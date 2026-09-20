@@ -18,41 +18,13 @@ with no milestone can wait indefinitely.
 | **Q2** | Is the home base a fixed station or a mobile mothership? | **A fixed station.** Removes base pathfinding, docking and a class of AI problem from the MVP; a mothership is a hull like any other later. | `GameDesign.md` §5 |
 | **Q3** | How much of the *Warzone 2100* design system lands in the MVP? | **The model, not the interface.** Hull, drive and slots in the simulation and on the wire from the first line; three fixed designs and no designer screen. | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) |
 | **Q4** | What fleet scale should the MVP target? | **About fifty ships a player**, 204 entities at peak, which is what makes full snapshots affordable. | `GameDesign.md` §10, [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) |
+| **Q5** | How does a client find a host? | **It does not — the address is configuration.** A one-line file in `LocalState` with `127.0.0.1` compiled in as the default; no discovery, no address entry. The loopback exemption this implies is a development arrangement and never a shipping one. | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) |
+| **Q6** | What is the target device? | **The Surface Pro.** 13-inch 3:2, 2880 × 1920 at 267 PPI, 200% scale, 1440 × 960 DIPs. The current model is ARM64, which makes that CI leg a real target. | `Interface.md` §1, [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) |
+| **Q7** | Is the authored frame 16:9 or 3:2? | **3:2, at 1440 × 960** — it follows from Q6 rather than being a separate choice. It is an exact 2× point-sampled fit on the target panel and there is no letterbox. The 16:9 recommendation this register carried was wrong once the device was known. | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) |
 
 ---
 
 ## Open
-
-### Q5 — How does a client find a host? — **needed by M0**
-
-**This is a hole in the brief and it blocks the first milestone.** There is no keyboard (R21), so nobody
-can type an address, and there is no lobby. A client that cannot reach a host is not a client.
-
-| Option | |
-|---|---|
-| **LAN discovery (recommended)** | The client multicasts a probe; hosts answer with a name and a player count; the client lists them as tappable rows. `DatagramSocket` supports it and `privateNetworkClientServer` in the manifest permits it. Fully touch-native, no text entry, and it is the LAN case the MVP targets anyway. |
-| **An on-screen numeric keypad** | The game draws twelve large targets and the player taps an address. Works anywhere, including across the internet, and is tedious every single time. |
-| **A configuration file in the package** | Cheapest to write and means a rebuild to change the address. Adequate for M0 and untenable after it. |
-
-**Recommendation: LAN discovery, with the keypad as the fallback the moment discovery proves unreliable
-on a real network.** The two are not exclusive and the keypad is perhaps eighty lines.
-
-### Q6 — What is the target device? — **needed by M0**
-
-The 72-pixel touch target in `Interface.md` §1 is derived from an assumed 12.3-inch 3:2 display at 188
-pixels per inch. **A different device makes every number in that derivation different**, and a 10-inch
-tablet makes them all worse.
-
-There is no recommendation. This is a fact about the hardware the game is for, and it should be pinned
-before the first panel is laid out — the derivation is reproduced in `Interface.md` §1 precisely so it can
-be redone against the real number.
-
-### Q7 — Is the authored resolution 16:9 or 3:2? — **needed by M1**
-
-1920 × 1080 is 1:1 on the display a developer works on and letterboxes about fifteen per cent away on a
-3:2 tablet. A 3:2 authored frame is the reverse. R13's scaling makes either correct; the question is which
-case is common. **Recommended: 16:9**, on the grounds that it is exact on the common display and that the
-answer is entangled with Q6.
 
 ### Q8 — Does hold-then-drag band select survive a real hand? — **needed by M1**
 
@@ -80,8 +52,10 @@ a raid is a real threat. The risk is that an undefended station makes a single e
 
 There is no text renderer in this tree and no font in R14's dependency list. Credits, costs and counts all
 need glyphs. **Recommended: a bitmap font baked into a header and drawn as instanced quads** — no
-dependency, no file, and it is exact at 1:1 which is what R13's scaling is built around. What it forecloses
-is any language that needs more than a few hundred glyphs.
+dependency, no file, and it is exact at the authored size — which on the target device reaches the glass at
+an exact 2× point-sampled fit ([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)), so a glyph
+baked to a pixel height stays a glyph baked to a pixel height. What it forecloses is any language that
+needs more than a few hundred glyphs.
 
 ### Q12 — What does suspend and resume look like? — **needed by M2**
 

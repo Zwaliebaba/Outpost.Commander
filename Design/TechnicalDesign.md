@@ -179,12 +179,32 @@ one thing: copy the datagram's bytes into a mutex-guarded queue and return. The 
 queue. The critical section is a `memcpy` and a `push_back`; nothing parses a packet on the pool thread and
 nothing touches renderer or replica state there.
 
-**A packaged client cannot reach a host on the same machine.** `AGENTS.md` §3 states it and this design has
-to plan around it: development is two machines, or a developer-mode loopback exemption that must be removed
-before anyone claims same-machine play works. **This is M0's job to establish** (`GameDesign.md` §10) —
-finding out at M3 that the arrangement needs a second machine would be finding out far too late. The
-package also needs its network capabilities declared in `Package.appxmanifest`, which is a certification
-failure rather than a runtime error when it is missing.
+### Where the host is, and the trap under it
+
+**The host address is a configuration value with a compiled-in default of `127.0.0.1`** — a one-line text
+file in the package's `LocalState` folder, which is the application's own storage and needs no capability.
+There is no discovery, no broadcast probe and no address entry, because R21 leaves no way to type one.
+This is [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md).
+
+The package declares **`privateNetworkClientServer`**, which is the capability for inbound and outbound
+traffic on home and work networks and is what Microsoft names for LAN games. **On Windows it does not grant
+internet access**, so going live additionally needs `internetClientServer`.
+
+**`127.0.0.1` works only under a loopback exemption, and that exemption is not a shipping configuration.**
+`AGENTS.md` §3 states the rule; this is why it bites here in particular. `Server` is an ordinary Win32
+console executable and therefore **unpackaged**, which closes off the manifest's `LoopbackAccessRules` —
+that route works only between two *packaged* applications. What is left is
+`CheckNetIsolation.exe LoopbackExempt`, which Microsoft documents as **"only possible for sideload or
+debugging scenarios where you have local access to the machine, and you have administrator privileges."**
+
+**Visual Studio grants it on every F5 deploy, which is the danger**: localhost will work for the whole of
+development and will not exist for anyone else. And since the development machine and the target device
+are not the same machine, **the Surface Pro needs a LAN address from the first day it is used** — which is
+the whole reason the address is a file rather than a constant.
+
+**M0 establishes both paths** (`GameDesign.md` §10), including which exemption form a UDP client actually
+needs: if replies to a bound socket require the inbound form `-is`, then `CheckNetIsolation.exe` must stay
+running the entire time the client is listening, and the single-machine loop stops being worth having.
 
 Encryption, authentication and any defence against a hostile client are not in the MVP. The protocol
 version in the header refuses a mismatched build, and that is the whole of it.
@@ -202,16 +222,20 @@ interpolated between the two; headings interpolate the short way round, which th
 subtraction rather than a special case. If the next snapshot has not arrived, the client extrapolates for a
 short bounded window and then holds position rather than sliding a ship somewhere it never was.
 
-**Rendering is R13's arrangement**: every pass draws into an off-screen scene target at the authored
-resolution, and the frame ends by fitting that target into the back buffer with the aspect preserved — 1:1
-and unfiltered when it already matches, point sampling at an exact integer multiple, bilinear otherwise.
-Exactly one place asks the window how big it is, and it is the conversion `AGENTS.md` R18 requires a suite
-over.
+**Rendering is R13's arrangement**, and [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) settles
+the resolution R13 deliberately leaves open: **the game is authored at 1440 × 960**. Every pass draws into
+a scene target at that size, and the frame ends by fitting it into the back buffer with the aspect
+preserved. The Surface Pro's panel is 2880 × 1920 and the swap chain is created at those physical pixels,
+**so the fit is an exact 2× and takes the point-sampled path** — R13's crisp case is the only one the
+target device takes. Exactly one place asks the window how big it is, and it is the conversion R18 requires
+a suite over.
 
-The scene target's sample count is one constant. **The MVP ships one sample**; space is thin bright
-silhouettes against black and it is exactly the content that wants multisampling, so 4× is the expected
-first change, and the resolve step goes in with it. The back buffer cannot be multisampled at all — DXGI's
-flip model requires `SampleDesc.Count` of 1 — which is most of why the scene target exists.
+**A 1.38-megapixel scene target is small, and that is what makes multisampling affordable.** The sample
+count is one constant; the MVP ships one sample, and 4× — 5.5 megasamples, which this hardware will not
+notice — is the expected first change, with the resolve step going in beside it. Space is thin bright
+silhouettes against black, which is exactly the content that wants it. The back buffer cannot be
+multisampled at all, since DXGI's flip model requires `SampleDesc.Count` of 1, and that is most of why the
+scene target exists.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
 colour. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
@@ -268,10 +292,13 @@ not a definition is arithmetic on the design's own starting values. These are ow
 3. **Packet loss and jitter on a real wireless link between two machines**, which decides whether 10 Hz
    and two-fragment snapshots survive contact — owed at M0, because it is the cheapest possible moment to
    find out the answer is no.
-4. **The frame time on the target tablet**, at both x64 and ARM64, which is the only thing that says
-   whether one sample or four is affordable.
-5. **Whether the loopback exemption is the only way to develop solo**, established at M0 by removing it and
-   trying again, exactly as `AGENTS.md` §3 instructs.
+4. **The frame time on an actual Surface Pro** at 1440 × 960, at one sample and at four, on **both x64 and
+   ARM64** — the Surface Pro 11 is a Snapdragon X part, so the ARM64 leg is a real target here rather than
+   a CI formality.
+5. **That the present step really takes the point-sampled path on the device**, confirmed by looking at it.
+   R13's whole arrangement is worthless if a conversion error lands the scale at 1.99.
+6. **Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by
+   removing the exemption and trying again exactly as `AGENTS.md` §3 instructs.
 
 ---
 
@@ -288,6 +315,8 @@ shaped:
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
 | [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | No content pipeline and no mesh format in the MVP. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
+| [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame is 1440 × 960 — an exact 2× point-sampled fit on the Surface Pro. |
+| [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) | The host address is configuration with a compiled-in default; no discovery, and the loopback exemption is a development arrangement. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in
 [`OpenQuestions.md`](OpenQuestions.md).

@@ -7,9 +7,9 @@ code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is 
 the source and `AGENTS.md` is the rule, in that order.
 
 **Status: DRAFT, 2026-09-20.** This is a first pass written against the brief and against `AGENTS.md`,
-starting from an empty `Design/` and a build shell with no game in it. Four questions were put to the
-owner and answered on 2026-09-20; eleven more are open on the register. **Nothing here is settled until
-the owner accepts it, and two of the open questions block the first milestone.**
+starting from an empty `Design/` and a build shell with no game in it. Seven questions have been put to
+the owner and answered; eight are open on the register and **none of them blocks the first milestone**.
+Nothing here is settled until the owner accepts it, and half the ADRs are still Proposed.
 
 ## The documents
 
@@ -18,8 +18,8 @@ the owner accepts it, and two of the open questions block the first milestone.**
 | [`GameDesign.md`](GameDesign.md) | The game: the two lineages and which half the MVP is, the session and victory, the area and how it is generated, the economy, the station, ships as compositions, combat, the AI, where research goes, and the five milestones |
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, why there is no content pipeline, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: four answered, eleven open, each with its options, what each costs, a recommendation where there honestly is one, and the milestone that needs it |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-006` |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: seven answered, eight open, each with its options, what each costs, a recommendation where there honestly is one, and the milestone that needs it |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-008` |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than
@@ -46,14 +46,20 @@ model goes in before its interface does, because retrofitting it would move dama
 mass, speed and the wire format in one change. The miner is the proof: it is not a ship type, it is a
 scout hull with a mining tool where a weapon would go.
 
-## What blocks the first milestone
+## What M0 has to find out
 
-Two questions on the register, and both should be answered before M0 is started rather than during it:
+Nothing on the register blocks M0 any more, but the first milestone is still there to answer questions
+rather than to build a game, and two of them are uncomfortable:
 
-- **[Q5](OpenQuestions.md) — how a client finds a host.** There is no keyboard and no lobby, so nobody can
-  type an address. The recommendation is LAN discovery over multicast.
-- **[Q6](OpenQuestions.md) — what the target device is.** Every layout number in `Interface.md` is derived
-  from an assumed 12.3-inch tablet, and a different one makes all of them different.
+- **Whether a single-machine development loop is usable at all.** The host address is `127.0.0.1` by
+  default ([`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)), which needs a loopback exemption
+  that Microsoft documents as a sideload-or-debugging arrangement, and that Visual Studio grants silently
+  on every F5. If UDP replies turn out to need the inbound form, `CheckNetIsolation.exe` has to stay
+  running the whole time — at which point two machines are the answer, and it is far better to know that
+  in week one.
+- **Whether the present step really lands on an exact 2×** on a Surface Pro
+  ([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)). R13's whole arrangement is worth nothing if
+  a conversion error puts the scale at 1.99, and that is a thing you confirm by looking at the screen.
 
 ## How a design changes
 
@@ -66,7 +72,7 @@ Two questions on the register, and both should be answered before M0 is started 
   into the document it belongs to.
 
 An ADR marked **Proposed** is a decision this design takes and the owner has not yet ruled on. **It is not
-something to write code against.** Four of the six are Proposed today.
+something to write code against.** Four of the eight are Proposed today.
 
 ## What is deliberately not designed yet
 

@@ -278,7 +278,7 @@ almost no game and all of the things that can turn out to be impossible.
 
 | | | |
 |---|---|---|
-| **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots, interpolates, and draws one shape in Direct3D 12. A tap sends a move order and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the gesture seam, and whether two machines are needed to develop. **Everything after this is content.** |
+| **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots, interpolates, and draws one shape in Direct3D 12. A tap sends a move order and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable at all. **Everything after this is content.** |
 | **M1** | **The fleet** | Four stations, the three designs, the build queue, move orders, selection. Multiple clients on one host. |
 | **M2** | **The field** | The procedural generator, asteroid fields, miners, the credit loop. |
 | **M3** | **The fight** | Weapons, the damage table, destruction, elimination and victory. A stub AI that builds and attacks, so a match can be played by one person. |

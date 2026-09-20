@@ -10,29 +10,44 @@ answers to.
 
 ## 1. The frame
 
-The game is authored at **1920 × 1080** and every layout, glyph and position behind that is
-unconditional (R13). The frame is drawn into a scene target at that size and fitted into the window at
-the end: 1:1 and unfiltered when the client area already matches, point sampling at an exact integer
-multiple, bilinear otherwise, letterboxed, aspect preserved. Exactly one piece of code asks the window
-how big it is.
+**The target device is the Surface Pro** (`OpenQuestions.md` Q6), and every number below is derived from
+it rather than assumed.
 
-**1920 × 1080 is 16:9 and a Surface-class tablet is 3:2**, so on the most likely device the frame
-letterboxes top and bottom and loses about fifteen per cent of the panel. The alternative — authoring
-3:2 — wins that back and letterboxes on every 16:9 display instead, including the monitor a developer
-actually works on. The choice is on the register in [`OpenQuestions.md`](OpenQuestions.md); 16:9 is the
-recommendation because it is 1:1 on the common case and because R13's scaling makes the other case
-correct rather than broken.
+| | |
+|---|---|
+| **Panel** | 13 inches, 3:2, **2880 × 1920** physical pixels, 267 pixels per inch. |
+| **Default Windows scale** | 200%, so the `CoreWindow` reports **1440 × 960** device-independent pixels. |
+| **Swap chain** | 2880 × 1920 — physical pixels, not DIPs. R18 requires the conversion that gets there to be one tested pure function. |
+
+**The game is authored at 1440 × 960** and every layout, glyph and position behind that is unconditional
+(R13). The frame is drawn into a scene target at that size and fitted into the back buffer at the end.
+
+**That fit is exactly 2×, so it is point sampling and it is crisp** — and it is 3:2, so there is no
+letterbox. This is not a coincidence: 200% is the scale Microsoft ships on this panel, so the authored
+frame *is* the DIP frame and the swap chain is exactly twice it. R13's whole architecture exists to make
+the exact-multiple path common, and on the target device it is the only path taken.
+
+Everything else is correct rather than crisp, which is what R13 buys. A Surface Pro 7 (12.3 inches,
+2736 × 1824) scales 1.9× and resamples slightly. A 1080p monitor — the display a developer actually works
+on — fits 1.125× and pillarboxes; that is the *development* case and it is deliberately not the one
+optimised for.
+
+**A 1,440 × 960 scene target is 1.38 megapixels**, which is small. That matters more than it sounds:
+4× multisampling costs 5.5 megasamples, which is affordable, and space is thin bright silhouettes against
+black — exactly the content that wants it (`TechnicalDesign.md` §6).
 
 ### The touch target, derived
 
-A 12.3-inch 3:2 display is 10.2 inches wide. A 16:9 frame fitted to that width puts 1920 authored pixels
-across 10.2 inches — **188 pixels per inch, 7.4 per millimetre**. Microsoft's own touch guidance puts the
-minimum target at 7 mm and the recommended one at 9 mm, which is **52 and 67 authored pixels**.
+A 13-inch 3:2 panel is **10.82 inches wide** (height² × 3.25 = 169). The authored frame spans that width,
+so 1,440 authored pixels over 10.82 inches is **133 authored pixels per inch, 5.24 per millimetre**.
 
-**The minimum interactive target is 72 × 72 authored pixels**, with at least 16 pixels of clear space
-between adjacent targets. Rounded up from 67 rather than down, because the derivation assumes the largest
-plausible screen and a smaller one makes every number worse. A control smaller than this is a defect, not
-a style choice.
+Microsoft's touch guidance puts the minimum target at 7 mm and the recommended one at 9 mm, which is
+**37 and 47 authored pixels**.
+
+**The minimum interactive target is 48 × 48 authored pixels**, with at least 12 pixels of clear space
+between adjacent targets. Forty-eight because it is the 9 mm recommendation rounded up, and because at the
+exact 2× scale it lands on **96 physical pixels — 9.15 mm** — with no fractional edge anywhere. A control
+smaller than this is a defect, not a style choice.
 
 ### Where the hands are
 
@@ -143,13 +158,13 @@ Five things are drawn over the scene. All of them are `GameClient` (R20).
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
-| **Minimap** | Top right, 320 × 320 | The square map, ships as owner-coloured dots, the camera's view as an outline. Tap to jump. |
+| **Minimap** | Top right, 240 × 240 | The square map, ships as owner-coloured dots, the camera's view as an outline. Tap to jump. |
 | **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it. |
 | **Build** | Bottom right, thumb zone | Visible when your station is selected. Three targets — Miner, Fighter, Battleship — each with its cost, greyed when unaffordable. Below them the queue, each item tappable to cancel. |
 | **System** | Top centre, small | Connection state, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
-Every target in every panel is at least 72 × 72 (§1). The build buttons are considerably larger, because
-they are the ones a player hits while something is exploding.
+Every target in every panel is at least 48 × 48 (§1), and **the build buttons are 96 × 96** — 18 mm,
+twice the minimum — because they are the ones a player hits while something is exploding.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so every panel
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
@@ -159,19 +174,17 @@ real cost — no free text layout, no free scrolling, no accessibility — and i
 
 ## 7. What this document does not settle
 
-1. **How a client finds a host.** There is no keyboard, so nobody can type an address, and the MVP has no
-   lobby. The proposal is **LAN discovery**: the client multicasts a probe, hosts answer with a name and a
-   player count, and the client lists them as tappable rows. `DatagramSocket` supports this and
-   `privateNetworkClientServer` in the manifest permits it. The fallback, if discovery proves unreliable,
-   is a numeric keypad the game draws itself. **This is a real hole in the brief and it is on the
-   register**, because a client that cannot reach a host is not a client.
-2. **The authored aspect ratio** (§1).
-3. **Whether hold-then-drag survives contact with a hand** (§3).
-4. **What suspend and resume look like.** A packaged application is suspended when it loses the
-   foreground, and the match continues without it. Resuming into a match that has moved on needs a
-   reconnect and a resynchronisation, and full snapshots (`TechnicalDesign.md` §4) make that mechanically
-   trivial — but what the player *sees* while it happens is not designed.
-5. **Fonts and glyphs.** There is no text renderer in this tree and no font in R14's dependency list. A
-   bitmap font generated in code, or one baked into a header, is the likely answer and it is not designed.
-6. **Anything a second player needs to say to a first.** There is no chat, no ping and no drawing on the
+1. **Whether hold-then-drag survives a real hand** (§3). Answered by using it, not by arguing about it.
+2. **What suspend and resume look like.** A packaged application is suspended when it loses the
+   foreground, and the match continues without it. Reconnecting is mechanically trivial because snapshots
+   are self-contained (`TechnicalDesign.md` §4) — but what the player *sees* while it happens is not
+   designed.
+3. **Fonts and glyphs.** There is no text renderer in this tree and no font in R14's dependency list. A
+   bitmap font baked into a header and drawn as instanced quads is the likely answer: no dependency, no
+   file, and exact at the authored size, which is the whole point of §1's 2× fit.
+4. **Anything a second player needs to say to a first.** There is no chat, no ping and no drawing on the
    map, and with no keyboard the first two need a gesture and a vocabulary nobody has proposed.
+
+**How a client finds a host is settled and is not here:** it is a configuration value with a compiled-in
+default, there is no discovery and no address entry, and the consequences are
+[`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md).

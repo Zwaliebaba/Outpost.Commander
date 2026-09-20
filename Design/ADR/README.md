@@ -11,9 +11,11 @@ this tree has taken no decisions before these.
 | [`ADR-004`](ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities in the MVP: damage lands on the tick a weapon fires and the client draws an event | Proposed | 2026-09-20 |
 | [`ADR-005`](ADR-005-meshes-are-generated-in-code.md) | No mesh format, no loader and no asset build step in the MVP | Proposed | 2026-09-20 |
 | [`ADR-006`](ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function | Accepted | 2026-09-20 |
+| [`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md) | The authored frame is 1440 × 960, which is an exact 2× point-sampled fit on the Surface Pro, and the 48-pixel touch target that follows | Accepted | 2026-09-20 |
+| [`ADR-008`](ADR-008-the-host-address-is-configuration.md) | The host address is a configuration file with a compiled-in default and no discovery; the loopback exemption is a development arrangement and not a shipping one | Accepted | 2026-09-20 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against.
+ruled; a proposed ADR is not something to write code against. Four of the eight are Proposed.
 
 ## When to write one
 
