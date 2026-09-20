@@ -41,7 +41,7 @@ tasks:
     verify:
       - python3 Tools/CheckTaskDag.py
     parallel_safe: true
-    status: todo
+    status: in_progress
 
   - id: T2
     title: InputEvent carries gestures, and the keyboard and mouse kinds are deleted
