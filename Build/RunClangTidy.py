@@ -2,7 +2,7 @@
 """Run the pinned clang-tidy over every hand-written translation unit the solution builds (AGENTS.md §1, §6).
 
     python Build\\RunClangTidy.py                        # every translation unit, in parallel; exit 1 on any finding
-    python Build\\RunClangTidy.py Core\\Json.cpp           # the named files only (a file you just wrote, before you push)
+    python Build\\RunClangTidy.py NeuronCore\\Json.cpp           # the named files only (a file you just wrote, before you push)
     python Build\\RunClangTidy.py --project Core         # one project
     python Build\\RunClangTidy.py --dry-run              # print the commands and run nothing
 
@@ -13,7 +13,7 @@ so that a local run and the gate are the same binary; the script prints the vers
 warns when it is another one.
 
 For every ClCompile item of every .vcxproj the solution lists (CompiledShaders/ and the vendored
-Client/d3dx12.h excepted), clang-tidy runs through clang's MSVC driver with the switches the
+NeuronClient/d3dx12.h excepted), clang-tidy runs through clang's MSVC driver with the switches the
 project files fix (ADR-001): /std:c++latest, /EHsc, /permissive-, /arch:AVX2, /fp:precise, the
 Unicode character set as /DUNICODE /D_UNICODE, the Debug configuration's preprocessor definitions
 (so /D_DEBUG) and its include directories, all read from the .vcxproj rather than repeated here,

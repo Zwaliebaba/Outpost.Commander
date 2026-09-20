@@ -16,18 +16,18 @@ tasks:
     intent: >
       What changes about the system once this lands, and why that matters.
       Not how - the how is the diff.
-    project: Core
+    project: NeuronCore
     depends_on: []
     blocked_by: []                    # tasks in another plan, as plan/Tn
     files:
-      - Core/Example.h
-      - Core/Example.cpp
+      - NeuronCore/Example.h
+      - NeuronCore/Example.cpp
       # Tests ship with the change, not after it (TechnicalDesign.md §10).
-      - Tests/CoreTests/ExampleTests.cpp
+      - Tests/NeuronCoreTests/ExampleTests.cpp
     acceptance:
       - An outcome someone else could check without asking you
       - Another one
-      - CoreTests covers <the behaviour this task adds or changes>
+      - NeuronCoreTests covers <the behaviour this task adds or changes>
     verify:
       - python3 Tools/CheckTaskDag.py
       - python3 Build/CheckFormat.py --clang-format clang-format-18

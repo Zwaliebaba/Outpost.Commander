@@ -22,7 +22,7 @@ tasks:
       Walls that join, hardpoints carrying a researched weapon, the bunker, the repair bay, the
       sensor tower and the uplink exist as GameDesign.md §5 describes them, so that a base has
       a defence beyond the tower and the retreat mechanic has somewhere to go.
-    project: Sim
+    project: GameLogic
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -37,7 +37,7 @@ tasks:
       Hover, rocket pod, flamer, artillery, laser, sensor and repair modules, the chassis Marks
       II and every version-1 number of GameDesign.md §6 and §7 are in the tables, so that the
       design space is the one the pillars promise.
-    project: Content
+    project: GameShared
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -52,7 +52,7 @@ tasks:
     intent: >
       The stance system exists for retreat and repair (GameDesign.md §8); with the repair bay and
       the repair module in the game the mechanic is complete and a veteran is worth saving.
-    project: Sim
+    project: GameLogic
     depends_on: [T1, T2]
     acceptance:
       - A device under its retreat threshold returns to the nearest repair bay or repair device within 60 cells, is repaired at the bay's or module's rate for power, and returns to its guard position; the render view carries the rank badge and the client draws it
@@ -65,7 +65,7 @@ tasks:
       One planner with personality weights (rusher, turtle, artillery, expander) and three
       difficulties that change cadence and options, never information, with the power bonus at
       the highest stated in the lobby (owner, 2026-09-17).
-    project: Sim
+    project: GameLogic
     depends_on: [T2]
     acceptance:
       - The planner of TechnicalDesign.md §7 replaces the M1 behaviour list; personalities are tables of weights; difficulty sets the planner's cadence (every 10, 3 or 1 seconds) and the number of options scored; the highest difficulty takes the power bonus and no other advantage
@@ -105,7 +105,7 @@ tasks:
     intent: >
       Authored content enters as stamps the generator places (GameDesign.md §3), so that a
       start base, a ruin and a chokepoint exist without a hand-authored map.
-    project: Sim
+    project: GameLogic
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -121,7 +121,7 @@ tasks:
       the Species sky and cloud layers camera-relative with their noise in world space (OpenQuestions.md Q17), the water plane with the
       wave texture and the shore band, sprites for the population and particles, and a decision
       on the pixel post pass with a frame to look at.
-    project: Client
+    project: NeuronClient
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -138,7 +138,7 @@ tasks:
     intent: >
       Weapons, explosions, engines, construction and the interface sound through the Species
       event model (TechnicalDesign.md §6.5) with the Species effects imported, positioned in 3D.
-    project: Client
+    project: NeuronClient
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -153,7 +153,7 @@ tasks:
       The interface becomes windows that open over the world (GameDesign.md §11 point 4), in the
       Eclipse shape with the rules SpeciesCanvas.md §2 writes down, so that the terminal look is
       complete; the panels' content is unchanged.
-    project: Client
+    project: NeuronClient
     depends_on: []
     blocked_by:
       - m1-vertical-slice/G3
@@ -167,7 +167,7 @@ tasks:
       A device or structure at zero hit points comes apart instead of being swapped for a wreck
       between two frames (GameDesign.md §8, ruled as OpenQuestions.md Q25), so that the moment
       the game is about is a moment the game draws.
-    project: Client
+    project: NeuronClient
     depends_on: [T8, T9]
     blocked_by:
       - m1-vertical-slice/G3
@@ -195,26 +195,26 @@ tasks:
   - id: T13
     title: The feature table - scenery gets rows, so that a feature names something
     intent: >
-      Sim/Feature.h's `design` is documented "Row index in the feature table" and there is no
-      feature table: Content/ContentTree.h has none and GameData ships no Features.json. So a
+      GameShared/Feature.h's `design` is documented "Row index in the feature table" and there is no
+      feature table: GameShared/ContentTree.h has none and GameData ships no Features.json. So a
       feature arrives over the wire naming a row of nothing, and m1-vertical-slice/R2's
       RenderViewBuilder cannot draw one. Found while writing that builder (R2's notes); recorded
       rather than invented, because a content schema is the owner's and the last three gaps like it
       became C6 and N4 for exactly that reason.
-    project: Content
+    project: GameShared
     depends_on: []
     files:
-      - Content/FeatureDesc.h
-      - Content/ContentTree.h
-      - Content/ContentLoader.cpp
-      - Content/ContentValidator.cpp
+      - GameShared/FeatureDesc.h
+      - GameShared/ContentTree.h
+      - GameShared/ContentLoader.cpp
+      - GameShared/ContentValidator.cpp
       - GameData/Features.json
-      - Replica/RenderViewBuilder.cpp
-      - Tests/ContentTests/FeatureDescTests.cpp
-      - Tests/ReplicaTests/RenderViewTests.cpp
+      - GameClient/RenderViewBuilder.cpp
+      - Tests/GameSharedTests/FeatureDescTests.cpp
+      - Tests/GameClientTests/RenderViewTests.cpp
       - Design/Interface.md
     acceptance:
-      - "A feature row carries at least an id, a model and the footprint in cells, loaded and validated like every other table, so that Sim/Feature.h's `design` indexes something real"
+      - "A feature row carries at least an id, a model and the footprint in cells, loaded and validated like every other table, so that GameShared/Feature.h's `design` indexes something real"
       - Landscape generation scatters features from the table, so that a feature on the ground is a thing the simulation placed rather than a row nothing reads
       - RenderViewBuilder composes a feature as one instance at its cell and facing, and a ReplicaTests case covers it
       - Design/Interface.md §11's feature row is struck
@@ -230,7 +230,7 @@ tasks:
       MOVED FROM m1-vertical-slice/C7 ON 2026-09-19 BY THE OWNER'S RULING. C7 asked first whether
       M1 places features at all, because nothing in Sim did and an empty table is content that must
       still be validated and hashed while no code reads it. The answer was that scenery is M2's.
-      What stays behind in M1 is an honest gap rather than a lie: Sim/Feature.h's `design` still
-      documents a table that does not exist, and Replica/RenderViewBuilder.cpp's feature branch
+      What stays behind in M1 is an honest gap rather than a lie: GameShared/Feature.h's `design` still
+      documents a table that does not exist, and GameClient/RenderViewBuilder.cpp's feature branch
       cannot be exercised there. Both are recorded in Design/Interface.md §11.
 

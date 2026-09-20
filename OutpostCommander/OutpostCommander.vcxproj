@@ -77,7 +77,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)Core;$(SolutionDir)Content;$(SolutionDir)Sim;$(SolutionDir)Net;$(SolutionDir)Replica;$(SolutionDir)Client;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)NeuronClient;$(SolutionDir)NeuronServer;$(SolutionDir)GameShared;$(SolutionDir)GameClient;$(SolutionDir)GameLogic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -129,46 +129,46 @@ exit /b 0</Command>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="LocalHost.cpp" />
-    <ClCompile Include="Match.cpp" />
+    <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="Hud.cpp" />
+    <ClCompile Include="LocalHost.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Match.cpp" />
     <ClCompile Include="Operator.cpp" />
     <ClCompile Include="StartingBase.cpp" />
-    <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h" />
     <ClInclude Include="App.h" />
+    <ClInclude Include="CameraController.h" />
+    <ClInclude Include="Hud.h" />
     <ClInclude Include="LocalHost.h" />
     <ClInclude Include="Match.h" />
-    <ClInclude Include="Hud.h" />
     <ClInclude Include="Operator.h" />
     <ClInclude Include="StartingBase.h" />
-    <ClInclude Include="CameraController.h" />
+    <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.vcxproj">
-      <Project>{B7C59AFE-46DD-490D-9E4D-9316425BFDC5}</Project>
+    <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
+      <Project>{71245361-8851-4CE4-9FE1-A6DB16515C2A}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Content\Content.vcxproj">
-      <Project>{2B4659A5-0642-400E-9682-22B38C8571F8}</Project>
+    <ProjectReference Include="..\NeuronClient\NeuronClient.vcxproj">
+      <Project>{59408B79-BB9F-4EDF-BECD-9526A362B9B5}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Sim\Sim.vcxproj">
-      <Project>{76A96960-7A4A-4CB2-A7ED-7C543AE2761A}</Project>
+    <ProjectReference Include="..\NeuronServer\NeuronServer.vcxproj">
+      <Project>{CF0779DC-81D1-40A7-B279-BEDF5772CAA1}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Net\Net.vcxproj">
-      <Project>{7C728653-8880-47F2-9ACC-B7B1696C6593}</Project>
+    <ProjectReference Include="..\GameShared\GameShared.vcxproj">
+      <Project>{EC4D4531-1E7E-418B-BC34-52E6EBAB4DDA}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Replica\Replica.vcxproj">
-      <Project>{2838F54E-D862-42D7-815C-2CD48F050DED}</Project>
+    <ProjectReference Include="..\GameClient\GameClient.vcxproj">
+      <Project>{49EF35F7-11C1-4A5C-AC2A-99EC1DE2060D}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Client\Client.vcxproj">
-      <Project>{58C52AE8-8230-43C6-8951-58DA3CD613DC}</Project>
+    <ProjectReference Include="..\GameLogic\GameLogic.vcxproj">
+      <Project>{7A7A8CC8-E684-4892-8799-D6227F0E1F5F}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

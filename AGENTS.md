@@ -76,7 +76,7 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 ### Worked example — this is the target style
 
 ```cpp
-// Client/SceneTarget.h
+// NeuronClient/SceneTarget.h
 #pragma once
 
 #include <cstdint>
@@ -177,7 +177,7 @@ msbuild <Solution>.slnx /t:<ProjectName> /p:Configuration=Debug /p:Platform=x64 
 msbuild <Solution>.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
 ```
 
-**No header is named like a C runtime or SDK header.** The other projects' directories sit on the include path ahead of the SDK, MSVC searches them for an angled include too, and it matches the name case-insensitively: `Core/Assert.h` was what DirectXMath's `<assert.h>` found, once (2026-09-17). `Build/CheckProjectFiles.py` refuses the runtime's names and the SDK headers this tree reaches for.
+**No header is named like a C runtime or SDK header.** The other projects' directories sit on the include path ahead of the SDK, MSVC searches them for an angled include too, and it matches the name case-insensitively: `NeuronCore/Assert.h` was what DirectXMath's `<assert.h>` found, once (2026-09-17). `Build/CheckProjectFiles.py` refuses the runtime's names and the SDK headers this tree reaches for.
 
 **No identifier is spelled like a Windows SDK macro.** `<windows.h>` is in scope on the whole Client side and in every test suite, and the preprocessor rewrites `near`, `far`, `pascal`, `cdecl`, `interface`, `small`, `hyper`, `IN`, `OUT`, `OPTIONAL`, `CONST`, `VOID`, `PURE`, `DELETE`, `IGNORE` and the upper-case twins of the first four before the compiler sees them: `const XMVECTOR near` lost its name, once (2026-09-17), and a portable layer only finds out when a test includes it. `Build/CheckProjectFiles.py` refuses the names in every project.
 

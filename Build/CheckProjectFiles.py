@@ -14,7 +14,7 @@ A finding is one line, `<file>:<line>: <rule>: <message>`, and any finding fails
   setting             a setting ADR-001 fixes is absent or has another value, in any configuration or platform
   alignment           Debug and Release differ, within a platform, outside the set AGENTS.md §3 enumerates
   include-directory   an include directory that is not $(SolutionDir)<AnotherProject>
-  macro-family        a project defines a macro of the Windows family Core/WindowsHeader.h owns
+  macro-family        a project defines a macro of the Windows family NeuronCore/WindowsHeader.h owns
   unregistered        a .cpp or .h in the project directory that the .vcxproj does not list
   missing             a listed file that does not exist
   filters             the .vcxproj and its .filters disagree, or the .filters is absent
@@ -62,14 +62,14 @@ SLICES = tuple(f"{configuration}|{platform}" for platform in PLATFORMS for confi
 SKIPPED_DIRECTORIES = {".git", ".vs", "x64", "ARM64"}
 FIXTURES = Path("Build") / "Fixtures" / "ProjectFiles"
 # Vendored, and the one exception to R14 (owner, 2026-09-17): neither named nor read by any rule here.
-VENDORED = {"Client/d3dx12.h"}
+VENDORED = {"NeuronClient/d3dx12.h"}
 SHADER_DIRECTORY = "Shaders"
 COMPILED_SHADER_DIRECTORY = "CompiledShaders"
 CPP_SUFFIXES = {".cpp", ".h"}
 UNUSED_CPP_SUFFIXES = {".hpp", ".hh", ".hxx", ".cc", ".cxx", ".c", ".inl", ".inc", ".ipp"}
 WIZARD_FILE_NAMES = {"pch.h", "pch.cpp", "framework.h", "targetver.h", "Resource.h"}
 # Every project directory is on the include path of the projects built on it, ahead of the SDK, and MSVC
-# searches /I directories for an angled include too, case-insensitively: Core/Assert.h was what DirectXMath's
+# searches /I directories for an angled include too, case-insensitively: NeuronCore/Assert.h was what DirectXMath's
 # <assert.h> found (2026-09-17). So no header is named like one of the C runtime's or like an SDK header the
 # tree reaches for (AGENTS.md §3). The runtime's list is the UCRT's and vcruntime's public headers.
 RUNTIME_HEADER_NAMES = {
@@ -135,28 +135,32 @@ CONFIGURATION_LINK = {
     "Release": {"EnableCOMDATFolding": "true", "OptimizeReferences": "true"},
 }
 CONFIGURATION_DEFINITION = {"Debug": "_DEBUG", "Release": "NDEBUG"}
-# The Windows macro family Core/WindowsHeader.h owns (AGENTS.md §4): a /D of any of these is C4005 under /WX.
+# The Windows macro family NeuronCore/WindowsHeader.h owns (AGENTS.md §4): a /D of any of these is C4005 under /WX.
 MACRO_FAMILY = {"NOMINMAX", "WIN32_LEAN_AND_MEAN", "NODRAWTEXT", "NOGDI", "NOBITMAP", "NOMCX", "NOSERVICE", "NOHELP"}
 
-# ADR-001's table, the one place the edges are written: what each project is built on, which is the whole
+# ADR-018's table, the one place the edges are written: what each project is built on, which is the whole
 # of what it may reference, put on its include path or include with a quoted include. The sets are
-# already closed (Net lists Sim's Content and Core), and a suite is built on its library and what that
+# already closed, and a suite is built on its library and what that
 # is built on: a test reaches no further up than the code it covers. Edges point down only; two
 # libraries at one level share what is below them, never each other. A new edge is a superseding ADR
 # and a row here, in that order.
 BUILT_ON = {
-    "Core": set(),
-    "Content": {"Core"},
-    "Sim": {"Core", "Content"},
-    "Net": {"Core", "Content", "Sim"},
-    "Replica": {"Core", "Content", "Net", "Sim"},
-    "Client": {"Core", "Content"},
-    "OutpostCommander": {"Core", "Content", "Sim", "Net", "Replica", "Client"},
-    "OutpostHost": {"Core", "Content", "Sim", "Net"},
+    "NeuronCore": set(),
+    "NeuronClient": {"NeuronCore"},
+    "NeuronServer": {"NeuronCore"},
+    "GameShared": {"NeuronCore"},
+    "GameClient": {"NeuronCore", "GameShared"},
+    "GameLogic": {"NeuronCore", "GameShared"},
+    "OutpostCommander": {"NeuronCore", "NeuronClient", "NeuronServer", "GameShared", "GameClient", "GameLogic"},
+    "OutpostHost": {"NeuronCore", "NeuronServer", "GameShared", "GameLogic"},
+    # THE ONE SUITE ALLOWED TO SEE BOTH SIDES (ADR-018). Every other suite is built on its library and
+    # what that is built on, derived from its name; there is no "Integration" library, and that is the
+    # point -- the split leaves no project above both GameClient and GameLogic, so the three tests that
+    # prove the two halves agree (convergence, the host endpoint, the interest set) have nowhere else to
+    # live. It is a harness, like OutpostCapture, and nothing ships from it.
+    "IntegrationTests": {"NeuronCore", "NeuronClient", "NeuronServer", "GameShared", "GameClient", "GameLogic"},
 }
-# The portable libraries include no platform header (ADR-001): Core may, in named files through
-# WindowsHeader.h, and Client, the executables and the suites may.
-PORTABLE = {"Content", "Sim", "Net", "Replica"}
+PORTABLE = {"GameShared", "GameClient", "GameLogic"}
 PLATFORM_HEADER_RE = re.compile(
     r"^(windows\.h|WindowsHeader\.h|d3d12[A-Za-z0-9_]*\.h|d3dx12\.h|d3dcompiler\.h|dxgi[A-Za-z0-9_]*\.h|winsock2\.h|ws2tcpip\.h|xaudio2[A-Za-z0-9_]*\.h|winrt/.*|wrl/.*)$",
     re.I,
@@ -464,7 +468,7 @@ def check_alignment(project: Project, platform: str) -> None:
     if stripped["Debug"] != stripped["Release"]:
         findings.append(Finding("alignment", project.relative, f"PreprocessorDefinitions differ beyond _DEBUG/NDEBUG on {platform}: Debug {stripped['Debug']}, Release {stripped['Release']}"))
     for macro in sorted({d for c in CONFIGURATIONS for d in definitions[c]} & MACRO_FAMILY):
-        findings.append(Finding("macro-family", project.relative, f"defines {macro}; Core/WindowsHeader.h owns the family and a /D of it is C4005 under /WX"))
+        findings.append(Finding("macro-family", project.relative, f"defines {macro}; NeuronCore/WindowsHeader.h owns the family and a /D of it is C4005 under /WX"))
 
 
 def check_include_directories(project: Project, project_names: set[str]) -> None:
@@ -812,30 +816,30 @@ SELF_TEST_EXPECTED = [
     ("solution-missing", "Fixture.slnx"),
     ("solution-unlisted", "Orphan/Orphan.vcxproj"),
     ("solution-directory", "Elsewhere/Moved.vcxproj"),
-    ("platform", "Content/Content.vcxproj"),
-    ("setting", "Content/Content.vcxproj"),
-    ("alignment", "Content/Content.vcxproj"),
-    ("include-directory", "Content/Content.vcxproj"),
-    ("macro-family", "Content/Content.vcxproj"),
-    ("unregistered", "Net/Stray.cpp"),
-    ("missing", "Net/Net.vcxproj"),
-    ("filters", "Net/Net.vcxproj.filters"),
-    ("subdirectory", "Net/Extra/Deep.h"),
-    ("compiled-shaders", "Net/Net.vcxproj"),
-    ("file-name", "Replica/bad_name.cpp"),
-    ("shadow", "Replica/Math.h"),
-    ("type-affix", "Replica/Replica.h"),
-    ("spelling", "Replica/Replica.h"),
-    ("sdk-macro", "Replica/Replica.h"),
+    ("platform", "GameShared/GameShared.vcxproj"),
+    ("setting", "GameShared/GameShared.vcxproj"),
+    ("alignment", "GameShared/GameShared.vcxproj"),
+    ("include-directory", "GameShared/GameShared.vcxproj"),
+    ("macro-family", "GameShared/GameShared.vcxproj"),
+    ("unregistered", "NeuronClient/Stray.cpp"),
+    ("missing", "NeuronClient/NeuronClient.vcxproj"),
+    ("filters", "NeuronClient/NeuronClient.vcxproj.filters"),
+    ("subdirectory", "NeuronClient/Extra/Deep.h"),
+    ("compiled-shaders", "NeuronClient/NeuronClient.vcxproj"),
+    ("file-name", "GameClient/bad_name.cpp"),
+    ("shadow", "GameClient/Math.h"),
+    ("type-affix", "GameClient/GameClient.h"),
+    ("spelling", "GameClient/GameClient.h"),
+    ("sdk-macro", "GameClient/GameClient.h"),
     ("tidy-regex", ".clang-tidy"),
-    ("suite-empty", "Tests/CoreTests/CoreTests.vcxproj"),
-    ("suite-stale", "Tests/ContentTests/ContentTests.vcxproj"),
+    ("suite-empty", "Tests/NeuronCoreTests/NeuronCoreTests.vcxproj"),
+    ("suite-stale", "Tests/GameSharedTests/GameSharedTests.vcxproj"),
     ("layering-unknown", "Elsewhere/Moved.vcxproj"),
-    ("edge-reference", "Sim/Sim.vcxproj"),
-    ("edge-directory", "Sim/Sim.vcxproj"),
-    ("edge-include", "Sim/Sim.cpp"),
-    ("edge-include", "Client/Client.cpp"),
-    ("platform-header", "Sim/Sim.cpp"),
+    ("edge-reference", "GameLogic/GameLogic.vcxproj"),
+    ("edge-directory", "GameLogic/GameLogic.vcxproj"),
+    ("edge-include", "GameLogic/GameLogic.cpp"),
+    ("edge-include", "NeuronServer/NeuronServer.cpp"),
+    ("platform-header", "GameLogic/GameLogic.cpp"),
 ]
 
 

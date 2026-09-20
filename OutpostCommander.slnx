@@ -4,19 +4,20 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Tests/">
-    <Project Path="Tests/ClientTests/ClientTests.vcxproj" Id="084594f7-0b41-432d-bbde-cb18428c8f40" />
-    <Project Path="Tests/ContentTests/ContentTests.vcxproj" Id="317ff961-038e-41e5-ac2d-7c4b85e13b9f" />
-    <Project Path="Tests/CoreTests/CoreTests.vcxproj" Id="0b22f7e0-e9b6-4c21-aa48-a9808c23d304" />
-    <Project Path="Tests/NetTests/NetTests.vcxproj" Id="faf74e53-2124-48d1-a2ba-3e12d9deb66e" />
-    <Project Path="Tests/ReplicaTests/ReplicaTests.vcxproj" Id="5997aff8-4812-418a-969d-6d281f73c88b" />
-    <Project Path="Tests/SimTests/SimTests.vcxproj" Id="24302afc-214d-4aa6-bb4a-425ebb87b093" />
+    <Project Path="Tests/NeuronCoreTests/NeuronCoreTests.vcxproj" Id="e9aca004-8318-46fa-8411-9312f97d0945" />
+    <Project Path="Tests/NeuronClientTests/NeuronClientTests.vcxproj" Id="10a0e1df-908d-44e5-8e6d-a218478b6965" />
+    <Project Path="Tests/NeuronServerTests/NeuronServerTests.vcxproj" Id="45365ada-0047-4809-8b78-64d4485b54c7" />
+    <Project Path="Tests/GameSharedTests/GameSharedTests.vcxproj" Id="35d85ee9-26bf-4127-9666-dc6d5b083747" />
+    <Project Path="Tests/GameClientTests/GameClientTests.vcxproj" Id="b592d8a0-e686-403f-a038-9b342ead84b0" />
+    <Project Path="Tests/GameLogicTests/GameLogicTests.vcxproj" Id="5a019093-b211-4989-9f1d-4dae624b6f52" />
+    <Project Path="Tests/IntegrationTests/IntegrationTests.vcxproj" Id="924b44f2-c17c-4abc-82ed-d4980291f3e9" />
   </Folder>
-  <Project Path="Client/Client.vcxproj" Id="58c52ae8-8230-43c6-8951-58da3cd613dc" />
-  <Project Path="Content/Content.vcxproj" Id="2b4659a5-0642-400e-9682-22b38c8571f8" />
-  <Project Path="Core/Core.vcxproj" Id="b7c59afe-46dd-490d-9e4d-9316425bfdc5" />
+  <Project Path="NeuronCore/NeuronCore.vcxproj" Id="71245361-8851-4ce4-9fe1-a6db16515c2a" />
+  <Project Path="NeuronClient/NeuronClient.vcxproj" Id="59408b79-bb9f-4edf-becd-9526a362b9b5" />
+  <Project Path="NeuronServer/NeuronServer.vcxproj" Id="cf0779dc-81d1-40a7-b279-bedf5772caa1" />
+  <Project Path="GameShared/GameShared.vcxproj" Id="ec4d4531-1e7e-418b-bc34-52e6ebab4dda" />
+  <Project Path="GameClient/GameClient.vcxproj" Id="49ef35f7-11c1-4a5c-ac2a-99ec1de2060d" />
+  <Project Path="GameLogic/GameLogic.vcxproj" Id="7a7a8cc8-e684-4892-8799-d6227f0e1f5f" />
   <Project Path="OutpostCommander/OutpostCommander.vcxproj" Id="5e179a2e-e69b-4414-acfe-5e15c52f46aa" />
   <Project Path="OutpostHost/OutpostHost.vcxproj" Id="7067e173-f690-47e9-817c-ab021fe24984" />
-  <Project Path="Net/Net.vcxproj" Id="7c728653-8880-47f2-9acc-b7b1696c6593" />
-  <Project Path="Replica/Replica.vcxproj" Id="2838f54e-d862-42d7-815c-2cd48f050ded" />
-  <Project Path="Sim/Sim.vcxproj" Id="76a96960-7a4a-4cb2-a7ed-7c543ae2761a" />
 </Solution>

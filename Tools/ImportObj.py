@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a Wavefront OBJ into the model JSON Content/ModelDesc.h loads.
+"""Convert a Wavefront OBJ into the model JSON NeuronCore/ModelDesc.h loads.
 
 The owner authors models in OBJ (TechnicalDesign.md 8), so this is the importer that exists before
 the models do. What it carries across is what a Frontier model is: positions, one flat colour per
@@ -44,7 +44,7 @@ import sys
 SUBUNITS_PER_WORLD_UNIT = 256
 MODEL_DESC_VERSION = 1
 
-#: A binary angle: the full turn in 65,536 parts (Core/BinaryAngle.h), which is what a marker's
+#: A binary angle: the full turn in 65,536 parts (NeuronCore/BinaryAngle.h), which is what a marker's
 #: heading and pitch are stored in.
 BINARY_ANGLE_TURN = 65536
 
@@ -54,7 +54,7 @@ class Fault(Exception):
 
 
 def binary_angle(radians):
-    """Radians as the binary angle of Core/BinaryAngle.h, wrapped into one turn."""
+    """Radians as the binary angle of NeuronCore/BinaryAngle.h, wrapped into one turn."""
     turns = radians / (2.0 * math.pi)
     return int(round(turns * BINARY_ANGLE_TURN)) % BINARY_ANGLE_TURN
 

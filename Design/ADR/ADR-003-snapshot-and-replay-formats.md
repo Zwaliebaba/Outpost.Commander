@@ -10,7 +10,7 @@ The determinism tests of `TechnicalDesign.md` §10 need a snapshot from M0: a `S
 
 ## Decision
 
-**A snapshot** is one stream, written by `Outpost::Snapshot::Write` and read by `Snapshot::Read` (`Sim/Snapshot.h`), in this order and nothing else:
+**A snapshot** is one stream, written by `Outpost::Snapshot::Write` and read by `Snapshot::Read` (`GameLogic/Snapshot.h`), in this order and nothing else:
 
 | Field | Bytes | Note |
 |---|---|---|
@@ -37,7 +37,7 @@ The determinism tests of `TechnicalDesign.md` §10 need a snapshot from M0: a `S
 
 The reader builds nothing until it has refused nothing: a different magic or version, a value outside its enumeration, a seat count outside `MIN_SEATS`..`MAX_SEATS` or different from the settings', a landscape the generator refuses or a delta outside it, more than 4,096 tiles or positions, a palette over 256 bytes, a pending count over 2^20, a stream that ends early or runs on, or a digest that differs, and `Read` returns nothing. A snapshot is host-side only (§4.9): a client never holds one.
 
-**An order in a stream** (`Sim/Order.h`, `WriteOrder`/`ReadOrder`): the tick (4), four operands (4 each), the seat (1) and the kind (1), 22 bytes, `ORDER_STREAM_BYTES`. The same bytes in the snapshot's queue, in a replay and on the wire (the network ADR cites this one); a kind outside the twenty is refused.
+**An order in a stream** (`GameShared/Order.h`, `WriteOrder`/`ReadOrder`): the tick (4), four operands (4 each), the seat (1) and the kind (1), 22 bytes, `ORDER_STREAM_BYTES`. The same bytes in the snapshot's queue, in a replay and on the wire (the network ADR cites this one); a kind outside the twenty is refused.
 
 **A replay** is the settings, the seed and the order stream in submission order: magic `"FCRP"`, version, the settings as above, an order count, the orders, then (tick, hash) checkpoints every 100 ticks and at the final tick, so that a replay is checked against the match it records rather than merely played. The in-memory form is what `SimTests::DeterminismTests` replays today: the whole stream is submitted up front, which is sound because the hash leaves the pending queue out (ADR-002). The file's writer and player arrive with M3 (`m3-multiplayer`), and the save file of M2 is the snapshot with the replay so far beside it, so that a saved match can still be replayed from its start.
 
@@ -48,7 +48,7 @@ The reader builds nothing until it has refused nothing: a different magic or ver
 - A save, a replay and a test snapshot are one code path, so the determinism tests exercise the save file from M0.
 - A truncated or altered file is refused whole rather than read past; there is no partial load.
 - Every object kind added to `Sim` is a version bump and a row in the table above, in the same commit. `S1` added all five at once and the table carries a row apiece; a field added to one of them is the same obligation.
-- **That obligation was not kept between versions 7 and 12, and the table was brought current at version 13 (2026-09-19).** `S3` through `S9` each bumped `SNAPSHOT_VERSION` and updated its history comment in `Sim/Snapshot.h`, and none of them updated this ADR — so the record here said 6 while the code said 12, and the record shapes were `S1`'s. Worth stating rather than quietly fixing: the comment in the header is what each task reached for because it is next to the number, and this table is the one a reader outside the code finds. The two say the same thing again now, and the header comment cites the task for every version so the two can be diffed by eye.
+- **That obligation was not kept between versions 7 and 12, and the table was brought current at version 13 (2026-09-19).** `S3` through `S9` each bumped `SNAPSHOT_VERSION` and updated its history comment in `GameLogic/Snapshot.h`, and none of them updated this ADR — so the record here said 6 while the code said 12, and the record shapes were `S1`'s. Worth stating rather than quietly fixing: the comment in the header is what each task reached for because it is next to the number, and this table is the one a reader outside the code finds. The two say the same thing again now, and the header comment cites the task for every version so the two can be diffed by eye.
 - The sizes hold the estimate of §4.9: 5,000 objects at about 64 bytes each is under 2 MB for a Large landscape. The five records averaged 47 bytes at version 5 and average **54** at version 15, after `S4`, `S8` and `S10` widened three of them; the estimate still holds and the margin is now a fifth rather than a quarter, which is worth watching rather than acting on. Compression, or per-section versions, would reopen this ADR, and only a measured snapshot over that estimate would justify either. **That happened on 2026-09-18**: the fog grid a seat gained with `S1` is the first O(area) state a snapshot has to carry, 16.8 MB on a Frontier landscape with eight seats, and [`ADR-008`](ADR-008-fog-grid-encoding.md) run-length encodes that one section on exactly the measurement this line demands. Every other section stays uncompressed and the bar is unchanged.
 
 ## Measurements

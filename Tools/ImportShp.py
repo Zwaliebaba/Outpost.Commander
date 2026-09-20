@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read a Species .shp shape and write it as the model JSON Content/ModelDesc.h loads.
+"""Read a Species .shp shape and write it as the model JSON NeuronCore/ModelDesc.h loads.
 
 It exists for REFERENCE IMPORTS and imports nothing into GameData in this task
 (m1-vertical-slice/C4): the owner is authoring new models, and what Species's shapes are worth here

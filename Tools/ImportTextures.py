@@ -4,7 +4,7 @@
 `TechnicalDesign.md` section 8 asks for exactly this tool: it "converts the Species BMPs to DDS,
 expanding the 8-bit ones through their palette and turning a sprite's colour key into alpha, and
 writes uncompressed DDS itself -- a header and the pixels". The output is top-down
-`B8G8R8A8_UNORM` with no mip chain, the DX10 header form `Core/TextureFile.cpp` validates, and the
+`B8G8R8A8_UNORM` with no mip chain, the DX10 header form `NeuronCore/TextureFile.cpp` validates, and the
 same header this tree's `MakeTerrainPalette.py` already writes.
 
 **The alpha channel is the whole problem, and BMP has none.** Every pixel of a Species BMP loads

@@ -10,34 +10,34 @@ firing anywhere else is a defect in the checker rather than in the fixture.
 
 | Fixture | What it breaks | Rule |
 |---|---|---|
-| `Core/` | Nothing. A library in the ADR-001 shape, on which no rule may fire. | (none) |
+| `NeuronCore/` | Nothing. A library in the ADR-001 shape, on which no rule may fire. | (none) |
 | `Fixture.slnx` | Lists `OutpostHost/OutpostHost.vcxproj`, which does not exist. | `solution-missing` |
 | `Orphan/` | A `.vcxproj` on disk that the solution does not list. Nothing else is read from it. | `solution-unlisted` |
 | `Elsewhere/Moved.vcxproj` | A clean project in a directory not named for it. | `solution-directory` |
 | | A name the ADR-001 table has no row for. | `layering-unknown` |
-| `Content/` | A third `ProjectConfiguration`, `Debug\|Win32`. | `platform` |
+| `GameShared/` | A third `ProjectConfiguration`, `Debug\|Win32`. | `platform` |
 | | `LanguageStandard` is `stdcpp17` in the unconditional group. | `setting` |
 | | The Release group sets `DiagnosticsFormat`, which Debug does not. | `alignment` |
 | | `..\Elsewhere` on the include path, which is not `$(SolutionDir)<AnotherProject>`. | `include-directory` |
 | | `NOMINMAX` among the preprocessor definitions. | `macro-family` |
-| `Net/` | `Stray.cpp` on disk and not in the `.vcxproj`. | `unregistered` |
+| `NeuronClient/` | `Stray.cpp` on disk and not in the `.vcxproj`. | `unregistered` |
 | | `Ghost.h` in the `.vcxproj` and not on disk. | `missing` |
-| | `Net.cpp` in the `.vcxproj` and not in the `.filters`. | `filters` |
+| | `NeuronClient.cpp` in the `.vcxproj` and not in the `.filters`. | `filters` |
 | | `Extra/Deep.h`, C++ in a subdirectory. | `subdirectory` |
 | | `CompiledShaders\ShapeVS.h` listed as a header. | `compiled-shaders` |
-| `Replica/` | `bad_name.cpp`, not PascalCase. | `file-name` |
+| `GameClient/` | `bad_name.cpp`, not PascalCase. | `file-name` |
 | | `Math.h`, named like the C runtime's `<math.h>`. | `shadow` |
-| | `class IThing` in `Replica.h`. | `type-affix` |
-| | `m_colour` in `Replica.h`. | `spelling` |
-| | `near` as a member in `Replica.h`, the SDK's macro. | `sdk-macro` |
-| `Sim/` | A `ProjectReference` to `Net`, which is built on `Sim` and not the reverse. | `edge-reference` |
-| | `$(SolutionDir)Net` on the include path. | `edge-directory` |
-| | `#include "Net.h"` in `Sim.cpp`, the upward include. | `edge-include` |
-| | `#include "WindowsHeader.h"` in `Sim.cpp`; `Sim` stays portable. | `platform-header` |
-| `Client/` | `#include "Replica.h"` in `Client.cpp`, the sideways include: the two share `Core` and `Content`, never each other. | `edge-include` |
-| `.clang-tidy` | The `HeaderFilterRegex` alternation omits `Replica`. | `tidy-regex` |
-| `Tests/CoreTests/` | A suite with no `TEST_METHOD` and no `SuiteSmoke.cpp`. | `suite-empty` |
-| `Tests/ContentTests/` | `SuiteSmoke.cpp` beside a file with a real `TEST_METHOD`. | `suite-stale` |
+| | `class IThing` in `GameClient.h`. | `type-affix` |
+| | `m_colour` in `GameClient.h`. | `spelling` |
+| | `near` as a member in `GameClient.h`, the SDK's macro. | `sdk-macro` |
+| `GameLogic/` | A `ProjectReference` to `NeuronClient`, which is built on `GameLogic` and not the reverse. | `edge-reference` |
+| | `$(SolutionDir)NeuronClient` on the include path. | `edge-directory` |
+| | `#include "NeuronClient.h"` in `GameLogic.cpp`, the upward include. | `edge-include` |
+| | `#include "WindowsHeader.h"` in `GameLogic.cpp`; `GameLogic` stays portable. | `platform-header` |
+| `NeuronServer/` | `#include "GameClient.h"` in `NeuronServer.cpp`, the sideways include: the two share `NeuronCore` and `GameShared`, never each other. | `edge-include` |
+| `.clang-tidy` | The `HeaderFilterRegex` alternation omits `GameClient`. | `tidy-regex` |
+| `Tests/NeuronCoreTests/` | A suite with no `TEST_METHOD` and no `SuiteSmoke.cpp`. | `suite-empty` |
+| `Tests/GameSharedTests/` | `SuiteSmoke.cpp` beside a file with a real `TEST_METHOD`. | `suite-stale` |
 
 Adding a rule means three edits in one change: the rule in the script, its line in the script's
 docstring, and a fixture here with its row in this table and its entry in `SELF_TEST_EXPECTED`.

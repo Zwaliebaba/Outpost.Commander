@@ -11,7 +11,7 @@ boxes with the markers a real model would carry, at the sizes SpeciesLineage.md 
 that the geometry pass of K1 composes them at the right scale and an authored model can replace
 one file at a time.
 
-Positions are subunits: 256 to the world unit, 64 world units to a cell (Core/FixedPoint.h).
+Positions are subunits: 256 to the world unit, 64 world units to a cell (NeuronCore/FixedPoint.h).
 A triangle colour with alpha 0 is a team-colour slot, drawn neither lit nor fogged (ADR-005).
 """
 from __future__ import annotations

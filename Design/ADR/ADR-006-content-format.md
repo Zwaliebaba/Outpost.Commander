@@ -20,7 +20,7 @@
 
 **A terrain palette ramps its bottom rows into the water plane's colour** (owner, 2026-09-18). Palettes blend where tiles of different biomes overlap, so two that share a landscape must agree at the waterline, and Species's do not: its Default puts dark blue in the lowland rows for shallows where its Desert puts sand. The rule is an authoring constraint rather than a mechanism, applied by `Tools/MakeTerrainPalette.py`, which takes the water colour and the number of rows and writes an uncompressed `B8G8R8A8_UNORM` DDS with no mip chain — palettes are read exactly by the terrain's own lookup, so they are never block compressed. `GameData/Terrain/LandscapeDefault.dds` is the first written to it. The validator checks a palette exists and not what is in it; enforcing the shore band would mean decoding every palette at validation time, which is a bigger step than it is worth until there are eight of them.
 
-**A table authored in seconds is converted once, in `Content`.** `Neuron::TICKS_PER_SECOND` is declared in `Core/FixedPoint.h` beside the other units, which ADR-002 fixed at 20 and no code had yet needed.
+**A table authored in seconds is converted once, in `Content`.** `Neuron::TICKS_PER_SECOND` is declared in `NeuronCore/FixedPoint.h` beside the other units, which ADR-002 fixed at 20 and no code had yet needed.
 
 **Every file carries a `version`, and a reader refuses a version it does not know by name** rather than reading it as best it can. The table files are at version 1 together; the landscape, stamp and model documents carry their own, declared beside their row, because a tool writes them one at a time.
 

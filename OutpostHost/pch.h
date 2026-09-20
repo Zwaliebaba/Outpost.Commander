@@ -1,7 +1,7 @@
 #pragma once
 
 // The precompiled header of OutpostHost, the headless host: the standard library. A file that needs Windows
-// includes Core's WindowsHeader.h itself (AGENTS.md §4; ADR-001).
+// includes NeuronCore's WindowsHeader.h itself (AGENTS.md §4; ADR-001).
 #include <algorithm>
 #include <array>
 #include <cstddef>

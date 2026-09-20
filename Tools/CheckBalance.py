@@ -7,15 +7,15 @@ directions, at every tier it is available. That is a table bug, and this finds i
 screen exists and before a player does.
 
 WHAT IT DOES. It enumerates every buildable design at each research tier - a chassis, a drive and
-one module set - derives its statistics by the same formulas as Content/DesignStats, and for each
+one module set - derives its statistics by the same formulas as GameShared/DesignStats, and for each
 ordered pair computes the expected time to kill. A design DOMINATES when, among the designs of its
 tier costing no more than it does, there is none it does not beat. The exit code is non-zero when
 any tier has one.
 
-THE ARITHMETIC IS Content/DesignStats.cpp's AND Content/DamageTable.h's, deliberately reimplemented
+THE ARITHMETIC IS GameShared/DesignStats.cpp's AND GameShared/DamageTable.h's, deliberately reimplemented
 here rather than bound to the C++ through some bridge: this script has to run on Linux on the
 standard library (the task's own acceptance), and a second implementation that disagrees with the
-first is a finding in itself. Tests/ContentTests/DesignStatsTests.cpp re-derives GameDesign.md 6's
+first is a finding in itself. Tests/GameSharedTests/DesignStatsTests.cpp re-derives GameDesign.md 6's
 two worked examples from the shipped tables, so the two implementations are pinned to the same
 numbers from both ends.
 
@@ -51,7 +51,7 @@ import json
 import os
 import sys
 
-# The enumerations of Content/ComponentDesc.h, in their declared order, because the damage matrix's
+# The enumerations of GameShared/ComponentDesc.h, in their declared order, because the damage matrix's
 # columns are that order and a row read by name has to land in the right column.
 WEAPON_CLASSES = ["AntiLight", "AntiTank", "Flame", "Artillery", "Energy"]
 DRIVE_CLASSES = ["Wheels", "HalfTrack", "Tracks", "Hover", "Legs", "Lift"]
@@ -212,7 +212,7 @@ class Design:
     def damage_per_second_against(self, target):
         """Expected damage a second at short range: the hit chance, the matrix and the armour.
 
-        DamageDealt of Content/DamageTable.h, times shots a salvo, over the reload in seconds,
+        DamageDealt of GameShared/DamageTable.h, times shots a salvo, over the reload in seconds,
         times the short-range hit percentage. Short range because that is where a fight is decided
         and because every weapon has one; long range would flatter the artillery that never has to
         close.

@@ -77,7 +77,7 @@ they stand:
 
 That order is the atlas's cell order and it was verified against the committed file on 2026-09-19:
 the command reproduces `Icons.dds` byte for byte. A rebuild under the current tool would carry the
-DX10 header instead, which `Core/TextureFile.cpp` reads as readily — the pixels are the same.
+DX10 header instead, which `NeuronCore/TextureFile.cpp` reads as readily — the pixels are the same.
 
 
 **The light pairs, the fog ranges, the palettes' numbers, the camera limits and the particle types**

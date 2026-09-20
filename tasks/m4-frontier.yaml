@@ -17,7 +17,7 @@ tasks:
     intent: >
       A 1,024-cell landscape with 4,096 clusters and 33.6 megabytes of samples runs eight
       commanders inside the tick and the frame (TechnicalDesign.md §4.4, §6.2).
-    project: Sim
+    project: GameLogic
     depends_on: []
     blocked_by:
       - m3-multiplayer/T10
@@ -44,7 +44,7 @@ tasks:
     intent: >
       Nests and a swarm that make a large landscape dangerous to cross alone (pillar 2), as a
       second AI in Sim.
-    project: Sim
+    project: GameLogic
     depends_on: [T1, T2]
     acceptance:
       - The faction's objects, behaviour and content exist per its design document, are deterministic, and appear in the interest test; the lobby enables and scales it
@@ -55,7 +55,7 @@ tasks:
     intent: >
       Devices with a command module lead attached groups, share their target and inherit their
       rank (GameDesign.md §8), so that late-game armies are a handful of groups.
-    project: Sim
+    project: GameLogic
     depends_on: []
     blocked_by:
       - m3-multiplayer/T10
@@ -68,7 +68,7 @@ tasks:
     intent: >
       The legs drive of GameDesign.md §6 lands; lift and air units need the owner's decision and,
       if taken, a design document for the lift-drive factory and the rearm pad.
-    project: Sim
+    project: GameLogic
     depends_on: []
     blocked_by:
       - m3-multiplayer/T10
@@ -80,7 +80,7 @@ tasks:
     title: Version 2 of the tables
     intent: >
       The tables are retuned on the measurements of three milestones of play.
-    project: Content
+    project: GameShared
     depends_on: [T3, T4, T5]
     acceptance:
       - Every table is at version 2 with its changes recorded, CheckBalance passes, and the research tree is complete

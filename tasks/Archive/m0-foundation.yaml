@@ -35,22 +35,22 @@ tasks:
       projects before they exist, so that adding them is mechanical and nobody re-argues an edge
       later. AGENTS.md §2 says the concrete layout is recorded there and in an ADR when the first
       project is created; this is that moment.
-    project: Core
+    project: NeuronCore
     depends_on: []
     files:
       - OutpostCommander.slnx
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Core/pch.h
-      - Core/pch.cpp
-      - Core/WindowsHeader.h
-      - Core/Assertion.h
-      - Core/Assertion.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
-      - Tests/CoreTests/pch.h
-      - Tests/CoreTests/pch.cpp
-      - Tests/CoreTests/SuiteSmoke.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronCore/pch.h
+      - NeuronCore/pch.cpp
+      - NeuronCore/WindowsHeader.h
+      - NeuronCore/Assertion.h
+      - NeuronCore/Assertion.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
+      - Tests/NeuronCoreTests/pch.h
+      - Tests/NeuronCoreTests/pch.cpp
+      - Tests/NeuronCoreTests/SuiteSmoke.cpp
       - .clang-tidy
       - AGENTS.md
       - Design/ADR/README.md
@@ -60,8 +60,8 @@ tasks:
       - OutpostCommander.slnx is the only solution at the repository root and carries exactly two configurations, Debug|x64 and Release|x64
       - 'Core.vcxproj states, identically in both configurations: PlatformToolset v145, LanguageStandard stdcpplatest, ConformanceMode true, WarningLevel Level4, TreatWarningAsError true, FloatingPointModel Precise, EnableEnhancedInstructionSet AdvancedVectorExtensions2, CharacterSet Unicode, a precompiled header pch.h, OutDir $(SolutionDir)x64\$(Configuration)\ and an IntDir under it per project'
       - The two configurations differ in nothing outside the set AGENTS.md §3 enumerates (Optimization, _DEBUG/NDEBUG, FunctionLevelLinking, IntrinsicFunctions, UseDebugLibraries, RuntimeLibrary, LinkIncremental, WholeProgramOptimization, EnableCOMDATFolding, OptimizeReferences)
-      - No project file defines any of the Windows macro family; Core/WindowsHeader.h is the one header that defines NOMINMAX, WIN32_LEAN_AND_MEAN, NODRAWTEXT, NOGDI, NOBITMAP, NOMCX, NOSERVICE and NOHELP before including windows.h, and a grep for those names finds only that file
-      - Core/Assert.h defines OUTPOST_ASSERT and OUTPOST_VERIFY, breaking into the debugger in Debug and compiling to nothing (OUTPOST_ASSERT) or to the expression alone (OUTPOST_VERIFY) in Release
+      - No project file defines any of the Windows macro family; NeuronCore/WindowsHeader.h is the one header that defines NOMINMAX, WIN32_LEAN_AND_MEAN, NODRAWTEXT, NOGDI, NOBITMAP, NOMCX, NOSERVICE and NOHELP before including windows.h, and a grep for those names finds only that file
+      - NeuronCore/Assert.h defines OUTPOST_ASSERT and OUTPOST_VERIFY, breaking into the debugger in Debug and compiling to nothing (OUTPOST_ASSERT) or to the expression alone (OUTPOST_VERIFY) in Release
       - Tests/CoreTests is a DynamicLibrary on the Microsoft Native Unit Test Framework, references Core, holds a SuiteSmoke test, and builds to x64\Debug\CoreTests.dll, which CI's "Run the tests" step runs green
       - .clang-tidy's HeaderFilterRegex alternation names all eight project directories of ADR-001 plus the Tests pattern, not only the two seeded today
       - "ADR-001 follows Design/ADR/README.md's template and fixes: the eight projects and their kinds, the edges of TechnicalDesign.md §2 as the only permitted ProjectReferences and includes, the namespaces Outpost and Neuron per project, Tests/<Name>Tests per static library, the OutDir/IntDir convention, the platform-header rule (Sim, Content, Net and Replica include no Windows, D3D, socket or WinRT header), and that the render-view and height-view aggregates live in Core so that Replica produces them and Client consumes them without an edge between the two (TechnicalDesign.md §6.3)"
@@ -80,7 +80,7 @@ tasks:
       acceptance did not say: the test project sets ProjectSubType NativeUnitTestProject and lists no
       UnitTest\include directory, because the wizard's $(VCInstallDir)UnitTest\include does not exist
       in Visual Studio 2026 and Microsoft.Cpp.UnitTest.props supplies the real paths; and the test
-      pch includes Core/pch.h, then WindowsHeader.h, then CppUnitTest.h, because the framework pulls
+      pch includes NeuronCore/pch.h, then WindowsHeader.h, then CppUnitTest.h, because the framework pulls
       in windows.h and the macro family has to be set first. The SuiteSmoke test exercises
       OUTPOST_VERIFY so that a suite whose library does not link cannot pass.
 
@@ -103,26 +103,26 @@ tasks:
     depends_on: [T1]
     files:
       - OutpostCommander.slnx
-      - Content/Content.vcxproj
-      - Content/Content.vcxproj.filters
-      - Content/pch.h
-      - Content/pch.cpp
-      - Sim/Sim.vcxproj
-      - Sim/Sim.vcxproj.filters
-      - Sim/pch.h
-      - Sim/pch.cpp
-      - Net/Net.vcxproj
-      - Net/Net.vcxproj.filters
-      - Net/pch.h
-      - Net/pch.cpp
-      - Replica/Replica.vcxproj
-      - Replica/Replica.vcxproj.filters
-      - Replica/pch.h
-      - Replica/pch.cpp
-      - Client/Client.vcxproj
-      - Client/Client.vcxproj.filters
-      - Client/pch.h
-      - Client/pch.cpp
+      - GameShared/GameShared.vcxproj
+      - GameShared/GameShared.vcxproj.filters
+      - GameShared/pch.h
+      - GameShared/pch.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - GameLogic/pch.h
+      - GameLogic/pch.cpp
+      - GameShared/GameShared.vcxproj
+      - GameShared/GameShared.vcxproj.filters
+      - GameShared/pch.h
+      - GameShared/pch.cpp
+      - GameClient/GameClient.vcxproj
+      - GameClient/GameClient.vcxproj.filters
+      - GameClient/pch.h
+      - GameClient/pch.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - NeuronClient/pch.h
+      - NeuronClient/pch.cpp
       - OutpostCommander/OutpostCommander.vcxproj
       - OutpostCommander/OutpostCommander.vcxproj.filters
       - OutpostCommander/pch.h
@@ -133,35 +133,35 @@ tasks:
       - OutpostHost/pch.h
       - OutpostHost/pch.cpp
       - OutpostHost/Main.cpp
-      - Tests/ContentTests/ContentTests.vcxproj
-      - Tests/ContentTests/ContentTests.vcxproj.filters
-      - Tests/ContentTests/pch.h
-      - Tests/ContentTests/pch.cpp
-      - Tests/ContentTests/SuiteSmoke.cpp
-      - Tests/SimTests/SimTests.vcxproj
-      - Tests/SimTests/SimTests.vcxproj.filters
-      - Tests/SimTests/pch.h
-      - Tests/SimTests/pch.cpp
-      - Tests/SimTests/SuiteSmoke.cpp
-      - Tests/NetTests/NetTests.vcxproj
-      - Tests/NetTests/NetTests.vcxproj.filters
-      - Tests/NetTests/pch.h
-      - Tests/NetTests/pch.cpp
-      - Tests/NetTests/SuiteSmoke.cpp
-      - Tests/ReplicaTests/ReplicaTests.vcxproj
-      - Tests/ReplicaTests/ReplicaTests.vcxproj.filters
-      - Tests/ReplicaTests/pch.h
-      - Tests/ReplicaTests/pch.cpp
-      - Tests/ReplicaTests/SuiteSmoke.cpp
-      - Tests/ClientTests/ClientTests.vcxproj
-      - Tests/ClientTests/ClientTests.vcxproj.filters
-      - Tests/ClientTests/pch.h
-      - Tests/ClientTests/pch.cpp
-      - Tests/ClientTests/SuiteSmoke.cpp
+      - Tests/GameSharedTests/ContentTests.vcxproj
+      - Tests/GameSharedTests/ContentTests.vcxproj.filters
+      - Tests/GameSharedTests/pch.h
+      - Tests/GameSharedTests/pch.cpp
+      - Tests/GameSharedTests/SuiteSmoke.cpp
+      - Tests/GameLogicTests/SimTests.vcxproj
+      - Tests/GameLogicTests/SimTests.vcxproj.filters
+      - Tests/GameLogicTests/pch.h
+      - Tests/GameLogicTests/pch.cpp
+      - Tests/GameLogicTests/SuiteSmoke.cpp
+      - Tests/GameSharedTests/GameSharedTests.vcxproj
+      - Tests/GameSharedTests/GameSharedTests.vcxproj.filters
+      - Tests/GameSharedTests/pch.h
+      - Tests/GameSharedTests/pch.cpp
+      - Tests/GameSharedTests/SuiteSmoke.cpp
+      - Tests/GameClientTests/ReplicaTests.vcxproj
+      - Tests/GameClientTests/ReplicaTests.vcxproj.filters
+      - Tests/GameClientTests/pch.h
+      - Tests/GameClientTests/pch.cpp
+      - Tests/GameClientTests/SuiteSmoke.cpp
+      - Tests/NeuronClientTests/ClientTests.vcxproj
+      - Tests/NeuronClientTests/ClientTests.vcxproj.filters
+      - Tests/NeuronClientTests/pch.h
+      - Tests/NeuronClientTests/pch.cpp
+      - Tests/NeuronClientTests/SuiteSmoke.cpp
     acceptance:
       - Every project carries the same settings T1 fixed for Core, checked line for line against Core.vcxproj
       - "ProjectReferences are exactly ADR-001's edges: Content on Core; Sim on Core and Content; Net on Core, Content and Sim; Replica on Core, Content, Net and Sim; Client on Core and Content; OutpostCommander on all six libraries; OutpostHost on Core, Content, Sim and Net; each test project on its library and what that library is built on"
-      - Sim/pch.h, Content/pch.h, Net/pch.h and Replica/pch.h include only standard-library headers and Core headers, never WindowsHeader.h
+      - GameLogic/pch.h, GameShared/pch.h, GameShared/pch.h and GameClient/pch.h include only standard-library headers and Core headers, never WindowsHeader.h
       - OutpostCommander is a Windows-subsystem executable whose WinMain returns 0; OutpostHost is a console executable whose main prints a version line for --version and returns 0
       - Each of the five new test projects holds SuiteSmoke and builds to x64\Debug\<Name>Tests.dll, and CI's test step runs all six suites green
       - CI is green on the PR
@@ -196,7 +196,7 @@ tasks:
     acceptance:
       - Runs on Linux (python3) and Windows (python) on the standard library alone
       - Accepts --clang-format <binary> (default clang-format on PATH) and --fix; prints the clang-format version it used and warns when it is not 18.x, which is what the CI job pins
-      - Checks every .cpp and .h under the repository except .git/, x64/, CompiledShaders/ and Client/d3dx12.h, lists every file that would change, and exits 1 if any would and 0 otherwise, including on a tree with no C++ at all
+      - Checks every .cpp and .h under the repository except .git/, x64/, CompiledShaders/ and NeuronClient/d3dx12.h, lists every file that would change, and exits 1 if any would and 0 otherwise, including on a tree with no C++ at all
       - --fix rewrites the offenders in place and exits 0
       - The CI format job's guard lifts and the job is green on the PR
     verify:
@@ -207,7 +207,7 @@ tasks:
     notes: >
       Exercised in the session on an empty tree (exit 0, "nothing to check"), on a temporary tree
       with a badly formatted file (exit 1, the file listed, x64/, CompiledShaders/ and
-      Client/d3dx12.h skipped), with --fix (rewritten, then exit 0) and with a missing binary (exit
+      NeuronClient/d3dx12.h skipped), with --fix (rewritten, then exit 0) and with a missing binary (exit
       2). The first real use was T1's own files, which it reformatted once (Assert.h's macro
       continuation columns) and then passed. The AGENTS.md §6 sentence that said none of the
       checkers exists yet was updated in T1's commit, which owns AGENTS.md in this plan.
@@ -253,7 +253,7 @@ tasks:
       left alone because both halves spell it with two l's. The fixture suites are named
       *Tests.vcxproj, which CI's test discovery would have picked up and failed on as not built; the
       workflow now skips Build/Fixtures there, the one line outside the task's files. The rule that
-      fired on the real tree was suite-stale: Tests/CoreTests/SuiteSmoke.cpp still sat beside ten
+      fired on the real tree was suite-stale: Tests/NeuronCoreTests/SuiteSmoke.cpp still sat beside ten
       real suites, and AGENTS.md §3 says to delete it when the first test lands, so it is deleted
       here. The include-directory rule checks the form, $(SolutionDir)<AnotherProject>; which other
       projects an edge permits is T6's table, and T6 extends the same script.
@@ -272,7 +272,7 @@ tasks:
     files:
       - Build/RunClangTidy.py
     acceptance:
-      - Enumerates every ClCompile item of every .vcxproj the solution lists, excluding CompiledShaders/ and Client/d3dx12.h, and runs the pinned clang-tidy over each with --driver-mode=cl, /std:c++latest, /EHsc, /permissive-, /DUNICODE, /D_UNICODE, /D_DEBUG, the project's include directories and preprocessor definitions read from the .vcxproj, and the repository's .clang-tidy
+      - Enumerates every ClCompile item of every .vcxproj the solution lists, excluding CompiledShaders/ and NeuronClient/d3dx12.h, and runs the pinned clang-tidy over each with --driver-mode=cl, /std:c++latest, /EHsc, /permissive-, /DUNICODE, /D_UNICODE, /D_DEBUG, the project's include directories and preprocessor definitions read from the .vcxproj, and the repository's .clang-tidy
       - Fails with a one-line explanation when INCLUDE is not set, prints the clang-tidy version and warns when it differs from the version the workflow pins, and runs translation units in parallel
       - Exits non-zero on any finding, printing clang-tidy's output unchanged
       - The CI clang-tidy step's guard lifts and the step is green on the PR
@@ -298,7 +298,7 @@ tasks:
       found two defects before CI did: a namespace-scope std::ofstream in Log.cpp (bugprone-throwing-static-initialization) and a default argument multiplied in unsigned int then widened
       in Log.h; both are fixed. That pass is an approximation, and CI's run through the MSVC driver
       is the answer that counts. .clang-tidy's comments no longer describe the runner as unwritten,
-      its example command drops the macro-family defines, and Client/d3dx12.h joins Resource.h in
+      its example command drops the macro-family defines, and NeuronClient/d3dx12.h joins Resource.h in
       ExcludeHeaderFilterRegex.
 
       The first CI round (run 26) ran the 38 units in 28 seconds and found three
@@ -339,7 +339,7 @@ tasks:
       the ADR writes it, and a suite built on its library and what that is built on. A quoted
       include resolves the way cl.exe resolves it: the including file's directory first, then, for a
       bare name, the projects that own a header of that name; a relative include (the suites'
-      ../../Core/pch.h) resolves against the file's directory. An include the tree does not own (an
+      ../../NeuronCore/pch.h) resolves against the file's directory. An include the tree does not own (an
       SDK header written with quotes) is nobody's edge and is left alone; an angled include is never
       an edge. The platform rule matches names, not resolution, so a portable library including
       WindowsHeader.h fires whether or not the header exists. The fixtures were renamed to the real
@@ -356,22 +356,22 @@ tasks:
     intent: >
       The simulation's numbers (TechnicalDesign.md §4.1) exist as types with the widening done
       once, so that nobody writes an int32 product by hand twice and R16 holds by construction.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/FixedPoint.h
-      - Core/FixedPoint.cpp
-      - Core/Point.h
-      - Core/BinaryAngle.h
-      - Core/BinaryAngle.cpp
-      - Core/SinTable.h
+      - NeuronCore/FixedPoint.h
+      - NeuronCore/FixedPoint.cpp
+      - NeuronCore/Point.h
+      - NeuronCore/BinaryAngle.h
+      - NeuronCore/BinaryAngle.cpp
+      - NeuronCore/SinTable.h
       - Tools/GenerateSinTable.py
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/FixedPointTests.cpp
-      - Tests/CoreTests/BinaryAngleTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/FixedPointTests.cpp
+      - Tests/NeuronCoreTests/BinaryAngleTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - "Position and height are std::int32_t in 1/256 world unit with named constants SUBUNITS_PER_WORLD_UNIT and SUBUNITS_PER_CELL (16,384); Point2 and Rect are integer aggregates in those units"
       - MulDiv, Sqrt (exact integer floor), Dot and LengthSquared take int32 operands and widen to int64 internally; no float or double appears in any of these headers
@@ -410,19 +410,19 @@ tasks:
       The simulation stream of TechnicalDesign.md §4.2 and the state hash of §4.9 exist as small,
       specified algorithms with test vectors, so that determinism has something to be measured
       against from the first Sim task.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/Random.h
-      - Core/Random.cpp
-      - Core/Hash.h
-      - Core/Hash.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/RandomTests.cpp
-      - Tests/CoreTests/HashTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/Random.h
+      - NeuronCore/Random.cpp
+      - NeuronCore/Hash.h
+      - NeuronCore/Hash.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/RandomTests.cpp
+      - Tests/NeuronCoreTests/HashTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - Random is xoshiro128** written from its public-domain specification with 16 bytes of state, seeded from a 64-bit seed through splitmix64; Next() returns 32 bits, Below(n) is unbiased by rejection, and the state can be read and restored for snapshots
       - The first ten outputs for a fixed seed match vectors computed independently by a small Python reference committed under Tools/ (the test cites the command)
@@ -458,15 +458,15 @@ tasks:
       Storage per object kind (TechnicalDesign.md §4.3) has a container whose handles never
       alias a later occupant and whose iteration order is a pure function of its history, so
       that a stale reference resolves to nothing and two runs of one match iterate identically.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/SlotMap.h
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/SlotMapTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/SlotMap.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/SlotMapTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - SlotMap<T> over a std::vector (R15) with a free list; Insert returns a Handle of index and generation, Erase bumps the generation, and Resolve of a stale handle returns null
       - Iteration order depends only on the sequence of inserts and erases, and an ascending-key traversal exists for the hash and the snapshot, where the key is the caller's creation counter stored with the element
@@ -495,18 +495,18 @@ tasks:
       Snapshots, replays and the wire share one serialisation with explicit bounds, so that a
       truncated or hostile buffer yields a failed read rather than a read past the end, which is
       the defect class the Species transport work spent its first task closing.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/ByteWriter.h
-      - Core/ByteWriter.cpp
-      - Core/ByteReader.h
-      - Core/ByteReader.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/ByteStreamTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/ByteWriter.h
+      - NeuronCore/ByteWriter.cpp
+      - NeuronCore/ByteReader.h
+      - NeuronCore/ByteReader.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/ByteStreamTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - Little-endian fixed-width integers of every width, byte spans with a length prefix, and a stream header of magic and version; ByteReader reads against the real buffer length and reports failure through a return value, never an exception, and a failed reader stays failed
       - Unaligned access goes through memcpy, never a pointer cast; only trivially copyable types cross the stream, enforced with a static_assert
@@ -537,22 +537,22 @@ tasks:
       Content is JSON (owner, 2026-09-17) and R14 forbids a library for it, so a strict reader
       of the standard grammar with file, line and column in every error is written into Core,
       about three hundred lines, and tested against a conformance set of this repository's own.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/Json.h
-      - Core/Json.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/JsonTests.cpp
-      - Tests/CoreTests/JsonFixtures.h
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/Json.h
+      - NeuronCore/Json.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/JsonTests.cpp
+      - Tests/NeuronCoreTests/JsonFixtures.h
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - Parses RFC 8259 exactly, no extensions (no comments, no trailing commas, no NaN or Infinity, no single quotes), validates UTF-8 and escapes including surrogate pairs, holds numbers as int64 when integral and double otherwise, and refuses nesting deeper than a stated limit
       - Every error carries the file name the caller supplied, the line and the column; a document is accepted whole or rejected whole
       - A JsonValue tree in standard containers (R15) with typed accessors, and a JsonWriter that emits what the reader accepts, with a stable key order and an indent option
-      - "The conformance set under Tests/CoreTests/JsonFixtures.h is written for this repository: at least forty documents that must parse (every value kind, whitespace forms, escapes, deep but legal nesting, large and negative and exponent numbers) and at least forty that must fail with the expected line and column"
+      - "The conformance set under Tests/NeuronCoreTests/JsonFixtures.h is written for this repository: at least forty documents that must parse (every value kind, whitespace forms, escapes, deep but legal nesting, large and negative and exponent numbers) and at least forty that must fail with the expected line and column"
     verify:
       - python3 Tools/CheckTaskDag.py
       - python3 Build/CheckFormat.py --clang-format clang-format-18
@@ -591,22 +591,22 @@ tasks:
       WAV, and the capture mode writes screenshots the agent can look at, so a strict DDS reader,
       a strict WAV reader and a small BMP writer live in Core with hand-built fixtures, and a
       malformed file is refused with a location rather than read past.
-    project: Core
+    project: NeuronCore
     depends_on: [T10]
     files:
-      - Core/TextureFile.h
-      - Core/TextureFile.cpp
-      - Core/BitmapWriter.h
-      - Core/BitmapWriter.cpp
-      - Core/Wave.h
-      - Core/Wave.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/TextureFileTests.cpp
-      - Tests/CoreTests/BitmapWriterTests.cpp
-      - Tests/CoreTests/WaveTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/TextureFile.h
+      - NeuronCore/TextureFile.cpp
+      - NeuronCore/BitmapWriter.h
+      - NeuronCore/BitmapWriter.cpp
+      - NeuronCore/Wave.h
+      - NeuronCore/Wave.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/TextureFileTests.cpp
+      - Tests/NeuronCoreTests/BitmapWriterTests.cpp
+      - Tests/NeuronCoreTests/WaveTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - "TextureFile reads a DDS: the magic, the 124-byte header, the pixel format, and the DX10 extension when the FourCC says so; the legacy FourCCs DXT1, DXT3 and DXT5 and the masked RGB(A) pixel formats map to their DXGI formats; the admitted formats are B8G8R8A8_UNORM, R8G8B8A8_UNORM, R8_UNORM, BC1_UNORM, BC3_UNORM and BC7_UNORM, with the _SRGB variants refused for now, and anything else refused by name"
       - "The mip chain is computed per level from the format's block size (1x1 at 4 bytes or 1 byte; 4x4 at 8 or 16), the payload length is checked against the sum before any level is exposed, and cube maps, volumes and arrays are refused with the flag named"
@@ -654,19 +654,19 @@ tasks:
       directory and the user's profile directory are the two roots, created on first use where
       they are written, and a log with levels exists for the host and the client to write what
       they did.
-    project: Core
+    project: NeuronCore
     depends_on: [T1]
     files:
-      - Core/Paths.h
-      - Core/Paths.cpp
-      - Core/Log.h
-      - Core/Log.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/PathsTests.cpp
-      - Tests/CoreTests/LogTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/Paths.h
+      - NeuronCore/Paths.cpp
+      - NeuronCore/Log.h
+      - NeuronCore/Log.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/PathsTests.cpp
+      - Tests/NeuronCoreTests/LogTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - Paths gives ExecutableDirectory(), ContentDirectory(), ModsDirectory() and UserDirectory() (%LOCALAPPDATA%\OutpostCommander, created on first use) as std::filesystem::path, with an override of the two roots for tests so that no test touches the real user directory
       - A grep of the tree finds no GetCurrentDirectory and no std::filesystem::current_path outside Paths.cpp, and Paths.cpp uses neither
@@ -702,23 +702,23 @@ tasks:
       The whole network conversation of M1 runs over a seam with an in-process implementation
       (owner, 2026-09-17; TechnicalDesign.md §5.6), so that Net and Replica are tested without a
       socket and UdpTransport slots in at M3 with no protocol change.
-    project: Core
+    project: NeuronCore
     depends_on: [T10]
     files:
-      - Core/Transport.h
-      - Core/Datagram.h
-      - Core/Datagram.cpp
-      - Core/LoopbackTransport.h
-      - Core/LoopbackTransport.cpp
-      - Core/Liveness.h
-      - Core/Liveness.cpp
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Tests/CoreTests/DatagramTests.cpp
-      - Tests/CoreTests/LoopbackTransportTests.cpp
-      - Tests/CoreTests/LivenessTests.cpp
-      - Tests/CoreTests/CoreTests.vcxproj
-      - Tests/CoreTests/CoreTests.vcxproj.filters
+      - NeuronCore/Transport.h
+      - NeuronCore/Datagram.h
+      - NeuronCore/Datagram.cpp
+      - NeuronCore/LoopbackTransport.h
+      - NeuronCore/LoopbackTransport.cpp
+      - NeuronCore/Liveness.h
+      - NeuronCore/Liveness.cpp
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - Tests/NeuronCoreTests/DatagramTests.cpp
+      - Tests/NeuronCoreTests/LoopbackTransportTests.cpp
+      - Tests/NeuronCoreTests/LivenessTests.cpp
+      - Tests/NeuronCoreTests/CoreTests.vcxproj
+      - Tests/NeuronCoreTests/CoreTests.vcxproj.filters
     acceptance:
       - "Transport is the seam: Send(connectionId, bytes), Receive() yielding (connectionId, bytes) until empty, Poll(), and connection ids assigned by the host side; it names no socket type"
       - Datagram framing is a protocol version and a payload length at the head of every datagram, read through ByteReader, so a datagram of the wrong version or a short one is dropped and counted rather than parsed
@@ -761,27 +761,27 @@ tasks:
       hashes every tick, snapshots and reloads, and replays an order stream, so that the three
       tests §10 says exist from M0 do, and every later system is built under them. This task
       writes the tick-and-numbers ADR and the snapshot-format ADR.
-    project: Sim
+    project: GameLogic
     depends_on: [T7, T8, T9, T10]
     files:
-      - Sim/Sim.h
-      - Sim/Sim.cpp
-      - Sim/MatchSettings.h
-      - Sim/Seat.h
-      - Sim/Order.h
-      - Sim/OrderQueue.h
-      - Sim/OrderQueue.cpp
-      - Sim/StateHash.h
-      - Sim/StateHash.cpp
-      - Sim/Snapshot.h
-      - Sim/Snapshot.cpp
-      - Sim/Sim.vcxproj
-      - Sim/Sim.vcxproj.filters
-      - Tests/SimTests/DeterminismTests.cpp
-      - Tests/SimTests/OrderQueueTests.cpp
-      - Tests/SimTests/SnapshotTests.cpp
-      - Tests/SimTests/SimTests.vcxproj
-      - Tests/SimTests/SimTests.vcxproj.filters
+      - GameLogic/Sim.h
+      - GameLogic/Sim.cpp
+      - GameShared/MatchSettings.h
+      - GameShared/Seat.h
+      - GameShared/Order.h
+      - GameLogic/OrderQueue.h
+      - GameLogic/OrderQueue.cpp
+      - GameShared/StateHash.h
+      - GameShared/StateHash.cpp
+      - GameLogic/Snapshot.h
+      - GameLogic/Snapshot.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameLogicTests/DeterminismTests.cpp
+      - Tests/GameLogicTests/OrderQueueTests.cpp
+      - Tests/GameLogicTests/SnapshotTests.cpp
+      - Tests/GameLogicTests/SimTests.vcxproj
+      - Tests/GameLogicTests/SimTests.vcxproj.filters
       - Design/ADR/README.md
       - Design/TechnicalDesign.md
     acceptance:
@@ -841,9 +841,9 @@ tasks:
     files:
       - Tools/LandscapeTool.py
       - Tools/Xoshiro.py
-      - Tests/SimTests/Fixtures/Landscape/README.md
-      - Tests/SimTests/Fixtures/Landscape/small-hashes.txt
-      - Tests/SimTests/Fixtures/Landscape/small-0001.heights
+      - Tests/GameLogicTests/Fixtures/Landscape/README.md
+      - Tests/GameLogicTests/Fixtures/Landscape/small-hashes.txt
+      - Tests/GameLogicTests/Fixtures/Landscape/small-0001.heights
     acceptance:
       - "Pure Python 3 on the standard library; the algorithm is SpeciesTerrain.md §4 step by step in integer arithmetic: tiles of (position, size, fractal dimension in hundredths, height scale, desired height) generated by diamond-square on xoshiro128** keyed by the match seed and the tile index, merged by maximum, smoothed under the guide grid, outsideHeight below sea level, water at height 0, samples every 16 world units as int16 whole units; the powf of the Species noise replaced by a fixed-point table over the fractal dimensions the recipes use"
       - "A landscape definition is a JSON document of size class, seed, tile list, palette name, start positions and deposit positions; the tool writes one, and its schema is what Content adopts in M1 (m1-vertical-slice/C1 cites this file)"
@@ -897,28 +897,28 @@ tasks:
       machine from a definition, with slope, water and obstruction grids per cell and a delta list
       over the base, so that pathing, visibility and placement have something to read and a
       snapshot carries a seed rather than samples.
-    project: Sim
+    project: GameLogic
     depends_on: [T15, T16]
     files:
-      - Content/LandscapeDefinition.h
-      - Content/Content.vcxproj
-      - Content/Content.vcxproj.filters
-      - Sim/Landscape.h
-      - Sim/Landscape.cpp
-      - Sim/LandscapeGenerator.h
-      - Sim/LandscapeGenerator.cpp
-      - Sim/FractalTable.h
-      - Sim/HeightDelta.h
-      - Sim/Snapshot.cpp
-      - Sim/Sim.vcxproj
-      - Sim/Sim.vcxproj.filters
+      - GameShared/LandscapeDefinition.h
+      - GameShared/GameShared.vcxproj
+      - GameShared/GameShared.vcxproj.filters
+      - GameShared/Landscape.h
+      - GameShared/Landscape.cpp
+      - GameShared/LandscapeGenerator.h
+      - GameShared/LandscapeGenerator.cpp
+      - GameShared/FractalTable.h
+      - GameShared/HeightDelta.h
+      - GameLogic/Snapshot.cpp
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
       - Tools/LandscapeTool.py
-      - Tests/SimTests/LandscapeTests.cpp
-      - Tests/SimTests/SimTests.vcxproj
-      - Tests/SimTests/SimTests.vcxproj.filters
+      - Tests/GameLogicTests/LandscapeTests.cpp
+      - Tests/GameLogicTests/SimTests.vcxproj
+      - Tests/GameLogicTests/SimTests.vcxproj.filters
     acceptance:
       - LandscapeDefinition is a plain aggregate in Content (size class, seed, tiles, palette name, starts, deposits) with no loader yet, so that M1 adds the JSON loader without moving it
-      - "Landscape holds int16 samples every 16 world units for the size class, generated by LandscapeGenerator from the definition on the simulation Random keyed as the tool keys it, and the fields for Small seeds 1 to 20 hash to the values in Tests/SimTests/Fixtures/Landscape/small-hashes.txt, with seed 1 compared sample for sample against small-0001.heights"
+      - "Landscape holds int16 samples every 16 world units for the size class, generated by LandscapeGenerator from the definition on the simulation Random keyed as the tool keys it, and the fields for Small seeds 1 to 20 hash to the values in Tests/GameLogicTests/Fixtures/Landscape/small-hashes.txt, with seed 1 compared sample for sample against small-0001.heights"
       - "Per-cell derived grids: slope class (the maximum gradient over the cell's samples, in hundredths), a water bit, and an obstruction byte; a SlopeClass test compares the grid against a brute-force computation on a small field"
       - HeightDelta is a rectangle of replacement heights applied over the base; the Landscape applies a list of them, the snapshot carries the definition and the list rather than the samples, and a reloaded snapshot reproduces the samples
       - FractalTable.h is generated by the tool (--fractal-table) and says so; no float or double in Sim
@@ -939,7 +939,7 @@ tasks:
       recipe, so the test feeds it the twenty definition fixtures the tool wrote (small-0001.json to
       small-0020.json, read through Core's JSON reader by the test) and holds seed 1 to the golden
       field sample for sample and the rest to the hash list. SizeClass moved from
-      Sim/MatchSettings.h down to Content/LandscapeDefinition.h, since the definition needs it and
+      GameShared/MatchSettings.h down to GameShared/LandscapeDefinition.h, since the definition needs it and
       Content sits below Sim. The cell grids are one 4-byte record a cell (slope percent, flags with
       the water bit, the obstruction byte), re-derived only under a delta's rectangle. The hash and
       the snapshot carry the definition and the delta list rather than the samples, which determine
@@ -956,39 +956,39 @@ tasks:
       that writes BMPs, so that CI is the agent's eyes from the first frame. The first client ADR
       settles the authored resolution, the window style and multisampling, admits d3dx12.h at a
       pinned version, and records which shader compiler FXCompile drives on the pinned toolset.
-    project: Client
+    project: NeuronClient
     depends_on: [T2, T12, T13]
     files:
-      - Client/d3dx12.h
-      - Client/d3dx12.LICENSE.txt
-      - Client/Window.h
-      - Client/Window.cpp
-      - Client/GraphicsDevice.h
-      - Client/GraphicsDevice.cpp
-      - Client/DescriptorHeap.h
-      - Client/DescriptorHeap.cpp
-      - Client/SwapChain.h
-      - Client/SwapChain.cpp
-      - Client/SceneTarget.h
-      - Client/SceneTarget.cpp
-      - Client/ScaleMode.h
-      - Client/ScaleMode.cpp
-      - Client/PresentPass.h
-      - Client/PresentPass.cpp
-      - Client/FrameCapture.h
-      - Client/FrameCapture.cpp
-      - Client/Shaders/PresentVS.hlsl
-      - Client/Shaders/PresentPS.hlsl
-      - Client/Client.vcxproj
-      - Client/Client.vcxproj.filters
+      - NeuronClient/d3dx12.h
+      - NeuronClient/d3dx12.LICENSE.txt
+      - NeuronClient/Window.h
+      - NeuronClient/Window.cpp
+      - NeuronClient/GraphicsDevice.h
+      - NeuronClient/GraphicsDevice.cpp
+      - NeuronClient/DescriptorHeap.h
+      - NeuronClient/DescriptorHeap.cpp
+      - NeuronClient/SwapChain.h
+      - NeuronClient/SwapChain.cpp
+      - NeuronClient/SceneTarget.h
+      - NeuronClient/SceneTarget.cpp
+      - NeuronClient/ScaleMode.h
+      - NeuronClient/ScaleMode.cpp
+      - NeuronClient/PresentPass.h
+      - NeuronClient/PresentPass.cpp
+      - NeuronClient/FrameCapture.h
+      - NeuronClient/FrameCapture.cpp
+      - NeuronClient/Shaders/PresentVS.hlsl
+      - NeuronClient/Shaders/PresentPS.hlsl
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
       - OutpostCommander/App.h
       - OutpostCommander/App.cpp
       - OutpostCommander/Main.cpp
       - OutpostCommander/OutpostCommander.vcxproj
       - OutpostCommander/OutpostCommander.vcxproj.filters
-      - Tests/ClientTests/ScaleModeTests.cpp
-      - Tests/ClientTests/ClientTests.vcxproj
-      - Tests/ClientTests/ClientTests.vcxproj.filters
+      - Tests/NeuronClientTests/ScaleModeTests.cpp
+      - Tests/NeuronClientTests/ClientTests.vcxproj
+      - Tests/NeuronClientTests/ClientTests.vcxproj.filters
       - .gitignore
       - Design/ADR/README.md
       - Design/ADR/ADR-<next>-renderer-foundation.md
@@ -1001,7 +1001,7 @@ tasks:
       - SceneTarget is a colour target and a depth buffer at the authored resolution the renderer ADR fixes, multisampled per the renderer ADR and resolved before the present pass
       - "ScaleMode is a pure function from (window client size, authored size) to (mode, destination rectangle) with the three cases AGENTS.md §5 lists, and ClientTests covers exact match, integer multiples, letterbox and pillarbox"
       - "OutpostCommander shows a window per the renderer ADR (the design assumes borderless over the primary monitor, with Escape and Alt+F4 owned by the game), clears the scene target, presents it scaled, and exits cleanly; --capture <frames> <directory> runs with no window and no swap chain, renders <frames> frames to the scene target, writes frame-<n>.bmp every hundredth through Core's BitmapWriter, and exits 0, or non-zero with the messages when the debug layer reported anything"
-      - "FXCompile items compile the two shaders into Client/CompiledShaders/PresentVS.h and PresentPS.h at build; CompiledShaders/ is ignored by git already and by every checker; the renderer ADR records whether the pinned toolset's FXCompile drives dxc for shader model 6 or fxc for 5.1, which is what M0 was told to find out"
+      - "FXCompile items compile the two shaders into NeuronClient/CompiledShaders/PresentVS.h and PresentPS.h at build; CompiledShaders/ is ignored by git already and by every checker; the renderer ADR records whether the pinned toolset's FXCompile drives dxc for shader model 6 or fxc for 5.1, which is what M0 was told to find out"
       - Captures/ is added to .gitignore
       - CI is green, including the new ClientTests
     verify:
@@ -1013,7 +1013,7 @@ tasks:
     parallel_safe: true
     status: done
     notes: >
-      ADR-004 records the decisions. Client/pch.h precompiles the platform (WindowsHeader.h, then
+      ADR-004 records the decisions. NeuronClient/pch.h precompiles the platform (WindowsHeader.h, then
       d3d12.h, d3d12sdklayers.h, dxgi1_6.h, unknwn.h before winrt/base.h, then d3dx12.h with the
       state-object helpers and the feature-support class compiled out), and every Client header
       still includes what it names, because the executable's pch.h is the standard library alone.
@@ -1033,7 +1033,7 @@ tasks:
       MSVC 14.51.36231 (Visual Studio 18 Enterprise) with the Windows SDK 10.0.26100.0, whose dxc
       compiled the shaders at 6.0. Three rounds before it: dxc warned that /Zi had nowhere to write a
       PDB and /warnaserror made that fatal, so both configurations embed the PDB; then winrt/base.h
-      pulled in DirectXMath, whose <assert.h> resolved to Core/Assert.h, because a project directory
+      pulled in DirectXMath, whose <assert.h> resolved to NeuronCore/Assert.h, because a project directory
       sits on the include path ahead of the SDK and MSVC matches the name case-insensitively, so the
       header is Assertion.h now and the checker refuses headers named like the runtime's (ADR-001
       records it). The acceptance grep, excluding the vendored header, finds nothing.
@@ -1045,32 +1045,32 @@ tasks:
       (TechnicalDesign.md §6.5), written fresh in the Neuron namespace from the Species design,
       so that the camera of T20 and the interface of M1 consume the same events and the
       simulation never subscribes to input.
-    project: Client
+    project: NeuronClient
     depends_on: [T2]
     files:
-      - Client/InputEvent.h
-      - Client/InputQueue.h
-      - Client/InputQueue.cpp
-      - Client/FrameInput.h
-      - Client/FrameInput.cpp
-      - Client/InputRouter.h
-      - Client/InputRouter.cpp
-      - Client/InputSubscription.h
-      - Client/InputSubscription.cpp
-      - Client/RawMouse.h
-      - Client/RawMouse.cpp
+      - NeuronClient/InputEvent.h
+      - NeuronClient/InputQueue.h
+      - NeuronClient/InputQueue.cpp
+      - NeuronClient/FrameInput.h
+      - NeuronClient/FrameInput.cpp
+      - NeuronClient/InputRouter.h
+      - NeuronClient/InputRouter.cpp
+      - NeuronClient/InputSubscription.h
+      - NeuronClient/InputSubscription.cpp
+      - NeuronClient/RawMouse.h
+      - NeuronClient/RawMouse.cpp
       # The procedure that enqueues, and the frame loop that derives, routes and masks. Added during
       # the work: the list was written from where the pipeline lives, and the work is where it is hooked.
-      - Client/Window.h
-      - Client/Window.cpp
+      - NeuronClient/Window.h
+      - NeuronClient/Window.cpp
       - OutpostCommander/App.cpp
-      - Client/Client.vcxproj
-      - Client/Client.vcxproj.filters
-      - Tests/ClientTests/FrameInputTests.cpp
-      - Tests/ClientTests/InputRouterTests.cpp
-      - Tests/ClientTests/InputSubscriptionTests.cpp
-      - Tests/ClientTests/ClientTests.vcxproj
-      - Tests/ClientTests/ClientTests.vcxproj.filters
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Tests/NeuronClientTests/FrameInputTests.cpp
+      - Tests/NeuronClientTests/InputRouterTests.cpp
+      - Tests/NeuronClientTests/InputSubscriptionTests.cpp
+      - Tests/NeuronClientTests/ClientTests.vcxproj
+      - Tests/NeuronClientTests/ClientTests.vcxproj.filters
     acceptance:
       - The window procedure only enqueues events (key down and up with repeat flagged, mouse buttons, wheel, absolute move, relative move, WM_CHAR text, focus lost) and returns; one pump per frame, nowhere else
       - DeriveFrameState is a free function over the frame's events and the previous state producing one edge per control per frame, tested without a window
@@ -1113,41 +1113,41 @@ tasks:
       SpeciesTerrain.md; SpeciesLook.md) through a chunked mesh with four levels of detail, under
       a flying camera, and the fog ruling of OpenQuestions.md R4 is taken on frames the agent can
       see, so that M0 ends with a landscape on screen and in CI's artefacts.
-    project: Client
+    project: NeuronClient
     depends_on: [T17, T18, T19]
     files:
-      - Core/RenderView.h
-      - Core/HeightView.h
-      - Core/Core.vcxproj
-      - Core/Core.vcxproj.filters
-      - Client/TerrainChunk.h
-      - Client/TerrainChunk.cpp
-      - Client/TerrainPass.h
-      - Client/TerrainPass.cpp
-      - Client/WaterPass.h
-      - Client/WaterPass.cpp
-      - Client/Camera.h
-      - Client/Camera.cpp
-      - Client/Lighting.h
-      - Client/SceneConstants.h
-      - Client/pch.h
-      - Client/Shaders/TerrainVS.hlsl
-      - Client/Shaders/TerrainPS.hlsl
-      - Client/Shaders/WaterVS.hlsl
-      - Client/Shaders/WaterPS.hlsl
-      - Client/Client.vcxproj
-      - Client/Client.vcxproj.filters
+      - NeuronCore/RenderView.h
+      - NeuronCore/HeightView.h
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronCore/NeuronCore.vcxproj.filters
+      - NeuronClient/TerrainChunk.h
+      - NeuronClient/TerrainChunk.cpp
+      - NeuronClient/TerrainPass.h
+      - NeuronClient/TerrainPass.cpp
+      - NeuronClient/WaterPass.h
+      - NeuronClient/WaterPass.cpp
+      - NeuronClient/Camera.h
+      - NeuronClient/Camera.cpp
+      - NeuronClient/Lighting.h
+      - NeuronClient/SceneConstants.h
+      - NeuronClient/pch.h
+      - NeuronClient/Shaders/TerrainVS.hlsl
+      - NeuronClient/Shaders/TerrainPS.hlsl
+      - NeuronClient/Shaders/WaterVS.hlsl
+      - NeuronClient/Shaders/WaterPS.hlsl
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
       - OutpostCommander/App.cpp
       - OutpostCommander/CameraController.h
       - OutpostCommander/CameraController.cpp
       - OutpostCommander/OutpostCommander.vcxproj
       - OutpostCommander/OutpostCommander.vcxproj.filters
-      - Tests/ClientTests/TerrainChunkTests.cpp
-      - Tests/ClientTests/CameraTests.cpp
-      - Tests/ClientTests/ClientTests.vcxproj
-      - Tests/ClientTests/ClientTests.vcxproj.filters
+      - Tests/NeuronClientTests/TerrainChunkTests.cpp
+      - Tests/NeuronClientTests/CameraTests.cpp
+      - Tests/NeuronClientTests/ClientTests.vcxproj
+      - Tests/NeuronClientTests/ClientTests.vcxproj.filters
       - Build/CheckProjectFiles.py
-      - Build/Fixtures/ProjectFiles/Replica/Replica.h
+      - Build/Fixtures/ProjectFiles/GameClient/Replica.h
       - Build/Fixtures/ProjectFiles/README.md
       - AGENTS.md
       - Design/ADR/ADR-004-renderer-foundation.md
@@ -1156,7 +1156,7 @@ tasks:
       - Design/TechnicalDesign.md
       - Design/SpeciesLook.md
     acceptance:
-      - "Core/HeightView.h is a plain aggregate (samples pointer, sample count per side, spacing, water level, highest) and Core/RenderView.h the plain instance list of TechnicalDesign.md §6.3, both in the engine namespace; Client consumes them and nothing in Client names a Sim type"
+      - "NeuronCore/HeightView.h is a plain aggregate (samples pointer, sample count per side, spacing, water level, highest) and NeuronCore/RenderView.h the plain instance list of TechnicalDesign.md §6.3, both in the engine namespace; Client consumes them and nothing in Client names a Sim type"
       - "TerrainChunk builds the mesh of a 32x32-cell chunk (129x129 samples, 16-bit indices) at a stride of 1, 2, 4 or 8 with a skirt, colours each vertex on the CPU by the Species formula u = (1 - slope)^0.4, v = 1 - height/highest plus the seeded noise, from a palette texture read through Core's TextureFile or, in M0, a built-in gradient; a test checks index counts, skirt presence and that a flat chunk at every stride has the same silhouette"
       - "TerrainPass draws the visible chunks with frustum culling, the near band at stride 1 and the rest at the stride that keeps the frame near a million triangles, lit by two directional lights with no ambient, summed then clamped, one normal per triangle; the triangle count is logged per frame"
       - WaterPass draws a flat single-colour plane at the water level, drawn only where the landscape falls below it; waves and the shore band are M2
@@ -1237,7 +1237,7 @@ tasks:
     notes: >
       Owner's task. An agent prepares the PR that archives the plan once the owner reports.
       Frame time, reported by the owner on 2026-09-18: 8 to 16 ms at 1920x1080, which is 60 to
-      125 frames a second. READ IT AS A CEILING AND NOT AS A COST. Client/SwapChain.cpp:55
+      125 frames a second. READ IT AS A CEILING AND NOT AS A COST. NeuronClient/SwapChain.cpp:55
       presents with Present(1, 0) and nothing turns that off, so a frame cannot finish faster than
       the display refreshes: 16.7 ms at 60 Hz, 8.3 ms at 120 Hz, which is the reported band almost
       exactly. The client also has no frame-time readout of any kind, so the figure came from
@@ -1296,5 +1296,5 @@ tasks:
       deposits and passable.
       WHAT IS NOT MET, and it is named rather than quietly dropped: the fog ruling, deferred above
       to m2-skirmish/T8. The frame the owner looked at is drawn under DEFAULT_FOG_MODE, which is
-      FogMode::Desaturation (Client/Lighting.h:72), and ADR-005 stands unconfirmed until there is a
+      FogMode::Desaturation (NeuronClient/Lighting.h:72), and ADR-005 stands unconfirmed until there is a
       sky behind the horizon band its evidence rests on.

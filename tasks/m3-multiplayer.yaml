@@ -20,7 +20,7 @@ tasks:
       The seam of M0 gets its socket-backed implementation (TechnicalDesign.md §5.6): one
       non-blocking socket per process polled from the loop, framed datagrams, server-assigned
       connection ids so two players behind one router are two players, and liveness by heartbeat.
-    project: Core
+    project: NeuronCore
     depends_on: []
     blocked_by:
       - m2-skirmish/T11
@@ -46,7 +46,7 @@ tasks:
       A mod is a directory whose files override the game's at the same path, enabled by name in
       the lobby, and the host hashes everything it loaded so that two players with different
       files are refused each other's matches before the first tick (TechnicalDesign.md §8).
-    project: Content
+    project: GameShared
     depends_on: []
     blocked_by:
       - m2-skirmish/T11
@@ -70,7 +70,7 @@ tasks:
     intent: >
       A player who drops is kept as a seat under AI control for a grace period and rejoins to
       their commander's view afresh; the host may pause; chat is text to all or allies.
-    project: Net
+    project: GameShared
     depends_on: [T2]
     acceptance:
       - The M1 protocol's rejoin path runs over UDP; the grace period and the AI hand-over are visible in the lobby and the log; pause and chat are orders the host applies; NetTests and the owner's run cover them
@@ -94,7 +94,7 @@ tasks:
       Pathing, visibility and the terrain renderer are sized by Large (TechnicalDesign.md §4.5,
       §4.6, §6.2); this task measures them with eight AI seats on a Large landscape and takes the
       hierarchical A* against flow fields decision on the numbers.
-    project: Sim
+    project: GameLogic
     depends_on: [T11]
     blocked_by:
       - m2-skirmish/T11
@@ -108,7 +108,7 @@ tasks:
     intent: >
       One side holding at least 60 percent of the deposits, an extractor built and served, for
       ten continuous minutes wins (GameDesign.md §2), so that a Large match need not be a hunt.
-    project: Sim
+    project: GameLogic
     depends_on: [T7]
     acceptance:
       - Dominance is a MatchSettings victory condition applied at stage 12 and shown in the lobby and the interface; SimTests covers the hold timer resetting on loss of a deposit
@@ -119,7 +119,7 @@ tasks:
     intent: >
       The network ADR's arithmetic becomes measurement: bytes per client per second in a large battle,
       and the interest test extended to eight seats.
-    project: Net
+    project: GameShared
     depends_on: [T4, T7]
     acceptance:
       - The interest test runs with eight seats and allied vision; the ADR gains a dated measurement section with peak and average bandwidth per client from a LAN match
@@ -145,14 +145,14 @@ tasks:
       chunk - is resident for the whole landscape so any chunk can always be drawn, strides 1,
       2 and 4 are built only within a radius of the camera and released beyond it with a chunk
       of hysteresis, and nothing is culled by distance, so the player sees no change.
-    project: Client
+    project: NeuronClient
     depends_on: []
     blocked_by:
       - m2-skirmish/T11
     files:
-      - Client/TerrainPass.h
-      - Client/TerrainPass.cpp
-      - Tests/ClientTests/TerrainPassTests.cpp
+      - NeuronClient/TerrainPass.h
+      - NeuronClient/TerrainPass.cpp
+      - Tests/NeuronClientTests/TerrainPassTests.cpp
     acceptance:
       - Resident terrain is within a tenth of 59 MB on every size class from Small to Frontier, measured and logged at load, against 10, 40, 161 and 644 MB before
       - The load-time mesh build is the coarsest level of the whole landscape plus the chunks first inside the radius, and its cost is logged and stated for each size class

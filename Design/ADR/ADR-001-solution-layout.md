@@ -32,13 +32,13 @@
 
 Edges point downward only; a library never references one beside it (`Client` and `Replica` share `Core` and `Content`, never each other). `Build/CheckProjectFiles.py` holds the tree to this table (`m0-foundation/T6`).
 
-**Platform headers.** `Sim`, `Content`, `Net` and `Replica` include no Windows, Direct3D, socket, WinRT or XAudio2 header, and their `pch.h` includes the standard library and `Core` only. `Core` may include platform headers in named files (the transport, the paths, the assertion reporter), through `Core/WindowsHeader.h`, which is the one header that defines the Windows macro family (`AGENTS.md` §4) before `<windows.h>`. `Client` and the executables may include platform headers, through that same header.
+**Platform headers.** `Sim`, `Content`, `Net` and `Replica` include no Windows, Direct3D, socket, WinRT or XAudio2 header, and their `pch.h` includes the standard library and `Core` only. `Core` may include platform headers in named files (the transport, the paths, the assertion reporter), through `NeuronCore/WindowsHeader.h`, which is the one header that defines the Windows macro family (`AGENTS.md` §4) before `<windows.h>`. `Client` and the executables may include platform headers, through that same header.
 
 **Three placements** the plan needed and `TechnicalDesign.md` §2 did not say:
 
 - The render-view and height-view aggregates live in `Core`, in the engine namespace, so that `Replica` produces them and `Client` consumes them without an edge between the two (`TechnicalDesign.md` §6.3).
 - `LandscapeDefinition` is a `Content` aggregate from M0, with its loader arriving in M1, because `Sim` reads `Content` and a type that started in `Sim` would have to move.
-- `OUTPOST_ASSERT` and `OUTPOST_VERIFY` live in `Core/Assertion.h`, reporting through `Core/Assertion.cpp`, so that every project above `Core` asserts the same way. (Named `Assert.h` until 2026-09-17, when DirectXMath's `<assert.h>` found it first: a project directory sits on the include path ahead of the SDK, and MSVC matches the name case-insensitively, so no header is named like a C runtime or SDK header, which `Build/CheckProjectFiles.py` refuses since that day.)
+- `OUTPOST_ASSERT` and `OUTPOST_VERIFY` live in `NeuronCore/Assertion.h`, reporting through `NeuronCore/Assertion.cpp`, so that every project above `Core` asserts the same way. (Named `Assert.h` until 2026-09-17, when DirectXMath's `<assert.h>` found it first: a project directory sits on the include path ahead of the SDK, and MSVC matches the name case-insensitively, so no header is named like a C runtime or SDK header, which `Build/CheckProjectFiles.py` refuses since that day.)
 
 **Every project file is written by hand** from the MSBuild schema, not by a wizard, in one shape: the settings that are not about optimisation sit in unconditional property and item-definition groups, so they are identical in Debug and Release by construction, and the conditional groups hold only what `AGENTS.md` §3 enumerates. The settings, stated explicitly in every project (`AGENTS.md` R16 says a default is not a decision):
 

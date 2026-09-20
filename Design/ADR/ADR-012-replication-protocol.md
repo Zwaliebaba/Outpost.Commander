@@ -20,7 +20,7 @@ cost of avoiding it is the history length chosen below.
 
 ## Decision
 
-**Interest per client per publish** (`Net/Interest.h`), from the fog grids of `m1-vertical-slice/S9`:
+**Interest per client per publish** (`GameLogic/Interest.h`), from the fog grids of `m1-vertical-slice/S9`:
 
 - every object in a cell the commander's **alliance** currently sees — allies share vision
   (`GameDesign.md` §2), so it is a union over the alliance's grids rather than a grid of its own;

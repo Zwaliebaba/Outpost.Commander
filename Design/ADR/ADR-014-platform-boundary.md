@@ -29,7 +29,7 @@ That is a genuinely useful property and it is not free. Three arrangements were 
 | `Game` | static library | `Outpost` | What the executable holds today: the application, the frame assembly, the camera controller, the HUD, the match, the local host, the operator and the starting base — everything that was unreachable from a test because it lived in an Application |
 | `OutpostCapture` | executable, console | `Outpost` | The headless path: `--warp --capture <landscape> <ticks> <directory>`, and nothing else. What CI drives |
 
-`Game` gets `Tests/GameTests`, which is the reason to want it independent of this migration: `Hud.cpp` is 70 kB and `Operator.cpp` 18 kB of code that no suite has ever been able to reach, and `Client/PointerMode.h` already carries a comment explaining that its contents were pushed down into a library for exactly this reason.
+`Game` gets `Tests/GameTests`, which is the reason to want it independent of this migration: `Hud.cpp` is 70 kB and `Operator.cpp` 18 kB of code that no suite has ever been able to reach, and `NeuronClient/PointerMode.h` already carries a comment explaining that its contents were pushed down into a library for exactly this reason.
 
 **`Game` does not name a window.** `RunWindowed` takes a presentation seam — the client size in physical pixels, a way to say the title has changed, and a pump that returns false when the user has left — and the packaged executable supplies it over a `CoreWindow`. Nothing above that seam knows which application model it is running under, which is what makes `OutpostCapture` possible at all.
 

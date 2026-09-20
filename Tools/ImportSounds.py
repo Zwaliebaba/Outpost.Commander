@@ -19,7 +19,7 @@ name of a set, and Species resolves it to Laser1.wav through Laser11.wav at load
 matched as a file first and, failing that, as a case-insensitive prefix of one or more files, which
 is reported as a GUESS and not as a match: 163 names resolve to 54 files exactly and the rest are
 groups. Everything but SOUNDNAME is Species's own mixer settings and is read past, because
-Outpost's sound event row (Content/SoundEventDesc.h) carries its own.
+Outpost's sound event row (GameShared/SoundEventDesc.h) carries its own.
 
 THE PROVENANCE. Which of these may be taken is the provenance ADR's to say, not this tool's; the
 soundtrack, the branding and the narration are excluded regardless (SpeciesLineage.md 1). The tool

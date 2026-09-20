@@ -13,8 +13,8 @@
 > bakes one per triangle; the ADR that lands the first model decides.
 
 `m1-vertical-slice/K1` is that task. Both halves of the choice already exist in the tree as working
-code to argue from: `Client/Shaders/TerrainPS.hlsl` takes its normal from
-`cross(ddy(world), ddx(world))` and has done since M0, and `Content/ModelDesc.h` holds a triangle
+code to argue from: `NeuronClient/Shaders/TerrainPS.hlsl` takes its normal from
+`cross(ddy(world), ddx(world))` and has done since M0, and `NeuronCore/ModelDesc.h` holds a triangle
 list with a colour per triangle that a loader would have to split anyway.
 
 The question had to be answered now because the geometry pass cannot be written either way without
@@ -22,10 +22,10 @@ answering it: the vertex format, the input layout and the pixel shader all diffe
 
 ## Decision
 
-**`Client/ModelBuffers.cpp` splits a model's vertices and bakes one normal per triangle.** The split
+**`NeuronClient/ModelBuffers.cpp` splits a model's vertices and bakes one normal per triangle.** The split
 is keyed on the triple *(the description's vertex, the triangle's colour, the triangle's direction)*,
 so two triangles that agree on both share their vertices and only a disagreement costs a duplicate.
-`Client/Shaders/GeometryPS.hlsl` carries the normal `nointerpolation` and does not normalize it,
+`NeuronClient/Shaders/GeometryPS.hlsl` carries the normal `nointerpolation` and does not normalize it,
 because the loader wrote it to unit length and a flat attribute reaches the pixel shader from the
 triangle's first vertex without arithmetic.
 
@@ -70,9 +70,9 @@ bytes to 20 and is available the moment vertex bandwidth is measured to matter; 
 entire model set it does not, and a packed normal is a thing to debug rather than read.
 
 **Positions become world units in this loader.** A `ModelDesc` is in subunits, 256 to the world unit
-(`Core/FixedPoint.h`), because `Content` holds the simulation's numbers; the camera, the terrain and
+(`NeuronCore/FixedPoint.h`), because `Content` holds the simulation's numbers; the camera, the terrain and
 the render view are in world units. The conversion happens once at load rather than per frame, and
-`Client/ModelBuffers.h` is the one place it happens.
+`NeuronClient/ModelBuffers.h` is the one place it happens.
 
 ## Consequences
 
@@ -133,7 +133,7 @@ the count was logged at Warning — which is how 6,356 sat in a green build for 
 
 - **The vertex counts and the winding**, measured on 2026-09-18 by building every model in
   `GameData\Models` through `Outpost::LoadContent` and `Neuron::BuildModelMesh` — the shipped
-  loader and the shipped builder — in a native Linux build of `Content` and `Client/ModelBuffers.cpp`
+  loader and the shipped builder — in a native Linux build of `Content` and `NeuronClient/ModelBuffers.cpp`
   against the session's stub platform headers. Twenty-two models; the descriptions hold **176**
   vertices and **264** triangles; the built meshes hold **528** vertices and **792** indices, which
   is 14,784 bytes of vertices at `sizeof(GeometryVertex)` = 28 and 3,168 bytes of indices;
@@ -147,7 +147,7 @@ the count was logged at Warning — which is how 6,356 sat in a green build for 
   `cross(v6 − v4, v5 − v4)` = `(0, 4lw, 0)`, which is +y and outward; the same arithmetic gives the
   outward normal for all six faces, and `ModelBuffersTests.cpp` asserts all six.
 - **`ModelBuffersTests.cpp` passes 11 of 11** in the session's native runner (clang 18 on Linux,
-  `Client/ModelBuffers.cpp` compiled against the stub platform headers). Nothing here was run on a
+  `NeuronClient/ModelBuffers.cpp` compiled against the stub platform headers). Nothing here was run on a
   GPU.
 - **WHAT IS NOT MEASURED, AND IT IS THE THING K1'S ACCEPTANCE ASKED FOR.** K1 says the ADR decides
   "with a captured frame of a placeholder model", and there is no such frame: `m1-vertical-slice/G2`

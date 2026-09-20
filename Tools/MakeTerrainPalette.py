@@ -3,10 +3,10 @@
 
 A terrain palette is the 64x64 lookup the landscape is coloured by: the slope term runs along x,
 flat ground at column 0 and a cliff at column 63, and the height term down y, the summit at row 0
-and sea level at row 63 (`Design/SpeciesTerrain.md` section 6; `Client/TerrainChunk.h`,
+and sea level at row 63 (`Design/SpeciesTerrain.md` section 6; `NeuronClient/TerrainChunk.h`,
 `TerrainPalette::Lookup`). Species kept eight of them as bottom-up 24-bit BMPs under
 its own `GameData/Terrain`, which is the name this tree keeps them under too; this writes one as a top-down `B8G8R8A8_UNORM` DDS with no mip chain, which is
-what `Core/TextureFile.h` reads and what the terrain's own lookup wants (`TechnicalDesign.md`
+what `NeuronCore/TextureFile.h` reads and what the terrain's own lookup wants (`TechnicalDesign.md`
 section 8: palettes are read exactly, so they are never block compressed).
 
 Two palettes that colour one landscape must agree at the shore, because their colours blend where
@@ -29,7 +29,7 @@ from pathlib import Path
 
 SIDE = 64
 
-# Core/TextureFile.cpp's values, which are dxgiformat.h's.
+# NeuronCore/TextureFile.cpp's values, which are dxgiformat.h's.
 DDS_MAGIC = 0x20534444
 DDSD_CAPS, DDSD_HEIGHT, DDSD_WIDTH, DDSD_PIXELFORMAT = 0x1, 0x2, 0x4, 0x1000
 DDSD_PITCH = 0x8
@@ -118,7 +118,7 @@ def main() -> int:
     parser.add_argument("--species", type=Path, required=True, help="the Species GameData/Terrain directory")
     parser.add_argument("--source", required=True, help="the palette to compose from: Default, Desert, Earth, Icecaps")
     parser.add_argument("--out", type=Path, required=True, help="the DDS to write")
-    parser.add_argument("--water", default="20,56,97", help="the water plane's colour; Client/Shaders/WaterPS.hlsl's")
+    parser.add_argument("--water", default="20,56,97", help="the water plane's colour; NeuronClient/Shaders/WaterPS.hlsl's")
     parser.add_argument("--shore", type=int, default=6, help="rows ramped into it, of 64")
     arguments = parser.parse_args()
 

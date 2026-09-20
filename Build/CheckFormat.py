@@ -6,7 +6,7 @@
     python3 Build/CheckFormat.py --clang-format clang-format-18    # the binary CI's Linux job uses
 
 Every .cpp and .h under the repository root is checked against the root .clang-format, except
-build output (x64/, CompiledShaders/), the .git and .vs directories, and Client/d3dx12.h, which
+build output (x64/, CompiledShaders/), the .git and .vs directories, and NeuronClient/d3dx12.h, which
 is a vendored third-party file and is never reformatted (AGENTS.md R14). A tree with no C++ in
 it passes: the gate exists before the code does, and it starts gating on the first file.
 
@@ -31,7 +31,7 @@ from pathlib import Path
 PINNED_MAJOR = 18
 EXTENSIONS = {".cpp", ".h"}
 SKIPPED_DIRECTORIES = {".git", ".vs", "x64", "CompiledShaders"}
-SKIPPED_FILES = {"Client/d3dx12.h"}
+SKIPPED_FILES = {"NeuronClient/d3dx12.h"}
 
 
 def repository_root() -> Path:
