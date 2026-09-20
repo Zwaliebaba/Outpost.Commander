@@ -7,13 +7,16 @@ code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is 
 the source and `AGENTS.md` is the rule, in that order.
 
 **Status: DRAFT, 2026-09-20.** Written against the brief and against `AGENTS.md`, starting from an empty
-`Design/` and a build shell with no game in it. **Eighteen questions have been put to the owner and
-answered, and none is open.**
+`Design/` and a build shell with no game in it. **Twenty-six questions answered, one open. All eleven ADRs
+Accepted.**
 
-That is not the same as the design being right. What is left is **measurement rather than decision** —
-`TechnicalDesign.md` §9 lists six figures that cannot be obtained until there is code — and **four of the
-ten ADRs are still marked Proposed**, which the index says are not things to write code against. Those
-four are now the only thing between this design and being settled.
+**A second designer was then asked to defeat it**, and the result is applied throughout. That review found
+a solved game in the combat numbers, a factual error in `AGENTS.md` itself, and several features specified
+in one document with no data path in another. It produced eight new questions, reversed two earlier
+answers, and **cut roughly a third of the MVP**; `OpenQuestions.md`'s fourth round names what was wrong.
+
+What is left is **measurement rather than decision**: `TechnicalDesign.md` §9 lists eight figures that
+cannot be obtained until there is code, three of them owed at M0.
 
 ## The documents
 
@@ -22,8 +25,8 @@ four are now the only thing between this design and being settled.
 | [`GameDesign.md`](GameDesign.md) | The game: the two lineages and which half the MVP is, the session and victory, the area and how it is generated, the economy, the station, ships as compositions, combat, the AI, where research goes, and the five milestones |
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, why there is no content pipeline, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: eighteen answered across three rounds, none open, each with its options and what each costs — and, at the end, what separates an answered register from a correct design |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-010` |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: twenty-six answered across four rounds, one open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-011` |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than
@@ -40,10 +43,15 @@ the MVP reachable, and the tactical z-axis is what it costs.
 
 **Replication is full self-contained snapshots**
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). R19 already ruled out lockstep by refusing
-the client a simulation; at 204 entities a snapshot is under two kilobytes, so there is no baseline, no
-acknowledgement and no history — and therefore no divergence, because there is nothing accumulated to
-diverge. What it costs is bandwidth and a 200-millisecond gap when a fragment is lost, both stated with
-the arithmetic behind them.
+the client a simulation; at the MVP's 102 entities a snapshot is **1,056 bytes — one datagram** — so there
+is no baseline, no acknowledgement, no history and no fragmentation. They go out at **20 Hz**, which is a
+latency decision and not a bandwidth one: tap-to-visible is 152 ms average where 10 Hz made it 252 ms, and
+on a touchscreen the tap is the only feedback a player gets.
+
+The claim that nothing can diverge is **narrower than it was first stated**: true of positions, never true
+of the client, which accumulates a selection set, order markers and wrecks by inference. An explicit
+removal list is what makes that derived state correct — and what makes fog of war additive for the client
+and not only for the protocol.
 
 **A ship is a composition** ([`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md)). The *Warzone 2100*
 model goes in before its interface does, because retrofitting it would move damage, cost, build time,
@@ -90,7 +98,8 @@ And M0 exists to answer questions rather than to build a game. Two of them are u
   into the document it belongs to.
 
 An ADR marked **Proposed** is a decision this design takes and the owner has not yet ruled on. **It is not
-something to write code against.** Four of the ten are Proposed today.
+something to write code against.** **None are Proposed today** — ADR-002 to ADR-005 were ruled on
+2026-09-20 after the review, all four with changes.
 
 ## What is deliberately not designed yet
 

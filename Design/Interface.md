@@ -19,8 +19,16 @@ it rather than assumed.
 | **Default Windows scale** | 200%, so the `CoreWindow` reports **1440 × 960** device-independent pixels. |
 | **Swap chain** | 2880 × 1920 — physical pixels, not DIPs. R18 requires the conversion that gets there to be one tested pure function. |
 
-**The game is authored at 1440 × 960** and every layout, glyph and position behind that is unconditional
-(R13). The frame is drawn into a scene target at that size and fitted into the back buffer at the end.
+**The client runs fullscreen**, entered at launch. Nothing previously said so, which quietly made
+everything below conditional on however the window happened to be sized; a touch-only game in a resizable
+window is not a coherent object anyway.
+
+**The world is authored at 1440 × 960** and drawn into a scene target at that size, then fitted into the
+back buffer. **The interface is authored at 1440 × 960 too — and drawn afterwards, at physical
+resolution** ([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). Every layout number in
+this document is an authored number and is unconditional, exactly as R13 requires; at draw time each one
+is carried through the same fit transform the present step already computed, so nothing branches on the
+window size and **text is not resampled**.
 
 **That fit is exactly 2×, so it is point sampling and it is crisp** — and it is 3:2, so there is no
 letterbox. This is not a coincidence: 200% is the scale Microsoft ships on this panel, so the authored
@@ -34,7 +42,9 @@ optimised for.
 
 **A 1,440 × 960 scene target is 1.38 megapixels**, which is small. That matters more than it sounds:
 4× multisampling costs 5.5 megasamples, which is affordable, and space is thin bright silhouettes against
-black — exactly the content that wants it (`TechnicalDesign.md` §6).
+black — exactly the content that wants it (`TechnicalDesign.md` §6). The interface pass cannot be
+multisampled, because a flip-model back buffer cannot be; for rectangles and text quads that costs
+nothing.
 
 ### The touch target, derived
 
@@ -145,6 +155,13 @@ is the complementary operation — the hold expands spatially, the panel filters
 space is already a move order, and the band-that-encloses-nothing this document used to rely on no longer
 exists.
 
+**An order is acknowledged the instant you give it, locally.** A tap is not visible on the ships for 152
+milliseconds at best (`TechnicalDesign.md` §4), and a touchscreen has no cursor to say it registered. So
+the client draws a destination marker and a line from the selection **the moment the gesture resolves**,
+and clears it when the host acknowledges that command's sequence. **Nothing is predicted** — the ships do
+not move until the host says they did. R19 forbids the client simulating, not the client drawing what it
+asked for.
+
 Orders replace; there is no queueing and no shift-equivalent, because there is no shift. Order queueing
 needs a gesture nobody has proposed and it is not in the MVP.
 
@@ -164,23 +181,25 @@ is the deliberate low-angle overview shot, which is a screenshot rather than a c
 degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws whenever
 you pan is unusable.
 
-The minimap is the only other way to move the camera: a tap on it jumps the focus point. **No orders can be
-given through the minimap** in the MVP — a 320-pixel map of a 16,384-unit square puts fifty units under a
-fingertip, and an order placed that imprecisely is an order given by accident.
+**There is no minimap.** Because pitch is coupled to zoom, **maximum zoom-out is already a top-down
+tactical view of the whole map** — a minimap would be a second, smaller, lower-fidelity copy of a view
+that is one gesture away, costing a second render of every entity, a second coordinate space and a second
+hit test, for a quarter of the frame's height. With a symmetric map and no fog of war there is nothing on
+it a player does not already know. The camera is the only way to move the camera.
 
 ---
 
 ## 6. The panels
 
-Five things are drawn over the scene. All of them are `GameClient` (R20).
+Four things are drawn over the scene. All of them are `GameClient` (R20), and all draw in the interface
+pass at physical resolution (§1).
 
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
-| **Minimap** | Top right, 240 × 240 | The square map, ships as owner-coloured dots, the camera's view as an outline. Tap to jump. |
 | **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
-| **Build** | Bottom right, thumb zone | Visible when your station is selected. Three targets — Miner, Fighter, Battleship — each with its cost, greyed when unaffordable. Below them the queue, each item tappable to cancel. |
-| **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
+| **Build** | Bottom right, thumb zone | Visible when your station is selected. Two targets — Miner and Fighter — each with its cost, greyed when unaffordable. Below them **the item currently building and its progress**, tappable to cancel. |
+| **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48 (§1), and **the build buttons are 96 × 96** — 18 mm,
 twice the minimum — because they are the ones a player hits while something is exploding.
@@ -196,11 +215,15 @@ real cost — no free text layout, no free scrolling, no accessibility — and i
 missing family is a startup failure rather than a substitution — a substituted font has different advance
 widths, and R13 requires every position in this document to be unconditional.
 
-**Two sizes**: a body size for readouts and a larger one for the build buttons. Text is drawn into the
-scene target like everything else, so on the target device it reaches the glass pixel-doubled at the exact
-2× fit. At 267 PPI a doubled pixel is a 133-PPI effective pixel — ordinary desktop density — and this is
-large type with a dozen strings rather than the dense small type R13 warns about, so the cost is small.
-It is still a cost, and what it actually looks like is a measurement owed at M1.
+**Two sizes**: a body size for readouts and a larger one for the build buttons, both authored and both
+rasterised at the physical size the fit transform produces — 48 physical pixels for a 24-authored-pixel
+label on a Surface Pro. **Text is therefore not doubled and not resampled.**
+
+This reverses what this document said on 2026-09-20, which accepted pixel doubling on the grounds that
+this interface is large type with a dozen strings. That was true of the MVP and expires with it: **M4 is a
+ship designer and a research tree**, which is precisely the dense small type R13 warns about, and by then
+every layout number would have been authored against a doubled pixel. `ADR-011` moved it while it cost
+eighty lines.
 
 ## 7. Suspend, resume, and what is still open
 
@@ -223,14 +246,24 @@ gesture and is out of the MVP because of it** (§4). An idle affordance costs no
 something marginal is not there when something real needs it. A map ping, a map-wide select-by-design and
 a jump-to-station were each considered and each declined.
 
+### When a match ends
+
+**The host reseeds and starts another; the client shows a result overlay and reconnects into it.** Nothing
+previously said what happened at victory — whether the host exited, reset or simply stopped — and for a
+solo-against-AI testing loop **restart is the single most-used operation in the project**. `GameDesign.md`
+§10 makes twenty matches in an evening the point of the reduced MVP; that is not possible if playing again
+means relaunching a packaged application.
+
 ### What is left to a hand and a screen
 
 Neither of these is a question. Both are **confirmations owed at M1**, and both are settled by using the
 thing rather than by arguing about it:
 
-1. **Whether 192 pixels is the right circle** (§4).
-2. **Whether pixel-doubled text reads acceptably** (§6). If it does not, the lever is the authored
-   resolution — [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) — and not the text path.
+1. **Whether 192 pixels is the right circle** (§4) — and specifically whether the raking-camera case
+   selects the wrong ships, since a circle on screen is a wedge in the world
+   ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)).
+2. **Whether the interface pass costs more GPU time than the world pass**, which is likely: five instanced
+   draws of simple geometry against an unbatched quad per glyph.
 
 **Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
 ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a

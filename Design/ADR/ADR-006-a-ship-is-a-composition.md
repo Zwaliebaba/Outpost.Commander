@@ -30,14 +30,19 @@ combination in the catalog. Mass is the hull plus its contents; speed is thrust 
 time are sums. **A cruiser with four plasma cannons is slower than an empty one because of arithmetic, not
 because anyone wrote it down.**
 
-**The MVP ships three designs and no designer.** Miner, Fighter and Battleship are *rows in a table*, not
-types in the code:
+**The MVP ships two designs and no designer.** Miner and Fighter are *rows in a table*, not types in the
+code, and so is the station:
 
 | Design | Hull | Drive | Slots |
 |---|---|---|---|
 | Miner | `Scout` | `IonDrive` | 1× `MiningLaser` |
 | Fighter | `Frigate` | `BurnDrive` | 2× `MassDriver` |
-| Battleship | `Cruiser` | `IonDrive` | 4× `PlasmaCannon` |
+| Station | `Station` | *(none)* | 2× `PointDefence` |
+
+A heavy design on the `Cruiser` hull was cut from the MVP on 2026-09-20 for reasons of economy rather than
+model (`Design/GameDesign.md` §6, §10). **The hull stays in the catalog and the derivation tests still
+cover it**, which is the point: reinstating it at M4 is a table row and nothing else, which is the claim
+this ADR exists to make.
 
 **A component is referred to by identity and never hardcoded**, which is the single property research
 needs: research adds an availability gate over a set of component identities and changes nothing else.
@@ -45,8 +50,15 @@ needs: research adds an availability gate over a set of component identities and
 ## Consequences
 
 **The miner is the evidence.** It is not a ship type — it is a `Scout` hull with a mining tool where a
-weapon would go. That the brief's three ships fall out of the component model with no special case is
-what says the model is right, and it costs nothing today.
+weapon would go, and the station is a hull with two point-defence mounts and no drive. That three things
+which look like three kinds of object fall out of one model with no special case anywhere is what says
+the model is right, and it costs nothing today.
+
+**The wire format contradicted this rule and has been corrected.** The design identity was packed into a
+flags byte alongside team and state, leaving two bits — room for exactly four designs, permanently. A
+two-bit cap is a hardcoded limit wearing the costume of an identity, and it would have been discovered
+while building the designer this ADR exists to make cheap.
+[`ADR-003`](ADR-003-replication-is-full-snapshots.md) now gives the design identity its own byte.
 
 **The designer and research become additive.** The designer is a screen that writes a row into a table the
 simulation already reads. Research is a gate over identities the code already treats as data. Neither

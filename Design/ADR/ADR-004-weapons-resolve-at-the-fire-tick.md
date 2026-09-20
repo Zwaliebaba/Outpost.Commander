@@ -1,8 +1,10 @@
 # ADR-004 — Weapons resolve at the fire tick; the MVP has no projectiles
 
-**Status:** Proposed
+**Status:** Accepted — ruled 2026-09-20 following an adversarial review, **with changes**: the fire event is
+now a specified wire record rather than a name in prose, and the decision's effect on the speed counter is
+stated.
 **Date:** 2026-09-20
-**Owner:** proposed by the design; not yet ruled
+**Owner:** Stefan Zwaal
 
 ## Context
 
@@ -23,9 +25,12 @@ The question is whether the MVP's combat needs projectiles to be *entities*.
 the entity store and none on the wire. Range and firing arc are checked at the fire tick; if the target is
 in range, the damage lands.
 
-**The host emits a fire event** — shooter, target, weapon — alongside the snapshot. It is small,
-unreliable and fire-and-forget: a lost fire event costs a missing tracer and nothing else, which is why it
-is not worth making reliable.
+**The host emits a fire event** — shooter 2, target 2, weapon 1 — appended to the snapshot after the
+removal list, behind a count byte. It is unreliable in the sense that it is not retransmitted: a lost
+snapshot costs a missing tracer and nothing else, which is why it is not worth a reliability path of its
+own. **This ADR originally referred to a fire event and a death event without specifying either**, which
+left two wire records named in prose and defined nowhere. The death event is the removal list
+[`ADR-003`](ADR-003-replication-is-full-snapshots.md) now carries; this is the other.
 
 **The client draws it.** A tracer, a beam or a muzzle flash, entirely client-side, on a client-side timer.
 The same applies to wrecks: a destroyed ship leaves debris the client spawns from a death event and decays
@@ -36,6 +41,13 @@ on its own, and **the host never knows a wreck exists**.
 **This removes roughly 200 entities from the simulation and the wire**, which is the whole reason for it.
 It also removes projectile collision, projectile lifetime, and the interaction between a projectile and a
 target that dies before it arrives.
+
+**It quietly strengthens the counter this design depends on, and neither document said so.**
+`Design/GameDesign.md` §7 claims the counter to a heavier ship is speed — strike craft pick the fight and
+leave. **Instant resolution is what makes disengaging actually work**: a ship that leaves weapon range
+takes zero further damage, where with travel time the shots already fired still land. The two decisions
+are coupled and were taken independently; the coupling is in this ADR's favour and is recorded here so
+that reopening either one is known to move the other.
 
 **What it costs is a class of gameplay.** Nothing can be intercepted, nothing can miss by flying past,
 there is no lead-the-target, and a fleeing ship cannot outrun a shot already fired. Combat resolves as
