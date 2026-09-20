@@ -164,9 +164,25 @@ is the deliberate low-angle overview shot, which is a screenshot rather than a c
 degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws whenever
 you pan is unusable.
 
-The minimap is the only other way to move the camera: a tap on it jumps the focus point. **No orders can be
-given through the minimap** in the MVP — a 320-pixel map of a 16,384-unit square puts fifty units under a
-fingertip, and an order placed that imprecisely is an order given by accident.
+**Orbit is kept, and it is not a cost against the gesture budget.** A manipulation carries translation,
+scale *and* rotation in the same event, so refusing orbit frees no finger and no verb — it discards a
+value that arrives regardless, and buys nothing back for order queueing or anything else §7 is short of.
+What a fixed heading would cost is real: a station or a battleship would hide whatever is behind it with
+no recourse, and on a square map with a base at each end one fixed heading is right for one player and
+backwards for the other. Scale and silhouette are what [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md)
+kept when it gave up the third axis, and they are read by moving around a thing.
+
+**A match starts with your own station toward the bottom of the frame**, so the opening heading is the
+one a player would have chosen, and each player gets it.
+
+The minimap is the only other way to move the camera: a tap on it jumps the focus point. **The minimap
+does not rotate** — the map is drawn at a fixed orientation and the camera's view outline turns within it.
+This is the absolute reference that makes orbit safe: however far the heading has drifted, where your base
+is on the map has not moved. A minimap that turned with the camera would give a player who has orbited
+twice nothing to orient against.
+
+**No orders can be given through the minimap** in the MVP — a 320-pixel map of a 16,384-unit square puts
+fifty units under a fingertip, and an order placed that imprecisely is an order given by accident.
 
 ---
 
@@ -177,7 +193,7 @@ Five things are drawn over the scene. All of them are `GameClient` (R20).
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
-| **Minimap** | Top right, 240 × 240 | The square map, ships as owner-coloured dots, the camera's view as an outline. Tap to jump. |
+| **Minimap** | Top right, 240 × 240 | The square map at a **fixed orientation** (§5), ships as owner-coloured dots, the camera's view as an outline that turns within it. Tap to jump. |
 | **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
 | **Build** | Bottom right, thumb zone | Visible when your station is selected. Three targets — Miner, Fighter, Battleship — each with its cost, greyed when unaffordable. Below them the queue, each item tappable to cancel. |
 | **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
@@ -225,12 +241,19 @@ a jump-to-station were each considered and each declined.
 
 ### What is left to a hand and a screen
 
-Neither of these is a question. Both are **confirmations owed at M1**, and both are settled by using the
-thing rather than by arguing about it:
+None of these is a question. All are **confirmations owed at M1**, and all are settled by using the thing
+rather than by arguing about it:
 
-1. **Whether 192 pixels is the right circle** (§4).
+1. **Whether 192 pixels is the right circle** (§4) — **including what it takes when the camera is low.**
+   The circle is screen-space and pitch is coupled to zoom (§5), so zoomed in the camera rakes across the
+   plane and those 192 pixels cover a long, uneven wedge of world rather than a disc: ships far up the
+   frame get taken though they read as distant. Whether that is a surprise in the hand or is simply how a
+   perspective camera behaves is the same confirmation as the radius, not a separate one.
 2. **Whether pixel-doubled text reads acceptably** (§6). If it does not, the lever is the authored
    resolution — [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) — and not the text path.
+3. **Whether the eight-degree deadzone holds the heading still enough** (§5). If a session's worth of
+   panning still drifts the camera off true, **the lever is easing the heading to the nearest quarter turn
+   when a manipulation ends** — not removing orbit, which §5 gives the reasons for keeping.
 
 **Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
 ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a

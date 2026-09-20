@@ -39,7 +39,7 @@ rewrite damage, cost, build time, movement and the wire format in one change.
 
 ### The playfield is a plane
 
-**Ships move on a single plane. The camera moves in three dimensions.** Asteroids, wrecks and debris sit
+**Ships move on a single plane. The camera orbits and zooms above it.** Asteroids, wrecks and debris sit
 visually above and below it, so the volume reads as a volume, but nothing the simulation owns has a
 third coordinate. This is [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md) and it is the most
 consequential decision in the document.

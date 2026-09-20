@@ -4,10 +4,8 @@
 
 namespace Outpost
 {
-
 std::string_view CoreLibraryName() noexcept
 {
   return "GameCore";
 }
-
 } // namespace Outpost

@@ -19,7 +19,6 @@ using winrt::Windows::UI::Core::CoreWindow;
 
 namespace
 {
-
 void ReportLibrary(std::string_view _name)
 {
   std::string line{_name};
@@ -59,7 +58,6 @@ struct App : winrt::implements<App, IFrameworkViewSource, IFrameworkView>
 
   void Uninitialize() {}
 };
-
 } // namespace
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)

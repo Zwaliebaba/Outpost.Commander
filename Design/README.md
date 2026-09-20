@@ -35,8 +35,8 @@ Three things shape everything else, and each is an ADR because each is expensive
 
 **The playfield is a plane** ([`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md)). *Homeworld*'s third
 axis does not survive contact with R21 — a tap is a ray and a ray has no depth, and there is no second
-input to supply one. The camera keeps all three dimensions; the simulation has two. This is what makes
-the MVP reachable, and the tactical z-axis is what it costs.
+input to supply one. The camera still orbits and zooms over the plane; the simulation has two dimensions
+and nothing else does. This is what makes the MVP reachable, and the tactical z-axis is what it costs.
 
 **Replication is full self-contained snapshots**
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). R19 already ruled out lockstep by refusing

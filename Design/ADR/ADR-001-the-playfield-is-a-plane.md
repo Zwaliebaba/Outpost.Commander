@@ -25,9 +25,12 @@ which is cheaper to write once than to convert.
 **The simulation is two-dimensional.** Every entity's position is a point on one plane; there is no third
 coordinate anywhere in `GameCore` or `GameLogic`, and none on the wire.
 
-**The camera is three-dimensional** and orbits, pitches and zooms freely over that plane
-(`Design/Interface.md` §5). Asteroids, wrecks, debris and effects may be *drawn* above and below the plane
-so the space reads as a volume; none of it is simulated and the host does not know it exists.
+**The camera is not.** It always looks at a focus point *on* the plane, orbits around that point and
+zooms; **pitch is coupled to zoom rather than separately controlled, and it never rolls**
+(`Design/Interface.md` §5). That is four degrees of freedom — focus, heading, distance — and it is
+deliberately not a free camera: it is enough to read scale and silhouette, and no more. Asteroids,
+wrecks, debris and effects may be *drawn* above and below the plane so the space reads as a volume; none
+of it is simulated and the host does not know it exists.
 
 A move order is therefore one tap, resolved by intersecting one ray with one plane.
 

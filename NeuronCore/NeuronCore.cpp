@@ -6,10 +6,8 @@
 
 namespace Neuron
 {
-
 std::string_view CoreLibraryName() noexcept
 {
   return "NeuronCore";
 }
-
 } // namespace Neuron

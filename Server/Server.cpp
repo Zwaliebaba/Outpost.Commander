@@ -8,14 +8,12 @@
 
 namespace
 {
-
 void PrintLibraryName(std::string_view _name)
 {
   std::string line{_name};
   line.push_back('\n');
   std::fputs(line.c_str(), stdout);
 }
-
 } // namespace
 
 int main()

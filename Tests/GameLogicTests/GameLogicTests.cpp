@@ -4,7 +4,6 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameLogicTests
 {
-
 /// The placeholder every suite ships, because vstest reports "no tests found" as a pass and an
 /// empty suite is therefore worse than no suite. It proves the library linked and that its master
 /// include reached this translation unit. Delete it when the first real test lands, never before.
@@ -18,5 +17,4 @@ public:
     Assert::IsTrue(Outpost::LogicLibraryName() == "GameLogic");
   }
 };
-
 } // namespace GameLogicTests
