@@ -50,8 +50,9 @@ already the binding constraint.
 **There are no floats anywhere in the simulation**, which R16 requires and which `/arch:AVX2` on x64 makes
 load-bearing rather than tidy: the compiler may contract `a*b+c` into an FMA even under `/fp:precise`, and
 may contract differently at different optimisation levels, so a float in the simulation is a Debug and
-Release that disagree. ARM64 sets no such switch, so it is also a divergence between the two platforms CI
-builds. Integers cannot be reached by either.
+Release that disagree. ARM64 sets no such switch, so it is also a divergence between the two platforms the
+game runs on — and **CI builds `Debug|x64` only** (`AGENTS.md` §6), so nothing automated would catch
+either. Integers cannot be reached by either.
 
 ### The numbers
 
@@ -309,8 +310,9 @@ not a definition is arithmetic on the design's own starting values. These are ow
    and two-fragment snapshots survive contact — owed at M0, because it is the cheapest possible moment to
    find out the answer is no.
 4. **The frame time on an actual Surface Pro** at 1440 × 960, at one sample and at four, on **both x64 and
-   ARM64** — the Surface Pro 11 is a Snapdragon X part, so the ARM64 leg is a real target here rather than
-   a CI formality.
+   ARM64**. The Surface Pro 11 is a Snapdragon X part, so **ARM64 is the target platform — and CI builds
+   no ARM64 at all** (`AGENTS.md` §6). The platform this game is actually for is the one nothing automated
+   ever compiles, which makes this a standing obligation rather than a one-off measurement.
 5. **That the present step really takes the point-sampled path on the device**, confirmed by looking at it.
    R13's whole arrangement is worthless if a conversion error lands the scale at 1.99.
 6. **Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by

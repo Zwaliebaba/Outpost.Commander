@@ -17,7 +17,8 @@ type that appears in the entity, in the wire format and in every test.
 `/arch:AVX2` on x64 makes this load-bearing rather than tidy. It lets MSVC contract `a*b+c` into an FMA
 even under `/fp:precise`, and contract differently at different optimisation levels. A `float` in the
 simulation is therefore a Debug and a Release that disagree — and, since ARM64 sets no such switch, an x64
-and an ARM64 that disagree, on two platforms CI builds every push.
+and an ARM64 that disagree. **CI builds `Debug|x64` only** (`AGENTS.md` §6), so neither divergence would be
+caught by anything automated — and ARM64 is the target platform.
 
 ## Decision
 
@@ -72,6 +73,11 @@ None yet, and two are owed before this moves from Proposed to Accepted:
 2. **The determinism test passing across all four configuration and platform pairs** — the same seed and
    the same scripted orders producing the same state hash on x64 and ARM64, Debug and Release. Until that
    runs, every claim in this ADR about bit-identical behaviour is an argument rather than a fact.
+
+**Nothing in CI will run that second one.** CI builds `Debug|x64` and no more (`AGENTS.md` §6), so three of
+the four pairs — including every ARM64 one, which is the target device — are checked only by whoever
+remembers to build them. That is the standing cost of this ADR: **the property it exists to guarantee is
+precisely the one the pipeline does not watch.**
 
 The figures in the Decision are definitions and arithmetic on them, not measurements: ±2,097,152 is
 16,384 × 256 ÷ 2, 0.088° is 360 ÷ 4,096, and eight kilobytes is 4,096 × 2.

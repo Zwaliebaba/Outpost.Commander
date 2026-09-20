@@ -61,8 +61,8 @@ out longhand precisely so it can be redone against another panel rather than re-
 None yet. Two are owed:
 
 1. **The frame time at 1440 × 960 on an actual Surface Pro**, at one sample and at four, on **both x64 and
-   ARM64** — the Surface Pro 11 is a Snapdragon X part, so ARM64 is a real target here and not a CI
-   formality.
+   ARM64**. The Surface Pro 11 is a Snapdragon X part, so ARM64 is the target platform — and CI builds
+   `Debug|x64` only (`AGENTS.md` §6), so it is also the platform nothing automated ever compiles.
 2. **That the present step takes the point-sampled path on the device**, confirmed by looking at it rather
    than by reading the code. R13's whole arrangement is worthless if a conversion error lands the scale at
    1.99.
