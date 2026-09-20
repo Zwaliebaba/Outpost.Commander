@@ -66,14 +66,16 @@ tasks:
     status: todo
 
   - id: T5
-    title: Drop, grace, rejoin, pause and chat in the match
+    title: Drop, grace, rejoin and chat in the match
     intent: >
       A player who drops is kept as a seat under AI control for a grace period and rejoins to
-      their commander's view afresh; the host may pause; chat is text to all or allies.
+      their commander's view afresh; chat is text to all or allies. THERE IS NO PAUSE (ADR-020):
+      rejoining is what a commander does instead of stopping the world, which is why the grace
+      period is the ergonomic answer and not a consolation.
     project: GameShared
     depends_on: [T2]
     acceptance:
-      - The M1 protocol's rejoin path runs over UDP; the grace period and the AI hand-over are visible in the lobby and the log; pause and chat are orders the host applies; NetTests and the owner's run cover them
+      - The M1 protocol's rejoin path runs over UDP; the grace period and the AI hand-over are visible in the seat list and the log; chat is an order that reaches every seat it is addressed to
     status: todo
 
   - id: T6

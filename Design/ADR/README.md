@@ -23,6 +23,7 @@ One file per engineering decision, numbered in order (`AGENTS.md` §6). **ADR-00
 | [`ADR-017`](ADR-017-core-window-pixels-and-lifetime.md) | The core window's pixels and its lifetime: the swap chain sized in physical pixels through one tested conversion, raw-pixel scaling asked for first, suspend and resume handled, device removal recovered, and the frame-time readout moved out of the title bar the app no longer has | 2026-09-20 |
 | [`ADR-018`](ADR-018-client-server-libraries.md) | Six libraries on two axes -- layer and side: NeuronCore, NeuronClient and NeuronServer for the engine, GameShared, GameClient and GameLogic for the game; the edges between them; Tests/IntegrationTests as the one suite allowed both sides; and the five boundary defects the split found. Supersedes ADR-001's project table | 2026-09-20 |
 | [`ADR-019`](ADR-019-the-client-never-simulates.md) | The client links no simulation and there is no local host, so ADR-012's interest set is enforced by the linker; the cost is that a player with one machine cannot play, because loopback is isolated for a packaged app against an unpackaged host | 2026-09-20 |
+| [`ADR-020`](ADR-020-central-server-no-lobby-no-pause.md) | A central authoritative server: no lobby -- MatchSettings come from the server's own configuration and a joining client chooses nothing -- and no pause of either kind, recorded as a choice rather than an impossibility, because this tree has already built a working one. F10's menu becomes the quit menu and Escape never exits | 2026-09-20 |
 
 ## When to write one
 

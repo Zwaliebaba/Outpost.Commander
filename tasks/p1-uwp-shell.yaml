@@ -114,6 +114,8 @@ tasks:
       - "GameClient is built on NeuronCore, NeuronClient and GameShared, and BUILT_ON carries the new NeuronClient edge that ADR-018 pre-authorised"
       - "RunWindowed takes a presentation seam and no window type: the client size in physical pixels, a way to say the frame time changed, and a pump that returns false once the user has left. Nothing above the seam names CoreWindow or HWND"
       - "OutpostCommander/LocalHost.{h,cpp} is deleted, and OutpostCommander's reference set is NeuronCore, NeuronClient, GameShared and GameClient - GameLogic and NeuronServer are gone from it (R19)"
+      - "F10's menu loses Resume and becomes the quit menu of Interface.md §10 - Back, Leave match, Quit - in the SAME commit that deletes LocalHost, because it is the same fact twice: there is nothing left in this process to pause (ADR-020). The code that froze the pacer goes with it"
+      - "A grep over the tree for a pause that is not a production line at the device cap returns nothing outside Tests/NeuronClientTests/InputSubscriptionTests.cpp, where PAUSE names an arbitrary key"
       - "GameClientTests covers the HUD's panel layout and the match's order submission: the first tests over any of this code"
       - "CheckProjectFiles gains the R20 rule - no .cpp in the packaged project that names neither a winrt:: type nor CoreApplication - and the self-test proves it fires"
     verify:

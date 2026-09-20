@@ -5,9 +5,13 @@
 #include <array>
 #include <cstdint>
 
-// The lobby's values, fixed before the first tick and carried whole by every snapshot and replay
+// The match's settings, fixed before the first tick and carried whole by every snapshot and replay
 // (GameDesign.md §2 and §3; TechnicalDesign.md §4.9). Plain aggregates (AGENTS.md R8): nothing
 // here changes during a match, and the simulation reads them and never writes them.
+//
+// THERE IS NO LOBBY (ADR-020). These come from the server's own configuration, read by OutpostHost
+// at startup; a joining client is handed a free human seat and chooses none of them. The type did
+// not change when the lobby went -- only where the values come from.
 
 namespace Outpost
 {
@@ -18,7 +22,7 @@ inline constexpr std::uint8_t MAX_SEATS = 8;
 /// An alliance number no seat has: the answer when nobody has won.
 inline constexpr std::uint8_t NO_ALLIANCE = 0xFF;
 
-// SizeClass and SIZE_CLASS_CELLS are Content's (LandscapeDefinition.h): the landscape is defined below the lobby.
+// SizeClass and SIZE_CLASS_CELLS are LandscapeDefinition.h's: the landscape is defined below the match.
 
 /// What a commander starts with (GameDesign.md §2).
 enum class BaseLevel : std::uint8_t

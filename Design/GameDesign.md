@@ -34,7 +34,7 @@
 | Dominance | One side has held — an extractor built and served (§4) — at least 60% of the landscape's deposits for 10 continuous minutes | Large landscapes, where hunting the last builder across a landscape sixteen Gardens wide is not a game; it ships with the first Large landscapes (§12) |
 | Survival | The clock runs out; the side that extracted the most power wins | Short matches and AI stress tests |
 
-Alliances are fixed in the lobby; allied commanders share vision and victory and cannot attack each other.
+Alliances are fixed in the server's configuration; allied commanders share vision and victory and cannot attack each other.
 
 **What the three conditions mean exactly** (settled by `m1-vertical-slice/S11`, 2026-09-19, because
 the table above is a sentence each and stage 12 needs a rule):
@@ -60,7 +60,7 @@ the table above is a sentence each and stage 12 needs a rule):
 - **A decided match stops.** The simulation does not advance another tick once a condition is met;
   the state the deciding tick left is what a snapshot of a finished match holds.
 
-**Base, power and technology levels** are lobby settings with values. Base level: *nothing* is a builder and a command post; *small* adds two served extractors, a generator and a factory; *established* adds a lab, a repair bay and four hardpoints. Power level sets the starting stockpile: 400, 1,000 or 2,500. Technology level pre-completes the first zero, one or two tiers of the research tree.
+**Base, power and technology levels** are match settings with values. Base level: *nothing* is a builder and a command post; *small* adds two served extractors, a generator and a factory; *established* adds a lab, a repair bay and four hardpoints. Power level sets the starting stockpile: 400, 1,000 or 2,500. Technology level pre-completes the first zero, one or two tiers of the research tree.
 
 ---
 
@@ -127,7 +127,7 @@ For scale: the Garden, the smallest of the twelve Species maps (the largest is t
 
 **Power is a stockpile with a cap, and the cap cannot be parked around.** Income accumulates into a per-commander stockpile capped at 1,000 plus 500 per generator, so a turtled base cannot bank an unlimited army and a raided one loses something real. Cost is drawn when construction or production begins, not when a plan is placed; cancelling refunds the share of the cost not yet built, and any refund that would exceed the cap is lost — so power cannot be stored in unfinished builds. Cancelled research refunds nothing: the power was spent when it started.
 
-**Armies are bounded.** A commander may field at most 200 devices and 300 structures at once (a lobby setting: 100, 200 or 300 devices), and a factory whose commander is at the cap pauses. Eight commanders make 1,600 devices and 2,400 structures, inside the simulation budget `TechnicalDesign.md` §3 sizes for. There is no upkeep: the cap and the factory count are the brake, and the cap is what an AI that turtles runs into.
+**Armies are bounded.** A commander may field at most 200 devices and 300 structures at once (a match setting: 100, 200 or 300 devices), and a factory whose commander is at the cap pauses. Eight commanders make 1,600 devices and 2,400 structures, inside the simulation budget `TechnicalDesign.md` §3 sizes for. There is no upkeep: the cap and the factory count are the brake, and the cap is what an AI that turtles runs into.
 
 **Repair and demolition.** Repair costs power at a fraction of the build cost per hit point restored. Demolishing a structure refunds half its cost; a destroyed one refunds nothing.
 
@@ -234,7 +234,7 @@ The thresholds double, so a rank costs about as much as every rank before it put
 
 **The tree** is authored as a table with the same properties as the component tables: id, prerequisites, cost, time, effect. It is validated at compile time — no missing prerequisite, no cycle, every unlock names a real component. Proposed sizes: 30 items in the vertical slice, 150 in the complete skirmish game (M2), against roughly 400 in *Warzone 2100*; the slice's tree is the minimum that lets a commander reach every module class in §6 once.
 
-**Auto-research** is a lobby option: a commander who turns it on has each idle lab pick the cheapest available item. It exists for players who would rather fight than manage, and it is what the AI uses.
+**Auto-research** is a match setting: a commander who turns it on has each idle lab pick the cheapest available item. It exists for players who would rather fight than manage, and it is what the AI uses.
 
 ---
 
@@ -307,7 +307,7 @@ Structures with weapons take a target-priority stance only. Orders are given to 
 
 **The host runs the match; each player sees the part of it their commander can see.** One simulation runs, on the host — a player's own game hosting in-process, or the headless host executable — and every other machine holds a replica of what its commander is entitled to know, kept current by the host (owner, 2026-09-17: host-authoritative state replication; `TechnicalDesign.md` §5). A client is never sent an object its commander cannot see, so the fog of war is enforced by the host rather than trusted to the client, and a modified client sees nothing an honest one does not. Orders travel to the host, are validated there against what the commander owns, sees and can afford, and take effect on the next tick; a unit moves when the host says it has.
 
-**Lobby.** A host opens a match; players join by address, over a LAN or by direct IP. There is no master server in the first version and no NAT traversal, because both need a service somewhere. The lobby sets the landscape (a seed and a size class, or a stamped landscape by name), the base, power and technology levels, the victory condition, alliances, which seats are AI with which personality and difficulty, and which mods are enabled. The host hashes the content it loaded, mods included, and refuses a client whose content differs.
+**The server.** There is no lobby ([`ADR-020`](ADR/ADR-020-central-server-no-lobby-no-pause.md), 2026-09-20). A server runs a match from **its own configuration** and players join it by address, over a LAN or by direct IP; there is no master server and no NAT traversal, because both need a service somewhere. That configuration — read by `OutpostHost` at startup and validated by the same machinery the content tables go through — sets the landscape (a seed and a size class, or a stamped landscape by name), the base, power and technology levels, the victory condition, alliances, which seats are AI with which personality and difficulty, and which mods are enabled. A joining client is handed a free human seat by the host and chooses nothing. The host hashes the content it loaded, mods included, and refuses a client whose content differs.
 
 **In the match.** A player who drops is kept as a seat under AI control for a grace period and may rejoin, receiving their commander's view afresh; the host may pause; the match may be saved and resumed by the same players later. A long-running host that keeps a match open for weeks is the same machinery left running (owner, 2026-09-17: match-based, server-ready). Chat is text, to all or to allies.
 

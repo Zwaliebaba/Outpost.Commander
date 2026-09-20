@@ -1,6 +1,6 @@
 # ADR-013 — The application model: a packaged UWP app over a CoreWindow
 
-**Status:** Accepted; supersedes [`ADR-004`](ADR-004-renderer-foundation.md) on the window and on how the game is left, and nothing else in it
+**Status:** Accepted; supersedes [`ADR-004`](ADR-004-renderer-foundation.md) on the window and on how the game is left, and nothing else in it. **Corrected on 2026-09-20 by [`ADR-020`](ADR-020-central-server-no-lobby-no-pause.md)**: Escape never exits — it peels and then swaps the pointer's mode, as `Design/Interface.md` §7 and `NeuronClient/PointerMode.h` have it — and F10's quit menu is the way out.
 **Date:** 2026-09-20
 **Owner:** the owner, 2026-09-20
 
@@ -30,7 +30,7 @@ The third is the only one whose shape matches what the renderer already is: one 
 
 **The swap chain is created for the core window**, `IDXGIFactory2::CreateSwapChainForCoreWindow`, and the window is put into full screen by `ApplicationView::TryEnterFullScreenMode()` rather than by sizing a borderless window to the monitor. `MakeWindowAssociation` and `DXGI_MWA_NO_ALT_ENTER` go: there is no `HWND` to associate and no DXGI full-screen toggle to suppress.
 
-**Escape is the only way the game leaves, and it calls `CoreApplication::Exit()`.** `ADR-004` gave the window procedure both Escape and Alt+F4 because a `WS_POPUP` has no close box. A `CoreWindow` is not in that position: the shell owns Alt+F4 and the app's close, and `CoreWindow::Closed` arrives whether the game asked for it or not. So Escape keeps its meaning from `Design/Interface.md` §7 — peeled, not swallowed, and only the last press leaves — and `CoreWindow::Closed` is honoured wherever it comes from.
+**Escape does not leave; the quit menu does, and it calls `CoreApplication::Exit()`.** `ADR-004` gave the window procedure both Escape and Alt+F4 because a `WS_POPUP` has no close box. A `CoreWindow` is not in that position: the shell owns Alt+F4 and the app's close, and `CoreWindow::Closed` arrives whether the game asked for it or not. So **Escape keeps exactly the meaning `Design/Interface.md` §7 gives it** — peeled, not swallowed, and the last press swaps the pointer's mode rather than exiting, which is what `NeuronClient/PointerMode.h`'s `EscapePeel` enumerates and what `NeuronClientTests` pins. The way out is F10's menu (`Interface.md` §10), and `CoreWindow::Closed` is honoured wherever it comes from.
 
 ## Consequences
 

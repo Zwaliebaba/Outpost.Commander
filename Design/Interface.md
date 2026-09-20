@@ -50,7 +50,7 @@ The M1 interface, as fixed panels at the authored resolution. It exists because 
 | Command | 800, 792, 768, 288 | Yes |
 | Orders | 1568, 792, 352, 288 | Yes |
 | Match-end overlay | 560, 380, 800, 320 | On the match ending (§10) |
-| Pause menu | 760, 420, 400, 240 | On Escape (§10) |
+| Quit menu | 760, 420, 400, 240 | On F10 (§10) |
 
 **The world view is the whole frame.** The scene is drawn at 1920×1080 and the panels are drawn over it, so the camera never has a smaller viewport than the screen and a unit is never hidden behind a panel without the player being able to scroll to it. The consequence is that the bottom 288 rows and the two 40-row corners are obscured; picking refuses a ray whose origin is inside a panel rectangle (§5), so nothing is ever selected through a panel.
 
@@ -149,7 +149,7 @@ Bindings live in `Preferences.json` (`TechnicalDesign.md` §9) as a control name
 | Tab | Cycle the selection through devices of the same design |
 | Delete | Demolish the selected own structure, after a confirm click |
 | Escape | Cancel an armed order, then a modal panel, then swap the pointer between *aim* and *point* (§4) |
-| F10 | The pause menu (§10), from either pointer mode |
+| F10 | The quit menu (§10), from either pointer mode |
 | Enter | Open the chat line (§10) |
 | F1 | Toggle the panel overlay off, for a clean look at the world |
 
@@ -363,7 +363,7 @@ The elapsed match time as `mm:ss` from the replica's tick, and, when the victory
 
 **The match-end overlay** (560, 380, 800, 320) appears when the seat's victory state leaves `Playing`. It fills the panel frame, shows `VICTORY` in `accent` or `DEFEAT` in `warning` at 32 pixels — the one place text is drawn at a size other than 16, as a doubled 16-pixel glyph, which is exactly 1:1 at twice the scale and stays crisp — the match duration, and a Quit button. The simulation stops advancing once decided (`S11`), so the world behind it is frozen and the camera still moves, which is deliberate: a player wants to look at the field.
 
-**The pause menu** (760, 420, 400, 240) appears on **F10**, from either pointer mode: Resume and Quit, stacked. It was on Escape until 2026-09-19, when Escape became the pointer's mode key (§4); opening it puts the pointer in *point* mode, and Resume puts it back where it was. It pauses the local host, which M1 may do because the host is a thread in the same process (`G1`); it is not a simulation state and no order carries it, so §11 notes it as the thing that must change before a match has a second human in it.
+**The quit menu** (760, 420, 400, 240) appears on **F10**, from either pointer mode: Leave match and Quit, stacked, with Back above them. It was a *pause* menu with Resume until 2026-09-20, when [`ADR-020`](ADR/ADR-020-central-server-no-lobby-no-pause.md) removed the pause — and it was on Escape until 2026-09-19, when Escape became the pointer's mode key (§4). Opening it puts the pointer in *point* mode and Back puts it back where it was; **the world goes on running behind it**, because the world is not in this process. It is the only way out of the game: a core window has no close box and Escape never exits (§7).
 
 **The chat line** opens on Enter as a single-line field along the bottom of the world view, above the panels at y 760, taking `WM_CHAR` characters up to 128, and emits `Chat` on Enter. Messages appear as up to four lines of `bodyText` above it, each for eight seconds. M1 has one human, so this exists to prove the order kind travels rather than to be used.
 
@@ -393,7 +393,7 @@ Each of these is a real gap found while writing this document, with the task tha
 | 6 | The eight ranks' names, badges and percentages. `GameDesign.md` §6 says "a small percentage" and nothing more, and `S5` defers to a design that proposes none | `GameDesign.md` §6, then `C2` |
 | 7 | ~~The icon list: six cursors and one icon per structure, module, order and stance, with `Icons.dds` laid out as a grid of 32×32 cells~~ | **Done 2026-09-20 by `K4`**, and owned by `K4` rather than by `C4` for the reason row 15 gives: `C4` is `done`, and this table's own heading records what a live gap hung off a finished task costs. `Tools/MakeIconAtlas.py` writes the sheet as eight columns of four 32×32 cells — thirty-two icons, one a cell, every cell named — and `GameData\Interface.json`'s `icons` table says which cell is which, a structure and a module by their own content ids. **The art is a placeholder and says so**, exactly as `Tools/MakePlaceholderModels.py`'s boxes are: each icon is a distinct simple shape drawn as a single-channel mask, which is what §3 asks an icon to be and what today's imported banners are not, so a panel of buttons reads as a panel of different buttons and the one wired wrong is visible at a glance. A few shapes repeat where the placeholder has nothing better to say — the chevron is Move, the order Move and the Pursue stance — and the names are distinct, so the owner's art replaces one cell at a time |
 | 8 | Whether a structure's own "target priority" stance has options at all; `GameDesign.md` §8 names it and gives no set | `GameDesign.md` §8 |
-| 9 | A rally-point order kind, a design-delete order kind, and a pause that is part of the match rather than of the process. All three need a twenty-first order kind, which changes the wire | A later milestone; noted in `TechnicalDesign.md` §4.7 |
+| 9 | A rally-point order kind and a design-delete order kind. Both need a twenty-first order kind, which changes the wire. **A match pause was the third and is gone** ([`ADR-020`](ADR/ADR-020-central-server-no-lobby-no-pause.md), 2026-09-20): it is buildable — M1 built one — and a central server has no player entitled to stop the world for everyone | A later milestone; noted in `TechnicalDesign.md` §4.7 |
 | 10 | The minimap's scale rule for Medium and Large landscapes | The milestone that ships them (M2, M3) |
 | 11 | The survival clock's default duration | `GameDesign.md` §2 |
 | 12 | A **feature table** in `Content`. `GameShared/Feature.h`'s `design` is documented "Row index in the feature table" and no such table exists — `ContentTree` has none and `GameData` ships no `Features.json` — so a feature reaches a client naming a row of nothing and `RenderViewBuilder` cannot draw one | `m2-skirmish/T13`. **Ruled 2026-09-19**: scenery is M2's, so M1 ships no feature table. The gap stays open rather than being papered over — `GameShared/Feature.h`'s `design` still names a table that does not exist and `RenderViewBuilder`'s feature branch cannot be exercised in M1 |
