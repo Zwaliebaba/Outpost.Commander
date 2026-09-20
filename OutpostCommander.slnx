@@ -1,0 +1,22 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/ClientTests/ClientTests.vcxproj" Id="084594f7-0b41-432d-bbde-cb18428c8f40" />
+    <Project Path="Tests/ContentTests/ContentTests.vcxproj" Id="317ff961-038e-41e5-ac2d-7c4b85e13b9f" />
+    <Project Path="Tests/CoreTests/CoreTests.vcxproj" Id="0b22f7e0-e9b6-4c21-aa48-a9808c23d304" />
+    <Project Path="Tests/NetTests/NetTests.vcxproj" Id="faf74e53-2124-48d1-a2ba-3e12d9deb66e" />
+    <Project Path="Tests/ReplicaTests/ReplicaTests.vcxproj" Id="5997aff8-4812-418a-969d-6d281f73c88b" />
+    <Project Path="Tests/SimTests/SimTests.vcxproj" Id="24302afc-214d-4aa6-bb4a-425ebb87b093" />
+  </Folder>
+  <Project Path="Client/Client.vcxproj" Id="58c52ae8-8230-43c6-8951-58da3cd613dc" />
+  <Project Path="Content/Content.vcxproj" Id="2b4659a5-0642-400e-9682-22b38c8571f8" />
+  <Project Path="Core/Core.vcxproj" Id="b7c59afe-46dd-490d-9e4d-9316425bfdc5" />
+  <Project Path="OutpostCommander/OutpostCommander.vcxproj" Id="5e179a2e-e69b-4414-acfe-5e15c52f46aa" />
+  <Project Path="OutpostHost/OutpostHost.vcxproj" Id="7067e173-f690-47e9-817c-ab021fe24984" />
+  <Project Path="Net/Net.vcxproj" Id="7c728653-8880-47f2-9acc-b7b1696c6593" />
+  <Project Path="Replica/Replica.vcxproj" Id="2838f54e-d862-42d7-815c-2cd48f050ded" />
+  <Project Path="Sim/Sim.vcxproj" Id="76a96960-7a4a-4cb2-a7ed-7c543ae2761a" />
+</Solution>
