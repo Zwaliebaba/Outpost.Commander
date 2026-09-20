@@ -332,7 +332,19 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 
 **R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into the game, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site. Keyboard events are not subscribed. Mouse and pen have no compatibility path, deliberately: an interaction is named in the recogniser's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction. A key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot.
 
-**R22 and up are reserved.** A rule with no source behind it is a rule nobody can settle an argument with; do not invent one and do not import one from another tree.
+**R22 — The simulation is two-dimensional.** Every entity's position is a point on one plane. There is no third coordinate in `GameCore` or `GameLogic`, none in any wire record, and none in any test fixture. The camera has three dimensions and the renderer may *draw* asteroids, wrecks and effects above and below the plane; nothing the simulation owns has a height, and the host does not know that anything is drawn off it.
+
+This is not a preference about space games. **A tap is a ray, and a ray has no depth** — R21 has already refused the second input that would give it one, so a move order is one ray-plane intersection and cannot be anything else. A feature that needs a third coordinate needs a different input device, which R21 has settled. Source: [`Design/ADR/ADR-001`](Design/ADR/ADR-001-the-playfield-is-a-plane.md).
+
+**R23 — The client derives the world from the seed; nobody sends it one.** The procedural generator lives in `GameCore` and both sides run it: the host to populate the match, the client to draw the same asteroids in the same places. No map is ever transmitted.
+
+That is not the client simulating (R19). **A generator is a rule, and `GameCore` is where the rules both sides evaluate live** — the same arrangement that lets a client preview an order against the rules the host validates with. What the simulation *owns*, such as how much ore is left in an asteroid, is replicated like any other state. A generator that reaches a different answer on the two sides is a defect of the same class as a desynchronisation, so it obeys R16 in full: integers, fixed point, no unordered iteration, and the match's pinned PRNG. Source: [`Design/TechnicalDesign.md`](Design/TechnicalDesign.md) §3.
+
+**R24 — A ship is a composition, and every stat is derived.** Nothing in the simulation knows a ship type by name. It knows a **design** — a hull, an optional drive, and a component in each of the hull's slots — referred to by identity. Every stat is computed by **one pure integer function in `GameCore`** with a suite over it: mass is the hull plus its contents, speed is thrust over mass, cost and build time are sums.
+
+**A number baked onto a type is the defect this rule exists to prevent.** It is the one that makes research and a design interface impossible to add later without moving damage, cost, build time, mass, speed and the wire format in a single change — which is the definition of a change that never gets made. Source: [`Design/ADR/ADR-006`](Design/ADR/ADR-006-a-ship-is-a-composition.md).
+
+**R25 and up are reserved.** A rule with no source behind it is a rule nobody can settle an argument with; do not invent one and do not import one from another tree. R22 to R24 each cite the design document or decision record that is their source, and that citation is what makes them rules rather than opinions — see §6.
 
 ---
 
@@ -369,6 +381,7 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 - [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else.
 - [ ] No new third-party dependency, and no second NuGet package (R14); every `packages.config` still pins one version.
 - [ ] Nothing was added to `OutpostCommander` or `Server` that a suite could have covered (R20), and nothing in the client links the simulation (R19).
+- [ ] No third coordinate reached the simulation or the wire (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
 - [ ] The format check passes.
 - [ ] It builds `Debug|x64`, and every test suite runs and passes.
 - [ ] **CI builds nothing else**, so: `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally, or the report says plainly that they were not.
