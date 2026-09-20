@@ -7,9 +7,13 @@ code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is 
 the source and `AGENTS.md` is the rule, in that order.
 
 **Status: DRAFT, 2026-09-20.** Written against the brief and against `AGENTS.md`, starting from an empty
-`Design/` and a build shell with no game in it. **Fifteen questions have been put to the owner and
-answered**; three are open on the register and none blocks a milestone before M1. Six of the ten ADRs are
-Accepted; the four still marked Proposed are not things to write code against.
+`Design/` and a build shell with no game in it. **Eighteen questions have been put to the owner and
+answered, and none is open.**
+
+That is not the same as the design being right. What is left is **measurement rather than decision** —
+`TechnicalDesign.md` §9 lists six figures that cannot be obtained until there is code — and **four of the
+ten ADRs are still marked Proposed**, which the index says are not things to write code against. Those
+four are now the only thing between this design and being settled.
 
 ## The documents
 
@@ -18,7 +22,7 @@ Accepted; the four still marked Proposed are not things to write code against.
 | [`GameDesign.md`](GameDesign.md) | The game: the two lineages and which half the MVP is, the session and victory, the area and how it is generated, the economy, the station, ships as compositions, combat, the AI, where research goes, and the five milestones |
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, why there is no content pipeline, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: fifteen answered, three open, each with its options, what each costs, a recommendation where there honestly is one, and the milestone that needs it |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: eighteen answered across three rounds, none open, each with its options and what each costs — and, at the end, what separates an answered register from a correct design |
 | [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-010` |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
@@ -53,10 +57,13 @@ within a circle on screen, which is only a coherent idea because a design is a f
 removes band select, which leaves one-finger drag meaning panning and nothing else — the cleanest the
 gesture budget has been.
 
-## What M0 has to find out
+## What is checked by a hand rather than an argument
 
-Nothing on the register blocks M0 any more, but the first milestone is still there to answer questions
-rather than to build a game, and two of them are uncomfortable:
+The register is empty, but three of its answers are **confirmations owed against hardware**, not choices
+already validated: whether 192 pixels is the right selection circle and whether pixel-doubled text reads
+acceptably, both at M1, and whether the station's safe zone is too safe, at M3.
+
+And M0 exists to answer questions rather than to build a game. Two of them are uncomfortable:
 
 - **Whether a single-machine development loop is usable at all.** The host address is `127.0.0.1` by
   default ([`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)), which needs a loopback exemption

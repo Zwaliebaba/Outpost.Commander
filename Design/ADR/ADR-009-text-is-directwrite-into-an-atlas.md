@@ -59,6 +59,11 @@ larger one for the build buttons.
 hundred lines more than baking a font into a header, and a failure mode (no Segoe UI) that a header has
 not got.
 
+**The pixel doubling is accepted rather than tolerated** (`Design/OpenQuestions.md` Q18). Drawing the
+interface into the back buffer *after* the scale would buy pixel-perfect text, and was declined: it costs
+an explicit exception to R13 and a second place that knows how big the window is, which is the one thing
+R13 exists to keep singular.
+
 **What would reopen it:** text quality disappointing on the actual device, which is a measurement at M1
 and is on the register. The lever is the authored resolution rather than the text path — authoring at
 2880 × 1920 makes the scale 1:1 and the text native, at the cost of a 5.5-megapixel scene target and

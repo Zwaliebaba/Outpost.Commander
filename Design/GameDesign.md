@@ -162,6 +162,12 @@ somewhere to retreat to and turns an early raid into a tactical exchange rather 
 undefended station makes a raid a threat, which reads well on paper; in practice it means finding out your
 economy is dead rather than seeing it happen.
 
+**The safe zone stops well short of the home field, and that is the point.** At 400 units against a field
+about 1,500 out, **miners at the rocks are raidable** — so an early fighter has a job, and a defender has
+a real choice between escorting and expanding. Retreating to the station is not free: it costs the cargo
+run. Extending the range to cover the field would make the opening simply safe and the early game pure
+build-up, with nothing happening until someone reaches the middle.
+
 There are no other structures in the MVP. No turrets, no outposts, no research facility — the station's
 defence is a component in a slot, not a building you place.
 

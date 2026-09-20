@@ -216,16 +216,25 @@ honest consequence of a match that does not pause, and it is the same behaviour 
 
 ### What this document does not settle
 
-1. **What `Holding` over empty space means.** It is the one gesture left over after
-   [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md), and it is deliberately unassigned rather
-   than filled. A map ping is the obvious candidate and was declined for the MVP, because solo against AI
-   is the only configuration the MVP can test.
-2. **Whether 192 pixels is the right circle** (§4). Answered by a hand on a Surface Pro, not by argument.
-3. **What the text actually looks like** pixel-doubled on the device (§6) — and if it disappoints, the
-   lever is the authored resolution rather than the text path.
-4. **Anything a second player needs to say to a first.** There is no chat, no ping and no map drawing, and
-   with no keyboard the first two need a gesture and a vocabulary nobody has proposed. Out of the MVP
-   deliberately; the gesture for it is sitting unused at item 1.
+**`Holding` over empty space means nothing, and that is a decision rather than an omission.** It is the
+one gesture left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md). R21 hands out
+three verbs and this design has already refused a feature for want of one — **order queueing has no
+gesture and is out of the MVP because of it** (§4). An idle affordance costs nothing; a gesture spent on
+something marginal is not there when something real needs it. A map ping, a map-wide select-by-design and
+a jump-to-station were each considered and each declined.
+
+### What is left to a hand and a screen
+
+Neither of these is a question. Both are **confirmations owed at M1**, and both are settled by using the
+thing rather than by arguing about it:
+
+1. **Whether 192 pixels is the right circle** (§4).
+2. **Whether pixel-doubled text reads acceptably** (§6). If it does not, the lever is the authored
+   resolution — [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) — and not the text path.
+
+**Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
+ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a
+ping would have used is the one being held in reserve above.
 
 **How a client finds a host is settled and is not here:** it is a configuration value with a compiled-in
 default, there is no discovery and no address entry, and the consequences are

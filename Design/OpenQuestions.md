@@ -8,7 +8,8 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Fifteen answered, three open**, and nothing blocks M0.
+**Eighteen answered, none open.** What remains is measurement rather than decision — see the end of
+this file.
 
 ---
 
@@ -39,36 +40,39 @@ with no milestone can wait indefinitely.
 
 ---
 
+## Answered — 2026-09-20, third round
+
+Each of these confirmed the draft rather than changing it, which is worth recording: a question put and
+answered the way it was already written is a different thing from a question never asked.
+
+| | Question | Answer | Recorded in |
+|---|---|---|---|
+| **Q16** | Does the station's point defence cover the home asteroid field? | **No — the station only.** Miners at the field stay raidable, so early fighters have a job and there is a real choice between escorting and expanding. Retreating to the safe zone costs a cargo run, which is the exchange the point defence exists to create. Covering the field would make the opening safe and the early game pure build-up. | `GameDesign.md` §5 |
+| **Q17** | What does `Holding` over empty space mean? | **Nothing, deliberately.** R21 hands out three verbs and this design has already had to refuse a feature for want of one — order queueing has no gesture and is out of the MVP because of it. An idle affordance is cheap; a gesture spent on something marginal is not there when something real needs it. | `Interface.md` §7 |
+| **Q18** | Is pixel-doubled text acceptable? | **Yes, and M1 confirms rather than decides.** Large type, a dozen strings, and a doubled pixel at 267 PPI is a 133-PPI effective pixel — ordinary desktop density, not visible pixel art. Drawing the interface after the scale was declined: it would buy pixel-perfect text for an explicit exception to R13 and a second place that knows the window size. | [`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md), `Interface.md` §6 |
+
+---
+
 ## Open
 
-**Everything the design raised has been answered.** What is left are three questions the answers
-themselves created, and none of them blocks a milestone before M1.
+**Nothing. Every question this design raised has been put to the owner and answered.**
 
-### Q16 — What are the station's point-defence numbers? — **needed by M3**
+That is not the same as the design being right, and the difference is worth stating plainly. **What is
+left is measurement, not decision.** [`TechnicalDesign.md`](TechnicalDesign.md) §9 lists six figures that
+are owed and that cannot be obtained until there is code, three of them at M0. And three of the eighteen
+answers above are **confirmations to be checked against hardware rather than choices already validated**:
+whether 192 pixels is the right selection circle (Q8, M1), whether the text reads acceptably (Q18, M1),
+and whether the safe zone is too safe (Q16, M3).
 
-`GameDesign.md` gives 60 damage per second per mount at 400 units, two mounts, and a damage row of
-120/90/30 against small, medium and large. Those are starting values in exactly the sense §1 of that
-document means. **The thing to watch is whether the safe zone is too safe** — a station that shrugs off
-raiding entirely removes the pressure that makes the early game a game. Same class as Q14 and answered
-the same way, by playing M3.
+A design with no open questions and no measurements behind it is a design that has not been wrong yet.
+That is a different thing from a design that is right.
 
-### Q17 — What does `Holding` over empty space mean? — no milestone
-
-It is the one gesture left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md), and it
-is unassigned rather than filled. **A map ping is the obvious candidate** and was declined at Q13 because
-the MVP has nobody to ping. Leaving it empty is deliberate: a gesture spent on something marginal is a
-gesture unavailable when something real needs it, and R21 hands out only three.
-
-### Q18 — Does pixel-doubled text look acceptable on the device? — **needed by M1**
-
-The scene target is 1440 × 960 and the fit is an exact 2×, so a glyph rasterised at 24 authored pixels
-reaches the glass as 2 × 2 blocks. R13 anticipates this and names dense small type as where it hurts;
-this interface is large type with a dozen strings, and a doubled pixel at 267 PPI is a 133-PPI effective
-pixel, which is ordinary desktop density. **The argument says it is fine and only a screen can confirm
-it.** If it disappoints, the lever is the authored resolution rather than the text path — authoring at
-2880 × 1920 makes the scale 1:1 at the cost of a 5.5-megapixel scene target and multisampling four times
-as expensive, which would supersede [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) rather
-than [`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md).
+**Four of the ten ADRs are still marked Proposed** — [`ADR-002`](ADR/ADR-002-tick-and-numbers.md),
+[`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md),
+[`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) and
+[`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) — and the ADR index says plainly that a Proposed
+decision is not something to write code against. **That is now the only thing between this design and
+being settled.**
 
 ---
 
