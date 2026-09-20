@@ -97,6 +97,7 @@ tasks:
       - "InputRouterTests and InputSubscriptionTests pass with their bodies unchanged except for the event they construct: if either needed rewriting, the seam was not where ADR-001 said it was, and the notes say so"
       - FrameInput derives a frame's gestures from the queue once, after the one pump, as it derived a frame's keys
       - NeuronClientTests covers a manipulation spanning three frames and a tap that arrives in the same frame as its release
+      - "THE STAGGERED TWO-FINGER TAP IS TRIED DELIBERATELY on the first machine that has a recogniser. Interface.md 4 puts the peel on a two-contact Tapped and could not establish how much stagger the recogniser tolerates before it calls them two one-contact taps - which on the world with a selection standing is two Move orders, so the failure sends the army to wherever the player was cancelling. If the tolerance is too tight, the fallback is a two-finger HOLD or a permanent BACK button, and Interface.md 4 and 12 ruling 12 are corrected to say which"
     verify:
       - python3 Build/CheckProjectFiles.py
       - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
