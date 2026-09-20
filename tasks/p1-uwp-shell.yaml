@@ -13,6 +13,49 @@ summary: >
   way, and the plan changes shape if any of them answers wrong.
 
 tasks:
+  - id: P0
+    title: Compile the restructured tree, and fix what only a compiler can find
+    intent: >
+      ADR-018 moved roughly 300 files and rewrote fifteen project files with no MSVC in reach.
+      CheckProjectFiles verified every edge, every reference, every include directory and every
+      quoted include against the layering table, and CheckFormat and the plan validator are green -
+      but nothing has been compiled or linked. This is the first task that does, and it comes before
+      the refactor in P2 for a plain reason: debugging a signature change and a file move at the
+      same time is two problems wearing one hat.
+    project: OutpostCommander
+    depends_on: []
+    files:
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronServer/NeuronServer.vcxproj
+      - GameShared/GameShared.vcxproj
+      - GameClient/GameClient.vcxproj
+      - GameLogic/GameLogic.vcxproj
+      - OutpostCommander/OutpostCommander.vcxproj
+      - OutpostHost/OutpostHost.vcxproj
+      - Design/ADR/ADR-018-client-server-libraries.md
+    acceptance:
+      - "The solution builds Debug|x64 clean with warnings as errors, all fifteen projects, from a
+        fresh clone - no stale x64/ directory to hide a missing file"
+      - "Every one of the seven suites produces a DLL and vstest runs them all green; a suite that
+        did not build is not a suite that passed"
+      - "The Release|x64 build is done once by hand as well, because CI does not do it and the
+        restructure changed every project file (AGENTS.md §3)"
+      - "GameShared/VictoryState.h is reached by everything that used to reach Victory.h for the
+        enum, and nothing links Victory.cpp from the client side"
+      - "Each of the seven precompiled headers still includes the right library's pch.h: they were
+        copied and rewritten by path, not by a compiler"
+      - "ADR-018's Measurements section loses the sentence saying the tree is unbuilt, and records
+        what the compiler found instead - including nothing, if it found nothing"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+      - python3 Build\RunClangTidy.py
+    parallel_safe: false
+    status: todo
+
   - id: P1
     title: Prove the ground before anything is built on it
     intent: >
@@ -52,7 +95,7 @@ tasks:
       client has no business with either. Three includes put them there. This removes all three, and
       the eight headers behind them go back to GameLogic.
     project: GameShared
-    depends_on: []
+    depends_on: [P0]
     files:
       - GameShared/Placement.h
       - GameShared/Placement.cpp
@@ -167,7 +210,7 @@ tasks:
       test, and each is one character away from a defect no compiler will notice - which is the
       argument NeuronClient/PointerMode.h already makes about the sign of an aim delta.
     project: NeuronClient
-    depends_on: [P1]
+    depends_on: [P0, P1]
     files:
       - NeuronClient/DisplayPixels.h
       - NeuronClient/DisplayPixels.cpp
@@ -197,7 +240,7 @@ tasks:
       desktop static library and simply never calls it there - which is the whole of why ADR-014's
       boundary works.
     project: NeuronClient
-    depends_on: [P1]
+    depends_on: [P0, P1]
     files:
       - NeuronClient/SwapChain.h
       - NeuronClient/SwapChain.cpp
