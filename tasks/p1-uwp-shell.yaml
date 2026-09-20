@@ -54,7 +54,24 @@ tasks:
       - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
       - python3 Build\RunClangTidy.py
     parallel_safe: false
-    status: todo
+    status: in_progress
+    notes: >
+      Overtaken by CI rather than run by hand. The pull request's Debug|x64 job is a fresh checkout
+      every time, so the fresh-clone condition is met, and at 3771dd6 (run 35509762420) every step
+      passed: fifteen projects built with warnings as errors, all seven suites produced DLLs and
+      passed under vstest, clang-tidy was clean over every translation unit, the content validated,
+      and the capture gate wrote 92 frames with its four assertions intact.
+
+      Three defects found and fixed, in this order: four projects with no AdditionalIncludeDirectories
+      element at all, which is now also an include-missing rule in CheckProjectFiles and a 28th
+      fixture; VICTORY_STATE_COUNT left in GameLogic when the enum it counts moved to GameShared,
+      which no layering rule could have caught because no include was illegal; and a doc comment the
+      extraction regex cut in half. ADR-018's Measurements records all three.
+
+      STILL OPEN, which is why this is not done: the Release|x64 build. CI builds Debug only
+      (AGENTS.md §3), the restructure rewrote every project file, and the two configurations differ
+      in exactly the four things §3 names - so a Release that lost a setting would not show up here.
+      That is the owner's to run, and it is the whole of what is left.
 
   - id: P1
     title: Prove the ground before anything is built on it

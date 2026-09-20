@@ -75,4 +75,12 @@ GameLogic    ← NeuronCore, GameShared
 - **Where the files went**: `NeuronCore` 39, `NeuronClient` 87, `NeuronServer` 3, `GameShared` 61, `GameClient` 24, `GameLogic` 51, by `find | wc -l` after the move.
 - **`Sim`, `Content`, `Net` and `Replica` named no platform header**, checked in CI since M0, which is why none of them needed one line changed to move.
 
-**Not compiled.** There is no MSVC in reach; what is verified is `Build/CheckProjectFiles.py` clean over all fifteen projects — which checks every edge, every reference, every include directory and every quoted include against the table above — its self-test green on all 27 rules against fixtures renamed to the new table, `Build/CheckFormat.py` clean over 395 files, and all five task plans validating. **A link error is still possible and a compile error is not ruled out.** `P2` is the first task that builds this.
+**Compiled, linked and run, on CI, at `3771dd6` (run 35509762420).** All fifteen projects build `Debug|x64` with warnings as errors, all seven suites produce DLLs and pass under `vstest`, clang-tidy is clean over every translation unit, `OutpostHost --validate` accepts the content, and **the capture gate holds**: the 9,000-tick scripted match on WARP wrote 92 frames and 41.3 MB of artefacts, with its four assertions — a shot in flight, a hundred interface quads a frame, a device selected, something researched — unchanged and passing.
+
+**Three defects, and the checker found none of them**, which is the honest measure of what a layering checker is for and what it is not:
+
+1. `NeuronServer`, `GameShared`, `GameClient` and `GameLogic` carried no `AdditionalIncludeDirectories` element at all, so `GameShared/pch.h` could not find `Assertion.h`. `CheckProjectFiles` refuses a directory the table does not allow and had nothing to say about a legal edge with no directory; it does now, as the `include-missing` rule, and the self-test is green on 28 rules rather than 27.
+2. `VICTORY_STATE_COUNT` stayed in `GameLogic/Victory.h` when the enum it counts moved to `GameShared/VictoryState.h`, and `GameShared/Records.cpp` bounds a byte off the wire with it. **No rule could have caught this**: `Records.cpp` includes no illegal header, so the symbol was unreachable and the include was not. That is a compiler's job.
+3. The regex that extracted the enum cut its doc comment in half, because `///` on an empty line does not match `/// ` with a trailing space.
+
+**What is still owed**: a `Release|x64` build, which CI does not do (`AGENTS.md` §3) and which matters here because the restructure rewrote every project file. `p1-uwp-shell/P0` holds it.
