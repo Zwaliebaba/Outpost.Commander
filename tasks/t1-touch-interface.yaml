@@ -42,6 +42,36 @@ tasks:
       - python3 Tools/CheckTaskDag.py
     parallel_safe: true
     status: in_progress
+    notes: >
+      Written 2026-09-20. Interface.md 4, 6 and 13 are new, 3, 5, 7, 8, 9, 10 and 11 are amended,
+      and 12 ruling 3 is marked superseded and left unedited. It stays in_progress rather than
+      done because its last acceptance line is the owner's merge, and because one figure is still
+      the owner's to take.
+
+      THE NUMBER IS 64 AUTHORED PIXELS, and it is arithmetic rather than a measurement. Microsoft's
+      touch target guidance is 7.5 mm square; carried through FitAuthored that reduces to
+      a = 14400 / width_mm, the resolution and the DPI both cancelling. 64 clears 7.5 mm on any
+      display at least 225 mm wide and falls 0.1 mm short on a 10.5-inch Surface Go. The budget
+      that follows is width_mm / 7.5 targets across - 29 on the smallest plausible tablet.
+
+      TWO FINDINGS THAT CORRECT ADR-021, BOTH IN THE TREE'S FAVOUR. Touch DOES have a second
+      button: GestureSettings::RightTap is documented "Touch: press and hold", so 6's
+      default-order table survives with the button replaced by the gesture rather than redesigned.
+      And reopening ADR-004's authored resolution would have bought NOTHING - it cancels out of
+      the formula - so the risk UwpMigration.md ranked third was a phantom. Both documents carry
+      the correction.
+
+      WHAT COULD NOT BE DONE HERE. learn.microsoft.com is unreachable from this machine except
+      through the Learn MCP server, which served the API reference and the targeting guidance and
+      nothing else; so whether the Visual Studio Simulator still ships with VS 2026 is unverified
+      and is added to p1-uwp-shell/P1, which is already in front of a Windows machine. And nobody
+      has put a finger on glass: every row of 13's device table is arithmetic on a published panel
+      size, said so, and T6 replaces the one that matters with a measurement.
+
+      ONE THING CLOSED FOR FREE: 11 row 18, the modifier field on InputEvent. There is no modifier
+      under touch and the two acts it would have distinguished are two events the recogniser raises
+      separately. Row 21 is new, for the text input that 7.4's name field and 10's chat line both
+      needed and neither had anywhere to send.
 
   - id: T2
     title: InputEvent carries gestures, and the keyboard and mouse kinds are deleted
@@ -126,9 +156,9 @@ tasks:
       - Tests/GameClientTests/HudTests.cpp
       - Tests/NeuronClientTests/UiLayoutTests.cpp
     acceptance:
-      - "No interactive element is smaller than T1's measured target, checked by a test over the layout rather than by eye: UiLayoutTests walks every widget the HUD places and fails on one under the floor"
+      - "No interactive element is smaller than 64 authored pixels in either dimension (Interface.md 13, ruled by T1), checked by a test over the layout rather than by eye: UiLayoutTests walks every widget the HUD places and fails on one under the floor. There is no exception and the test is what keeps it that way"
       - "Every order kind and every panel the key table reached is reachable by touch, and the closing grep of T6 is what proves none was orphaned"
-      - "The interface still fits the authored 1920x1080, or T1's reopening of ADR-004 landed first and this builds at the new size"
+      - "The interface still fits the authored 1920x1080, which T1 established it must: the authored resolution cancels out of the target arithmetic, so ADR-004 is NOT reopened and growing the frame would buy nothing. What pays for the target is counts - a tab strip in the command and orders panels, a third off the portrait grid, halved list densities - and Interface.md 13 lists them"
       - "GameClientTests covers the layout at the authored size; the capture gate's floor of a hundred interface quads a frame still holds, because OutpostCapture draws the same HUD"
     verify:
       - python3 Build/CheckProjectFiles.py
