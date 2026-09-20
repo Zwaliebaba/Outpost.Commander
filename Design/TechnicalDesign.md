@@ -24,54 +24,60 @@ What the rules leave open, and this document decides: the projects, the simulati
 Eight projects, one solution at the root, `x64` only, toolset `v145`, as `AGENTS.md` §3 requires. The names are decided (owner, 2026-09-17), and [`ADR-001`](ADR/ADR-001-solution-layout.md) records the layout as built (2026-09-17). Arrows point at what a project is built on; every arrow points downward and none points sideways.
 
 ```
-            ┌────────────────────────────────────────────────┐
-            │  OutpostCommander (exe)      OutpostHost (exe)│
-            └───────┬──────────┬──────────────────────┬──────┘
-                    │          │                      │
-            ┌───────▼───┐  ┌───▼──────┐               │
-            │  Client   │  │ Replica  │               │
-            └───────┬───┘  └───┬──────┘               │
-                    │          │                      │
-                    │      ┌───▼────┐                 │
-                    │      │  Net   │◄────────────────┘      OutpostHost builds on
-                    │      └───┬────┘                        Net, Sim, Content, Core
-                    │          │                             and never on Client or Replica
-                    │      ┌───▼────┐
-                    │      │  Sim   │
-                    │      └───┬────┘
-                    │          │
-            ┌───────▼──────────▼────┐
-            │        Content        │
-            └───────────┬───────────┘
-                        │
-            ┌───────────▼───────────┐
-            │         Core          │
-            └───────────────────────┘
+        OutpostCommander                              OutpostHost / OutpostCapture
+        packaged UWP, a CoreWindow                    Win32 console
+                │                                              │
+    ┌───────────┼───────────┐                      ┌────────────┼───────────┐
+    │           │           │                      │            │           │
+┌───▼──────┐ ┌──▼─────────┐ │                 ┌────▼───────┐ ┌──▼─────────┐ │
+│GameClient│ │NeuronClient│ │                 │ GameLogic  │ │NeuronServer│ │
+│ replica, │ │  D3D12,    │ │                 │ the whole  │ │  Winsock,  │ │
+│ orders,  │ │  passes,   │ │                 │ simulation,│ │  the tick  │ │
+│ the HUD  │ │  input, UI │ │                 │ host, fog  │ │  pacer     │ │
+└───┬──────┘ └──┬─────────┘ │                 └────┬───────┘ └──┬─────────┘ │
+    │           │           │                      │            │           │
+    │     ┌─────▼───────────▼──┐              ┌────▼────────────▼─────┐     │
+    └────►│     GameShared     │◄─────────────┤     GameShared        │     │
+          │ content tables,    │              │ (the same library)    │     │
+          │ the wire format,   │              └───────────┬───────────┘     │
+          │ the vocabulary     │                          │                 │
+          └─────────┬──────────┘                          │                 │
+                    │                                     │                 │
+          ┌─────────▼───────────────────────────────────  ▼  ───────────────▼┐
+          │                        NeuronCore                                │
+          └──────────────────────────────────────────────────────────────────┘
+
+    GameClient never names GameLogic and OutpostCommander never links it: the
+    interest set of ADR-012 is a boundary the linker keeps (ADR-019). The two
+    halves meet in exactly two places, both harnesses that never ship --
+    Tests/IntegrationTests and OutpostCapture.
 ```
 
 | Project | Kind | Namespace | Holds | Built on |
 |---|---|---|---|---|
-| `Core` | static lib | `Neuron` | Fixed-point math, binary angles, integer geometry, the PRNG, hashing, slot maps, byte-stream reader and writer, the JSON reader and writer, the DDS and WAV readers and a BMP writer for captures, the UDP transport and its loopback twin, path resolution (executable directory, user profile), assertions, the one header that owns the Windows macro family | nothing |
-| `Content` | static lib | `Outpost` | The loaders and the in-memory tables: components, research, structures, the damage matrix, sound events, biomes, landscape definitions, stamps, models; the content hash; validation with file-and-line diagnostics | `Core` |
-| `Sim` | static lib | `Outpost` | The landscape, the world, orders and their validation, economy, research, production, movement and pathing, visibility, combat, the AI, the tick, the hash, snapshots | `Core`, `Content` |
-| `Net` | static lib | `Outpost` | The protocol: message records, the host endpoint that publishes each client's view of `Sim`, the client endpoint that receives it | `Core`, `Sim` |
-| `Replica` | static lib | `Outpost` | The client's world: the objects its commander can see, built from `Net`'s records, interpolated between frames, and turned into the render view | `Core`, `Content`, `Net` |
-| `Client` | static lib | `Neuron` | The Direct3D 12 renderer, the window, the input event system, XAudio2, the UI toolkit | `Core`, `Content` |
-| `OutpostCommander` | exe | `Outpost` | The game: application, main loop, camera, HUD, the local host for single-player and hosted matches | everything |
-| `OutpostHost` | exe | `Outpost` | The headless host: opens a match, runs the one simulation, publishes to clients | `Core`, `Content`, `Sim`, `Net` |
+| `NeuronCore` | static lib | `Neuron` | Fixed point, binary angles, integer geometry, the PRNG, hashing, slot maps, the byte stream, JSON, the DDS and WAV readers, bitmaps, logging, paths, the `Transport` seam and `LoopbackTransport`; and the aggregates the renderer consumes without knowing the game — `RenderView`, `HeightView`, `InterfaceDesc`, `ModelDesc` | — |
+| `NeuronClient` | static lib | `Neuron` | The Direct3D 12 renderer, the seven passes, the scene target and swap chain, the camera, the input event system, the interface primitives and fonts, the scale rule; XAudio2; the Windows Runtime datagram transport, from M3 | `NeuronCore` |
+| `NeuronServer` | static lib | `Neuron` | `TickPacer`, where wall time meets the tick and nowhere else (R16); the Winsock transport, from M3 | `NeuronCore` |
+| `GameShared` | static lib | `Outpost` | The content tables and their loaders, the content hash and validation; the wire format — records, messages, fragmentation, reassembly, the reliable stream; and the vocabulary both sides agree on: object ids, orders, designs, devices, structures, deposits, plans, features, seats, the fog grid, the landscape and its generator, `VictoryState` | `NeuronCore` |
+| `GameClient` | static lib | `Outpost` | The client's world: the objects its commander can see, built from the records, interpolated between frames and turned into the render view; selection, picking, order input, the placement preview; the client endpoint | `NeuronCore`, `GameShared` |
+| `GameLogic` | static lib | `Outpost` | The simulation entire — the world, orders and their validation, economy, research, production, movement and pathing, visibility, combat, the AI, the tick, the hash, snapshots; the host endpoint, the interest set, the client history the encoder keeps | `NeuronCore`, `GameShared` |
+| `OutpostCommander` | exe, **packaged UWP** | `Outpost` | The game: the framework view, the core window, the frame loop, the package's two directories. Windows Runtime glue and nothing else (R20) | `NeuronCore`, `NeuronClient`, `GameShared`, `GameClient` |
+| `OutpostHost` | exe, console | `Outpost` | The headless host: opens a match, runs the one simulation, publishes to clients | `NeuronCore`, `NeuronServer`, `GameShared`, `GameLogic` |
+| `OutpostCapture` | exe, console | `Outpost` | The headless capture CI drives: a scripted match, client and host in one process over `LoopbackTransport`, a frame written every hundredth tick. A harness; it never ships | everything |
 
 **The edges, and why each runs the way it does.**
 
-- **`Sim` includes no Windows header, no D3D header and no socket.** That is what makes a headless host possible and the simulation testable without a window, and it is the edge the layering checker guards hardest, because it is the one a convenience include breaks first.
-- **`Content` holds data and its loaders, not behaviour.** The row types (`ChassisDesc`, `ResearchItemDesc`, …) are plain aggregates (R8) filled from JSON; the validation that checks the tables lives beside them (§8). `Sim` reads `Content`; `Content` knows nothing of `Sim`.
-- **`Net` builds on `Sim`** because the host endpoint reads simulation state to publish it, and never on `Client`, `Replica` or the executables. The message records — the wire form of a device, a structure, a projectile, an event — are defined here and are the only thing the two ends share.
-- **`Replica` builds on `Net`** for those records and on nothing above. It is the second world model this design has, and it exists because only the host simulates (owner, 2026-09-17): a client draws what the host told it, not what it computed. It is a library rather than part of the executable so that "applying frames converges to the host's state" is a unit test (§10). **It is in the vertical slice** (owner, 2026-09-17): M1 runs the host thread and the loopback transport, and the client is a replica from the first playable build, so that replication meets its bugs where they are cheap; the review had proposed building the render view from `Sim` directly through the seam of §6.3 until M3, and the owner declined.
-- **`Client` does not build on `Sim` or `Replica`.** The executable builds a **render view** from the replica each frame — a plain list of what to draw — and `Client` draws it, so nothing in `Client` names a `Device`. That is R9's "the engine does not know the game" made structural.
-- **The executables hold what is genuinely theirs**: the frame loop, the camera, the HUD, the render-view translation, and in `OutpostCommander` the thread that hosts a match locally. Code in an executable cannot be linked into a test DLL, so anything in one that deserves a test is code that belongs in a library.
+- **The split is by layer and by side, and both halves of that matter** ([`ADR-018`](ADR/ADR-018-client-server-libraries.md)). The layer keeps the engine ignorant of the game (`AGENTS.md` R9); the side keeps the client ignorant of the simulation, which is the older and sharper rule — only the host simulates (owner, 2026-09-17), and now only the host *links* the code that does.
+- **`GameShared` holds nothing that decides anything.** The tables, the wire format, and the vocabulary a record is written in: an object id, an order, a design, a device's state, a structure, a deposit, a plan, the fog grid, the landscape. If a header there starts answering a question about a match rather than describing one, it belongs in `GameLogic`.
+- **`GameLogic` includes no Windows header, no D3D header and no socket.** That is what makes a headless host possible and the simulation testable without a window, and it is the edge the layering checker gates on (`Build/CheckProjectFiles.py`). `GameShared` and `GameClient` are held to the same rule.
+- **`GameClient` builds on `GameShared` and on nothing above it.** It is the second world model this design has: the objects its commander can see, built from the records, interpolated, and turned into a render view. **It does not build on `NeuronClient`** — the render view and height view are aggregates in `NeuronCore`, so the replica produces them and the renderer consumes them with no edge between the two. That property came from [`ADR-001`](ADR/ADR-001-solution-layout.md) and is kept deliberately.
+- **`NeuronClient` builds on `NeuronCore` alone.** `ADR-001`'s table let it build on `Content`, and three of its headers took the offer — which was an R9 break nobody had noticed until the layering table refused it. The two aggregates the renderer actually wanted, `InterfaceDesc` and `ModelDesc`, are in `NeuronCore` now; the renderer names no game concept at all.
+- **The executables hold what is genuinely theirs, and `OutpostCommander` holds less than that.** The packaged executable is Windows Runtime glue — the view source, the framework view, the event subscriptions, the package's two directories — and nothing a suite could have covered (`AGENTS.md` R20). The frame assembly, the camera controller and the HUD live in `GameClient` for exactly the reason `NeuronClient/PointerMode.h` gives about the sign of an aim delta.
+- **Two projects see both sides and neither ships**: `Tests/IntegrationTests`, because the split leaves no library above both halves and the three tests that prove they agree have nowhere else to live; and `OutpostCapture`, because a scripted match needs a host and a client in one process. Both are written into the layering table by hand, so that "everything" is a decision rather than a habit.
 
-**Namespaces** (owner, 2026-09-17): `Outpost` for the game, as `AGENTS.md` §1 illustrates; **`Neuron` for the engine**, so that the input, transport and XAudio2 code ported from Species moves without a rename, which `AGENTS.md` names as the reason the formatter settings were carried over. The transport lives in `Core` and is engine code; the protocol above it is game code, which is why `Net` is `Outpost`.
+**Namespaces** (owner, 2026-09-17): `Outpost` for the game, as `AGENTS.md` §1 illustrates; **`Neuron` for the engine**, so that the input, transport and XAudio2 code ported from Species moves without a rename, which `AGENTS.md` names as the reason the formatter settings were carried over. The transport seam lives in `NeuronCore` and its two socket implementations in `NeuronClient` and `NeuronServer`, all of them engine code; the protocol above them is game code, which is why the wire format is `GameShared` and the two endpoints are `GameClient` and `GameLogic`, all in `Outpost`.
 
-**Tests** are one `Tests/<Name>Tests` project per static library on the Microsoft Native Unit Test Framework, each sitting directly above its library with the same edges. `Sim`, `Net` and `Replica` tests are the bulk of the suite (§10).
+**Tests** are one `Tests/<Name>Tests` project per static library on the Microsoft Native Unit Test Framework, each sitting directly above its library with the same edges, **and one more**: `Tests/IntegrationTests`, the only suite allowed to see both sides, which is why it is the one row in the layering table written by hand rather than derived from a library's name. `GameShared`, `GameClient` and `GameLogic` test without a window; `NeuronClientTests` and `IntegrationTests` link `d3d12.lib` and `dxgi.lib` because what they cover does.
 
 **`Build/` and `Tools/`** hold Python that never ships: the three checkers `AGENTS.md` §6 names, a layering checker in the Species mould (an upward include fails, and there is no allowlist), the landscape tool of §4.4, the cost-efficiency script of `GameDesign.md` §8, and the importers of §8.
 

@@ -65,6 +65,8 @@ tasks/
   m2-skirmish.yaml          M2 to M4 are coarse: units of scope, split into units of work
   m3-multiplayer.yaml       when the previous milestone closes and the slice has numbers
   m4-frontier.yaml
+  p1-uwp-shell.yaml         the platform plan: a letter rather than a milestone number, because it
+                            cuts across the milestones instead of following them
   Archive/                  plans with nothing left open; still loaded so blocked_by resolves
     m0-foundation.yaml      closed 2026-09-19 by the owner's run (T22)
 ```
@@ -119,6 +121,7 @@ The milestone is done when its "proves" column in `GameDesign.md` §12 is true o
 | M1 Vertical slice | `tasks/m1-vertical-slice.yaml` | Two commanders on a Small landscape build, design, research and fight to annihilation over loopback, the client a replica | 29 | Units of work |
 | M2 Skirmish | `tasks/m2-skirmish.yaml` | Four commanders on Medium with the full catalogue and component set, personalities, save and resume, the look completed | 11 | Units of scope |
 | M3 Multiplayer | `tasks/m3-multiplayer.yaml` | Eight commanders over LAN and direct IP on a headless host; rejoin; Large and dominance; mods; replays | 10 | Units of scope |
+| P1 UWP shell | `tasks/p1-uwp-shell.yaml` | The game runs as a packaged UWP application over a `CoreWindow`, the client links no simulation, and the capture gate still passes | 11 | Units of work |
 | M4 Frontier | `tasks/m4-frontier.yaml` | Frontier-class landscapes at full performance; the neutral faction; commanders; legs and possibly lift | 7 | Units of scope |
 
 **M0 in one paragraph.** Three tasks start at once: the solution with `Core` and its tests plus ADR-001 for all eight projects (T1), the format checker (T3), and the landscape tool in Python (T16), which needs nothing and is the one piece of the simulation the agent can run and tune in the session. The other seven projects (T2), the build-shape checker (T4), clang-tidy's runner (T5) and the `Core` pieces — arithmetic, randomness and hashing, the slot map, the byte stream, JSON, bitmaps and waves, paths and logging, the transport seam with loopback — follow, each with its tests. The `Sim` skeleton (T15) puts the fourteen-stage tick, the hash, the snapshot and the three determinism tests in place before any system exists, and the landscape (T17) is the first system, tested bit for bit against the tool's golden fields. The `Client` foundation (T18) is the window, the device with WARP, the scene target presented scaled, the shader pipeline and the capture that writes BMPs, with ADR-002; input (T19) follows the Species design; the terrain pass and camera (T20) draw the landscape and write the fog-and-lighting ADR on captured frames; the capture job (T21) makes the frames CI artefacts. The owner's run (T22) closes it. **It closed on 2026-09-19** and the plan moved to `tasks/Archive/`; T22's notes carry the machine, the frame time and the WARP-against-hardware comparison, and name the one acceptance line left unmet.

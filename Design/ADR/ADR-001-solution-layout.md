@@ -1,6 +1,6 @@
 # ADR-001 — The solution and project layout
 
-**Status:** Accepted
+**Status:** Accepted; the project table, its edges and its test-project mapping are superseded by [`ADR-018`](ADR-018-client-server-libraries.md) (2026-09-20), which splits the six libraries by side as well as by layer, and what `OutpostCommander` is built on by [`ADR-019`](ADR-019-the-client-never-simulates.md) (2026-09-20), which takes the simulation out of the client's binary. Everything else here stands: the settings every project carries, the flat directories and their two sanctioned subdirectories, the platform-header rule, the `$(SolutionDir)` anchoring, and the namespaces `Neuron` and `Outpost`.
 **Date:** 2026-09-17
 **Owner:** the author, on the layout `Design/TechnicalDesign.md` §2 decided with the owner (2026-09-17)
 
