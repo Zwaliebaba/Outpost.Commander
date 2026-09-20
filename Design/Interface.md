@@ -541,7 +541,19 @@ Nothing here was measured on a device. Each row is arithmetic on a published pan
 
 It is 2× the 32-pixel icon, 4× the 16-pixel glyph cell, and exactly 30 columns across the authored frame with 16 rows down and 56 rows spare — so a layout can be built on a 64-pixel grid without fractions, which is what `T4` will want.
 
-**What it satisfies and where it falls short.** 64 authored pixels is 7.5 mm or better on any display whose used width is at least **225 mm** — a Surface Pro and everything larger, where it reaches 9.2 mm on a 13″ Pro. On a 10.5″ Surface Go it is **7.40 mm against the 7.5 mm asked for**, a shortfall of 0.10 mm, or 1.3%. That is stated rather than rounded away, and it is the owner's to accept or to exclude the device.
+**THE DEVICE IS A SURFACE PRO** (owner, 2026-09-20), and that settles it with room to spare. 64 authored pixels is 7.5 mm or better on any display whose used width is at least **225 mm**, and every Surface Pro ever made clears that — the narrowest, the 12″ Pro 3, is 253.6 mm:
+
+| Surface Pro | Used width | Needs | 64 px gives | Margin | Budget across × down |
+|---|---|---|---|---|---|
+| 12″ (Pro 3) | 253.6 mm | 57 | **8.45 mm** | +13% | 33 × 19 |
+| 12.3″ (Pro 4 – 7) | 259.9 mm | 56 | **8.66 mm** | +16% | 34 × 19 |
+| 13″ (Pro 8 – 11, Pro X) | 274.7 mm | 53 | **9.16 mm** | +22% | 36 × 20 |
+
+**The margin is the point, not the slack.** The platform asks 7.5 mm for chrome pressed deliberately and then says to go *larger* for targets pressed frequently — which is every order button in a real-time strategy game. 64 spends 13 to 22% on exactly that clause, on the device named, and it does so without the model needing to be pinned down: a 12″ Pro and a 13″ Pro take the same layout.
+
+**Why not drop to 56, which the device would allow.** It would buy four more columns of budget and cost every scrap of the frequency margin — 7.58 mm on a 12.3″ Pro is the minimum with nothing over it — and 1920 / 56 is 34.3, so the grid stops being exact. 64 divides the authored frame into 30 columns on the nose. The four columns are not worth either.
+
+**The 10.5″ Surface Go shortfall is now moot** and is left in the table above because the formula still says it: on a display that narrow, 64 is 7.40 mm, 0.10 mm or 1.3% under. It is not the device this is for.
 
 **Why not 72, which would clear every device in the table.** Because the budget is 29 targets across on the worst device and 72 would cut it to 26, and §9.1's own count — seventeen targets where the mouse interface had five — is already what forces a second tab. A floor that clears every conceivable panel by spending the interface's remaining room is not a safer floor.
 
@@ -565,8 +577,14 @@ Each of these is a count that fell, not a size that shrank (§3):
 
 **Neither is a substitute for the owner's own device**, which is why `t1-touch-interface/T6` is an owner's run on a touchscreen and not a green build.
 
+### What the Surface Pro settles, and what it raises
+
+**The letterbox is now a known quantity, and `T4` and `p1-uwp-shell/P9` both want it.** A Surface Pro is 3:2 and this frame is 16:9, so `FitAuthored` is width-limited and the bars are horizontal. On a 13″ Pro at 2880×1920 the scale is exactly **1.5**, the frame occupies 2880×1620, and **300 physical rows are dark** — 150 top and 150 bottom, 15.6% of the panel. On a 12.3″ Pro at 2736×1824 the scale is 1.425 and 285 rows are dark.
+
+Two consequences. The scale is a **clean 1.5 on a 13″ Pro**, which is not an integer multiple, so `AGENTS.md` §5's point-sampled path does not run and `P9`'s bilinear branch does — worth knowing before `P9` measures rather than after. And §4's rule that a contact in the letterbox is refused by every hit test makes those two bands **dead by construction**, which is the cheapest palm rejection this document will ever get.
+
 ### What is still owed
 
-**One measurement, and it is the owner's**: which device the game will actually be played on, and 7.5 mm on it in authored pixels — by the formula above from the panel's width, or by putting a finger on the glass, which is better. If that device's used width is 225 mm or more, 64 stands and nothing in this document moves. If it is smaller, the target rises and every count in the list above falls again, which is `T4`'s problem and is worth knowing before `T4` starts rather than after.
+**One judgement, and it is the owner's, in front of the game rather than in front of this document.** 7.5 mm is a recommendation for application chrome pressed deliberately; this is a game pressed quickly, under pressure. The 13 to 22% margin above is an argument that 64 is enough and not evidence that it is. `t1-touch-interface/T6` is where it becomes evidence, and if 64 proves too small **in a fight rather than at rest**, the answer is fewer things on the screen and not smaller ones (§3).
 
-**One judgement that is not Microsoft's to make.** 7.5 mm is a recommendation for application chrome pressed deliberately. This is a game pressed quickly, under pressure, by a hand that is also holding the tablet — which is the *frequency* adjustment the guidance names and does not quantify. If the owner's run finds 64 too small in a fight rather than at rest, the answer is fewer things on the screen, not smaller ones.
+**One thing the device raises that the mouse never did: posture.** A Surface Pro on its kickstand on a table is one interface; a Surface Pro held in two hands is another, and in landscape the grip falls on the left and right edges — which is where the minimap sits at (0, 792) and the orders panel at (1568, 792). The letterbox bands are top and bottom and do not help. **This document assumes the kickstand** because that is the posture a match-length session is played in, and `T6` is where the other one is tried. If held play matters, the answer is a margin down both edges, which costs the panel strip roughly two targets of width.

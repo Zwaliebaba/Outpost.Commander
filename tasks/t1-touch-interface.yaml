@@ -61,6 +61,13 @@ tasks:
       the formula - so the risk UwpMigration.md ranked third was a phantom. Both documents carry
       the correction.
 
+      THE DEVICE IS A SURFACE PRO (owner, 2026-09-20), which settles it: every model ever made is at
+      least 253.6mm wide, so 64 clears 7.5mm on all of them with 13 to 22 percent over. Nothing in
+      the document moves and T4 can lay out against 64 without waiting. It also pins the two
+      numbers p1-uwp-shell/P9 wants - a scale of exactly 1.5 on a 13-inch Pro with 300 rows of
+      letterbox, 1.425 on a 12.3-inch with 285 - and neither is an integer multiple, so AGENTS.md
+      5's point-sampled path does not run on this device.
+
       WHAT COULD NOT BE DONE HERE. learn.microsoft.com is unreachable from this machine except
       through the Learn MCP server, which served the API reference and the targeting guidance and
       nothing else; so whether the Visual Studio Simulator still ships with VS 2026 is unverified
@@ -212,7 +219,8 @@ tasks:
       - "The owner plays a full match on a touchscreen, joining a host on another machine, and accepts the interface by saying so in this task's notes - or names what is wrong and the plan gains a task"
       - "A grep over the whole tree for KeyDown, KeyUp, WM_CHAR, MouseButton, MouseMove, MouseRawMove, Wheel, AimedBy and AIM_RADIANS_PER_COUNT returns nothing outside OutpostHost and OutpostCapture"
       - "Every order kind was issued at least once during the run, and the notes list them; an order nobody could reach is the defect this plan exists to prevent"
-      - "ADR-021's Measurements gains the target size that was actually used and the device it was measured on, replacing the figure T1 owed"
+      - "ADR-021's Measurements records whether 64 authored pixels held up IN A FIGHT rather than at rest, which is the only part of T1's target the arithmetic could not settle. The device was fixed as a Surface Pro on 2026-09-20 and 64 clears 7.5mm on every model, so this confirms a number rather than discovering one - and if it is wrong the answer is fewer targets, never smaller ones"
+      - "The posture is tried both ways: on the kickstand, which Interface.md 13 assumes, and held in two hands, where the grip falls on the minimap at (0, 792) and the orders panel at (1568, 792). If held play matters, the panel strip owes a margin down both edges"
       - "m1-vertical-slice/G3's notes record that M1 was accepted on the interface this plan replaced, so that a later reader does not think the two runs contradict"
     verify:
       - python3 Build/CheckProjectFiles.py
