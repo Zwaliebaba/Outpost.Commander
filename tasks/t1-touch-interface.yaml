@@ -1,0 +1,192 @@
+# Schema: Design/ImplementationPlan.md §3    Validate: python3 Tools/CheckTaskDag.py tasks/t1-touch-interface.yaml
+# The decision is ADR-021. The gesture PLUMBING is p1-uwp-shell's (P5, P8); this plan is the interface.
+
+plan: t1-touch-interface
+title: The interface is driven by fingers, and by nothing else
+phase: 1
+summary: >
+  ADR-021 makes touch the only input the game takes. This plan is what that costs above the seam:
+  Design/Interface.md rewritten, the key table gone, aim mode deleted, the panels resized for a
+  contact that is not one pixel wide, and every order issued without a second button. The plumbing
+  below the seam - GestureRecognizer into Neuron::InputQueue - is p1-uwp-shell/P5 and P8, and this
+  plan is blocked on them rather than duplicating them.
+
+  T1 comes first and everything waits on it. It is a design task, the owner accepts it by merging,
+  and it carries one measurement the rest of the plan cannot start without: the touch target size
+  the authored 1920x1080 can actually carry.
+
+tasks:
+  - id: T1
+    title: Rewrite Interface.md for fingers, and measure what a target costs
+    intent: >
+      Design/Interface.md is 424 lines and 81 table rows of a mouse-and-keyboard interface: panel
+      positions in pixels, a table of keys, two pointer modes, and Escape peeled one press at a
+      time. ADR-021 supersedes §4, §6, §7 and §12 ruling 3 and leaves nothing in their place. This
+      writes what replaces them, in GestureRecognizer's vocabulary and no other, and it is the one
+      design task in this plan - the owner accepts it by merging, as m1-vertical-slice/D1 worked.
+    project: GameClient
+    depends_on: []
+    blocked_by: []
+    files:
+      - Design/Interface.md
+      - Design/ADR/ADR-021-touch-is-the-only-input.md
+    acceptance:
+      - "THE MEASUREMENT FIRST, because every panel in the document depends on it: the smallest touch target the authored 1920x1080 can carry, measured on the device the owner will play on and stated in authored pixels against the 16-pixel glyph and 24-pixel button §2 specifies today. If it does not fit, ADR-004's authored resolution is reopened and this task says so rather than shrinking a finger"
+      - "Every interaction is named in GestureRecognizer's terms and no others - Tapped, Holding, and the translate, scale and rotate of a manipulation. A gesture the recogniser does not raise is not in the document"
+      - "How the camera is driven, replacing aim mode: which manipulation pans, which scales, and whether anything rotates. §12 ruling 3 is marked superseded by ADR-021 rather than edited away"
+      - "How an order is issued with no second button and no hotkey, for all twenty order kinds; and how an armed order is cancelled, which is what EscapePeel meant when Escape was a key"
+      - "Whether the chat line survives. A CoreWindow app reaches the soft keyboard through CoreTextEditContext and InputPane, which is real work for a feature M1 built to prove an order kind travels rather than to be used"
+      - "How a developer without a touchscreen runs it: the Visual Studio Simulator, InjectTouchInput, or a named alternative. AGENTS.md §3's 'run it and look at it' is unsatisfiable otherwise and the whole plan leans on it"
+      - The owner accepts it by merging
+    verify:
+      - python3 Tools/CheckTaskDag.py
+    parallel_safe: true
+    status: todo
+
+  - id: T2
+    title: InputEvent carries gestures, and the keyboard and mouse kinds are deleted
+    intent: >
+      NeuronClient/InputEvent.h names nine event kinds, eight of them keyboard or mouse. They are
+      replaced by what a gesture is, and the seam itself does not move: an event becomes a record in
+      the same InputQueue a window procedure filled, because the frame decides what it meant
+      (TechnicalDesign.md §6.5). InputRouter and InputSubscription route whatever the record is, so
+      their suites stand unchanged - which is the test that this was a seam and not a coupling.
+    project: NeuronClient
+    depends_on: [T1]
+    blocked_by: [p1-uwp-shell/P5]
+    files:
+      - NeuronClient/InputEvent.h
+      - NeuronClient/InputQueue.h
+      - NeuronClient/InputQueue.cpp
+      - NeuronClient/FrameInput.h
+      - NeuronClient/FrameInput.cpp
+      - Tests/NeuronClientTests/FrameInputTests.cpp
+      - Tests/NeuronClientTests/InputRouterTests.cpp
+    acceptance:
+      - "InputEventKind names only what a gesture is, plus FocusLost. KeyDown, KeyUp, Character, MouseButtonDown, MouseButtonUp, MouseMove, MouseRawMove and Wheel are gone, and a grep over the tree finds none of them"
+      - "InputRouterTests and InputSubscriptionTests pass with their bodies unchanged except for the event they construct: if either needed rewriting, the seam was not where ADR-001 said it was, and the notes say so"
+      - FrameInput derives a frame's gestures from the queue once, after the one pump, as it derived a frame's keys
+      - NeuronClientTests covers a manipulation spanning three frames and a tap that arrives in the same frame as its release
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\NeuronClientTests.dll /Platform:x64
+    parallel_safe: false
+    status: todo
+
+  - id: T3
+    title: Delete aim mode, and drive the camera from a manipulation
+    intent: >
+      PointerMode.h's aim mode is the mouse driving the camera with no button held, the cursor
+      hidden and the ray through the screen's centre. None of that exists under a finger. The file
+      keeps the half that is still true - what a press cancels, innermost first - and loses
+      AIM_RADIANS_PER_COUNT, Aim and AimedBy with the tests that pin their signs.
+      THE SIGNS ARE STILL THE POINT. A manipulation's translate is one character away from an
+      inverted camera exactly as a raw mouse count was, so whatever replaces AimedBy is a pure
+      function in NeuronClient with a suite over it, for the reason PointerMode.h already gives.
+    project: NeuronClient
+    depends_on: [T1]
+    blocked_by: [p1-uwp-shell/P5]
+    files:
+      - NeuronClient/PointerMode.h
+      - NeuronClient/PointerMode.cpp
+      - NeuronClient/Camera.h
+      - NeuronClient/Camera.cpp
+      - Tests/NeuronClientTests/PointerModeTests.cpp
+      - Tests/NeuronClientTests/CameraTests.cpp
+    acceptance:
+      - "PointerMode's two modes are gone and so is every reference to them; what survives is the peel order, under whatever gesture T1 gave it"
+      - "The camera's response to a manipulation is a pure function with NeuronClientTests pinning the SIGN of every axis against a worked example, as AimedBy was pinned"
+      - "Pinch scales and drag pans in the directions T1 specified, checked by the owner moving fingers rather than by a test - the test cannot tell inverted from correct, which is why it was written down"
+      - A grep over the tree for AIM_RADIANS_PER_COUNT, AimedBy and PointerMode returns nothing
+    verify:
+      - python3 Build/CheckFormat.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\NeuronClientTests.dll /Platform:x64
+    parallel_safe: false
+    status: todo
+
+  - id: T4
+    title: Resize the panels to T1's target, and replace the key table with what is on the screen
+    intent: >
+      Every panel in Interface.md §2 is placed and sized for a pointer one pixel wide, and every
+      order in §7 is reachable by a key that no longer exists. This redraws the interface at T1's
+      measured target size and puts on the screen what the key table used to carry. It is the
+      largest diff in the plan and it is in GameClient, where the HUD landed with p1-uwp-shell/P3.
+    project: GameClient
+    depends_on: [T1, T2]
+    blocked_by: [p1-uwp-shell/P3]
+    files:
+      - GameClient/Hud.h
+      - GameClient/Hud.cpp
+      - GameClient/Operator.h
+      - GameClient/Operator.cpp
+      - NeuronClient/UiLayout.h
+      - NeuronClient/UiWidgets.h
+      - Tests/GameClientTests/HudTests.cpp
+      - Tests/NeuronClientTests/UiLayoutTests.cpp
+    acceptance:
+      - "No interactive element is smaller than T1's measured target, checked by a test over the layout rather than by eye: UiLayoutTests walks every widget the HUD places and fails on one under the floor"
+      - "Every order kind and every panel the key table reached is reachable by touch, and the closing grep of T6 is what proves none was orphaned"
+      - "The interface still fits the authored 1920x1080, or T1's reopening of ADR-004 landed first and this builds at the new size"
+      - "GameClientTests covers the layout at the authored size; the capture gate's floor of a hundred interface quads a frame still holds, because OutpostCapture draws the same HUD"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+      - x64\Debug\OutpostCapture.exe --warp --capture Slice 9000 Captures
+    parallel_safe: false
+    status: todo
+
+  - id: T5
+    title: Refuse every pointer that is not a finger, in one place
+    intent: >
+      ADR-021 gives mouse and pen no compatibility path. This is where that is true: one test at the
+      seam, on PointerDevice::PointerDeviceType, and a log line the first time a non-touch pointer is
+      dropped so that a player on a machine without a touchscreen learns why nothing happens rather
+      than concluding the game is broken. It is deliberately one place and deliberately trivial,
+      because ADR-021 names admitting mouse and pen later as the cheap reversal and a deletion is
+      only cheap if there is one thing to delete.
+    project: OutpostCommander
+    depends_on: [T2]
+    blocked_by: [p1-uwp-shell/P8]
+    files:
+      - OutpostCommander/FrameworkView.cpp
+      - Design/ADR/ADR-021-touch-is-the-only-input.md
+    acceptance:
+      - "A PointerPoint whose PointerDeviceType is not Touch is dropped before GestureRecognizer sees it, at exactly one site"
+      - "The first drop writes one line to the log naming the device type; the rest are silent, because a mouse moving produces hundreds a second"
+      - "Moving a mouse over the running game does nothing at all - no cursor, no hover, no selection - checked by doing it"
+      - ADR-021's Measurements records the site and the line, so that the reversal it describes is a known deletion
+    verify:
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+    parallel_safe: false
+    status: todo
+
+  - id: T6
+    title: The owner's run - a match played with fingers, and the closing grep
+    intent: >
+      What M1's G3 did for the simulation, this does for the interface: the owner plays a match on a
+      touchscreen against a host on another machine and accepts it, or does not. Nothing in this
+      plan is provable any other way - a test cannot tell an inverted pinch from a correct one, and
+      a green build says nothing about whether a finger can reach a button.
+    project: GameClient
+    depends_on: [T3, T4, T5]
+    blocked_by: [p1-uwp-shell/P11]
+    files:
+      - Design/Interface.md
+      - Design/ADR/ADR-021-touch-is-the-only-input.md
+      - tasks/m1-vertical-slice.yaml
+    acceptance:
+      - "The owner plays a full match on a touchscreen, joining a host on another machine, and accepts the interface by saying so in this task's notes - or names what is wrong and the plan gains a task"
+      - "A grep over the whole tree for KeyDown, KeyUp, WM_CHAR, MouseButton, MouseMove, MouseRawMove, Wheel, AimedBy and AIM_RADIANS_PER_COUNT returns nothing outside OutpostHost and OutpostCapture"
+      - "Every order kind was issued at least once during the run, and the notes list them; an order nobody could reach is the defect this plan exists to prevent"
+      - "ADR-021's Measurements gains the target size that was actually used and the device it was measured on, replacing the figure T1 owed"
+      - "m1-vertical-slice/G3's notes record that M1 was accepted on the interface this plan replaced, so that a later reader does not think the two runs contradict"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - python3 Build/CheckFormat.py
+      - python3 Tools/CheckTaskDag.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+    parallel_safe: false
+    status: todo

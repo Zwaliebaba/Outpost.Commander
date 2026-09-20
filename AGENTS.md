@@ -264,7 +264,9 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 
 **R20 — The packaged project holds Windows Runtime glue and nothing else.** No game logic, no arithmetic, no decision a test could pin lives in `OutpostCommander`; anything testable is pushed down into a library, which is what `GameClient` and `GameLogic` are for ([`ADR-014`](Design/ADR/ADR-014-platform-boundary.md)). This is the same argument `NeuronClient/PointerMode.h` already makes about the sign of an aim delta: a thing an Application holds is a thing no suite can reach.
 
-**R21 and up are reserved.** A design document does not only say what to build; some of what it says constrains how the code is *shaped* — which state a decision routine may read, what an emitted event has to carry with it, where tuning values live. Those are conformance rules with a design source, and they are written here as R21 onward when there is a design to cite, without renumbering anything above. Until then, do not invent one and do not import one from another tree: a rule with no source behind it is a rule nobody can settle an argument with.
+**R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into `Neuron::InputQueue` ([`ADR-021`](Design/ADR/ADR-021-touch-is-the-only-input.md)). Keyboard events are **not subscribed**, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site — mouse and pen have no compatibility path, deliberately and at a cost the ADR states. An interaction is named in the recogniser's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction: a key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot. `Design/Interface.md` is the design source once `t1-touch-interface/T1` has rewritten it; until then the ADR is.
+
+**R22 and up are reserved.** A design document does not only say what to build; some of what it says constrains how the code is *shaped* — which state a decision routine may read, what an emitted event has to carry with it, where tuning values live. Those are conformance rules with a design source, and they are written here as R22 onward when there is a design to cite, without renumbering anything above. Until then, do not invent one and do not import one from another tree: a rule with no source behind it is a rule nobody can settle an argument with.
 
 ---
 
@@ -294,9 +296,9 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 - [ ] No project's `ConformanceMode`, `LanguageStandard`, `WarningLevel` or `TreatWarningAsError` was changed, and no warning was silenced with a pragma.
 - [ ] Debug and Release still agree on everything §3 says they must.
 - [ ] No new third-party dependency, and no second NuGet package (R14).
-- [ ] Nothing was added to `OutpostCommander` that a suite could have covered (R20), and nothing in the client names `Sim` (R19).
+- [ ] Nothing was added to `OutpostCommander` that a suite could have covered (R20), nothing in the client names `Sim` (R19), and no input reaches the game except through the gesture seam (R21).
 - [ ] The checkers pass — or, for one not yet written, the report says which and why.
 - [ ] It builds Debug|x64, and every test suite runs and passes.
-- [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the game means deployed as a package and launched, and says which scale factor it was looked at on (`ADR-017`).
+- [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the game means deployed as a package and launched, and says which scale factor it was looked at on (`ADR-017`). Input is driven by touch, because there is no other kind (R21); on a machine without a touchscreen, say which of the Visual Studio Simulator or `InjectTouchInput` stood in.
 - [ ] `Design/ADR/` has a new file if the change *was* a decision.
 - [ ] Your report states plainly what you verified, what you assumed, and any rule here you had to bend.

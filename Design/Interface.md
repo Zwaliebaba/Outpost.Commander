@@ -4,6 +4,8 @@ The M1 interface, as fixed panels at the authored resolution. It exists because 
 
 **Status: DESIGN.** Written by `m1-vertical-slice/D1` on 2026-09-17. The owner's merge of its pull request is its acceptance, and §12 lists the rulings it takes that a reader may want to overturn before merging.
 
+**Status: §4, §6, §7 and §12 ruling 3 are SUPERSEDED as of 2026-09-20** by [`ADR-021`](ADR/ADR-021-touch-is-the-only-input.md), which makes **touch the only input the game takes**. The pointer modes, the hotkey table, the right-click orders and the aim ruling describe a mouse and a keyboard this client no longer subscribes to; they are left in place, unedited, because a superseded section is evidence and a deleted one is not. **`t1-touch-interface/T1` writes what replaces them**, in `GestureRecognizer`'s vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — and carries the measurement the rest of that plan waits on: the smallest target a finger can be given at the authored 1920×1080. Everything else here — the frame, the palette, the panels, the minimap, the readouts, the overlays — stands, and is redrawn at that target size rather than reinvented.
+
 **M2 restyles this, it does not replace it.** The Eclipse-shaped windows of `SpeciesCanvas.md` are M2's, and they carry the same content in movable windows. Everything here is written so that a panel's *content* survives that change and only its frame is redrawn.
 
 ---

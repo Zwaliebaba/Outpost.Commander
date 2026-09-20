@@ -1,6 +1,6 @@
 # ADR-013 — The application model: a packaged UWP app over a CoreWindow
 
-**Status:** Accepted; supersedes [`ADR-004`](ADR-004-renderer-foundation.md) on the window and on how the game is left, and nothing else in it. **Corrected on 2026-09-20 by [`ADR-020`](ADR-020-central-server-no-lobby-no-pause.md)**: Escape never exits — it peels and then swaps the pointer's mode, as `Design/Interface.md` §7 and `NeuronClient/PointerMode.h` have it — and F10's quit menu is the way out.
+**Status:** Accepted; supersedes [`ADR-004`](ADR-004-renderer-foundation.md) on the window and on how the game is left, and nothing else in it. **Corrected on 2026-09-20 by [`ADR-020`](ADR-020-central-server-no-lobby-no-pause.md)**: Escape never exits — it peels and then swaps the pointer's mode, as `Design/Interface.md` §7 and `NeuronClient/PointerMode.h` have it — and F10's quit menu is the way out. **Amended on 2026-09-20 by [`ADR-021`](ADR-021-touch-is-the-only-input.md)** on what device the client runs on and what it takes as input: the packaged application is for a **touchscreen**, a gesture is the only way into the input queue, and the keyboard is not subscribed — which overtakes the correction above a second time, because Escape is no longer a key at all and the quit menu is reached by a gesture.
 **Date:** 2026-09-20
 **Owner:** the owner, 2026-09-20
 
@@ -23,6 +23,8 @@ The third is the only one whose shape matches what the renderer already is: one 
 ## Decision
 
 **The game is an MSIX-packaged UWP application.** `OutpostCommander` becomes a `ConfigurationType` of `Application` with `ApplicationType` `Windows Store`, an `AppxManifest.xml`, package identity, and no entry point other than `CoreApplication::Run`. It is never run unpackaged, and nothing in the tree depends on it being runnable that way.
+
+**The client runs on a touchscreen device** — a tablet, a Surface, or a desktop with a touch panel — and the host is elsewhere on the network ([`ADR-019`](ADR-019-the-client-never-simulates.md), [`ADR-021`](ADR-021-touch-is-the-only-input.md)). “Desktop, packaged” in this ADR means the *device family*, `Windows.Desktop`, and not a machine with a mouse.
 
 **Its view is a `CoreWindow`, driven by `IFrameworkView`.** One type implements `IFrameworkViewSource` and returns one implementing `IFrameworkView`; `Initialize`, `SetWindow`, `Load`, `Run` and `Uninitialize` are the five methods, `SetWindow` is where the window's events are subscribed, and `Run` owns the frame loop and calls `CoreDispatcher::ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent)` once per frame. **That call replaces `Window::Pump` exactly**: it is the one drain of the queue per frame, and the events it dispatches enqueue into the same `Neuron::InputQueue` the window procedure enqueued into, for the same reason — a message becomes a record and the frame decides what it meant (`TechnicalDesign.md` §6.5).
 

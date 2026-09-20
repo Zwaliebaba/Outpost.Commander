@@ -3058,6 +3058,13 @@ tasks:
       is reachable in ordinary play. And NOTHING HAS EVER RUN THE WINDOWED BUILD: CI runs --capture
       only, so the panels have been drawn but the whole input path - clicks, the minimap, the pause
       menu, every hotkey - executes for the first time when the owner launches it.
+      AND THE INTERFACE THIS TASK ACCEPTS IS THE ONE ADR-021 REPLACES. On 2026-09-20 touch became
+      the only input the game takes, which deletes the clicks, the hotkeys and the pause menu named
+      just above, along with aim mode. This task is NOT rewritten and its acceptance is not
+      weakened: M1 proves the simulation and the replication over a slice, and it proves them
+      through whatever interface it had at the time. The touch interface is proved by
+      t1-touch-interface/T6's own run, on a touchscreen against a host on another machine, and the
+      two runs do not contradict each other - they are evidence about different things.
 
   - id: C5
     title: The content tree in the simulation, and the snapshot's binding to it
