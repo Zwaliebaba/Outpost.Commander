@@ -86,23 +86,24 @@ an instance of it.
 | Gesture | What it does |
 |---|---|
 | **One-finger tap** | The verb. What it does depends on what is under it — §4. |
-| **One-finger drag** | Pans the camera. This is the most frequent thing a player does, so it gets the most comfortable gesture. |
-| **One-finger hold, then drag** | Band select. The hold arms it, the rubber band follows the finger, release commits. |
+| **One-finger hold on a ship** | Selects that ship **and every ship of the same design within a circle centred on it**. |
+| **One-finger drag** | Pans the camera. **Unconditionally** — it has no second meaning and never has. |
 | **Two-finger pinch** | Zooms — and with it, pitches. |
 | **Two-finger rotate** | Orbits. |
 | **Two-finger drag** | Pans, identically to one finger. It comes free from the same manipulation and refusing it would be a surprise. |
 
-**Hold-then-drag is how band select coexists with panning**, and it is the standard answer to a drag that
-must mean two things. It costs about 300 milliseconds of latency before a band starts and it is not
-self-evident to a new player; the alternatives were putting panning on two fingers, which taxes the most
-frequent action, or a selection-mode toggle, which adds a mode and a button. It is on the register as the
-first thing to re-examine once anyone has actually used it.
+**One finger has exactly two meanings, separated by whether it moved**, which is as unambiguous as a single
+pointer gets. A tap is the verb, a drag is the camera, and the recogniser's own movement threshold decides
+which — so a slightly sloppy tap pans a few pixels instead of issuing an order. That is the right failure:
+an accidental pan costs nothing and an accidental move order costs a fleet.
 
-**There is no context menu and there is no long-press on a ship.** A ship is tapped to select it and the
-selection panel shows everything a menu would have; `Holding` over the playfield always means band select,
-wherever it starts.
+**There is no band select.** A finger cannot draw a rectangle without that drag meaning two things, and the
+hold-and-drag arrangement that would have allowed it consumed `Holding` — one of only three verbs R21
+gives — to buy a gesture that is not self-evident and is 300 ms slow.
+[`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)
+records why, and §4 says what replaces it.
 
----
+**`Holding` over empty space is unassigned**, deliberately. It is the one gesture this design has left over.
 
 ## 4. Selection and orders
 
@@ -117,17 +118,35 @@ key. With something selected:
 | Your own station | Opens the build panel; the selection is unchanged. |
 | One of your own ships | Replaces the selection with that ship. |
 
-A tap on empty space with **nothing** selected does nothing. **Deselecting is a band select that encloses
-nothing** — the gesture a player already has, rather than a button that exists for one purpose.
+A tap on empty space with **nothing** selected does nothing.
 
-A tap and a drag are separated by the recogniser's own movement threshold: `Tapped` does not fire if the
-pointer travelled, so a slightly sloppy tap pans a few pixels instead of issuing an order. That is the
-right failure — an accidental pan costs nothing and an accidental move order costs a fleet.
+### Selecting more than one
+
+**A hold on one of your ships selects it and every ship of the same design within a circle centred on it.**
+The circle is **screen-space, 192 authored pixels in radius** — four times the touch target, about a
+quarter of the frame's width — and it is **drawn while the finger is down** so there is no invisible rule
+about what is included. It is centred on the *ship* rather than the finger, because the finger is covering
+the ship. Own ships only, same design only, and the radius does not grow with the hold.
+
+**The camera is the group-size control.** Because the circle is screen-space, zooming in takes a squad and
+zooming out takes the fleet, using a gesture the player is already driving constantly. This is what a
+world-space radius would not give: the drawn circle would shrink on screen as the camera pulled back and
+stop meaning anything.
+
+**What this cannot do is select an arbitrary subset.** There is no way to take fourteen particular
+fighters; you take one ship, or a design within a circle, so splitting a fleet means two camera positions
+and two holds. At fifty ships across three designs that is a small loss, and it is stated rather than
+discovered.
+
+Beyond that, tapping a design group in the selection panel narrows an existing selection to it (§6), which
+is the complementary operation — the hold expands spatially, the panel filters by design.
+
+**Deselecting is the clear button on the selection panel.** There is no gesture for it: a tap on empty
+space is already a move order, and the band-that-encloses-nothing this document used to rely on no longer
+exists.
 
 Orders replace; there is no queueing and no shift-equivalent, because there is no shift. Order queueing
-needs a gesture nobody has proposed yet and it is not in the MVP.
-
----
+needs a gesture nobody has proposed and it is not in the MVP.
 
 ## 5. The camera
 
@@ -159,9 +178,9 @@ Five things are drawn over the scene. All of them are `GameClient` (R20).
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
 | **Minimap** | Top right, 240 × 240 | The square map, ships as owner-coloured dots, the camera's view as an outline. Tap to jump. |
-| **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it. |
+| **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
 | **Build** | Bottom right, thumb zone | Visible when your station is selected. Three targets — Miner, Fighter, Battleship — each with its cost, greyed when unaffordable. Below them the queue, each item tappable to cancel. |
-| **System** | Top centre, small | Connection state, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
+| **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48 (§1), and **the build buttons are 96 × 96** — 18 mm,
 twice the minimum — because they are the ones a player hits while something is exploding.
@@ -170,20 +189,43 @@ twice the minimum — because they are the ones a player hits while something is
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
 real cost — no free text layout, no free scrolling, no accessibility — and it is what R18 buys elsewhere.
 
----
+### Text
 
-## 7. What this document does not settle
+**Glyphs come from DirectWrite, rasterised into a texture atlas at startup**
+([`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md)). The family is Segoe UI, pinned, and a
+missing family is a startup failure rather than a substitution — a substituted font has different advance
+widths, and R13 requires every position in this document to be unconditional.
 
-1. **Whether hold-then-drag survives a real hand** (§3). Answered by using it, not by arguing about it.
-2. **What suspend and resume look like.** A packaged application is suspended when it loses the
-   foreground, and the match continues without it. Reconnecting is mechanically trivial because snapshots
-   are self-contained (`TechnicalDesign.md` §4) — but what the player *sees* while it happens is not
-   designed.
-3. **Fonts and glyphs.** There is no text renderer in this tree and no font in R14's dependency list. A
-   bitmap font baked into a header and drawn as instanced quads is the likely answer: no dependency, no
-   file, and exact at the authored size, which is the whole point of §1's 2× fit.
-4. **Anything a second player needs to say to a first.** There is no chat, no ping and no drawing on the
-   map, and with no keyboard the first two need a gesture and a vocabulary nobody has proposed.
+**Two sizes**: a body size for readouts and a larger one for the build buttons. Text is drawn into the
+scene target like everything else, so on the target device it reaches the glass pixel-doubled at the exact
+2× fit. At 267 PPI a doubled pixel is a 133-PPI effective pixel — ordinary desktop density — and this is
+large type with a dozen strings rather than the dense small type R13 warns about, so the cost is small.
+It is still a cost, and what it actually looks like is a measurement owed at M1.
+
+## 7. Suspend, resume, and what is still open
+
+**A packaged application is suspended when it loses the foreground, and the match runs on without it.**
+On resume the client reconnects and shows a **reconnecting** overlay until the first snapshot lands, then
+returns straight to play. That is mechanically free: snapshots are self-contained
+([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)), so there is nothing to catch up on and no
+resynchronisation to get wrong.
+
+**The player's fleet was at risk the whole time they were away**, and nothing mitigates that. It is the
+honest consequence of a match that does not pause, and it is the same behaviour a disconnected player gets
+(`GameDesign.md` §2).
+
+### What this document does not settle
+
+1. **What `Holding` over empty space means.** It is the one gesture left over after
+   [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md), and it is deliberately unassigned rather
+   than filled. A map ping is the obvious candidate and was declined for the MVP, because solo against AI
+   is the only configuration the MVP can test.
+2. **Whether 192 pixels is the right circle** (§4). Answered by a hand on a Surface Pro, not by argument.
+3. **What the text actually looks like** pixel-doubled on the device (§6) — and if it disappoints, the
+   lever is the authored resolution rather than the text path.
+4. **Anything a second player needs to say to a first.** There is no chat, no ping and no map drawing, and
+   with no keyboard the first two need a gesture and a vocabulary nobody has proposed. Out of the MVP
+   deliberately; the gesture for it is sitting unused at item 1.
 
 **How a client finds a host is settled and is not here:** it is a configuration value with a compiled-in
 default, there is no discovery and no address entry, and the consequences are

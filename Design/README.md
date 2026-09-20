@@ -6,10 +6,10 @@ engineering rule never decides a game mechanic. Where a design decision has to c
 code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is its source — the design is
 the source and `AGENTS.md` is the rule, in that order.
 
-**Status: DRAFT, 2026-09-20.** This is a first pass written against the brief and against `AGENTS.md`,
-starting from an empty `Design/` and a build shell with no game in it. Seven questions have been put to
-the owner and answered; eight are open on the register and **none of them blocks the first milestone**.
-Nothing here is settled until the owner accepts it, and half the ADRs are still Proposed.
+**Status: DRAFT, 2026-09-20.** Written against the brief and against `AGENTS.md`, starting from an empty
+`Design/` and a build shell with no game in it. **Fifteen questions have been put to the owner and
+answered**; three are open on the register and none blocks a milestone before M1. Six of the ten ADRs are
+Accepted; the four still marked Proposed are not things to write code against.
 
 ## The documents
 
@@ -18,8 +18,8 @@ Nothing here is settled until the owner accepts it, and half the ADRs are still 
 | [`GameDesign.md`](GameDesign.md) | The game: the two lineages and which half the MVP is, the session and victory, the area and how it is generated, the economy, the station, ships as compositions, combat, the AI, where research goes, and the five milestones |
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, why there is no content pipeline, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: seven answered, eight open, each with its options, what each costs, a recommendation where there honestly is one, and the milestone that needs it |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-008` |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: fifteen answered, three open, each with its options, what each costs, a recommendation where there honestly is one, and the milestone that needs it |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-010` |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than
@@ -44,7 +44,14 @@ the arithmetic behind them.
 **A ship is a composition** ([`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md)). The *Warzone 2100*
 model goes in before its interface does, because retrofitting it would move damage, cost, build time,
 mass, speed and the wire format in one change. The miner is the proof: it is not a ship type, it is a
-scout hull with a mining tool where a weapon would go.
+scout hull with a mining tool where a weapon would go — and so is the station, which is a hull with two
+point-defence mounts and no drive.
+
+It also paid for something unrelated. **Selection works by design**
+([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)): a hold takes every ship of the same design
+within a circle on screen, which is only a coherent idea because a design is a first-class identity. That
+removes band select, which leaves one-finger drag meaning panning and nothing else — the cleanest the
+gesture budget has been.
 
 ## What M0 has to find out
 
@@ -65,6 +72,10 @@ rather than to build a game, and two of them are uncomfortable:
 
 - **A change to what the game is** edits the relevant document in a pull request the owner approves. The
   document is the record; there is no separate changelog.
+- **A design decision that constrains the shape of code** is proposed as an `AGENTS.md` §5 rule citing the
+  section here that is its source. Three have been: **R22** the simulation is two-dimensional, **R23** the
+  client derives the world from the seed, **R24** a ship is a composition and every stat is derived. R25
+  and up are the reserved range now.
 - **A decision taken while building** — a format, a protocol, a subsystem's shape, an exception to a rule
   — is an ADR, written in the same commit as the code (`AGENTS.md` §6), and the design document it settles
   is updated in that commit to cite it.
@@ -72,7 +83,7 @@ rather than to build a game, and two of them are uncomfortable:
   into the document it belongs to.
 
 An ADR marked **Proposed** is a decision this design takes and the owner has not yet ruled on. **It is not
-something to write code against.** Four of the eight are Proposed today.
+something to write code against.** Four of the ten are Proposed today.
 
 ## What is deliberately not designed yet
 

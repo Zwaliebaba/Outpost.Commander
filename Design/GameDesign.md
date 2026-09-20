@@ -78,6 +78,13 @@ that.
 remaining ships from the field. The alternative — leaving a beaten player's ships alive to be hunted —
 turns the last ten minutes of every match into a search problem, and no amount of tuning fixes that.
 
+**A player who disconnects keeps their slot.** Their ships hold position and keep whatever autonomous
+behaviour they have, the slot is held indefinitely, and they may reconnect — which is mechanically free
+because snapshots are self-contained (`TechnicalDesign.md` §4), so there is nothing to catch up on. The
+cost is that an abandoned fleet sits on the board as free kills, and that is accepted rather than solved:
+an AI taking the slot is the better answer and it waits for M4, when there is an AI that can start from
+arbitrary mid-match state. Suspend and resume are the same path (`Interface.md` §7).
+
 There is no pause and no save in the MVP. A host with no clients keeps simulating.
 
 ---
@@ -138,16 +145,25 @@ docking geometry and a whole class of AI problem from the MVP. A mothership is a
 can be added later without changing anything here, because position is mutable in the entity model from
 the first line — the station simply never asks to move.
 
-The station does three things: it builds, it receives ore, and it dies. **Building is a single queue.**
+The station does four things: it builds, it receives ore, it shoots at whatever comes too close, and it
+dies. **Building is a single queue.**
 A design is selected, it is added to the queue, credits are deducted when the item starts, and the ship
 appears at the station's spawn point when the item finishes. There is no rally point in the MVP; new
 ships sit where they appear.
 
-A station has substantial hull and no weapon. It is a thing you defend, not a thing that defends itself
-— which is what makes a raid a threat rather than an inconvenience. This is worth revisiting the first
-time a match is actually played, and it is on the register in [`OpenQuestions.md`](OpenQuestions.md).
+**A station is a hull with slots, like everything else**, and it carries two `PointDefence` mounts. It
+has no drive, which is the only thing that distinguishes it from a ship — §6's model allows a hull without
+one, and giving the station hull a drive later is how a mothership arrives.
 
-There are no other structures in the MVP. No turrets, no outposts, no research facility.
+**The point defence kills a loiterer, not a fleet.** It is short-ranged and weighted against small and
+medium hulls (§7), so a lone fighter that parks near your station dies and a battleship group barely
+notices it. That is the whole intent: the area around the station is a **safe zone**, which gives miners
+somewhere to retreat to and turns an early raid into a tactical exchange rather than a free kill. An
+undefended station makes a raid a threat, which reads well on paper; in practice it means finding out your
+economy is dead rather than seeing it happen.
+
+There are no other structures in the MVP. No turrets, no outposts, no research facility — the station's
+defence is a component in a slot, not a building you place.
 
 ---
 
@@ -163,14 +179,16 @@ can do is allowed to live (`AGENTS.md` R19).
 
 ### The catalog
 
-Three hulls, two drives, three slot components. That is nine components, and it is deliberately just
-enough to prove the model rather than to make interesting choices.
+Four hulls, two drives, four slot components. That is ten components, and it is deliberately just enough
+to prove the model rather than to make interesting choices. **The station is one of the hulls**, which is
+what makes §5 possible without a second kind of thing in the simulation.
 
 | Hull | Slots | Hull HP | Mass | Size class |
 |---|---|---|---|---|
 | `Scout` | 1 | 200 | low | Small |
 | `Frigate` | 2 | 600 | medium | Medium |
 | `Cruiser` | 4 | 3,000 | high | Large |
+| `Station` | 2 | 12,000 | — | Large |
 
 | Drive | Character |
 |---|---|
@@ -182,8 +200,10 @@ enough to prove the model rather than to make interesting choices.
 | `MiningLaser` | Extracts ore. Does no damage. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
 | `PlasmaCannon` | 120 damage every two seconds per mount. | 1,400 |
+| `PointDefence` | 60 damage per second per mount. Station slots only. | 400 |
 
-**Speed is thrust divided by mass**, and mass is the hull plus everything in it — so a Cruiser with four
+**A drive is optional.** A hull with none does not move, which is what a station is. **Speed is
+thrust divided by mass**, and mass is the hull plus everything in it — so a Cruiser with four
 plasma cannons is slower than an empty one, and that falls out of the arithmetic rather than being
 written down anywhere. Turn rate derives the same way.
 
@@ -216,11 +236,17 @@ table is the whole of the rock-paper-scissors, and it is six numbers:
 |---|---|---|---|
 | `MassDriver` | 100 | 60 | 25 |
 | `PlasmaCannon` | 20 | 60 | 100 |
+| `PointDefence` | 120 | 90 | 30 |
 
-Mass drivers hurt small fast things and scratch capitals; plasma is the reverse. The counter to a
-battleship is not a better weapon, it is that a battleship moves at 50 units per second and a fighter
-moves at 140 — fighters pick the fight, kill miners and leave. Whether that reads as a counter in a real
-match is the first thing to test, and it is on the register.
+Mass drivers hurt small fast things and scratch capitals; plasma is the reverse, and point defence is the
+mass driver taken further — it shreds anything small that loiters and is irrelevant to a capital. The
+counter to a battleship is not a better weapon, it is that a battleship moves at 50 units per second and a
+fighter moves at 140 — fighters pick the fight, kill miners and leave.
+
+**Whether that reads as a counter in a real match is the first thing M3 is for**, and no mechanism is being
+added in advance to guarantee it. If it turns out false, the damage table is the cheapest lever and the
+price list is the next; tracking-and-evasion rolls and a minimum range on capital weapons are the two
+structural answers, and both were declined for now because this is a question you play rather than argue.
 
 **A weapon resolves its damage on the tick it fires.** There are no projectile entities in the
 simulation and none on the wire; the host emits a *fire event* which the client draws as a tracer or a

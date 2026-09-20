@@ -21,6 +21,7 @@ design onto them:
 | Packet header, fragmentation and reassembly | `NeuronCore` | Transport framing knows nothing about the game (R9), and the two sides must agree on it byte for byte. |
 | The UDP endpoint over `DatagramSocket` | `NeuronClient` | C++/WinRT, Windows Store family. |
 | Direct3D 12 device, swap chain, scene target, the scaled present | `NeuronClient` | R12, R13. |
+| The DirectWrite glyph atlas and the text quad renderer | `NeuronClient` | Engine: a glyph cache knows nothing about the game (R9). |
 | The `CoreWindow` seam: `GestureRecognizer` in, an input queue out | `NeuronClient` | R18, R21. The arithmetic under a gesture is a pure function with a suite over it. |
 | The UDP endpoint over Winsock2 | `NeuronServer` | Desktop family. |
 | Entities, the component catalog, derived stats, the damage table, the generator, every wire record | `GameCore` | Game vocabulary both sides must share. The client previews against these rules; the host validates with them (R19). |
@@ -242,6 +243,21 @@ colour. Three hulls, one station mesh, one asteroid mesh: five draws for the who
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimised
 until something measured says to.
 
+**Text is DirectWrite rasterised into an atlas we own**
+([`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md)),
+built at startup and drawn as instanced quads — one more draw. **No Direct2D and no `ID3D11On12Device`**,
+both of which R12 bans by name, which closes the route every D3D12 text sample takes. Coverage is
+rasterised as ClearType and the three subpixel values averaged into one channel, because subpixel output
+would arrive as colour fringing after the 2× scale. The font family is pinned and a missing family fails
+at startup rather than substituting, since a substituted font has different advance widths and R13 requires
+every layout number to be unconditional.
+
+**Suspend and resume cost nothing structurally.** A packaged application is suspended when it loses the
+foreground and the match runs on; on resume the client reconnects and the first self-contained snapshot
+restores everything, with a reconnecting overlay in between (`Interface.md` §7). There is no
+resynchronisation path to write, which is [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) paying
+for itself a second time. The same is true of a player who disconnects outright (`GameDesign.md` §2).
+
 ---
 
 ## 7. Content, and why there is no content pipeline
@@ -274,10 +290,10 @@ and the placeholder goes the day the first real test lands.
 | Suite | Owns |
 |---|---|
 | `NeuronCoreTests` | Fixed-point multiply and divide at the edges of `int32`, the sine table against a reference, integer square root, the PRNG's first thousand outputs pinned, fragmentation and reassembly including a lost fragment and a duplicate. |
-| `NeuronClientTests` | The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. |
+| `NeuronClientTests` | The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, and that a glyph's advance width survives the round trip. |
 | `NeuronServerTests` | The Winsock2 endpoint against a loopback peer: send, receive, a short read, a datagram larger than the buffer. |
 | `GameCoreTests` | Derived design stats for every catalog combination, the damage table, the generator's output pinned for a seed **and its four-fold symmetry asserted**, and every wire record encoded and decoded round trip. |
-| `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, and hit-testing a tap against the plane at several camera angles. |
+| `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles, and **the hold-selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including the boundary case of a ship exactly on the edge. |
 | `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory — and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
 
 ---
@@ -317,6 +333,8 @@ shaped:
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
 | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame is 1440 × 960 — an exact 2× point-sampled fit on the Surface Pro. |
 | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) | The host address is configuration with a compiled-in default; no discovery, and the loopback exemption is a development arrangement. |
+| [`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md) | Text is DirectWrite rasterised into a D3D12 atlas — no Direct2D, no D3D11On12, no dependency. |
+| [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md) | A tap selects one ship; a hold selects the same design within a screen-space circle. No band select, and one-finger drag is unconditionally panning. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in
 [`OpenQuestions.md`](OpenQuestions.md).
