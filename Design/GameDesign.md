@@ -64,6 +64,12 @@ collectors feeding a base, and the silhouette.
 **One area, four commanders, no lobby.** A match is four slots. Any slot is a human or an AI, and the
 match is configured on the host before it starts — there is nothing to negotiate once it is running.
 
+**The MVP ships two of those four slots** (§10). That is scope, not design: the generator's symmetry, the
+AI count and the snapshot's per-player blocks are all sized by a runtime player count, so the third and
+fourth slots are a configuration value rather than a change. What two slots buy is a match of about five
+minutes instead of twenty, which is the only mechanism this project has for answering the balance
+questions — twenty matches in an evening, rather than one match and a set of opinions.
+
 **A solo match against three AI players is a first-class configuration**, and it is the only way the game
 is testable before there are four people to test it with. It is not a single-player *mode*: the
 architecture is unchanged, the host is still a separate process, and the client still links no
@@ -96,19 +102,25 @@ and the client run (`TechnicalDesign.md` §3). The client is not *told* the map;
 takes a large static payload off the wire and means the two sides cannot disagree about where an
 asteroid is.
 
-**It is four-fold rotationally symmetric about the centre.** One quadrant is generated and copied three
-times at 90°, 180° and 270°. This is the cheapest possible fairness guarantee: every player's start is
-the same start, so no balance analysis is needed and no seed can be unlucky. It is also visibly
-artificial, and that is the trade — a procedural generator that is *fair* without being symmetric is a
-research project, and this is an MVP.
+**It is rotationally symmetric about the centre, to the player count.** At four players one quadrant is
+generated and copied at 90°, 180° and 270°; **at the MVP's two players one half is generated and copied at
+180°**, which on integer positions is a negation and therefore exact. This is the cheapest possible
+fairness guarantee: every player's start is the same start, so no balance analysis is needed and no seed
+can be unlucky. It is also visibly artificial, and that is the trade — a procedural generator that is
+*fair* without being symmetric is a research project, and this is an MVP.
+
+**M0 and M1 run one fixed seed with a hand-checked layout.** The generator is still `GameCore` code that
+both sides run (R23); it simply has one input until M2, which keeps a whole class of "is the map wrong or
+is the game wrong" question out of the first two milestones.
 
 What a seed produces:
 
 | | |
 |---|---|
-| **The square** | 16,384 world units on a side, centred on the origin. A world unit is nominally a metre. A battleship crosses it in about five and a half minutes, a fighter in two. |
+| **The square** | 16,384 world units on a side, centred on the origin. A world unit is nominally a metre. A fighter crosses it in about two minutes, a miner in under three. |
 | **Four start anchors** | One per quadrant, at a fixed radius from the centre. A station spawns on each. |
 | **A home field** | A small asteroid cluster within about 1,500 units of each anchor. Enough to open on, not enough to win on. |
+| **The anchor radius and the asteroid count** | Not fixed here. Both are inputs to the raid arithmetic in §7 and to the replication budget, and both are on the register (`OpenQuestions.md` Q26). |
 | **Contested fields** | Richer clusters toward the centre, reachable by everyone. This is the map's only real proposition. |
 
 Nebulae, wrecks, hazards and anything that affects sensors are not in the MVP. The generator's interface
@@ -125,11 +137,16 @@ That is the entire loop, and it is a loop rather than a number because the miner
 that can be shot. An idle miner with a full hold and a dead station is the economy failing in a way a
 player can see and do something about.
 
-**Asteroids are finite.** An exhausted asteroid stays on the map as a husk and a miner with no order
-retargets the nearest one with ore left. Finite asteroids are what make the contested fields worth
-contesting; an infinite home field turns the map into scenery and the match into pure military
-arithmetic. The cost is that a player who ignores their miners eventually finds them idle, which is a
-management burden the MVP accepts rather than solves.
+**Asteroids are finite from M3, and infinite before it.** Finite asteroids are what make the contested
+fields worth contesting; an infinite home field turns the map into scenery and the match into pure
+military arithmetic, so the mechanic matters and it arrives with the milestone that needs it. Until then
+an asteroid is an inexhaustible point, which removes husk state, miner retargeting and — because ore
+remaining is the only per-asteroid state the simulation owns — **the entire question of replicating
+asteroids at all** from M0 to M2 (`TechnicalDesign.md` §4).
+
+From M3: an exhausted asteroid stays on the map as a husk and a miner with no order retargets the nearest
+one with ore left. The cost is that a player who ignores their miners eventually finds them idle, which is
+a management burden the MVP accepts rather than solves.
 
 Starting values: a station begins with 1,000 credits. A miner carries 100 credits of ore, extracts at 20
 per second and so fills in five seconds; a round trip to the home field is roughly thirty seconds, which
@@ -155,9 +172,19 @@ ships sit where they appear.
 has no drive, which is the only thing that distinguishes it from a ship — §6's model allows a hull without
 one, and giving the station hull a drive later is how a mothership arrives.
 
-**The point defence kills a loiterer, not a fleet.** It is short-ranged and weighted against small and
-medium hulls (§7), so a lone fighter that parks near your station dies and a battleship group barely
-notices it. That is the whole intent: the area around the station is a **safe zone**, which gives miners
+**Its hull is 8,000, down from 12,000, because the siege unit was cut** (§10). The battleship was what a
+station was priced against; without it, ten fighters standing off at 500 units take about a minute to
+bring one down, which is a siege a player can mount and lose.
+
+**The point defence outranges nothing, and that is deliberate — say it out loud or it reads as a bug.**
+`PointDefence` reaches 400 units; a `MassDriver` reaches 600. **A fighter can therefore stand off at 500
+and shell the station untouched.** What the point defence protects is the *unloading area* — a raider that
+chases a fleeing miner home crosses 400 and dies in under six seconds — not the station itself. If it
+outranged the fighter instead, a station with no siege unit left in the MVP would simply be unkillable.
+
+**So it kills a loiterer, not a besieger and not a fleet.** It is weighted against small and medium hulls
+(§7), so anything that comes close dies quickly. That is the whole intent: the area around the station
+is a **safe zone**, which gives miners
 somewhere to retreat to and turns an early raid into a tactical exchange rather than a free kill. An
 undefended station makes a raid a threat, which reads well on paper; in practice it means finding out your
 economy is dead rather than seeing it happen.
@@ -185,16 +212,17 @@ can do is allowed to live (`AGENTS.md` R19).
 
 ### The catalog
 
-Four hulls, two drives, four slot components. That is ten components, and it is deliberately just enough
-to prove the model rather than to make interesting choices. **The station is one of the hulls**, which is
-what makes §5 possible without a second kind of thing in the simulation.
+Four hulls, two drives, three slot components. **The station is one of the hulls**, which is what makes §5
+possible without a second kind of thing in the simulation, and `Cruiser` stays in the catalog although
+nothing in the MVP builds it — the derivation function and its tests cover every hull, and reinstating a
+heavy design later is a table row (§10).
 
 | Hull | Slots | Hull HP | Mass | Size class |
 |---|---|---|---|---|
-| `Scout` | 1 | 200 | low | Small |
+| `Scout` | 1 | **450** | low | Small |
 | `Frigate` | 2 | 600 | medium | Medium |
 | `Cruiser` | 4 | 3,000 | high | Large |
-| `Station` | 2 | 12,000 | — | Large |
+| `Station` | 2 | **8,000** | — | Large |
 
 | Drive | Character |
 |---|---|
@@ -205,27 +233,35 @@ what makes §5 possible without a second kind of thing in the simulation.
 |---|---|---|
 | `MiningLaser` | Extracts ore. Does no damage. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
-| `PlasmaCannon` | 120 damage every two seconds per mount. | 1,400 |
 | `PointDefence` | 60 damage per second per mount. Station slots only. | 400 |
 
-**A drive is optional.** A hull with none does not move, which is what a station is. **Speed is
-thrust divided by mass**, and mass is the hull plus everything in it — so a Cruiser with four
-plasma cannons is slower than an empty one, and that falls out of the arithmetic rather than being
-written down anywhere. Turn rate derives the same way.
+**A drive is optional.** A hull with none does not move, which is what a station is. **Speed is thrust
+divided by mass**, and mass is the hull plus everything in it — so a `Frigate` carrying two mass drivers
+is slower than an empty one, and that falls out of the arithmetic rather than being written down anywhere.
+Turn rate derives the same way.
 
-### The three designs the MVP ships
+### The two designs the MVP ships
 
-The player's three buildable ships are not special cases in the code. They are rows in a table:
+The player's two buildable ships are not special cases in the code. They are rows in a table:
 
 | Design | Hull | Drive | Slots | Cost | Speed |
 |---|---|---|---|---|---|
 | **Miner** | `Scout` | `IonDrive` | 1× `MiningLaser` | 150 | 100 u/s |
 | **Fighter** | `Frigate` | `BurnDrive` | 2× `MassDriver` | 300 | 140 u/s |
-| **Battleship** | `Cruiser` | `IonDrive` | 4× `PlasmaCannon` | 2,400 | 50 u/s |
 
-**Note what the miner is:** it is not a ship type. It is a `Scout` with a mining tool where a weapon
-would go. That the user's three ships fall straight out of the component model without a single special
-case is the evidence that the model is worth building before its interface exists.
+**The battleship is cut from the MVP and the reason is arithmetic, not taste.** It cost 2,400 credits
+against an income of about 15 a second — **160 seconds of total income, spending nothing on defence** —
+while a strike force crosses the map in roughly 80 to 100 seconds. It was a unit that no match would
+ever contain, which made it untested content: one more mesh, one more component, one more damage row and
+one more branch in the AI, none of which anything would exercise. Worse, the question the design most
+wanted M3 to answer — whether speed counters mass (§7) — **could not have been answered at M3**, because
+the mass never appears. Cutting it makes that deferral honest instead of accidental, and ADR-006 makes
+reinstating it a table row.
+
+**Note what the miner is:** it is not a ship type. It is a `Scout` with a mining tool where a weapon would
+go — and the station is a `Station` hull with two point-defence mounts and no drive. That three things
+that look like three kinds of object fall straight out of one component model, with no special case
+anywhere, is the evidence that the model is worth building before its interface exists.
 
 ---
 
@@ -240,19 +276,40 @@ table is the whole of the rock-paper-scissors, and it is six numbers:
 
 | | Small | Medium | Large |
 |---|---|---|---|
-| `MassDriver` | 100 | 60 | 25 |
-| `PlasmaCannon` | 20 | 60 | 100 |
+| `MassDriver` | **70** | 60 | 25 |
 | `PointDefence` | 120 | 90 | 30 |
 
-Mass drivers hurt small fast things and scratch capitals; plasma is the reverse, and point defence is the
-mass driver taken further — it shreds anything small that loiters and is irrelevant to a capital. The
-counter to a battleship is not a better weapon, it is that a battleship moves at 50 units per second and a
-fighter moves at 140 — fighters pick the fight, kill miners and leave.
+Mass drivers hurt small things and scratch heavy hulls; point defence is the mass driver taken further —
+it shreds anything small that loiters and is irrelevant to anything large.
 
-**Whether that reads as a counter in a real match is the first thing M3 is for**, and no mechanism is being
-added in advance to guarantee it. If it turns out false, the damage table is the cheapest lever and the
-price list is the next; tracking-and-evasion rolls and a minimum range on capital weapons are the two
-structural answers, and both were declined for now because this is a question you play rather than argue.
+### The raid arithmetic, which was degenerate and is not any more
+
+**The first version of these numbers solved the game, and the fault was structural rather than a bad
+value.** A miner was simultaneously the cheapest unit, the lowest-hull unit, and the unit that took *full*
+damage from the cheapest weapon — three independently reasonable choices whose product was not checked:
+
+| | was | now |
+|---|---|---|
+| One fighter kills one miner | **4.0 s** | 12.9 s |
+| One fighter kills one fighter | 20.0 s | 20.0 s |
+| Defence slower than offence by | **5.0×** | 1.6× |
+| Three fighters kill six miners in | **8.0 s** | 25.7 s |
+| Miners lost fleeing 1,500 units to the station | **all six** | about 3½ |
+
+At 5× a raider destroyed 750 credits of miners in the time a defender destroyed 300 credits of fighter,
+before counting the lost income — so the dominant opening was an all-in strike, the dominant reply was the
+same, and the economy was decoration. **`Scout` hull is now 450 and `MassDriver` does 70% against Small**,
+which makes a raid an exchange rather than a slaughter.
+
+**A miner with no order that is fired upon flees to its station.** Thirty lines, and without it the
+defender must be watching the right part of a 16,384-unit map at the right moment to have any counterplay
+at all.
+
+**The counter to mass is still speed, and now nothing in the MVP tests it.** A `Frigate` moves at 140
+units per second and a `Cruiser` at 50 — strike craft pick the fight and leave — and
+[`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) makes disengaging actually work, because a
+ship out of range takes no further damage from a shot already fired. But the MVP builds no `Cruiser`, so
+**this is deferred rather than answered**, honestly and on the register.
 
 **A weapon resolves its damage on the tick it fires.** There are no projectile entities in the
 simulation and none on the wire; the host emits a *fire event* which the client draws as a tracer or a
@@ -310,11 +367,21 @@ almost no game and all of the things that can turn out to be impossible.
 
 | | | |
 |---|---|---|
-| **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots, interpolates, and draws one shape in Direct3D 12. A tap sends a move order and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable at all. **Everything after this is content.** |
-| **M1** | **The fleet** | Four stations, the three designs, the build queue, move orders, selection. Multiple clients on one host. |
-| **M2** | **The field** | The procedural generator, asteroid fields, miners, the credit loop. |
-| **M3** | **The fight** | Weapons, the damage table, destruction, elimination and victory. A stub AI that builds and attacks, so a match can be played by one person. |
-| **M4** | **The opponent** | The AI of §8, match configuration, one to three AI slots. |
+| **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots at 20 Hz, interpolates, and draws one shape in Direct3D 12 — **fullscreen**, world at 1440 × 960 scaled 2×, interface pass at physical resolution. A tap sends a move order, a local marker appears at once, and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the two-pass renderer, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable. **It also measures tap-to-visible latency, which is the number that decides how the game feels.** Everything after this is content. |
+| **M1** | **The fleet** | Two stations, the two designs, the current build item, move orders with ring assignment, selection by tap and by hold. Two clients on one host. Host-side command validation. |
+| **M2** | **The field** | The procedural generator on a real seed, asteroid fields, miners, the credit loop. Asteroids are inexhaustible. |
+| **M3** | **The fight** | Weapons, the damage table, the station's point defence, miner flight, destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
+| **M4** | **The opponent, and the other two slots** | The AI of §8; three and four players; the `Cruiser` reinstated as a design with its weapon and its damage row — the milestone that can finally answer whether speed counters mass. |
+
+**What M0 to M3 deliberately omit, and what each omission buys:** two players rather than four (a
+five-minute match, and a snapshot that fits one datagram); one fixed seed until M2 (no "is the map wrong
+or is the game wrong"); inexhaustible asteroids until M3 (no husk state, no retargeting, and no asteroid
+replication at all); the current build item rather than a queue (a two-byte field instead of a queue
+format); no `Cruiser` design; no minimap.
+
+**The reduced thing proves something the full one would not** — that the loop can be played twenty times
+in an evening. That is the only mechanism this project has for turning the balance questions in §7 and on
+the register into answers rather than opinions, and one long four-player match cannot supply it.
 
 After the MVP, in the order they are most likely worth doing: the designer screen, research, fog of war
 and the interest set, delta replication, formations, and a mobile mothership hull.

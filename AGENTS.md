@@ -8,7 +8,11 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 **Where these rules come from.** Naming, formatting and the compiler settings are carried over from two sibling repositories, `Outpost.Warzone` and `Nomad-Commander`, where they were measured against a large tree. That lineage is why [`.clang-format`](.clang-format) and [`.clang-tidy`](.clang-tidy) are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design or their decisions.**
 
-**What is authoritative, in order:** this file, then the surrounding code. For anything this file does not cover, match the file you are editing.
+**What is authoritative, in order:** this file, then [`Design/`](Design/README.md), then the surrounding code. For anything none of them covers, match the file you are editing.
+
+**This file says *how* code is written; `Design/` says *what* is being built.** A design document never overrides an engineering rule and an engineering rule never decides a game mechanic. Where a design decision has to constrain the shape of code it becomes a rule here citing the design section that is its source — R22 to R24 are the three that have. Decisions taken while building are ADRs under [`Design/ADR/`](Design/ADR/README.md); questions the design has not answered go on [`Design/OpenQuestions.md`](Design/OpenQuestions.md) **before** the code that needs them is written, not after.
+
+**Start at [`Design/README.md`](Design/README.md)**, then the milestone you are working on in `Design/GameDesign.md` §10.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
@@ -237,22 +241,18 @@ Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'
 
 **`OutpostCommander` is a packaged application and `Server` is not.** The client carries `ApplicationType` `Windows Store`, a `Package.appxmanifest` and package identity; the host is an ordinary console executable. `NeuronClient` and `GameClient` are Windows Store static libraries, compiled against the app family; `NeuronServer`, `GameLogic` and every suite are desktop builds. **A Windows Store static library carries no Windows Runtime metadata here** — `GenerateWindowsMetadata` is `false` in both, because no library in this tree declares a runtime class, and the C++/WinRT package would otherwise feed mdmerge a `.winmd` that nothing writes.
 
-**Running the game costs a deploy.** A packaged application is not started from a shell: it is built, deployed and launched, and in Visual Studio that is F5 on `OutpostCommander` with developer mode on. **A packaged client cannot reach a host on the same machine** without a loopback exemption. A developer gets one and should know it: Visual Studio's *Allow Local Network Loopback* debugging property adds one on every F5 deploy, and `CheckNetIsolation.exe LoopbackExempt -a -n=<packagefamilyname>` adds one by hand — so a client and a `Server` on one box work indefinitely on the machine that built them and nowhere else. **Before you conclude that same-machine play works, remove the exemption and try again.**
+**Running the game costs a deploy.** A packaged application is not started from a shell: it is built, deployed and launched, and in Visual Studio that is F5 on `OutpostCommander` with developer mode on. **A packaged client cannot reach a host on the same machine without a loopback exemption, which Visual Studio grants silently on every F5** — so same-machine play works on the box that built it and nowhere else. **Before you conclude otherwise, remove the exemption and try again.** [`Design/ADR/ADR-008`](Design/ADR/ADR-008-the-host-address-is-configuration.md) has the mechanics and why this is never a shipping configuration.
 
 **Build through the solution, never a `.vcxproj` directly.** Output paths and cross-project include directories are anchored on `$(SolutionDir)`, and MSBuild defines `SolutionDir` only for a solution build. Building a project file directly resolves every one of those paths against the *project* folder instead. **It does not fail — that is the problem.** Output lands in the wrong folder, so the next solution build links against whichever copy is staler, and every cross-project include path becomes a directory that does not exist. To build one project, use `/t:<ProjectName>` on the solution.
 
 ```powershell
-# Everything, from the repository root.
+# From the repository root. /t:<Project> builds one project, still through the solution.
 msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
 
-# One project, still through the solution.
-msbuild OutpostCommander.slnx /t:Server /p:Configuration=Debug /p:Platform=x64 /m /nologo
-
-# The other three pairs, which NOBODY ELSE BUILDS. CI builds Debug|x64 and no more, so these
-# three are yours: a break in any of them reaches main green and is found by whoever ships.
-msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
-msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /nologo
-msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=ARM64 /m /v:minimal /nologo
+# The other three pairs, which NOBODY ELSE BUILDS — CI builds Debug|x64 and no more, so a break
+# in any of these reaches main green and is found by whoever ships. Run all three before you do.
+foreach ($c in 'Release|x64','Debug|ARM64','Release|ARM64') { $p = $c -split '\|'
+  msbuild OutpostCommander.slnx /p:Configuration=$($p[0]) /p:Platform=$($p[1]) /m /v:minimal /nologo }
 ```
 
 **Run the tests**, through `vstest.console.exe`, over every suite the build produced. Every suite is an ordinary desktop test DLL and lands beside the other output at `<Platform>\<Configuration>\<Suite>.dll`, so running them costs no deploy:
@@ -303,10 +303,14 @@ These bind code as it is written from here. Several describe subsystems that do 
 
 **R13 — The client draws into a scene target and presents that, scaled.** Every pass draws into an off-screen colour target at the resolution the game is authored for, and the frame ends by presenting that target into the swap chain's back buffer, fitted to the window's client area with the aspect ratio preserved: **1:1 and unfiltered when the client area already matches, point sampling at an exact integer multiple, bilinear otherwise, letterboxed.** Exactly one place asks the window how big it is, and that is it; every layout, every glyph and every integer position behind it is unconditional. A pass that branches on the window size has misunderstood this rule.
 
-Two things bind whoever settles the authored resolution and whether the scene target is multisampled — neither is decided here:
+Two things bind anyone changing the authored resolution or the sample count:
 
-- **A back buffer cannot be multisampled, and that is the API's doing rather than a policy.** D3D12 supports only the flip-model swap effects, and DXGI does not multisample a flip-model back buffer — `SampleDesc.Count` must be 1. A *scene* target has no such limit: it may be created multisampled and resolved before the present step scales it. That, beyond running on a display too small to hold the authored resolution, is the main thing the indirection buys.
-- **A scale is not free, and text is what it costs.** A glyph authored as a bit pattern, or baked to an exact pixel height, reaches the glass resampled unless the scale is exactly 1. In a dense interface full of small type that is the real cost of the whole arrangement, which is why the 1:1 path exists and why it is worth keeping common.
+- **A back buffer cannot be multisampled** — D3D12 supports only the flip-model swap effects and DXGI will not multisample a flip-model back buffer, so `SampleDesc.Count` must be 1. A *scene* target may be, and is resolved before the present step scales it. That is the main thing the indirection buys.
+- **A scale is not free, and text is what it costs** — a glyph baked to an exact pixel height reaches the glass resampled unless the scale is exactly 1, which is why the 1:1 and exact-multiple paths exist and are worth keeping common.
+
+Both are settled for this game in [`Design/ADR/ADR-007`](Design/ADR/ADR-007-the-authored-frame-is-1440x960.md); do not re-derive them here.
+
+**One departure from "every pass" is recorded and is not a violation.** The *interface* draws after the scale, straight into the back buffer at physical resolution, laid out in authored coordinates through the same fit transform this rule already computes once — so no pass branches on the window size and no layout number becomes conditional. The world still draws into the scene target. [`ADR-011`](Design/ADR/ADR-011-the-interface-draws-after-the-scale.md) states why this rule's intent survives its letter being broken, and what would put the interface back.
 
 **R14 — Two dependencies, both named, and the list is closed.** The Windows SDK and the MSVC standard library — with one named exception: **`Microsoft.Windows.CppWinRT`, a NuGet package**, pinned to an exact version, referenced by the five C++/WinRT projects §2 lists and by no others. The rule is one *package*, not one project: adding it to a sixth project on that side is a line in `packages.config` and four in the `.vcxproj`, while adding a second package is a decision. If you believe one is unavoidable, propose it in your report with what it buys and what it costs — do not add it.
 
@@ -318,7 +322,15 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 **R16 — Determinism is a property of the simulation, and it is built, not hoped for.** Every project compiles `/fp:precise`, stated explicitly rather than inherited, and identically in Debug and Release — which is the half of this that actually protects a replay.
 
-**`/arch:AVX2` on x64 has a cost, and it is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. And it lets MSVC contract `a*b+c` into an FMA even under `/fp:precise`, which changes float results, and may contract differently at different optimisation levels. **That is survivable only because the simulation holds no floats**: the rest of this rule requires integers and fixed point there, so the arithmetic a replay depends on is exact and an FMA cannot reach it. Floats live in the renderer, where nothing is replayed. ARM64 sets no such switch, which is a second reason the simulation cannot depend on one: the two platforms must agree.
+**`/arch:AVX2` on x64 has a cost, and it is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. That is the real cost of the switch and it is the whole of it.
+
+**The simulation holds no floats, for three reasons:**
+
+- **`sinf`, `cosf`, `sqrtf` and friends are CRT implementations and are not correctly-rounded.** Nothing specifies them bit-identical between x64 and ARM64, or across CRT versions. That alone ends cross-platform float determinism and no compiler switch reaches it.
+- **ARM64 always has FMA**; x64 has it only under `/arch:AVX2`. Any explicit `std::fma`, or any library that contracts, differs by architecture whatever `/fp` says.
+- **`/fp:precise` rounds to source precision at four named points** — assignments, typecasts, arguments passed, values returned — and explicitly permits *"intermediate computations ... at machine precision"* in between. Register allocation therefore reaches the result, and register allocation is what an optimisation level changes.
+
+Integers are reached by none of the three. Floats live in the renderer, where nothing is replayed. **This rule once rested on FMA contraction under `/fp:precise`, which this toolset does not do**; [`Design/ADR/ADR-002`](Design/ADR/ADR-002-tick-and-numbers.md) records the correction and the citation.
 
 Inside the simulation, additionally: no `float` where a fixed-point or integer quantity will do (hold a fraction as integer hundredths and say so in the name, R6), no iteration over an unordered container whose order reaches the outcome, and **no wall-clock time — the tick is the clock.** Wall time maps to ticks at the seam, and that is the only place the two meet. Randomness is a pinned PRNG seeded from the match — never `std::random_device`, never a hash of an address. None of this is taste: a simulation that cannot reproduce from its seed cannot be replayed, cannot be debugged from a report of what happened, and cannot be measured twice.
 
@@ -354,16 +366,14 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 
 **Record decisions where the next person will read them.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — belongs in writing, in the same commit as the change that implements it, and this file is where the standing ones live. Figures are measured, not estimated: if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs. The Windows job verifies the toolchain, restores every `packages.config` it finds, builds the whole solution **`Debug|x64`** with `/warnaserror`, checks that every `*Tests.vcxproj` produced a DLL, and runs the suites. The Linux job checks formatting on a pinned clang-format.
-
-**`Debug|x64` and nothing more — know what that leaves open.** The owner decided this: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. The cost is that **two real things are gated by nobody**:
+**What CI gates: `Debug|x64` and the format check, and nothing else.** [`.github/workflows/build.yml`](.github/workflows/build.yml) is the definition and is not restated here — a prose copy of a workflow drifts, and this one already did. What matters is not the steps but **what they leave open**, which no file states for you:
 
 - **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimisation reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
-- **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform.
+- **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform. **The target device is an ARM64 part** (`Design/ADR/ADR-007`), so this is the platform the game is for and the platform nothing automated compiles.
 
-**The cheap way to close either gap is a static check on the project files, not a second build.** A script that reads the twelve `.vcxproj` files and asserts §3's table would cost seconds rather than minutes and would catch the drift Release was there to catch. It is not written. Until it is, §7's checklist carries this, and the pull request template asks whether you built the other three pairs — answer it honestly.
+The owner decided this scope: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. **The cheap way to close either gap is a static check on the project files, not a second build** — a script that reads the twelve `.vcxproj` files and asserts §3's table would cost seconds rather than minutes. It is not written. Until it is, §7 carries it and the pull request template asks whether you built the other three pairs; answer it honestly.
 
-**The toolchain is verified before it is used.** The first step of each Windows leg fails with a message naming exactly what is missing if the runner lacks the v145 toolset or the Windows Store application type. That is deliberate: the toolset is pinned in the project files and lowering it to get past a red build is not a fix.
+**A red toolchain step is not something to work around.** CI fails by name when the runner lacks the pinned toolset or SDK, deliberately: lowering the pin to get past it is not a fix (§3).
 
 **Commits and PRs.** Branch off `main`; small, focused commits with an imperative subject describing the change, not the process. One change per PR. CI must be green. Never commit build output, `.vs/`, `packages/` or `.user` files.
 
@@ -371,19 +381,36 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 
 ## 7. Before you hand work back
 
+**Always:**
+
 - [ ] Naming conforms to §1 — `_` on parameters, `m_` on class state, `UPPER_CASE` constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes. **Nothing checks this for you.**
 - [ ] Only the lines the task required were changed; no reformatting, no drive-by fixes.
-- [ ] New, removed or moved files are in the `.vcxproj` or `.vcxitems` **and** the `.filters` of every project involved.
-- [ ] No `.filters` gained a `Source Files` or `Header Files` filter — Visual Studio adds them back on its own (§2).
-- [ ] A new `.vcxitems` import was added to exactly one project per link closure (§2).
-- [ ] A new library has a master include, a `pch.h` that includes it, and a suite under `Tests/`.
-- [ ] No project's `ConformanceMode`, `LanguageStandard`, `WarningLevel` or `TreatWarningAsError` was changed, and no warning was silenced with a pragma.
-- [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else.
-- [ ] No new third-party dependency, and no second NuGet package (R14); every `packages.config` still pins one version.
-- [ ] Nothing was added to `OutpostCommander` or `Server` that a suite could have covered (R20), and nothing in the client links the simulation (R19).
-- [ ] No third coordinate reached the simulation or the wire (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
+- [ ] No new third-party dependency and no second NuGet package (R14); every `packages.config` still pins one version.
 - [ ] The format check passes.
 - [ ] It builds `Debug|x64`, and every test suite runs and passes.
-- [ ] **CI builds nothing else**, so: `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally, or the report says plainly that they were not.
-- [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the client means deployed as a package and launched. Input is driven by touch, because there is no other kind (R21); on a machine without a touchscreen, say what stood in.
-- [ ] Your report states plainly what you verified, what you assumed, and any rule here you had to bend.
+- [ ] **CI builds nothing else** (§6), so `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally — or your report says plainly that they were not.
+- [ ] Your report states what you verified, what you assumed, and any rule here you had to bend.
+
+**If you added, removed or moved a file:**
+
+- [ ] It is in the owning `.vcxproj` or `.vcxitems` **and** its `.filters`.
+- [ ] No `.filters` gained a `Source Files` or `Header Files` filter — Visual Studio adds them back on its own (§2).
+
+**If you added a library:**
+
+- [ ] It has a master include, a `pch.h` that includes it, and a suite under `Tests/`.
+- [ ] A new `.vcxitems` import was added to exactly one project per link closure (§2).
+
+**If you touched a project file:**
+
+- [ ] No `ConformanceMode`, `LanguageStandard`, `WarningLevel` or `TreatWarningAsError` changed, and no warning silenced with a pragma.
+- [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else.
+
+**If you touched the simulation or the wire format:**
+
+- [ ] No third coordinate reached either (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
+- [ ] Nothing in the client links the simulation (R19), and nothing was put in an executable that a suite could have covered (R20).
+
+**If you touched rendering, input, audio or presentation:**
+
+- [ ] It was **run**, not just built — which for the client means deployed as a package and launched. Input is touch, because there is no other kind (R21); on a machine without a touchscreen, say what stood in.

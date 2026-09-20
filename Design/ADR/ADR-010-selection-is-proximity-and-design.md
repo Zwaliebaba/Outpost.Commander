@@ -58,6 +58,17 @@ not be.
 **A dense mixed formation is the bad case.** Miners and fighters sitting together means the circle takes
 only one of them, which is usually what you wanted and occasionally is not.
 
+**The circle is round on the screen and a wedge in the world, and this ADR did not notice.**
+`Design/Interface.md` §5 couples the camera's pitch to its zoom, so at maximum zoom-in the camera rakes
+low across the plane — and a screen-space circle then maps to a **strongly elongated world region**, deep
+along the view direction and narrow across it. Two ships equidistant from the held ship in world space are
+included or excluded depending on their bearing relative to the camera. The player is shown the circle, so
+they are not working blind, but they see a circle and get a wedge. **This is the one place two accepted
+decisions interact badly**, it follows directly from a pitch coupling taken for unrelated reasons, and it
+is the specific thing M1 must watch for (`Design/OpenQuestions.md`, prediction P3). The mitigation, if it
+proves bad, is to define the circle on the **plane** at the radius the screen circle subtends at the held
+ship's depth — still one number, still drawn, no longer round on screen.
+
 **What would reopen it:** a fleet cap materially above the design's fifty a player
 (`Design/GameDesign.md` §10), or a tactic that genuinely needs an arbitrary subset appearing in play.
 

@@ -1,6 +1,6 @@
 # ADR-007 — The authored frame is 1440 × 960
 
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-09-20 by [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md), which binds this decision to the world only.** The interface no longer draws into the scene target, so the authored frame no longer sets the interface's resolution.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal — the target device; the resolution follows from it
 
@@ -53,8 +53,23 @@ compromise — there is no room for fine detail in a control a fingertip covers 
 interface cannot get denser later without reauthoring every layout number**, because R13 requires them all
 to be unconditional.
 
-**What would reopen it:** a different target device. The derivation in `Design/Interface.md` §1 is written
-out longhand precisely so it can be redone against another panel rather than re-argued.
+**Two things this ADR originally got wrong, corrected here rather than quietly.**
+
+**The 2× is not a consequence of the 200% display scale.** `Design/Interface.md` §1 said "this is not a
+coincidence: 200% is the scale Microsoft ships on this panel". The swap chain is created at *physical*
+pixels, so the DPI scale factor never enters the fit: the 2× is between 1440 × 960, which was freely
+chosen, and 2880 × 1920, which is the panel. Dressing a free choice as a natural consequence invites
+someone to "fix" the swap chain to device-independent pixels and break it.
+
+**Nothing forced the client fullscreen, so the exact 2× was never guaranteed.** A `CoreWindow`
+application can run windowed at an arbitrary size, in which case the fit is an arbitrary bilinear scale
+and this decision buys nothing. **The client now enters fullscreen at launch**
+(`Design/OpenQuestions.md` Q23); a touch-only game in a resizable window is not a coherent object.
+
+**What would reopen it:** a different target device, or a measured frame time that does not fit at
+1440 × 960. The derivation in `Design/Interface.md` §1 is written out longhand so it can be redone against
+another panel rather than re-argued. Since ADR-011 it costs the world's fill rate and nothing in the
+interface.
 
 ## Measurements
 

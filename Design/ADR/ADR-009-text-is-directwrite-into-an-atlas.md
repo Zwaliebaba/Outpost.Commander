@@ -1,6 +1,8 @@
 # ADR-009 — Text is DirectWrite rasterised into an atlas we own
 
-**Status:** Accepted
+**Status:** Accepted — **the DirectWrite decision stands; its pixel-doubling consequence is superseded
+by [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md)**, which moves the interface out of the
+scene target so glyphs are rasterised at physical size.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal
 
@@ -24,7 +26,10 @@ DirectWrite is `dwrite.h` in the Windows SDK, and both that interface and that m
 the UWP app family as well as for desktop.
 
 **Coverage is rasterised as `DWRITE_TEXTURE_CLEARTYPE_3x1` and the three subpixel values are averaged into
-one 8-bit channel.** This is not an oversight and it is the detail a naive implementation gets wrong:
+one 8-bit channel — and the average is taken in linear space, not on the stored bytes.** ClearType
+coverage is gamma-encoded; averaging the encoded values directly produces systematically thin or fat
+stems, which is the second thing a naive implementation gets wrong after the fringing below. This is not
+an oversight and it is the detail a naive implementation gets wrong:
 ClearType assumes an RGB stripe at the *final* display, and this frame is scaled 2× on the way there
 ([`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md)), so subpixel output would arrive as colour
 fringing that survives the scale. `CreateAlphaTexture` offers only bi-level and ClearType, and averaging
@@ -35,8 +40,14 @@ substitution.** R13 requires every layout number to be unconditional, and a subs
 advance widths, so a silent fallback would quietly break every position in the interface on some machine
 nobody tests on.
 
-**Glyphs are rasterised at authored pixel sizes** and drawn into the scene target, because R13 requires
-every pass to draw there.
+**Glyphs are rasterised at the physical size the fit transform produces** — 48 physical pixels for a
+24-authored-pixel label on a Surface Pro — and drawn in the interface pass, after the scale
+([`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md)). They were originally rasterised at authored
+size into the scene target, which doubled them.
+
+**The atlas is therefore sized against the window rather than against a constant, and a resize
+invalidates it.** So does device removal. Both are rebuild paths this decision did not previously have,
+and both must not stall a frame visibly.
 
 ## Consequences
 
