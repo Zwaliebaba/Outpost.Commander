@@ -41,6 +41,7 @@ One suite per library, under [`Tests/`](Tests/), each an ordinary desktop test D
 | | |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** §2 is the project layout and why it is shaped this way. |
+| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft; nothing in it is settled yet.** |
 | [`.github/workflows/build.yml`](.github/workflows/build.yml) | What CI gates, and what it deliberately does not |
 
 ## Building it
