@@ -34,7 +34,7 @@
 //
 // THE CLIENT HAS NO SIMULATION CLOCK, AND STILL NEEDS A CLOCK. §3 is explicit that the client "has
 // no simulation clock; it has the replica's timeline, which is the host's tick numbers arriving
-// late" - and Net's Client takes a tick, for heartbeats and timeouts (Core/Liveness.h). That is a
+// late" - and Net's Client takes a tick, for heartbeats and timeouts (NeuronCore/Liveness.h). That is a
 // LIVENESS clock and not a simulation one, and it has to come from wall time rather than from the
 // replica: a host that stopped sending stops advancing the replica's tick, which is exactly the
 // moment a timeout has to fire. Nothing here advances the world; the world is the host's.
@@ -67,7 +67,7 @@ class Match
 {
 public:
   /// _content outlives the match; Sim holds a reference to it. _settings is the lobby's, which in
-  /// M1 is the fixed pair of seats G1a's acceptance names. _chunkCells is Client/TerrainChunk.h's
+  /// M1 is the fixed pair of seats G1a's acceptance names. _chunkCells is NeuronClient/TerrainChunk.h's
   /// CHUNK_CELLS, PASSED IN rather than included: it is a rendering decision, and reaching for it
   /// here would drag Direct3D into the one half of this executable that does not need it.
   Match(const ContentTree& _content, const MatchSettings& _settings, std::uint64_t _contentHash, std::uint32_t _chunkCells);
@@ -79,7 +79,7 @@ public:
   /// logged, when the landscape is refused - which is a content fault and belongs on the way up
   /// rather than on a thread nobody is watching.
   ///
-  /// _observeSeat asks to WATCH a seat rather than to play one (Net/Messages.h's Join; the owner's
+  /// _observeSeat asks to WATCH a seat rather than to play one (GameShared/Messages.h's Join; the owner's
   /// ruling of 2026-09-19 at m1-vertical-slice/G2). That is how a match of two scripted commanders
   /// comes to have a client at all: FreeSeat hands a joining client only a seat whose kind is
   /// Human, so an all-AI lobby refuses an ordinary join with NoSeat and leaves nothing to draw.
@@ -88,7 +88,7 @@ public:
                            std::uint8_t _observeSeat = NO_OBSERVED_SEAT, HostPacing _pacing = HostPacing::Threaded);
 
   /// One tick of the host, for a Stepped match: the pass its thread would have run, handed exactly
-  /// a tick's worth of time so that it runs exactly one (Core/TickPacer.h says so in as many
+  /// a tick's worth of time so that it runs exactly one (NeuronServer/TickPacer.h says so in as many
   /// words). Does nothing on a Threaded match, whose host is already running its own loop.
   void StepHost();
 
@@ -143,7 +143,7 @@ public:
   /// THE LOBBY THIS PROCESS CHOSE, and not something the wire carried. Design/Interface.md §7.5
   /// asks the Match tab to show what the lobby fixed "because M1 has no lobby and the defaults are
   /// otherwise invisible", and nothing in Net replicates MatchSettings: a joining client is sent
-  /// its seat and the landscape's definition and no lobby at all (Net/Messages.h's JoinAccepted).
+  /// its seat and the landscape's definition and no lobby at all (GameShared/Messages.h's JoinAccepted).
   ///
   /// THAT IS HONEST ONLY WHILE THE MATCH IS LOCAL. Here the same process both chose these values
   /// and is reading them back, so the panel is showing the commander his own lobby rather than
@@ -175,7 +175,7 @@ public:
   }
 
   /// THE DEPOSITS THIS COMMANDER KNOWS OF, built from the definition his join carried and not from
-  /// the host's economy. Replica/PlacementPreview.h wants it for the one rule that is about WHAT is
+  /// the host's economy. GameClient/PlacementPreview.h wants it for the one rule that is about WHAT is
   /// being built - an extractor stands on a deposit and nothing else does - and a client that had
   /// none would draw every extractor ghost legal and be refused by the host every time.
   [[nodiscard]] const DepositField& Deposits() const noexcept

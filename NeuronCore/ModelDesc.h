@@ -44,7 +44,7 @@ struct ModelMarker
 {
   std::string name;
   ModelVertex position;
-  std::uint16_t headingBinaryAngle; ///< The binary angle of Core/BinaryAngle.h
+  std::uint16_t headingBinaryAngle; ///< The binary angle of NeuronCore/BinaryAngle.h
   std::uint16_t pitchBinaryAngle;
 
   [[nodiscard]] bool operator==(const ModelMarker&) const noexcept = default;

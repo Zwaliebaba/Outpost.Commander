@@ -11,14 +11,14 @@
 // The interface's place in the input order (TechnicalDesign.md §6.5; Design/Interface.md §4): the
 // router's FIRST sink, so that a click on a panel never also reaches selection or the camera.
 //
-// WHY A SINK AND NOT A CHECK IN THE GAME LOOP. Client/InputRouter.h already has the rule - each
+// WHY A SINK AND NOT A CHECK IN THE GAME LOOP. NeuronClient/InputRouter.h already has the rule - each
 // event goes to the sinks in order and the first to consume it ends the offer - and it masks the
 // frame's polled view and the subscriptions to match. An interface that tested "is the pointer over
 // a panel?" in the game's own code would have to repeat that masking in every place that reads
 // input, and the places it forgot would be the bugs.
 //
 // IT OWNS THE ONE CLIENT-TO-AUTHORED CONVERSION IN THE INPUT PATH. Events carry client pixels
-// (Client/InputEvent.h) and every rectangle in the interface is authored (§4), so the sink holds
+// (NeuronClient/InputEvent.h) and every rectangle in the interface is authored (§4), so the sink holds
 // the current ScaledRectangle and runs AuthoredFromClient once per event. A pointer in the
 // letterbox is over nothing at all and is not consumed.
 
@@ -35,7 +35,7 @@ public:
   void RemovePanel(UiPanel* _panel);
   void Clear() noexcept;
 
-  /// Where the scene target lands in the client area this frame (Client/ScaleMode.h). Set once a
+  /// Where the scene target lands in the client area this frame (NeuronClient/ScaleMode.h). Set once a
   /// frame, before the events are dispatched; until it is set, nothing is over anything.
   void SetFit(const ScaledRectangle& _fit) noexcept
   {

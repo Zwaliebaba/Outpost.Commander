@@ -68,7 +68,7 @@
 //                 off, fifty simulated minutes, the enemy army destroyed, the enemy command post at
 //                 full health and 153 machine guns standing round it. With it on, the same match is
 //                 decided in 12,874 ticks. OutpostCommander/App.cpp's lobby had it off, and every
-//                 unit suite passed throughout because Tests/SimTests/AiTests.cpp's fixture sets it.
+//                 unit suite passed throughout because Tests/GameLogicTests/AiTests.cpp's fixture sets it.
 //  6. PRODUCE     An idle factory and fewer devices than the composition wants: queue one. The
 //                 composition is two builders and then fighters to the device cap.
 //  7. ATTACK      More idle fighters than ATTACK_GROUP_SIZE: attack-move the whole group to the

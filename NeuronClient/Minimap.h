@@ -11,7 +11,7 @@
 // area is exactly 256x256, so a Small landscape of 128 cells is TWO PIXELS A CELL and is drawn
 // without resampling - which is why the panel is that size and why M1 is a Small landscape.
 //
-// NO DIRECT3D HERE, for the reason Client/GroundRay.h and Client/CapturePath.h give: everything
+// NO DIRECT3D HERE, for the reason NeuronClient/GroundRay.h and NeuronClient/CapturePath.h give: everything
 // below is a loop over a fog grid and a list of instances, so a minimap that draws a commander's
 // army in the wrong place is a failing assertion on any machine rather than something only a
 // screenshot can show. What the pass above it does is upload these bytes and draw one quad.

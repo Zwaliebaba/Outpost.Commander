@@ -85,7 +85,7 @@ void DropRoute(Sim& _sim, ObjectId _id, Device& _device)
   _device.stalledTicks = 0;
 }
 
-/// What each order does on reaching what it was sent to (Sim/Order.h's table).
+/// What each order does on reaching what it was sent to (GameShared/Order.h's table).
 void Arrive(Sim& _sim, ObjectId _id, Device& _device)
 {
   if (_device.primaryOrder == PrimaryOrder::Move || _device.primaryOrder == PrimaryOrder::AttackMove)
@@ -120,7 +120,7 @@ void Walk(Sim& _sim, ObjectId _id, Device& _device, const Mover& _mover)
     return;
   }
   // Attack and ReturnToRepair walk like a Move: what makes them different is who sets the
-  // destination. Stage 8 keeps an Attack's on the target it is closing with and Sim/Retreat.cpp
+  // destination. Stage 8 keeps an Attack's on the target it is closing with and GameLogic/Retreat.cpp
   // puts a ReturnToRepair's on the bay (m1-vertical-slice/S10); both are already on the record by
   // the time this stage runs, so the walk needs no case of its own.
 
@@ -153,7 +153,7 @@ void Walk(Sim& _sim, ObjectId _id, Device& _device, const Mover& _mover)
   }
 
   // Refine the next clusters as it reaches the end of the ones it has, which is what keeps a
-  // Frontier-sized route off one tick (Sim/PathPlanner.h).
+  // Frontier-sized route off one tick (GameLogic/PathPlanner.h).
   if (path->state == PathState::Partial && _device.pathIndex + 1 >= path->cells.size())
   {
     (void)_sim.Planner().RefineFurther(_id);

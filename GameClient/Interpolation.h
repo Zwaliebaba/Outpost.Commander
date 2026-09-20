@@ -34,7 +34,7 @@ inline constexpr std::int32_t INTERPOLATION_DELAY_TICKS = 2;
 inline constexpr std::int64_t RENDER_TIME_SCALE = 1000;
 
 /// A heading is interpolated at 256 substeps to each of the wire's 256 steps, which multiplies back
-/// out to the 65,536 of a full binary angle (Core/BinaryAngle.h) - the resolution the simulation
+/// out to the 65,536 of a full binary angle (NeuronCore/BinaryAngle.h) - the resolution the simulation
 /// turns at before the wire coarsened it.
 inline constexpr std::int64_t HEADING_SUBSTEPS = 256;
 
@@ -57,7 +57,7 @@ inline constexpr std::int64_t HEADING_SUBSTEPS = 256;
 struct Sample
 {
   std::uint32_t tick = 0;
-  std::int32_t x = 0; ///< Wire units, a quarter of a world unit (Net/Records.h)
+  std::int32_t x = 0; ///< Wire units, a quarter of a world unit (GameShared/Records.h)
   std::int32_t y = 0;
   std::int32_t z = 0;
   std::uint8_t heading = 0; ///< The high byte of a binary angle: 256 headings to the turn

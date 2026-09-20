@@ -25,7 +25,7 @@
 // rather than a second use of workRemainingTicks, which is a factory's production countdown and a
 // builder's, and which a mod that put a weapon on a factory would then have to share. What a
 // research upgrade changes is how far the counter is set back, so an upgrade reaches a device
-// already in the field on its next shot without anything walking the world (Sim/Design.h's rule).
+// already in the field on its next shot without anything walking the world (GameShared/Design.h's rule).
 
 namespace Outpost
 {
@@ -43,14 +43,14 @@ inline constexpr std::int32_t PROJECTILE_SPEED_SUBUNITS_PER_TICK = 12288;
 ///
 /// WHY THE SIMULATION HAS TO RECORD THIS AT ALL. TechnicalDesign.md §5.3 sends shots "as
 /// short-lived events rather than objects", so a client learns a shot happened from an Event and
-/// from nothing else - and DIRECT fire leaves no other trace anywhere: Sim/Targeting.cpp decides
+/// from nothing else - and DIRECT fire leaves no other trace anywhere: GameLogic/Targeting.cpp decides
 /// the hit at the trigger and keeps no Projectile, because "what flies is the client's business".
 /// Without this list a direct shot is invisible to every commander including the one who fired it.
 /// Indirect fire does create a Projectile, and is recorded here too, so that the client draws a
 /// shell leaving the barrel at the moment it was fired rather than inferring one from a position
 /// it never receives.
 ///
-/// SCRATCH AND NOT STATE, exactly as Sim/Damage.h's DamageEvent is: filled and emptied inside one
+/// SCRATCH AND NOT STATE, exactly as GameLogic/Damage.h's DamageEvent is: filled and emptied inside one
 /// Advance, so it is neither hashed nor carried by a snapshot. Two hosts that ran the same tick
 /// produce the same list, which is what makes it safe to build a wire event from.
 ///
@@ -89,7 +89,7 @@ struct WeaponMount
 [[nodiscard]] bool WeaponOf(const ContentTree& _content, const Structure& _structure, WeaponMount& _out);
 
 /// The chance a shot hits, as a percentage in [0, 100]: the row's chance at this range, plus what
-/// the shooter's rank adds (Sim/Design.h) and what research has added to the weapon's class.
+/// the shooter's rank adds (GameShared/Design.h) and what research has added to the weapon's class.
 [[nodiscard]] std::int32_t HitPercent(const ModuleDesc& _module, const ClassUpgrades& _upgrades, std::uint8_t _rank,
                                       bool _longRange) noexcept;
 

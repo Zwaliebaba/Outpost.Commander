@@ -234,7 +234,7 @@ Outpost::ObjectId PlacePlan(Outpost::Sim& _sim, std::uint8_t _seat, Outpost::Str
 }
 
 /// Gives a seat the fighter design it would otherwise stop and make, so that a decision reaches the
-/// behaviours past DESIGN. Index 0 is the builder and index 1 the fighter, always (Sim/AiSeat.cpp).
+/// behaviours past DESIGN. Index 0 is the builder and index 1 the fighter, always (GameLogic/AiSeat.cpp).
 void GiveFighterDesign(Outpost::Sim& _sim, std::uint8_t _seat)
 {
   Outpost::AiBlackboard blackboard;
@@ -269,7 +269,7 @@ void WallIn(Outpost::Sim& _sim, const Outpost::Footprint& _footprint, std::uint3
   }
 }
 
-/// The cell a Move order names, from its operands (Sim/Order.h: the device, then x and z in
+/// The cell a Move order names, from its operands (GameShared/Order.h: the device, then x and z in
 /// subunits).
 [[nodiscard]] Outpost::CellPosition MoveTargetCell(const Outpost::Order& _order)
 {
@@ -409,7 +409,7 @@ public:
     // fights rather than the half that builds. An attack group is sent APPROACH_CELLS short of
     // the enemy's start cell, and a base GROWS: by the time a commander has four idle fighters,
     // four cells back is inside the enemy's buildings, whose cells are impassable. The planner
-    // answers Unreachable one tick later, Sim/Movement.cpp falls the device back to Stop, and the
+    // answers Unreachable one tick later, GameLogic/Movement.cpp falls the device back to Stop, and the
     // next decision orders the same four devices at the same cell - for the rest of the match.
     // Measured before the fix: the group was ordered on tick 5,623 to cell (38,90), gave up on
     // 5,624 having moved nothing, and the same order went out every ten ticks thereafter.
@@ -456,8 +456,8 @@ public:
   TEST_METHOD(AScriptedCommanderNeverWalksABuilderOntoASitesOwnFootprint)
   {
     // THE DEADLOCK THIS PINS (m1-vertical-slice/S13). A structure occupies its cells from the tick
-    // construction begins (Sim/Plan.h), so those cells leave the cluster graph; the planner refuses
-    // a route to one, Sim/Movement.cpp falls the device back to Stop, and FINISH - seeing an idle
+    // construction begins (GameShared/Plan.h), so those cells leave the cluster graph; the planner refuses
+    // a route to one, GameLogic/Movement.cpp falls the device back to Stop, and FINISH - seeing an idle
     // builder and an unfinished site - orders it at the same cell on the next decision, and the
     // next. It answers before the generator, the factory and the lab, so the commander stops
     // building anything at all: measured at 11,500 of 12,000 ticks spent ordering one truck at a
@@ -553,9 +553,9 @@ public:
   TEST_METHOD(APlanTheGroundWillNoLongerTakeIsCanceledRatherThanCountedForEver)
   {
     // THE THIRD DEFECT, and the one the plan's notes guessed wrong about (m1-vertical-slice/S13).
-    // A plan does NOT occupy its cells (Sim/Plan.h), so two plans may overlap; the first to begin
+    // A plan does NOT occupy its cells (GameShared/Plan.h), so two plans may overlap; the first to begin
     // construction flattens and marks its footprint, and the other is refused by CheckPlacement
-    // for as long as it exists. Sim/Construction.cpp is explicit that "a plan that can no longer be
+    // for as long as it exists. GameLogic/Construction.cpp is explicit that "a plan that can no longer be
     // built stays a plan until it is cancelled", which is right for a human who can see it and
     // press the button - and nothing was doing the cancelling for a scripted commander.
     //
@@ -583,7 +583,7 @@ public:
 
     // The ground goes out from under it, by the one mechanism that does this in a real match: a
     // neighbour that OVERLAPPED the plan began construction, which is the moment it starts
-    // occupying its cells (Sim/Plan.h). Both were legal to place, because a plan occupies nothing,
+    // occupying its cells (GameShared/Plan.h). Both were legal to place, because a plan occupies nothing,
     // and only one of them can ever be built. Obstructing a cell directly does NOT reproduce it -
     // CheckPlacement's Occupied test reads the world's structures and not the obstruction byte, so
     // the first version of this test set the byte, saw no refusal, and proved nothing.

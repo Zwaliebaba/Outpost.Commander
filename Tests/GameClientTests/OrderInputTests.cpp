@@ -71,7 +71,7 @@ namespace
   return {_id, Outpost::ObjectKind::Structure, false, false};
 }
 
-/// Subunits from world units, which is what every positional operand of Sim/Order.h is in.
+/// Subunits from world units, which is what every positional operand of GameShared/Order.h is in.
 [[nodiscard]] std::int32_t Sub(float _worldUnits)
 {
   return static_cast<std::int32_t>(std::lround(_worldUnits * static_cast<float>(Neuron::SUBUNITS_PER_WORLD_UNIT)));
@@ -79,7 +79,7 @@ namespace
 
 /// What a screen column names on the ground, in subunits, under this camera.
 ///
-/// THE HALF PIXEL IS REAL AND IS NOT ABSORBED INTO A TOLERANCE. Replica/Picking.cpp casts through
+/// THE HALF PIXEL IS REAL AND IS NOT ABSORBED INTO A TOLERANCE. GameClient/Picking.cpp casts through
 /// the pixel's CENTRE, because that is where the rasterizer sampled what was drawn there, so screen
 /// column 150 is world x 50.5 and not 50. The first writing of these cases expected the round
 /// number and four of them failed; a tolerance would have hidden it, and half a world unit is a
@@ -355,7 +355,7 @@ public:
   }
 
   /// §6, until K4's construction panel: a hotkey plus a click places a structure. The operand is a
-  /// CELL and not a point, because placement is on the grid (Sim/Order.h).
+  /// CELL and not a point, because placement is on the grid (GameShared/Order.h).
   TEST_METHOD(PlacingAStructureNamesACellAndNotAPoint)
   {
     Session session;
@@ -405,7 +405,7 @@ public:
   }
 
   /// The one conversion in this file, pinned: a ground point is in SUBUNITS, 256 to the world unit,
-  /// because that is the unit every positional operand of Sim/Order.h is in. Getting it wrong sends
+  /// because that is the unit every positional operand of GameShared/Order.h is in. Getting it wrong sends
   /// a Move 256 times too far and the simulation obeys it.
   TEST_METHOD(AGroundPointIsInSubunits)
   {
@@ -419,7 +419,7 @@ public:
   TEST_METHOD(ADevicesAbilitiesAreItsDesignsAndNotItsOwn)
   {
     // The wire carries a design INDEX and the seat's DesignState says what that index names
-    // (Net/Records.h), so this is the one place a click on a gunner comes to know it can shoot.
+    // (GameShared/Records.h), so this is the one place a click on a gunner comes to know it can shoot.
     const Outpost::ContentTree tables = AbilityTables();
     Outpost::DesignStore designs;
     designs.Remember(Design(0, 0, {GUN_ROW}));
@@ -443,7 +443,7 @@ public:
 
   TEST_METHOD(ABuilderRowWithNoBuildPowerIsNotABuilder)
   {
-    // A legal row (Content/ComponentDesc.h) and the case that tells "carries build power" apart
+    // A legal row (GameShared/ComponentDesc.h) and the case that tells "carries build power" apart
     // from "is spelled Builder": a selection of these would otherwise be offered a Build the
     // simulation refuses for every one of them.
     const Outpost::ContentTree tables = AbilityTables();
@@ -578,7 +578,7 @@ public:
 
   TEST_METHOD(TwoSeatsDesignsAtTheSameIndexAreNotMixedUp)
   {
-    // A design index is the SEAT's, not the match's (Net/Records.h), so an enemy device selected as
+    // A design index is the SEAT's, not the match's (GameShared/Records.h), so an enemy device selected as
     // an inspection must read its own commander's design and not this one's at the same number.
     const Outpost::ContentTree tables = AbilityTables();
     Outpost::DesignStore designs;

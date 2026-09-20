@@ -150,7 +150,7 @@ Outpost::LandscapeDefinition Ground()
 
 /// Flat ground, then a ridge of _stepPerSample running the whole height of the landscape: the
 /// cells it crosses are at _stepPerSample * 100 / 16 percent, which is what a drive's maximum
-/// slope is measured against (Sim/Landscape.cpp derives a cell's slope that way).
+/// slope is measured against (GameShared/Landscape.cpp derives a cell's slope that way).
 [[nodiscard]] bool Ridge(Outpost::Sim& _sim, std::uint32_t _atSample, std::int16_t _stepPerSample, std::uint32_t _samples)
 {
   std::vector<std::int16_t> profile(_sim.Terrain().SamplesPerSide(), 10);
@@ -287,7 +287,7 @@ public:
     const std::uint32_t last = field.sim.Terrain().CellsPerSide() - 1;
     // Along the first row of a cluster row. The crossing between two clusters is the first pair of
     // passable cells the graph finds across their border and that is the lowest row of the two
-    // (Sim/ClusterGraph.cpp), so a device walking along that row walks a straight line and what is
+    // (GameLogic/ClusterGraph.cpp), so a device walking along that row walks a straight line and what is
     // being measured here is the speed rather than where the abstraction puts its doorways. Half a
     // cluster higher the same drive takes 1,804 ticks, all of the difference being two diagonals
     // to the doorway and back, which is S7's abstraction and is measured by S7's own suite.

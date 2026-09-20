@@ -15,7 +15,7 @@ namespace Outpost
 namespace
 {
 
-/// A wire position as world units. Net/Records.h quantises to a quarter of a world unit.
+/// A wire position as world units. GameShared/Records.h quantises to a quarter of a world unit.
 [[nodiscard]] float WorldFromWire(std::int32_t _wireUnits) noexcept
 {
   return Neuron::WorldUnitsOfSubunits(_wireUnits * SUBUNITS_PER_WIRE_UNIT);
@@ -140,7 +140,7 @@ void RenderViewBuilder::MarkChunks(const Flattened& _footprint, std::vector<std:
 /// A SHOT WHOSE SHOOTER IS NOT DRAWN IS NOT DRAWN EITHER. The muzzle comes from the composition of
 /// the shooter, so a commander who cannot see the firing device sees no tracer leave it - which is
 /// the §5.2 rule holding without a second test for it: the host does not send him the event at all
-/// (Net/Host.cpp filters events by what the seat can see), and if one arrived anyway there is
+/// (GameLogic/Host.cpp filters events by what the seat can see), and if one arrived anyway there is
 /// nowhere for it to start.
 void RenderViewBuilder::TakeShots(const Replica& _replica, const std::map<std::uint32_t, ComposedMuzzle>& _muzzles)
 {
@@ -173,7 +173,7 @@ void RenderViewBuilder::TakeShots(const Replica& _replica, const std::map<std::u
     const ModuleDesc& weapon = m_content->components.modules[muzzle->second.moduleRow];
     if (weapon.projectileModel.empty() || weapon.projectileLifetimeTicks == 0)
     {
-      continue; // A weapon that shows nothing in flight, which is a legal row (Content/ComponentDesc.h).
+      continue; // A weapon that shows nothing in flight, which is a legal row (GameShared/ComponentDesc.h).
     }
     const std::uint32_t model = m_composer->ProjectileModel(muzzle->second.moduleRow);
     if (model == ModelComposer::NO_MODEL)
@@ -260,7 +260,7 @@ void RenderViewBuilder::Build(const Replica& _replica, std::int64_t _renderTime,
     m_composer->ComposeDevice(*design, pose, appearance, _outView.instances, &muzzles);
     if (!muzzles.empty())
     {
-      // THE FIRST MOUNTED WEAPON, AND THIS IS A SIMPLIFICATION WITH A NAME. Net/Records.h's Event
+      // THE FIRST MOUNTED WEAPON, AND THIS IS A SIMPLIFICATION WITH A NAME. GameShared/Records.h's Event
       // carries the shooter, the target and a point; it does not carry WHICH module fired, and
       // adding a field is a wire change this task does not own. So a device with two weapons of
       // different rows draws both their shots as the first one's projectile. Every design the M1
@@ -381,7 +381,7 @@ void RenderViewBuilder::Build(const Replica& _replica, std::int64_t _renderTime,
   DrawShots(_renderTime, _outView);
 
   // ── The fog, straight through ──────────────────────────────────────────────────────────────
-  // The replica's own bytes without a table: Core/RenderView.h's FogShade and Sim/FogGrid.h's
+  // The replica's own bytes without a table: NeuronCore/RenderView.h's FogShade and GameShared/FogGrid.h's
   // FogState carry the same three values in the same order, and that header says so.
   const std::span<const FogState> fog = _replica.Fog();
   _outView.fog.cells.resize(fog.size());

@@ -14,7 +14,7 @@
 // IT HOLDS EVERY SEAT'S DESIGNS AND NOT ONLY THE COMMANDER'S. A client is told the design of an
 // enemy device it can see, which is what lets the selection panel say what it is fighting rather
 // than name a box; the fog decides which enemy devices it sees at all, and that is the host's
-// judgement, made before the record was sent (Net/Interest.h).
+// judgement, made before the record was sent (GameLogic/Interest.h).
 
 namespace Outpost
 {
@@ -22,7 +22,7 @@ namespace Outpost
 /// The designs a client has been sent, by seat and index. A linear search, because a seat holds at
 /// most sixteen designs (Design/Interface.md §9) and eight seats is a hundred and twenty-eight rows
 /// at the very most - a map would cost more to build than every lookup a match makes, which is the
-/// same bargain Content/ContentTree.h strikes for its tables.
+/// same bargain GameShared/ContentTree.h strikes for its tables.
 class DesignStore
 {
 public:

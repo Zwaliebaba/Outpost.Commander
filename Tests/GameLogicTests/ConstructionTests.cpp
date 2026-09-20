@@ -248,7 +248,7 @@ public:
 
   TEST_METHOD(OneBuilderTakesTheRowsBuildTimeAndTwoTakeHalfOfIt)
   {
-    // The whole of the rate arithmetic (Sim/Construction.h): a builder at the reference rate puts
+    // The whole of the rate arithmetic (GameLogic/Construction.h): a builder at the reference rate puts
     // in exactly the row's time, and the effort is summed, so a second builder halves it. The tick
     // that BEGINS the site puts in nothing, which is why the counts below start at one.
     Site one;

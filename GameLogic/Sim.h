@@ -198,7 +198,7 @@ public:
     return m_world;
   }
 
-  /// This tick's damage: what stages 8 and 9 decided and stage 10 applies (Sim/Damage.h). Scratch
+  /// This tick's damage: what stages 8 and 9 decided and stage 10 applies (GameLogic/Damage.h). Scratch
   /// and not state - it is filled and emptied inside one Advance - so it is neither hashed nor
   /// carried by a snapshot, exactly as stage 1's order scratch is not.
   [[nodiscard]] std::vector<DamageEvent>& Damage() noexcept
@@ -206,7 +206,7 @@ public:
     return m_damage;
   }
 
-  /// This tick's shots: every trigger stage 8 pulled (Sim/Weapons.h's SimShot). Scratch on the same
+  /// This tick's shots: every trigger stage 8 pulled (GameLogic/Weapons.h's SimShot). Scratch on the same
   /// terms as the damage above - filled and emptied inside one Advance, neither hashed nor
   /// snapshotted - and read by the host loop between ticks, which is what turns it into the wire's
   /// events (m1-vertical-slice/C9). A caller that does not read it loses nothing but the events.
@@ -262,7 +262,7 @@ public:
     return m_droppedOrders;
   }
 
-  /// Stage 12's one writer (Sim/Victory.h): the match is over, and this alliance won or
+  /// Stage 12's one writer (GameLogic/Victory.h): the match is over, and this alliance won or
   /// NO_ALLIANCE for a draw. Every seat still playing becomes Won or Lost by it, and a seat that
   /// had already left keeps Eliminated. Nothing else in the tree ends a match.
   void Decide(std::uint8_t _winningAlliance) noexcept;

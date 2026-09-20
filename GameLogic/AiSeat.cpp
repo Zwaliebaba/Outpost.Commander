@@ -114,7 +114,7 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
   return false;
 }
 
-/// SaveDesign's operand 3 packs up to four module rows, one per byte (Sim/Order.h).
+/// SaveDesign's operand 3 packs up to four module rows, one per byte (GameShared/Order.h).
 [[nodiscard]] std::int32_t PackModules(const DeviceDesign& _design) noexcept
 {
   std::uint32_t packed = 0;
@@ -270,7 +270,7 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
 ///
 /// THIS IS THE ONLY MEMORY A DECISION HAS, and it is the device's own. A behaviour runs from a
 /// blackboard rebuilt every decision, so nothing carries over from the last one - but Device keeps
-/// its destination when Sim/Movement.cpp gives up on a route it cannot plan (PathState::Unreachable
+/// its destination when GameLogic/Movement.cpp gives up on a route it cannot plan (PathState::Unreachable
 /// or Refused set Stop and drop the route; neither touches the destination). So a builder at Stop
 /// whose destination is the very cell a behaviour is about to order it to again is a builder that
 /// has already tried and failed, and ordering it there a second time is the deadlock rather than
@@ -291,8 +291,8 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
 /// False when there is no such cell, which is the answer that lets a caller pass the site over.
 ///
 /// WHY A DEVICE MUST NEVER BE SENT ONTO A FOOTPRINT, which is the defect this function exists for.
-/// A structure occupies its cells from the tick construction begins (Sim/Plan.h's Occupies), so
-/// those cells leave the cluster graph. The planner then refuses the route, Sim/Movement.cpp falls
+/// A structure occupies its cells from the tick construction begins (GameShared/Plan.h's Occupies), so
+/// those cells leave the cluster graph. The planner then refuses the route, GameLogic/Movement.cpp falls
 /// the device back to Stop, and the behaviour that sent it there - seeing an idle builder and an
 /// unfinished site - sends it to the same cell on the next decision, and the next, for the rest of
 /// the match. It answers before the generator, the factory and the lab, so the commander stops
@@ -351,7 +351,7 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
         }
         const std::int32_t spotX = static_cast<std::int32_t>(cellX) * Neuron::SUBUNITS_PER_CELL + Neuron::SUBUNITS_PER_CELL / 2;
         const std::int32_t spotZ = static_cast<std::int32_t>(cellY) * Neuron::SUBUNITS_PER_CELL + Neuron::SUBUNITS_PER_CELL / 2;
-        // Stage 5's own rule, from Sim/Placement.h, so that a builder sent here is a builder stage
+        // Stage 5's own rule, from GameShared/Placement.h, so that a builder sent here is a builder stage
         // 5 counts.
         if (DistanceSquaredTo(_footprint, spotX, spotZ) > _reachSubunits * _reachSubunits)
         {
@@ -372,9 +372,9 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
 
 /// Cancels a plan the ground will no longer take.
 ///
-/// A PLAN DOES NOT OCCUPY ITS CELLS (Sim/Plan.h), which is what makes this possible: two plans may
+/// A PLAN DOES NOT OCCUPY ITS CELLS (GameShared/Plan.h), which is what makes this possible: two plans may
 /// overlap, and the first to BEGIN construction flattens its footprint and marks it, which leaves
-/// the other refused by CheckPlacement for as long as it exists. Sim/Construction.cpp says exactly
+/// the other refused by CheckPlacement for as long as it exists. GameLogic/Construction.cpp says exactly
 /// what happens then - "a plan that can no longer be built stays a plan until it is cancelled" -
 /// and that is the right rule for a human, who can see the thing and press the button. Nothing was
 /// doing the cancelling for a scripted commander.
@@ -704,9 +704,9 @@ void Submit(Sim& _sim, std::uint8_t _seat, OrderKind _kind, std::int32_t _a = 0,
   target = standable;
   const auto x = static_cast<std::int32_t>(target.x * Neuron::SUBUNITS_PER_CELL + Neuron::SUBUNITS_PER_CELL / 2);
   const auto z = static_cast<std::int32_t>(target.y * Neuron::SUBUNITS_PER_CELL + Neuron::SUBUNITS_PER_CELL / 2);
-  // One order a device: an order names ONE object (Sim/Order.h), so a group of four is four orders,
+  // One order a device: an order names ONE object (GameShared/Order.h), so a group of four is four orders,
   // which is what a human's selection is too. A GROUP, and not everything standing still: the
-  // planner's budget is 2,000 nodes a tick shared across every request (Sim/PathPlanner.h), so
+  // planner's budget is 2,000 nodes a tick shared across every request (GameLogic/PathPlanner.h), so
   // twenty-nine cross-map searches at once each get seventy nodes and none of them finishes.
   std::size_t sent = 0;
   for (const ObjectId& fighter : _blackboard.idleFighters)

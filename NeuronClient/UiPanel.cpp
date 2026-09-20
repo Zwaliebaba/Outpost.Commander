@@ -216,7 +216,7 @@ UiEventResult UiPanel::OnCharacter(std::uint32_t _character)
   if (!m_visible || m_focus == 0)
   {
     // NOT CONSUMED WITH NO FOCUS. A character nobody is typing into is a key the game may have a
-    // binding for, and consuming it here would delete that input (Client/InputRouter.h says so of
+    // binding for, and consuming it here would delete that input (NeuronClient/InputRouter.h says so of
     // answering Consumed for an event a sink merely looked at).
     return result;
   }

@@ -23,7 +23,7 @@ namespace
 
 /// A palette whose every role is a different colour, so that "this quad is buttonFillHover" is a
 /// comparison rather than a guess. Built from CHROME_ROLES rather than by hand: a role added to
-/// Content/InterfaceDesc.h is then covered here without anybody remembering to come back.
+/// NeuronCore/InterfaceDesc.h is then covered here without anybody remembering to come back.
 [[nodiscard]] Outpost::ChromePalette DistinctPalette()
 {
   Outpost::ChromePalette palette{};
@@ -106,7 +106,7 @@ constexpr Neuron::UiRect SELECTION_PANEL{288, 792, 512, 288};
 TEST_CLASS(UiDrawTests)
 {
 public:
-  /// The one packing, pinned: Core/RenderView.h's PackedRgba8 and a vertex attribute declared
+  /// The one packing, pinned: NeuronCore/RenderView.h's PackedRgba8 and a vertex attribute declared
   /// R8G8B8A8_UNORM both read red out of the low byte, and a swap here is eight roles drawn blue.
   TEST_METHOD(AColorIsRgba8WithRedInTheLowByte)
   {

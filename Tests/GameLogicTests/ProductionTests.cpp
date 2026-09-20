@@ -288,7 +288,7 @@ public:
     Assert::IsFalse(Outpost::SaveDesign(sim, 0, 5, Designed(Chassis::Light, Drive::Wheels, Module::MachineGun)));
     Assert::IsTrue(Outpost::SaveDesign(sim, 0, 1, Designed(Chassis::Light, Drive::Wheels, Module::MachineGun)));
 
-    // The wire form: the modules one per byte, the empty slots 0xFF (Sim/Order.h's table).
+    // The wire form: the modules one per byte, the empty slots 0xFF (GameShared/Order.h's table).
     const Outpost::DeviceDesign packed = Outpost::DesignFromOrder(0, 0, static_cast<std::int32_t>(0xFFFFFF00u));
     Assert::AreEqual(std::uint8_t{1}, packed.moduleCount);
     Assert::AreEqual(0u, packed.modules[0]);
@@ -389,7 +389,7 @@ public:
 
   TEST_METHOD(AnUpgradeResearchedLaterReachesWhatIsAlreadyInTheField)
   {
-    // The whole reason nothing derived is stored on a device (Sim/Design.h): the seat's upgrades
+    // The whole reason nothing derived is stored on a device (GameShared/Design.h): the seat's upgrades
     // are read wherever a statistic is wanted, so a device built an hour ago answers the new
     // number without anything walking the world to tell it.
     Line line;

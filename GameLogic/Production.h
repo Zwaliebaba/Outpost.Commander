@@ -12,13 +12,13 @@
 
 // Stage 4 of the tick (TechnicalDesign.md §4.8): factories build devices from their commander's
 // designs (GameDesign.md §6; m1-vertical-slice/S5). Free functions for the same reason
-// Sim/Construction.h has them - this system holds no state of its own. The queues are on the seat,
+// GameLogic/Construction.h has them - this system holds no state of its own. The queues are on the seat,
 // the factory's countdown is on the structure, and a tick moves one of the two.
 //
 // A DEVICE IS PRICED AND TIMED BY ITS OWN STATISTICS AND NOT BY A ROW. The design's cost is the sum
-// of its parts (Content/DesignStats.cpp) and its build time is that cost divided by the ten power a
+// of its parts (GameShared/DesignStats.cpp) and its build time is that cost divided by the ten power a
 // second of GameDesign.md §6, less what the factory's modules take off. Structures are the other
-// way round - their rows state a time and the builders' rates meet it (Sim/Construction.h) - and
+// way round - their rows state a time and the builders' rates meet it (GameLogic/Construction.h) - and
 // the two rules are the tables as the design authored them rather than an inconsistency invented
 // here.
 //
@@ -38,7 +38,7 @@ class World;
 [[nodiscard]] DesignFault DeriveSeatDesign(const Seat& _seat, const ContentTree& _content, std::uint32_t _design, DesignStats& _out);
 
 /// Whether a seat may build a design at all: every part exists, every part is unlocked for it, and
-/// the combination is one Content/DesignStats.cpp accepts. DesignFault::None is yes.
+/// the combination is one GameShared/DesignStats.cpp accepts. DesignFault::None is yes.
 [[nodiscard]] DesignFault CheckDesign(const Seat& _seat, const ContentTree& _content, const DeviceDesign& _design);
 
 /// Where a factory puts what it built: the first cell around its footprint that is on the
@@ -47,7 +47,7 @@ class World;
 /// footprint itself rather than not at all.
 [[nodiscard]] bool ExitCell(const Landscape& _landscape, const Footprint& _footprint, std::uint32_t& _cellX, std::uint32_t& _cellY);
 
-// ── The three orders this system owns (Sim/Order.h's table) ──────────────────────────────────
+// ── The three orders this system owns (GameShared/Order.h's table) ──────────────────────────────────
 
 /// Saves a design in one of the seat's slots, extending the list where the slot is the next one.
 [[nodiscard]] bool SaveDesign(Sim& _sim, std::uint8_t _seat, std::uint32_t _slot, const DeviceDesign& _design);

@@ -21,7 +21,7 @@
 // A queue makes the order of the walk stop mattering: the two shots are both fired, both applied,
 // and the target dies once.
 //
-// THE FORMULA IS CONTENT'S, NOT THIS TASK'S. Content/DamageTable.h carries DamageDealt, because
+// THE FORMULA IS CONTENT'S, NOT THIS TASK'S. GameShared/DamageTable.h carries DamageDealt, because
 // the design screen and Tools/CheckBalance.py apply it too, and a second implementation here is a
 // second thing to keep in step. What this file adds is which armour a target offers and which
 // column of the matrix it is hit in.
@@ -71,7 +71,7 @@ inline constexpr std::int32_t RETREAT_REPAIR_RANGE_SUBUNITS = 60 * Neuron::SUBUN
 void ResolveDamage(Sim& _sim);
 
 /// The part of stage 10 that decides who leaves the fight. Its own translation unit because it is
-/// its own rule and a long one (Sim/Retreat.cpp); declared here because it is what the hit points
+/// its own rule and a long one (GameLogic/Retreat.cpp); declared here because it is what the hit points
 /// this stage writes are read for.
 void AdvanceRetreat(Sim& _sim);
 

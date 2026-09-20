@@ -10,7 +10,7 @@
 
 cbuffer UiConstants : register(b0)
 {
-  float2 g_authoredSize; // AUTHORED_WIDTH_PIXELS, AUTHORED_HEIGHT_PIXELS (Client/ScaleMode.h)
+  float2 g_authoredSize; // AUTHORED_WIDTH_PIXELS, AUTHORED_HEIGHT_PIXELS (NeuronClient/ScaleMode.h)
 };
 
 struct Input

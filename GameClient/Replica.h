@@ -41,7 +41,7 @@ public:
   /// THE REPLICA STARTS ITSELF, and that is a deliberate seam rather than a convenience. It needs
   /// the seat and the landscape's size before it can apply anything, and both arrive in the
   /// JoinAccepted that Net's Client reads inside the very same Advance that then delivers the first
-  /// frame (Net/Client.cpp) - so there is no moment between the two for a caller to act in. A
+  /// frame (GameClient/Client.cpp) - so there is no moment between the two for a caller to act in. A
   /// replica started by hand after that Advance would therefore be started AFTER its first full
   /// frame had already been applied, and would clear it: an ordering trap with no signal, which the
   /// convergence test of this task fell into before this constructor existed.
@@ -56,7 +56,7 @@ public:
   }
 
   /// Applies one frame. A FULL FRAME CLEARS FIRST and re-reads the seat and the landscape: a frame
-  /// with no baseline is everything the commander can see sent whole (Net/Messages.h), which is
+  /// with no baseline is everything the commander can see sent whole (GameShared/Messages.h), which is
   /// what a joining or rejoining client gets, so anything held from before it is by definition
   /// stale - and a rejoin may land in a different seat. A delta is applied on top of what is there.
   void Apply(const Frame& _frame) override;
@@ -129,7 +129,7 @@ public:
 
   /// The rows of the fog that the newest frame changed, ascending and without repeats. Emptied and
   /// refilled by every Apply, because the render view carries "which rows" rather than making the
-  /// client diff a megabyte to recover it (Core/RenderView.h).
+  /// client diff a megabyte to recover it (NeuronCore/RenderView.h).
   [[nodiscard]] std::span<const std::uint32_t> ChangedFogRows() const noexcept
   {
     return m_changedFogRows;
@@ -165,7 +165,7 @@ private:
   std::uint32_t m_newestSequence = NO_BASELINE;
 
   // Keyed by id and ordered by it. ORDERED ON PURPOSE: the host builds its interest set as ids in
-  // ascending order so that two hosts hold it one way (Net/Interest.h), and a replica that walks
+  // ascending order so that two hosts hold it one way (GameLogic/Interest.h), and a replica that walks
   // its objects in the same order is one a test can compare against it without sorting either side.
   std::map<std::uint32_t, ReplicaDevice> m_devices;
   std::map<std::uint32_t, ReplicaStructure> m_structures;

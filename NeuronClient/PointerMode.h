@@ -81,7 +81,7 @@ struct Aim
 /// gains the horizontal count; moving it FORWARD (a negative y count, because the screen's y grows
 /// downward) raises the view, so pitch LOSES the vertical count. Both are one character away from
 /// an inverted camera, both compile either way, and neither is noticed until somebody plays it.
-/// Client/Camera.h clamps the pitch, so nothing here does.
+/// NeuronClient/Camera.h clamps the pitch, so nothing here does.
 [[nodiscard]] Aim AimedBy(const Aim& _aim, std::int32_t _countsX, std::int32_t _countsY) noexcept;
 
 } // namespace Neuron

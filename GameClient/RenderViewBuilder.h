@@ -26,7 +26,7 @@
 // placeholder for them would be a decision about content taken in a renderer.
 //
 // THE CHANGED CHUNKS ARE COMPUTED HERE AND NOT RECEIVED, and that is a security boundary rather
-// than a convenience. Net/Records.h says it plainly: "a snapshot carries the landscape's flatten
+// than a convenience. GameShared/Records.h says it plainly: "a snapshot carries the landscape's flatten
 // deltas and the wire must not, because the terrain under an unscouted base is not public"
 // (TechnicalDesign.md §5.2). A client generates the landscape from the definition it was given at
 // the join and flattens it under the structures it can SEE - which is exactly why StructureState
@@ -48,7 +48,7 @@ namespace Outpost
 ///
 /// FREE, BECAUSE IT IS THE ONLY ARITHMETIC HERE WORTH A TEST. Building the rest of a render view
 /// needs a Replica, which needs a Net::Client, which needs a host to have sent it a JoinAccepted -
-/// the whole stack, which is what Tests/ReplicaTests/ConvergenceTests.cpp already stands up. This
+/// the whole stack, which is what Tests/IntegrationTests/ConvergenceTests.cpp already stands up. This
 /// is the part that is wrong by one chunk at an edge, and it can be checked with two integers.
 void ChunksOfFootprint(std::uint32_t _cellX, std::uint32_t _cellY, std::uint32_t _footprintCellsX, std::uint32_t _footprintCellsY,
                        std::uint32_t _cellsPerSide, std::uint32_t _chunkCells, std::vector<std::uint32_t>& _outChunks);
@@ -64,7 +64,7 @@ void ChunksOfFootprint(std::uint32_t _cellX, std::uint32_t _cellY, std::uint32_t
 /// one - that the client's samples end up agreeing with the host's under a footprint he can see and
 /// untouched under one he cannot.
 ///
-/// IT USES Sim/Placement.h's FlattenDelta FOR THE RECTANGLE AND THE WIRE'S HEIGHT FOR THE VALUE.
+/// IT USES GameShared/Placement.h's FlattenDelta FOR THE RECTANGLE AND THE WIRE'S HEIGHT FOR THE VALUE.
 /// The rectangle is the samples a footprint owns - four a cell plus the boundary sample on the far
 /// side - and taking it from the same function the host used is what makes the two agree sample for
 /// sample. The HEIGHT is not recomputed: FlattenDelta fills its rectangle with the mean of the
@@ -81,7 +81,7 @@ struct RenderViewSettings
 {
   /// The landscape's, for turning a cell into a chunk index.
   std::uint32_t cellsPerSide = 0;
-  /// Client/TerrainChunk.h's CHUNK_CELLS. PASSED AND NOT NAMED: it is a rendering decision and
+  /// NeuronClient/TerrainChunk.h's CHUNK_CELLS. PASSED AND NOT NAMED: it is a rendering decision and
   /// Replica may not include Client, so a copy of the constant here would be a second definition
   /// that nothing makes agree with the first.
   std::uint32_t chunkCells = 32;

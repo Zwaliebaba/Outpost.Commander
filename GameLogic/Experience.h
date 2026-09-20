@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// What a kill is worth (GameDesign.md §8; m1-vertical-slice/S10). Sim/Design.h holds the eight
+// What a kill is worth (GameDesign.md §8; m1-vertical-slice/S10). GameShared/Design.h holds the eight
 // ranks and their thresholds - the owner's answer to OpenQuestions.md Q22 - and says experience is
 // "kills weighted by GameDesign.md §8". The design gives the ranks and the word "weighted" and no
 // weights, so the weighting is stated here, once, where the one caller reads it.

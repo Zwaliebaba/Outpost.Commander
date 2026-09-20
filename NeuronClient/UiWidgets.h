@@ -12,7 +12,7 @@
 // working.
 //
 // ONE STRUCT, NOT SEVEN TYPES AND A VARIANT. A widget is a rectangle, a kind, and the few numbers
-// that kind reads; the fields another kind does not use are zero, exactly as Client/InputEvent.h's
+// that kind reads; the fields another kind does not use are zero, exactly as NeuronClient/InputEvent.h's
 // flat event record does it and for the same reason. The panels of M1 are fixed and authored
 // (§2 - "nothing moves"), so the thing this saves is not allocation but the machinery a hierarchy
 // would need to pay for: a vtable, a downcast at every hit test, and a second place to look when a

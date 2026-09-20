@@ -63,7 +63,7 @@ template <class T> [[nodiscard]] bool ReadList(Neuron::ByteReader& _reader, std:
 }
 
 /// The landscape's public half (§5.2): the definition, and never the flatten deltas. Written here
-/// rather than shared with Sim/Snapshot.cpp because they are two streams with two versions and
+/// rather than shared with GameLogic/Snapshot.cpp because they are two streams with two versions and
 /// two payloads, and a snapshot that gained a field would otherwise break every client.
 void WriteLandscapeDefinition(Neuron::ByteWriter& _writer, const LandscapeDefinition& _definition)
 {

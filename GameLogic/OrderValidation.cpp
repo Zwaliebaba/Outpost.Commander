@@ -328,7 +328,7 @@ OrderCheck ValidateOrder(const Order& _order, const OrderContext& _context)
     {
       return Reject(_order, RejectReason::InvalidPlacement);
     }
-    // The whole of GameDesign.md §5's placement rule (Sim/Placement.h), which is also what the
+    // The whole of GameDesign.md §5's placement rule (GameShared/Placement.h), which is also what the
     // construction system asks again the moment a builder reaches the plan.
     const std::uint32_t cellX = static_cast<std::uint32_t>(_order.operands[1]);
     const std::uint32_t cellY = static_cast<std::uint32_t>(_order.operands[2]);

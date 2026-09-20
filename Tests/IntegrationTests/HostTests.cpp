@@ -719,7 +719,7 @@ public:
 
     // The link goes one way: the host keeps publishing and hears nothing back.
     match.network.SetFaults({0, 0, 0, 0, 0});
-    // Well past five seconds of quiet plus the lobby's grace, which is what Net/Host.cpp waits.
+    // Well past five seconds of quiet plus the lobby's grace, which is what GameLogic/Host.cpp waits.
     for (std::uint32_t tick = 0; tick < 400 + 2 * Lobby().rejoinGraceTicks; ++tick)
     {
       match.sim.Advance();

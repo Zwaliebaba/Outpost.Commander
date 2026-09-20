@@ -8,7 +8,7 @@
 // constant because the landscape generator scatters them and the snapshot must carry them.
 //
 // A deposit is not a feature. It is a point on the landscape an extractor is built on, and it
-// lives in the landscape's definition (Content/LandscapeDefinition.h), not here.
+// lives in the landscape's definition (GameShared/LandscapeDefinition.h), not here.
 
 namespace Outpost
 {

@@ -108,7 +108,7 @@ public:
 
   /// Aims the graph at a landscape it has already been built against, without rebuilding it: what
   /// a Sim calls on itself after being copied or moved, because the landscape it holds is the same
-  /// landscape at a new address (Sim/Sim.h). Never used to point it at a DIFFERENT landscape -
+  /// landscape at a new address (GameLogic/Sim.h). Never used to point it at a DIFFERENT landscape -
   /// Build is what does that, and it re-derives everything.
   void Rebind(const Landscape* _landscape) noexcept
   {

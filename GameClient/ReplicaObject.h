@@ -30,7 +30,7 @@ struct ReplicaDevice
 /// A structure, standing or remembered.
 ///
 /// A GHOST IS NOT A SEPARATE COLLECTION. The host sends a structure the commander has seen and
-/// cannot see now from the ghost store, in the same list and as the same record (Net/Interest.h:
+/// cannot see now from the ghost store, in the same list and as the same record (GameLogic/Interest.h:
 /// "A structure in `structures` is never here as well"), so the id never leaves the replica and
 /// never arrives twice. What changes is that the record is the last-seen one, which the encoder
 /// marks by sending no hit points - see GHOST_HIT_POINTS.
@@ -40,7 +40,7 @@ struct ReplicaStructure
   bool ghost = false;
 };
 
-/// The hit points a ghost carries. Net/FrameEncoder.cpp's WireGhost sends 0 and says why: the
+/// The hit points a ghost carries. GameLogic/FrameEncoder.cpp's WireGhost sends 0 and says why: the
 /// commander has no idea what the building has taken since he last saw it, so zero means unknown
 /// rather than destroyed. A standing structure at zero hit points does not exist - it would have
 /// been removed the tick it reached zero - so this is a marker the wire can carry without a flag.

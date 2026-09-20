@@ -11,7 +11,7 @@ Footprint PreviewFootprint(const ContentTree& _content, std::uint32_t _structure
 {
   if (_structureRow >= _content.structures.structures.size())
   {
-    // One cell, as Sim/Placement.h's FootprintOf answers for a structure whose row is unknown: it
+    // One cell, as GameShared/Placement.h's FootprintOf answers for a structure whose row is unknown: it
     // is where the thing certainly is and never claims ground it may not hold.
     return {_cellX, _cellY, 1, 1};
   }
@@ -31,7 +31,7 @@ PlacementFault PreviewPlacement(std::uint32_t _structureRow, std::uint32_t _cell
   const StructureDesc& row = _query.content->structures.structures[_structureRow];
   const Footprint footprint = FootprintAt(row, _cellX, _cellY);
 
-  // THE GROUND'S OWN THREE RULES, from Sim/Placement.h's function and not from a copy of it, so
+  // THE GROUND'S OWN THREE RULES, from GameShared/Placement.h's function and not from a copy of it, so
   // the ghost and the order cannot disagree about a cliff edge. It is asked ONCE and its answer
   // held, because the order the faults are reported in puts Occupied between OffLandscape and the
   // other two.

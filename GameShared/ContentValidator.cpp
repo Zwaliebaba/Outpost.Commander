@@ -53,7 +53,7 @@ void CollectIds(const ContentTree& _tree, std::vector<ContentDiagnostic>& _diagn
 /// is a list that grows with the tree.
 void CheckResearch(const ContentTree& _tree, std::vector<ContentDiagnostic>& _diagnostics)
 {
-  // THE TABLE FITS THE WIRE'S MASK (Content/ResearchItemDesc.h's MAX_RESEARCH_ITEMS). A commander's
+  // THE TABLE FITS THE WIRE'S MASK (GameShared/ResearchItemDesc.h's MAX_RESEARCH_ITEMS). A commander's
   // completed research reaches the client as one bit a row, so a sixty-fifth row would be research
   // the interface could never show as done - and the panels of Design/Interface.md §7 would offer
   // it for ever. It is refused here rather than dropped by the encoder, because a table that does

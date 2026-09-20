@@ -24,7 +24,7 @@
 // base is not public, so the client's landscape is its own and never the host's).
 //
 // AND WHY IT MUST NOT WRITE THE RULE AGAIN. The ground's three rules are shared literally:
-// Sim/Placement.h's CheckFootprintGround is called from here and from CheckPlacement, so the
+// GameShared/Placement.h's CheckFootprintGround is called from here and from CheckPlacement, so the
 // steepest-cell reading of the slope - which that header spends thirty lines justifying, and which
 // differs from the average-gradient reading exactly along cliff edges - cannot drift between the
 // ghost and the order. What is written here is the two questions whose ANSWERS live in different

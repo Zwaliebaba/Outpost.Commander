@@ -62,7 +62,7 @@ std::int64_t Replica::RenderTimeAtNewestFrame() const noexcept
 void Replica::Apply(const Frame& _frame)
 {
   // A frame with no baseline is everything the commander can see, sent whole: a join, a rejoin, or
-  // a client whose acknowledged baseline aged out of the host's history (Net/Messages.h). Whatever
+  // a client whose acknowledged baseline aged out of the host's history (GameShared/Messages.h). Whatever
   // is held now was encoded against a baseline this frame is not a delta from, so it is not stale
   // in parts - it is stale entirely, and keeping any of it would leave objects the host has since
   // removed standing on the field forever.
@@ -155,7 +155,7 @@ void Replica::Apply(const Frame& _frame)
     structure.state = changed;
     // The one field that tells a remembered structure from a standing one, and the reason a ghost
     // needs no separate collection: the host sends the last-seen record in the same list, with no
-    // hit points on it (Net/FrameEncoder.cpp's WireGhost). A structure that comes back into view
+    // hit points on it (GameLogic/FrameEncoder.cpp's WireGhost). A structure that comes back into view
     // arrives with its hit points again and stops being a ghost here, in the same line.
     structure.ghost = changed.hitPoints == GHOST_HIT_POINTS;
   }
@@ -163,7 +163,7 @@ void Replica::Apply(const Frame& _frame)
   for (const std::uint32_t id : _frame.removed)
   {
     // The id says nothing about which table holds it, so all four are asked. Ids are unique across
-    // kinds (Sim/ObjectId.h), so at most one erases.
+    // kinds (GameShared/ObjectId.h), so at most one erases.
     m_devices.erase(id);
     m_structures.erase(id);
     m_wrecks.erase(id);
@@ -204,7 +204,7 @@ void Replica::ApplyFog(const Frame& _frame)
       }
     }
   }
-  // Ascending and without repeats, which is what Core/RenderView.h's FogView promises its reader:
+  // Ascending and without repeats, which is what NeuronCore/RenderView.h's FogView promises its reader:
   // a run may cross a row boundary and two runs in one frame may touch the same row.
   std::sort(m_changedFogRows.begin(), m_changedFogRows.end());
   m_changedFogRows.erase(std::unique(m_changedFogRows.begin(), m_changedFogRows.end()), m_changedFogRows.end());

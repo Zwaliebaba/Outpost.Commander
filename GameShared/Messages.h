@@ -81,7 +81,7 @@ inline constexpr std::uint8_t NO_OBSERVED_SEAT = 0xFF;
 struct Join
 {
   std::uint16_t protocolVersion;
-  std::uint64_t contentHash; ///< Content/ContentHash.h, the same digest a snapshot is bound by
+  std::uint64_t contentHash; ///< GameShared/ContentHash.h, the same digest a snapshot is bound by
   std::uint64_t token;       ///< The same token rejoins the same seat (§5.4)
   std::uint8_t nameBytes;
   std::array<char, MAX_PLAYER_NAME_BYTES> name; ///< Not null-terminated; nameBytes says how much is his

@@ -41,7 +41,7 @@ constexpr std::uint32_t NO_ROW = 0xFFFFFFFFu;
 }
 
 /// The command post, standing and whole, with the ground under it levelled exactly as
-/// Sim/Construction.cpp levels it when a builder starts one.
+/// GameLogic/Construction.cpp levels it when a builder starts one.
 [[nodiscard]] bool PlaceCommandPost(Sim& _sim, std::uint8_t _seat, const CellPosition& _start)
 {
   const std::uint32_t row = RowOf(_sim.Content(), StructureRole::CommandPost);

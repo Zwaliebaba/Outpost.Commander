@@ -13,7 +13,7 @@ namespace Outpost
 namespace
 {
 
-/// A wire unit is a quarter of a world unit (Net/Records.h), so this is 0.25 and multiplying by it
+/// A wire unit is a quarter of a world unit (GameShared/Records.h), so this is 0.25 and multiplying by it
 /// is the float conversion, done once per axis. Derived from the two constants rather than written
 /// as a quarter, so that a change to either is a change here and not a silent disagreement.
 constexpr float WORLD_UNITS_PER_WIRE_UNIT =
@@ -22,7 +22,7 @@ constexpr float WORLD_UNITS_PER_WIRE_UNIT =
 // HEADING_SUBSTEPS is Interpolation.h's. Without the substeps the intermediate would round to one
 // of the two endpoints and a device would snap through its turn in 1.4-degree jumps however many
 // frames were drawn inside the interval.
-/// The wire's headings to a full turn: Net/Records.h carries the high byte of a binary angle.
+/// The wire's headings to a full turn: GameShared/Records.h carries the high byte of a binary angle.
 constexpr std::int32_t HEADINGS_PER_TURN = 256;
 
 [[nodiscard]] constexpr float WorldFromWire(std::int64_t _wireUnits) noexcept

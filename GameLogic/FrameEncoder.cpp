@@ -10,7 +10,7 @@ namespace Outpost
 {
 
 // The wire's mask and Content's bound are the same number, and this is the one translation unit
-// that sees both (Net/Records.h says so, and Sim/Sim.cpp does the same for MAX_SEATS).
+// that sees both (GameShared/Records.h says so, and GameLogic/Sim.cpp does the same for MAX_SEATS).
 static_assert(RESEARCH_MASK_BITS == MAX_RESEARCH_ITEMS, "the research mask and the content bound must agree");
 
 namespace
@@ -373,7 +373,7 @@ void EncodeFrame(const Sim& _sim, const InterestSet& _interest, ClientView& _vie
   // THE RUNS ARE RELATIVE TO WHAT HE HAS ACKNOWLEDGED, exactly as every other list in this frame
   // is. _view.fog is the grid as of _view.foggedThrough, and it moves only when a baseline the
   // client acknowledged is folded into it - never on an encode. That is the whole fix of
-  // m1-vertical-slice/G1a: Net/Client.cpp drops any delta whose baseline is not the frame it last
+  // m1-vertical-slice/G1a: GameClient/Client.cpp drops any delta whose baseline is not the frame it last
   // applied, which happens whenever a publish outruns an acknowledgement, and a grid advanced on
   // encode loses those runs for good.
   const std::span<const FogState> now = seat.fog.States();

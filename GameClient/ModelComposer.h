@@ -10,7 +10,7 @@
 #include <vector>
 
 // A device or a structure turned into the models that draw it (m1-vertical-slice/R2;
-// Content/ModelDesc.h; TechnicalDesign.md §6.3).
+// NeuronCore/ModelDesc.h; TechnicalDesign.md §6.3).
 //
 // A DEVICE IS A TREE OF THREE MODEL KINDS AND THE COUNT IS A SUM. The chassis model carries a
 // MarkerDrive for each place a drive goes and a MarkerMount for each module; a drive model is drawn
@@ -23,7 +23,7 @@
 // id and ContentTree::FindModel is a linear search over every model in the game, so resolving one
 // per part per object per frame is a string search per handful of triangles. Every row is resolved
 // here into an index into ContentTree::models - which is the id a RenderInstance carries, because
-// Client/ModelBuffers.h is built from that same vector in that same order.
+// NeuronClient/ModelBuffers.h is built from that same vector in that same order.
 //
 // IT COMPOSES AND DOES NOT DECIDE. Which objects are drawn at all is the interest set's, already
 // settled by the host; where they are is Interpolation's; whether one is selected is picking's.
@@ -80,7 +80,7 @@ public:
                      Neuron::RenderInstanceKind _kind, std::vector<Neuron::RenderInstance>& _outInstances) const;
 
   /// How far a row's model reaches from its own origin, in world units and at the row's own draw
-  /// scale: the sphere Replica/Picking.h tests a click against.
+  /// scale: the sphere GameClient/Picking.h tests a click against.
   ///
   /// A CHASSIS'S RADIUS IS THE WHOLE DEVICE'S, near enough. The drives and the modules sit ON the
   /// chassis, so its own reach covers them but for a long barrel, and a click has a pixel of slop

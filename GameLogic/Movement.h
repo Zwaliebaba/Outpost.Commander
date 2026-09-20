@@ -22,7 +22,7 @@
 // slope column buys handling on ground both can cross and not merely reach on ground one cannot.
 //
 // A DEVICE WALKS CELLS AND STEERS IN SUBUNITS. The route is a sequence of cells, because that is
-// what the obstruction grid and the passability rules speak in (Sim/Path.h); the device walks at
+// what the obstruction grid and the passability rules speak in (GameLogic/Path.h); the device walks at
 // the middle of the next cell of it, and at the destination itself for the last. How far along the
 // route it has walked is on the DEVICE and not in the route, because two devices can share a
 // destination and therefore a route, and cannot share a position.

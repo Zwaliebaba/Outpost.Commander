@@ -404,7 +404,7 @@ public:
   TEST_METHOD(AnUnlockIsNothingButTheItemBeingComplete)
   {
     // A row says what unlocks it and an item says what it unlocks; the simulation reads the first,
-    // so there is no second mechanism to keep in step (Sim/Research.h).
+    // so there is no second mechanism to keep in step (GameLogic/Research.h).
     Outpost::Sim sim(TwoSeats(), Tables());
     Assert::IsTrue(sim.CreateLandscape(Ground()));
     const Outpost::ObjectId lab = Standing(sim, 0, Row::ResearchLab, 30, 30);

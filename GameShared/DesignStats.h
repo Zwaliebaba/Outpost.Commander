@@ -31,7 +31,7 @@ struct ClassUpgrades
   std::array<std::int32_t, WEAPON_CLASS_COUNT> weaponAccuracyPercent{};
   /// Not a class, but the same kind of thing and the same one home: ResearchEffect::ExtractorRate
   /// and ResearchEffect::StructureHitPoints apply to every extractor and every structure a seat
-  /// has, and the derivations that read them are Sim/Economy.cpp's and Sim/Research.cpp's.
+  /// has, and the derivations that read them are GameLogic/Economy.cpp's and GameLogic/Research.cpp's.
   std::int32_t extractorRatePercent = 0;
   std::int32_t structureHitPointPercent = 0;
 

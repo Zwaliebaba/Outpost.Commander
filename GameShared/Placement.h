@@ -24,7 +24,7 @@
 // first and then measured against this one. Two things decided it.
 //
 // The number. 25 is the same number and the same unit GameData\Components.json gives Wheels for
-// maxSlopePercent, and that one is read per cell (Sim/ClusterGraph.h). One figure written twice in
+// maxSlopePercent, and that one is read per cell (GameLogic/ClusterGraph.h). One figure written twice in
 // one design means one unit.
 //
 // What each refuses. Over the 795 dry three-by-three sites of the built-in Small landscape, the
@@ -80,8 +80,8 @@ enum class PlacementFault : std::uint8_t
 /// for a point inside it.
 ///
 /// IT IS HERE BECAUSE TWO SYSTEMS HAVE TO AGREE ON IT. Stage 5 counts a builder's effort toward a
-/// plan when this is within the builder module's range (Sim/Construction.cpp), and the scripted
-/// commander decides where to walk a builder so that stage 5 will count it (Sim/AiSeat.cpp). When
+/// plan when this is within the builder module's range (GameLogic/Construction.cpp), and the scripted
+/// commander decides where to walk a builder so that stage 5 will count it (GameLogic/AiSeat.cpp). When
 /// those were two functions the AI walked its trucks to a point measured one way and stage 5
 /// counted them another, and a truck stood beside a plan that never rose. One function, so that a
 /// builder the AI sends is a builder stage 5 counts.

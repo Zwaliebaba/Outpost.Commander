@@ -25,7 +25,7 @@ class SceneTarget;
 // icons drawn over the scene, orthographically at the authored resolution, alpha blended, AFTER the
 // fog pass - so that the interface is never darkened by the fog it is telling the player about.
 //
-// IT DRAWS QUADS AND KNOWS NOTHING ELSE. What a panel looks like is Client/UiDraw.h's, and it is
+// IT DRAWS QUADS AND KNOWS NOTHING ELSE. What a panel looks like is NeuronClient/UiDraw.h's, and it is
 // there rather than here because this header includes d3d12.h and that one does not. This file is
 // the upload, the pipeline and the draw: a vertex buffer a frame, two atlases uploaded once, one
 // root signature, one pipeline state, one DrawInstanced.
@@ -56,7 +56,7 @@ public:
   UiPass(GraphicsDevice& _device, const SceneTarget& _scene, const BitmapFont& _font, const IconAtlas& _icons);
 
   /// THE MINIMAP'S PIXELS FOR THIS FRAME (Design/Interface.md §9.2; m1-vertical-slice/K4), as
-  /// MINIMAP_BYTES of RGBA8 from Client/Minimap.h. Staged here and copied into the texture by the
+  /// MINIMAP_BYTES of RGBA8 from NeuronClient/Minimap.h. Staged here and copied into the texture by the
   /// next Draw, because a copy needs a command list and this does not.
   ///
   /// IT IS A THIRD TEXTURE OF THIS PASS AND NOT A PASS OF ITS OWN. Alpha blending is not

@@ -195,7 +195,7 @@ void CompleteResearch(Sim& _sim, std::uint8_t _seat, std::uint32_t _item)
   {
     return;
   }
-  // Ascending, because Sim/Seat.h says so and because two runs must hash alike.
+  // Ascending, because GameShared/Seat.h says so and because two runs must hash alike.
   seat.researchComplete.insert(std::upper_bound(seat.researchComplete.begin(), seat.researchComplete.end(), _item), _item);
 
   const ResearchItemDesc& item = _sim.Content().research[_item];
@@ -203,7 +203,7 @@ void CompleteResearch(Sim& _sim, std::uint8_t _seat, std::uint32_t _item)
   if (slot == nullptr)
   {
     // An Unlock: joining researchComplete IS the unlock, because a row says what unlocks it and
-    // that is the direction the simulation reads (Sim/Design.h's UnlockedFor).
+    // that is the direction the simulation reads (GameShared/Design.h's UnlockedFor).
     return;
   }
 
@@ -279,7 +279,7 @@ void AdvanceResearch(Sim& _sim)
                   });
 
     // Auto-research fills the idle labs at the start of the tick, cheapest first (the lobby's
-    // option, Sim/MatchSettings.h). Labs in ascending id, so two hosts fill them in one order.
+    // option, GameShared/MatchSettings.h). Labs in ascending id, so two hosts fill them in one order.
     if (_sim.Settings().seats[index].autoResearch)
     {
       std::vector<ObjectId> idle;

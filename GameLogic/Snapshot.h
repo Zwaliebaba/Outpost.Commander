@@ -67,7 +67,7 @@ public:
   /// One planning request per device, and a device is an object.
   static constexpr std::uint32_t MAX_REQUESTS = MAX_OBJECTS;
   /// A route of 65,536 cells is four times the diagonal of the largest landscape, so this is a
-  /// bound on a hostile file and not on a route (Sim/Path.h).
+  /// bound on a hostile file and not on a route (GameLogic/Path.h).
   static constexpr std::uint32_t MAX_PATH_CELLS = 1u << 16;
   static constexpr std::uint32_t MAX_PATH_NODES = 1u << 16;
 };

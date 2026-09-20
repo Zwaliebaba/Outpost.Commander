@@ -87,7 +87,7 @@ void LocalHost::Pass(std::chrono::nanoseconds _elapsed)
   for (std::uint32_t index = 0; index < step.ticks; ++index)
   {
     m_sim->Advance();
-    // 2b. WHAT THE TICK DID, TURNED INTO WHAT THE WIRE CARRIES (m1-vertical-slice/C9). Net/Host.h
+    // 2b. WHAT THE TICK DID, TURNED INTO WHAT THE WIRE CARRIES (m1-vertical-slice/C9). GameLogic/Host.h
     //     says of its event list that "the host loop fills this from what the tick did", and until
     //     now no host loop filled it: every one of the seven event kinds was a wire feature with no
     //     producer, and a client could not be told that anything had been fired.

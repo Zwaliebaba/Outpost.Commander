@@ -89,7 +89,7 @@ void Fire(Sim& _sim, ObjectId _shooter, std::uint8_t _seat, std::int32_t _x, std
   }
 
   // Direct fire decides the hit at the trigger; what flies is the client's business and carries
-  // no record, which is why there is no Projectile here (Sim/Projectile.h says so).
+  // no record, which is why there is no Projectile here (GameShared/Projectile.h says so).
   for (std::uint8_t shot = 0; shot < std::max<std::uint8_t>(_module.shotsPerSalvo, 1); ++shot)
   {
     if (static_cast<std::int32_t>(_sim.Roll(100)) >= chance)
@@ -200,7 +200,7 @@ void ShootDevice(Sim& _sim, ObjectId _id, Device& _device, const DeviceDesign& _
   if (tooFarForEveryWeapon && _device.primaryOrder == PrimaryOrder::Stop && _device.movement == MovementStance::Pursue)
   {
     // IT GIVES ITSELF THE ORDER A COMMANDER WOULD HAVE GIVEN: advance and engage. Stage 3 does not
-    // move a device on Stop at all - Sim/Movement.cpp's Walk returns on it - so setting a
+    // move a device on Stop at all - GameLogic/Movement.cpp's Walk returns on it - so setting a
     // destination alone changes nothing; Stop has to be left for the device to walk anywhere.
     //
     // AttackMove and not Attack, because Arrive turns an AttackMove back into Stop when it gets
@@ -229,7 +229,7 @@ void ShootDevice(Sim& _sim, ObjectId _id, Device& _device, const DeviceDesign& _
 }
 
 /// One standing structure's tick of shooting. A structure has no stances - SetStance names a device
-/// (Sim/Order.h's table) - so it fires at will at the priority Targeting.h states.
+/// (GameShared/Order.h's table) - so it fires at will at the priority Targeting.h states.
 void ShootStructure(Sim& _sim, ObjectId _id, Structure& _structure)
 {
   const ContentTree& content = _sim.Content();
@@ -348,7 +348,7 @@ ObjectId Acquire(const Sim& _sim, std::uint8_t _seat, std::int32_t _x, std::int3
       return;
     }
     // Devices before structures, then the nearest, then the lower id - which the walk gives for
-    // nothing, because it is ascending and a tie keeps the one already held (Sim/Targeting.h).
+    // nothing, because it is ascending and a tie keeps the one already held (GameLogic/Targeting.h).
     if (best == NO_OBJECT || (_device && !bestIsDevice) || (_device == bestIsDevice && distance < bestDistance))
     {
       best = _id;

@@ -17,7 +17,7 @@
 //
 // An id operand is an ObjectId's value; where the kind may name more than one kind of object, a
 // second operand carries the ObjectKind. A position is two operands, x then z, in subunits
-// (1/256 of a world unit, Core/FixedPoint.h) - never in cells, so that an order is as precise as
+// (1/256 of a world unit, NeuronCore/FixedPoint.h) - never in cells, so that an order is as precise as
 // the simulation is. A cell position, where a kind wants one, is two operands of cell indices and
 // says so.
 //

@@ -47,7 +47,7 @@ namespace
 
 /// A key pressed THIS FRAME and not held: the edge, so that a key held down fires once.
 ///
-/// NO BOUND TEST. keyEdges has one entry per virtual-key code (Client/FrameInput.h's KEY_COUNT is
+/// NO BOUND TEST. keyEdges has one entry per virtual-key code (NeuronClient/FrameInput.h's KEY_COUNT is
 /// 256) and the key is a std::uint8_t, so a comparison against the size is always true - which is
 /// a finding rather than a safety net, and clang-tidy says so.
 [[nodiscard]] bool Pressed(const Neuron::FrameInput& _input, std::uint8_t _key) noexcept

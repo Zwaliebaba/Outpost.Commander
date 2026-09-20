@@ -293,7 +293,7 @@ void Host::OnJoin(Neuron::ConnectionId _connection, const Join& _join, std::uint
       client.view.history.Clear();
       client.view.acknowledgedSequence = NO_BASELINE;
       // The history is gone, so no baseline can be folded into the fog again; the next frame is a
-      // full one and encodes the whole grid against an empty one (Net/FrameEncoder.cpp).
+      // full one and encodes the whole grid against an empty one (GameLogic/FrameEncoder.cpp).
       client.view.foggedThrough = NO_BASELINE;
       // AND THE EVENTS OF THE ABSENCE GO WITH IT (m1-vertical-slice/C9). A state list is caught up
       // by the full frame that follows, which is exactly what a rejoin is for; an event cannot be,

@@ -236,7 +236,7 @@ void Visibility::CollectViewers(const World& _world, std::span<const Seat> _seat
                            std::min(_structure.cellY, side == 0 ? 0 : side - 1), CellsOf(row->sightSubunits)});
     });
   // Devices walk in ascending id and structures likewise, but an id is unique across kinds
-  // (Sim/ObjectId.h), so the two runs interleave and the whole has to be put back in id order for
+  // (GameShared/ObjectId.h), so the two runs interleave and the whole has to be put back in id order for
   // the stamp lookups and for the tie-break below to mean anything.
   std::sort(m_viewers.begin(), m_viewers.end(), [](const Viewer& _left, const Viewer& _right) { return _left.id.value < _right.id.value; });
 }

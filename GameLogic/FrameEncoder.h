@@ -43,7 +43,7 @@ struct ClientView
   /// the newest frame it has acknowledged and whose runs have been folded in. O(cells) a client,
   /// which ADR-008 already names as the price of a per-commander fog grid.
   ///
-  /// ACKNOWLEDGED AND NOT SENT, WHICH IS THE WHOLE POINT. Net/Client.cpp drops any delta whose
+  /// ACKNOWLEDGED AND NOT SENT, WHICH IS THE WHOLE POINT. GameClient/Client.cpp drops any delta whose
   /// baseline is not exactly the frame it last applied, which happens whenever a publish outruns an
   /// acknowledgement - the ordinary case at a 10 Hz publish rate, not a lossy-link one. Every other
   /// field survives that, because a frame is the difference between what the client can see NOW and

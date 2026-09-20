@@ -25,7 +25,7 @@ namespace
   Order order{};
   order.seat = _seat;
   order.kind = _kind;
-  // The tick is the HOST'S: Net/Host.cpp stamps an arriving order with its own next tick, because
+  // The tick is the HOST'S: GameLogic/Host.cpp stamps an arriving order with its own next tick, because
   // an order for a tick already run would be moved anyway and one for a tick far ahead would let a
   // client schedule the future. Writing anything here would be writing a number nobody reads.
   order.tick = 0;
@@ -76,7 +76,7 @@ bool OnTheWorld(std::span<const PickBox> _blocked, std::int32_t _x, std::int32_t
 bool GroundPoint(const PickRay& _ray, std::int32_t& _outX, std::int32_t& _outZ) noexcept
 {
   // The ground plane is y = 0 and the order is a point on it. NOT the terrain's height: a Move
-  // names x and z only (Sim/Order.h) and the simulation puts the device on whatever ground is
+  // names x and z only (GameShared/Order.h) and the simulation puts the device on whatever ground is
   // there, so intersecting the heightfield here would cost a walk to produce a number nobody sends.
   if (std::fabs(_ray.directionY) < 1e-6f)
   {
@@ -187,7 +187,7 @@ void OrderInput::ArmedAt(const OrderFrame& _frame, std::vector<Order>& _outOrder
 
   if (m_armed == ArmedOrder::PlaceStructure)
   {
-    // A cell and not a point (Sim/Order.h): placement is on the grid, because the obstruction grid
+    // A cell and not a point (GameShared/Order.h): placement is on the grid, because the obstruction grid
     // and the pathfinder read cells. Negative ground is off the landscape and the simulation
     // refuses it with InvalidPlacement, which is the correction §12 ruling 7 relies on.
     Order order = Make(_frame.ownSeat, OrderKind::PlaceStructure);

@@ -78,7 +78,7 @@ void ResolveDamage(Sim& _sim)
       wreck.seat = device->seat;
       wreck.origin = kill.victim;
       // A device's design is its commander's slot and a structure's is a content row; the origin's
-      // kind is what tells a reader which, and Sim/Wreck.h's field carries whichever it was.
+      // kind is what tells a reader which, and GameShared/Wreck.h's field carries whichever it was.
       wreck.design = device->design;
       wreck.x = device->x;
       wreck.y = device->y;
@@ -87,7 +87,7 @@ void ResolveDamage(Sim& _sim)
       wreck.decayTicks = WRECK_DECAY_TICKS;
       (void)world.Create(wreck);
       // The duty m1-vertical-slice/S8 left here in writing: a planner job outlives its device and
-      // goes on taking budget from the ones still alive (Sim/Movement.h).
+      // goes on taking budget from the ones still alive (GameLogic/Movement.h).
       _sim.Planner().Cancel(kill.victim);
       (void)world.Remove(kill.victim);
     }

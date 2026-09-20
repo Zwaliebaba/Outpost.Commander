@@ -22,14 +22,14 @@ namespace Outpost
 
 // The one translation unit where Sim's seat count and Content's commander-colour count are both
 // visible. Content may not include Sim (AGENTS.md R9: Sim reads Content, never the reverse), so
-// Content/InterfaceDesc.h repeats the number and this is what keeps the two honest - without it,
+// NeuronCore/InterfaceDesc.h repeats the number and this is what keeps the two honest - without it,
 // raising MAX_SEATS would leave the last seats drawn in whatever the array was initialised to.
 static_assert(COMMANDER_COLOR_COUNT == static_cast<std::size_t>(MAX_SEATS), "GameData\\Interface.json carries one commander colour a seat");
 
 Sim::Sim(const MatchSettings& _settings, const ContentTree& _content)
 {
   // Assigned rather than initialised in a list, because the members are a private base's
-  // (Sim/Sim.h says why) and a mem-initialiser list cannot name one of those.
+  // (GameLogic/Sim.h says why) and a mem-initialiser list cannot name one of those.
   m_settings = _settings;
   m_content = &_content;
   m_random = Neuron::Random(_settings.seed);
@@ -341,7 +341,7 @@ bool Sim::Apply(const Order& _order)
       return false;
     }
     // The far end is the order's, and the near end is where the device stood when it was given:
-    // a patrol is between two points and an order names one (Sim/Order.h's table).
+    // a patrol is between two points and an order names one (GameShared/Order.h's table).
     target->primaryOrder = PrimaryOrder::Patrol;
     target->destinationX = order.operands[1];
     target->destinationZ = order.operands[2];
@@ -497,7 +497,7 @@ bool Sim::Apply(const Order& _order)
       return false;
     }
     // A commander may send a device back by hand as well as its retreat stance sending it
-    // (Sim/Retreat.cpp). With nothing in reach it stays where it is rather than walking nowhere.
+    // (GameLogic/Retreat.cpp). With nothing in reach it stays where it is rather than walking nowhere.
     std::int32_t x = 0;
     std::int32_t z = 0;
     if (!RepairPointNear(*this, order.seat, target->x, target->z, x, z))

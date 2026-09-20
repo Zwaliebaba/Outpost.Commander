@@ -61,7 +61,7 @@ struct ContentTree
   std::vector<ResearchItemDesc> research;
   DamageTable damage;
   std::vector<BiomeDesc> biomes;
-  /// The chrome palette and the commander colours (Content/InterfaceDesc.h). NOT named `interface`:
+  /// The chrome palette and the commander colours (NeuronCore/InterfaceDesc.h). NOT named `interface`:
   /// the Windows SDK defines that as a macro for `struct`, and a member spelled that way compiles
   /// everywhere except the one platform this game is built on.
   InterfaceDesc ui;

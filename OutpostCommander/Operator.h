@@ -35,7 +35,7 @@
 // compiler will not catch.
 //
 // NO DIRECT3D AND NO DirectXMath, though. The camera arrives as a PickCamera, which is sixteen
-// floats and its inverse (Replica/Picking.h), so this file can be built and stepped through a whole
+// floats and its inverse (GameClient/Picking.h), so this file can be built and stepped through a whole
 // match on any machine even though the pass that draws its quads cannot.
 //
 // NOTHING HERE TOUCHES Sim, which is G1b's acceptance in as many words: every order it makes is an
@@ -66,7 +66,7 @@ class Operator
 {
 public:
   /// One frame, with the window's pixels already turned into the frame the interface is laid out
-  /// in. The caller owns the conversion because it owns the window (Client/ScaleMode.h's
+  /// in. The caller owns the conversion because it owns the window (NeuronClient/ScaleMode.h's
   /// AuthoredFromClient), and the camera arrives as matrices for the reason the file header gives.
   struct Frame
   {
@@ -148,7 +148,7 @@ public:
   /// object.
   void MoveTo(float _worldX, float _worldZ, Match& _match);
 
-  /// What the selection can do, as this frame read it (Replica/OrderInput.h's AbilitiesOf). The
+  /// What the selection can do, as this frame read it (GameClient/OrderInput.h's AbilitiesOf). The
   /// panels want the same answer and it is one walk of the replica, so it is read once here rather
   /// than a second time beside them.
   [[nodiscard]] std::span<const SelectedObject> Abilities() const noexcept

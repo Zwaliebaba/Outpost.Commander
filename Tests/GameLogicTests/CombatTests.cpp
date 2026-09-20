@@ -410,7 +410,7 @@ public:
 
   TEST_METHOD(ARankIsEarnedByKillsWeightedByWhatTheyCost)
   {
-    // The weighting of Sim/Experience.h, against the reference device it is defined by.
+    // The weighting of GameLogic/Experience.h, against the reference device it is defined by.
     Assert::AreEqual(1u, Outpost::ExperienceForKill(13000), L"the scout GameDesign.md §6 sizes by");
     Assert::AreEqual(1u, Outpost::ExperienceForKill(6000), L"and anything cheaper still counts");
     Assert::AreEqual(3u, Outpost::ExperienceForKill(50000), L"a command post is worth three");
@@ -514,7 +514,7 @@ public:
     // AND IT STANDS AGAIN WHEN THERE IS NOTHING LEFT TO CLOSE ON, which is why the order it gives
     // itself is an AttackMove and not an Attack: Arrive turns an AttackMove back into Stop when it
     // gets there, so a device that closed and then killed what it came for is idle again - and a
-    // scripted commander counts its idle fighters by exactly that (Sim/AiBlackboard.cpp).
+    // scripted commander counts its idle fighters by exactly that (GameLogic/AiBlackboard.cpp).
     for (std::uint32_t tick = 0;
          tick < 900 && DeviceAt(field.sim, gunner) != nullptr && field.sim.Objects().Count(Outpost::ObjectKind::Device) > 1; ++tick)
     {
@@ -625,7 +625,7 @@ public:
       Assert::IsTrue(Level(field.sim, 36, 40, 70, 40));
       const Outpost::ObjectId mortar = Spawn(field.sim, 0, 1, Middle(40), Middle(60));
       // The runner starts on the first COLUMN of a cluster, which is where the graph puts the
-      // doorways between one cluster and the one above it (Sim/ClusterGraph.cpp), so its route
+      // doorways between one cluster and the one above it (GameLogic/ClusterGraph.cpp), so its route
       // north is a straight line. Half a cluster to the side it would detour ten cells west to
       // reach a doorway - toward the mortar - and a shell fired over fourteen cells leads its
       // target by less than the splash and connects. That is correct behaviour and it is not what
@@ -674,7 +674,7 @@ public:
     Field field;
     const Outpost::ObjectId tower = Standing(field.sim, 0, Row::Tower, 60, 60);
     // A structure of theirs nearer than a device of theirs: devices come first all the same,
-    // because a thing that shoots back is the thing that has to stop (Sim/Targeting.h).
+    // because a thing that shoots back is the thing that has to stop (GameLogic/Targeting.h).
     (void)Standing(field.sim, 1, Row::CommandPost, 62, 60);
     const Outpost::ObjectId device = Spawn(field.sim, 1, 2, Middle(66), Middle(60));
     field.sim.Advance(); // Stage 7 stamps the tower's sight before stage 8 reads it

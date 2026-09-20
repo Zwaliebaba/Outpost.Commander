@@ -11,7 +11,7 @@
 // look anybody gets at this game, so where the camera is pointed is not a detail of the run - it is
 // the whole of what the artefact says.
 //
-// NO DIRECT3D AND NO DirectXMath HERE, for the reason Client/GroundRay.h gives: everything below is
+// NO DIRECT3D AND NO DirectXMath HERE, for the reason NeuronClient/GroundRay.h gives: everything below is
 // arithmetic over a script and a list of instances, so a camera pointed at the wrong valley is a
 // failing assertion on any machine rather than ninety BMPs nobody can rerun. What the capture keeps
 // is the device, the passes and the ground height under the aim point.

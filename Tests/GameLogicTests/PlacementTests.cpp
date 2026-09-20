@@ -176,7 +176,7 @@ public:
     Outpost::Sim sim(TwoSeats(), Tables());
     Assert::IsTrue(sim.CreateLandscape(Ground()));
     // The border of a generated landscape falls to the outside plain, which is under the sea
-    // (Content/LandscapeDefinition.h), so the ground is levelled first: this test is about the
+    // (GameShared/LandscapeDefinition.h), so the ground is levelled first: this test is about the
     // bounds and nothing else.
     Assert::IsTrue(Level(sim, 123, 123, 5, 5, 40));
     Reveal(sim, 0, 120, 120, 8, 8);
@@ -226,14 +226,14 @@ public:
     Reveal(sim, 0, 28, 28, 10, 10);
     Assert::IsTrue(Level(sim, 30, 30, 3, 3, 40));
     Assert::IsTrue(Outpost::PlacementFault::Accepted == FaultAt(sim, Row::Factory, 30, 30));
-    // Sea level is zero (Content/LandscapeDefinition.h), so one cell put under it is enough.
+    // Sea level is zero (GameShared/LandscapeDefinition.h), so one cell put under it is enough.
     Assert::IsTrue(Level(sim, 32, 32, 1, 1, -10));
     Assert::IsTrue(Outpost::PlacementFault::Water == FaultAt(sim, Row::Factory, 30, 30), L"one corner in the sea");
   }
 
   TEST_METHOD(TheSteepestCellDecidesTheSlopeAndNotTheAverageAcrossIt)
   {
-    // This is the whole of the reading ADR-less choice in Sim/Placement.h, pinned by a case the
+    // This is the whole of the reading ADR-less choice in GameShared/Placement.h, pinned by a case the
     // other reading would accept: a three-by-three of level ground with ONE eight-unit step in the
     // middle of it. Across the footprint that is 8 world units over 192, which is 4%; under the
     // one cell that carries it, it is 8 over the 16-unit sample spacing, which is 50%.
@@ -333,8 +333,8 @@ public:
   {
     // ONE FUNCTION, TWO CALLERS, AND THAT IS THE POINT OF IT (m1-vertical-slice/S13). Stage 5
     // counts a builder's effort toward a plan when this is inside the builder module's range
-    // (Sim/Construction.cpp), and the scripted commander decides where to walk a builder so that
-    // stage 5 will count it (Sim/AiSeat.cpp). It lived in Construction.cpp's anonymous namespace,
+    // (GameLogic/Construction.cpp), and the scripted commander decides where to walk a builder so that
+    // stage 5 will count it (GameLogic/AiSeat.cpp). It lived in Construction.cpp's anonymous namespace,
     // so the AI measured to the site's CORNER against half the reach as a correction, and the two
     // could not be checked against each other. They are the same call now.
     constexpr std::int32_t CELL = Neuron::SUBUNITS_PER_CELL;

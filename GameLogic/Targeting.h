@@ -26,7 +26,7 @@
 //
 // THE TARGET PRIORITY IS THIS TASK'S, AND IT IS THE ONE THE DESIGN LEFT OUT. GameDesign.md §8 says
 // "Structures with weapons take a target-priority stance only" and never says what the priorities
-// are, and there is no target-priority axis in Sim/Device.h's four (the order set cannot express
+// are, and there is no target-priority axis in GameShared/Device.h's four (the order set cannot express
 // one). So the rule below is fixed for every shooter and stated here: keep the target you have
 // while it is alive, visible and in range - a weapon that re-chose every tick would spray a crowd
 // and never kill anything - and otherwise take the nearest, devices before structures, ties broken
@@ -53,7 +53,7 @@ struct TargetPoint
   std::int32_t z;
   std::int32_t y;
   TargetArmor armor;
-  std::int32_t costHundredths; ///< What destroying it is worth (Sim/Experience.h)
+  std::int32_t costHundredths; ///< What destroying it is worth (GameLogic/Experience.h)
   bool device;                 ///< Devices are taken before structures
 
   [[nodiscard]] constexpr bool operator==(const TargetPoint&) const noexcept = default;

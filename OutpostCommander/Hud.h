@@ -31,13 +31,13 @@
 // IT IS IN THE EXECUTABLE FOR THE REASON Operator.h GIVES: it needs Client's toolkit and Replica's
 // records, and ADR-001 makes those siblings over Core, so only an executable may hold both. What
 // could be a library already is - UiPanel, UiWidgets and UiDraw in Client, PlacementPreview and
-// OrderInput in Replica, the minimap's picture in Client/Minimap.h - and what is left is the
+// OrderInput in Replica, the minimap's picture in NeuronClient/Minimap.h - and what is left is the
 // reading of one and the filling of the other.
 //
 // EVERY PANEL IS REBUILT FROM THE REPLICA EVERY FRAME, and the widgets therefore carry NAMED ids
 // rather than the numbers UiPanel::Add hands out. A button acts on the release and only inside the
 // widget it was pressed in, so an id that moved to another control between the press and the
-// release would fire the wrong one; a named id cannot move (Client/UiPanel.h's Reset says so too).
+// release would fire the wrong one; a named id cannot move (NeuronClient/UiPanel.h's Reset says so too).
 
 namespace Outpost
 {
@@ -72,7 +72,7 @@ inline constexpr std::uint32_t PORTRAITS_SHOWN = 32;
 inline constexpr std::int32_t PORTRAITS_PER_ROW = 8;
 
 /// How many modules a SaveDesign order can carry: its fourth operand packs them one to a byte
-/// (Sim/Order.h), which bounds a saved design to four mounts against MAX_MOUNTS' eight. The design
+/// (GameShared/Order.h), which bounds a saved design to four mounts against MAX_MOUNTS' eight. The design
 /// tab stops at four rather than letting the encoder drop the fifth silently.
 inline constexpr std::size_t DESIGN_MODULES_ON_THE_WIRE = 4;
 

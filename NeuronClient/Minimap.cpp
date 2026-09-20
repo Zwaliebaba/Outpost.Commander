@@ -211,7 +211,7 @@ MinimapPoint WorldOfMinimap(std::int32_t _pixelX, std::int32_t _pixelY, std::uin
     return point;
   }
   const float perCell = static_cast<float>(std::max<std::uint32_t>(1, MINIMAP_PIXELS / std::max<std::uint32_t>(_cellsPerSide, 1)));
-  // THE MIDDLE OF THE PIXEL AND NOT ITS CORNER, which is the same rule Replica/Picking.cpp casts
+  // THE MIDDLE OF THE PIXEL AND NOT ITS CORNER, which is the same rule GameClient/Picking.cpp casts
   // through: a click lands on what was drawn there, and what was drawn there was sampled at the
   // middle. Half a cell is 32 world units, which is half a device's length.
   point.x = (static_cast<float>(_pixelX) + 0.5f) / perCell * _worldUnitsPerCell;

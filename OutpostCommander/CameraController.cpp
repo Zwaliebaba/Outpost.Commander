@@ -75,7 +75,7 @@ void CameraController::Advance(Neuron::Camera& _camera, const Neuron::FrameInput
   const float up = (Axis(_input, KEY_PAGE_UP, KEY_PAGE_DOWN) * rate) + static_cast<float>(_input.wheelDetents) * WHEEL_HEIGHT_PER_DETENT;
   _camera.Move(forward * rate, right * rate, up);
 
-  // AIM MODE TURNS THE CAMERA WITH NO BUTTON HELD (§4). The signs are Client/PointerMode.h's, and
+  // AIM MODE TURNS THE CAMERA WITH NO BUTTON HELD (§4). The signs are NeuronClient/PointerMode.h's, and
   // they are there rather than here because they are exactly the thing that ships inverted: both
   // compile either way and neither is noticed until somebody plays it.
   Neuron::Aim aim{_camera.Yaw(), _camera.Pitch()};

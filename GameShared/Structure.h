@@ -49,17 +49,17 @@ struct Structure
   StructurePhase state;
   std::int32_t hitPoints;
   /// What the attending builders have put in, in hundredths of build power summed over ticks
-  /// (Sim/Construction.h): complete at the row's buildTimeTicks times the reference builder's
+  /// (GameLogic/Construction.h): complete at the row's buildTimeTicks times the reference builder's
   /// rate. The accumulator is the builders' own contribution rather than a percentage of the
   /// whole, because a percentage per tick does not divide - a hundred percent over a 1,200-tick
   /// factory is 8.33 hundredths a tick - and a truncated percentage never reaches a hundred.
-  /// Sim/Construction.h turns it into the percentage the hit points and the refund want.
+  /// GameLogic/Construction.h turns it into the percentage the hit points and the refund want.
   std::int32_t buildEffortHundredths;
 
   std::array<std::uint32_t, MAX_STRUCTURE_MODULES> modules; ///< Row indices; the first moduleCount count
   std::uint8_t moduleCount;
 
-  /// Ticks until the one weapon this structure's row names may fire again (Sim/Weapons.h). A
+  /// Ticks until the one weapon this structure's row names may fire again (GameLogic/Weapons.h). A
   /// field of its own rather than a second use of workRemainingTicks below, which is a factory's
   /// production countdown: a mod that puts a weapon on a factory would otherwise have the two
   /// share one counter and each reset the other.

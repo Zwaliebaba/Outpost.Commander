@@ -30,7 +30,7 @@
 // rather than one type with a narrowing writer, because a field added to the simulation must not
 // reach the wire by default - §5.2's leak posture is enforced by what the encoder can name.
 //
-// WHY THE LAYOUT IS NOT THE SNAPSHOT'S. Sim/Snapshot.cpp writes the same settings and the same
+// WHY THE LAYOUT IS NOT THE SNAPSHOT'S. GameLogic/Snapshot.cpp writes the same settings and the same
 // landscape definition, and this file writes them again rather than calling into it. They are two
 // streams with two versions: a snapshot that gains a field bumps SNAPSHOT_VERSION, and a wire that
 // shared its writer would break every client of a host that could save. They also carry different
@@ -275,7 +275,7 @@ struct SeatState
   /// The seat's most recent refused order, for the one line of warning text Design/Interface.md §6
   /// draws for two seconds and then replaces.
   ///
-  /// NOT A LIST, although Sim/Seat.h keeps one. The display shows one refusal at a time, and a
+  /// NOT A LIST, although GameShared/Seat.h keeps one. The display shows one refusal at a time, and a
   /// variable-length field in a record the encoder compares by value would be walked and sent every
   /// frame for a line that is usually the same one. THE SEQUENCE IS WHY THREE FIELDS AND NOT TWO:
   /// two identical refusals in a row are equal by value, so without a counter a commander who asks
@@ -294,8 +294,8 @@ struct SeatState
 inline constexpr std::uint32_t NO_RESEARCH_ITEM = 0xFFFFFFFFu;
 
 /// How many research rows SeatState::researchComplete can carry. It is Content's own bound, so
-/// that the bit and the row index are the same number everywhere; Net/FrameEncoder.cpp is the one
-/// translation unit that sees both and static_asserts them equal, exactly as Sim/Sim.cpp does for
+/// that the bit and the row index are the same number everywhere; GameLogic/FrameEncoder.cpp is the one
+/// translation unit that sees both and static_asserts them equal, exactly as GameLogic/Sim.cpp does for
 /// MAX_SEATS against Content's COMMANDER_COLOR_COUNT.
 inline constexpr std::uint32_t RESEARCH_MASK_BITS = static_cast<std::uint32_t>(MAX_RESEARCH_ITEMS);
 

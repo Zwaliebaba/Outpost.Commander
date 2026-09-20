@@ -20,7 +20,7 @@
 // simulation's queue. One simulation runs and the host is what tells everyone else about it.
 //
 // THE FOG IS ENFORCED HERE. GameDesign.md §10 is explicit that a modified client must see nothing
-// an honest one does not, so the filter is the interest set of Net/Interest.h and the encoder never
+// an honest one does not, so the filter is the interest set of GameLogic/Interest.h and the encoder never
 // names an object it does not carry. That is the security property NetTests::InterestTests asserts
 // over a whole scripted match rather than over one frame.
 //
@@ -49,7 +49,7 @@ struct HostClient
   ReliableStream orders; ///< The receiving half of §5.5's stream; the client holds the other
   std::uint32_t lastHeardTick = 0;
   SeatConnection state = SeatConnection::Open;
-  /// It WATCHES its seat rather than playing it (m1-vertical-slice/G2; Net/Messages.h's Join says
+  /// It WATCHES its seat rather than playing it (m1-vertical-slice/G2; GameShared/Messages.h's Join says
   /// why one exists). Everything about receiving frames is the same - the interest set, the fog,
   /// the events are the seat's - and everything about BEING the seat is not: it is not what
   /// FreeSeat hands the next joiner, not what SeatState reports of the seat, and its going quiet

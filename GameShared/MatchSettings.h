@@ -86,7 +86,7 @@ struct SeatSettings
   /// be an order and this is not one.
   ///
   /// A SCRIPTED SEAT IS NOT PLAYABLE WITHOUT IT, and the default is the wrong one for such a seat:
-  /// Sim/AiSeat.h carries no research behaviour precisely because this flag is meant to do the job,
+  /// GameLogic/AiSeat.h carries no research behaviour precisely because this flag is meant to do the job,
   /// so an AI seat left with it false never unlocks a weapon that can destroy a building and cannot
   /// finish a match it has won (m1-vertical-slice/S15). It stays false by default because a HUMAN
   /// seat's default must be "the panel is mine", and every caller that seats an AI is responsible

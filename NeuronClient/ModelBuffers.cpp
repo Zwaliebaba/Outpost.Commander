@@ -83,7 +83,7 @@ struct VertexKey
          (static_cast<std::uint32_t>(_color[2]) << 16) | (static_cast<std::uint32_t>(_color[3]) << 24);
 }
 
-/// Core/RenderView.h's, kept under this name because the calls below read better for it and because
+/// NeuronCore/RenderView.h's, kept under this name because the calls below read better for it and because
 /// one definition is the point rather than one spelling.
 [[nodiscard]] float WorldUnits(std::int32_t _subunits) noexcept
 {

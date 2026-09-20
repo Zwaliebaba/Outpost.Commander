@@ -36,7 +36,7 @@ class GraphicsDevice;
 // the terrain resolves by knowing that the ground faces up, has no such answer on a model.
 //
 // POSITIONS BECOME WORLD UNITS HERE. A ModelDesc is in subunits, 256 to the world unit
-// (Core/FixedPoint.h), because Content is where the simulation's numbers live; the camera, the
+// (NeuronCore/FixedPoint.h), because Content is where the simulation's numbers live; the camera, the
 // terrain and the render view are in world units. This is the conversion, and it happens once at
 // load rather than per frame.
 //
@@ -73,7 +73,7 @@ struct GeometryInstance
   float headingCos;
   float headingSin;
   std::uint32_t teamColor;                      ///< RGBA8, R in the low byte
-  std::array<float, 3> scale{1.0f, 1.0f, 1.0f}; ///< Core/RenderView.h's InstanceScale
+  std::array<float, 3> scale{1.0f, 1.0f, 1.0f}; ///< NeuronCore/RenderView.h's InstanceScale
 };
 
 // THE INPUT LAYOUT IS WRITTEN FROM THESE OFFSETS and there is no compiler to tell it apart from a

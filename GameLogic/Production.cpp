@@ -358,7 +358,7 @@ void AdvanceProduction(Sim& _sim)
     device.target = NO_OBJECT;
     device.destinationX = device.x;
     device.destinationZ = device.z;
-    // The stances a commander has not changed: the first value of each axis (Sim/Device.h), which
+    // The stances a commander has not changed: the first value of each axis (GameShared/Device.h), which
     // is fire at will, optimal range, retreat at half and pursue.
     device.fire = FireStance::FireAtWill;
     device.range = RangeStance::Optimal;

@@ -14,8 +14,8 @@ namespace Neuron
 
 // THE TWO CONVERSIONS THAT MAKE A RENDER NUMBER OUT OF A SIMULATION ONE live here, beside the
 // aggregate whose fields they produce. §6.3 says this is where the conversion happens; before
-// m1-vertical-slice/R2 each caller kept its own copy of them - Client/ModelBuffers.cpp a
-// WorldUnits, Replica/Interpolation.cpp a RADIANS_PER_HEADING_SUBSTEP - and a third was about to be
+// m1-vertical-slice/R2 each caller kept its own copy of them - NeuronClient/ModelBuffers.cpp a
+// WorldUnits, GameClient/Interpolation.cpp a RADIANS_PER_HEADING_SUBSTEP - and a third was about to be
 // written for the model composer.
 //
 // NOTHING IN Sim MAY CALL EITHER OF THEM. The simulation is fixed point and binary angles from end
@@ -30,7 +30,7 @@ namespace Neuron
   return static_cast<float>(_subunits) / static_cast<float>(SUBUNITS_PER_WORLD_UNIT);
 }
 
-/// A binary angle (Core/BinaryAngle.h) in radians. One conversion, so that a device's heading and a
+/// A binary angle (NeuronCore/BinaryAngle.h) in radians. One conversion, so that a device's heading and a
 /// marker's cannot disagree about which way round the circle goes.
 [[nodiscard]] constexpr float RadiansOfBinaryAngle(std::int64_t _binaryAngle) noexcept
 {
@@ -66,7 +66,7 @@ enum class RenderInstanceKind : std::uint8_t
 ///
 /// The position is in WORLD UNITS, as the camera and the terrain are, not in the simulation's
 /// subunits: this aggregate is where the conversion has already happened, which is what "the only
-/// place it happens" in §6.3 means. Models are converted once at load (Client/ModelBuffers.h).
+/// place it happens" in §6.3 means. Models are converted once at load (NeuronClient/ModelBuffers.h).
 ///
 /// THE COLOUR IS AN INDEX AND NOT A COLOUR (Design/Interface.md §11 row 2, m1-vertical-slice/R2).
 /// It used to be the packed word itself, which meant the palette was copied into every instance of

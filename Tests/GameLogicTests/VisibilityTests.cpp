@@ -494,7 +494,7 @@ public:
     // TALLEST sample, so a sight line drawn from that height to that height grazes the ground the
     // whole way and every swell between two cells occludes. The owner saw the result on 2026-09-19
     // and described it exactly: cyan terrain riddled with rectangular black holes, through ground
-    // the commander was standing next to. Sim/Visibility.h's VIEWER_EYE_WORLD_UNITS is the fix and
+    // the commander was standing next to. GameLogic/Visibility.h's VIEWER_EYE_WORLD_UNITS is the fix and
     // this is the measurement that chose it, kept as a test so that a later change to CellHeight,
     // to the radius or to the eye cannot take the fog back to moth-eaten without this number
     // moving and somebody having to say why.

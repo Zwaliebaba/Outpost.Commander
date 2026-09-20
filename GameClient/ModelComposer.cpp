@@ -14,7 +14,7 @@ namespace Outpost
 namespace
 {
 
-/// The marker names of Content/ModelDesc.h. A marker is matched by PREFIX and not by equality,
+/// The marker names of NeuronCore/ModelDesc.h. A marker is matched by PREFIX and not by equality,
 /// because a chassis with four wheels carries MarkerDrive1 through MarkerDrive4 and the number is
 /// the Species convention rather than anything this game reads: what matters is how many there are
 /// and where, and both come from the list itself.
@@ -36,7 +36,7 @@ constexpr std::string_view MARKER_MUZZLE = "MarkerMuzzle";
 }
 
 /// The furthest a model's vertices reach from its own origin, in world units. The same number
-/// Client/ModelBuffers.h computes for a cull, worked out here because Replica may not include it.
+/// NeuronClient/ModelBuffers.h computes for a cull, worked out here because Replica may not include it.
 [[nodiscard]] float ModelRadiusWorldUnits(const ModelDesc& _model) noexcept
 {
   std::int64_t furthestSquared = 0;
@@ -62,7 +62,7 @@ Pose PlacedAt(const Pose& _parent, const ModelVertex& _offsetSubunits, std::uint
   const float x = Neuron::WorldUnitsOfSubunits(_offsetSubunits.x);
   const float y = Neuron::WorldUnitsOfSubunits(_offsetSubunits.y);
   const float z = Neuron::WorldUnitsOfSubunits(_offsetSubunits.z);
-  // THIS IS Client/Shaders/GeometryVS.hlsl's Turn, WRITTEN AGAIN, and it has to be: the chassis's
+  // THIS IS NeuronClient/Shaders/GeometryVS.hlsl's Turn, WRITTEN AGAIN, and it has to be: the chassis's
   // own vertices are turned by that function and a marker on the chassis has to land where they do.
   // Heading zero looks along +z and grows toward +x, which is what the marker importer wrote and
   // what the simulation's binary angle counts in; a sign the other way round here would mirror

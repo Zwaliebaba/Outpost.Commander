@@ -13,7 +13,7 @@
 // overlapping devices" is a case rather than something somebody checks by clicking.
 //
 // REPLICA HAS NO MATRIX TYPE AND MAY NOT HAVE ONE. It includes no Windows, Direct3D or WinRT header
-// anywhere and Build/CheckProjectFiles.py refuses one (Replica/pch.h, ADR-001), so DirectXMath is
+// anywhere and Build/CheckProjectFiles.py refuses one (GameClient/pch.h, ADR-001), so DirectXMath is
 // out. Sixteen floats is the whole of what this needs, and the executable stores its XMMATRIX into
 // them with XMStoreFloat4x4, which is where the row-major convention below comes from.
 //
@@ -27,14 +27,14 @@
 // A rectangle takes DEVICES of one seat only: "a rectangle never selects structures and never
 // selects another commander's anything". A wreck, a feature and a projectile are picked by nothing.
 // A ray whose origin lands on a panel is refused before it is cast, and that is the caller's: the
-// interface already knows where its panels are (Client/UiInputSink.h's PointerOverPanel).
+// interface already knows where its panels are (NeuronClient/UiInputSink.h's PointerOverPanel).
 
 namespace Outpost
 {
 
 /// A camera matrix as sixteen floats, ROW MAJOR, multiplied as a row vector times the matrix. That
 /// is DirectXMath's convention - XMStoreFloat4x4 of View * Projection - and the one
-/// Client/Shaders/GeometryVS.hlsl computes with mul(float4(world, 1), g_viewProjection).
+/// NeuronClient/Shaders/GeometryVS.hlsl computes with mul(float4(world, 1), g_viewProjection).
 struct CameraMatrix
 {
   std::array<float, 16> m{};
@@ -42,7 +42,7 @@ struct CameraMatrix
 
 /// The camera as picking reads it: the matrix that projects, its inverse, and the frame the screen
 /// coordinates are in. The frame is passed rather than named because AUTHORED_WIDTH_PIXELS is
-/// Client's (Client/ScaleMode.h) and Replica may not include it - and because a capture at another
+/// Client's (NeuronClient/ScaleMode.h) and Replica may not include it - and because a capture at another
 /// size would otherwise pick at the wrong place with no symptom but a miss.
 struct PickCamera
 {
@@ -72,7 +72,7 @@ struct PickBox
 /// SPHERE AND NOT THE MODEL'S TRIANGLES, because a click is a gesture with a pixel of slop in it
 /// and a per-triangle test would make a unit harder to select the more detailed its model became -
 /// which is the wrong way round. The radius is the model's own furthest vertex, which
-/// Client/ModelBuffers.h already computes for the same reason a cull would.
+/// NeuronClient/ModelBuffers.h already computes for the same reason a cull would.
 struct PickCandidate
 {
   std::uint32_t id = 0;

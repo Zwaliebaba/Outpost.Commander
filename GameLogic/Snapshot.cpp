@@ -140,7 +140,7 @@ void WriteObjectId(Neuron::ByteWriter& _writer, ObjectId _id)
 /// fraction of a landscape, so it is written as runs: a length and a value, and an untouched grid
 /// is one run. Deterministic, because the runs are a pure function of the values.
 ///
-/// Templated on the value's type since S9 widened the viewer count to sixteen bits (Sim/FogGrid.h
+/// Templated on the value's type since S9 widened the viewer count to sixteen bits (GameShared/FogGrid.h
 /// says why), so the two grids of the pair no longer share one.
 template <class T> void WriteRuns(Neuron::ByteWriter& _writer, std::span<const T> _values)
 {
@@ -774,7 +774,7 @@ void Snapshot::Write(const Sim& _sim, Neuron::ByteWriter& _writer)
     _writer.Write(stamp.refreshedTick);
   }
   // The planning queue: the requests in the order the budget serves them, each with the route it
-  // has reached and the nodes it has spent, but never the search's own working (Sim/PathPlanner.h).
+  // has reached and the nodes it has spent, but never the search's own working (GameLogic/PathPlanner.h).
   // A device that is walking a route must go on walking the same one, and one whose search is
   // half done must finish it on the tick it would have finished on.
   const std::vector<PathRequest> requests = _sim.m_planner.Requests();

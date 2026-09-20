@@ -235,7 +235,7 @@ public:
 
   TEST_METHOD(GroundThatIsOccupiedIsReportedAsOccupiedAndNotAsTheGroundsOwnFault)
   {
-    // The fault ORDER, which Sim/Placement.h calls "the order a commander would want to be told
+    // The fault ORDER, which GameShared/Placement.h calls "the order a commander would want to be told
     // about them": a site that is both built on and too steep is reported as built on, because
     // that is the thing he can do something about. A preview that tested the ground first would
     // tell him a hillside was too steep when what is actually in his way is his own factory.

@@ -16,11 +16,11 @@
 // library. It belongs here on its own merits too - Design/Interface.md §5 calls this code "R2's
 // picking functions, as pure functions over the replica and the camera matrices", and Picking.h is
 // already next door. No layering edge is new: Replica is built on Core, Content, Sim and Net, and
-// this needs only Picking and Sim/Order.h.
+// this needs only Picking and GameShared/Order.h.
 //
 // NO DEVICE AND NO WINDOW. Everything here is arithmetic over the frame's input, R2's picking and
 // the replica's candidates, so it is a unit test rather than something only the capture can see.
-// That is the same bargain Replica/Picking.h struck and for the same reason: the rules here - which
+// That is the same bargain GameClient/Picking.h struck and for the same reason: the rules here - which
 // press is a click and which is a rectangle, what a rectangle may take, what an empty click does -
 // are the ones that are wrong by a pixel or by one commander's units rather than wrong by a crash.
 //
@@ -43,7 +43,7 @@ namespace Outpost
 /// rule than the click the commander meant.
 inline constexpr std::int32_t DRAG_THRESHOLD_PIXELS = 4;
 
-/// One frame as Selection reads it. Authored pixels throughout (Client/ScaleMode.h's
+/// One frame as Selection reads it. Authored pixels throughout (NeuronClient/ScaleMode.h's
 /// AuthoredFromClient is what turns a client pixel into one), because that is the frame R2's
 /// picking projects into and the frame Design/Interface.md lays its panels out in.
 struct SelectionFrame

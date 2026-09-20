@@ -19,7 +19,7 @@
 // of marching the grid rather than reading a height. A cell is two triangles and there are two
 // ways to split it; on a saddle the two splits differ by most of a cell's height, so a cursor
 // tested against the other diagonal floats over the ground the commander is looking at. The split
-// here is Client/TerrainChunk.cpp's: the shared edge runs from (x+1, z) to (x, z+1).
+// here is NeuronClient/TerrainChunk.cpp's: the shared edge runs from (x+1, z) to (x, z+1).
 //
 // THE HEIGHTS ARE THE LANDSCAPE'S AND NOT THE MESH'S. The mesh dips its shore samples below the
 // water to hide the seam (TerrainChunk.cpp's SHORE_DIP); that is a cosmetic of the draw and not

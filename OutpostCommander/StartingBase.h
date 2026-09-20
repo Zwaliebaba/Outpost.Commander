@@ -11,7 +11,7 @@
 // hardpoints".
 //
 // THIS IS THE APPLICATION'S AND NOT THE SIMULATION'S, which is a ruling the tree already carries:
-// Tests/SimTests/AiTests.cpp places its own base and says why - "NOTHING IN THE TREE OWNS
+// Tests/GameLogicTests/AiTests.cpp places its own base and says why - "NOTHING IN THE TREE OWNS
 // BASE-LEVEL PLACEMENT YET - it is the application's (m1-vertical-slice/G1), and until G1 lands a
 // match is set up by whoever starts one". This is G1 landing. It stays out of Sim because a tick
 // never does it: it happens once, before tick 0, from the lobby's settings, and a Sim that could do
@@ -32,7 +32,7 @@ namespace Outpost
 
 /// Places _seat's base level at _start, the cell the landscape names as that seat's start, which
 /// becomes the command post's LOWEST cell rather than its centre - the same reading
-/// Tests/SimTests/AiTests.cpp takes of GameData/Landscapes/Slice.json, so the picture the
+/// Tests/GameLogicTests/AiTests.cpp takes of GameData/Landscapes/Slice.json, so the picture the
 /// application starts and the picture the AI suite tests are the same one.
 ///
 /// False, with the reason logged, when the tables carry no command post or no builder the seat

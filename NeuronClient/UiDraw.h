@@ -18,7 +18,7 @@
 
 // A panel turned into the quads that draw it (Design/Interface.md §3; m1-vertical-slice/K3). This
 // is the whole of the look - the fills, the border, the title gradient, the button states, the bar
-// colours and where every glyph lands - and it holds no Direct3D at all. Client/UiPass.h uploads
+// colours and where every glyph lands - and it holds no Direct3D at all. NeuronClient/UiPass.h uploads
 // what this produces and issues the draw.
 //
 // THE SPLIT IS WHAT MAKES THE LOOK TESTABLE. UiPass.h includes d3d12.h, so anything declared beside
@@ -27,12 +27,12 @@
 // rather than wrong by a crash, which is exactly what a unit test catches and an eye does not. It
 // is the same reason AUTHORED_WIDTH_PIXELS moved out of SceneTarget.h in this task.
 //
-// A COLOUR IS RGBA8 WITH RED IN THE LOW BYTE, which is Core/RenderView.h's PackedRgba8 - the one
+// A COLOUR IS RGBA8 WITH RED IN THE LOW BYTE, which is NeuronCore/RenderView.h's PackedRgba8 - the one
 // packing in the tree, and the byte order DXGI_FORMAT_R8G8B8A8_UNORM reads a vertex attribute in.
 //
 // THE PALETTE IS THE GAME'S DATA AND THAT IS ALLOWED. Outpost::ChromePalette is Content's
 // (GameData\Interface.json, m1-vertical-slice/C6) and Client is built on Content
-// (TechnicalDesign.md §2), the same edge Client/ModelBuffers.h already uses for ModelDesc. What R9
+// (TechnicalDesign.md §2), the same edge NeuronClient/ModelBuffers.h already uses for ModelDesc. What R9
 // forbids is Client knowing Sim or Replica, and nothing here does.
 
 namespace Neuron
@@ -47,7 +47,7 @@ enum class UiQuadKind : std::uint32_t
   Icon = 2,  ///< The icon atlas, tinted: colour.rgb with the atlas's red as the mask (§3)
   /// The minimap, drawn AS AUTHORED and not tinted (§9.2; m1-vertical-slice/K4): its every pixel
   /// is already a colour - the fog's terrain, a commander's, the accent of a selection - because
-  /// Client/Minimap.h decides all of them. It is the one quad of the interface whose colour does
+  /// NeuronClient/Minimap.h decides all of them. It is the one quad of the interface whose colour does
   /// not come from the palette through a vertex, and it is a KIND rather than a second pass
   /// because a pass of its own would have to be ordered against this one by hand, and §3's whole
   /// arrangement is that the interface is one draw in the order its quads were appended.

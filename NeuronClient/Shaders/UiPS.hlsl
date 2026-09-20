@@ -1,5 +1,5 @@
 // The UI pass's pixel half (Design/Interface.md §3): a solid colour, a glyph, or an icon, chosen by
-// the quad's kind. The three values are Client/UiDraw.h's UiQuadKind and the two files say so in
+// the quad's kind. The three values are NeuronClient/UiDraw.h's UiQuadKind and the two files say so in
 // each other's comments; there is no fourth.
 //
 // BOTH ATLASES ARE MASKS, AND EACH IN THE CHANNEL IT ACTUALLY CARRIES. The font is a two-colour
@@ -16,7 +16,7 @@
 Texture2D<float4> g_font : register(t0);
 Texture2D<float4> g_icons : register(t1);
 // THE MINIMAP IS NOT A MASK, which is why it is a third texture and not a third cell of the icon
-// sheet: every pixel of it is already a colour (Client/Minimap.h), so it is sampled for colour and
+// sheet: every pixel of it is already a colour (NeuronClient/Minimap.h), so it is sampled for colour and
 // multiplied by the vertex's alpha alone.
 Texture2D<float4> g_minimap : register(t2);
 SamplerState g_pointSampler : register(s0);

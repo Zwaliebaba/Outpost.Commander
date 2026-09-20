@@ -149,7 +149,7 @@ constexpr std::array<StanceRow, 4> STANCE_ROWS = {{
 }
 
 /// Whether the seat has researched the row a content id names. An empty id is a row available from
-/// the first tick (Content/ComponentDesc.h), which is every M1 row until research runs.
+/// the first tick (GameShared/ComponentDesc.h), which is every M1 row until research runs.
 [[nodiscard]] bool Unlocked(const ContentTree& _content, std::uint64_t _complete, const std::string& _unlockedBy)
 {
   if (_unlockedBy.empty())
@@ -325,7 +325,7 @@ constexpr std::array<StanceRow, 4> STANCE_ROWS = {{
 }
 
 /// The design a device carries, or null while the record has not arrived. A client is told an
-/// enemy's design with the first device of it that it sees (Replica/DesignStore.h), and for a frame
+/// enemy's design with the first device of it that it sees (GameClient/DesignStore.h), and for a frame
 /// or two after a rejoin it holds none - which §8 draws as DESIGN UNKNOWN rather than as a guess.
 [[nodiscard]] const DesignState* DesignOf(const Replica& _replica, const DeviceState& _device) noexcept
 {
@@ -404,7 +404,7 @@ void DescribeDesign(const ContentTree& _content, const DesignState& _design, std
   design.moduleCount = _design.moduleCount;
   const ClassUpgrades none{};
   // THE BASE STATISTICS AND NOT THE OWNER'S. A device's hit points are raised by its seat's
-  // research (Content/DesignStats.h's ClassUpgrades), and a client is sent neither an enemy seat's
+  // research (GameShared/DesignStats.h's ClassUpgrades), and a client is sent neither an enemy seat's
   // research nor the effects of its own as upgrades - only the mask of what IT has completed. A
   // maximum that is too low would draw a full bar as overfull, so the bar's own maximum is taken
   // from the device's current hit points where those are higher, in the caller.
@@ -478,7 +478,7 @@ Hud::Hud()
 void Hud::Register(Neuron::UiInputSink& _sink)
 {
   // The order they are added is the order they are OFFERED events in, last first
-  // (Client/UiInputSink.h), and none of these is modal, so the order between them is only about
+  // (NeuronClient/UiInputSink.h), and none of these is modal, so the order between them is only about
   // which one a click on an overlap reaches. They do not overlap: §2's rectangles tile the strip.
   _sink.AddPanel(&m_power);
   _sink.AddPanel(&m_matchState);
@@ -870,7 +870,7 @@ void Hud::RefreshSelection(const Frame& _frame)
   const ContentTree& content = *_frame.content;
 
   // What of the selection the replica still holds. A selected device that died is left out here
-  // although Selection keeps it (Replica/Selection.h says why): a panel that described a device
+  // although Selection keeps it (GameClient/Selection.h says why): a panel that described a device
   // nobody can see any more is a panel describing a memory.
   std::vector<const ReplicaDevice*> devices;
   const ReplicaStructure* structure = nullptr;
@@ -915,7 +915,7 @@ void Hud::RefreshSelection(const Frame& _frame)
   {
     // "A ghost structure shows its kind and the health it had when last seen, with the whole
     // panel's body text in dimText and the word REMEMBERED in the title strip." The health it had
-    // is exactly what the encoder does NOT send (Replica/ReplicaObject.h's GHOST_HIT_POINTS), so
+    // is exactly what the encoder does NOT send (GameClient/ReplicaObject.h's GHOST_HIT_POINTS), so
     // the honest reading of "the health it had when last seen" is that the wire carries none and
     // the panel says so rather than drawing a full bar.
     m_selection.SetTitle("REMEMBERED");
@@ -943,7 +943,7 @@ void Hud::RefreshSelection(const Frame& _frame)
   {
     // "A structure under construction shows a barBuild bar and the seconds remaining instead of
     // health, because health follows progress." The seconds are the row's build time against the
-    // percent done: the wire carries the percent and not the ticks left (Net/Records.h), and the
+    // percent done: the wire carries the percent and not the ticks left (GameShared/Records.h), and the
     // host owns the arithmetic that got it there - §7.2's own rule, "the panel divides and prints".
     m_selection.Add(Bar(Neuron::UiRect{area.x, area.y + (line * 20), area.width - 80, Neuron::BAR_HEIGHT_PIXELS}, state.buildPercent, 100,
                         Neuron::UiBarStyle::Build));
@@ -997,7 +997,7 @@ std::string Hud::RoleLineOf(const Frame& _frame, const ReplicaStructure& _struct
   }
   case StructureRole::Generator:
   {
-    // "A generator's served extractor count." The assignment is the host's (Sim/Economy.h serves
+    // "A generator's served extractor count." The assignment is the host's (GameLogic/Economy.h serves
     // the four nearest unserved extractors in range, recomputed every tick) and nothing replicates
     // it, so what is shown is what the row says it CAN serve rather than what it does.
     return "SERVES UP TO " + std::to_string(_row.servesExtractors);
@@ -1065,8 +1065,8 @@ void Hud::RefreshDevices(const Frame& _frame, std::span<const ReplicaDevice* con
   const auto line = [&](std::int32_t _index) { return Neuron::UiRect{area.x, top + (_index * 18), area.width, 16}; };
   std::int32_t index = 0;
   // "Its design name" - and nothing in the tree carries one. A design is a chassis, a drive and a
-  // list of module rows, in the simulation (Sim/Device.h), on the wire (Net/Records.h) and in the
-  // order that saves it (Sim/Order.h's SaveDesign); the name §7.4 types is not carried by any of
+  // list of module rows, in the simulation (GameShared/Device.h), on the wire (GameShared/Records.h) and in the
+  // order that saves it (GameShared/Order.h's SaveDesign); the name §7.4 types is not carried by any of
   // the three. Design/Interface.md §11 row 19 owns it; until then a design is its index, which is
   // what DeviceState::design names it by.
   m_selection.Add(Label(line(index++), (own ? "DESIGN " : "ENEMY DESIGN ") + std::to_string(state.design)));
@@ -1358,7 +1358,7 @@ void Hud::OnEvent(const Neuron::UiEventResult& _result, const Frame& _frame, std
   if (widget >= ID_PORTRAIT_BASE && widget < ID_PORTRAIT_BASE + PORTRAITS_SHOWN)
   {
     // §8: "clicking a portrait narrows the selection to that device". Ctrl-clicking removes it, and
-    // that cannot be done: Client/InputEvent.h carries no modifier at all, so the sink that
+    // that cannot be done: NeuronClient/InputEvent.h carries no modifier at all, so the sink that
     // consumed this click could not tell the panel which it was (Interface.md §11 row 18).
     const std::uint32_t index = widget - ID_PORTRAIT_BASE;
     std::uint32_t at = 0;
@@ -1418,7 +1418,7 @@ void Hud::OnEvent(const Neuron::UiEventResult& _result, const Frame& _frame, std
   if (widget == ID_DESIGN_NAME)
   {
     // The field edits and nothing else: SaveDesign carries a chassis, a drive and four module rows
-    // and no name at all (Sim/Order.h), so what is typed here reaches the simulation nowhere.
+    // and no name at all (GameShared/Order.h), so what is typed here reaches the simulation nowhere.
     // Interface.md §11 row 19.
     const Neuron::UiWidget* field = m_command.Find(ID_DESIGN_NAME);
     m_designName = field != nullptr ? field->text : m_designName;
@@ -1432,7 +1432,7 @@ void Hud::OnPrimaryOrder(OrderKind _kind, const Frame& _frame, std::vector<Order
   // Move, Attack-move and Patrol ARM (§6) and the click on the world that follows is what makes the
   // order; Stop and Guard are issued here, because neither takes a point the commander has still to
   // give. Guard is given the device's own ground, which is what "guard where you stand" is: its
-  // operand 3 is 0, so it guards a position and not another device (Sim/Order.h's table).
+  // operand 3 is 0, so it guards a position and not another device (GameShared/Order.h's table).
   if (_kind == OrderKind::Move || _kind == OrderKind::AttackMove || _kind == OrderKind::Patrol)
   {
     m_armRequest = ArmedFor(_kind);
@@ -1548,7 +1548,7 @@ void Hud::OnResearch(std::int32_t _row, const Frame& _frame, std::vector<Order>&
     return;
   }
   // THE FIRST IDLE LAB IS THE FIRST LAB THIS COMMANDER HOLDS. SeatState carries one research row
-  // for the whole seat (Net/Records.h), so "idle" is a property of the commander and not of a lab,
+  // for the whole seat (GameShared/Records.h), so "idle" is a property of the commander and not of a lab,
   // and M1 gives a seat one lab; a milestone with two needs the lab's own row on the wire.
   for (const auto& standing : replica.Structures())
   {
@@ -1572,7 +1572,7 @@ void Hud::OnResearch(std::int32_t _row, const Frame& _frame, std::vector<Order>&
 void Hud::OnDesignEvent(std::uint32_t _widget, const Frame& _frame, std::vector<Order>& _outOrders)
 {
   // §7.4's three columns and its Save. The rows are indices into the content tables, which is what
-  // SaveDesign's operands are (Sim/Order.h): a chassis row, a drive row, and up to four module rows
+  // SaveDesign's operands are (GameShared/Order.h): a chassis row, a drive row, and up to four module rows
   // packed one to a byte.
   if (_widget >= ID_DESIGN_CHASSIS_BASE && _widget < ID_DESIGN_CHASSIS_BASE + _frame.content->components.chassis.size())
   {
@@ -1595,7 +1595,7 @@ void Hud::OnDesignEvent(std::uint32_t _widget, const Frame& _frame, std::vector<
     else if (m_designModules.size() < DESIGN_MODULES_ON_THE_WIRE)
     {
       // FOUR AND NOT MAX_MOUNTS' EIGHT. SaveDesign packs the module rows one to a byte of a single
-      // operand (Sim/Order.h), so four is what an order can carry however many mounts a chassis
+      // operand (GameShared/Order.h), so four is what an order can carry however many mounts a chassis
       // has; a fifth would be silently dropped by the encoder, which is worse than a button that
       // does nothing.
       m_designModules.push_back(module);

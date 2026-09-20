@@ -182,7 +182,7 @@ void AppendMinimap(const UiRect& _rect, std::uint32_t _alpha, std::vector<UiQuad
   quad.rect = _rect;
   quad.kind = UiQuadKind::Minimap;
   // The colour carries nothing but the alpha: every pixel of the minimap is already the colour it
-  // should be, so the vertex has no tint to contribute (Client/Minimap.h decides all of them).
+  // should be, so the vertex has no tint to contribute (NeuronClient/Minimap.h decides all of them).
   quad.colorTop = PackedRgba8(255, 255, 255, static_cast<std::uint8_t>(_alpha));
   quad.colorBottom = quad.colorTop;
   _outQuads.push_back(quad);

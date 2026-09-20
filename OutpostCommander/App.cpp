@@ -78,7 +78,7 @@ constexpr std::uint32_t CAPTURE_EVERY_TICKS = 100;
 constexpr float PI = 3.14159265358979323846f;
 
 /// The capture's script, in world units and ticks. The framing is the 60-degree vertical field of
-/// view of Client/Camera.h: at a distance d the frame is 1.155 d high and 2.05 d wide at the aim
+/// view of NeuronClient/Camera.h: at a distance d the frame is 1.155 d high and 2.05 d wide at the aim
 /// plane, so a base fifteen cells across (960 units) wants an eye about a thousand units off it and
 /// a landscape 8,192 across wants four thousand.
 constexpr float ORBIT_RADIUS_FRACTION = 0.45f;
@@ -170,7 +170,7 @@ constexpr float CAMERA_ELEVATION = 340.0f;
 /// scripted AI of S12 in seat 1, at the defaults GameDesign.md §2 names.
 ///
 /// _bothScripted is the capture's lobby: TWO AI SEATS, which the observer connection of G2 is what
-/// makes drawable at all. Net/Host.cpp's FreeSeat hands a joining client only a seat whose kind is
+/// makes drawable at all. GameLogic/Host.cpp's FreeSeat hands a joining client only a seat whose kind is
 /// Human, so an all-AI lobby refuses an ordinary join with NoSeat and leaves no replica to draw
 /// from - measured at G1a, six failures and an empty view. The owner ruled on 2026-09-19 that a
 /// client may join to WATCH a seat instead; the capture does that, sees exactly what the commander
@@ -195,13 +195,13 @@ constexpr float CAMERA_ELEVATION = 340.0f;
   {
     seat = {SeatKind::Empty, NO_ALLIANCE};
   }
-  // A SCRIPTED SEAT IS SET UP WITH AUTO-RESEARCH ON, which is Sim/AiSeat.h's contract in as many
+  // A SCRIPTED SEAT IS SET UP WITH AUTO-RESEARCH ON, which is GameLogic/AiSeat.h's contract in as many
   // words: "Research is the seat's own autoResearch flag, so there is no research behaviour here
   // and an AI seat is set up with it on." This lobby did not do it, and the scripted commander was
   // therefore locked out of the whole research table for the entire match.
   //
   // IT MADE THE GAME UNWINNABLE BY THE AI AND NOBODY SAW IT, because the one configuration nothing
-  // tested was this one: Tests/SimTests/AiTests.cpp's fixture sets the flag, so every suite ran a
+  // tested was this one: Tests/GameLogicTests/AiTests.cpp's fixture sets the flag, so every suite ran a
   // commander that researches, and the executable ran one that does not. Measured on the slice
   // landscape at seed 1 (m1-vertical-slice/S15): without it the commander is stuck on the machine
   // gun - the only weapon unlocked from the first tick - and a machine gun deals EXACTLY NOTHING to
@@ -349,7 +349,7 @@ constexpr float GHOST_LIFT_WORLD_UNITS = 1.0f;
 
 /// Whether a structure of this row may stand with its lowest cell here, AS THIS COMMANDER KNOWS
 /// IT: his own structures, his own fog, his own landscape and his own deposits
-/// (Replica/PlacementPreview.h). The host still decides; a green ghost means "nothing I know of
+/// (GameClient/PlacementPreview.h). The host still decides; a green ghost means "nothing I know of
 /// refuses this", and the refusal that comes back is what the warning line is for.
 [[nodiscard]] bool MayStandHere(const Match& _match, const ContentTree& _content, std::uint32_t _row, std::int32_t _cellX,
                                 std::int32_t _cellZ)
@@ -415,7 +415,7 @@ constexpr float PULSE_DEPTH = 0.6f;
   return pixels;
 }
 
-/// The camera as Replica's picking reads it (Replica/Picking.h): the matrix that projects and its
+/// The camera as Replica's picking reads it (GameClient/Picking.h): the matrix that projects and its
 /// inverse, ROW MAJOR, over the AUTHORED frame and not the window's - every rectangle of the
 /// interface is authored and a click arrives converted, so picking at the window's size would land
 /// a ray somewhere else on every display but one.
@@ -498,14 +498,14 @@ template <typename Atlas> [[nodiscard]] Atlas LoadAtlas(const char* _file)
 
 /// A world-unit coordinate as the simulation's subunits, for reading the ground under a vantage.
 /// The landscape is the simulation's and is sampled in its own numbers; this is the one direction
-/// Core/RenderView.h's WorldUnitsOfSubunits does not go.
+/// NeuronCore/RenderView.h's WorldUnitsOfSubunits does not go.
 [[nodiscard]] std::int32_t SubunitsOfWorldUnits(float _worldUnits) noexcept
 {
   return static_cast<std::int32_t>(_worldUnits * static_cast<float>(Neuron::SUBUNITS_PER_WORLD_UNIT));
 }
 
 /// Where the eye sits round an aim point, given the direction it should sit IN from it: the
-/// bearing Client/CapturePath.h measures from due -Z toward +X. A vantage says "over the base,
+/// bearing NeuronClient/CapturePath.h measures from due -Z toward +X. A vantage says "over the base,
 /// from outside" or "from this commander's own ground", and this is what turns that into a
 /// number. Due -Z of the aim is zero, due +X a quarter turn.
 [[nodiscard]] float BearingOfEyeFrom(float _awayX, float _awayZ) noexcept
@@ -532,7 +532,7 @@ template <typename Atlas> [[nodiscard]] Atlas LoadAtlas(const char* _file)
 /// AND THE LAST TWO FOLLOW. The script cannot know where a fight is - the armies walk around
 /// terrain rather than through it, and a quarter of the way along the line between the two starts
 /// is 461 world units from where they actually met - so those vantages take their aim from the
-/// shots this commander can see when there are any (Client/CapturePath.h's ActionCenter).
+/// shots this commander can see when there are any (NeuronClient/CapturePath.h's ActionCenter).
 [[nodiscard]] std::vector<Neuron::CaptureVantage> ScriptFor(const LandscapeDefinition& _landscape, float _extent)
 {
   const float center = _extent * 0.5f;
@@ -656,7 +656,7 @@ bool ParseCommandLine(std::span<const std::wstring> _arguments, LaunchOptions& _
       {
         return false;
       }
-      // A content id is ASCII (Content/ContentTree.h), so a wide argument carrying anything else is
+      // A content id is ASCII (GameShared/ContentTree.h), so a wide argument carrying anything else is
       // refused rather than squeezed into a char and silently matched against no landscape at all.
       std::string stem;
       stem.reserve(name.size());
@@ -741,7 +741,7 @@ int App::RunWindowed()
   std::vector<Neuron::UiQuad> overlay;
   // THE PANELS (Design/Interface.md §7 to §9; m1-vertical-slice/K4), and the sink that gives them
   // the input first. The sink is the ROUTER'S FIRST, so a click on a panel never also reaches
-  // selection or the camera (Client/UiInputSink.h), which is the half of §5's rule that stops the
+  // selection or the camera (NeuronClient/UiInputSink.h), which is the half of §5's rule that stops the
   // click; the other half is Hud::BlockedBy, handed to the Operator below, which stops the ray.
   Hud hud;
   Neuron::UiInputSink uiSink;
@@ -809,7 +809,7 @@ int App::RunWindowed()
     // would be a click tested against a rectangle the picture was not drawn in (AGENTS.md §5).
     //
     // READ BEFORE THE EVENTS ARE OFFERED, because the first sink they are offered to is the
-    // interface's and every rectangle in the interface is authored (Client/UiInputSink.h): a sink
+    // interface's and every rectangle in the interface is authored (NeuronClient/UiInputSink.h): a sink
     // with last frame's fit would test this frame's click against the rectangle the picture was
     // drawn in one resize ago.
     const Neuron::ScaledRectangle fit =
@@ -912,7 +912,7 @@ int App::RunWindowed()
       if (inputView.keyEdges[KEY_PANEL_TOGGLE] > 0)
       {
         panelsShown = !panelsShown;
-        // AN INVISIBLE PANEL CONSUMES NOTHING (Client/UiPanel.cpp's hit tests refuse one), so this
+        // AN INVISIBLE PANEL CONSUMES NOTHING (NeuronClient/UiPanel.cpp's hit tests refuse one), so this
         // is the whole of turning the interface off: it stops drawing, it stops taking clicks, and
         // Hud::BlockedBy stops refusing rays through it. A strip that was merely not drawn would be
         // a dead band along the bottom of the screen with nothing on it to explain why.
@@ -1002,7 +1002,7 @@ int App::RunWindowed()
           commander.ArmedStructure() < content.structures.structures.size())
       {
         // THE FOOTPRINT GHOST (m1-vertical-slice/G1b's last acceptance line). Its rule and its
-        // legality are Replica/PlacementPreview.h's and are already tested; what was missing was a
+        // legality are GameClient/PlacementPreview.h's and are already tested; what was missing was a
         // quad lying on the ground to show it with, and this pass is what can put one there.
         const StructureDesc& row = content.structures.structures[commander.ArmedStructure()];
         const std::int32_t cellX = static_cast<std::int32_t>(commander.Ground().x) / Neuron::WORLD_UNITS_PER_CELL;

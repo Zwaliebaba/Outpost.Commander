@@ -163,7 +163,7 @@ struct ModuleDesc
   /// shot, which is a legal row rather than a broken one - a beam weapon would want exactly that.
   std::string projectileModel;
   /// How many ticks the shot is drawn for, from the tick it was fired. It is a LOOK and not a
-  /// flight time: Sim/Projectile.h gives indirect fire a real ticksToImpact and direct fire none at
+  /// flight time: GameShared/Projectile.h gives indirect fire a real ticksToImpact and direct fire none at
   /// all ("what flies is the client's business and carries no record"), so this is the client's
   /// number and the simulation never reads it.
   std::uint32_t projectileLifetimeTicks = 0;

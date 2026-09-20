@@ -95,7 +95,7 @@ public:
 
   TEST_METHOD(TheSequenceWrappingIsNotMistakenForSilence)
   {
-    // It wraps and steps over 0 when it does (Net/Host.cpp), so 65,535 followed by 1 is a new
+    // It wraps and steps over 0 when it does (GameLogic/Host.cpp), so 65,535 followed by 1 is a new
     // refusal and not a seat that has stopped having them. Nothing here compares for ORDER, which
     // is what makes that true.
     Outpost::WarningLine line;

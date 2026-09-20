@@ -274,7 +274,7 @@ struct Match
 };
 
 /// Levels the host's ground under a structure and writes the mean into it, which is what
-/// Sim/Construction.cpp does the moment construction begins and what StructureAt above does not -
+/// GameLogic/Construction.cpp does the moment construction begins and what StructureAt above does not -
 /// it builds a structure directly, so every one of them stands at y = 0 until this is called.
 /// m1-vertical-slice/K6's case needs the host's landscape actually flattened, or there is nothing
 /// for the client's to agree with.
@@ -382,7 +382,7 @@ void AssertConverged(const Outpost::Sim& _sim, std::uint8_t _seat, const Outpost
   // AND THE FOG, CELL FOR CELL. This suite compared only its SIZE until m1-vertical-slice/G1a,
   // which is a comparison an all-black grid passes - and an all-black grid is exactly what the
   // first capture of a real match produced, for a bug that had been in the encoder since N2. The
-  // two spans are compared flat because flat is what the wire carries: Net/FrameEncoder.cpp reads
+  // two spans are compared flat because flat is what the wire carries: GameLogic/FrameEncoder.cpp reads
   // seat.fog.States() and Replica::ApplyFog writes the same indices, so an index computed here
   // would be a third opinion about the layout rather than a check of it.
   const std::span<const Outpost::FogState> hostFog = _sim.Seats()[_seat].fog.States();
@@ -712,7 +712,7 @@ public:
   /// The replica is one publish interval behind by design, and its own timeline says so. This is
   /// the number the executable draws at (TechnicalDesign.md §3 step 4).
   /// THE RENDER VIEW BUILT FROM A CONVERGED REPLICA, which is the one part of
-  /// Replica/RenderViewBuilder.h that needs the whole stack: Build takes a Replica, a Replica needs
+  /// GameClient/RenderViewBuilder.h that needs the whole stack: Build takes a Replica, a Replica needs
   /// a Net::Client, and a Client needs a host to have sent it a JoinAccepted. The arithmetic the
   /// builder does on its own - the chunks a footprint touches - is a free function with its own
   /// cases in RenderViewTests; what is here is the walk, which can only be exercised against a

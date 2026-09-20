@@ -13,7 +13,7 @@
 // the labs are structures, and a tick moves one number.
 //
 // AN UPGRADE IS WRITTEN ONCE, TO THE SEAT, AND NOT TO EVERY DEVICE. Seat::upgrades is what every
-// derivation reads (Sim/Design.h), so the moment a percentage lands there every design of that
+// derivation reads (GameShared/Design.h), so the moment a percentage lands there every design of that
 // class answers the new number - including designs of devices built an hour ago, because nothing
 // derived is stored on a device. What completing an upgrade DOES have to walk the world for is the
 // one thing that is stored: the current hit points. A device at half health must still be at half

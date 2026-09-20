@@ -20,14 +20,14 @@
 // player would order a unit to walk to whatever was behind the readout he just clicked, which is
 // the one input mistake a real-time game cannot take back.
 //
-// IT DRAWS NOTHING. A panel is state and hit testing; Client/UiDraw.h turns it into quads and
-// Client/UiPass.h draws them. That is what lets the whole of this file be tested on any machine,
+// IT DRAWS NOTHING. A panel is state and hit testing; NeuronClient/UiDraw.h turns it into quads and
+// NeuronClient/UiPass.h draws them. That is what lets the whole of this file be tested on any machine,
 // with no device and no window.
 
 namespace Neuron
 {
 
-/// What an event did. `consumed` is the router's answer (Client/InputRouter.h); `action` is the
+/// What an event did. `consumed` is the router's answer (NeuronClient/InputRouter.h); `action` is the
 /// owner's, and is None for an event that was consumed by the panel but changed nothing.
 struct UiEventResult
 {

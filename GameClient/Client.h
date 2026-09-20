@@ -71,7 +71,7 @@ public:
   /// Join record from every line of this class that names it.
   ///
   /// _observeSeat asks to WATCH that seat rather than to play one (m1-vertical-slice/G2;
-  /// Net/Messages.h's Join says why). NO_OBSERVED_SEAT, the default, is the ordinary join.
+  /// GameShared/Messages.h's Join says why). NO_OBSERVED_SEAT, the default, is the ordinary join.
   void SendJoin(std::uint64_t _contentHash, std::uint64_t _token, std::string_view _name, std::uint32_t _tick,
                 std::uint8_t _observeSeat = NO_OBSERVED_SEAT);
 
@@ -171,7 +171,7 @@ private:
   std::uint32_t m_appliedSequence = NO_BASELINE;
   /// How many events this client has applied, counted from the first of the match, against which
   /// Frame::firstEvent says what is new. Reset by a join, because the host's own count goes back
-  /// to nothing when it lets a rejoining commander's queue go (Net/Host.cpp).
+  /// to nothing when it lets a rejoining commander's queue go (GameLogic/Host.cpp).
   std::uint32_t m_eventsApplied = 0;
 
   Join m_join{}; ///< Kept so that a Join can be sent again while no answer has come back

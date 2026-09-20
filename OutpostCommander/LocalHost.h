@@ -39,7 +39,7 @@ inline constexpr std::chrono::nanoseconds TICK_DURATION{std::chrono::millisecond
 
 /// How many ticks one pass of the loop may run before it gives the thread back, and how far the
 /// match clock may fall behind wall time before it starts writing the debt off. The rule those two
-/// numbers serve - the match SLOWS and never skips - is Core/TickPacer.h's, which is where it can
+/// numbers serve - the match SLOWS and never skips - is NeuronServer/TickPacer.h's, which is where it can
 /// be tested; these are this match's settings for it.
 inline constexpr std::uint32_t MAX_TICKS_PER_PASS = 4;
 inline constexpr std::uint32_t MAX_DEBT_TICKS = 20;
@@ -83,7 +83,7 @@ public:
   /// stops advancing and the protocol does not: publishes, heartbeats and acknowledgements keep
   /// running, so neither end times the other out while a menu is open.
   ///
-  /// A HOST THAT SIMPLY STOPPED WOULD LOSE ITS CLIENT. Net/Client.cpp reports Lost after the
+  /// A HOST THAT SIMPLY STOPPED WOULD LOSE ITS CLIENT. GameClient/Client.cpp reports Lost after the
   /// liveness timeout - twenty seconds on a loopback match's settings - and a paused game that
   /// dropped its own commander after twenty seconds of a menu would look exactly like a crash.
   /// So this is the same shape a finished Sim already takes in Pass: the pacer is forgotten and no

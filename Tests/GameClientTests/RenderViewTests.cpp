@@ -12,7 +12,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-// Model composition at markers (m1-vertical-slice/R2; Content/ModelDesc.h): a device is a chassis
+// Model composition at markers (m1-vertical-slice/R2; NeuronCore/ModelDesc.h): a device is a chassis
 // with a drive at each MarkerDrive and a module at each MarkerMount, so the model count is a SUM.
 // The arithmetic that puts a part where its marker says is the thing worth pinning: it is wrong by
 // a reflection rather than by a crash, and a mirrored drive looks like a different model rather
@@ -176,7 +176,7 @@ public:
     Assert::AreEqual(std::size_t{0}, CountOf(instances, 3), L"and the second is empty");
   }
 
-  /// THE ROTATION IS Client/Shaders/GeometryVS.hlsl's. Heading zero looks along +z and grows toward
+  /// THE ROTATION IS NeuronClient/Shaders/GeometryVS.hlsl's. Heading zero looks along +z and grows toward
   /// +x, so at a quarter turn a marker one unit along +x is one unit along -z. A sign the other way
   /// round mirrors every drive about the device and reads as a different model, not as a defect.
   TEST_METHOD(AMarkerTurnsWithTheDeviceTheWayTheVertexShaderTurnsItsVertices)
@@ -333,7 +333,7 @@ public:
 
   /// THE CHUNKS A STRUCTURE FLATTENS. Computed on the client and never received: the wire carries
   /// no flatten deltas on purpose, because "the terrain under an unscouted base is not public"
-  /// (Net/Records.h, TechnicalDesign.md §5.2), so a commander's own machine flattens only under the
+  /// (GameShared/Records.h, TechnicalDesign.md §5.2), so a commander's own machine flattens only under the
   /// structures he can see. Wrong by one chunk at an edge is a seam of unflattened ground beside a
   /// building, which is why the edges are what these cases are about.
   TEST_METHOD(AFootprintInsideOneChunkTouchesOnlyThatChunk)

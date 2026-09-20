@@ -137,7 +137,7 @@ void Match::Advance(std::chrono::nanoseconds _elapsed)
   m_livenessTick += m_liveness.Take(_elapsed).ticks;
 
   // 2. Drain the network: frames in, orders and acks out. One Poll serves this end; the host thread
-  //    polls its own (Net/Client.h says the transport is the caller's to poll).
+  //    polls its own (GameClient/Client.h says the transport is the caller's to poll).
   m_clientEnd.Poll();
 
   // 3. Apply what arrived to the replica. Client::Advance reads everything that has come in, hands
@@ -171,7 +171,7 @@ void Match::Advance(std::chrono::nanoseconds _elapsed)
   // commander can see or remembers seeing: a base he has never scouted levels nothing, and a ghost
   // levels exactly what the structure did when he last saw it.
   //
-  // THE SAME ARITHMETIC THE HOST RAN, so the two agree sample for sample: Sim/Placement.h's
+  // THE SAME ARITHMETIC THE HOST RAN, so the two agree sample for sample: GameShared/Placement.h's
   // FlattenDelta for the rectangle of samples a footprint owns, and the height the wire carried
   // rather than a mean recomputed here. Recomputing would be wrong in the one case that matters -
   // a second structure whose window overlaps the first levels ground the host had ALREADY

@@ -18,7 +18,7 @@
 // twice for what he cannot afford would see the line sit there unchanged and read it as not having
 // been heard. The sequence counts refusals, so it moves even when nothing else does; it wraps, and
 // steps over 0 on the wrap, because 0 is how a seat that has had no refusal at all says so
-// (Net/Records.h).
+// (GameShared/Records.h).
 //
 // THE CLOCK IS THE CALLER'S AND IT IS WALL TIME. A refusal is shown for two SECONDS and not for
 // forty ticks: the replica's timeline is the host's tick numbers arriving late, and a host that

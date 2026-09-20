@@ -35,7 +35,7 @@
 // "does this selection have a weapon" is a question about a design and a content row, and asking it
 // once a frame beats asking it once an order.
 //
-// AN ORDER NAMES ONE OBJECT (Sim/Order.h), so a selection of twelve devices is twelve orders. That
+// AN ORDER NAMES ONE OBJECT (GameShared/Order.h), so a selection of twelve devices is twelve orders. That
 // is the simulation's shape and not a convenience: it keeps the record fixed-layout and the
 // validation per object, and it is why Advance returns a vector rather than one Order.
 
@@ -76,7 +76,7 @@ struct OrderFrame
   bool leftPressed = false;  ///< The left button went down this frame
   bool rightPressed = false; ///< The right button went down this frame
   /// The key edges of the frame, indexed by virtual-key code: +1 pressed, -1 released, 0 neither
-  /// (Client/FrameInput.h). Empty is a frame with no keyboard, which every test but the hotkey ones
+  /// (NeuronClient/FrameInput.h). Empty is a frame with no keyboard, which every test but the hotkey ones
   /// passes.
   std::span<const std::int8_t> keyEdges;
   /// How many structure rows the tables carry, for the Build hotkey below. Zero is a frame with no
@@ -84,14 +84,14 @@ struct OrderFrame
   std::uint32_t structureRowCount = 0;
   /// WHERE THE RAY MEETS THE GROUND, when the caller has an answer better than this file's
   /// (m1-vertical-slice/K7). GroundPoint below intersects the plane y = 0, which is the only thing
-  /// Replica can do: the heightfield ray is Client/GroundRay.h's and Replica may not include Client
+  /// Replica can do: the heightfield ray is NeuronClient/GroundRay.h's and Replica may not include Client
   /// (ADR-001 makes them siblings). The executable holds both and casts ONE ray, so the point a
   /// right click orders and the point the ground cursor is drawn at are the same point.
   ///
   /// IT IS WORTH SIX CELLS. Over ground 200 world units up, at the camera's default pitch of 26.6
   /// degrees, the plane at y = 0 is 400 world units further along the ray than the ground is.
   bool groundKnown = false;
-  std::int32_t groundX = 0; ///< Subunits, as every positional operand of Sim/Order.h is
+  std::int32_t groundX = 0; ///< Subunits, as every positional operand of GameShared/Order.h is
   std::int32_t groundZ = 0;
 };
 
@@ -171,7 +171,7 @@ private:
 /// device that died between the click and this frame can take no order at all.
 ///
 /// A DEVICE'S ABILITIES ARE ITS DESIGN'S AND NOT ITS OWN, which is why this needs the content
-/// tables as well as the replica: the wire carries a device's design INDEX (Net/Records.h's
+/// tables as well as the replica: the wire carries a device's design INDEX (GameShared/Records.h's
 /// DeviceState::design) and the seat's DesignState says which component rows that index names.
 /// A design the replica has not been sent yet - which happens for a frame or two after a rejoin -
 /// leaves the object with neither ability rather than dropping it, because it is still selected and
@@ -192,7 +192,7 @@ void AbilitiesOf(const std::map<std::uint32_t, ReplicaDevice>& _devices, const s
 [[nodiscard]] bool OnTheWorld(std::span<const PickBox> _blocked, std::int32_t _x, std::int32_t _y) noexcept;
 
 /// Where a ray meets the ground plane at y = 0, in SUBUNITS, which is the unit every positional
-/// operand of Sim/Order.h is in. False when the ray is parallel to the ground or points away from
+/// operand of GameShared/Order.h is in. False when the ray is parallel to the ground or points away from
 /// it, which is a camera aimed at the sky and an order with nowhere to go.
 [[nodiscard]] bool GroundPoint(const PickRay& _ray, std::int32_t& _outX, std::int32_t& _outZ) noexcept;
 

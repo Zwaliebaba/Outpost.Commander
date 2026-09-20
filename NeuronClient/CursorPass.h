@@ -27,7 +27,7 @@ class GraphicsDevice;
 /// size on screen without being a billboard, and drawn twice - a blurred copy under a sharp one -
 /// because that is what makes a bright ring readable over bright sand.
 ///
-/// WHERE IT GOES IS Client/GroundRay.h's ANSWER AND NOT THIS FILE'S. Everything that can be wrong
+/// WHERE IT GOES IS NeuronClient/GroundRay.h's ANSWER AND NOT THIS FILE'S. Everything that can be wrong
 /// about which triangle the cursor lands on, which way the ground faces there and what the sea does
 /// to it is decided by arithmetic that runs on any machine and is tested there; this is the draw
 /// call, which can only be looked at.

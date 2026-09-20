@@ -82,7 +82,7 @@ InputDisposition UiInputSink::OnInputEvent(const InputEvent& _event)
   {
   case InputEventKind::MouseMove:
   {
-    // ONLY MouseMove CARRIES A POSITION (Client/InputEvent.h): a button event has no x or y, so
+    // ONLY MouseMove CARRIES A POSITION (NeuronClient/InputEvent.h): a button event has no x or y, so
     // where a click landed is where the last move put the pointer. That is not a workaround - it is
     // how the window messages arrive, and a click is always preceded by the move that got there.
     m_pointerInside = ToAuthored(_event.x, _event.y, m_pointer);

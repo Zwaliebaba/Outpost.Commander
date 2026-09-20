@@ -118,7 +118,7 @@ private:
   };
 
   /// _extractorRatePercent is what the seat's research has added to every extractor's yield
-  /// (Content/DesignStats.h's ClassUpgrades; m1-vertical-slice/S6).
+  /// (GameShared/DesignStats.h's ClassUpgrades; m1-vertical-slice/S6).
   void CollectSites(const World& _world, const ContentTree& _content, std::uint8_t _seat, std::int32_t _extractorRatePercent);
   /// Serves the collected extractors from the collected generators and returns the tick's yield
   /// in hundredths, which the assignment already knows and a second walk would only rediscover.

@@ -93,7 +93,7 @@ inline constexpr std::array<ChromeRole, CHROME_ROLE_COUNT> CHROME_ROLES = {{
 
 /// How many commanders a match holds, and so how many colours this file must carry in seat order.
 /// SIM'S MAX_SEATS IS THE AUTHORITY and this repeats it, because Sim reads Content and Content may
-/// not read Sim (AGENTS.md R9). Sim/Sim.cpp static_asserts that the two agree; it is the first
+/// not read Sim (AGENTS.md R9). GameLogic/Sim.cpp static_asserts that the two agree; it is the first
 /// translation unit where both are visible, so a change to either is caught at the build rather
 /// than by a seat drawn in whatever was left in the array.
 inline constexpr std::size_t COMMANDER_COLOR_COUNT = 8;

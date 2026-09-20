@@ -93,7 +93,7 @@ struct DeviceDesign
   [[nodiscard]] constexpr bool operator==(const DeviceDesign&) const noexcept = default;
 };
 
-/// A device that is walking no route (Sim/Movement.h). It is a sentinel rather than an index of
+/// A device that is walking no route (GameLogic/Movement.h). It is a sentinel rather than an index of
 /// zero because zero is the first cell of a real route, and a device that had just been given one
 /// would otherwise be indistinguishable from one that had never asked.
 inline constexpr std::uint32_t NO_PATH_INDEX = 0xFFFFFFFFu;
@@ -121,7 +121,7 @@ struct Device
   std::int32_t anchorZ;
 
   /// How far along the planner's route it has walked, and how many ticks it has made no headway
-  /// (Sim/Movement.h). The route itself is the planner's, because it is a vector and a device is a
+  /// (GameLogic/Movement.h). The route itself is the planner's, because it is a vector and a device is a
   /// fixed-layout record; how far along it this device is cannot be, because two devices share a
   /// destination and not a position.
   std::uint32_t pathIndex = NO_PATH_INDEX;

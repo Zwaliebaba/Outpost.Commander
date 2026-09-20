@@ -45,7 +45,7 @@ class Sim;
 class World;
 
 /// The obstruction byte a structure that occupies its cells writes into every cell of its
-/// footprint; cleared to zero when it is gone. Nothing passes it (Sim/ClusterGraph.h).
+/// footprint; cleared to zero when it is gone. Nothing passes it (GameLogic/ClusterGraph.h).
 inline constexpr std::uint8_t OBSTRUCTION_STRUCTURE = 255;
 
 /// The builder rate the structure rows' build times are stated against: the Builder module of
@@ -74,7 +74,7 @@ inline constexpr std::uint32_t WRECK_DECAY_TICKS = 30 * static_cast<std::uint32_
 /// How many plans _seat has waiting, against MAX_PLANS_PER_SEAT.
 [[nodiscard]] std::uint32_t PlanCount(const World& _world, std::uint8_t _seat);
 
-// ── The four orders this system owns (Sim/Order.h's table) ───────────────────────────────────
+// ── The four orders this system owns (GameShared/Order.h's table) ───────────────────────────────────
 
 /// Places a plan: no cost, no obstruction, no flatten. False when the seat is at its plan limit.
 [[nodiscard]] bool PlaceStructurePlan(Sim& _sim, std::uint8_t _seat, std::uint32_t _row, std::uint32_t _cellX, std::uint32_t _cellY);
@@ -96,7 +96,7 @@ inline constexpr std::uint32_t WRECK_DECAY_TICKS = 30 * static_cast<std::uint32_
 /// What a structure's modules take off a time of that effect, as a percentage, summed over the
 /// modules it carries: a factory with two takes 50 off its build times and a lab with one takes 30
 /// off its research (GameDesign.md §5). The generator's effect is a COUNT rather than a time and
-/// Sim/Economy.cpp reads it where it serves; these two have no reader until m1-vertical-slice/S5
+/// GameLogic/Economy.cpp reads it where it serves; these two have no reader until m1-vertical-slice/S5
 /// and S6, and the function is here so that when they arrive there is one place it is read from
 /// and not two that can disagree.
 [[nodiscard]] std::int32_t ModuleTimeReductionPercent(const Structure& _structure, const ContentTree& _content,

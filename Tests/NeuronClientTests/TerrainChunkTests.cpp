@@ -151,7 +151,7 @@ public:
   TEST_METHOD(AReMeshedChunkPutsTheNewHeightsInTheSameVerticesAndLeavesTheRestAlone)
   {
     // The rebuild as the CPU can see it, with no device: mesh a chunk, level a square of samples
-    // the way Sim/Placement.h's FlattenDelta does under a structure, mesh it again, and check that
+    // the way GameShared/Placement.h's FlattenDelta does under a structure, mesh it again, and check that
     // the second mesh fits where the first one was and differs only where the ground did.
     const Neuron::TerrainPalette palette = Neuron::TerrainPalette::BuiltIn();
     Field field = Flat(100);

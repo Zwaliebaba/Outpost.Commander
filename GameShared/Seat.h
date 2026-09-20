@@ -15,7 +15,7 @@
 namespace Outpost
 {
 
-/// A research item a LAB is part-way through (Sim/Research.h). The lab is part of the record
+/// A research item a LAB is part-way through (GameLogic/Research.h). The lab is part of the record
 /// because "each lab researches one item" and "a destroyed lab loses the progress" are both rules,
 /// and neither can be enforced by a list that does not say whose progress it is. The countdown
 /// lives here rather than on the structure - which is where a factory's does - because a lab has
@@ -57,12 +57,12 @@ struct Seat
 
   std::vector<DeviceDesign> designs; ///< What this commander may build; S5 owns the rules
 
-  /// What research has added to each class, as percentages (Content/DesignStats.h). S6 fills it on
+  /// What research has added to each class, as percentages (GameShared/DesignStats.h). S6 fills it on
   /// an upgrade completing and S5 reads it wherever a statistic is derived, so an upgrade reaches
   /// every device of the class at once rather than being written into each of them.
   ClassUpgrades upgrades;
 
-  /// The factories' queues, in the order the commander asked for them (Sim/Design.h). One list a
+  /// The factories' queues, in the order the commander asked for them (GameShared/Design.h). One list a
   /// seat rather than one a factory, because a structure is a fixed-layout record.
   std::vector<ProductionEntry> production;
 
@@ -71,11 +71,11 @@ struct Seat
   std::uint32_t structureCount;
   std::uint32_t structureCap;
 
-  /// What this commander can see and has seen (Sim/FogGrid.h). Sized when the landscape is
+  /// What this commander can see and has seen (GameShared/FogGrid.h). Sized when the landscape is
   /// created; S9's Visibility is what counts viewers into it.
   FogGrid fog;
 
-  /// The last-seen record of every structure this commander has ever seen (Sim/GhostStore.h).
+  /// The last-seen record of every structure this commander has ever seen (GameShared/GhostStore.h).
   GhostStore ghosts;
 
   /// This tick's dropped orders, in the order stage 1 judged them, for Net to report. Cleared at

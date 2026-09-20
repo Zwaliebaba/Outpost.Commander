@@ -16,7 +16,7 @@
 // it is what the design screen commits and what is saved between matches (TechnicalDesign.md §9);
 // Sim's DeviceDesign names them by row index, because a design is hashed and replicated every tick
 // and a string is neither cheap nor fixed-layout. RecipeFor is the one conversion between them, so
-// that the simulation derives its statistics from Content/DesignStats.cpp and not from a second
+// that the simulation derives its statistics from GameShared/DesignStats.cpp and not from a second
 // implementation that can disagree with the design screen.
 //
 // NOTHING DERIVED IS STORED ON A DEVICE, and that is Device.h's rule rather than this task's
@@ -33,7 +33,7 @@ namespace Outpost
 struct Seat;
 
 /// One thing a factory is building or is queued to build. It hangs off the SEAT and not off the
-/// structure (Sim/Structure.h says so) because a queue is a list and a structure is a fixed-layout
+/// structure (GameShared/Structure.h says so) because a queue is a list and a structure is a fixed-layout
 /// record that the hash and the snapshot walk field by field.
 struct ProductionEntry
 {
@@ -86,7 +86,7 @@ inline constexpr std::array<std::int32_t, RANK_COUNT> RANK_DAMAGE_PERCENT = {0, 
   return rank;
 }
 
-/// The id-named form of a design the seat holds, for Content/DesignStats.cpp. An index that names
+/// The id-named form of a design the seat holds, for GameShared/DesignStats.cpp. An index that names
 /// no row becomes an empty id, which DeriveDesignStats refuses by name rather than by subscript.
 [[nodiscard]] DesignRecipe RecipeFor(const ContentTree& _content, const DeviceDesign& _design);
 
@@ -97,7 +97,7 @@ inline constexpr std::array<std::int32_t, RANK_COUNT> RANK_DAMAGE_PERCENT = {0, 
 /// the module builder all ask the same question of different tables.
 [[nodiscard]] bool UnlockedFor(const Seat& _seat, const ContentTree& _content, std::string_view _unlockedBy);
 
-/// The byte a SaveDesign order writes in a module slot it is not using (Sim/Order.h's table). It
+/// The byte a SaveDesign order writes in a module slot it is not using (GameShared/Order.h's table). It
 /// is 0xFF rather than 0 because 0 is a real row, and an order that leaves a slot empty must not
 /// read as one that mounted the first module in the table.
 inline constexpr std::uint8_t NO_PACKED_MODULE = 0xFFu;

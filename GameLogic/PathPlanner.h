@@ -25,7 +25,7 @@
 // the clusters the device is about to walk (REFINE_CLUSTERS of them), the rest refined as it goes.
 //
 // THE ABSTRACT ROUTE IS A SEQUENCE OF COMPONENTS, not of cells. Reachability over that graph is
-// exactly a flood fill's answer (Sim/ClusterGraph.h says why), so a route the search finds is a
+// exactly a flood fill's answer (GameLogic/ClusterGraph.h says why), so a route the search finds is a
 // route that exists; what the abstraction gives up is the exact COST, since a component is a
 // region and has no one length. The cells are exact, because refining a leg is a cell search.
 //
@@ -73,7 +73,7 @@ public:
   void SetGraph(const ClusterGraph* _graph) noexcept;
 
   /// Aims the planner at the same graph at a new address, keeping the queue: what a Sim calls on
-  /// itself after being copied or moved (Sim/Sim.h). SetGraph is the other thing - a different
+  /// itself after being copied or moved (GameLogic/Sim.h). SetGraph is the other thing - a different
   /// graph means every route it found is about a landscape that is gone, so it clears the queue.
   void Rebind(const ClusterGraph* _graph) noexcept
   {

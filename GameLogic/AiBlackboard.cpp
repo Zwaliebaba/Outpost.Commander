@@ -118,7 +118,7 @@ void Observe(const Sim& _sim, std::uint8_t _seat, AiBlackboard& _out)
         }
         if (row->role == StructureRole::Factory && _structure.state == StructurePhase::Standing && !_structure.working.Valid())
         {
-          // Nothing queued for it either. A factory's queue is the seat's list (Sim/Design.h), and
+          // Nothing queued for it either. A factory's queue is the seat's list (GameShared/Design.h), and
           // an order submitted for tick t+2 is judged two ticks after this walk - so a factory that
           // is "idle" only because its queue has not started yet would be queued again every
           // decision and every one of those would be refused.
