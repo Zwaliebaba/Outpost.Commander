@@ -63,7 +63,7 @@ Disposition per module. *Port* means the code moves, renamed to `AGENTS.md` §1 
 | `NetworkUpdate`, `ServerToClientLetter`, `ByteStream`, `ProtocolLimits`, `TeamControls` | Design, partly | The framing, versioning and sequence discipline come across as design; the 42-byte fixed packet, the thirteen update kinds, `NUM_TEAMS 4` and the Darwinia vocabulary (`RunProgram`, `AimBuilding`) do not. `Design/TechnicalDesign.md` §5.3 is the replacement |
 | `MathUtils` (`syncrand`, a Mersenne Twister), `Random` (an LCG) | Design | The two-streams rule, named and enforced. The generators are replaced (`Design/TechnicalDesign.md` §4.2) |
 | `NeuronMath` and the DirectXMath conventions | Port, renderer only | DirectXMath is SDK content and R14 allows it; it belongs on the render side and never in `Sim` |
-| `Debug` (`ASSERT`, `DebugTrace`, `Fatal`), `NeuronHelper` (`NonCopyable`, `ScopedHandle`) | Port | Small, Species-style, and exactly what `Core` needs first |
+| `Debug` (`ASSERT`, `DebugTrace`, `Fatal`), `NeuronHelper` (`NonCopyable`, `ScopedHandle`) | Port | Small, Species-style, and exactly what `NeuronCore` needs first |
 | `FileSys`, `Preferences`, `Profiler`, `HiResTime`, `GameTime` | Design | Content and user files live in directories resolved from the executable's path and the user's profile (`Design/TechnicalDesign.md` §8, §9), which is `FileSys`'s job reshaped; preferences become a JSON file; timing is the tick |
 | `LookupTable`, `VectorUtils`, `2dArray` | Port where used | Utility |
 | `WorldObjectId` | Leave | A slot index on the wire is the design this game is explicitly not repeating |

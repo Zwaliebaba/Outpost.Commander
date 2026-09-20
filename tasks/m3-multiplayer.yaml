@@ -9,7 +9,7 @@ summary: >
   What M3 proves (GameDesign.md §12): eight commanders over LAN and direct IP on a headless host;
   a client is never sent what its commander cannot see; a dropped player rejoins; Large
   landscapes and the dominance victory; mods and the content hash; replays record and play.
-  Content is the lobby, the UDP transport, the headless host and the replay viewer. The
+  Content is the UDP transport, the headless host and the replay viewer. The
   protocol, the interest test and the replica exist since M1 over loopback; this milestone puts
   a socket under them and a second machine behind it.
 
@@ -44,7 +44,7 @@ tasks:
     title: Mods overlay and the content hash
     intent: >
       A mod is a directory whose files override the game's at the same path, enabled by name in
-      the lobby, and the host hashes everything it loaded so that two players with different
+      the server's configuration, and the host hashes everything it loaded so that two players with different
       files are refused each other's matches before the first tick (TechnicalDesign.md §8).
     project: GameShared
     depends_on: []
@@ -55,14 +55,17 @@ tasks:
     status: todo
 
   - id: T4
-    title: The network lobby
+    title: Join a running server by address
     intent: >
-      A host opens a match and players join by address over a LAN or by direct IP, see the seats,
-      the settings, the enabled mods and each other's readiness, and chat (GameDesign.md §10).
-    project: OutpostCommander
+      THERE IS NO LOBBY (ADR-020): this task was "the network lobby" until 2026-09-20. A server is
+      already running a match from its configuration; the client connects to it by address over a
+      LAN or by direct IP, is handed a free human seat, and sees the seats, the settings and the
+      enabled mods it has joined -- it agrees to them rather than choosing them.
+    project: GameClient
     depends_on: [T2, T3]
     acceptance:
-      - The lobby of M2 gains a network mode with join by address, seat assignment, ready state, mod list and content-hash refusal shown in words; no master server and no NAT traversal
+      - "A connect screen takes an address and nothing else; on success the client shows the seats, the settings and the mod list the server sent, and on refusal shows why in words - content hash, no free seat, or unreachable"
+      - No master server and no NAT traversal, and nothing in the client proposes a setting to the server
     status: todo
 
   - id: T5
@@ -113,7 +116,7 @@ tasks:
     project: GameLogic
     depends_on: [T7]
     acceptance:
-      - Dominance is a MatchSettings victory condition applied at stage 12 and shown in the lobby and the interface; SimTests covers the hold timer resetting on loss of a deposit
+      - Dominance is a MatchSettings victory condition applied at stage 12, set in the server's configuration and shown in the interface; GameLogicTests covers the hold timer resetting on loss of a deposit
     status: todo
 
   - id: T9

@@ -47,7 +47,7 @@ tasks:
     project: GameLogic
     depends_on: [T1, T2]
     acceptance:
-      - The faction's objects, behaviour and content exist per its design document, are deterministic, and appear in the interest test; the lobby enables and scales it
+      - The faction's objects, behaviour and content exist per its design document, are deterministic, and appear in the interest test; the server's configuration enables and scales it
     status: todo
 
   - id: T4

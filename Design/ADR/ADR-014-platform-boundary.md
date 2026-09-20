@@ -1,6 +1,6 @@
 # ADR-014 — The platform boundary: one packaged executable over a desktop tree
 
-**Status:** Accepted
+**Status:** Accepted; the two projects it adds are superseded by [`ADR-018`](ADR-018-client-server-libraries.md) (2026-09-20), which splits the tree by side instead and puts what this ADR called `Game` into `GameClient` and `GameLogic`. `OutpostCapture` survives unchanged, and so does everything this ADR decides about the *boundary* — one packaged project, holding glue and nothing else, over a desktop tree.
 **Date:** 2026-09-20
 **Owner:** the owner, 2026-09-20
 

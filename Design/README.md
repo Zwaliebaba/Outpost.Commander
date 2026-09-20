@@ -31,3 +31,22 @@ Read them in that order. `GameDesign.md` is written to stand alone for a reader 
 ## What is deliberately not here yet
 
 A map and stamp content plan, an art bible beyond the presentation section of the game design, an audio design and any campaign writing are worth doing only against the running slice, and the milestones in `GameDesign.md` §12 say when that is. The interface specification that stood here was written on 2026-09-17 as [`Interface.md`](Interface.md) (`m1-vertical-slice/D1`); its §11 lists what it found missing and which task owns each, and its §12 the rulings its merge accepts.
+
+## Reading a document written before 2026-09-20
+
+On 2026-09-20 this tree was forked from *Frontier Commander* and then restructured twice: [`ADR-018`](ADR/ADR-018-client-server-libraries.md) split the six libraries by **side** as well as by layer, and [`ADR-019`](ADR/ADR-019-the-client-never-simulates.md) took the simulation out of the client altogether. Every **path** in this repository was rewritten against the new layout, so a path that does not resolve is a defect worth reporting. **Prose is a different matter**, and two rules cover it.
+
+**The living documents on this page use the new names.** Where one still says `Sim`, `Replica` or `Client` in backticks, it means the *type* — all three still exist, in `GameLogic`, `GameClient` and `GameClient` — and not the project that used to share the name.
+
+**`Design/ADR/ADR-001` to `ADR-012` keep their original text on purpose.** They record what was decided when it was decided, and an ADR is never edited into a different ADR ([`ADR/README.md`](ADR/README.md)); the ones a later decision overtakes carry a status line pointing forward. Read them with this map:
+
+| written as | now |
+|---|---|
+| `Core` | `NeuronCore` |
+| `Client` | `NeuronClient` |
+| `Content` | `GameShared` |
+| `Sim` | `GameLogic` — the simulation systems; its shared vocabulary went to `GameShared` |
+| `Net` | split three ways: the wire format to `GameShared`, the client endpoint to `GameClient`, the host endpoint and the interest set to `GameLogic` |
+| `Replica` | `GameClient` |
+| the local host | gone; the host is a separate process on a separate machine |
+| the lobby | the server's configuration ([`ADR-020`](ADR/ADR-020-central-server-no-lobby-no-pause.md)) |
