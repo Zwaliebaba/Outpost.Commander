@@ -12,12 +12,6 @@ namespace Outpost
 
 class Sim;
 
-/// Where a commander stands. One value a seat, written by stage 12 and by nothing else, carried by
-/// the snapshot and reported to the client in Net's SeatState.
-///
-
-inline constexpr std::uint8_t VICTORY_STATE_COUNT = 4;
-
 /// True when the seat holds neither a structure nor a device carrying a builder module - the
 /// annihilation rule of GameDesign.md §2, "every enemy structure and every enemy builder".
 ///

@@ -266,7 +266,7 @@ struct SeatState
   /// refuses a research table longer than this many rows (Content/ContentValidator), which is what
   /// keeps the bit and the row the same number.
   std::uint64_t researchComplete;
-  std::uint8_t victory; ///< A VictoryState (Sim/Victory.h)
+  std::uint8_t victory; ///< A VictoryState (GameShared/VictoryState.h)
   std::uint16_t deviceCount;
   std::uint16_t deviceCap;
   std::uint16_t structureCount;

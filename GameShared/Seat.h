@@ -83,7 +83,7 @@ struct Seat
   /// in the hash, because two hosts that refuse different orders have diverged.
   std::vector<OrderRejection> rejections;
 
-  /// Where this commander stands (Sim/Victory.h). Stage 12 writes it and nothing else does. There
+  /// Where this commander stands (GameShared/VictoryState.h). Stage 12 writes it and nothing else does. There
   /// is no separate defeated flag: it would be this field spelled a second way, and a second way
   /// to spell a fact is a way for the two to disagree.
   VictoryState victory;
