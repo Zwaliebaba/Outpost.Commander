@@ -36,7 +36,7 @@ tasks:
       - "The generated winrt/*.h projection headers compile at /W4 with warnings as errors, or the exact warning numbers are recorded and the /external: answer is scoped to the generated-projection directory alone - never a lowered warning level, never a pragma (AGENTS.md §4)"
       - "DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING is accepted at CREATION on a core-window chain, in ApplicationView::TryEnterFullScreenMode, and Present(0, DXGI_PRESENT_ALLOW_TEARING) returns S_OK - or ADR-013 records that it is not, and the frame time moves to GPU timestamp queries"
       - "Whether the GitHub windows-latest image carries Microsoft.VisualStudio.ComponentGroup.UWP.VC is established by running vswhere in a throwaway workflow. If it does not, ADR-016's package gate is answered with a workload install step, a pinned image, or an entry in AGENTS.md §3 saying the package is a local gate"
-      - "The loopback claim of ADR-019 is confirmed on a machine: a packaged app with privateNetworkClientServer cannot reach an unpackaged listener on 127.0.0.1 without CheckNetIsolation. If it CAN, ADR-019 is reopened at once - the cost it accepts exists only if the constraint is real"
+      - "The DEVELOPMENT loopback path is confirmed on a machine, which is the only loopback path the tree needs: a packaged client reaches an unpackaged listener on 127.0.0.1 with the exemption, and fails without it. The failing half matters more than the passing half - it is what stops a same-machine build being mistaken for a shipping one (ADR-019)"
       - "The spike is deleted in the same commit that records the answers. It is a measurement, not a foundation"
     verify:
       - msbuild <spike>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:normal /flp:LogFile=spike.log
