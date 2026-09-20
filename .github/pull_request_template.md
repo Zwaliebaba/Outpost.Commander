@@ -19,8 +19,9 @@
      claims. Say which configurations you actually built. -->
 
 - [ ] Builds clean through the solution: `Debug|x64`
-- [ ] The other three pairs build: `Release|x64`, `Debug|ARM64`, `Release|ARM64`
-- [ ] Every test suite runs and passes on x64
+- [ ] Every test suite runs and passes
+- [ ] The other three pairs build: `Release|x64`, `Debug|ARM64`, `Release|ARM64` — **CI builds none
+      of these**, so an unticked box here means nobody checked, not that nothing was wrong
 - [ ] `clang-format --dry-run --Werror` over the files touched, on the pinned version
 - [ ] Ran the executable (**required** if this touches rendering, input, audio or presentation —
       for the client that means deployed as a package and launched)

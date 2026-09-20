@@ -54,7 +54,9 @@ anchored on `$(SolutionDir)`, and MSBuild defines it only for a solution build.
 msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
 ```
 
-x64 and ARM64, Debug and Release; CI builds all four and runs the suites on x64. The one NuGet
+x64 and ARM64, Debug and Release. **CI builds `Debug|x64` only** and runs the suites there, so the
+other three pairs are checked by whoever builds them — see [`AGENTS.md` §3](AGENTS.md#3-build-and-verify).
+The one NuGet
 package — `Microsoft.Windows.CppWinRT`, referenced by the five projects on the C++/WinRT side —
 restores from each of their `packages.config`, all pinned to the same version:
 

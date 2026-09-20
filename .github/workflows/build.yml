@@ -2,22 +2,26 @@ name: Build
 
 # CI for Outpost Commander (AGENTS.md section 6).
 #
-# ── What this builds ───────────────────────────────────────────────────────────────────────────
+# ── What this builds, and what it deliberately does not ────────────────────────────────────────
 #
-# ALL FOUR PAIRS: Debug and Release, x64 and ARM64. Both halves of that are deliberate.
+# DEBUG|X64 ONLY, by the owner's decision. The Windows build is the slow half of the pipeline and
+# each extra pair roughly doubles it.
 #
-# Release, because AGENTS.md section 3 requires every setting that is not about optimisation to
-# read identically in the two configurations, and there is no checker in this tree that asserts it
-# yet. Compiling Release is what stands in for one: a Release that quietly lost an include
-# directory or sat on an older language standard fails here rather than on the day somebody ships.
-# The tree is small and the four jobs run in parallel; when that stops being true, write the static
-# check and drop the Release matrix legs, in that order.
+# BE HONEST ABOUT WHAT THAT LEAVES UNGATED, because it is not nothing:
 #
-# ARM64, because the client is a packaged application for a device that may well be one -- this is
-# developed on a Surface -- and a platform nobody builds is a platform that is broken.
+#   RELEASE. AGENTS.md section 3 requires every setting that is not about optimisation to read
+#   identically in the two configurations, and no checker in this tree asserts it. Nothing here
+#   compiles Release, so a Release that quietly lost an include directory, sat on an older language
+#   standard, or breaks only under optimisation reaches main green. It is caught by whoever builds
+#   Release before shipping -- see AGENTS.md section 3 and the pull request checklist.
 #
-# The suites RUN on x64 only. An ARM64 test DLL cannot be executed by an x64 runner; it is still
-# built, and a suite that did not build fails the job.
+#   ARM64. The client is a packaged application for a device that may well be one. Nothing here
+#   builds it, so an ARM64-only break -- most plausibly something that assumes x86-family
+#   intrinsics, since EnableEnhancedInstructionSet is the one setting that differs by platform --
+#   reaches main green too.
+#
+# The way to close either gap is a static check on the project files, which is cheap and does not
+# cost a build; adding matrix legs back is the expensive way round. Neither is written yet.
 #
 # ── What is not pinned, and what is ────────────────────────────────────────────────────────────
 #
@@ -49,19 +53,13 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.configuration }}|${{ matrix.platform }}
+    name: Debug|x64
     runs-on: windows-latest
-    timeout-minutes: 45
-
-    strategy:
-      fail-fast: false
-      matrix:
-        configuration: [Debug, Release]
-        platform: [x64, ARM64]
+    timeout-minutes: 30
 
     env:
-      CONFIGURATION: ${{ matrix.configuration }}
-      PLATFORM: ${{ matrix.platform }}
+      CONFIGURATION: Debug
+      PLATFORM: x64
 
     steps:
       - uses: actions/checkout@v4
@@ -91,6 +89,13 @@ jobs:
 
           $missing = @()
 
+          # What IS here, before what is not: a message that names only the gap leaves the reader
+          # guessing whether the image is one component short or a whole Visual Studio behind.
+          $toolsets = @(Get-ChildItem -Path "$install\MSBuild\Microsoft\VC" -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { Get-ChildItem -Path "$($_.FullName)\Platforms\$env:PLATFORM\PlatformToolsets" -Directory -ErrorAction SilentlyContinue } |
+            Select-Object -ExpandProperty Name | Sort-Object -Unique)
+          Write-Output "toolsets     : $($toolsets -join ', ')"
+
           $desktop = @(Get-ChildItem -Path "$install\MSBuild\Microsoft\VC" -Directory -ErrorAction SilentlyContinue |
             ForEach-Object { Join-Path $_.FullName "Platforms\$env:PLATFORM\PlatformToolsets\v145" } |
             Where-Object { Test-Path $_ })
@@ -107,12 +112,31 @@ jobs:
           }
           else { Write-Output "v145 uwp     : $($store[0])" }
 
+          # The Windows SDK the project files ask for, read FROM them rather than repeated here, so
+          # this cannot drift from what they pin. A bare "10.0" means "whatever is newest" and is
+          # always satisfiable; an exact version has to actually be installed, and when it is not,
+          # MSBuild's own complaint is several layers deep in a target.
+          $sdkRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\Include"
+          $installed = @(Get-ChildItem -Path $sdkRoot -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name | Sort-Object)
+          Write-Output "windows sdks : $($installed -join ', ')"
+          $pinned = @(Get-ChildItem -Path . -Recurse -Filter '*.vcxproj' -File |
+            ForEach-Object { Select-Xml -Path $_.FullName -XPath '//*[local-name()="WindowsTargetPlatformVersion"]' } |
+            ForEach-Object { $_.Node.InnerText } | Sort-Object -Unique)
+          Write-Output "sdks pinned  : $($pinned -join ', ')"
+          foreach ($want in $pinned) {
+            if ($want -eq '10.0') { continue }
+            if ($installed -notcontains $want) {
+              $missing += "the Windows SDK $want, which the project files pin (installed here: $($installed -join ', '))"
+            }
+          }
+
           if ($missing.Count -gt 0) {
             $lines = $missing | ForEach-Object { "  - $_" }
             throw "This runner cannot build Outpost Commander. Missing:`n$($lines -join "`n")`n" +
-                  "The toolset is pinned in the project files (AGENTS.md section 3) and is not something to work around " +
-                  "by lowering it. Either the runner image needs the missing component installed in this job, or the " +
-                  "build needs a self-hosted runner that has it."
+                  "The toolset and the SDK are pinned in the project files (AGENTS.md section 3) and are not something " +
+                  "to work around by lowering them on the quiet. Either this job installs what is missing, or the build " +
+                  "needs a runner that already has it -- and if the pin itself is wrong, change it in the project files " +
+                  "deliberately, not here."
           }
 
       # The solution is found, not named: exactly one .slnx or .sln at the repository root.
@@ -153,9 +177,6 @@ jobs:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite that
       # passed -- and neither is a suite with no tests in it, which is why every one ships a
       # SuiteSmoke placeholder (AGENTS.md section 3).
-      #
-      # The existence check runs on every platform; the run itself only where the binaries are
-      # native to the runner.
       - name: Check that every suite was built
         shell: pwsh
         run: |
@@ -168,7 +189,6 @@ jobs:
           }
 
       - name: Run the tests
-        if: matrix.platform == 'x64'
         shell: pwsh
         run: |
           $suites = @(Get-ChildItem -Path . -Recurse -Filter '*Tests.vcxproj' -File |
@@ -186,7 +206,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-log-${{ matrix.configuration }}-${{ matrix.platform }}
+          name: build-log
           path: build.log
           if-no-files-found: ignore
 
@@ -194,7 +214,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.configuration }}-${{ matrix.platform }}
+          name: test-results
           path: TestResults
           if-no-files-found: ignore
 
