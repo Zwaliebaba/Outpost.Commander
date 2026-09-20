@@ -28,6 +28,7 @@ firing anywhere else is a defect in the checker rather than in the fixture.
 | `GameClient/` | `bad_name.cpp`, not PascalCase. | `file-name` |
 | | `Math.h`, named like the C runtime's `<math.h>`. | `shadow` |
 | | `class IThing` in `GameClient.h`. | `type-affix` |
+| | `NeuronCore.h` included with `$(SolutionDir)NeuronCore` absent from the include path: a legal edge with no plumbing. | `include-missing` |
 | | `m_colour` in `GameClient.h`. | `spelling` |
 | | `near` as a member in `GameClient.h`, the SDK's macro. | `sdk-macro` |
 | `GameLogic/` | A `ProjectReference` to `NeuronClient`, which is built on `GameLogic` and not the reverse. | `edge-reference` |

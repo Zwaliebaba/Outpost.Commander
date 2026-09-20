@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "GameClient.h"
+#include "NeuronCore.h"
 
 namespace Fixture
 {

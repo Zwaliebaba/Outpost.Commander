@@ -32,6 +32,8 @@ A finding is one line, `<file>:<line>: <rule>: <message>`, and any finding fails
   edge-reference      a ProjectReference to a project ADR-001 does not build this one on
   edge-directory      an include directory naming a project ADR-001 does not build this one on
   edge-include        a quoted include resolving into a project ADR-001 does not build this one on
+  include-missing     a quoted include resolving into a project whose directory is NOT on the include
+                      path: the edge is legal and the plumbing is absent, so it compiles nowhere
   platform-header     a platform header included from Content, Sim, Net or Replica, which stay portable
 
 Exit codes: 0 no finding; 1 at least one finding; 2 the tree could not be checked (no solution, or two).
@@ -691,6 +693,13 @@ def check_layering(root: Path, projects: list[Project]) -> None:
                     other = entry[len("$(SolutionDir)"):]
                     if other in by_name and other != project.name and other not in permitted:
                         project.findings.append(Finding("edge-directory", project.relative, f"include directory '{entry}'; {edge(other)}"))
+        listed = {entry[len("$(SolutionDir)"):] for entry in seen}
+        # WHICH OTHER PROJECTS THIS ONE ACTUALLY REACHES. edge-directory above refuses a directory the
+        # table does not allow; this refuses the opposite defect, which is the one that does not show up
+        # until a compiler sees it: a legal edge whose directory nobody put on the include path. Four
+        # projects shipped that way on 2026-09-20, generated from a template that had no such element,
+        # and every rule in this file passed them.
+        reached: set[str] = set()
 
         for path in sorted(project.directory.iterdir()):
             if not path.is_file() or path.suffix not in CPP_SUFFIXES or path.relative_to(root).as_posix() in VENDORED:
@@ -707,8 +716,11 @@ def check_layering(root: Path, projects: list[Project]) -> None:
                 if "/" in include:
                     resolved = (path.parent / include).resolve()
                     owner = next((name for name, directory in directories.items() if resolved.parent == directory), None)
-                    if owner is not None and owner != project.name and owner not in permitted:
-                        project.findings.append(Finding("edge-include", relative, f"includes {include}, which is {owner}'s; {edge(owner)}", line))
+                    if owner is not None and owner != project.name:
+                        if owner not in permitted:
+                            project.findings.append(Finding("edge-include", relative, f"includes {include}, which is {owner}'s; {edge(owner)}", line))
+                        else:
+                            reached.add(owner)
                     continue
                 if (project.directory / include).exists():
                     continue  # its own, which the compiler finds first
@@ -716,6 +728,10 @@ def check_layering(root: Path, projects: list[Project]) -> None:
                 if candidates and not any(candidate in permitted for candidate in candidates):
                     owner = candidates[0]
                     project.findings.append(Finding("edge-include", relative, f"includes {include}, which is {owner}'s; {edge(owner)}", line))
+                else:
+                    reached.update(candidate for candidate in candidates if candidate in permitted and candidate != project.name)
+        for other in sorted(reached - listed):
+            project.findings.append(Finding("include-missing", project.relative, f"includes a header of {other} and does not list '$(SolutionDir){other}' on the include path; the edge is allowed and the directory is absent, so nothing finds it but the file's own folder"))
 
 
 def check_tidy_regex(root: Path, project_names: set[str]) -> list[Finding]:
@@ -839,6 +855,7 @@ SELF_TEST_EXPECTED = [
     ("edge-directory", "GameLogic/GameLogic.vcxproj"),
     ("edge-include", "GameLogic/GameLogic.cpp"),
     ("edge-include", "NeuronServer/NeuronServer.cpp"),
+    ("include-missing", "GameClient/GameClient.vcxproj"),
     ("platform-header", "GameLogic/GameLogic.cpp"),
 ]
 
