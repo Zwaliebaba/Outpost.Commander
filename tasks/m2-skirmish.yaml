@@ -1,0 +1,245 @@
+# Schema: Design/ImplementationPlan.md §3    Validate: python3 Tools/CheckTaskDag.py tasks/m2-skirmish.yaml
+#
+# Coarser than m1-vertical-slice on purpose: each task here is a unit of scope, not yet a unit of
+# work, and is split into tasks of the M1 grain when M1 closes and the slice has numbers. The
+# acceptance lines are the milestone's; a split keeps them and adds the observable ones.
+
+plan: m2-skirmish
+title: M2 Skirmish - up to four commanders on a Medium landscape with the full catalogue, the full component set, personalities, save and resume, and the look completed
+phase: 2
+summary: >
+  What M2 proves (GameDesign.md §12): up to four commanders on a Medium landscape with the full
+  structure catalogue, the full component set, fog of war, retreat and repair, ranks, and an AI
+  with personalities; a match saves and resumes; the look completed. Content is the full §5
+  catalogue, the §6 tables at version 1, 150 research items, three personalities by three
+  difficulties, eight biomes, the sky and clouds, the sprite population, a stamp library and
+  the Eclipse-shaped windows. Everything M1 deliberately left out lands here.
+
+tasks:
+  - id: T1
+    title: The full structure catalogue
+    intent: >
+      Walls that join, hardpoints carrying a researched weapon, the bunker, the repair bay, the
+      sensor tower and the uplink exist as GameDesign.md §5 describes them, so that a base has
+      a defence beyond the tower and the retreat mechanic has somewhere to go.
+    project: GameLogic
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - Every row of the §5 catalogue is in Structures.json with a model, and Sim applies each structure's behaviour, including wall joining, the hardpoint's module choice from the researched set, the repair bay's repair of devices that come to it, the sensor tower's spotting, and the uplink's ghost refresh every ten seconds with no device sight
+      - SimTests covers each new behaviour and the interest test still passes with uplink ghosts
+    status: todo
+
+  - id: T2
+    title: The full component set and the 150-item research tree
+    intent: >
+      Hover, rocket pod, flamer, artillery, laser, sensor and repair modules, the chassis Marks
+      II and every version-1 number of GameDesign.md §6 and §7 are in the tables, so that the
+      design space is the one the pillars promise.
+    project: GameShared
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - Components.json, Research.json and Damage.json hold the complete version-1 tables and 150 research items whose tree reaches every component; OutpostHost --validate passes
+      - Tools/CheckBalance.py reports no dominator in any tier, and the notes record what moved
+      - Thermal armour, burst fire, minimum ranges, the laser's armorFactor and artillery's are applied by Sim and tested
+    status: todo
+
+  - id: T3
+    title: Retreat and repair complete, ranks visible
+    intent: >
+      The stance system exists for retreat and repair (GameDesign.md §8); with the repair bay and
+      the repair module in the game the mechanic is complete and a veteran is worth saving.
+    project: GameLogic
+    depends_on: [T1, T2]
+    acceptance:
+      - A device under its retreat threshold returns to the nearest repair bay or repair device within 60 cells, is repaired at the bay's or module's rate for power, and returns to its guard position; the render view carries the rank badge and the client draws it
+      - SimTests covers the round trip and the 60-cell rule against a real bay
+    status: todo
+
+  - id: T4
+    title: AI personalities and difficulties
+    intent: >
+      One planner with personality weights (rusher, turtle, artillery, expander) and three
+      difficulties that change cadence and options, never information, with the power bonus at
+      the highest stated in the server's configuration (owner, 2026-09-17).
+    project: GameLogic
+    depends_on: [T2]
+    acceptance:
+      - The planner of TechnicalDesign.md §7 replaces the M1 behaviour list; personalities are tables of weights; difficulty sets the planner's cadence (every 10, 3 or 1 seconds) and the number of options scored; the highest difficulty takes the power bonus and no other advantage
+      - Three personalities against each other from a seed reproduce hash for hash and reach a decided end within a bounded tick count in SimTests
+    status: todo
+
+  - id: T5
+    title: Save and resume, preferences and designs on disk
+    intent: >
+      A match is saved as a versioned snapshot with its settings and resumed by the same
+      players (GameDesign.md §10), and the client's preferences and designs persist under the
+      user directory (TechnicalDesign.md §9), each with its ADR.
+    project: OutpostCommander
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - Saves\*.fcsave holds a snapshot plus settings, written by the host and loaded to resume; a resumed match continues to the same hashes as the original in a test
+      - Preferences.json (scaling mode, key bindings, audio volumes, player name) and Designs.json are written and read through Core's JSON, absent meaning defaults, and the preferences ADR records the schema; the save-file ADR cites the snapshot ADR of M0
+    status: todo
+
+  - id: T6
+    title: The server's match configuration, and Medium landscapes for up to four commanders
+    intent: >
+      THERE IS NO LOBBY (ADR-020): this task was "the local lobby" until 2026-09-20, and what it
+      builds now is the file the server reads instead of the screen a player used to fill in.
+      OutpostHost takes a match configuration -- landscape by seed and size or by name, base, power
+      and technology levels, the victory condition, alliances with shared vision, and AI seats with
+      personality and difficulty -- so that a skirmish is configured rather than hard-coded.
+    project: OutpostHost
+    depends_on: [T4]
+    files:
+      - OutpostHost/MatchConfig.h
+      - OutpostHost/MatchConfig.cpp
+      - OutpostHost/Main.cpp
+      - Tests/GameSharedTests/MatchConfigTests.cpp
+    acceptance:
+      - The configuration file sets every MatchSettings value, is read at startup and is validated by the same machinery the content tables go through (ADR-006) - a bad configuration is refused with a line on every diagnostic and the server does not start
+      - Four commanders on a Medium landscape run at the frame time and tick cost recorded in the notes
+      - Alliances share vision and victory and cannot attack each other, tested in GameLogicTests
+      - A client joining is handed a free human seat by the host and chooses nothing (ADR-020)
+    status: todo
+
+  - id: T7
+    title: Stamps and the stamp library
+    intent: >
+      Authored content enters as stamps the generator places (GameDesign.md §3), so that a
+      start base, a ruin and a chokepoint exist without a hand-authored map.
+    project: GameLogic
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - StampDesc loads from Content\Stamps, the generator places stamps at chosen or seeded positions after generation, and the landscape tool measures Medium with the library at a stated pass rate
+      - The editor window that authors a stamp exists in the client or the task's notes say why it waited
+    status: todo
+
+  - id: T8
+    title: The look completed - eight biomes, sky and clouds, water with waves, the sprite pass, the pixel post pass decision
+    intent: >
+      The five points of GameDesign.md §11 are all on screen: every biome's palette and light pair,
+      the Species sky and cloud layers camera-relative with their noise in world space (OpenQuestions.md Q17), the water plane with the
+      wave texture and the shore band, sprites for the population and particles, and a decision
+      on the pixel post pass with a frame to look at.
+    project: NeuronClient
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - "Biomes.json carries all eight palettes with the light pairs SpeciesLook.md §3 measured, and the sky rows the cloud pass reads: per layer a height, a world-space repeat period and a colour, plus the drift; the sky, cloud and water passes exist per SpeciesLook.md and SpeciesTerrain.md; the sprite pass draws the population walking between structures and the particle events"
+      - "The cloud layers are camera-relative with their noise sampled in world space, as OpenQuestions.md Q17 decided: a layer covers the view at any landscape size, a cloud feature keeps its authored size, and the pattern stays over the same ground. The task's ADR records the measured layer heights, the world-space repeat period and the drift, with a frame to look at"
+      - "ADR-005's two fog frames are re-made with the sky drawn, from the same vantage under both fog modes, and the fog ruling is confirmed or superseded on those rather than on the black-sky ones. THIS CARRIES m0-foundation/T22's FOG LINE, deferred here by the owner on 2026-09-18: the frames are drawn under ADR-007's absolute range and its ceiling, and under the Sandbox light pair of OpenQuestions.md Q21, because the frame that raised the question had neither and read dark from the rig rather than from the fog"
+      - "The terrain pass reads a palette per tile and blends where tiles of different biomes overlap, by the same edge falloff their heights merge by (OpenQuestions.md Q18): the schema, the loader and the validator are already there from m1-vertical-slice/C1, and this task draws it. Water stays one look per map; a water blend is raised again here only if a frame shows it is wrong"
+      - The pixel post pass is decided in an ADR on captured frames, and the capture job's frames show the completed look
+    status: todo
+
+  - id: T9
+    title: Audio - XAudio2, X3DAudio and the sound-event table
+    intent: >
+      Weapons, explosions, engines, construction and the interface sound through the Species
+      event model (TechnicalDesign.md §6.5) with the Species effects imported, positioned in 3D.
+    project: NeuronClient
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - Sounds.json carries an event per (object kind, event) with sample group, position type, loop type and parameter curves; ImportSounds.py has populated Content\Sounds under the provenance ADR's list; device loss parks silent and rebuilds; the table carries a row for the destruction and impact events T12 emits, so the explosion its intent names has something to key on
+      - The pure parts (the event table, the curve evaluation) are unit-tested; the rest is run by the owner
+    status: todo
+
+  - id: T10
+    title: Eclipse-shaped windows replace the fixed panels
+    intent: >
+      The interface becomes windows that open over the world (GameDesign.md §11 point 4), in the
+      Eclipse shape with the rules SpeciesCanvas.md §2 writes down, so that the terminal look is
+      complete; the panels' content is unchanged.
+    project: NeuronClient
+    depends_on: []
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - A window stack with the chrome of SpeciesCanvas.md §3, dragging and closing, the router offering events to the topmost window first; the design, research and production screens and the minimap are windows the operator opens; Design/Interface.md is revised to describe them
+    status: todo
+
+  - id: T12
+    title: Destruction - the explosion, the debris shatter and the wreck underneath
+    intent: >
+      A device or structure at zero hit points comes apart instead of being swapped for a wreck
+      between two frames (GameDesign.md §8, ruled as OpenQuestions.md Q25), so that the moment
+      the game is about is a moment the game draws.
+    project: NeuronClient
+    depends_on: [T8, T9]
+    blocked_by:
+      - m1-vertical-slice/G3
+    acceptance:
+      - "A device or structure destroyed in the commander's sight shatters into its own triangles with the constants SpeciesLook.md §8 measured: five seconds of life, an outward velocity of (triangle centroid - fragment centre) x 3 with 10 added to y, gravity -10, linear and rotational friction, five shared tumblers an explosion, the whole fading together to nothing; triangles under 6 units of perimeter and degenerate ones are dropped before any of it"
+      - "The Debris pass of TechnicalDesign.md §6.2 exists - its own vertex shader, the Geometry pass's pixel shader with an alpha, alpha blended, one transform per triangle rather than one per model - and its pool of live triangles has a stated maximum that drops the oldest explosion when full; the task's ADR records the maximum and the eviction order against the largest structure in the catalogue, ruled on a frame of several commanders losing an army at once"
+      - "The particle half is keyed to the impact and not to the death: a weapon with a splash radius throws ExplosionCore and ExplosionDebris from its impact point with the counts, sizes and velocities of Location.cpp:1992 scaled by the splash radius and damage of GameDesign.md §6, through the sprite pass T8 builds, whether or not the impact killed anything - and a death with no blast behind it shatters with no burst"
+      - "A death and a blast each sound, positioned at their own point in 3D through the event table T9 builds, keyed on the same two event kinds the wire already carries rather than on an audio channel of their own"
+      - "The wreck is not delayed for the effect - it is simulation state, so it is drawn from the frame the death is reported and the shards fall around it"
+      - "Sim is untouched and proves it: the destruction event is an event kind on the wire and not a new record, the replica keeps a removed object's last state until the end of the frame reporting its death so the client can read the model, transform and seat it already holds, the shatter draws from the cosmetic stream in Client, and the state hash, the snapshot format and SimTests are unchanged"
+      - "A death the commander cannot see produces nothing: ReplicaTests shows the destruction event for an object outside interest is never delivered, so no rule about render distance ever reaches the fog pass"
+      - "ClientTests covers the pure parts as literals - the per-tick advance under friction and gravity, the tumbler's Y.X.Z composition and its rotational friction, the perimeter cull, and the pool's eviction order"
+    status: todo
+
+  - id: T11
+    title: The owner's run - M2 accepted
+    intent: >
+      A milestone is done when its "proves" column is true on a running build the owner has run.
+    project: Design
+    depends_on: [T3, T5, T6, T7, T8, T9, T10, T12]
+    acceptance:
+      - The owner plays a four-commander skirmish on a Medium landscape against three personalities, saves and resumes it, and records the frame time and the tick cost; every M2 line of GameDesign.md §12 is true; the plan is archived
+    status: todo
+
+  - id: T13
+    title: The feature table - scenery gets rows, so that a feature names something
+    intent: >
+      GameShared/Feature.h's `design` is documented "Row index in the feature table" and there is no
+      feature table: GameShared/ContentTree.h has none and GameData ships no Features.json. So a
+      feature arrives over the wire naming a row of nothing, and m1-vertical-slice/R2's
+      RenderViewBuilder cannot draw one. Found while writing that builder (R2's notes); recorded
+      rather than invented, because a content schema is the owner's and the last three gaps like it
+      became C6 and N4 for exactly that reason.
+    project: GameShared
+    depends_on: []
+    files:
+      - GameShared/FeatureDesc.h
+      - GameShared/ContentTree.h
+      - GameShared/ContentLoader.cpp
+      - GameShared/ContentValidator.cpp
+      - GameData/Features.json
+      - GameClient/RenderViewBuilder.cpp
+      - Tests/GameSharedTests/FeatureDescTests.cpp
+      - Tests/GameClientTests/RenderViewTests.cpp
+      - Design/Interface.md
+    acceptance:
+      - "A feature row carries at least an id, a model and the footprint in cells, loaded and validated like every other table, so that GameShared/Feature.h's `design` indexes something real"
+      - Landscape generation scatters features from the table, so that a feature on the ground is a thing the simulation placed rather than a row nothing reads
+      - RenderViewBuilder composes a feature as one instance at its cell and facing, and a ReplicaTests case covers it
+      - Design/Interface.md §11's feature row is struck
+    verify:
+      - python3 Tools/CheckTaskDag.py
+      - python3 Build/CheckFormat.py --clang-format clang-format-18
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+    parallel_safe: true
+    status: todo
+    notes: >
+      MOVED FROM m1-vertical-slice/C7 ON 2026-09-19 BY THE OWNER'S RULING. C7 asked first whether
+      M1 places features at all, because nothing in Sim did and an empty table is content that must
+      still be validated and hashed while no code reads it. The answer was that scenery is M2's.
+      What stays behind in M1 is an honest gap rather than a lie: GameShared/Feature.h's `design` still
+      documents a table that does not exist, and GameClient/RenderViewBuilder.cpp's feature branch
+      cannot be exercised there. Both are recorded in Design/Interface.md §11.
+

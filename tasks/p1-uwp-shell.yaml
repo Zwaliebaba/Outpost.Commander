@@ -1,0 +1,422 @@
+# Schema: Design/ImplementationPlan.md §3    Validate: python3 Tools/CheckTaskDag.py tasks/p1-uwp-shell.yaml
+# The narrative this schedules is Design/UwpMigration.md; the decisions are ADR-013 to ADR-019.
+
+plan: p1-uwp-shell
+title: Run the game as a packaged UWP application over a CoreWindow, with the client holding no simulation
+phase: 1
+summary: >
+  A letter rather than a milestone number, because this plan cuts across the milestones instead of
+  following them. When it is finished: OutpostCommander is an MSIX-packaged UWP application whose
+  view is a CoreWindow, it links no GameLogic, the headless capture CI depends on runs from its own
+  console executable, and a grep over the tree for the Win32 window entry points returns nothing.
+  P1 comes first and alone: it measures five things this plan assumes and cannot check any other
+  way, and the plan changes shape if any of them answers wrong.
+
+tasks:
+  - id: P0
+    title: Compile the restructured tree, and fix what only a compiler can find
+    intent: >
+      ADR-018 moved roughly 300 files and rewrote fifteen project files with no MSVC in reach.
+      CheckProjectFiles verified every edge, every reference, every include directory and every
+      quoted include against the layering table, and CheckFormat and the plan validator are green -
+      but nothing has been compiled or linked. This is the first task that does, and it comes before
+      the refactor in P2 for a plain reason: debugging a signature change and a file move at the
+      same time is two problems wearing one hat.
+    project: OutpostCommander
+    depends_on: []
+    files:
+      - NeuronCore/NeuronCore.vcxproj
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronServer/NeuronServer.vcxproj
+      - GameShared/GameShared.vcxproj
+      - GameClient/GameClient.vcxproj
+      - GameLogic/GameLogic.vcxproj
+      - OutpostCommander/OutpostCommander.vcxproj
+      - OutpostHost/OutpostHost.vcxproj
+      - Design/ADR/ADR-018-client-server-libraries.md
+    acceptance:
+      - "The solution builds Debug|x64 clean with warnings as errors, all fifteen projects, from a
+        fresh clone - no stale x64/ directory to hide a missing file"
+      - "Every one of the seven suites produces a DLL and vstest runs them all green; a suite that
+        did not build is not a suite that passed"
+      - "The Release|x64 build is done once by hand as well, because CI does not do it and the
+        restructure changed every project file (AGENTS.md §3)"
+      - "GameShared/VictoryState.h is reached by everything that used to reach Victory.h for the
+        enum, and nothing links Victory.cpp from the client side"
+      - "Each of the seven precompiled headers still includes the right library's pch.h: they were
+        copied and rewritten by path, not by a compiler"
+      - "ADR-018's Measurements section loses the sentence saying the tree is unbuilt, and records
+        what the compiler found instead - including nothing, if it found nothing"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+      - python3 Build\RunClangTidy.py
+    parallel_safe: false
+    status: in_progress
+    notes: >
+      Overtaken by CI rather than run by hand. The pull request's Debug|x64 job is a fresh checkout
+      every time, so the fresh-clone condition is met, and at 3771dd6 (run 35509762420) every step
+      passed: fifteen projects built with warnings as errors, all seven suites produced DLLs and
+      passed under vstest, clang-tidy was clean over every translation unit, the content validated,
+      and the capture gate wrote 92 frames with its four assertions intact.
+
+      Three defects found and fixed, in this order: four projects with no AdditionalIncludeDirectories
+      element at all, which is now also an include-missing rule in CheckProjectFiles and a 28th
+      fixture; VICTORY_STATE_COUNT left in GameLogic when the enum it counts moved to GameShared,
+      which no layering rule could have caught because no include was illegal; and a doc comment the
+      extraction regex cut in half. ADR-018's Measurements records all three.
+
+      STILL OPEN, which is why this is not done: the Release|x64 build. CI builds Debug only
+      (AGENTS.md §3), the restructure rewrote every project file, and the two configurations differ
+      in exactly the four things §3 names - so a Release that lost a setting would not show up here.
+      That is the owner's to run, and it is the whole of what is left.
+
+  - id: P1
+    title: Prove the ground before anything is built on it
+    intent: >
+      Every platform claim in ADR-013 to ADR-017 is read from Microsoft's documentation and none is
+      confirmed against a compiler, because the tree that wrote them had no Windows machine in
+      reach. This is a throwaway UWP project that opens a core window, makes a D3D12 device,
+      creates a swap chain for it, clears to a colour and presents - and answers five questions. It
+      is a day of work that can save a fortnight, and nothing else in this plan may start until it
+      has run.
+    project: OutpostCommander
+    depends_on: []
+    files:
+      - Design/ADR/ADR-013-uwp-application-model.md
+      - Design/ADR/ADR-015-cppwinrt-dependency.md
+      - Design/ADR/ADR-017-core-window-pixels-and-lifetime.md
+      - Design/ADR/ADR-019-the-client-never-simulates.md
+    acceptance:
+      - "The spike builds at ApplicationType=Windows Store with v145 and the tree's whole setting block: /std:c++latest, /permissive-, /W4 with warnings as errors, /fp:precise, /arch:AVX2. The exact toolset component and its version are recorded in ADR-013's Measurements"
+      - "The /std: switch on the compiler command line is read out of the BUILD LOG, not inferred from the build succeeding: the Microsoft.Windows.CppWinRT package documents setting stdcpp17, and ADR-015 overrides it back. The package version is pinned and written into ADR-015"
+      - "/await is absent from the command line once the property is cleared, or ADR-015 records why it could not be; the switch is deprecated as of Visual Studio 2026 and slated for removal"
+      - "The generated winrt/*.h projection headers compile at /W4 with warnings as errors, or the exact warning numbers are recorded and the /external: answer is scoped to the generated-projection directory alone - never a lowered warning level, never a pragma (AGENTS.md §4)"
+      - "DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING is accepted at CREATION on a core-window chain, in ApplicationView::TryEnterFullScreenMode, and Present(0, DXGI_PRESENT_ALLOW_TEARING) returns S_OK - or ADR-013 records that it is not, and the frame time moves to GPU timestamp queries"
+      - "Whether the GitHub windows-latest image carries Microsoft.VisualStudio.ComponentGroup.UWP.VC is established by running vswhere in a throwaway workflow. If it does not, ADR-016's package gate is answered with a workload install step, a pinned image, or an entry in AGENTS.md §3 saying the package is a local gate"
+      - "The DEVELOPMENT loopback path is confirmed on a machine, which is the only loopback path the tree needs: a packaged client reaches an unpackaged listener on 127.0.0.1 with the exemption, and fails without it. The failing half matters more than the passing half - it is what stops a same-machine build being mistaken for a shipping one (ADR-019)"
+      - "The spike is deleted in the same commit that records the answers. It is a measurement, not a foundation"
+    verify:
+      - msbuild <spike>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:normal /flp:LogFile=spike.log
+      - Select-String -Path spike.log -Pattern '/std:|/await|/external:'
+    parallel_safe: true
+    status: todo
+
+  - id: P2
+    title: Tighten the shared boundary, so the client cannot name the world
+    intent: >
+      ADR-018 split the tree correctly at the project level and loosely at the header level:
+      GameShared holds 19 headers that came out of Sim, World.h and StateHash.h among them, and the
+      client has no business with either. Three includes put them there. This removes all three, and
+      the eight headers behind them go back to GameLogic.
+    project: GameShared
+    depends_on: [P0]
+    files:
+      - GameShared/Placement.h
+      - GameShared/Placement.cpp
+      - GameShared/Landscape.h
+      - GameShared/Landscape.cpp
+      - GameLogic/StateHash.h
+      - GameLogic/StateHash.cpp
+      - GameShared/GameShared.vcxproj
+      - GameShared/GameShared.vcxproj.filters
+      - GameLogic/GameLogic.vcxproj
+      - GameLogic/GameLogic.vcxproj.filters
+      - Tests/GameSharedTests/PlacementTests.cpp
+      - Tests/GameLogicTests/LandscapeTests.cpp
+    acceptance:
+      - "Placement takes the landscape, the footprint and an occupancy view rather than a World&, so Placement.h no longer includes World.h; the placement preview and the host's validation still call the same function, which is what makes the preview honest"
+      - "Landscape.h no longer includes StateHash.h: the landscape's contribution to the state hash is a free function on the side that hashes, and World.h, StateHash.h, Seat.h, GhostStore.h, Projectile.h, Wreck.h and Feature.h are GameLogic's again"
+      - "A grep over GameClient and GameShared for World.h, StateHash.h, Sim.h, Seat.h, GhostStore.h, Projectile.h and Wreck.h returns nothing"
+      - "GameSharedTests covers the placement rule directly, without constructing a Sim"
+      - The determinism tests still pass bit for bit; the state hash covers the same bytes in the same order (ADR-002)
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - python3 Build/CheckFormat.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+    parallel_safe: true
+    status: todo
+
+  - id: P3
+    title: Empty the executable into GameClient and GameLogic
+    intent: >
+      OutpostCommander holds 228.8 kB over 14 files that no suite has ever been able to reach,
+      because it lives in an Application - and under ADR-014 the packaged project holds Windows
+      Runtime glue and nothing else. The frame assembly, the camera controller, the HUD, the
+      operator and the match go down into GameClient; the starting base goes to GameLogic;
+      LocalHost is DELETED rather than moved, because ADR-019 says the client never simulates.
+    project: GameClient
+    depends_on: [P2]
+    files:
+      - GameClient/App.h
+      - GameClient/App.cpp
+      - GameClient/Hud.h
+      - GameClient/Hud.cpp
+      - GameClient/Operator.h
+      - GameClient/Operator.cpp
+      - GameClient/Match.h
+      - GameClient/Match.cpp
+      - GameClient/CameraController.h
+      - GameClient/CameraController.cpp
+      - GameLogic/StartingBase.h
+      - GameLogic/StartingBase.cpp
+      - GameClient/GameClient.vcxproj
+      - GameClient/GameClient.vcxproj.filters
+      - OutpostCommander/OutpostCommander.vcxproj
+      - Build/CheckProjectFiles.py
+      - Tests/GameClientTests/HudTests.cpp
+      - Tests/GameClientTests/MatchTests.cpp
+      - Design/ADR/ADR-018-client-server-libraries.md
+    acceptance:
+      - "GameClient is built on NeuronCore, NeuronClient and GameShared, and BUILT_ON carries the new NeuronClient edge that ADR-018 pre-authorised"
+      - "RunWindowed takes a presentation seam and no window type: the client size in physical pixels, a way to say the frame time changed, and a pump that returns false once the user has left. Nothing above the seam names CoreWindow or HWND"
+      - "OutpostCommander/LocalHost.{h,cpp} is deleted, and OutpostCommander's reference set is NeuronCore, NeuronClient, GameShared and GameClient - GameLogic and NeuronServer are gone from it (R19)"
+      - "F10's menu loses Resume and becomes the quit menu of Interface.md §10 - Back, Leave match, Quit - in the SAME commit that deletes LocalHost, because it is the same fact twice: there is nothing left in this process to pause (ADR-020). The code that froze the pacer goes with it"
+      - "A grep over the tree for a pause that is not a production line at the device cap returns nothing outside Tests/NeuronClientTests/InputSubscriptionTests.cpp, where PAUSE names an arbitrary key"
+      - "GameClientTests covers the HUD's panel layout and the match's order submission: the first tests over any of this code"
+      - "CheckProjectFiles gains the R20 rule - no .cpp in the packaged project that names neither a winrt:: type nor CoreApplication - and the self-test proves it fires"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - python3 Build/CheckProjectFiles.py --self-test
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\*Tests.dll /Platform:x64
+    parallel_safe: false
+    status: todo
+
+  - id: P4
+    title: Give the headless capture its own executable
+    intent: >
+      The capture gate is the strongest quality mechanism this tree has - four assertions over a
+      9,000-tick scripted match - and App::RunCapture has no window and no swap chain, so packaging
+      it buys nothing and risks all four. It becomes a console executable that links both sides over
+      LoopbackTransport, and CI's capture step changes one word.
+    project: OutpostCapture
+    depends_on: [P3]
+    files:
+      - OutpostCapture/Main.cpp
+      - OutpostCapture/Capture.h
+      - OutpostCapture/Capture.cpp
+      - OutpostCapture/pch.h
+      - OutpostCapture/pch.cpp
+      - OutpostCapture/OutpostCapture.vcxproj
+      - OutpostCapture/OutpostCapture.vcxproj.filters
+      - OutpostCommander.slnx
+      - Build/CheckProjectFiles.py
+      - .github/workflows/build.yml
+    acceptance:
+      - "OutpostCapture --warp --capture Slice 9000 Captures writes the same frames and the same capture.log the game wrote, and exits with the same three codes"
+      - "CI's capture step names OutpostCapture.exe and is otherwise unchanged: all four assertions - a shot in flight, at least a hundred interface quads a frame, a device selected, something researched - pass verbatim"
+      - "--capture is gone from OutpostCommander entirely; a flag that cannot be reached is worse than no flag (ADR-016)"
+      - "BUILT_ON carries OutpostCapture with the whole table as its edge set, and the comment says it is a harness that never ships"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - x64\Debug\OutpostCapture.exe --warp --capture Slice 9000 Captures
+    parallel_safe: false
+    status: todo
+
+  - id: P5
+    title: Write the translation the shell will need, as pure functions with a suite
+    intent: >
+      The three pieces of the shell a compiler and a test runner can hold: the conversion from the
+      core window's device-independent pixels to physical ones, the VirtualKey to key-code mapping,
+      and the pointer-event to InputEvent translation. None needs a package to build or a window to
+      test, and each is one character away from a defect no compiler will notice - which is the
+      argument NeuronClient/PointerMode.h already makes about the sign of an aim delta.
+    project: NeuronClient
+    depends_on: [P0, P1]
+    files:
+      - NeuronClient/DisplayPixels.h
+      - NeuronClient/DisplayPixels.cpp
+      - NeuronClient/KeyMap.h
+      - NeuronClient/KeyMap.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - NeuronClient/NeuronClient.vcxproj.filters
+      - Tests/NeuronClientTests/DisplayPixelsTests.cpp
+      - Tests/NeuronClientTests/KeyMapTests.cpp
+    acceptance:
+      - "PhysicalPixels(dips, logicalDpi) rounds as the platform documents - floor(dips * dpi / 96 + 0.5) - and names no Windows Runtime type"
+      - "NeuronClientTests pins it at 96, 120, 144 and 192 DPI against 1920x1080, 2560x1440 and 3840x2160, and pins that the 1:1 and integer-multiple cases of AGENTS.md §5 are reached where they should be"
+      - "The key map turns a VirtualKey into the same key code the window procedure produced, so that every input test written before this migration still means what it meant"
+      - "Neither file includes winrt/ anything: the translation is arithmetic over integers, and the shell hands it the integers"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /t:NeuronClient /p:Configuration=Debug /p:Platform=x64 /m
+      - vstest.console.exe x64\Debug\NeuronClientTests.dll /Platform:x64
+    parallel_safe: true
+    status: todo
+
+  - id: P6
+    title: Let the swap chain be created for a core window
+    intent: >
+      One constructor beside the one that takes an HWND. CreateSwapChainForCoreWindow is a plain
+      COM method on IDXGIFactory2 taking an IUnknown*, so NeuronClient compiles it as an ordinary
+      desktop static library and simply never calls it there - which is the whole of why ADR-014's
+      boundary works.
+    project: NeuronClient
+    depends_on: [P0, P1]
+    files:
+      - NeuronClient/SwapChain.h
+      - NeuronClient/SwapChain.cpp
+    acceptance:
+      - "SwapChain(GraphicsDevice&, IUnknown* coreWindow, width, height) creates a flip-discard chain of three buffers with CreateSwapChainForCoreWindow"
+      - "MakeWindowAssociation and DXGI_MWA_NO_ALT_ENTER are gone from that path: there is no HWND and no DXGI full-screen toggle to suppress"
+      - "The tearing flag is asked for on the core-window path exactly as P1 found it to behave, and the log says which answer the machine gave"
+      - "The HWND constructor still exists and still works, because OutpostCapture does not use either - and a constructor nobody calls is deleted, not kept"
+    verify:
+      - python3 Build/CheckFormat.py
+      - msbuild OutpostCommander.slnx /t:NeuronClient /p:Configuration=Debug /p:Platform=x64 /m
+    parallel_safe: true
+    status: todo
+
+  - id: P7
+    title: Reduce Paths to two roots each executable supplies for itself
+    intent: >
+      Neuron::Paths asks GetModuleFileNameW and the LOCALAPPDATA environment variable where things
+      are; under the app container neither is the right answer, and NeuronCore is shared with two
+      console executables that have no package identity. The right owner of the question is the
+      process that knows what kind of process it is, so Paths stops asking and starts being told.
+    project: NeuronCore
+    depends_on: [P4]
+    files:
+      - NeuronCore/Paths.h
+      - NeuronCore/Paths.cpp
+      - OutpostHost/Main.cpp
+      - OutpostCapture/Main.cpp
+      - Build/CheckProjectFiles.py
+      - Tests/NeuronCoreTests/PathsTests.cpp
+    acceptance:
+      - "Paths::SetRoots(contentRoot, userRoot) replaces OverrideForTests, and Paths::ClearRoots stays for the suites; Paths makes no Win32 call at all"
+      - "A grep over the six libraries for GetModuleFileName, GetEnvironmentVariable, SHGetKnownFolderPath and GetCurrentPackage returns nothing, and CheckProjectFiles keeps it returning nothing"
+      - "ModsDirectory is UserDirectory()/Mods, not beside the executable: the install directory is inside the package and unwritable by anything including the game (ADR-016)"
+      - "OutpostHost and OutpostCapture each set their own roots in Main.cpp from GetModuleFileNameW and %LOCALAPPDATA%\\OutpostCommander, and say so in the log"
+      - NeuronCoreTests still covers the four directories, now through SetRoots
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - vstest.console.exe x64\Debug\NeuronCoreTests.dll /Platform:x64
+    parallel_safe: false
+    status: todo
+
+  - id: P8
+    title: Make OutpostCommander a packaged UWP application over a CoreWindow
+    intent: >
+      The shell itself: an IFrameworkViewSource handed to CoreApplication::Run, an IFrameworkView
+      whose SetWindow subscribes the events and whose Run owns the loop, the manifest, the assets
+      and package identity. Window.{h,cpp} and RawMouse.{h,cpp} are deleted - 457 lines - and the
+      mouse's relative counts come from MouseDevice::MouseMoved, which is the closest mapping in the
+      whole migration.
+    project: OutpostCommander
+    depends_on: [P1, P3, P5, P6, P7]
+    files:
+      - OutpostCommander/Main.cpp
+      - OutpostCommander/ViewSource.h
+      - OutpostCommander/ViewSource.cpp
+      - OutpostCommander/FrameworkView.h
+      - OutpostCommander/FrameworkView.cpp
+      - OutpostCommander/Package.appxmanifest
+      - OutpostCommander/OutpostCommander.vcxproj
+      - OutpostCommander/OutpostCommander.vcxproj.filters
+      - NeuronClient/Window.h
+      - NeuronClient/Window.cpp
+      - NeuronClient/RawMouse.h
+      - NeuronClient/RawMouse.cpp
+      - NeuronClient/NeuronClient.vcxproj
+      - Design/ADR/ADR-013-uwp-application-model.md
+    acceptance:
+      - "The game builds as an MSIX, deploys, launches full screen through ApplicationView::TryEnterFullScreenMode, draws the match and takes input - RUN AND LOOKED AT, not merely built (AGENTS.md §3)"
+      - "CoreDispatcher::ProcessEvents(ProcessAllIfPresent) is called once per frame and nowhere else, and enqueues into the same Neuron::InputQueue the window procedure enqueued into"
+      - "Aim mode hides the cursor with CoreWindow::PointerCursor = nullptr and turns the camera on MouseDevice::MouseMoved's MouseDelta; the sign of both axes is checked against NeuronClient/PointerMode.h's rule by moving the mouse and looking"
+      - "Escape peels as Design/Interface.md §7 says and calls CoreApplication::Exit only on the last press; CoreWindow::Closed is honoured wherever it comes from"
+      - "GameData ships in the package as DeploymentContent and is read from Package::Current().InstalledLocation(); the user's directory is ApplicationData::Current().LocalFolder(); both are handed to Paths::SetRoots (ADR-016)"
+      - "--warp and --novsync arrive through LaunchActivatedEventArgs::Arguments() and are proved to work from the debugger's arguments property - or ADR-016 records that they do not and they move to a file in LocalState"
+      - "NeuronClient/Window.{h,cpp} and NeuronClient/RawMouse.{h,cpp} are deleted, and no .xaml exists anywhere in the tree (R18)"
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+      - Add-AppxPackage -Register OutpostCommander\bin\x64\Debug\AppX\AppxManifest.xml
+    parallel_safe: false
+    status: todo
+
+  - id: P9
+    title: Size the swap chain in physical pixels, and prove it at three scale factors
+    intent: >
+      The one place this migration can silently produce a worse picture. A swap chain created at
+      CoreWindow::Bounds on a 3840x2160 panel at 150% would be 2560x1440, FitAuthored would take the
+      bilinear path from a 1920x1080 scene target, and the compositor would scale that again - two
+      resamples where AGENTS.md §5 asks for a point-sampled 2x. Nothing fails, nothing logs, and no
+      test catches it, which is why the acceptance here is numbers and a picture rather than a
+      green build.
+    project: OutpostCommander
+    depends_on: [P8]
+    files:
+      - OutpostCommander/FrameworkView.cpp
+      - NeuronClient/DisplayPixels.cpp
+      - Design/ADR/ADR-017-core-window-pixels-and-lifetime.md
+    acceptance:
+      - "ApplicationViewScaling::TrySetDisableLayoutScaling(true) is called before the first frame, and the log says whether it succeeded and what the window then reported"
+      - "At 100%, 150% and 200% on one panel, the log records four numbers each: the window's reported size, the DPI, the swap chain's size, and which branch of FitAuthored ran. All three are recorded in ADR-017's Measurements"
+      - "A screenshot at 1:1 is pixel-exact against a capture frame: the interface's small type is unresampled, which is what the whole arrangement exists to protect (ADR-004)"
+      - "DpiChanged, DisplayContentsInvalidated and CoreWindow::SizeChanged all reach the same recompute-and-resize path, and dragging the window between two monitors of different scale is looked at"
+      - The manifest declares landscape orientations only, and no pre-rotation path is written
+    verify:
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+    parallel_safe: false
+    status: todo
+
+  - id: P10
+    title: Survive suspend, resume and device removal
+    intent: >
+      The largest piece of genuinely new work in this plan, and the only one whose failure mode is a
+      crash rather than a wrong picture. A grep over NeuronClient for DXGI_ERROR_DEVICE_REMOVED
+      returns nothing today: a desktop game that runs until the player leaves can get away with
+      that, and one the system parks and wakes cannot.
+    project: OutpostCommander
+    depends_on: [P8]
+    files:
+      - OutpostCommander/FrameworkView.cpp
+      - NeuronClient/GraphicsDevice.h
+      - NeuronClient/GraphicsDevice.cpp
+      - NeuronClient/SwapChain.cpp
+      - NeuronClient/SceneTarget.cpp
+    acceptance:
+      - "CoreApplication::Suspending takes its deferral, waits for the GPU to go idle, calls IDXGIDevice3::Trim and completes the deferral; the app survives a suspend and a resume with the match intact"
+      - "The frame loop stops presenting when CoreWindow::VisibilityChanged says the window is not visible, and starts again when it is - checked by minimising and restoring"
+      - "Present and BeginFrame detect DXGI_ERROR_DEVICE_REMOVED and DXGI_ERROR_DEVICE_RESET, log GetDeviceRemovedReason, and rebuild the device, the swap chain, the scene target and all seven pipeline states"
+      - "Device removal is PROVOKED deliberately - the debug layer's device-removal injection on WARP - and the game recovers and keeps drawing the same match, because the simulation holds no graphics state"
+    verify:
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+    parallel_safe: false
+    status: todo
+
+  - id: P11
+    title: Close the plan - the package gates in CI, and the grep returns nothing
+    intent: >
+      A closing criterion is worth the most when it can fail early and the least when it fails last,
+      so the grep in this task is written and run on the day P1 is written. What is left here is
+      making the package a gate, moving the frame-time readout out of a title bar the app no longer
+      has, and checking that nothing of the Win32 shell survives anywhere.
+    project: OutpostCommander
+    depends_on: [P4, P8, P9, P10]
+    files:
+      - .github/workflows/build.yml
+      - GameClient/Hud.cpp
+      - AGENTS.md
+      - Design/UwpMigration.md
+      - Design/ADR/ADR-016-package-identity-and-launch.md
+    acceptance:
+      - "CI builds the .msix and asserts it exists and that its manifest is the one in the tree. It is NOT run: running a packaged app on a hosted runner needs deployment and developer mode, and a build gate catches what a build gate can honestly catch"
+      - "The frame time is drawn by the HUD and written to the log; m1-vertical-slice/K5's title-bar readout is gone, and K5's notes say where it went and why"
+      - "A grep over the whole tree for CreateWindowEx, RegisterClassEx, PeekMessage, DispatchMessage, DefWindowProc, RegisterRawInputDevices, GetRawInputData, SetProcessDpiAwarenessContext, ShowCursor and SetWindowText returns nothing outside OutpostHost and OutpostCapture"
+      - "Design/UwpMigration.md's risk table is rewritten as what actually happened, with P1's five answers in it, and every ADR from 013 to 019 has its Measurements section filled in or says which figure is still owed"
+      - The owner has played a match against a host on another machine and says so
+    verify:
+      - python3 Build/CheckProjectFiles.py
+      - python3 Build/CheckFormat.py
+      - python3 Tools/CheckTaskDag.py
+      - msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /warnaserror
+    parallel_safe: false
+    status: todo
