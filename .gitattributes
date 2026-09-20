@@ -87,11 +87,14 @@
 *.h             text eol=crlf
 *.hlsl          text eol=crlf
 *.vcxproj       text eol=crlf
+*.vcxitems      text eol=crlf
 *.filters       text eol=crlf
 *.slnx          text eol=crlf
 *.sln           text eol=crlf
 *.props         text eol=crlf
 *.targets       text eol=crlf
+*.appxmanifest  text eol=crlf
+*.config        text eol=crlf
 *.json          text eol=crlf
 .clang-format   text eol=crlf
 .clang-tidy     text eol=crlf

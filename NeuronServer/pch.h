@@ -1,13 +1,6 @@
-// pch.h: This is a precompiled header file.
-// Files listed below are compiled only once, improving build performance for future builds.
-// This also affects IntelliSense performance, including code completion and many code browsing features.
-// However, files listed here are ALL re-compiled if any one of them is updated between builds.
-// Do not add files here that you will be updating frequently as this negates the performance advantage.
+#pragma once
 
-#ifndef PCH_H
-#define PCH_H
+// The precompiled header of NeuronServer. It includes this library's master include and nothing
+// else; the master include carries the chain below it (AGENTS.md section 2).
 
-// add headers that you want to pre-compile here
-#include "framework.h"
-
-#endif //PCH_H
+#include "NeuronServer.h"

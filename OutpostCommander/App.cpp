@@ -1,151 +1,69 @@
 #include "pch.h"
 
-using namespace winrt;
+#include <string>
 
-using namespace Windows;
-using namespace Windows::ApplicationModel::Core;
-using namespace Windows::Foundation::Numerics;
-using namespace Windows::UI;
-using namespace Windows::UI::Core;
-using namespace Windows::UI::Composition;
+// The packaged client, and the whole of it: an IFrameworkView over a CoreWindow that activates,
+// drains its dispatcher and exits. There is no XAML anywhere in this tree and no SwapChainPanel.
+//
+// This project holds Windows Runtime glue and nothing else (AGENTS.md R20). Anything a suite could
+// pin belongs below it in NeuronClient or GameClient -- a thing an Application holds is a thing no
+// suite can reach.
 
-struct App : implements<App, IFrameworkViewSource, IFrameworkView>
+using winrt::Windows::ApplicationModel::Core::CoreApplication;
+using winrt::Windows::ApplicationModel::Core::CoreApplicationView;
+using winrt::Windows::ApplicationModel::Core::IFrameworkView;
+using winrt::Windows::ApplicationModel::Core::IFrameworkViewSource;
+using winrt::Windows::UI::Core::CoreDispatcher;
+using winrt::Windows::UI::Core::CoreProcessEventsOption;
+using winrt::Windows::UI::Core::CoreWindow;
+
+namespace
 {
-    CompositionTarget m_target{ nullptr };
-    VisualCollection m_visuals{ nullptr };
-    Visual m_selected{ nullptr };
-    float2 m_offset{};
 
-    IFrameworkView CreateView()
-    {
-        return *this;
-    }
+void ReportLibrary(std::string_view _name)
+{
+  std::string line{_name};
+  line.push_back('\n');
+  OutputDebugStringA(line.c_str());
+}
 
-    void Initialize(CoreApplicationView const &)
-    {
-    }
+struct App : winrt::implements<App, IFrameworkViewSource, IFrameworkView>
+{
+  IFrameworkView CreateView()
+  {
+    return *this;
+  }
 
-    void Load(hstring const&)
-    {
-    }
+  void Initialize(const CoreApplicationView&)
+  {
+    // The one thing this shell does today: name the libraries it was linked against, so that a
+    // deploy proves the whole chain reached the package rather than merely compiled.
+    ReportLibrary(Neuron::CoreLibraryName());
+    ReportLibrary(Neuron::ClientLibraryName());
+    ReportLibrary(Outpost::CoreLibraryName());
+    ReportLibrary(Outpost::ClientLibraryName());
+  }
 
-    void Uninitialize()
-    {
-    }
+  void Load(const winrt::hstring&) {}
 
-    void Run()
-    {
-        CoreWindow window = CoreWindow::GetForCurrentThread();
-        window.Activate();
+  void SetWindow(const CoreWindow&) {}
 
-        CoreDispatcher dispatcher = window.Dispatcher();
-        dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
-    }
+  void Run()
+  {
+    const CoreWindow window = CoreWindow::GetForCurrentThread();
+    window.Activate();
 
-    void SetWindow(CoreWindow const & window)
-    {
-        Compositor compositor;
-        ContainerVisual root = compositor.CreateContainerVisual();
-        m_target = compositor.CreateTargetForCurrentView();
-        m_target.Root(root);
-        m_visuals = root.Children();
+    const CoreDispatcher dispatcher = window.Dispatcher();
+    dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
+  }
 
-        window.PointerPressed({ this, &App::OnPointerPressed });
-        window.PointerMoved({ this, &App::OnPointerMoved });
-
-        window.PointerReleased([&](auto && ...)
-        {
-            m_selected = nullptr;
-        });
-    }
-
-    void OnPointerPressed(IInspectable const &, PointerEventArgs const & args)
-    {
-        float2 const point = args.CurrentPoint().Position();
-
-        for (Visual visual : m_visuals)
-        {
-            float3 const offset = visual.Offset();
-            float2 const size = visual.Size();
-
-            if (point.x >= offset.x &&
-                point.x < offset.x + size.x &&
-                point.y >= offset.y &&
-                point.y < offset.y + size.y)
-            {
-                m_selected = visual;
-                m_offset.x = offset.x - point.x;
-                m_offset.y = offset.y - point.y;
-            }
-        }
-
-        if (m_selected)
-        {
-            m_visuals.Remove(m_selected);
-            m_visuals.InsertAtTop(m_selected);
-        }
-        else
-        {
-            AddVisual(point);
-        }
-    }
-
-    void OnPointerMoved(IInspectable const &, PointerEventArgs const & args)
-    {
-        if (m_selected)
-        {
-            float2 const point = args.CurrentPoint().Position();
-
-            m_selected.Offset(
-            {
-                point.x + m_offset.x,
-                point.y + m_offset.y,
-                0.0f
-            });
-        }
-    }
-
-    void AddVisual(float2 const point)
-    {
-        Compositor compositor = m_visuals.Compositor();
-        SpriteVisual visual = compositor.CreateSpriteVisual();
-
-        static Color colors[] =
-        {
-            { 0xDC, 0x5B, 0x9B, 0xD5 },
-            { 0xDC, 0xED, 0x7D, 0x31 },
-            { 0xDC, 0x70, 0xAD, 0x47 },
-            { 0xDC, 0xFF, 0xC0, 0x00 }
-        };
-
-        static unsigned last = 0;
-        unsigned const next = ++last % _countof(colors);
-        visual.Brush(compositor.CreateColorBrush(colors[next]));
-
-        float const BlockSize = 100.0f;
-
-        visual.Size(
-        {
-            BlockSize,
-            BlockSize
-        });
-
-        visual.Offset(
-        {
-            point.x - BlockSize / 2.0f,
-            point.y - BlockSize / 2.0f,
-            0.0f,
-        });
-
-        m_visuals.InsertAtTop(visual);
-
-        m_selected = visual;
-        m_offset.x = -BlockSize / 2.0f;
-        m_offset.y = -BlockSize / 2.0f;
-    }
+  void Uninitialize() {}
 };
+
+} // namespace
 
 int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
 {
-    CoreApplication::Run(make<App>());
+  CoreApplication::Run(winrt::make<App>());
+  return 0;
 }

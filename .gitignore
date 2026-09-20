@@ -16,13 +16,6 @@
 # Mono auto generated files
 mono_crash.*
 
-# Shader headers are written by the shader compiler on every build (AGENTS.md §2):
-# <Library>/Shaders/*.hlsl in, <Library>/CompiledShaders/*.h out. Build output; the .vcxproj regenerates it.
-CompiledShaders/
-
-# What OutpostCommander --capture writes when run from the repository root (TechnicalDesign.md §6.1).
-Captures/
-
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

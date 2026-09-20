@@ -1,5 +1,5 @@
-# AGENTS.md §1 — naming and semantics, machine-readable. This file is the single source of truth
-# for the option values; AGENTS.md states the rules in prose and does not repeat the settings.
+# AGENTS.md section 1 -- naming and semantics, machine-readable. This file is the single source of
+# truth for the option values; AGENTS.md states the rules in prose and does not repeat the settings.
 #
 # The values below are carried over from the sibling repositories Outpost.Warzone and
 # Nomad-Commander, so that engine code moves between the trees without a rename pass.
@@ -8,64 +8,51 @@
 # overlap: clang-tidy has no check that reports a wrong brace position or an over-long line, and
 # clang-format cannot see that a parameter is missing its `_`.
 #
-# ── Status: CI gates this over the whole tree ──────────────────────────────────────────────
+# -- Status: NOTHING RUNS THIS YET -------------------------------------------------------------
 #
-# `.github/workflows/build.yml` runs clang-tidy on the Windows job, after the build, over every
-# hand-written translation unit in the tree (AGENTS.md §6), driven by Build/RunClangTidy.py
-# (2026-09-17), which reads each project's include directories and definitions from its
-# .vcxproj rather than repeating them. It runs through clang's MSVC
-# driver (`--driver-mode=cl`) against the same switches the .vcxproj files set, because the
-# alternative — GNU driver mode against the Windows SDK — disagrees with MSVC in both directions
-# and reports defects that are not there.
+# These are the settings, ready and unabridged. What is missing is the script that drives them:
+# clang-tidy needs each translation unit's include directories and preprocessor definitions, this
+# tree has eleven project files that hold them, and no tool here reads one and hands over the
+# other. So `.github/workflows/build.yml` gates FORMATTING and does not gate NAMING, and a green
+# build says nothing about whether an identifier conforms.
 #
-# This repository is GREENFIELD: its first translation units landed with this gate on. Nothing is
-# grandfathered, a whole-tree pass comes back clean, and a finding is therefore a defect rather
-# than archaeology. That is a claim CI keeps true from the first translation unit onwards; it is
-# not a claim about how careful anyone was. When it breaks, fix the code — do not narrow the
-# filter.
+# Writing that script is worth doing. Until somebody does, naming is review's problem -- and this
+# file is not evidence to the contrary.
 #
-# Run it yourself, on the files you wrote, before you push. From a Developer PowerShell (the
-# INCLUDE variable is what makes the Windows SDK visible to clang):
+# By hand, on a file you just wrote, from a Developer PowerShell (INCLUDE is what makes the Windows
+# SDK visible to clang):
 #
-#   python Build\RunClangTidy.py <Project>\YourNewFile.cpp
-#
-# which builds, from the project file, the command it would take by hand:
-#
-#   clang-tidy --quiet <Project>/YourNewFile.cpp -- --driver-mode=cl /std:c++latest /EHsc `
+#   python -m pip install clang-tidy
+#   clang-tidy --quiet <Project>/YourNewFile.cpp -- --driver-mode=cl /std:c++latest /EHsc \
 #     /permissive- /DUNICODE /D_UNICODE /D_DEBUG /I <OtherProject>
 #
-# Never add /DWIN32_LEAN_AND_MEAN or /DNOMINMAX to it: Core/WindowsHeader.h defines the family
-# (AGENTS.md §4), and a second definition is a macro-redefinition diagnostic that WarningsAsErrors
-# turns fatal, exactly as C4005 does under /WX.
+# `--driver-mode=cl`, because the alternative -- GNU driver mode against the Windows SDK --
+# disagrees with MSVC in both directions and reports defects that are not there.
 #
-# UNICODE and _UNICODE are not optional in that command. Every project sets CharacterSet=Unicode,
-# so `IDC_ARROW` is `MAKEINTRESOURCEW`; without the defines clang-tidy reports a type error at
-# every `LoadCursorW` call that MSVC compiles without complaint.
+# Never add /DWIN32_LEAN_AND_MEAN or /DNOMINMAX to that command: NeuronCore/NeuronCore.h defines
+# the family (AGENTS.md section 4), and a second definition is a macro-redefinition diagnostic that
+# WarningsAsErrors turns fatal, exactly as C4005 does under /WX.
 #
-# THE VERSION MATTERS, and the workflow PINS it -- `CLANG_TIDY_VERSION` in
-# .github/workflows/build.yml, installed from pip so that the same binary is available on any
-# machine. "Clean" is always clean *under something*, and that something now has a number.
+# UNICODE and _UNICODE are not optional in it either. Every project sets CharacterSet=Unicode, so
+# `IDC_ARROW` is `MAKEINTRESOURCEW`; without the defines clang-tidy reports a type error at every
+# `LoadCursorW` call that MSVC compiles without complaint.
 #
-# It is pinned because in the sibling tree it flapped: the runner image moved to LLVM 20, which
-# reports two things 22 does not -- a bit-flag enum whose OR-ed value names no enumerator, and a
+# THE VERSION WILL MATTER the day this is gated, and the gate should pin it, from pip rather than
+# from a runner image. "Clean" is always clean *under something*, and that something needs a
+# number. In the sibling tree an unpinned one flapped: the image moved to LLVM 20, which reports
+# two things 22 does not -- a bit-flag enum whose OR-ed value names no enumerator, and a
 # std::unique_ptr inside an aggregate returned by value. Both are correct code. The same run also
 # found a real defect, a decoder casting zero into an enum with no zero, and that one was fixed
 # rather than pinned away. The lesson travels even though the incident does not: a version change
 # must not be able to turn main red on its own.
-#
-# To run exactly what CI runs:
-#
-#   python -m pip install clang-tidy==22.1.8
-#   python Build/RunClangTidy.py
 
-# Four rules of AGENTS.md §1 this file cannot express — R2's banned type affixes, R7's file naming
-# and .vcxproj/.filters registration, R11's standing spelling families, and §2's flat project
-# directories — are checked by Build/CheckProjectFiles.py, which runs in the same CI job that
-# builds (2026-09-17; AGENTS.md §6). A check that exists somewhere is worth more
-# than a rule everyone is asked to remember.
+# Four rules of AGENTS.md section 1 this file cannot express -- R2's banned type affixes, R7's file
+# naming and .vcxproj/.filters registration, R11's standing spelling families, and section 2's flat
+# project directories -- are checked by nothing at all here. They are review's, and they are the
+# ones most worth a script.
 #
 # readability-identifier-length is deliberately NOT enabled. Its defaults reject the domain
-# vocabulary this codebase is built on — x, y, _a, _b — and short names here are precise, not lazy.
+# vocabulary this codebase is built on -- x, y, _a, _b -- and short names here are precise, not lazy.
 
 Checks: >
   readability-identifier-naming,
@@ -105,26 +92,24 @@ WarningsAsErrors: '*'
 # THIS ALTERNATION IS A PROJECT REGISTRY. It names the projects whose headers are linted, so
 # ADDING A PROJECT MEANS ADDING IT HERE -- a project missing from this list is a project whose
 # headers are checked by nothing at all, with no finding and no warning to say so. It is the
-# quietest way to lose a gate, which is why Build/CheckProjectFiles.py compares this list against
-# the solution (its tidy-regex rule) rather than trusting anyone to remember.
+# quietest way to lose a gate, and nothing in this tree compares the list against the solution --
+# so it is somebody remembering. Add a project here in the commit that creates it.
 #
-# The eight projects of ADR-001 and the `<Something>Tests` convention. A project added later is
-# added here in the same commit (ADR-001, Consequences).
+# The eight projects of AGENTS.md section 2, and the `<Library>Tests` convention.
 #
 # [/\\], not '/'. On a Windows Clang build the paths arrive with backslashes, so a filter anchored
 # on a forward slash matches no header at all and silently suppresses every in-build diagnostic.
 # The pattern matches headers sitting DIRECTLY in a project folder, which is every hand-written
 # one (AGENTS.md §2's flat-directory rule). A bare `.*` would also match build output and the
 # Windows SDK, and most of what it reported would be from headers nobody here wrote.
-HeaderFilterRegex: '(NeuronCore|NeuronClient|NeuronServer|GameShared|GameClient|GameLogic|OutpostCommander|OutpostHost|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
+HeaderFilterRegex: '(NeuronCore|NeuronClient|NeuronServer|GameCore|GameClient|GameLogic|OutpostCommander|Server|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
 
 # A `Resource.h` is written by the Visual Studio resource editor, not by hand. Its
 # `#define IDC_STATIC -1` trips bugprone-macro-parentheses, and the fix would be undone the next
 # time someone opens the dialog editor. Excluded here rather than by weakening the check for
-# everything else. Client/d3dx12.h is vendored, R14's one exception (owner, 2026-09-17), and is
-# not ours to lint either. (`ExcludeHeaderFilterRegex` needs clang-tidy 19 or newer; on an older
-# one pass `--exclude-header-filter='(Resource|d3dx12)\.h$'` instead.)
-ExcludeHeaderFilterRegex: '(Resource|d3dx12)\.h$'
+# everything else. (`ExcludeHeaderFilterRegex` needs clang-tidy 19 or newer; on an older one
+# pass `--exclude-header-filter='Resource\.h$'` instead.)
+ExcludeHeaderFilterRegex: 'Resource\.h$'
 
 CheckOptions:
   # ── Types: PascalCase, no prefix of any kind (R2, R5) ──────────────────────────────

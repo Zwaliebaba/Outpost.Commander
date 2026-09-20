@@ -9,33 +9,39 @@
 
 ## Why
 
-<!-- The problem, or the decision this implements. Link the ADR if there is one; add one under
-     Design/ADR/ if this change IS a decision (AGENTS.md §6). -->
+<!-- The problem, or the decision this implements. If this change IS a standing decision — a file
+     format, a wire protocol, a subsystem's shape, an exception to a rule — write it into AGENTS.md
+     in this same PR (§6). -->
 
 ## How it was verified
 
 <!-- Be specific and be honest. "Builds clean, not run" and "builds and runs" are different
      claims. Say which configurations you actually built. -->
 
-- [ ] Builds clean, `Debug|x64`, through the solution
-- [ ] Every test suite runs and passes
-- [ ] `python Build\CheckProjectFiles.py`
-- [ ] `python Build\CheckFormat.py`
-- [ ] `python Build\RunClangTidy.py`
-- [ ] Release built locally (CI does not build it — AGENTS.md §6)
-- [ ] Ran the executable (**required** if this touches rendering, input, audio or presentation)
+- [ ] Builds clean through the solution: `Debug|x64`
+- [ ] The other three pairs build: `Release|x64`, `Debug|ARM64`, `Release|ARM64`
+- [ ] Every test suite runs and passes on x64
+- [ ] `clang-format --dry-run --Werror` over the files touched, on the pinned version
+- [ ] Ran the executable (**required** if this touches rendering, input, audio or presentation —
+      for the client that means deployed as a package and launched)
 
-<!-- A checker that is not written yet is not a box to tick. Strike it and say so below. -->
+<!-- Nothing in this tree checks naming: there is no script that drives .clang-tidy yet
+     (AGENTS.md §1). Read your own diff against the table. -->
 
 ## Conformance
 
 - [ ] Naming follows AGENTS.md §1 — `_` on parameters, `m_` on class state, `UPPER_CASE`
       constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes
-- [ ] New, removed or moved files are in the `.vcxproj` **and** the `.filters`
-- [ ] A new project was added to `.clang-tidy`'s `HeaderFilterRegex`, or this PR adds none
-- [ ] Debug and Release still agree on everything AGENTS.md §3 says they must
+- [ ] New, removed or moved files are in the `.vcxproj` or `.vcxitems` **and** the `.filters`
+- [ ] No `.filters` gained a `Source Files` or `Header Files` filter — Visual Studio adds them back
+      on its own, and filters here are functional only (§2)
+- [ ] A new `.vcxitems` import was added to exactly one project per link closure (§2)
+- [ ] A new library has a master include, a `pch.h` that includes it, a suite under `Tests/`, and a
+      name in `.clang-tidy`'s `HeaderFilterRegex`
+- [ ] Debug and Release still differ in exactly the rows of AGENTS.md §3's table and nothing else
 - [ ] No warning silenced, no `ConformanceMode`/`LanguageStandard`/`WarningLevel` changed
-- [ ] No new third-party dependency (R14)
+- [ ] No new third-party dependency, and no second NuGet package (R14); every `packages.config`
+      still pins the same version
 - [ ] Only the lines the task required were changed
 
 ## Anything you had to bend

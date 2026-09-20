@@ -2,19 +2,13 @@
 
 Operating instructions for every agent (and human) writing code in this repository. **Read this before generating a single line.**
 
-*Outpost Commander* is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 client and an authoritative simulation, built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* is in [`Design/`](Design/README.md) — `Design/GameDesign.md` and `Design/TechnicalDesign.md`, promoted by the owner on 2026-09-17.
+*Outpost Commander* is a multiplayer-only real-time strategy game and a hobby project with one developer: a packaged UWP client and an authoritative Win32 host, built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase.
 
-**The tree is young.** The solution and its first project landed on 2026-09-17 ([`ADR-001`](Design/ADR/ADR-001-solution-layout.md)); what exists conforms, and nothing below is a target to migrate towards: it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, from the first file on.
+**The tree is a shell.** Six libraries, two executables and six test suites exist; between them they hold a handful of functions that return their own name, so that every edge of the build — every reference, every include path, every link — is exercised by something rather than asserted. There is no game in it yet. Nothing below is a target to migrate towards: it describes the code as it must be written from the first real line.
 
-**Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
+**Where these rules come from.** Naming, formatting and the compiler settings are carried over from two sibling repositories, `Outpost.Warzone` and `Nomad-Commander`, where they were measured against a large tree. That lineage is why [`.clang-format`](.clang-format) and [`.clang-tidy`](.clang-tidy) are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design or their decisions.**
 
-**What is authoritative, in order:**
-
-1. **This file** — conformance: naming, style, build settings, and how to work here.
-2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6). Numbering starts at `ADR-001` (the solution layout, 2026-09-17) in this repository and does not continue another's.
-3. **The surrounding code** — for anything neither of the above covers, match the file you are editing.
-
-The design sits alongside rather than above: it says what is built and this file says how. A task that needs a design answer the design does not give asks the owner and gets the answer written into `Design/` before the code is.
+**What is authoritative, in order:** this file, then the surrounding code. For anything this file does not cover, match the file you are editing.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
@@ -37,7 +31,7 @@ If a rule here conflicts with a habit from another codebase, this file wins. If 
 | Namespace | `PascalCase` | `Outpost` |
 | File | `PascalCase.cpp` / `.h` | `SwapChainTarget.cpp` |
 
-**Note the split that catches people out: a `constexpr` is `UPPER_CASE`, an enumerator is `PascalCase`.** They are both compile-time and they are spelled differently on purpose — an enumerator is a *value of a type* and reads as one at the use site (`PageFault::OutOfVideoMemory`), while a constant is a number with a name and is meant to look like one. [`.clang-tidy`](.clang-tidy) enforces both, and it is the single source of truth for the option values; this document states the rules in prose and does not repeat the settings, so there is nothing to drift.
+**Note the split that catches people out: a `constexpr` is `UPPER_CASE`, an enumerator is `PascalCase`.** They are both compile-time and they are spelled differently on purpose — an enumerator is a *value of a type* and reads as one at the use site (`PageFault::OutOfVideoMemory`), while a constant is a number with a name and is meant to look like one. [`.clang-tidy`](.clang-tidy) is the single source of truth for the option values; this document states the rules in prose and does not repeat the settings, so there is nothing to drift.
 
 ### The rules behind the table
 
@@ -53,8 +47,6 @@ Transport             ← the concept
 
 That tree is an illustration of the rule, not a description of anything. A base class for one derived class is ceremony: name the concept, and add the layer when a second thing needs it.
 
-clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so the repository checker carries the other half (§6).
-
 **R3 — Compile-time constants are `UPPER_CASE`.** `constexpr`, `inline constexpr` and `static constexpr` members: `WIDTH_PIXELS`, `TICKS_PER_SECOND`, `CELL_PIXELS`. `sm_` is reserved for *mutable* statics, which are rare and must document their thread-safety.
 
 **R4 — Acronyms capitalize as words**: `HlslSource`, `DxgiFactory`, `UdpTransport` — never `HLSLSource`. Identifiers from an external SDK keep that SDK's spelling (`ID3D12Device`, `DXGI_FORMAT`, `HRESULT`, `IDXGISwapChain4`) and are never renamed to fit.
@@ -63,15 +55,15 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 
 **R6 — Units belong in names; types do not.** `fuelPerJump`, `upkeepCreditsPerDay`, `arrivalTick`, `confidencePercent` are encouraged — a simulation measured in ticks, credits and distances makes unit ambiguity a real defect class, and it is one the compiler cannot catch for you. Never encode the type: no `iCount`, `pFleet`, `strName`.
 
-**R7 — A file is named for its primary type**, PascalCase, `.h` / `.cpp` only. `.hpp`, `.cc` and `.inl` are not used; template implementations live in the header. Exceptions, because MSBuild and the Visual Studio wizards spell them this way: `pch.h`, `pch.cpp`, `framework.h`, `targetver.h`, `Resource.h`.
+**R7 — A file is named for its primary type**, PascalCase, `.h` / `.cpp` only. `.hpp`, `.cc` and `.inl` are not used; template implementations live in the header. The exceptions, because MSBuild and the Visual Studio wizards spell them this way: `pch.h`, `pch.cpp`, `Resource.h`.
 
 **R8 — `m_` marks encapsulated state, not every field.** A `class` with invariants prefixes private members `m_`. A public aggregate — a `Desc` config struct, a wire record, a POD handed to the renderer — uses plain `camelCase` fields so brace initialization reads naturally.
 
-**R9 — One namespace per layer, and the engine does not know the game.** Reusable engine code gets its own namespace; game code gets another. The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
+**R9 — One namespace per layer, and the engine does not know the game.** Engine code is `Neuron`; game code is `Outpost`. The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
 
 **R10 — No `using namespace` at file scope in a header.** It leaks into every translation unit that includes it, and the failure it causes appears somewhere else. In a `.cpp` it is allowed for the unit-test framework and nothing else; otherwise qualify the name or write a local alias.
 
-**R11 — One spelling per family, and it is the SDK's.** `color`, `initialize`, `serialize`, `normalize`, `quantize`, `synchronize`, `behavior`, `neighbor`, `center`, `gray`, `canceled`. Neither spelling is wrong English; the defect is a tree where a reader has to know which half they are in and a grep for one finds half the uses. `D3D12_CLEAR_VALUE::Color` settles which half wins. Prose is not checked — a design document may spell `flavour` and `harbour`; an identifier spells `flavor` and `harbor`.
+**R11 — One spelling per family, and it is the SDK's.** `color`, `initialize`, `serialize`, `normalize`, `quantize`, `synchronize`, `behavior`, `neighbor`, `center`, `gray`, `canceled`. Neither spelling is wrong English; the defect is a tree where a reader has to know which half they are in and a grep for one finds half the uses. `D3D12_CLEAR_VALUE::Color` settles which half wins. Prose is not checked — a document may spell `flavour` and `harbour`; an identifier spells `flavor` and `harbor`.
 
 ### Worked example — this is the target style
 
@@ -81,7 +73,7 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 
 #include <cstdint>
 
-namespace Outpost
+namespace Neuron
 {
 
 // R3: constant → UPPER_CASE. R6: the unit is in the name.
@@ -120,94 +112,165 @@ private:
   bool m_deviceRemoved = false;
 };
 
-} // namespace Outpost
+} // namespace Neuron
 ```
 
-### Enforcement
+### What is enforced, and what is not
 
 | Rule | Enforced by |
 |---|---|
-| The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy), gated in CI over the whole tree |
-| R2 affixes, R7 file names and project registration, R11 spellings, §2 flat directories, §3 no header named like a runtime or SDK header | `Build/CheckProjectFiles.py`, gated in CI |
-| R4, R6, R9, R10 | Review. Check your own diff against the table before handing it back. |
+| Layout and formatting (§4) | [`.clang-format`](.clang-format), **gated in CI** on a pinned version |
+| Debug and Release agreeing (§3) | The Release legs of the CI matrix, which compile it |
+| Every library having a suite that runs (§2) | The CI test steps, which fail on a suite that did not build |
+| The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy) — **configured, not yet gated**; see below |
+| R2, R4, R6, R7, R9, R10, R11 | Review. Check your own diff against the table before handing it back. |
 
-`Build/CheckProjectFiles.py` exists (2026-09-17) and gates in CI; `python Build\CheckProjectFiles.py --self-test` proves that each of its rules fires on the deliberately broken projects under `Build/Fixtures/ProjectFiles/`, and the README there says what each fixture breaks. `.clang-tidy` gates in CI through `Build/RunClangTidy.py` (2026-09-17), which runs the pinned clang-tidy over every translation unit the solution builds; `python Build\RunClangTidy.py <file>` runs it over the file you just wrote, before you push.
+**`.clang-tidy` is in the tree and nothing runs it.** It is the settings, carried over intact and ready; there is no script here that drives it over the translation units the solution builds, and CI therefore does not check naming. Writing that script is worth doing and is not done. Until it is, naming is review's problem — do not assume a green build says anything about it.
 
 ---
 
 ## 2. Repository shape
 
-The concrete layout is [`ADR-018`](Design/ADR/ADR-018-client-server-libraries.md) and [`ADR-019`](Design/ADR/ADR-019-the-client-never-simulates.md) (2026-09-20), which supersede [`ADR-001`](Design/ADR/ADR-001-solution-layout.md) (2026-09-17) on the project table and on what the client is built from. `OutpostCommander.slnx` at the root; **six libraries on two axes, layer and side** — the prefix says which layer, the suffix says which side:
+`OutpostCommander.slnx` at the root. **Six libraries on two axes, layer and side** — the prefix says which layer, the suffix says which side:
 
 | | shared | client only | server only |
 |---|---|---|---|
 | **engine**, namespace `Neuron` | `NeuronCore` | `NeuronClient` | `NeuronServer` |
-| **game**, namespace `Outpost` | `GameShared` | `GameClient` | `GameLogic` |
+| **game**, namespace `Outpost` | `GameCore` | `GameClient` | `GameLogic` |
 
-Three executables over them: `OutpostCommander`, the game, a **packaged UWP application** whose view is a `CoreWindow` ([`ADR-013`](Design/ADR/ADR-013-uwp-application-model.md)); `OutpostHost`, the headless host, a Win32 console executable; and `OutpostCapture`, the headless capture CI drives, likewise — that one arrives with `p1-uwp-shell/P4`, and until it does the capture is still a mode of the game. Each in a flat directory of its name, with `Tests/<Name>Tests` per library and one more — `Tests/IntegrationTests`, the only suite allowed to see both sides, because the split leaves no project above both `GameClient` and `GameLogic`.
+Two executables over them: **`OutpostCommander`**, the game — a packaged UWP application whose view is a `CoreWindow`, built from `GameClient` and `NeuronClient`; and **`Server`**, the authoritative host — an ordinary Win32 console executable, built from `GameLogic` and `NeuronServer`. Each in a flat directory of its name, and one suite per library under `Tests/<Library>Tests`.
 
-**The client links no simulation** ([`ADR-019`](Design/ADR/ADR-019-the-client-never-simulates.md)). `GameLogic` is not in `OutpostCommander`'s reference set and `Sim.h` is not on its include path, so `ADR-012`'s interest set is a boundary the linker enforces rather than a convention inside one address space. The game is multiplayer only and a player with one machine cannot play it; that ADR says what that costs and why it was taken. Two harnesses are allowed both sides and neither ships: `Tests/IntegrationTests` and `OutpostCapture`, both written into `BUILT_ON` by hand.
-
-**The edges run one way and are `BUILT_ON` in `Build/CheckProjectFiles.py`**, which is the one place they are written and which fails the build over a reference, an include directory or a quoted include that is not in the table. A new edge is a superseding ADR and a row there, in that order. The constraints below are what the layout satisfies and what any change to it has to keep.
-
-**Project directories are flat, with exactly two sanctioned subdirectories.** C++ source lives directly in its project's folder. This is not taste: `.clang-tidy`'s `HeaderFilterRegex` matches headers exactly one level in, so **a header in a subdirectory is silently unchecked** — no findings, no warning, and nobody notices for months. The two exceptions are the shader pipeline:
-
-- **`<Project>/Shaders/`** holds the HLSL, hand-written, named `<Shader>VS.hlsl` and `<Shader>PS.hlsl` for the vertex and pixel halves of one shader.
-- **`<Project>/CompiledShaders/`** holds what the compiler wrote: one header per `.hlsl`, `<Shader>VS.h` and `<Shader>PS.h`, each declaring a byte array `g_<Shader>VS` / `g_<Shader>PS`. It is **build output** — produced by an `FXCompile` item in the `.vcxproj` on every build, listed in `.gitignore`, skipped by every checker, and never edited or committed. The `.cpp` that binds the pipeline state includes it and nothing else does.
+**The client links no simulation.** `GameLogic` is not in `OutpostCommander`'s reference set and its headers are not on the client's include path, so what a client may know is a boundary the linker keeps rather than a convention inside one address space. The game is multiplayer only and a player with one machine cannot play it; that is the cost, and it was taken deliberately.
 
 **The edges run one way, and a layer never reaches sideways.** Engine code is built on by game code and never the reverse (R9), and two libraries at the same level share what is below them rather than each other. An edge that only exists "for now" is an edge, and it is the one that will be impossible to remove later.
 
-**The project files are part of the source.** Adding, removing or moving a file means editing the owning `.vcxproj` **and** its `.filters`. A file that compiles locally but is missing from the project fails only in CI — or worse, links a stale object nobody notices.
+### The two shared libraries are shared-items projects, and this is why
 
-**There is one package, in one project, and no vendored SDKs.** `OutpostCommander` references `Microsoft.Windows.CppWinRT` at a pinned version, decided by the owner on 2026-09-20 and recorded in [`ADR-015`](Design/ADR/ADR-015-cppwinrt-dependency.md); every other project depends on the Windows SDK, the MSVC standard library and the one header R14 names, and on nothing else. A second package is a second ADR. See R14.
+`NeuronCore` and `GameCore` are `.vcxitems`, not `.vcxproj`. They produce no `.lib` of their own: their sources are compiled **into** each project that imports them, with that project's settings.
 
-**Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
+That is not a filing preference. `NeuronClient` and `GameClient` are compiled for the **Windows Store** application type — AppContainer, `WINAPI_FAMILY_APP`, a restricted view of the Windows SDK — and `NeuronServer`, `GameLogic` and every suite are ordinary desktop builds. One static library cannot be both, and the direction that fails is exactly the one that matters: a desktop-compiled library linked into an AppContainer package compiles, links, and is refused at certification. A shared-items project compiles the shared code twice, correctly, once per side.
+
+**Import each `.vcxitems` exactly once per link closure, or the same symbols arrive twice.** Who imports what:
+
+| Project | imports | references |
+|---|---|---|
+| `NeuronClient` | `NeuronCore` | — |
+| `GameClient` | `GameCore` | `NeuronClient` |
+| `NeuronServer` | `NeuronCore` | — |
+| `GameLogic` | `GameCore` | `NeuronServer` |
+| `OutpostCommander` | — | `GameClient`, `NeuronClient` |
+| `Server` | — | `GameLogic`, `NeuronServer` |
+| `Tests/NeuronCoreTests` | `NeuronCore` | — |
+| `Tests/GameCoreTests` | `GameCore`, `NeuronCore` | — |
+| `Tests/NeuronClientTests` | — | `NeuronClient` |
+| `Tests/GameClientTests` | — | `GameClient`, `NeuronClient` |
+| `Tests/NeuronServerTests` | — | `NeuronServer` |
+| `Tests/GameLogicTests` | — | `GameLogic`, `NeuronServer` |
+
+`GameCoreTests` imports two because nothing below a suite over `GameCore` provides `NeuronCore` to it. Every other row imports at most one.
+
+### Every library has a master include, and a pch that includes it
+
+`NeuronClient.h` for `NeuronClient`, `GameCore.h` for `GameCore`, and so on. **A master include includes the master include of everything its library is built on**, so a consumer includes one file and gets the whole chain:
+
+```
+NeuronCore.h  ←  NeuronClient.h  ←  GameClient.h  ←  OutpostCommander/pch.h
+       ↑              ↑                  ↑
+       └── GameCore.h ┘                  │
+       ↑                                 │
+       └── NeuronServer.h ← GameLogic.h ← Server/pch.h
+```
+
+Each project's `pch.h` includes **its own** master include and nothing else; `pch.cpp` includes `pch.h` and is the translation unit that creates the precompiled header. A suite's `pch.h` includes the master include of the library under test, and `<CppUnitTest.h>`.
+
+**The two shared-items libraries carry no precompiled header.** Their `.cpp` files are compiled into six different projects, each with a pch of its own, and there is no one header to share between them. Those files are marked `PrecompiledHeader: NotUsing` in the `.vcxitems` and include their own master header first instead. That is the one exception to "`pch.h` comes first", and it is stated in the files themselves.
+
+### Include directories
+
+A project lists the directories of the **other** projects it reaches into, as `$(SolutionDir)<Project>`. A `.vcxitems` lists its own directory relative to itself, because it is evaluated inside whichever project imported it.
+
+**A project does not put its own directory on the include path.** `cl.exe` already searches the directory of the including file first for a quoted include, so `#include "GameClient.h"` from a `.cpp` in the same folder resolves without help.
+
+**No header is named like a C runtime or SDK header.** The other projects' directories sit on the include path ahead of the SDK, MSVC searches them for an angled include too, and it matches case-insensitively — a `NeuronCore/Assert.h` is what DirectXMath's `<assert.h>` would find.
+
+**No identifier is spelled like a Windows SDK macro.** `<windows.h>` is in scope throughout this tree, and the preprocessor rewrites `near`, `far`, `pascal`, `cdecl`, `interface`, `small`, `hyper`, `IN`, `OUT`, `OPTIONAL`, `CONST`, `VOID`, `PURE`, `DELETE` and `IGNORE` before the compiler sees them.
+
+### The rest of the shape
+
+**Project directories are flat.** C++ source lives directly in its project's folder. This is not taste: `.clang-tidy`'s `HeaderFilterRegex` matches headers exactly one level in, so **a header in a subdirectory is silently unchecked** the day that gate is switched on. `OutpostCommander/Assets/` is the one subdirectory in the tree, and it holds package artwork rather than code.
+
+**The project files are part of the source.** Adding, removing or moving a file means editing the owning `.vcxproj` or `.vcxitems` **and** its `.filters`. A file that compiles locally but is missing from the project fails only in CI — or worse, links a stale object nobody notices.
+
+**A filter says what a file is for, never what its extension is.** There is no `Source Files` and no `Header Files` in any `.filters` in this tree, and there will not be one: a header and the `.cpp` that implements it are two halves of one idea and belong together, under the name of the thing they are. Sorting by extension separates them and says nothing a glance at the name would not have said. So a project starts with **no filters at all** — its files sit at the project root, which for a library holding one idea is the honest picture — and a filter arrives the first time there is a functional group worth naming. `OutpostCommander`'s `Assets` is the only one in the tree today; it names the package artwork, which is what those files are for, and it also has to exist because they live in a subdirectory.
+
+**Visual Studio recreates `Source Files` and `Header Files` on its own**, every time *Add New Item* is used. Delete them again and drop the `<Filter>` element from the item; a file with none sits at the root, which is what is wanted. Nothing checks this for you.
+
+**There is one package, and no vendored SDKs.** `Microsoft.Windows.CppWinRT`, at a pinned version, referenced through a `packages.config` by the **five projects on the C++/WinRT side**: `NeuronClient`, `GameClient`, `OutpostCommander`, and the two suites that link the first two. The Windows SDK ships the projection headers — a Windows Store project reaches `<winrt/Windows.UI.Core.h>` with no package at all, which is worth knowing before adding one — but not `cppwinrt.exe` or its MSBuild targets, which is what a project needs to author a runtime class of its own from IDL.
+
+**Every packages.config in the tree pins the same version.** Five configs that disagree is a restore that fetches two copies of one package and a build that links whichever import path was written last. CI restores them by finding them, not by naming them, so a sixth project does not mean remembering to edit the workflow. Every other project depends on the Windows SDK and the MSVC standard library and on nothing else. A second package is a decision, not a convenience; see R14.
+
+**Build and IDE output is never committed** — `x64/`, `ARM64/`, `AppPackages/`, `Generated Files/`, `packages/`, `.vs/`, `*.user`, and anything a build step generates.
 
 ---
 
 ## 3. Build and verify
 
-**x64 and ARM64 are the platforms; there is no 32-bit anything.** No Win32/x86 configuration in any project or solution; do not add one, and do not write code that only works at 32 bits. `EnableEnhancedInstructionSet` is the one setting that belongs to the platform rather than to the configuration, and it is stated per platform in every project file (R16; [`ADR-001`](Design/ADR/ADR-001-solution-layout.md)).
+**x64 and ARM64 are the platforms; there is no 32-bit anything.** No Win32/x86 configuration in any project or in the solution; do not add one, and do not write code that only works at 32 bits. `EnableEnhancedInstructionSet` is the one compiler setting that belongs to the platform rather than to the configuration — `AdvancedVectorExtensions2` on x64, `NotSet` on ARM64 — and it is stated per platform in every project file rather than inherited, because an MSVC default is not a decision.
 
-**`OutpostCommander` is a packaged application and the other two executables are not.** It carries `ApplicationType` `Windows Store`, an `AppxManifest.xml` and package identity; `OutpostHost` and `OutpostCapture` are ordinary Win32 console executables, and every library is an ordinary desktop static library ([`ADR-014`](Design/ADR/ADR-014-platform-boundary.md)). **That means the UWP API boundary is not enforced by the compiler anywhere in this tree** — a library can call a desktop-only API and it will compile, link into the package, and be refused at certification instead. What stands in for it is the `platform-header` rule of `Build/CheckProjectFiles.py` over the game layer, the absence of any path-producing API in `NeuronCore` ([`ADR-016`](Design/ADR/ADR-016-package-identity-and-launch.md)), and the package build in CI. Do not add a Win32 call to a library because it compiles.
+**Debug and Release are aligned by rule, not by luck.** Every setting that is not *about* optimisation reads identically in both — and in the project files it is written once, in one unconditioned `ItemDefinitionGroup`, so there is no second copy to drift. The two configurations differ in exactly this and nothing else:
 
-**Running the game costs a deploy.** A packaged application is not started from a shell: it is built, deployed and launched, and in Visual Studio that is F5 on `OutpostCommander` with developer mode on. A command line reaches it only through the debugger's arguments property ([`ADR-016`](Design/ADR/ADR-016-package-identity-and-launch.md)); `--capture` is not one of its flags and belongs to `OutpostCapture`. **A packaged client cannot reach a host on the same machine** without a loopback exemption, so a shipping configuration means a host elsewhere on the network ([`ADR-019`](Design/ADR/ADR-019-the-client-never-simulates.md)). **A developer gets that exemption and should know it:** Visual Studio's *Allow Local Network Loopback* debugging property adds one on every F5 deploy, and `CheckNetIsolation.exe LoopbackExempt -a -n=<packagefamilyname>` adds one by hand. So a client and an `OutpostHost` on one box work indefinitely on the machine that built them and nowhere else — **before you conclude that same-machine play works, remove the exemption and try again.**
+| | Debug | Release |
+|---|---|---|
+| `UseDebugLibraries` | `true` | `false` |
+| `WholeProgramOptimization` | — | `true` |
+| `LinkIncremental` | `true` | `false` |
+| `Optimization` | `Disabled` | `MaxSpeed` |
+| `FunctionLevelLinking`, `IntrinsicFunctions` | — | `true` |
+| preprocessor | `_DEBUG` | `NDEBUG` |
+| `EnableCOMDATFolding`, `OptimizeReferences` | — | `true` |
 
-**The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, `/arch:AVX2` (R16). There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
+Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'` group, and **nothing else may.** If you find yourself adding a setting to one of those groups, you are either adding an optimisation switch or breaking this rule.
 
-**Debug and Release are aligned by rule, not by luck.** Every setting that is not *about* optimisation reads identically in both configurations: language standard, conformance, warning level, include directories, precompiled header, floating-point model, instruction set. The two differ in exactly four things — `Optimization`, `_DEBUG` vs `NDEBUG`, `FunctionLevelLinking`/`IntrinsicFunctions`, and the linker's folding and LTCG switches. (MSBuild spells those four through a few more properties — `UseDebugLibraries`, `RuntimeLibrary` as the debug or release CRT, `LinkIncremental`, `WholeProgramOptimization`, `EnableCOMDATFolding`, `OptimizeReferences` — and that list is the whole of what may differ.)
+**The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, SDL checks on. There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
 
-That alignment matters more than it looks, because **CI builds Debug only** (§6). Release is compiled by whoever ships, and a Release that quietly lost an include directory or sat on an older language standard would not be discovered until then. A static check of the two configurations is what stands in for the build nobody runs.
+**`OutpostCommander` is a packaged application and `Server` is not.** The client carries `ApplicationType` `Windows Store`, a `Package.appxmanifest` and package identity; the host is an ordinary console executable. `NeuronClient` and `GameClient` are Windows Store static libraries, compiled against the app family; `NeuronServer`, `GameLogic` and every suite are desktop builds. **A Windows Store static library carries no Windows Runtime metadata here** — `GenerateWindowsMetadata` is `false` in both, because no library in this tree declares a runtime class, and the C++/WinRT package would otherwise feed mdmerge a `.winmd` that nothing writes.
 
-**Build through the solution, never a `.vcxproj` directly.** Output paths and cross-project include directories are anchored on `$(SolutionDir)`, and MSBuild defines `SolutionDir` only for a solution build. Building a project file directly resolves every one of those paths against the *project* folder instead of the repository root. **It does not fail — that is the problem.** Output lands in the wrong folder, so the next solution build links against whichever copy is staler, and every cross-project include path becomes a directory that does not exist. The breakage is latent: it bites the first time a file reaches across projects, which may be weeks after someone got into the habit. To build one project, use `/t:<ProjectName>` on the solution.
+**Running the game costs a deploy.** A packaged application is not started from a shell: it is built, deployed and launched, and in Visual Studio that is F5 on `OutpostCommander` with developer mode on. **A packaged client cannot reach a host on the same machine** without a loopback exemption. A developer gets one and should know it: Visual Studio's *Allow Local Network Loopback* debugging property adds one on every F5 deploy, and `CheckNetIsolation.exe LoopbackExempt -a -n=<packagefamilyname>` adds one by hand — so a client and a `Server` on one box work indefinitely on the machine that built them and nowhere else. **Before you conclude that same-machine play works, remove the exemption and try again.**
+
+**Build through the solution, never a `.vcxproj` directly.** Output paths and cross-project include directories are anchored on `$(SolutionDir)`, and MSBuild defines `SolutionDir` only for a solution build. Building a project file directly resolves every one of those paths against the *project* folder instead. **It does not fail — that is the problem.** Output lands in the wrong folder, so the next solution build links against whichever copy is staler, and every cross-project include path becomes a directory that does not exist. To build one project, use `/t:<ProjectName>` on the solution.
 
 ```powershell
-# Everything, from the repository root, naming the solution.
-msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
+# Everything, from the repository root.
+msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
 
 # One project, still through the solution.
-msbuild <Solution>.slnx /t:<ProjectName> /p:Configuration=Debug /p:Platform=x64 /m /nologo
+msbuild OutpostCommander.slnx /t:Server /p:Configuration=Debug /p:Platform=x64 /m /nologo
 
-# Release, before you claim anything about it.
-msbuild <Solution>.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
+# The other three pairs, which CI also builds.
+msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
+msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /nologo
+msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=ARM64 /m /v:minimal /nologo
 ```
 
-**No header is named like a C runtime or SDK header.** The other projects' directories sit on the include path ahead of the SDK, MSVC searches them for an angled include too, and it matches the name case-insensitively: `NeuronCore/Assert.h` was what DirectXMath's `<assert.h>` found, once (2026-09-17). `Build/CheckProjectFiles.py` refuses the runtime's names and the SDK headers this tree reaches for.
+**Run the tests**, through `vstest.console.exe`, over every suite the build produced. Every suite is an ordinary desktop test DLL and lands beside the other output at `<Platform>\<Configuration>\<Suite>.dll`, so running them costs no deploy:
 
-**No identifier is spelled like a Windows SDK macro.** `<windows.h>` is in scope on the whole Client side and in every test suite, and the preprocessor rewrites `near`, `far`, `pascal`, `cdecl`, `interface`, `small`, `hyper`, `IN`, `OUT`, `OPTIONAL`, `CONST`, `VOID`, `PURE`, `DELETE`, `IGNORE` and the upper-case twins of the first four before the compiler sees them: `const XMVECTOR near` lost its name, once (2026-09-17), and a portable layer only finds out when a test includes it. `Build/CheckProjectFiles.py` refuses the names in every project.
+```powershell
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
+$suites = Get-ChildItem -Recurse -Filter '*Tests.vcxproj' | ForEach-Object { "x64\Debug\$($_.BaseName).dll" }
+& $vstest $suites /Platform:x64 /Logger:"console;verbosity=normal"
+```
 
-**A project does not put its own directory on the include path.** `cl.exe` already searches the directory of the including file first for a quoted include, so `#include "FileSys.h"` from a `.cpp` in the same folder resolves without help. Only the directories of *other* projects are listed, as `$(SolutionDir)<Project>`.
-
-**Run the tests**, through `vstest.console.exe`, over every suite the build produced.
+**The two client suites are desktop test DLLs that link Windows Store libraries.** That direction works — the libraries were compiled against the narrower app family, so everything they call is available to a desktop host — and it is what buys a suite that runs in CI without an appx deploy, a developer-mode runner and a signing certificate. What it costs is stated plainly: **those suites do not compile or run under the UWP API family**, so they cannot catch an app-family violation. Nothing in this tree can; what stands in for it is the client libraries themselves being compiled for Windows Store, and the package build in CI.
 
 **vstest reports "no tests found" as a pass.** An empty suite is therefore worse than no suite: it is a green check mark over a library nobody exercised. Every test project ships a placeholder `SuiteSmoke` for exactly this reason; delete it when the first real test lands, never before.
 
-**Run the checkers before you push.** They are seconds of Python and they are what CI runs:
+**Check formatting before you push.** It is seconds, and it is what CI runs:
 
 ```powershell
-python Build\CheckFormat.py           # clang-format, whole tree. --fix rewrites the offenders
-python Build\CheckProjectFiles.py     # build shape, project registration, R2/R7/R11
-python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE must be set)
+python -m pip install clang-format==23.1.1     # the version CI pins
+git ls-files '*.cpp' '*.h' | ForEach-Object { clang-format --dry-run --Werror $_ }
+# clang-format -i <file> rewrites an offender.
 ```
 
 **A green build says nothing about whether the game draws.** For anything touching rendering, input, audio or presentation, launch the executable and look at it.
@@ -218,55 +281,55 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 ## 4. Layout and formatting
 
-[`.clang-format`](.clang-format) is the authority for C++ layout: 2-space indent, 140 columns, Allman braces, pointer and reference bound left, includes never reordered. [`.editorconfig`](.editorconfig) covers everything clang-format does not — CRLF, UTF-8, final newline, trailing whitespace, and the non-C++ formats — and repeats the two numbers an editor needs before the first save.
+[`.clang-format`](.clang-format) is the authority for C++ layout: 2-space indent, 140 columns, Allman braces, pointer and reference bound left, includes never reordered. [`.editorconfig`](.editorconfig) covers everything clang-format does not — CRLF, UTF-8, final newline, trailing whitespace, and the non-C++ formats — and repeats the two numbers an editor needs before the first save. [`.gitattributes`](.gitattributes) settles line endings per extension, so a Windows checkout and the Linux format job read the same bytes.
 
-**This tree is formatted, and CI keeps it that way.** A whole-tree format check here is a no-op. Format what you write; if the check fires, run `--fix` and commit the result rather than arguing with it.
+**This tree is formatted, and CI keeps it that way.** A whole-tree format check here is a no-op. Format what you write; if the check fires, run `clang-format -i` and commit the result rather than arguing with it.
 
 - **Do not reformat what your task did not touch.** The check being green tree-wide means a drive-by reformat produces pure churn and buries your actual change.
-- **Include order is load-bearing and grouped by hand**, which is why `SortIncludes` is `Never`: `pch.h`, then `<windows.h>` before any D3D12/DXGI/XAudio2 header, then the rest of the SDK, then project headers, then the standard library. A formatter reordering these behind a change's back is a correctness risk, not a style preference.
-- **One header owns the Windows macro family, and nothing else defines any of it.** `NOMINMAX`, `WIN32_LEAN_AND_MEAN`, `NODRAWTEXT`, `NOGDI`, `NOBITMAP`, `NOMCX`, `NOSERVICE`, `NOHELP` are set in that one header, before `<windows.h>`, and the project files deliberately define none of them. Two owners of one macro is C4005, and `/WX` makes that fatal — `/D` spells a bare macro as `1` where a `#define` spells it as nothing, so the collision is guaranteed rather than possible. If you need `<windows.h>`, include that header; do not add the macros yourself.
-- **`NOGDI` means GDI is genuinely gone**, not discouraged. `GetStockObject`, `TextOut` and their kin are not declared. That is the point: the swap chain owns every pixel, and there is no case in this game where a GDI call is the right answer.
+- **Include order is load-bearing and grouped by hand**, which is why `SortIncludes` is `Never`: `pch.h` first, then this project's own headers, then other projects' master includes, then the SDK, then the standard library. A formatter reordering these behind a change's back is a correctness risk, not a style preference.
+- **One header owns the Windows macro family, and nothing else defines any of it.** `NOMINMAX`, `WIN32_LEAN_AND_MEAN`, `NODRAWTEXT`, `NOBITMAP`, `NOMCX`, `NOSERVICE` and `NOHELP` are set in [`NeuronCore/NeuronCore.h`](NeuronCore/NeuronCore.h), before `<windows.h>`, and the project files deliberately define none of them. Two owners of one macro is C4005, and `/WX` makes that fatal — `/D` spells a bare macro as `1` where a `#define` spells it as nothing, so the collision is guaranteed rather than possible. If you need `<windows.h>`, you already have it: every `pch.h` in the tree reaches that header.
 - Do not silence a diagnostic with `#pragma warning(disable: ...)` to make a build pass. Fix the cause, or report it.
 
 ---
 
 ## 5. Rules for this codebase
 
-**R12 — Graphics is Direct3D 12 only.** No D3D11, no D3D11On12, no immediate-mode helper layers. COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style.
+These bind code as it is written from here. Several describe subsystems that do not exist yet; they are here so that the first version of each is right rather than retrofitted.
 
-**The client draws into a scene target and presents that, scaled.** Every pass draws into an off-screen colour target at the resolution the game is authored for, and the frame ends by presenting that target into the swap chain's back buffer, fitted to the window's client area with the aspect ratio preserved: **1:1 and unfiltered when the client area already matches, point sampling at an exact integer multiple, bilinear otherwise, letterboxed.** Exactly one place asks the window how big it is, and that is it; every layout, every glyph and every integer position behind it is unconditional. A pass that branches on the window size has misunderstood this rule.
+**R12 — Graphics is Direct3D 12 only.** No D3D11, no D3D11On12, no immediate-mode helper layers. COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. `winrt::com_ptr` is the smart pointer; WRL's `ComPtr` is not used.
 
-**The authored resolution and whether the scene target is multisampled are not settled here.** They are the first client ADR, [`ADR-004`](Design/ADR/ADR-004-renderer-foundation.md), which the first renderer task wrote (2026-09-17): 1920×1080, a 4× multisampled scene target. **The window is no longer ADR-004's**: [`ADR-013`](Design/ADR/ADR-013-uwp-application-model.md) makes the view a `CoreWindow` in `ApplicationView::TryEnterFullScreenMode`, and [`ADR-017`](Design/ADR/ADR-017-core-window-pixels-and-lifetime.md) makes the size a conversion out of device-independent pixels rather than a process DPI-awareness setting — **the one place this migration can silently produce a worse picture, so the conversion is a pure function in `NeuronClient` with a suite over it.** The three things that were in hand for ADR-004's decision still bind whoever reopens it: Three things were in hand for that decision and still bind whoever reopens it:
+**R13 — The client draws into a scene target and presents that, scaled.** Every pass draws into an off-screen colour target at the resolution the game is authored for, and the frame ends by presenting that target into the swap chain's back buffer, fitted to the window's client area with the aspect ratio preserved: **1:1 and unfiltered when the client area already matches, point sampling at an exact integer multiple, bilinear otherwise, letterboxed.** Exactly one place asks the window how big it is, and that is it; every layout, every glyph and every integer position behind it is unconditional. A pass that branches on the window size has misunderstood this rule.
+
+Two things bind whoever settles the authored resolution and whether the scene target is multisampled — neither is decided here:
 
 - **A back buffer cannot be multisampled, and that is the API's doing rather than a policy.** D3D12 supports only the flip-model swap effects, and DXGI does not multisample a flip-model back buffer — `SampleDesc.Count` must be 1. A *scene* target has no such limit: it may be created multisampled and resolved before the present step scales it. That, beyond running on a display too small to hold the authored resolution, is the main thing the indirection buys.
 - **A scale is not free, and text is what it costs.** A glyph authored as a bit pattern, or baked to an exact pixel height, reaches the glass resampled unless the scale is exactly 1. In a dense interface full of small type that is the real cost of the whole arrangement, which is why the 1:1 path exists and why it is worth keeping common.
-- **A decorated window cannot have a client area as tall as the monitor it is on.** A caption and borders add roughly 6×37 pixels, so asking for a 1080-pixel client area on a 1080p desktop asks for a window taller than the screen. A borderless `WS_POPUP` covering the primary monitor is the usual answer, and it is not free either: with no close box, something has to own Escape and Alt+F4 as the only ways out.
 
-**R14 — Two dependencies, both named, and the list is closed.** The Windows SDK and the MSVC standard library, and nothing else — with two named exceptions. The first, decided by the owner on 2026-09-17: `d3dx12.h`, the Direct3D 12 helper header, vendored under `NeuronClient/` as a single pinned file with its MIT licence text beside it, never fetched by the build; the release it came from and its hash are in [`ADR-004`](Design/ADR/ADR-004-renderer-foundation.md). The second, decided by the owner on 2026-09-20: **`Microsoft.Windows.CppWinRT`, a NuGet package, referenced by `OutpostCommander` and by no other project**, pinned to an exact version, for the build integration `ADR-013`'s application model needs — the SDK ships the projection headers and not `cppwinrt.exe` or its MSBuild targets. [`ADR-015`](Design/ADR/ADR-015-cppwinrt-dependency.md) records what it buys, what it costs, and the three settings it changes that are overridden back in the project file, `/std:c++latest` among them. If you believe something else is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar, and it is two entries long.
+**R14 — Two dependencies, both named, and the list is closed.** The Windows SDK and the MSVC standard library — with one named exception: **`Microsoft.Windows.CppWinRT`, a NuGet package**, pinned to an exact version, referenced by the five C++/WinRT projects §2 lists and by no others. The rule is one *package*, not one project: adding it to a sixth project on that side is a line in `packages.config` and four in the `.vcxproj`, while adding a second package is a decision. If you believe one is unavoidable, propose it in your report with what it buys and what it costs — do not add it.
 
-**It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are content, not dependencies, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
+For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `winrt/base.h` and the `fxc`/`dxc` compilers. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK, DirectX-Headers, `d3dx12.h`, DirectXTK12, DirectXTex and the DirectX Shader Compiler as a redistributable.
 
-For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `winrt/base.h` (`winrt::com_ptr` is the COM smart pointer R12 asks for; WRL's `ComPtr` is not used) and the `fxc`/`dxc` compilers that `FXCompile` drives. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK, DirectX-Headers, DirectXTK12, DirectXTex, the DirectX Shader Compiler as a redistributable, and the C++/WinRT NuGet package — `winrt/base.h` is SDK content and needs none of it. The one exception is `d3dx12.h` on its own, as R14 says: its structures describe barriers, heaps and root signatures, and the header is a file in the tree, not a package.
+**It binds what the executable is built from, not what a development tool needs.** A script that never ships and never links — clang-format itself, say — does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are content, not dependencies, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 
-**R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded in `Design/ADR/`.
+**R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded and a measurement behind it.
 
-**R16 — Determinism is a property of the simulation, and it is built, not hoped for.** Every project compiles `/fp:precise` and **`/arch:AVX2`**, stated explicitly in the project file rather than inherited from an MSVC default — a default is not a decision, and the symptom of losing one is two builds of the same simulation disagreeing about the same sum with no line to blame. Both settings are identical in Debug and Release, which is the half of this that actually protects a replay.
+**R16 — Determinism is a property of the simulation, and it is built, not hoped for.** Every project compiles `/fp:precise`, stated explicitly rather than inherited, and identically in Debug and Release — which is the half of this that actually protects a replay.
 
-**What `/arch:AVX2` costs is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. And it lets MSVC contract `a*b+c` into an FMA even under `/fp:precise`, which changes float results, and may contract differently at different optimisation levels. **That is survivable only because the simulation holds no floats**: the rest of this rule requires integers and fixed point there, so the arithmetic a replay depends on is exact and an FMA cannot reach it. Floats live in the renderer, where nothing is replayed. If a float ever enters the simulation, this rule is what must be reopened — not worked around.
+**`/arch:AVX2` on x64 has a cost, and it is named rather than waved at.** It sets an AVX2 floor — Intel Haswell (2013) and AMD Excavator (2015); an older CPU meets an illegal instruction, not a message. And it lets MSVC contract `a*b+c` into an FMA even under `/fp:precise`, which changes float results, and may contract differently at different optimisation levels. **That is survivable only because the simulation holds no floats**: the rest of this rule requires integers and fixed point there, so the arithmetic a replay depends on is exact and an FMA cannot reach it. Floats live in the renderer, where nothing is replayed. ARM64 sets no such switch, which is a second reason the simulation cannot depend on one: the two platforms must agree.
 
-Inside the simulation, additionally: no `float` where a fixed-point or integer quantity will do (hold a fraction as integer hundredths and say so in the name, R6), no iteration over an unordered container whose order reaches the outcome, and **no wall-clock time — the tick is the clock.** Wall time maps to ticks at the seam, and that is the only place the two meet. Randomness is a pinned PRNG seeded from the save — never `std::random_device`, never a hash of an address. None of this is taste: a simulation that cannot reproduce from its seed cannot be replayed, cannot be debugged from a report of what happened, and cannot be measured twice.
+Inside the simulation, additionally: no `float` where a fixed-point or integer quantity will do (hold a fraction as integer hundredths and say so in the name, R6), no iteration over an unordered container whose order reaches the outcome, and **no wall-clock time — the tick is the clock.** Wall time maps to ticks at the seam, and that is the only place the two meet. Randomness is a pinned PRNG seeded from the match — never `std::random_device`, never a hash of an address. None of this is taste: a simulation that cannot reproduce from its seed cannot be replayed, cannot be debugged from a report of what happened, and cannot be measured twice.
 
 **R17 — A string you do not write is `const`.** `/permissive-` turns on `/Zc:strictStrings`: a literal is `const char[N]` and will not bind to `char*`. The fix is `const` on the signature, never a cast at the call site — a `const_cast` here is a lie about a literal that lives in a read-only section, and writing through it is a real crash rather than a theoretical one.
 
-**R18 — The view is a `CoreWindow` and the loop owns the frame.** The game is a packaged UWP application driven by `IFrameworkView`; `CoreDispatcher::ProcessEvents(ProcessAllIfPresent)` is the one drain of the queue per frame and enqueues into the same `Neuron::InputQueue` a window procedure used to ([`ADR-013`](Design/ADR/ADR-013-uwp-application-model.md)). **There is no XAML anywhere in this tree** — no `SwapChainPanel`, no `.xaml` in any project, no XAML compiler step. The window's size is in device-independent pixels and reaches the swap chain through one tested conversion; the loop stops when the window is not visible, the device is trimmed on suspend, and device removal is recovered rather than fatal ([`ADR-017`](Design/ADR/ADR-017-core-window-pixels-and-lifetime.md)).
+**R18 — The view is a `CoreWindow` and the loop owns the frame.** The client is a packaged UWP application driven by `IFrameworkView`, and one drain of the dispatcher per frame is the whole of its event handling. **There is no XAML anywhere in this tree** — no `SwapChainPanel`, no `.xaml` in any project, no XAML compiler step. The window's size is in device-independent pixels and reaches the swap chain through one conversion, which is a pure function in `NeuronClient` with a suite over it, because it is the one place this application model can silently produce a worse picture.
 
-**R19 — The client never simulates, and nothing in it may.** `OutpostCommander` links no `GameLogic` and includes no `Sim.h` ([`ADR-019`](Design/ADR/ADR-019-the-client-never-simulates.md)). Client-side code interpolates records it was *sent* and previews against rules that live in `GameShared`, which are the same rules the host validates with. If a client feature seems to need the simulation, it needs a record it is not being sent, and the answer is in the protocol — never a second copy of a rule.
+**R19 — The client never simulates, and nothing in it may.** `OutpostCommander` links no `GameLogic`. Client-side code interpolates records it was *sent*, and previews against rules that live in `GameCore` — the same rules the host validates with. If a client feature seems to need the simulation, it needs a record it is not being sent, and the answer is in the protocol, never a second copy of a rule.
 
-**R20 — The packaged project holds Windows Runtime glue and nothing else.** No game logic, no arithmetic, no decision a test could pin lives in `OutpostCommander`; anything testable is pushed down into a library, which is what `GameClient` and `GameLogic` are for ([`ADR-014`](Design/ADR/ADR-014-platform-boundary.md)). This is the same argument `NeuronClient/PointerMode.h` already makes about the sign of an aim delta: a thing an Application holds is a thing no suite can reach.
+**R20 — The packaged project holds Windows Runtime glue and nothing else.** No game logic, no arithmetic, no decision a test could pin lives in `OutpostCommander`; anything testable is pushed down into a library, which is what `GameClient` and `NeuronClient` are for. The same goes for `Server`. A thing an executable holds is a thing no suite can reach.
 
-**R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into `Neuron::InputQueue` ([`ADR-021`](Design/ADR/ADR-021-touch-is-the-only-input.md)). Keyboard events are **not subscribed**, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site — mouse and pen have no compatibility path, deliberately and at a cost the ADR states. An interaction is named in the recogniser's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction: a key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot. **`Design/Interface.md` is the design source** — `t1-touch-interface/T1` rewrote it for touch on 2026-09-20, and its §4 fixes the `GestureSettings` mask, §6 what a tap and a press-and-hold each do, and §13 the floor every interactive element clears: **64 authored pixels, with no exception.**
+**R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into the game, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site. Keyboard events are not subscribed. Mouse and pen have no compatibility path, deliberately: an interaction is named in the recogniser's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction. A key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot.
 
-**R22 and up are reserved.** A design document does not only say what to build; some of what it says constrains how the code is *shaped* — which state a decision routine may read, what an emitted event has to carry with it, where tuning values live. Those are conformance rules with a design source, and they are written here as R22 onward when there is a design to cite, without renumbering anything above. Until then, do not invent one and do not import one from another tree: a rule with no source behind it is a rule nobody can settle an argument with.
+**R22 and up are reserved.** A rule with no source behind it is a rule nobody can settle an argument with; do not invent one and do not import one from another tree.
 
 ---
 
@@ -274,31 +337,31 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 
 **Stay in scope.** Do what the task asks. Adjacent code that offends you is not part of the task — note it in your report and move on. Unrequested "while I was in there" changes are the main way a young tree acquires regressions it cannot bisect.
 
-**Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
+**Record decisions where the next person will read them.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — belongs in writing, in the same commit as the change that implements it, and this file is where the standing ones live. Figures are measured, not estimated: if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on. All three exist (2026-09-17) and gate in CI, so a rule one of them enforces is never review's problem.
+**What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs. The Windows job is a matrix over **all four pairs** — Debug and Release, x64 and ARM64 — and each leg verifies the toolchain, restores every `packages.config` it finds, builds the whole solution with `/warnaserror`, and checks that every `*Tests.vcxproj` produced a DLL; the x64 legs then run the suites. The Linux job checks formatting on a pinned clang-format.
 
-**What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs: a Windows job that checks the build shape, builds **Debug|x64**, runs the test suites and then clang-tidy; and a Linux job that checks formatting on a pinned clang-format. **Every step that has something to run blocks; a step whose input does not exist yet is skipped, not faked.** Each gate is guarded on the file it needs — the checker script, the solution, the built test DLLs — so the workflow is honest about today's empty tree and starts gating the moment that file lands. The guards are the only concession: nothing is `continue-on-error`, and a script that exists and fails still fails the build. Remove a guard once its input is permanently there, not before, and never add one to get past a red build.
+**Release is compiled rather than asserted.** There is no static check in this tree that Debug and Release agree on the settings §3 says they must, so CI compiles Release instead. That is affordable because the tree is small. When it stops being affordable, write the checker first and drop the Release legs second — never the other way round.
 
-**CI does not build Release.** The Windows build is the slow half of the pipeline and a second configuration roughly doubles it for a tree where the two differ only in optimisation. What stands in for it is the static alignment check on the two configurations (§3) — and, before a release, an actual `Configuration=Release` build by whoever is shipping. If you change something that could plausibly break only under optimisation, build Release yourself and say so.
+**The toolchain is verified before it is used.** The first step of each Windows leg fails with a message naming exactly what is missing if the runner lacks the v145 toolset or the Windows Store application type. That is deliberate: the toolset is pinned in the project files and lowering it to get past a red build is not a fix.
 
-**Commits and PRs.** Branch off `main`; small, focused commits with an imperative subject describing the change, not the process. One change per PR. CI must be green. Never commit build output, `.vs/` or `.user` files.
-
-**Work is planned as task graphs.** Anything larger than a single-file change is a task in a plan under `tasks/`, in the format [`Design/ImplementationPlan.md`](Design/ImplementationPlan.md) §3 describes; `python Tools\CheckTaskDag.py --next tasks\<plan>.yaml` says what can start. A task is set `in_progress` in its own commit before the work and `done` in the commit that lands it, never before CI is green, and a task that turns out to be wrong is marked and replaced rather than quietly reshaped.
+**Commits and PRs.** Branch off `main`; small, focused commits with an imperative subject describing the change, not the process. One change per PR. CI must be green. Never commit build output, `.vs/`, `packages/` or `.user` files.
 
 ---
 
 ## 7. Before you hand work back
 
-- [ ] Naming conforms to §1 — `_` on parameters, `m_` on class state, `UPPER_CASE` constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes.
+- [ ] Naming conforms to §1 — `_` on parameters, `m_` on class state, `UPPER_CASE` constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes. **Nothing checks this for you.**
 - [ ] Only the lines the task required were changed; no reformatting, no drive-by fixes.
-- [ ] New, removed or moved files are in the `.vcxproj` **and** the `.filters` of every project involved.
+- [ ] New, removed or moved files are in the `.vcxproj` or `.vcxitems` **and** the `.filters` of every project involved.
+- [ ] No `.filters` gained a `Source Files` or `Header Files` filter — Visual Studio adds them back on its own (§2).
+- [ ] A new `.vcxitems` import was added to exactly one project per link closure (§2).
+- [ ] A new library has a master include, a `pch.h` that includes it, and a suite under `Tests/`.
 - [ ] No project's `ConformanceMode`, `LanguageStandard`, `WarningLevel` or `TreatWarningAsError` was changed, and no warning was silenced with a pragma.
-- [ ] Debug and Release still agree on everything §3 says they must.
-- [ ] No new third-party dependency, and no second NuGet package (R14).
-- [ ] Nothing was added to `OutpostCommander` that a suite could have covered (R20), nothing in the client names `Sim` (R19), and no input reaches the game except through the gesture seam (R21).
-- [ ] The checkers pass — or, for one not yet written, the report says which and why.
-- [ ] It builds Debug|x64, and every test suite runs and passes.
-- [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the game means deployed as a package and launched, and says which scale factor it was looked at on (`ADR-017`). Input is driven by touch, because there is no other kind (R21); on a machine without a touchscreen, say which of the Visual Studio Simulator or `InjectTouchInput` stood in.
-- [ ] `Design/ADR/` has a new file if the change *was* a decision.
+- [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else.
+- [ ] No new third-party dependency, and no second NuGet package (R14); every `packages.config` still pins one version.
+- [ ] Nothing was added to `OutpostCommander` or `Server` that a suite could have covered (R20), and nothing in the client links the simulation (R19).
+- [ ] The format check passes.
+- [ ] It builds all four configuration/platform pairs, and every test suite runs and passes on x64.
+- [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the client means deployed as a package and launched. Input is driven by touch, because there is no other kind (R21); on a machine without a touchscreen, say what stood in.
 - [ ] Your report states plainly what you verified, what you assumed, and any rule here you had to bend.

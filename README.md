@@ -1,22 +1,19 @@
 # Outpost Commander
 
-A real-time strategy game for Windows: C++23, Direct3D 12, an authoritative simulation and a client
-that is only ever a replica of it. One developer, a hobby project.
+A multiplayer-only real-time strategy game for Windows, in the lineage of *Warzone 2100*: C++23, an
+authoritative simulation on a host, and a client that is only ever a replica of it. One developer, a
+hobby project.
 
-It is a hard fork of [*Frontier Commander*](https://github.com/Zwaliebaba/Frontier-Commander), taken
-at its M1 state on 2026-09-20, and the fork exists for the application model. *Frontier Commander* is
-a Win32 desktop executable over an `HWND`. **This is a packaged UWP application whose view is a
-`CoreWindow`**, and the client holds no simulation at all.
+**The client is a packaged UWP application** whose view is a `CoreWindow`. **The host is an ordinary
+Win32 console executable.** There is no single-player mode and no offline mode: a client with no host
+on the network has nothing to show.
 
-## Where to start
+## The state of it
 
-| | |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** |
-| [`Design/README.md`](Design/README.md) | What the game is, and the index of every design document |
-| [`Design/UwpMigration.md`](Design/UwpMigration.md) | The migration this fork exists for: the surface measured, the tree before and after, the risks ranked |
-| [`Design/ADR/README.md`](Design/ADR/README.md) | Nineteen engineering decisions, one file each |
-| [`tasks/`](tasks/) | The work, as directed acyclic graphs. `python3 Tools/CheckTaskDag.py --next tasks/<plan>.yaml` says what can start |
+**This is a shell, not a game.** The solution builds an empty client and an empty host across four
+configuration and platform pairs, six test suites run, and every edge of the build — each project
+reference, include path and link — is exercised by a function that returns its own name. There is no
+simulation, no renderer and no protocol in it yet.
 
 ## The shape of it
 
@@ -25,28 +22,50 @@ Six libraries on two axes — which layer the code is, and which side it runs on
 | | shared | client only | server only |
 |---|---|---|---|
 | **engine**, `Neuron` | `NeuronCore` | `NeuronClient` | `NeuronServer` |
-| **game**, `Outpost` | `GameShared` | `GameClient` | `GameLogic` |
+| **game**, `Outpost` | `GameCore` | `GameClient` | `GameLogic` |
 
-Three executables over them: `OutpostCommander`, the packaged game; `OutpostHost`, the headless
-host; and `OutpostCapture`, the headless capture CI drives, which arrives with `p1-uwp-shell/P4`. **`OutpostCommander` links no
-`GameLogic`**, so the interest set that decides what a client may know is a boundary the linker
-keeps rather than a convention inside one address space
-([`ADR-019`](Design/ADR/ADR-019-the-client-never-simulates.md)).
+Two executables over them: `OutpostCommander`, the packaged client, built from `GameClient` and
+`NeuronClient`; and `Server`, the authoritative host, built from `GameLogic` and `NeuronServer`.
+**`OutpostCommander` links no `GameLogic`**, so what a client may know is a boundary the linker keeps
+rather than a convention inside one address space.
+
+`NeuronCore` and `GameCore` are shared-items projects (`.vcxitems`) rather than libraries, because
+the client half of the tree is compiled for the Windows Store application type and the server half is
+an ordinary desktop build — one static library cannot be both, and shared items compile the same
+sources correctly for each side.
+
+One suite per library, under [`Tests/`](Tests/), each an ordinary desktop test DLL.
+
+## Where to start
+
+| | |
+|---|---|
+| [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** §2 is the project layout and why it is shaped this way. |
+| [`.github/workflows/build.yml`](.github/workflows/build.yml) | What CI gates, and what it deliberately does not |
 
 ## Building it
 
-Visual Studio 2026, toolset `v145`, the Windows SDK, and the UWP C++ workload for the game itself.
-Build through the solution, never a project file directly — output paths and cross-project include
-directories are anchored on `$(SolutionDir)`, and MSBuild defines it only for a solution build.
+Visual Studio 2026 with toolset `v145`, the Windows SDK, **and the Universal Windows Platform
+development workload** — the client does not build without the last of those. Build through the
+solution, never a project file directly: output paths and cross-project include directories are
+anchored on `$(SolutionDir)`, and MSBuild defines it only for a solution build.
 
 ```powershell
 msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
-
-python Build\CheckFormat.py           # clang-format, whole tree; --fix rewrites the offenders
-python Build\CheckProjectFiles.py     # build shape, project registration, the layering table
-python Build\RunClangTidy.py          # needs a Developer PowerShell
-python Tools\CheckTaskDag.py          # every plan validates
 ```
 
-The game is a packaged application: it is deployed and launched, not run from a shell, and it needs
-a host somewhere on the network to have a match to join.
+x64 and ARM64, Debug and Release; CI builds all four and runs the suites on x64. The one NuGet
+package — `Microsoft.Windows.CppWinRT`, referenced by the five projects on the C++/WinRT side —
+restores from each of their `packages.config`, all pinned to the same version:
+
+```powershell
+Get-ChildItem -Recurse -Filter packages.config |
+  ForEach-Object { nuget restore $_.FullName -PackagesDirectory packages }
+```
+
+Running the tests, and checking formatting before a push, are both in
+[`AGENTS.md` §3](AGENTS.md#3-build-and-verify).
+
+The client is a packaged application: it is deployed and launched rather than run from a shell, it
+needs developer mode, and it needs a host somewhere on the network to have a match to join — **a
+packaged client cannot reach a host on the same machine** without a loopback exemption.
