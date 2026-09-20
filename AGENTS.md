@@ -120,7 +120,7 @@ private:
 | Rule | Enforced by |
 |---|---|
 | Layout and formatting (§4) | [`.clang-format`](.clang-format), **gated in CI** on a pinned version |
-| Debug and Release agreeing (§3) | The Release legs of the CI matrix, which compile it |
+| Debug and Release agreeing (§3) | **Nothing.** CI builds `Debug\|x64` only; read §3's table and build Release yourself |
 | Every library having a suite that runs (§2) | The CI test steps, which fail on a suite that did not build |
 | The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy) — **configured, not yet gated**; see below |
 | R2, R4, R6, R7, R9, R10, R11 | Review. Check your own diff against the table before handing it back. |
@@ -233,6 +233,8 @@ Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'
 
 **The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, SDL checks on. There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
 
+**The Windows SDK is pinned to `10.0.26100.0`, and the pin is not "whatever is newest here".** It is the SDK the CI runner has, and a developer machine with a newer one cannot see that: a pin of `10.0.28000.0` — the newest on the machine that wrote these files — failed every project on GitHub's image with `MSB8036` before a single file compiled, because `windows-latest` carries Visual Studio 2026 and exactly one SDK. **Raising this means checking the runner image first**: `actions/runner-images`, `images/windows/Windows2025-VS2026-Readme.md`, its Windows SDK list. The toolchain step of the workflow reads the pinned value back out of the project files and fails by name when the runner lacks it, so the next mismatch is one line in a log rather than a hunt. `WindowsTargetPlatformMinVersion` is a different thing — the oldest Windows the package will install on — and is `10.0.17763.0`.
+
 **`OutpostCommander` is a packaged application and `Server` is not.** The client carries `ApplicationType` `Windows Store`, a `Package.appxmanifest` and package identity; the host is an ordinary console executable. `NeuronClient` and `GameClient` are Windows Store static libraries, compiled against the app family; `NeuronServer`, `GameLogic` and every suite are desktop builds. **A Windows Store static library carries no Windows Runtime metadata here** — `GenerateWindowsMetadata` is `false` in both, because no library in this tree declares a runtime class, and the C++/WinRT package would otherwise feed mdmerge a `.winmd` that nothing writes.
 
 **Running the game costs a deploy.** A packaged application is not started from a shell: it is built, deployed and launched, and in Visual Studio that is F5 on `OutpostCommander` with developer mode on. **A packaged client cannot reach a host on the same machine** without a loopback exemption. A developer gets one and should know it: Visual Studio's *Allow Local Network Loopback* debugging property adds one on every F5 deploy, and `CheckNetIsolation.exe LoopbackExempt -a -n=<packagefamilyname>` adds one by hand — so a client and a `Server` on one box work indefinitely on the machine that built them and nowhere else. **Before you conclude that same-machine play works, remove the exemption and try again.**
@@ -246,7 +248,8 @@ msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minim
 # One project, still through the solution.
 msbuild OutpostCommander.slnx /t:Server /p:Configuration=Debug /p:Platform=x64 /m /nologo
 
-# The other three pairs, which CI also builds.
+# The other three pairs, which NOBODY ELSE BUILDS. CI builds Debug|x64 and no more, so these
+# three are yours: a break in any of them reaches main green and is found by whoever ships.
 msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo
 msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /nologo
 msbuild OutpostCommander.slnx /p:Configuration=Release /p:Platform=ARM64 /m /v:minimal /nologo
@@ -351,9 +354,14 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 
 **Record decisions where the next person will read them.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — belongs in writing, in the same commit as the change that implements it, and this file is where the standing ones live. Figures are measured, not estimated: if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs. The Windows job is a matrix over **all four pairs** — Debug and Release, x64 and ARM64 — and each leg verifies the toolchain, restores every `packages.config` it finds, builds the whole solution with `/warnaserror`, and checks that every `*Tests.vcxproj` produced a DLL; the x64 legs then run the suites. The Linux job checks formatting on a pinned clang-format.
+**What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs. The Windows job verifies the toolchain, restores every `packages.config` it finds, builds the whole solution **`Debug|x64`** with `/warnaserror`, checks that every `*Tests.vcxproj` produced a DLL, and runs the suites. The Linux job checks formatting on a pinned clang-format.
 
-**Release is compiled rather than asserted.** There is no static check in this tree that Debug and Release agree on the settings §3 says they must, so CI compiles Release instead. That is affordable because the tree is small. When it stops being affordable, write the checker first and drop the Release legs second — never the other way round.
+**`Debug|x64` and nothing more — know what that leaves open.** The owner decided this: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. The cost is that **two real things are gated by nobody**:
+
+- **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimisation reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
+- **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform.
+
+**The cheap way to close either gap is a static check on the project files, not a second build.** A script that reads the twelve `.vcxproj` files and asserts §3's table would cost seconds rather than minutes and would catch the drift Release was there to catch. It is not written. Until it is, §7's checklist carries this, and the pull request template asks whether you built the other three pairs — answer it honestly.
 
 **The toolchain is verified before it is used.** The first step of each Windows leg fails with a message naming exactly what is missing if the runner lacks the v145 toolset or the Windows Store application type. That is deliberate: the toolset is pinned in the project files and lowering it to get past a red build is not a fix.
 
@@ -375,6 +383,7 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 - [ ] Nothing was added to `OutpostCommander` or `Server` that a suite could have covered (R20), and nothing in the client links the simulation (R19).
 - [ ] No third coordinate reached the simulation or the wire (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
 - [ ] The format check passes.
-- [ ] It builds all four configuration/platform pairs, and every test suite runs and passes on x64.
+- [ ] It builds `Debug|x64`, and every test suite runs and passes.
+- [ ] **CI builds nothing else**, so: `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally, or the report says plainly that they were not.
 - [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built — which for the client means deployed as a package and launched. Input is driven by touch, because there is no other kind (R21); on a machine without a touchscreen, say what stood in.
 - [ ] Your report states plainly what you verified, what you assumed, and any rule here you had to bend.
