@@ -255,9 +255,16 @@ development and will not exist for anyone else. And since the development machin
 are not the same machine, **the Surface Pro needs a LAN address from the first day it is used** — which is
 the whole reason the address is a file rather than a constant.
 
-**M0 establishes both paths** (`GameDesign.md` §10), including which exemption form a UDP client actually
-needs: if replies to a bound socket require the inbound form `-is`, then `CheckNetIsolation.exe` must stay
-running the entire time the client is listening, and the single-machine loop stops being worth having.
+**The client enters fullscreen at launch** (`OpenQuestions.md` Q23). Nothing previously forced it, which
+quietly made [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)'s exact 2× an accident of however
+the window happened to be sized — a `CoreWindow` application can run windowed, and then the fit is an
+arbitrary bilinear scale and the whole arrangement buys nothing. A touch-only game in a resizable window
+is not a coherent object in any case.
+
+**M0 establishes both loopback paths** (`GameDesign.md` §10), including which exemption form a UDP
+client actually needs: if replies to a bound socket require the inbound form `-is`, then
+`CheckNetIsolation.exe` must stay running the entire time the client is listening, and the
+single-machine loop stops being worth having.
 
 Encryption, authentication and any defence against a hostile client are not in the MVP. The protocol
 version in the header refuses a mismatched build, and that is the whole of it.
@@ -269,26 +276,38 @@ version in the header refuses a mismatched build, and that is the whole of it.
 One drain of the `CoreWindow` dispatcher per frame (R18), then the packet queue, then the interpolation
 clock, then render, then present.
 
-**The client renders the past.** It holds the two most recent snapshots and draws at a time about 150
-milliseconds behind the newest — one snapshot interval plus a jitter margin. Positions and headings are
-interpolated between the two; headings interpolate the short way round, which the binary angle makes a
-subtraction rather than a special case. If the next snapshot has not arrived, the client extrapolates for a
-short bounded window and then holds position rather than sliding a ship somewhere it never was.
+**The client renders the past.** It holds the two most recent snapshots and draws at a time **75
+milliseconds** behind the newest — one snapshot interval at 20 Hz plus a jitter margin. Positions and
+headings are interpolated between the two; headings interpolate the short way round, which the binary
+angle makes a subtraction rather than a special case. If the next snapshot has not arrived, the client
+extrapolates for a short bounded window and then holds position rather than sliding a ship somewhere it
+never was.
 
-**Rendering is R13's arrangement**, and [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) settles
-the resolution R13 deliberately leaves open: **the game is authored at 1440 × 960**. Every pass draws into
-a scene target at that size, and the frame ends by fitting it into the back buffer with the aspect
-preserved. The Surface Pro's panel is 2880 × 1920 and the swap chain is created at those physical pixels,
-**so the fit is an exact 2× and takes the point-sampled path** — R13's crisp case is the only one the
-target device takes. Exactly one place asks the window how big it is, and it is the conversion R18 requires
-a suite over.
+**The frame is two passes, and the second one is a recorded departure from R13.**
+
+**The world** draws into a scene target at the authored 1440 × 960
+([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)) and is fitted into the back buffer with the
+aspect preserved. The Surface Pro's panel is 2880 × 1920 and the swap chain is created at those physical
+pixels, **so the fit is an exact 2× and takes the point-sampled path.**
+
+**The interface** then draws straight into the back buffer at physical resolution
+([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). It is still laid out in authored
+coordinates, unconditionally, and each position is carried through **the same fit transform the present
+step already computed** — so no pass branches on the window size, exactly one place asks how big it is, and
+R13's intent holds while its letter does not. Glyphs are rasterised at the physical size that transform
+produces rather than doubled from 24 authored pixels.
+
+**What this buys beyond crisp text is that the authored resolution stops binding the interface.** Changing
+1440 × 960 later is a decision about the world's fill rate, not a reauthoring of every panel — which was
+the compounding cost that made ADR-007 the most expensive decision in this design.
 
 **A 1.38-megapixel scene target is small, and that is what makes multisampling affordable.** The sample
 count is one constant; the MVP ships one sample, and 4× — 5.5 megasamples, which this hardware will not
 notice — is the expected first change, with the resolve step going in beside it. Space is thin bright
-silhouettes against black, which is exactly the content that wants it. The back buffer cannot be
-multisampled at all, since DXGI's flip model requires `SampleDesc.Count` of 1, and that is most of why the
-scene target exists.
+silhouettes against black, which is exactly the content that wants it. **Neither the back buffer nor the
+interface pass can be multisampled**, since DXGI's flip model requires `SampleDesc.Count` of 1; for
+rectangles and text quads that costs nothing, and for the world it is most of why the scene target
+exists.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
 colour. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in

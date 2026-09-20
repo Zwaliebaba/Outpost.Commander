@@ -67,21 +67,22 @@ gesture budget has been.
 
 ## What is checked by a hand rather than an argument
 
-The register is empty, but three of its answers are **confirmations owed against hardware**, not choices
-already validated: whether 192 pixels is the right selection circle and whether pixel-doubled text reads
-acceptably, both at M1, and whether the station's safe zone is too safe, at M3.
+The register has one entry open, but several answers are **confirmations owed against hardware** rather
+than choices already validated: whether 192 pixels is the right selection circle and whether the interface
+pass outweighs the world pass, both at M1; and whether the repaired raid arithmetic and the station's safe
+zone actually play, at M3.
 
-And M0 exists to answer questions rather than to build a game. Two of them are uncomfortable:
+And M0 exists to answer questions rather than to build a game. Three of them are uncomfortable:
 
+- **Tap-to-visible latency.** 152 ms average is arithmetic on four design constants, none of them
+  observed. It is the number that decides how the game feels, and every other decision is cheap beside it.
 - **Whether a single-machine development loop is usable at all.** The host address is `127.0.0.1` by
-  default ([`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)), which needs a loopback exemption
-  that Microsoft documents as a sideload-or-debugging arrangement, and that Visual Studio grants silently
-  on every F5. If UDP replies turn out to need the inbound form, `CheckNetIsolation.exe` has to stay
-  running the whole time — at which point two machines are the answer, and it is far better to know that
-  in week one.
+  default ([`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)), needing a loopback exemption
+  Microsoft documents as a sideload-or-debugging arrangement and that Visual Studio grants silently on
+  every F5. If UDP replies need the inbound form, `CheckNetIsolation.exe` has to stay running throughout.
 - **Whether the present step really lands on an exact 2×** on a Surface Pro
-  ([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)). R13's whole arrangement is worth nothing if
-  a conversion error puts the scale at 1.99, and that is a thing you confirm by looking at the screen.
+  ([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)). R13's whole arrangement is worth nothing
+  if a conversion error puts the scale at 1.99, and that is confirmed by looking at the screen.
 
 ## How a design changes
 

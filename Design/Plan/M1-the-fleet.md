@@ -349,12 +349,12 @@ Three things the design says are checked by a hand rather than an argument, all 
 1. **Whether 192 pixels is the right circle** (ADR-010, `Interface.md` §4) — and specifically **whether the
    raking-camera case selects the wrong ships**, since a circle on screen is a wedge in the world. The
    mitigation if it is bad is already designed and is one number.
-2. **Whether the text reads** at 24 authored pixels on the target device. Note that
-   `Design/README.md` still describes this confirmation as "whether pixel-doubled text reads acceptably",
-   which [`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md) superseded — **there is no
-   doubling any more**, and the thing to confirm is simply legibility. That sentence wants correcting, in
-   the same class of defect as `README.md` F4 and for the same reason: a decision moved and one sentence
-   describing it did not.
+2. **Whether the text reads** at 24 authored pixels on the target device. There is **no doubling** —
+   [`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md) moved the interface out of the scene
+   target, so a glyph is rasterised at the physical size the fit transform produces — and the thing to
+   confirm is simply legibility. *(This step originally recorded that `Design/README.md` still called the
+   confirmation "pixel-doubled"; that sentence was corrected on 2026-09-20, along with three others from
+   the same source. See `README.md` F4.)*
 3. **Whether the interface pass costs more GPU time than the world pass** — §9.6, which the design predicts
    it will: five instanced draws of simple geometry against an unbatched quad per glyph.
 
