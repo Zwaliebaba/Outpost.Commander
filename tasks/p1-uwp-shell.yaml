@@ -1,5 +1,5 @@
 # Schema: Design/ImplementationPlan.md §3    Validate: python3 Tools/CheckTaskDag.py tasks/p1-uwp-shell.yaml
-# The narrative this schedules is Design/UwpMigration.md; the decisions are ADR-013 to ADR-019.
+# The narrative this schedules is Design/UwpMigration.md; the decisions are ADR-013 to ADR-021.
 
 plan: p1-uwp-shell
 title: Run the game as a packaged UWP application over a CoreWindow, with the client holding no simulation
@@ -11,6 +11,11 @@ summary: >
   console executable, and a grep over the tree for the Win32 window entry points returns nothing.
   P1 comes first and alone: it measures five things this plan assumes and cannot check any other
   way, and the plan changes shape if any of them answers wrong.
+
+  INPUT ARRIVES THROUGH A GESTURE AND THROUGH NOTHING ELSE (ADR-021), and the plumbing for that is
+  here rather than in t1-touch-interface: writing a VirtualKey path in P5 and P8 and deleting it a
+  fortnight later is a fortnight spent twice. What a gesture MEANS is the other plan's and is not
+  decided here.
 
 tasks:
   - id: P0
@@ -97,6 +102,7 @@ tasks:
       - "DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING is accepted at CREATION on a core-window chain, in ApplicationView::TryEnterFullScreenMode, and Present(0, DXGI_PRESENT_ALLOW_TEARING) returns S_OK - or ADR-013 records that it is not, and the frame time moves to GPU timestamp queries"
       - "Whether the GitHub windows-latest image carries Microsoft.VisualStudio.ComponentGroup.UWP.VC is established by running vswhere in a throwaway workflow. If it does not, ADR-016's package gate is answered with a workload install step, a pinned image, or an entry in AGENTS.md §3 saying the package is a local gate"
       - "The DEVELOPMENT loopback path is confirmed on a machine, which is the only loopback path the tree needs: a packaged client reaches an unpackaged listener on 127.0.0.1 with the exemption, and fails without it. The failing half matters more than the passing half - it is what stops a same-machine build being mistaken for a shipping one (ADR-019)"
+      - "Whether the Visual Studio SIMULATOR still ships with Visual Studio 2026 is established, because it is how anyone without a touchscreen satisfies AGENTS.md 3's 'run it and look at it' under ADR-021, and t1-touch-interface leans on it throughout. Design/Interface.md 13 names it and could not verify it. If it is gone, InjectTouchInput is the scripted fallback and 13 is corrected to say so"
       - "The spike is deleted in the same commit that records the answers. It is a measurement, not a foundation"
     verify:
       - msbuild <spike>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:normal /flp:LogFile=spike.log
@@ -221,26 +227,34 @@ tasks:
   - id: P5
     title: Write the translation the shell will need, as pure functions with a suite
     intent: >
-      The three pieces of the shell a compiler and a test runner can hold: the conversion from the
-      core window's device-independent pixels to physical ones, the VirtualKey to key-code mapping,
-      and the pointer-event to InputEvent translation. None needs a package to build or a window to
-      test, and each is one character away from a defect no compiler will notice - which is the
-      argument NeuronClient/PointerMode.h already makes about the sign of an aim delta.
+      The two pieces of the shell a compiler and a test runner can hold: the conversion from the
+      core window's device-independent pixels to physical ones, and the translation of a gesture
+      into a Neuron::InputEvent. Neither needs a package to build or a window to test, and each is
+      one character away from a defect no compiler will notice - which is the argument
+      NeuronClient/PointerMode.h already makes about the sign of an aim delta, and the argument
+      ADR-021 makes again about the direction of a pinch.
+      THE GESTURE HALF IS HERE ON DAY ONE DELIBERATELY. ADR-021 makes touch the only input, so a
+      VirtualKey-to-key-code map would be plumbing written in order to be deleted. What a gesture
+      MEANS - which manipulation pans, what issues an order, what cancels one - is
+      t1-touch-interface/T1's and is not decided here.
     project: NeuronClient
     depends_on: [P0, P1]
     files:
       - NeuronClient/DisplayPixels.h
       - NeuronClient/DisplayPixels.cpp
-      - NeuronClient/KeyMap.h
-      - NeuronClient/KeyMap.cpp
+      - NeuronClient/GestureTranslation.h
+      - NeuronClient/GestureTranslation.cpp
+      - NeuronClient/InputEvent.h
       - NeuronClient/NeuronClient.vcxproj
       - NeuronClient/NeuronClient.vcxproj.filters
       - Tests/NeuronClientTests/DisplayPixelsTests.cpp
-      - Tests/NeuronClientTests/KeyMapTests.cpp
+      - Tests/NeuronClientTests/GestureTranslationTests.cpp
     acceptance:
       - "PhysicalPixels(dips, logicalDpi) rounds as the platform documents - floor(dips * dpi / 96 + 0.5) - and names no Windows Runtime type"
       - "NeuronClientTests pins it at 96, 120, 144 and 192 DPI against 1920x1080, 2560x1440 and 3840x2160, and pins that the 1:1 and integer-multiple cases of AGENTS.md §5 are reached where they should be"
-      - "The key map turns a VirtualKey into the same key code the window procedure produced, so that every input test written before this migration still means what it meant"
+      - "A tap, a hold and a manipulation's translate, scale and rotate become Neuron::InputEvents carrying PHYSICAL pixels, from plain numbers the caller passes in - which is what lets the translation compile and be tested inside a desktop static library"
+      - "THE SIGNS ARE PINNED BY A WORKED EXAMPLE: both axes of a translate and the direction of a scale. An inverted pan compiles exactly as well as a correct one and is noticed by nobody until somebody plays it, which is the whole reason PointerMode.h wrote its rule down rather than trusting it"
+      - "InputEventKind GAINS the gesture kinds and loses nothing yet. Deleting the eight keyboard and mouse kinds is t1-touch-interface/T2's, after T1 has said what replaces them - a tree that names both for a fortnight is cheaper than a tree that does not build between two plans (ADR-021)"
       - "Neither file includes winrt/ anything: the translation is arithmetic over integers, and the shell hands it the integers"
     verify:
       - python3 Build/CheckProjectFiles.py
@@ -306,9 +320,10 @@ tasks:
     intent: >
       The shell itself: an IFrameworkViewSource handed to CoreApplication::Run, an IFrameworkView
       whose SetWindow subscribes the events and whose Run owns the loop, the manifest, the assets
-      and package identity. Window.{h,cpp} and RawMouse.{h,cpp} are deleted - 457 lines - and the
-      mouse's relative counts come from MouseDevice::MouseMoved, which is the closest mapping in the
-      whole migration.
+      and package identity. Window.{h,cpp} and RawMouse.{h,cpp} are deleted - 457 lines - and
+      NOTHING REPLACES THEM: under ADR-021 there is no mouse to read and no keyboard to subscribe.
+      What SetWindow subscribes is the four pointer events, and what it forwards them to is one
+      Windows::UI::Input::GestureRecognizer.
     project: OutpostCommander
     depends_on: [P1, P3, P5, P6, P7]
     files:
@@ -326,11 +341,15 @@ tasks:
       - NeuronClient/RawMouse.cpp
       - NeuronClient/NeuronClient.vcxproj
       - Design/ADR/ADR-013-uwp-application-model.md
+      - Design/ADR/ADR-021-touch-is-the-only-input.md
     acceptance:
       - "The game builds as an MSIX, deploys, launches full screen through ApplicationView::TryEnterFullScreenMode, draws the match and takes input - RUN AND LOOKED AT, not merely built (AGENTS.md §3)"
       - "CoreDispatcher::ProcessEvents(ProcessAllIfPresent) is called once per frame and nowhere else, and enqueues into the same Neuron::InputQueue the window procedure enqueued into"
-      - "Aim mode hides the cursor with CoreWindow::PointerCursor = nullptr and turns the camera on MouseDevice::MouseMoved's MouseDelta; the sign of both axes is checked against NeuronClient/PointerMode.h's rule by moving the mouse and looking"
-      - "Escape peels as Design/Interface.md §7 says and calls CoreApplication::Exit only on the last press; CoreWindow::Closed is honoured wherever it comes from"
+      - "PointerPressed, PointerMoved, PointerReleased and PointerCaptureLost are subscribed and fed to ONE Windows::UI::Input::GestureRecognizer through ProcessDownEvent, ProcessMoveEvents and ProcessUpEvent; its Tapped, Holding and Manipulation events reach P5's translation and reach nothing else"
+      - "CoreWindow::PointerCursor is nullptr for the life of the application: there is no cursor to hide, because there is never one to show (ADR-021)"
+      - "KeyDown, KeyUp, CharacterReceived and AcceleratorKeyActivated are NOT subscribed, and a grep over OutpostCommander for VirtualKey, KeyEventArgs and MouseDevice returns nothing (ADR-021)"
+      - "The GestureSettings mask is set in exactly ONE place and copied into ADR-021's Measurements. It is the one decision in this task no suite can reach - a GestureRecognizer cannot be constructed outside a package - and that is the honest limit of R20 rather than an exception to it"
+      - "The way out is F10's quit menu calling CoreApplication::Exit (ADR-020), reached by whatever gesture t1-touch-interface/T1 names; if T1 has not landed, this task's notes record the provisional gesture it used and T1 replaces it. There is no Escape and no F10, because there is no keyboard. CoreWindow::Closed is honoured wherever it comes from"
       - "GameData ships in the package as DeploymentContent and is read from Package::Current().InstalledLocation(); the user's directory is ApplicationData::Current().LocalFolder(); both are handed to Paths::SetRoots (ADR-016)"
       - "--warp and --novsync arrive through LaunchActivatedEventArgs::Arguments() and are proved to work from the debugger's arguments property - or ADR-016 records that they do not and they move to a file in LocalState"
       - "NeuronClient/Window.{h,cpp} and NeuronClient/RawMouse.{h,cpp} are deleted, and no .xaml exists anywhere in the tree (R18)"
@@ -411,7 +430,8 @@ tasks:
       - "CI builds the .msix and asserts it exists and that its manifest is the one in the tree. It is NOT run: running a packaged app on a hosted runner needs deployment and developer mode, and a build gate catches what a build gate can honestly catch"
       - "The frame time is drawn by the HUD and written to the log; m1-vertical-slice/K5's title-bar readout is gone, and K5's notes say where it went and why"
       - "A grep over the whole tree for CreateWindowEx, RegisterClassEx, PeekMessage, DispatchMessage, DefWindowProc, RegisterRawInputDevices, GetRawInputData, SetProcessDpiAwarenessContext, ShowCursor and SetWindowText returns nothing outside OutpostHost and OutpostCapture"
-      - "Design/UwpMigration.md's risk table is rewritten as what actually happened, with P1's five answers in it, and every ADR from 013 to 019 has its Measurements section filled in or says which figure is still owed"
+      - "The same grep for VirtualKey, KeyEventArgs, MouseDevice and PointerCursor returns nothing outside the one line of FrameworkView.cpp that sets the cursor to nullptr: what the Win32 shell left behind and what ADR-021 refuses are two greps, and both are run the day P1 is written"
+      - "Design/UwpMigration.md's risk table is rewritten as what actually happened, with P1's five answers in it, and every ADR from 013 to 021 has its Measurements section filled in or says which figure is still owed - ADR-021's remaining figure is t1-touch-interface/T6's and is named as owed rather than left blank"
       - The owner has played a match against a host on another machine and says so
     verify:
       - python3 Build/CheckProjectFiles.py

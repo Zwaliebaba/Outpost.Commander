@@ -24,6 +24,7 @@ One file per engineering decision, numbered in order (`AGENTS.md` §6). **ADR-00
 | [`ADR-018`](ADR-018-client-server-libraries.md) | Six libraries on two axes -- layer and side: NeuronCore, NeuronClient and NeuronServer for the engine, GameShared, GameClient and GameLogic for the game; the edges between them; Tests/IntegrationTests as the one suite allowed both sides; and the five boundary defects the split found. Supersedes ADR-001's project table | 2026-09-20 |
 | [`ADR-019`](ADR-019-the-client-never-simulates.md) | The client links no simulation and there is no local host, so ADR-012's interest set is enforced by the linker; the cost is that a player with one machine cannot play, because loopback is isolated for a packaged app against an unpackaged host | 2026-09-20 |
 | [`ADR-020`](ADR-020-central-server-no-lobby-no-pause.md) | A central authoritative server: no lobby -- MatchSettings come from the server's own configuration and a joining client chooses nothing -- and no pause of either kind, recorded as a choice rather than an impossibility, because this tree has already built a working one. F10's menu becomes the quit menu and Escape never exits | 2026-09-20 |
+| [`ADR-021`](ADR-021-touch-is-the-only-input.md) | Touch is the only input: `GestureRecognizer` the one path into `Neuron::InputQueue`, the keyboard unsubscribed and every non-touch pointer dropped at one site, so the client requires a touchscreen; aim mode and eight of nine `InputEvent` kinds deleted. Supersedes `Design/Interface.md` §4, §6, §7 and §12 ruling 3 wholesale, and amends ADR-013 | 2026-09-20 |
 
 ## When to write one
 
@@ -73,4 +74,4 @@ A decision is never edited into a different decision. A new ADR supersedes it, t
 
 Two consequences follow and are stated rather than left to be noticed. **The measurements in them were made in the other tree** — on its CI runs, its `windows-latest` images and the owner's machine — and where one cites a CI artefact the link points at *Frontier Commander*, deliberately, because that is where the evidence is. And **the numbering does continue that tree's**, which is the one place this repository departs from `AGENTS.md` §6: ADR-013 follows ADR-012 because the code arrived with twelve decisions already taken, and renumbering them from one would have broken every citation in the design documents and the task plans for no gain.
 
-The UWP migration begins at ADR-013. `Design/UwpMigration.md` is the plan those five ADRs are the decisions of.
+The UWP migration begins at ADR-013. `Design/UwpMigration.md` is the plan ADR-013 to ADR-021 are the decisions of; the interface half of ADR-021 is planned separately, in `tasks/t1-touch-interface.yaml`.

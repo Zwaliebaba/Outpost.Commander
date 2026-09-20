@@ -67,6 +67,8 @@ tasks/
   m4-frontier.yaml
   p1-uwp-shell.yaml         the platform plan: a letter rather than a milestone number, because it
                             cuts across the milestones instead of following them
+  t1-touch-interface.yaml   the interface plan: likewise a letter and likewise cross-cutting --
+                            what ADR-021 costs above the input seam, blocked on p1's plumbing
   Archive/                  plans with nothing left open; still loaded so blocked_by resolves
     m0-foundation.yaml      closed 2026-09-19 by the owner's run (T22)
 ```
@@ -122,6 +124,7 @@ The milestone is done when its "proves" column in `GameDesign.md` §12 is true o
 | M2 Skirmish | `tasks/m2-skirmish.yaml` | Four commanders on Medium with the full catalogue and component set, personalities, save and resume, the look completed | 11 | Units of scope |
 | M3 Multiplayer | `tasks/m3-multiplayer.yaml` | Eight commanders over LAN and direct IP on a headless host; rejoin; Large and dominance; mods; replays | 10 | Units of scope |
 | P1 UWP shell | `tasks/p1-uwp-shell.yaml` | The game runs as a packaged UWP application over a `CoreWindow`, the client links no simulation, and the capture gate still passes | 12 | Units of work |
+| T1 Touch interface | `tasks/t1-touch-interface.yaml` | The game is played with fingers: `Interface.md` rewritten in `GestureRecognizer`'s vocabulary, aim mode and the key table gone, every order and every panel reachable without a key or a second button ([`ADR-021`](ADR/ADR-021-touch-is-the-only-input.md)) | 6 | Units of work |
 | M4 Frontier | `tasks/m4-frontier.yaml` | Frontier-class landscapes at full performance; the neutral faction; commanders; legs and possibly lift | 7 | Units of scope |
 
 **M0 in one paragraph.** Three tasks start at once: the solution with `NeuronCore` and its tests plus ADR-001 for all eight projects (T1), the format checker (T3), and the landscape tool in Python (T16), which needs nothing and is the one piece of the simulation the agent can run and tune in the session. The other seven projects (T2), the build-shape checker (T4), clang-tidy's runner (T5) and the `NeuronCore` pieces — arithmetic, randomness and hashing, the slot map, the byte stream, JSON, bitmaps and waves, paths and logging, the transport seam with loopback — follow, each with its tests. The `Sim` skeleton (T15) puts the fourteen-stage tick, the hash, the snapshot and the three determinism tests in place before any system exists, and the landscape (T17) is the first system, tested bit for bit against the tool's golden fields. The `Client` foundation (T18) is the window, the device with WARP, the scene target presented scaled, the shader pipeline and the capture that writes BMPs, with ADR-002; input (T19) follows the Species design; the terrain pass and camera (T20) draw the landscape and write the fog-and-lighting ADR on captured frames; the capture job (T21) makes the frames CI artefacts. The owner's run (T22) closes it. **It closed on 2026-09-19** and the plan moved to `tasks/Archive/`; T22's notes carry the machine, the frame time and the WARP-against-hardware comparison, and name the one acceptance line left unmet.
@@ -136,7 +139,7 @@ The milestone is done when its "proves" column in `GameDesign.md` §12 is true o
 | `NeuronCore` (M0 T7–T14) | `TechnicalDesign.md` §4.1–§4.3, §4.9, §5.6, §8 (the JSON reader), §9 | `AGENTS.md` R14–R17; the Species `network-transport` plan for the transport seam |
 | Landscape (M0 T16–T17; M2 T7) | `SpeciesTerrain.md` §2–§5 | `GameDesign.md` §3; `TechnicalDesign.md` §4.4 |
 | Renderer (M0 T18, T20; M1 K1–K2; M2 T8, T12) | `AGENTS.md` §5; `TechnicalDesign.md` §6 | `SpeciesLook.md`; `SpeciesTerrain.md` §6–§7; `GameDesign.md` §11 |
-| Input and UI (M0 T19; M1 D1, K3, K4; M2 T10) | `TechnicalDesign.md` §6.4–§6.5 | `SpeciesCanvas.md`; the Species `input-native-events` plan; `Design/Interface.md` once written |
+| Input and UI (M0 T19; M1 D1, K3, K4; M2 T10; all of T1) | `TechnicalDesign.md` §6.4–§6.5; [`ADR-021`](ADR/ADR-021-touch-is-the-only-input.md) | `SpeciesCanvas.md`; the Species `input-native-events` plan; `Design/Interface.md`, read knowing §4, §6, §7 and §12 ruling 3 are superseded until `t1-touch-interface/T1` rewrites them |
 | Simulation (M0 T15; M1 S1–S12) | `TechnicalDesign.md` §3, §4, §7 | `GameDesign.md` §2–§9 for the numbers each system applies |
 | Content and tools (M1 C1–C4) | `TechnicalDesign.md` §8 | `GameDesign.md` §4–§8 tables; `SpeciesLineage.md` §4–§5 |
 | Networking and replica (M1 N1–N3, R1–R2; M3) | `TechnicalDesign.md` §5, §6.3, §10 | `GameDesign.md` §10; the Species `network-transport` plan |
