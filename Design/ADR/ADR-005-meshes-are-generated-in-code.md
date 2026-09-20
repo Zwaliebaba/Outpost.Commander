@@ -1,8 +1,10 @@
 # ADR-005 — Meshes are generated in code; the MVP has no content pipeline
 
-**Status:** Proposed
+**Status:** Accepted — ruled 2026-09-20 following an adversarial review, **with changes**: the silhouette
+consequence is named, and the mesh function must be parameterised for divergent proportion rather than
+only for size.
 **Date:** 2026-09-20
-**Owner:** proposed by the design; not yet ruled
+**Owner:** Stefan Zwaal
 
 ## Context
 
@@ -35,8 +37,16 @@ There is **no mesh file, no loader, no asset build step and no texture** in the 
 importer to debug, and a geometry change that is a code change the compiler checks. For a tree whose
 `AGENTS.md` demands the build gate everything, that last one is worth more than it looks.
 
-**What it costs is how the game looks.** A ship will look like a few dozen triangles because it is a few
-dozen triangles, and no amount of care in the function changes that ceiling. The MVP's job is to prove
+**The sharpest cost is a silhouette problem, and it lands on the feel the design sells.**
+`Design/GameDesign.md` §1 promises "ships that bank as they turn and read as silhouettes", and
+`Design/Interface.md` §5 couples pitch to zoom so the tactical view is near top-down. **Two hulls emitted
+by one shared parameterised function will tend to be the same shape at two scales**, which is exactly
+unreadable at the zoom where identification matters most. The function must therefore be parameterised
+for *divergent proportion* — a wide flat hull against a long narrow one — and not merely for size. If that
+fails at M2 the answer is a shape-coded overlay, not more triangles.
+
+**Beyond that it costs how the game looks.** A ship will look like a few dozen triangles because it is a
+few dozen triangles, and no amount of care in the function changes that ceiling. The MVP's job is to prove
 the loop, and a faceted low-polygon fleet in silhouette against black is at least a coherent look rather
 than an apologetic one — but it is a ceiling and it is low.
 

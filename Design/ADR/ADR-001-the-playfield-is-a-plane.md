@@ -11,10 +11,25 @@ three-dimensional volume. It also takes `AGENTS.md` R21: **touch is the only inp
 `Tapped`, `Holding` and a manipulation's translate, scale and rotate, and there is no keyboard, no
 modifier and no second pointer button anywhere.
 
-Those two do not fit. **A tap is a ray, and a ray has no depth.** Specifying a point in a volume needs two
-independent inputs, which is why *Homeworld* invented the move disk and why the move disk needed a mouse
-and a held key to drive it. On a tablet gripped in two hands, a two-stage depth gesture competes with the
-camera for the same fingers, at the moment a player is least able to spare attention.
+**This ADR originally argued that a tap is a ray and a ray has no depth, and that argument does not
+survive scrutiny.** A ray has the depth of *the camera's current focus plane* — which is precisely what
+*Homeworld*'s move disk is, with the vertical drag as a rarely used modifier rather than the primary
+interaction. Under R21 one could legitimately build a volume where a tap places on the focus plane and
+changing altitude means moving the camera, which pinch and orbit already do. **No fourth gesture is
+required, so the stated reason was refutable.** It is replaced here rather than left standing, because a
+refutable justification on an irreversible decision is a decision that gets reopened by whoever spots the
+hole.
+
+**The plane wins on two other grounds, and they hold.**
+
+**Implementation cost.** Three-dimensional spatial indexing, three-dimensional separation — which is
+already an unbudgeted cost in two dimensions, see `Design/TechnicalDesign.md` §2 — three-dimensional AI
+target selection, and six bytes of position instead of four, against one developer and no code at all.
+
+**The camera's gesture budget, which is the decisive one.** On a plane, pitch can be coupled to zoom
+(`Design/Interface.md` §5), which frees a degree of freedom outright. **In a volume the player needs
+independent pitch to read depth**, so the fourth degree of freedom comes back — not for the move order,
+which the focus plane solves, but for the camera, where R21 has nothing left to give.
 
 The question had to be answered before anything was written, because it decides the spatial index, the
 collision test, the pathfinding, the camera, the AI's target selection and the wire format — every one of
@@ -51,6 +66,7 @@ anyone reopening it should expect to rewrite rather than extend.
 ## Measurements
 
 None. This is a decision about what is expressible with a finger, not a quantity. The arithmetic it makes
-possible — four bytes of position rather than six, and a snapshot of 1,872 bytes rather than about 2,280 —
+possible — four bytes of position rather than six, and an MVP snapshot of 1,056 bytes rather than about
+1,260, which is the difference between one datagram and two —
 is in `Design/TechnicalDesign.md` §4 and is arithmetic on the design's own entity counts, not a
 measurement.
