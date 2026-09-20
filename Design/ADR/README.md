@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-One file per engineering decision, numbered from `ADR-001` in this repository (`AGENTS.md` §6). The numbering does not continue any other tree's.
+One file per engineering decision, numbered in order (`AGENTS.md` §6). **ADR-001 to ADR-012 arrived with the code, from *Frontier Commander*, when this tree was forked on 2026-09-20**; the UWP migration begins at ADR-013. The last section says why the numbering continues rather than restarting.
 
 | ADR | Decision | Date |
 |---|---|---|
@@ -16,6 +16,11 @@ One file per engineering decision, numbered from `ADR-001` in this repository (`
 | [`ADR-010`](ADR-010-species-content.md) | The Species-derived content: the owner's acceptance of the provenance risk, including distribution in M3 and inside mods; the inventory of every file that has come across and the tool that converted it; the exclusions enforced in `Tools/ImportSounds.py` rather than remembered | 2026-09-18 |
 | [`ADR-011`](ADR-011-model-normals.md) | Model normals baked by the loader onto a split vertex rather than taken from the pixel shader's derivatives, because the colour already forces the split and the derivative's sign has no answer on a model; the outward normal is the SDK's `cross(c − a, b − a)`, pinned by a test and checked by a winding count; the captured frame K1 asked for is owed once G2 lands | 2026-09-18 |
 | [`ADR-012`](ADR-012-replication-protocol.md) | The replication protocol: the interest set as a security boundary, delta frames against a 32-frame history, positions quantized to a quarter of a world unit by floor division, 1,200-byte fragments, and the bytes a frame takes at 100 and 600 visible objects, measured | 2026-09-19 |
+| [`ADR-013`](ADR-013-uwp-application-model.md) | The application model: an MSIX-packaged UWP app whose view is a `CoreWindow` driven by `IFrameworkView`, no XAML anywhere, `TryEnterFullScreenMode` in place of the borderless popup and `CoreApplication::Exit` in place of Alt+F4; supersedes ADR-004 on the window | 2026-09-20 |
+| [`ADR-014`](ADR-014-platform-boundary.md) | The platform boundary: exactly one packaged project holding Windows Runtime glue and nothing else, over a desktop tree that keeps its six libraries, its six test suites and its console executables; the `Game` library and `OutpostCapture` that makes possible, and the compile-time enforcement given up to get it | 2026-09-20 |
+| [`ADR-015`](ADR-015-cppwinrt-dependency.md) | `Microsoft.Windows.CppWinRT` as a pinned NuGet dependency of the packaged executable alone: the first package in the tree, the amendment to R14 and §2 it forces, and the three settings it changes that are overridden back | 2026-09-20 |
+| [`ADR-016`](ADR-016-package-identity-and-launch.md) | Package identity: `Paths` reduced to two roots each executable supplies for itself so that `Core` names no path API, `GameData` shipped in the package, `Mods` moved to the user's directory, launch options from the activation arguments, and the capture gate moved to `OutpostCapture` with its four assertions unchanged | 2026-09-20 |
+| [`ADR-017`](ADR-017-core-window-pixels-and-lifetime.md) | The core window's pixels and its lifetime: the swap chain sized in physical pixels through one tested conversion, raw-pixel scaling asked for first, suspend and resume handled, device removal recovered, and the frame-time readout moved out of the title bar the app no longer has | 2026-09-20 |
 
 ## When to write one
 
@@ -58,3 +63,11 @@ machine. If a figure is arithmetic rather than a measurement, say what it is ari
 ## Superseding
 
 A decision is never edited into a different decision. A new ADR supersedes it, the old one's status line points forward, and the old file stays: the history of why is the point.
+
+## Where ADR-001 to ADR-012 came from
+
+*Outpost Commander* is a hard fork of *Frontier Commander*, taken at its M1 state on 2026-09-20. **ADR-001 to ADR-012 came across with the code they describe**, renamed but otherwise unaltered, because a tree that copies the code and drops its decisions is a tree whose every boundary is about to be re-litigated by whoever forgot it. They are this repository's decisions now and are superseded here, not there.
+
+Two consequences follow and are stated rather than left to be noticed. **The measurements in them were made in the other tree** — on its CI runs, its `windows-latest` images and the owner's machine — and where one cites a CI artefact the link points at *Frontier Commander*, deliberately, because that is where the evidence is. And **the numbering does continue that tree's**, which is the one place this repository departs from `AGENTS.md` §6: ADR-013 follows ADR-012 because the code arrived with twelve decisions already taken, and renumbering them from one would have broken every citation in the design documents and the task plans for no gain.
+
+The UWP migration begins at ADR-013. `Design/UwpMigration.md` is the plan those five ADRs are the decisions of.

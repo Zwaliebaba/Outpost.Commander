@@ -1,6 +1,6 @@
 # ADR-004 — The renderer foundation
 
-**Status:** Accepted
+**Status:** Accepted; the window is superseded by [`ADR-013`](ADR-013-uwp-application-model.md) (2026-09-20), which makes the view a `CoreWindow` under a packaged application, and DPI awareness by [`ADR-017`](ADR-017-core-window-pixels-and-lifetime.md) (2026-09-20), which converts the window's device-independent pixels rather than setting a process awareness. Everything else here stands: the authored resolution, the multisampled scene target and its resolve, the frame loop, the swap chain's shape, the `HRESULT` policy, the `d3dx12.h` pin and shader model 6.0.
 **Date:** 2026-09-17
 **Owner:** the author, on `AGENTS.md` §5 and R14 and `Design/TechnicalDesign.md` §6.1, with the owner's assumptions of 2026-09-17
 
