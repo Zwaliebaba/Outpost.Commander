@@ -1,17 +1,9 @@
-#pragma once
+﻿#pragma once
 
-// The precompiled header of GameClient: the standard library and NeuronCore, and never a platform header
-// (ADR-001). Replica includes no Windows, Direct3D, socket or WinRT header anywhere; the
-// layering check of Build/CheckProjectFiles.py refuses one.
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <span>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include "targetver.h"
 
-#include "Assertion.h"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <windows.h>

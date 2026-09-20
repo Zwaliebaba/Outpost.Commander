@@ -1,2 +1,0 @@
-# A self-test fixture of Build/CheckProjectFiles.py: the alternation omits GameClient, so that project's headers would go unchecked.
-HeaderFilterRegex: '(NeuronCore|GameShared|GameLogic|NeuronClient|NeuronServer|Moved|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'

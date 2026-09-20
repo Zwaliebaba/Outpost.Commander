@@ -1,16 +1,8 @@
-#pragma once
-
-// The precompiled header of OutpostCommander, the game: the standard library. A file that needs Windows
-// includes NeuronCore's WindowsHeader.h itself (AGENTS.md §4; ADR-001).
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <span>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
-#include "Assertion.h"
+﻿#pragma once
+#include <windows.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.ApplicationModel.Core.h>
+#include <winrt/Windows.UI.Core.h>
+#include <winrt/Windows.UI.Composition.h>
+#include <winrt/Windows.UI.Input.h>

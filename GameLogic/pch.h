@@ -1,17 +1,13 @@
-#pragma once
+// pch.h: This is a precompiled header file.
+// Files listed below are compiled only once, improving build performance for future builds.
+// This also affects IntelliSense performance, including code completion and many code browsing features.
+// However, files listed here are ALL re-compiled if any one of them is updated between builds.
+// Do not add files here that you will be updating frequently as this negates the performance advantage.
 
-// The precompiled header of GameLogic: the standard library and NeuronCore, and never a platform header
-// (ADR-001). Sim includes no Windows, Direct3D, socket or WinRT header anywhere; the
-// layering check of Build/CheckProjectFiles.py refuses one.
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <span>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#ifndef PCH_H
+#define PCH_H
 
-#include "Assertion.h"
+// add headers that you want to pre-compile here
+#include "framework.h"
+
+#endif //PCH_H
