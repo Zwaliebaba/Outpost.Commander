@@ -4,6 +4,7 @@
     <ClCompile Include="ByteCodecTests.cpp" />
     <ClCompile Include="FixedPointTests.cpp" />
     <ClCompile Include="SineTableTests.cpp" />
+    <ClCompile Include="Pcg32Tests.cpp" />
     <ClCompile Include="PacketHeaderTests.cpp" />
     <ClCompile Include="ProbePacketTests.cpp" />
     <ClCompile Include="pch.cpp" />

@@ -6,6 +6,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)SineTable.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ByteWriter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)NeuronCore.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Pcg32.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)PacketHeader.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ProbePacket.cpp" />
   </ItemGroup>
@@ -17,6 +18,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Pcg32.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ProbePacket.h" />
   </ItemGroup>
 </Project>

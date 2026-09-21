@@ -37,6 +37,7 @@
 // (AGENTS.md section 2), so every public header of NeuronCore is listed here and the order is the
 // one section 4 fixes: own headers before the SDK and the standard library, never sorted.
 #include "FixedPoint.h"
+#include "Pcg32.h"
 #include "SineTable.h"
 #include "Vec2.h"
 

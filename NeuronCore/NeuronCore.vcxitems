@@ -30,6 +30,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)NeuronCore.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)Pcg32.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)PacketHeader.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -45,6 +48,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Pcg32.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ProbePacket.h" />
   </ItemGroup>
 </Project>
