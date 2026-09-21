@@ -113,6 +113,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ByteCodecTests.cpp" />
+    <ClCompile Include="FixedPointTests.cpp" />
+    <ClCompile Include="SineTableTests.cpp" />
     <ClCompile Include="PacketHeaderTests.cpp" />
     <ClCompile Include="ProbePacketTests.cpp" />
     <ClCompile Include="pch.cpp">

@@ -18,6 +18,12 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)ByteReader.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)FixedPoint.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)SineTable.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)ByteWriter.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -33,6 +39,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteReader.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)FixedPoint.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)SineTable.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Vec2.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
