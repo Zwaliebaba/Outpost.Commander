@@ -23,7 +23,7 @@
     2026-09-21, after that  19 translation units, 2 with diagnostics.
   What is left is noise rather than findings: clang-tidy reports tens of thousands of warnings
   generated from the Windows SDK headers it walks. .clang-tidy's HeaderFilterRegex limits what is
-  REPORTED, not what is analysed. Quieting that is the work between here and -Gate.
+  REPORTED, not what is analyzed. Quieting that is the work between here and -Gate.
 
 .PARAMETER Gate
   Return a non-zero exit code when clang-tidy reports a diagnostic. Off by default: turn it on

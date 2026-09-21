@@ -31,7 +31,7 @@ coverage is gamma-encoded; averaging the encoded values directly produces system
 stems, which is the second thing a naive implementation gets wrong after the fringing below. This is not
 an oversight and it is the detail a naive implementation gets wrong:
 ClearType assumes an RGB stripe at the *final* display, and this frame is scaled 2× on the way there
-([`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md)), so subpixel output would arrive as colour
+([`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md)), so subpixel output would arrive as color
 fringing that survives the scale. `CreateAlphaTexture` offers only bi-level and ClearType, and averaging
 ClearType is how you get grayscale antialiasing out of it.
 

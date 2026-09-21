@@ -46,7 +46,7 @@ target that dies before it arrives.
 `Design/GameDesign.md` §7 claims the counter to a heavier ship is speed — strike craft pick the fight and
 leave. **Instant resolution is what makes disengaging actually work**: a ship that leaves weapon range
 takes zero further damage, where with travel time the shots already fired still land. The two decisions
-are coupled and were taken independently; the coupling is in this ADR's favour and is recorded here so
+are coupled and were taken independently; the coupling is in this ADR's favor and is recorded here so
 that reopening either one is known to move the other.
 
 **What it costs is a class of gameplay.** Nothing can be intercepted, nothing can miss by flying past,

@@ -44,7 +44,7 @@ and nothing else does. This is what makes the MVP reachable, and the tactical z-
 **Replication is full self-contained snapshots**
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). R19 already ruled out lockstep by refusing
 the client a simulation; at the MVP's 110 entities a snapshot is **1,136 bytes — one datagram** — so there
-is no baseline, no acknowledgement, no history and no fragmentation. They go out at **20 Hz**, which is a
+is no baseline, no acknowledgment, no history and no fragmentation. They go out at **20 Hz**, which is a
 latency decision and not a bandwidth one: tap-to-visible is 152 ms average where 10 Hz made it 252 ms, and
 on a touchscreen the tap is the only feedback a player gets.
 
@@ -57,7 +57,7 @@ and not only for the protocol.
 model goes in before its interface does, because retrofitting it would move damage, cost, build time,
 mass, speed and the wire format in one change. The miner is the proof: it is not a ship type, it is a
 scout hull with a mining tool where a weapon would go — and so is the station, which is a hull with two
-point-defence mounts and no drive.
+point-defense mounts and no drive.
 
 It also paid for something unrelated. **Selection works by design**
 ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)): a hold takes every ship of the same design

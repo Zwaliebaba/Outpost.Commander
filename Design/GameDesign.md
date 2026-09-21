@@ -85,7 +85,7 @@ remaining ships from the field. The alternative — leaving a beaten player's sh
 turns the last ten minutes of every match into a search problem, and no amount of tuning fixes that.
 
 **A player who disconnects keeps their slot.** Their ships hold position and keep whatever autonomous
-behaviour they have, the slot is held indefinitely, and they may reconnect — which is mechanically free
+behavior they have, the slot is held indefinitely, and they may reconnect — which is mechanically free
 because snapshots are self-contained (`TechnicalDesign.md` §4), so there is nothing to catch up on. The
 cost is that an abandoned fleet sits on the board as free kills, and that is accepted rather than solved:
 an AI taking the slot is the better answer and it waits for M4, when there is an AI that can start from
@@ -102,7 +102,7 @@ and the client run (`TechnicalDesign.md` §3). The client is not *told* the map;
 takes a large static payload off the wire and means the two sides cannot disagree about where an
 asteroid is.
 
-**It is rotationally symmetric about the centre, to the player count.** At four players one quadrant is
+**It is rotationally symmetric about the center, to the player count.** At four players one quadrant is
 generated and copied at 90°, 180° and 270°; **at the MVP's two players one half is generated and copied at
 180°**, which on integer positions is a negation and therefore exact. This is the cheapest possible
 fairness guarantee: every player's start is the same start, so no balance analysis is needed and no seed
@@ -117,11 +117,11 @@ What a seed produces:
 
 | | |
 |---|---|
-| **The square** | 16,384 world units on a side, centred on the origin. A world unit is nominally a metre. A fighter crosses it in about two minutes, a miner in under three. |
-| **Four start anchors** | One per quadrant, at a fixed radius from the centre. A station spawns on each. |
+| **The square** | 16,384 world units on a side, centered on the origin. A world unit is nominally a meter. A fighter crosses it in about two minutes, a miner in under three. |
+| **Four start anchors** | One per quadrant, at a fixed radius from the center. A station spawns on each. |
 | **A home field** | A small asteroid cluster within about 1,500 units of each anchor. Enough to open on, not enough to win on. |
 | **The anchor radius and the asteroid count** | Not fixed here. Both are inputs to the raid arithmetic in §7 and to the replication budget, and both are on the register (`OpenQuestions.md` Q26). |
-| **Contested fields** | Richer clusters toward the centre, reachable by everyone. This is the map's only real proposition. |
+| **Contested fields** | Richer clusters toward the center, reachable by everyone. This is the map's only real proposition. |
 
 Nebulae, wrecks, hazards and anything that affects sensors are not in the MVP. The generator's interface
 is a seed in and a list of placed objects out, so adding a kind later does not change its shape.
@@ -186,7 +186,7 @@ A design is selected, it is added to the queue, credits are deducted when the it
 appears at the station's spawn point when the item finishes. There is no rally point in the MVP; new
 ships sit where they appear.
 
-**A station is a hull with slots, like everything else**, and it carries two `PointDefence` mounts. It
+**A station is a hull with slots, like everything else**, and it carries two `PointDefense` mounts. It
 has no drive, which is the only thing that distinguishes it from a ship — §6's model allows a hull without
 one, and giving the station hull a drive later is how a mothership arrives.
 
@@ -194,9 +194,9 @@ one, and giving the station hull a drive later is how a mothership arrives.
 station was priced against; without it, ten fighters standing off at 500 units take about a minute to
 bring one down, which is a siege a player can mount and lose.
 
-**The point defence outranges nothing, and that is deliberate — say it out loud or it reads as a bug.**
-`PointDefence` reaches 400 units; a `MassDriver` reaches 600. **A fighter can therefore stand off at 500
-and shell the station untouched.** What the point defence protects is the *unloading area* — a raider that
+**The point defense outranges nothing, and that is deliberate — say it out loud or it reads as a bug.**
+`PointDefense` reaches 400 units; a `MassDriver` reaches 600. **A fighter can therefore stand off at 500
+and shell the station untouched.** What the point defense protects is the *unloading area* — a raider that
 chases a fleeing miner home crosses 400 and dies in under six seconds — not the station itself. If it
 outranged the fighter instead, a station with no siege unit left in the MVP would simply be unkillable.
 
@@ -240,16 +240,16 @@ A module that costs credits and does nothing is the mistake §6 already made onc
 empty space within **400 units** places it — an interaction that was dead, because a tap on empty space is
 a move order and the station cannot move (`Interface.md` §4).
 
-**400 is the point-defence range, so the safe zone means exactly "your base".** The consequence is
+**400 is the point-defense range, so the safe zone means exactly "your base".** The consequence is
 positional and intended: a `MassDriver` reaches 600, so **a fighter standing off at 500 can shell the
-modules on the near side while staying outside point-defence cover**. Which side of your station you build
+modules on the near side while staying outside point-defense cover**. Which side of your station you build
 on is a decision.
 
 **Four modules to a station.** That cap is as much a replication budget as a design one
 (`TechnicalDesign.md` §4), and raising it is a protocol decision rather than a game one.
 
 Beyond modules there are no other structures in the MVP. No turrets, no outposts — the station's own
-defence is a component in its slots, not a building you place.
+defense is a component in its slots, not a building you place.
 
 ---
 
@@ -288,7 +288,7 @@ heavy design later is a table row (§10).
 |---|---|---|
 | `MiningLaser` | Extracts 20 ore a second and carries 100 of it. Does no damage. Capacity and rate both sum over a hull's slots. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
-| `PointDefence` | 60 damage per second per mount. Station slots only. | 400 |
+| `PointDefense` | 60 damage per second per mount. Station slots only. | 400 |
 
 | Module component | What it does | Cost |
 |---|---|---|
@@ -312,7 +312,7 @@ The player's two buildable ships are not special cases in the code. They are row
 | **Fighter** | `Frigate` | `BurnDrive` | 2× `MassDriver` | 300 | 140 u/s |
 
 **The battleship is cut from the MVP and the reason is arithmetic, not taste.** It cost 2,400 credits
-against an income of about 15 a second — **160 seconds of total income, spending nothing on defence** —
+against an income of about 15 a second — **160 seconds of total income, spending nothing on defense** —
 while a strike force crosses the map in roughly 80 to 100 seconds. It was a unit that no match would
 ever contain, which made it untested content: one more mesh, one more component, one more damage row and
 one more branch in the AI, none of which anything would exercise. Worse, the question the design most
@@ -321,7 +321,7 @@ the mass never appears. Cutting it makes that deferral honest instead of acciden
 reinstating it a table row.
 
 **Note what the miner is:** it is not a ship type. It is a `Scout` with a mining tool where a weapon would
-go — and the station is a `Station` hull with two point-defence mounts and no drive. That three things
+go — and the station is a `Station` hull with two point-defense mounts and no drive. That three things
 that look like three kinds of object fall straight out of one component model, with no special case
 anywhere, is the evidence that the model is worth building before its interface exists.
 
@@ -351,9 +351,9 @@ table is the whole of the rock-paper-scissors, and it is six numbers:
 | | Small | Medium | Large |
 |---|---|---|---|
 | `MassDriver` | **70** | 60 | 25 |
-| `PointDefence` | 120 | 90 | 30 |
+| `PointDefense` | 120 | 90 | 30 |
 
-Mass drivers hurt small things and scratch heavy hulls; point defence is the mass driver taken further —
+Mass drivers hurt small things and scratch heavy hulls; point defense is the mass driver taken further —
 it shreds anything small that loiters and is irrelevant to anything large.
 
 ### The raid arithmetic, which was degenerate and is not any more
@@ -366,7 +366,7 @@ damage from the cheapest weapon — three independently reasonable choices whose
 |---|---|---|
 | One fighter kills one miner | **4.0 s** | 12.9 s |
 | One fighter kills one fighter | 20.0 s | 20.0 s |
-| Defence slower than offence by | **5.0×** | 1.6× |
+| Defense slower than offense by | **5.0×** | 1.6× |
 | Three fighters kill six miners in | **8.0 s** | 25.7 s |
 | Miners lost fleeing 1,500 units to the station | **all six** | about 3½ |
 
@@ -448,7 +448,7 @@ almost no game and all of the things that can turn out to be impossible.
 | **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots at 20 Hz, interpolates, and draws one shape in Direct3D 12 — **fullscreen**, world at 1440 × 960 scaled 2×, interface pass at physical resolution. A tap sends a move order, a local marker appears at once, and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the two-pass renderer, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable. **It also measures tap-to-visible latency, which is the number that decides how the game feels.** Everything after this is content. |
 | **M1** | **The fleet** | Two stations, the two designs, the current build item, move orders with ring assignment, selection by tap and by double tap. **A generated sky — a star field and a galaxy band from the match seed** ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)). Two clients on one host. Host-side command validation. |
 | **M2** | **The field** | The procedural generator on a real seed, asteroid fields, miners, the credit loop. Asteroids are inexhaustible. **Modules**: the `ModuleFrame` entity, placement by tap inside the build radius, the shipyard's build rate and the ore processor's cargo multiplier, both at two levels ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)). |
-| **M3** | **The fight** | Weapons, the damage table, the station's point defence, miner flight, **modules as targets and the near-side standoff they create**, destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
+| **M3** | **The fight** | Weapons, the damage table, the station's point defense, miner flight, **modules as targets and the near-side standoff they create**, **the off-screen damage alert and hull bars in the world** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)), destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
 | **M4** | **The opponent, and the other two slots** | The AI of §8; three and four players; the `Cruiser` reinstated as a design with its weapon and its damage row — the milestone that can finally answer whether speed counters mass. **Research, and the research station module with it**; the shipyard's levels start gating hulls and the designer rather than only build rate. |
 
 **What M0 to M3 deliberately omit, and what each omission buys:** two players rather than four (a

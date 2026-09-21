@@ -120,7 +120,7 @@ step back is reading your own diff against §1's table.** The five that get miss
 `_camelCase` on every parameter · `m_camelCase` on private class state and plain `camelCase` on a public
 aggregate's fields · `UPPER_CASE` for a `constexpr` but `PascalCase` for an enumerator · no `I`, `C`, `E`,
 `Base`, `Abstract` or `Impl` affix on any type · one spelling per family, and it is the SDK's — `color`,
-`initialize`, `normalize`, `behavior`, `center`. **Prose spells `colour`; an identifier spells `color`**
+`initialize`, `normalize`, `behavior`, `center`. **Prose and identifiers both spell `color`** — R11 covered only identifiers until 2026-09-21
 (R11), and both appear in the same file all through this tree.
 
 ### What a step's report says
@@ -161,7 +161,7 @@ M0.1 bytes ─► M0.2 header ─► M0.3 host socket ─┐
 development loop ([`ADR-008`](../ADR/ADR-008-the-host-address-is-configuration.md)); M0.16 is the one that
 can invalidate R13's whole arrangement ([`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md)) and
 the one that settles the world's resolution, which
-[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) defaults to 1:1 on a judgement rather than a
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) defaults to 1:1 on a judgment rather than a
 measurement.
 Both are cheap, and both are why M0 is ordered the way it is.
 
@@ -224,7 +224,7 @@ header and names what is in them, but not every width — appropriate for a desi
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
 turns ADR-003's 1,136 bytes from arithmetic into a measurement.
 
-**F8 — M0 is about half the engineering in the MVP, and it is the milestone labelled "no game at all".**
+**F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
 Twenty-three steps against M2's eleven, touching all eight projects, containing every subsystem that can
 turn out to be impossible. That is the correct shape for a risk-ordered plan, and it is said here because
 "M0: the wire" reads like a week and is not one.

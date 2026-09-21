@@ -150,7 +150,7 @@ def upstream(a):
     print(f"  {capacity / max(a.selection, 1):.1f}x amplification{cite}. The FORMAT is not the")
     print(f"  constraint. The RETRANSMIT WINDOW is: at a full selection, {fits} commands in flight"
           f" fit and")
-    print(f"  {fits + 1} fragment. That count is behaviour, not format \u2014 a stalled ack, not a"
+    print(f"  {fits + 1} fragment. That count is behavior, not format \u2014 a stalled ack, not a"
           " fast player.")
     print("  Section 5 answers it structurally: the packet is filled OLDEST-FIRST and stops when the")
     print("  next command will not fit, so it cannot exceed the payload, no order is dropped, and the")

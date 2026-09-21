@@ -67,7 +67,7 @@ not affected — the identity match makes that two single taps. The real case is
 ship twice meaning to re-select it, and getting the group. That is a recoverable mistake and a cheap one:
 the fix is a third tap.
 
-**ADR-010's circle is untouched.** Screen-space, 192 authored pixels, drawn during the gesture, centred on
+**ADR-010's circle is untouched.** Screen-space, 192 authored pixels, drawn during the gesture, centered on
 the ship, own ships only, same design only, fixed radius. **The camera is still the group-size control.**
 The wedge that ADR-010 records at a raking camera is still there and is still M1's to watch — though
 `Interface.md` §5's pitch floor now bounds how bad it can get, which is a bound ADR-010 did not have.

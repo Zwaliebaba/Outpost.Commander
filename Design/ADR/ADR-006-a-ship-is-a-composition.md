@@ -37,7 +37,7 @@ code, and so is the station:
 |---|---|---|---|
 | Miner | `Scout` | `IonDrive` | 1× `MiningLaser` |
 | Fighter | `Frigate` | `BurnDrive` | 2× `MassDriver` |
-| Station | `Station` | *(none)* | 2× `PointDefence` |
+| Station | `Station` | *(none)* | 2× `PointDefense` |
 
 A heavy design on the `Cruiser` hull was cut from the MVP on 2026-09-20 for reasons of economy rather than
 model (`Design/GameDesign.md` §6, §10). **The hull stays in the catalog and the derivation tests still
@@ -50,7 +50,7 @@ needs: research adds an availability gate over a set of component identities and
 ## Consequences
 
 **The miner is the evidence.** It is not a ship type — it is a `Scout` hull with a mining tool where a
-weapon would go, and the station is a hull with two point-defence mounts and no drive. That three things
+weapon would go, and the station is a hull with two point-defense mounts and no drive. That three things
 which look like three kinds of object fall out of one model with no special case anywhere is what says
 the model is right, and it costs nothing today.
 

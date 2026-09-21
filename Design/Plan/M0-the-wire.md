@@ -14,7 +14,7 @@ between them a handful of functions that return their own name so that every edg
 exercised by something. Nothing below builds on anything that exists; it all builds on the shell.
 
 **Twenty-three steps and three gates.** M0 is roughly half the engineering in the MVP and it is the
-milestone labelled "no game at all" (`README.md` F8). That is the correct shape for a plan ordered by risk
+milestone labeled "no game at all" (`README.md` F8). That is the correct shape for a plan ordered by risk
 — everything that can turn out to be impossible is in here — and it is said out loud because the name
 reads like a week.
 
@@ -66,7 +66,7 @@ Reassembly itself is M4.3 and is not written here.
 `Tests/NeuronCoreTests/PacketHeaderTests.cpp`.
 
 **Done when:** the header round trips; a mismatched protocol version is rejected by the reader and the
-rejection is distinguishable from a malformed packet; a single-fragment packet is recognised as complete
+rejection is distinguishable from a malformed packet; a single-fragment packet is recognized as complete
 without consulting a reassembler that does not exist.
 
 ### M0.3 — The Winsock2 transport · `NeuronServer` · `NeuronServerTests` · agent
@@ -295,7 +295,7 @@ unfiltered, the default; 1440 × 960 into 2880 × 1920 is exactly 2 and point-sa
 interface fit from 1440 × 960 into 2880 × 1920 is exactly 2 whichever the world is doing** — that assertion
 is the regression the split exists to prevent and it is the most valuable test in this step. Also: the
 world at 1:1 into 1920 × 1080 is 0.5625, bilinear and pillarboxed — the development case, deliberately not
-the optimised one; a 16:9 window letterboxes and a 3:2 window does not; and the DIP conversion is pinned at
+the optimized one; a 16:9 window letterboxes and a 3:2 window does not; and the DIP conversion is pinned at
 100%, 150%, 200% and a fractional scale.
 
 ### M0.13 — The device, the swap chain and frames in flight · `NeuronClient` · hand · agent
@@ -342,7 +342,7 @@ change the decision implies.
 and the indirection stays: it is what makes four samples a constant change rather than a rewrite, because
 a flip-model back buffer cannot be multisampled (ADR-016).
 
-**Adds:** the off-screen colour target and its depth buffer at **the size the world scale gives** — two
+**Adds:** the off-screen color target and its depth buffer at **the size the world scale gives** — two
 constants now, the scale and the sample count (ADR-016). The default scale is 1:1, so on the target device
 the target is 2880 × 1920; the MVP ships one sample and `TechnicalDesign.md` §6 expects four to be the
 first change. Then the present step that fits the target into the back buffer through **M0.12's world
@@ -367,7 +367,7 @@ scale. Then take the frame time at both, at one sample, **on x64 and on ARM64.**
 
 **Done when:** the filter is confirmed by eye at both — unfiltered and pixel-exact at 1:1, point-sampled
 and cleanly doubled at 0.5 — **and the four frame times are written into ADR-016's Measurements along with
-which scale ships.** ADR-016 defaults to 1:1 on a judgement and names this gate as the thing that settles
+which scale ships.** ADR-016 defaults to 1:1 on a judgment and names this gate as the thing that settles
 it; if 1:1 does not hold the budget on ARM64 the scale goes to 0.5 and **the constant is the only thing
 that changes.**
 
@@ -481,7 +481,7 @@ anchor solve this camera is driven by.**
 **Build the anchor solve, not a delta-accumulator.** At `ManipulationStarted` the ray through the contact
 centroid meets the plane and that world point is kept for the life of the gesture. Each update: scale to a
 new distance and hence a new pitch, rotation to a new heading, **then one solve** placing the focus so the
-anchor lands under the current centroid at the *new* pose. **Do not also apply the recogniser's
+anchor lands under the current centroid at the *new* pose. **Do not also apply the recognizer's
 translation** — it is already in the solve, and applying both is the defect that makes the camera
 accelerate. One finger is the same solve with no scale and no rotation, which is why §3's "two fingers pan
 identically to one" needs no separate code.
@@ -501,7 +501,7 @@ holds at the corners **and lets the anchor slip rather than fighting it**; the c
 pitch to zoom is monotonic at both ends of the range; and **the pitch floor holds** — `Interface.md` §5
 pins a 40° vertical field of view and a 30° minimum pitch, which puts the top edge of the frame 10° below
 horizontal and the horizon off screen. **Assert the stretch ratio**, 5.67 camera heights at the top edge
-against 1.73 at the centre: that ratio is what bounds tap error near the top of the frame and what bounds
+against 1.73 at the center: that ratio is what bounds tap error near the top of the frame and what bounds
 ADR-010's wedge, and it grows without bound if the floor slips.
 
 ### M0.21 — The tap, the order and the local marker · `GameClient` · `GameClientTests` · agent
@@ -523,14 +523,14 @@ failure is the expensive one — you miss the ship, hit empty space, and the sel
 
 **Nothing is predicted.** The entity does not move until the host says it did. R19 forbids the client
 simulating, not the client drawing what it asked for, and holding that line precisely is the whole of this
-step — it is also the step where a well-meaning optimisation ("just move it locally, the host will agree")
+step — it is also the step where a well-meaning optimization ("just move it locally, the host will agree")
 breaks the architecture.
 
 **Files:** `GameClient/OrderMarker.h` `.cpp`, `GameClient/TapOrder.h` `.cpp`; `GameClient.vcxproj` +
 `.filters`; `Tests/GameClientTests/OrderMarkerTests.cpp`.
 
 **Done when:** a marker appears on the resolving gesture, survives an unacknowledged round trip, and clears
-on the acknowledgement that covers it — including the case where one later sequence clears two markers at
+on the acknowledgment that covers it — including the case where one later sequence clears two markers at
 once; and **nothing in `GameClient` moves an entity.**
 
 ### M0.22 — The package · `OutpostCommander`, `GameClient` · hand · agent

@@ -26,9 +26,9 @@ same function driven by the match PRNG so that no two rocks are identical.
 
 **Normals are baked per face onto split vertices.** That is flat shading, which is what a low-polygon
 faceted look wants; there is no smoothing group to decide, no tangent basis to get wrong and no vertex
-cache to optimise at this scale.
+cache to optimize at this scale.
 
-**Team colour is a vertex attribute** selecting between a hull palette and the owner's colour, so one
+**Team color is a vertex attribute** selecting between a hull palette and the owner's color, so one
 instanced draw covers every ship of a hull regardless of owner.
 
 There is **no mesh file, no loader, no asset build step and no texture** in the MVP.

@@ -47,7 +47,7 @@ free choice as a natural consequence invites someone to "fix" the swap chain to 
 Everything that is not this panel is correct rather than crisp, which is what R13 buys. A Surface Pro 7
 (12.3 inches, 2736 × 1824) resamples slightly. A 1080p monitor — the display a developer actually works
 on — now *downscales* by 0.5625, which is supersampling; that is the *development* case and it is still
-deliberately not the one optimised for, but it has stopped being the ugly one.
+deliberately not the one optimized for, but it has stopped being the ugly one.
 
 **At 1:1 the scene target is 5.53 megapixels and at 0.5 it is 1.38**, and that difference is the whole of
 what the scale buys. 4× multisampling costs 22.1 megasamples at the first and 5.5 at the second, and space
@@ -91,9 +91,13 @@ a pure function with a suite over it, and a number nobody wrote down is a number
 | **Double-tap window** | — | — | 300 ms, and the second tap is matched **by entity identity** rather than by distance ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) — a moving ship must still be the same ship. |
 | **Contact rejection** | 78 | 14.9 | A contact whose `ContactRect` exceeds this in either dimension is a palm, not a finger, and is dropped at the seam (§2). A fingertip is 8–12 mm. |
 
-**The pick order is stated, because "what is under it" is not a total order when things overlap:** own
-ship, then own station or module, then hostile, then asteroid, then empty space. Nearest wins inside a
-tier; the tier wins across one.
+**The pick order is stated, because "what is under it" is not a total order when things overlap:** **any
+interface target first**, then own ship, then own station or module, then hostile, then asteroid, then
+empty space. Nearest wins inside a tier; the tier wins across one.
+
+**The interface heading that list is not obvious and was missing.** This order named only world entities
+until [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md), and said nothing about a tap
+that lands on a panel and a ship at once — which is every tap near the bottom of the screen.
 
 ### Where the hands are
 
@@ -120,10 +124,10 @@ screen must not be under that hand. The selection panel is the readout that matt
 `Windows::UI::Input::GestureRecognizer` is the single path from the `CoreWindow` into the game (R21).
 `PointerPressed`, `PointerMoved` and `PointerReleased` are forwarded to it; **a `PointerPoint` whose
 `PointerDeviceType` is not `Touch` is dropped at exactly one site**, and keyboard events are not
-subscribed at all. The recogniser emits `Tapped`, `Holding` and manipulation updates carrying translation,
+subscribed at all. The recognizer emits `Tapped`, `Holding` and manipulation updates carrying translation,
 scale and rotation, and those are the only interactions that exist.
 
-**The seam counts contacts, because the recogniser does not tell you.** A manipulation means two different
+**The seam counts contacts, because the recognizer does not tell you.** A manipulation means two different
 things depending on how many fingers began it, so the seam records the contact count at
 `ManipulationStarted` and the manipulation keeps that meaning until it ends. **Putting a second finger
 down mid-drag does not change what the drag is doing** — the alternative is a camera that lurches whenever
@@ -150,12 +154,12 @@ an instance of it.
 | Gesture | What it does |
 |---|---|
 | **One-finger tap** | The verb. What it does depends on what is under it — §4. |
-| **One-finger double tap on your ship** | Selects that ship, then expands to **every ship of the same design within a circle centred on it**. The first tap fires at once; the second upgrades it ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). |
+| **One-finger double tap on your ship** | Selects that ship, then expands to **every ship of the same design within a circle centered on it**. The first tap fires at once; the second upgrades it ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). |
 | **One-finger drag** | Pans the camera. **Unconditionally** — it has no second meaning and never has. |
 | **Two-finger pinch** | Zooms — and with it, pitches. |
 | **Two-finger rotate** | Orbits. |
 | **Two-finger drag** | Pans, identically to one finger. It comes free from the same manipulation and refusing it would be a surprise. |
-| **One-finger hold on empty space** | **Recentres** the camera on the selection, or on your station when nothing is selected ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). |
+| **One-finger hold on empty space** | **Recenters** the camera on the selection, or on your station when nothing is selected ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). |
 | **One-finger hold on a ship** | **Nothing**, and deliberately — the second of the two verbs ADR-017 freed is still banked (§7). |
 
 **One finger has exactly two meanings, separated by whether it moved**, which is as unambiguous as a single
@@ -163,7 +167,7 @@ pointer gets. A tap is the verb, a drag is the camera, and **§1's 16-pixel tap 
 slightly sloppy tap pans instead of issuing an order. That is the right failure: an accidental pan costs
 nothing and an accidental move order costs a fleet.
 
-**The threshold is pinned here rather than inherited from the recogniser**, because the asymmetry above
+**The threshold is pinned here rather than inherited from the recognizer**, because the asymmetry above
 only holds if the number is right. Too small and a normal handheld tap — five to ten physical pixels of
 travel is ordinary — loses the order *and* displaces the camera, which is two costs rather than none. The
 pan begins at the point the threshold was crossed, so nothing jumps when it engages.
@@ -204,7 +208,7 @@ A tap on empty space with **nothing** selected does nothing.
 ### Selecting more than one
 
 **A double tap on one of your ships selects it and then every ship of the same design within a circle
-centred on it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). **The first tap selects
+centered on it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). **The first tap selects
 that one ship immediately**, exactly as a single tap always has; a second tap that resolves to the *same
 ship* within 300 milliseconds expands the result. Nothing is deferred waiting to see whether a second tap
 arrives, so no tap in this game got slower, and an expansion abandoned halfway leaves one ship selected
@@ -215,7 +219,7 @@ which asked a hand to stay motionless for half a second on a handheld device in 
 
 The circle is unchanged: **screen-space, 192 authored pixels in radius** — four times the touch floor,
 about a quarter of the frame's width — **drawn during the gesture** so there is no invisible rule about
-what is included, centred on the *ship* rather than the finger because the finger is covering the ship,
+what is included, centered on the *ship* rather than the finger because the finger is covering the ship,
 own ships only, same design only, fixed radius.
 
 **The circle is largely under the player's hand, so the count is read somewhere else.** At 192 pixels of
@@ -273,7 +277,7 @@ and at a different rate again at the top of the screen than the bottom, because 
 does.
 
 **One solve does all of it**, so scale gives the new distance and pitch, rotation gives the new heading,
-and then a single anchor solve places the focus. **The recogniser's translation is not applied on top** —
+and then a single anchor solve places the focus. **The recognizer's translation is not applied on top** —
 that double-counts, and a camera that accelerates is what it looks like. Orbit turns about the anchor
 rather than the focus for free, and a one-finger drag is the same solve with no scale and no rotation,
 which is why §3's "two fingers pan identically to one" is true by construction here rather than by care.
@@ -296,7 +300,7 @@ Both are the same effect and one number bounds both.
 
 **The vertical field of view is 40° and the minimum pitch is 30° above the plane.** At that floor the top
 edge of the frame looks 10° down, which meets the plane at **5.67 camera heights against 1.73 at the
-frame's centre — a 3.3× stretch, top to middle**, and the horizon is never on screen. Lowering the floor
+frame's center — a 3.3× stretch, top to middle**, and the horizon is never on screen. Lowering the floor
 buys a more raking silhouette and pays for it on that ratio, which grows without bound as the top edge
 approaches the horizontal; raising it costs the look. **M1.8 pins both numbers and states the ratio it
 measured**, and the wedge ADR-010 warns about cannot be worse than this. The floor bounds a third thing:
@@ -354,7 +358,7 @@ silhouette legibility this design is built on.
 
 **What a minimap does provide is a way back, and that is a hold rather than a panel.** `GameDesign.md` §7
 names the problem — a defender has to be watching the right part of a 16,384-unit map at the right moment
-— and until now the only way back to your own base was panning there. **A hold on empty space recentres**
+— and until now the only way back to your own base was panning there. **A hold on empty space recenters**
 on the selection, or on your station when nothing is selected (ADR-018, spending one of the two verbs
 ADR-017 freed). It is the cheap half of a minimap without the second render, the second coordinate space
 or the second hit test.
@@ -363,21 +367,29 @@ or the second hit test.
 
 ## 6. The panels
 
-Four things are drawn over the scene. All of them are `GameClient` (R20), and all draw in the interface
+Five things are drawn over the scene. All of them are `GameClient` (R20), and all draw in the interface
 pass at physical resolution (§1).
 
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
 | **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
-| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and greyed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
-| **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
+| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
+| **Alert** | The screen edge, in the direction of the event | **You are being attacked somewhere you cannot see** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). Derived from the fire events and the removal list the client already has, so it costs no wire bytes; **nothing shows if the event is already on screen**; one indicator per cluster with a count; fades over a few seconds. **Tapping it recenters the camera there** — a hit-test rectangle rather than a gesture, so R21's budget is untouched. 64 × 64, the combat tier. |
+| **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends — **which names the winner**, since from M4 there are three and four players and "you lost" does not say to whom — and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48, and §1's three tiers decide which are larger. **The build
 buttons are 96 × 96** — 18.3 mm, twice the floor — because they are the ones a player hits while something
 is exploding. **The selection panel's design groups, its clear target and the build queue's cancel are
 64 × 64**, 12.2 mm: they are hit under the same pressure as the build buttons and were previously at the
 floor, which is the size for something you reach for between fights.
+
+**Hull bars are drawn in the world too, and only on damaged ships.** The selection panel shows the hull of
+what you have selected, which leaves everything else invisible — and reading fleet health at a glance is
+most of what an RTS player does with their eyes. A ship at full hull draws nothing, so the map is quiet
+until something is wrong and the cost is one quad per damaged ship, at most 110. **They are positioned by
+projecting the ship's world position and then through the interface's fit transform** (ADR-011, ADR-016),
+which is the same path a world-anchored marker already takes.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so every panel
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
@@ -390,7 +402,7 @@ empty space is a move order, and the station cannot move. So with the station se
 **a tap inside the build radius places it** ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)).
 
 **The radius is drawn while a module is armed** — 400 world units around the station, the same distance as
-its point defence — and a tap outside it, on the station, or on another module does nothing. A second tap
+its point defense — and a tap outside it, on the station, or on another module does nothing. A second tap
 on the armed module in the panel disarms it.
 
 The preview is client-side and the host validates: the same rule evaluated on both sides, from `GameCore`,
@@ -422,7 +434,7 @@ returns straight to play. That is mechanically free: snapshots are self-containe
 resynchronisation to get wrong.
 
 **The player's fleet was at risk the whole time they were away**, and nothing mitigates that. It is the
-honest consequence of a match that does not pause, and it is the same behaviour a disconnected player gets
+honest consequence of a match that does not pause, and it is the same behavior a disconnected player gets
 (`GameDesign.md` §2).
 
 ### What this document does not settle
@@ -430,7 +442,7 @@ honest consequence of a match that does not pause, and it is the same behaviour 
 **One of the two freed `Holding` gestures is spent and the other is banked.** `Holding` was the one verb
 left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md); moving group selection onto
 a double tap ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) freed it over a ship as well,
-making the reserve two. **A hold on empty space now recentres the camera**
+making the reserve two. **A hold on empty space now recenters the camera**
 ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — it went to a navigation hole the MVP
 has today rather than to a feature it might want later, which is the test.
 

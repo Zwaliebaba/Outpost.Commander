@@ -19,7 +19,7 @@ the argument that made its 4× shading multiplier affordable was that the conten
 against a **mostly black background**. A sky evaluated analytically per pixel fills all 5,529,600 of them
 with three or four octaves of noise. At an estimated 150–250 ALU per pixel that is plausibly **2–5 ms a
 frame** — 12–30% of a 16.7 ms budget, and 24–60% of the 8.3 ms one Q34 is weighing. Those figures are
-estimates and are labelled as such; the point stands without them being exact.
+estimates and are labeled as such; the point stands without them being exact.
 
 **And a cubemap alone cannot hold the stars.** Zoom changes distance rather than field of view, so the
 40° vertical FOV is fixed: 1,920 physical pixels over 40° is **0.0208° per pixel**. A cube face spans 90°,
@@ -37,11 +37,11 @@ Six faces at **512², RGBA8, 6.3 MB**, rendered at match start with the expensiv
 1.6 M pixels, once. Per frame it costs one cube fetch.
 
 **What makes it read as a galaxy rather than a smear is the structure, not the noise.** The band is
-brighter and wider toward the galactic centre, so it has a bulge on one side rather than uniform
+brighter and wider toward the galactic center, so it has a bulge on one side rather than uniform
 thickness; and it carries **dark dust lanes**, which are subtractive. A band without dust lanes looks like
 a stain.
 
-### 2. The stars are geometry, and they are modelled on a real sky
+### 2. The stars are geometry, and they are modeled on a real sky
 
 **About 3,000 instanced quads** on a unit sphere, positions and properties from the match seed. One draw
 call, generatable from `SV_VertexID` with no vertex buffer at all. Three thousand is not an arbitrary
@@ -58,7 +58,7 @@ star is a point source; what differs is how much the eye and the sensor smear it
 **8 scene-target pixels for the brightest tier down to 1.5 for the faintest**, with a soft radial falloff
 baked into the sprite — which also approximates a bloom this design is not going to write.
 
-**Colour is blackbody, and it is heavily desaturated.** Stellar colour is surface temperature: hot stars
+**Color is blackbody, and it is heavily desaturated.** Stellar color is surface temperature: hot stars
 blue-white at 10,000 K and up, the Sun yellow at 5,800 K, cool dwarfs orange-red near 3,000 K. A pinned
 table of about eight temperature stops with linear interpolation gives the chromaticity — generated in
 code, no data file, and a table a test can pin exactly. **Then desaturate to roughly 20%.** Real stars
@@ -66,7 +66,7 @@ read very nearly white and the tint is subtle; oversaturated red and blue confet
 common way a procedural star field announces itself as fake.
 
 **Temperature correlates with brightness, and that correlation is the detail that sells it.** Hot stars
-are luminous, so the bright tiers skew blue-white and the faint ones skew orange. Drawing colour
+are luminous, so the bright tiers skew blue-white and the faint ones skew orange. Drawing color
 independently of magnitude produces a sky that is subtly, unnameably wrong.
 
 **Star density rises toward the galactic plane.** Biasing the direction sampling toward the band is free
@@ -79,7 +79,7 @@ a twinkle is the opposite of the "natural" this was asked to be. A sparkle was a
 put, and the request was withdrawn on it.
 
 **Two substitutes were considered and are also out.** Diffraction spikes on the brightest stars read as
-brilliance, but they are a *telescope* artefact — the player is looking at space, not through an
+brilliance, but they are a *telescope* artifact — the player is looking at space, not through an
 instrument, so spikes would be the same mistake in a more flattering costume. A slow per-star shimmer
 would stop a static field reading as a decal, but nothing here is static: the camera orbits and pitches,
 so the sky already moves against the frame.
@@ -132,7 +132,7 @@ acceptable and it is one more small argument for the 1:1 default.
 **The sky is fixed in world space, which makes it a compass.** It rotates with heading and pitch and does
 not translate with pan, so panning across a 16,384-unit map leaves it still. With no minimap and no
 compass that is a real navigational aid rather than decoration, and it is the same problem
-[`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) added snap-to-cardinal and a recentre for.
+[`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) added snap-to-cardinal and a recenter for.
 
 **What is excluded: bloom.** A full-screen blur chain is a much larger change, it multiplies exactly the
 cost `ADR-016` is exposed to, and under the luminance ceiling above there would be very little for it to
@@ -150,9 +150,9 @@ None yet. Three are owed at **M1.16**:
 2. **Whether the fleet still reads against it** at the tactical zoom, which is the thing `ADR-005` is
    worried about and is judged by looking rather than by a number.
 3. **Whether the sky looks like a sky.** The failure modes are known and specific: uniform brightness
-   reading as noise, oversaturated colour reading as confetti, and a band without dust lanes reading as a
+   reading as noise, oversaturated color reading as confetti, and a band without dust lanes reading as a
    stain. All three are looked at, and all three have a named cause if they appear.
 
-The star count, the magnitude ratio and the colour temperatures are **arithmetic on the real sky** rather
+The star count, the magnitude ratio and the color temperatures are **arithmetic on the real sky** rather
 than measurements of this one: roughly 5,000–6,000 stars to magnitude 6, counts multiplying by about 2.5
 per step, and blackbody chromaticity from surface temperature.

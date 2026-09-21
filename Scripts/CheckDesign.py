@@ -9,7 +9,7 @@ repeatedly, which is why this exists rather than a reminder to be careful.
     python3 Scripts/CheckDesign.py
     python3 Scripts/CheckDesign.py --root .
 
-Prose is normalised before matching: a figure wraps across a line break, and a naive grep for
+Prose is normalized before matching: a figure wraps across a line break, and a naive grep for
 '96 bytes' misses '96\\nbytes'. An earlier sweep let exactly that through.
 
 THE DATAGRAM FIGURES ARE NOT LISTED HERE. They are imported from the datagram-budget skill's
@@ -55,7 +55,7 @@ MANIFEST = [
      ["Design/Interface.md", "Design/Plan/M0-the-wire.md"]),
     ("the spent Holding", [r"[Tt]wo verbs are banked rather than one",
                            r"\`Holding\` means nothing anywhere"],
-     r"recentres", ["Design/Interface.md"]),
+     r"recenters", ["Design/Interface.md"]),
     # ADR-019 says it out loud: "a backdrop that nobody pinned gets brighter one commit at a time."
     ("the sky's luminance ceiling", [], r"12% of full white",
      ["Design/ADR/ADR-005-meshes-are-generated-in-code.md",

@@ -9,10 +9,10 @@ name: Build
 #
 # BE HONEST ABOUT WHAT THAT LEAVES UNGATED, because it is not nothing:
 #
-#   RELEASE. AGENTS.md section 3 requires every setting that is not about optimisation to read
+#   RELEASE. AGENTS.md section 3 requires every setting that is not about optimization to read
 #   identically in the two configurations, and no checker in this tree asserts it. Nothing here
 #   compiles Release, so a Release that quietly lost an include directory, sat on an older language
-#   standard, or breaks only under optimisation reaches main green. It is caught by whoever builds
+#   standard, or breaks only under optimization reaches main green. It is caught by whoever builds
 #   Release before shipping -- see AGENTS.md section 3 and the pull request checklist.
 #
 #   ARM64. The client is a packaged application for a device that may well be one. Nothing here
@@ -24,7 +24,7 @@ name: Build
 # asserts section 3's table over every project file in about a second, so a setting that drifted into
 # a configuration-conditioned group, a lowered language standard or a platform that inherits
 # EnableEnhancedInstructionSet is caught here rather than by whoever ships. IT STILL COMPILES
-# NOTHING. A Release that breaks only under optimisation, or an ARM64 that assumes an x86 intrinsic,
+# NOTHING. A Release that breaks only under optimization, or an ARM64 that assumes an x86 intrinsic,
 # reaches main green exactly as before -- configuration drift is what closed, not the platforms.
 #
 # ── What is not pinned, and what is ────────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ jobs:
           if (-not $vstest) { throw "vstest.console.exe not found." }
           # The console logger at detailed verbosity prints what a test wrote (Logger::WriteMessage)
           # for passed tests too, which is how a measurement a test makes reaches a reader of this
-          # log rather than only the TestResults artefact.
+          # log rather than only the TestResults artifact.
           & $vstest $suites /Platform:x64 /Logger:trx /Logger:"console;verbosity=detailed" /ResultsDirectory:TestResults
           if ($LASTEXITCODE -ne 0) { throw "vstest reported failures." }
 
@@ -264,6 +264,12 @@ jobs:
         # A float in GameCore, an unordered container, a wall-clock read, an unpinned PRNG. Each
         # compiles and passes every test; each surfaces as an x64-against-ARM64 desync months later.
         run: python3 Scripts/CheckDeterminism.py
+
+      - name: US spelling, in prose and identifiers alike
+        # R11's rule since day one for identifiers, extended to prose on 2026-09-21 and enforced
+        # by anything for the first time. It found a weapon identity in the catalog still spelled
+        # the British way, which is how long an unenforced naming rule survives.
+        run: python3 Scripts/CheckSpelling.py
 
       - name: The design documents agree
         # A figure here is stated in three places by design. When one moves and the others do not,

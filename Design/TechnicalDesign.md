@@ -132,7 +132,7 @@ There is nothing to re-litigate here.
 
 ### Downstream: full snapshots, no delta
 
-**Every snapshot is self-contained.** No baselines, no acknowledgements, no per-client history, no
+**Every snapshot is self-contained.** No baselines, no acknowledgments, no per-client history, no
 accumulated client state. A client that misses a packet misses one frame of animation and is fully correct
 on the next one. This is [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) and it is the single
 largest simplification in the MVP.
@@ -213,10 +213,10 @@ arrived.
 
 **Asteroids are not replicated at all before M3**, because inexhaustible asteroids have no simulation
 state (`GameDesign.md` §4) and the client derives their positions from the seed (R23). From M3, ore
-remaining is sent **sparsely** — only asteroids whose quantised ore bucket changed since the last
+remaining is sent **sparsely** — only asteroids whose quantized ore bucket changed since the last
 snapshot, which is at most one per active miner, four bytes each.
 
-**The host serialises a per-player entity set, not the world.** The MVP has no fog of war and that set is
+**The host serializes a per-player entity set, not the world.** The MVP has no fog of war and that set is
 everything, but it is a list the host builds, so visibility later changes one function and not the format.
 
 ### Upstream: commands, made reliable by the snapshot
@@ -231,7 +231,7 @@ about thirty lines, with no general reliability layer.
 acknowledged" bounds the packet by how many commands are outstanding, and nothing about the format bounds
 *that*: at the peak 110-identity selection a command is 228 bytes, so **five fit in the pinned 1,232-byte
 payload and a sixth fragments**. What reaches six is not a fast player — touch cannot issue five orders in
-200 ms — it is a **stalled acknowledgement**: a host hitch or a run of lost snapshots, which is exactly the
+200 ms — it is a **stalled acknowledgment**: a host hitch or a run of lost snapshots, which is exactly the
 load under which a fragmented command packet is worst. Filling oldest-first makes the bound structural
 rather than a constant to tune: the packet cannot exceed the payload, no order is ever dropped, and the
 sequence never gains a gap — which matters because the host applies in sequence order and ignores anything
@@ -240,7 +240,7 @@ cost is that the newest order waits a packet, 50 ms, when the window is that dee
 on the stall that made it deep.
 
 **The host validates every command, and this is correctness rather than security.** §5 declines
-authentication and any defence against a hostile client; that exclusion silently covered ownership and
+authentication and any defense against a hostile client; that exclusion silently covered ownership and
 bounds checks too, which are a different category. A 1,232-byte command packet holds **610 identities
 against a peak of 110** — a 5.5× amplification into a single-threaded loop, reachable from an ordinary bug
 or a reordered packet with no attacker anywhere. So the host: rejects entities the sender does not own,
@@ -303,7 +303,7 @@ client actually needs: if replies to a bound socket require the inbound form `-i
 `CheckNetIsolation.exe` must stay running the entire time the client is listening, and the
 single-machine loop stops being worth having.
 
-Encryption, authentication and any defence against a hostile client are not in the MVP. The protocol
+Encryption, authentication and any defense against a hostile client are not in the MVP. The protocol
 version in the header refuses a mismatched build, and that is the whole of it.
 
 ---
@@ -367,8 +367,8 @@ it takes no time input, so it is generated once and never updated. Being floats 
 is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
-colour. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
-flight with a fence per frame. None of this is near any limit, and the renderer should not be optimised
+color. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
+flight with a fence per frame. None of this is near any limit, and the renderer should not be optimized
 until something measured says to.
 
 **Text is DirectWrite rasterised into an atlas we own**
@@ -378,7 +378,7 @@ window**, so a resize invalidates it, as does device removal; both are rebuild p
 frame visibly. **No Direct2D and no `ID3D11On12Device`**,
 both of which R12 bans by name, which closes the route every D3D12 text sample takes. Coverage is
 rasterised as ClearType and the three subpixel values averaged into one channel, because subpixel output
-would arrive as colour fringing after the 2× scale. The font family is pinned and a missing family fails
+would arrive as color fringing after the 2× scale. The font family is pinned and a missing family fails
 at startup rather than substituting, since a substituted font has different advance widths and R13 requires
 every layout number to be unconditional.
 
@@ -405,8 +405,8 @@ noticing. There is no glTF loader here, no FBX, no DirectXTK12, and there will n
 **Meshes are generated in code.** A hull is a function that emits a few dozen triangles — a fuselage, an
 engine block, a pair of wings — parameterised so the three hulls share the code that makes them. Normals
 are baked per face onto split vertices, which is flat shading, which is what a low-polygon faceted look
-wants anyway; there is no smoothing group to decide and no tangent basis to get wrong. Team colour is a
-vertex attribute selecting between a hull palette and the owner's colour.
+wants anyway; there is no smoothing group to decide and no tangent basis to get wrong. Team color is a
+vertex attribute selecting between a hull palette and the owner's color.
 
 This costs nothing today and buys an MVP with **no file format, no loader, no asset build step and no
 third-party anything**. It is [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md), and what reopens it
@@ -430,7 +430,7 @@ and the placeholder goes the day the first real test lands.
 | `NeuronClientTests` | The blackbody temperature-to-chromaticity table — eight stops, interpolated, **pinned exactly**, because it is the number that decides whether the sky reads as a sky or as confetti ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)); that the magnitude tiers come out in the 1 : 3 : 9 : 27 : 81 : 243 ratio for a given seed, and that the same seed gives the same sky twice. The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, that a glyph's advance width survives the round trip, and **the interface's own authored-to-physical transform**, which is a second value from the same computation rather than the present step's ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)) — pinned at both world scales, because it must not move when the world's does. Plus the gesture constants `Interface.md` §1 derives: the 16-pixel tap slop either side of its threshold, the rotation deadzone's **latch**, the 2% scale deadzone, and that a contact wider than 78 authored pixels never becomes an input record. |
 | `NeuronServerTests` | The Winsock2 endpoint against a loopback peer: send, receive, a short read, a datagram larger than the buffer. |
 | `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**, and every module level; **module placement validity** — inside the radius, outside it, overlapping the station, overlapping another module, and the fifth module against a cap of four; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including a removal list, a fire event and a snapshot at both player counts. |
-| `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles; **the anchor solve** ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — the property is *project the anchor and it lands on the centroid*, across the pitch range, for one contact and for two, with the scale and rotation applied, and with **no drift over a long synthetic gesture**, which is the failure this model actually has; that the clamp stops the focus and lets the anchor slip rather than fighting it; and that `pitch(distance)` **saturates** at the floor instead of ending the zoom range; **the double-tap selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)), now bounded by `Interface.md` §5's pitch floor; **that the first tap selects one ship and only a second tap resolving to the same entity expands it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)), including two taps on *different* ships staying two single taps; the 24-pixel pick radius and its tier order against overlapping candidates; and the order marker's lifetime against an acknowledgement. |
+| `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles; **the anchor solve** ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — the property is *project the anchor and it lands on the centroid*, across the pitch range, for one contact and for two, with the scale and rotation applied, and with **no drift over a long synthetic gesture**, which is the failure this model actually has; that the clamp stops the focus and lets the anchor slip rather than fighting it; and that `pitch(distance)` **saturates** at the floor instead of ending the zoom range; **the double-tap selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)), now bounded by `Interface.md` §5's pitch floor; **that the first tap selects one ship and only a second tap resolving to the same entity expands it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)), including two taps on *different* ships staying two single taps; the 24-pixel pick radius and its tier order against overlapping candidates; the order marker's lifetime against an acknowledgment; and **the alert** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)) — that a fire event naming one of your entities raises one and a fire event naming somebody else's does not, that an event already on screen raises none, that several hits in one place cluster to one indicator with the right count, and that its bearing is right at several camera headings including behind the camera. |
 | `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory; **the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both as integer percentages, and that elimination removes a player's modules with their ships**; **ring slot assignment** — that the same selection ordered to the same point yields the same slots in the same order; **command validation** — a foreign entity, an over-long selection, a stale generation, a wrapped sequence, an out-of-map target; and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
 
 ---
@@ -474,7 +474,7 @@ shaped:
 |---|---|
 | [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md) | The simulation is two-dimensional; the camera is not. |
 | [`ADR-002`](ADR/ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the binary angle and the sine table, the pinned PRNG, and ordering as a correctness property. |
-| [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz with no delta and no acknowledgement; a ten-byte record with the design identity its own byte; a removal list; commands made reliable by a sequence the snapshot already carries and validated by the host. |
+| [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz with no delta and no acknowledgment; a ten-byte record with the design identity its own byte; a removal list; commands made reliable by a sequence the snapshot already carries and validated by the host. |
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
 | [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | No content pipeline and no mesh format in the MVP. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
@@ -485,8 +485,9 @@ shaped:
 | [`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent. |
 | [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale of the panel defaulting to 1:1, and the interface gets a fit transform of its own rather than borrowing the world's. |
 | [`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold; the first tap acts at once and the second upgrades it, and `Holding` is freed. |
-| [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane; one solve drives pan, zoom and orbit, there is no inertia, and a hold on empty space recentres. |
+| [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane; one solve drives pan, zoom and orbit, there is no inertia, and a hold on empty space recenters. |
 | [`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus instanced stars, generated from the match seed, capped at 12% large-area luminance. |
+| [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Off-screen damage shows as a clustered directional indicator at the screen edge, derived from data already sent and tappable to recenter. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in
 [`OpenQuestions.md`](OpenQuestions.md).

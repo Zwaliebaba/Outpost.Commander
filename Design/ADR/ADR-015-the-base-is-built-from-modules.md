@@ -34,9 +34,9 @@ build panel, a tap on empty space within **400 world units** of the station plac
 dead: a tap on empty space is a move order, and the station cannot move. The radius is drawn while a module
 is chosen, and a tap outside it, or on another module, does nothing.
 
-**The radius is 400 because that is the point-defence range** (`GameDesign.md` §5), so the safe zone means
+**The radius is 400 because that is the point-defense range** (`GameDesign.md` §5), so the safe zone means
 exactly "your base". The consequence is positional and is the point: a `MassDriver` reaches 600, so a
-fighter standing off at 500 **can shell the modules on the near side while staying outside point-defence
+fighter standing off at 500 **can shell the modules on the near side while staying outside point-defense
 cover**, and which side of your station you build on is therefore a decision.
 
 **A station carries at most four modules.** That cap is as much a wire budget as a design one — see below.
@@ -91,4 +91,4 @@ None yet. Two are owed:
    computed.
 
 Every figure here is arithmetic on the design's own numbers: 110 is 2 × (50 + 1 + 4); 1,136 is
-110 × 10 + 30 + three removals; 400 is `GameDesign.md` §5's point-defence range, unchanged.
+110 × 10 + 30 + three removals; 400 is `GameDesign.md` §5's point-defense range, unchanged.

@@ -38,7 +38,7 @@ where the anchor projects. Solved naively that is a feedback loop.
 plane and keep that world point for the life of the manipulation. It is never recomputed mid-gesture —
 recomputing is what produces drift.
 
-**2. One solve drives everything, and the recogniser's translation is not applied separately.** The order
+**2. One solve drives everything, and the recognizer's translation is not applied separately.** The order
 is: scale → new distance, and therefore new pitch; rotation → new heading; **then one solve** that places
 the focus so the anchor lands under the current centroid. Applying the translation delta *as well* as the
 solve double-counts it and produces a camera that runs away. **This is the defect to expect if the camera
@@ -58,10 +58,10 @@ turning it is worth one constant — it is what spatial memory is built on.
 
 **6. The clamp applies after the solve, and the ground stops.** The focus is clamped to the play area plus
 its margin, so at the edge the anchor slips and the finger slides over stationary ground. That is the
-right behaviour for a strategy game and it is what clamping the solve's output already gives — it is
+right behavior for a strategy game and it is what clamping the solve's output already gives — it is
 stated because it reads as a defect the first time it is seen.
 
-**7. There is no inertia, and `Holding` over empty space recentres.** The inertia gesture settings stay
+**7. There is no inertia, and `Holding` over empty space recenters.** The inertia gesture settings stay
 off: the action immediately after positioning this camera is a precise tap, and momentum fights that.
 Instead, a hold on empty space moves the focus to the selection, or to your station when nothing is
 selected. `Design/GameDesign.md` §7 already names the problem — *"a defender must be watching the right

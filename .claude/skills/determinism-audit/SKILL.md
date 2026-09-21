@@ -19,7 +19,7 @@ automated compares two platforms, and **ARM64 is the platform the game is actual
 
 ```bash
 python3 Scripts/CheckDeterminism.py              # GameCore and GameLogic
-python3 Scripts/CheckDeterminism.py --review     # + the judgement calls
+python3 Scripts/CheckDeterminism.py --review     # + the judgment calls
 python3 Scripts/CheckDeterminism.py --also NeuronCore   # the PRNG lives there
 ```
 
@@ -102,8 +102,8 @@ blind-spot list catches what is designed, the test catches what is executed. **R
 ## What to hand back
 
 ```
-Sweep:        CheckDeterminism.py <flags>, N violations, M judgement calls   ← empty means the work is not done
-Judgement:    <each --review hit, and the answer: total order on what, which engine, which key>
+Sweep:        CheckDeterminism.py <flags>, N violations, M judgment calls   ← empty means the work is not done
+Judgment:     <each --review hit, and the answer: total order on what, which engine, which key>
 Blind spots:  <of the six, which the change touches, and what was checked>
 Formats:      <every new quantity, its type, its scale, and the unit in its name>
 Bounds:       <every fixed-point expression added, and its worst-case intermediate>

@@ -7,7 +7,7 @@ this tree has taken no decisions before these.
 |---|---|---|---|
 | [`ADR-001`](ADR-001-the-playfield-is-a-plane.md) | The simulation is two-dimensional and the camera is not, because a tap is a ray and a ray has no depth | Accepted | 2026-09-20 |
 | [`ADR-002`](ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the 16-bit binary angle over a 4,096-entry sine table, the pinned PRNG, and candidate ordering as a correctness property | Accepted | 2026-09-20 |
-| [`ADR-003`](ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz, no delta and no acknowledgement; a ten-byte record, an explicit removal list, host-side command validation, and commands made reliable by a sequence the snapshot already carries | Accepted | 2026-09-20 |
+| [`ADR-003`](ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz, no delta and no acknowledgment; a ten-byte record, an explicit removal list, host-side command validation, and commands made reliable by a sequence the snapshot already carries | Accepted | 2026-09-20 |
 | [`ADR-004`](ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities in the MVP: damage lands on the tick a weapon fires and the client draws an event | Accepted | 2026-09-20 |
 | [`ADR-005`](ADR-005-meshes-are-generated-in-code.md) | No mesh format, no loader and no asset build step in the MVP | Accepted | 2026-09-20 |
 | [`ADR-006`](ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function | Accepted | 2026-09-20 |
@@ -15,15 +15,16 @@ this tree has taken no decisions before these.
 | [`ADR-008`](ADR-008-the-host-address-is-configuration.md) | The host address is a configuration file with a compiled-in default and no discovery; the loopback exemption is a development arrangement and not a shipping one | Accepted | 2026-09-20 |
 | [`ADR-009`](ADR-009-text-is-directwrite-into-an-atlas.md) | Text is DirectWrite rasterised into a Direct3D 12 atlas we own — no Direct2D and no D3D11On12, which R12 bans, and no dependency | Accepted | 2026-09-20 |
 | [`ADR-010`](ADR-010-selection-is-proximity-and-design.md) | A tap selects one ship and a hold selects the same design within a screen-space circle; no band select, so one-finger drag is unconditionally panning. Supersedes `Design/Interface.md` §3's hold-then-drag | Accepted | 2026-09-20 |
-| [`ADR-015`](ADR-015-the-base-is-built-from-modules.md) | The base is built from modules, and a module is a separate destroyable entity placed by tap inside the point-defence radius; each upgrade level is its own component identity | Accepted | 2026-09-21 |
+| [`ADR-015`](ADR-015-the-base-is-built-from-modules.md) | The base is built from modules, and a module is a separate destroyable entity placed by tap inside the point-defense radius; each upgrade level is its own component identity | Accepted | 2026-09-21 |
 | [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent; amends ADR-007 to bind the world only and supersedes ADR-009's pixel doubling | Accepted | 2026-09-20 |
 | [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale defaulting to 1:1, and the interface gets its own transform rather than borrowing the world's | Accepted | 2026-09-21 |
 | [`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold — the first tap acts at once and the second upgrades it — which frees `Holding` | Accepted | 2026-09-21 |
-| [`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane and one solve drives pan, zoom and orbit; no inertia, and a hold on empty space recentres | Accepted | 2026-09-21 |
-| [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus seeded instanced stars, modelled on the real magnitude and colour distributions and capped at 12% large-area luminance | Accepted | 2026-09-21 |
+| [`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane and one solve drives pan, zoom and orbit; no inertia, and a hold on empty space recenters | Accepted | 2026-09-21 |
+| [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus seeded instanced stars, modeled on the real magnitude and color distributions and capped at 12% large-area luminance | Accepted | 2026-09-21 |
+| [`ADR-020`](ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Damage off screen shows as a directional indicator at the edge, derived from data the client already has and tappable to recenter | Accepted | 2026-09-21 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All sixteen are now Accepted** — ADR-002
+ruled; a proposed ADR is not something to write code against. **All seventeen are now Accepted** — ADR-002
 to ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes.
 
 **ADR-012, ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan
