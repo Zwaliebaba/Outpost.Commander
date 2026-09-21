@@ -102,12 +102,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="NeuronServer.cpp" />
+    <ClCompile Include="WinsockTransport.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NeuronServer.h" />
+    <ClInclude Include="WinsockTransport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

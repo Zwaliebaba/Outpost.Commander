@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)ByteReader.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)ByteWriter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)NeuronCore.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)PacketHeader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="$(MSBuildThisFileDirectory)ByteReader.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
   </ItemGroup>
 </Project>

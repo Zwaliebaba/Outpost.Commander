@@ -6,6 +6,10 @@
 
 #include "NeuronCore.h"
 
+// This library's own headers, so that a consumer includes this one file and gets the whole chain
+// (AGENTS.md section 2). WinsockTransport.h deliberately pulls in no <winsock2.h> of its own.
+#include "WinsockTransport.h"
+
 namespace Neuron
 {
 /// The name of this library, so that a suite can prove it linked and that the include path reaches

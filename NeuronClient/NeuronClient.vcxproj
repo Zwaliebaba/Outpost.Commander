@@ -111,13 +111,17 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DatagramTransport.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
+    <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DatagramTransport.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
