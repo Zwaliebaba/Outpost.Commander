@@ -92,10 +92,12 @@ candidates at equal distance must break the tie on identity, not on which cell w
 
 ### The tick
 
-Drain incoming commands, then: orders, AI, movement, weapons, mining, build queues, deaths, victory. **Mining is a standing order and therefore the one system that re-issues work to itself** — a miner that unloads is given its next destination inside the same pass, which keeps the cycle on the tick and out of the command path. One
-pass, fixed order, no system reading another's half-updated output. At the end of the tick the host
-computes a **state hash** over every entity's identity, position, heading and hull, which is what the
-determinism test asserts and what a desynchronisation report would carry.
+Drain incoming commands, then: orders, AI, movement, weapons, mining, build queues, deaths, victory.
+**Mining is a standing order and therefore the one system that re-issues work to itself** — a miner that
+unloads is given its next destination inside the same pass, which keeps the cycle on the tick and out of
+the command path. One pass, fixed order, no system reading another's half-updated output. At the end of
+the tick the host computes a **state hash** over every entity's identity, position, heading and hull,
+which is what the determinism test asserts and what a desynchronisation report would carry.
 
 ---
 
@@ -181,6 +183,12 @@ quarter-second of nothing is a dead interface.
 |---|---|---|---|---|---|---|
 | **MVP — 2 players × (50 ships + 1 station + 4 modules)** | 110 | 30 B | **1,136 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
 | Post-M2 — 4 players, same per player | 220 | 46 B | 2,252 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
+
+**Before changing any of this, run the budget.** `.claude/skills/datagram-budget/` computes the table
+above from the record layout rather than restating it, ranks the levers for buying room cheapest-first,
+and applies the one test that separates a legitimate split from fragmentation with a better name: *can the
+client draw a correct frame from one datagram without the other?* These figures have disagreed with
+ADR-003's copy of them before; when one moves, move both.
 
 **Modules cost the single-datagram property most of its headroom, and the cap of four exists because of
 it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,056 to **1,136 against a 1,200-byte
