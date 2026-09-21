@@ -65,7 +65,7 @@ that arithmetic is against the *panel*, never against the world's target. **No l
 is 1:1 because at one sample, which is what the MVP ships, native strictly dominates: the same content with
 no upscale and no anti-aliasing either way.
 
-**This default is a judgement and not a measurement, and it is stated as one.** ADR-007's 1440 × 960 was
+**This default is a judgment and not a measurement, and it is stated as one.** ADR-007's 1440 × 960 was
 not measured either — its Measurements section said "None yet" from the day it was written. The difference
 is that this one names the gate that settles it: **M0.16**, which already exists in the plan, now measures
 both.

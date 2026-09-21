@@ -25,6 +25,7 @@
 - [ ] `python3 Scripts/CheckProjectFiles.py` — AGENTS.md §3's table over every project file
 - [ ] `python3 Scripts/CheckDeterminism.py` — R16 over `GameCore` and `GameLogic`
 - [ ] `python3 Scripts/CheckDesign.py` — figures, citations and links across `Design/`
+- [ ] `python3 Scripts/CheckSpelling.py` — US spelling, in prose and identifiers (R11)
 - [ ] `clang-format --dry-run --Werror` over the files touched, on the pinned version
 
 **The build, which is slower and which CI only half covers:**
@@ -81,7 +82,7 @@
       (R23); no ship stat baked onto a type rather than derived (R24)
 - [ ] Nothing in the client links the simulation (R19), and nothing was put in an executable that a
       suite could have covered (R20)
-- [ ] `Scripts/CheckDeterminism.py` is clean **including `--review`**, and the judgement calls it
+- [ ] `Scripts/CheckDeterminism.py` is clean **including `--review`**, and the judgment calls it
       reports were answered rather than dismissed — a sort's comparator is a total order on entity
       identity, a draw comes from the match's engine
 - [ ] **If a datagram moved, `Scripts/DatagramBudget.py` was run** and its figures — not estimates —

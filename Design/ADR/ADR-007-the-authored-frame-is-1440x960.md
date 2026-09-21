@@ -50,7 +50,7 @@ conversation.
 **Everything that is not a current Surface Pro is correct rather than crisp**, which is precisely what R13
 buys and is stated rather than regretted. A Surface Pro 7 at 2736 × 1824 fits 1.9× and resamples slightly.
 A 1080p monitor — **the display a developer actually works on** — fits 1.125× and pillarboxes. The
-development case is deliberately not the one optimised for, and anyone judging glyph quality on a desktop
+development case is deliberately not the one optimized for, and anyone judging glyph quality on a desktop
 monitor is judging the wrong picture.
 
 **1440 × 960 is a low authored resolution for a 2026 game**, and the interface will look chunky beside one

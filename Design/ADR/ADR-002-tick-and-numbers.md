@@ -34,7 +34,7 @@ automated — and ARM64 is the target platform.
 seam and the two meet nowhere else.
 
 **Position and velocity are `std::int32_t` with 8 fractional bits** — one unit is 1/256 of a world unit,
-about four millimetres at the design's nominal metre. The 16,384-unit play area spans ±2,097,152, leaving
+about four millimetres at the design's nominal meter. The 16,384-unit play area spans ±2,097,152, leaving
 three orders of magnitude of headroom. Multiplication is `(std::int64_t(a) * b) >> 8`; the 64-bit
 intermediate is not optional.
 
@@ -91,7 +91,7 @@ until they land the bit-identical claim is an argument rather than a fact:
    budget. Ring slot assignment and target selection are the two candidates for consuming it.
 2. **The determinism test passing across all four configuration and platform pairs** — the same seed and
    the same scripted orders producing the same state hash on x64 and ARM64, Debug and Release. Until that
-   runs, every claim in this ADR about bit-identical behaviour is an argument rather than a fact.
+   runs, every claim in this ADR about bit-identical behavior is an argument rather than a fact.
 
 **Nothing in CI will run that second one.** CI builds `Debug|x64` and no more (`AGENTS.md` §6), so three of
 the four pairs — including every ARM64 one, which is the target device — are checked only by whoever

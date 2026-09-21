@@ -1,6 +1,6 @@
 # M3 — The fight
 
-[`GameDesign.md`](../GameDesign.md) §10: weapons, the damage table, the station's point defence, miner
+[`GameDesign.md`](../GameDesign.md) §10: weapons, the damage table, the station's point defense, miner
 flight, destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can
 be played in an evening. Finite asteroids arrive here, and a stub AI so a match can be played by one
 person.
@@ -124,22 +124,22 @@ and never from absence** — assert this by feeding the client a snapshot in whi
 *without* a removal entry and requiring that it is **not** treated as dead; a dead ship leaves the
 selection; and a wreck decays without the host being told.
 
-### M3.5 — The station's point defence · `GameLogic` · `GameLogicTests` · agent
+### M3.5 — The station's point defense · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §5 in full; `OpenQuestions.md` Q10 and Q16.
 
 **Adds:** the station shooting, which needs no new code beyond what M3.2 built — it is a hull with two
-`PointDefence` mounts (M1.1) and the weapon system does not know it is a station.
+`PointDefense` mounts (M1.1) and the weapon system does not know it is a station.
 
-**The point defence outranges nothing, and `GameDesign.md` §5 says to say so out loud or it reads as a
+**The point defense outranges nothing, and `GameDesign.md` §5 says to say so out loud or it reads as a
 bug.** It reaches 400 units; a `MassDriver` reaches 600. **A fighter can stand off at 500 and shell the
-station untouched.** What the point defence protects is the *unloading area* — a raider that chases a
+station untouched.** What the point defense protects is the *unloading area* — a raider that chases a
 fleeing miner home crosses 400 and dies in under six seconds — not the station itself. **So it kills a
 loiterer, not a besieger and not a fleet**, and Q16 confirms it deliberately does not cover the home field,
 so miners at the rocks stay raidable.
 
 **Do not "fix" this while implementing it.** It is the most likely thing in the milestone to be mistaken
-for a defect, and `GameDesign.md` §5 explains at length why a station whose defence outranged the fighter
+for a defect, and `GameDesign.md` §5 explains at length why a station whose defense outranged the fighter
 would simply be unkillable now that the siege unit is cut.
 
 **Files:** `GameLogic/WeaponSystem.cpp`; `Tests/GameLogicTests/CombatTests.cpp` extended.
@@ -156,7 +156,7 @@ must be watching the right part of a 16,384-unit map at the right moment to have
 A miner with no order that is fired upon flees to its station.
 
 **With no order** is the condition and it matters — a miner explicitly ordered to mine keeps mining, which
-is the player overriding the behaviour, and that distinction is what makes the behaviour a help rather
+is the player overriding the behavior, and that distinction is what makes the behavior a help rather
 than an annoyance.
 
 **Files:** `GameLogic/MinerBehavior.h` `.cpp` — **`Behavior`, R11's spelling, in an identifier**;
@@ -231,8 +231,8 @@ fields worth contesting; an infinite home field turns the map into scenery and t
 arithmetic.
 
 **And the first asteroid replication in the project** (Q22): ore remaining is sent **sparsely** — only
-asteroids whose **quantised ore bucket** changed since the last snapshot, which is at most one per active
-miner, four bytes each. The quantisation is what keeps it sparse; sending exact ore would send every
+asteroids whose **quantized ore bucket** changed since the last snapshot, which is at most one per active
+miner, four bytes each. The quantization is what keeps it sparse; sending exact ore would send every
 asteroid every snapshot.
 
 **The cost is stated rather than solved**: a player who ignores their miners eventually finds them idle,

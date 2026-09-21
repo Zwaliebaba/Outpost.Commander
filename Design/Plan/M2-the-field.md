@@ -83,7 +83,7 @@ no seed can be unlucky. It is also visibly artificial, and `GameDesign.md` §3 t
 
 **Done when:** `TechnicalDesign.md` §8's requirement is met in full — **the symmetry is asserted at both
 two and four players**, although the MVP runs only two. For each placed object there is exactly one
-counterpart at the rotated position, with no rounding anywhere and no object landing on the centre twice.
+counterpart at the rotated position, with no rounding anywhere and no object landing on the center twice.
 
 ### M2.3 — The client derives the field · `GameClient` · `GameClientTests` · agent
 

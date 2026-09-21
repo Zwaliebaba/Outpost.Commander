@@ -75,7 +75,7 @@ point: M0.9 built the format and M1 fills it.
 `Tests/GameCoreTests/SnapshotTests.cpp` extended.
 
 **Done when:** a design identity above four round trips intact — the two-bit packing ADR-003 corrected is
-the exact defect this asserts against; hull percentage quantises and dequantises within one percent; and
+the exact defect this asserts against; hull percentage quantizes and dequantises within one percent; and
 the entity's simulation heading stays 16-bit while the wire's stays 8.
 
 ### M1.4 — ADR-013: the join record · `GameCore`, `GameLogic`, `GameClient` · all three · **human**, then agent
@@ -93,7 +93,7 @@ needs to know who is sending, and the credits readout needs to know which block 
 
 **What the ADR has to settle:** what a client sends on connect and what comes back; how a slot is claimed
 and whether a client may choose; what happens to a second client claiming a taken slot; how a reconnecting
-client (`GameDesign.md` §2, `Interface.md` §7) is recognised as the same player; whether the protocol
+client (`GameDesign.md` §2, `Interface.md` §7) is recognized as the same player; whether the protocol
 version check lives here or stays in every packet header; and **the match seed**.
 
 **The seed was missing from this list and R23 already requires it.** The client runs the asteroid
@@ -107,7 +107,7 @@ get the *same* seed back is part of what this ADR settles.
 `.filters`; tests in all three suites.
 
 **Done when:** the ADR is Accepted; a client learns its player index and validates against it; a second
-client on a taken slot is refused in a way the client can show; and a reconnect is recognised rather than
+client on a taken slot is refused in a way the client can show; and a reconnect is recognized rather than
 treated as a new player — which self-contained snapshots make cheap
 ([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)) and which nothing else makes correct.
 
@@ -122,7 +122,7 @@ treated as a new player — which self-contained snapshots make cheap
 **Adds:** the start anchors and a station on each. **M0 and M1 run one fixed seed with a hand-checked
 layout** (`GameDesign.md` §3), so this is the placement M2's generator grows into rather than a throwaway:
 it lives in `GameCore`, both sides run it, and it takes a seed it currently ignores. The station is a
-`Station` hull with two `PointDefence` mounts and no drive, which under M1.2 needs no code of its own.
+`Station` hull with two `PointDefense` mounts and no drive, which under M1.2 needs no code of its own.
 
 **Files:** `GameCore/Layout.h` `.cpp`; `GameCore.vcxitems` + `.filters`;
 `Tests/GameCoreTests/LayoutTests.cpp`.
@@ -144,7 +144,7 @@ progress in two bytes per player. No rally point; new ships sit where they appea
 `Tests/GameLogicTests/BuildTests.cpp`.
 
 **Done when:** an unaffordable order is refused at the host rather than at the client alone; progress is
-monotonic in ticks and reaches completion exactly; cancelling refunds what the design says it refunds —
+monotonic in ticks and reaches completion exactly; canceling refunds what the design says it refunds —
 **and if the design does not say, that is a register question rather than a guess in a commit.**
 
 ### M1.7 — Ring slot assignment, and the determinism test · `GameLogic` · `GameLogicTests` · agent
@@ -197,7 +197,7 @@ no minimap** and `Interface.md` §5 explains at length why maximum zoom-out alre
   no compass; a map that is reliably north-up when nobody is deliberately turning it is what spatial
   memory is built on.
 
-**And the recentre**: a hold on empty space moves the focus to the selection, or to your station when
+**And the recenter**: a hold on empty space moves the focus to the selection, or to your station when
 nothing is selected (ADR-018, spending one of the two verbs ADR-017 freed). `GameDesign.md` §7 names the
 problem it answers — a defender has to be watching the right part of a 16,384-unit map at the right
 moment, and until now the only way back was panning there.
@@ -232,8 +232,8 @@ four constants — and makes pinch pure zoom. **If it is bad, say so; it is desi
 **Adds:** geometry from functions. **The split is R9's:** `NeuronClient` gets the vertex and index buffers,
 the upload and the instanced draw, which know nothing about a game; `GameClient` gets the function that
 knows what a `Scout` looks like. Normals baked per face onto split vertices — flat shading, no smoothing
-group to decide and no tangent basis to get wrong. Team colour is a vertex attribute selecting between a
-hull palette and the owner's colour, so one instanced draw covers every ship of a hull regardless of owner.
+group to decide and no tangent basis to get wrong. Team color is a vertex attribute selecting between a
+hull palette and the owner's color, so one instanced draw covers every ship of a hull regardless of owner.
 
 **ADR-005 names the risk and it is this step's to watch: two hulls from one parameterised function tend to
 be the same shape at two scales**, which is exactly unreadable at the zoom where identification matters
@@ -245,7 +245,7 @@ narrow one — and not merely for size.
 and `.filters`.
 
 **Done when:** three hulls and a station draw as one instanced call each with a per-instance transform and
-team colour; and **the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
+team color; and **the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
 
 ### M1.9b — The sky · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
 
@@ -255,7 +255,7 @@ team colour; and **the silhouettes are looked at from the tactical zoom**, which
 
 **Adds:** the backdrop, in two halves with two frequencies. **The galaxy** bakes once into a 512² cubemap,
 6.3 MB, rendered at match start and sampled with one fetch per pixel — a band that is wider and brighter
-toward the galactic centre and carries **dark dust lanes**, because a band without them is a stain rather
+toward the galactic center and carries **dark dust lanes**, because a band without them is a stain rather
 than a galaxy. **The stars** are about 3,000 instanced quads from `SV_VertexID` with no vertex buffer,
 seeded from the match.
 
@@ -266,14 +266,14 @@ seeded from the match.
   pepper.
 - **Size follows brightness**, 8 scene-target pixels down to 1.5, with a soft radial falloff in the
   sprite. Apparent size is the point-spread function, not the star.
-- **Colour is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
+- **Color is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
   announces itself; real stars read very nearly white.
 - **Temperature correlates with magnitude** — bright tiers blue-white, faint ones orange — and star
-  density rises toward the galactic plane. Draw colour independently of brightness and the sky is subtly,
+  density rises toward the galactic plane. Draw color independently of brightness and the sky is subtly,
   unnameably wrong.
 
 **Nothing twinkles and nothing moves.** There is no atmosphere, so there is no scintillation; diffraction
-spikes are a telescope artefact and the player is not looking through one. **The sky takes no time input
+spikes are a telescope artifact and the player is not looking through one. **The sky takes no time input
 at all** — generated once, never updated, zero per-frame CPU. Do not add "a little movement" later without
 reopening ADR-019.
 
@@ -328,8 +328,8 @@ overlapping ships resolves the same way twice.
 **Read first:** [`ADR-017`](../ADR/ADR-017-group-selection-is-a-double-tap.md) **before** ADR-010, which
 it amends; `Interface.md` §3 and §4; `OpenQuestions.md` Q8.
 
-**Adds:** a second tap on one of your ships taking **every ship of the same design within a circle centred
-on it** — screen-space, 192 authored pixels, drawn during the gesture, centred on the *ship* because the
+**Adds:** a second tap on one of your ships taking **every ship of the same design within a circle centered
+on it** — screen-space, 192 authored pixels, drawn during the gesture, centered on the *ship* because the
 finger is covering it, own ships only, same design only, fixed radius. **The camera is the group-size
 control**: because the circle is screen-space, zooming in takes a squad and zooming out takes the fleet.
 
@@ -368,7 +368,7 @@ and `CreateAlphaTexture` for coverage bytes we upload ourselves. **No Direct2D a
 
 **Two details a naive implementation gets wrong, both stated in ADR-009 so they need not be rediscovered:**
 coverage is rasterised as ClearType and the three subpixel values averaged into one channel, because
-subpixel output would arrive as colour fringing after the scale — **and the average is taken in linear
+subpixel output would arrive as color fringing after the scale — **and the average is taken in linear
 space, not on the stored gamma-encoded bytes**, or stems come out systematically thin or fat. And **a
 missing font family is a startup failure rather than a substitution**, because a substituted font has
 different advance widths and R13 requires every layout number to be unconditional.
@@ -409,8 +409,8 @@ same authored origin; and a string draws at the physically correct place, confir
 **Adds:** credits top left; selection bottom left in the thumb zone, grouped by design with a count and a
 hull bar, where tapping a group narrows the selection and a clear target deselects everything — **the only
 way to deselect**, because a tap on empty space is already a move order; build bottom right, visible when
-your station is selected, two targets with their costs, greyed when unaffordable, the current item and its
-progress below them and tappable to cancel; and system top centre, carrying connection state, the
+your station is selected, two targets with their costs, grayed when unaffordable, the current item and its
+progress below them and tappable to cancel; and system top center, carrying connection state, the
 reconnecting overlay, the result overlay and the one button that quits.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so a panel is
@@ -480,7 +480,7 @@ seven, and two ADRs added their own since this step was written:
    [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) actually needs, because a black screen
    was never the content. **Whether the fleet still reads against it** at the tactical zoom, which is
    ADR-005's worry. And **whether the sky looks like a sky**, whose three failure modes each have a named
-   cause: uniform brightness reading as noise, oversaturated colour as confetti, a band without dust lanes
+   cause: uniform brightness reading as noise, oversaturated color as confetti, a band without dust lanes
    as a stain.
 
 **Done when:** all of them are answered on hardware and written into the documents that asked for them.

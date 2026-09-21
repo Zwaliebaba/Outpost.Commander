@@ -20,7 +20,7 @@ and left stale copies behind. Each was found by a sweep and none by reading.
 python3 Scripts/CheckDesign.py
 ```
 
-It normalises whitespace before matching, because a figure wraps across a line break and a naive grep
+It normalizes whitespace before matching, because a figure wraps across a line break and a naive grep
 for `96 bytes` misses `96\nbytes` — an earlier sweep let exactly that through. It checks four things:
 
 - **The datagram figures, recomputed** by `Scripts/DatagramBudget.py` rather than restated, so the checker cannot itself go stale against the numbers it is policing.
@@ -74,7 +74,7 @@ it, which is the whole reason any of this exists.
 - **A figure that is wrong everywhere.** Consistency is not correctness; the sweep proves the copies
   agree, never that they are right. That is what the measurements each ADR owes are for.
 - **A decision that was taken and not recorded at all.** Nothing can detect the absence of a document
-  nobody wrote. This is the most common failure and the only defence is the four-way above.
+  nobody wrote. This is the most common failure and the only defense is the four-way above.
 - **Prose that contradicts itself in words rather than numbers** — two paragraphs that disagree about
   what a subsystem does, with no figure between them. Read the diff.
 - **A citation that resolves but is wrong** — a link to ADR-007 where ADR-008 was meant. The target

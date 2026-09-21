@@ -67,7 +67,9 @@ That tree is an illustration of the rule, not a description of anything. A base 
 
 **R10 — No `using namespace` at file scope in a header.** It leaks into every translation unit that includes it, and the failure it causes appears somewhere else. In a `.cpp` it is allowed for the unit-test framework and nothing else; otherwise qualify the name or write a local alias.
 
-**R11 — One spelling per family, and it is the SDK's.** `color`, `initialize`, `serialize`, `normalize`, `quantize`, `synchronize`, `behavior`, `neighbor`, `center`, `gray`, `canceled`. Neither spelling is wrong English; the defect is a tree where a reader has to know which half they are in and a grep for one finds half the uses. `D3D12_CLEAR_VALUE::Color` settles which half wins. Prose is not checked — a document may spell `flavour` and `harbour`; an identifier spells `flavor` and `harbor`.
+**R11 — One spelling per family, and it is the SDK's.** `color`, `initialize`, `serialize`, `normalize`, `quantize`, `synchronize`, `behavior`, `neighbor`, `center`, `gray`, `canceled`. Neither spelling is wrong English; the defect is a tree where a reader has to know which half they are in and a grep for one finds half the uses. `D3D12_CLEAR_VALUE::Color` settles which half wins.
+
+**This now covers prose as well, and it did not used to.** R11 originally exempted documents — *"a document may spell `flavour` and `harbour`"* — on the grounds that only identifiers are grepped. That was wrong here for a reason specific to this tree: **the design documents quote identifiers constantly**, so the exemption put both spellings inside single sentences. `Design/Interface.md` said "the recognizer emits `Tapped`" three times over, naming a type that is spelled `GestureRecognizer`. A reader still has to know which half they are in; the boundary just moved from the file to the paragraph. **US spelling everywhere**, prose and identifiers alike, and [`Scripts/CheckSpelling.py`](Scripts/CheckSpelling.py) gates it in CI over both — which is the first time either half of R11 has been enforced by anything but review.
 
 ### Worked example — this is the target style
 
@@ -92,7 +94,7 @@ enum class TargetFault : std::uint8_t
   OutOfVideoMemory
 };
 
-/// The colour framebuffer the game draws into, and the depth buffer that goes with it.
+/// The color framebuffer the game draws into, and the depth buffer that goes with it.
 /// R2: no prefix on the type. R8: private state carries m_.
 class SceneTarget
 {
@@ -127,7 +129,8 @@ private:
 | Debug and Release agreeing (§3) | [`Scripts/CheckProjectFiles.py`](Scripts/CheckProjectFiles.py), **gated in CI** — the settings only. CI still builds `Debug\|x64` alone, so nothing compiles Release |
 | Every library having a suite that runs (§2) | The CI test steps, which fail on a suite that did not build |
 | The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy) — **driven, reported, not gated**; see below |
-| R2, R4, R6, R7, R9, R10, R11 | Review. Check your own diff against the table before handing it back. |
+| R11, in prose and identifiers | [`Scripts/CheckSpelling.py`](Scripts/CheckSpelling.py), **gated in CI** |
+| R2, R4, R6, R7, R9, R10 | Review. Check your own diff against the table before handing it back. |
 
 **`.clang-tidy` now has a driver, and it reports rather than gates.** [`Scripts/RunClangTidy.ps1`](Scripts/RunClangTidy.ps1) reads each project for its sources and include directories, follows the `.vcxitems` it imports, and runs clang-tidy in clang-cl driver mode; CI runs it with `continue-on-error`. That is deliberate and not timidity: **clang is not MSVC**, `/std:c++latest` is ahead of what clang implements, and the C++/WinRT headers lean on MSVC extensions — so a parse error there is a clang limitation, not a defect in this tree. Read its output; treat a finding as a finding and a crash as a note to whoever next touches the script. **Until it has run clean on the runner once and been switched to `-Gate`, naming is still review's problem** — do not assume a green build says anything about it.
 
@@ -213,9 +216,9 @@ A project lists the directories of the **other** projects it reaches into, as `$
 
 **Every packages.config in the tree pins the same version.** Five configs that disagree is a restore that fetches two copies of one package and a build that links whichever import path was written last. CI restores them by finding them, not by naming them, so a sixth project does not mean remembering to edit the workflow. Every other project depends on the Windows SDK and the MSVC standard library and on nothing else. A second package is a decision, not a convenience; see R14.
 
-**`Scripts/` holds the checks, and the split in it is deliberate.** A **gate** is pass/fail, runs in CI and is named `Check*`: [`CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) (§3's table), [`CheckDeterminism.py`](Scripts/CheckDeterminism.py) (R16), [`CheckDesign.py`](Scripts/CheckDesign.py) (figures and citations across `Design/`) and [`CheckSuites.py`](Scripts/CheckSuites.py) (a suite that ran no test). A **calculator** answers a question and has no verdict: [`DatagramBudget.py`](Scripts/DatagramBudget.py) costs a wire-format proposal. [`RunClangTidy.ps1`](Scripts/RunClangTidy.ps1) is neither yet — it reports (§1).
+**`Scripts/` holds the checks, and the split in it is deliberate.** A **gate** is pass/fail, runs in CI and is named `Check*`: [`CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) (§3's table), [`CheckDeterminism.py`](Scripts/CheckDeterminism.py) (R16), [`CheckDesign.py`](Scripts/CheckDesign.py) (figures and citations across `Design/`), [`CheckSpelling.py`](Scripts/CheckSpelling.py) (R11, in prose and identifiers) and [`CheckSuites.py`](Scripts/CheckSuites.py) (a suite that ran no test). A **calculator** answers a question and has no verdict: [`DatagramBudget.py`](Scripts/DatagramBudget.py) costs a wire-format proposal. [`RunClangTidy.ps1`](Scripts/RunClangTidy.ps1) is neither yet — it reports (§1).
 
-They live here rather than beside the skills under `.claude/` for one reason: **a build must not break because a skill was moved.** The skills hold the judgement — when a lever is worth its cost, where a decision goes, what a sweep cannot see — and point at these. Run them before you push; they are seconds, and they are what CI runs.
+They live here rather than beside the skills under `.claude/` for one reason: **a build must not break because a skill was moved.** The skills hold the judgment — when a lever is worth its cost, where a decision goes, what a sweep cannot see — and point at these. Run them before you push; they are seconds, and they are what CI runs.
 
 **Build and IDE output is never committed** — `x64/`, `ARM64/`, `AppPackages/`, `Generated Files/`, `packages/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -225,7 +228,7 @@ They live here rather than beside the skills under `.claude/` for one reason: **
 
 **x64 and ARM64 are the platforms; there is no 32-bit anything.** No Win32/x86 configuration in any project or in the solution; do not add one, and do not write code that only works at 32 bits. `EnableEnhancedInstructionSet` is the one compiler setting that belongs to the platform rather than to the configuration — `AdvancedVectorExtensions2` on x64, `NotSet` on ARM64 — and it is stated per platform in every project file rather than inherited, because an MSVC default is not a decision.
 
-**Debug and Release are aligned by rule, not by luck.** Every setting that is not *about* optimisation reads identically in both — and in the project files it is written once, in one unconditioned `ItemDefinitionGroup`, so there is no second copy to drift. The two configurations differ in exactly this and nothing else:
+**Debug and Release are aligned by rule, not by luck.** Every setting that is not *about* optimization reads identically in both — and in the project files it is written once, in one unconditioned `ItemDefinitionGroup`, so there is no second copy to drift. The two configurations differ in exactly this and nothing else:
 
 | | Debug | Release |
 |---|---|---|
@@ -237,7 +240,7 @@ They live here rather than beside the skills under `.claude/` for one reason: **
 | preprocessor | `_DEBUG` | `NDEBUG` |
 | `EnableCOMDATFolding`, `OptimizeReferences` | — | `true` |
 
-Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'` group, and **nothing else may.** If you find yourself adding a setting to one of those groups, you are either adding an optimisation switch or breaking this rule.
+Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'` group, and **nothing else may.** If you find yourself adding a setting to one of those groups, you are either adding an optimization switch or breaking this rule.
 
 **The compiler settings are the settings.** Toolset `v145` (Visual Studio 2026), `/std:c++latest`, `/permissive-`, `/W4` with **warnings as errors**, `/fp:precise`, SDL checks on. There is no CMake. If a build error tempts you to change the toolset, lower the language standard, turn off `/permissive-` or silence a warning — **stop and report instead.**
 
@@ -305,7 +308,7 @@ These bind code as it is written from here. Several describe subsystems that do 
 
 **R12 — Graphics is Direct3D 12 only.** No D3D11, no D3D11On12, no immediate-mode helper layers. COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. `winrt::com_ptr` is the smart pointer; WRL's `ComPtr` is not used.
 
-**R13 — The client draws into a scene target and presents that, scaled.** Every pass draws into an off-screen colour target at the resolution the game is authored for, and the frame ends by presenting that target into the swap chain's back buffer, fitted to the window's client area with the aspect ratio preserved: **1:1 and unfiltered when the client area already matches, point sampling at an exact integer multiple, bilinear otherwise, letterboxed.** Exactly one place asks the window how big it is, and that is it; every layout, every glyph and every integer position behind it is unconditional. A pass that branches on the window size has misunderstood this rule.
+**R13 — The client draws into a scene target and presents that, scaled.** Every pass draws into an off-screen color target at the resolution the game is authored for, and the frame ends by presenting that target into the swap chain's back buffer, fitted to the window's client area with the aspect ratio preserved: **1:1 and unfiltered when the client area already matches, point sampling at an exact integer multiple, bilinear otherwise, letterboxed.** Exactly one place asks the window how big it is, and that is it; every layout, every glyph and every integer position behind it is unconditional. A pass that branches on the window size has misunderstood this rule.
 
 Two things bind anyone changing the authored resolution or the sample count:
 
@@ -320,7 +323,7 @@ Both are settled for this game in [`Design/ADR/ADR-007`](Design/ADR/ADR-007-the-
 
 For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `winrt/base.h` and the `fxc`/`dxc` compilers. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK, DirectX-Headers, `d3dx12.h`, DirectXTK12, DirectXTex and the DirectX Shader Compiler as a redistributable.
 
-**It binds what the executable is built from, not what a development tool needs.** A script that never ships and never links — clang-format itself, say — does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are content, not dependencies, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
+**It binds what the executable is built from, not what a development tool needs.** A script that never ships and never links — clang-format itself, say — does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are content, not dependencies, and anything under a license needs the owner's approval before it lands, with the license text traveling with the bytes.
 
 **R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded and a measurement behind it.
 
@@ -332,7 +335,7 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 - **`sinf`, `cosf`, `sqrtf` and friends are CRT implementations and are not correctly-rounded.** Nothing specifies them bit-identical between x64 and ARM64, or across CRT versions. That alone ends cross-platform float determinism and no compiler switch reaches it.
 - **ARM64 always has FMA**; x64 has it only under `/arch:AVX2`. Any explicit `std::fma`, or any library that contracts, differs by architecture whatever `/fp` says.
-- **`/fp:precise` rounds to source precision at four named points** — assignments, typecasts, arguments passed, values returned — and explicitly permits *"intermediate computations ... at machine precision"* in between. Register allocation therefore reaches the result, and register allocation is what an optimisation level changes.
+- **`/fp:precise` rounds to source precision at four named points** — assignments, typecasts, arguments passed, values returned — and explicitly permits *"intermediate computations ... at machine precision"* in between. Register allocation therefore reaches the result, and register allocation is what an optimization level changes.
 
 Integers are reached by none of the three. Floats live in the renderer, where nothing is replayed. **[`Scripts/CheckDeterminism.py`](Scripts/CheckDeterminism.py) sweeps `GameCore` and `GameLogic` for what this rule forbids and is gated in CI**; it catches what is *written*, never what is *designed*, and the `determinism-audit` skill carries the six blind spots no sweep can see. **This rule once rested on FMA contraction under `/fp:precise`, which this toolset does not do**; [`Design/ADR/ADR-002`](Design/ADR/ADR-002-tick-and-numbers.md) records the correction and the citation.
 
@@ -346,7 +349,7 @@ Inside the simulation, additionally: no `float` where a fixed-point or integer q
 
 **R20 — The packaged project holds Windows Runtime glue and nothing else.** No game logic, no arithmetic, no decision a test could pin lives in `OutpostCommander`; anything testable is pushed down into a library, which is what `GameClient` and `NeuronClient` are for. The same goes for `Server`. A thing an executable holds is a thing no suite can reach.
 
-**R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into the game, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site. Keyboard events are not subscribed. Mouse and pen have no compatibility path, deliberately: an interaction is named in the recogniser's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction. **A double tap is `Tapped` carrying a count** (`TappedEventArgs.TapCount`, under `GestureSettings::DoubleTap`) rather than a fourth verb, and is used for group selection ([`Design/ADR/ADR-017`](Design/ADR/ADR-017-group-selection-is-a-double-tap.md)); it is affordable only because the first tap acts immediately and the second upgrades the result, so no tap ever waits to find out what it is. A key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot.
+**R21 — Touch is the only input, and a gesture is the only way in.** `Windows::UI::Input::GestureRecognizer` is the one path from the `CoreWindow` into the game, and a `PointerPoint` whose `PointerDeviceType` is not `Touch` is dropped at the seam, at exactly one site. Keyboard events are not subscribed. Mouse and pen have no compatibility path, deliberately: an interaction is named in the recognizer's vocabulary — `Tapped`, `Holding`, and a manipulation's translate, scale and rotate — or it is not an interaction. **A double tap is `Tapped` carrying a count** (`TappedEventArgs.TapCount`, under `GestureSettings::DoubleTap`) rather than a fourth verb, and is used for group selection ([`Design/ADR/ADR-017`](Design/ADR/ADR-017-group-selection-is-a-double-tap.md)); it is affordable only because the first tap acts immediately and the second upgrades the result, so no tap ever waits to find out what it is. A key, a hover, a second button and a wheel are four things a finger does not have, and a feature that needs one needs a different design rather than a different device. **The client requires a touchscreen**, which is a requirement and not an oversight. The arithmetic under a gesture is a pure function in `NeuronClient` with a suite over it, for the same reason R20 gives: the sign of a pinch is a thing a package can hide and a test cannot.
 
 **R22 — The simulation is two-dimensional.** Every entity's position is a point on one plane. There is no third coordinate in `GameCore` or `GameLogic`, none in any wire record, and none in any test fixture. The camera has three dimensions and the renderer may *draw* asteroids, wrecks and effects above and below the plane; nothing the simulation owns has a height, and the host does not know that anything is drawn off it.
 
@@ -372,12 +375,12 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 
 **What CI gates: `Debug|x64` and the format check, and nothing else.** [`.github/workflows/build.yml`](.github/workflows/build.yml) is the definition and is not restated here — a prose copy of a workflow drifts, and this one already did. What matters is not the steps but **what they leave open**, which no file states for you:
 
-- **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimisation reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
+- **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimization reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
 - **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform. **The target device is an ARM64 part** (`Design/ADR/ADR-007`), so this is the platform the game is for and the platform nothing automated compiles.
 
 The owner decided this scope: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. **The cheap half of both gaps is now closed by a static check rather than a second build.** [`Scripts/CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) reads every `.vcxproj` and asserts §3's table in about a second, gated in CI, so configuration drift — a setting that wandered into a conditioned group, a lowered language standard, a platform inheriting `EnableEnhancedInstructionSet`, an SDK pin past the runner's — is caught here.
 
-**It compiles nothing, and that is the whole of what it does not do.** A Release that breaks only under optimisation and an ARM64 that assumes an x86 intrinsic reach `main` green exactly as before. §7 still carries that, and the pull request template still asks whether you built the other three pairs; answer it honestly.
+**It compiles nothing, and that is the whole of what it does not do.** A Release that breaks only under optimization and an ARM64 that assumes an x86 intrinsic reach `main` green exactly as before. §7 still carries that, and the pull request template still asks whether you built the other three pairs; answer it honestly.
 
 **A red toolchain step is not something to work around.** CI fails by name when the runner lacks the pinned toolset or SDK, deliberately: lowering the pin to get past it is not a fix (§3).
 
@@ -392,7 +395,7 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 - [ ] Naming conforms to §1 — `_` on parameters, `m_` on class state, `UPPER_CASE` constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes. **Nothing checks this for you.**
 - [ ] Only the lines the task required were changed; no reformatting, no drive-by fixes.
 - [ ] No new third-party dependency and no second NuGet package (R14); every `packages.config` still pins one version.
-- [ ] The format check passes, and so do the gates: `python3 Scripts/CheckProjectFiles.py`, `Scripts/CheckDeterminism.py`, `Scripts/CheckDesign.py`. They are seconds and they are what CI runs.
+- [ ] The format check passes, and so do the gates: `python3 Scripts/CheckProjectFiles.py`, `Scripts/CheckDeterminism.py`, `Scripts/CheckDesign.py`, `Scripts/CheckSpelling.py`. They are seconds and they are what CI runs; `CheckSpelling.py --fix` rewrites what it finds.
 - [ ] It builds `Debug|x64`, and every test suite runs and passes.
 - [ ] **CI builds nothing else** (§6), so `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally — or your report says plainly that they were not.
 - [ ] Your report states what you verified, what you assumed, and any rule here you had to bend.
@@ -421,7 +424,7 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 
 - [ ] No third coordinate reached either (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
 - [ ] Nothing in the client links the simulation (R19), and nothing was put in an executable that a suite could have covered (R20).
-- [ ] **`Scripts/CheckDeterminism.py` is clean, including `--review`**, and the judgement calls it reports were answered rather than dismissed — a sort's comparator is a total order on entity identity, a draw comes from the match's engine. A clean sweep is half of R16; the `determinism-audit` skill has the other half.
+- [ ] **`Scripts/CheckDeterminism.py` is clean, including `--review`**, and the judgment calls it reports were answered rather than dismissed — a sort's comparator is a total order on entity identity, a draw comes from the match's engine. A clean sweep is half of R16; the `determinism-audit` skill has the other half.
 - [ ] **If a datagram moved, `Scripts/DatagramBudget.py` was run** and its figures — not estimates — are in the report and in `Design/TechnicalDesign.md` §4. The headroom is double digits and nothing in the build fails when it is gone.
 
 **If you touched rendering, input, audio or presentation:**

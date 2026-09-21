@@ -41,7 +41,7 @@ identity, which would render the whole interface at half size in one corner. The
 two transforms. Glyphs are rasterised at the physical size that transform produces, so a 24-authored-pixel
 label is rasterised at 48 physical pixels on a Surface Pro rather than doubled from 24.
 
-**What this breaks is R13's letter — "every pass draws into an off-screen colour target" — and nothing
+**What this breaks is R13's letter — "every pass draws into an off-screen color target" — and nothing
 else.** R13's stated purpose is that "every layout, every glyph and every integer position behind it is
 unconditional" and that no pass branches on the window size. Both hold. The letter was written to protect
 the intent, and here the intent is better served by departing from it.
@@ -84,4 +84,4 @@ None yet. Two are owed at **M1**:
 2. **That a window resize rebuilds the atlas without a visible stall**, which is the failure path this
    decision introduces.
 
-The eighty-line estimate is a judgement about a second pass over existing geometry, not a measurement.
+The eighty-line estimate is a judgment about a second pass over existing geometry, not a measurement.

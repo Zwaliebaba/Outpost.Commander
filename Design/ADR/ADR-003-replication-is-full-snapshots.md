@@ -15,16 +15,16 @@ so **the client cannot simulate and lockstep is not available.** The host simula
 
 What is left to decide is the shape of that state on the wire, and it has to be decided before anything is
 written because the answer determines whether the host keeps per-client history, whether the client
-accumulates, and whether either side needs an acknowledgement path.
+accumulates, and whether either side needs an acknowledgment path.
 
 The standard answer in this genre is delta encoding against an acknowledged baseline, which costs a
-history ring per client, an acknowledgement channel, and a failure mode where a client whose baseline has
+history ring per client, an acknowledgment channel, and a failure mode where a client whose baseline has
 aged out must be recovered. The design's entity count — four players at fifty ships plus four stations,
 204 records (`Design/GameDesign.md` §10) — is small enough to ask whether that is worth paying for.
 
 ## Decision
 
-**Every snapshot is self-contained.** No baselines, no acknowledgements, no per-client history, no
+**Every snapshot is self-contained.** No baselines, no acknowledgments, no per-client history, no
 accumulated client state. A client that misses a packet misses one frame of animation and is fully correct
 on the next one.
 
@@ -89,17 +89,17 @@ incomplete set is discarded. **The reassembler holds partial sets for the two mo
 one: with a single slot, any cross-snapshot reorder discards a snapshot whose fragments had all arrived.
 **The MVP does not fragment at all** — see below.
 
-**The host serialises a per-player entity set, not the world.** The MVP has no fog of war and that set is
+**The host serializes a per-player entity set, not the world.** The MVP has no fog of war and that set is
 everything, but it is a list the host builds, so adding visibility later changes one function and not the
 wire format.
 
 **Commands are made reliable by the snapshot.** A command carries a per-player sequence number and is
 repeated in every outgoing packet until the `lastCommandSeqApplied` field of an arriving snapshot reaches
 it. The host applies commands in sequence order and ignores anything at or below what it has applied.
-There is no general reliability layer, no second timer and no separate acknowledgement packet.
+There is no general reliability layer, no second timer and no separate acknowledgment packet.
 
 **The host validates every command, and that is correctness rather than security.**
-`Design/TechnicalDesign.md` §5 declines authentication and any defence against a hostile client; that
+`Design/TechnicalDesign.md` §5 declines authentication and any defense against a hostile client; that
 exclusion silently covered ownership, bounds and generation checks too, which is a different category.
 A 1,232-byte command packet holds **610 entity identities against a peak of 110** — a 5.5× amplification
 into a single-threaded host loop, reachable from an ordinary bug or a reordered packet with no attacker
@@ -139,11 +139,11 @@ losses are needed to show anything, which at 2% packet loss is once every two mi
 path returns with the fourth player and is where the analysis above applies.
 
 **Delta encoding stays declined, and the reason is better than the one given.** This ADR originally
-declined it for costing "a history ring per client, an acknowledgement channel, and a failure mode where
+declined it for costing "a history ring per client, an acknowledgment channel, and a failure mode where
 a client whose baseline has aged out must be recovered". Those costs are overstated: a 32-frame ring
-across four clients is 240 KB, the acknowledgement channel already exists in `lastCommandSeqApplied`, and
+across four clients is 240 KB, the acknowledgment channel already exists in `lastCommandSeqApplied`, and
 baseline recovery is a full snapshot, which is the thing already built. **It loses on its merits instead:
-delta saves most when nothing is moving and least when everything is**, so it optimises the idle case and
+delta saves most when nothing is moving and least when everything is**, so it optimizes the idle case and
 degenerates to a full snapshot plus a bitmask during the battle that is the only time the budget is under
 pressure.
 

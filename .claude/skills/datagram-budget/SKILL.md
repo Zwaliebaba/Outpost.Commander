@@ -1,12 +1,12 @@
 ---
 name: datagram-budget
-description: Audit and optimise the UDP datagram budget for Outpost Commander — the snapshot going down and the command packet coming up — so each keeps fitting one packet. Use this skill whenever a change touches the wire format or could grow it — adding or widening a field on the entity record, the snapshot header or a command, raising an entity or module cap, adding a player, adding a new kind of replicated entity, changing the snapshot rate, or anything that asks "will this still fit", "how big is the packet", "are we near the MTU", "should we split the datagram" or "can we afford another byte". Use it proactively when reviewing a design or plan change that adds replicated state, even if nobody mentions packets, because the headroom is small and a change that overflows it is discovered late and expensively. Running `Scripts/DatagramBudget.py` is a precondition of touching a datagram at all, not advice to consider: it computes the budget rather than estimating it, audits every field's width against what the client actually draws, ranks the levers cheapest-first, and refuses a split that is fragmentation wearing a better name.
+description: Audit and optimize the UDP datagram budget for Outpost Commander — the snapshot going down and the command packet coming up — so each keeps fitting one packet. Use this skill whenever a change touches the wire format or could grow it — adding or widening a field on the entity record, the snapshot header or a command, raising an entity or module cap, adding a player, adding a new kind of replicated entity, changing the snapshot rate, or anything that asks "will this still fit", "how big is the packet", "are we near the MTU", "should we split the datagram" or "can we afford another byte". Use it proactively when reviewing a design or plan change that adds replicated state, even if nobody mentions packets, because the headroom is small and a change that overflows it is discovered late and expensively. Running `Scripts/DatagramBudget.py` is a precondition of touching a datagram at all, not advice to consider: it computes the budget rather than estimating it, audits every field's width against what the client actually draws, ranks the levers cheapest-first, and refuses a split that is fragmentation wearing a better name.
 ---
 
 # The datagram budget
 
 `Design/ADR/ADR-003` buys one thing above all: **a snapshot is self-contained and fits one datagram.**
-No baseline, no acknowledgement, no history — so a lost packet costs one frame of animation and nothing
+No baseline, no acknowledgment, no history — so a lost packet costs one frame of animation and nothing
 can diverge. Every byte spent is spent against that property, and it is nearly spent.
 
 ## Run the script. Every time, before anything else
@@ -159,7 +159,7 @@ backwards compatibility makes that stronger rather than weaker:** there is no mi
 so deferring costs nothing and a lever never needed is never paid for. It buys the most of any lever
 short of interest management, and it makes every subsequent wire change more expensive to reason about.
 
-**3. Quantise harder.** Distinct from lever 2: that one spends fewer bits on the same value range, this
+**3. Quantize harder.** Distinct from lever 2: that one spends fewer bits on the same value range, this
 one shrinks the range. Position is already a quarter of a world unit over the play area. Going further
 means asking what the *client draws* from a field and giving it exactly the precision that draws.
 
@@ -171,14 +171,14 @@ precision.
 
 **5. Rate-separate**, per the independence test above.
 
-**6. Interest management.** The host already serialises a per-player entity set rather than the world; in
+**6. Interest management.** The host already serializes a per-player entity set rather than the world; in
 the MVP that set is everything. Making it smaller is the fog-of-war work, and it is the lever that scales
 best and costs most.
 
 **7. Delta encoding — declined, and know why before re-proposing it.** ADR-003 examined and rejected it,
-not on the costs first given (a history ring is 240 KB and the acknowledgement channel already exists in
+not on the costs first given (a history ring is 240 KB and the acknowledgment channel already exists in
 `lastCommandSeqApplied`) but on its merits: **delta saves most when nothing is moving and least when
-everything is.** It optimises the idle case and degenerates to a full snapshot plus a bitmask during the
+everything is.** It optimizes the idle case and degenerates to a full snapshot plus a bitmask during the
 battle that is the only time the budget is under pressure. Re-propose it only by defeating that.
 
 ## Upstream: the command packet, and the bound nobody wrote down
@@ -191,7 +191,7 @@ identities — the 5.5× amplification `TechnicalDesign.md` §5 already makes th
 
 **The retransmit window was the constraint, and finding it is what `--upstream` is for.** Commands are
 *repeated in every outgoing packet until acknowledged*, so the packet holds however many are outstanding
-— and at a full selection **five fit and six fragment**. That count is behaviour, not format: a stalled
+— and at a full selection **five fit and six fragment**. That count is behavior, not format: a stalled
 host or a run of lost snapshots pushes it up, under exactly the load where a fragmented command packet is
 worst. §5 now answers it structurally — **the packet is filled oldest-first and stops when the next
 command will not fit** — so the packet cannot exceed the payload, no order is dropped, and the sequence

@@ -65,13 +65,13 @@ Checks: >
   -clang-analyzer-optin.performance.Padding,
   -performance-enum-size
 
-# `-clang-analyzer-optin.performance.Padding` is a judgement call, not a mechanical exclusion. It
+# `-clang-analyzer-optin.performance.Padding` is a judgment call, not a mechanical exclusion. It
 # is an OPT-IN analyzer that arrives with clang-tidy's defaults because this list does not begin
 # with `-*`. Wire records, mesh vertices and GPU instance structs have layouts that are
 # load-bearing — a snapshot record is the size the wire says it is — and reordering fields to save
 # padding is exactly the change this repository must not make casually.
 #
-# `-bugprone-narrowing-conversions` is off because quantisation is pervasive and deliberate:
+# `-bugprone-narrowing-conversions` is off because quantization is pervasive and deliberate:
 # world units to lattice steps, angles to fixed-point turns, 64-bit quantities to a 32-bit wire
 # field, float to the integer wire types. It would fire on most of the serialization layer, where
 # the narrowing IS the design.

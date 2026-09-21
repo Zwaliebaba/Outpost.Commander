@@ -3,7 +3,7 @@
 
 CI gates Debug|x64 and the format check and nothing else, so a Release that lost a setting,
 an ARM64 that assumes an x86 intrinsic switch, or a Debug group that quietly grew a setting
-that is not about optimisation all reach main green (AGENTS.md section 6). Compiling three
+that is not about optimization all reach main green (AGENTS.md section 6). Compiling three
 more pairs costs minutes; reading the XML costs under a second and catches the drift that
 those pairs would have caught. It cannot catch a break in code -- only in configuration.
 
@@ -24,7 +24,7 @@ SDK = "10.0.26100.0"
 PLATFORMS = {"x64", "ARM64"}
 CONFIGURATIONS = {"Debug", "Release"}
 
-# Section 3: the settings that are ABOUT optimisation, and may therefore be conditioned on the
+# Section 3: the settings that are ABOUT optimization, and may therefore be conditioned on the
 # configuration. Anything else found inside a configuration-conditioned group is the rule being
 # broken -- that is the whole point of the check, and it is the half no build would ever fail on.
 BY_CONFIGURATION = {
@@ -34,7 +34,7 @@ BY_CONFIGURATION = {
                 "FunctionLevelLinking": "true", "IntrinsicFunctions": "true",
                 "EnableCOMDATFolding": "true", "OptimizeReferences": "true"},
 }
-# Linker optimisations. A StaticLibrary never invokes the linker, so these are required only of an
+# Linker optimizations. A StaticLibrary never invokes the linker, so these are required only of an
 # Application or a DynamicLibrary -- NeuronClient and GameClient DO carry a <Link> section, holding
 # GenerateWindowsMetadata and nothing else (section 3), so the presence of one decides nothing.
 LINK_ONLY = {"EnableCOMDATFolding", "OptimizeReferences"}
@@ -110,7 +110,7 @@ def check_project(path):
                 seen[configuration].add(name)
                 continue
             if name not in ALLOWED:
-                fault(path, f"{configuration} group sets {name}, which is not about optimisation "
+                fault(path, f"{configuration} group sets {name}, which is not about optimization "
                             f"-- section 3 says it belongs in the unconditioned group")
             elif name not in table:
                 fault(path, f"{configuration} sets {name}, which section 3 gives only to "

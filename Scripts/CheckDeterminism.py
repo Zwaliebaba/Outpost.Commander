@@ -9,7 +9,7 @@ seed, which is the class of defect that cannot be debugged from a report of what
 
     python3 Scripts/CheckDeterminism.py
     python3 Scripts/CheckDeterminism.py --also NeuronCore
-    python3 Scripts/CheckDeterminism.py --review   # include the judgement calls
+    python3 Scripts/CheckDeterminism.py --review   # include the judgment calls
 
 Comments and string literals are stripped before matching, so the output is signal. What it
 cannot see is in SKILL.md and is not optional -- a clean sweep is half the audit.
@@ -52,7 +52,7 @@ VIOLATIONS = [
      "integer arithmetic in the simulation, DirectXMath on the client side of the seam"),
 ]
 
-# A judgement call: legal, but each is a way a determinism defect has historically arrived.
+# A judgment call: legal, but each is a way a determinism defect has historically arrived.
 REVIEW = [
     (r"\bstd::(sort|stable_sort|nth_element|partial_sort|make_heap|push_heap|pop_heap)\b",
      "does the comparator impose a TOTAL order?",
@@ -104,7 +104,7 @@ def main():
     parser.add_argument("--also", action="append", default=[],
                         help="another directory to treat as simulation, e.g. NeuronCore")
     parser.add_argument("--review", action="store_true",
-                        help="also report the judgement calls, which are legal but load-bearing")
+                        help="also report the judgment calls, which are legal but load-bearing")
     a = parser.parse_args()
 
     directories = [a.root / d for d in SIMULATION + a.also]
@@ -129,10 +129,10 @@ def main():
                 review += 1
 
     print(f"\n{violations} violation(s)"
-          + (f", {review} judgement call(s)" if a.review else "")
+          + (f", {review} judgment call(s)" if a.review else "")
           + f" across {len(files)} file(s) in {', '.join(d.name for d in directories)}.")
     if not a.review:
-        print("  Run with --review for the judgement calls: sort comparators, distributions,")
+        print("  Run with --review for the judgment calls: sort comparators, distributions,")
         print("  pointer-keyed containers and mutable statics are all legal and all load-bearing.")
     print("  A clean sweep is HALF the audit. SKILL.md lists what no sweep can see.")
     return 1 if violations else 0

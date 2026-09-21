@@ -21,7 +21,7 @@ self-evident. It also consumed `Holding`, which is one of only three verbs R21 g
 
 ## Decision
 
-**A tap selects one ship. A second tap on it selects every ship of the same design within a circle centred
+**A tap selects one ship. A second tap on it selects every ship of the same design within a circle centered
 on it.** This originally read *"a hold on a ship"*;
 [`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) replaced the verb and left everything below it
 standing, so the table's reasoning is unchanged and reads the same for a double tap as it did for a hold.
@@ -30,7 +30,7 @@ standing, so the table's reasoning is unchanged and reads the same for a double 
 |---|---|
 | **The circle is screen-space**, 192 authored pixels in radius — four times the 48-pixel touch target, about 27% of the frame's width. | The player sees exactly what they will get. |
 | **It is drawn while the finger is down** and committed on release. | No invisible rule. |
-| **It is centred on the ship, not on the finger.** | The finger is covering the ship. |
+| **It is centered on the ship, not on the finger.** | The finger is covering the ship. |
 | **Own ships only, same design only.** | A hold on the station, which is the only one of its design, selects the station. |
 | **The radius is fixed and does not grow with the hold.** | Time as a second axis makes the gesture slow and the result unpredictable. |
 
