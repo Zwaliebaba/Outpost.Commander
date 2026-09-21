@@ -23,28 +23,38 @@ it rather than assumed.
 everything below conditional on however the window happened to be sized; a touch-only game in a resizable
 window is not a coherent object anyway.
 
-**The world is authored at 1440 × 960** and drawn into a scene target at that size, then fitted into the
-back buffer. **The interface is authored at 1440 × 960 too — and drawn afterwards, at physical
-resolution** ([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). Every layout number in
-this document is an authored number and is unconditional, exactly as R13 requires; at draw time each one
-is carried through the same fit transform the present step already computed, so nothing branches on the
-window size and **text is not resampled**.
+**The world is drawn into a scene target and fitted into the back buffer, and its resolution is a scale of
+the panel whose default is 1:1 — 2880 × 1920**
+([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). **The interface is authored at 1440 × 960
+and drawn afterwards, at physical resolution**
+([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). Every layout number in this document is
+an authored number and is unconditional, exactly as R13 requires.
 
-**That fit is exactly 2×, so it is point sampling and it is crisp** — and it is 3:2, so there is no
-letterbox. This is not a coincidence: 200% is the scale Microsoft ships on this panel, so the authored
-frame *is* the DIP frame and the swap chain is exactly twice it. R13's whole architecture exists to make
-the exact-multiple path common, and on the target device it is the only path taken.
+**Those are two numbers doing two different jobs, and each has its own transform.** The world fit maps the
+scene target into the back buffer; the interface fit maps this document's authored coordinates into the
+back buffer. Both are values from the one place that asks the window how big it is, so nothing branches on
+the window size and **text is not resampled**. They were a single transform until ADR-016, and separating
+them is what makes 1440 × 960 mean what it reads as here — a statement about fingertips rather than about
+fill rate. **The world's resolution can change and no number below moves.**
 
-Everything else is correct rather than crisp, which is what R13 buys. A Surface Pro 7 (12.3 inches,
-2736 × 1824) scales 1.9× and resamples slightly. A 1080p monitor — the display a developer actually works
-on — fits 1.125× and pillarboxes; that is the *development* case and it is deliberately not the one
-optimised for.
+At the 1:1 default the world reaches the panel unfiltered, which is R13's best path; at a 0.5 scale it is
+point-sampled at an exact 2×, which is sharp but doubles every pixel. It is 3:2 either way, so there is no
+letterbox. **The 1440 × 960 the `CoreWindow` reports is a DIP figure and enters neither fit** — the swap
+chain is created at physical pixels, so the display scale never reaches the arithmetic. An earlier version
+of this section called that correspondence "not a coincidence"; ADR-007 corrected it, because dressing a
+free choice as a natural consequence invites someone to "fix" the swap chain to DIPs and break it.
 
-**A 1,440 × 960 scene target is 1.38 megapixels**, which is small. That matters more than it sounds:
-4× multisampling costs 5.5 megasamples, which is affordable, and space is thin bright silhouettes against
-black — exactly the content that wants it (`TechnicalDesign.md` §6). The interface pass cannot be
-multisampled, because a flip-model back buffer cannot be; for rectangles and text quads that costs
-nothing.
+Everything that is not this panel is correct rather than crisp, which is what R13 buys. A Surface Pro 7
+(12.3 inches, 2736 × 1824) resamples slightly. A 1080p monitor — the display a developer actually works
+on — now *downscales* by 0.5625, which is supersampling; that is the *development* case and it is still
+deliberately not the one optimised for, but it has stopped being the ugly one.
+
+**At 1:1 the scene target is 5.53 megapixels and at 0.5 it is 1.38**, and that difference is the whole of
+what the scale buys. 4× multisampling costs 22.1 megasamples at the first and 5.5 at the second, and space
+is thin bright silhouettes against black — exactly the content that wants it (`TechnicalDesign.md` §6).
+Worth carrying: **1,440 × 960 at four samples and 2,880 × 1,920 at one are the same 5,529,600 samples.**
+The interface pass cannot be multisampled, because a flip-model back buffer cannot be; for rectangles and
+text quads that costs nothing.
 
 ### The touch target, derived
 
@@ -54,17 +64,54 @@ so 1,440 authored pixels over 10.82 inches is **133 authored pixels per inch, 5.
 Microsoft's touch guidance puts the minimum target at 7 mm and the recommended one at 9 mm, which is
 **37 and 47 authored pixels**.
 
-**The minimum interactive target is 48 × 48 authored pixels**, with at least 12 pixels of clear space
-between adjacent targets. Forty-eight because it is the 9 mm recommendation rounded up, and because at the
-exact 2× scale it lands on **96 physical pixels — 9.15 mm** — with no fractional edge anywhere. A control
-smaller than this is a defect, not a style choice.
+**The minimum interactive target is 48 × 48 authored pixels**, with at least **16 pixels of clear space**
+between adjacent targets. Forty-eight because it is the 9 mm recommendation rounded up, and because the
+interface fit is an exact 2× so it lands on **96 physical pixels — 9.15 mm** — with no fractional edge
+anywhere. A control smaller than this is a defect, not a style choice. Sixteen pixels of clearance is
+3.05 mm, above Microsoft's 2 mm minimum rather than exactly on it, because this is a game and a mis-hit
+costs a fleet rather than a menu.
+
+**There are three tiers, and the tier is decided by what the player is doing when they reach for it.**
+
+| | Authored | Physical | Millimetres | What |
+|---|---|---|---|---|
+| **Floor** | 48 × 48 | 96 | 9.15 | Anything interactive. Nothing is smaller. |
+| **Combat** | 64 × 64 | 128 | 12.2 | Anything hit while the match is running — the selection panel's design groups, the clear target, the cancel on the build queue. |
+| **Under fire** | 96 × 96 | 192 | 18.3 | The build buttons, which are hit while something is exploding (§6). |
+
+### The gesture constants, derived
+
+These are the numbers under the seam and the hit test. R21 requires the arithmetic beneath a gesture to be
+a pure function with a suite over it, and a number nobody wrote down is a number the suite cannot pin.
+
+| | Authored | Millimetres | Why this number |
+|---|---|---|---|
+| **Pick radius** | 24 | 4.58 | Half the 48-pixel floor, so a world tap has the same reach as an interface target and a 4-pixel ship at tactical zoom is still hittable. A tap takes the **nearest** candidate inside it. |
+| **Tap slop** | 16 | 3.05 | The travel that separates a tap from a pan. Above handheld tremor, below a third of the floor. **Do not inherit `GestureRecognizer`'s default** — pin this, and begin the pan at the point the threshold was crossed so the first 16 pixels are not lost to a jump. |
+| **Double-tap window** | — | — | 300 ms, and the second tap is matched **by entity identity** rather than by distance ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) — a moving ship must still be the same ship. |
+| **Contact rejection** | 78 | 14.9 | A contact whose `ContactRect` exceeds this in either dimension is a palm, not a finger, and is dropped at the seam (§2). A fingertip is 8–12 mm. |
+
+**The pick order is stated, because "what is under it" is not a total order when things overlap:** own
+ship, then own station or module, then hostile, then asteroid, then empty space. Nearest wins inside a
+tier; the tier wins across one.
 
 ### Where the hands are
 
-A tablet is held at its sides and the thumbs reach the bottom corners. **The frequently used controls
-live in the bottom corners deliberately** — selection on the left, build on the right — and the middle of
-the bottom edge is kept comparatively clear, because that is the part of the screen a held tablet's thumbs
-cannot reach without regripping.
+**The posture is the kickstand on a desk or a lap, and one or two index fingers.** This document
+previously said the tablet is held at its sides with the thumbs reaching the bottom corners, which is the
+right model for a phone or an 8-inch tablet and the wrong one for this device: a Surface Pro 11 is
+**287 × 208 mm and 895 grams**. Nobody plays a twenty-minute match holding nine hundred grams in two
+hands, and at 287 mm across the far bottom corner is outside a comfortable thumb arc even if they did.
+
+**That changes which constraint binds.** Reach stops mattering and **occlusion starts**: a player reaching
+in covers the target and a wedge of screen around it with hand and forearm, on the side of their dominant
+hand. The frequently used controls still belong along the bottom edge, where they are out of the way of
+the playfield and close to a resting hand — but *which* corner is a handedness question rather than a
+reach question, and it is on the register (`OpenQuestions.md` Q33) rather than settled here.
+
+**One consequence is already actionable**: anything the player must *read* while their hand is on the
+screen must not be under that hand. The selection panel is the readout that matters during a gesture, and
+§4 puts it on the opposite side of the interaction it reports.
 
 ---
 
@@ -82,6 +129,13 @@ things depending on how many fingers began it, so the seam records the contact c
 down mid-drag does not change what the drag is doing** — the alternative is a camera that lurches whenever
 a thumb brushes the glass.
 
+**The seam rejects palms, at the same site that drops non-touch pointers.** On a 287 mm screen played on a
+desk the heel of a hand reaches the glass routinely, and the contact-count latch above only protects a
+gesture already in progress — a palm landing *first* starts a manipulation of its own and the camera
+lurches. `PointerPoint.Properties.ContactRect` gives the contact's extent; anything wider or taller than
+**78 authored pixels, 14.9 mm** (§1) is not a fingertip and never becomes an input record. One test, one
+site, and the game stops being unpleasant on a table.
+
 Everything downstream of the seam is a pure function over an input event and the camera, lives in
 `NeuronClient` or `GameClient`, and has a suite over it. R21 is explicit about why: the sign of a pinch
 and the sign of a rotation are things a package can hide and a test cannot.
@@ -96,29 +150,46 @@ an instance of it.
 | Gesture | What it does |
 |---|---|
 | **One-finger tap** | The verb. What it does depends on what is under it — §4. |
-| **One-finger hold on a ship** | Selects that ship **and every ship of the same design within a circle centred on it**. |
+| **One-finger double tap on your ship** | Selects that ship, then expands to **every ship of the same design within a circle centred on it**. The first tap fires at once; the second upgrades it ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). |
 | **One-finger drag** | Pans the camera. **Unconditionally** — it has no second meaning and never has. |
 | **Two-finger pinch** | Zooms — and with it, pitches. |
 | **Two-finger rotate** | Orbits. |
 | **Two-finger drag** | Pans, identically to one finger. It comes free from the same manipulation and refusing it would be a surprise. |
+| **One-finger hold on empty space** | **Recentres** the camera on the selection, or on your station when nothing is selected ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). |
+| **One-finger hold on a ship** | **Nothing**, and deliberately — the second of the two verbs ADR-017 freed is still banked (§7). |
 
 **One finger has exactly two meanings, separated by whether it moved**, which is as unambiguous as a single
-pointer gets. A tap is the verb, a drag is the camera, and the recogniser's own movement threshold decides
-which — so a slightly sloppy tap pans a few pixels instead of issuing an order. That is the right failure:
-an accidental pan costs nothing and an accidental move order costs a fleet.
+pointer gets. A tap is the verb, a drag is the camera, and **§1's 16-pixel tap slop** decides which — so a
+slightly sloppy tap pans instead of issuing an order. That is the right failure: an accidental pan costs
+nothing and an accidental move order costs a fleet.
+
+**The threshold is pinned here rather than inherited from the recogniser**, because the asymmetry above
+only holds if the number is right. Too small and a normal handheld tap — five to ten physical pixels of
+travel is ordinary — loses the order *and* displaces the camera, which is two costs rather than none. The
+pan begins at the point the threshold was crossed, so nothing jumps when it engages.
+
+**A double tap is not a third meaning.** It arrives on `Tapped` with a count, the first tap has already
+acted, and the second only ever expands a selection — so no tap in this game waits to find out what it
+is (`ADR-017`).
 
 **There is no band select.** A finger cannot draw a rectangle without that drag meaning two things, and the
 hold-and-drag arrangement that would have allowed it consumed `Holding` — one of only three verbs R21
-gives — to buy a gesture that is not self-evident and is 300 ms slow.
+gives — to buy a gesture that is not self-evident and is slow.
 [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)
 records why, and §4 says what replaces it.
 
-**`Holding` over empty space is unassigned**, deliberately. It is the one gesture this design has left over.
+**`Holding` is unassigned everywhere**, deliberately, and since
+[`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) that is two gestures in reserve rather than
+one — over a ship as well as over empty space. ADR-010 rejected hold-and-drag for a latency it then paid
+itself by adopting a plain hold; a double tap is faster, is the idiom every RTS player already knows, and
+hands the verb back.
 
 ## 4. Selection and orders
 
-**A tap's meaning comes from what is under it**, which is the only way to have a verb without a modifier
-key. With something selected:
+**A tap's meaning comes from what is under it** — within §1's **24-pixel pick radius**, nearest first,
+in the stated tier order — which is the only way to have a verb without a modifier key. A point hit test
+against a four-pixel silhouette is a coin flip, and the failure is the expensive one: you miss the ship,
+hit empty space, and the fleet you had selected flies there. With something selected:
 
 | Tapped | Order |
 |---|---|
@@ -132,11 +203,26 @@ A tap on empty space with **nothing** selected does nothing.
 
 ### Selecting more than one
 
-**A hold on one of your ships selects it and every ship of the same design within a circle centred on it.**
-The circle is **screen-space, 192 authored pixels in radius** — four times the touch target, about a
-quarter of the frame's width — and it is **drawn while the finger is down** so there is no invisible rule
-about what is included. It is centred on the *ship* rather than the finger, because the finger is covering
-the ship. Own ships only, same design only, and the radius does not grow with the hold.
+**A double tap on one of your ships selects it and then every ship of the same design within a circle
+centred on it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)). **The first tap selects
+that one ship immediately**, exactly as a single tap always has; a second tap that resolves to the *same
+ship* within 300 milliseconds expands the result. Nothing is deferred waiting to see whether a second tap
+arrives, so no tap in this game got slower, and an expansion abandoned halfway leaves one ship selected
+rather than nothing.
+
+It replaced a hold, which fired no faster than the hold-and-drag ADR-010 rejected for being slow, and
+which asked a hand to stay motionless for half a second on a handheld device in the middle of a fight.
+
+The circle is unchanged: **screen-space, 192 authored pixels in radius** — four times the touch floor,
+about a quarter of the frame's width — **drawn during the gesture** so there is no invisible rule about
+what is included, centred on the *ship* rather than the finger because the finger is covering the ship,
+own ships only, same design only, fixed radius.
+
+**The circle is largely under the player's hand, so the count is read somewhere else.** At 192 pixels of
+radius it is 73 mm across and a reaching hand covers a good part of it. The drawn circle stays — it is the
+rule made visible — but the **selection panel updates live during the gesture**, and it is on the opposite
+side of the screen from the hand that is doing it (§1, §6). That is the readout the player actually
+watches.
 
 **The camera is the group-size control.** Because the circle is screen-space, zooming in takes a squad and
 zooming out takes the fleet, using a gesture the player is already driving constantly. This is what a
@@ -163,7 +249,13 @@ not move until the host says they did. R19 forbids the client simulating, not th
 asked for.
 
 Orders replace; there is no queueing and no shift-equivalent, because there is no shift. Order queueing
-needs a gesture nobody has proposed and it is not in the MVP.
+needs a gesture, and since [`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) there is one free —
+it is still out of the MVP, but for want of a decision rather than for want of a verb (§7).
+
+**There is no attack-move and no stop, and neither is missing.** Attack-move exists to substitute for a
+target you cannot see; with no fog of war in the MVP you can always see the target and tap it directly.
+Stop is a move order to where the selection already is. **Both become real gaps the day fog ships**, and
+that is the milestone to reopen them at, not this one.
 
 ## 5. The camera
 
@@ -171,21 +263,101 @@ The camera always looks at a **focus point on the plane** and never rolls. Pan m
 which is clamped to the play area plus a margin. Orbit turns the camera around it. Zoom changes the
 distance.
 
+**How a finger becomes that motion is one decision and it is
+[`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md): the camera is anchored to the plane.** A
+ray through the contact centroid at `ManipulationStarted` meets the plane and that world point is kept;
+each update solves for the focus that puts it back under the current centroid. **The ground sticks to the
+finger**, which is what every map application does and what hands already expect — the alternative, moving
+the focus by the finger's delta times a constant, slides the ground at a different rate from the finger
+and at a different rate again at the top of the screen than the bottom, because that is what perspective
+does.
+
+**One solve does all of it**, so scale gives the new distance and pitch, rotation gives the new heading,
+and then a single anchor solve places the focus. **The recogniser's translation is not applied on top** —
+that double-counts, and a camera that accelerates is what it looks like. Orbit turns about the anchor
+rather than the focus for free, and a one-finger drag is the same solve with no scale and no rotation,
+which is why §3's "two fingers pan identically to one" is true by construction here rather than by care.
+
+**At the clamp the ground stops and the finger slides over it.** The focus is clamped after the solve, so
+the anchor slips at the edge of the play area. That is correct and it is stated because it reads as a
+defect the first time it is seen. **There is no inertia**: the action immediately after positioning this
+camera is a precise tap, and momentum fights that.
+
 **Pitch is coupled to zoom and is not separately controllable.** Fully zoomed out the camera is near
 top-down; fully zoomed in it rakes low across the plane. This is not a compromise made reluctantly — it
 removes a whole degree of freedom from a gesture budget that has very little left, and it gives an RTS
 exactly what it wants at each end: a tactical read when out, a fleet in silhouette when in. What it costs
 is the deliberate low-angle overview shot, which is a screenshot rather than a control.
 
-**Rotation has a deadzone**: the camera ignores a manipulation's rotation until it exceeds about eight
-degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws whenever
-you pan is unusable.
+**Low has a floor, and the floor is what keeps a tap accurate.** As the camera rakes, a screen pixel near
+the top of the frame maps to an ever-larger world distance — so tap precision collapses exactly when the
+player has zoomed in *for* precision, and ADR-010's screen circle stretches into an ever-longer wedge.
+Both are the same effect and one number bounds both.
+
+**The vertical field of view is 40° and the minimum pitch is 30° above the plane.** At that floor the top
+edge of the frame looks 10° down, which meets the plane at **5.67 camera heights against 1.73 at the
+frame's centre — a 3.3× stretch, top to middle**, and the horizon is never on screen. Lowering the floor
+buys a more raking silhouette and pays for it on that ratio, which grows without bound as the top edge
+approaches the horizontal; raising it costs the look. **M1.8 pins both numbers and states the ratio it
+measured**, and the wedge ADR-010 warns about cannot be worse than this. The floor bounds a third thing:
+an anchor near the horizon would need an unbounded focus movement to stay under the finger (ADR-018).
+
+**The floor saturates the pitch; it does not end the zoom.** `pitch(distance)` clamps its *output* at 30°
+and distance keeps decreasing below the point where it bottoms out. Read the coupling the other way — a
+floor on pitch terminating the range — and the camera quietly loses its close zoom, which is not what the
+floor is for.
+
+**Rotation has a deadzone, and it latches**: the camera ignores a manipulation's rotation until it exceeds
+about eight degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws
+whenever you pan is unusable. **Once it engages it stays engaged for the rest of that manipulation** —
+without the latch the camera stutters every time the player crosses back under the threshold mid-gesture,
+which is worse than no deadzone at all.
+
+**Zoom needs a small deadzone too, and for the mirror-image reason.** Fingers that rotate also change
+separation slightly, so a pure orbit otherwise creeps the zoom — and since pitch is coupled to zoom, an
+orbit silently re-pitches the camera. **Two per cent of scale** is below that noise and above nothing a
+player intends. Pan and zoom still compose freely, as §3 says; rotation is the one axis that is gated, and
+gating it needs both numbers.
+
+**On release the heading snaps to the nearest cardinal** when it is within a stated threshold of one.
+There is no minimap and no compass, so a map that is reliably north-up whenever the player is not
+deliberately turning it is worth one constant — spatial memory is what stands in for the minimap this
+design declines.
+
+**Orbit is the fragile gesture, and it is the named candidate to cut.** The three constants above exist
+*only* because rotation shares a manipulation with zoom, and on a kickstand a thumb-and-index rotation has
+about 50° of arc before a re-grip, so a half-turn is three or four gestures. For a symmetric map on a
+plane that is effort spent on something largely cosmetic. It stays for the MVP; if M1 finds two-finger
+manipulation unreliable, **cutting it removes four constants and makes pinch pure zoom**
+([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — a reliability gain rather than a
+feature loss.
+
+**The zoom range is about two gestures, which is why no gain constant is needed.** At the 40° field of
+view above, showing the whole 16,384-unit square puts the camera at **22,500 units**, and the 3:2 aspect
+gives roughly 24,600 units of visible width so the square fits on its height. The near end is not pinned;
+at a close view of about 1,500 world units it is near 1,400, making the range **16×** — and a comfortable
+pinch spans about 4× of scale, so the whole range is two gestures. M1.8 pins the near end, and if the
+range grows much past that the lever is a gain on the scale rather than a different gesture.
 
 **There is no minimap.** Because pitch is coupled to zoom, **maximum zoom-out is already a top-down
 tactical view of the whole map** — a minimap would be a second, smaller, lower-fidelity copy of a view
 that is one gesture away, costing a second render of every entity, a second coordinate space and a second
 hit test, for a quarter of the frame's height. With a symmetric map and no fog of war there is nothing on
-it a player does not already know. The camera is the only way to move the camera.
+it a player does not already know.
+
+**The sky is the other half of what a minimap gives, and it is free.**
+[`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) fixes a generated star field in world
+space, so it rotates with heading and pitch and does **not** translate with pan — panning across the map
+leaves it still. With no minimap and no compass, that is which-way-am-I-facing, answered by the backdrop.
+It is why ADR-019 is not only decoration, and it is dim enough (12% over any large area) not to cost the
+silhouette legibility this design is built on.
+
+**What a minimap does provide is a way back, and that is a hold rather than a panel.** `GameDesign.md` §7
+names the problem — a defender has to be watching the right part of a 16,384-unit map at the right moment
+— and until now the only way back to your own base was panning there. **A hold on empty space recentres**
+on the selection, or on your station when nothing is selected (ADR-018, spending one of the two verbs
+ADR-017 freed). It is the cheap half of a minimap without the second render, the second coordinate space
+or the second hit test.
 
 ---
 
@@ -197,12 +369,15 @@ pass at physical resolution (§1).
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
-| **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
-| **Build** | Bottom right, thumb zone | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and greyed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
+| **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
+| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and greyed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
 | **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
-Every target in every panel is at least 48 × 48 (§1), and **the build buttons are 96 × 96** — 18 mm,
-twice the minimum — because they are the ones a player hits while something is exploding.
+Every target in every panel is at least 48 × 48, and §1's three tiers decide which are larger. **The build
+buttons are 96 × 96** — 18.3 mm, twice the floor — because they are the ones a player hits while something
+is exploding. **The selection panel's design groups, its clear target and the build queue's cancel are
+64 × 64**, 12.2 mm: they are hit under the same pressure as the build buttons and were previously at the
+floor, which is the size for something you reach for between fights.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so every panel
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
@@ -252,12 +427,20 @@ honest consequence of a match that does not pause, and it is the same behaviour 
 
 ### What this document does not settle
 
-**`Holding` over empty space means nothing, and that is a decision rather than an omission.** It is the
-one gesture left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md). R21 hands out
-three verbs and this design has already refused a feature for want of one — **order queueing has no
-gesture and is out of the MVP because of it** (§4). An idle affordance costs nothing; a gesture spent on
-something marginal is not there when something real needs it. A map ping, a map-wide select-by-design and
-a jump-to-station were each considered and each declined.
+**One of the two freed `Holding` gestures is spent and the other is banked.** `Holding` was the one verb
+left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md); moving group selection onto
+a double tap ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) freed it over a ship as well,
+making the reserve two. **A hold on empty space now recentres the camera**
+([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — it went to a navigation hole the MVP
+has today rather than to a feature it might want later, which is the test.
+
+**A hold on a ship still means nothing, and that is a decision.** Order queueing is the standing candidate
+— §4 notes it is now short a decision rather than short a verb — and a stop-and-hold-position is the
+other. ADR-010's instinct was right and survives its own gesture being replaced: an idle affordance costs
+nothing, and a verb spent on something marginal is not there when something real needs it. A map ping and
+a map-wide select-by-design were each considered and each declined; the jump-to-station that was declined
+with them is what ADR-018 has now put back, which is worth noticing — it was declined for want of a verb
+and returned the moment there was one.
 
 ### When a match ends
 
@@ -274,9 +457,22 @@ rather than by arguing about it:
 
 1. **Whether 192 pixels is the right circle** (§4) — and specifically whether the raking-camera case
    selects the wrong ships, since a circle on screen is a wedge in the world
-   ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)).
+   ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)). §5's pitch floor now bounds how bad
+   that can get; what it cannot say is whether the bound is comfortable.
 2. **Whether the interface pass costs more GPU time than the world pass**, which is likely: five instanced
    draws of simple geometry against an unbatched quad per glyph.
+3. **Whether §1's gesture constants are right** — the 16-pixel tap slop above all, because it is the one
+   that decides how often an intended order becomes a pan. The 24-pixel pick radius and the 300-millisecond
+   double-tap window are the other two, and all three are single constants behind a tested pure function.
+4. **Which side the panels belong on** (`OpenQuestions.md` Q33), which is a handedness question now that
+   occlusion rather than reach is the binding constraint.
+5. **Whether the ground actually sticks to the finger** across the pitch range
+   ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The failure is drift over a long
+   gesture, and a test catches that only if it already knows the tolerance to expect.
+6. **Whether orbit is usable one-handed on a kickstand**, and how often a re-grip is needed. This is the
+   one that decides whether orbit and its three protecting constants survive §5's kill-switch.
+7. **The near end of the zoom range** (§5), which is the only one of the two that arithmetic does not
+   already give.
 
 **Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
 ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a

@@ -1,6 +1,10 @@
 # ADR-010 — Selection is a tap, or a hold that takes the same design nearby
 
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-09-21 by
+[`ADR-017`](ADR-017-group-selection-is-a-double-tap.md): the verb is a double tap, not a hold.** The
+selection *rule* below — same design, screen-space circle, camera as the group-size control — is unchanged
+and is what this ADR is still the record of. ADR-017 exists because the latency objection this ADR raised
+against hold-and-drag applied equally to the plain hold it adopted.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal
 
@@ -17,8 +21,10 @@ self-evident. It also consumed `Holding`, which is one of only three verbs R21 g
 
 ## Decision
 
-**A tap selects one ship. A hold on a ship selects every ship of the same design within a circle centred
-on it.**
+**A tap selects one ship. A second tap on it selects every ship of the same design within a circle centred
+on it.** This originally read *"a hold on a ship"*;
+[`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) replaced the verb and left everything below it
+standing, so the table's reasoning is unchanged and reads the same for a double tap as it did for a hold.
 
 | | |
 |---|---|

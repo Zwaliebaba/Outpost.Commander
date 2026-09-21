@@ -3,7 +3,9 @@
 **Status:** Accepted — **amended 2026-09-20 by
 [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md), which binds this decision to the world
 only.** The interface no longer draws into the scene target, so the authored frame no longer sets the
-interface's resolution. **Date:** 2026-09-20 **Owner:** Stefan Zwaal — the target device; the resolution
+interface's resolution. **Further amended 2026-09-21 by
+[`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md): the world's resolution is a scale defaulting to
+1:1, this decision's crispness argument is corrected, and the interface gets a transform of its own.** **Date:** 2026-09-20 **Owner:** Stefan Zwaal — the target device; the resolution
 follows from it
 
 ## Context
@@ -27,9 +29,11 @@ the `CoreWindow` reports 1440 × 960 device-independent pixels. **The swap chain
 pixels — 2880 × 1920 — not at DIPs.** The scene target is the authored 1440 × 960 and the present step
 scales it by exactly 2.
 
-**The consequence worth stating in one line: on the target device the fit is an exact integer multiple, so
-it is point sampling, so it is crisp.** R13's exact-multiple path is not an optimisation for a lucky
-window size here; it is the only path the target device takes.
+**The consequence originally stated here was that the fit is an exact integer multiple, so it is point
+sampling, so it is crisp. [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) corrects the last
+clause:** point sampling at an exact multiple is *sharp*, not crisp — it doubles every pixel, so nothing
+finer than two physical pixels can exist on screen. R13's exact-multiple path is still the one a 0.5 scale
+takes; it is no longer the only path the target device takes, because the default is now 1:1.
 
 **The minimum interactive touch target is 48 × 48 authored pixels** (`Design/Interface.md` §1), which is 96
 physical pixels and 9.15 mm — the recommended 9 mm rounded up, landing on an even number of physical
@@ -77,8 +81,9 @@ interface.
 
 None yet. Two are owed:
 
-1. **The frame time at 1440 × 960 on an actual Surface Pro**, at one sample and at four, on **both x64 and
-   ARM64**. The Surface Pro 11 is a Snapdragon X part, so ARM64 is the target platform — and CI builds
+1. **The frame time on an actual Surface Pro**, at one sample and at four, on **both x64 and
+   ARM64** — and since [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) at **both** 2880 × 1920 and
+   1440 × 960, because that measurement is what now settles which one ships. The Surface Pro 11 is a Snapdragon X part, so ARM64 is the target platform — and CI builds
    `Debug|x64` only (`AGENTS.md` §6), so it is also the platform nothing automated ever compiles.
 2. **That the present step takes the point-sampled path on the device**, confirmed by looking at it rather
    than by reading the code. R13's whole arrangement is worthless if a conversion error lands the scale at

@@ -80,9 +80,10 @@ And M0 exists to answer questions rather than to build a game. Three of them are
   default ([`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)), needing a loopback exemption
   Microsoft documents as a sideload-or-debugging arrangement and that Visual Studio grants silently on
   every F5. If UDP replies need the inbound form, `CheckNetIsolation.exe` has to stay running throughout.
-- **Whether the present step really lands on an exact 2×** on a Surface Pro
-  ([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)). R13's whole arrangement is worth nothing
-  if a conversion error puts the scale at 1.99, and that is confirmed by looking at the screen.
+- **Whether the present step really lands on the scale it computed** on a Surface Pro, and **which world
+  scale ships** ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). R13's whole arrangement is
+  worth nothing if a conversion error puts the scale at 1.99 rather than 2, or 0.999 rather than 1, and
+  that is confirmed by looking at the screen.
 
 ## How a design changes
 

@@ -1,7 +1,7 @@
 # M1 — The fleet
 
 [`GameDesign.md`](../GameDesign.md) §10: two stations, the two designs, the current build item, move orders
-with ring assignment, selection by tap and by hold, two clients on one host, host-side command validation.
+with ring assignment, selection by tap and by double tap, a generated sky behind it, two clients on one host, host-side command validation.
 
 **What it proves** is the one thing M0 deliberately left out — that
 [`ADR-006`](../ADR/ADR-006-a-ship-is-a-composition.md)'s component model carries the game rather than
@@ -93,8 +93,14 @@ needs to know who is sending, and the credits readout needs to know which block 
 
 **What the ADR has to settle:** what a client sends on connect and what comes back; how a slot is claimed
 and whether a client may choose; what happens to a second client claiming a taken slot; how a reconnecting
-client (`GameDesign.md` §2, `Interface.md` §7) is recognised as the same player; and whether the protocol
-version check lives here or stays in every packet header.
+client (`GameDesign.md` §2, `Interface.md` §7) is recognised as the same player; whether the protocol
+version check lives here or stays in every packet header; and **the match seed**.
+
+**The seed was missing from this list and R23 already requires it.** The client runs the asteroid
+generator itself — that is the whole of R23 — so it cannot draw a map without the seed, and the join
+record is the only place it can arrive. [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md)
+is a second consumer and costs nothing extra because of it. Whether it also needs a reconnecting client to
+get the *same* seed back is part of what this ADR settles.
 
 **Files:** `Design/ADR/ADR-013-<slug>.md` and the row in `Design/ADR/README.md`; then
 `GameCore/Join.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`, and the client side of it; the project files and
@@ -173,17 +179,50 @@ and `AGENTS.md` §6 guarantees nothing in CI ever will.
 **Read first:** `Interface.md` §5 and §3; `README.md` F6.
 
 **Adds:** what M0.20 stubbed — two-finger pinch zooming and pitching together, two-finger rotate orbiting,
-one- and two-finger drag panning identically. **Pitch is coupled to zoom and is not separately
-controllable**, which removes a degree of freedom from a gesture budget that has very little left and gives
-a near top-down tactical read at one end and a fleet in silhouette at the other. **There is no minimap**
-and `Interface.md` §5 explains at length why maximum zoom-out already is one.
+one- and two-finger drag panning identically, all through M0.20's single anchor solve
+([`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). **Pitch is coupled to zoom and is not
+separately controllable**, which removes a degree of freedom from a gesture budget that has very little
+left and gives a near top-down tactical read at one end and a fleet in silhouette at the other. **There is
+no minimap** and `Interface.md` §5 explains at length why maximum zoom-out already is one.
+
+**Three things land here that M0.20 did not need:**
+
+- **`pitch(distance)` saturates at the 30° floor rather than terminating the zoom range.** Read the
+  coupling the wrong way and the floor silently becomes a zoom-in limit, which is not what it is for.
+- **The zoom range's two ends.** The far end is arithmetic — 22,500 units shows the whole 16,384-unit
+  square at a 40° field of view — and **the near end is this step's to pin**. At roughly 1,500 world units
+  of close view the range is about 16×, which is two pinch gestures at unity gain. If it comes out much
+  larger, the lever is a gain on the scale, not a different gesture.
+- **Heading snaps to the nearest cardinal on release** within a stated threshold. There is no minimap and
+  no compass; a map that is reliably north-up when nobody is deliberately turning it is what spatial
+  memory is built on.
+
+**And the recentre**: a hold on empty space moves the focus to the selection, or to your station when
+nothing is selected (ADR-018, spending one of the two verbs ADR-017 freed). `GameDesign.md` §7 names the
+problem it answers — a defender has to be watching the right part of a 16,384-unit map at the right
+moment, and until now the only way back was panning there.
 
 **Files:** `GameClient/Camera.cpp` extended, `GameClient/CameraGesture.h` `.cpp`;
 `Tests/GameClientTests/CameraGestureTests.cpp`.
 
-**Done when:** the rotation deadzone holds — two fingers dragging to pan are never exactly parallel and a
-camera that yaws whenever you pan is unusable; pitch tracks zoom monotonically with both ends pinned; and
-the pan clamp holds at the corners of the play area plus its margin.
+**Done when:** the rotation deadzone holds **and latches** — two fingers dragging to pan are never exactly
+parallel, a camera that yaws whenever you pan is unusable, and one that stutters as the player crosses
+back under eight degrees is worse; the **2% scale deadzone** holds, so a pure orbit does not creep the
+zoom and therefore the pitch; pitch tracks zoom monotonically with both ends pinned **and never goes below
+`Interface.md` §5's 30° floor at a 40° field of view**; and the pan clamp holds at the corners of the play
+area plus its margin.
+
+**The floor is the number to look at on the device, not just to assert.** It is what bounds tap error near
+the top of the frame, what bounds ADR-010's wedge, and what stops an anchor near the horizon demanding an
+unbounded focus movement (ADR-018). It trades directly against how raking the zoomed-in silhouette looks.
+If it is too high to look good, say so with the stretch ratio in hand rather than lowering it quietly.
+
+**Two things here are looked at rather than asserted, and both are on `Interface.md` §7's list.** Whether
+the ground actually sticks across the pitch range — the failure is drift over a long gesture. And
+**whether orbit is usable one-handed on a kickstand**, where a thumb-and-index rotation has about 50° of
+arc before a re-grip. That second one decides whether orbit survives: `Interface.md` §5 names it the
+candidate to cut, and cutting it removes the 8° deadzone, its latch, the 2% scale deadzone and the snap —
+four constants — and makes pinch pure zoom. **If it is bad, say so; it is designed to be cuttable.**
 
 ### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient` · hand · agent
 
@@ -208,6 +247,59 @@ and `.filters`.
 **Done when:** three hulls and a station draw as one instanced call each with a per-instance transform and
 team colour; and **the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
 
+### M1.9b — The sky · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
+
+**Read first:** [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) in full;
+[`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), which it amends;
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md); R9, R14 and R23.
+
+**Adds:** the backdrop, in two halves with two frequencies. **The galaxy** bakes once into a 512² cubemap,
+6.3 MB, rendered at match start and sampled with one fetch per pixel — a band that is wider and brighter
+toward the galactic centre and carries **dark dust lanes**, because a band without them is a stain rather
+than a galaxy. **The stars** are about 3,000 instanced quads from `SV_VertexID` with no vertex buffer,
+seeded from the match.
+
+**What makes it read as a sky is four properties, and each has a way of failing that is worth knowing:**
+
+- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — roughly 8, 25, 74, 222, 667 and 2,004
+  stars. The brightest tier being *eight* is the whole effect. Uniform brightness reads as salt and
+  pepper.
+- **Size follows brightness**, 8 scene-target pixels down to 1.5, with a soft radial falloff in the
+  sprite. Apparent size is the point-spread function, not the star.
+- **Colour is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
+  announces itself; real stars read very nearly white.
+- **Temperature correlates with magnitude** — bright tiers blue-white, faint ones orange — and star
+  density rises toward the galactic plane. Draw colour independently of brightness and the sky is subtly,
+  unnameably wrong.
+
+**Nothing twinkles and nothing moves.** There is no atmosphere, so there is no scintillation; diffraction
+spikes are a telescope artefact and the player is not looking through one. **The sky takes no time input
+at all** — generated once, never updated, zero per-frame CPU. Do not add "a little movement" later without
+reopening ADR-019.
+
+**It is dim, and the ceiling is on area rather than peak**: large-area luminance never above **12% of full
+white**, point features up to 45% and only for the brightest tier. ADR-005 leans on the backdrop being
+black to make a few-dozen-triangle hull read as deliberate, and this is the number that keeps that true.
+
+**The R9 split is the usual one.** `NeuronClient` gets the render-to-cubemap facility, the instanced
+sprite draw, the blackbody table and the seeded point-field generator — none of which knows there is a
+game. `GameClient` gets what *this* sky looks like: the band's orientation, the star count, the tier
+ratios, the palette and the ceiling. **Nothing goes in `GameCore` or `GameLogic`**, and the sky being
+floats and noise throughout means `Scripts/CheckDeterminism.py` catches it if anyone tries.
+
+**Draw it last, with depth test on**, so it shades no pixel the fleet already covers and pays no
+multisample resolve on a surface with no edges.
+
+**Files:** `NeuronClient/CubemapBake.h` `.cpp`, `NeuronClient/PointSprites.h` `.cpp`,
+`NeuronClient/Blackbody.h` `.cpp`, `NeuronClient/StarField.h` `.cpp`, `NeuronClient/Sky.hlsl`,
+`NeuronClient/Star.hlsl`; `GameClient/SkyLook.h` `.cpp`; both project files and `.filters`;
+`Tests/NeuronClientTests/BlackbodyTests.cpp`, `StarFieldTests.cpp`.
+
+**Done when:** the blackbody table is **pinned exactly** at its eight stops and between them; a given seed
+produces the magnitude tiers in the stated ratio and **the same sky twice**; the cubemap bakes in one pass
+over six faces; and the whole thing is **looked at on the device at the tactical zoom** — which is where
+ADR-005's worry lands and is M1.16's to answer, not this step's.
+
 ### M1.10 — Selection by tap · `GameClient` · `GameClientTests` · agent
 
 **Read first:** `Interface.md` §4; [`ADR-010`](../ADR/ADR-010-selection-is-proximity-and-design.md);
@@ -225,28 +317,42 @@ keep correct for no measured gain.
 **Files:** `GameClient/Selection.h` `.cpp`, `GameClient/HitTest.h` `.cpp`;
 `Tests/GameClientTests/HitTestTests.cpp`.
 
-**Done when:** a tap resolves to the nearest ship within a stated screen-space radius at several camera
-pitches; the empty-space and nothing-selected cases are pinned; and a tap that lands on two overlapping
-ships resolves the same way twice.
+**Done when:** a tap resolves to the nearest candidate within **`Interface.md` §1's 24-pixel pick radius**
+at several camera pitches — the radius is now stated rather than left to this step; **the tier order is
+pinned** against overlapping candidates of different kinds (own ship → own station or module → hostile →
+asteroid → empty); the empty-space and nothing-selected cases are pinned; and a tap that lands on two
+overlapping ships resolves the same way twice.
 
-### M1.11 — Selection by hold · `GameClient` · `GameClientTests` · agent
+### M1.11 — Selection by double tap · `GameClient` · `GameClientTests` · agent
 
-**Read first:** ADR-010 in full; `Interface.md` §3 and §4; `OpenQuestions.md` Q8.
+**Read first:** [`ADR-017`](../ADR/ADR-017-group-selection-is-a-double-tap.md) **before** ADR-010, which
+it amends; `Interface.md` §3 and §4; `OpenQuestions.md` Q8.
 
-**Adds:** a hold on one of your ships taking **every ship of the same design within a circle centred on
-it** — screen-space, 192 authored pixels, drawn while the finger is down, centred on the *ship* because the
-finger is covering it, own ships only, same design only, and the radius does not grow with the hold.
-**The camera is the group-size control**: because the circle is screen-space, zooming in takes a squad and
-zooming out takes the fleet.
+**Adds:** a second tap on one of your ships taking **every ship of the same design within a circle centred
+on it** — screen-space, 192 authored pixels, drawn during the gesture, centred on the *ship* because the
+finger is covering it, own ships only, same design only, fixed radius. **The camera is the group-size
+control**: because the circle is screen-space, zooming in takes a squad and zooming out takes the fleet.
+
+**The structure that matters is that nothing defers.** M1.10's single tap already selected one ship and
+already fired; this step only ever *upgrades* that result when a second tap within 300 ms resolves to the
+**same entity**. Matching on identity rather than on screen distance is what makes it work while the fleet
+is moving, which is when it is used. Build it as an upgrade to an existing selection and no tap in the
+game gets slower; build it as a decision between two outcomes and every tap does.
+
+**It replaced a hold** — ADR-010 rejected hold-and-drag for a latency its own plain hold then paid, and a
+hold asks a hand to stay still for half a second on a handheld device mid-fight. `Holding` is now free
+over ships as well as over empty space, and `Interface.md` §7 is deliberately not spending either yet.
 
 **"Same design" is only a coherent idea because ADR-006 made a design a first-class identity**, and that is
 why this step sits after M1.2 rather than beside M1.10.
 
-**Files:** `GameClient/HoldSelection.h` `.cpp`; `Tests/GameClientTests/HoldSelectionTests.cpp`.
+**Files:** `GameClient/GroupSelection.h` `.cpp`; `Tests/GameClientTests/GroupSelectionTests.cpp`.
 
 **Done when:** `TechnicalDesign.md` §8's requirement is met — which ships a 192-pixel radius takes at
 several zoom levels, **a ship exactly on the edge**, and **the raking-camera case where the circle's world
-footprint is a wedge.** ADR-010 calls that last one the single place where two accepted decisions interact
+footprint is a wedge**, now bounded by §5's pitch floor. Plus the three ADR-017 cases: **one tap selects
+one ship and expands nothing**; a second tap on the *same* entity within the window expands; and two taps
+on **different** ships stay two single taps rather than becoming an expansion. ADR-010 calls that last one the single place where two accepted decisions interact
 badly: the player sees a circle and gets a wedge, and the mitigation, if M1.16 says it is bad, is a radius
 defined on the plane rather than on the screen.
 
@@ -267,7 +373,9 @@ space, not on the stored gamma-encoded bytes**, or stems come out systematically
 missing font family is a startup failure rather than a substitution**, because a substituted font has
 different advance widths and R13 requires every layout number to be unconditional.
 
-**Glyphs are rasterised at the physical size the fit transform produces** (ADR-011) — 48 physical pixels
+**Glyphs are rasterised at the physical size the INTERFACE fit transform produces** (ADR-011, corrected by
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md): there are two, and this is not the world's)
+— 48 physical pixels
 for a 24-authored-pixel label on the target device — so **the atlas is sized against the window**, and a
 resize or a device removal invalidates it. Both are rebuild paths, and neither may stall a frame visibly.
 
@@ -338,7 +446,7 @@ decision at all.
 **Done when:** the question is answered on the register, and two clients on one host are playing — on
 whatever number of machines the answer turned out to require.
 
-### M1.16 — GATE: the three confirmations · — · hand · **human**
+### M1.16 — GATE: the confirmations · — · hand · **human**
 
 **Read first:** `Interface.md` §7's closing section; `TechnicalDesign.md` §9.6; `OpenQuestions.md` Q18 and
 ADR-010's consequences.
@@ -351,21 +459,38 @@ Three things the design says are checked by a hand rather than an argument, all 
    mitigation if it is bad is already designed and is one number.
 2. **Whether the text reads** at 24 authored pixels on the target device. There is **no doubling** —
    [`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md) moved the interface out of the scene
-   target, so a glyph is rasterised at the physical size the fit transform produces — and the thing to
+   target, so a glyph is rasterised at the physical size the *interface* fit transform produces — and the
+   thing to
    confirm is simply legibility. *(This step originally recorded that `Design/README.md` still called the
    confirmation "pixel-doubled"; that sentence was corrected on 2026-09-20, along with three others from
    the same source. See `README.md` F4.)*
 3. **Whether the interface pass costs more GPU time than the world pass** — §9.6, which the design predicts
    it will: five instanced draws of simple geometry against an unbatched quad per glyph.
 
-**Done when:** all three are answered on hardware and written into the documents that asked for them.
+**The list has grown past three and this step carries all of it.** `Interface.md` §7 now closes with
+seven, and two ADRs added their own since this step was written:
+
+4. **The gesture constants** (`Interface.md` §1) — the 16-pixel tap slop above all, since it decides how
+   often an intended order becomes a pan.
+5. **Whether the ground sticks to the finger** across the pitch range, and **whether orbit is usable
+   one-handed on a kickstand** ([`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The
+   second decides whether orbit and its three protecting constants survive.
+6. **The frame time with the sky present**, at both world scales
+   ([`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md)) — this is the measurement
+   [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) actually needs, because a black screen
+   was never the content. **Whether the fleet still reads against it** at the tactical zoom, which is
+   ADR-005's worry. And **whether the sky looks like a sky**, whose three failure modes each have a named
+   cause: uniform brightness reading as noise, oversaturated colour as confetti, a band without dust lanes
+   as a stain.
+
+**Done when:** all of them are answered on hardware and written into the documents that asked for them.
 
 ---
 
 ## Leaving M1
 
 **The milestone is finished when** two commanders on one host each build miners and fighters from one
-catalog, select them by tap and by hold, and order them somewhere they arrive in formation; the interface
+catalog, select them by tap and by double tap, and order them somewhere they arrive in formation; the interface
 reads; and `GameCoreTests` covers every catalog combination including the `Cruiser` nothing builds.
 
 **What M1 produces besides code:** ADR-013; the register's answer on the second client; the three

@@ -78,9 +78,11 @@ R13 exists to keep singular.
 **What would reopen it:** text quality disappointing on the actual device, which is a measurement at M1
 and is on the register. The lever is the authored resolution rather than the text path — authoring at
 2880 × 1920 makes the scale 1:1 and the text native, at the cost of a 5.5-megapixel scene target and
-multisampling four times as expensive. That would supersede
-[`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md),
-not this.
+multisampling four times as expensive. **That lever was taken on 2026-09-21 by
+[`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md)**, which amends
+[`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md) and not this. Text was already native by then, since
+[`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md) took the interface out of the scaled path, so
+this reopening is spent: the world moved, the text path did not.
 
 ## Measurements
 

@@ -42,6 +42,29 @@ MANIFEST = [
      r"client renders \*{0,2}75 milliseconds\*{0,2} behind", ["Design/TechnicalDesign.md"]),
     ("MVP entity count", [r"\b102 entities in the reduced MVP"], r"\b110 entities in th\w* reduced MVP",
      ["Design/OpenQuestions.md"]),
+    # ADR-016 moved this across ten documents at once, which is exactly the drift this exists for.
+    ("world resolution", [r"[Tt]he world is authored at 1440 . 960",
+                          r"scene target at the authored 1440 . 960"],
+     r"default(ing to|s to| is) 1:1", ["Design/TechnicalDesign.md", "Design/Interface.md"]),
+    # ADR-017 moved the verb across five documents; the posture correction moved one premise.
+    ("group selection's verb", [r"selection by tap and by hold", r"[Aa] hold on one of your ships"],
+     r"double tap", ["Design/Interface.md", "Design/GameDesign.md", "Design/Plan/M1-the-fleet.md"]),
+    # ADR-018: the camera's control model was absent rather than wrong, so this row is a
+    # presence check with nothing to retire -- `gone` may be empty and often should be.
+    ("the camera's control model", [], r"anchor solve",
+     ["Design/Interface.md", "Design/Plan/M0-the-wire.md"]),
+    ("the spent Holding", [r"[Tt]wo verbs are banked rather than one",
+                           r"\`Holding\` means nothing anywhere"],
+     r"recentres", ["Design/Interface.md"]),
+    # ADR-019 says it out loud: "a backdrop that nobody pinned gets brighter one commit at a time."
+    ("the sky's luminance ceiling", [], r"12% of full white",
+     ["Design/ADR/ADR-005-meshes-are-generated-in-code.md",
+      "Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md",
+      "Design/Plan/M1-the-fleet.md"]),
+    ("the posture", [r"held at its sides and the thumbs reach"],
+     r"kickstand on a desk", ["Design/Interface.md"]),
+    ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],
+     r"interface fit", ["Design/Interface.md", "Design/TechnicalDesign.md"]),
 ]
 
 # Prose that names an ADR which must exist, and a question which must be on the register.
