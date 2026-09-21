@@ -61,8 +61,8 @@ other than ships, a reason to defend a perimeter rather than a point, and a raid
 station. It also gives the station something to do in the first two minutes besides emit miners.
 
 **It costs the single-datagram property most of its headroom.** Four modules a player at two players is
-eight more entities: **110 entities, 1,136 bytes, still one datagram — but 64 bytes of headroom where there
-were 144.** Six entities, where there were fourteen. [`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s
+eight more entities: **110 entities, 1,136 bytes, still one datagram — but 96 bytes of headroom where there
+were 176.** Nine entities, where there were seventeen. [`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s
 headline benefit survives this change and would not survive another of the same size, which is why the cap
 is four and why raising it is a replication decision rather than a design one.
 
@@ -86,7 +86,7 @@ goes with them.
 None yet. Two are owed:
 
 1. **The snapshot's encoded size at 110 entities** (M2), against the 1,136 bytes this ADR asserts and the
-   1,200-byte payload. This is the measurement that decides whether the cap of four is right.
+   1,232-byte payload. This is the measurement that decides whether the cap of four is right.
 2. **Whether losing a module to a raid reads as depth or as punishment** (M3), which is played rather than
    computed.
 

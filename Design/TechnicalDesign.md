@@ -155,7 +155,7 @@ in the header is what makes the third and fourth player a runtime value rather t
 
 **Cargo rides in the flags byte and could not have had one of its own.** A miner's fill level has to reach
 the client or a player cannot see why a ship turned for home, but **a byte per entity is 110 bytes against
-64 of headroom — it would split the datagram**. Two bits give four buckets, which is all a fill bar needs,
+96 of headroom — it would split the datagram**. Two bits give four buckets, which is all a fill bar needs,
 and the flags byte had them spare once the design identity moved out
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)).
 
@@ -191,9 +191,10 @@ client draw a correct frame from one datagram without the other?* These figures 
 ADR-003's copy of them before; when one moves, move both.
 
 **Modules cost the single-datagram property most of its headroom, and the cap of four exists because of
-it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,056 to **1,136 against a 1,200-byte
-payload — 64 bytes, six entities, where there were 144 and fourteen**. It survives this change and would
-not survive another of the same size, so **raising the module cap is a replication decision**
+it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,056 to **1,136 against the 1,232-byte
+payload — 96 bytes, nine entities, where there were 176 and seventeen**. It survives this change and would
+survive one more of the same size with sixteen bytes left — one entity, which is not room to plan with — so
+**raising the module cap is still a replication decision**
 ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)), not a game one. Modules are ordinary entity
 records: they never move, but their hull does, so they cannot be treated as static the way asteroids are.
 
@@ -226,10 +227,22 @@ carry a per-player sequence number and are **repeated in every outgoing packet u
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
 
+**The packet is filled oldest-first and stops when the next command will not fit.** "Repeated until
+acknowledged" bounds the packet by how many commands are outstanding, and nothing about the format bounds
+*that*: at the peak 110-identity selection a command is 228 bytes, so **five fit in the pinned 1,232-byte
+payload and a sixth fragments**. What reaches six is not a fast player — touch cannot issue five orders in
+200 ms — it is a **stalled acknowledgement**: a host hitch or a run of lost snapshots, which is exactly the
+load under which a fragmented command packet is worst. Filling oldest-first makes the bound structural
+rather than a constant to tune: the packet cannot exceed the payload, no order is ever dropped, and the
+sequence never gains a gap — which matters because the host applies in sequence order and ignores anything
+at or below what it has applied, so a missing middle command would be discarded rather than waited for. The
+cost is that the newest order waits a packet, 50 ms, when the window is that deep; it was already waiting
+on the stall that made it deep.
+
 **The host validates every command, and this is correctness rather than security.** §5 declines
 authentication and any defence against a hostile client; that exclusion silently covered ownership and
-bounds checks too, which are a different category. A 1,200-byte command packet holds **592 identities
-against a peak of 110** — a 5.4× amplification into a single-threaded loop, reachable from an ordinary bug
+bounds checks too, which are a different category. A 1,232-byte command packet holds **610 identities
+against a peak of 110** — a 5.5× amplification into a single-threaded loop, reachable from an ordinary bug
 or a reordered packet with no attacker anywhere. So the host: rejects entities the sender does not own,
 bounds the selection at the sender's own entity count, rejects stale generations, clamps target points to
 the play area, and handles `uint16` sequence wraparound explicitly rather than letting the "at or below"
@@ -408,8 +421,8 @@ and the placeholder goes the day the first real test lands.
 not a definition is arithmetic on the design's own starting values. These are owed:
 
 1. **The snapshot's real size** at 110 entities and at 220, from the encoder rather than from §4's table,
-   and specifically **that the MVP's really is one datagram** — which with modules has six entities of
-   headroom rather than fourteen, so this measurement decides whether the module cap of four is right.
+   and specifically **that the MVP's really is one datagram** — which with modules has nine entities of
+   headroom rather than seventeen, so this measurement decides whether the module cap of four is right.
 2. **Tap-to-visible latency on real hardware** — timestamp the `Tapped` event and the first frame in which
    the ship's drawn heading changes. §4 predicts 152 ms average. **Owed at M0**, because it is the number
    that decides how the game feels and every other decision is cheap to change beside it.

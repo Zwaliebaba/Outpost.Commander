@@ -215,7 +215,7 @@ table gets corrected against.
 
 **Done when:** every record round trips, including a removal list, a fire event and both player counts —
 **and `TechnicalDesign.md` §9.1 is discharged.** A test encodes 102 synthetic entities with two player
-blocks and three removals, asserts the result is a single datagram inside the 1,200-byte figure ADR-003
+blocks and three removals, asserts the result is a single datagram inside the 1,232-byte figure ADR-003
 uses, and writes the byte count through `Logger::WriteMessage` so it appears in every CI log rather than in
 one person's notes. The same test records the 204-entity size. **The measured figures replace the
 arithmetic in ADR-003's table in the same pull request** — that is what `AGENTS.md` §6 means by a figure

@@ -410,6 +410,7 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 
 - [ ] No third coordinate reached either (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
 - [ ] Nothing in the client links the simulation (R19), and nothing was put in an executable that a suite could have covered (R20).
+- [ ] **If a datagram moved, `.claude/skills/datagram-budget/scripts/budget.py` was run** and its figures — not estimates — are in the report and in `Design/TechnicalDesign.md` §4. The headroom is double digits and nothing in the build fails when it is gone.
 
 **If you touched rendering, input, audio or presentation:**
 

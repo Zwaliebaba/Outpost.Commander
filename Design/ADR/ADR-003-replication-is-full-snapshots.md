@@ -2,7 +2,9 @@
 
 **Status:** Accepted — ruled 2026-09-20 following an adversarial review, **with changes**: 20 Hz rather than
 10, a ten-byte record with the design identity its own byte, an explicit removal list, host-side command
-validation, and figures stated for both player counts.
+validation, and figures stated for both player counts. **Amended 2026-09-21:** the payload is pinned at
+1,232 rather than 1,200 — stated under *Decision* — and the command packet is filled oldest-first so its
+size is bounded by construction (`TechnicalDesign.md` §5).
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal
 
@@ -43,6 +45,18 @@ two players to four is a runtime value and not a format change.
 
 **A removal list closes the snapshot.** One count byte in the header, then two bytes per removed entity
 identity. Typically zero to three per snapshot.
+
+**The payload is pinned at 1,232 bytes, and that is the IPv6 minimum-MTU payload exactly.** Every
+conformant IPv6 path must carry 1,280 bytes unfragmented; less the 40-byte IPv6 header and the 8-byte UDP
+header, that is 1,232 — the largest figure that needs no path-MTU discovery, no probing and no fallback
+path in the code. The conventional alternative is QUIC's 1,200, which is this same number with 32 bytes
+held back for an IPv6 extension header or a tunnel, and **that reserve is what this pin declines.**
+
+The cost is named rather than implied: a path that adds encapsulation — an IPv6-in-IPv4 tunnel, IPsec, a
+corporate VPN — fragments where 1,200 would have fitted, and fragmentation is precisely the property this
+ADR exists to keep. `GameDesign.md` §2 puts the game on a LAN, where none of those is present, so the pin
+is defensible today and is **a decision rather than a default**. The day the game leaves a LAN this is the
+first number to revisit, and the fallback is 1,200: 32 bytes, which is three entity records.
 
 **This exists because absence is ambiguous and the original design leaned on it.** A dead ship simply
 vanished from the entity list, so the client learned of death by *inference*. That works only while the
@@ -87,7 +101,7 @@ There is no general reliability layer, no second timer and no separate acknowled
 **The host validates every command, and that is correctness rather than security.**
 `Design/TechnicalDesign.md` §5 declines authentication and any defence against a hostile client; that
 exclusion silently covered ownership, bounds and generation checks too, which is a different category.
-A 1,200-byte command packet holds **592 entity identities against a peak of 110** — a 5.4× amplification
+A 1,232-byte command packet holds **610 entity identities against a peak of 110** — a 5.5× amplification
 into a single-threaded host loop, reachable from an ordinary bug or a reordered packet with no attacker
 anywhere. The host therefore rejects entities the sender does not own, bounds the selection at the
 sender's own entity count, rejects stale generations, clamps target points to the play area, and handles
@@ -151,5 +165,5 @@ None yet. Four are owed, and three of them at **M0**, which exists largely to ob
 
 Every figure above is **arithmetic on the design's own numbers**, not a measurement: 110 is 2 × (50 + 1 + 4);
 1,136 is 110 × 10 + 30 + three removals; 22.7 KB/s is 1,136 × 20. The ten-byte record is a proposed
-layout, the 1,200-byte payload is the conventional safe figure for UDP over Ethernet, and the latency
+layout, the 1,232-byte payload is the IPv6 minimum decided above rather than anything observed, and the latency
 table sums four design constants — none of the four has been observed.
