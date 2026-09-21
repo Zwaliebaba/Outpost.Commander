@@ -39,6 +39,7 @@ struct DeviceBinding
   winrt::handle fenceEvent;
 
   std::uint32_t frameIndex = 0;
+  std::uint32_t highestShaderModel = 0;
   DeviceState state = DeviceState::Absent;
   HRESULT lastHresult = S_OK;
   bool recording = false;
@@ -168,6 +169,16 @@ bool GraphicsDevice::Create() noexcept
     return false;
   }
 
+  // Asked once, at creation. CheckFeatureSupport with SHADER_MODEL is an in-out call: it is given
+  // the highest model to ask about and lowers HighestShaderModel to what the device actually has.
+  {
+    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel{.HighestShaderModel = D3D_SHADER_MODEL_6_7};
+    if (SUCCEEDED(binding.device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+    {
+      binding.highestShaderModel = static_cast<std::uint32_t>(shaderModel.HighestShaderModel);
+    }
+  }
+
   binding.frameIndex = 0;
   binding.recording = false;
   binding.state = DeviceState::Ready;
@@ -206,6 +217,11 @@ DeviceState GraphicsDevice::State() const noexcept
 std::int32_t GraphicsDevice::LastHresult() const noexcept
 {
   return static_cast<std::int32_t>(m_binding->lastHresult);
+}
+
+std::uint32_t GraphicsDevice::HighestShaderModel() const noexcept
+{
+  return m_binding->highestShaderModel;
 }
 
 std::uint32_t GraphicsDevice::FrameIndex() const noexcept

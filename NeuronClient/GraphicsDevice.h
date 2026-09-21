@@ -70,6 +70,15 @@ public:
   /// The frame slot this frame is using: 0 or 1.
   [[nodiscard]] std::uint32_t FrameIndex() const noexcept;
 
+  /// The highest shader model this device supports, as a packed nibble pair: 0x67 is Shader Model
+  /// 6.7, 0x60 is 6.0. Zero before Create succeeds.
+  ///
+  /// IT IS A RUNTIME FACT AND NOT A BUILD-TIME ONE. A pipeline state built from DXIL the driver
+  /// cannot accept fails at PSO creation, on the device, in front of a player -- so the model the
+  /// shaders are compiled at is a claim about every machine this ships to, and this is how that
+  /// claim is checked rather than assumed.
+  [[nodiscard]] std::uint32_t HighestShaderModel() const noexcept;
+
   /// Blocks until the GPU has finished every frame submitted so far.
   void WaitForGpu() noexcept;
 

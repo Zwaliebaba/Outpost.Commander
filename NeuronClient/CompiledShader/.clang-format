@@ -1,0 +1,5 @@
+# dxc writes these files. They are checked in (ADR-012) so the format gate walks them, and no
+# generated header will ever satisfy a style. DisableFormat makes `--dry-run --Werror` a no-op here
+# instead of making every caller of the gate remember an exclusion.
+DisableFormat: true
+SortIncludes: Never

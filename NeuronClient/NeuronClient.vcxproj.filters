@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <FxCompile Include="Shaders\PresentPS.hlsl" />
+    <FxCompile Include="Shaders\PresentVS.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
     <ClCompile Include="FitTransform.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />

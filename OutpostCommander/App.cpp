@@ -155,6 +155,9 @@ void RunProbe(const CoreWindow& _window)
   }
   else
   {
+    // Major and minor out of the packed nibbles, because "0x" in front of a decimal is a lie.
+    const std::uint32_t shaderModel = device.HighestShaderModel();
+    Report(log, "probe: highest shader model " + std::to_string((shaderModel >> 4) & 0xF) + "." + std::to_string(shaderModel & 0xF));
     Report(log, "probe: swap chain " + std::to_string(swapChain.WidthPixels()) + "x" + std::to_string(swapChain.HeightPixels()) +
                   " physical, from " + std::to_string(static_cast<int>(metrics.widthDips)) + "x" +
                   std::to_string(static_cast<int>(metrics.heightDips)) + " dips at " + std::to_string(metrics.rawPixelsPerViewPixel) + "x");
