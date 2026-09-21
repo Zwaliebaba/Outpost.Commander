@@ -39,6 +39,7 @@
 #include "ByteReader.h"
 #include "ByteWriter.h"
 #include "PacketHeader.h"
+#include "ProbePacket.h"
 
 #include <string_view>
 

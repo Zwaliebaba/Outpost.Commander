@@ -114,6 +114,7 @@
   <ItemGroup>
     <ClCompile Include="ByteCodecTests.cpp" />
     <ClCompile Include="PacketHeaderTests.cpp" />
+    <ClCompile Include="ProbePacketTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
