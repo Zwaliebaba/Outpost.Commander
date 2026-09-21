@@ -264,10 +264,12 @@ machine sees the snapshot sequence advance by exactly one per snapshot.
 
 ## The frame
 
-### M0.12 — Window metrics and the fit transform · `NeuronClient` · `NeuronClientTests` · agent
+### M0.12 — Window metrics and the two fit transforms · `NeuronClient` · `NeuronClientTests` · agent
 
-**Read first:** R13 and R18; [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md);
-[`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md); `Interface.md` §1.
+**Read first:** [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) **before**
+[`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md) and
+[`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md), which it amends; R13 and R18;
+`Interface.md` §1.
 
 **Adds:** **the one place in the client that asks how big the window is.** Two pure functions:
 device-independent pixels to physical pixels, which R18 requires a suite over by name; and the fit —
@@ -275,18 +277,26 @@ authored size and physical size in, a scale, an offset and a filter choice out, 
 of 1:1 unfiltered, point sampling at an exact integer multiple, and bilinear otherwise, aspect preserved
 and letterboxed.
 
-**It returns a value rather than applying one**, because ADR-011 has the interface pass using this same
-transform after the scale. Two consumers, one computation, and nothing else in the tree asking the window
-anything.
+**It returns a value rather than applying one, and it is called twice** (ADR-016). The **world fit** takes
+the scene target's size; the **interface fit** takes 1440 × 960, the authored layout space. Those are two
+different numbers doing two different jobs, and they coincide only at a 0.5 world scale.
+
+**An earlier version of this step said "two consumers, one computation" and meant one value.** That is the
+defect ADR-016 corrects: at the 1:1 world default the shared transform is identity, which renders every
+panel, glyph and touch target at half size in one corner. One place asks the window anything; **two values
+come out of it.**
 
 **Files:** `NeuronClient/WindowMetrics.h` `.cpp`, `NeuronClient/FitTransform.h` `.cpp`;
 `NeuronClient.vcxproj` + `.filters`; `Tests/NeuronClientTests/FitTransformTests.cpp`,
 `WindowMetricsTests.cpp`.
 
-**Done when:** 1440 × 960 into 2880 × 1920 is exactly 2 and point-sampled — the target device's case and
-the only one it takes; into 1440 × 960 is 1:1 and unfiltered; into 1920 × 1080 is 1.125, bilinear and
-pillarboxed — the development case, deliberately not the optimised one; a 16:9 window letterboxes and a 3:2
-window does not; and the DIP conversion is pinned at 100%, 150%, 200% and a fractional scale.
+**Done when:** the world fit is pinned at both settled scales — 2880 × 1920 into 2880 × 1920 is 1:1 and
+unfiltered, the default; 1440 × 960 into 2880 × 1920 is exactly 2 and point-sampled, the 0.5 scale. **The
+interface fit from 1440 × 960 into 2880 × 1920 is exactly 2 whichever the world is doing** — that assertion
+is the regression the split exists to prevent and it is the most valuable test in this step. Also: the
+world at 1:1 into 1920 × 1080 is 0.5625, bilinear and pillarboxed — the development case, deliberately not
+the optimised one; a 16:9 window letterboxes and a 3:2 window does not; and the DIP conversion is pinned at
+100%, 150%, 200% and a fractional scale.
 
 ### M0.13 — The device, the swap chain and frames in flight · `NeuronClient` · hand · agent
 
@@ -326,11 +336,17 @@ change the decision implies.
 
 ### M0.15 — The scene target and the scaled present · `NeuronClient` · `NeuronClientTests` · agent
 
-**Read first:** R13; ADR-007; ADR-011; ADR-012.
+**Read first:** R13; ADR-016, then ADR-007 and ADR-011; ADR-012.
 
-**Adds:** the off-screen colour target and its depth buffer at the authored size, with **the sample count
-as one constant** — the MVP ships one sample and `TechnicalDesign.md` §6 expects four to be the first
-change — and the present step that fits the target into the back buffer through M0.12's transform. The
+**At 1:1 with one sample this step's present is a pure copy and buys nothing visible.** That is expected
+and the indirection stays: it is what makes four samples a constant change rather than a rewrite, because
+a flip-model back buffer cannot be multisampled (ADR-016).
+
+**Adds:** the off-screen colour target and its depth buffer at **the size the world scale gives** — two
+constants now, the scale and the sample count (ADR-016). The default scale is 1:1, so on the target device
+the target is 2880 × 1920; the MVP ships one sample and `TechnicalDesign.md` §6 expects four to be the
+first change. Then the present step that fits the target into the back buffer through **M0.12's world
+transform**, not the interface's. The
 first HLSL in the tree: a full-screen triangle and the sampler the transform's filter choice selects.
 
 **Files:** `NeuronClient/SceneTarget.h` `.cpp`, `NeuronClient/PresentStep.h` `.cpp`,
@@ -340,16 +356,25 @@ first HLSL in the tree: a full-screen triangle and the sampler the transform's f
 letterboxed where the aspect does not match, over several window sizes on a desktop machine. The
 arithmetic is pinned by M0.12's tests rather than by this step, which is exactly why they went in first.
 
-### M0.16 — GATE: the present is point-sampled on the device · — · hand · **human**
+### M0.16 — GATE: the filter is right, and which world scale ships · — · hand · **human**
 
-**Read first:** ADR-007's Measurements 2; `TechnicalDesign.md` §9.7.
+**Read first:** [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements 1 and 2;
+`TechnicalDesign.md` §9.5 and §9.7.
 
-**Adds:** nothing. Deploy to the Surface Pro, fullscreen, put a hard one-pixel edge in the scene target,
-and **look at it.**
+**Adds:** nothing, and it now answers two questions rather than one. Deploy to the Surface Pro, fullscreen,
+put a hard one-pixel edge in the scene target, and **look at it** — at the 1:1 default and again at a 0.5
+scale. Then take the frame time at both, at one sample, **on x64 and on ARM64.**
 
-**Done when:** confirmed by eye, and the result written into ADR-007's Measurements. **R13's whole
-arrangement is worth nothing if a conversion error lands the scale at 1.99** — a soft edge here means the
-conversion is wrong, and no renderer work after this point is safe until it is right.
+**Done when:** the filter is confirmed by eye at both — unfiltered and pixel-exact at 1:1, point-sampled
+and cleanly doubled at 0.5 — **and the four frame times are written into ADR-016's Measurements along with
+which scale ships.** ADR-016 defaults to 1:1 on a judgement and names this gate as the thing that settles
+it; if 1:1 does not hold the budget on ARM64 the scale goes to 0.5 and **the constant is the only thing
+that changes.**
+
+**R13's whole arrangement is worth nothing if a conversion error lands the scale at 1.99 rather than 2, or
+at 0.999 rather than 1** — a soft edge at either means the conversion is wrong, and no renderer work after
+this point is safe until it is right. The four-sample figures are not available here; they wait for the
+resolve step and stay a standing obligation (`Plan/README.md`, measurement 5).
 
 ### M0.17 — The interface pass · `NeuronClient` · `NeuronClientTests` · agent
 
@@ -485,7 +510,7 @@ read itself is not reachable from a desktop test host.
 
 **Adds:** nothing. On an actual Surface Pro with the host on another machine: timestamp the `Tapped` event
 and the first frame in which the drawn position differs, over many taps, against §4's predicted **152 ms
-average and 227 ms worst**. Then frame time at 1440 × 960 at one sample, **on x64 and on ARM64** — the
+average and 227 ms worst**. Then frame time **at both world scales** at one sample, **on x64 and on ARM64** — the
 target device is a Snapdragon part, so ARM64 is the platform the game is for and the platform nothing
 automated compiles.
 

@@ -267,7 +267,9 @@ space, not on the stored gamma-encoded bytes**, or stems come out systematically
 missing font family is a startup failure rather than a substitution**, because a substituted font has
 different advance widths and R13 requires every layout number to be unconditional.
 
-**Glyphs are rasterised at the physical size the fit transform produces** (ADR-011) — 48 physical pixels
+**Glyphs are rasterised at the physical size the INTERFACE fit transform produces** (ADR-011, corrected by
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md): there are two, and this is not the world's)
+— 48 physical pixels
 for a 24-authored-pixel label on the target device — so **the atlas is sized against the window**, and a
 resize or a device removal invalidates it. Both are rebuild paths, and neither may stall a frame visibly.
 
@@ -351,7 +353,8 @@ Three things the design says are checked by a hand rather than an argument, all 
    mitigation if it is bad is already designed and is one number.
 2. **Whether the text reads** at 24 authored pixels on the target device. There is **no doubling** —
    [`ADR-011`](../ADR/ADR-011-the-interface-draws-after-the-scale.md) moved the interface out of the scene
-   target, so a glyph is rasterised at the physical size the fit transform produces — and the thing to
+   target, so a glyph is rasterised at the physical size the *interface* fit transform produces — and the
+   thing to
    confirm is simply legibility. *(This step originally recorded that `Design/README.md` still called the
    confirmation "pixel-doubled"; that sentence was corrected on 2026-09-20, along with three others from
    the same source. See `README.md` F4.)*

@@ -42,6 +42,12 @@ MANIFEST = [
      r"client renders \*{0,2}75 milliseconds\*{0,2} behind", ["Design/TechnicalDesign.md"]),
     ("MVP entity count", [r"\b102 entities in the reduced MVP"], r"\b110 entities in th\w* reduced MVP",
      ["Design/OpenQuestions.md"]),
+    # ADR-016 moved this across ten documents at once, which is exactly the drift this exists for.
+    ("world resolution", [r"[Tt]he world is authored at 1440 . 960",
+                          r"scene target at the authored 1440 . 960"],
+     r"default(ing to|s to| is) 1:1", ["Design/TechnicalDesign.md", "Design/Interface.md"]),
+    ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],
+     r"interface fit", ["Design/Interface.md", "Design/TechnicalDesign.md"]),
 ]
 
 # Prose that names an ADR which must exist, and a question which must be on the register.

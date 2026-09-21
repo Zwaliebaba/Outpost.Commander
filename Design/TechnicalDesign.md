@@ -322,29 +322,36 @@ never was.
 
 **The frame is two passes, and the second one is a recorded departure from R13.**
 
-**The world** draws into a scene target at the authored 1440 × 960
-([`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)) and is fitted into the back buffer with the
-aspect preserved. The Surface Pro's panel is 2880 × 1920 and the swap chain is created at those physical
-pixels, **so the fit is an exact 2× and takes the point-sampled path.**
+**The world** draws into a scene target and is fitted into the back buffer with the aspect preserved. Its
+resolution is **a scale of the panel, defaulting to 1:1 — 2880 × 1920**
+([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)); the swap chain is created at those physical
+pixels, so at the default the fit is 1:1 and unfiltered, and at the other settled point, a 0.5 scale, it is
+an exact 2× on the point-sampled path.
 
 **The interface** then draws straight into the back buffer at physical resolution
-([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). It is still laid out in authored
-coordinates, unconditionally, and each position is carried through **the same fit transform the present
-step already computed** — so no pass branches on the window size, exactly one place asks how big it is, and
-R13's intent holds while its letter does not. Glyphs are rasterised at the physical size that transform
-produces rather than doubled from 24 authored pixels.
+([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). It is laid out in authored coordinates —
+1440 × 960, a statement about fingertips — unconditionally, and each position is carried through **the
+interface's own fit transform**, which maps that authored space into the back buffer. Glyphs are rasterised
+at the physical size it produces rather than doubled from 24 authored pixels.
 
-**What this buys beyond crisp text is that the authored resolution stops binding the interface.** Changing
-1440 × 960 later is a decision about the world's fill rate, not a reauthoring of every panel — which was
-the compounding cost that made ADR-007 the most expensive decision in this design.
+**Two transforms, one place that asks the window how big it is.** The world fit and the interface fit are
+separate values from the same computation. They were one value until ADR-016, and reusing the world's fit
+made the interface's scale a function of the world's resolution — at 1:1 it becomes identity, which renders
+the entire interface at half size in one corner. No pass branches on the window size, exactly one place
+asks, and R13's intent holds while its letter does not.
 
-**A 1.38-megapixel scene target is small, and that is what makes multisampling affordable.** The sample
-count is one constant; the MVP ships one sample, and 4× — 5.5 megasamples, which this hardware will not
-notice — is the expected first change, with the resolve step going in beside it. Space is thin bright
-silhouettes against black, which is exactly the content that wants it. **Neither the back buffer nor the
-interface pass can be multisampled**, since DXGI's flip model requires `SampleDesc.Count` of 1; for
-rectangles and text quads that costs nothing, and for the world it is most of why the scene target
-exists.
+**What this buys is that the world's resolution binds nothing but the world.** Changing it is a decision
+about fill rate, not a reauthoring of every panel — which was the compounding cost that made ADR-007 the
+most expensive decision in this design, and is now the cost it no longer has.
+
+**The scale is what makes multisampling affordable, and it is a trade rather than a free lunch.** At 1:1
+the scene target is 5.53 megapixels; at 0.5 it is 1.38. The sample count is one constant, the MVP ships
+one sample, and **1,440 × 960 at four samples and 2,880 × 1,920 at one are the same 5,529,600 samples** —
+so the choice is between resolution and edge quality at a fixed footprint. Space is thin bright silhouettes
+against black, which wants both. **Neither the back buffer nor the interface pass can be multisampled**,
+since DXGI's flip model requires `SampleDesc.Count` of 1; for rectangles and text quads that costs nothing,
+and for the world it is most of why the scene target exists — at 1:1 with one sample the present step is a
+pure copy that buys only the ability to turn multisampling on as a constant.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
 colour. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
@@ -430,14 +437,18 @@ not a definition is arithmetic on the design's own starting values. These are ow
    assignment and target selection are the two candidates for consuming it.
 4. **Packet loss and jitter on a real wireless link between two machines** — owed at M0, the cheapest
    possible moment to find out the answer is no.
-5. **The frame time on an actual Surface Pro** at 1440 × 960, at one sample and at four, on **both x64 and
-   ARM64**. The Surface Pro 11 is a Snapdragon X part, so **ARM64 is the target platform — and CI builds
-   no ARM64 at all** (`AGENTS.md` §6). The platform this game is actually for is the one nothing automated
+5. **The frame time on an actual Surface Pro** at **2880 × 1920 and at 1440 × 960**, at one sample and at
+   four, on **both x64 and ARM64** — the four figures that settle which scale ships
+   ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). The Surface Pro 11 is a Snapdragon X
+   part, so **ARM64 is the target platform — and CI builds no ARM64 at all** (`AGENTS.md` §6). The platform this game is actually for is the one nothing automated
    ever compiles, which makes this a standing obligation rather than a one-off measurement.
 6. **The interface pass against the world pass**, which the review predicts will be the larger of the two:
    five instanced draws of simple geometry against an unbatched quad per glyph.
-7. **That the present step really takes the point-sampled path on the device**, confirmed by looking at it.
-   R13's whole arrangement is worthless if a conversion error lands the scale at 1.99.
+7. **That the present step really takes the path the scale calls for on the device**, confirmed by looking
+   at it: unfiltered at the 1:1 default, point-sampled at an exact 2× if the scale goes to 0.5. R13's whole
+   arrangement is worthless if a conversion error lands the scale at 1.99 rather than 2, or at 0.999 rather
+   than 1. **And that the interface lands identically at both**, which is a test rather than a look and is
+   the regression ADR-016's two transforms exist to prevent.
 8. **Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by
    removing the exemption and trying again exactly as `AGENTS.md` §3 instructs.
 
@@ -454,11 +465,12 @@ shaped:
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
 | [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | No content pipeline and no mesh format in the MVP. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
-| [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame is 1440 × 960 — an exact 2× point-sampled fit on the Surface Pro. |
+| [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame was pinned at 1440 × 960 for an exact 2× fit; amended by ADR-016, which makes it a scale. |
 | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) | The host address is configuration with a compiled-in default; no discovery, and the loopback exemption is a development arrangement. |
 | [`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md) | Text is DirectWrite rasterised into a D3D12 atlas — no Direct2D, no D3D11On12, no dependency. |
 | [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md) | A tap selects one ship; a hold selects the same design within a screen-space circle. No band select, and one-finger drag is unconditionally panning. |
 | [`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent. |
+| [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale of the panel defaulting to 1:1, and the interface gets a fit transform of its own rather than borrowing the world's. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in
 [`OpenQuestions.md`](OpenQuestions.md).

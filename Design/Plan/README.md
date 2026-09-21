@@ -145,7 +145,7 @@ M0.1 bytes ─► M0.2 header ─► M0.3 host socket ─┐
                                                            ▼
    M0.6 numbers ─► M0.8 the tick ─► M0.9 the snapshot ─► M0.10 commands ─► M0.11 the host runs
                                                            │
-   M0.12 the fit ─► M0.13 device ─► M0.15 scene target ─► M0.16 GATE: the present is point-sampled
+   M0.12 the fits ─► M0.13 device ─► M0.15 scene target ─► M0.16 GATE: the filter, and which world scale
                                                            │
                                    M0.18 the seam ─► M0.19 interpolation ─► M0.21 tap to order
                                                            │
@@ -159,7 +159,10 @@ M0.1 bytes ─► M0.2 header ─► M0.3 host socket ─┐
 
 **Three gates sit on it and two are in the first week.** M0.5 is the one that can end the single-machine
 development loop ([`ADR-008`](../ADR/ADR-008-the-host-address-is-configuration.md)); M0.16 is the one that
-can invalidate R13's whole arrangement ([`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md)).
+can invalidate R13's whole arrangement ([`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md)) and
+the one that settles the world's resolution, which
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) defaults to 1:1 on a judgement rather than a
+measurement.
 Both are cheap, and both are why M0 is ordered the way it is.
 
 ---
@@ -241,7 +244,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
-| 7 | **That the present step is really point-sampled on the device** | **M0.16** gate | By looking at it. R13's arrangement is worth nothing at a scale of 1.99. |
+| 7 | **That the present step really takes the filter the scale calls for, and which world scale ships** | **M0.16** gate | By looking at it, at both scales, plus frame time at each on x64 and ARM64. R13's arrangement is worth nothing at a scale of 1.99 — or 0.999 ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |
 | 8 | Which loopback exemption form a UDP client needs | **M0.5** gate | Remove the exemption and try again, exactly as `AGENTS.md` §3 instructs. |
 
 [`ADR-002`](../ADR/ADR-002-tick-and-numbers.md) owes a ninth that is not on that list and matters more than

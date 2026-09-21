@@ -1,6 +1,9 @@
 # ADR-011 — The interface draws after the scale, at physical resolution
 
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-09-21 by
+[`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md), which corrects the mechanism below.** Reusing the
+present step's fit made the interface's scale a function of the world's resolution, restoring the binding
+this ADR's own consequences claim to remove; the interface now has a transform of its own.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal — on a second designer's review
 **Amends:** [`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md), which now binds the world only.
@@ -27,9 +30,15 @@ rises with every screen, and the trigger Q18 armed fires long after the fix has 
 straight into the back buffer, at physical resolution.**
 
 **The interface is still laid out in authored coordinates**, unconditionally, exactly as R13 requires. At
-draw time each position is carried through **the same fit transform the present step already computes** —
-the one that exists because exactly one place asks the window how big it is. Nothing branches on the
-window size. Glyphs are rasterised at the physical size that transform produces, so a 24-authored-pixel
+draw time each position is carried through a fit transform produced by the one place that asks the window
+how big it is. Nothing branches on the window size.
+
+**This ADR originally said "the same fit transform the present step already computes", and that was the
+defect [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) corrects.** The present step's fit maps the
+*scene target* into the back buffer, so its value depends on the world's resolution — and at 1:1 it is
+identity, which would render the whole interface at half size in one corner. The interface's transform maps
+*authored layout space* into the back buffer and is a second value from the same computation. One place,
+two transforms. Glyphs are rasterised at the physical size that transform produces, so a 24-authored-pixel
 label is rasterised at 48 physical pixels on a Surface Pro rather than doubled from 24.
 
 **What this breaks is R13's letter — "every pass draws into an off-screen colour target" — and nothing
@@ -41,7 +50,9 @@ the intent, and here the intent is better served by departing from it.
 
 **Text is no longer resampled.** That is the immediate gain and it is the smaller one.
 
-**The larger gain is that the authored resolution stops binding the interface.** After this,
+**The larger gain is that the authored resolution stops binding the interface** — which is true of this
+ADR's intent and became true of its mechanism only at
+[`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md). After this,
 [`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md) is a decision about the *world* — how much the
 renderer has to fill and how much multisampling costs — and changing it no longer means reauthoring every
 panel. The compounding cost that made ADR-007 the expensive decision in this corpus is removed at the one

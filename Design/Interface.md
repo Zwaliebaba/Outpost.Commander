@@ -23,28 +23,38 @@ it rather than assumed.
 everything below conditional on however the window happened to be sized; a touch-only game in a resizable
 window is not a coherent object anyway.
 
-**The world is authored at 1440 × 960** and drawn into a scene target at that size, then fitted into the
-back buffer. **The interface is authored at 1440 × 960 too — and drawn afterwards, at physical
-resolution** ([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). Every layout number in
-this document is an authored number and is unconditional, exactly as R13 requires; at draw time each one
-is carried through the same fit transform the present step already computed, so nothing branches on the
-window size and **text is not resampled**.
+**The world is drawn into a scene target and fitted into the back buffer, and its resolution is a scale of
+the panel whose default is 1:1 — 2880 × 1920**
+([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). **The interface is authored at 1440 × 960
+and drawn afterwards, at physical resolution**
+([`ADR-011`](ADR/ADR-011-the-interface-draws-after-the-scale.md)). Every layout number in this document is
+an authored number and is unconditional, exactly as R13 requires.
 
-**That fit is exactly 2×, so it is point sampling and it is crisp** — and it is 3:2, so there is no
-letterbox. This is not a coincidence: 200% is the scale Microsoft ships on this panel, so the authored
-frame *is* the DIP frame and the swap chain is exactly twice it. R13's whole architecture exists to make
-the exact-multiple path common, and on the target device it is the only path taken.
+**Those are two numbers doing two different jobs, and each has its own transform.** The world fit maps the
+scene target into the back buffer; the interface fit maps this document's authored coordinates into the
+back buffer. Both are values from the one place that asks the window how big it is, so nothing branches on
+the window size and **text is not resampled**. They were a single transform until ADR-016, and separating
+them is what makes 1440 × 960 mean what it reads as here — a statement about fingertips rather than about
+fill rate. **The world's resolution can change and no number below moves.**
 
-Everything else is correct rather than crisp, which is what R13 buys. A Surface Pro 7 (12.3 inches,
-2736 × 1824) scales 1.9× and resamples slightly. A 1080p monitor — the display a developer actually works
-on — fits 1.125× and pillarboxes; that is the *development* case and it is deliberately not the one
-optimised for.
+At the 1:1 default the world reaches the panel unfiltered, which is R13's best path; at a 0.5 scale it is
+point-sampled at an exact 2×, which is sharp but doubles every pixel. It is 3:2 either way, so there is no
+letterbox. **The 1440 × 960 the `CoreWindow` reports is a DIP figure and enters neither fit** — the swap
+chain is created at physical pixels, so the display scale never reaches the arithmetic. An earlier version
+of this section called that correspondence "not a coincidence"; ADR-007 corrected it, because dressing a
+free choice as a natural consequence invites someone to "fix" the swap chain to DIPs and break it.
 
-**A 1,440 × 960 scene target is 1.38 megapixels**, which is small. That matters more than it sounds:
-4× multisampling costs 5.5 megasamples, which is affordable, and space is thin bright silhouettes against
-black — exactly the content that wants it (`TechnicalDesign.md` §6). The interface pass cannot be
-multisampled, because a flip-model back buffer cannot be; for rectangles and text quads that costs
-nothing.
+Everything that is not this panel is correct rather than crisp, which is what R13 buys. A Surface Pro 7
+(12.3 inches, 2736 × 1824) resamples slightly. A 1080p monitor — the display a developer actually works
+on — now *downscales* by 0.5625, which is supersampling; that is the *development* case and it is still
+deliberately not the one optimised for, but it has stopped being the ugly one.
+
+**At 1:1 the scene target is 5.53 megapixels and at 0.5 it is 1.38**, and that difference is the whole of
+what the scale buys. 4× multisampling costs 22.1 megasamples at the first and 5.5 at the second, and space
+is thin bright silhouettes against black — exactly the content that wants it (`TechnicalDesign.md` §6).
+Worth carrying: **1,440 × 960 at four samples and 2,880 × 1,920 at one are the same 5,529,600 samples.**
+The interface pass cannot be multisampled, because a flip-model back buffer cannot be; for rectangles and
+text quads that costs nothing.
 
 ### The touch target, derived
 
