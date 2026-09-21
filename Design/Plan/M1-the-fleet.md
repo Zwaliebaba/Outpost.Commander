@@ -1,7 +1,7 @@
 # M1 — The fleet
 
 [`GameDesign.md`](../GameDesign.md) §10: two stations, the two designs, the current build item, move orders
-with ring assignment, selection by tap and by hold, two clients on one host, host-side command validation.
+with ring assignment, selection by tap and by double tap, two clients on one host, host-side command validation.
 
 **What it proves** is the one thing M0 deliberately left out — that
 [`ADR-006`](../ADR/ADR-006-a-ship-is-a-composition.md)'s component model carries the game rather than
@@ -181,9 +181,17 @@ and `Interface.md` §5 explains at length why maximum zoom-out already is one.
 **Files:** `GameClient/Camera.cpp` extended, `GameClient/CameraGesture.h` `.cpp`;
 `Tests/GameClientTests/CameraGestureTests.cpp`.
 
-**Done when:** the rotation deadzone holds — two fingers dragging to pan are never exactly parallel and a
-camera that yaws whenever you pan is unusable; pitch tracks zoom monotonically with both ends pinned; and
-the pan clamp holds at the corners of the play area plus its margin.
+**Done when:** the rotation deadzone holds **and latches** — two fingers dragging to pan are never exactly
+parallel, a camera that yaws whenever you pan is unusable, and one that stutters as the player crosses
+back under eight degrees is worse; the **2% scale deadzone** holds, so a pure orbit does not creep the
+zoom and therefore the pitch; pitch tracks zoom monotonically with both ends pinned **and never goes below
+`Interface.md` §5's 30° floor at a 40° field of view**; and the pan clamp holds at the corners of the play
+area plus its margin.
+
+**The floor is the number to look at on the device, not just to assert.** It is what bounds tap error near
+the top of the frame and what bounds ADR-010's wedge, and it trades directly against how raking the
+zoomed-in silhouette looks. If it is too high to look good, say so with the stretch ratio in hand rather
+than lowering it quietly.
 
 ### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient` · hand · agent
 
@@ -225,28 +233,42 @@ keep correct for no measured gain.
 **Files:** `GameClient/Selection.h` `.cpp`, `GameClient/HitTest.h` `.cpp`;
 `Tests/GameClientTests/HitTestTests.cpp`.
 
-**Done when:** a tap resolves to the nearest ship within a stated screen-space radius at several camera
-pitches; the empty-space and nothing-selected cases are pinned; and a tap that lands on two overlapping
-ships resolves the same way twice.
+**Done when:** a tap resolves to the nearest candidate within **`Interface.md` §1's 24-pixel pick radius**
+at several camera pitches — the radius is now stated rather than left to this step; **the tier order is
+pinned** against overlapping candidates of different kinds (own ship → own station or module → hostile →
+asteroid → empty); the empty-space and nothing-selected cases are pinned; and a tap that lands on two
+overlapping ships resolves the same way twice.
 
-### M1.11 — Selection by hold · `GameClient` · `GameClientTests` · agent
+### M1.11 — Selection by double tap · `GameClient` · `GameClientTests` · agent
 
-**Read first:** ADR-010 in full; `Interface.md` §3 and §4; `OpenQuestions.md` Q8.
+**Read first:** [`ADR-017`](../ADR/ADR-017-group-selection-is-a-double-tap.md) **before** ADR-010, which
+it amends; `Interface.md` §3 and §4; `OpenQuestions.md` Q8.
 
-**Adds:** a hold on one of your ships taking **every ship of the same design within a circle centred on
-it** — screen-space, 192 authored pixels, drawn while the finger is down, centred on the *ship* because the
-finger is covering it, own ships only, same design only, and the radius does not grow with the hold.
-**The camera is the group-size control**: because the circle is screen-space, zooming in takes a squad and
-zooming out takes the fleet.
+**Adds:** a second tap on one of your ships taking **every ship of the same design within a circle centred
+on it** — screen-space, 192 authored pixels, drawn during the gesture, centred on the *ship* because the
+finger is covering it, own ships only, same design only, fixed radius. **The camera is the group-size
+control**: because the circle is screen-space, zooming in takes a squad and zooming out takes the fleet.
+
+**The structure that matters is that nothing defers.** M1.10's single tap already selected one ship and
+already fired; this step only ever *upgrades* that result when a second tap within 300 ms resolves to the
+**same entity**. Matching on identity rather than on screen distance is what makes it work while the fleet
+is moving, which is when it is used. Build it as an upgrade to an existing selection and no tap in the
+game gets slower; build it as a decision between two outcomes and every tap does.
+
+**It replaced a hold** — ADR-010 rejected hold-and-drag for a latency its own plain hold then paid, and a
+hold asks a hand to stay still for half a second on a handheld device mid-fight. `Holding` is now free
+over ships as well as over empty space, and `Interface.md` §7 is deliberately not spending either yet.
 
 **"Same design" is only a coherent idea because ADR-006 made a design a first-class identity**, and that is
 why this step sits after M1.2 rather than beside M1.10.
 
-**Files:** `GameClient/HoldSelection.h` `.cpp`; `Tests/GameClientTests/HoldSelectionTests.cpp`.
+**Files:** `GameClient/GroupSelection.h` `.cpp`; `Tests/GameClientTests/GroupSelectionTests.cpp`.
 
 **Done when:** `TechnicalDesign.md` §8's requirement is met — which ships a 192-pixel radius takes at
 several zoom levels, **a ship exactly on the edge**, and **the raking-camera case where the circle's world
-footprint is a wedge.** ADR-010 calls that last one the single place where two accepted decisions interact
+footprint is a wedge**, now bounded by §5's pitch floor. Plus the three ADR-017 cases: **one tap selects
+one ship and expands nothing**; a second tap on the *same* entity within the window expands; and two taps
+on **different** ships stay two single taps rather than becoming an expansion. ADR-010 calls that last one the single place where two accepted decisions interact
 badly: the player sees a circle and gets a wedge, and the mitigation, if M1.16 says it is bad, is a radius
 defined on the plane rather than on the screen.
 
@@ -368,7 +390,7 @@ Three things the design says are checked by a hand rather than an argument, all 
 ## Leaving M1
 
 **The milestone is finished when** two commanders on one host each build miners and fighters from one
-catalog, select them by tap and by hold, and order them somewhere they arrive in formation; the interface
+catalog, select them by tap and by double tap, and order them somewhere they arrive in formation; the interface
 reads; and `GameCoreTests` covers every catalog combination including the `Cruiser` nothing builds.
 
 **What M1 produces besides code:** ADR-013; the register's answer on the second client; the three

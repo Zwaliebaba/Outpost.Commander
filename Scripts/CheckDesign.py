@@ -46,6 +46,11 @@ MANIFEST = [
     ("world resolution", [r"[Tt]he world is authored at 1440 . 960",
                           r"scene target at the authored 1440 . 960"],
      r"default(ing to|s to| is) 1:1", ["Design/TechnicalDesign.md", "Design/Interface.md"]),
+    # ADR-017 moved the verb across five documents; the posture correction moved one premise.
+    ("group selection's verb", [r"selection by tap and by hold", r"[Aa] hold on one of your ships"],
+     r"double tap", ["Design/Interface.md", "Design/GameDesign.md", "Design/Plan/M1-the-fleet.md"]),
+    ("the posture", [r"held at its sides and the thumbs reach"],
+     r"kickstand on a desk", ["Design/Interface.md"]),
     ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],
      r"interface fit", ["Design/Interface.md", "Design/TechnicalDesign.md"]),
 ]

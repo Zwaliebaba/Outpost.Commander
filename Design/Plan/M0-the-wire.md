@@ -403,10 +403,22 @@ on the window size**, which is the intent R13 exists to protect and the thing AD
 **Read first:** R21; `Interface.md` §2 and §3; `README.md` F6.
 
 **Adds:** the one path in. `PointerPressed`, `PointerMoved` and `PointerReleased` forwarded to a
-`GestureRecognizer`; **a `PointerPoint` whose `PointerDeviceType` is not `Touch` dropped at exactly one
-site**; keyboard events not subscribed at all. The seam records the contact count at
+`GestureRecognizer` with **`GestureSettings::DoubleTap` enabled** (ADR-017 — it arrives on `Tapped` with a
+count, not as a fourth verb); **a `PointerPoint` whose `PointerDeviceType` is not `Touch` dropped at
+exactly one site**; keyboard events not subscribed at all. The seam records the contact count at
 `ManipulationStarted` and the manipulation keeps that meaning until it ends, so a thumb landing mid-drag
 does not change what the drag is doing.
+
+**Two things go in at this site and nowhere else** (`Interface.md` §1, §2):
+
+- **Palm rejection.** A contact whose `ContactRect` exceeds **78 authored pixels — 14.9 mm** in either
+  dimension is not a fingertip and never becomes an input record. The contact-count latch above only
+  protects a gesture already running; a palm landing *first* starts one of its own, and on a 287 mm screen
+  played on a desk that happens routinely.
+- **The tap slop, pinned at 16 authored pixels rather than inherited.** It is what separates a tap from a
+  pan, and the asymmetry `Interface.md` §3 relies on — an accidental pan is free, an accidental move order
+  is not — only holds if the number is right. **Begin the pan at the point the threshold was crossed**, so
+  engaging it does not jump.
 
 **Split it, or it cannot be tested** (F6). The half that touches WinRT turns each event into a plain input
 record — a contact count, a translation, a scale, a rotation, a point — and the half that does arithmetic
@@ -418,9 +430,13 @@ over it **only if it never sees a `PointerPoint`**, and R21 requires it to have 
 `Tests/NeuronClientTests/GestureArithmeticTests.cpp`.
 
 **Done when:** **the sign of a pinch and the sign of a rotation are pinned by tests** — R21 names these as
-the things a package can hide and a test cannot; the rotation deadzone `Interface.md` §5 specifies is
-pinned either side of its threshold; a manipulation that began with two contacts still reports two when a
-third lands; and the non-touch drop is asserted at the single site that performs it.
+the things a package can hide and a test cannot; the rotation deadzone is pinned either side of its
+threshold **and its latch is pinned**, so a manipulation that crosses back under eight degrees keeps
+rotating rather than stuttering; the **2% scale deadzone** holds, so a pure orbit does not creep the zoom
+and therefore the pitch; the 16-pixel tap slop is pinned either side, with the pan starting at the
+crossing point; a contact wider than 78 authored pixels produces no input record; a manipulation that
+began with two contacts still reports two when a third lands; and the non-touch drop is asserted at the
+single site that performs it.
 
 ---
 
@@ -462,8 +478,12 @@ separately controlled**. A fifth is not a feature to add later; it is this decis
 `Tests/GameClientTests/CameraTests.cpp`.
 
 **Done when:** the transform is pinned at several pitches; a screen point maps to a plane point and back to
-the same screen point within a stated tolerance; the focus clamp holds at the corners; and the coupling of
-pitch to zoom is monotonic at both ends of the range.
+the same screen point within a stated tolerance; the focus clamp holds at the corners; the coupling of
+pitch to zoom is monotonic at both ends of the range; and **the pitch floor holds** — `Interface.md` §5
+pins a 40° vertical field of view and a 30° minimum pitch, which puts the top edge of the frame 10° below
+horizontal and the horizon off screen. **Assert the stretch ratio**, 5.67 camera heights at the top edge
+against 1.73 at the centre: that ratio is what bounds tap error near the top of the frame and what bounds
+ADR-010's wedge, and it grows without bound if the floor slips.
 
 ### M0.21 — The tap, the order and the local marker · `GameClient` · `GameClientTests` · agent
 
@@ -473,6 +493,11 @@ paragraph; R19.
 **Adds:** the verb. A tap on empty space with something selected becomes a move command and is sent at
 once; **and the client draws a destination marker and a line from the selection the instant the gesture
 resolves**, clearing it when a snapshot's `lastCommandSeqApplied` passes that command's sequence.
+
+**"What is under it" needs a radius and an order, and `Interface.md` §1 now states both**: a **24-pixel
+pick radius**, nearest candidate inside it, with the tier order own ship → own station or module →
+hostile → asteroid → empty space. A point hit test against a four-pixel silhouette is a coin flip, and the
+failure is the expensive one — you miss the ship, hit empty space, and the selected fleet flies there.
 
 **Nothing is predicted.** The entity does not move until the host says it did. R19 forbids the client
 simulating, not the client drawing what it asked for, and holding that line precisely is the whole of this
