@@ -26,7 +26,7 @@ The target codebase is **C++ against Direct3D 12 with no UI framework** (`GameCl
 There is no XAML, no Direct2D, no CSS, no SVG, no image assets and no texture atlas other than the
 DirectWrite glyph atlas. Recreating this design therefore means emitting:
 
-- **axis-aligned solid rectangles** with per-vertex colour and per-vertex alpha,
+- **axis-aligned solid rectangles** with per-vertex color and per-vertex alpha,
 - **line segments** of a given width at any angle,
 - **flat-filled triangles** (used in exactly two places here),
 - **glyph quads** from the Segoe UI atlas (ADR-009),
@@ -37,7 +37,7 @@ primitives in a browser.
 
 ## Fidelity
 
-**High fidelity.** Colours, type sizes, weights and every rectangle are final and are stated in
+**High fidelity.** Colors, type sizes, weights and every rectangle are final and are stated in
 authored pixels as integers. Reproduce them exactly. Where a value is derived (panel width as a
 function of group count, alert position from a bearing), the formula is given rather than a number.
 
@@ -182,9 +182,9 @@ ellipsises or scrolls.
 | **Armed** | `PLATE.ARMED` | 2 px `SIG.ARMED` | `SIG.ARMED` | `#FFE1A8` | `#FFE1A8` | 4 px `SIG.ARMED` rule along the top edge; outline alpha pulses |
 
 *Unaffordable* means "save up" — the plate stays lit, only the cost reddens. *Unavailable* means
-"build something else first" — the whole button dims. A single grey for both is the specific failure
+"build something else first" — the whole button dims. A single gray for both is the specific failure
 this distinction exists to prevent. Every state carries a **geometric** cue as well as a hue (index
-bar, bottom rule, hatch, top bar), so the panel survives peripheral vision and colour blindness.
+bar, bottom rule, hatch, top bar), so the panel survives peripheral vision and color blindness.
 
 #### Progress strip
 
@@ -226,7 +226,7 @@ Geometry for a **left-edge** indicator at along-edge position `ay`:
 
 The triangle is one flat triangle with its apex outward — `(10, ay+48), (44, ay+22), (44, ay+74)`.
 Top-edge indicators are the transpose: 96 × 120 hit rect, 96 × 8 stripe, 52 × 34 triangle, count
-centred below. Right and bottom are mirrors.
+centered below. Right and bottom are mirrors.
 
 **There is no scrim and no plate behind an alert.** The moment it looks like chrome it becomes chrome,
 and the failure ADR-020 names is habituation.
@@ -234,8 +234,8 @@ and the failure ADR-020 names is habituation.
 Placement rules:
 
 1. **Nothing appears if the event is already on screen.**
-2. Edge is chosen by the **dominant axis of the bearing** from frame centre to the event.
-3. The along-edge coordinate is where the centre→event ray crosses the frame, then **clamped** so the
+2. Edge is chosen by the **dominant axis of the bearing** from frame center to the event.
+3. The along-edge coordinate is where the center→event ray crosses the frame, then **clamped** so the
    whole 96 px body stays on that edge *and* clears every panel band by ≥16 px.
 4. At a corner the clamp leaves at most 45° of residual bearing error, which is inside the tolerance of
    "go and look".
@@ -243,11 +243,11 @@ Placement rules:
    nothing else.
 6. **At most three at once**, never closer than 112 px along an edge (96 body + 16 clear). Two clusters
    that would collide **merge and sum their counts**; a fourth replaces the oldest.
-7. Tapping it recentres the camera there — a hit-test rectangle, not a gesture.
+7. Tapping it recenters the camera there — a hit-test rectangle, not a gesture.
 
-### 5. System — top centre, small
+### 5. System — top center, small
 
-Panel 192 × 64 at (624, 0), centred on x = 720. Index bar, bottom hairline with registration ticks.
+Panel 192 × 64 at (624, 0), centered on x = 720. Index bar, bottom hairline with registration ticks.
 
 - Connection dot 12 × 12 at (640, 26), `TEAM.OWN` when linked.
 - `LINK` at BODY, `TEXT.2`, at (660, 22). `RECONNECTING` replaces it on resume.
@@ -260,7 +260,7 @@ no recovery path anywhere in the system. Tap one **arms**; tap two quits.
 
 Armed state: the system panel expands in place to 256 × 152 at (592, 0).
 
-- `NO SAVE. NO REJOIN.` at BODY, `SIG.SHORT`, centred, at (608, 48, 224, 20).
+- `NO SAVE. NO REJOIN.` at BODY, `SIG.SHORT`, centered, at (608, 48, 224, 20).
 - **STAY** 96 × 64 at (608, 80) — lit plate, left, the safe choice under the reach.
 - **QUIT** 96 × 64 at (720, 80) — outlined in `SIG.SHORT` only, not filled.
 - The armed state **expires after 4,000 ms** and fades out over 200 ms, so it cannot be left lying on
@@ -274,7 +274,7 @@ be slightly hard to hit.
 Both draw over a full-frame scrim and suppress nothing else.
 
 **Reconnecting** — scrim `#04060A` at 0.60; block 360 × 88 at (540, 436).
-`RECONNECTING` at DISPLAY centred, `THE MATCH DID NOT WAIT` at BODY, `TEXT.2`, centred below.
+`RECONNECTING` at DISPLAY centered, `THE MATCH DID NOT WAIT` at BODY, `TEXT.2`, centered below.
 
 **Result** — scrim `#04060A` at 0.72; block 560 × 224 at (440, 368).
 `ENGAGEMENT ENDED` at BODY, `TEXT.2`, letter-spacing 0.14em, at (+32, +40).
@@ -294,8 +294,8 @@ it has a screen position.
 
 | Element | Space | Geometry |
 |---|---|---|
-| **Hull bar on a damaged ship** | screen (billboarded) | 18 × 6 keyline `#0A0E12`, inner 16 × 4 at +1. Remaining portion `HULL.REST`, **lost portion `SIG.ALERT`**. Centred on the projected position, 14 px above the ship's screen half-height. **Fixed size at every depth.** |
-| **Selection circle** | **screen** | r = **192 authored px**, 64-segment line strip, 2 px, `TEAM.OWN` at 0.5. Centred on the *ship*, not the finger. |
+| **Hull bar on a damaged ship** | screen (billboarded) | 18 × 6 keyline `#0A0E12`, inner 16 × 4 at +1. Remaining portion `HULL.REST`, **lost portion `SIG.ALERT`**. Centered on the projected position, 14 px above the ship's screen half-height. **Fixed size at every depth.** |
+| **Selection circle** | **screen** | r = **192 authored px**, 64-segment line strip, 2 px, `TEAM.OWN` at 0.5. Centered on the *ship*, not the finger. |
 | **Order marker** | **world** | 120-unit square footprint on the plane — 4 line segments, 3 px — plus a 90-unit vertical riser and a 26 × 3 head tick. |
 | **Order line** | world | 2 px, `TEAM.OWN` at 0.34, **one per selected design group** from that group's centroid to the marker base. Maximum four. |
 | **Placement radius** | **world** | r = 400 world units on the plane, 48 segments, **24 drawn** (dashed), 2 px, `SIG.ARMED` at 0.70. |
@@ -330,7 +330,7 @@ The full machine-readable list is `palette.json`.
 | `TEAM.C` | `#F75FD0` | 318° | hostile B (M4) |
 | `TEAM.D` | `#A45CFF` | 268° | hostile C (M4) |
 
-**State — the reserved red family, never a team colour.**
+**State — the reserved red family, never a team color.**
 
 | Token | Hex | Use |
 |---|---|---|
@@ -435,7 +435,7 @@ deliberately not shown — the five surfaces are closed.
 Touch only. No mouse, pen, keyboard, cursor, hover, tooltip, right-click, long-press menu or text entry.
 The gesture vocabulary is closed and **the HUD may not add to it**: tap, double-tap on your own ship,
 one-finger drag (pan, unconditionally), two-finger pinch (zoom, coupled to pitch), two-finger rotate
-(orbit), hold on empty space (recentre). A hold on a ship is deliberately unassigned.
+(orbit), hold on empty space (recenter). A hold on a ship is deliberately unassigned.
 
 Because one-finger drag already means pan, **there is no scrolling anywhere**: every panel fits its
 worst case in fixed space. No lists, no carousels, no paging, no build queue list.
@@ -462,7 +462,7 @@ tier wins across one.
 
 ## Suggested build order
 
-1. **Primitive emitter and the hit table.** Rects with per-vertex colour and alpha, line segments, flat
+1. **Primitive emitter and the hit table.** Rects with per-vertex color and alpha, line segments, flat
    triangles, glyph quads. A hit table of rectangles with a tier tag. Nothing renders yet.
 2. **The tier/clearance test.** Load `geometry.json`, assert every interactive rect meets its tier and
    every adjacent pair has ≥16 px clearance, in both handedness states. This is judged by a test, not by
@@ -495,7 +495,7 @@ tier wins across one.
 | `README.md` | this document — self-sufficient; implement from it |
 | `CLAUDE_CODE_PROMPT.md` | a prompt to paste into Claude Code to start the work |
 | `geometry.json` | every rectangle, hit rect, tier and mirrored x — intended for the assertion test |
-| `palette.json` | every colour token with hex, alpha and usage |
+| `palette.json` | every color token with hex, alpha and usage |
 | `Outpost Commander HUD.dc.html` | the design reference. Open in a browser. **The scene behind the HUD is not a specification.** |
 | `frames/01-idle.png` | Frame 1 — nothing selected, early match. Credits and system only |
 | `frames/02-combat.png` | Frame 2 — 30 selected across two groups, world hull bars, left-edge alert, order marker and lines |

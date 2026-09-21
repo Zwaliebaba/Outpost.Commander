@@ -22,7 +22,7 @@ opens in a browser and shows four 1440 × 960 frames plus state studies. Use it 
 image assets, no texture atlas other than the DirectWrite Segoe UI glyph atlas. Follow this repository's
 existing conventions (`AGENTS.md`, the `Design/ADR/` decisions, R13/R18/R19/R20/R21) over anything you
 would otherwise reach for. Everything the HUD draws must be one of: an axis-aligned rect with per-vertex
-colour and alpha, a line segment of a given width, a flat-filled triangle, or a glyph quad.
+color and alpha, a line segment of a given width, a flat-filled triangle, or a glyph quad.
 
 **Before you write UI code, do these in order:**
 
