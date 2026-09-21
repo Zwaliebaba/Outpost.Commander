@@ -164,7 +164,7 @@ pixel rate of 60 Hz at a 0.5 scale.
 **No recommendation: measure both before choosing** (`TechnicalDesign.md` §6, §9). The two are one constant
 apart, and the measurement M0.23 already owes is the whole of the answer.
 
-### Q35 — Does canceling a build refund, and how much? — **needed by M1**
+### Q35 — Does canceling *or replacing* a build refund, and how much? — **needed by M1**
 
 **The plan asked for this row by name.** M1.6's exit criterion reads *"canceling refunds what the design
 says it refunds — and if the design does not say, that is a register question rather than a guess in a
@@ -181,12 +181,26 @@ cancel without saying what a cancel costs.
   taken whole and the refund is a fraction of it, so it needs a rounding rule that is exact on both sides
   (R16), in the one part of the tick where that is least forgiving.
 
-**Recommendation: full refund.** The MVP has one queue slot and no way to queue ahead
+**The design handoff found the sharper case, and it is not the cancel.** `design_handoff_hud/` keeps
+**all six build buttons live while something is building**, so a tap on any of them replaces the item in
+progress — and since credits are spent at the start, the displaced item's credits are simply gone. That
+is the common path, not the rare one: the cancel target has to be aimed at, while a replacement is one
+tap on a 96-pixel button a player is already using. The handoff raises it and declines to answer it,
+correctly — it is a `GameCore` rule, not an interface one.
+
+**Recommendation: full refund, on both paths.** The MVP has one queue slot and no way to queue ahead
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md), Q21), so the only thing a cancel can express
 is *I picked the wrong one* — which is the mis-tap case, not a strategic one. A proportional refund buys a
 decision the MVP gives the player no other way to make interesting, and pays a rounding rule for it.
 
-### Q36 — How does the client compute the income rate, and over what window? — **needed by M2**
+### Q36 — Does the income rate ship at all, and if so how and over what window? — **needed by M2**
+
+**This question grew a first half.** `design_handoff_hud/` draws the credits panel — 272 × 88, a label, the
+balance and a change flash — with **no room for a rate**, and states flatly that there is none because it
+*has no data path*. **That reason is false**, and it is false for a traceable cause: the brief the handoff
+was generated from asserted it, so the handoff inherited an error rather than finding one. The conclusion
+may still be right — a rate the player does not need is a readout that costs panel space over the
+battlefield — but it has to be decided rather than absorbed. **Whether comes before how.**
 
 `Interface.md` §6 puts an income rate in the credits panel *"once there is one"*, and M2.7 is the milestone
 in which there is one. **The snapshot has no income field** — the per-player block carries credits, the
@@ -210,8 +224,8 @@ Two derivations fit the data the client has, and they fail differently:
 in roughly thirty (`GameDesign.md` §4), so with the two or three miners of an opening a delivery is a rare
 discrete event: an instantaneous rate reads as zero most of the time and as a spike for one frame.
 
-**Recommendation: difference the credits, over a window stated in ticks rather than seconds** (R16 — the
-tick is the clock), and **settle Q35 first**, because this derivation is wrong by whatever a cancel gives
+**Recommendation: ship it, and difference the credits over a window stated in ticks rather than seconds**
+(R16 — the tick is the clock), and **settle Q35 first**, because this derivation is wrong by whatever a cancel gives
 back. It evaluates no rule the host also evaluates, so it cannot disagree with the host. The window itself
 is a thing to get from playing rather than from arithmetic: long enough that an opening does not read as
 zero, short enough that losing a miner shows.

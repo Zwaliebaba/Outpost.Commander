@@ -185,8 +185,10 @@ determinism test's scripted orders, not only by its own.
 **Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, **and the
 cargo bucket in the flags byte** — two bits, four buckets, which is what a fill bar needs and is all the
 snapshot has room for (`TechnicalDesign.md` §4), and the top-left
-readout M1.14 already draws going live — **including the income rate, which `Interface.md` §6 says appears
-"once there is one"**, and this is the milestone in which there is one.
+readout M1.14 already draws going live — and **the income rate, which `Interface.md` §6 says appears
+"once there is one"**, if it ships at all. **It may not.** `design_handoff_hud/` draws the credits panel
+with no room for a rate and states that it has no data path; that reason is false, but the conclusion is
+still open, and **Q36 settles whether before this step can say how**.
 
 **Files:** `GameLogic/Economy.h` `.cpp`; `GameClient/Panels.cpp`;
 `Tests/GameLogicTests/EconomyTests.cpp`.

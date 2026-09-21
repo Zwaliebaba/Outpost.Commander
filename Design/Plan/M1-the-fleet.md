@@ -406,7 +406,8 @@ same authored origin; and a string draws at the physically correct place, confir
 
 ### M1.14 — The four panels · `GameClient` · `GameClientTests` · agent
 
-**Read first:** `Interface.md` §6 and §1; R18 and R20.
+**Read first:** `Interface.md` §6 and §1, including *Where the geometry lives*;
+[`design_handoff_hud/README.md`](../design_handoff_hud/README.md) in full; R14, R18 and R20.
 
 **Adds:** credits top left; selection along the bottom **away from the reaching hand**, grouped by design
 with a count and a hull bar — the cargo bar `Interface.md` §6 draws beside it arrives with mining at M2.7 —
@@ -414,7 +415,8 @@ where tapping a group narrows the selection and a clear target deselects everyth
 deselect**, because a tap on empty space is already a move order; build along the bottom **on the reaching
 hand's side**, visible when your station is selected, two targets with their costs, grayed when
 unaffordable, the current item and its progress below them and tappable to cancel; and system top center,
-carrying connection state, the reconnecting overlay, the result overlay and the one button that quits.
+carrying connection state, the reconnecting overlay, the result overlay and the quit, **which arms on
+the first tap and quits on the second and disarms itself after four seconds** (`Interface.md` §6).
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so a panel is
 geometry and text the renderer draws and a "button" is a rectangle the hit test knows about. **All three of
@@ -422,6 +424,21 @@ geometry and text the renderer draws and a "button" is a rectangle the hit test 
 it: the **48 × 48** floor with **16 pixels of clear space** under anything interactive, the **64 × 64**
 combat tier on the selection panel's design groups, its clear target and the build item's cancel, and
 **96 × 96** on the build buttons. A control smaller than its tier is a defect rather than a style choice.
+
+**The geometry is no longer this step's to invent.** `design_handoff_hud/` states every rectangle in
+integer authored coordinates, with the palette, the two type sizes and the motion table, and
+`geometry.json` is the machine-readable form carrying each rect's hit box, its tier and its mirrored x.
+**Take the numbers from there rather than deriving them**, and take the build order with them — the
+emitter and the hit table first, then the tier test, then credits and system, then selection, then build.
+`Interface.md` §6 *Where the geometry lives* says which document wins where the two overlap.
+
+**R14 decides how the test reads that file, and the answer is not in the test.** The handoff asks for a
+suite that loads `geometry.json` and asserts the two rules, but the dependency list is closed — the
+Windows SDK, the MSVC standard library and `Microsoft.Windows.CppWinRT` — so there is **no JSON parser
+in this tree and adding one is a decision rather than a convenience.** The shape that costs nothing is
+the one `Scripts/` already uses five times over: **the suite asserts over the constants in
+`HudLayout.h`, and a gate compares those constants against `geometry.json`.** Python reads the JSON,
+C++ reads none, and the two cannot drift without something failing.
 
 **The bottom edge is deliberate; which corner is not settled here.** `Interface.md` §1 reversed the posture
 this step was first written against — a Surface Pro is used on a kickstand with index fingers rather than
@@ -431,13 +448,15 @@ it is the readout the player reads while their hand is on the glass. **Which sid
 `OpenQuestions.md` Q33, open and settled at M1 by playing**, so this step cannot hard-code a side.
 
 **Files:** `GameClient/Panels.h` `.cpp`, `GameClient/HudLayout.h` `.cpp`, `GameClient/PanelHitTest.h`
-`.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`.
+`.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`;
+`Scripts/CheckHudGeometry.py`.
 
-**Done when:** **every interactive target is asserted at its own tier with its clear space** — a test, not
-a measurement by eye, because this is the rule that erodes one control at a time, and a combat-tier target
-passing on the 48 floor is the way it erodes; a tap inside a panel never reaches the world; **the two
-bottom panels swap sides on one value**, so Q33 costs a setting rather than a rewrite; and the selection
-panel's grouping matches what M1.11 selected.
+**Done when:** **every interactive target is asserted at its own tier with its clear space, in both
+handedness states** — a test, not a measurement by eye, because this is the rule that erodes one control
+at a time, and a combat-tier target passing on the 48 floor is the way it erodes; **the gate agrees with
+`geometry.json` rect for rect**, so the drawn interface and the designed one cannot diverge silently; a
+tap inside a panel never reaches the world; **the two bottom panels swap sides on one value**, so Q33
+costs a setting rather than a rewrite; and the selection panel's grouping matches what M1.11 selected.
 
 ---
 

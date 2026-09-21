@@ -106,7 +106,10 @@ client-side, with the host never told it exists.
 ### M3.3b — The alert, and hull bars in the world · `GameClient` · `GameClientTests` · agent
 
 **Read first:** [`ADR-020`](../ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md); `Interface.md`
-§1's pick order and §6; [`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)'s recenter.
+§1's pick order and §6, including *Where the geometry lives*;
+[`design_handoff_hud/README.md`](../design_handoff_hud/README.md) §*Damage alert* and
+§*World-anchored interface elements*; [`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)'s
+recenter.
 
 **Adds:** the two things that make damage visible, both derived from data the client already holds.
 
@@ -114,7 +117,11 @@ client-side, with the host never told it exists.
 you, and the replica store has the position. **No wire bytes and no host change** — this step touches
 `GameClient` and nothing else. It draws a directional indicator at the screen edge, fading over a few
 seconds, **suppressed entirely when the event is already on screen**, clustered so a fleet caught in the
-open is one indicator with a count rather than forty.
+open is one indicator with a count rather than forty. **The handoff draws it and adds a cap ADR-020 did
+not have**: at most three indicators at once, never closer than 112 pixels along an edge, two that would
+collide merging and summing their counts, a fourth replacing the oldest — plus the clamp that keeps the
+body clear of every panel band, and **no scrim and no plate behind it**, because the moment an alert looks
+like chrome it becomes chrome and habituation is the failure ADR-020 names.
 
 **It is a hit-test rectangle, not a gesture.** Tapping it recenters the camera there, reusing M1.8's
 recenter. R21's gesture budget is untouched and the banked `Holding` stays banked — which is why
@@ -124,7 +131,9 @@ it never stated.
 **Hull bars in the world, on damaged ships only.** A ship at full hull draws nothing, so the map stays
 quiet until something is wrong; the cost is one quad per damaged ship, at most 110. Position by projecting
 the world point and then through the **interface's** fit transform (ADR-011, ADR-016) — the world's fit is
-the other one and using it here is the ADR-016 defect in miniature.
+the other one and using it here is the ADR-016 defect in miniature. **The bar is 18 × 6 and a fixed size
+at every depth**, and only the *lost* portion is bright — so a healthy fleet is a row of dark ticks and a
+dying one a row of red, and loudness tracks severity without a rule.
 
 **Without this step, half of `GameDesign.md` §7 cannot be played.** It says a defender "must be watching
 the right part of a 16,384-unit map at the right moment to have any counterplay" — with no minimap, no
@@ -137,7 +146,9 @@ audio and no hull bar outside the selection panel, that is not a hard ask, it is
 alert and one naming somebody else's does not; an event already on screen raises none; several hits in one
 place cluster to one indicator with the right count; **and the bearing is right at several camera
 headings, including an event behind the camera**, which is the case that gets the sign wrong. Plus: an
-undamaged ship draws no bar, and the alert's target is at least 64 × 64.
+undamaged ship draws no bar; the alert's target is at least 64 × 64; **a fourth simultaneous cluster
+replaces the oldest rather than drawing a fourth indicator**; and the geometry matches `geometry.json`
+through M1.14's gate, which now covers the alert's rects.
 
 ### M3.4 — Death, the removal list, and wrecks · `GameLogic`, `GameClient` · both · agent
 

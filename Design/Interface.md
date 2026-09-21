@@ -372,11 +372,11 @@ pass at physical resolution (§1).
 
 | | Where | What |
 |---|---|---|
-| **Credits** | Top left | The number, and the income rate once there is one. |
+| **Credits** | Top left | The number, and the income rate once there is one — **whether that readout ships at all is `OpenQuestions.md` Q36**, because the handoff below draws no room for it. |
 | **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
-| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
-| **Alert** | The screen edge, in the direction of the event | **You are being attacked somewhere you cannot see** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). Derived from the fire events and the removal list the client already has, so it costs no wire bytes; **nothing shows if the event is already on screen**; one indicator per cluster with a count; fades over a few seconds. **Tapping it recenters the camera there** — a hit-test rectangle rather than a gesture, so R21's budget is untouched. 64 × 64, the combat tier. |
-| **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends — **which names the winner**, since from M4 there are three and four players and "you lost" does not say to whom — and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
+| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it — and **all six buttons stay live while it builds, so a tap replaces what is in progress**, which is the common path into `OpenQuestions.md` Q35 rather than the cancel target. |
+| **Alert** | The screen edge, in the direction of the event | **You are being attacked somewhere you cannot see** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). Derived from the fire events and the removal list the client already has, so it costs no wire bytes; **nothing shows if the event is already on screen**; one indicator per cluster with a count, **at most three at once** — two that would collide merge and sum, a fourth replaces the oldest; fades over a few seconds. **No scrim and no plate behind it**: the moment an alert looks like chrome it becomes chrome. **Tapping it recenters the camera there** — a hit-test rectangle rather than a gesture, so R21's budget is untouched. 64 × 64, the combat tier. |
+| **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends — **which names the winner**, since from M4 there are three and four players and "you lost" does not say to whom — and the button that quits via `CoreApplication::Exit`, **which arms on the first tap and quits on the second, and disarms itself after four seconds** — there is no pause, no save and no rejoin, so a single stray contact would otherwise end a five-minute match with no recovery path anywhere in the system. There is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48, and §1's three tiers decide which are larger. **The build
 buttons are 96 × 96** — 18.3 mm, twice the floor — because they are the ones a player hits while something
@@ -424,6 +424,40 @@ this interface is large type with a dozen strings. That was true of the MVP and 
 ship designer and a research tree**, which is precisely the dense small type R13 warns about, and by then
 every layout number would have been authored against a doubled pixel. `ADR-011` moved it while it cost
 eighty lines.
+
+### Where the geometry lives
+
+**This document settles what the interface is and why. It does not say where anything is drawn**, and
+that was deliberate — a coordinate in prose is a coordinate that drifts. The gap is now filled by
+[`design_handoff_hud/`](design_handoff_hud/README.md): **every rectangle in integer authored
+coordinates, the palette, the type scale and the motion table**, with a machine-readable
+`geometry.json` that M1.14's test asserts against rather than a reviewer measuring by eye.
+
+**The authority is split, and the split is the point.** This document is the source for what exists and
+why — the frame, the three tiers and the clear space, the gesture vocabulary, the pick order, which five
+surfaces there are and what data reaches them. The handoff is the source for what this document
+deliberately never stated: **where each rectangle sits, what color it is, which type size it uses, and
+how it moves.** Where the handoff restates a figure from here it is echoing rather than deciding, and
+**this document wins.**
+
+That last sentence is load-bearing, because the handoff echoes a good deal of §1 and §4 — the frame, the
+tiers, the sixteen pixels, the pick order, the data the client holds. **`Scripts/CheckDesign.py` does not
+police those copies**, so a figure that moves here has to be moved there by hand, and the handoff is the
+fourth place this tree now states some of them.
+
+**Four things the handoff decided rather than echoed**, each recorded above or on the register, because a
+decision that lives only in a handoff is a decision nobody can find: the quit is two taps; **the alert
+caps at three concurrent indicators**, never closer than 112 pixels along an edge, merging on collision
+and replacing the oldest beyond three — [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)
+had the cluster rule and no cap; **at most four order lines**, one per selected design group; and a
+design that carries no ore draws **no cargo row at all** rather than an empty one.
+
+**One thing it contradicts.** The handoff states that there is no income rate and that it *has no data
+path* — and that reason is false: the per-player block, plus the build item the client already watches,
+give two derivations, which is what `OpenQuestions.md` Q36 exists to choose between. The conclusion may
+still be the right one, but it has to be reached rather than inherited, and **the error came from the
+brief the handoff was generated from** rather than from the design. Q36 therefore settles *whether* the
+readout ships before M2.7 can say how it is computed.
 
 ## 7. Suspend, resume, and what is still open
 
