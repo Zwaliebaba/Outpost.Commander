@@ -56,6 +56,18 @@ if (-not $clangTidy) {
 }
 Write-Output "clang-tidy: $clangTidy"
 
+# $(VCInstallDir) is MSBuild's, not the shell's, and the suites reach CppUnitTest.h through it.
+# Without this every test translation unit fails to parse, and TEST_CLASS(SuiteSmoke) is then read
+# as a global variable declaration -- which is where the first run's naming "finding" came from.
+$vcInstallDir = $null
+if ($vsRoot) {
+  foreach ($candidate in @("$vsRoot\VC\", "$vsRoot\VC\Auxiliary\VS\")) {
+    if (Test-Path (Join-Path $candidate 'UnitTest\include\CppUnitTest.h')) { $vcInstallDir = $candidate; break }
+  }
+}
+if ($vcInstallDir) { Write-Output "VCInstallDir: $vcInstallDir" }
+else { Write-Output "CppUnitTest.h not located; the suites will not parse." }
+
 function Get-Metadata([xml]$xml, [string]$name) {
   # The value of an unconditioned ClCompile setting, with MSBuild's macros expanded.
   $nodes = $xml.Project.ItemDefinitionGroup | Where-Object { -not $_.Condition }
@@ -63,9 +75,11 @@ function Get-Metadata([xml]$xml, [string]$name) {
 }
 
 function Expand-Macros([string]$text, [string]$projectDir) {
-  $text -replace '\$\(SolutionDir\)', "$root\" `
-        -replace '\$\(MSBuildThisFileDirectory\)', "$projectDir\" `
-        -replace '%\(AdditionalIncludeDirectories\)', ''
+  $expanded = $text -replace '\$\(SolutionDir\)', "$root\" `
+                    -replace '\$\(MSBuildThisFileDirectory\)', "$projectDir\" `
+                    -replace '%\(AdditionalIncludeDirectories\)', ''
+  if ($script:vcInstallDir) { $expanded = $expanded -replace '\$\(VCInstallDir\)', $script:vcInstallDir }
+  $expanded
 }
 
 $units = 0
@@ -78,7 +92,8 @@ foreach ($project in Get-ChildItem -Path $root -Recurse -Filter '*.vcxproj' -Fil
   $defines = New-Object System.Collections.Generic.List[string]
   $includes.Add($projectDir)                       # cl searches the including file's directory
   foreach ($piece in (Expand-Macros (Get-Metadata $xml 'AdditionalIncludeDirectories') $projectDir) -split ';') {
-    if ($piece.Trim()) { $includes.Add($piece.Trim().TrimEnd('\')) }
+    $piece = $piece.Trim()
+    if ($piece -and $piece -notmatch '\$\(') { $includes.Add($piece.TrimEnd('\')) }
   }
   foreach ($piece in (Get-Metadata $xml 'PreprocessorDefinitions') -split ';') {
     if ($piece.Trim() -and $piece -notlike '%(*') { $defines.Add($piece.Trim()) }
