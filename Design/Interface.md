@@ -441,9 +441,12 @@ how it moves.** Where the handoff restates a figure from here it is echoing rath
 **this document wins.**
 
 That last sentence is load-bearing, because the handoff echoes a good deal of §1 and §4 — the frame, the
-tiers, the sixteen pixels, the pick order, the data the client holds. **`Scripts/CheckDesign.py` does not
-police those copies**, so a figure that moves here has to be moved there by hand, and the handoff is the
-fourth place this tree now states some of them.
+tiers, the sixteen pixels, the pick order, the data the client holds — so the handoff is the fourth place
+this tree states some of them. **`Scripts/CheckDesign.py` reads `Design/*.md` and never reaches into that
+JSON**, so [`Scripts/CheckHudGeometry.py`](../Scripts/CheckHudGeometry.py) exists to close the half that
+can be closed mechanically: it fails when the frame, the three tiers or the sixteen pixels in
+`geometry.json` stop matching §1's table. **The prose copies it cannot check — the pick order, the
+gesture vocabulary, the data the client holds — still move by hand.**
 
 **Four things the handoff decided rather than echoed**, each recorded above or on the register, because a
 decision that lives only in a handoff is a decision nobody can find: the quit is two taps; **the alert

@@ -67,10 +67,15 @@ forbids it), so axis-aligned edges are clean and every diagonal is a deliberate 
 
 **Minimum clear space between adjacent interactive targets: 16 authored pixels.**
 
-`geometry.json` in this bundle is the machine-readable form of the geometry table and is intended to
-be consumed by a unit test that asserts both rules. The tightest clearances in the shipped layout are
-all exactly 16 and all vertical: ships row → modules row (752 → 768), modules row → cancel
-(864 → 880), selection group[3] → clear (704 → 720).
+`geometry.json` in this bundle is the machine-readable form of the geometry table and is asserted by
+`Scripts/CheckHudGeometry.py`, which checks both rules in both handedness states.
+
+**Every clearance in the build and selection panels is exactly 16. Twelve distinct pairs sit on the
+floor and not one is above it**, so there is no slack anywhere and a control that grows by a pixel
+breaks the rule. Three are vertical — ships row → modules row at 752 → 768, in both columns, and the
+ore row → cancel at 864 → 880 — and **nine are horizontal**: the four gaps between build columns
+(1016 → 1032 twice, 1152 → 1168, 1288 → 1304), the four between selection groups and on into clear
+(176 → 192, 352 → 368, 528 → 544, 704 → 720), and the two confirm buttons (704 → 720).
 
 ## Handedness
 

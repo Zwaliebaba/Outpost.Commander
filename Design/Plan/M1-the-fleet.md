@@ -449,7 +449,9 @@ it is the readout the player reads while their hand is on the glass. **Which sid
 
 **Files:** `GameClient/Panels.h` `.cpp`, `GameClient/HudLayout.h` `.cpp`, `GameClient/PanelHitTest.h`
 `.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`;
-`Scripts/CheckHudGeometry.py`.
+`Scripts/CheckHudGeometry.py` **extended** — it already gates `geometry.json` against its own rules
+and against `Interface.md` §1, and this step adds the half that compares those rects to the
+constants the client actually draws from.
 
 **Done when:** **every interactive target is asserted at its own tier with its clear space, in both
 handedness states** — a test, not a measurement by eye, because this is the rule that erodes one control

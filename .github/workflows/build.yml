@@ -276,6 +276,13 @@ jobs:
         # both copies read as authoritative. This has happened repeatedly.
         run: python3 Scripts/CheckDesign.py
 
+      - name: The HUD geometry obeys its own rules
+        # Every interactive rect at its 48/64/96 tier with 16px of clear space, in BOTH handedness
+        # states, plus the frame and tier figures geometry.json copies out of Interface.md section 1.
+        # CheckDesign.py reads Design/*.md and never reaches into that JSON, so without this a tier
+        # that moves in the prose leaves a copy in the handoff still reading as authoritative.
+        run: python3 Scripts/CheckHudGeometry.py
+
   format:
     name: clang-format
     runs-on: ubuntu-latest
