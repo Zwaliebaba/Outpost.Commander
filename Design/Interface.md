@@ -124,7 +124,7 @@ key. With something selected:
 |---|---|
 | Empty space | Move there — **or, with your station selected and a module chosen, place that module** (§6). |
 | A hostile ship or station | Attack it. |
-| An asteroid with ore | Mine it — miners in the selection take it, the rest move to it. |
+| An asteroid with ore | Mine it — miners in the selection take it, the rest move to it. **This is a standing order**: the miner shuttles until told otherwise. |
 | Your own station | Opens the build panel; the selection is unchanged. |
 | One of your own ships | Replaces the selection with that ship. |
 
@@ -197,7 +197,7 @@ pass at physical resolution (§1).
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
-| **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
+| **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
 | **Build** | Bottom right, thumb zone | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and greyed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
 | **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 

@@ -28,6 +28,8 @@ design onto them:
 | The simulation, the AI, the match | `GameLogic` | Host only. The client does not link it. |
 | Destination slot assignment around an order point | `GameLogic` | It reaches an outcome, so it is simulation and obeys R16's ordering rule. |
 | Module placement validity — radius, clearance of the station and of other modules | `GameCore` | A rule both sides evaluate: the client previews it under the finger, the host validates it (R19). |
+| Derived cargo capacity and extraction rate, summed over a hull's slots | `GameCore` | The same pure function as every other derived stat (R24). |
+| The nearest thing that accepts ore | `GameLogic` | It reaches an outcome, so it is simulation: candidates ordered by entity identity (R16). |
 | Command validation — ownership, bounds, generation, sequence | `GameLogic` | The host is the only thing that may decide an order is legal (R19). |
 | Replica state, interpolation, the camera, selection, the HUD | `GameClient` | Client only. |
 | `IFrameworkView` and application lifecycle | `OutpostCommander` | Windows Runtime glue and nothing else (R20). |
@@ -90,7 +92,7 @@ candidates at equal distance must break the tie on identity, not on which cell w
 
 ### The tick
 
-Drain incoming commands, then: orders, AI, movement, weapons, mining, build queues, deaths, victory. One
+Drain incoming commands, then: orders, AI, movement, weapons, mining, build queues, deaths, victory. **Mining is a standing order and therefore the one system that re-issues work to itself** — a miner that unloads is given its next destination inside the same pass, which keeps the cycle on the tick and out of the command path. One
 pass, fixed order, no system reading another's half-updated output. At the end of the tick the host
 computes a **state hash** over every entity's identity, position, heading and hull, which is what the
 determinism test asserts and what a desynchronisation report would carry.
@@ -142,12 +144,18 @@ An entity record is **ten bytes**:
 | Heading | 1 | 256 steps, 1.4°. A rendering quantity; the simulation's heading is 16-bit. |
 | Hull remaining | 1 | Percent. |
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
-| Flags | 1 | Team and state bits. |
+| Flags | 1 | **Team 2 bits, state 3 bits, cargo 2 bits, one spare.** |
 
 The header carries the protocol version, the type, the snapshot sequence, the tick, the entity count, the
 **player count**, the **removal count**, and then one block per player: credits, last applied command
 sequence, and the **currently building design and its progress**. Sizing the per-player blocks by a count
 in the header is what makes the third and fourth player a runtime value rather than a format change.
+
+**Cargo rides in the flags byte and could not have had one of its own.** A miner's fill level has to reach
+the client or a player cannot see why a ship turned for home, but **a byte per entity is 110 bytes against
+64 of headroom — it would split the datagram**. Two bits give four buckets, which is all a fill bar needs,
+and the flags byte had them spare once the design identity moved out
+([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)).
 
 **A removal list closes the snapshot** — one count byte, two bytes per removed identity, typically zero to
 three. Without it a death is learned by *absence*, which works only while the interest set is everything;

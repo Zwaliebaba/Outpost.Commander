@@ -258,7 +258,7 @@ never gets written — a gap in the sequence is cheaper than an ADR nobody meant
 |---|---|---|
 | **ADR-012** | How a shader is built and how it reaches the binary — `fxc` to a `/Fh` header, or a `.cso` as package content (F1) | M0.14 |
 | **ADR-013** | The join record: how a client is told which player it is, and what a host does with an unexpected one (F2) | M1.4 |
-| **ADR-015** | *Taken 2026-09-21.* The base is built from modules, and a module is a separate destroyable entity (`GameDesign.md` §5) |
+| **ADR-015** | The base is built from modules, and a module is a separate destroyable entity (`GameDesign.md` §5) | **Taken 2026-09-21** |
 | **ADR-014** | The firing interval in ticks and where integer damage rounds (F3), once the register has said what it should be | M3.1 |
 
 ## Standing work, in no milestone

@@ -100,6 +100,25 @@ module arrives with fog, post-MVP.
 
 ---
 
+## Answered — 2026-09-21, sixth round: the mining cycle
+
+| | Question | Answer |
+|---|---|---|
+| **Q32** | Is mining a standing order, and where does cargo capacity live? | **Yes, and in the mining tool.** A mine order is the only order in this design that does not complete — the miner shuttles until told otherwise, five states on the tick. Capacity and extraction rate are **derived and summed over the hull's slots** like mass and cost (R24), so a two-slot heavy miner is a table row rather than a mechanic. The unload target is **a query for the nearest owned thing that accepts ore**, written as a set although it holds one station today, because a mining factory at a contested field is only worth adding if the miner already asks. |
+
+**The wire could not afford a cargo byte.** A fill level per entity is 110 bytes against 64 of headroom,
+which would have split the MVP's single datagram. Cargo is **two bits in the flags byte** — four buckets,
+which is what a bar needs — in the space the design identity vacated when Q28's review moved it to a byte
+of its own. It is a small illustration of the thing ADR-015 warned about: the datagram now has six
+entities of headroom, and the next feature that wants a per-entity byte cannot have one.
+
+**One sentence was corrected while doing this.** `GameDesign.md` §4 said a home field "holds enough for a
+long opening and not for a match" in a paragraph that reads as current — true from M3, false before it,
+since asteroids are inexhaustible until then. **A consistency checker cannot catch that**: it is a claim
+that is true in one milestone and false in another, not a figure that disagrees with itself.
+
+---
+
 ## Open
 
 ### Q26 — What is the asteroid count, and the spawn anchor radius? — **needed by M2**

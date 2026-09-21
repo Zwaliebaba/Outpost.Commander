@@ -132,10 +132,27 @@ is a seed in and a list of placed objects out, so adding a kind later does not c
 
 One resource, **credits**. There is no second currency and no upkeep in the MVP.
 
-A **miner** flies to an asteroid, extracts until its cargo is full, flies back to the station and unloads.
-That is the entire loop, and it is a loop rather than a number because the miner is a ship on the map
-that can be shot. An idle miner with a full hold and a dead station is the economy failing in a way a
-player can see and do something about.
+A **miner** flies to an asteroid, extracts until its cargo is full, flies to the nearest place that
+accepts ore, unloads, and **goes back to the same asteroid and does it again**. That is the entire loop,
+and it is a loop rather than a number because the miner is a ship on the map that can be shot. An idle
+miner with a full hold and a dead station is the economy failing in a way a player can see and do
+something about.
+
+**A mine order is the only standing order in this design.** Every other order completes: a ship told to
+move arrives and is finished. A miner told to mine **keeps mining until it is told to do something else**,
+which is the whole of the cycle above and is why an economy runs without a player shepherding it. The
+state machine is five states — going to ore, extracting, going to unload, unloading, and back — all of it
+on the tick, all of it integer.
+
+**Where it unloads is a query, not a constant.** The miner flies to the *nearest thing you own that
+accepts ore*. Today that set has one member, your station. It is written as a set because a mining factory
+placed out at a contested field is an obvious later feature, and the whole value of it — a shorter round
+trip — depends on the miner already asking "what is nearest" rather than being told "the station".
+
+**Cargo capacity is a derived stat like any other** (R24). It is carried by the mining tool, not by the
+hull, and it is **summed over the hull's slots** exactly as mass and cost are — so a two-slot hull with two
+mining lasers carries twice as much and extracts twice as fast, and a "heavy miner" later is a table row
+rather than a mechanic. A ship with no mining tool has zero capacity and cannot be given a mine order.
 
 **Asteroids are finite from M3, and infinite before it.** Finite asteroids are what make the contested
 fields worth contesting; an infinite home field turns the map into scenery and the match into pure
@@ -148,10 +165,11 @@ From M3: an exhausted asteroid stays on the map as a husk and a miner with no or
 one with ore left. The cost is that a player who ignores their miners eventually finds them idle, which is
 a management burden the MVP accepts rather than solves.
 
-Starting values: a station begins with 1,000 credits. A miner carries 100 credits of ore, extracts at 20
-per second and so fills in five seconds; a round trip to the home field is roughly thirty seconds, which
-puts one miner at about 2.5 credits per second. A home field holds enough for a long opening and not for
-a match.
+Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
+extracts at 20 per second, so the one-slot miner fills in five seconds; a round trip to the home field is
+roughly thirty seconds, which puts one miner at about 2.5 credits per second. **From M3, when asteroids
+become finite, a home field holds enough for a long opening and not for a match** — before M3 it holds
+everything, because there is nothing to exhaust.
 
 ---
 
@@ -268,7 +286,7 @@ heavy design later is a table row (§10).
 
 | Slot component | What it does | Range |
 |---|---|---|
-| `MiningLaser` | Extracts ore. Does no damage. | 200 |
+| `MiningLaser` | Extracts 20 ore a second and carries 100 of it. Does no damage. Capacity and rate both sum over a hull's slots. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
 | `PointDefence` | 60 damage per second per mount. Station slots only. | 400 |
 

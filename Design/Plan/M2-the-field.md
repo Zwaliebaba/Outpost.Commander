@@ -146,10 +146,18 @@ two entities at exactly equal distance resolve to the same one on every run.
 
 **Read first:** `GameDesign.md` §4 and §6; `TechnicalDesign.md` §2's tick order.
 
-**Adds:** the whole economy. **A miner flies to an asteroid, extracts until its cargo is full, flies back
-to the station and unloads.** That is the entire loop, and it is a loop rather than a number because the
-miner is a ship on the map that can be shot — an idle miner with a full hold and a dead station is the
-economy failing in a way a player can see and do something about.
+**Adds:** the whole economy, as a **five-state standing order** — going to ore, extracting, going to
+unload, unloading, and back to ore. A mine order does not complete; it runs until the miner is told
+something else, which is why an economy runs without a player shepherding it and is the only order in the
+design that behaves this way (`GameDesign.md` §4).
+
+**Two things this step must not hardcode**, both of which are one line now and a refactor later:
+
+- **Cargo capacity and extraction rate are derived** from the components in the hull's slots and summed,
+  exactly as mass and cost are (R24). Not a constant on "the miner", which is not a type.
+- **The unload target is a query** — the nearest owned entity that accepts ore, candidates ordered by
+  entity identity (R16). Today that set holds one station. Writing it as a constant is what would make a
+  mining factory at a contested field a rewrite instead of a table row.
 
 `GameDesign.md` §4's starting values are the design's and are not repeated here. **They are starting
 values and not balance**, and M3's twenty matches are what move them.
@@ -158,19 +166,24 @@ The `MiningLaser` is a slot component with a range like any weapon (M1.1) and do
 here is a special case for a "miner"** — it is a design whose slot happens to hold a mining tool, which is
 ADR-006's central claim being exercised rather than asserted.
 
-**Files:** `GameLogic/MiningSystem.h` `.cpp`; `GameLogic.vcxproj` + `.filters`;
-`Tests/GameLogicTests/MiningTests.cpp`.
+**Files:** `GameLogic/MiningSystem.h` `.cpp`, `GameLogic/UnloadTarget.h` `.cpp`; `GameLogic.vcxproj` +
+`.filters`; `GameCore/DesignStats.cpp` extended for derived capacity and rate;
+`Tests/GameLogicTests/MiningTests.cpp`; `Tests/GameCoreTests/DesignStatsTests.cpp` extended.
 
-**Done when:** a miner completes the full cycle in the tick count the design's figures imply; extraction
-stops exactly at a full hold rather than overshooting by a tick's worth; a miner ordered elsewhere
-mid-cycle abandons cleanly; and the loop is pinned by the determinism test's scripted orders, not only by
-its own.
+**Done when:** a miner completes the full cycle in the tick count the design's figures imply **and then
+starts the next one without a further order**; extraction stops exactly at a full hold rather than
+overshooting by a tick's worth; a miner ordered elsewhere mid-cycle abandons cleanly **and keeps whatever
+it was carrying**; a two-slot design with two mining lasers is pinned at twice the capacity and twice the
+rate, which is the derivation being exercised rather than asserted; and the loop is pinned by the
+determinism test's scripted orders, not only by its own.
 
 ### M2.7 — Credits, and the readout · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** `GameDesign.md` §4; ADR-003's per-player block; `Interface.md` §6.
 
-**Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, and the top-left
+**Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, **and the
+cargo bucket in the flags byte** — two bits, four buckets, which is what a fill bar needs and is all the
+snapshot has room for (`TechnicalDesign.md` §4), and the top-left
 readout M1.14 already draws going live — **including the income rate, which `Interface.md` §6 says appears
 "once there is one"**, and this is the milestone in which there is one.
 
