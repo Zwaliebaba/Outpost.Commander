@@ -10,6 +10,8 @@
 // (AGENTS.md section 2). WinsockTransport.h deliberately pulls in no <winsock2.h> of its own.
 #include "WinsockTransport.h"
 
+#include "TickSchedule.h"
+
 namespace Neuron
 {
 /// The name of this library, so that a suite can prove it linked and that the include path reaches

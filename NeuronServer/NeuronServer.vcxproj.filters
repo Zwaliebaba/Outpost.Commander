@@ -2,11 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="NeuronServer.cpp" />
+    <ClCompile Include="TickSchedule.cpp" />
     <ClCompile Include="WinsockTransport.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="NeuronServer.h" />
+    <ClInclude Include="TickSchedule.h" />
     <ClInclude Include="WinsockTransport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

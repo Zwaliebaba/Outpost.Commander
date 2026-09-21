@@ -10,30 +10,17 @@
 #include <string_view>
 #include <thread>
 
-// The host, and the whole of it: a console executable that names what it was linked against and
-// exits, plus M0.5's temporary probe mode. The match loop arrives with the simulation.
+// The host's shell, and nothing else. R20 names `Server` explicitly: no game logic, no arithmetic,
+// no decision a test could pin lives here. The loop's body is `Outpost::Host` in `GameLogic`,
+// where a suite can reach it; this file opens a socket, drives the tick schedule, and waits.
+//
+// Check a diff against that rule specifically. It is the one an executable breaks quietly, because
+// putting "just one" branch here is always easier than putting it where it can be tested.
 
 namespace
 {
-void PrintLibraryName(std::string_view _name)
-{
-  std::string line{_name};
-  line.push_back('\n');
-  std::fputs(line.c_str(), stdout);
-}
-
 // ---------------------------------------------------------------------------------------------
-// M0.5 SCAFFOLDING, AND IT IS MEANT TO BE DELETED.
-//
-// `Design/Plan/M0-the-wire.md` M0.5 is a gate rather than a feature: it adds no product code, and
-// what it does add is a host mode that sends a numbered packet at a fixed rate and a client that
-// logs what arrives. Everything between this banner and the next one goes when the gate has its
-// four answers and ADR-008 and TechnicalDesign.md section 9 have been written.
-//
-// It stays thin on purpose (R20, which names `Server` explicitly): there is no arithmetic here a
-// suite could pin. The framing is ProbePacket's and NeuronCoreTests owns it; the loss and the
-// jitter are computed by `Scripts/ProbeReport.py` from the CLIENT's log, because the client is
-// the side that can see what did not arrive.
+// M0.5 SCAFFOLDING, AND IT IS MEANT TO BE DELETED -- see the banner at the end of this block.
 // ---------------------------------------------------------------------------------------------
 
 [[nodiscard]] std::uint64_t MillisecondsSince(std::chrono::steady_clock::time_point _start) noexcept
@@ -44,13 +31,10 @@ void PrintLibraryName(std::string_view _name)
 
 void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 {
-  // Host byte order, so the octets come out most significant first exactly as they are written.
   std::printf("%.*s %u.%u.%u.%u:%u\n", static_cast<int>(_label.size()), _label.data(), (_endpoint.addressV4 >> 24) & 0xFFu,
               (_endpoint.addressV4 >> 16) & 0xFFu, (_endpoint.addressV4 >> 8) & 0xFFu, _endpoint.addressV4 & 0xFFu, _endpoint.port);
 }
 
-/// Sends a numbered Heartbeat to whoever spoke last, at ProbePacket::RATE_HZ, until the duration
-/// runs out or the console is interrupted. Returns the process exit code.
 [[nodiscard]] int RunProbe(std::uint32_t _durationSeconds)
 {
   Neuron::WinsockTransport transport;
@@ -77,7 +61,6 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   std::array<std::byte, 2048> scratch{};
   while (_durationSeconds == 0 || MillisecondsSince(start) < std::uint64_t{_durationSeconds} * 1000u)
   {
-    // Drain first, so a client that has just appeared is sent to on this pass rather than the next.
     for (;;)
     {
       std::size_t byteCount = 0;
@@ -121,20 +104,12 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 
       ++sequence;
       nextSend += interval;
-
-      // A machine that stalled for a second must not then send twenty packets back to back: that
-      // is a burst the network never saw, and it would read as jitter the link did not cause.
       if (nextSend < now)
       {
         nextSend = now;
       }
     }
 
-    // NOT sleep_for. Windows rounds a short sleep up to the system timer granularity, which is
-    // 15.6 ms by default, and a probe that polls that coarsely quantizes every arrival into a
-    // 15 ms bucket -- reporting as jitter what is actually its own scheduler. A measurement whose
-    // whole purpose is to find the real figure cannot have a noise floor three times the tick, so
-    // this spins instead and spends a core for the length of a run. Deliberate, and temporary.
     std::this_thread::yield();
   }
 
@@ -143,32 +118,119 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   return 0;
 }
 
-// --------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 // End of M0.5 scaffolding.
-// --------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+
+[[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds)
+{
+  Outpost::Host host;
+  if (!host.Open(_port))
+  {
+    std::printf("host: could not open port %u, WSA fault %d\n", _port, host.LastFault());
+    return 1;
+  }
+
+  PrintEndpoint("host: listening on", host.BoundEndpoint());
+  std::printf("host: %lld ms a tick; Ctrl+C to stop\n", static_cast<long long>(Outpost::TICK_PERIOD_MILLISECONDS));
+  std::fflush(stdout);
+
+  // One entity that goes somewhere, which is the whole of the simulation at M0 and is what makes
+  // a client's snapshot show something moving rather than an empty world.
+  const Outpost::EntityId first = host.MutableWorld().Create(Neuron::Vec2{}, 0, 1, 1);
+  static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288}, 7 * 256));
+
+  // THE SEAM, AND IT LIVES IN THE SHELL. R16 keeps wall time out of the simulation's library, so
+  // the schedule is the engine's and the host below it counts only ticks. The three lines that
+  // join them are this loop, which holds no arithmetic a suite could want (R20).
+  const auto start = std::chrono::steady_clock::now();
+  Neuron::TickSchedule schedule{start, Outpost::TICK_PERIOD_MILLISECONDS};
+  std::uint64_t reportedAtSecond = 0;
+
+  for (;;)
+  {
+    const auto now = std::chrono::steady_clock::now();
+    if ((_durationSeconds != 0) && (MillisecondsSince(start) >= (std::uint64_t{_durationSeconds} * 1000u)))
+    {
+      break;
+    }
+
+    const std::uint32_t due = schedule.TicksDue(now);
+    for (std::uint32_t tick = 0; tick < due; ++tick)
+    {
+      host.RunOneTick();
+    }
+
+    // A line a second, so a run of some minutes can be read afterwards rather than watched.
+    const std::uint64_t second = MillisecondsSince(start) / 1000u;
+    if (second != reportedAtSecond)
+    {
+      reportedAtSecond = second;
+      std::printf("host: t=%llus ticks=%llu abandoned=%llu snapshot=%u clients=%zu rejected=%llu\n",
+                  static_cast<unsigned long long>(second), static_cast<unsigned long long>(schedule.TicksIssued()),
+                  static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence(), host.ClientCount(),
+                  static_cast<unsigned long long>(host.RejectedDatagramCount()));
+      std::fflush(stdout);
+    }
+
+    // Wait for the next tick rather than spin. The deadline comes from the schedule, which is the
+    // one thing in this process that knows what time it is in ticks.
+    std::this_thread::sleep_until(schedule.NextDeadline());
+  }
+
+  std::printf("host: %llu ticks, %llu abandoned, %u snapshots\n", static_cast<unsigned long long>(schedule.TicksIssued()),
+              static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence());
+  host.Close();
+  return 0;
+}
+
+[[nodiscard]] bool ParseNumber(std::string_view _text, std::uint32_t& _outValue) noexcept
+{
+  return std::from_chars(_text.data(), _text.data() + _text.size(), _outValue).ec == std::errc{};
+}
 } // namespace
 
 int main(int _argc, char** _argv)
 {
   const std::span<char*> arguments{_argv, static_cast<std::size_t>(_argc)};
-  if (_argc > 1 && std::string_view{arguments[1]} == "--probe")
+
+  std::uint32_t port = Outpost::Host::DEFAULT_PORT;
+  std::uint32_t durationSeconds = 0;
+  bool probe = false;
+
+  for (std::size_t index = 1; index < arguments.size(); ++index)
   {
-    std::uint32_t durationSeconds = 0;
-    if (_argc > 2)
+    const std::string_view argument{arguments[index]};
+    const bool hasValue = (index + 1) < arguments.size();
+
+    if (argument == "--probe")
     {
-      const std::string_view given{arguments[2]};
-      if (std::from_chars(given.data(), given.data() + given.size(), durationSeconds).ec != std::errc{})
+      probe = true;
+    }
+    else if ((argument == "--port") && hasValue)
+    {
+      ++index;
+      if (!ParseNumber(std::string_view{arguments[index]}, port) || (port > 65535))
       {
-        std::fputs("usage: Server --probe [durationSeconds]\n", stderr);
+        std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
         return 2;
       }
     }
-    return RunProbe(durationSeconds);
+    else if ((argument == "--seconds") && hasValue)
+    {
+      ++index;
+      if (!ParseNumber(std::string_view{arguments[index]}, durationSeconds))
+      {
+        std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
+        return 2;
+      }
+    }
+    else
+    {
+      std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
+      return 2;
+    }
   }
 
-  PrintLibraryName(Neuron::CoreLibraryName());
-  PrintLibraryName(Neuron::ServerLibraryName());
-  PrintLibraryName(Outpost::CoreLibraryName());
-  PrintLibraryName(Outpost::LogicLibraryName());
-  return 0;
+  return probe ? RunProbe(durationSeconds) : RunHost(static_cast<std::uint16_t>(port), durationSeconds);
 }

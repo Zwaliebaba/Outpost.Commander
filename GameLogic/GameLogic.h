@@ -14,6 +14,7 @@
 #include "World.h"
 
 #include "CommandIntake.h"
+#include "Host.h"
 #include "StateHash.h"
 #include "Tick.h"
 
