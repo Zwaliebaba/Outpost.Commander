@@ -20,12 +20,17 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 def counts(trx):
-    """Executed tests per suite DLL stem, and how many of them did not pass."""
+    """Executed tests per suite DLL stem, and how many of them did not pass.
+
+    KEYED IN LOWER CASE, AND THAT IS NOT TIDINESS. vstest writes the storage path lowercased --
+    'x64\\debug\\gamecoretests.dll' -- while the project is GameCoreTests.vcxproj. Comparing the
+    two directly reports every suite as empty AND every suite as a stale DLL, which is exactly
+    what the first CI run of this script did."""
     root = ET.parse(trx).getroot()
     storage = {}
     for unit in root.iter(NS + "UnitTest"):
         path = (unit.get("storage") or "").replace("\\", "/")
-        storage[unit.get("id")] = pathlib.PurePosixPath(path).stem
+        storage[unit.get("id")] = pathlib.PurePosixPath(path).stem.lower()
     ran, failed = collections.Counter(), collections.Counter()
     for result in root.iter(NS + "UnitTestResult"):
         suite = storage.get(result.get("testId"))
@@ -54,24 +59,24 @@ def main():
         ran.update(r)
         failed.update(f)
 
-    suites = sorted(p.stem for p in a.root.rglob("*Tests.vcxproj"))
+    # lower-case stem -> the project's own spelling, which is what a reader wants to see.
+    suites = {p.stem.lower(): p.stem for p in a.root.rglob("*Tests.vcxproj")}
     if not suites:
         print("  No *Tests.vcxproj in the tree. Every library has a suite (AGENTS.md section 2).")
         return 1
 
     faults = 0
-    for suite in suites:
-        if not ran[suite]:
-            print(f"  {suite}: ran NO tests. vstest scores that as a pass; it is a green check "
+    for key, name in sorted(suites.items(), key=lambda kv: kv[1]):
+        if not ran[key]:
+            print(f"  {name}: ran NO tests. vstest scores that as a pass; it is a green check "
                   f"mark over a library nobody exercised.")
             faults += 1
         else:
-            note = f", {failed[suite]} not passed" if failed[suite] else ""
-            print(f"  {suite}: {ran[suite]} test(s){note}")
+            note = f", {failed[key]} not passed" if failed[key] else ""
+            print(f"  {name}: {ran[key]} test(s){note}")
 
-    unknown = sorted(set(ran) - set(suites))
-    for suite in unknown:
-        print(f"  {suite}: ran {ran[suite]} test(s) but has no *Tests.vcxproj -- a stale DLL "
+    for key in sorted(set(ran) - set(suites)):
+        print(f"  {key}: ran {ran[key]} test(s) but has no *Tests.vcxproj -- a stale DLL "
               f"from an earlier build is being run")
         faults += 1
 
