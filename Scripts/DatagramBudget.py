@@ -22,8 +22,12 @@ import sys
 RECORD = [("identity", 2), ("position", 4), ("heading", 1),
           ("hull", 1), ("design identity", 1), ("flags", 1)]
 
-# Fixed header, then one block per player.
-HEADER_FIXED = [("version", 1), ("type", 1), ("sequence", 4), ("tick", 4),
+# Fixed header, then one block per player. The first six bytes are the TRANSPORT header and their
+# split is pinned by NeuronCore/PacketHeader.h rather than by this table -- a 2-byte sequence that
+# buys the two fragment fields, where this model previously spent all four on the sequence. Same
+# fourteen bytes either way, which is why nothing below moved when M0.2 landed.
+HEADER_FIXED = [("version", 1), ("type", 1), ("sequence", 2),
+                ("fragment index", 1), ("fragment count", 1), ("tick", 4),
                 ("entity count", 2), ("player count", 1), ("removal count", 1)]
 HEADER_PER_PLAYER = [("credits", 4), ("last command applied", 2),
                      ("building design", 1), ("build progress", 1)]

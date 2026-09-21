@@ -150,7 +150,16 @@ An entity record is **ten bytes**:
 
 The header carries the protocol version, the type, the snapshot sequence, the tick, the entity count, the
 **player count**, the **removal count**, and then one block per player: credits, last applied command
-sequence, and the **currently building design and its progress**. Sizing the per-player blocks by a count
+sequence, and the **currently building design and its progress**.
+
+**The first six of those bytes are the transport's, and M0.2 has pinned how they divide**:
+version 1, type 1, **sequence 2**, fragment index 1, fragment count 1 (`NeuronCore/PacketHeader.h`). Two
+things in that are worth stating rather than leaving to the code. The **sequence is two bytes, not four** —
+at 20 Hz it wraps after about 55 minutes, against a match of five (`GameDesign.md` §2), so the width buys
+the fragment fields instead. And **the fragment fields are present from the first packet although the MVP
+never fragments**: [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) puts the two-fragment path at
+the fourth player, and a field always there is a fast path where a field added later is a format change.
+The total is unchanged either way, which is why the budget below did not move. Sizing the per-player blocks by a count
 in the header is what makes the third and fourth player a runtime value rather than a format change.
 
 **Cargo rides in the flags byte and could not have had one of its own.** A miner's fill level has to reach
