@@ -8,8 +8,11 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Twenty-six answered, one open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong. What remains is measurement, not decision.
+**Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
+answers and corrected three statements that were wrong. **Q26, Q35 and Q36 are under *Open* below; Q33 and
+Q34 sit in the sixth round's table where they were asked**, each carrying an open answer and the milestone
+that settles it. Three of the five are measurement and two are decisions — Q35, and which derivation Q36
+takes.
 
 ---
 
@@ -132,6 +135,58 @@ asteroid count sets the sparse ore budget from M3 (Q22) and how much a home fiel
 **No recommendation.** Both follow from playing, and guessing them now would add two more unmeasured
 numbers to a document that has plenty. What is required is that the generator *names* them rather than
 leaving them implicit in code.
+
+### Q35 — Does canceling a build refund, and how much? — **needed by M1**
+
+**The plan asked for this row by name.** M1.6's exit criterion reads *"canceling refunds what the design
+says it refunds — and if the design does not say, that is a register question rather than a guess in a
+commit"*, and the design does not say: `GameDesign.md` §5 states that credits are deducted when the item
+starts and says nothing about getting them back, and `Interface.md` §6 makes the current item tappable to
+cancel without saying what a cancel costs.
+
+- **Full refund.** A cancel is free, so a mis-hit on a 96 × 96 button costs only the build time already
+  spent. It also makes the station a place to park credits at no risk, which matters only if something
+  later charges for holding them — nothing in the MVP does.
+- **No refund.** A cancel becomes a real decision, and it punishes the mis-tap that `Interface.md` §1's
+  *under fire* tier exists to prevent, on a target sized for a player who is being shot at.
+- **Proportional to the progress remaining.** The obvious middle, and the expensive one: the deduction was
+  taken whole and the refund is a fraction of it, so it needs a rounding rule that is exact on both sides
+  (R16), in the one part of the tick where that is least forgiving.
+
+**Recommendation: full refund.** The MVP has one queue slot and no way to queue ahead
+([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md), Q21), so the only thing a cancel can express
+is *I picked the wrong one* — which is the mis-tap case, not a strategic one. A proportional refund buys a
+decision the MVP gives the player no other way to make interesting, and pays a rounding rule for it.
+
+### Q36 — How does the client compute the income rate, and over what window? — **needed by M2**
+
+`Interface.md` §6 puts an income rate in the credits panel *"once there is one"*, and M2.7 is the milestone
+in which there is one. **The snapshot has no income field** — the per-player block carries credits, the
+last applied command sequence, and the current build item with its progress
+(`TechnicalDesign.md` §4) — so the number is derived on the client, and M2.7 constrains the derivation
+without choosing it: *"a client that derives income from the catalog is a client doing simulation"* (R19).
+
+Two derivations fit the data the client has, and they fail differently:
+
+- **Difference the credits and subtract the spend the client can already see.** Credits are deducted when
+  an item starts (`GameDesign.md` §5) and the client watches that item appear in the same per-player block,
+  so the deduction is observable rather than inferred. It evaluates no economy rule, which is the cleanest
+  reading of R19. It needs the item's cost, which is the same catalog read the build panel already makes —
+  **and it is wrong by exactly whatever a cancel refunds, which is Q35.**
+- **Count deliveries and convert.** This is what M2.7's *observed deliveries* names, and a delivery is
+  visible in the flags byte's cargo buckets going from full to empty. Turning it into credits needs the ore
+  processor's multiplier out of the catalog — an economy rule evaluated on the client, which is the thing
+  M2.7's own sentence warns against.
+
+**The window is a number nobody has written down.** A one-slot miner fills in five seconds and round-trips
+in roughly thirty (`GameDesign.md` §4), so with the two or three miners of an opening a delivery is a rare
+discrete event: an instantaneous rate reads as zero most of the time and as a spike for one frame.
+
+**Recommendation: difference the credits, over a window stated in ticks rather than seconds** (R16 — the
+tick is the clock), and **settle Q35 first**, because this derivation is wrong by whatever a cancel gives
+back. It evaluates no rule the host also evaluates, so it cannot disagree with the host. The window itself
+is a thing to get from playing rather than from arithmetic: long enough that an opening does not read as
+zero, short enough that losing a miner shows.
 
 ---
 

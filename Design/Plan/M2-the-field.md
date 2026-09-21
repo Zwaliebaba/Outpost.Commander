@@ -8,8 +8,9 @@ transmitted — and that the economy is a **loop** rather than a number that goe
 the map that can be shot, and until there is one, `GameDesign.md` §4's claim that the economy is something
 a player can see failing is untested.
 
-**Read [`README.md`](README.md) first.** Eleven steps, three gates, and **the first is the register's one
-open question**: nothing can be generated until Q26 has an answer.
+**Read [`README.md`](README.md) first.** Eleven steps, three gates, and **the first is a gate on Q26**:
+nothing can be generated until it has an answer. **Q36 is the milestone's other open question** and it does
+not gate the start — it is owed by M2.7, where the income rate goes live.
 
 **Entry state.** M1 complete: two commanders, one catalog, two designs, selection, orders, the interface.
 One fixed seed with a hand-checked layout, and `GameCore/Layout` waiting to become a generator.
@@ -20,8 +21,8 @@ One fixed seed with a hand-checked layout, and `GameCore/Layout` waiting to beco
 
 **Read first:** `OpenQuestions.md` Q26; `GameDesign.md` §3 and §7.
 
-**Q26 is the register's only open question and it is needed by this milestone**: what is the asteroid
-count, and what is the spawn anchor radius? Neither appears anywhere in the design, and both are inputs to
+**Q26 gates this milestone and nothing in it can start without the answer**: what is the asteroid count,
+and what is the spawn anchor radius? Neither appears anywhere in the design, and both are inputs to
 things that do — the anchor radius sets how long a strike force takes to cross the map, which is half of
 §7's raid arithmetic, and the asteroid count sets the sparse ore budget from M3 and how much a home field
 is worth holding.
@@ -179,7 +180,7 @@ determinism test's scripted orders, not only by its own.
 
 ### M2.7 — Credits, and the readout · `GameLogic`, `GameClient` · both · agent
 
-**Read first:** `GameDesign.md` §4; ADR-003's per-player block; `Interface.md` §6.
+**Read first:** `GameDesign.md` §4; `OpenQuestions.md` Q36; ADR-003's per-player block; `Interface.md` §6.
 
 **Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, **and the
 cargo bucket in the flags byte** — two bits, four buckets, which is what a fill bar needs and is all the
@@ -190,9 +191,10 @@ readout M1.14 already draws going live — **including the income rate, which `I
 **Files:** `GameLogic/Economy.h` `.cpp`; `GameClient/Panels.cpp`;
 `Tests/GameLogicTests/EconomyTests.cpp`.
 
-**Done when:** credits reach the client only through the snapshot; the income rate is computed from
-observed deliveries rather than from a rule the client evaluates — **a client that derives income from the
-catalog is a client doing simulation** (R19); and building deducts at start as M1.6 established.
+**Done when:** credits reach the client only through the snapshot; the income rate is computed the way
+**`OpenQuestions.md` Q36** settles — the snapshot carries no income field, two derivations fit the data the
+client has, and the constraint on both is that **a client that derives income from the catalog is a client
+doing simulation** (R19); and building deducts at start as M1.6 established.
 
 ### M2.8 — The tap on an asteroid · `GameClient` · `GameClientTests` · agent
 

@@ -133,7 +133,7 @@ design identity, because it is one.
 
 ### M1.6 — The build, and the current item · `GameLogic`, `GameClient` · `GameLogicTests` · agent
 
-**Read first:** `GameDesign.md` §5; `OpenQuestions.md` Q21; ADR-003's per-player block.
+**Read first:** `GameDesign.md` §5; `OpenQuestions.md` Q21 and Q35; ADR-003's per-player block.
 
 **Adds:** a design selected, credits deducted **when the item starts**, the ship appearing at the spawn
 point when it finishes. **There is no queue** — Q21 cut it because `Interface.md` had specified a
@@ -145,7 +145,9 @@ progress in two bytes per player. No rally point; new ships sit where they appea
 
 **Done when:** an unaffordable order is refused at the host rather than at the client alone; progress is
 monotonic in ticks and reaches completion exactly; canceling refunds what the design says it refunds —
-**and if the design does not say, that is a register question rather than a guess in a commit.**
+**and the design did not say, so it is now `OpenQuestions.md` Q35 rather than a guess in a commit.** Q36
+waits on it, because a client differencing credits to show an income rate is wrong by whatever a cancel
+gives back.
 
 ### M1.7 — Ring slot assignment, and the determinism test · `GameLogic` · `GameLogicTests` · agent
 
@@ -406,28 +408,36 @@ same authored origin; and a string draws at the physically correct place, confir
 
 **Read first:** `Interface.md` §6 and §1; R18 and R20.
 
-**Adds:** credits top left; selection bottom left in the thumb zone, grouped by design with a count and a
-hull bar, where tapping a group narrows the selection and a clear target deselects everything — **the only
-way to deselect**, because a tap on empty space is already a move order; build bottom right, visible when
-your station is selected, two targets with their costs, grayed when unaffordable, the current item and its
-progress below them and tappable to cancel; and system top center, carrying connection state, the
-reconnecting overlay, the result overlay and the one button that quits.
+**Adds:** credits top left; selection along the bottom **away from the reaching hand**, grouped by design
+with a count and a hull bar — the cargo bar `Interface.md` §6 draws beside it arrives with mining at M2.7 —
+where tapping a group narrows the selection and a clear target deselects everything, **the only way to
+deselect**, because a tap on empty space is already a move order; build along the bottom **on the reaching
+hand's side**, visible when your station is selected, two targets with their costs, grayed when
+unaffordable, the current item and its progress below them and tappable to cancel; and system top center,
+carrying connection state, the reconnecting overlay, the result overlay and the one button that quits.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so a panel is
-geometry and text the renderer draws and a "button" is a rectangle the hit test knows about. **Every target
-is at least 48 × 48 authored pixels with 12 pixels of clear space, and the build buttons are 96 × 96** —
-`Interface.md` §1 derives both from the panel rather than assuming them, and a control smaller than the
-minimum is a defect rather than a style choice.
+geometry and text the renderer draws and a "button" is a rectangle the hit test knows about. **All three of
+`Interface.md` §1's tiers appear in this step**, and it derives each from the panel rather than assuming
+it: the **48 × 48** floor with **16 pixels of clear space** under anything interactive, the **64 × 64**
+combat tier on the selection panel's design groups, its clear target and the build item's cancel, and
+**96 × 96** on the build buttons. A control smaller than its tier is a defect rather than a style choice.
 
-**The frequently used controls are in the bottom corners deliberately**, because a tablet is held at its
-sides and the middle of the bottom edge is where a held tablet's thumbs cannot reach.
+**The bottom edge is deliberate; which corner is not settled here.** `Interface.md` §1 reversed the posture
+this step was first written against — a Surface Pro is used on a kickstand with index fingers rather than
+held at its sides — so the binding constraint is **occlusion** rather than reach: a reaching hand covers
+its target and a wedge of screen around it. That is why the selection panel sits opposite the build panel;
+it is the readout the player reads while their hand is on the glass. **Which side each takes is
+`OpenQuestions.md` Q33, open and settled at M1 by playing**, so this step cannot hard-code a side.
 
 **Files:** `GameClient/Panels.h` `.cpp`, `GameClient/HudLayout.h` `.cpp`, `GameClient/PanelHitTest.h`
 `.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`.
 
-**Done when:** **every interactive target is asserted at 48 × 48 or larger with its clear space** — a test,
-not a measurement by eye, because this is the rule that erodes one control at a time; a tap inside a panel
-never reaches the world; and the selection panel's grouping matches what M1.11 selected.
+**Done when:** **every interactive target is asserted at its own tier with its clear space** — a test, not
+a measurement by eye, because this is the rule that erodes one control at a time, and a combat-tier target
+passing on the 48 floor is the way it erodes; a tap inside a panel never reaches the world; **the two
+bottom panels swap sides on one value**, so Q33 costs a setting rather than a rewrite; and the selection
+panel's grouping matches what M1.11 selected.
 
 ---
 
