@@ -101,6 +101,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CommandIntake.cpp" />
     <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="Tick.cpp" />
@@ -110,6 +111,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandIntake.h" />
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="Tick.h" />

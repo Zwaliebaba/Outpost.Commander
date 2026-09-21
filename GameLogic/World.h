@@ -42,7 +42,9 @@ class World
 public:
   /// A new entity in the lowest-numbered free slot, or a fresh slot when none is free. NO_ENTITY
   /// when the store is full -- 65,536 slots, which the design's 110 is nowhere near.
-  [[nodiscard]] EntityId Create(const Neuron::Vec2& _position, Neuron::Angle _heading, HullId _hull) noexcept;
+  /// _owner defaults to nobody, which is what a neutral thing or a test fixture is. Players are
+  /// numbered from one (`GameCore/Entity.h`).
+  [[nodiscard]] EntityId Create(const Neuron::Vec2& _position, Neuron::Angle _heading, HullId _hull, PlayerId _owner = NO_PLAYER) noexcept;
 
   /// False on an identity that is already stale, which is not an error: a thing killed twice in
   /// one tick by two systems is ordinary, and the second call simply finds it gone.
@@ -75,6 +77,11 @@ public:
   {
     return m_aliveCount;
   }
+
+  /// How many live entities a player owns. THE BOUND Q24 PUTS ON A SELECTION: a command naming
+  /// more identities than the sender has entities is refused outright, which is what turns
+  /// ADR-003's 5.5x amplification into a rejected packet rather than a loop.
+  [[nodiscard]] std::size_t OwnedCount(PlayerId _owner) const noexcept;
 
   [[nodiscard]] bool IsSlotAlive(std::size_t _slot) const noexcept;
 

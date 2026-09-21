@@ -14,7 +14,7 @@ namespace
 inline constexpr std::size_t MAX_SLOTS = std::numeric_limits<std::uint16_t>::max() + std::size_t{1};
 } // namespace
 
-EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, HullId _hull) noexcept
+EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, HullId _hull, PlayerId _owner) noexcept
 {
   std::uint16_t index = 0;
 
@@ -45,7 +45,8 @@ EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, Hu
     generation = 1;
   }
 
-  slot.entity = Entity{.id = EntityId{.index = index, .generation = generation}, .position = _position, .heading = _heading, .hull = _hull};
+  slot.entity = Entity{
+    .id = EntityId{.index = index, .generation = generation}, .position = _position, .heading = _heading, .hull = _hull, .owner = _owner};
   slot.order = MoveOrder{};
   slot.alive = true;
   ++m_aliveCount;
@@ -109,6 +110,19 @@ const MoveOrder* World::FindOrder(EntityId _id) const noexcept
 {
   const Slot* found = ResolveSlot(_id);
   return (found == nullptr) ? nullptr : &found->order;
+}
+
+std::size_t World::OwnedCount(PlayerId _owner) const noexcept
+{
+  std::size_t owned = 0;
+  for (const Slot& slot : m_slots)
+  {
+    if (slot.alive && (slot.entity.owner == _owner))
+    {
+      ++owned;
+    }
+  }
+  return owned;
 }
 
 bool World::IsSlotAlive(std::size_t _slot) const noexcept

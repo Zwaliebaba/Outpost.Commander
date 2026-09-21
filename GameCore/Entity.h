@@ -40,6 +40,17 @@ struct EntityId
 /// The identity no entity has.
 inline constexpr EntityId NO_ENTITY{};
 
+/// Which player an entity belongs to. Zero is nobody -- a neutral thing, or a fixture in a test --
+/// and players are numbered from one, so a default-constructed Entity is owned by no one rather
+/// than by player zero.
+///
+/// It rides the wire in the flags byte's two team bits (`GameCore/EntityRecord.h`), which is why
+/// it is on the replicated record rather than beside it: the client draws ownership, and the host
+/// validates commands against it (ADR-003, Q24).
+using PlayerId = std::uint8_t;
+
+inline constexpr PlayerId NO_PLAYER = 0;
+
 /// Which hull an entity is built on. R24 has a built thing as a composition -- a hull, an optional
 /// drive, and a component per slot -- and nothing in the simulation knows a ship type by name. At
 /// M0 there is no catalog to index into and this is a number that rides along so the state hash
@@ -52,13 +63,18 @@ using HullId = std::uint8_t;
 /// `GameCore` and not the simulation, and a host-only field on a shared record is an invitation to
 /// read it on the side that never has it. `GameLogic`'s World carries that state alongside.
 ///
-/// The fields are exactly what ADR-002's state hash covers: identity, position, heading and hull.
+/// The first four fields are exactly what ADR-002's state hash covers: identity, position, heading
+/// and hull.
 struct Entity
 {
   EntityId id{};
   Neuron::Vec2 position{};
   Neuron::Angle heading = 0;
   HullId hull = 0;
+
+  /// NOT hashed. ADR-002 names four fields and this is not one of them, which is correct: a state
+  /// hash detects two hosts drifting apart, and ownership is set once at creation and never moves.
+  PlayerId owner = NO_PLAYER;
 };
 
 } // namespace Outpost

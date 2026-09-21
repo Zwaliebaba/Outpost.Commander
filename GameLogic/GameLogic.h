@@ -13,6 +13,7 @@
 // This library's own headers. World first, because the other two are declared over it.
 #include "World.h"
 
+#include "CommandIntake.h"
 #include "StateHash.h"
 #include "Tick.h"
 

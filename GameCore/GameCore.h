@@ -12,6 +12,8 @@
 #include "Entity.h"
 #include "EntityRecord.h"
 
+#include "Command.h"
+
 #include "Snapshot.h"
 
 namespace Outpost
