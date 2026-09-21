@@ -102,12 +102,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GameLogic.cpp" />
+    <ClCompile Include="StateHash.cpp" />
+    <ClCompile Include="Tick.cpp" />
+    <ClCompile Include="World.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameLogic.h" />
+    <ClInclude Include="StateHash.h" />
+    <ClInclude Include="Tick.h" />
+    <ClInclude Include="World.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

@@ -10,6 +10,12 @@
 
 #include "GameCore.h"
 
+// This library's own headers. World first, because the other two are declared over it.
+#include "World.h"
+
+#include "StateHash.h"
+#include "Tick.h"
+
 namespace Outpost
 {
 /// The name of this library, so that a suite can prove it linked and that the include path reaches

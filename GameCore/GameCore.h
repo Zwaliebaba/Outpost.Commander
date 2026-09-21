@@ -7,6 +7,10 @@
 
 #include "NeuronCore.h"
 
+// This library's own headers (AGENTS.md section 2): a consumer includes this one file and gets
+// the whole chain.
+#include "Entity.h"
+
 namespace Outpost
 {
 /// The name of this library, so that a suite can prove it was compiled into the binary under test
