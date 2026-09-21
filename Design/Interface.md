@@ -122,7 +122,7 @@ key. With something selected:
 
 | Tapped | Order |
 |---|---|
-| Empty space | Move there. |
+| Empty space | Move there — **or, with your station selected and a module chosen, place that module** (§6). |
 | A hostile ship or station | Attack it. |
 | An asteroid with ore | Mine it — miners in the selection take it, the rest move to it. |
 | Your own station | Opens the build panel; the selection is unchanged. |
@@ -198,7 +198,7 @@ pass at physical resolution (§1).
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
 | **Selection** | Bottom left, thumb zone | What is selected, grouped by design with a count and a hull bar. Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). |
-| **Build** | Bottom right, thumb zone | Visible when your station is selected. Two targets — Miner and Fighter — each with its cost, greyed when unaffordable. Below them **the item currently building and its progress**, tappable to cancel. |
+| **Build** | Bottom right, thumb zone | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and greyed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
 | **System** | Top centre, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48 (§1), and **the build buttons are 96 × 96** — 18 mm,
@@ -207,6 +207,19 @@ twice the minimum — because they are the ones a player hits while something is
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so every panel
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
 real cost — no free text layout, no free scrolling, no accessibility — and it is what R18 buys elsewhere.
+
+### Placing a module
+
+**Choosing a module in the build panel arms a placement**, and the interaction it uses was dead: a tap on
+empty space is a move order, and the station cannot move. So with the station selected and a module chosen,
+**a tap inside the build radius places it** ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)).
+
+**The radius is drawn while a module is armed** — 400 world units around the station, the same distance as
+its point defence — and a tap outside it, on the station, or on another module does nothing. A second tap
+on the armed module in the panel disarms it.
+
+The preview is client-side and the host validates: the same rule evaluated on both sides, from `GameCore`,
+which is what R19 permits and what R23 already does for the map.
 
 ### Text
 

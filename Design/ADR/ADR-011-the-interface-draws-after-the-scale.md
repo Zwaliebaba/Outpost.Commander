@@ -68,7 +68,7 @@ accept the scale.
 
 None yet. Two are owed at **M1**:
 
-1. **The interface pass's GPU cost** against the world pass at 102 entities, which the review predicts
+1. **The interface pass's GPU cost** against the world pass at 110 entities, which the review predicts
    will be the larger of the two (`Design/OpenQuestions.md`, prediction P5).
 2. **That a window resize rebuilds the atlas without a visible stall**, which is the failure path this
    decision introduces.

@@ -43,7 +43,7 @@ and nothing else does. This is what makes the MVP reachable, and the tactical z-
 
 **Replication is full self-contained snapshots**
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). R19 already ruled out lockstep by refusing
-the client a simulation; at the MVP's 102 entities a snapshot is **1,056 bytes — one datagram** — so there
+the client a simulation; at the MVP's 110 entities a snapshot is **1,136 bytes — one datagram** — so there
 is no baseline, no acknowledgement, no history and no fragmentation. They go out at **20 Hz**, which is a
 latency decision and not a bandwidth one: tap-to-visible is 152 ms average where 10 Hz made it 252 ms, and
 on a touchscreen the tap is the only feedback a player gets.

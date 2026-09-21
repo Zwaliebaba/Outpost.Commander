@@ -87,7 +87,7 @@ near.
 None yet. Accepted without them, because the alternative was writing no movement code; two are owed and
 until they land the bit-identical claim is an argument rather than a fact:
 
-1. **The cost of an empty tick and of a full one** at the MVP's 102 entities and at 204, against the 50 ms
+1. **The cost of an empty tick and of a full one** at the MVP's 110 entities and at 220, against the 50 ms
    budget. Ring slot assignment and target selection are the two candidates for consuming it.
 2. **The determinism test passing across all four configuration and platform pairs** — the same seed and
    the same scripted orders producing the same state hash on x64 and ARM64, Debug and Release. Until that

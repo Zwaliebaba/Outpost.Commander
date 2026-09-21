@@ -27,6 +27,7 @@ design onto them:
 | Entities, the component catalog, derived stats, the damage table, the generator, every wire record | `GameCore` | Game vocabulary both sides must share. The client previews against these rules; the host validates with them (R19). |
 | The simulation, the AI, the match | `GameLogic` | Host only. The client does not link it. |
 | Destination slot assignment around an order point | `GameLogic` | It reaches an outcome, so it is simulation and obeys R16's ordering rule. |
+| Module placement validity — radius, clearance of the station and of other modules | `GameCore` | A rule both sides evaluate: the client previews it under the finger, the host validates it (R19). |
 | Command validation — ownership, bounds, generation, sequence | `GameLogic` | The host is the only thing that may decide an order is legal (R19). |
 | Replica state, interpolation, the camera, selection, the HUD | `GameClient` | Client only. |
 | `IFrameworkView` and application lifecycle | `OutpostCommander` | Windows Runtime glue and nothing else (R20). |
@@ -170,14 +171,21 @@ quarter-second of nothing is a dead interface.
 
 | | entities | header | snapshot | datagrams | per client @20 Hz | host egress |
 |---|---|---|---|---|---|---|
-| **MVP — 2 players × 50** | 102 | 30 B | **1,056 B** | **one** | 21.1 KB/s | 21 KB/s (169 kbit/s) |
-| Post-M2 — 4 players × 50 | 204 | 46 B | 2,092 B | two | 41.8 KB/s | 167 KB/s (1.34 Mbit/s) |
+| **MVP — 2 players × (50 ships + 1 station + 4 modules)** | 110 | 30 B | **1,136 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
+| Post-M2 — 4 players, same per player | 220 | 46 B | 2,252 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
+
+**Modules cost the single-datagram property most of its headroom, and the cap of four exists because of
+it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,056 to **1,136 against a 1,200-byte
+payload — 64 bytes, six entities, where there were 144 and fourteen**. It survives this change and would
+not survive another of the same size, so **raising the module cap is a replication decision**
+([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)), not a game one. Modules are ordinary entity
+records: they never move, but their hull does, so they cannot be treated as static the way asteroids are.
 
 All *arithmetic*, not measurement. The earlier version of this section quoted only the four-player figure
 — against a configuration `GameDesign.md` §2 says the MVP cannot run, since the MVP is one human against
 one AI and therefore **one client**.
 
-**The MVP does not fragment**, which removes the sharpest cost this design had. At 1,056 bytes a snapshot
+**The MVP does not fragment**, which removes the sharpest cost this design had. At 1,136 bytes a snapshot
 is one datagram, so snapshot loss equals packet loss instead of roughly twice it, and a lost snapshot is a
 **50-millisecond gap inside a 75-millisecond buffer** — covered without extrapolating. Two consecutive
 losses are needed to show anything: at 2% packet loss, once every two minutes.
@@ -205,7 +213,7 @@ about thirty lines, with no general reliability layer.
 **The host validates every command, and this is correctness rather than security.** §5 declines
 authentication and any defence against a hostile client; that exclusion silently covered ownership and
 bounds checks too, which are a different category. A 1,200-byte command packet holds **592 identities
-against a peak of 102** — a 5.8× amplification into a single-threaded loop, reachable from an ordinary bug
+against a peak of 110** — a 5.4× amplification into a single-threaded loop, reachable from an ordinary bug
 or a reordered packet with no attacker anywhere. So the host: rejects entities the sender does not own,
 bounds the selection at the sender's own entity count, rejects stale generations, clamps target points to
 the play area, and handles `uint16` sequence wraparound explicitly rather than letting the "at or below"
@@ -372,9 +380,9 @@ and the placeholder goes the day the first real test lands.
 | `NeuronCoreTests` | Fixed-point multiply and divide at the edges of `int32`, the sine table against a reference, integer square root, the PRNG's first thousand outputs pinned, fragmentation and reassembly including a lost fragment and a duplicate. |
 | `NeuronClientTests` | The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, that a glyph's advance width survives the round trip, and **the authored-to-physical transform the interface pass uses**, which is the same one the present step computes and is the only place window size enters. |
 | `NeuronServerTests` | The Winsock2 endpoint against a loopback peer: send, receive, a short read, a datagram larger than the buffer. |
-| `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including a removal list, a fire event and a snapshot at both player counts. |
+| `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**, and every module level; **module placement validity** — inside the radius, outside it, overlapping the station, overlapping another module, and the fifth module against a cap of four; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including a removal list, a fire event and a snapshot at both player counts. |
 | `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles; **the hold-selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)); and the order marker's lifetime against an acknowledgement. |
-| `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory; **ring slot assignment** — that the same selection ordered to the same point yields the same slots in the same order; **command validation** — a foreign entity, an over-long selection, a stale generation, a wrapped sequence, an out-of-map target; and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
+| `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory; **the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both as integer percentages, and that elimination removes a player's modules with their ships**; **ring slot assignment** — that the same selection ordered to the same point yields the same slots in the same order; **command validation** — a foreign entity, an over-long selection, a stale generation, a wrapped sequence, an out-of-map target; and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
 
 ---
 
@@ -383,12 +391,13 @@ and the placeholder goes the day the first real test lands.
 `AGENTS.md` §6 requires a figure to be measured before it is quoted, and everything numeric above that is
 not a definition is arithmetic on the design's own starting values. These are owed:
 
-1. **The snapshot's real size** at 102 entities and at 204, from the encoder rather than from §4's table,
-   and specifically **that the MVP's really is one datagram**.
+1. **The snapshot's real size** at 110 entities and at 220, from the encoder rather than from §4's table,
+   and specifically **that the MVP's really is one datagram** — which with modules has six entities of
+   headroom rather than fourteen, so this measurement decides whether the module cap of four is right.
 2. **Tap-to-visible latency on real hardware** — timestamp the `Tapped` event and the first frame in which
    the ship's drawn heading changes. §4 predicts 152 ms average. **Owed at M0**, because it is the number
    that decides how the game feels and every other decision is cheap to change beside it.
-3. **The tick's cost** at 102 entities on the host, and how far from 50 milliseconds it is. Ring slot
+3. **The tick's cost** at 110 entities on the host, and how far from 50 milliseconds it is. Ring slot
    assignment and target selection are the two candidates for consuming it.
 4. **Packet loss and jitter on a real wireless link between two machines** — owed at M0, the cheapest
    possible moment to find out the answer is no.

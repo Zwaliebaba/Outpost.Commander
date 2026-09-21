@@ -20,7 +20,7 @@ answers and corrected three statements that were wrong. What remains is measurem
 | **Q1** | Is the playfield a volume, a plane, or a plane with altitude bands? | **A plane.** A tap is a ray and a ray has no depth, and R21 leaves no second input to supply one. | [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md) |
 | **Q2** | Is the home base a fixed station or a mobile mothership? | **A fixed station.** Removes base pathfinding, docking and a class of AI problem from the MVP; a mothership is a hull like any other later. | `GameDesign.md` §5 |
 | **Q3** | How much of the *Warzone 2100* design system lands in the MVP? | **The model, not the interface.** Hull, drive and slots in the simulation and on the wire from the first line; three fixed designs and no designer screen. | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) |
-| **Q4** | What fleet scale should the MVP target? | **About fifty ships a player** — 204 entities at four players, and **102 in the reduced MVP** (Q27), which is what makes a snapshot fit one datagram. | `GameDesign.md` §10, [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) |
+| **Q4** | What fleet scale should the MVP target? | **About fifty ships a player** — with the station and four modules that is **110 entities in the reduced MVP** (Q27, Q28) and 220 at four players, and 110 is what makes a snapshot fit one datagram, with six entities of headroom. | `GameDesign.md` §10, [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) |
 | **Q5** | How does a client find a host? | **It does not — the address is configuration.** A one-line file in `LocalState` with `127.0.0.1` compiled in as the default; no discovery, no address entry. The loopback exemption this implies is a development arrangement and never a shipping one. | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) |
 | **Q6** | What is the target device? | **The Surface Pro.** 13-inch 3:2, 2880 × 1920 at 267 PPI, 200% scale, 1440 × 960 DIPs. The current model is ARM64, which makes that CI leg a real target. | `Interface.md` §1, [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) |
 | **Q7** | Is the authored frame 16:9 or 3:2? | **3:2, at 1440 × 960** — it follows from Q6 rather than being a separate choice. An exact 2× point-sampled fit on the target panel, no letterbox. The 16:9 recommendation this register carried was wrong once the device was known. | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) |
@@ -76,6 +76,27 @@ defended by a citation that does not survive being looked up;
 [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md)'s "a ray has no depth", which a camera-relative focus
 plane defeats, so the plane now stands on implementation cost and the camera's gesture budget instead; and
 the wire format's two-bit design identity, which capped designs at four and contradicted R24 outright.
+
+---
+
+## Answered — 2026-09-21, fifth round: the base is built from modules
+
+The owner added a feature: a base built out of modules, each doing something and each upgradeable, with
+more added later. Four questions settled its shape; all four are in
+[`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md) and `GameDesign.md` §5.
+
+| | Question | Answer |
+|---|---|---|
+| **Q28** | Are modules separate map entities, or part of the station? | **Separate, destroyable entities**, placed within 400 units of the station. Taken for one reason: it is the only version where an attacker can cripple an economy without killing the base, which is what *Warzone 2100*'s buildings are for. Costs the single-datagram property most of its headroom — six entities left where there were fourteen — which is why the cap is four. |
+| **Q29** | Can a bare station build ships? | **Yes; the shipyard raises the ceiling.** In the MVP that ceiling is **build rate**, not new hulls, because the MVP has two designs and the station already builds both — a module gating *what* could be built would gate nothing. From M4 the same levels gate heavier hulls and the designer. |
+| **Q30** | What does the research station do with no research? | **It is designed now and built at M4**, with research. The MVP ships two working modules. A module that costs credits and does nothing is the mistake the heavy design already made. |
+| **Q31** | How do upgrade levels work? | **Each level is its own component identity** — `ShipyardL1` and `L2` are two catalog rows and upgrading replaces one with the next. Free under R24: no new axis in the derived-stat function, and research gating a level is the gate it already needs over any component. |
+
+**One observation recorded rather than acted on.** The radar module the owner offered as a future example
+would show a minimap, which `Interface.md` §5 cut on the grounds that maximum zoom-out already *is* a
+top-down view of the whole map. A radar module is only a real reward when there is something you cannot
+see — so **radar and fog of war are the same decision**, and the module system's first genuinely valuable
+module arrives with fog, post-MVP.
 
 ---
 

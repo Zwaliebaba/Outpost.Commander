@@ -1,8 +1,10 @@
 # ADR-007 — The authored frame is 1440 × 960
 
-**Status:** Accepted — **amended 2026-09-20 by [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md), which binds this decision to the world only.** The interface no longer draws into the scene target, so the authored frame no longer sets the interface's resolution.
-**Date:** 2026-09-20
-**Owner:** Stefan Zwaal — the target device; the resolution follows from it
+**Status:** Accepted — **amended 2026-09-20 by
+[`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md), which binds this decision to the world
+only.** The interface no longer draws into the scene target, so the authored frame no longer sets the
+interface's resolution. **Date:** 2026-09-20 **Owner:** Stefan Zwaal — the target device; the resolution
+follows from it
 
 ## Context
 

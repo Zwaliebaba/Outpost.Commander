@@ -30,7 +30,7 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 |---|---|---|---|---|
 | [`M0`](M0-the-wire.md) | **The wire** | The tick, the packet, two socket stacks talking, the D3D12 frame, the two-pass renderer, the gesture seam — and whether a single-machine loop is usable at all | 23 | 3 |
 | [`M1`](M1-the-fleet.md) | **The fleet** | The component model under two designs, selection, orders, the interface, two clients on one host | 16 | 2 |
-| [`M2`](M2-the-field.md) | **The field** | The generator both sides run, and the economy as a loop rather than a number | 11 | 3 |
+| [`M2`](M2-the-field.md) | **The field** | The generator both sides run, the economy as a loop rather than a number, and a base built out of modules | 15 | 3 |
 | [`M3`](M3-the-fight.md) | **The fight** | Combat, death, victory — and a match you can restart twenty times in an evening | 12 | 2 |
 | [`M4`](M4-the-opponent.md) | **The opponent** | An AI worth the name, four slots, and the one question the MVP could not answer | 8 | 2 |
 
@@ -219,7 +219,7 @@ tested half takes **plain values** — a contact count, a translation, a scale, 
 [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) gives a ten-byte record and a thirty-byte
 header and names what is in them, but not every width — appropriate for a design and insufficient for an
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
-turns ADR-003's 1,056 bytes from arithmetic into a measurement.
+turns ADR-003's 1,136 bytes from arithmetic into a measurement.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labelled "no game at all".**
 Twenty-three steps against M2's eleven, touching all eight projects, containing every subsystem that can
@@ -235,9 +235,9 @@ assigns all eight to a step, which is the whole of its contribution to them:
 
 | §9 | The figure | Taken at | How |
 |---|---|---|---|
-| 1 | The snapshot's real size at 102 entities and at 204 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
+| 1 | The snapshot's real size at 110 entities and at 220 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
 | 2 | **Tap-to-visible latency on real hardware** | **M0.23** gate | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
-| 3 | The tick's cost at 102 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
+| 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
@@ -258,6 +258,7 @@ never gets written — a gap in the sequence is cheaper than an ADR nobody meant
 |---|---|---|
 | **ADR-012** | How a shader is built and how it reaches the binary — `fxc` to a `/Fh` header, or a `.cso` as package content (F1) | M0.14 |
 | **ADR-013** | The join record: how a client is told which player it is, and what a host does with an unexpected one (F2) | M1.4 |
+| **ADR-015** | *Taken 2026-09-21.* The base is built from modules, and a module is a separate destroyable entity (`GameDesign.md` §5) |
 | **ADR-014** | The firing interval in ticks and where integer damage rounds (F3), once the register has said what it should be | M3.1 |
 
 ## Standing work, in no milestone

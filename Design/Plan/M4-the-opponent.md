@@ -55,7 +55,7 @@ arriving between fragments of *n*, with both delivered.
 
 **Read first:** ADR-003's cost table; `TechnicalDesign.md` §4; M0.9's measurement.
 
-**Adds:** nothing structural — the encoder already handles 204 entities and M0.9 already measured it. What
+**Adds:** nothing structural — the encoder already handles 220 entities and M0.9 already measured it. What
 this step does is **put the measured four-player size against ADR-003's 2,092-byte arithmetic** and
 confirm the two-datagram claim on the wire rather than in a test.
 
@@ -81,6 +81,25 @@ extended.
 **Done when:** the heavy design builds, moves at the speed its mass implies without anybody writing that
 speed down, and takes its damage row; and **the diff is a table row plus tests** — if it is more, say what
 it was.
+
+### M4.4b — The research station module · `GameCore`, `GameLogic` · both · agent
+
+**Read first:** `GameDesign.md` §9 and §5's module table;
+[`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md) on why this module waited.
+
+**Adds:** `ResearchStationL1` as a third module, and with it the thing that made it wait — research has a
+place on the map an enemy can take away, rather than being a menu. The shipyard's levels start gating
+**hulls and the designer** here, which is the effect they were always described as having and which the
+MVP could not exercise with two designs.
+
+**Files:** `GameCore/Catalog.h`, `GameLogic/Research.cpp`;
+`Tests/GameCoreTests/DesignStatsTests.cpp` and `Tests/GameLogicTests/ModuleEffectTests.cpp` extended.
+
+**Done when:** a component is unavailable until its research completes, that gate is one predicate over a
+component identity as R24 says it should be, and destroying the research station stops research in
+progress.
+
+---
 
 ### M4.5 — The AI of §8 · `GameLogic` · `GameLogicTests` · agent
 

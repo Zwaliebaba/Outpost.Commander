@@ -191,10 +191,10 @@ it.** Q25 exists because nothing previously said what happened at victory, and b
 testing loop this is the single most-used operation in the project** — twenty matches in an evening is not
 possible if playing again means relaunching a packaged application.
 
-**It costs almost nothing structurally**, which is [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)
-paying for itself a third time: snapshots are self-contained, so there is no resynchronisation path to
-write. The client's derived state — selection, markers, wrecks — is what must be cleared, and it is the
-only thing that must be.
+**It costs almost nothing structurally**, which is
+[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) paying for itself a third time: snapshots
+are self-contained, so there is no resynchronisation path to write. The client's derived state —
+selection, markers, wrecks — is what must be cleared, and it is the only thing that must be.
 
 **Files:** `GameLogic/Match.h` `.cpp`; `GameClient/MatchState.h` `.cpp`, `GameClient/Panels.cpp`;
 `Tests/GameLogicTests/MatchTests.cpp`; `Tests/GameClientTests/MatchStateTests.cpp`.
@@ -202,6 +202,24 @@ only thing that must be.
 **Done when:** the host reseeds and runs on without being restarted; the client shows the result, clears
 **all** derived state, and is playing the next match without a relaunch; and a reconnecting client lands in
 the current match rather than the finished one.
+
+### M3.8b — Modules under fire · `GameLogic` · `GameLogicTests` · agent
+
+**Read first:** [`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md)'s *Consequences*;
+`GameDesign.md` §7 on modules as targets; M2.9 to M2.12.
+
+**Adds:** nothing new to combat — a module is an entity with a hull and a size class, so the damage table
+already covers it. What this step adds is the **two consequences** of that: a destroyed module stops doing
+its job the tick it dies, and **elimination removes a player's modules with their ships**.
+
+**Files:** `GameLogic/Damage.cpp`, `GameLogic/Victory.cpp`;
+`Tests/GameLogicTests/ModuleEffectTests.cpp` and `VictoryTests.cpp` extended.
+
+**Done when:** killing an ore processor drops its owner's income the same tick, killing a shipyard slows
+the queue already running, and eliminating a player removes their modules in the same snapshot as their
+ships.
+
+---
 
 ### M3.9 — Finite asteroids · `GameCore`, `GameLogic` · both · agent
 
