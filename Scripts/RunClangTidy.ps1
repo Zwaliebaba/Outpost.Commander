@@ -16,6 +16,15 @@
   Naming is enforced by review until then (AGENTS.md section 1), so treat a finding as a finding
   and a crash as a note to whoever next touches this script.
 
+  WHERE IT STANDS, measured on the runner rather than guessed (AGENTS.md section 6):
+    2026-09-21, first run   19 translation units, 8 with diagnostics. All of them traced to
+                            $(VCInstallDir) never expanding, so CppUnitTest.h was not found and
+                            TEST_CLASS(SuiteSmoke) parsed as a global variable declaration.
+    2026-09-21, after that  19 translation units, 2 with diagnostics.
+  What is left is noise rather than findings: clang-tidy reports tens of thousands of warnings
+  generated from the Windows SDK headers it walks. .clang-tidy's HeaderFilterRegex limits what is
+  REPORTED, not what is analysed. Quieting that is the work between here and -Gate.
+
 .PARAMETER Gate
   Return a non-zero exit code when clang-tidy reports a diagnostic. Off by default: turn it on
   only once this has run clean on the runner, and say so in the pull request that does it.
