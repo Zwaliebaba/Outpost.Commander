@@ -113,7 +113,9 @@
   <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
     <ClCompile Include="FitTransform.cpp" />
+    <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="WindowMetrics.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="pch.cpp">
@@ -123,7 +125,9 @@
   <ItemGroup>
     <ClInclude Include="DatagramTransport.h" />
     <ClInclude Include="FitTransform.h" />
+    <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="WindowMetrics.h" />
     <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="pch.h" />

@@ -11,6 +11,11 @@
 #include "FitTransform.h"
 #include "WindowMetrics.h"
 
+// GraphicsDevice and SwapChain declare their Direct3D state and DEFINE it in their .cpp, so
+// that <d3d12.h> and <dxgi1_6.h> reach neither this chain nor the desktop suites below it.
+#include "GraphicsDevice.h"
+#include "SwapChain.h"
+
 // This library's own headers, so that a consumer includes this one file and gets the whole chain
 // (AGENTS.md section 2). DatagramTransport.h deliberately pulls in no C++/WinRT projection
 // header: the two client suites are DESKTOP test DLLs and have no business compiling one.

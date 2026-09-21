@@ -4,6 +4,7 @@
 // adding it to this project's precompiled header fails the build outright with C3859 and
 // C1076, the compiler running out of room for the PCH itself. It is needed by exactly one
 // function here -- ADR-008's LocalState folder -- so it is included by exactly one file.
+#include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.Storage.h>
 
 #include <array>
@@ -29,6 +30,7 @@ using winrt::Windows::ApplicationModel::Core::CoreApplication;
 using winrt::Windows::ApplicationModel::Core::CoreApplicationView;
 using winrt::Windows::ApplicationModel::Core::IFrameworkView;
 using winrt::Windows::ApplicationModel::Core::IFrameworkViewSource;
+using winrt::Windows::Graphics::Display::DisplayInformation;
 using winrt::Windows::Storage::ApplicationData;
 using winrt::Windows::UI::Core::CoreDispatcher;
 using winrt::Windows::UI::Core::CoreProcessEventsOption;
@@ -130,8 +132,37 @@ void RunProbe(const CoreWindow& _window)
     return;
   }
 
+  // M0.13: the device, the swap chain, and the one thing this client draws.
+  //
+  // THE SWAP CHAIN IS CREATED AT PHYSICAL PIXELS AND THAT IS THE WHOLE POINT (ADR-007). The
+  // CoreWindow reports DIPs; the Surface Pro ships at 200%; a swap chain made from the reported
+  // size is 1440 x 960 against a 2880 x 1920 panel, nothing fails, and the game is half resolution
+  // on the one device it is for. WindowMetrics is that conversion and R18 requires a suite over it.
+  const Neuron::WindowMetrics metrics{.widthDips = _window.Bounds().Width,
+                                      .heightDips = _window.Bounds().Height,
+                                      .rawPixelsPerViewPixel =
+                                        static_cast<float>(DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel())};
+
+  Neuron::GraphicsDevice device;
+  Neuron::SwapChain swapChain;
+  if (!device.Create())
+  {
+    Report(log, "probe: no Direct3D 12 device, hresult " + std::to_string(device.LastHresult()));
+  }
+  else if (!swapChain.Create(device, winrt::get_unknown(_window), Neuron::PhysicalWidth(metrics), Neuron::PhysicalHeight(metrics)))
+  {
+    Report(log, "probe: no swap chain, hresult " + std::to_string(swapChain.LastHresult()));
+  }
+  else
+  {
+    Report(log, "probe: swap chain " + std::to_string(swapChain.WidthPixels()) + "x" + std::to_string(swapChain.HeightPixels()) +
+                  " physical, from " + std::to_string(static_cast<int>(metrics.widthDips)) + "x" +
+                  std::to_string(static_cast<int>(metrics.heightDips)) + " dips at " + std::to_string(metrics.rawPixelsPerViewPixel) + "x");
+  }
+
   bool running = true;
   const auto closed = _window.Closed(winrt::auto_revoke, [&running](const auto&, const auto&) { running = false; });
+  std::uint64_t presentedFrames = 0;
 
   const CoreDispatcher dispatcher = _window.Dispatcher();
   const auto start = std::chrono::steady_clock::now();
@@ -190,6 +221,25 @@ void RunProbe(const CoreWindow& _window)
                     " local_ms=" + std::to_string(arrivedAtMs));
     }
 
+    // Clear and present. All of M0.13's drawing, and R13 puts the real passes in a scene target
+    // rather than straight into this buffer -- that is M0.15's, behind ADR-012 and M0.16's gate.
+    if (swapChain.IsReady() && device.BeginFrame())
+    {
+      static_cast<void>(swapChain.RecordClear(device, 0.02f, 0.04f, 0.09f));
+      if (device.EndFrameAndSubmit() && swapChain.Present())
+      {
+        device.PresentedFrame();
+        ++presentedFrames;
+        if (presentedFrames == 1)
+        {
+          // Once, on the first one. A frame counter every frame would bury the log; the question
+          // this answers is only ever "did it present at all".
+          Report(log, "probe: first frame presented, back buffer " + std::to_string(swapChain.CurrentBackBufferIndex()) + " of " +
+                        std::to_string(Neuron::SwapChain::BUFFER_COUNT));
+        }
+      }
+    }
+
     // NOT sleep_for. Windows rounds a short sleep up to the system timer granularity, which is
     // 15.6 ms by default, and a probe that polls that coarsely quantizes every arrival into a
     // 15 ms bucket -- reporting as jitter what is actually its own scheduler. A measurement whose
@@ -202,8 +252,10 @@ void RunProbe(const CoreWindow& _window)
   // here is this client failing to keep up; a gap with none of these is the link losing packets.
   Report(log, "probe: received " + std::to_string(receivedCount) + " dropped " + std::to_string(queue.DroppedCount()) + " rejected " +
                 std::to_string(queue.RejectedCount()) + " oversized " + std::to_string(transport.OversizedCount()) + " skippedSends " +
-                std::to_string(transport.SkippedSendCount()));
+                std::to_string(transport.SkippedSendCount()) + " presented " + std::to_string(presentedFrames));
   transport.Close();
+  swapChain.Destroy();
+  device.Destroy();
 }
 
 // ---------------------------------------------------------------------------------------------
