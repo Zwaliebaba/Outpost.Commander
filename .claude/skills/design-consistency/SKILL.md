@@ -21,9 +21,14 @@ python3 Scripts/CheckDesign.py
 ```
 
 It normalizes whitespace before matching, because a figure wraps across a line break and a naive grep
-for `96 bytes` misses `96\nbytes` — an earlier sweep let exactly that through. It checks four things:
+for `96 bytes` misses `96\nbytes` — an earlier sweep let exactly that through. It checks five things:
 
 - **The datagram figures, recomputed** by `Scripts/DatagramBudget.py` rather than restated, so the checker cannot itself go stale against the numbers it is policing.
+- **Each milestone's step and gate counts, recomputed** from its own `### M<n>.<k>` headings and compared
+  against both the milestone's opening line and the table in `Design/Plan/README.md`. Counted the way that
+  table already does: **distinct step numbers, gates among them rather than beside them, and a `b`-suffixed
+  step folded into its parent.** M2 claimed eleven steps against fifteen and the README repeated it, which
+  nothing noticed because a step count is not a figure anyone thought to pin.
 - **Figures that have drifted before**, from a small manifest, in both directions: the superseded value
   must be gone, and the current one must actually appear where it is expected.
 - **Citations**: every `ADR-NNN` exists or is declared reserved in `Design/ADR/README.md`; every `Q<n>`
