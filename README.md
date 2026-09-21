@@ -10,10 +10,23 @@ on the network has nothing to show.
 
 ## The state of it
 
-**This is a shell, not a game.** The solution builds an empty client and an empty host across four
-configuration and platform pairs, six test suites run, and every edge of the build — each project
-reference, include path and link — is exercised by a function that returns its own name. There is no
-simulation, no renderer and no protocol in it yet.
+**There is a wire, a simulation and a frame — and still no game.** M0 is roughly half the engineering
+in the MVP and it is the milestone labeled "no game at all"; what runs today is the host simulating one
+entity moving toward a point, at twenty ticks a second, encoding it into a single datagram, while the
+packaged client opens a Direct3D 12 device and presents a cleared frame.
+
+| | |
+|---|---|
+| **The numbers** | Fixed point at eight fractional bits, the vector over it, the binary angle, a 4,096-entry sine table and a PCG32 seeded from the match — all integer, because a simulation that cannot reproduce from its seed cannot be replayed |
+| **The wire** | The packet header, the snapshot and the command packet, both encoded and decoded in full. A 110-entity snapshot measures **1,137 bytes** against the 1,232 pinned, so it is one datagram |
+| **The simulation** | Entities in a vector with a free list, a fixed-order tick, movement that arrives without oscillating, and a state hash that comes out **identical on x64 and ARM64, Debug and Release** |
+| **The host** | Winsock in, the tick, snapshots out — sixty seconds at exactly twenty ticks a second with no drift |
+| **The frame** | The window metrics and the two fit transforms, the device, a flip-model swap chain at the panel's **physical** pixels, and two frames in flight |
+
+**226 tests** across six suites, run on all four configuration and platform pairs. What is not here: the
+scene target and the scaled present, the interface pass, the gesture seam, the client's replica store and
+camera — and therefore anything a player could look at. `GameClient` is the one library still holding a
+function that returns its own name.
 
 ## The shape of it
 
@@ -41,7 +54,7 @@ One suite per library, under [`Tests/`](Tests/), each an ordinary desktop test D
 | | |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** §2 is the project layout and why it is shaped this way. |
-| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft; nothing in it is settled yet.** |
+| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft, but the decisions are ruled: eighteen ADRs Accepted.** |
 | [`.github/workflows/build.yml`](.github/workflows/build.yml) | What CI gates, and what it deliberately does not |
 
 ## Building it
@@ -72,3 +85,8 @@ Running the tests, and checking formatting before a push, are both in
 The client is a packaged application: it is deployed and launched rather than run from a shell, it
 needs developer mode, and it needs a host somewhere on the network to have a match to join — **a
 packaged client cannot reach a host on the same machine** without a loopback exemption.
+
+**It needs Windows 11 22H2 or newer to run**, which is `10.0.22621.0` in the manifest. That is not
+caution: the shaders are compiled at Shader Model 6.7
+([`ADR-012`](Design/ADR/ADR-012-a-shader-is-compiled-into-a-header.md)), which shipped in-box with that
+release, so an older machine would install a client whose pipeline states cannot be created.

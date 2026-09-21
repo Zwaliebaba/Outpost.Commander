@@ -34,6 +34,21 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 | [`M3`](M3-the-fight.md) | **The fight** | Combat, death, victory — and a match you can restart twenty times in an evening | 12 | 2 |
 | [`M4`](M4-the-opponent.md) | **The opponent** | An AI worth the name, four slots, and the one question the MVP could not answer | 8 | 2 |
 
+## Where it stands
+
+**Every step from M0.1 to M0.14 is written and verified** — the wire, the numbers, the simulation, the
+host loop and the frame's foundations — and **the gates among them are a different matter**, because a
+gate is a measurement rather than code and no agent closes one. What is left inside M0 is the renderer
+from M0.15 on, the client, the package, and these three:
+
+| | |
+|---|---|
+| **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, measured at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
+| **M0.16** | Unstarted, and it gates everything after it: *no renderer work past this point is safe until the filter is confirmed by eye* |
+| **M0.23** | Unstarted — tap-to-visible latency and frame time, on the device |
+
+**M0.15 is the next step an agent can take.** It was blocked on ADR-012 and no longer is.
+
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the
 renderer goes in after both, because a wrong answer about the loopback exemption invalidates a fortnight of

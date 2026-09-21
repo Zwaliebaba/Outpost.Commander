@@ -8,7 +8,9 @@ the source and `AGENTS.md` is the rule, in that order.
 
 **Status: DRAFT, 2026-09-20**, with the fifth and sixth rounds applied on 2026-09-21. Written against the
 brief and against `AGENTS.md`, starting from an empty `Design/` and a build shell with no game in it.
-**Thirty-one questions answered, five open. All seventeen ADRs Accepted.**
+**Thirty-one questions answered, five open. All eighteen ADRs Accepted** — the eighteenth is
+[`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md), ruled at M0.14 while the code that needs
+it was being written, which is the case the register was reserving a number for.
 
 **A second designer was then asked to defeat it**, and the result is applied throughout. That review found
 a solved game in the combat numbers, a factual error in `AGENTS.md` itself, and several features specified
@@ -16,7 +18,10 @@ in one document with no data path in another. It produced eight new questions, r
 answers, and **cut roughly a third of the MVP**; `OpenQuestions.md`'s fourth round names what was wrong.
 
 What is left is **measurement rather than decision**: `TechnicalDesign.md` §9 lists eight figures that
-cannot be obtained until there is code, three of them owed at M0.
+cannot be obtained until there is code. **The first is now discharged** — M0.9's encoder put the MVP
+snapshot at 1,137 bytes and corrected the design's arithmetic by a byte in five documents. Three of the
+remaining seven are owed at M0, and all three need hardware rather than code: tap-to-visible latency, loss
+and jitter on a real wireless link, and which loopback exemption form a UDP client actually needs.
 
 ## The documents
 
