@@ -20,8 +20,12 @@ name: Build
 #   intrinsics, since EnableEnhancedInstructionSet is the one setting that differs by platform --
 #   reaches main green too.
 #
-# The way to close either gap is a static check on the project files, which is cheap and does not
-# cost a build; adding matrix legs back is the expensive way round. Neither is written yet.
+# The cheap half of both is now closed by the `static checks` job below: Scripts/CheckProjectFiles.py
+# asserts section 3's table over every project file in about a second, so a setting that drifted into
+# a configuration-conditioned group, a lowered language standard or a platform that inherits
+# EnableEnhancedInstructionSet is caught here rather than by whoever ships. IT STILL COMPILES
+# NOTHING. A Release that breaks only under optimisation, or an ARM64 that assumes an x86 intrinsic,
+# reaches main green exactly as before -- configuration drift is what closed, not the platforms.
 #
 # ── What is not pinned, and what is ────────────────────────────────────────────────────────────
 #
@@ -202,6 +206,21 @@ jobs:
           & $vstest $suites /Platform:x64 /Logger:trx /Logger:"console;verbosity=detailed" /ResultsDirectory:TestResults
           if ($LASTEXITCODE -ne 0) { throw "vstest reported failures." }
 
+      - name: Check that every suite ran a test
+        shell: pwsh
+        # vstest scores "no tests found" as a PASS, so the step above -- which proves each suite was
+        # BUILT -- leaves an empty suite as a green check mark over a library nobody exercised.
+        run: python Scripts/CheckSuites.py TestResults
+
+      - name: Naming, via clang-tidy (report only)
+        shell: pwsh
+        continue-on-error: true
+        # NOT A GATE, deliberately. .clang-tidy has never been driven over this tree, clang is not
+        # MSVC, and /std:c++latest is ahead of what clang implements -- so a parse error here is a
+        # clang limitation rather than a defect. Read the output. Once this has run clean on the
+        # runner, pass -Gate and drop continue-on-error, in a pull request that says it did so.
+        run: pwsh Scripts/RunClangTidy.ps1
+
       - name: Upload the build log
         if: always()
         uses: actions/upload-artifact@v4
@@ -217,6 +236,39 @@ jobs:
           name: test-results
           path: TestResults
           if-no-files-found: ignore
+
+  checks:
+    name: static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Linux, and parallel to the Windows build, because all three read files rather than compile:
+    # they finish in about a second and report before a build would have started linking. Between
+    # them they close three of the gaps the header above names -- Release and ARM64 configuration
+    # drift, R16, and figures that disagree between documents -- without costing a second build.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Project files agree with AGENTS.md section 3
+        # The cheap half of what building Release|x64, Debug|ARM64 and Release|ARM64 would have
+        # caught: a setting that drifted into a configuration-conditioned group, a lowered language
+        # standard, a platform that inherits EnableEnhancedInstructionSet, an SDK pin past the
+        # runner's. It cannot catch a break in CODE -- only in configuration.
+        run: python3 Scripts/CheckProjectFiles.py
+
+      - name: The simulation obeys R16
+        # A float in GameCore, an unordered container, a wall-clock read, an unpinned PRNG. Each
+        # compiles and passes every test; each surfaces as an x64-against-ARM64 desync months later.
+        run: python3 Scripts/CheckDeterminism.py
+
+      - name: The design documents agree
+        # A figure here is stated in three places by design. When one moves and the others do not,
+        # both copies read as authoritative. This has happened repeatedly.
+        run: python3 Scripts/CheckDesign.py
 
   format:
     name: clang-format

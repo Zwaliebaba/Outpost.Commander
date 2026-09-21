@@ -124,12 +124,12 @@ private:
 | Rule | Enforced by |
 |---|---|
 | Layout and formatting (§4) | [`.clang-format`](.clang-format), **gated in CI** on a pinned version |
-| Debug and Release agreeing (§3) | **Nothing.** CI builds `Debug\|x64` only; read §3's table and build Release yourself |
+| Debug and Release agreeing (§3) | [`Scripts/CheckProjectFiles.py`](Scripts/CheckProjectFiles.py), **gated in CI** — the settings only. CI still builds `Debug\|x64` alone, so nothing compiles Release |
 | Every library having a suite that runs (§2) | The CI test steps, which fail on a suite that did not build |
-| The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy) — **configured, not yet gated**; see below |
+| The naming table, R1, R3, R5, R8 | [`.clang-tidy`](.clang-tidy) — **driven, reported, not gated**; see below |
 | R2, R4, R6, R7, R9, R10, R11 | Review. Check your own diff against the table before handing it back. |
 
-**`.clang-tidy` is in the tree and nothing runs it.** It is the settings, carried over intact and ready; there is no script here that drives it over the translation units the solution builds, and CI therefore does not check naming. Writing that script is worth doing and is not done. Until it is, naming is review's problem — do not assume a green build says anything about it.
+**`.clang-tidy` now has a driver, and it reports rather than gates.** [`Scripts/RunClangTidy.ps1`](Scripts/RunClangTidy.ps1) reads each project for its sources and include directories, follows the `.vcxitems` it imports, and runs clang-tidy in clang-cl driver mode; CI runs it with `continue-on-error`. That is deliberate and not timidity: **clang is not MSVC**, `/std:c++latest` is ahead of what clang implements, and the C++/WinRT headers lean on MSVC extensions — so a parse error there is a clang limitation, not a defect in this tree. Read its output; treat a finding as a finding and a crash as a note to whoever next touches the script. **Until it has run clean on the runner once and been switched to `-Gate`, naming is still review's problem** — do not assume a green build says anything about it.
 
 ---
 
@@ -212,6 +212,10 @@ A project lists the directories of the **other** projects it reaches into, as `$
 **There is one package, and no vendored SDKs.** `Microsoft.Windows.CppWinRT`, at a pinned version, referenced through a `packages.config` by the **five projects on the C++/WinRT side**: `NeuronClient`, `GameClient`, `OutpostCommander`, and the two suites that link the first two. The Windows SDK ships the projection headers — a Windows Store project reaches `<winrt/Windows.UI.Core.h>` with no package at all, which is worth knowing before adding one — but not `cppwinrt.exe` or its MSBuild targets, which is what a project needs to author a runtime class of its own from IDL.
 
 **Every packages.config in the tree pins the same version.** Five configs that disagree is a restore that fetches two copies of one package and a build that links whichever import path was written last. CI restores them by finding them, not by naming them, so a sixth project does not mean remembering to edit the workflow. Every other project depends on the Windows SDK and the MSVC standard library and on nothing else. A second package is a decision, not a convenience; see R14.
+
+**`Scripts/` holds the checks, and the split in it is deliberate.** A **gate** is pass/fail, runs in CI and is named `Check*`: [`CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) (§3's table), [`CheckDeterminism.py`](Scripts/CheckDeterminism.py) (R16), [`CheckDesign.py`](Scripts/CheckDesign.py) (figures and citations across `Design/`) and [`CheckSuites.py`](Scripts/CheckSuites.py) (a suite that ran no test). A **calculator** answers a question and has no verdict: [`DatagramBudget.py`](Scripts/DatagramBudget.py) costs a wire-format proposal. [`RunClangTidy.ps1`](Scripts/RunClangTidy.ps1) is neither yet — it reports (§1).
+
+They live here rather than beside the skills under `.claude/` for one reason: **a build must not break because a skill was moved.** The skills hold the judgement — when a lever is worth its cost, where a decision goes, what a sweep cannot see — and point at these. Run them before you push; they are seconds, and they are what CI runs.
 
 **Build and IDE output is never committed** — `x64/`, `ARM64/`, `AppPackages/`, `Generated Files/`, `packages/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -330,7 +334,7 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 - **ARM64 always has FMA**; x64 has it only under `/arch:AVX2`. Any explicit `std::fma`, or any library that contracts, differs by architecture whatever `/fp` says.
 - **`/fp:precise` rounds to source precision at four named points** — assignments, typecasts, arguments passed, values returned — and explicitly permits *"intermediate computations ... at machine precision"* in between. Register allocation therefore reaches the result, and register allocation is what an optimisation level changes.
 
-Integers are reached by none of the three. Floats live in the renderer, where nothing is replayed. **This rule once rested on FMA contraction under `/fp:precise`, which this toolset does not do**; [`Design/ADR/ADR-002`](Design/ADR/ADR-002-tick-and-numbers.md) records the correction and the citation.
+Integers are reached by none of the three. Floats live in the renderer, where nothing is replayed. **[`Scripts/CheckDeterminism.py`](Scripts/CheckDeterminism.py) sweeps `GameCore` and `GameLogic` for what this rule forbids and is gated in CI**; it catches what is *written*, never what is *designed*, and the `determinism-audit` skill carries the six blind spots no sweep can see. **This rule once rested on FMA contraction under `/fp:precise`, which this toolset does not do**; [`Design/ADR/ADR-002`](Design/ADR/ADR-002-tick-and-numbers.md) records the correction and the citation.
 
 Inside the simulation, additionally: no `float` where a fixed-point or integer quantity will do (hold a fraction as integer hundredths and say so in the name, R6), no iteration over an unordered container whose order reaches the outcome, and **no wall-clock time — the tick is the clock.** Wall time maps to ticks at the seam, and that is the only place the two meet. Randomness is a pinned PRNG seeded from the match — never `std::random_device`, never a hash of an address. None of this is taste: a simulation that cannot reproduce from its seed cannot be replayed, cannot be debugged from a report of what happened, and cannot be measured twice.
 
@@ -371,7 +375,9 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 - **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimisation reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
 - **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform. **The target device is an ARM64 part** (`Design/ADR/ADR-007`), so this is the platform the game is for and the platform nothing automated compiles.
 
-The owner decided this scope: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. **The cheap way to close either gap is a static check on the project files, not a second build** — a script that reads the twelve `.vcxproj` files and asserts §3's table would cost seconds rather than minutes. It is not written. Until it is, §7 carries it and the pull request template asks whether you built the other three pairs; answer it honestly.
+The owner decided this scope: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. **The cheap half of both gaps is now closed by a static check rather than a second build.** [`Scripts/CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) reads every `.vcxproj` and asserts §3's table in about a second, gated in CI, so configuration drift — a setting that wandered into a conditioned group, a lowered language standard, a platform inheriting `EnableEnhancedInstructionSet`, an SDK pin past the runner's — is caught here.
+
+**It compiles nothing, and that is the whole of what it does not do.** A Release that breaks only under optimisation and an ARM64 that assumes an x86 intrinsic reach `main` green exactly as before. §7 still carries that, and the pull request template still asks whether you built the other three pairs; answer it honestly.
 
 **A red toolchain step is not something to work around.** CI fails by name when the runner lacks the pinned toolset or SDK, deliberately: lowering the pin to get past it is not a fix (§3).
 
@@ -386,10 +392,15 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 - [ ] Naming conforms to §1 — `_` on parameters, `m_` on class state, `UPPER_CASE` constants, `PascalCase` enumerators, no `I`/`C`/`Base` affixes. **Nothing checks this for you.**
 - [ ] Only the lines the task required were changed; no reformatting, no drive-by fixes.
 - [ ] No new third-party dependency and no second NuGet package (R14); every `packages.config` still pins one version.
-- [ ] The format check passes.
+- [ ] The format check passes, and so do the gates: `python3 Scripts/CheckProjectFiles.py`, `Scripts/CheckDeterminism.py`, `Scripts/CheckDesign.py`. They are seconds and they are what CI runs.
 - [ ] It builds `Debug|x64`, and every test suite runs and passes.
 - [ ] **CI builds nothing else** (§6), so `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally — or your report says plainly that they were not.
 - [ ] Your report states what you verified, what you assumed, and any rule here you had to bend.
+
+**If you touched `Design/` or this file:**
+
+- [ ] `Scripts/CheckDesign.py` is clean — figures agree across every document that states them, citations resolve, links resolve.
+- [ ] Each decision went to exactly one of: a rule here (citing its source), an ADR, `Design/OpenQuestions.md`, or nowhere. The `design-consistency` skill has the four-way.
 
 **If you added, removed or moved a file:**
 
@@ -404,13 +415,14 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 **If you touched a project file:**
 
 - [ ] No `ConformanceMode`, `LanguageStandard`, `WarningLevel` or `TreatWarningAsError` changed, and no warning silenced with a pragma.
-- [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else.
+- [ ] Debug and Release still differ in exactly the rows of §3's table and nothing else — `Scripts/CheckProjectFiles.py` asserts this, so run it rather than reading.
 
 **If you touched the simulation or the wire format:**
 
 - [ ] No third coordinate reached either (R22); no map was transmitted that the seed already derives (R23); no ship stat was baked onto a type rather than derived (R24).
 - [ ] Nothing in the client links the simulation (R19), and nothing was put in an executable that a suite could have covered (R20).
-- [ ] **If a datagram moved, `.claude/skills/datagram-budget/scripts/budget.py` was run** and its figures — not estimates — are in the report and in `Design/TechnicalDesign.md` §4. The headroom is double digits and nothing in the build fails when it is gone.
+- [ ] **`Scripts/CheckDeterminism.py` is clean, including `--review`**, and the judgement calls it reports were answered rather than dismissed — a sort's comparator is a total order on entity identity, a draw comes from the match's engine. A clean sweep is half of R16; the `determinism-audit` skill has the other half.
+- [ ] **If a datagram moved, `Scripts/DatagramBudget.py` was run** and its figures — not estimates — are in the report and in `Design/TechnicalDesign.md` §4. The headroom is double digits and nothing in the build fails when it is gone.
 
 **If you touched rendering, input, audio or presentation:**
 

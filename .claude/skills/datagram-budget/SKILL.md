@@ -1,6 +1,6 @@
 ---
 name: datagram-budget
-description: Audit and optimise the UDP datagram budget for Outpost Commander — the snapshot going down and the command packet coming up — so each keeps fitting one packet. Use this skill whenever a change touches the wire format or could grow it — adding or widening a field on the entity record, the snapshot header or a command, raising an entity or module cap, adding a player, adding a new kind of replicated entity, changing the snapshot rate, or anything that asks "will this still fit", "how big is the packet", "are we near the MTU", "should we split the datagram" or "can we afford another byte". Use it proactively when reviewing a design or plan change that adds replicated state, even if nobody mentions packets, because the headroom is small and a change that overflows it is discovered late and expensively. Running `scripts/budget.py` is a precondition of touching a datagram at all, not advice to consider: it computes the budget rather than estimating it, audits every field's width against what the client actually draws, ranks the levers cheapest-first, and refuses a split that is fragmentation wearing a better name.
+description: Audit and optimise the UDP datagram budget for Outpost Commander — the snapshot going down and the command packet coming up — so each keeps fitting one packet. Use this skill whenever a change touches the wire format or could grow it — adding or widening a field on the entity record, the snapshot header or a command, raising an entity or module cap, adding a player, adding a new kind of replicated entity, changing the snapshot rate, or anything that asks "will this still fit", "how big is the packet", "are we near the MTU", "should we split the datagram" or "can we afford another byte". Use it proactively when reviewing a design or plan change that adds replicated state, even if nobody mentions packets, because the headroom is small and a change that overflows it is discovered late and expensively. Running `Scripts/DatagramBudget.py` is a precondition of touching a datagram at all, not advice to consider: it computes the budget rather than estimating it, audits every field's width against what the client actually draws, ranks the levers cheapest-first, and refuses a split that is fragmentation wearing a better name.
 ---
 
 # The datagram budget
@@ -11,13 +11,13 @@ can diverge. Every byte spent is spent against that property, and it is nearly s
 
 ## Run the script. Every time, before anything else
 
-**Touching a datagram means running `scripts/budget.py` in that same piece of work.** Not when a change
+**Touching a datagram means running `Scripts/DatagramBudget.py` in that same piece of work.** Not when a change
 looks big, not when the headroom feels tight — every time a field, a cap, a rate or a record moves:
 
 ```bash
-python3 .claude/skills/datagram-budget/scripts/budget.py            # the snapshot as it stands
-python3 .claude/skills/datagram-budget/scripts/budget.py --all      # + field audit + upstream
-python3 .claude/skills/datagram-budget/scripts/budget.py --add-bytes 1   # cost of a proposal
+python3 Scripts/DatagramBudget.py            # the snapshot as it stands
+python3 Scripts/DatagramBudget.py --all      # + field audit + upstream
+python3 Scripts/DatagramBudget.py --add-bytes 1   # cost of a proposal
 ```
 
 This is a precondition rather than a step because of how the failure actually presents. Nothing in the
@@ -223,7 +223,7 @@ A proposal is not a direction, it is a change with a price. Report in this shape
 it comes from the script** — a report without the script's figures is not a finished report:
 
 ```
-Script run:      budget.py <flags used>            ← if this line is empty, the work is not done
+Script run:      DatagramBudget.py <flags used>            ← if this line is empty, the work is not done
 Budget now:      <entities> entities, <record> B record, <total> B — <free> B free (<n> entities)
 The change:      <what it adds, per entity, per header, per command>
 Budget after:    <total> B — <free> B free, still one datagram / FRAGMENTS at <cap>
