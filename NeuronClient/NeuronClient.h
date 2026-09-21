@@ -7,6 +7,10 @@
 
 #include "NeuronCore.h"
 
+// This library's own headers (AGENTS.md section 2).
+#include "FitTransform.h"
+#include "WindowMetrics.h"
+
 // This library's own headers, so that a consumer includes this one file and gets the whole chain
 // (AGENTS.md section 2). DatagramTransport.h deliberately pulls in no C++/WinRT projection
 // header: the two client suites are DESKTOP test DLLs and have no business compiling one.

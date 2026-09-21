@@ -113,7 +113,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FitTransformTests.cpp" />
     <ClCompile Include="PacketQueueTests.cpp" />
+    <ClCompile Include="WindowMetricsTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

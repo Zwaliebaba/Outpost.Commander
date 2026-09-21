@@ -2,13 +2,17 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
+    <ClCompile Include="FitTransform.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
+    <ClCompile Include="WindowMetrics.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DatagramTransport.h" />
+    <ClInclude Include="FitTransform.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="WindowMetrics.h" />
     <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
