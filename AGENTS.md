@@ -409,7 +409,7 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 
 **If you added a library:**
 
-- [ ] It has a master include, a `pch.h` that includes it, and a suite under `Tests/`.
+- [ ] It has a master include, a `pch.h` that includes it, a suite under `Tests/`, and **a name in [`.clang-tidy`](.clang-tidy)'s `HeaderFilterRegex`** — that pattern names each library explicitly, so a library missing from it has every header silently unchecked.
 - [ ] A new `.vcxitems` import was added to exactly one project per link closure (§2).
 
 **If you touched a project file:**
