@@ -10,8 +10,9 @@ with no milestone can wait indefinitely.
 
 **Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong. **All five open questions are under *Open* below**,
-each with the milestone that settles it. Three of the five are measurement and two are decisions — Q35,
-and which derivation Q36 takes.
+each with the milestone that settles it. **Every one now carries a recommendation**, which it did not
+before: two are measurements that still have a starting value to be moved from (Q26, Q34) and three are
+decisions somebody has to take (Q33, Q35, Q36).
 
 ---
 
@@ -129,9 +130,30 @@ Neither appears anywhere in this design, and both are inputs to things that do. 
 long a strike force takes to cross the map, which is half of the raid arithmetic in `GameDesign.md` §7. The
 asteroid count sets the sparse ore budget from M3 (Q22) and how much a home field is worth holding.
 
-**No recommendation.** Both follow from playing, and guessing them now would add two more unmeasured
-numbers to a document that has plenty. What is required is that the generator *names* them rather than
-leaving them implicit in code.
+**This row carried no recommendation, deliberately**, on the grounds that both follow from playing and
+guessing them adds two more unmeasured numbers to a document that has plenty. That reasoning stands and the
+numbers below do not displace it — but M2.0 cannot start on nothing, and **a starting value with its
+derivation can be measured against, while a blank cannot.** Both are arithmetic on this design's own
+figures, not observations, and both are expected to move.
+
+**Recommendation: an anchor radius of 6,000 units.** Two opposed stations then sit **12,000 apart**, which
+at the Fighter's 140 u/s is **86 seconds** — inside `GameDesign.md` §7's stated 80-to-100-second crossing,
+which is the arithmetic the raid balance rests on. It leaves comfortable margin to the play area's edge for
+the camera clamp.
+
+**Watch what that radius does at four players, because it is not obvious.** Anchors at 90° on a 6,000
+radius put *opposed* players 12,000 apart and **adjacent** ones 8,485 — **60 seconds, not 86.** Raids get
+materially shorter the moment the third and fourth slots ship (`GameDesign.md` §2), so the radius may have
+to be a function of the player count rather than a constant. That is a consequence to measure at M4, not a
+reason to move the number now.
+
+**Recommendation: ten asteroids per home field, 200 ore each.** The design puts income at about 15 credits
+a second and one miner at 2.5, so a running economy is roughly six miners; ten rocks keeps them from
+queuing on one. Two thousand ore to a field then covers a long opening without covering a match, which is
+exactly what `GameDesign.md` §4 asks of a home field once M3 makes asteroids finite.
+
+**What is required either way** is that the generator *names* both rather than leaving them implicit in
+code.
 
 ### Q33 — Which side do the panels belong on? — **needed by M1**
 
@@ -145,10 +167,15 @@ The bottom edge is still right and it is *which corner* that is open. The build 
 reaching hand and the selection panel opposite it, because the selection panel is the readout the player
 reads while their hand is on the glass (`Interface.md` §6); which hand that is, is handedness.
 
-**No recommendation, and the answer may not be a constant** — a setting is as plausible as a side, and
-either follows from playing rather than from arithmetic. What it requires in the meantime is that M1.14
-build the two positions as one layout that mirrors on a single value, so the answer costs a setting rather
-than a rewrite.
+**Recommendation: ship right-handed as the default, make it a setting, and close this row.** The premise
+that it waits on M1 is weaker than it looks, because **the cost of making it a preference has already been
+paid**: `design_handoff_hud/geometry.json` carries the mirrored x for every affected rect, the flip is the
+single reflection `x' = 1440 - x - w`, and `Scripts/CheckHudGeometry.py` asserts the tiers and the clear
+space in *both* states. Once the mirror exists and is gated, "which side" is answered by whichever the
+player picks, and the only decision left is the default — which is right-handed, because most hands are.
+
+What playing at M1 can still tell us is whether the *occlusion* model behind §1 is right at all, which is a
+different question from which corner. That one is worth keeping; this one is not.
 
 ### Q34 — Does the client target 60 Hz or the panel's 120? — **needed by M0**
 
@@ -161,8 +188,17 @@ by.
 [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)'s 1:1 default — 120 Hz at 1:1 is four times the
 pixel rate of 60 Hz at a 0.5 scale.
 
-**No recommendation: measure both before choosing** (`TechnicalDesign.md` §6, §9). The two are one constant
-apart, and the measurement M0.23 already owes is the whole of the answer.
+**Recommendation: 60 Hz for the MVP, and treat 120 as a measured upgrade rather than a goal.** The
+intuition above does not survive the arithmetic. Tap-to-visible is **152 ms average** (`TechnicalDesign.md`
+§4), of which frame time is 16.7 — about **11%**. Halving it saves 8.4 ms, or **5.5% of the number that
+decides how the game feels**, against a 75 ms interpolation delay and a 20 Hz snapshot cadence that
+dominate it. That is not perceptible, and it costs half the frame budget to buy.
+
+**The honest counter is panning, and it should decide this rather than the order latency.** A pan is
+client-side and not network-gated, so it is the one interaction where 8.3 ms against 16.7 is the whole
+story rather than 11% of it. **So M0.23 should time the two separately** — order latency and camera
+pan — because the first says 60 is plenty and only the second can argue for 120. The two are one constant
+apart, so this stays cheap to reverse.
 
 ### Q35 — Does canceling *or replacing* a build refund, and how much? — **needed by M1**
 
@@ -224,11 +260,22 @@ Two derivations fit the data the client has, and they fail differently:
 in roughly thirty (`GameDesign.md` §4), so with the two or three miners of an opening a delivery is a rare
 discrete event: an instantaneous rate reads as zero most of the time and as a spike for one frame.
 
-**Recommendation: ship it, and difference the credits over a window stated in ticks rather than seconds**
-(R16 — the tick is the clock), and **settle Q35 first**, because this derivation is wrong by whatever a cancel gives
-back. It evaluates no rule the host also evaluates, so it cannot disagree with the host. The window itself
-is a thing to get from playing rather than from arithmetic: long enough that an opening does not read as
-zero, short enough that losing a miner shows.
+**Recommendation: no numeric rate in the MVP — which is the handoff's conclusion, reached by a route that
+holds.** This row first recommended shipping it and differencing the credits. That reversed on noticing what
+the handoff's credits panel already carries: **a 120 × 3 change flash, cyan on a gain and amber on a spend,
+decaying exponentially.** It delivers the signal a player actually acts on — money is arriving, money just
+left — with no number, no window constant, no dependency on Q35 and no derivation to argue about. A rate is
+**instrumentation for the designer more than a control for the player**, who can count their miners on the
+map; and every pixel of that panel is battlefield they cannot see.
+
+**Revisit it after twenty matches** (`GameDesign.md` §10), which is the mechanism this MVP exists to
+provide. If the flash turns out not to answer "is my economy growing", the analysis above is the answer to
+*how*: **difference the credits over a window stated in ticks rather than seconds** (R16 — the tick is the
+clock), settling Q35 first because that derivation is wrong by whatever a cancel or a replacement gives
+back. It evaluates no rule the host also evaluates, so it cannot disagree with the host.
+
+**What must not happen is shipping the omission for the handoff's stated reason**, which is false. "No data
+path" would make this a constraint; it is a choice, and it should be re-openable on evidence.
 
 ---
 
