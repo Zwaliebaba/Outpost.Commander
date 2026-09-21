@@ -10,6 +10,9 @@
 // This library's own headers (AGENTS.md section 2): a consumer includes this one file and gets
 // the whole chain.
 #include "Entity.h"
+#include "EntityRecord.h"
+
+#include "Snapshot.h"
 
 namespace Outpost
 {

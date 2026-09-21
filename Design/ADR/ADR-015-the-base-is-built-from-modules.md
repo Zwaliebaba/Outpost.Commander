@@ -61,8 +61,8 @@ other than ships, a reason to defend a perimeter rather than a point, and a raid
 station. It also gives the station something to do in the first two minutes besides emit miners.
 
 **It costs the single-datagram property most of its headroom.** Four modules a player at two players is
-eight more entities: **110 entities, 1,136 bytes, still one datagram — but 96 bytes of headroom where there
-were 176.** Nine entities, where there were seventeen. [`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s
+eight more entities: **110 entities, 1,137 bytes, still one datagram — but 95 bytes of headroom where there
+were 175.** Nine entities, where there were seventeen. [`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s
 headline benefit survives this change and would not survive another of the same size, which is why the cap
 is four and why raising it is a replication decision rather than a design one.
 
@@ -85,10 +85,11 @@ goes with them.
 
 None yet. Two are owed:
 
-1. **The snapshot's encoded size at 110 entities** (M2), against the 1,136 bytes this ADR asserts and the
-   1,232-byte payload. This is the measurement that decides whether the cap of four is right.
+1. **The snapshot's encoded size at 110 entities** — **measured at M0.9 and no longer owed: 1,137 bytes**
+   from the encoder, against the 1,232-byte payload, leaving **95 bytes**. One byte more than this ADR
+   asserted, because the arithmetic omitted ADR-004's fire-event count byte.
 2. **Whether losing a module to a raid reads as depth or as punishment** (M3), which is played rather than
    computed.
 
-Every figure here is arithmetic on the design's own numbers: 110 is 2 × (50 + 1 + 4); 1,136 is
-110 × 10 + 30 + three removals; 400 is `GameDesign.md` §5's point-defense range, unchanged.
+110 is 2 × (50 + 1 + 4) and 400 is `GameDesign.md` §5's point-defense range, both arithmetic on the
+design's own numbers. **1,137 is measured** — M0.9's encoder, not this document's addition.

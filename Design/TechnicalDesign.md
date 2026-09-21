@@ -190,8 +190,8 @@ quarter-second of nothing is a dead interface.
 
 | | entities | header | snapshot | datagrams | per client @20 Hz | host egress |
 |---|---|---|---|---|---|---|
-| **MVP — 2 players × (50 ships + 1 station + 4 modules)** | 110 | 30 B | **1,136 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
-| Post-M2 — 4 players, same per player | 220 | 46 B | 2,252 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
+| **MVP — 2 players × (50 ships + 1 station + 4 modules)** | 110 | 30 B | **1,137 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
+| Post-M2 — 4 players, same per player | 220 | 46 B | 2,253 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
 
 **Before changing any of this, run the budget.** `.claude/skills/datagram-budget/` computes the table
 above from the record layout rather than restating it, ranks the levers for buying room cheapest-first,
@@ -200,18 +200,19 @@ client draw a correct frame from one datagram without the other?* These figures 
 ADR-003's copy of them before; when one moves, move both.
 
 **Modules cost the single-datagram property most of its headroom, and the cap of four exists because of
-it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,056 to **1,136 against the 1,232-byte
-payload — 96 bytes, nine entities, where there were 176 and seventeen**. It survives this change and would
-survive one more of the same size with sixteen bytes left — one entity, which is not room to plan with — so
+it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,057 to **1,137 against the 1,232-byte
+payload — 95 bytes, nine entities, where there were 175 and seventeen**. It survives this change and would
+survive one more of the same size with fifteen bytes left — one entity, which is not room to plan with — so
 **raising the module cap is still a replication decision**
 ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)), not a game one. Modules are ordinary entity
 records: they never move, but their hull does, so they cannot be treated as static the way asteroids are.
 
-All *arithmetic*, not measurement. The earlier version of this section quoted only the four-player figure
+**The snapshot column is measured**; M0.9's encoder produced 1,137 and 2,253 and `GameCoreTests` pins
+both. The rest of the table is arithmetic. The earlier version of this section quoted only the four-player figure
 — against a configuration `GameDesign.md` §2 says the MVP cannot run, since the MVP is one human against
 one AI and therefore **one client**.
 
-**The MVP does not fragment**, which removes the sharpest cost this design had. At 1,136 bytes a snapshot
+**The MVP does not fragment**, which removes the sharpest cost this design had. At 1,137 bytes a snapshot
 is one datagram, so snapshot loss equals packet loss instead of roughly twice it, and a lost snapshot is a
 **50-millisecond gap inside a 75-millisecond buffer** — covered without extrapolating. Two consecutive
 losses are needed to show anything: at 2% packet loss, once every two minutes.
@@ -451,9 +452,12 @@ and the placeholder goes the day the first real test lands.
 `AGENTS.md` §6 requires a figure to be measured before it is quoted, and everything numeric above that is
 not a definition is arithmetic on the design's own starting values. These are owed:
 
-1. **The snapshot's real size** at 110 entities and at 220, from the encoder rather than from §4's table,
-   and specifically **that the MVP's really is one datagram** — which with modules has nine entities of
-   headroom rather than seventeen, so this measurement decides whether the module cap of four is right.
+1. ~~**The snapshot's real size** at 110 entities and at 220~~ — **DISCHARGED at M0.9.** The encoder
+   produces **1,137 bytes** at 110 and **2,253** at 220; the MVP's really is one datagram, with **95 bytes**
+   of headroom, nine entity records. `Tests/GameCoreTests/SnapshotTests.cpp` pins both and writes them
+   through `Logger::WriteMessage` so they land in every CI log. The figure was 1,136 here and in three
+   ADRs: §4's arithmetic omitted the fire-event count byte this same section specifies two paragraphs
+   below. The module cap of four survives — see §4, and ADR-015's Measurements.
 2. **Tap-to-visible latency on real hardware** — timestamp the `Tapped` event and the first frame in which
    the ship's drawn heading changes. §4 predicts 152 ms average. **Owed at M0**, because it is the number
    that decides how the game feels and every other decision is cheap to change beside it.

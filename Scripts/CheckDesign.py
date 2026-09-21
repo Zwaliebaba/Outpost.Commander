@@ -97,7 +97,7 @@ def documents(root):
 def check_figures(root, files):
     for name, gone, here, expect in MANIFEST:
         for path in files:
-            body = flat(path.read_text(), prose_only=True)
+            body = flat(path.read_text(encoding="utf-8"), prose_only=True)
             for pattern in gone:
                 for match in re.finditer(pattern, body):
                     faults.append(f"{path.relative_to(root)}: {name} still reads "
@@ -106,7 +106,7 @@ def check_figures(root, files):
             path = root / target
             if not path.exists():
                 faults.append(f"{target}: expected to state {name} but the file is missing")
-            elif not re.search(here, flat(path.read_text(), prose_only=True)):
+            elif not re.search(here, flat(path.read_text(encoding="utf-8"), prose_only=True)):
                 faults.append(f"{target}: never states {name} ({here}), which it is expected to")
 
 
@@ -128,13 +128,13 @@ def check_datagram(root, files):
                (f"the pin ({pinned} B)", rf"\b{pinned:,}\b".replace(",", ",?")),
                (f"the headroom ({headroom} B)", rf"\b{headroom}\b")]
     for name, pattern in derived:
-        where = [p for p in files if re.search(pattern, flat(p.read_text()))]
+        where = [p for p in files if re.search(pattern, flat(p.read_text(encoding="utf-8")))]
         if not where:
             faults.append(f"Design/: budget.py computes {name} and no document states it")
 
     # Any four-digit byte figure near the word "payload" that is not the pin is a stale pin.
     for path in files:
-        body = flat(path.read_text())
+        body = flat(path.read_text(encoding="utf-8"))
         for match in re.finditer(r"(\d,?\d{3})-byte (payload|command packet|figure)", body):
             value = int(match.group(1).replace(",", ""))
             if value != pinned and "ADR-003" not in path.name:
@@ -149,18 +149,18 @@ def check_citations(root, files):
     # it has not taken yet. The README is where that is declared, so read it rather than guess.
     reserved = set()
     if readme.exists():
-        for sentence in re.findall(r"[^.]*\breserved\b[^.]*\.", readme.read_text()):
+        for sentence in re.findall(r"[^.]*\breserved\b[^.]*\.", readme.read_text(encoding="utf-8")):
             reserved |= set(ADR_REFERENCE.findall(sentence))
 
     register = (root / "Design/OpenQuestions.md")
     questions = set()
     if register.exists():
-        body = register.read_text()
+        body = register.read_text(encoding="utf-8")
         # A question is a table row OR a heading; Q26 is a heading and an earlier sweep cried wolf.
         questions = set(re.findall(r"\|\s*\*\*Q(\d+)\*\*", body)) \
             | set(re.findall(r"^#+\s*Q(\d+)\b", body, re.M))
     for path in files:
-        body = path.read_text()
+        body = path.read_text(encoding="utf-8")
         for number in set(ADR_REFERENCE.findall(body)):
             if number not in adrs and number not in reserved:
                 faults.append(f"{path.relative_to(root)}: cites ADR-{number}, which neither exists "
@@ -174,7 +174,7 @@ def check_citations(root, files):
     # Every ADR is reachable from its README, or nobody finds it.
     readme = root / "Design/ADR/README.md"
     if readme.exists():
-        listed = set(ADR_REFERENCE.findall(readme.read_text()))
+        listed = set(ADR_REFERENCE.findall(readme.read_text(encoding="utf-8")))
         for number, path in sorted(adrs.items()):  # noqa: every ADR must be reachable from here
             if number not in listed:
                 faults.append(f"Design/ADR/README.md: does not list {path.name}")
@@ -182,7 +182,7 @@ def check_citations(root, files):
 
 def check_shape(root, files):
     for path in files:
-        raw = path.read_text()
+        raw = path.read_text(encoding="utf-8")
         for number, line in enumerate(raw.splitlines(), 1):
             stripped = line.strip()
             # An escaped pipe is content, not a column separator -- `Debug\|x64` is not a table.
@@ -223,7 +223,7 @@ def check_plan_counts(root):
     fall out of the README's own table, which every row already satisfies.
     """
     readme = root / "Design/Plan/README.md"
-    table = flat(readme.read_text()) if readme.exists() else ""
+    table = flat(readme.read_text(encoding="utf-8")) if readme.exists() else ""
 
     for path in sorted((root / "Design/Plan").glob("M?-*.md")):
         milestone = path.name.split("-")[0]

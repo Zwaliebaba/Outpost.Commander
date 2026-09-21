@@ -222,7 +222,7 @@ tested half takes **plain values** — a contact count, a translation, a scale, 
 [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) gives a ten-byte record and a thirty-byte
 header and names what is in them, but not every width — appropriate for a design and insufficient for an
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
-turns ADR-003's 1,136 bytes from arithmetic into a measurement.
+turns ADR-003's snapshot size from arithmetic into a measurement.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
 Twenty-three steps against M2's fifteen, touching all eight projects, containing every subsystem that can

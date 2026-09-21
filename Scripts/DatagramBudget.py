@@ -32,6 +32,12 @@ HEADER_FIXED = [("version", 1), ("type", 1), ("sequence", 2),
 HEADER_PER_PLAYER = [("credits", 4), ("last command applied", 2),
                      ("building design", 1), ("build progress", 1)]
 
+# After the removal list, not in the header: ADR-004 puts the fire events behind a count byte at
+# the very end, so the header's shape does not change on the day weapons arrive. THIS BYTE WAS
+# MISSING FROM THIS MODEL until M0.9's encoder measured a snapshot one byte larger than the design
+# said -- TechnicalDesign.md section 4 specified it one line below the table that left it out.
+TRAILER = [("fire event count", 1)]
+
 # Field-width audit. "wire" is what the record spends today; "draws" is the number of bits the
 # client actually needs to draw the field. Those are different questions, and only the second
 # one sizes a wire field -- width on the wire is decoupled from width in the simulation, which
@@ -71,7 +77,8 @@ def budget(players, ships, modules, removals, extra_per_entity, extra_header):
     record = sum(b for _, b in RECORD) + extra_per_entity
     header = (sum(b for _, b in HEADER_FIXED)
               + players * sum(b for _, b in HEADER_PER_PLAYER) + extra_header)
-    return entities, record, header, entities * record + header + removals * 2
+    trailer = sum(b for _, b in TRAILER)
+    return entities, record, header, entities * record + header + removals * 2 + trailer
 
 
 def snapshot(a):
@@ -80,7 +87,8 @@ def snapshot(a):
     print(f"  {a.players} players x ({a.ships} ships + 1 station + {a.modules} modules)"
           f" = {entities} entities")
     print(f"  record {record} B ({sum(b for _, b in RECORD)} + {a.add_bytes} proposed)"
-          f" · header {header} B · removals {a.removals * 2} B")
+          f" · header {header} B · removals {a.removals * 2} B"
+          f" · fire count {sum(b for _, b in TRAILER)} B")
     print(f"  SNAPSHOT {total} B   at {a.rate_hz} Hz = {total * a.rate_hz / 1000:.1f} KB/s per client\n")
 
     for name, cap, why in MTU:

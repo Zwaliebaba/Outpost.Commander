@@ -124,15 +124,15 @@ than it could carry.
 
 | | entities | header | snapshot | fragments | per client @20 Hz | host egress |
 |---|---|---|---|---|---|---|
-| **MVP — 2 players × (50 ships + station + 4 modules)** | 110 | 30 B | **1,136 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
-| Post-M2 — 4 players, same per player | 220 | 46 B | 2,252 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
+| **MVP — 2 players × (50 ships + station + 4 modules)** | 110 | 30 B | **1,137 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
+| Post-M2 — 4 players, same per player | 220 | 46 B | 2,253 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
 
 This ADR originally quoted only the four-player figure, against a configuration
 `Design/GameDesign.md` §2 says the MVP cannot run: **the MVP is one human against one AI, so there is one
 client.** Designing the replication budget against a load the project has no way to generate is what made
 10 Hz look like a saving.
 
-**The MVP does not fragment, and that removes its sharpest cost outright.** At 1,136 bytes a snapshot is
+**The MVP does not fragment, and that removes its sharpest cost outright.** At 1,137 bytes a snapshot is
 one datagram, so snapshot loss equals packet loss rather than roughly twice it, and a lost snapshot is a
 **50-millisecond gap inside a 75-millisecond buffer** — covered without extrapolating. Two consecutive
 losses are needed to show anything, which at 2% packet loss is once every two minutes. The two-fragment
@@ -163,7 +163,13 @@ None yet. Four are owed, and three of them at **M0**, which exists largely to ob
 3. **Loss and jitter on a real wireless link between two machines**, which is what decides whether 10 Hz
    and two-fragment snapshots survive contact.
 
-Every figure above is **arithmetic on the design's own numbers**, not a measurement: 110 is 2 × (50 + 1 + 4);
-1,136 is 110 × 10 + 30 + three removals; 22.7 KB/s is 1,136 × 20. The ten-byte record is a proposed
-layout, the 1,232-byte payload is the IPv6 minimum decided above rather than anything observed, and the latency
-table sums four design constants — none of the four has been observed.
+**The snapshot size is now measured, and it was one byte short.** M0.9's encoder produces **1,137 bytes**
+at 110 entities and **2,253** at 220; `Tests/GameCoreTests/SnapshotTests.cpp` pins both and writes them into
+every CI log. This ADR's own arithmetic — 110 × 10 + 30 + three removals — omitted the **fire-event count
+byte** that [`ADR-004`](ADR-004-weapons-resolve-at-the-fire-tick.md) places after the removal list, which is
+a field this document specifies and its table then left out. Headroom against the 1,232-byte payload is
+**95 bytes**, still nine entity records.
+
+The rest remains **arithmetic on the design's own numbers**: 110 is 2 × (50 + 1 + 4), and 22.7 KB/s is
+1,137 × 20. The 1,232-byte payload is the IPv6 minimum decided above rather than anything observed, and the
+latency table sums four design constants — none of the four has been observed.
