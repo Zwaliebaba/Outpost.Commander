@@ -103,6 +103,42 @@ may treat the tracer's travel as a thing with duration.
 missing tracer and nothing else — asserted by feeding the client a gap; and the tracer's lifetime is
 client-side, with the host never told it exists.
 
+### M3.3b — The alert, and hull bars in the world · `GameClient` · `GameClientTests` · agent
+
+**Read first:** [`ADR-020`](../ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md); `Interface.md`
+§1's pick order and §6; [`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)'s recenter.
+
+**Adds:** the two things that make damage visible, both derived from data the client already holds.
+
+**The alert.** M3.3 just made fire events arrive; an event naming one of *your* entities is an attack on
+you, and the replica store has the position. **No wire bytes and no host change** — this step touches
+`GameClient` and nothing else. It draws a directional indicator at the screen edge, fading over a few
+seconds, **suppressed entirely when the event is already on screen**, clustered so a fleet caught in the
+open is one indicator with a count rather than forty.
+
+**It is a hit-test rectangle, not a gesture.** Tapping it recenters the camera there, reusing M1.8's
+recenter. R21's gesture budget is untouched and the banked `Holding` stays banked — which is why
+`Interface.md` §1's pick order now puts **any interface target ahead of every world tier**, a precedence
+it never stated.
+
+**Hull bars in the world, on damaged ships only.** A ship at full hull draws nothing, so the map stays
+quiet until something is wrong; the cost is one quad per damaged ship, at most 110. Position by projecting
+the world point and then through the **interface's** fit transform (ADR-011, ADR-016) — the world's fit is
+the other one and using it here is the ADR-016 defect in miniature.
+
+**Without this step, half of `GameDesign.md` §7 cannot be played.** It says a defender "must be watching
+the right part of a 16,384-unit map at the right moment to have any counterplay" — with no minimap, no
+audio and no hull bar outside the selection panel, that is not a hard ask, it is a guess.
+
+**Files:** `GameClient/DamageAlert.h` `.cpp`, `GameClient/HullBar.h` `.cpp`; `GameClient.vcxproj` +
+`.filters`; `Tests/GameClientTests/DamageAlertTests.cpp`.
+
+**Done when:** `TechnicalDesign.md` §8's requirement is met — a fire event naming one of yours raises an
+alert and one naming somebody else's does not; an event already on screen raises none; several hits in one
+place cluster to one indicator with the right count; **and the bearing is right at several camera
+headings, including an event behind the camera**, which is the case that gets the sign wrong. Plus: an
+undamaged ship draws no bar, and the alert's target is at least 64 × 64.
+
 ### M3.4 — Death, the removal list, and wrecks · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** ADR-003's removal-list paragraph; ADR-004; `TechnicalDesign.md` §4.
@@ -281,6 +317,13 @@ it.
 
 Play them, and answer:
 
+0. **Does the alert fire too often to be worth reading, and do you act on it?**
+   ([`ADR-020`](../ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). It is numbered zero because
+   every answer below depends on it: **a defender who cannot tell they are under attack is not playing the
+   game §7 describes**, and a raid that lands unanswered because nobody noticed is not evidence about the
+   raid arithmetic. The failure is habituation — an indicator that cries wolf becomes wallpaper, and then
+   it is worse than none. If the answer is that players ignore it, the indicator is the wrong shape and a
+   panel entry is the alternative.
 1. **Is the raid arithmetic right?** §7's table predicts an exchange rather than a slaughter. The previous
    set of numbers **solved the game** and it took an adversarial review to notice, so the bar is whether
    the opening has more than one viable line.

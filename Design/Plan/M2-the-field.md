@@ -260,6 +260,25 @@ snapshot carrying it correctly. A placement the host refuses leaves the credits 
 
 ---
 
+### M2.11b — Two reasons a build button is dead · `GameClient` · `GameClientTests` · agent
+
+**Read first:** `Interface.md` §6's build panel row.
+
+**Adds:** the distinction M2.11 makes necessary. Until modules existed there was one reason a build button
+was dead — you could not afford it — and one gray for it. **A module now gates what can be built**, so
+there are two, and a single gray leaves a player unable to tell "save up" from "build something else
+first".
+
+**An item you cannot pay for keeps its button lit and reddens its cost. An item you have no module for is
+dimmed entirely.** Affordability changes second by second and unavailability does not, which is the other
+reason they should not look alike.
+
+**Files:** `GameClient/BuildPanel.cpp` extended; `Tests/GameClientTests/BuildPanelTests.cpp`.
+
+**Done when:** the two states are distinguishable in a test by the values the panel emits rather than by
+looking, and an item that is both unaffordable *and* unavailable reads as unavailable — the state you
+cannot fix with credits wins.
+
 ### M2.12 — What the modules do · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §5's table; ADR-015 on integer percentages and where they round.

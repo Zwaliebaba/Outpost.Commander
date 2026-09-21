@@ -91,9 +91,13 @@ a pure function with a suite over it, and a number nobody wrote down is a number
 | **Double-tap window** | — | — | 300 ms, and the second tap is matched **by entity identity** rather than by distance ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) — a moving ship must still be the same ship. |
 | **Contact rejection** | 78 | 14.9 | A contact whose `ContactRect` exceeds this in either dimension is a palm, not a finger, and is dropped at the seam (§2). A fingertip is 8–12 mm. |
 
-**The pick order is stated, because "what is under it" is not a total order when things overlap:** own
-ship, then own station or module, then hostile, then asteroid, then empty space. Nearest wins inside a
-tier; the tier wins across one.
+**The pick order is stated, because "what is under it" is not a total order when things overlap:** **any
+interface target first**, then own ship, then own station or module, then hostile, then asteroid, then
+empty space. Nearest wins inside a tier; the tier wins across one.
+
+**The interface heading that list is not obvious and was missing.** This order named only world entities
+until [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md), and said nothing about a tap
+that lands on a panel and a ship at once — which is every tap near the bottom of the screen.
 
 ### Where the hands are
 
@@ -363,21 +367,29 @@ or the second hit test.
 
 ## 6. The panels
 
-Four things are drawn over the scene. All of them are `GameClient` (R20), and all draw in the interface
+Five things are drawn over the scene. All of them are `GameClient` (R20), and all draw in the interface
 pass at physical resolution (§1).
 
 | | Where | What |
 |---|---|---|
 | **Credits** | Top left | The number, and the income rate once there is one. |
 | **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
-| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below, each with its cost and grayed when unaffordable. Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
-| **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends, and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
+| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it. |
+| **Alert** | The screen edge, in the direction of the event | **You are being attacked somewhere you cannot see** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). Derived from the fire events and the removal list the client already has, so it costs no wire bytes; **nothing shows if the event is already on screen**; one indicator per cluster with a count; fades over a few seconds. **Tapping it recenters the camera there** — a hit-test rectangle rather than a gesture, so R21's budget is untouched. 64 × 64, the combat tier. |
+| **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends — **which names the winner**, since from M4 there are three and four players and "you lost" does not say to whom — and the one button that quits via `CoreApplication::Exit` — there is no Alt+F4 and no title bar. |
 
 Every target in every panel is at least 48 × 48, and §1's three tiers decide which are larger. **The build
 buttons are 96 × 96** — 18.3 mm, twice the floor — because they are the ones a player hits while something
 is exploding. **The selection panel's design groups, its clear target and the build queue's cancel are
 64 × 64**, 12.2 mm: they are hit under the same pressure as the build buttons and were previously at the
 floor, which is the size for something you reach for between fights.
+
+**Hull bars are drawn in the world too, and only on damaged ships.** The selection panel shows the hull of
+what you have selected, which leaves everything else invisible — and reading fleet health at a glance is
+most of what an RTS player does with their eyes. A ship at full hull draws nothing, so the map is quiet
+until something is wrong and the cost is one quad per damaged ship, at most 110. **They are positioned by
+projecting the ship's world position and then through the interface's fit transform** (ADR-011, ADR-016),
+which is the same path a world-anchored marker already takes.
 
 **Nothing here is a Windows Runtime control.** There is no XAML anywhere in this tree (R18), so every panel
 is geometry and text the renderer draws, and a "button" is a rectangle the hit test knows about. That is a
