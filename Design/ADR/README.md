@@ -17,6 +17,7 @@ this tree has taken no decisions before these.
 | [`ADR-010`](ADR-010-selection-is-proximity-and-design.md) | A tap selects one ship and a hold selects the same design within a screen-space circle; no band select, so one-finger drag is unconditionally panning. Supersedes `Design/Interface.md` §3's hold-then-drag | Accepted | 2026-09-20 |
 | [`ADR-015`](ADR-015-the-base-is-built-from-modules.md) | The base is built from modules, and a module is a separate destroyable entity placed by tap inside the point-defense radius; each upgrade level is its own component identity | Accepted | 2026-09-21 |
 | [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent; amends ADR-007 to bind the world only and supersedes ADR-009's pixel doubling | Accepted | 2026-09-20 |
+| [`ADR-012`](ADR-012-a-shader-is-compiled-into-a-header.md) | A shader is compiled by `fxc` through `FxCompile` into a `/Fh` header rather than a `.cso` on disk, because `NeuronClient` is a static library with no package of its own — and because a packaged `.cso` is read through an asynchronous API on the ASTA | **Proposed** | 2026-09-21 |
 | [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale defaulting to 1:1, and the interface gets its own transform rather than borrowing the world's | Accepted | 2026-09-21 |
 | [`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold — the first tap acts at once and the second upgrades it — which frees `Holding` | Accepted | 2026-09-21 |
 | [`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane and one solve drives pan, zoom and orbit; no inertia, and a hold on empty space recenters | Accepted | 2026-09-21 |
@@ -24,14 +25,16 @@ this tree has taken no decisions before these.
 | [`ADR-020`](ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Damage off screen shows as a directional indicator at the edge, derived from data the client already has and tappable to recenter | Accepted | 2026-09-21 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All seventeen are now Accepted** — ADR-002
-to ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes.
+ruled; a proposed ADR is not something to write code against. **Seventeen of the eighteen are Accepted** —
+ADR-002 to ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes.
+**ADR-012 is the one that is not**, and M0.15 cites it, so the renderer's next step waits on that ruling
+rather than on more code.
 
-**ADR-012, ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan
-met three questions the design does not answer and named a number for each rather than answering them in
-passing: the shader build path (`Plan/README.md` F1, due at M0.14), the join record (F2, M1.4), and the
-firing interval with its integer rounding (F3, M3). **A gap in this list is a reservation, not a lost
-file.**
+**ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan met three
+questions the design does not answer and named a number for each rather than answering them in passing:
+the shader build path (`Plan/README.md` F1) is now ADR-012 above, and the join record (F2, M1.4) and the
+firing interval with its integer rounding (F3, M3) are still owed. **A gap in this list is a reservation,
+not a lost file.**
 
 ## When to write one
 

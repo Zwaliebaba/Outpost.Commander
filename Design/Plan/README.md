@@ -178,8 +178,9 @@ present is a full-screen blit and therefore the first HLSL in the project, at M0
 `dxc` because the Windows SDK installs them, but nothing says whether a `.cso` is package content or
 whether `/Fh` bakes a byte array into a header. It is not a detail: `NeuronClient` is a **static library
 with no package of its own**, so a `.cso` on disk must be carried into `OutpostCommander`'s package by a
-project the library cannot see, while a header has no such problem. **Needs ADR-012 at M0.14**, before the
-second shader exists.
+project the library cannot see, while a header has no such problem. **ADR-012 is now drafted** — `fxc`
+through `FxCompile` to a `/Fh` header — and is **Proposed rather than Accepted**, so M0.15 still waits on
+the owner's ruling rather than on the record existing.
 
 **F2 — The protocol has no join, so a client cannot learn which player it is.** `GameDesign.md` §2
 configures the slots on the host before the match starts and `TechnicalDesign.md` §4 specifies the
@@ -259,7 +260,7 @@ never gets written — a gap in the sequence is cheaper than an ADR nobody meant
 
 | | Decision | Owed at |
 |---|---|---|
-| **ADR-012** | How a shader is built and how it reaches the binary — `fxc` to a `/Fh` header, or a `.cso` as package content (F1) | M0.14 |
+| **ADR-012** | How a shader is built and how it reaches the binary — `fxc` to a `/Fh` header, or a `.cso` as package content (F1) | **Drafted 2026-09-21, awaiting a ruling** |
 | **ADR-013** | The join record: how a client is told which player it is, and what a host does with an unexpected one (F2) | M1.4 |
 | **ADR-015** | The base is built from modules, and a module is a separate destroyable entity (`GameDesign.md` §5) | **Taken 2026-09-21** |
 | **ADR-014** | The firing interval in ticks and where integer damage rounds (F3), once the register has said what it should be | M3.1 |
