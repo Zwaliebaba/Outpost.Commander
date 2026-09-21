@@ -49,6 +49,13 @@ MANIFEST = [
     # ADR-017 moved the verb across five documents; the posture correction moved one premise.
     ("group selection's verb", [r"selection by tap and by hold", r"[Aa] hold on one of your ships"],
      r"double tap", ["Design/Interface.md", "Design/GameDesign.md", "Design/Plan/M1-the-fleet.md"]),
+    # ADR-018: the camera's control model was absent rather than wrong, so this row is a
+    # presence check with nothing to retire -- `gone` may be empty and often should be.
+    ("the camera's control model", [], r"anchor solve",
+     ["Design/Interface.md", "Design/Plan/M0-the-wire.md"]),
+    ("the spent Holding", [r"[Tt]wo verbs are banked rather than one",
+                           r"\`Holding\` means nothing anywhere"],
+     r"recentres", ["Design/Interface.md"]),
     ("the posture", [r"held at its sides and the thumbs reach"],
      r"kickstand on a desk", ["Design/Interface.md"]),
     ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],

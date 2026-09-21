@@ -155,7 +155,8 @@ an instance of it.
 | **Two-finger pinch** | Zooms — and with it, pitches. |
 | **Two-finger rotate** | Orbits. |
 | **Two-finger drag** | Pans, identically to one finger. It comes free from the same manipulation and refusing it would be a surprise. |
-| **`Holding`** | **Nothing, anywhere.** Two verbs are banked rather than one — see §7. |
+| **One-finger hold on empty space** | **Recentres** the camera on the selection, or on your station when nothing is selected ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). |
+| **One-finger hold on a ship** | **Nothing**, and deliberately — the second of the two verbs ADR-017 freed is still banked (§7). |
 
 **One finger has exactly two meanings, separated by whether it moved**, which is as unambiguous as a single
 pointer gets. A tap is the verb, a drag is the camera, and **§1's 16-pixel tap slop** decides which — so a
@@ -262,6 +263,26 @@ The camera always looks at a **focus point on the plane** and never rolls. Pan m
 which is clamped to the play area plus a margin. Orbit turns the camera around it. Zoom changes the
 distance.
 
+**How a finger becomes that motion is one decision and it is
+[`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md): the camera is anchored to the plane.** A
+ray through the contact centroid at `ManipulationStarted` meets the plane and that world point is kept;
+each update solves for the focus that puts it back under the current centroid. **The ground sticks to the
+finger**, which is what every map application does and what hands already expect — the alternative, moving
+the focus by the finger's delta times a constant, slides the ground at a different rate from the finger
+and at a different rate again at the top of the screen than the bottom, because that is what perspective
+does.
+
+**One solve does all of it**, so scale gives the new distance and pitch, rotation gives the new heading,
+and then a single anchor solve places the focus. **The recogniser's translation is not applied on top** —
+that double-counts, and a camera that accelerates is what it looks like. Orbit turns about the anchor
+rather than the focus for free, and a one-finger drag is the same solve with no scale and no rotation,
+which is why §3's "two fingers pan identically to one" is true by construction here rather than by care.
+
+**At the clamp the ground stops and the finger slides over it.** The focus is clamped after the solve, so
+the anchor slips at the edge of the play area. That is correct and it is stated because it reads as a
+defect the first time it is seen. **There is no inertia**: the action immediately after positioning this
+camera is a precise tap, and momentum fights that.
+
 **Pitch is coupled to zoom and is not separately controllable.** Fully zoomed out the camera is near
 top-down; fully zoomed in it rakes low across the plane. This is not a compromise made reluctantly — it
 removes a whole degree of freedom from a gesture budget that has very little left, and it gives an RTS
@@ -278,7 +299,13 @@ edge of the frame looks 10° down, which meets the plane at **5.67 camera height
 frame's centre — a 3.3× stretch, top to middle**, and the horizon is never on screen. Lowering the floor
 buys a more raking silhouette and pays for it on that ratio, which grows without bound as the top edge
 approaches the horizontal; raising it costs the look. **M1.8 pins both numbers and states the ratio it
-measured**, and the wedge ADR-010 warns about cannot be worse than this.
+measured**, and the wedge ADR-010 warns about cannot be worse than this. The floor bounds a third thing:
+an anchor near the horizon would need an unbounded focus movement to stay under the finger (ADR-018).
+
+**The floor saturates the pitch; it does not end the zoom.** `pitch(distance)` clamps its *output* at 30°
+and distance keeps decreasing below the point where it bottoms out. Read the coupling the other way — a
+floor on pitch terminating the range — and the camera quietly loses its close zoom, which is not what the
+floor is for.
 
 **Rotation has a deadzone, and it latches**: the camera ignores a manipulation's rotation until it exceeds
 about eight degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws
@@ -292,11 +319,38 @@ orbit silently re-pitches the camera. **Two per cent of scale** is below that no
 player intends. Pan and zoom still compose freely, as §3 says; rotation is the one axis that is gated, and
 gating it needs both numbers.
 
+**On release the heading snaps to the nearest cardinal** when it is within a stated threshold of one.
+There is no minimap and no compass, so a map that is reliably north-up whenever the player is not
+deliberately turning it is worth one constant — spatial memory is what stands in for the minimap this
+design declines.
+
+**Orbit is the fragile gesture, and it is the named candidate to cut.** The three constants above exist
+*only* because rotation shares a manipulation with zoom, and on a kickstand a thumb-and-index rotation has
+about 50° of arc before a re-grip, so a half-turn is three or four gestures. For a symmetric map on a
+plane that is effort spent on something largely cosmetic. It stays for the MVP; if M1 finds two-finger
+manipulation unreliable, **cutting it removes four constants and makes pinch pure zoom**
+([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — a reliability gain rather than a
+feature loss.
+
+**The zoom range is about two gestures, which is why no gain constant is needed.** At the 40° field of
+view above, showing the whole 16,384-unit square puts the camera at **22,500 units**, and the 3:2 aspect
+gives roughly 24,600 units of visible width so the square fits on its height. The near end is not pinned;
+at a close view of about 1,500 world units it is near 1,400, making the range **16×** — and a comfortable
+pinch spans about 4× of scale, so the whole range is two gestures. M1.8 pins the near end, and if the
+range grows much past that the lever is a gain on the scale rather than a different gesture.
+
 **There is no minimap.** Because pitch is coupled to zoom, **maximum zoom-out is already a top-down
 tactical view of the whole map** — a minimap would be a second, smaller, lower-fidelity copy of a view
 that is one gesture away, costing a second render of every entity, a second coordinate space and a second
 hit test, for a quarter of the frame's height. With a symmetric map and no fog of war there is nothing on
-it a player does not already know. The camera is the only way to move the camera.
+it a player does not already know.
+
+**What a minimap does provide is a way back, and that is a hold rather than a panel.** `GameDesign.md` §7
+names the problem — a defender has to be watching the right part of a 16,384-unit map at the right moment
+— and until now the only way back to your own base was panning there. **A hold on empty space recentres**
+on the selection, or on your station when nothing is selected (ADR-018, spending one of the two verbs
+ADR-017 freed). It is the cheap half of a minimap without the second render, the second coordinate space
+or the second hit test.
 
 ---
 
@@ -366,16 +420,20 @@ honest consequence of a match that does not pause, and it is the same behaviour 
 
 ### What this document does not settle
 
-**`Holding` means nothing anywhere, and that is a decision rather than an omission.** It was the one
-gesture left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md); since
-[`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) moved group selection onto a double tap it is
-free over a ship as well as over empty space, so the reserve is two.
+**One of the two freed `Holding` gestures is spent and the other is banked.** `Holding` was the one verb
+left over after [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md); moving group selection onto
+a double tap ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)) freed it over a ship as well,
+making the reserve two. **A hold on empty space now recentres the camera**
+([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — it went to a navigation hole the MVP
+has today rather than to a feature it might want later, which is the test.
 
-**What to spend them on is deliberately still open.** Order queueing is the standing candidate — §4 notes
-it is now short a decision rather than short a verb — and a stop-and-hold-position and a deselect are the
-others. ADR-010's instinct was right and survives its own gesture being replaced: an idle affordance costs
-nothing, and a verb spent on something marginal is not there when something real needs it. A map ping, a
-map-wide select-by-design and a jump-to-station were each considered and each declined.
+**A hold on a ship still means nothing, and that is a decision.** Order queueing is the standing candidate
+— §4 notes it is now short a decision rather than short a verb — and a stop-and-hold-position is the
+other. ADR-010's instinct was right and survives its own gesture being replaced: an idle affordance costs
+nothing, and a verb spent on something marginal is not there when something real needs it. A map ping and
+a map-wide select-by-design were each considered and each declined; the jump-to-station that was declined
+with them is what ADR-018 has now put back, which is worth noticing — it was declined for want of a verb
+and returned the moment there was one.
 
 ### When a match ends
 
@@ -401,6 +459,13 @@ rather than by arguing about it:
    double-tap window are the other two, and all three are single constants behind a tested pure function.
 4. **Which side the panels belong on** (`OpenQuestions.md` Q33), which is a handedness question now that
    occlusion rather than reach is the binding constraint.
+5. **Whether the ground actually sticks to the finger** across the pitch range
+   ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The failure is drift over a long
+   gesture, and a test catches that only if it already knows the tolerance to expect.
+6. **Whether orbit is usable one-handed on a kickstand**, and how often a re-grip is needed. This is the
+   one that decides whether orbit and its three protecting constants survive §5's kill-switch.
+7. **The near end of the zoom range** (§5), which is the only one of the two that arithmetic does not
+   already give.
 
 **Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
 ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a

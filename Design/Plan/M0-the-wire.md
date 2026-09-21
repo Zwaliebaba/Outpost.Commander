@@ -415,6 +415,10 @@ does not change what the drag is doing.
   dimension is not a fingertip and never becomes an input record. The contact-count latch above only
   protects a gesture already running; a palm landing *first* starts one of its own, and on a 287 mm screen
   played on a desk that happens routinely.
+- **The inertia gesture settings stay off** ([`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)).
+  The action immediately after positioning this camera is a precise tap, and momentum fights it. Leaving
+  them off is a decision rather than an omission, so do not enable them to "see what it feels like" without
+  changing the ADR.
 - **The tap slop, pinned at 16 authored pixels rather than inherited.** It is what separates a tap from a
   pan, and the asymmetry `Interface.md` §3 relies on — an accidental pan is free, an accidental move order
   is not — only holds if the number is right. **Begin the pan at the point the threshold was crossed**, so
@@ -463,12 +467,24 @@ does not move the clock backwards; and the 75 is one named constant rather than 
 
 ### M0.20 — The camera, minimally · `GameClient` · `GameClientTests` · agent
 
-**Read first:** `Interface.md` §5; [`ADR-001`](../ADR/ADR-001-the-playfield-is-a-plane.md).
+**Read first:** [`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) **before**
+`Interface.md` §5 and [`ADR-001`](../ADR/ADR-001-the-playfield-is-a-plane.md) — ADR-001 settles the degrees
+of freedom and §5 settles which gesture drives which, and ADR-018 is the mapping between them that neither
+states.
 
 **Adds:** a camera that looks at a focus point on the plane and never rolls, with pan, orbit and zoom,
 pitch coupled to zoom, and the focus clamped to the play area plus a margin. **Floats are correct here** —
 the renderer is not the simulation (R16). The part that must be exact is the inverse: a tap becomes a ray
-and the ray meets the plane, which is where ADR-001 lands in code and is M0.21's input.
+and the ray meets the plane, which is where ADR-001 lands in code, is M0.21's input, **and is also the
+anchor solve this camera is driven by.**
+
+**Build the anchor solve, not a delta-accumulator.** At `ManipulationStarted` the ray through the contact
+centroid meets the plane and that world point is kept for the life of the gesture. Each update: scale to a
+new distance and hence a new pitch, rotation to a new heading, **then one solve** placing the focus so the
+anchor lands under the current centroid at the *new* pose. **Do not also apply the recogniser's
+translation** — it is already in the solve, and applying both is the defect that makes the camera
+accelerate. One finger is the same solve with no scale and no rotation, which is why §3's "two fingers pan
+identically to one" needs no separate code.
 
 **ADR-001 states the budget exactly and it is smaller than "a 3D camera":** four degrees of freedom — a
 focus point on the plane, a heading, and a distance — with **pitch derived from the distance rather than
@@ -478,7 +494,10 @@ separately controlled**. A fifth is not a feature to add later; it is this decis
 `Tests/GameClientTests/CameraTests.cpp`.
 
 **Done when:** the transform is pinned at several pitches; a screen point maps to a plane point and back to
-the same screen point within a stated tolerance; the focus clamp holds at the corners; the coupling of
+the same screen point within a stated tolerance; **the anchor solve's property holds — project the anchor
+and it lands on the centroid** — for one contact and for two, with scale and rotation applied, and **with
+no drift over a long synthetic gesture**, which is the failure this model actually has; the focus clamp
+holds at the corners **and lets the anchor slip rather than fighting it**; the coupling of
 pitch to zoom is monotonic at both ends of the range; and **the pitch floor holds** — `Interface.md` §5
 pins a 40° vertical field of view and a 30° minimum pitch, which puts the top edge of the frame 10° below
 horizontal and the horizon off screen. **Assert the stretch ratio**, 5.67 camera heights at the top edge
@@ -493,6 +512,9 @@ paragraph; R19.
 **Adds:** the verb. A tap on empty space with something selected becomes a move command and is sent at
 once; **and the client draws a destination marker and a line from the selection the instant the gesture
 resolves**, clearing it when a snapshot's `lastCommandSeqApplied` passes that command's sequence.
+
+**The ray-plane intersection this step needs is the one M0.20 already built for the anchor solve**
+(ADR-018), which is why the camera comes first: a tap is the same cast at a different moment.
 
 **"What is under it" needs a radius and an order, and `Interface.md` §1 now states both**: a **24-pixel
 pick radius**, nearest candidate inside it, with the tier order own ship → own station or module →

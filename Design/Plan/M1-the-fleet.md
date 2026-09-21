@@ -173,10 +173,28 @@ and `AGENTS.md` §6 guarantees nothing in CI ever will.
 **Read first:** `Interface.md` §5 and §3; `README.md` F6.
 
 **Adds:** what M0.20 stubbed — two-finger pinch zooming and pitching together, two-finger rotate orbiting,
-one- and two-finger drag panning identically. **Pitch is coupled to zoom and is not separately
-controllable**, which removes a degree of freedom from a gesture budget that has very little left and gives
-a near top-down tactical read at one end and a fleet in silhouette at the other. **There is no minimap**
-and `Interface.md` §5 explains at length why maximum zoom-out already is one.
+one- and two-finger drag panning identically, all through M0.20's single anchor solve
+([`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). **Pitch is coupled to zoom and is not
+separately controllable**, which removes a degree of freedom from a gesture budget that has very little
+left and gives a near top-down tactical read at one end and a fleet in silhouette at the other. **There is
+no minimap** and `Interface.md` §5 explains at length why maximum zoom-out already is one.
+
+**Three things land here that M0.20 did not need:**
+
+- **`pitch(distance)` saturates at the 30° floor rather than terminating the zoom range.** Read the
+  coupling the wrong way and the floor silently becomes a zoom-in limit, which is not what it is for.
+- **The zoom range's two ends.** The far end is arithmetic — 22,500 units shows the whole 16,384-unit
+  square at a 40° field of view — and **the near end is this step's to pin**. At roughly 1,500 world units
+  of close view the range is about 16×, which is two pinch gestures at unity gain. If it comes out much
+  larger, the lever is a gain on the scale, not a different gesture.
+- **Heading snaps to the nearest cardinal on release** within a stated threshold. There is no minimap and
+  no compass; a map that is reliably north-up when nobody is deliberately turning it is what spatial
+  memory is built on.
+
+**And the recentre**: a hold on empty space moves the focus to the selection, or to your station when
+nothing is selected (ADR-018, spending one of the two verbs ADR-017 freed). `GameDesign.md` §7 names the
+problem it answers — a defender has to be watching the right part of a 16,384-unit map at the right
+moment, and until now the only way back was panning there.
 
 **Files:** `GameClient/Camera.cpp` extended, `GameClient/CameraGesture.h` `.cpp`;
 `Tests/GameClientTests/CameraGestureTests.cpp`.
@@ -189,9 +207,16 @@ zoom and therefore the pitch; pitch tracks zoom monotonically with both ends pin
 area plus its margin.
 
 **The floor is the number to look at on the device, not just to assert.** It is what bounds tap error near
-the top of the frame and what bounds ADR-010's wedge, and it trades directly against how raking the
-zoomed-in silhouette looks. If it is too high to look good, say so with the stretch ratio in hand rather
-than lowering it quietly.
+the top of the frame, what bounds ADR-010's wedge, and what stops an anchor near the horizon demanding an
+unbounded focus movement (ADR-018). It trades directly against how raking the zoomed-in silhouette looks.
+If it is too high to look good, say so with the stretch ratio in hand rather than lowering it quietly.
+
+**Two things here are looked at rather than asserted, and both are on `Interface.md` §7's list.** Whether
+the ground actually sticks across the pitch range — the failure is drift over a long gesture. And
+**whether orbit is usable one-handed on a kickstand**, where a thumb-and-index rotation has about 50° of
+arc before a re-grip. That second one decides whether orbit survives: `Interface.md` §5 names it the
+candidate to cut, and cutting it removes the 8° deadzone, its latch, the 2% scale deadzone and the snap —
+four constants — and makes pinch pure zoom. **If it is bad, say so; it is designed to be cuttable.**
 
 ### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient` · hand · agent
 

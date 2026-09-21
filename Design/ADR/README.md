@@ -19,9 +19,10 @@ this tree has taken no decisions before these.
 | [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent; amends ADR-007 to bind the world only and supersedes ADR-009's pixel doubling | Accepted | 2026-09-20 |
 | [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale defaulting to 1:1, and the interface gets its own transform rather than borrowing the world's | Accepted | 2026-09-21 |
 | [`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold — the first tap acts at once and the second upgrades it — which frees `Holding` | Accepted | 2026-09-21 |
+| [`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane and one solve drives pan, zoom and orbit; no inertia, and a hold on empty space recentres | Accepted | 2026-09-21 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All fourteen are now Accepted** — ADR-002
+ruled; a proposed ADR is not something to write code against. **All fifteen are now Accepted** — ADR-002
 to ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes.
 
 **ADR-012, ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan
