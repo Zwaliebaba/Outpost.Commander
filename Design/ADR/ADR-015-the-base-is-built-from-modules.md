@@ -62,9 +62,16 @@ station. It also gives the station something to do in the first two minutes besi
 
 **It costs the single-datagram property most of its headroom.** Four modules a player at two players is
 eight more entities: **110 entities, 1,137 bytes, still one datagram — but 95 bytes of headroom where there
-were 175.** Nine entities, where there were seventeen. [`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s
-headline benefit survives this change and would not survive another of the same size, which is why the cap
-is four and why raising it is a replication decision rather than a design one.
+were 175.** Nine entities, where there were seventeen.
+
+[`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s headline benefit survives this change and **would
+survive one more of the same size with fifteen bytes left** -- one entity, which is not room to plan with.
+**This ADR previously said it would NOT survive another, and that was wrong**: eight more module entities
+is eighty bytes against ninety-five of headroom, and `TechnicalDesign.md` §4 has done that subtraction
+correctly all along. The correction does not move the cap. It moves the *reason*: four is not the number
+the datagram forces, it is the last number that leaves any headroom worth the name -- so raising it is
+still a replication decision rather than a design one, and still one that has to be costed with
+`Scripts/DatagramBudget.py` rather than argued.
 
 **It adds a placement validity rule to the simulation** — inside the radius, clear of the station and of
 other modules — which is simulation state and therefore obeys R16: integers, and candidates ordered by

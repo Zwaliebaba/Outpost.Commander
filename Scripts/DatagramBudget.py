@@ -55,7 +55,14 @@ FIELD_AUDIT = [("identity",           16, 16, False, "correctness, not display: 
 # Upstream. Section 5 states the command packet in prose rather than a table -- a type, a target,
 # the selected identities, a per-player sequence, retransmitted every packet until the snapshot
 # acknowledges it. This is that prose costed. If section 5 ever gains a table, move this to match.
-COMMAND_HEADER = [("version", 1), ("type", 1), ("player identity", 1), ("command count", 1)]
+# THIS WAS FOUR BYTES UNTIL M0.10 ENCODED ONE. It carried `version` and `type` -- the whole of the
+# packet header as it stood before M0.2 -- and never gained the sequence and the two fragment fields
+# that landed with NeuronCore/PacketHeader.h. The same omission the fire-event count byte was, in
+# the other direction: a field the design settled elsewhere and this model was never told about.
+# GameCore/Command.h now states it as PacketHeader::SIZE_BYTES + 2, and CommandTests pins it.
+COMMAND_HEADER = [("version", 1), ("type", 1), ("sequence", 2),
+                  ("fragment index", 1), ("fragment count", 1),
+                  ("player identity", 1), ("command count", 1)]
 COMMAND_FIXED = [("sequence", 2), ("order type", 1), ("target point or entity", 4),
                  ("selection count", 1)]
 IDENTITY_BYTES = 2

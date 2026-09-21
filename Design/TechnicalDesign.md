@@ -237,6 +237,14 @@ carry a per-player sequence number and are **repeated in every outgoing packet u
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
 
+**The widths are measured, and M0.10's encoder is where they became facts.** The packet header is
+**eight bytes** -- the transport's six (`NeuronCore/PacketHeader.h`) plus the player identity and the
+command count -- and one command is **eight bytes and two per selected identity**. `CommandTests` pins
+both. `Scripts/DatagramBudget.py` modelled the header as four until that encoder was written, because it
+carried only the `version` and `type` of the header as it stood before M0.2 and never gained the sequence
+and fragment fields; the figures below are the corrected ones, and the retransmit window is unchanged by
+the correction.
+
 **The packet is filled oldest-first and stops when the next command will not fit.** "Repeated until
 acknowledged" bounds the packet by how many commands are outstanding, and nothing about the format bounds
 *that*: at the peak 110-identity selection a command is 228 bytes, so **five fit in the pinned 1,232-byte
@@ -251,7 +259,7 @@ on the stall that made it deep.
 
 **The host validates every command, and this is correctness rather than security.** §5 declines
 authentication and any defense against a hostile client; that exclusion silently covered ownership and
-bounds checks too, which are a different category. A 1,232-byte command packet holds **610 identities
+bounds checks too, which are a different category. A 1,232-byte command packet holds **608 identities
 against a peak of 110** — a 5.5× amplification into a single-threaded loop, reachable from an ordinary bug
 or a reordered packet with no attacker anywhere. So the host: rejects entities the sender does not own,
 bounds the selection at the sender's own entity count, rejects stale generations, clamps target points to

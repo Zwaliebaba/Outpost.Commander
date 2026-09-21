@@ -101,7 +101,7 @@ There is no general reliability layer, no second timer and no separate acknowled
 **The host validates every command, and that is correctness rather than security.**
 `Design/TechnicalDesign.md` §5 declines authentication and any defense against a hostile client; that
 exclusion silently covered ownership, bounds and generation checks too, which is a different category.
-A 1,232-byte command packet holds **610 entity identities against a peak of 110** — a 5.5× amplification
+A 1,232-byte command packet holds **608 entity identities against a peak of 110** — a 5.5× amplification
 into a single-threaded host loop, reachable from an ordinary bug or a reordered packet with no attacker
 anywhere. The host therefore rejects entities the sender does not own, bounds the selection at the
 sender's own entity count, rejects stale generations, clamps target points to the play area, and handles
