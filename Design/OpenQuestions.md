@@ -9,10 +9,9 @@ is**, rather than assuming.
 with no milestone can wait indefinitely.
 
 **Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong. **Q26, Q35 and Q36 are under *Open* below; Q33 and
-Q34 sit in the sixth round's table where they were asked**, each carrying an open answer and the milestone
-that settles it. Three of the five are measurement and two are decisions — Q35, and which derivation Q36
-takes.
+answers and corrected three statements that were wrong. **All five open questions are under *Open* below**,
+each with the milestone that settles it. Three of the five are measurement and two are decisions — Q35,
+and which derivation Q36 takes.
 
 ---
 
@@ -107,8 +106,6 @@ module arrives with fog, post-MVP.
 
 | | Question | Answer |
 |---|---|---|
-| **Q33** | Which side do the panels belong on? | **Open — settled at M1 by playing.** The posture assumption was wrong: a Surface Pro 11 is 287 × 208 mm and 895 g, so it is used on a kickstand with index fingers, not held with thumbs (`Interface.md` §1). Reach therefore stops being the binding constraint and **occlusion starts** — a reaching hand covers the target and a wedge around it. The bottom edge is still right; which corner is a handedness question, and the answer may be a setting rather than a constant. | `Interface.md` §1, §6 |
-| **Q34** | Does the client target 60 Hz or the panel's 120? | **Open — decided by M0.23's frame times.** The panel is 120 Hz VRR, and touch responsiveness is bounded by frame time more than by anything else: 8.3 ms against 16.7 is perceptible on a direct-manipulation gesture like panning. It is not free — it halves the frame budget, and it compounds with [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)'s 1:1 default, since 120 Hz at 1:1 is four times the pixel rate of 60 Hz at 0.5. **Measure both before choosing.** | `TechnicalDesign.md` §6, §9 |
 | **Q32** | Is mining a standing order, and where does cargo capacity live? | **Yes, and in the mining tool.** A mine order is the only order in this design that does not complete — the miner shuttles until told otherwise, five states on the tick. Capacity and extraction rate are **derived and summed over the hull's slots** like mass and cost (R24), so a two-slot heavy miner is a table row rather than a mechanic. The unload target is **a query for the nearest owned thing that accepts ore**, written as a set although it holds one station today, because a mining factory at a contested field is only worth adding if the miner already asks. |
 
 **The wire could not afford a cargo byte.** A fill level per entity is 110 bytes against 96 of headroom,
@@ -135,6 +132,37 @@ asteroid count sets the sparse ore budget from M3 (Q22) and how much a home fiel
 **No recommendation.** Both follow from playing, and guessing them now would add two more unmeasured
 numbers to a document that has plenty. What is required is that the generator *names* them rather than
 leaving them implicit in code.
+
+### Q33 — Which side do the panels belong on? — **needed by M1**
+
+Asked in the sixth round and not answered there. **The posture assumption underneath it was wrong**: a
+Surface Pro 11 is 287 × 208 mm and 895 g, so it is used on a kickstand with index fingers rather than held
+at its sides with the thumbs reaching the bottom corners (`Interface.md` §1). **Reach therefore stops being
+the binding constraint and occlusion starts** — a reaching hand covers its target and a wedge of screen
+around it, on the side of the dominant hand.
+
+The bottom edge is still right and it is *which corner* that is open. The build panel belongs under the
+reaching hand and the selection panel opposite it, because the selection panel is the readout the player
+reads while their hand is on the glass (`Interface.md` §6); which hand that is, is handedness.
+
+**No recommendation, and the answer may not be a constant** — a setting is as plausible as a side, and
+either follows from playing rather than from arithmetic. What it requires in the meantime is that M1.14
+build the two positions as one layout that mirrors on a single value, so the answer costs a setting rather
+than a rewrite.
+
+### Q34 — Does the client target 60 Hz or the panel's 120? — **needed by M0**
+
+Asked in the sixth round, and **decided by M0.23's frame times** rather than by argument. The panel is
+120 Hz VRR, and touch responsiveness is bounded by frame time more than by anything else: 8.3 ms against
+16.7 is perceptible on a direct-manipulation gesture like panning, which is the gesture this game is driven
+by.
+
+**It is not free.** It halves the frame budget, and it compounds with
+[`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)'s 1:1 default — 120 Hz at 1:1 is four times the
+pixel rate of 60 Hz at a 0.5 scale.
+
+**No recommendation: measure both before choosing** (`TechnicalDesign.md` §6, §9). The two are one constant
+apart, and the measurement M0.23 already owes is the whole of the answer.
 
 ### Q35 — Does canceling a build refund, and how much? — **needed by M1**
 
