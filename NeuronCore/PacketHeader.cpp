@@ -39,7 +39,10 @@ bool PacketHeader::Write(ByteWriter& _writer) const noexcept
 
 PacketFault PacketHeader::Read(ByteReader& _reader, PacketHeader& _outHeader) noexcept
 {
-  if (_reader.RemainingBytes() < SIZE_BYTES)
+  // A reader that has already run out reports how far it honestly got, so its RemainingBytes can
+  // still look sufficient while every read returns zero. Asking it first is what stops a header
+  // being decoded out of that zero and reported as a version mismatch with somebody's build.
+  if (_reader.Faulted() || _reader.RemainingBytes() < SIZE_BYTES)
   {
     return PacketFault::Truncated;
   }

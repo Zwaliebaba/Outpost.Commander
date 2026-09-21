@@ -191,6 +191,24 @@ public:
     Assert::AreEqual(Code(Neuron::PacketFault::Truncated), Code(Neuron::PacketHeader::Read(reader, received)));
   }
 
+  /// A reader that has already run out keeps its cursor where it stopped, so its RemainingBytes
+  /// can still look sufficient while every read it answers is a zero. Decoding a header out of
+  /// those zeros would report somebody's build as the wrong version.
+  TEST_METHOD(AnAlreadyFaultedReaderIsTruncatedRatherThanAVersionMismatch)
+  {
+    std::array<std::byte, 32> backing{};
+    backing.fill(static_cast<std::byte>(Neuron::PROTOCOL_VERSION));
+    Neuron::ByteReader reader{backing};
+
+    std::array<std::byte, 64> tooMuch{};
+    Assert::IsFalse(reader.ReadBytes(tooMuch));
+    Assert::IsTrue(reader.Faulted());
+    Assert::IsTrue(reader.RemainingBytes() >= Neuron::PacketHeader::SIZE_BYTES, L"the buffer still looks long enough");
+
+    Neuron::PacketHeader received{};
+    Assert::AreEqual(Code(Neuron::PacketFault::Truncated), Code(Neuron::PacketHeader::Read(reader, received)));
+  }
+
   TEST_METHOD(AnEmptyDatagramIsTruncated)
   {
     Neuron::ByteReader reader{std::span<const std::byte>{}};
