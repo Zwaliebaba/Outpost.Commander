@@ -24,10 +24,14 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)NeuronCore.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)PacketHeader.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteReader.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
   </ItemGroup>
 </Project>

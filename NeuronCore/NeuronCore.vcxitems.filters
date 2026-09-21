@@ -4,10 +4,12 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)ByteReader.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ByteWriter.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)NeuronCore.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)PacketHeader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteReader.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ByteWriter.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)NeuronCore.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)PacketHeader.h" />
   </ItemGroup>
 </Project>

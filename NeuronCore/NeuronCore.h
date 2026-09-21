@@ -38,6 +38,7 @@
 // one section 4 fixes: own headers before the SDK and the standard library, never sorted.
 #include "ByteReader.h"
 #include "ByteWriter.h"
+#include "PacketHeader.h"
 
 #include <string_view>
 
