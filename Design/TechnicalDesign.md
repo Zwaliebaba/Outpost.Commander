@@ -353,6 +353,19 @@ since DXGI's flip model requires `SampleDesc.Count` of 1; for rectangles and tex
 and for the world it is most of why the scene target exists — at 1:1 with one sample the present step is a
 pure copy that buys only the ability to turn multisampling on as a constant.
 
+**The sky is two more draws and a bake** ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)).
+The galaxy band is a 512² cubemap, 6.3 MB, rendered once at match start from the match seed and sampled
+with one fetch per pixel; the stars are about 3,000 instanced quads in a single draw, generated from the
+seed with no vertex buffer. **It draws last, with depth test on**, so it shades no pixel the fleet already
+covers and pays no multisample resolve on a surface with no edges. Evaluating the sky analytically per
+pixel instead would cost an estimated 2–5 ms a frame at 5.53 megapixels, which is the figure that would
+have taken [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)'s 1:1 default away.
+
+**Nothing about the sky reaches the host, and nothing about it changes.** It is seeded from the match seed
+the client already holds for R23's generator, so it costs no wire bytes and cannot desynchronise anything;
+it takes no time input, so it is generated once and never updated. Being floats and noise throughout, it
+is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
+
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
 colour. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimised
@@ -414,7 +427,7 @@ and the placeholder goes the day the first real test lands.
 | Suite | Owns |
 |---|---|
 | `NeuronCoreTests` | Fixed-point multiply and divide at the edges of `int32`, the sine table against a reference, integer square root, the PRNG's first thousand outputs pinned, fragmentation and reassembly including a lost fragment and a duplicate. |
-| `NeuronClientTests` | The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, that a glyph's advance width survives the round trip, and **the interface's own authored-to-physical transform**, which is a second value from the same computation rather than the present step's ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)) — pinned at both world scales, because it must not move when the world's does. Plus the gesture constants `Interface.md` §1 derives: the 16-pixel tap slop either side of its threshold, the rotation deadzone's **latch**, the 2% scale deadzone, and that a contact wider than 78 authored pixels never becomes an input record. |
+| `NeuronClientTests` | The blackbody temperature-to-chromaticity table — eight stops, interpolated, **pinned exactly**, because it is the number that decides whether the sky reads as a sky or as confetti ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)); that the magnitude tiers come out in the 1 : 3 : 9 : 27 : 81 : 243 ratio for a given seed, and that the same seed gives the same sky twice. The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, that a glyph's advance width survives the round trip, and **the interface's own authored-to-physical transform**, which is a second value from the same computation rather than the present step's ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)) — pinned at both world scales, because it must not move when the world's does. Plus the gesture constants `Interface.md` §1 derives: the 16-pixel tap slop either side of its threshold, the rotation deadzone's **latch**, the 2% scale deadzone, and that a contact wider than 78 authored pixels never becomes an input record. |
 | `NeuronServerTests` | The Winsock2 endpoint against a loopback peer: send, receive, a short read, a datagram larger than the buffer. |
 | `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**, and every module level; **module placement validity** — inside the radius, outside it, overlapping the station, overlapping another module, and the fifth module against a cap of four; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including a removal list, a fire event and a snapshot at both player counts. |
 | `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles; **the anchor solve** ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — the property is *project the anchor and it lands on the centroid*, across the pitch range, for one contact and for two, with the scale and rotation applied, and with **no drift over a long synthetic gesture**, which is the failure this model actually has; that the clamp stops the focus and lets the anchor slip rather than fighting it; and that `pitch(distance)` **saturates** at the floor instead of ending the zoom range; **the double-tap selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)), now bounded by `Interface.md` §5's pitch floor; **that the first tap selects one ship and only a second tap resolving to the same entity expands it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)), including two taps on *different* ships staying two single taps; the 24-pixel pick radius and its tier order against overlapping candidates; and the order marker's lifetime against an acknowledgement. |
@@ -473,6 +486,7 @@ shaped:
 | [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale of the panel defaulting to 1:1, and the interface gets a fit transform of its own rather than borrowing the world's. |
 | [`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold; the first tap acts at once and the second upgrades it, and `Holding` is freed. |
 | [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane; one solve drives pan, zoom and orbit, there is no inertia, and a hold on empty space recentres. |
+| [`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus instanced stars, generated from the match seed, capped at 12% large-area luminance. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in
 [`OpenQuestions.md`](OpenQuestions.md).

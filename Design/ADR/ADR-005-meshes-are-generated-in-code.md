@@ -1,6 +1,8 @@
 # ADR-005 — Meshes are generated in code; the MVP has no content pipeline
 
-**Status:** Accepted — ruled 2026-09-20 following an adversarial review, **with changes**: the silhouette
+**Status:** Accepted — **amended 2026-09-21 by
+[`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md).** The silhouette argument below rests on the
+backdrop being black; it is now near-black, with a stated luminance ceiling rather than an absence. — ruled 2026-09-20 following an adversarial review, **with changes**: the silhouette
 consequence is named, and the mesh function must be parameterised for divergent proportion rather than
 only for size.
 **Date:** 2026-09-20
@@ -49,6 +51,13 @@ fails at M2 the answer is a shape-coded overlay, not more triangles.
 few dozen triangles, and no amount of care in the function changes that ceiling. The MVP's job is to prove
 the loop, and a faceted low-polygon fleet in silhouette against black is at least a coherent look rather
 than an apologetic one — but it is a ceiling and it is low.
+
+**That backdrop is no longer literally black** ([`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md)),
+and this paragraph is why that ADR carries a luminance ceiling rather than a taste. Black was doing work
+here: it is what lets a few dozen triangles read as deliberate. The sky is therefore capped at **12% of
+full white over any large area**, with only the brightest eight stars reaching 45% over a few dozen
+pixels. If the fleet stops reading at the tactical zoom, that ceiling is the first number to move — not
+the triangle count.
 
 It also means **there is no way for anyone but a programmer to change a ship's shape**, which forecloses
 art as a parallel activity for as long as it stands.

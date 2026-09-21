@@ -20,9 +20,10 @@ this tree has taken no decisions before these.
 | [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale defaulting to 1:1, and the interface gets its own transform rather than borrowing the world's | Accepted | 2026-09-21 |
 | [`ADR-017`](ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold — the first tap acts at once and the second upgrades it — which frees `Holding` | Accepted | 2026-09-21 |
 | [`ADR-018`](ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane and one solve drives pan, zoom and orbit; no inertia, and a hold on empty space recentres | Accepted | 2026-09-21 |
+| [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus seeded instanced stars, modelled on the real magnitude and colour distributions and capped at 12% large-area luminance | Accepted | 2026-09-21 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All fifteen are now Accepted** — ADR-002
+ruled; a proposed ADR is not something to write code against. **All sixteen are now Accepted** — ADR-002
 to ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes.
 
 **ADR-012, ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan

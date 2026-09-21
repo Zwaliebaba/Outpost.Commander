@@ -1,7 +1,7 @@
 # M1 — The fleet
 
 [`GameDesign.md`](../GameDesign.md) §10: two stations, the two designs, the current build item, move orders
-with ring assignment, selection by tap and by double tap, two clients on one host, host-side command validation.
+with ring assignment, selection by tap and by double tap, a generated sky behind it, two clients on one host, host-side command validation.
 
 **What it proves** is the one thing M0 deliberately left out — that
 [`ADR-006`](../ADR/ADR-006-a-ship-is-a-composition.md)'s component model carries the game rather than
@@ -93,8 +93,14 @@ needs to know who is sending, and the credits readout needs to know which block 
 
 **What the ADR has to settle:** what a client sends on connect and what comes back; how a slot is claimed
 and whether a client may choose; what happens to a second client claiming a taken slot; how a reconnecting
-client (`GameDesign.md` §2, `Interface.md` §7) is recognised as the same player; and whether the protocol
-version check lives here or stays in every packet header.
+client (`GameDesign.md` §2, `Interface.md` §7) is recognised as the same player; whether the protocol
+version check lives here or stays in every packet header; and **the match seed**.
+
+**The seed was missing from this list and R23 already requires it.** The client runs the asteroid
+generator itself — that is the whole of R23 — so it cannot draw a map without the seed, and the join
+record is the only place it can arrive. [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md)
+is a second consumer and costs nothing extra because of it. Whether it also needs a reconnecting client to
+get the *same* seed back is part of what this ADR settles.
 
 **Files:** `Design/ADR/ADR-013-<slug>.md` and the row in `Design/ADR/README.md`; then
 `GameCore/Join.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`, and the client side of it; the project files and
@@ -240,6 +246,59 @@ and `.filters`.
 
 **Done when:** three hulls and a station draw as one instanced call each with a per-instance transform and
 team colour; and **the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
+
+### M1.9b — The sky · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
+
+**Read first:** [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) in full;
+[`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), which it amends;
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md); R9, R14 and R23.
+
+**Adds:** the backdrop, in two halves with two frequencies. **The galaxy** bakes once into a 512² cubemap,
+6.3 MB, rendered at match start and sampled with one fetch per pixel — a band that is wider and brighter
+toward the galactic centre and carries **dark dust lanes**, because a band without them is a stain rather
+than a galaxy. **The stars** are about 3,000 instanced quads from `SV_VertexID` with no vertex buffer,
+seeded from the match.
+
+**What makes it read as a sky is four properties, and each has a way of failing that is worth knowing:**
+
+- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — roughly 8, 25, 74, 222, 667 and 2,004
+  stars. The brightest tier being *eight* is the whole effect. Uniform brightness reads as salt and
+  pepper.
+- **Size follows brightness**, 8 scene-target pixels down to 1.5, with a soft radial falloff in the
+  sprite. Apparent size is the point-spread function, not the star.
+- **Colour is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
+  announces itself; real stars read very nearly white.
+- **Temperature correlates with magnitude** — bright tiers blue-white, faint ones orange — and star
+  density rises toward the galactic plane. Draw colour independently of brightness and the sky is subtly,
+  unnameably wrong.
+
+**Nothing twinkles and nothing moves.** There is no atmosphere, so there is no scintillation; diffraction
+spikes are a telescope artefact and the player is not looking through one. **The sky takes no time input
+at all** — generated once, never updated, zero per-frame CPU. Do not add "a little movement" later without
+reopening ADR-019.
+
+**It is dim, and the ceiling is on area rather than peak**: large-area luminance never above **12% of full
+white**, point features up to 45% and only for the brightest tier. ADR-005 leans on the backdrop being
+black to make a few-dozen-triangle hull read as deliberate, and this is the number that keeps that true.
+
+**The R9 split is the usual one.** `NeuronClient` gets the render-to-cubemap facility, the instanced
+sprite draw, the blackbody table and the seeded point-field generator — none of which knows there is a
+game. `GameClient` gets what *this* sky looks like: the band's orientation, the star count, the tier
+ratios, the palette and the ceiling. **Nothing goes in `GameCore` or `GameLogic`**, and the sky being
+floats and noise throughout means `Scripts/CheckDeterminism.py` catches it if anyone tries.
+
+**Draw it last, with depth test on**, so it shades no pixel the fleet already covers and pays no
+multisample resolve on a surface with no edges.
+
+**Files:** `NeuronClient/CubemapBake.h` `.cpp`, `NeuronClient/PointSprites.h` `.cpp`,
+`NeuronClient/Blackbody.h` `.cpp`, `NeuronClient/StarField.h` `.cpp`, `NeuronClient/Sky.hlsl`,
+`NeuronClient/Star.hlsl`; `GameClient/SkyLook.h` `.cpp`; both project files and `.filters`;
+`Tests/NeuronClientTests/BlackbodyTests.cpp`, `StarFieldTests.cpp`.
+
+**Done when:** the blackbody table is **pinned exactly** at its eight stops and between them; a given seed
+produces the magnitude tiers in the stated ratio and **the same sky twice**; the cubemap bakes in one pass
+over six faces; and the whole thing is **looked at on the device at the tactical zoom** — which is where
+ADR-005's worry lands and is M1.16's to answer, not this step's.
 
 ### M1.10 — Selection by tap · `GameClient` · `GameClientTests` · agent
 
@@ -387,7 +446,7 @@ decision at all.
 **Done when:** the question is answered on the register, and two clients on one host are playing — on
 whatever number of machines the answer turned out to require.
 
-### M1.16 — GATE: the three confirmations · — · hand · **human**
+### M1.16 — GATE: the confirmations · — · hand · **human**
 
 **Read first:** `Interface.md` §7's closing section; `TechnicalDesign.md` §9.6; `OpenQuestions.md` Q18 and
 ADR-010's consequences.
@@ -408,7 +467,23 @@ Three things the design says are checked by a hand rather than an argument, all 
 3. **Whether the interface pass costs more GPU time than the world pass** — §9.6, which the design predicts
    it will: five instanced draws of simple geometry against an unbatched quad per glyph.
 
-**Done when:** all three are answered on hardware and written into the documents that asked for them.
+**The list has grown past three and this step carries all of it.** `Interface.md` §7 now closes with
+seven, and two ADRs added their own since this step was written:
+
+4. **The gesture constants** (`Interface.md` §1) — the 16-pixel tap slop above all, since it decides how
+   often an intended order becomes a pan.
+5. **Whether the ground sticks to the finger** across the pitch range, and **whether orbit is usable
+   one-handed on a kickstand** ([`ADR-018`](../ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The
+   second decides whether orbit and its three protecting constants survive.
+6. **The frame time with the sky present**, at both world scales
+   ([`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md)) — this is the measurement
+   [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) actually needs, because a black screen
+   was never the content. **Whether the fleet still reads against it** at the tactical zoom, which is
+   ADR-005's worry. And **whether the sky looks like a sky**, whose three failure modes each have a named
+   cause: uniform brightness reading as noise, oversaturated colour as confetti, a band without dust lanes
+   as a stain.
+
+**Done when:** all of them are answered on hardware and written into the documents that asked for them.
 
 ---
 

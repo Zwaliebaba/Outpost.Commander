@@ -345,6 +345,13 @@ that is one gesture away, costing a second render of every entity, a second coor
 hit test, for a quarter of the frame's height. With a symmetric map and no fog of war there is nothing on
 it a player does not already know.
 
+**The sky is the other half of what a minimap gives, and it is free.**
+[`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) fixes a generated star field in world
+space, so it rotates with heading and pitch and does **not** translate with pan — panning across the map
+leaves it still. With no minimap and no compass, that is which-way-am-I-facing, answered by the backdrop.
+It is why ADR-019 is not only decoration, and it is dim enough (12% over any large area) not to cost the
+silhouette legibility this design is built on.
+
 **What a minimap does provide is a way back, and that is a hold rather than a panel.** `GameDesign.md` §7
 names the problem — a defender has to be watching the right part of a 16,384-unit map at the right moment
 — and until now the only way back to your own base was panning there. **A hold on empty space recentres**

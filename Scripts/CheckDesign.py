@@ -56,6 +56,11 @@ MANIFEST = [
     ("the spent Holding", [r"[Tt]wo verbs are banked rather than one",
                            r"\`Holding\` means nothing anywhere"],
      r"recentres", ["Design/Interface.md"]),
+    # ADR-019 says it out loud: "a backdrop that nobody pinned gets brighter one commit at a time."
+    ("the sky's luminance ceiling", [], r"12% of full white",
+     ["Design/ADR/ADR-005-meshes-are-generated-in-code.md",
+      "Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md",
+      "Design/Plan/M1-the-fleet.md"]),
     ("the posture", [r"held at its sides and the thumbs reach"],
      r"kickstand on a desk", ["Design/Interface.md"]),
     ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],
