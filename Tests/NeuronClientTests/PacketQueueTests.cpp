@@ -311,9 +311,16 @@ public:
 
   /// The arrangement as it will actually run: something pushing from a pool thread while the
   /// frame drains. The deadline is what turns a lost datagram into a failure rather than a hang.
+  ///
+  /// A slot per datagram, as the test above sizes it, and for the same reason: with fewer slots
+  /// than the producer sends, whether the drain keeps up is the SCHEDULER's answer rather than the
+  /// queue's, and asserting no drop would be pinning it. The drop policy is a decision this suite
+  /// pins deterministically and single-threaded in NothingIsDroppedUntilTheQueueIsFull and
+  /// AFullQueueDropsTheOldestAndCountsIt. What is left for this test is the thread boundary --
+  /// order kept, nothing torn, nothing lost -- and that holds on any machine.
   TEST_METHOD(APushingThreadAndADrainingThreadAgree)
   {
-    Neuron::PacketQueue queue{256, MARKED_BYTES};
+    Neuron::PacketQueue queue{PER_PRODUCER_COUNT, MARKED_BYTES};
 
     std::thread producer(
       [&queue]
@@ -349,7 +356,7 @@ public:
     producer.join();
 
     Assert::AreEqual(static_cast<std::size_t>(PER_PRODUCER_COUNT), drained);
-    Assert::AreEqual(std::uint64_t{0}, queue.DroppedCount(), L"the drain could not keep up with 256 slots of slack");
+    Assert::AreEqual(std::uint64_t{0}, queue.DroppedCount(), L"a queue with a slot per datagram dropped one");
   }
 };
 
