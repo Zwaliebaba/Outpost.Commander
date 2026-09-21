@@ -124,8 +124,8 @@ public:
     Neuron::PacketQueue queue{4, 1};
     Assert::AreEqual(static_cast<std::size_t>(0), queue.PendingCount());
 
-    queue.Push(Numbered(1));
-    queue.Push(Numbered(2));
+    PushNumbered(queue, std::uint8_t{1});
+    PushNumbered(queue, std::uint8_t{2});
     Assert::AreEqual(static_cast<std::size_t>(2), queue.PendingCount());
 
     std::array<std::byte, 1> received{};

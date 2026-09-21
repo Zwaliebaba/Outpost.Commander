@@ -6,6 +6,11 @@
 // which is exactly what keeps the older <winsock.h> out of <windows.h>. That macro has one owner
 // in this tree (AGENTS.md section 4) and this file is one of the reasons it matters.
 #include <winsock2.h>
+// <ws2tcpip.h> BEFORE <mstcpip.h>, and it is not optional. <mstcpip.h> is where SIO_UDP_CONNRESET
+// lives, but it is written against the address and protocol definitions <ws2tcpip.h> brings in;
+// included on its own after <winsock2.h> it parses and defines nothing this file needs, which is a
+// missing header that presents as an undeclared identifier rather than as a file not found.
+#include <ws2tcpip.h>
 #include <mstcpip.h>
 
 // The link dependency travels with the code that needs it rather than with each project that
