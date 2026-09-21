@@ -132,7 +132,7 @@ rule has teeth. ADR-002 is blunt about the cost: sorting costs real time in the 
 selection, and it is not optional, because **an unordered tie-break is a desynchronisation that appears
 once an hour and cannot be reproduced.**
 
-**The client does not get one.** At 102 entities `GameClient`'s hit test is a linear scan (M1.10) and a
+**The client does not get one.** At 110 entities `GameClient`'s hit test is a linear scan (M1.10) and a
 second index would be a second thing to keep correct for no measured gain.
 
 **Files:** `GameLogic/UniformGrid.h` `.cpp`; `GameLogic.vcxproj` + `.filters`;
@@ -146,10 +146,18 @@ two entities at exactly equal distance resolve to the same one on every run.
 
 **Read first:** `GameDesign.md` §4 and §6; `TechnicalDesign.md` §2's tick order.
 
-**Adds:** the whole economy. **A miner flies to an asteroid, extracts until its cargo is full, flies back
-to the station and unloads.** That is the entire loop, and it is a loop rather than a number because the
-miner is a ship on the map that can be shot — an idle miner with a full hold and a dead station is the
-economy failing in a way a player can see and do something about.
+**Adds:** the whole economy, as a **five-state standing order** — going to ore, extracting, going to
+unload, unloading, and back to ore. A mine order does not complete; it runs until the miner is told
+something else, which is why an economy runs without a player shepherding it and is the only order in the
+design that behaves this way (`GameDesign.md` §4).
+
+**Two things this step must not hardcode**, both of which are one line now and a refactor later:
+
+- **Cargo capacity and extraction rate are derived** from the components in the hull's slots and summed,
+  exactly as mass and cost are (R24). Not a constant on "the miner", which is not a type.
+- **The unload target is a query** — the nearest owned entity that accepts ore, candidates ordered by
+  entity identity (R16). Today that set holds one station. Writing it as a constant is what would make a
+  mining factory at a contested field a rewrite instead of a table row.
 
 `GameDesign.md` §4's starting values are the design's and are not repeated here. **They are starting
 values and not balance**, and M3's twenty matches are what move them.
@@ -158,19 +166,24 @@ The `MiningLaser` is a slot component with a range like any weapon (M1.1) and do
 here is a special case for a "miner"** — it is a design whose slot happens to hold a mining tool, which is
 ADR-006's central claim being exercised rather than asserted.
 
-**Files:** `GameLogic/MiningSystem.h` `.cpp`; `GameLogic.vcxproj` + `.filters`;
-`Tests/GameLogicTests/MiningTests.cpp`.
+**Files:** `GameLogic/MiningSystem.h` `.cpp`, `GameLogic/UnloadTarget.h` `.cpp`; `GameLogic.vcxproj` +
+`.filters`; `GameCore/DesignStats.cpp` extended for derived capacity and rate;
+`Tests/GameLogicTests/MiningTests.cpp`; `Tests/GameCoreTests/DesignStatsTests.cpp` extended.
 
-**Done when:** a miner completes the full cycle in the tick count the design's figures imply; extraction
-stops exactly at a full hold rather than overshooting by a tick's worth; a miner ordered elsewhere
-mid-cycle abandons cleanly; and the loop is pinned by the determinism test's scripted orders, not only by
-its own.
+**Done when:** a miner completes the full cycle in the tick count the design's figures imply **and then
+starts the next one without a further order**; extraction stops exactly at a full hold rather than
+overshooting by a tick's worth; a miner ordered elsewhere mid-cycle abandons cleanly **and keeps whatever
+it was carrying**; a two-slot design with two mining lasers is pinned at twice the capacity and twice the
+rate, which is the derivation being exercised rather than asserted; and the loop is pinned by the
+determinism test's scripted orders, not only by its own.
 
 ### M2.7 — Credits, and the readout · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** `GameDesign.md` §4; ADR-003's per-player block; `Interface.md` §6.
 
-**Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, and the top-left
+**Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, **and the
+cargo bucket in the flags byte** — two bits, four buckets, which is what a fill bar needs and is all the
+snapshot has room for (`TechnicalDesign.md` §4), and the top-left
 readout M1.14 already draws going live — **including the income rate, which `Interface.md` §6 says appears
 "once there is one"**, and this is the milestone in which there is one.
 
@@ -197,9 +210,75 @@ has not seen.
 
 ---
 
+### M2.9 — The module frame and its catalog · `GameCore` · `GameCoreTests` · agent
+
+**Read first:** [`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md);
+`GameDesign.md` §5 *The base is built out of modules*, §6's catalog; R24.
+
+**Adds:** the `ModuleFrame` hull and the four module components to the catalog, and nothing else. A module
+is a composition, so the derived-stat function needs no change — **that it needs no change is the thing
+this step proves**, and it is what ADR-015 claims about levels being component identities.
+
+**Files:** `GameCore/Catalog.h` extended; `Tests/GameCoreTests/DesignStatsTests.cpp` extended.
+
+**Done when:** derived stats are pinned for every module at every level, and the suite fails if a level's
+cost or hull is changed without the test being updated.
+
+---
+
+### M2.10 — Placement validity · `GameCore` · `GameCoreTests` · agent
+
+**Read first:** ADR-015's *Decision*; `Interface.md` §6 *Placing a module*; R16's ordering rule; R23 on why
+a rule both sides evaluate lives in `GameCore`.
+
+**Adds:** one pure function — is this point a legal module site for this station? Inside 400 units, clear
+of the station, clear of every existing module, and the fifth module refused against a cap of four. Integer
+throughout, candidates ordered by entity identity.
+
+**Files:** `GameCore/ModuleSite.h`, `GameCore/ModuleSite.cpp`, both in `GameCore.vcxitems` and its
+`.filters`; `Tests/GameCoreTests/ModuleSiteTests.cpp` new, in that project and its `.filters`.
+
+**Done when:** the five refusal cases and the accept case are each a test, and the client and the host call
+the same function — which a reader can check by grep, because there is only one.
+
+---
+
+### M2.11 — Building and placing a module · `GameLogic`, `GameClient` · both · agent
+
+**Read first:** M2.10; `GameDesign.md` §5; `Interface.md` §6; ADR-003 on the entity record.
+
+**Adds:** the module as an entity the host creates on completion at the placed point; the build panel's
+second row; the armed-placement state and the drawn radius on the client; the placement point carried on
+the build command and validated by the host with M2.10's function.
+
+**Files:** `GameLogic/BuildQueue.cpp`, `GameLogic/CommandValidation.cpp`, `GameClient/BuildPanel.cpp`,
+`GameClient/TapOrder.cpp`; `Tests/GameLogicTests/BuildQueueTests.cpp` and
+`Tests/GameClientTests/TapOrderTests.cpp` extended.
+
+**Done when:** a module is built, appears at the tapped point, and survives a reconnect — which is the
+snapshot carrying it correctly. A placement the host refuses leaves the credits unspent.
+
+---
+
+### M2.12 — What the modules do · `GameLogic` · `GameLogicTests` · agent
+
+**Read first:** `GameDesign.md` §5's table; ADR-015 on integer percentages and where they round.
+
+**Adds:** the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both applied as
+integer percentages. **Where each rounds is the question ADR-014 is reserved for** (`README.md` F3) — this
+step must not invent an answer; it applies the rule ADR-014 sets, or waits.
+
+**Files:** `GameLogic/BuildQueue.cpp`, `GameLogic/Mining.cpp`;
+`Tests/GameLogicTests/ModuleEffectTests.cpp` new, in the project and its `.filters`.
+
+**Done when:** the multipliers are pinned at both levels, and a test asserts the rounding direction rather
+than accepting whatever the code does.
+
+---
+
 ## The gates
 
-### M2.9 — GATE: the silhouettes · — · hand · **human**
+### M2.13 — GATE: the silhouettes · — · hand · **human**
 
 **Read first:** ADR-005's Consequences; `GameDesign.md` §1; `Interface.md` §5.
 
@@ -212,11 +291,11 @@ two scales** — which is exactly unreadable at the zoom where identification ma
 are distinguishable at a glance. **If they are not, ADR-005 has already named the answer — a shape-coded
 overlay, not more triangles** — and that is an ADR rather than a quiet addition to the mesh function.
 
-### M2.10 — GATE: the tick's cost · — · hand · **human**
+### M2.14 — GATE: the tick's cost · — · hand · **human**
 
 **Read first:** `TechnicalDesign.md` §9.3; ADR-002's Measurements 1.
 
-**Adds:** nothing. Measure an empty tick and a full one **at 102 entities**, against the 50-millisecond
+**Adds:** nothing. Measure an empty tick and a full one **at 110 entities**, against the 50-millisecond
 budget. ADR-002 names the two candidates for consuming it — **ring slot assignment and target selection** —
 and M2.5's sort is now in the second of them.
 

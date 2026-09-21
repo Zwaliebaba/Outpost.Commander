@@ -69,7 +69,7 @@ anyone reopening it should expect to rewrite rather than extend.
 ## Measurements
 
 None. This is a decision about what is expressible with a finger, not a quantity. The arithmetic it makes
-possible — four bytes of position rather than six, and an MVP snapshot of 1,056 bytes rather than about
-1,260, which is the difference between one datagram and two —
+possible — four bytes of position rather than six, and an MVP snapshot of 1,136 bytes rather than about
+1,360, which is the difference between one datagram and two —
 is in `Design/TechnicalDesign.md` §4 and is arithmetic on the design's own entity counts, not a
 measurement.

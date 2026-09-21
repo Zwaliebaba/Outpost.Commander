@@ -132,10 +132,27 @@ is a seed in and a list of placed objects out, so adding a kind later does not c
 
 One resource, **credits**. There is no second currency and no upkeep in the MVP.
 
-A **miner** flies to an asteroid, extracts until its cargo is full, flies back to the station and unloads.
-That is the entire loop, and it is a loop rather than a number because the miner is a ship on the map
-that can be shot. An idle miner with a full hold and a dead station is the economy failing in a way a
-player can see and do something about.
+A **miner** flies to an asteroid, extracts until its cargo is full, flies to the nearest place that
+accepts ore, unloads, and **goes back to the same asteroid and does it again**. That is the entire loop,
+and it is a loop rather than a number because the miner is a ship on the map that can be shot. An idle
+miner with a full hold and a dead station is the economy failing in a way a player can see and do
+something about.
+
+**A mine order is the only standing order in this design.** Every other order completes: a ship told to
+move arrives and is finished. A miner told to mine **keeps mining until it is told to do something else**,
+which is the whole of the cycle above and is why an economy runs without a player shepherding it. The
+state machine is five states — going to ore, extracting, going to unload, unloading, and back — all of it
+on the tick, all of it integer.
+
+**Where it unloads is a query, not a constant.** The miner flies to the *nearest thing you own that
+accepts ore*. Today that set has one member, your station. It is written as a set because a mining factory
+placed out at a contested field is an obvious later feature, and the whole value of it — a shorter round
+trip — depends on the miner already asking "what is nearest" rather than being told "the station".
+
+**Cargo capacity is a derived stat like any other** (R24). It is carried by the mining tool, not by the
+hull, and it is **summed over the hull's slots** exactly as mass and cost are — so a two-slot hull with two
+mining lasers carries twice as much and extracts twice as fast, and a "heavy miner" later is a table row
+rather than a mechanic. A ship with no mining tool has zero capacity and cannot be given a mine order.
 
 **Asteroids are finite from M3, and infinite before it.** Finite asteroids are what make the contested
 fields worth contesting; an infinite home field turns the map into scenery and the match into pure
@@ -148,10 +165,11 @@ From M3: an exhausted asteroid stays on the map as a husk and a miner with no or
 one with ore left. The cost is that a player who ignores their miners eventually finds them idle, which is
 a management burden the MVP accepts rather than solves.
 
-Starting values: a station begins with 1,000 credits. A miner carries 100 credits of ore, extracts at 20
-per second and so fills in five seconds; a round trip to the home field is roughly thirty seconds, which
-puts one miner at about 2.5 credits per second. A home field holds enough for a long opening and not for
-a match.
+Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
+extracts at 20 per second, so the one-slot miner fills in five seconds; a round trip to the home field is
+roughly thirty seconds, which puts one miner at about 2.5 credits per second. **From M3, when asteroids
+become finite, a home field holds enough for a long opening and not for a match** — before M3 it holds
+everything, because there is nothing to exhaust.
 
 ---
 
@@ -195,8 +213,43 @@ a real choice between escorting and expanding. Retreating to the station is not 
 run. Extending the range to cover the field would make the opening simply safe and the early game pure
 build-up, with nothing happening until someone reaches the middle.
 
-There are no other structures in the MVP. No turrets, no outposts, no research facility — the station's
-defence is a component in a slot, not a building you place.
+### The base is built out of modules
+
+**A station on its own is a small base, and the rest of it is built.** A **module** is a separate entity
+placed near the station, owned, upgradeable, and **destroyable on its own** — which is the whole point of
+making it an entity rather than an upgrade inside the station
+([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)). A raid that kills your ore processor and
+leaves has done real damage without touching your station, and that move is what *Warzone 2100* base
+building is for.
+
+**A module is a composition like everything else** (R24): a `ModuleFrame` hull with one slot, no drive,
+carrying one module component. **Each upgrade level is its own component**, so upgrading replaces
+`ShipyardL1` with `ShipyardL2` and the derived-stat function is untouched.
+
+**The MVP has two working modules**, at two levels each:
+
+| Module | What it does | L1 | L2 |
+|---|---|---|---|
+| **Shipyard** | Raises the station's build rate. From M4 its levels also gate heavier hulls and the designer. | 400 cr, ×1.5 | 700 cr, ×2.0 |
+| **Ore processor** | Raises what a delivered cargo is worth. | 350 cr, +25% | 600 cr, +50% |
+
+**The research station is designed and not built until M4**, when there is research for it to do (§9).
+A module that costs credits and does nothing is the mistake §6 already made once with the heavy design.
+
+**Placement is a tap and costs no new gesture.** With your station selected and a module chosen, a tap on
+empty space within **400 units** places it — an interaction that was dead, because a tap on empty space is
+a move order and the station cannot move (`Interface.md` §4).
+
+**400 is the point-defence range, so the safe zone means exactly "your base".** The consequence is
+positional and intended: a `MassDriver` reaches 600, so **a fighter standing off at 500 can shell the
+modules on the near side while staying outside point-defence cover**. Which side of your station you build
+on is a decision.
+
+**Four modules to a station.** That cap is as much a replication budget as a design one
+(`TechnicalDesign.md` §4), and raising it is a protocol decision rather than a game one.
+
+Beyond modules there are no other structures in the MVP. No turrets, no outposts — the station's own
+defence is a component in its slots, not a building you place.
 
 ---
 
@@ -212,7 +265,8 @@ can do is allowed to live (`AGENTS.md` R19).
 
 ### The catalog
 
-Four hulls, two drives, three slot components. **The station is one of the hulls**, which is what makes §5
+Five hulls, two drives, three weapon components and four module components. **The station is one of
+the hulls and so is a module frame**, which is what makes §5
 possible without a second kind of thing in the simulation, and `Cruiser` stays in the catalog although
 nothing in the MVP builds it — the derivation function and its tests cover every hull, and reinstating a
 heavy design later is a table row (§10).
@@ -223,6 +277,7 @@ heavy design later is a table row (§10).
 | `Frigate` | 2 | 600 | medium | Medium |
 | `Cruiser` | 4 | 3,000 | high | Large |
 | `Station` | 2 | **8,000** | — | Large |
+| `ModuleFrame` | 1 | 1,500 | — | Large |
 
 | Drive | Character |
 |---|---|
@@ -231,11 +286,18 @@ heavy design later is a table row (§10).
 
 | Slot component | What it does | Range |
 |---|---|---|
-| `MiningLaser` | Extracts ore. Does no damage. | 200 |
+| `MiningLaser` | Extracts 20 ore a second and carries 100 of it. Does no damage. Capacity and rate both sum over a hull's slots. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
 | `PointDefence` | 60 damage per second per mount. Station slots only. | 400 |
 
-**A drive is optional.** A hull with none does not move, which is what a station is. **Speed is thrust
+| Module component | What it does | Cost |
+|---|---|---|
+| `ShipyardL1` / `L2` | Station build rate ×1.5 / ×2.0. From M4 its levels also gate heavier hulls and the designer. | 400 / 700 |
+| `OreProcessorL1` / `L2` | A delivered cargo is worth +25% / +50%. | 350 / 600 |
+| `ResearchStationL1` | Designed at M4, when there is research for it to do (§9). | — |
+
+**A drive is optional.** A hull with none does not move, which is what a station and a module frame both
+are. **Speed is thrust
 divided by mass**, and mass is the hull plus everything in it — so a `Frigate` carrying two mass drivers
 is slower than an empty one, and that falls out of the arithmetic rather than being written down anywhere.
 Turn rate derives the same way.
@@ -268,8 +330,20 @@ anywhere, is the evidence that the model is worth building before its interface 
 ## 7. Combat
 
 A ship with a weapon and no order engages the nearest hostile in range on its own. A ship with an attack
-order pursues its target. There is no formation system in the MVP beyond ships holding a loose spacing
-so they do not occupy the same point.
+order pursues its target.
+
+**Ships ordered to a point are given distinct destinations, not the same one.** On a plane, fifty ships
+sent to one coordinate stack; in a volume they would have missed each other in the third dimension, so
+this is a cost the plane induces ([`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md)) and it was
+previously named once and owned by nobody. The order assigns each selected ship a **slot on a ring around
+the destination**, ordered by entity identity so the assignment is deterministic, with the ring sized to
+the selection. No continuous separation force and no flocking: those are floating-point-shaped problems in
+an integer simulation, and a formation system later is this same assignment with a different slot layout.
+
+**A module is a target like anything else.** `ModuleFrame` is size class Large, so a `MassDriver` does 25%
+against it: one fighter needs about two minutes to kill a module and three need forty seconds. That is
+deliberate — a module is a raid objective a player has to commit to, not something a passing fighter
+removes. When a station dies its owner is eliminated and **their modules go with their ships** (§2).
 
 **Damage is `base × modifier[weaponClass][targetSizeClass] / 100`**, integer throughout. The modifier
 table is the whole of the rock-paper-scissors, and it is six numbers:
@@ -344,7 +418,11 @@ Difficulty levels, personalities and anything resembling strategic planning are 
 
 ## 9. Research, and what the MVP must not foreclose
 
-**There is no research in the MVP**, and there is no designer screen. Both are the next thing after it,
+**There is no research in the MVP**, and there is no designer screen. When both arrive at M4 they arrive
+**in a module** — the research station of §5, which is designed now and built then, so that research has a
+place on the map that an enemy can take away rather than being a menu.
+
+The rest of this section is unchanged: Both are the next thing after it,
 and the design is arranged so that neither needs the simulation changed to arrive:
 
 - A **design** is already a composition of components, already stored by identity, already the thing the
@@ -369,15 +447,16 @@ almost no game and all of the things that can turn out to be impossible.
 |---|---|---|
 | **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots at 20 Hz, interpolates, and draws one shape in Direct3D 12 — **fullscreen**, world at 1440 × 960 scaled 2×, interface pass at physical resolution. A tap sends a move order, a local marker appears at once, and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the two-pass renderer, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable. **It also measures tap-to-visible latency, which is the number that decides how the game feels.** Everything after this is content. |
 | **M1** | **The fleet** | Two stations, the two designs, the current build item, move orders with ring assignment, selection by tap and by hold. Two clients on one host. Host-side command validation. |
-| **M2** | **The field** | The procedural generator on a real seed, asteroid fields, miners, the credit loop. Asteroids are inexhaustible. |
-| **M3** | **The fight** | Weapons, the damage table, the station's point defence, miner flight, destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
-| **M4** | **The opponent, and the other two slots** | The AI of §8; three and four players; the `Cruiser` reinstated as a design with its weapon and its damage row — the milestone that can finally answer whether speed counters mass. |
+| **M2** | **The field** | The procedural generator on a real seed, asteroid fields, miners, the credit loop. Asteroids are inexhaustible. **Modules**: the `ModuleFrame` entity, placement by tap inside the build radius, the shipyard's build rate and the ore processor's cargo multiplier, both at two levels ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)). |
+| **M3** | **The fight** | Weapons, the damage table, the station's point defence, miner flight, **modules as targets and the near-side standoff they create**, destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
+| **M4** | **The opponent, and the other two slots** | The AI of §8; three and four players; the `Cruiser` reinstated as a design with its weapon and its damage row — the milestone that can finally answer whether speed counters mass. **Research, and the research station module with it**; the shipyard's levels start gating hulls and the designer rather than only build rate. |
 
 **What M0 to M3 deliberately omit, and what each omission buys:** two players rather than four (a
 five-minute match, and a snapshot that fits one datagram); one fixed seed until M2 (no "is the map wrong
 or is the game wrong"); inexhaustible asteroids until M3 (no husk state, no retargeting, and no asteroid
 replication at all); the current build item rather than a queue (a two-byte field instead of a queue
-format); no `Cruiser` design; no minimap.
+format); no `Cruiser` design; no minimap; **two working modules rather than three**, the research station
+waiting for the research that gives it a job.
 
 **The reduced thing proves something the full one would not** — that the loop can be played twenty times
 in an evening. That is the only mechanism this project has for turning the balance questions in §7 and on

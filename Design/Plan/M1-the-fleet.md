@@ -218,7 +218,7 @@ modifier key. `Interface.md` §4's table is the whole specification: empty space
 an asteroid mines, your own station opens the build panel, your own ship replaces the selection. A tap on
 empty space with **nothing** selected does nothing.
 
-At 102 entities the hit test is a linear scan over the replica store. **Do not build a spatial index on the
+At 110 entities the hit test is a linear scan over the replica store. **Do not build a spatial index on the
 client** — the simulation's grid is `GameLogic`'s (M2.5) and a second one here would be a second thing to
 keep correct for no measured gain.
 
