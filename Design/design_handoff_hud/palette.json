@@ -1,6 +1,6 @@
 {
   "note": "sRGB hex. Convert to linear for the renderer. Alpha where given is the fill alpha of the rect.",
-  "hueRule": "The cool band 150-240 degrees is reserved for the local player at every player count. No team is red; 340-45 degrees is reserved for state signalling.",
+  "hueRule": "The cool band 150-240 degrees is reserved for the local player at every player count. No team is red; 340-45 degrees is reserved for state signaling.",
   "teams": {
     "TEAM.OWN": {
       "hex": "#38D1F5",
@@ -40,7 +40,7 @@
   "chrome": {
     "SPACE": {
       "hex": "#04060A",
-      "use": "world clear colour - not drawn by the interface pass"
+      "use": "world clear color - not drawn by the interface pass"
     },
     "SCRIM": {
       "hex": "#07090B",

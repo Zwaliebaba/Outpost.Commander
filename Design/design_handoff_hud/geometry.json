@@ -973,8 +973,8 @@
   },
   "alertPlacement": {
     "suppressIfOnScreen": true,
-    "edgeBy": "dominant axis of the bearing from frame centre to the event",
-    "alongEdge": "crossing of the centre->event ray with the frame rect",
+    "edgeBy": "dominant axis of the bearing from frame center to the event",
+    "alongEdge": "crossing of the center->event ray with the frame rect",
     "clamp": "body stays wholly on the edge and >=16px clear of every panel band",
     "maxConcurrent": 3,
     "minSeparationAlongEdge": 112,

@@ -6,9 +6,9 @@ engineering rule never decides a game mechanic. Where a design decision has to c
 code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is its source — the design is
 the source and `AGENTS.md` is the rule, in that order.
 
-**Status: DRAFT, 2026-09-20.** Written against the brief and against `AGENTS.md`, starting from an empty
-`Design/` and a build shell with no game in it. **Twenty-six questions answered, one open. All eleven ADRs
-Accepted.**
+**Status: DRAFT, 2026-09-20**, with the fifth and sixth rounds applied on 2026-09-21. Written against the
+brief and against `AGENTS.md`, starting from an empty `Design/` and a build shell with no game in it.
+**Thirty-one questions answered, five open. All seventeen ADRs Accepted.**
 
 **A second designer was then asked to defeat it**, and the result is applied throughout. That review found
 a solved game in the combat numbers, a factual error in `AGENTS.md` itself, and several features specified
@@ -25,12 +25,15 @@ cannot be obtained until there is code, three of them owed at M0.
 | [`GameDesign.md`](GameDesign.md) | The game: the two lineages and which half the MVP is, the session and victory, the area and how it is generated, the economy, the station, ships as compositions, combat, the AI, where research goes, and the five milestones |
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, why there is no content pipeline, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: twenty-six answered across four rounds, one open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-011` |
+| [`design_handoff_hud/`](design_handoff_hud/README.md) | **The HUD as drawn**: every rectangle in integer authored coordinates, the palette, the type scale and the motion table, with a `geometry.json` M1.14's test asserts against and four reference frames at 1440 × 960. It settles *where and what color*; `Interface.md` §6 *Where the geometry lives* settles which of the two wins where they overlap |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: thirty-one answered across six rounds, five open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-020`, with `ADR-012` to `ADR-014` reserved |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than
-restating them; `Interface.md` assumes both.
+restating them; `Interface.md` assumes both. **`design_handoff_hud/` is read after `Interface.md` and
+never instead of it** — it is a design pass over what §6 had already settled, so it restates figures it
+does not own, and `CheckDesign.py` does not police those copies.
 
 ## What the design actually decided
 

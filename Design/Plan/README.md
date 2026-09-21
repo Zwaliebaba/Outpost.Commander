@@ -225,7 +225,7 @@ encoder. **M0.9 is where the widths become facts**, and the test that measures t
 turns ADR-003's 1,136 bytes from arithmetic into a measurement.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
-Twenty-three steps against M2's eleven, touching all eight projects, containing every subsystem that can
+Twenty-three steps against M2's fifteen, touching all eight projects, containing every subsystem that can
 turn out to be impossible. That is the correct shape for a risk-ordered plan, and it is said here because
 "M0: the wire" reads like a week and is not one.
 

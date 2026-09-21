@@ -16,6 +16,9 @@ THE DATAGRAM FIGURES ARE NOT LISTED HERE. They are imported from the datagram-bu
 budget.py and recomputed, so this checker cannot itself go stale against them. Everything else
 is a manifest below, and when one of those moves it moves here too -- that is the cost of a
 figure being canonical, and it is smaller than the cost of two of them.
+
+THE MILESTONE STEP COUNTS ARE NOT LISTED EITHER, for the same reason: check_plan_counts below
+recomputes them from the step headings and compares both places that state them.
 """
 import argparse
 import importlib.util
@@ -192,6 +195,65 @@ def check_shape(root, files):
                 faults.append(f"{path.relative_to(root)}: link to {match.group(1)} does not resolve")
 
 
+# Number words a plan's prose actually uses. Spelled out rather than digits, which is the house
+# style in Design/ -- "Twenty-three steps and three gates", not "23 steps and 3 gates".
+WORDS = {w: n for n, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen "
+    "sixteen seventeen eighteen nineteen twenty".split())}
+WORDS.update({f"twenty-{w}": 20 + n for w, n in list(WORDS.items())[1:10]})
+WORDS.update({f"thirty-{w}": 30 + n for w, n in list(WORDS.items())[1:10]})
+WORDS["thirty"] = 30
+WORDS["forty"] = 40
+
+
+def check_plan_counts(root):
+    """Recompute each milestone's step and gate counts from its own headings.
+
+    A milestone states its size in two places -- its own opening line and the table in
+    Design/Plan/README.md -- and both are prose beside a list that is the actual answer. M2 said
+    "eleven steps" against fifteen while the README said fifteen, and neither the manifest above nor
+    anything else noticed, because a step count is not a figure anyone thought to pin.
+
+    So it is computed here rather than listed, for the same reason the datagram figures are: a
+    checker that restates the number it is policing can go stale against it.
+
+    THE COUNTING RULE, because it is not the obvious one. A milestone's steps are its DISTINCT step
+    NUMBERS, with gates among them rather than beside them -- M0's twenty-three steps include its
+    three gates -- and a b-suffixed step folds into its parent, so M1.9 and M1.9b are one step. Both
+    fall out of the README's own table, which every row already satisfies.
+    """
+    readme = root / "Design/Plan/README.md"
+    table = flat(readme.read_text()) if readme.exists() else ""
+
+    for path in sorted((root / "Design/Plan").glob("M?-*.md")):
+        milestone = path.name.split("-")[0]
+        body = path.read_text(encoding="utf-8")
+        steps = len(set(re.findall(rf"^### ({milestone}\.\d+)", body, re.M)))
+        gates = len(re.findall(rf"^### {milestone}\.\d+b? — GATE", body, re.M))
+        if not steps:
+            continue
+
+        claim = re.search(r"([A-Za-z]+(?:-[a-z]+)?) steps(?:,| and) ([a-z]+(?:-[a-z]+)?) gates",
+                          flat(body))
+        if not claim:
+            faults.append(f"{path.relative_to(root)}: no line states how many steps and gates "
+                          f"{milestone} has; it has {steps} and {gates}")
+        else:
+            said_steps = WORDS.get(claim.group(1).lower())
+            said_gates = WORDS.get(claim.group(2).lower())
+            if said_steps != steps or said_gates != gates:
+                faults.append(f"{path.relative_to(root)}: says {claim.group(0)!r}, but "
+                              f"{milestone} has {steps} steps and {gates} gates")
+
+        row = re.search(rf"\| \[`{milestone}`\]\([^)]+\)[^|]*\|[^|]*\|[^|]*\| (\d+) \| (\d+) \|",
+                        table)
+        if not row:
+            faults.append(f"Design/Plan/README.md: no milestone row for {milestone}")
+        elif (int(row.group(1)), int(row.group(2))) != (steps, gates):
+            faults.append(f"Design/Plan/README.md: {milestone} is listed as {row.group(1)} steps "
+                          f"and {row.group(2)} gates, but it has {steps} and {gates}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=pathlib.Path, default=ROOT)
@@ -203,6 +265,7 @@ def main():
 
     check_figures(root, files)
     check_datagram(root, files)
+    check_plan_counts(root)
     check_citations(root, files)
     check_shape(root, files)
 
