@@ -228,8 +228,9 @@ four constants — and makes pinch pure zoom. **If it is bad, say so; it is desi
 
 ### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient` · hand · agent
 
-**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md) in full; `TechnicalDesign.md`
-§6 and §7; R9; R14.
+**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md) in full, including the shape
+list its status line corrects; `OpenQuestions.md` **Q37**, because a hull has no stated size and this step
+cannot emit one without agreeing a number; `TechnicalDesign.md` §6 and §7; R9; R14.
 
 **Adds:** geometry from functions. **The split is R9's:** `NeuronClient` gets the vertex and index buffers,
 the upload and the instanced draw, which know nothing about a game; `GameClient` gets the function that
@@ -246,8 +247,10 @@ narrow one — and not merely for size.
 `GameClient/HullMesh.h` `.cpp`, `GameClient/WorldPass.h` `.cpp`, `GameClient/Ship.hlsl`; both project files
 and `.filters`.
 
-**Done when:** three hulls and a station draw as one instanced call each with a per-instance transform and
-team color; and **the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
+**Done when:** **the two ship hulls this milestone builds — `Scout` and `Frigate` — and the station** draw
+as one instanced call each with a per-instance transform and team color, at the sizes Q37 settles; the
+shared function reaches `ModuleFrame` and `Cruiser` by parameter without either being drawn here; and
+**the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
 
 ### M1.9b — The sky · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
 

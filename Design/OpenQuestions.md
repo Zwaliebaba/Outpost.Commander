@@ -10,9 +10,9 @@ with no milestone can wait indefinitely.
 
 **Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong. **All five open questions are under *Open* below**,
-each with the milestone that settles it. **Every one now carries a recommendation**, which it did not
-before: two are measurements that still have a starting value to be moved from (Q26, Q34) and three are
-decisions somebody has to take (Q33, Q35, Q36).
+each with the milestone that settles it. **Every one carries a recommendation**, which none of Q26, Q33
+and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37) and
+three are decisions somebody has to take (Q33, Q35, Q36).
 
 ---
 
@@ -276,6 +276,51 @@ back. It evaluates no rule the host also evaluates, so it cannot disagree with t
 
 **What must not happen is shipping the omission for the handoff's stated reason**, which is false. "No data
 path" would make this a constraint; it is a choice, and it should be re-openable on evidence.
+
+### Q37 — How big is each hull, in world units? — **needed by M1.9**
+
+**No hull has a size anywhere in this design.** `GameDesign.md` §6's table gives a *size class* — Small,
+Medium, Large — and that is an axis of the damage table (§7) rather than a dimension: it says what a
+`MassDriver` does to a small hull and nothing about how long a `Scout` is. **Three things need the number
+and none of them can be written without it:**
+
+- **[`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md)'s mesh function** (M1.9), which emits a hull
+  from parameters and has no absolute scale to hang them on.
+- **Q19's ring slot assignment**, which spaces fifty ships around a point without knowing how wide any of
+  them is.
+- **M2.10's placement validity**, which asks whether a module site is "clear of the station, clear of every
+  existing module" — a question about footprints, asked of a design that states none.
+
+**The figures that *are* stated give a derivation**, and it is arithmetic on them rather than an
+observation:
+
+- Fully zoomed out the camera sits at **22,500 units** with a 40° field of view, showing about **24,600
+  units of width** across the 1,440-pixel authored frame (`Interface.md` §5) — **17.1 units per authored
+  pixel**.
+- `Interface.md` §1 justifies the 24-pixel pick radius by keeping **"a 4-pixel ship at tactical zoom"**
+  hittable, which puts a small hull at about **68 units**.
+- At the close end the camera is about **1,500 units** out, showing roughly 1,638 units of width — so that
+  same hull is about **60 authored pixels** across, which is the size it is actually looked at.
+- For scale against what is fixed: a move-order marker draws a **120-unit** square on the plane, modules
+  are placed within **400 units** of the station, and point defense reaches 400 against a mass driver's 600.
+
+**Recommendation, to be moved by looking at it on the device at M2.13:**
+
+| | Longest dimension |
+|---|---|
+| `Scout` | **60** |
+| `Frigate` | **90** |
+| `ModuleFrame` | **90** |
+| `Station` | **220** |
+| Asteroid | **60–180**, varied by the match PRNG |
+
+**One of these is a packing constraint rather than a free choice.** Four modules must sit inside 400 units
+of the station, clear of it and of each other (`GameDesign.md` §5), so the station's footprint and the
+module's are solved together or M2.10 refuses placements it should allow. A 220-unit station and 90-unit
+modules leave room; a 300-unit station does not.
+
+**What is required either way** is that the catalog *names* a size per hull, derived like every other stat
+(R24), rather than leaving it implicit in whatever the mesh function happens to emit.
 
 ---
 

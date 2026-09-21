@@ -8,7 +8,7 @@ transmitted — and that the economy is a **loop** rather than a number that goe
 the map that can be shot, and until there is one, `GameDesign.md` §4's claim that the economy is something
 a player can see failing is untested.
 
-**Read [`README.md`](README.md) first.** Eleven steps, three gates, and **the first is a gate on Q26**:
+**Read [`README.md`](README.md) first.** Fifteen steps, three gates, and **the first is a gate on Q26**:
 nothing can be generated until it has an answer. **Q36 is the milestone's other open question** and it does
 not gate the start — it is owed by M2.7, where the income rate goes live.
 
@@ -247,6 +247,34 @@ the same function — which a reader can check by grep, because there is only on
 
 ---
 
+### M2.10b — The module mesh, and telling four modules apart · `GameClient` · hand · agent
+
+**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), whose status line corrects the
+shape list this step exists to complete; [`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md)'s
+*Decision*; `OpenQuestions.md` Q37; M1.9's shared function.
+
+**This step was missing and the milestone could not have finished without it.** ADR-005 counted the MVP's
+shapes the day before ADR-015 made a module a separate drawn entity, so M1.9 builds the hulls and the
+station, M2.4 builds the asteroid, and **nothing built the thing M2.11 places on the map.**
+
+**Adds:** `ModuleFrame` as a parameterisation of M1.9's shared function — no new mesh code, a new row of
+parameters — at the size Q37 settles, and **the scheme that tells the four variants apart**.
+
+**That second half is a design problem and not a detail.** ADR-015's whole argument is that *"a raid that
+kills your ore processor and leaves has done real damage without touching your station"*. That move needs
+**an attacker who can pick the right target and a defender who can see what they lost**, from the
+near-top-down tactical camera (`Interface.md` §5), with **one mesh, no textures and no icons** — the
+client knows each module's design identity from the snapshot's own byte
+([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)), so what is missing is what it draws with
+it, not what it knows. Geometry and the team-color attribute are the whole budget.
+
+**Files:** `GameClient/HullMesh.cpp` extended; `Tests/GameClientTests/` only if the parameterisation
+becomes worth pinning.
+
+**Done when:** a module draws as an instanced call off the same function as the hulls, four sit inside the
+400-unit placement radius without touching (M2.10), and **a shipyard is distinguishable from an ore
+processor at the tactical zoom** — which M2.13 judges rather than this step.
+
 ### M2.11 — Building and placing a module · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** M2.10; `GameDesign.md` §5; `Interface.md` §6; ADR-003 on the entity record.
@@ -311,8 +339,11 @@ top-down, and **two hulls emitted by one shared parameterised function will tend
 two scales** — which is exactly unreadable at the zoom where identification matters most.
 
 **Done when:** a field of miners and fighters is looked at from the tactical zoom on the device and the two
-are distinguishable at a glance. **If they are not, ADR-005 has already named the answer — a shape-coded
-overlay, not more triangles** — and that is an ADR rather than a quiet addition to the mesh function.
+are distinguishable at a glance; **and a base of four modules is looked at the same way and a shipyard is
+distinguishable from an ore processor** (M2.10b), because ADR-015's raid depends on picking the right
+target and this gate is the only thing that checks it. **If either fails, ADR-005 has already named the
+answer — a shape-coded overlay, not more triangles** — and that is an ADR rather than a quiet addition to
+the mesh function.
 
 ### M2.14 — GATE: the tick's cost · — · hand · **human**
 

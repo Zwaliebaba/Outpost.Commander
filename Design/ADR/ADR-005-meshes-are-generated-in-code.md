@@ -1,10 +1,12 @@
 # ADR-005 — Meshes are generated in code; the MVP has no content pipeline
 
 **Status:** Accepted — **amended 2026-09-21 by
-[`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md).** The silhouette argument below rests on the
-backdrop being black; it is now near-black, with a stated luminance ceiling rather than an absence. — ruled 2026-09-20 following an adversarial review, **with changes**: the silhouette
-consequence is named, and the mesh function must be parameterised for divergent proportion rather than
-only for size.
+[`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md)**, which makes the backdrop near-black with a
+stated luminance ceiling rather than an absence, and **by
+[`ADR-015`](ADR-015-the-base-is-built-from-modules.md)**, which added a sixth thing to draw after this
+record said there were five. The shape list in *Context* is corrected below and the decision is untouched.
+Originally ruled 2026-09-20 following an adversarial review, **with changes**: the silhouette consequence
+is named, and the mesh function must be parameterised for divergent proportion rather than only for size.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal
 
@@ -16,12 +18,19 @@ convenience. **A mesh format is the single most common place a graphics project 
 without noticing** — glTF wants a JSON parser, FBX wants the SDK, and every D3D12 sample in existence
 pulls DirectXTK12 for the loader it happens to ship with.
 
-The MVP needs five distinct shapes: three ship hulls, a station and an asteroid. That is the whole of it.
+The MVP needs five distinct shapes. **This record originally listed them as three ship hulls, a station
+and an asteroid, and that was wrong in both directions within a day.**
+[`ADR-015`](ADR-015-the-base-is-built-from-modules.md) made a module a separate destroyable entity, which
+has to be drawn; and `GameDesign.md` §10 cut the `Cruiser` from the MVP, so nothing builds it and nothing
+draws it. **The five are `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid** — still five,
+and not the same five. The `Cruiser` stays a parameterisation the shared function must reach at M4 rather
+than a shape the MVP emits.
 
 ## Decision
 
 **Meshes are functions.** A hull is a function that emits a few dozen triangles — a fuselage, an engine
-block, wings — parameterised so that the three hulls share the code that shapes them. The asteroid is the
+block, wings — parameterised so that **every hull in the catalog shares the code that shapes them**,
+including the two the MVP never draws. The asteroid is the
 same function driven by the match PRNG so that no two rocks are identical.
 
 **Normals are baked per face onto split vertices.** That is flat shading, which is what a low-polygon

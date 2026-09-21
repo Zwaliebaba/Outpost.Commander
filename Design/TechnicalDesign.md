@@ -367,7 +367,9 @@ it takes no time input, so it is generated once and never updated. Being floats 
 is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
-color. Three hulls, one station mesh, one asteroid mesh: five draws for the whole field. Two frames in
+color. Three hulls — `Scout`, `Frigate` and, from M2, `ModuleFrame` — one station mesh and one asteroid
+mesh: five draws for the whole field. The `Cruiser` is a sixth hull the shared function must reach and the
+MVP never draws (`GameDesign.md` §10). Two frames in
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimized
 until something measured says to.
 
