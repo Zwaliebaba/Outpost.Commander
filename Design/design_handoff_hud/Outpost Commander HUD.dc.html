@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<style>
+html,body{margin:0;padding:0;background:#0A0C0E;}
+body{font-family:"Segoe UI","Segoe UI Variable Text",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;color:#C4CED2;-webkit-font-smoothing:antialiased;}
+a{color:#38D1F5;text-decoration:none;}
+a:hover{color:#8BE4FF;}
+</style>
+</helmet>
+
+<div style="padding:56px 60px 90px;max-width:1560px;box-sizing:border-box">
+
+<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+<div style="font:600 12px/1 ui-monospace,Consolas,monospace;letter-spacing:.18em;color:#6B7A80">OUTPOST COMMANDER · MVP · IN-MATCH HUD · REV B</div>
+<div style="font:600 34px/1.15 inherit;color:#E8ECEC">The tactical HUD, authored at 1440 × 960</div>
+<div style="font:400 15px/1.6 inherit;color:#93A0A5;max-width:920px;text-wrap:pretty">Every frame is exactly 1440 × 960 authored pixels at 1:1, scaled 2× onto the 2880 × 1920 panel. All coordinates are integers. <span style="color:#E8ECEC">Rev B draws the scene through the real camera</span> — 40° vertical FOV, 34° above the plane, focus distance 2,600 units — so ships scale and foreshorten with depth, world-space circles are ellipses, and the HUD sits over a perspective field rather than a flat one. Nothing in the interface pass changed dimension: it is still axis-aligned rects, line segments, flat triangles and Segoe UI glyph quads.</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:26px 0 44px">
+<div style="background:#11161A;padding:16px 18px"><div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin-bottom:9px">CHROME</div><div style="font:400 14px/1.5 inherit;color:#C4CED2">Gunmetal scrim to the content edge, one hairline on the playfield-facing edge, registration ticks at its ends. Instrument, not glass. A panel with nothing to say is not drawn.</div></div>
+<div style="background:#11161A;padding:16px 18px"><div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin-bottom:9px">OWN vs HOSTILE</div><div style="font:400 14px/1.5 inherit;color:#C4CED2">The cool band, 150–240°, is reserved for the local player forever. The three hostile hues sit at 78°, 268° and 318°. No team is red.</div></div>
+<div style="background:#11161A;padding:16px 18px"><div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin-bottom:9px">DEPTH</div><div style="font:400 14px/1.5 inherit;color:#C4CED2">No horizon — the 30° pitch floor guarantees it never enters frame. Depth is read from ship scale, formation stretch and the shape of world circles.</div></div>
+<div style="background:#11161A;padding:16px 18px"><div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin-bottom:9px">STATE, NOT COLOUR ALONE</div><div style="font:400 14px/1.5 inherit;color:#C4CED2">Every button state carries a geometric cue as well as a hue: an index bar, a bottom rule, a hatch, a top bar. Readable in peripheral vision and colour-blind safe.</div></div>
+</div>
+
+<!-- ============================= FRAME 1 ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:0 0 6px">FRAME 1 — IDLE</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 16px;max-width:920px">Nothing selected, early match, 1,000 credits, no combat. Two surfaces drawn and three not: no selection means no selection panel, no station tap means no build panel, nothing under attack means no alert. 96% of the frame is battlefield.</div>
+
+<div style="position:relative;width:1440px;height:960px;overflow:hidden;background:#04060A;outline:1px solid #1C242B">
+{{ f1 }}
+<div style="position:absolute;left:0;top:0;width:272px;height:88px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:0;width:3px;height:88px;background:#38D1F5;opacity:.6"></div>
+<div style="position:absolute;left:0;top:87px;width:272px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:271px;top:0;width:1px;height:88px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:256px;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:16px;top:14px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">CREDITS</div>
+<div style="position:absolute;left:16px;top:40px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">1,000</div>
+<div style="position:absolute;left:624px;top:0;width:192px;height:64px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:624px;top:0;width:3px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:624px;top:63px;width:192px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:624px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:800px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:640px;top:26px;width:12px;height:12px;background:#38D1F5"></div>
+<div style="position:absolute;left:660px;top:22px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">LINK</div>
+<div style="position:absolute;left:736px;top:8px;width:64px;height:48px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:736px;top:22px;width:64px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:center">QUIT</div>
+<div style="position:absolute;left:0;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:0;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+</div>
+
+<!-- ============================= FRAME 2 ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:56px 0 6px">FRAME 2 — COMBAT</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 16px;max-width:920px">Thirty ships selected across two design groups, several damaged with world hull bars, a seven-ship attack off the left edge, and an order just given. The fleet is drawn on the plane, so the near rank is roughly 2.5× the screen size of the far rank — the same formation, not two formations. One line per design group runs from that group's centroid to the marker, in perspective, and the marker is a projected footprint on the plane with a riser: it has to read as a place in the world, not a spot on the glass.</div>
+
+<div style="position:relative;width:1440px;height:960px;overflow:hidden;background:#04060A;outline:1px solid #1C242B">
+{{ f2 }}
+<div style="position:absolute;left:0;top:0;width:272px;height:88px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:0;width:3px;height:88px;background:#38D1F5;opacity:.6"></div>
+<div style="position:absolute;left:0;top:87px;width:272px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:271px;top:0;width:1px;height:88px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:256px;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:16px;top:14px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">CREDITS</div>
+<div style="position:absolute;left:16px;top:40px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">2,340</div>
+<div style="position:absolute;left:16px;top:76px;width:120px;height:3px;background:#38D1F5"></div>
+<div style="position:absolute;left:624px;top:0;width:192px;height:64px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:624px;top:0;width:3px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:624px;top:63px;width:192px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:624px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:800px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:640px;top:26px;width:12px;height:12px;background:#38D1F5"></div>
+<div style="position:absolute;left:660px;top:22px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">LINK</div>
+<div style="position:absolute;left:736px;top:8px;width:64px;height:48px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:736px;top:22px;width:64px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:center">QUIT</div>
+<div style="position:absolute;left:0;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:0;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+
+<div style="position:absolute;left:0;top:832px;width:480px;height:128px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:832px;width:480px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:479px;top:832px;width:1px;height:128px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:464px;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+
+<div style="position:absolute;left:16px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:16px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:32px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">18</div>
+<div style="position:absolute;left:32px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">FIGHTER</div>
+<div style="position:absolute;left:32px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:33px;top:901px;width:89px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:122px;top:901px;width:37px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:64px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:96px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:127px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+
+<div style="position:absolute;left:192px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:192px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:208px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">12</div>
+<div style="position:absolute;left:208px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">MINER</div>
+<div style="position:absolute;left:208px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:209px;top:901px;width:118px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:327px;top:901px;width:8px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:240px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:272px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:303px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:208px;top:920px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:241px;top:920px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:274px;top:920px;width:29px;height:10px;background:#1A2024;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:307px;top:920px;width:29px;height:10px;background:#1A2024;border:1px solid #313A40;box-sizing:border-box"></div>
+
+<div style="position:absolute;left:368px;top:864px;width:96px;height:64px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:368px;top:864px;width:4px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:368px;top:886px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:center">CLEAR</div>
+
+<div style="position:absolute;left:0;top:560px;width:8px;height:96px;background:#FF3B2F"></div>
+<div style="position:absolute;left:10px;top:582px;width:34px;height:52px;background:#FF3B2F;clip-path:polygon(0% 50%,100% 0%,100% 100%)"></div>
+<div style="position:absolute;left:52px;top:592px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:right">7</div>
+</div>
+
+<!-- ============================= FRAME 3 ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:56px 0 6px">FRAME 3 — BUILDING</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 16px;max-width:920px">Station selected at 380 credits. Shipyard&nbsp;L1 is unaffordable — plate stays lit, cost reddens, index bar reddens, and a 3&nbsp;px rule runs the bottom edge. Both L2 items are unavailable: dimmed whole and hatched, so the two dead states differ by texture as well as value. Ore&nbsp;Processor&nbsp;L1 is armed, and the 400-unit placement radius is drawn on the plane — <span style="color:#E8ECEC">an ellipse, because a world circle at 34° is an ellipse</span>. A Miner is 40% built.</div>
+
+<div style="position:relative;width:1440px;height:960px;overflow:hidden;background:#04060A;outline:1px solid #1C242B">
+{{ f3 }}
+<div style="position:absolute;left:0;top:0;width:272px;height:88px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:0;width:3px;height:88px;background:#38D1F5;opacity:.6"></div>
+<div style="position:absolute;left:0;top:87px;width:272px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:271px;top:0;width:1px;height:88px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:256px;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:16px;top:14px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">CREDITS</div>
+<div style="position:absolute;left:16px;top:40px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">380</div>
+<div style="position:absolute;left:16px;top:76px;width:120px;height:3px;background:#FFB020"></div>
+<div style="position:absolute;left:624px;top:0;width:192px;height:64px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:624px;top:0;width:3px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:624px;top:63px;width:192px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:624px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:800px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:640px;top:26px;width:12px;height:12px;background:#38D1F5"></div>
+<div style="position:absolute;left:660px;top:22px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">LINK</div>
+<div style="position:absolute;left:736px;top:8px;width:64px;height:48px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:736px;top:22px;width:64px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:center">QUIT</div>
+<div style="position:absolute;left:0;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:0;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+
+<div style="position:absolute;left:0;top:832px;width:304px;height:128px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:832px;width:304px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:303px;top:832px;width:1px;height:128px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:288px;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:16px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:16px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:32px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">1</div>
+<div style="position:absolute;left:32px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">STATION</div>
+<div style="position:absolute;left:32px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:33px;top:901px;width:126px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:64px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:96px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:127px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:192px;top:864px;width:96px;height:64px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:192px;top:864px;width:4px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:192px;top:886px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:center">CLEAR</div>
+
+<div style="position:absolute;left:880px;top:640px;width:560px;height:320px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:880px;top:640px;width:560px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:880px;top:640px;width:1px;height:320px;background:#313A40"></div>
+<div style="position:absolute;left:880px;top:640px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:1424px;top:640px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:880px;top:944px;width:2px;height:16px;background:#8A9AA2"></div>
+
+<div style="position:absolute;left:896px;top:656px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:896px;top:656px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:908px;top:666px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">MINER</div>
+<div style="position:absolute;left:908px;top:704px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">150</div>
+
+<div style="position:absolute;left:1032px;top:656px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:1032px;top:656px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:1044px;top:666px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">FIGHTER</div>
+<div style="position:absolute;left:1044px;top:704px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">300</div>
+
+<div style="position:absolute;left:896px;top:768px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:896px;top:768px;width:4px;height:96px;background:#FF5A4A"></div>
+<div style="position:absolute;left:908px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">SHIPYARD</div>
+<div style="position:absolute;left:908px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#93A0A5">L1</div>
+<div style="position:absolute;left:908px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FF5A4A;text-align:right">400</div>
+<div style="position:absolute;left:896px;top:861px;width:120px;height:3px;background:#FF5A4A"></div>
+
+<div style="position:absolute;left:1032px;top:768px;width:120px;height:96px;background:rgba(9,12,14,.92);border:1px solid #232C31;box-sizing:border-box"></div>
+<div style="position:absolute;left:1033px;top:769px;width:118px;height:94px;background:repeating-linear-gradient(45deg,rgba(90,106,114,.22) 0 1px,rgba(0,0,0,0) 1px 12px)"></div>
+<div style="position:absolute;left:1032px;top:768px;width:4px;height:96px;background:#313A40"></div>
+<div style="position:absolute;left:1044px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#6B7A80">SHIPYARD</div>
+<div style="position:absolute;left:1044px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#48575E">L2</div>
+<div style="position:absolute;left:1044px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#6B7A80;text-align:right">700</div>
+
+<div style="position:absolute;left:1168px;top:768px;width:120px;height:96px;background:rgba(23,18,10,.94);border:2px solid #FFB020;box-sizing:border-box"></div>
+<div style="position:absolute;left:1168px;top:768px;width:120px;height:4px;background:#FFB020"></div>
+<div style="position:absolute;left:1168px;top:768px;width:4px;height:96px;background:#FFB020"></div>
+<div style="position:absolute;left:1180px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#FFE1A8">ORE PROC</div>
+<div style="position:absolute;left:1180px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#FFB020">L1</div>
+<div style="position:absolute;left:1180px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFE1A8;text-align:right">350</div>
+
+<div style="position:absolute;left:1304px;top:768px;width:120px;height:96px;background:rgba(9,12,14,.92);border:1px solid #232C31;box-sizing:border-box"></div>
+<div style="position:absolute;left:1305px;top:769px;width:118px;height:94px;background:repeating-linear-gradient(45deg,rgba(90,106,114,.22) 0 1px,rgba(0,0,0,0) 1px 12px)"></div>
+<div style="position:absolute;left:1304px;top:768px;width:4px;height:96px;background:#313A40"></div>
+<div style="position:absolute;left:1316px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#6B7A80">ORE PROC</div>
+<div style="position:absolute;left:1316px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#48575E">L2</div>
+<div style="position:absolute;left:1316px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#6B7A80;text-align:right">600</div>
+
+<div style="position:absolute;left:896px;top:880px;width:528px;height:64px;border:1px solid #313A40;box-sizing:border-box;background:rgba(14,18,20,.6)"></div>
+<div style="position:absolute;left:896px;top:880px;width:4px;height:64px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:912px;top:890px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#E8ECEC">MINER</div>
+<div style="position:absolute;left:1008px;top:890px;width:300px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:right">40%</div>
+<div style="position:absolute;left:912px;top:920px;width:396px;height:12px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:913px;top:921px;width:158px;height:10px;background:#38D1F5"></div>
+<div style="position:absolute;left:1011px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+<div style="position:absolute;left:1110px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+<div style="position:absolute;left:1208px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+<div style="position:absolute;left:1328px;top:880px;width:96px;height:64px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:1328px;top:880px;width:4px;height:64px;background:#FF5A4A"></div>
+<div style="position:absolute;left:1328px;top:902px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#FF5A4A;text-align:center">CANCEL</div>
+</div>
+
+<!-- ============================= FRAME 4 ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#FFB020;margin:56px 0 6px">FRAME 4 — LEFT-HANDED, WORST CASE</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 16px;max-width:920px">The single boolean flipped: <span style="font-family:ui-monospace,Consolas,monospace;color:#E8ECEC">x′ = 1440 − x − w</span> applied to the selection and build panels only. Credits and system do not move. Doing double duty as the stress case: four design groups, a five-digit balance, all four teams on the field at four different depths, and three simultaneous alert clusters — one clamped at the top-right corner.</div>
+
+<div style="position:relative;width:1440px;height:960px;overflow:hidden;background:#04060A;outline:1px solid #1C242B">
+{{ f4 }}
+<div style="position:absolute;left:0;top:0;width:272px;height:88px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:0;width:3px;height:88px;background:#38D1F5;opacity:.6"></div>
+<div style="position:absolute;left:0;top:87px;width:272px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:271px;top:0;width:1px;height:88px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:256px;top:86px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:16px;top:14px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">CREDITS</div>
+<div style="position:absolute;left:16px;top:40px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">10,240</div>
+<div style="position:absolute;left:624px;top:0;width:192px;height:64px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:624px;top:0;width:3px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:624px;top:63px;width:192px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:624px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:800px;top:62px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:640px;top:26px;width:12px;height:12px;background:#38D1F5"></div>
+<div style="position:absolute;left:660px;top:22px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">LINK</div>
+<div style="position:absolute;left:736px;top:8px;width:64px;height:48px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:736px;top:22px;width:64px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:center">QUIT</div>
+<div style="position:absolute;left:0;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:0;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:192px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+<div style="position:absolute;left:1426px;top:480px;width:14px;height:2px;background:#8A9AA2;opacity:.45"></div>
+
+<div style="position:absolute;left:608px;top:832px;width:832px;height:128px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:608px;top:832px;width:832px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:608px;top:832px;width:1px;height:128px;background:#313A40"></div>
+<div style="position:absolute;left:608px;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:1424px;top:832px;width:16px;height:2px;background:#8A9AA2"></div>
+
+<div style="position:absolute;left:624px;top:864px;width:96px;height:64px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:716px;top:864px;width:4px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:624px;top:886px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:center">CLEAR</div>
+
+<div style="position:absolute;left:736px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:892px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:752px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">1</div>
+<div style="position:absolute;left:752px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">STATION</div>
+<div style="position:absolute;left:752px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:753px;top:901px;width:105px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:858px;top:901px;width:21px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:784px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:816px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:847px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+
+<div style="position:absolute;left:912px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:1068px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:928px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">2</div>
+<div style="position:absolute;left:928px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">ORE PROC</div>
+<div style="position:absolute;left:928px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:929px;top:901px;width:126px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:960px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:992px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1023px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+
+<div style="position:absolute;left:1088px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:1244px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:1104px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">50</div>
+<div style="position:absolute;left:1104px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">MINER</div>
+<div style="position:absolute;left:1104px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:1105px;top:901px;width:98px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:1203px;top:901px;width:28px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:1136px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1168px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1199px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1104px;top:920px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:1137px;top:920px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:1170px;top:920px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:1203px;top:920px;width:29px;height:10px;background:#1A2024;border:1px solid #313A40;box-sizing:border-box"></div>
+
+<div style="position:absolute;left:1264px;top:848px;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:1420px;top:848px;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:1280px;top:858px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">23</div>
+<div style="position:absolute;left:1280px;top:866px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">FIGHTER</div>
+<div style="position:absolute;left:1280px;top:900px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:1281px;top:901px;width:78px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:1359px;top:901px;width:48px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:1312px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1344px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:1375px;top:901px;width:1px;height:8px;background:#3A454B"></div>
+
+<div style="position:absolute;left:0;top:640px;width:560px;height:320px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:640px;width:560px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:559px;top:640px;width:1px;height:320px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:640px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:544px;top:640px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:558px;top:944px;width:2px;height:16px;background:#8A9AA2"></div>
+
+<div style="position:absolute;left:424px;top:656px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:540px;top:656px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:436px;top:666px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">MINER</div>
+<div style="position:absolute;left:436px;top:704px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">150</div>
+
+<div style="position:absolute;left:288px;top:656px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:404px;top:656px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:300px;top:666px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">FIGHTER</div>
+<div style="position:absolute;left:300px;top:704px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">300</div>
+
+<div style="position:absolute;left:424px;top:768px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:540px;top:768px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:436px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">SHIPYARD</div>
+<div style="position:absolute;left:436px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#93A0A5">L1</div>
+<div style="position:absolute;left:436px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">400</div>
+
+<div style="position:absolute;left:288px;top:768px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:404px;top:768px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:300px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">SHIPYARD</div>
+<div style="position:absolute;left:300px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#93A0A5">L2</div>
+<div style="position:absolute;left:300px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">700</div>
+
+<div style="position:absolute;left:152px;top:768px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:268px;top:768px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:164px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">ORE PROC</div>
+<div style="position:absolute;left:164px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#93A0A5">L1</div>
+<div style="position:absolute;left:164px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">350</div>
+
+<div style="position:absolute;left:16px;top:768px;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:132px;top:768px;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:28px;top:778px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#E8ECEC">ORE PROC</div>
+<div style="position:absolute;left:28px;top:800px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.05em;color:#93A0A5">L2</div>
+<div style="position:absolute;left:28px;top:816px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">600</div>
+
+<div style="position:absolute;left:16px;top:880px;width:528px;height:64px;border:1px solid #313A40;box-sizing:border-box;background:rgba(14,18,20,.6)"></div>
+<div style="position:absolute;left:540px;top:880px;width:4px;height:64px;background:#313A40"></div>
+<div style="position:absolute;left:228px;top:890px;width:300px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.06em;color:#93A0A5;text-align:right">SLOT EMPTY</div>
+<div style="position:absolute;left:132px;top:920px;width:396px;height:12px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:231px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+<div style="position:absolute;left:330px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+<div style="position:absolute;left:428px;top:921px;width:1px;height:10px;background:#3A454B"></div>
+
+<div style="position:absolute;left:0;top:300px;width:8px;height:96px;background:#FF3B2F"></div>
+<div style="position:absolute;left:10px;top:322px;width:34px;height:52px;background:#FF3B2F;clip-path:polygon(0% 50%,100% 0%,100% 100%)"></div>
+<div style="position:absolute;left:52px;top:332px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:right">7</div>
+
+<div style="position:absolute;left:1328px;top:0;width:96px;height:8px;background:#FF3B2F"></div>
+<div style="position:absolute;left:1350px;top:10px;width:52px;height:34px;background:#FF3B2F;clip-path:polygon(50% 0%,100% 100%,0% 100%)"></div>
+<div style="position:absolute;left:1328px;top:56px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:center">2</div>
+
+<div style="position:absolute;left:1432px;top:560px;width:8px;height:96px;background:#FF3B2F"></div>
+<div style="position:absolute;left:1396px;top:582px;width:34px;height:52px;background:#FF3B2F;clip-path:polygon(100% 50%,0% 0%,0% 100%)"></div>
+<div style="position:absolute;left:1336px;top:592px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF">11</div>
+</div>
+
+<!-- ============================= STATE STUDIES ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:64px 0 6px">STATE STUDIES</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 20px;max-width:920px">Everything below is at 1:1 authored scale, on the frame's own backdrop value.</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">BUILD BUTTON — FOUR STATES, 120 × 96</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:120px;height:96px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:0;top:0;width:4px;height:96px;background:#5A6A72"></div>
+<div style="position:absolute;left:12px;top:10px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#E8ECEC">SHIPYARD</div>
+<div style="position:absolute;left:12px;top:32px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5">L1</div>
+<div style="position:absolute;left:12px;top:48px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:right">400</div>
+</div>
+<div style="font:400 12px/1.4 inherit;color:#93A0A5;width:120px">LIVE<br>Tap builds it.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:120px;height:96px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:120px;height:96px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:0;top:0;width:4px;height:96px;background:#FF5A4A"></div>
+<div style="position:absolute;left:12px;top:10px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#E8ECEC">SHIPYARD</div>
+<div style="position:absolute;left:12px;top:32px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5">L1</div>
+<div style="position:absolute;left:12px;top:48px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FF5A4A;text-align:right">400</div>
+<div style="position:absolute;left:0;top:93px;width:120px;height:3px;background:#FF5A4A"></div>
+</div>
+<div style="font:400 12px/1.4 inherit;color:#93A0A5;width:120px">UNAFFORDABLE<br><span style="color:#FF5A4A">Save up.</span> Plate stays lit.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:120px;height:96px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:120px;height:96px;background:rgba(9,12,14,.92);border:1px solid #232C31;box-sizing:border-box"></div>
+<div style="position:absolute;left:1px;top:1px;width:118px;height:94px;background:repeating-linear-gradient(45deg,rgba(90,106,114,.22) 0 1px,rgba(0,0,0,0) 1px 12px)"></div>
+<div style="position:absolute;left:0;top:0;width:4px;height:96px;background:#313A40"></div>
+<div style="position:absolute;left:12px;top:10px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#6B7A80">SHIPYARD</div>
+<div style="position:absolute;left:12px;top:32px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#48575E">L2</div>
+<div style="position:absolute;left:12px;top:48px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#6B7A80;text-align:right">700</div>
+</div>
+<div style="font:400 12px/1.4 inherit;color:#93A0A5;width:120px">UNAVAILABLE<br>Build something else first. Hatched, so the state survives without colour.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:120px;height:96px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:120px;height:96px;background:rgba(23,18,10,.94);border:2px solid #FFB020;box-sizing:border-box"></div>
+<div style="position:absolute;left:0;top:0;width:120px;height:4px;background:#FFB020"></div>
+<div style="position:absolute;left:0;top:0;width:4px;height:96px;background:#FFB020"></div>
+<div style="position:absolute;left:12px;top:10px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#FFE1A8">ORE PROC</div>
+<div style="position:absolute;left:12px;top:32px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#FFB020">L1</div>
+<div style="position:absolute;left:12px;top:48px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFE1A8;text-align:right">350</div>
+</div>
+<div style="font:400 12px/1.4 inherit;color:#93A0A5;width:120px">ARMED<br>Now tap the plane. Tap again to disarm.</div>
+</div>
+</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">SCREEN SPACE vs WORLD SPACE — THE TWO CIRCLES</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:460px;height:440px;background:#04060A;overflow:hidden;outline:1px solid #1C242B">{{ studyA }}</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:460px">The double-tap circle is <span style="color:#E8ECEC">screen space</span>: r = 192 authored pixels, a 64-segment line strip, a true circle on the glass at every camera angle, centred on the ship rather than the finger. It is the rule made visible. Because it is screen space, the camera is the group-size control — zoom in for a squad, out for the fleet.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:460px;height:440px;background:#04060A;overflow:hidden;outline:1px solid #1C242B">{{ studyB }}</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:460px">The placement radius is <span style="color:#E8ECEC">world space</span>: 400 units on the plane, projected through the same transform, so it is an ellipse — wider and lower at the near side, compressed at the far. 48 segments, 24 drawn, dashed so it can never be mistaken for the selection circle. Getting this wrong is the classic tell that a 3D game's overlays were authored in 2D.</div>
+</div>
+</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">THE TWO BARS, AND HULL BARS IN THE WORLD</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:160px;height:96px;background:#07090B">
+<div style="position:absolute;left:0;top:0;width:160px;height:96px;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:0;top:0;width:4px;height:96px;background:#38D1F5;opacity:.75"></div>
+<div style="position:absolute;left:16px;top:10px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">12</div>
+<div style="position:absolute;left:16px;top:18px;width:128px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#93A0A5;text-align:right">MINER</div>
+<div style="position:absolute;left:16px;top:52px;width:128px;height:10px;border:1px solid #313A40;box-sizing:border-box;background:#1A2024"></div>
+<div style="position:absolute;left:17px;top:53px;width:118px;height:8px;background:#CFDDE0"></div>
+<div style="position:absolute;left:135px;top:53px;width:8px;height:8px;background:rgba(255,59,47,.85)"></div>
+<div style="position:absolute;left:48px;top:53px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:80px;top:53px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:111px;top:53px;width:1px;height:8px;background:#3A454B"></div>
+<div style="position:absolute;left:16px;top:72px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:49px;top:72px;width:29px;height:10px;background:#D8A23C"></div>
+<div style="position:absolute;left:82px;top:72px;width:29px;height:10px;background:#1A2024;border:1px solid #313A40;box-sizing:border-box"></div>
+<div style="position:absolute;left:115px;top:72px;width:29px;height:10px;background:#1A2024;border:1px solid #313A40;box-sizing:border-box"></div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:320px">Four discriminators, not one. <span style="color:#CFDDE0">Hull</span> is a single keylined trough with quarter index ticks, unbroken, cool white losing to red, always the upper row. <span style="color:#D8A23C">Cargo</span> is four separated chips, no trough, no ticks, warm gold, always the lower row. The cargo bar cannot display a value it does not have.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:540px;height:620px;background:#04060A;overflow:hidden;outline:1px solid #1C242B">{{ studyC }}</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:540px">World hull bars are <span style="color:#E8ECEC">billboarded and depth-invariant</span>: 18 × 6 authored pixels whether the ship is 26 px across in the near rank or 8 px in the far one. Only the <span style="color:#FF3B2F">lost</span> portion is bright; the remainder is near-black, and a ship at full hull draws nothing at all. A healthy fleet is a row of dark ticks, a dying one a row of red — loudness tracks severity for free, and it does not shrink into illegibility with distance.</div>
+</div>
+</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">ALERT — EDGE GEOMETRY, CORNER CLAMP, MULTIPLES</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:200px;height:136px;background:#04060A;outline:1px solid #1C242B">
+<div style="position:absolute;left:0;top:20px;width:8px;height:96px;background:#FF3B2F"></div>
+<div style="position:absolute;left:10px;top:42px;width:34px;height:52px;background:#FF3B2F;clip-path:polygon(0% 50%,100% 0%,100% 100%)"></div>
+<div style="position:absolute;left:52px;top:52px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:right">4</div>
+<div style="position:absolute;left:0;top:20px;width:120px;height:96px;border:1px dashed #FFB020;box-sizing:border-box;opacity:.8"></div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:260px">Stripe 8 × 96 flush to the edge; one triangle, 34 × 52; count at DISPLAY in white. Hit rect 120 × 96 — the combat tier with room. No scrim and no plate: the moment it looks like chrome it becomes chrome.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:260px;height:136px;background:#04060A;outline:1px solid #1C242B">
+<div style="position:absolute;left:164px;top:0;width:96px;height:8px;background:#FF3B2F"></div>
+<div style="position:absolute;left:186px;top:10px;width:52px;height:34px;background:#FF3B2F;clip-path:polygon(50% 0%,100% 100%,0% 100%)"></div>
+<div style="position:absolute;left:164px;top:56px;width:96px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:center">2</div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:260px">The edge is chosen by the bearing's dominant axis, then the along-edge coordinate is clamped to keep the whole body on that edge and clear of any panel. At a corner the residual bearing error is at most 45° — inside the tolerance of "go and look".</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:200px;height:300px;background:#04060A;outline:1px solid #1C242B">
+<div style="position:absolute;left:0;top:16px;width:8px;height:96px;background:#FF3B2F"></div>
+<div style="position:absolute;left:10px;top:38px;width:34px;height:52px;background:#FF3B2F;clip-path:polygon(0% 50%,100% 0%,100% 100%)"></div>
+<div style="position:absolute;left:52px;top:48px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;text-align:right">3</div>
+<div style="position:absolute;left:0;top:128px;width:8px;height:96px;background:#FF3B2F;opacity:.55"></div>
+<div style="position:absolute;left:10px;top:150px;width:34px;height:52px;background:#FF3B2F;opacity:.55;clip-path:polygon(0% 50%,100% 0%,100% 100%)"></div>
+<div style="position:absolute;left:52px;top:160px;width:52px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#FFFFFF;opacity:.55;text-align:right">9</div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:200px">Up to three at once, never closer than 112 px along an edge (96 body + 16 clear). Two clusters that would collide merge and sum their counts; a fourth replaces the oldest. The second here is mid-fade.</div>
+</div>
+</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">SYSTEM — QUIT CONFIRM, RECONNECTING, RESULT</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:256px;height:152px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:256px;height:152px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:0;width:3px;height:152px;background:#FF5A4A"></div>
+<div style="position:absolute;left:0;top:151px;width:256px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:16px;top:26px;width:12px;height:12px;background:#38D1F5"></div>
+<div style="position:absolute;left:36px;top:22px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.1em;color:#93A0A5">LINK</div>
+<div style="position:absolute;left:16px;top:48px;width:224px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.04em;color:#FF5A4A;text-align:center">NO SAVE. NO REJOIN.</div>
+<div style="position:absolute;left:16px;top:80px;width:96px;height:64px;background:rgba(14,18,20,.92);border:1px solid #5A6A72;box-sizing:border-box"></div>
+<div style="position:absolute;left:16px;top:80px;width:4px;height:64px;background:#5A6A72"></div>
+<div style="position:absolute;left:16px;top:102px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#E8ECEC;text-align:center">STAY</div>
+<div style="position:absolute;left:128px;top:80px;width:96px;height:64px;background:rgba(20,8,6,.92);border:1px solid #FF5A4A;box-sizing:border-box"></div>
+<div style="position:absolute;left:128px;top:80px;width:4px;height:64px;background:#FF5A4A"></div>
+<div style="position:absolute;left:128px;top:102px;width:96px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;color:#FF5A4A;text-align:center">QUIT</div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:256px">The confirm expands in place from the system panel and states the stake in four words. STAY is the lit one; QUIT is outlined only. Expires to nothing after 4,000 ms.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:360px;height:152px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:360px;height:152px;background:rgba(4,6,10,.6)"></div>
+<div style="position:absolute;left:0;top:32px;width:360px;height:88px;background:rgba(7,9,11,.88)"></div>
+<div style="position:absolute;left:0;top:32px;width:360px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:119px;width:360px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:32px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:344px;top:32px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:0;top:52px;width:360px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;letter-spacing:.04em;color:#E8ECEC;text-align:center">RECONNECTING</div>
+<div style="position:absolute;left:0;top:92px;width:360px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.04em;color:#93A0A5;text-align:center">THE MATCH DID NOT WAIT</div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:360px">360 × 88 centred at (540, 436) over a 0.6 scrim. The second line is the honest one: suspend costs you whatever happened while you were gone, and saying so beats a spinner.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:560px;height:224px;background:#04060A">
+<div style="position:absolute;left:0;top:0;width:560px;height:224px;background:rgba(7,9,11,.9)"></div>
+<div style="position:absolute;left:0;top:0;width:560px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:223px;width:560px;height:1px;background:#313A40"></div>
+<div style="position:absolute;left:0;top:0;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:544px;top:0;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:0;top:222px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:544px;top:222px;width:16px;height:2px;background:#8A9AA2"></div>
+<div style="position:absolute;left:32px;top:40px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.14em;color:#93A0A5">ENGAGEMENT ENDED</div>
+<div style="position:absolute;left:32px;top:88px;width:32px;height:32px;background:#C4E838"></div>
+<div style="position:absolute;left:80px;top:88px;height:32px;font-size:32px;line-height:32px;font-weight:600;white-space:nowrap;color:#E8ECEC">TEAM 2 HOLDS THE FIELD</div>
+<div style="position:absolute;left:32px;top:152px;width:496px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.04em;color:#93A0A5">NEXT MATCH IS SEEDING</div>
+<div style="position:absolute;left:32px;top:180px;width:496px;height:20px;font-size:20px;line-height:20px;font-weight:600;white-space:nowrap;letter-spacing:.04em;color:#93A0A5">YOU WILL BE DROPPED IN</div>
+</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:560px">The winner is named by team swatch and number, because from M4 "you lost" does not say to whom. No button: the host reseeds and the client reconnects itself. The only target still on screen is QUIT.</div>
+</div>
+</div>
+
+<div style="font:600 11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em;color:#6B7A80;margin:0 0 12px">ORDER MARKER — PROJECTED ONTO THE PLANE</div>
+<div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:34px">
+<div style="display:flex;flex-direction:column;gap:9px">
+<div style="position:relative;width:560px;height:580px;background:#04060A;overflow:hidden;outline:1px solid #1C242B">{{ studyD }}</div>
+<div style="font:400 12px/1.5 inherit;color:#93A0A5;width:560px">Drawn the instant the gesture resolves and 152 ms before any ship moves — the single most latency-critical element on screen. Rev B makes it a <span style="color:#E8ECEC">world object rather than a screen sprite</span>: a 120-unit square footprint projected onto the plane (four line segments, so it foreshortens with everything else), plus a 90-unit vertical riser and a short cross-tick at its head so the marker is findable when the footprint is small. The group line meets the riser's base. All of it clears when the host acknowledges the sequence.</div>
+</div>
+</div>
+
+<!-- ============================= TABLES ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:64px 0 6px">B · GEOMETRY</div>
+<div style="font:400 14px/1.5 inherit;color:#93A0A5;margin:0 0 16px;max-width:920px">Authored pixels, integers, origin top-left. <span style="font-family:ui-monospace,Consolas,monospace;color:#E8ECEC">+n</span> is an offset from the parent rect. MIRROR X is the value under the handedness boolean; a dash means the element does not move. Panel widths that depend on the group count <span style="font-family:ui-monospace,Consolas,monospace">n</span>: sel.panel w = 16 + 160n + 16(n−1) + 16 + 96 + 16, sel.clear x = 16 + 160n + 16(n−1) + 16. The table lists n = 4.</div>
+
+<div style="background:#11161A;padding:2px 0 8px;margin-bottom:10px;overflow-x:auto">
+<div style="display:grid;grid-template-columns:300px 92px 92px 72px 72px 92px 96px 92px;gap:0;padding:12px 18px;font:600 11px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.1em;color:#6B7A80;border-bottom:1px solid #313A40;min-width:920px">
+<div>NAME</div><div>X</div><div>Y</div><div>W</div><div>H</div><div>HIT RECT</div><div>TIER</div><div>MIRROR X</div>
+</div>
+<sc-for list="{{ geom }}" as="r" hint-placeholder-count="10">
+<div style="display:grid;grid-template-columns:300px 92px 92px 72px 72px 92px 96px 92px;gap:0;padding:6px 18px;font:400 12px/1.4 ui-monospace,Consolas,monospace;color:#C4CED2;border-bottom:1px solid rgba(49,58,64,.45);min-width:920px">
+<div style="color:#E8ECEC">{{ r.n }}</div><div>{{ r.x }}</div><div>{{ r.y }}</div><div>{{ r.w }}</div><div>{{ r.h }}</div><div style="color:#93A0A5">{{ r.hit }}</div><div style="color:#FFB020">{{ r.tier }}</div><div style="color:#93A0A5">{{ r.mx }}</div>
+</div>
+</sc-for>
+</div>
+<div style="font:400 13px/1.6 inherit;color:#93A0A5;margin:0 0 8px;max-width:920px">Tightest clearances in the layout, all exactly at the 16 px minimum and all vertical: ships row → modules row (752 → 768), modules row → cancel (864 → 880), and group[3] → clear (704 → 720). Every other pair is 20 px or more. The alert's along-edge clamp subtracts the panel bands, so it can never land within 16 px of one.</div>
+
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:52px 0 16px">C · PALETTE</div>
+<div style="background:#11161A;padding:2px 0 8px;margin-bottom:10px;overflow-x:auto">
+<sc-for list="{{ pal }}" as="p" hint-placeholder-count="12">
+<div style="display:grid;grid-template-columns:200px 180px 64px minmax(0,1fr);gap:0;padding:7px 18px;font:400 12px/1.45 ui-monospace,Consolas,monospace;color:#C4CED2;border-bottom:1px solid rgba(49,58,64,.45);min-width:880px">
+<div style="color:#E8ECEC">{{ p.tok }}<span style="color:#6B7A80;letter-spacing:.1em;font-weight:600">{{ p.group }}</span></div><div style="color:#93A0A5">{{ p.hex }}</div><div style="color:#6B7A80">{{ p.hue }}</div><div style="font-family:inherit;color:#93A0A5">{{ p.use }}</div>
+</div>
+</sc-for>
+</div>
+<div style="font:400 13px/1.6 inherit;color:#93A0A5;margin:0 0 8px;max-width:920px">All values are sRGB and convert to linear for the renderer. The hue rule is the load-bearing part: reserving 150–240° for the local player means own-vs-hostile survives every future player count without a second decision, and the MVP's two-player case — cyan against chartreuse, 115° apart — is the easiest pair in the set rather than an accident. Rev B desaturated the chrome from slate-blue toward gunmetal so the only cool saturated thing on screen is your own fleet.</div>
+
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:52px 0 16px">D · TYPE</div>
+<div style="background:#11161A;padding:2px 0 8px;margin-bottom:10px;overflow-x:auto">
+<div style="display:grid;grid-template-columns:120px 96px 96px 96px 76px 140px minmax(0,1fr);gap:0;padding:12px 18px;font:600 11px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.1em;color:#6B7A80;border-bottom:1px solid #313A40;min-width:1000px">
+<div>TOKEN</div><div>AUTHORED</div><div>PHYSICAL</div><div>ON GLASS</div><div>AT 550mm</div><div>WEIGHT</div><div>USED BY</div>
+</div>
+<sc-for list="{{ type }}" as="t" hint-placeholder-count="2">
+<div style="display:grid;grid-template-columns:120px 96px 96px 96px 76px 140px minmax(0,1fr);gap:0;padding:9px 18px;font:400 12px/1.45 ui-monospace,Consolas,monospace;color:#C4CED2;border-bottom:1px solid rgba(49,58,64,.45);min-width:1000px">
+<div style="color:#E8ECEC">{{ t.tok }}</div><div>{{ t.auth }}</div><div>{{ t.phys }}</div><div>{{ t.mm }}</div><div>{{ t.arc }}</div><div>{{ t.wt }}</div><div style="font-family:inherit;color:#93A0A5">{{ t.use }}</div>
+</div>
+</sc-for>
+</div>
+<div style="font:400 13px/1.6 inherit;color:#93A0A5;margin:0 0 8px;max-width:920px">Both sizes are even, so the 2× fit lands them on 40 and 64 physical pixels and DirectWrite rasterises at that size directly — no doubling, no resampling. Semibold at both: the interface pass has no multisampling, and a Regular stem at 40 physical pixels on a single-channel coverage atlas breaks up against a bright silhouette. Every string is length-bounded by design; the longest is <span style="color:#E8ECEC">TEAM 2 HOLDS THE FIELD</span> at 22 characters, build item names are capped at 8 characters per line over two lines, and every fixed-height text rect is set nowrap so an over-long string clips visibly instead of wrapping — a wrap is the one failure the renderer cannot reproduce.</div>
+
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:52px 0 16px">E · MOTION</div>
+<div style="background:#11161A;padding:2px 0 8px;margin-bottom:10px;overflow-x:auto">
+<div style="display:grid;grid-template-columns:230px 190px 240px minmax(0,1fr) 130px;gap:0;padding:12px 18px;font:600 11px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.1em;color:#6B7A80;border-bottom:1px solid #313A40;min-width:1000px">
+<div>ELEMENT</div><div>PROPERTY</div><div>FROM → TO</div><div>CURVE</div><div>DURATION (ms)</div>
+</div>
+<sc-for list="{{ motion }}" as="m" hint-placeholder-count="8">
+<div style="display:grid;grid-template-columns:230px 190px 240px minmax(0,1fr) 130px;gap:0;padding:7px 18px;font:400 12px/1.45 ui-monospace,Consolas,monospace;color:#C4CED2;border-bottom:1px solid rgba(49,58,64,.45);min-width:1000px">
+<div style="color:#E8ECEC">{{ m.el }}</div><div style="color:#93A0A5">{{ m.prop }}</div><div>{{ m.fromto }}</div><div style="color:#93A0A5">{{ m.curve }}</div><div style="color:#FFB020">{{ m.ms }}</div>
+</div>
+</sc-for>
+</div>
+<div style="font:400 13px/1.6 inherit;color:#93A0A5;margin:0 0 8px;max-width:920px">Every curve is linear, a looping linear triangle, or a single exponential decay of the form <span style="font-family:ui-monospace,Consolas,monospace;color:#E8ECEC">v(t) = target + (start − target)·e<sup>−t/τ</sup></span>. Nothing needs a spring, an easing table or a second clock.</div>
+
+<!-- ============================= RATIONALE ============================= -->
+<div style="font:600 13px/1 ui-monospace,Consolas,monospace;letter-spacing:.16em;color:#38D1F5;margin:64px 0 18px">F · RATIONALE — NON-OBVIOUS CHOICES ONLY</div>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;max-width:1300px">
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Drawing the scene in perspective changed three overlays and no HUD numbers</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">The camera is 40° vertical FOV, 34° above the plane, focus at 2,600 units — inside the 30° pitch floor, so <span style="color:#E8ECEC">the horizon is never in frame</span> and there is no sky-vs-ground line to lean on. Depth therefore has to come from the content: ship scale runs about 2.5:1 top to bottom of the frame, a formation's rank spacing stretches with it, and the fleet foreshortens on the plane. Three overlays had to change and they are the ones a 2D mock gets wrong: the <span style="color:#E8ECEC">placement radius is now an ellipse</span> (world circle, raked camera), the <span style="color:#E8ECEC">order marker is a projected footprint with a riser</span> rather than a screen-aligned square, and <span style="color:#E8ECEC">order lines run in perspective</span> from each group centroid. Two things deliberately did not change: the selection circle stays a true screen-space circle, because that is exactly what makes the camera the group-size control; and world hull bars stay billboarded at a fixed 18 × 6, because a hull bar that shrinks with distance is unreadable precisely when the ship is too small to read.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">The plane grid is an addition to the scene spec and needs a decision</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">§7 describes space as near-black with silhouettes, a star field and a galaxy band. It does not mention a grid, and these frames draw one: a 512-unit tactical lattice on the plane, every fourth line brighter, fading with depth, peak luminance about 7% — under ADR-019's 12% area ceiling. It is here because without a horizon it is the only cue that says <em>this is a surface you are looking across</em>, and it doubles as a distance scale for placing modules and reading fleet spacing. The cost is honest and small: about 56 line segments in one draw, no new texture, no new pass. <span style="color:#E8ECEC">It is also the one thing here that can be deleted without moving a single interface number</span> — so if it is not wanted, cut it and nothing else changes.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Chrome: gunmetal instrument, not glass — and state is never colour alone</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">A hairline alone fails the worst case: over the galaxy band, 20 px Semibold on bare sky collapses wherever a bright silhouette passes under a glyph, and silhouettes move. The scrim at 0.88 over the band composites to roughly 3.5% luminance and holds about <span style="color:#E8ECEC">10:1</span> unconditionally. What keeps it from eating the battlefield is extent, not transparency: it stops at the content box, every panel is edge-anchored, and a panel with no content is not drawn — Frame 1 covers 3.5% of the frame. Rev B pulled the chrome off blue toward gunmetal (<span style="font-family:ui-monospace,Consolas,monospace">#313A40 / #5A6A72</span>) so the only cool saturated thing on screen is your own fleet, and added the instrument register the brief's device implies: registration ticks at the ends of each panel rule and at the frame's left and right quarter points, a coloured index bar down the leading edge of every target, and quarter index ticks in the hull trough. Each of those is one or two rects. <span style="color:#E8ECEC">Every state now has a geometric cue as well as a hue</span> — index bar, bottom rule, hatch, top bar — so the build panel survives both peripheral vision and colour blindness.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Own vs hostile: reserve a hue band, not a colour</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">Team colour is a vertex attribute, so at a 4 px silhouette hue is the only channel — no outline, no badge, no shape difference. Four pretty colours would solve the MVP and break at M4. Instead the <span style="color:#E8ECEC">cool band 150–240° belongs to the local player permanently</span> and every hostile is drawn outside it: 78°, 268°, 318°. "Is that mine" becomes a warm/cool judgement, which is pre-attentive and survives the band. Telling hostile A from hostile B is a slower, rarer read and gets the leftovers, exactly as the brief ranks it. The red trap is closed by excluding 340–45° from the team set entirely: one plausible team colour given up, an alert channel bought that can never be mistaken for a fleet.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Alert: position carries the bearing, one triangle carries the rest</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">A rectangle cannot point. Direction is therefore carried twice: coarsely by which edge and where along it the indicator sits (the crossing of the centre→event ray with the frame, which the new quarter-point registration ticks give a scale to), and locally by one outward triangle. The 8 px stripe flush to the edge does the noticing — a hard bright line against near-black in peripheral vision, pulsing on a 1,200 ms linear triangle, which the eye catches without foveating. The count is the only thing to read and it is a single glanceable number, so nothing invites a stop. Deliberately no scrim and no plate: the failure ADR-020 names is habituation, and habituation starts the moment an alert looks like furniture.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Quit: two taps, and the arming target stays at the floor</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">An accidental hit is not acceptable. There is no pause, no save and no rejoin-in-progress, so one stray contact at the top of the frame ends a five-minute match with no recovery path anywhere in the system. So: tap one arms, tap two quits, and the confirm expires after 4,000 ms so an armed state cannot be left lying on the glass. The arming target stays at the <span style="color:#E8ECEC">48 px floor</span> rather than a comfort tier — it is the one control on screen that should be slightly hard to hit — and the confirm states the stake rather than asking a polite question: <span style="color:#FF5A4A">NO SAVE. NO REJOIN.</span> STAY is the lit, left-hand choice; QUIT is outlined only, and is the only red target in the design that is not reporting damage.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">Deviations, and one hole the brief did not name</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty"><span style="color:#E8ECEC">Diagonals appear in exactly two places and both earn it.</span> The alert triangle, because direction needs one; and the 45° hatch on an unavailable button — about 14 line segments, 12 px apart — because the two dead states must differ by something other than a value, and a texture difference reads at a glance where a grey-vs-grey does not. Everything else in the interface pass is axis-aligned.<br><br><span style="color:#E8ECEC">One line per design group, not per ship.</span> §6 says "lines"; thirty converging lines is noise and thirty quads. Four maximum.<br><br><span style="color:#E8ECEC">The 32 px size is on four numbers, not only the build buttons.</span> "SHIPYARD L1" cannot be set at 32 px inside any button that also fits six across the frame. The large size lands on the cost figure — the thing the unaffordable state modifies and the thing a player compares — and on the three other numbers read mid-fight. Names are 20 px.<br><br><span style="color:#E8ECEC">Clear and cancel are 96 × 64 with words, not 64 × 64 with glyphs.</span> An × is two diagonals and aliases badly with no multisampling; the words cost 32 px of panel width and are unambiguous in a design with no tooltips.<br><br><span style="color:#E8ECEC">The queue slot conflict is unresolved and is not an interface problem.</span> One slot, six always-live buttons, credits spent at start: tapping a button while something is building replaces it and the spent credits are gone. Dimming the six while the slot is busy would overload "unavailable" with a second meaning. A refund-on-replace rule in GameCore is the fix, and it is a simulation decision.<br><br><span style="color:#E8ECEC">Elapsed match time is available and is not shown.</span> The tick gives it, but §3 fixes five surfaces and it belongs to none.<br><br><span style="color:#E8ECEC">A standing selection has no world-side mark.</span> Once the order marker clears, the panel is the only readout of what is selected — the stated design, and correct while a hand is on the glass. If M1 finds it wrong in the quiet moments, the cheapest fix inside the primitives is a 1 px team-colour underline beneath each selected ship: 110 quads worst case, no new colour, no new state.</div>
+</div>
+
+<div style="background:#11161A;padding:20px 22px">
+<div style="font:600 15px/1.3 inherit;color:#E8ECEC;margin-bottom:9px">What the brief asked for and the data cannot give</div>
+<div style="font:400 13.5px/1.62 inherit;color:#A4B0B5;text-wrap:pretty">The credit readout carries a <span style="color:#E8ECEC">change flash</span> and not a rate: a 120 × 3 rule beneath the number, cyan on a gain and amber on a spend, decaying exponentially. It answers "did that land" without implying a series the snapshot does not contain. No income rate, no ore remaining, no kill count, no enemy credits appear anywhere — each was wanted somewhere in this layout and each has no data path. The one that hurts is ore remaining in a field: a miner's standing order outlives the rock, and with no readout the player discovers it by watching a miner idle. That is a wire decision, not a HUD one.</div>
+</div>
+
+</div>
+
+<div style="font:400 13px/1.6 inherit;color:#6B7A80;margin:44px 0 0;max-width:920px">Tweaks on this page: <span style="color:#93A0A5">Audit</span> overlays every hit rectangle in amber so the tier and clearance assertions can be read off the frames; <span style="color:#93A0A5">Grid</span> removes the plane lattice; <span style="color:#93A0A5">Backdrop</span> removes the galaxy band or changes star density to test HUD legibility against the best and worst sky. Rev A, with the flat scene and the slate-blue chrome, is kept alongside this file.</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1560,&quot;height&quot;:1200},&quot;showHit&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Audit&quot;},&quot;showGrid&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Scene&quot;},&quot;showBand&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Scene&quot;},&quot;starDensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:100,&quot;min&quot;:40,&quot;max&quot;:220,&quot;step&quot;:10,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Scene&quot;}}">
+class Component extends DCLogic {
+  T = { own:'#38D1F5', b:'#C4E838', c:'#F75FD0', d:'#A45CFF' };
+  CAM = { D:2600, th:34*Math.PI/180, f:1318.8, cx:720, cy:480 };
+
+  el(style, key){ return React.createElement('div', { key, style: Object.assign({ position:'absolute' }, style) }); }
+
+  // --- camera: ground plane at y=0, heading 0, pitch th above the plane
+  proj(dx, dz){
+    const c = this.CAM, st = Math.sin(c.th), ct = Math.cos(c.th);
+    const zc = c.D + dz*ct;
+    const s = c.f / Math.max(zc, 60);
+    return { x: c.cx + dx*s, y: c.cy - dz*st*s, s };
+  }
+
+  shade(hex, k){
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    const f = v => Math.max(0, Math.min(255, Math.round(k<1 ? v*k : v + (255-v)*(k-1))));
+    return 'rgb('+f(r)+','+f(g)+','+f(b)+')';
+  }
+
+  rnd(seed){ let s=(seed>>>0)||1; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; }
+
+  seg(x0,y0,x1,y1,color,w,alpha,key){
+    const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy), ang=Math.atan2(dy,dx)*180/Math.PI;
+    return this.el({ left:x0, top:y0-w/2, width:len, height:w, background:color, opacity:alpha, transformOrigin:'0 50%', transform:'rotate('+ang+'deg)' }, key);
+  }
+
+  // --- the plane lattice: 512-unit cells, brighter every fourth line, fading with depth
+  grid(key){
+    if (this.props.showGrid === false) return [];
+    const out=[], G=512, ZN=-1300, ZF=4200, XR=3800;
+    for (let i=-7;i<=7;i++){
+      const dx=i*G, major=(i%4===0);
+      for (let k=0;k<3;k++){
+        const z0=ZN+(ZF-ZN)*k/3, z1=ZN+(ZF-ZN)*(k+1)/3;
+        const a=this.proj(dx,z0), b=this.proj(dx,z1);
+        const al=(major?.62:.34)*(1-k*0.28);
+        out.push(this.seg(a.x,a.y,b.x,b.y,major?'#2A343A':'#1E262B',major?1.5:1,al,key+'gx'+i+'_'+k));
+      }
+    }
+    for (let j=-3;j<=8;j++){
+      const dz=j*G, major=(j%4===0);
+      const a=this.proj(-XR,dz), b=this.proj(XR,dz);
+      const t=(dz-ZN)/(ZF-ZN);
+      const al=(major?.6:.32)*(1-t*0.72);
+      out.push(this.seg(a.x,a.y,b.x,b.y,major?'#2A343A':'#1E262B',major?1.5:1,al,key+'gz'+j));
+    }
+    return out;
+  }
+
+  stars(seed, density){
+    const r = this.rnd(seed), out = [];
+    const tiers = [[1,4,.95,'#DDE7FF'],[3,3,.82,'#E9EEFF'],[8,2,.66,'#FFFFFF'],[22,2,.44,'#FFF6E8'],[58,1,.32,'#FFE9D2'],[150,1,.2,'#FFDCC4']];
+    let k = 0;
+    tiers.forEach(t => {
+      const n = Math.max(1, Math.round(t[0] * density / 100));
+      for (let i=0;i<n;i++){
+        const x = Math.floor(r()*1440), y = Math.floor(r()*960);
+        const by = 250 - 0.40*(x-720);
+        if (Math.abs(y-by) > 230 && r() > 0.40) continue;
+        out.push(this.el({ left:x, top:y, width:t[1], height:t[1], background:t[3], opacity:t[2] }, 's'+seed+(k++)));
+      }
+    });
+    return out;
+  }
+
+  band(seed){
+    if (this.props.showBand === false) return [];
+    return [
+      this.el({ left:-700, top:90, width:2900, height:430, transform:'rotate(-21.8deg)', transformOrigin:'50% 50%',
+        background:'linear-gradient(to bottom, rgba(158,170,205,0) 0%, rgba(158,170,205,.055) 24%, rgba(170,178,208,.11) 47%, rgba(140,152,190,.07) 64%, rgba(158,170,205,0) 100%)' }, 'band'+seed),
+      this.el({ left:-700, top:258, width:2900, height:34, transform:'rotate(-21.8deg)', transformOrigin:'50% 50%',
+        background:'linear-gradient(to bottom, rgba(4,6,10,0), rgba(4,6,10,.85), rgba(4,6,10,0))' }, 'dust'+seed),
+      this.el({ left:-700, top:332, width:2900, height:18, transform:'rotate(-21.8deg)', transformOrigin:'50% 50%',
+        background:'linear-gradient(to bottom, rgba(4,6,10,0), rgba(4,6,10,.7), rgba(4,6,10,0))' }, 'dust2'+seed)
+    ];
+  }
+
+  // --- a ship: flat-shaded facets, scaled by depth, squashed by the camera rake
+  ship(o, i, key){
+    const p = this.proj(o.dx, o.dz), col = this.T[o.t] || this.T.own;
+    const w = Math.max(4, o.size * p.s), sq = 0.62;
+    const facets = o.k === 'm'
+      ? [['polygon(50% 0%,100% 30%,50% 46%,0% 30%)', 1.32],
+         ['polygon(0% 30%,50% 46%,50% 100%,0% 76%)', 0.92],
+         ['polygon(100% 30%,100% 76%,50% 100%,50% 46%)', 0.58]]
+      : [['polygon(50% 0%,50% 76%,0% 100%)', 1.22],
+         ['polygon(50% 0%,100% 100%,50% 76%)', 0.6]];
+    const inner = facets.map((f,fi)=> React.createElement('div', { key:'f'+fi,
+      style:{ position:'absolute', left:0, top:0, width:'100%', height:'100%', background:this.shade(col, f[1]), clipPath:f[0] } }));
+    const out = [ React.createElement('div', { key:key+'sh'+i,
+      style:{ position:'absolute', left:p.x-w/2, top:p.y-w/2, width:w, height:w, opacity:o.o || .95,
+        transform:'scaleY('+sq+') rotate('+(o.hd||0)+'deg)' } }, inner) ];
+    if (o.h !== undefined && o.h < 100){
+      const rem = Math.min(15, Math.round(16*o.h/100)), by = p.y - (w*sq)/2 - 14;
+      out.push(this.el({ left:Math.round(p.x)-9, top:Math.round(by), width:18, height:6, background:'#0A0E12' }, key+'hb'+i));
+      out.push(this.el({ left:Math.round(p.x)-8, top:Math.round(by)+1, width:rem, height:4, background:'#2E3942' }, key+'hr'+i));
+      out.push(this.el({ left:Math.round(p.x)-8+rem, top:Math.round(by)+1, width:16-rem, height:4, background:'#FF3B2F' }, key+'hl'+i));
+    }
+    return out;
+  }
+
+  // --- an extruded body on the plane: footprint, side band, lit top face
+  solid(dx, dz, r, lift, col, clip, key){
+    const p = this.proj(dx, dz), w = r*p.s*2, hgt = lift*0.829*p.s, sq = 0.62;
+    return [
+      this.el({ left:p.x-w/2, top:p.y-w*sq/2, width:w, height:w*sq, background:this.shade(col,.42), clipPath:clip, opacity:.85 }, key+'base'),
+      this.el({ left:p.x-w*0.40, top:p.y-hgt, width:w*0.80, height:hgt+2, background:this.shade(col,.62), opacity:.92 }, key+'side'),
+      this.el({ left:p.x-w*0.44, top:p.y-hgt-w*0.44*sq, width:w*0.88, height:w*0.88*sq, background:this.shade(col,1.35), clipPath:clip, opacity:.96 }, key+'top')
+    ];
+  }
+
+  station(dx, dz, t, mods, key){
+    const col = this.T[t], oct = 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)';
+    let out = this.solid(dx, dz, 95, 80, col, oct, key+'st');
+    (mods||[]).forEach((m,i)=>{
+      const a = this.proj(dx,dz), b = this.proj(dx+m[0], dz+m[1]);
+      out = out.concat([ this.seg(a.x,a.y,b.x,b.y,col,2,.28,key+'ml'+i) ],
+        this.solid(dx+m[0], dz+m[1], 34, 36, col, 'polygon(20% 0%,80% 0%,100% 50%,80% 100%,20% 100%,0% 50%)', key+'md'+i));
+    });
+    return out;
+  }
+
+  rocks(list, key){
+    let out=[];
+    list.forEach((a,i)=>{
+      out = out.concat(this.solid(a[0], a[1], a[2], a[2]*0.55, '#343A40',
+        'polygon(24% 4%,72% 0%,100% 38%,88% 86%,42% 100%,6% 72%,0% 30%)', key+'rk'+i));
+    });
+    return out;
+  }
+
+  // --- world-space circle on the plane -> ellipse
+  planeCircle(dx, dz, r, segs, color, w, alpha, dash, key){
+    const out=[];
+    for(let i=0;i<segs;i++){
+      if(dash && i%2) continue;
+      const a0=i*2*Math.PI/segs, a1=(i+1)*2*Math.PI/segs;
+      const p0=this.proj(dx+r*Math.cos(a0), dz+r*Math.sin(a0));
+      const p1=this.proj(dx+r*Math.cos(a1), dz+r*Math.sin(a1));
+      out.push(this.seg(p0.x,p0.y,p1.x,p1.y,color,w,alpha,key+i));
+    }
+    return out;
+  }
+
+  // --- screen-space circle: a true circle at any camera angle
+  screenCircle(cx, cy, r, segs, color, w, alpha, key){
+    const out=[];
+    for(let i=0;i<segs;i++){
+      const a0=i*2*Math.PI/segs, a1=(i+1)*2*Math.PI/segs;
+      out.push(this.seg(cx+r*Math.cos(a0), cy+r*Math.sin(a0), cx+r*Math.cos(a1), cy+r*Math.sin(a1), color, w, alpha, key+i));
+    }
+    return out;
+  }
+
+  // --- order marker: projected footprint + riser + head tick
+  marker(dx, dz, key){
+    const c = this.T.own, s = 60, riser = 90;
+    const q = [[-s,-s],[s,-s],[s,s],[-s,s]].map(v=>this.proj(dx+v[0], dz+v[1]));
+    const out = q.map((p,i)=> this.seg(p.x,p.y,q[(i+1)%4].x,q[(i+1)%4].y, c, 3, .95, key+'q'+i));
+    const base = this.proj(dx,dz), h = riser*0.829*base.s;
+    out.push(this.el({ left:base.x-1.5, top:base.y-h, width:3, height:h, background:c, opacity:.95 }, key+'ri'));
+    out.push(this.el({ left:base.x-13, top:base.y-h-1.5, width:26, height:3, background:c, opacity:.95 }, key+'hd'));
+    return out;
+  }
+
+  hitRects(list,key){
+    if (!this.props.showHit) return [];
+    return list.map((r,i)=> this.el({ left:r[0], top:r[1], width:r[2], height:r[3], border:'1px solid #FFB020', opacity:.75, boxSizing:'border-box' }, key+'hit'+i));
+  }
+
+  renderVals(){
+    const d = this.props.starDensity ?? 100;
+    const cy = this.T.own;
+    const S = (dx,dz,size,hd,t,k,h)=>({dx,dz,size,hd,t,k,h});
+
+    // ---------- Frame 1 : idle ----------
+    const f1 = [].concat(
+      this.band(1), this.stars(11, d), this.grid('f1'),
+      this.rocks([[-1750,1500,72],[-1420,1180,52],[-2050,1080,38],[1850,2600,58],[2200,2350,44],[-1600,1720,30]],'f1'),
+      this.station(-260, 620, 'own', [[300,-180],[-280,200]], 'f1'),
+      [S(-1500,1240,30,40,'own','m'),S(-1320,1020,30,215,'own','m'),S(-1780,900,30,95,'own','m'),
+       S(120,1400,34,335,'own','f'),S(300,1280,34,330,'own','f'),S(-500,120,30,20,'own','m')]
+        .reduce((a,s,i)=>a.concat(this.ship(s,i,'f1')),[])
+    );
+
+    // ---------- Frame 2 : combat ----------
+    const fh=[100,100,68,100,84,100,100,41,100,100,100,92,100,57,100,100,100,100];
+    const mh=[100,100,100,88,100,100,100,100,73,100,100,100];
+    const own=[];
+    for(let i=0;i<18;i++){ const c=i%6, r=(i-c)/6; own.push(S(-1250+c*205+r*90, 80+r*300, 34, 52, 'own','f', fh[i])); }
+    for(let i=0;i<12;i++){ const c=i%4, r=(i-c)/4; own.push(S(-1500+c*185+r*70, -720+r*230, 30, 74, 'own','m', mh[i])); }
+    const host=[ S(1180,1560,34,232,'b','f',62), S(1420,1420,34,230,'b','f'), S(1080,1280,34,238,'b','f',31),
+      S(1560,1760,34,224,'b','f'), S(1760,1520,30,242,'b','m',88), S(880,1120,34,246,'b','f'),
+      S(1880,1780,34,228,'b','f'), S(1300,1040,34,252,'b','f',77) ];
+    const f2 = [].concat(
+      this.band(2), this.stars(23, d), this.grid('f2'),
+      this.rocks([[-2250,2700,60],[-1900,2450,42]],'f2'),
+      own.reduce((a,s,i)=>a.concat(this.ship(s,i,'f2a')),[]),
+      host.reduce((a,s,i)=>a.concat(this.ship(s,i,'f2b')),[]),
+      [ this.seg(this.proj(-800,530).x, this.proj(-800,530).y, this.proj(1450,2450).x, this.proj(1450,2450).y, cy,2,.34,'f2ol1'),
+        this.seg(this.proj(-1200,-490).x, this.proj(-1200,-490).y, this.proj(1450,2450).x, this.proj(1450,2450).y, cy,2,.34,'f2ol2') ],
+      this.marker(1450, 2450, 'f2'),
+      this.hitRects([[0,560,120,96],[16,848,160,96],[192,848,160,96],[368,864,96,64]],'f2')
+    );
+
+    // ---------- Frame 3 : building ----------
+    const f3 = [].concat(
+      this.band(3), this.stars(37, d), this.grid('f3'),
+      this.rocks([[1900,900,64],[2250,650,46],[1650,520,34]],'f3'),
+      this.planeCircle(-520, 700, 400, 48, '#FFB020', 2, .7, true, 'f3pr'),
+      this.station(-520, 700, 'own', [[300,-190],[-290,210]], 'f3'),
+      [S(180,1500,34,332,'own','f'),S(360,1360,34,328,'own','f'),
+       S(1450,260,30,122,'own','m',74),S(1650,120,30,120,'own','m'),
+       S(-1700,2600,30,20,'own','m')]
+        .reduce((a,s,i)=>a.concat(this.ship(s,i,'f3')),[]),
+      this.hitRects([[16,848,160,96],[192,864,96,64],[896,656,120,96],[1032,656,120,96],[896,768,120,96],[1032,768,120,96],[1168,768,120,96],[1304,768,120,96],[1328,880,96,64]],'f3')
+    );
+
+    // ---------- Frame 4 : left-handed worst case ----------
+    const f4s=[]; const f4h=[100,72,100,54,100,100,89,100,100,38,100,100,100,66];
+    for(let i=0;i<14;i++){ const c=i%7, r=(i-c)/7; f4s.push(S(-900+c*215+r*95, 600+r*280, 34, 128, 'own','f', f4h[i])); }
+    for(let i=0;i<7;i++){ const c=i%4, r=(i-c)/4; f4s.push(S(-1600+c*175, -300+r*220, 30, 42, 'own','m')); }
+    const f4 = [].concat(
+      this.band(4), this.stars(53, d), this.grid('f4'),
+      this.rocks([[2100,2900,56],[2450,2650,40]],'f4'),
+      f4s.reduce((a,s,i)=>a.concat(this.ship(s,i,'f4a')),[]),
+      [ S(1250,1700,34,232,'b','f'), S(1470,1560,34,230,'b','f',44),
+        S(420,3050,34,200,'c','f'), S(700,2950,34,204,'c','f',81),
+        S(1900,400,34,252,'d','f'), S(2150,240,30,250,'d','m') ]
+        .reduce((a,s,i)=>a.concat(this.ship(s,i,'f4b')),[]),
+      this.hitRects([[0,300,120,96],[1328,0,96,120],[1320,560,120,96],[736,848,160,96],[912,848,160,96],[1088,848,160,96],[1264,848,160,96],[624,864,96,64],[424,656,120,96],[288,656,120,96],[424,768,120,96],[288,768,120,96],[152,768,120,96],[16,768,120,96],[16,880,96,64]],'f4')
+    );
+
+    // ---------- studies ----------
+    // A: screen-space selection circle (drawn in a 460x440 tile, centre 230,220)
+    const studyA = [].concat(
+      this.stars(71, 55),
+      this.screenCircle(230,220,192,64,cy,2,.5,'sa'),
+      [[0,0,20],[-118,-96,17],[126,-118,17],[96,112,17],[-148,86,16],[212,182,15],[-30,-176,16]]
+        .map((o,i)=> this.el({ left:230+o[0]-o[2]/2, top:220+o[1]-o[2]*0.62/2, width:o[2], height:o[2],
+          background:this.shade(cy, i===0?1.3:1), clipPath:'polygon(50% 0%,100% 100%,50% 76%,0% 100%)',
+          transform:'scaleY(.62) rotate(38deg)', opacity:.95 }, 'sas'+i))
+    );
+    // B: world-space placement ellipse, same nominal radius, on the plane
+    const fit = (els, tw, th, pts) => {
+      let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+      pts.forEach(p=>{ const q=this.proj(p[0],p[1]); x0=Math.min(x0,q.x); x1=Math.max(x1,q.x); y0=Math.min(y0,q.y); y1=Math.max(y1,q.y); });
+      const ox = Math.round(tw/2 - (x0+x1)/2), oy = Math.round(th/2 - (y0+y1)/2);
+      return els.map((e,i)=> React.createElement('div', { key:'w'+i, style:{ position:'absolute', left:ox, top:oy, width:0, height:0 } }, e));
+    };
+    const studyB = fit([].concat(
+      this.stars(83, 55),
+      this.grid('sb'),
+      this.planeCircle(-300, 600, 400, 48, '#FFB020', 2, .8, true, 'sb'),
+      this.station(-300, 600, 'own', [[280,-170]], 'sb')
+    ), 460, 440, [[100,600],[-700,600],[-300,200],[-300,1000]]);
+    // C: depth-invariant hull bars across three depths
+    const scShips = [ S(-500,-800,34,90,'own','f',94), S(-150,-100,34,90,'own','f',62), S(150,600,34,90,'own','f',18), S(450,1400,34,90,'own','f') ];
+    const studyC = fit([].concat(
+      this.grid('sc'),
+      scShips.reduce((a,s,i)=>a.concat(this.ship(s,i,'sc')),[])
+    ), 540, 620, scShips.map(o=>[o.dx,o.dz]));
+    // D: order marker on the plane
+    const studyD = fit([].concat(
+      this.grid('sd'),
+      [ S(-200,-600,34,44,'own','f'), S(60,-750,34,44,'own','f'), S(-380,-820,34,44,'own','f') ]
+        .reduce((a,s,i)=>a.concat(this.ship(s,i,'sd')),[]),
+      [ this.seg(this.proj(-170,-720).x, this.proj(-170,-720).y, this.proj(600,900).x, this.proj(600,900).y, cy,2,.34,'sdl') ],
+      this.marker(600, 900, 'sd')
+    ), 560, 580, [[-380,-820],[60,-750],[600,900],[600,1150]]);
+
+    const geom = [
+      ['credits.panel',0,0,272,88,'—','—','—'],
+      ['credits.index',0,0,3,88,'—','—','—'],
+      ['credits.rule.bottom',0,87,272,1,'—','—','—'],
+      ['credits.rule.tick (×2)','0 / 256',86,16,2,'—','—','—'],
+      ['credits.label (BODY)',16,14,'—',20,'—','—','—'],
+      ['credits.value (DISPLAY)',16,40,'—',32,'—','—','—'],
+      ['credits.flash',16,76,120,3,'—','—','—'],
+      ['system.panel',624,0,192,64,'—','—','—'],
+      ['system.index',624,0,3,64,'—','—','—'],
+      ['system.rule.bottom',624,63,192,1,'—','—','—'],
+      ['system.link.dot',640,26,12,12,'—','—','—'],
+      ['system.link.label (BODY)',660,22,'—',20,'—','—','—'],
+      ['system.quit',736,8,64,48,'same','floor','—'],
+      ['system.confirm.panel',592,0,256,152,'—','—','—'],
+      ['system.confirm.warn (BODY)',608,48,224,20,'—','—','—'],
+      ['system.confirm.stay',608,80,96,64,'same','combat','—'],
+      ['system.confirm.quit',720,80,96,64,'same','combat','—'],
+      ['frame.reg.tick (×4)','0 / 1426','192 / 480',14,2,'—','—','—'],
+      ['sel.panel (n=4 worst case)',0,832,832,128,'—','—',608],
+      ['sel.rule.top',0,832,832,1,'—','—',608],
+      ['sel.rule.tick (×2)','0 / 816',832,16,2,'—','—','608 / −'],
+      ['sel.group[0]',16,848,160,96,'same','combat',1264],
+      ['sel.group[1]',192,848,160,96,'same','combat',1088],
+      ['sel.group[2]',368,848,160,96,'same','combat',912],
+      ['sel.group[3]',544,848,160,96,'same','combat',736],
+      ['sel.group.index','+0','+0',4,96,'—','—','+156'],
+      ['sel.group.count (DISPLAY)','+16','+10','—',32,'—','—','—'],
+      ['sel.group.name (BODY, right)','+16','+18',128,20,'—','—','—'],
+      ['sel.group.hull','+16','+52',128,10,'—','—','—'],
+      ['sel.group.hull.tick (×3)','+32/+64/+95','+53',1,8,'—','—','—'],
+      ['sel.group.cargo.chip[i]','+16+33i','+72',29,10,'—','—','—'],
+      ['sel.clear (n=4)',720,864,96,64,'same','combat',624],
+      ['build.panel',880,640,560,320,'—','—',0],
+      ['build.rule.top',880,640,560,1,'—','—',0],
+      ['build.rule.left',880,640,1,320,'—','—',559],
+      ['build.btn.miner',896,656,120,96,'same','under fire',424],
+      ['build.btn.fighter',1032,656,120,96,'same','under fire',288],
+      ['build.btn.yard.l1',896,768,120,96,'same','under fire',424],
+      ['build.btn.yard.l2',1032,768,120,96,'same','under fire',288],
+      ['build.btn.ore.l1',1168,768,120,96,'same','under fire',152],
+      ['build.btn.ore.l2',1304,768,120,96,'same','under fire',16],
+      ['build.btn.index','+0','+0',4,96,'—','—','+116'],
+      ['build.btn.name (BODY)','+12','+10 / +32','—',20,'—','—','—'],
+      ['build.btn.cost (DISPLAY, right)','+12','+48',96,32,'—','—','—'],
+      ['build.btn.short.rule','+0','+93',120,3,'—','—','—'],
+      ['build.btn.armed.rule','+0','+0',120,4,'—','—','—'],
+      ['build.btn.hatch (14 segs, 45°)','+1','+1',118,94,'—','—','—'],
+      ['build.progress',896,880,528,64,'—','—',16],
+      ['build.progress.index',896,880,4,64,'—','—',540],
+      ['build.progress.track',912,920,396,12,'—','—',132],
+      ['build.cancel',1328,880,96,64,'same','combat',16],
+      ['alert.hit (left edge)',0,'ay',120,96,'same','combat','—'],
+      ['alert.stripe (left)',0,'ay',8,96,'—','—','—'],
+      ['alert.triangle (left)',10,'ay+22',34,52,'—','—','—'],
+      ['alert.count (DISPLAY, right)',52,'ay+32',52,32,'—','—','—'],
+      ['alert.hit (top edge)','ax',0,96,120,'same','combat','—'],
+      ['overlay.scrim',0,0,1440,960,'—','—','—'],
+      ['overlay.result.block',440,368,560,224,'—','—','—'],
+      ['overlay.reconnect.block',540,436,360,88,'—','—','—'],
+      ['world.hullbar (keyline)','px−9','py−h/2−14',18,6,'—','—','—'],
+      ['world.hullbar (inner)','px−8','py−h/2−13',16,4,'—','—','—'],
+      ['world.marker.footprint','120 u square on the plane','4 segs','—',3,'—','—','—'],
+      ['world.marker.riser','90 u vertical','—',3,'proj','—','—','—'],
+      ['world.selcircle (screen space)','r=192 px','64 segs','—',2,'—','—','—'],
+      ['world.placement (world space)','r=400 u','48 segs, 24 drawn','—',2,'—','—','—'],
+      ['world.grid','512 u lattice','56 segs','—','1 / 1.5','—','—','—']
+    ].map(r=>({n:r[0],x:r[1],y:r[2],w:r[3],h:r[4],hit:r[5],tier:r[6],mx:r[7]}));
+
+    const pal = [
+      ['g','TEAMS — the hue band 150–240° is reserved for the local player at every player count'],
+      ['TEAM.OWN','#38D1F5','193°','Your fleet and station, order marker and lines, build-progress fill, panel index bars'],
+      ['TEAM.B','#C4E838','78°','Hostile A — the MVP opponent, the furthest hue from own'],
+      ['TEAM.C','#F75FD0','318°','Hostile B (M4)'],
+      ['TEAM.D','#A45CFF','268°','Hostile C (M4)'],
+      ['g','STATE — the reserved red family, never a team colour'],
+      ['SIG.ALERT','#FF3B2F','','Damage-alert stripe and triangle; the lost portion of every hull bar'],
+      ['SIG.SHORT','#FF5A4A','','Unaffordable cost, its index bar and bottom rule; cancel; the quit confirm'],
+      ['SIG.ARMED','#FFB020','','Armed module button, placement ellipse, credit-spend flash'],
+      ['g','CHROME — gunmetal, desaturated away from the fleet'],
+      ['SPACE','#04060A','','World clear colour. Not drawn by the interface pass'],
+      ['SCRIM','#07090B @ .88','','Every panel fill'],
+      ['PLATE','#0E1214 @ .92','','Build button, clear, cancel — live'],
+      ['PLATE.DIM','#090C0E @ .92','','Build button — unavailable, under the 45° hatch'],
+      ['PLATE.ARMED','#17120A @ .94','','Build button — armed'],
+      ['RULE','#313A40','','1 px hairlines, bar keylines, group-cell outlines, dim index bars'],
+      ['RULE.LIT','#5A6A72','','Outline and index bar of a live target'],
+      ['TICK','#8A9AA2','','Registration ticks at panel rule ends and the frame quarter points'],
+      ['TICK.BAR','#3A454B','','Quarter index ticks inside the hull and progress troughs'],
+      ['TRACK','#1A2024','','Hull trough, empty cargo chip, progress trough'],
+      ['g','TEXT'],
+      ['TEXT','#E8ECEC','','Counts, costs, credits, live button names — about 10:1 on scrim over the band'],
+      ['TEXT.2','#93A0A5','','Design names, labels, percent, link state'],
+      ['TEXT.DIM','#6B7A80','','Unavailable button text — 4.9:1, readable and plainly recessed'],
+      ['g','BARS'],
+      ['HULL','#CFDDE0','','Hull remaining, selection panel'],
+      ['HULL.LOST','#FF3B2F @ .85','','Hull lost, selection panel and world'],
+      ['HULL.REST','#2E3942','','Hull remaining, world bars only — deliberately near-invisible'],
+      ['ORE','#D8A23C','','Filled cargo chip'],
+      ['g','SCENE (world pass, stated for the luminance ceiling)'],
+      ['GRID.MINOR','#1E262B','','512-unit plane lattice'],
+      ['GRID.MAJOR','#2A343A','','Every fourth lattice line'],
+      ['BAND.PEAK','#AAB2D0 @ .11','','Galaxy band, ≤12% luminance over any large area'],
+      ['STAR','#DDE7FF → #FFDCC4','','Six magnitude tiers, blackbody desaturated to ~20%']
+    ].map(r=> r[0]==='g'
+      ? {group:r[1],tok:'',hex:'',hue:'',use:''}
+      : {group:'',tok:r[0],hex:r[1],hue:r[2],use:r[3]});
+
+    const type = [
+      ['BODY','20 px','40 px','3.82 mm','24′','Semibold 600','Design names, build item names, panel labels, link state, progress percent, overlay sublabels'],
+      ['DISPLAY','32 px','64 px','6.11 mm','38′','Semibold 600','The credit balance, the build cost on each button, the selection group count, the alert count, overlay headlines']
+    ].map(r=>({tok:r[0],auth:r[1],phys:r[2],mm:r[3],arc:r[4],wt:r[5],use:r[6]}));
+
+    const motion = [
+      ['Alert (whole body)','alpha','0 → 1','step','0'],
+      ['Alert (whole body)','alpha','1 → 1','hold','1200'],
+      ['Alert (whole body)','alpha','1 → 0','linear','2400'],
+      ['Alert edge stripe','alpha','1 ↔ 0.55','linear triangle, during the hold only','1200 period'],
+      ['Order marker riser','height','0 → 90 world units','exponential, τ = 40 ms','120'],
+      ['Order marker + line','alpha','1 → 0 on host ack','linear','100'],
+      ['Order line','alpha','0 → 0.34','step','0'],
+      ['Build progress fill','width','previous → snapshot value','linear','50 (one snapshot interval)'],
+      ['Armed button outline','alpha','1 ↔ 0.4','linear triangle','800 period'],
+      ['Placement ellipse','alpha','0 → 0.70','linear','120'],
+      ['Credit gain flash','alpha','1 → 0','exponential, τ = 120 ms','400'],
+      ['Credit spend flash','alpha','1 → 0','exponential, τ = 180 ms','600'],
+      ['Selection group count','—','—','none — the latency-critical readout must not lag the gesture','0'],
+      ['World hull bar','alpha','1 → 0 on death','linear','200'],
+      ['Reconnect scrim','alpha','0 → 0.60','linear','200'],
+      ['Reconnect label','alpha','1 ↔ 0.45','linear triangle','900 period'],
+      ['Result scrim','alpha','0 → 0.72','linear','200'],
+      ['Quit confirm','alpha','1 → 0 on expiry','linear','200, after a 4000 ms hold']
+    ].map(r=>({el:r[0],prop:r[1],fromto:r[2],curve:r[3],ms:r[4]}));
+
+    return { f1, f2, f3, f4, studyA, studyB, studyC, studyD, geom, pal, type, motion };
+  }
+}
+</script>
+</body>
+</html>

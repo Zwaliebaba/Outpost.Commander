@@ -1,0 +1,157 @@
+{
+  "note": "sRGB hex. Convert to linear for the renderer. Alpha where given is the fill alpha of the rect.",
+  "hueRule": "The cool band 150-240 degrees is reserved for the local player at every player count. No team is red; 340-45 degrees is reserved for state signalling.",
+  "teams": {
+    "TEAM.OWN": {
+      "hex": "#38D1F5",
+      "hue": 193,
+      "use": "your fleet and station, order marker and lines, build-progress fill, panel index bars"
+    },
+    "TEAM.B": {
+      "hex": "#C4E838",
+      "hue": 78,
+      "use": "hostile A - the MVP opponent, the furthest hue from own"
+    },
+    "TEAM.C": {
+      "hex": "#F75FD0",
+      "hue": 318,
+      "use": "hostile B (M4)"
+    },
+    "TEAM.D": {
+      "hex": "#A45CFF",
+      "hue": 268,
+      "use": "hostile C (M4)"
+    }
+  },
+  "state": {
+    "SIG.ALERT": {
+      "hex": "#FF3B2F",
+      "use": "damage-alert stripe and triangle; the lost portion of every hull bar"
+    },
+    "SIG.SHORT": {
+      "hex": "#FF5A4A",
+      "use": "unaffordable cost, its index bar and bottom rule; cancel; the quit confirm"
+    },
+    "SIG.ARMED": {
+      "hex": "#FFB020",
+      "use": "armed module button, placement radius, credit-spend flash"
+    }
+  },
+  "chrome": {
+    "SPACE": {
+      "hex": "#04060A",
+      "use": "world clear colour - not drawn by the interface pass"
+    },
+    "SCRIM": {
+      "hex": "#07090B",
+      "alpha": 0.88,
+      "use": "every panel fill"
+    },
+    "PLATE": {
+      "hex": "#0E1214",
+      "alpha": 0.92,
+      "use": "live build button, clear, cancel"
+    },
+    "PLATE.DIM": {
+      "hex": "#090C0E",
+      "alpha": 0.92,
+      "use": "unavailable build button, under the 45deg hatch"
+    },
+    "PLATE.ARMED": {
+      "hex": "#17120A",
+      "alpha": 0.94,
+      "use": "armed build button"
+    },
+    "PLATE.QUIT": {
+      "hex": "#140806",
+      "alpha": 0.92,
+      "use": "the QUIT half of the quit confirm"
+    },
+    "RULE": {
+      "hex": "#313A40",
+      "use": "hairlines, bar keylines, cell outlines, dim index bars"
+    },
+    "RULE.DIM": {
+      "hex": "#232C31",
+      "use": "outline of an unavailable build button"
+    },
+    "RULE.LIT": {
+      "hex": "#5A6A72",
+      "use": "outline and index bar of a live target"
+    },
+    "TICK": {
+      "hex": "#8A9AA2",
+      "use": "registration ticks at panel rule ends and the frame quarter points"
+    },
+    "TICK.BAR": {
+      "hex": "#3A454B",
+      "use": "quarter index ticks inside the hull and progress troughs"
+    },
+    "TRACK": {
+      "hex": "#1A2024",
+      "use": "hull trough, empty cargo chip, progress trough"
+    }
+  },
+  "text": {
+    "TEXT": {
+      "hex": "#E8ECEC",
+      "use": "counts, costs, credits, live button names - about 10:1 on scrim over the band"
+    },
+    "TEXT.2": {
+      "hex": "#93A0A5",
+      "use": "design names, labels, percent, link state"
+    },
+    "TEXT.DIM": {
+      "hex": "#6B7A80",
+      "use": "unavailable button text - 4.9:1, readable and plainly recessed"
+    },
+    "TEXT.ARMED": {
+      "hex": "#FFE1A8",
+      "use": "armed button name and cost"
+    },
+    "TEXT.ALERT": {
+      "hex": "#FFFFFF",
+      "use": "the alert count only"
+    }
+  },
+  "bars": {
+    "HULL": {
+      "hex": "#CFDDE0",
+      "use": "hull remaining, selection panel"
+    },
+    "HULL.LOST": {
+      "hex": "#FF3B2F",
+      "alpha": 0.85,
+      "use": "hull lost, selection panel and world"
+    },
+    "HULL.REST": {
+      "hex": "#2E3942",
+      "use": "hull remaining, world bars only - deliberately near-invisible"
+    },
+    "HULL.KEY": {
+      "hex": "#0A0E12",
+      "use": "world hull bar keyline"
+    },
+    "ORE": {
+      "hex": "#D8A23C",
+      "use": "filled cargo chip"
+    }
+  },
+  "typography": {
+    "family": "Segoe UI, pinned. A missing family is a startup failure, not a substitution (ADR-009).",
+    "BODY": {
+      "authoredPx": 20,
+      "physicalPx": 40,
+      "mm": 3.82,
+      "weight": 600,
+      "use": "design names, build item names, panel labels, link state, percent, overlay sublabels"
+    },
+    "DISPLAY": {
+      "authoredPx": 32,
+      "physicalPx": 64,
+      "mm": 6.11,
+      "weight": 600,
+      "use": "credit balance, build cost, selection group count, alert count, overlay headlines"
+    }
+  }
+}
