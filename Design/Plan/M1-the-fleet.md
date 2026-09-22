@@ -226,36 +226,58 @@ arc before a re-grip. That second one decides whether orbit survives: `Interface
 candidate to cut, and cutting it removes the 8° deadzone, its latch, the 2% scale deadzone and the snap —
 four constants — and makes pinch pure zoom. **If it is bad, say so; it is designed to be cuttable.**
 
-### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient` · hand · agent
+### M1.9 — The hulls, as meshes · `NeuronClient`, `GameClient`, `OutpostCommander` · `NeuronClientTests`, hand · agent
 
-**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md) in full, including the shape
-list its status line corrects; `OpenQuestions.md` **Q37**, because a hull has no stated size and this step
-cannot emit one without agreeing a number; `TechnicalDesign.md` §6 and §7; R9; R14.
+**Read first:** [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md) in full — **it replaced the opposite
+decision and the tree held the old one for two days**, so read the record rather than remembering it;
+[`ADR-021`](../ADR/ADR-021-content-ships-with-the-package.md) on how content is carried and on the ASTA
+trap; `Design/design_handoff_meshes/`, which specifies the shapes; `OpenQuestions.md` **Q37**, because a
+mesh is not scaled at draw time so its authored extent *is* its size; `TechnicalDesign.md` §6 and §7; R9;
+R14.
 
-**Adds:** geometry from functions. **The split is R9's:** `NeuronClient` gets the vertex and index buffers,
-the upload and the instanced draw, which know nothing about a game; `GameClient` gets the function that
-knows what a `Scout` looks like. Normals baked per face onto split vertices — flat shading, no smoothing
-group to decide and no tangent basis to get wrong. Team color is a vertex attribute selecting between a
-hull palette and the owner's color, so one instanced draw covers every ship of a hull regardless of owner.
+**Adds:** geometry from files. **Three CMO meshes ship here** — `Scout`, `Frigate` and the station — as
+package content declared by `OutpostCommander`.
 
-**ADR-005 names the risk and it is this step's to watch: two hulls from one parameterised function tend to
-be the same shape at two scales**, which is exactly unreadable at the zoom where identification matters
-most. The function must be parameterised for **divergent proportion** — a wide flat hull against a long
-narrow one — and not merely for size.
+**The split is R9's and the reader falls on the engine side of it.** A CMO reader knows nothing about a
+game, so `NeuronClient` gets the reader, the vertex and index buffers, the upload and the instanced draw;
+`GameClient` gets the map from a hull identity to a file and the hull palette, which is the only part that
+knows what a `Scout` is.
 
-**Files:** `NeuronClient/MeshBuffer.h` `.cpp`, `NeuronClient/InstancedDraw.h` `.cpp`;
-`GameClient/HullMesh.h` `.cpp`, `GameClient/WorldPass.h` `.cpp`, `GameClient/Ship.hlsl`; both project files
-and `.filters`.
+**The reader is the risk in this step and the tests are its.** CMO carries a materials block with eight
+texture-name slots, a skinning vertex buffer, a bone hierarchy and animation clips, **none of which the
+MVP uses and all of which it must skip rather than reject** — so the suite feeds it a file that has them.
+It reads position, normal and vertex color from the fixed vertex and treats tangent and texture coordinate
+as the dead 24 bytes of 52 that they are. **No DirectXTK12**: R14 has not moved and ADR-005 turns on it.
 
-**Done when:** **the two ship hulls this milestone builds — `Scout` and `Frigate` — and the station** draw
-as one instanced call each with a per-instance transform and team color, at the sizes Q37 settles; the
-shared function reaches `ModuleFrame` and `Cruiser` by parameter without either being drawn here; and
-**the silhouettes are looked at from the tactical zoom**, which is a screen and not a test.
+**Nothing loads on the frame thread.** `Package.Current.InstalledLocation` is asynchronous and the frame
+thread is an ASTA, where blocking on it is a deadlock rather than a delay. The meshes are read before the
+frame loop starts or on a worker with a handoff, and this is the step that meets it first.
+
+**Team color is the vertex color channel** selecting between the hull palette and the owner's color, so
+one instanced draw covers every ship of a shape regardless of owner. A mesh that wants a second material
+for its team costs a draw call per owner and is a trade to argue rather than take.
+
+**The risk ADR-005 named has changed shape but not gone.** One shared function tending to emit the same
+hull at two scales is no longer the mechanism — but `Scout` and `Frigate` are still 3.5 and 5.3 authored
+pixels at the tactical zoom, and **divergent proportion in the plan view** is still what makes them
+different objects there. M2.13 judges it.
+
+**Files:** `NeuronClient/CmoReader.h` `.cpp`, `NeuronClient/MeshBuffer.h` `.cpp`,
+`NeuronClient/InstancedDraw.h` `.cpp`; `GameClient/HullMesh.h` `.cpp`, `GameClient/WorldPass.h` `.cpp`,
+`GameClient/Ship.hlsl`; the three `.cmo` files and their declaration in `Package.appxmanifest` or the
+project's content items; `Tests/NeuronClientTests/CmoReaderTests.cpp`; the project files and `.filters`.
+
+**Done when:** **`Scout`, `Frigate` and the station** draw as one instanced call each with a per-instance
+transform and team color, at the sizes Q37 settles; the reader survives a file carrying skinning, bones
+and animation clips and is asserted to; a mesh's authored extent matches the size the catalog states; the
+package actually carries the files on a clean install, **which is the failure ADR-021 named and which does
+not appear on the machine that built it**; and **the silhouettes are looked at from the tactical zoom**,
+which is a screen and not a test.
 
 ### M1.9b — The sky · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
 
 **Read first:** [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) in full;
-[`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), which it amends;
+[`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), which it amends;
 [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md); R9, R14 and R23.
 
 **Adds:** the backdrop, in two halves with two frequencies. **The galaxy** bakes once into a 512² cubemap,
@@ -284,7 +306,7 @@ reopening ADR-019.
 
 **It is dim, and the ceiling is on area rather than peak**: large-area luminance never above **12% of full
 white**, point features up to 45% and only for the brightest tier. ADR-005 leans on the backdrop being
-black to make a few-dozen-triangle hull read as deliberate, and this is the number that keeps that true.
+near-black to make a faceted hull read as deliberate, and this is the number that keeps that true.
 
 **The R9 split is the usual one.** `NeuronClient` gets the render-to-cubemap facility, the instanced
 sprite draw, the blackbody table and the seeded point-field generator — none of which knows there is a

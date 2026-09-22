@@ -101,13 +101,20 @@ asteroids have no simulation state, so there is nothing to send.
 the outputs are identical — **the one test that can catch an R23 violation before it presents as rocks in
 the wrong place**; and a `grep` finds no asteroid position anywhere on the wire.
 
-### M2.4 — The asteroid mesh · `GameClient` · hand · agent
+### M2.4 — The asteroid variants · `GameClient` · hand · agent
 
-**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md); `TechnicalDesign.md` §7.
+**Read first:** [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), whose *Consequences* name this step's
+whole problem; `TechnicalDesign.md` §6 and §7; `Design/design_handoff_meshes/`.
 
-**Adds:** the same mesh function M1.9 built, **driven by the match PRNG so that no two rocks are
-identical** — which ADR-005 names specifically, and which costs nothing because the PRNG is already there
-and already pinned. One instanced draw for the whole field.
+**Adds:** the rocks, as a **set of authored CMO variants** rather than one function driven by the match
+PRNG. **This is what ADR-005 cost when it made a mesh a file**: a file is one rock, so variation comes
+from the seed choosing among variants and applying its own yaw, pitch and scale jitter, and a variant set
+repeats where a generator did not.
+
+**Two figures move here and the second is owed at this step.** The field is **one instanced draw per
+variant** where `TechnicalDesign.md` §6 used to state one for the whole field, and each variant is package
+bytes. Settle the count against how obviously the set repeats at the tactical zoom, and write both
+figures into ADR-005's *Measurements* and `TechnicalDesign.md` §6.
 
 Asteroids, wrecks and debris **may be drawn above and below the plane** so the space reads as a volume;
 [`ADR-001`](../ADR/ADR-001-the-playfield-is-a-plane.md) permits exactly that and is equally clear that none
@@ -115,10 +122,13 @@ of it is simulated and the host does not know it exists. **A visual offset must 
 client and never reach a `GameCore` record** — this is the step where R22's third coordinate would sneak
 in if it were going to.
 
-**Files:** `GameClient/AsteroidMesh.h` `.cpp`; `GameClient.vcxproj` + `.filters`.
+**Files:** `GameClient/AsteroidMesh.h` `.cpp`; the variant `.cmo` files and their package declaration;
+`GameClient.vcxproj` + `.filters`.
 
-**Done when:** the field draws as one instanced call, rocks differ from one another, and the visual
-vertical offset exists only in client code — check your own diff for a `z` that crossed into `GameCore`.
+**Done when:** the field draws as one instanced call **per variant**, rocks differ from one another at the
+tactical zoom, the variant count and the package bytes are written into the two documents that state them,
+and the visual vertical offset and the scale jitter exist only in client code — check your own diff for a
+`z` that crossed into `GameCore`.
 
 ### M2.5 — The uniform grid · `GameLogic` · `GameLogicTests` · agent
 
@@ -249,27 +259,33 @@ the same function — which a reader can check by grep, because there is only on
 
 ### M2.10b — The module mesh, and telling four modules apart · `GameClient` · hand · agent
 
-**Read first:** [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), whose status line corrects the
+**Read first:** [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), whose status line corrects the
 shape list this step exists to complete; [`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md)'s
-*Decision*; `OpenQuestions.md` Q37; M1.9's shared function.
+*Decision*; `OpenQuestions.md` Q37; M1.9's reader and its identity-to-mesh map;
+`Design/design_handoff_meshes/`.
 
 **This step was missing and the milestone could not have finished without it.** ADR-005 counted the MVP's
 shapes the day before ADR-015 made a module a separate drawn entity, so M1.9 builds the hulls and the
 station, M2.4 builds the asteroid, and **nothing built the thing M2.11 places on the map.**
 
-**Adds:** `ModuleFrame` as a parameterisation of M1.9's shared function — no new mesh code, a new row of
-parameters — at the size Q37 settles, and **the scheme that tells the four variants apart**.
+**Adds:** `ModuleFrame` at the size Q37 settles, and **the scheme that tells the four variants apart** —
+no new mesh code either way, because M1.9's reader already reads whatever this step ships.
 
 **That second half is a design problem and not a detail.** ADR-015's whole argument is that *"a raid that
 kills your ore processor and leaves has done real damage without touching your station"*. That move needs
 **an attacker who can pick the right target and a defender who can see what they lost**, from the
-near-top-down tactical camera (`Interface.md` §5), with **one mesh, no textures and no icons** — the
-client knows each module's design identity from the snapshot's own byte
-([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)), so what is missing is what it draws with
-it, not what it knows. Geometry and the team-color attribute are the whole budget.
+near-top-down tactical camera (`Interface.md` §5) — the client knows each module's design identity from
+the snapshot's own byte ([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)), so what is missing
+is what it draws with it, not what it knows.
 
-**Files:** `GameClient/HullMesh.cpp` extended; `Tests/GameClientTests/` only if the parameterisation
-becomes worth pinning.
+**[`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md) is what makes this tractable and it is the largest
+single thing that decision buys.** The old rule left one mesh, the team-color attribute and no icons as
+the whole budget; a mesh being a file means **four authored module meshes are available**, at a draw call
+and a file each. Take them if the distinction needs them and say so; one mesh reading four ways is still
+cheaper if it works.
+
+**Files:** `GameClient/HullMesh.cpp` extended; the module `.cmo` files and their package declaration;
+`Tests/GameClientTests/` only if the identity-to-mesh map becomes worth pinning.
 
 **Done when:** a module draws as an instanced call off the same function as the hulls, four sit inside the
 400-unit placement radius without touching (M2.10), and **a shipyard is distinguishable from an ore
@@ -333,17 +349,21 @@ than accepting whatever the code does.
 
 **Read first:** ADR-005's Consequences; `GameDesign.md` §1; `Interface.md` §5.
 
-**ADR-005 names this risk against this milestone.** `GameDesign.md` §1 promises "ships that bank as they
-turn and read as silhouettes", `Interface.md` §5 couples pitch to zoom so the tactical view is near
-top-down, and **two hulls emitted by one shared parameterised function will tend to be the same shape at
-two scales** — which is exactly unreadable at the zoom where identification matters most.
+**ADR-005 names this risk against this milestone, and replacing that record removed its cause without
+removing the constraint.** `GameDesign.md` §1 promises "ships that bank as they turn and read as
+silhouettes" and `Interface.md` §5 couples pitch to zoom so the tactical view is near top-down. The old
+mechanism — two hulls emitted by one shared parameterised function tending to be the same shape at two
+scales — is gone now that each hull is modeled on its own. **What has not moved is 17.1 units to the
+authored pixel**, which puts a `Scout` at 3.5 pixels and a `Frigate` at 5.3, seen from almost directly
+above. A modeler can draw two different ships and still hand over two identical four-pixel smudges.
 
 **Done when:** a field of miners and fighters is looked at from the tactical zoom on the device and the two
 are distinguishable at a glance; **and a base of four modules is looked at the same way and a shipyard is
 distinguishable from an ore processor** (M2.10b), because ADR-015's raid depends on picking the right
-target and this gate is the only thing that checks it. **If either fails, ADR-005 has already named the
-answer — a shape-coded overlay, not more triangles** — and that is an ADR rather than a quiet addition to
-the mesh function.
+target and this gate is the only thing that checks it. **If either fails, the answer is a shape-coded
+overlay drawn by the interface, not more triangles** — which ADR-005 named while it still ruled meshes
+were functions and which survives it, because the overlay was never about how the geometry was made. That
+is an ADR rather than a quiet addition to the world pass.
 
 ### M2.14 — GATE: the tick's cost · — · hand · **human**
 

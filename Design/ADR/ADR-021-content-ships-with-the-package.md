@@ -3,12 +3,17 @@
 **Status:** Accepted — ruled 2026-09-22.
 **Date:** 2026-09-22
 **Owner:** Stefan Zwaal
-**Updates:** [`ADR-005`](ADR-005-meshes-are-generated-in-code.md), which no longer claims the MVP has no
+**Updates:** [`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md), which no longer claims the MVP has no
 content pipeline, and [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md), which no longer rests on
 a painted cubemap being unloadable. **Both were edited rather than superseded**, under the rule the same
 ruling set: through the MVP a conflicting record is updated in place, because two records that disagree
 cost more than the history of the disagreement buys (`ADR/README.md`, *Superseding, and the MVP
 exception*).
+
+**Later the same day the owner went further with `ADR-005` and reversed it**: a mesh is a CMO file, and
+that record was replaced in place rather than superseded. **This one is unaffected** — it removed a
+prohibition and ADR-005 is what spends it — but every sentence below that describes ADR-005 describes the
+record as it stood on the morning of 2026-09-22, and says so where it matters.
 
 ## Context
 
@@ -22,8 +27,10 @@ what follows is why they were wrong to read that way in the first place.
 **Neither of them argued that.** ADR-005's whole case is R14's dependency line: a mesh format is "the
 single most common place a graphics project reaches past that line without noticing — glTF wants a JSON
 parser, FBX wants the SDK, and every D3D12 sample in existence pulls DirectXTK12 for the loader it happens
-to ship with." Its Measurements section says so outright: *"This is a decision about where the dependency
-line sits, and R14 already drew it."* It even named its own exit — a small hand-rolled binary format
+to ship with." Its Measurements section said so outright — *"This is a decision about where the
+dependency line sits, and R14 already drew it"* — a sentence the replaced record no longer carries,
+because the record that replaced it takes a different decision on the same line. It even named its own
+exit — a small hand-rolled binary format
 written by a script in `Build/` and read by about forty lines in `GameClient` — and said of it, in bold,
 "**That is still no dependency**."
 
@@ -49,8 +56,11 @@ as files, carried in the package, and loaded at runtime.
 **1. R14 still closes the dependency list.** A content *file* is not a dependency; a *loader library* is.
 No glTF loader, no FBX SDK, no DirectXTK12, no DirectXTex. A format used here is one whose reader is
 written here, or one the Windows SDK already reads — WIC for images, Media Foundation for audio, both
-inside R14 already. ADR-005's hand-rolled "a vertex count, an index count and two arrays" is still the
-cheapest thing that works and is still the first thing to reach for.
+inside R14 already. **That boundary is what makes CMO affordable**: ADR-005 now rules that a mesh is a
+CMO file *and* that its reader is written in this tree, because CMO's only reader in the wild is the
+DirectXTK12 this paragraph closes. Its hand-rolled "a vertex count, an index count and two arrays"
+remains the cheapest thing that works and is now the fallback rather than the first reach — ADR-005 says
+what would send the tree back to it.
 
 **2. Nothing the simulation reads becomes a file.** The component catalog, the designs and the damage
 table stay `constexpr` tables in `GameCore` (`TechnicalDesign.md` §7). A table the host and the client can
@@ -78,14 +88,17 @@ lands, and the license text sits beside the bytes.
 cost it was accepting — *"there is no way for anyone but a programmer to change a ship's shape, which
 forecloses art as a parallel activity for as long as it stands."* This buys that back.
 
-**Nothing changes today.** Meshes are still generated in code, the sky is still generated from the seed,
-and there is no loader to write against. **This record removes a prohibition; it does not order a
-pipeline.** Until somebody writes the first loader, ADR-005's surviving half describes the tree exactly.
+**This record removes a prohibition; it does not order a pipeline** — and it was written expecting that
+nothing would change for a while. **[`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md) ordered one the same
+day**, ruling that a mesh is a CMO file, so the first loader is owed at M1.9 rather than whenever somebody
+wanted one. The sky is still generated from the seed and
+[`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) is unmoved.
 
 **Two arguments elsewhere stopped resting on this and now rest on themselves, which is why both records
 were edited rather than annotated.** ADR-005's sharpest cost — that one shared function tends to emit the
-same shape at two scales, unreadable at the zoom where identification matters most — is now answerable
-with a modeled hull rather than only with a shape-coded overlay. And
+same shape at two scales, unreadable at the zoom where identification matters most — became answerable
+with a modeled hull rather than only with a shape-coded overlay, **and that is the opening ADR-005 then
+took**. And
 [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) claimed a painted cubemap "could not be loaded
 even if one existed"; that decision survives on its other grounds, which are that a seeded sky costs no
 wire bytes, cannot desync anything, never updates, and saves 6.3 MB in the package.

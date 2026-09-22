@@ -9,7 +9,7 @@ this tree has taken no decisions before these.
 | [`ADR-002`](ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the 16-bit binary angle over a 4,096-entry sine table, the pinned PRNG, and candidate ordering as a correctness property | Accepted | 2026-09-20 |
 | [`ADR-003`](ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz, no delta and no acknowledgment; a ten-byte record, an explicit removal list, host-side command validation, and commands made reliable by a sequence the snapshot already carries | Accepted | 2026-09-20 |
 | [`ADR-004`](ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities in the MVP: damage lands on the tick a weapon fires and the client draws an event | Accepted | 2026-09-20 |
-| [`ADR-005`](ADR-005-meshes-are-generated-in-code.md) | Meshes are functions rather than files, because a mesh format is where a project reaches past R14's dependency line. **Updated 2026-09-22**: it no longer claims the MVP has no content pipeline | Accepted | 2026-09-20 |
+| [`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md) | A mesh is a CMO file, authored as content, with the reader written here — R14 closes a list of libraries and not a list of files. **Replaced 2026-09-22**, having decided the opposite: a mesh was a function | Accepted | 2026-09-22 |
 | [`ADR-006`](ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function | Accepted | 2026-09-20 |
 | [`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md) | The world is authored at a scale of the panel, **defaulting to 1:1 since [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md)**, and the 48-pixel touch target that follows from the panel rather than from it | Accepted | 2026-09-20 |
 | [`ADR-008`](ADR-008-the-host-address-is-configuration.md) | The host address is a configuration file with a compiled-in default and no discovery; the loopback exemption is a development arrangement and not a shipping one | Accepted | 2026-09-20 |
@@ -28,8 +28,11 @@ this tree has taken no decisions before these.
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
 ruled; a proposed ADR is not something to write code against. **All nineteen are Accepted** — ADR-002 to
 ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes; ADR-012
-on 2026-09-21 with the compiler changed from the one the plan recommended; and ADR-021 on 2026-09-22,
-which also settled that a conflicting record is updated in place through the MVP rather than superseded.
+on 2026-09-21 with the compiler changed from the one the plan recommended; ADR-021 on 2026-09-22, which
+also settled that a conflicting record is updated in place through the MVP rather than superseded; and
+**ADR-005 again on 2026-09-22, reversed outright** — a mesh is a CMO file where that record had ruled a
+mesh was a function. That last one is the exception below being stretched from contradictions to
+decisions, and the owner stretched it.
 
 **ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan met three
 questions the design does not answer and named a number for each rather than answering them in passing:
@@ -87,13 +90,22 @@ If a figure is arithmetic rather than a measurement, say what it is arithmetic o
 design is still being settled, two records that disagree cost more than the history of the disagreement
 buys, and a reader who has to work out which of two paragraphs is live is the failure this directory
 exists to prevent. So an ADR that has been overtaken is **edited until it is true**, its status line says
-what changed and when, and the git history carries the rest. `ADR-005` is the worked example: it was
-updated rather than half-superseded, and its status line says so.
+what changed and when, and the git history carries the rest.
+
+**`ADR-005` is the worked example, and now the limit case as well.** It was first updated rather than
+half-superseded, alongside `ADR-021`. Then on 2026-09-22 the owner **reversed its decision outright** — a
+mesh is a CMO file where it had ruled a mesh was a function — and ruled it replaced in place rather than
+superseded by a twenty-second record, on the same ground: nothing has shipped, and a second record
+arguing with the first is the cost this exception exists to avoid. **Its slug changed with its title**,
+because a filename asserting a decision the file no longer takes is the same defect one directory out.
 
 **After the MVP this inverts, and the older rule takes over:** a decision is never edited into a different
 decision, a new ADR supersedes it, the old one's status line points forward, and the old file stays —
 because once something has shipped, why it used to be another way is a question people actually ask.
 
-**A new decision is still a new record.** This exception is about removing contradictions, not about
-folding every change into whatever record is nearest: `ADR-021` is its own file because it decides
-something, while `ADR-005` and `ADR-019` were edited because they merely disagreed with it.
+**A new decision is usually still a new record, and stretching that is the owner's call rather than an
+author's.** This exception is about removing contradictions, not about folding every change into whatever
+record is nearest: `ADR-021` is its own file because it decides something, and `ADR-019` was edited
+because it merely disagreed with it. **`ADR-005` is the one case where a new decision replaced an old
+record instead**, and the reason is that it *reversed* that record rather than adding to it — a
+twenty-second ADR would have left the fifth asserting the opposite for the whole of the MVP.

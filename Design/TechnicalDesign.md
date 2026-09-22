@@ -385,9 +385,12 @@ it takes no time input, so it is generated once and never updated. Being floats 
 is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
-color. Three hulls — `Scout`, `Frigate` and, from M2, `ModuleFrame` — one station mesh and one asteroid
-mesh: five draws for the whole field. The `Cruiser` is a sixth hull the shared function must reach and the
-MVP never draws (`GameDesign.md` §10). Two frames in
+color. Three hulls — `Scout`, `Frigate` and, from M2, `ModuleFrame` — the station, and **one draw per
+asteroid variant** rather than one for the whole field, which is what
+[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) cost when it made a rock a file instead of a function;
+the variant count is settled at M2.4 and the figure is owed there. The `Cruiser` is a sixth hull the
+catalog carries and the MVP never draws (`GameDesign.md` §10), and under ADR-005 it costs a file rather
+than a parameter. Two frames in
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimized
 until something measured says to.
 
@@ -433,17 +436,28 @@ thread is an ASTA, where blocking on an asynchronous operation is a deadlock rat
 ([`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md) records it as observed). Content is read
 before the frame loop starts or on a worker thread with a handoff.
 
-**Meshes are generated in code.** A hull is a function that emits a few dozen triangles — a fuselage, an
-engine block, a pair of wings — parameterised so the three hulls share the code that makes them. Normals
-are baked per face onto split vertices, which is flat shading, which is what a low-polygon faceted look
-wants anyway; there is no smoothing group to decide and no tangent basis to get wrong. Team color is a
-vertex attribute selecting between a hull palette and the owner's color.
+**A mesh is a CMO file** ([`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)). The five MVP shapes —
+`Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid — are modeled and shipped as package
+content rather than emitted by code, and `Design/design_handoff_meshes/` specifies them. **That record
+used to rule the opposite**, and it was replaced rather than superseded because nothing has shipped.
 
-**That is what the tree holds today, and it is a description rather than a constraint.** It is
-[`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md), whose surviving half is that meshes are
-functions. The first ship that needs to look like something a function cannot describe gets a small
-hand-rolled binary format read by `GameClient` — still no dependency, and still the cheapest thing that
-works before any library is considered.
+**The reader is written here, which is the whole of how CMO stays inside R14.** CMO's only reader in the
+wild is DirectXTK12's, which the paragraph above closes by name. The MVP uses the position, the normal and
+the vertex color of CMO's fixed vertex and writes tangent and texture coordinate as zeros — 24 dead bytes
+of 52 — and the reader **skips the materials' eight texture slots, the skinning buffer, the bones and the
+animation clips rather than rejecting a file that has them.**
+
+**Normals are baked per face onto split vertices**, which is flat shading and is what a low-polygon
+faceted look wants: no smoothing group to decide and no tangent basis to get wrong. **Team color is the
+vertex color channel** selecting between a hull palette and the owner's color, so one instanced draw
+covers every ship of a shape regardless of owner — the one property of the old decision that constrains
+the authoring, and the reason a shape may not spend a second material on its team.
+
+**What is given up is that a geometry change was a change the compiler checked.** The replacement is a
+script asserting each mesh's bounds against the size the catalog states, which is a gate rather than a
+compile error — the arrangement `Scripts/CheckHudGeometry.py` already has for the interface pass. And the
+asteroid loses its generator: a file is one rock, so variation is a set of authored variants with the
+match seed choosing among them and jittering yaw, pitch and scale in the client.
 
 **Presentation may be data; rules stay code.** The component catalog, the designs and the damage table are
 `constexpr` tables in `GameCore` and do not become files. A table the host and the client can disagree
@@ -521,7 +535,7 @@ shaped:
 | [`ADR-002`](ADR/ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the binary angle and the sine table, the pinned PRNG, and ordering as a correctness property. |
 | [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz with no delta and no acknowledgment; a ten-byte record with the design identity its own byte; a removal list; commands made reliable by a sequence the snapshot already carries and validated by the host. |
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
-| [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | Meshes are functions rather than files, because a mesh format is where a project reaches past R14's dependency line. |
+| [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) | A mesh is a CMO file, authored as content, with the reader written here because CMO's only reader in the wild is the DirectXTK12 R14 closes. Replaced the opposite decision, that meshes are functions. |
 | [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md) | Content files ship with the package. The line is against dependencies and against simulation data becoming files, not against files as such. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
 | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame was pinned at 1440 × 960 for an exact 2× fit; amended by ADR-016, which makes it a scale. |

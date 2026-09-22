@@ -316,7 +316,7 @@ physical resolution. **Nothing automated reaches this step** and the report says
 
 ### M0.14 — ADR-012: how a shader is built · `Design/ADR`, `NeuronClient` · hand · **human**, then agent
 
-**Read first:** R14; [`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md), which draws the same
+**Read first:** R14; [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), which draws the same
 dependency line one subsystem over; `README.md` F1.
 
 **Adds:** the decision, taken before the shader rather than after it. `fxc` and `dxc` ship with the Windows

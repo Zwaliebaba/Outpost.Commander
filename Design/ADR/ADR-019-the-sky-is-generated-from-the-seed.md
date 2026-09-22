@@ -3,14 +3,14 @@
 **Status:** Accepted
 **Date:** 2026-09-21
 **Owner:** Stefan Zwaal — asked for a procedural star field with a galaxy behind it
-**Amends:** [`ADR-005`](ADR-005-meshes-are-generated-in-code.md), whose silhouette argument rests on the
+**Amends:** [`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md), whose silhouette argument rests on the
 backdrop being black. It is now near-black, and this ADR puts a number on how near.
 
 ## Context
 
 **Procedural is a choice here and this record has to earn it.** An earlier draft said R14 made it the only
 option, because there is no DDS loader and no DirectXTex
-([`ADR-005`](ADR-005-meshes-are-generated-in-code.md)) and a painted cubemap therefore could not be loaded
+([`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md)) and a painted cubemap therefore could not be loaded
 even if one existed. **[`ADR-021`](ADR-021-content-ships-with-the-package.md) settled that content files
 ship**, so that argument is gone and the decision stands on the rest: a seeded sky costs no wire bytes,
 cannot desync anything, takes no time input so it is generated once and never updated, and is 6.3 MB the
@@ -94,8 +94,8 @@ little movement" is the kind of thing that arrives later without anyone deciding
 
 ### 4. It is dim, and the ceiling is on area rather than on peak
 
-`ADR-005` argues that "a faceted low-polygon fleet in silhouette against black is at least a coherent look
-rather than an apologetic one", and `TechnicalDesign.md` §6 wants thin bright silhouettes against black
+`ADR-005` argues that the near-black backdrop "is still what makes a faceted hull read as deliberate",
+and `TechnicalDesign.md` §6 wants thin bright silhouettes against black
 for legibility. **A bright sky attacks both.** The ceiling is therefore stated in two parts, because what
 costs contrast is lit *area*, not peak value:
 
