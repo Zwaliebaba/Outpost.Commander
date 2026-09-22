@@ -13,6 +13,9 @@
     <Filter Include="Assets">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\Meshes">
+      <UniqueIdentifier>{1f6558ad-bd0e-4753-866d-a61db1f3533d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
@@ -42,5 +45,47 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Assets\Meshes\AsteroidA.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\AsteroidB.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\AsteroidC.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\AsteroidD.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\AsteroidE.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\Frigate.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\manifest.json">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\ModuleFrame.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\ModuleOreProcessorL1.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\ModuleOreProcessorL2.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\ModuleShipyardL1.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\ModuleShipyardL2.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\Scout.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
+    <None Include="Assets\Meshes\Station.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
   </ItemGroup>
 </Project>
