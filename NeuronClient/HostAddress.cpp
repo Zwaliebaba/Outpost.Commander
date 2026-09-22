@@ -5,6 +5,8 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Storage.h>
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 
@@ -44,16 +46,39 @@ std::string HostAddressFromFileContents(std::string_view _contents)
 
 std::string ReadHostAddress() noexcept
 {
-  // EVERY FAILURE PATH ENDS AT THE DEFAULT, which is why the whole body is inside one catch. There
-  // is no first run on which this file exists, so "not there" is the ordinary case rather than the
-  // exceptional one, and it must cost nothing but the exception the projection throws for it.
+  // === IT ASKS THE PROJECTION FOR THE PATH AND THEN READS THE FILE WITH AN ifstream. ===
+  //
+  // THIS IS NOT A STYLE PREFERENCE AND THE OBVIOUS ALTERNATIVE CRASHES THE CLIENT. The tidy-looking
+  // version is `LocalFolder().GetFileAsync(...).get()` and `FileIO::ReadTextAsync(file).get()`, and
+  // it was written that way first. **A packaged application's view runs on a single-threaded
+  // apartment, and blocking it on an asynchronous operation is not allowed**: C++/WinRT's `get()`
+  // asserts on the UI thread rather than returning, so the client died between opening its log and
+  // writing the first line into it -- a zero-byte log file and no window, with nothing in it to say
+  // why.
+  //
+  // It was found by deploying to the device, which is the only place it can be found: no suite in
+  // this tree can construct a `CoreWindow`, so no test can put this call on the thread that breaks
+  // it. `App.cpp` had it right before M0.22 moved the body down here, and moving it did not make
+  // the mechanism wrong -- it made the SPLIT right and then changed the mechanism as well, which is
+  // one change too many for one commit.
+  //
+  // `ApplicationData::Current().LocalFolder().Path()` is a property rather than an async operation,
+  // so it is safe anywhere; the read after it is ordinary file I/O on a path the process owns.
+  //
+  // EVERY FAILURE PATH ENDS AT THE DEFAULT. There is no first run on which this file exists, so
+  // "not there" is the ordinary case rather than the exceptional one.
   try
   {
-    const winrt::Windows::Storage::StorageFolder folder = winrt::Windows::Storage::ApplicationData::Current().LocalFolder();
-    const winrt::Windows::Storage::StorageFile file = folder.GetFileAsync(winrt::hstring{HOST_ADDRESS_FILE_NAME}).get();
-    const winrt::hstring contents = winrt::Windows::Storage::FileIO::ReadTextAsync(file).get();
+    const std::filesystem::path localState{std::wstring{winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path()}};
+    std::ifstream file{localState / HOST_ADDRESS_FILE_NAME};
+    if (!file)
+    {
+      return std::string{DEFAULT_HOST_ADDRESS};
+    }
 
-    return HostAddressFromFileContents(winrt::to_string(contents));
+    std::string firstLine;
+    std::getline(file, firstLine);
+    return HostAddressFromFileContents(firstLine);
   }
   catch (...)
   {
