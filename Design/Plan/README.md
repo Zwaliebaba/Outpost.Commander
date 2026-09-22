@@ -41,21 +41,29 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1 has its model and its protocol.** M1.1's catalog, M1.2's derivation and M1.3's entity are in, and
-the three of them together are ADR-006's claim made testable: a miner, a fighter and a station come out of
-one table with no special case, and `GameCoreTests` pins every combination the catalog can express rather
-than the three rows that ship. **M1.4 took the decision this plan said was not its to take** —
+**M1 IS BUILT AS FAR AS ITS RENDERER.** M1.1 to M1.8, M1.10 and M1.11 are in, and M1.9 is half in.
+What that adds up to is a match: two stations placed 12,000 units apart on a seed both sides derive, a
+station that builds and refunds, fifty ships that take a ring slot each rather than stacking, a camera
+that sticks to the finger, and a tap that selects, expands and orders.
+
+**M1.4 took the decision this plan said was not its to take** —
 [`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) — and the code behind it: a client is
 told which player it is, a reconnect gets its slot back, and a command from an endpoint the host never
 seated is refused instead of believed.
 
-**What is open is measurement**, and no longer any decision:
+**ADR-002's second owed measurement is closed.** M1.7's determinism test runs a two-minute scripted match
+from one seed and hashes to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. Until it
+ran, every claim in that record about bit-identical behavior was an argument.
+
+**What is open is the geometry, and two measurements**:
 
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
 | **M0.23** | **Half closed.** Frame time is measured and settled — 1,118 microseconds mean GPU over 3,600 frames, three runs inside four microseconds of each other, in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md). Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
 | **M1.4** | **Closed.** The ADR is Accepted and the join is built. **What it has not had is two machines** — every one of its properties is pinned by a socket-free suite, and a reconnect across a real relaunch is one of the things M0.23's outstanding run is now worth watching for |
+| **M1.9** | **Half built.** The CMO reader, the regenerated mesh catalog, the hull-to-mesh map with its handedness conversion and `CheckMeshes.py`'s CMO stage are in and tested; **nothing uploads a vertex buffer yet**, so the world still draws M0.21b's generated arrow. Both of the step's remaining exit criteria are a screen rather than a test |
+| **M1.9b** | **Not started.** The sky is the one part of M1 with no code at all. Its blackbody table and its seeded star field are `NeuronClientTests`' to pin (`TechnicalDesign.md` §8); the cubemap bake and the draw are looked at rather than asserted |
 
 **M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the frame times are in
 [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements, and **the scale that ships

@@ -311,9 +311,24 @@ pixels at the tactical zoom, and **divergent proportion in the plan view** is st
 different objects there. M2.13 judges it.
 
 **Files:** `NeuronClient/CmoReader.h` `.cpp`, `NeuronClient/MeshBuffer.h` `.cpp`,
-`NeuronClient/InstancedDraw.h` `.cpp`; `GameClient/HullMesh.h` `.cpp`, `GameClient/WorldPass.h` `.cpp`,
-`GameClient/Ship.hlsl`; the three `.cmo` files and their declaration in `Package.appxmanifest` or the
-project's content items; `Tests/NeuronClientTests/CmoReaderTests.cpp`; the project files and `.filters`.
+`NeuronClient/InstancedDraw.h` `.cpp`; `GameClient/HullMesh.h` `.cpp`, `GameClient/MeshCatalog.g.h`,
+`GameClient/WorldPass.h` `.cpp`, `GameClient/Ship.hlsl`; the three `.cmo` files and their declaration in
+`Package.appxmanifest` or the project's content items; `Tests/NeuronClientTests/CmoReaderTests.cpp`,
+`Tests/GameClientTests/HullMeshTests.cpp`; `Scripts/BuildMeshCatalog.py`; the project files and
+`.filters`.
+
+**WHAT IS BUILT, 2026-09-22.** The reader, and the suite that feeds it a file carrying skinning, bones
+and animation clips. `Scripts/BuildMeshCatalog.py` and the `MeshCatalog.g.h` it regenerates from
+`manifest.json`. `GameClient/HullMesh`, which is the only part of the path that knows what a `Scout` is
+and is where the authored Y-up frame becomes the camera's Z-up one — a reflection, so every triangle's
+winding is reversed. `CheckMeshes.py`'s CMO stage, which was a stub that passed while asserting nothing
+and now decodes all thirteen files, runs the landmark tests on the decoded positions and catches the
+all-white colours that mean the vertex-colour injection was skipped. **And Q37's two statements now have
+a script between them**, which is what the register said would close that row.
+
+**WHAT IS NOT.** The vertex and index buffers, the upload, the instanced draw, the `Ship` shader pair and
+the world pass that would call them. The world still draws M0.21b's generated arrow. Both of the exit
+criteria below that are a screen rather than a test are therefore untouched.
 
 **Done when:** **`Scout`, `Frigate` and the station** draw as one instanced call each with a per-instance
 transform and team color, at the sizes Q37 settles; the reader survives a file carrying skinning, bones
