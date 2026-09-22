@@ -223,6 +223,8 @@
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
     <ClCompile Include="PointSprites.cpp" />
+    <ClCompile Include="AtlasPacker.cpp" />
+    <ClCompile Include="GlyphAtlas.cpp" />
     <ClCompile Include="Blackbody.cpp" />
     <ClCompile Include="CmoReader.cpp" />
     <ClCompile Include="StarField.cpp" />
@@ -252,6 +254,9 @@
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
     <ClInclude Include="PointSprites.h" />
+    <ClInclude Include="AtlasPacker.h" />
+    <ClInclude Include="GlyphAtlas.h" />
+    <ClInclude Include="TextLayout.h" />
     <ClInclude Include="Blackbody.h" />
     <ClInclude Include="CmoReader.h" />
     <ClInclude Include="StarField.h" />
