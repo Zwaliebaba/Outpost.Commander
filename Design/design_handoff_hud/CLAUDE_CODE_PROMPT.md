@@ -8,8 +8,8 @@ Implement the in-match HUD for Outpost Commander from the design handoff in
 `design_handoff_hud/`. Read `design_handoff_hud/README.md` in full before writing code — it is
 self-sufficient and every number in it is final.
 
-**Scope.** The interface pass only. Do **not** implement the 3D scene: no camera, star field, galaxy
-band, plane grid, ship/station/asteroid meshes. The design reference HTML draws a representative scene
+**Scope.** The interface pass only. Do **not** implement the 3D scene: no camera, star field, plane
+grid, ship/station/asteroid meshes. The design reference HTML draws a representative scene
 behind the HUD purely so contrast could be judged; none of it is a specification. If a world position is
 needed (hull bars, order marker, placement radius), assume a `project(worldPos) -> screenPos` function
 exists or stub it behind an interface — the overlays' *geometry* is in scope, their *projection* is not.

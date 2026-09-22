@@ -53,18 +53,19 @@ struct StarFieldDescription
   /// centre at best, at a fraction of its peak, and most of the faint tiers simply did not appear on
   /// the device. Below about two pixels a sprite is not dim, it is absent -- and a star that vanishes
   /// is worse than one that is too bright, because nothing on the screen says it was meant to be
-  /// there. 2.4 clears the floor with room for the falloff to be a falloff.
+  /// there. 2.4 cleared the floor and was still not seen, because the nearest pixel centre got a third
+  /// of the peak; 3.0 with `StarPS.hlsl`'s flat-topped falloff gets it about three quarters.
   float brightestSizePixels = 10.0f;
-  float faintestSizePixels = 2.4f;
+  float faintestSizePixels = 3.0f;
 
   /// The value the centre of a sprite reaches, as a fraction of full white. **ADR-019 caps the
   /// brightest at 0.45** and puts the ceiling on lit AREA rather than on peak.
   ///
-  /// The faint end was 0.08, which is below the band it has to be seen against -- so the faint stars
-  /// were not merely dim, they were dimmer than the sky behind them. See `GameClient/SkyLook.h`, where
-  /// both ends of that comparison now live.
+  /// The faint end was 0.08, then 0.18, and neither was seen on the device -- first because a band
+  /// outshone it and then because the sprite never delivered its peak to a pixel. See
+  /// `GameClient/SkyLook.cpp` for the derivation of the figure it has now.
   float brightestValue = 0.45f;
-  float faintestValue = 0.18f;
+  float faintestValue = 0.24f;
 
   /// **TEMPERATURE CORRELATES WITH BRIGHTNESS, AND THAT CORRELATION IS THE DETAIL THAT SELLS IT.** Hot
   /// stars are luminous, so the bright tiers skew blue-white and the faint ones orange; drawing colour
@@ -91,7 +92,7 @@ struct StarFieldDescription
   /// above one pulls stars toward the plane, and the exponent is applied to the sine of the latitude.
   float planeConcentration = 2.3f;
 
-  /// The galactic pole, in world space -- the axis the band lies perpendicular to. Normalized on use,
+  /// The galactic pole, in world space -- the axis the plane lies perpendicular to. Normalized on use,
   /// so a caller may state a direction rather than a unit vector.
   float poleX = 0.0f;
   float poleY = 0.35f;
@@ -135,9 +136,10 @@ struct Star
 /// **THE LIT AREA THE FIELD ADDS, AS A FRACTION OF THE FRAME** -- ADR-019's ceiling is on area rather
 /// than on peak, and this is the number that ceiling is about.
 ///
-/// A sprite's soft radial falloff means it does not contribute its whole disc: the integral of the
-/// falloff over the quad is about a quarter of it, which is what the `0.25` below is and what makes this
-/// an estimate rather than a measurement of the rendered frame.
+/// A sprite's soft radial falloff means it does not contribute its whole disc. `StarPS.hlsl`'s
+/// `1 - smoothstep(0, 1, r)` integrates to exactly 0.30 of the disc -- 2 x (1/2 - 3/4 + 2/5) -- which
+/// is the constant below. It is still an estimate rather than a measurement of the rendered frame,
+/// because rasterization samples the falloff at pixel centres rather than integrating it.
 [[nodiscard]] float LitAreaFraction(const std::vector<Star>& _stars, std::uint32_t _framePixels) noexcept;
 
 /// **PCG32's STREAM FOR THE SKY.** `GameLogic/Sessions.h` took stream 1 and said M2's generator owns

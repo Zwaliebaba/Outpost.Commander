@@ -356,23 +356,24 @@ which is a screen and not a test.
 [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), which it amends;
 [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md); R9, R14 and R23.
 
-**Adds:** the backdrop, in two halves with two frequencies. **The galaxy** bakes once into a 512² cubemap,
-6.3 MB, rendered at match start and sampled with one fetch per pixel — a band that is wider and brighter
-toward the galactic center and carries **dark dust lanes**, because a band without them is a stain rather
-than a galaxy. **The stars** are about 3,000 instanced quads from `SV_VertexID` with no vertex buffer,
-seeded from the match.
+**Adds:** the backdrop, and it is **stars and nothing else** — 8,000 instanced quads from `SV_VertexID`
+with no vertex buffer, seeded from the match, over a black clear. **The galaxy band this step first built
+is withdrawn** ([`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) decision 1): baked into a
+512² cubemap with dust lanes, it read on the device as a painting behind the fleet at every brightness
+that was visible at all. The Milky Way is carried by star density rising toward the galactic plane.
 
 **What makes it read as a sky is four properties, and each has a way of failing that is worth knowing:**
 
-- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — 8, 25, 74, 223, 668 and 2,002 stars,
-  which are rounded shares with the leftover at the faint end rather than an exact division: the ratio
-  sums to 364 and divides no round number evenly. The brightest tier being *eight* is the whole effect.
-  Uniform brightness reads as salt and pepper.
-- **Size follows brightness**, 10 scene-target pixels down to 2.4, **drawn continuously rather than one
-  size per tier** — six sizes for three thousand stars reads as six kinds of dot, and the faint end is a
-  rasterization floor: below about two pixels a sprite covers no pixel centre and is absent rather than
-  dim. Both were found by looking at it. The falloff is soft and radial, and apparent size is the
-  point-spread function, not the star.
+- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — 22, 66, 198, 593, 1,780 and 5,341
+  stars, which are rounded shares with the leftover at the faint end rather than an exact division: the
+  ratio sums to 364 and divides no round number evenly. The brightest tier being a handful — one or two
+  in any frame — is the whole effect, and the count is judged per frame: 3,000 put under half a
+  standout on screen. Uniform brightness reads as salt and pepper.
+- **Size follows brightness**, 10 scene-target pixels down to 3.0, **drawn continuously rather than one
+  size per tier** — six sizes for three thousand stars reads as six kinds of dot — and the faint end is
+  set by **what the nearest pixel receives**: 2.4 pixels at 0.18 under a squared falloff delivered about
+  16 of 255 and was not seen. The falloff is flat-topped, `1 − smoothstep(0, 1, r)`, and apparent size is
+  the point-spread function, not the star. All of it was found by looking.
 - **Color is blackbody, desaturated to about 38%.** Oversaturated tints are how a procedural sky
   announces itself; real stars read very nearly white — but *nearly* white is the point, and 20% over a
   narrow temperature range left every star the same off-white with no tint visible at all.
@@ -389,23 +390,24 @@ reopening ADR-019.
 white**, point features up to 45% and only for the brightest tier. ADR-005 leans on the backdrop being
 near-black to make a faceted hull read as deliberate, and this is the number that keeps that true.
 
-**The R9 split is the usual one.** `NeuronClient` gets the render-to-cubemap facility, the instanced
-sprite draw, the blackbody table and the seeded point-field generator — none of which knows there is a
-game. `GameClient` gets what *this* sky looks like: the band's orientation, the star count, the tier
-ratios, the palette and the ceiling. **Nothing goes in `GameCore` or `GameLogic`**, and the sky being
-floats and noise throughout means `Scripts/CheckDeterminism.py` catches it if anyone tries.
+**The R9 split is the usual one.** `NeuronClient` gets the instanced sprite draw, the blackbody table
+and the seeded point-field generator — none of which knows there is a game. `GameClient` gets what *this*
+sky looks like: the galactic plane's orientation, the star count, the tier ratios, the palette and the
+ceiling. **Nothing goes in `GameCore` or `GameLogic`**, and the sky being floats throughout means
+`Scripts/CheckDeterminism.py` catches it if anyone tries.
 
 **Draw it last, with depth test on**, so it shades no pixel the fleet already covers and pays no
 multisample resolve on a surface with no edges.
 
-**Files:** `NeuronClient/CubemapBake.h` `.cpp`, `NeuronClient/PointSprites.h` `.cpp`,
-`NeuronClient/Blackbody.h` `.cpp`, `NeuronClient/StarField.h` `.cpp`, `NeuronClient/Sky.hlsl`,
-`NeuronClient/Star.hlsl`; `GameClient/SkyLook.h` `.cpp`; both project files and `.filters`;
-`Tests/NeuronClientTests/BlackbodyTests.cpp`, `StarFieldTests.cpp`.
+**Files:** `NeuronClient/PointSprites.h` `.cpp`, `NeuronClient/Blackbody.h` `.cpp`,
+`NeuronClient/StarField.h` `.cpp`, `NeuronClient/Shaders/StarVS.hlsl`, `StarPS.hlsl`;
+`GameClient/SkyLook.h` `.cpp`; both project files and `.filters`;
+`Tests/NeuronClientTests/BlackbodyTests.cpp`, `StarFieldTests.cpp`; `Tests/GameClientTests/SkyLookTests.cpp`.
+The withdrawn band's `NeuronClient/CubemapBake.h` `.cpp` and its `Galaxy` and `Sky` shader pairs are deleted.
 
 **Done when:** the blackbody table is **pinned exactly** at its eight stops and between them; a given seed
-produces the magnitude tiers in the stated ratio and **the same sky twice**; the cubemap bakes in one pass
-over six faces; and the whole thing is **looked at on the device at the tactical zoom** — which is where
+produces the magnitude tiers in the stated ratio and **the same sky twice**; the faintest star delivers
+a visible value to its nearest pixel; and the whole thing is **looked at on the device at the tactical zoom** — which is where
 ADR-005's worry lands and is M1.16's to answer, not this step's.
 
 ### M1.10 — Selection by tap · `GameClient` · `GameClientTests` · agent
@@ -617,8 +619,8 @@ seven, and two ADRs added their own since this step was written:
    [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md) actually needs, because a black screen
    was never the content. **Whether the fleet still reads against it** at the tactical zoom, which is
    ADR-005's worry. And **whether the sky looks like a sky**, whose three failure modes each have a named
-   cause: uniform brightness reading as noise, oversaturated color as confetti, a band without dust lanes
-   as a stain.
+   cause: uniform brightness reading as noise, oversaturated color as confetti, faint stars in the frame
+   but not on the glass.
 
 **Done when:** all of them are answered on hardware and written into the documents that asked for them.
 

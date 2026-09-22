@@ -7,33 +7,41 @@ namespace Outpost
 
 Neuron::StarFieldDescription ShippedStarField() noexcept
 {
-  GalaxyLook galaxy = ShippedGalaxy();
+  const GalacticPlane plane = ShippedGalacticPlane();
 
   Neuron::StarFieldDescription description;
 
-  // ADR-019: "about 3,000", and the whole naked-eye sky to magnitude six holds roughly 5,000 to 6,000 --
-  // so a realistic count and a cheap count are the same count. It divides into the magnitude ratio as
-  // 8, 25, 74, 223, 668 and 2,002; the ratio sums to 364 and divides no round number evenly, so those
-  // are `TierCounts` rounding rather than a property of 3,000.
-  description.starCount = 3000;
+  // **THE COUNT IS JUDGED PER FRAME, NOT PER SPHERE.** ADR-019 first shipped 3,000, and the 40-degree
+  // frame at 3:2 subtends 0.66 steradian, a nineteenth of the sphere: some 160 stars, most of them
+  // faint, and under half of one of the eight standouts on average -- the effect the magnitude law was
+  // buying was usually not on screen. 8,000 puts about 420 in the frame and one standout on average
+  // (more when the camera faces the plane, fewer at the poles), and it is still a real
+  // count: a dark-site sky to magnitude 6.5 holds about 9,000. It divides into the magnitude ratio as
+  // 22, 66, 198, 593, 1,780 and 5,341; the ratio sums to 364 and divides no round number evenly, so
+  // those are `TierCounts` rounding rather than a property of 8,000.
+  description.starCount = 8000;
 
   // **SIZE IS DRAWN CONTINUOUSLY BETWEEN THESE, NOT PICKED FROM SIX STEPS.** The first version of this
   // sky took one size per tier, so three thousand stars were drawn at six sizes -- which the eye reads
   // as six kinds of dot rather than as a range. `GenerateStarField` now varies it within the tier.
   //
-  // The faint end is 2.4 rather than ADR-019's 1.5 because below about two pixels a sprite with a
-  // radial falloff covers no pixel centre at its peak and disappears entirely; see `StarField.h`.
+  // The faint end is 3.0 rather than ADR-019's first 1.5 because a small sprite covers few pixel
+  // centres and none of them at its peak; see `StarField.h`. **2.4 cleared the rasterization floor and
+  // was still not seen on the device**: the nearest pixel centre sat at a third of the peak, which put
+  // two thirds of the sky at about 16 of 255 -- present in the frame and invisible on the glass.
   description.brightestSizePixels = 10.0f;
-  description.faintestSizePixels = 2.4f;
+  description.faintestSizePixels = 3.0f;
 
   description.brightestValue = SKY_POINT_LUMINANCE_CEILING;
 
-  // **THE FAINT END IS NOT IN THE ADR AND IS DERIVED HERE**, against the thing it has to be seen
-  // against: the band. It was 0.08, chosen when the band's centre was 0.10 -- so the faintest two
-  // thirds of the sky were dimmer than the backdrop they sat on and simply were not there. The band is
-  // now 0.030 at its brightest and this is six times it, which is the ratio that makes a star a star
-  // rather than a slightly lighter patch of sky.
-  description.faintestValue = 0.18f;
+  // **THE FAINT END IS SET AGAINST BLACK, AND AGAINST WHAT A PIXEL ACTUALLY RECEIVES.** It was 0.08
+  // under a 0.10 band, then 0.18 over a 0.030 one. With the band withdrawn there is nothing behind it,
+  // so the figure that matters is the nearest pixel centre: `StarPS.hlsl`'s flat-topped falloff gives it
+  // about three quarters of the peak on a 3-pixel sprite, and 0.24 of that is about 46 of 255 -- the
+  // dimmest level that reliably reads as a point rather than as noise. It is not raised further
+  // because the brightness range is what makes the eight standouts stand out: 0.45 over 0.24 is still
+  // nearly two to one in value, and the size range multiplies that by eleven in area.
+  description.faintestValue = 0.24f;
 
   // Hot stars are luminous, so the bright end skews blue-white and the faint end orange. **The jitter
   // is what stops that being a gradient**: it is wide enough that a bright star can be cool and a faint
@@ -48,13 +56,13 @@ Neuron::StarFieldDescription ShippedStarField() noexcept
   // still mostly white.
   description.saturation = 0.38f;
 
-  // **THE FIELD AND THE BAND SHARE A POLE**, which is what ties the two halves into one sky rather than
-  // a star field with a stripe painted over it. The concentration is up from 1.7 because the band is
-  // now read mostly from the stars crowding toward the plane rather than from the baked glow.
+  // **THE MILKY WAY IS THE STARS AND NOTHING ELSE.** There is no band behind them any more, so the
+  // plane is read entirely from the stars crowding toward it -- which is how the naked-eye Milky Way
+  // is resolved in the first place, a density rather than a glow.
   description.planeConcentration = 2.3f;
-  description.poleX = galaxy.poleX;
-  description.poleY = galaxy.poleY;
-  description.poleZ = galaxy.poleZ;
+  description.poleX = plane.poleX;
+  description.poleY = plane.poleY;
+  description.poleZ = plane.poleZ;
 
   return description;
 }
@@ -87,44 +95,11 @@ std::vector<Neuron::StarInstance> ShippedStarInstances(std::uint64_t _seed)
   return instances;
 }
 
-GalaxyLook ShippedGalaxy() noexcept
+GalacticPlane ShippedGalacticPlane() noexcept
 {
-  // The defaults ARE the shipped look; the struct carries them so that every figure is documented where
-  // it is declared rather than here. This function exists so there is one name to call and one place to
-  // change if the two ever have to differ.
-  return GalaxyLook{};
-}
-
-GalaxyConstants ToConstants(const GalaxyLook& _look) noexcept
-{
-  GalaxyConstants constants;
-
-  constants.pole[0] = _look.poleX;
-  constants.pole[1] = _look.poleY;
-  constants.pole[2] = _look.poleZ;
-  constants.pole[3] = 0.0f;
-
-  constants.centre[0] = _look.centreX;
-  constants.centre[1] = _look.centreY;
-  constants.centre[2] = _look.centreZ;
-  constants.centre[3] = 0.0f;
-
-  constants.shape[0] = _look.thicknessAwayFromCentre;
-  constants.shape[1] = _look.thicknessAtCentre;
-  constants.shape[2] = _look.dustDepth;
-  constants.shape[3] = _look.dustFrequency;
-
-  constants.core[0] = _look.coreRed;
-  constants.core[1] = _look.coreGreen;
-  constants.core[2] = _look.coreBlue;
-  constants.core[3] = _look.centreLuminance;
-
-  constants.rim[0] = _look.rimRed;
-  constants.rim[1] = _look.rimGreen;
-  constants.rim[2] = _look.rimBlue;
-  constants.rim[3] = _look.rimLuminance;
-
-  return constants;
+  // The defaults ARE the shipped plane; the struct carries them so that the figure is documented where
+  // it is declared rather than here.
+  return GalacticPlane{};
 }
 
 } // namespace Outpost

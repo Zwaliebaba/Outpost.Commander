@@ -52,7 +52,7 @@ inline constexpr float PI = 3.14159265358979323846f;
 }
 
 /// An orthonormal basis whose third axis is the given pole. Used to put a direction sampled in
-/// galactic coordinates -- latitude measured from the band -- into world space.
+/// galactic coordinates -- latitude measured from the galactic plane -- into world space.
 ///
 /// **THE HELPER AXIS IS CHOSEN AGAINST THE POLE'S SMALLEST COMPONENT**, which is the standard way to
 /// avoid a cross product with something nearly parallel; picking a fixed helper gives a degenerate
@@ -187,7 +187,7 @@ std::vector<Star> GenerateStarField(std::uint64_t _seed, const StarFieldDescript
 
       // **THE SINE OF THE GALACTIC LATITUDE, PULLED TOWARD THE PLANE.** A uniform sphere wants this
       // uniform on [-1, 1]; raising its magnitude to a power above one concentrates it near zero,
-      // which is the band. The sign is kept, so both hemispheres fill.
+      // which is the Milky Way. The sign is kept, so both hemispheres fill.
       const float uniform = NextSigned(random);
       const float magnitude = std::pow(std::fabs(uniform), concentration);
       const float sineLatitude = (uniform < 0.0f) ? -magnitude : magnitude;
@@ -228,9 +228,9 @@ float LitAreaFraction(const std::vector<Star>& _stars, std::uint32_t _framePixel
     return 0.0f;
   }
 
-  // A quarter of the disc, which is roughly what a soft radial falloff integrates to -- see the header
-  // for why this is an estimate.
-  constexpr float FALLOFF_INTEGRAL = 0.25f;
+  // What `StarPS.hlsl`'s falloff integrates to over the disc -- see the header for the arithmetic and
+  // for why this is still an estimate.
+  constexpr float FALLOFF_INTEGRAL = 0.30f;
 
   double lit = 0.0;
   for (const Star& star : _stars)

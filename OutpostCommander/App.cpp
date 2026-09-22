@@ -299,15 +299,11 @@ void RunProbe(const CoreWindow& _window)
   std::array<bool, 3> meshReady{};
   std::uint32_t instanceFrame = 0;
 
-  // M1.9b: THE SKY (ADR-019). The galaxy bakes into a cubemap once, the stars upload once, and both
-  // are then drawn LAST with the depth test on so they shade no pixel the fleet already covers.
+  // M1.9b: THE SKY (ADR-019). Stars and nothing else: they upload once and are then drawn LAST with
+  // the depth test on so they shade no pixel the fleet already covers.
   //
-  // **NEITHER CAN HAPPEN UNTIL THE JOIN REPLY LANDS**, because both are seeded from the match
-  // (R23) -- so the flag below is set when the seed arrives and the bake is recorded at the top of
-  // the next frame, which is the first moment there is a command list open to record it into.
-  Neuron::CubemapBake cubemapBake;
+  // **IT CANNOT HAPPEN UNTIL THE JOIN REPLY LANDS**, because the field is seeded from the match (R23).
   Neuron::PointSprites pointSprites;
-  bool skyBakePending = false;
   bool meshesLoaded = false;
   Outpost::ClientFrame clientFrame;
 
@@ -347,10 +343,7 @@ void RunProbe(const CoreWindow& _window)
     Report(log, "probe: no swap chain, hresult " + std::to_string(swapChain.LastHresult()));
   }
   else if (!sceneTarget.Create(device, {.widthPixels = Neuron::WorldTargetWidthPixels(swapChain.WidthPixels()),
-                                        .heightPixels = Neuron::WorldTargetHeightPixels(swapChain.HeightPixels()),
-                                        .clearRed = 0.02f,
-                                        .clearGreen = 0.04f,
-                                        .clearBlue = 0.09f}))
+                                        .heightPixels = Neuron::WorldTargetHeightPixels(swapChain.HeightPixels())}))
   {
     Report(log, "probe: no scene target, hresult " + std::to_string(sceneTarget.LastHresult()));
   }
@@ -377,10 +370,6 @@ void RunProbe(const CoreWindow& _window)
     // M0.21b. It is created from the SCENE TARGET rather than the swap chain, because that is what
     // it renders into and a pipeline state has to agree with its target's formats and sample count.
     Report(log, "probe: no world pass, hresult " + std::to_string(worldPass.LastHresult()));
-  }
-  else if (!cubemapBake.Create(device, sceneTarget))
-  {
-    Report(log, "probe: no cubemap bake, hresult " + std::to_string(cubemapBake.LastHresult()));
   }
   else if (!pointSprites.Create(device, sceneTarget))
   {
@@ -537,8 +526,7 @@ void RunProbe(const CoreWindow& _window)
         const std::vector<Neuron::StarInstance> stars = Outpost::ShippedStarInstances(join.MatchSeed());
         if (pointSprites.Upload(device, stars))
         {
-          skyBakePending = true;
-          Report(log, "SKY " + std::to_string(pointSprites.StarCount()) + " stars uploaded, galaxy bake queued");
+          Report(log, "SKY " + std::to_string(pointSprites.StarCount()) + " stars uploaded");
         }
         else
         {
@@ -823,38 +811,12 @@ void RunProbe(const CoreWindow& _window)
     // present step fits one into the other, and the interface pass draws over that, straight into
     // the back buffer at physical resolution (ADR-011).
     //
-    // THE TWO CLEARS ARE DIFFERENT COLORS ON PURPOSE. At the 1:1 default the present is a pure copy
-    // and buys nothing visible, so the only way to see that it happened at all is that a blit which
-    // drew nothing leaves a black screen rather than a dark blue one.
+    // **BOTH CLEARS ARE BLACK.** The scene target used to clear to a dark blue so that a present
+    // blit which drew nothing would show as a black screen -- instrumentation from before there was
+    // a world to draw. The fleet and the stars now say the same thing, and a blue clear is exactly
+    // what ADR-019 does not want: the scene target's clear IS the sky between the stars.
     if (swapChain.IsReady() && presentStep.IsReady() && interfacePass.IsReady() && device.BeginFrame())
     {
-      // **THE GALAXY BAKES BEFORE ANYTHING IS BOUND, AND EXACTLY ONCE.** It sets its own render
-      // targets over the six cube faces, so it has to run before `RecordClear` binds the scene
-      // target rather than after -- and `RecordClear` then puts the scene target back, which is why
-      // nothing else here has to know the bake happened.
-      if (skyBakePending && cubemapBake.IsReady())
-      {
-        const Outpost::GalaxyConstants constants = Outpost::ToConstants(Outpost::ShippedGalaxy());
-
-        static_assert(sizeof(Outpost::GalaxyConstants) == (Neuron::CubemapBake::GALAXY_CONSTANT_COUNT * sizeof(float)),
-                      "The galaxy's constants are the bake's cbuffer and the two layouts must not disagree");
-
-        float galaxy[Neuron::CubemapBake::GALAXY_CONSTANT_COUNT]{};
-        std::memcpy(galaxy, &constants, sizeof(galaxy));
-
-        if (cubemapBake.Bake(device, galaxy))
-        {
-          skyBakePending = false;
-          Report(log, "SKY galaxy baked, " + std::to_string(Neuron::CubemapBake::FACE_COUNT) + " faces of " +
-                        std::to_string(Neuron::CubemapBake::FACE_PIXELS) + " square");
-        }
-        else
-        {
-          skyBakePending = false;
-          Report(log, "SKY FAILED to bake the galaxy, hresult " + std::to_string(cubemapBake.LastHresult()));
-        }
-      }
-
       static_cast<void>(sceneTarget.RecordClear(device));
 
       // M0.21b: THE WORLD, AND THE FIRST THING IN THIS TREE TO DRAW ONE. Into the scene target,
@@ -1028,36 +990,22 @@ void RunProbe(const CoreWindow& _window)
 
       // === THE SKY, DRAWN LAST (ADR-019). ================================================
       //
-      // **LAST IS THE WHOLE OPTIMIZATION.** Both passes test depth and neither writes it, so every
-      // pixel the fleet already covers is rejected before it shades -- the backdrop's cube fetch and
-      // the sprites' falloff are paid only where there is sky to see. Drawn first they would shade
-      // the entire frame and then be painted over.
+      // **LAST IS THE WHOLE OPTIMIZATION.** The pass tests depth and does not write it, so every
+      // pixel the fleet already covers is rejected before it shades -- the sprites' falloff is paid
+      // only where there is sky to see. Drawn first it would shade and then be painted over.
+      //
+      // **THERE IS NO BACKDROP BEHIND THE STARS.** The baked galaxy band that used to sit here read
+      // on the device as a painted wash rather than as sky, and ADR-019 withdrew it: the Milky Way is
+      // carried by the stars crowding toward the plane, and between them the scene target's clear is
+      // black.
       //
       // It is outside the `worldPass.IsReady()` block above on purpose: the sky is the backdrop and
       // does not depend on there being a snapshot to draw in front of it.
-      if (cubemapBake.IsBaked() || (pointSprites.StarCount() > 0))
+      if (pointSprites.StarCount() > 0)
       {
         const float skyAspect = (sceneTarget.HeightPixels() > 0)
                                   ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
                                   : 1.0f;
-        const Outpost::CameraBasis basis = Outpost::BuildBasis(clientFrame.Camera());
-
-        // The half-angle the frame subtends, which is what turns a normalized coordinate into a ray.
-        const float halfHeight = std::tan(0.5f * Outpost::VERTICAL_FIELD_OF_VIEW_DEGREES * 3.14159265358979323846f / 180.0f);
-        const float halfWidth = halfHeight * skyAspect;
-
-        float ray[Neuron::CubemapBake::RAY_CONSTANT_COUNT]{};
-        ray[0] = basis.right.x * halfWidth;
-        ray[1] = basis.right.y * halfWidth;
-        ray[2] = basis.right.z * halfWidth;
-        ray[4] = basis.up.x * halfHeight;
-        ray[5] = basis.up.y * halfHeight;
-        ray[6] = basis.up.z * halfHeight;
-        ray[8] = basis.forward.x;
-        ray[9] = basis.forward.y;
-        ray[10] = basis.forward.z;
-
-        static_cast<void>(cubemapBake.DrawBackdrop(device, sceneTarget, ray));
 
         // **THE TRANSLATION IS REMOVED BY ZEROING THE LAST ROW.** These matrices are row-major and
         // applied to row vectors, so the last row IS the image of the origin -- the camera's

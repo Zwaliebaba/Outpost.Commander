@@ -6,7 +6,7 @@ This package specifies the complete in-match heads-up display for **Outpost Comm
 interface surfaces (credits, selection, build, damage alert, system), their overlays, the palette,
 the type scale, the motion table, and every rectangle in integer authored coordinates.
 
-**Scope: the interface pass only.** The 3D scene — camera, star field, galaxy band, plane grid,
+**Scope: the interface pass only.** The 3D scene — camera, star field, plane grid,
 ship and station meshes, asteroid meshes — is explicitly **out of scope for this handoff**. The
 design frames draw a representative scene behind the HUD so contrast could be judged; none of it
 is a specification and none of it should be implemented from this package. Where this document
@@ -361,7 +361,7 @@ The full machine-readable list is `palette.json`.
 
 | Token | Hex | Use |
 |---|---|---|
-| `TEXT` | `#E8ECEC` | counts, costs, credits, live button names — about 10:1 on scrim over the galaxy band |
+| `TEXT` | `#E8ECEC` | counts, costs, credits, live button names — about 10:1 on scrim over a backdrop at the sky's 12% area ceiling |
 | `TEXT.2` | `#93A0A5` | design names, labels, percent, link state |
 | `TEXT.DIM` | `#6B7A80` | unavailable button text — 4.9:1, readable and plainly recessed |
 
@@ -486,7 +486,7 @@ tier wins across one.
   by a test over `geometry.json`.
 - Every element is drawable with the four primitives; the only diagonals in the entire interface pass are
   the alert triangle and the unavailable hatch.
-- The HUD is readable over the galaxy band at its 12% ceiling, and the fleet is still readable through the
+- The HUD is readable over a backdrop at the sky's 12% area ceiling, and the fleet is still readable through the
   HUD.
 - A player under fire can hit the right build button without looking carefully.
 - The selection panel answers "what did I just select" while a hand covers the world.

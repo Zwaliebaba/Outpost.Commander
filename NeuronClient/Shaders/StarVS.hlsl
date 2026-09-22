@@ -1,7 +1,7 @@
-// ADR-019's stars, the vertex half: **about 3,000 instanced quads**, one draw call, whose four corners
-// come from the vertex identifier rather than from a vertex buffer. Only the per-star instance data is
-// in memory -- a direction, a size and an already-lit colour, thirty-two bytes each, which is about 94
-// KiB for the whole sky.
+// ADR-019's stars, the vertex half: **8,000 instanced quads**, one draw call, whose four corners come
+// from the vertex identifier rather than from a vertex buffer. Only the per-star instance data is in
+// memory -- a direction, a size and an already-lit colour, thirty-two bytes each, which is 250 KiB for
+// the whole sky.
 //
 // **SIZE IS IN SCENE-TARGET PIXELS AND SO THE WORLD SCALE REACHES IT** (ADR-016): the target's size
 // arrives as a constant and the quad is built in normalized space, so a star is the same size on the

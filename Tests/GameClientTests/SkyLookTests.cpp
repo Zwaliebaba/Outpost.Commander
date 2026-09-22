@@ -15,11 +15,6 @@ constexpr std::uint64_t SEED = 20260922;
 
 /// ADR-016's 1:1 default, which is the resolution the ceiling below is a fraction of.
 constexpr std::uint32_t FRAME_PIXELS = 2880 * 1920;
-
-[[nodiscard]] float Luminance(float _red, float _green, float _blue) noexcept
-{
-  return (0.2126f * _red) + (0.7152f * _green) + (0.0722f * _blue);
-}
 } // namespace
 
 /// **THE CEILING IS THE POINT OF THIS SUITE.** ADR-019 decision 4 says it out loud -- "a backdrop that
@@ -36,29 +31,6 @@ public:
     Assert::AreEqual(0.45f, Outpost::SKY_POINT_LUMINANCE_CEILING, 0.0001f);
   }
 
-  /// **THE BAND IS THE LARGEST LIT AREA IN THE FRAME AND SO THE ONE MOST ABLE TO BREAK THE CEILING.**
-  /// Both its ends are checked, because the bulge is the bright one and the rim is the one that covers
-  /// the most sky.
-  TEST_METHOD(TheGalaxysBothEndsAreUnderTheAreaCeiling)
-  {
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
-
-    Assert::IsTrue(galaxy.centreLuminance <= Outpost::SKY_AREA_LUMINANCE_CEILING, L"the galactic centre is brighter than the area ceiling");
-    Assert::IsTrue(galaxy.rimLuminance <= Outpost::SKY_AREA_LUMINANCE_CEILING, L"the band's rim is brighter than the area ceiling");
-
-    // The colour is applied on top of the luminance, so a core colour brighter than white would lift
-    // the result past a luminance that looked compliant on its own.
-    Assert::IsTrue(Luminance(galaxy.coreRed, galaxy.coreGreen, galaxy.coreBlue) <= 1.0f);
-    Assert::IsTrue(Luminance(galaxy.rimRed, galaxy.rimGreen, galaxy.rimBlue) <= 1.0f);
-
-    // **THE BULGE IS THE DIFFERENCE BETWEEN THE TWO THICKNESSES**, and a band of uniform thickness is
-    // the stain ADR-019 names. Asserted so that "simplifying" the two into one is a failure.
-    Assert::IsTrue(galaxy.thicknessAtCentre > galaxy.thicknessAwayFromCentre, L"the band has no bulge and will read as a stain");
-
-    // Dust lanes are not optional, for the same reason.
-    Assert::IsTrue(galaxy.dustDepth > 0.0f, L"the band carries no dust lanes");
-  }
-
   /// **ONLY THE BRIGHTEST TIER REACHES THE POINT CEILING, AND IT REACHES IT EXACTLY.**
   TEST_METHOD(TheBrightestStarIsAtThePointCeilingAndNoneIsAboveIt)
   {
@@ -72,19 +44,27 @@ public:
     }
   }
 
-  /// The faint end has to read against the band it may be sitting on -- see the derivation beside the
-  /// figure in `SkyLook.cpp`. Over the rim it is better than twice the background; that is the claim.
-  TEST_METHOD(TheFaintestStarClearsTheBandsRim)
+  /// **THE FAINTEST STAR HAS TO REACH A PIXEL, NOT MERELY EXIST.** This is the failure the device
+  /// showed and no figure caught: a 2.4-pixel sprite at 0.18 under a squared falloff delivered about
+  /// 16 of 255 to the nearest pixel centre, so two thirds of the sky was in the frame and not on the
+  /// glass. Asserted as what the pixel receives -- the value, the size and `StarPS.hlsl`'s falloff
+  /// together -- because each of the three looked fine on its own.
+  TEST_METHOD(TheFaintestStarDeliversAVisibleValueToAPixel)
   {
     const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
 
-    Assert::IsTrue(field.faintestValue > (galaxy.rimLuminance * 2.0f), L"the faintest tier will not read against the band's rim");
+    // A star centred half a pixel from the nearest pixel centre, which is the typical case rather
+    // than the lucky one.
+    const float radius = 0.5f / (field.faintestSizePixels * 0.5f);
+    const float hermite = radius * radius * (3.0f - (2.0f * radius));
+    const float delivered = field.faintestValue * (1.0f - hermite) * 255.0f;
+
+    Assert::IsTrue(delivered >= 40.0f, L"the faintest star delivers too little to its nearest pixel to be seen");
     Assert::IsTrue(field.faintestValue < field.brightestValue, L"the tiers do not run bright to faint");
   }
 
-  /// **THE CEILING IS ON AREA, SO THIS IS THE NUMBER IT IS ACTUALLY ABOUT.** Three thousand sprites of
-  /// one and a half to eight pixels cover a small fraction of one per cent of a 2880 x 1920 frame --
+  /// **THE CEILING IS ON AREA, SO THIS IS THE NUMBER IT IS ACTUALLY ABOUT.** Eight thousand sprites of
+  /// three to ten pixels cover a small fraction of one per cent of a 2880 x 1920 frame --
   /// nowhere near 12%, and the assertion is what keeps a later "make the stars a bit bigger" honest.
   TEST_METHOD(TheWholeFieldsLitAreaIsFarUnderTheCeiling)
   {
@@ -101,38 +81,39 @@ public:
 TEST_CLASS(TheShippedSky)
 {
 public:
-  /// **THE FIELD AND THE BAND SHARE A POLE**, which is what ties the two halves into one sky rather
-  /// than a star field with a stripe painted over it. Two poles that drifted apart would give a
-  /// density ridge that did not line up with the band -- subtly, unnameably wrong.
-  TEST_METHOD(TheStarsAndTheBandShareAPole)
+  /// **THE STARS CROWD TOWARD THE SHIPPED PLANE**, and the plane is the only trace of the Milky Way
+  /// left now the band is gone -- so a field that took its pole from anywhere else would put the
+  /// density ridge somewhere nobody chose.
+  TEST_METHOD(TheStarsCrowdTowardTheShippedPlane)
   {
     const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
+    const Outpost::GalacticPlane plane = Outpost::ShippedGalacticPlane();
 
-    Assert::AreEqual(galaxy.poleX, field.poleX, 0.0001f);
-    Assert::AreEqual(galaxy.poleY, field.poleY, 0.0001f);
-    Assert::AreEqual(galaxy.poleZ, field.poleZ, 0.0001f);
+    Assert::AreEqual(plane.poleX, field.poleX, 0.0001f);
+    Assert::AreEqual(plane.poleY, field.poleY, 0.0001f);
+    Assert::AreEqual(plane.poleZ, field.poleZ, 0.0001f);
+    Assert::IsTrue(field.planeConcentration > 1.0f, L"the field does not crowd toward the plane and the Milky Way is gone");
   }
 
-  /// **TILTED RATHER THAN ALIGNED WITH AN AXIS.** A band lying exactly on the horizon or exactly
-  /// overhead reads as a rendering artifact rather than as a galaxy.
+  /// **TILTED RATHER THAN ALIGNED WITH AN AXIS.** A density ridge lying exactly on the horizon or
+  /// exactly overhead reads as a rendering artifact rather than as a galaxy.
   TEST_METHOD(ThePoleIsTiltedRatherThanOnAnAxis)
   {
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
-    const float length = std::sqrt((galaxy.poleX * galaxy.poleX) + (galaxy.poleY * galaxy.poleY) + (galaxy.poleZ * galaxy.poleZ));
+    const Outpost::GalacticPlane plane = Outpost::ShippedGalacticPlane();
+    const float length = std::sqrt((plane.poleX * plane.poleX) + (plane.poleY * plane.poleY) + (plane.poleZ * plane.poleZ));
 
     Assert::AreEqual(1.0f, length, 0.01f, L"the pole is not a unit vector");
 
-    const float largest = std::max(std::fabs(galaxy.poleX), std::max(std::fabs(galaxy.poleY), std::fabs(galaxy.poleZ)));
-    Assert::IsTrue(largest < 0.99f, L"the pole lies on an axis and the band will read as an artifact");
+    const float largest = std::max(std::fabs(plane.poleX), std::max(std::fabs(plane.poleY), std::fabs(plane.poleZ)));
+    Assert::IsTrue(largest < 0.99f, L"the pole lies on an axis and the ridge will read as an artifact");
   }
 
-  /// The instances that reach the graphics processor: three thousand of them, on the unit sphere, at
+  /// The instances that reach the graphics processor: eight thousand of them, on the unit sphere, at
   /// the sizes ADR-019 states.
   TEST_METHOD(TheInstancesAreTheFieldInTheLayoutTheDrawWants)
   {
     const std::vector<Neuron::StarInstance> instances = Outpost::ShippedStarInstances(SEED);
-    Assert::AreEqual(static_cast<std::size_t>(3000), instances.size());
+    Assert::AreEqual(static_cast<std::size_t>(8000), instances.size());
 
     const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
     for (const Neuron::StarInstance& instance : instances)
@@ -183,40 +164,6 @@ public:
     Assert::IsTrue(fraction < 0.01f, L"the field covers more than one per cent of the frame");
   }
 
-  /// **THE BAND IS DIMMER THAN THE FAINTEST STAR, AND THAT ORDERING IS THE WHOLE LOOK.**
-  ///
-  /// The first version of this sky had it the other way round -- a 0.10 band under 0.08 stars -- and
-  /// what that draws is a coloured smear with the stars lost inside it. The band is a texture the
-  /// stars sit on, not a light that competes with them, and this is the assertion that says so.
-  TEST_METHOD(TheBandIsDimmerThanTheFaintestStar)
-  {
-    const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
-
-    Assert::IsTrue(galaxy.centreLuminance < field.faintestValue,
-                   L"the band's brightest point outshines the faintest star and will read as a smear");
-    Assert::IsTrue(field.faintestValue > (galaxy.centreLuminance * 3.0f), L"the faintest star does not clearly clear the band");
-  }
-
-  /// **THE BAND IS VERY NEARLY GREY.** The naked-eye Milky Way is too dim to engage colour vision at
-  /// all; a band running from a 0.66 blue to a 0.66 red -- which this had -- is a colour wash.
-  TEST_METHOD(TheBandIsBarelyTinted)
-  {
-    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
-
-    const float coreSpread = std::max(galaxy.coreRed, std::max(galaxy.coreGreen, galaxy.coreBlue)) -
-                             std::min(galaxy.coreRed, std::min(galaxy.coreGreen, galaxy.coreBlue));
-    const float rimSpread = std::max(galaxy.rimRed, std::max(galaxy.rimGreen, galaxy.rimBlue)) -
-                            std::min(galaxy.rimRed, std::min(galaxy.rimGreen, galaxy.rimBlue));
-
-    Assert::IsTrue(coreSpread < 0.15f, L"the band's core is a colour rather than a tint");
-    Assert::IsTrue(rimSpread < 0.15f, L"the band's rim is a colour rather than a tint");
-
-    // Not zero, though -- a perfectly grey band reads as a flat stripe.
-    Assert::IsTrue(coreSpread > 0.0f);
-    Assert::IsTrue(rimSpread > 0.0f);
-  }
-
   /// **THE SAME SEED GIVES THE SAME SKY**, all the way through the conversion rather than only in the
   /// generator -- which is what lets two players share one for nothing (R23).
   TEST_METHOD(TheSameSeedGivesTheSameInstancesTwice)
@@ -231,59 +178,6 @@ public:
       Assert::AreEqual(first[index].sizePixels, second[index].sizePixels, 0.0f);
       Assert::AreEqual(first[index].colour[0], second[index].colour[0], 0.0f);
     }
-  }
-
-  /// **THE CONSTANT LAYOUT IS THE `cbuffer`'S AND THE TWO MUST NOT DISAGREE.** A field that moved here
-  /// without moving in `GalaxyPS.hlsl` would give a band with somebody else's thickness, which reads
-  /// as a look nobody chose rather than as a bug.
-  TEST_METHOD(TheConstantsAreInTheOrderTheShaderDeclares)
-  {
-    Outpost::GalaxyLook look;
-    look.poleX = 1.0f;
-    look.poleY = 2.0f;
-    look.poleZ = 3.0f;
-    look.centreX = 4.0f;
-    look.centreY = 5.0f;
-    look.centreZ = 6.0f;
-    look.thicknessAwayFromCentre = 7.0f;
-    look.thicknessAtCentre = 8.0f;
-    look.dustDepth = 9.0f;
-    look.dustFrequency = 10.0f;
-    look.coreRed = 11.0f;
-    look.coreGreen = 12.0f;
-    look.coreBlue = 13.0f;
-    look.centreLuminance = 14.0f;
-    look.rimRed = 15.0f;
-    look.rimGreen = 16.0f;
-    look.rimBlue = 17.0f;
-    look.rimLuminance = 18.0f;
-
-    const Outpost::GalaxyConstants constants = Outpost::ToConstants(look);
-
-    Assert::AreEqual(1.0f, constants.pole[0]);
-    Assert::AreEqual(3.0f, constants.pole[2]);
-    Assert::AreEqual(0.0f, constants.pole[3], L"the pad must be zero, not left over");
-    Assert::AreEqual(4.0f, constants.centre[0]);
-
-    // shape is thickness away, thickness at centre, dust depth, dust frequency -- in that order.
-    Assert::AreEqual(7.0f, constants.shape[0]);
-    Assert::AreEqual(8.0f, constants.shape[1]);
-    Assert::AreEqual(9.0f, constants.shape[2]);
-    Assert::AreEqual(10.0f, constants.shape[3]);
-
-    // core and rim are r, g, b, luminance -- the luminance rides in the fourth slot rather than in a
-    // seventh `float4`, which is what keeps this to five.
-    Assert::AreEqual(11.0f, constants.core[0]);
-    Assert::AreEqual(14.0f, constants.core[3]);
-    Assert::AreEqual(15.0f, constants.rim[0]);
-    Assert::AreEqual(18.0f, constants.rim[3]);
-  }
-
-  /// Five `float4` and nothing else, because `App.cpp` copies the struct into the root constants as
-  /// bytes and a sixth field would go somewhere the shader is not looking.
-  TEST_METHOD(TheConstantsAreExactlyTwentyFloats)
-  {
-    Assert::AreEqual(static_cast<std::size_t>(20 * sizeof(float)), sizeof(Outpost::GalaxyConstants));
   }
 };
 
