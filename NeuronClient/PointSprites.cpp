@@ -132,10 +132,9 @@ bool PointSprites::Create(const GraphicsDevice& _device, const SceneTarget& _sce
   pipelineDescription.VS = {.pShaderBytecode = g_pStarVS, .BytecodeLength = sizeof(g_pStarVS)};
   pipelineDescription.PS = {.pShaderBytecode = g_pStarPS, .BytecodeLength = sizeof(g_pStarPS)};
 
-  // **ADDITIVE, WHICH IS WHAT A STAR OVER THE BAND ACTUALLY DOES.** Source times one plus destination
-  // times one: a sprite adds its light to the baked galaxy rather than replacing it, and two faint
-  // sprites that overlap come out brighter than either. An alpha blend here would punch a hole in the
-  // band wherever a star sat over it, which reads as the sky being drawn in the wrong order.
+  // **ADDITIVE, WHICH IS WHAT OVERLAPPING STARS ACTUALLY DO.** Source times one plus destination
+  // times one: two faint sprites that overlap come out brighter than either, where an alpha blend
+  // would let the later one cut a dark ring into the earlier.
   pipelineDescription.BlendState.AlphaToCoverageEnable = FALSE;
   pipelineDescription.BlendState.IndependentBlendEnable = FALSE;
   pipelineDescription.BlendState.RenderTarget[0].BlendEnable = TRUE;

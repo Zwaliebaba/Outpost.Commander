@@ -69,15 +69,27 @@ MANIFEST = [
     # "exact" division that was neither exact nor what the code computed. A six-number list is
     # value-shaped rather than claim-shaped, which this file warns against -- it is safe here only
     # because the whole list appears nowhere except as an assertion of these counts.
-    ("the star field's magnitude tiers", [r"8, 25, 74, 222, 667 and 2,004"],
-     r"8, 25, 74, 223, 668 and 2,002",
+    #
+    # The list moved again when the shipped count went from 3,000 to 8,000 (ADR-019's second look), and
+    # the 3,000-star list is retired by the same reasoning: nothing writes it out except to assert it.
+    ("the star field's magnitude tiers", [r"8, 25, 74, 222, 667 and 2,004", r"8, 25, 74, 223, 668 and 2,002"],
+     r"22, 66, 198, 593, 1,780 and 5,341",
      ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/Plan/M1-the-fleet.md"]),
     # Both figures moved because the sky was looked at and did not read as one: 1.5-pixel sprites did
     # not rasterize, and 20% saturation over a narrow temperature range left every star the same
     # off-white. Claim-shaped rather than bare numbers -- "1.5" alone appears in unrelated prose, and
     # the history of both figures is legitimately written down in ADR-019.
-    ("the star sprite's size range", [r"down to 1\.5 for the faintest", r"8 scene-target pixels down to 1\.5"],
-     r"down to 2\.4", ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/Plan/M1-the-fleet.md"]),
+    # It moved again, 2.4 to 3.0, when a screenshot showed 2.4 delivering 16 of 255 to a pixel.
+    ("the star sprite's size range", [r"down to 1\.5 for the faintest", r"8 scene-target pixels down to 1\.5",
+                                      r"pixels down to 2\.4", r"down to 2\.4 at the faint"],
+     r"down to 3\.0", ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/Plan/M1-the-fleet.md"]),
+    # ADR-019 withdrew the galaxy band after the second look: it read as a painting. The `gone` patterns
+    # are the sentences that ASSERT a band is drawn; the band's history stays in ADR-019 as prose.
+    ("the sky is stars only", [r"[Tt]he galaxy bakes once into", r"[Tt]he galaxy band is a 512",
+                               r"[Tt]he sky is two more draws and a bake"],
+     r"stars and nothing else",
+     ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/TechnicalDesign.md",
+      "Design/Plan/M1-the-fleet.md"]),
     ("the star field's saturation", [r"desaturate to roughly 20%", r"desaturated to about 20%"],
      r"(desaturate to about|desaturated to about) 38%",
      ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/Plan/M1-the-fleet.md"]),

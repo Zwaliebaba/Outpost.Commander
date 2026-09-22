@@ -407,17 +407,18 @@ since DXGI's flip model requires `SampleDesc.Count` of 1; for rectangles and tex
 and for the world it is most of why the scene target exists — at 1:1 with one sample the present step is a
 pure copy that buys only the ability to turn multisampling on as a constant.
 
-**The sky is two more draws and a bake** ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)).
-The galaxy band is a 512² cubemap, 6.3 MB, rendered once at match start from the match seed and sampled
-with one fetch per pixel; the stars are about 3,000 instanced quads in a single draw, generated from the
-seed with no vertex buffer. **It draws last, with depth test on**, so it shades no pixel the fleet already
+**The sky is one more draw, and it is stars and nothing else**
+([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)): 8,000 instanced quads in a single draw,
+generated from the match seed with no vertex buffer, over a black clear. A baked galaxy band behind them
+was built and withdrawn — it read as a painting — and the Milky Way is carried by star density rising
+toward the galactic plane. **It draws last, with depth test on**, so it shades no pixel the fleet already
 covers and pays no multisample resolve on a surface with no edges. Evaluating the sky analytically per
 pixel instead would cost an estimated 2–5 ms a frame at 5.53 megapixels, which is the figure that would
 have taken [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)'s 1:1 default away.
 
 **Nothing about the sky reaches the host, and nothing about it changes.** It is seeded from the match seed
 the client already holds for R23's generator, so it costs no wire bytes and cannot desynchronise anything;
-it takes no time input, so it is generated once and never updated. Being floats and noise throughout, it
+it takes no time input, so it is generated once and never updated. Being floats throughout, it
 is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team

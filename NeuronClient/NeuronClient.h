@@ -19,7 +19,6 @@
 #include "GraphicsDevice.h"
 #include "InterfacePass.h"
 #include "PresentStep.h"
-#include "CubemapBake.h"
 #include "PointSprites.h"
 #include "Blackbody.h"
 #include "CmoReader.h"
