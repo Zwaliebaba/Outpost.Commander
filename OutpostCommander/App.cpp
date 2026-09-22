@@ -13,6 +13,7 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -256,6 +257,11 @@ void RunProbe(const CoreWindow& _window)
   Neuron::WorldPass worldPass;
   Outpost::ClientFrame clientFrame;
 
+  // R21's one path in. The seam turns `CoreWindow` pointer events into plain records on the frame's
+  // own thread (R18), and everything downstream of that -- the pick, the order, the marker -- is
+  // `GameClient`'s with a suite over it.
+  Neuron::GestureSeam seam;
+
   // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
   // because nothing here resizes: the scene target is created from the swap chain's size and both
   // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
@@ -304,6 +310,15 @@ void RunProbe(const CoreWindow& _window)
     worldFit = Neuron::ComputeFit(sceneTarget.WidthPixels(), sceneTarget.HeightPixels(), swapChain.WidthPixels(), swapChain.HeightPixels());
     interfaceFit = Neuron::ComputeInterfaceFit(swapChain.WidthPixels(), swapChain.HeightPixels());
 
+    // THE INTERFACE FIT AND NOT THE WORLD'S (ADR-016), which is the defect that ADR worries about:
+    // at the 1:1 world default the world fit is identity and every tap would land in the top left
+    // quarter of the frame.
+    const Neuron::AuthoredSpace authoredSpace{.interfaceFit = interfaceFit, .rawPixelsPerViewPixel = metrics.rawPixelsPerViewPixel};
+    if (!seam.Attach(winrt::get_unknown(_window), authoredSpace))
+    {
+      Report(log, "probe: the gesture seam did not attach -- there is no way in");
+    }
+
     // Major and minor out of the packed nibbles, because "0x" in front of a decimal is a lie.
     const std::uint32_t shaderModel = device.HighestShaderModel();
     Report(log, "probe: highest shader model " + std::to_string((shaderModel >> 4) & 0xF) + "." + std::to_string(shaderModel & 0xF));
@@ -346,6 +361,21 @@ void RunProbe(const CoreWindow& _window)
   bool reportedReady = false;
   std::uint16_t helloSequence = 0;
   std::uint64_t receivedCount = 0;
+
+  // M0.23'S MEASUREMENT, AND IT IS AN OBSERVATION RATHER THAN AN ARITHMETIC (R20). The client
+  // records when the tap resolved, where the entity was drawn at that instant, and the first frame
+  // in which the drawn position differs from it. `Scripts/ProbeReport.py` turns a run of those into
+  // a distribution; nothing here averages anything.
+  //
+  // WHY IT IS THE DRAWN POSITION AND NOT THE SNAPSHOT'S. The gate's question is what the PLAYER
+  // sees, and the client renders 75 ms behind the newest snapshot -- so a snapshot that already
+  // carries the move is still not the moment the ship appears to move.
+  std::uint64_t tapAtMs = 0;
+  float tapFromX = 0.0f;
+  float tapFromY = 0.0f;
+  bool awaitingVisible = false;
+  float drawnX = 0.0f;
+  float drawnY = 0.0f;
 
   while (running)
   {
@@ -395,6 +425,95 @@ void RunProbe(const CoreWindow& _window)
                     " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) +
                     " seq=" + std::to_string(newest != nullptr ? newest->sequence : 0) +
                     " entities=" + std::to_string(newest != nullptr ? newest->entities.size() : 0) + " local_ms=" + std::to_string(nowMs));
+    }
+
+    // === M0.21's VERB, WIRED (M0.22). ==========================================================
+    //
+    // One drain of the seam per frame, on the frame's thread. A tap on empty space with something
+    // selected is a move order: it is SENT at once and the client draws a marker for it
+    // immediately (Q20), because a tap is not visible for 152 ms at best and on a touchscreen the
+    // tap is the only feedback there is.
+    //
+    // NOTHING IS PREDICTED. The order goes to the host and the entity keeps the position the last
+    // snapshot gave it until a later snapshot moves it. R19 forbids the client simulating, not the
+    // client drawing what it asked for.
+    std::array<Neuron::InputEvent, Neuron::GestureSeam::EVENT_CAPACITY> events{};
+    const std::size_t eventCount = seam.Drain(events);
+    for (std::size_t index = 0; index < eventCount; ++index)
+    {
+      const Neuron::InputEvent& event = events[index];
+      if (event.kind != Neuron::InputEventKind::Tapped)
+      {
+        // M0 has one verb. A hold recenters and a manipulation drives the camera (ADR-018), and
+        // both arrive with M1 -- the records are drained and dropped rather than queued, so a
+        // gesture nobody handles cannot accumulate.
+        continue;
+      }
+
+      const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
+      if ((newest == nullptr) || newest->entities.empty())
+      {
+        Report(log, "TAP at " + std::to_string(event.xAuthoredPixels) + "," + std::to_string(event.yAuthoredPixels) +
+                      " -- nothing is replicated yet, so nothing is selected");
+        continue;
+      }
+
+      // M0's selection is the one entity there is. M1.13 is where a tap on a ship selects it and
+      // ADR-010's circle selects several; until then a tap on empty space orders what exists.
+      const std::uint16_t selected = newest->entities.front().identity;
+      // THE ASPECT IS THE SCENE TARGET'S, NOT THE AUTHORED FRAME'S, and they answer different
+      // questions. The authored width and height convert the tap's position into the normalized
+      // range; the ASPECT builds the ray, and it has to be the one the world was DRAWN with or a
+      // tap resolves to a different world point than the pixel the player touched.
+      //
+      // On the target device the two coincide -- a 3:2 panel, an authored 3:2 frame, fullscreen at
+      // launch (Q23) -- which is exactly why passing the wrong one would go unnoticed here and
+      // surface on the first window that is not 3:2.
+      const float tapAspect = (sceneTarget.HeightPixels() > 0)
+                                ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                : 1.0f;
+      const Outpost::TapOutcome outcome = Outpost::ResolveTap(clientFrame.Camera(), tapAspect, event.xAuthoredPixels, event.yAuthoredPixels,
+                                                              static_cast<float>(Neuron::INTERFACE_AUTHORED_WIDTH),
+                                                              static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT), {}, true);
+
+      if (outcome.action != Outpost::TapAction::MoveTo)
+      {
+        Report(log, "TAP resolved to nothing to do");
+        continue;
+      }
+
+      const std::uint16_t sequence = clientFrame.TakeCommandSequence();
+      std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+      Neuron::ByteWriter commandWriter{outgoing};
+      Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+      packet.commands.push_back(
+        Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, std::span<const std::uint16_t>{&selected, 1}));
+
+      bool sent = false;
+      if (Outpost::Encode(packet, commandWriter))
+      {
+        sent = transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+      }
+
+      Outpost::OrderMarker marker;
+      marker.targetX = packet.commands.front().targetX;
+      marker.targetY = packet.commands.front().targetY;
+      marker.commandSequence = sequence;
+      marker.selection.push_back(selected);
+      clientFrame.Markers().Add(marker);
+
+      // M0.23's measurement starts here. The gate times the tap against the first frame in which
+      // the DRAWN position differs, so both halves are recorded at the moment the gesture resolved
+      // rather than reconstructed afterwards.
+      tapAtMs = nowMs;
+      tapFromX = drawnX;
+      tapFromY = drawnY;
+      awaitingVisible = true;
+
+      Report(log, "TAP seq=" + std::to_string(sequence) + " authored=" + std::to_string(event.xAuthoredPixels) + "," +
+                    std::to_string(event.yAuthoredPixels) + " world=" + std::to_string(outcome.worldX) + "," +
+                    std::to_string(outcome.worldY) + (sent ? " sent" : " NOT SENT") +
+                    " markers=" + std::to_string(clientFrame.Markers().Count()) + " local_ms=" + std::to_string(nowMs));
     }
 
     // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
@@ -465,6 +584,24 @@ void RunProbe(const CoreWindow& _window)
             }
 
             static_cast<void>(worldPass.Record(device, sceneTarget, combined.m, 0.80f, 0.86f, 0.95f, 1.0f));
+
+            // The first entity's drawn position is what M0.23 watches. One entity is all M0 has,
+            // and taking the first is honest for exactly as long as that is true.
+            if (&newer == &drawn.newer->entities.front())
+            {
+              drawnX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
+              drawnY = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
+
+              // A QUARTER OF A WORLD UNIT IS THE WIRE'S OWN STEP (ADR-003), so anything at or below
+              // it is the quantizer rather than movement. Half a unit is comfortably above that and
+              // far below anything a player would call a move.
+              if (awaitingVisible && ((std::fabs(drawnX - tapFromX) > 0.5f) || (std::fabs(drawnY - tapFromY) > 0.5f)))
+              {
+                Report(log, "TAPVISIBLE ms=" + std::to_string(nowMs - tapAtMs) + " from=" + std::to_string(tapFromX) + "," +
+                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY));
+                awaitingVisible = false;
+              }
+            }
           }
         }
       }
