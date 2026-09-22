@@ -137,6 +137,26 @@ void Report(std::ofstream& _log, const std::string& _line)
   return "?";
 }
 
+/// Log formatting, like `FilterName` above. **`Starved` in a steady run is the one to notice**: it
+/// means no retained pair straddled the render time, so the frame fell back to the newest snapshot
+/// and was NOT drawn 75 milliseconds behind -- which is ADR-003's buffer not doing its job, and it
+/// would make every latency figure optimistic.
+[[nodiscard]] const char* PlayoutName(Outpost::PlayoutState _state) noexcept
+{
+  switch (_state)
+  {
+  case Outpost::PlayoutState::Interpolating:
+    return "interp";
+  case Outpost::PlayoutState::Extrapolating:
+    return "extrap";
+  case Outpost::PlayoutState::Holding:
+    return "hold";
+  case Outpost::PlayoutState::Starved:
+    return "STARVED";
+  }
+  return "?";
+}
+
 /// Before there is a log file to write to, and therefore the only way to see how far this got on a
 /// machine where it did not get far. It stays after the gate is over if the probe outlives it.
 void Trace(const char* _marker) noexcept
@@ -377,6 +397,12 @@ void RunProbe(const CoreWindow& _window)
   float drawnX = 0.0f;
   float drawnY = 0.0f;
 
+  /// The frame before's, which is the only way to know whether the ship is moving RIGHT NOW. At
+  /// 140 units a second a travelling ship moves about 2.3 units between frames and a parked one
+  /// moves zero, so the two are not close.
+  float previousDrawnX = 0.0f;
+  float previousDrawnY = 0.0f;
+
   while (running)
   {
     dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
@@ -421,6 +447,9 @@ void RunProbe(const CoreWindow& _window)
     {
       receivedCount += drained.accepted;
       const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
+      // The same query the draw makes a few lines later. It walks a ring of three and allocates
+      // nothing, and asking twice is cheaper than carrying the answer across half a frame.
+      const Outpost::ReplicaStore::Frame shown = clientFrame.Advance(nowMs);
       Report(log, "RX datagrams=" + std::to_string(drained.datagrams) + " accepted=" + std::to_string(drained.accepted) +
                     " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) +
                     " seq=" + std::to_string(newest != nullptr ? newest->sequence : 0) +
@@ -430,7 +459,14 @@ void RunProbe(const CoreWindow& _window)
                     // entity's journey time, to find that the ship had already arrived before the
                     // client started and that nothing moving was correct rather than a defect.
                     " drawn=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
-                    " awaiting=" + std::to_string(awaitingVisible ? 1 : 0) + " local_ms=" + std::to_string(nowMs));
+                    " awaiting=" + std::to_string(awaitingVisible ? 1 : 0) +
+                    // WHAT THE PLAYOUT CLOCK IS ACTUALLY DOING. A run that says STARVED is not
+                    // drawing 75 milliseconds behind at all -- it is drawing the newest snapshot --
+                    // and every latency figure taken from it would be optimistic by the whole
+                    // buffer. The two sequences either side say which pair it is between.
+                    " playout=" + PlayoutName(shown.playout.state) +
+                    " pair=" + std::to_string(shown.older != nullptr ? shown.older->sequence : 0) + "-" +
+                    std::to_string(shown.newer != nullptr ? shown.newer->sequence : 0) + " local_ms=" + std::to_string(nowMs));
     }
 
     // === M0.21's VERB, WIRED (M0.22). ==========================================================
@@ -508,13 +544,30 @@ void RunProbe(const CoreWindow& _window)
       marker.selection.push_back(selected);
       clientFrame.Markers().Add(marker);
 
-      // M0.23's measurement starts here. The gate times the tap against the first frame in which
-      // the DRAWN position differs, so both halves are recorded at the moment the gesture resolved
-      // rather than reconstructed afterwards.
-      tapAtMs = nowMs;
-      tapFromX = drawnX;
-      tapFromY = drawnY;
-      awaitingVisible = true;
+      // === M0.23'S MEASUREMENT ARMS ONLY ON A PARKED SHIP. ====================================
+      //
+      // It used to arm on every tap and fire on the first frame where the drawn position differed
+      // at all -- which, if the ship was ALREADY travelling from an earlier order, is the next
+      // frame. Eight of twelve taps in the first run on the device read zero milliseconds that
+      // way: the measurement was timing the old motion continuing rather than the new order
+      // arriving, and it produced a plausible-looking number for it.
+      //
+      // A latency test taps a ship that is standing still. When it is not, the tap is recorded as
+      // unmeasurable rather than measured badly -- a missing sample costs nothing and a wrong one
+      // is worse than none, because it goes into an average.
+      const float movedLastFrame = std::fabs(drawnX - previousDrawnX) + std::fabs(drawnY - previousDrawnY);
+      const bool parked = movedLastFrame < 0.1f;
+      if (parked)
+      {
+        tapAtMs = nowMs;
+        tapFromX = drawnX;
+        tapFromY = drawnY;
+        awaitingVisible = true;
+      }
+      else
+      {
+        Report(log, "TAPUNMEASURED the ship was already moving, " + std::to_string(movedLastFrame) + " units last frame");
+      }
 
       Report(log, "TAP seq=" + std::to_string(sequence) + " authored=" + std::to_string(event.xAuthoredPixels) + "," +
                     std::to_string(event.yAuthoredPixels) + " world=" + std::to_string(outcome.worldX) + "," +
@@ -595,6 +648,8 @@ void RunProbe(const CoreWindow& _window)
             // and taking the first is honest for exactly as long as that is true.
             if (&newer == &drawn.newer->entities.front())
             {
+              previousDrawnX = drawnX;
+              previousDrawnY = drawnY;
               drawnX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
               drawnY = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
 
@@ -604,7 +659,8 @@ void RunProbe(const CoreWindow& _window)
               if (awaitingVisible && ((std::fabs(drawnX - tapFromX) > 0.5f) || (std::fabs(drawnY - tapFromY) > 0.5f)))
               {
                 Report(log, "TAPVISIBLE ms=" + std::to_string(nowMs - tapAtMs) + " from=" + std::to_string(tapFromX) + "," +
-                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY));
+                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
+                              " playout=" + PlayoutName(drawn.playout.state));
                 awaitingVisible = false;
               }
             }
