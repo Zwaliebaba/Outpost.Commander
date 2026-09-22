@@ -81,6 +81,14 @@ inline constexpr std::chrono::milliseconds HELLO_INTERVAL{1000};
 inline constexpr std::uint64_t WARMUP_FRAMES = 120;
 inline constexpr std::uint64_t MEASURE_FRAMES = 3600;
 
+/// M0.17'S RECTANGLE, in AUTHORED coordinates (`Interface.md` section 1): the 48 x 48 touch floor,
+/// inset by the 16 pixels of clear space that section requires, in the bottom left corner. It is
+/// the smallest thing the interface is ever allowed to contain, so a pair of eyes checking that it
+/// lands "at the physically correct place" is checking the number the whole interface rests on --
+/// 96 physical pixels and 9.15 mm on the target panel. The physical rectangle it maps to is written
+/// into the log below rather than inferred from the picture.
+inline constexpr Neuron::AuthoredRect INTERFACE_PROBE_RECT{.left = 16, .top = 896, .right = 64, .bottom = 944};
+
 /// How long the fullscreen transition is given, and what counts as having finished. A quarter of a
 /// second of an unchanging width is several refreshes at any rate this panel runs at, and the
 /// timeout is generous because overshooting it costs a second of a sixty-second run while
@@ -254,11 +262,18 @@ void RunProbe(const CoreWindow& _window)
   Neuron::SwapChain swapChain;
   Neuron::SceneTarget sceneTarget;
   Neuron::PresentStep presentStep;
+  Neuron::InterfacePass interfacePass;
 
-  // THE WORLD FIT (ADR-016), and the one place this shell asks for one. It is computed once because
-  // nothing here resizes: the scene target is created from the swap chain's size and both are
-  // fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
+  // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
+  // because nothing here resizes: the scene target is created from the swap chain's size and both
+  // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
+  //
+  // THEY ARE TWO VALUES AND NOT ONE, which is the whole of ADR-016 section 2. The world fit maps the
+  // scene target into the back buffer; the interface fit maps authored layout space into it. At the
+  // 1:1 world default the first is identity, so an interface drawn through it would land at half
+  // size in one corner.
   Neuron::FitTransform worldFit{};
+  Neuron::FitTransform interfaceFit{};
 
   if (!device.Create())
   {
@@ -282,9 +297,14 @@ void RunProbe(const CoreWindow& _window)
     // accept the Shader Model 6.7 blob the build compiled.
     Report(log, "probe: no present step, hresult " + std::to_string(presentStep.LastHresult()));
   }
+  else if (!interfacePass.Create(device, swapChain))
+  {
+    Report(log, "probe: no interface pass, hresult " + std::to_string(interfacePass.LastHresult()));
+  }
   else
   {
     worldFit = Neuron::ComputeFit(sceneTarget.WidthPixels(), sceneTarget.HeightPixels(), swapChain.WidthPixels(), swapChain.HeightPixels());
+    interfaceFit = Neuron::ComputeInterfaceFit(swapChain.WidthPixels(), swapChain.HeightPixels());
 
     // Major and minor out of the packed nibbles, because "0x" in front of a decimal is a lie.
     const std::uint32_t shaderModel = device.HighestShaderModel();
@@ -300,6 +320,18 @@ void RunProbe(const CoreWindow& _window)
     Report(log, "probe: world fit scale " + std::to_string(worldFit.scale) + " filter " + FilterName(worldFit.filter) + " rect " +
                   std::to_string(worldFit.width) + "x" + std::to_string(worldFit.height) + " at " + std::to_string(worldFit.offsetX) + "," +
                   std::to_string(worldFit.offsetY));
+    Report(log, "probe: interface fit scale " + std::to_string(interfaceFit.scale) + " rect " + std::to_string(interfaceFit.width) + "x" +
+                  std::to_string(interfaceFit.height) + " at " + std::to_string(interfaceFit.offsetX) + "," +
+                  std::to_string(interfaceFit.offsetY));
+
+    // M0.17 IS CONFIRMED AGAINST THIS LINE AND NOT AGAINST THE PICTURE ALONE. On the panel the
+    // authored 16,896 48 x 48 target has to read 32,1792 96 x 96 here, and the square on the glass
+    // has to be where those numbers say it is.
+    const Neuron::PhysicalRect probeRect = Neuron::MapAuthoredRect(interfaceFit, INTERFACE_PROBE_RECT);
+    Report(log, "probe: interface rect authored " + std::to_string(INTERFACE_PROBE_RECT.WidthPixels()) + "x" +
+                  std::to_string(INTERFACE_PROBE_RECT.HeightPixels()) + " at " + std::to_string(INTERFACE_PROBE_RECT.left) + "," +
+                  std::to_string(INTERFACE_PROBE_RECT.top) + " reaches " + std::to_string(probeRect.WidthPixels()) + "x" +
+                  std::to_string(probeRect.HeightPixels()) + " at " + std::to_string(probeRect.left) + "," + std::to_string(probeRect.top));
   }
 
   bool running = true;
@@ -367,15 +399,15 @@ void RunProbe(const CoreWindow& _window)
                     " local_ms=" + std::to_string(arrivedAtMs));
     }
 
-    // M0.15's frame, and R13's arrangement in five lines: the world clears the SCENE TARGET, the
-    // back buffer is cleared to black -- which is what the letterbox bars are -- and the present
-    // step fits one into the other. The interface pass goes between the blit and the close (ADR-011)
-    // at M0.17.
+    // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
+    // TARGET, the back buffer is cleared to black -- which is what the letterbox bars are -- the
+    // present step fits one into the other, and the interface pass draws over that, straight into
+    // the back buffer at physical resolution (ADR-011).
     //
     // THE TWO CLEARS ARE DIFFERENT COLORS ON PURPOSE. At the 1:1 default the present is a pure copy
     // and buys nothing visible, so the only way to see that it happened at all is that a blit which
     // drew nothing leaves a black screen rather than a dark blue one.
-    if (swapChain.IsReady() && presentStep.IsReady() && device.BeginFrame())
+    if (swapChain.IsReady() && presentStep.IsReady() && interfacePass.IsReady() && device.BeginFrame())
     {
       static_cast<void>(sceneTarget.RecordClear(device));
 
@@ -386,6 +418,13 @@ void RunProbe(const CoreWindow& _window)
 
       static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
       static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));
+
+      // ADR-011'S ORDERING CONSTRAINT, and it lives here because it is the caller's: after the
+      // present blit, before the back buffer is closed. Moving this line above the blit draws the
+      // interface and then paints the world over it, which is a defect nothing in either class can
+      // catch.
+      static_cast<void>(interfacePass.Record(device, swapChain, interfaceFit,
+                                             {.rect = INTERFACE_PROBE_RECT, .red = 0.98f, .green = 0.73f, .blue = 0.18f, .alpha = 1.0f}));
       static_cast<void>(swapChain.RecordReadyToPresent(device));
       if (device.EndFrameAndSubmit() && swapChain.Present())
       {
@@ -441,6 +480,7 @@ void RunProbe(const CoreWindow& _window)
   // has already gone.
   device.WaitForGpu();
 
+  interfacePass.Destroy();
   presentStep.Destroy();
   sceneTarget.Destroy();
   swapChain.Destroy();

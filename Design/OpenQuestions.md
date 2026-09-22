@@ -8,11 +8,17 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong. **All five open questions are under *Open* below**,
+**Thirty-two answered, six open.** Eight came from an adversarial review that also reversed two earlier
+answers and corrected three statements that were wrong, and one — Q38, the seventh round — came from
+writing the code rather than from reading the design. **All six open questions are under *Open* below**,
 each with the milestone that settles it. **Every one carries a recommendation**, which none of Q26, Q33
 and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37) and
 three are decisions somebody has to take (Q33, Q35, Q36).
+
+**This line said "five open" while six were listed**, from the commit that registered Q37 and did not
+count again. It is the same defect `Plan/README.md`'s step counts had and for the same reason — a count is
+prose beside a list, and nothing reads the list. `Scripts/CheckDesign.py` recomputes the plan's counts and
+does not yet recompute these.
 
 ---
 
@@ -119,6 +125,29 @@ entities of headroom, and the next feature that wants a per-entity byte still ca
 long opening and not for a match" in a paragraph that reads as current — true from M3, false before it,
 since asteroids are inexhaustible until then. **A consistency checker cannot catch that**: it is a claim
 that is true in one milestone and false in another, not a figure that disagrees with itself.
+
+---
+
+## Answered — 2026-09-22, seventh round: implementing the seam
+
+| | Question | Answer | Recorded in |
+|---|---|---|---|
+| **Q38** | Does the rotation deadzone rebase at its crossing, the way the tap slop does? | **Yes, it rebases.** The heading follows the fingers from the point the eight degrees was passed, so engaging rotation moves nothing — exactly the rule `Interface.md` §3 already states for the pan. **The argument that settles it is what the deadzone is for**: a pan and a pinch rotate by accident, so the crossing is usually reached unintentionally, and passing the whole cumulative through would snap the world eight degrees in the middle of a pan — making the accident the deadzone exists to absorb worse rather than better. | `Interface.md` §5 |
+
+**What it costs is about eight degrees of every deliberate orbit**, against the fifty a kickstand grip has
+before a re-grip ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — roughly a sixth of a
+gesture. That is the same price §3 pays for the pan and it is paid for the same reason, but it is worth
+writing down, because **it is one more thing on the bill if orbit is cut at M1.16**: ADR-018 already names
+orbit the candidate and counts three constants that exist only to protect it.
+
+**A fourth constant was declined.** Ramping rotation in over the first few degrees past the threshold
+would cost neither the lurch nor the arc — and it would put the camera in a band where the ground turns at
+some fraction of the fingers, which is the "slides at a different rate from the finger" complaint ADR-018
+opens by rejecting rate-based cameras over.
+
+**This is the first row the register took from writing code rather than from reviewing design**, and it is
+worth noting how it was found: two paragraphs of `Interface.md` described the same kind of threshold and
+only one of them said what happens at the crossing. Nothing compares two paragraphs for that.
 
 ---
 

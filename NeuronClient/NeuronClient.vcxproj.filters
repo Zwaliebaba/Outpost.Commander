@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <FxCompile Include="Shaders\InterfacePS.hlsl" />
+    <FxCompile Include="Shaders\InterfaceVS.hlsl" />
     <FxCompile Include="Shaders\PresentPS.hlsl" />
     <FxCompile Include="Shaders\PresentVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
     <ClCompile Include="FitTransform.cpp" />
+    <ClCompile Include="GestureArithmetic.cpp" />
+    <ClCompile Include="GestureSeam.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
+    <ClCompile Include="InterfacePass.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
     <ClCompile Include="SceneTarget.cpp" />
@@ -20,7 +25,11 @@
     <ClInclude Include="DatagramTransport.h" />
     <ClInclude Include="FitTransform.h" />
     <ClInclude Include="FrameStatistics.h" />
+    <ClInclude Include="GestureArithmetic.h" />
+    <ClInclude Include="GestureSeam.h" />
+    <ClInclude Include="InputEvent.h" />
     <ClInclude Include="GraphicsDevice.h" />
+    <ClInclude Include="InterfacePass.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
     <ClInclude Include="SceneTarget.h" />

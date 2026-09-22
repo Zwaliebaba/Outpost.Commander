@@ -315,7 +315,15 @@ floor is for.
 about eight degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws
 whenever you pan is unusable. **Once it engages it stays engaged for the rest of that manipulation** —
 without the latch the camera stutters every time the player crosses back under the threshold mid-gesture,
-which is worse than no deadzone at all.
+which is worse than no deadzone at all. **And it rebases at the crossing, exactly as §3's tap slop does**
+— the heading follows the fingers from the point the eight degrees was passed, so engaging rotation moves
+nothing (`OpenQuestions.md` Q38). What settles that is what the deadzone is *for*: a pan and a pinch
+rotate by accident, so the crossing is usually reached unintentionally, and passing the whole cumulative
+through would snap the world eight degrees in the middle of a pan — making the accident this exists to
+absorb worse rather than better. **It costs about eight degrees of every deliberate orbit** against the
+fifty a kickstand grip has before a re-grip
+([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)), which is the same price §3 pays for the
+pan and one more item on the bill if orbit is cut.
 
 **Zoom needs a small deadzone too, and for the mirror-image reason.** Fingers that rotate also change
 separation slightly, so a pure orbit otherwise creeps the zoom — and since pitch is coupled to zoom, an
