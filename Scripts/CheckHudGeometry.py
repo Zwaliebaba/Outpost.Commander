@@ -19,11 +19,14 @@ CheckDesign.py polices figures inside Design/*.md and does not reach into this J
 moves in Interface.md leaves a copy here that still reads as authoritative. That is the exact defect
 the design-consistency skill exists for, one directory further out.
 
-WHAT THIS DOES NOT DO YET: compare against GameClient/HudLayout.h. That file does not exist until
-M1.14, and the plan's arrangement is that the C++ suite asserts over its constants while this gate
-compares those constants to the JSON -- Python reads the file and C++ reads none, because R14 closes
-the dependency list and there is no JSON parser in this tree. Until HudLayout.h lands, the layout
-half below is skipped rather than failed, and says so.
+THIRD, the client can draw something other than what was designed. M1.14 wrote GameClient/HudLayout.h,
+and the plan's arrangement is that the C++ suite asserts over its constants while this gate compares
+those constants to the JSON -- Python reads the file and C++ reads none, because R14 closes the
+dependency list and there is no JSON parser in this tree. Every constant that copies a row carries a
+`// geometry: <name>` tag, and each tagged constant is compared field by field: a JSON field that is
+null (a text box's width) is skipped, and a cell-relative "+16" compares as 16. A JSON row with a fixed
+position that no constant claims is a fault too, because a rect the client never copied is a rect it
+cannot be drawing where the handoff says.
 """
 import argparse
 import itertools
@@ -158,14 +161,58 @@ def check_rects(geometry):
     return len(rects), len(interactive), len(placed)
 
 
-def check_layout_header(root):
-    """Compare GameClient/HudLayout.h's constants to the JSON. Skipped until M1.14 writes it."""
+LAYOUT_LINE = re.compile(r"inline constexpr HudRect (\w+)\{(-?\d+), (-?\d+), (-?\d+), (-?\d+)\};\s*// geometry: (\S+)")
+
+# Rows this client cannot claim yet, because their position is solved at runtime (the alert's
+# along-edge coordinate, the world-anchored hull bar) or because only a later milestone draws them
+# (the armed and unavailable module states are M2's, and so is cargo). Listed so the exemption is
+# visible rather than silent.
+UNCLAIMABLE = ("alert.", "world.", "build.btn.armed.", "build.btn.hatch", "sel.group.cargo.")
+
+
+def as_number(value):
+    """A JSON field as a number to compare: an int, a cell-relative "+16", or None when not comparable."""
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and re.fullmatch(r"\+\d+", value):
+        return int(value[1:])
+    return None
+
+
+def check_layout_header(root, geometry):
+    """Compare GameClient/HudLayout.h's tagged constants to the JSON, rect for rect."""
     header = root / LAYOUT_HEADER
     if not header.exists():
-        return False
-    # M1.14 writes the header and extends this to read it. Failing here before that step exists
-    # would gate the tree on a file the plan has not reached yet.
-    return True
+        faults.append(f"{LAYOUT_HEADER} is missing -- M1.14 wrote it, and nothing now compares the drawn "
+                      f"layout to the designed one")
+        return 0
+
+    rects = {row[0]: dict(zip(geometry["rectFields"], row)) for row in geometry["rects"]}
+    claimed = set()
+    compared = 0
+    for number, line in enumerate(header.read_text(encoding="utf-8").splitlines(), start=1):
+        match = LAYOUT_LINE.search(line)
+        if not match:
+            if line.lstrip().startswith("inline constexpr") and "// geometry:" in line:
+                faults.append(f"{LAYOUT_HEADER}:{number} carries a geometry tag this gate cannot read")
+            continue
+        constant, name = match.group(1), match.group(6)
+        values = [int(match.group(index)) for index in range(2, 6)]
+        if name not in rects:
+            faults.append(f"{LAYOUT_HEADER}:{number} {constant} names '{name}', which {GEOMETRY} does not have")
+            continue
+        claimed.add(name)
+        compared += 1
+        for field, value in zip(("x", "y", "w", "h"), values):
+            expected = as_number(rects[name][field])
+            if expected is not None and expected != value:
+                faults.append(f"{constant} has {field} = {value}, but {GEOMETRY} says {name}.{field} = "
+                              f"{rects[name][field]}")
+
+    for name in rects:
+        if name not in claimed and not name.startswith(UNCLAIMABLE):
+            faults.append(f"{GEOMETRY} row '{name}' is claimed by no constant in {LAYOUT_HEADER}")
+    return compared
 
 
 def main():
@@ -182,15 +229,13 @@ def main():
     geometry = json.loads(geometry_path.read_text(encoding="utf-8"))
     check_against_interface(geometry, interface_path.read_text(encoding="utf-8"))
     total, interactive, placed = check_rects(geometry)
-    compared_header = check_layout_header(root)
+    compared = check_layout_header(root, geometry)
 
     for line in faults:
         print(f"  {line}")
     print(f"\n{len(faults)} issue(s) over {total} rects, {interactive} of them interactive "
-          f"({placed} statically placed), in both handedness states.")
-    if not compared_header:
-        print(f"  {LAYOUT_HEADER} does not exist yet, so nothing compared the drawn layout to "
-              f"this one. M1.14 writes it.")
+          f"({placed} statically placed), in both handedness states; {compared} constants in "
+          f"{LAYOUT_HEADER} compared against them.")
     return 1 if faults else 0
 
 

@@ -492,6 +492,13 @@ resize or a device removal invalidates it. Both are rebuild paths, and neither m
 **Files:** `NeuronClient/GlyphAtlas.h` `.cpp`, `NeuronClient/AtlasPacker.h` `.cpp`;
 `NeuronClient.vcxproj` + `.filters`; `Tests/NeuronClientTests/AtlasPackerTests.cpp`.
 
+**BUILT, 2026-09-22.** The packer, the linear-space average pinned at 213, 156 and 141 against hand
+arithmetic, and the advance round trip. The atlas also packs **a block of full coverage first**, so a
+solid plate is a glyph quad over it and M1.13 draws the whole interface as one call in emission order.
+Measured on the device: **3 to 17 ms to rasterize both sizes, 269 of 512 rows used** — ADR-009's second
+owed figure, and small enough that caching it to `LocalState` is not worth a file. **The rebuild path is
+not wired**: the client never resizes and has no device-removal path, so the atlas is built once.
+
 **Done when:** `TechnicalDesign.md` §8's two are pinned — **atlas packing**, and that **a glyph's advance
 width survives the round trip**; the linear-space average is asserted against a hand-computed value rather
 than against itself; and the rebuild path runs without a visible stall, which is a screen rather than a
@@ -508,6 +515,13 @@ resampled**, which is what ADR-011 bought and what ADR-009's original pixel doub
 
 **Files:** `NeuronClient/TextRenderer.h` `.cpp`, `NeuronClient/Glyph.hlsl`; `NeuronClient.vcxproj` +
 `.filters`; `Tests/NeuronClientTests/TextLayoutTests.cpp`.
+
+**BUILT, 2026-09-22**, as `TextLayout` (pure, the suite's) and `TextRenderer` (the draw), with the
+shader pair split as ADR-012 requires — `GlyphVS.hlsl` and `GlyphPS.hlsl` rather than one `Glyph.hlsl`.
+**The baseline follows CSS**, because every text rect in the handoff is a line box as tall as its font:
+ascent plus descent centered in the box. **The palette goes in as its bytes, not converted to linear**,
+which contradicts `palette.json`'s note and is right for this tree: the back buffer is
+`B8G8R8A8_UNORM` with no sRGB view, and the handoff's reference blends on the encoded values too.
 
 **Done when:** a string's laid-out advance widths are pinned; the same string at both sizes lands at the
 same authored origin; and a string draws at the physically correct place, confirmed once by looking.
@@ -560,6 +574,16 @@ it is the readout the player reads while their hand is on the glass. **Which sid
 `Scripts/CheckHudGeometry.py` **extended** — it already gates `geometry.json` against its own rules
 and against `Interface.md` §1, and this step adds the half that compares those rects to the
 constants the client actually draws from.
+
+**BUILT, 2026-09-22.** `HudLayout.h` carries every rect with a `// geometry:` tag and
+`CheckHudGeometry.py` now compares 63 of them against `geometry.json` field by field. The rows it
+exempts are the alert, the world-anchored elements, and the module row's armed and unavailable states and
+cargo, which are M2's and M3's. **What is not built:** the module row (no module exists until ADR-015 at
+M2, and *unavailable* means "build something else first", which nobody at M1 can do); **motion**, which
+the handoff's own build order puts last; and a **reconnecting** state, because nothing yet detects a resume
+— the overlay is drawn from a state nothing sets. **Two things the handoff did not settle and this step
+did:** a refused join shows `MATCH FULL` in the reconnect overlay's block, and the system panel keeps
+`LINK` rather than `RECONNECTING` because the longer word does not fit its 72 pixels before the quit.
 
 **Done when:** **every interactive target is asserted at its own tier with its clear space, in both
 handedness states** — a test, not a measurement by eye, because this is the rule that erodes one control

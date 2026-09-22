@@ -10,6 +10,8 @@
     <ClCompile Include="HitTest.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="JoinState.cpp" />
+    <ClCompile Include="PanelHitTest.cpp" />
+    <ClCompile Include="Panels.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
     <ClCompile Include="ReplicaStore.cpp" />
     <ClCompile Include="Selection.cpp" />
@@ -28,6 +30,9 @@
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="MeshCatalog.g.h" />
     <ClInclude Include="JoinState.h" />
+    <ClInclude Include="HudLayout.h" />
+    <ClInclude Include="PanelHitTest.h" />
+    <ClInclude Include="Panels.h" />
     <ClInclude Include="OrderMarker.h" />
     <ClInclude Include="ReplicaStore.h" />
     <ClInclude Include="Selection.h" />

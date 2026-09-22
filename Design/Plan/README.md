@@ -41,11 +41,15 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1 IS BUILT AS FAR AS ITS INTERFACE, AND THE HULLS ARE ON THE SCREEN.** M1.1 to M1.11 are in.
+**M1'S CODE IS IN; ITS TWO GATES ARE NOT.** M1.1 to M1.14 are built, and M1.15 and M1.16 are a hand's.
 What that adds up to is a match you can look at: two stations placed 12,000 units apart on a seed both
 sides derive, a station that builds and refunds, fifty ships that take a ring slot each rather than
 stacking, a camera that sticks to the finger and opens on your own base, a tap that selects, expands and
-orders, and three authored CMO hulls drawn as three instanced calls.
+orders, three authored CMO hulls drawn as three instanced calls — **and now an interface over it**:
+Segoe UI rasterized into an atlas this tree owns, every plate and glyph drawn as one instanced call, and
+the credits, selection, build and system panels with the quit's two taps. On the device the atlas builds
+in 3 to 17 ms and uses 269 of its 512 rows; the quit was armed and confirmed by hand. **Whether the text
+reads is M1.16's**, and nobody has judged it yet.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

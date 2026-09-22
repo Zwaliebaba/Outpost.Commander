@@ -12,6 +12,7 @@
     <ClCompile Include="HitTestTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="JoinStateTests.cpp" />
+    <ClCompile Include="HudLayoutTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>

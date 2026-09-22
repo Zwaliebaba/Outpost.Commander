@@ -323,6 +323,26 @@ void RunProbe(const CoreWindow& _window)
   Outpost::Selection selection;
   std::uint16_t lastTapIdentity = 0;
 
+  // M1.12 to M1.14: THE INTERFACE. The atlas is rasterized once, on the first frame, because its upload
+  // is recorded on the frame's command list; the renderer draws every plate and glyph as one instanced
+  // call. `hud` is the frame the player last SAW, and it is what a tap is tested against -- a tap answers
+  // to what was on the glass, not to what this frame is about to draw.
+  Neuron::GlyphAtlas glyphAtlas;
+  Neuron::TextRenderer textRenderer;
+  bool atlasAttempted = false;
+  Outpost::HudFrame hud;
+  std::vector<Neuron::GlyphQuad> hudQuads;
+  Outpost::QuitConfirm quitConfirm;
+  bool quitConfirmed = false;
+
+  // `Interface.md` section 4: a tap on your own station opens the build panel and leaves the selection
+  // alone, so "the station is selected" is its own client-local fact rather than a selection entry.
+  bool buildPanelOpen = false;
+
+  // OpenQuestions.md Q33: right-handed is the default. This is the one value that swaps the two bottom
+  // panels, and until there is a settings surface it is a constant here.
+  constexpr bool LEFT_HANDED = false;
+
   // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
   // because nothing here resizes: the scene target is created from the swap chain's size and both
   // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
@@ -374,6 +394,10 @@ void RunProbe(const CoreWindow& _window)
   else if (!pointSprites.Create(device, sceneTarget))
   {
     Report(log, "probe: no point sprites, hresult " + std::to_string(pointSprites.LastHresult()));
+  }
+  else if (!textRenderer.Create(device, swapChain))
+  {
+    Report(log, "probe: no text renderer, hresult " + std::to_string(textRenderer.LastHresult()));
   }
   else
   {
@@ -618,6 +642,81 @@ void RunProbe(const CoreWindow& _window)
       }
 
       const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
+
+      // === THE INTERFACE FIRST (`design_handoff_hud` *Pick order*). ============================
+      //
+      // A tap that lands on a panel is the panel's, target or not, and never reaches the world: a tap
+      // on the credit balance that fell through would be a move order to wherever the balance is drawn.
+      const Outpost::HudHit hudHit = hud.hits.Test(event.xAuthoredPixels, event.yAuthoredPixels);
+      if (hudHit.consumed)
+      {
+        const auto design = static_cast<Outpost::DesignId>(hudHit.argument);
+        switch (hudHit.action)
+        {
+        case Outpost::HudAction::SelectGroup:
+          if (newest != nullptr)
+          {
+            Report(log, "HUD narrowed to " + std::to_string(Outpost::NarrowToDesign(selection, newest->entities, design)) + " of design " +
+                          std::to_string(hudHit.argument));
+          }
+          break;
+
+        case Outpost::HudAction::ClearSelection:
+          // **THE ONLY WAY TO DESELECT** (`Interface.md` section 4), and it takes the build panel with it:
+          // "everything" includes the station.
+          selection.Clear();
+          buildPanelOpen = false;
+          Report(log, "HUD cleared the selection");
+          break;
+
+        case Outpost::HudAction::Build:
+        case Outpost::HudAction::CancelBuild:
+          if (clientFrame.CurrentJoin().IsJoined() && (state == Neuron::TransportState::Ready))
+          {
+            const std::uint16_t sequence = clientFrame.TakeCommandSequence();
+            const Outpost::CommandType type =
+              (hudHit.action == Outpost::HudAction::Build) ? Outpost::CommandType::Build : Outpost::CommandType::CancelBuild;
+            Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+            packet.commands.push_back(Outpost::BuildStationCommand(sequence, type, design));
+
+            std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+            Neuron::ByteWriter commandWriter{outgoing};
+            const bool sent = Outpost::Encode(packet, commandWriter) &&
+                              transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+            Report(log,
+                   std::string{"HUD "} +
+                     ((type == Outpost::CommandType::Build) ? "build design " + std::to_string(hudHit.argument) : std::string{"cancel"}) +
+                     " seq=" + std::to_string(sequence) + (sent ? " sent" : " NOT SENT"));
+          }
+          break;
+
+        case Outpost::HudAction::ArmQuit:
+          quitConfirm.Arm(nowMs);
+          Report(log, "HUD quit armed");
+          break;
+
+        case Outpost::HudAction::StayInMatch:
+          quitConfirm.Disarm();
+          Report(log, "HUD quit disarmed");
+          break;
+
+        case Outpost::HudAction::ConfirmQuit:
+          // Checked again rather than trusted: the confirm is drawn from last frame's state, and four
+          // seconds can have run out between the draw and the tap.
+          if (quitConfirm.IsArmed(nowMs))
+          {
+            Report(log, "HUD quit confirmed");
+            quitConfirmed = true;
+            running = false;
+          }
+          break;
+
+        case Outpost::HudAction::None:
+          break;
+        }
+        continue;
+      }
+
       if ((newest == nullptr) || newest->entities.empty())
       {
         Report(log, "TAP at " + std::to_string(event.xAuthoredPixels) + "," + std::to_string(event.yAuthoredPixels) +
@@ -661,8 +760,18 @@ void RunProbe(const CoreWindow& _window)
           Report(log, "SELECT expanded to " + std::to_string(expanded.selected) + " of one design");
         }
       }
+      if (picked.verb == Outpost::OrderVerb::OpenBuildPanel)
+      {
+        // **THE SELECTION IS UNCHANGED** (`Interface.md` section 4): this row of the table is about the
+        // interface rather than the world. A second tap on the station closes the panel again.
+        buildPanelOpen = !buildPanelOpen;
+        Report(log, std::string{"BUILD panel "} + (buildPanelOpen ? "opened" : "closed"));
+        continue;
+      }
       if (picked.verb == Outpost::OrderVerb::Select)
       {
+        // A ship replaced the selection, so the station is no longer what is selected.
+        buildPanelOpen = false;
         lastTapIdentity = picked.target;
         Report(log, "SELECT " + std::to_string(picked.target) + ", " + std::to_string(selection.Count()) + " selected");
         continue;
@@ -817,6 +926,29 @@ void RunProbe(const CoreWindow& _window)
     // what ADR-019 does not want: the scene target's clear IS the sky between the stars.
     if (swapChain.IsReady() && presentStep.IsReady() && interfacePass.IsReady() && device.BeginFrame())
     {
+      // === M1.12: THE GLYPH ATLAS, ONCE, ON THE FIRST FRAME. ====================================
+      //
+      // Here rather than with the other passes because its upload is a copy recorded on the frame's
+      // command list. **A MISSING SEGOE UI IS A FAILURE AND NOT A SUBSTITUTION** (ADR-009): the client
+      // keeps running with no interface, and says why, rather than moving every string.
+      if (!atlasAttempted)
+      {
+        atlasAttempted = true;
+        const auto rasterizing = std::chrono::steady_clock::now();
+        if (glyphAtlas.Create(device, interfaceFit))
+        {
+          // ADR-009's second owed measurement: what the atlas costs at startup.
+          Report(log, "ATLAS rasterized in " + std::to_string(MillisecondsSince(rasterizing)) + " ms, body " +
+                        std::to_string(glyphAtlas.EmSizePixels(Neuron::TextSize::Body)) + " px, display " +
+                        std::to_string(glyphAtlas.EmSizePixels(Neuron::TextSize::Display)) + " px, " +
+                        std::to_string(glyphAtlas.UsedHeightPixels()) + " of " + std::to_string(glyphAtlas.HeightPixels()) + " rows used");
+        }
+        else
+        {
+          Report(log, "ATLAS FAILED, hresult " + std::to_string(glyphAtlas.LastHresult()) + " -- the interface is not drawn");
+        }
+      }
+
       static_cast<void>(sceneTarget.RecordClear(device));
 
       // M0.21b: THE WORLD, AND THE FIRST THING IN THIS TREE TO DRAW ONE. Into the scene target,
@@ -1040,6 +1172,49 @@ void RunProbe(const CoreWindow& _window)
       // blit, before the back buffer is closed. Moving this line above the blit draws the interface
       // and then paints the world over it, which is a defect nothing in either class can catch.
       static_cast<void>(interfacePass.Record(device, swapChain, interfaceFit, {}));
+
+      // === M1.14: THE FOUR PANELS, AS ONE INSTANCED DRAW. =========================================
+      //
+      // Everything the panels need is read here and nowhere else: the newest snapshot's block for THIS
+      // player (one-based identity, zero-based block -- `ClientFrame.cpp` says why that matters), the
+      // selection, and the client-local facts. `BuildHud` is pure and has a suite over it; this is the
+      // gathering and the call (R20).
+      {
+        Outpost::HudState hudState;
+        hudState.leftHanded = LEFT_HANDED;
+        hudState.player = clientFrame.Player();
+        hudState.buildPanelOpen = buildPanelOpen;
+        hudState.quitArmed = quitConfirm.IsArmed(nowMs);
+
+        const Outpost::JoinPhase phase = clientFrame.CurrentJoin().Phase();
+        hudState.link = (phase == Outpost::JoinPhase::Refused)  ? Outpost::LinkState::Refused
+                        : (phase == Outpost::JoinPhase::Joined) ? Outpost::LinkState::Linked
+                                                                : Outpost::LinkState::Joining;
+
+        if (const Outpost::Snapshot* latest = clientFrame.Replicas().Newest(); latest != nullptr)
+        {
+          const std::size_t block = static_cast<std::size_t>(hudState.player) - 1;
+          if ((hudState.player != Outpost::NO_PLAYER) && (block < latest->players.size()))
+          {
+            hudState.credits = latest->players[block].credits;
+            hudState.buildingWire = latest->players[block].buildingDesign;
+            hudState.buildProgressPercent = latest->players[block].buildProgressPercent;
+          }
+
+          // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
+          // hand covers the double tap's circle.
+          hudState.groups = Outpost::SummarizeSelection(selection.Identities(), latest->entities);
+        }
+
+        hud = Outpost::BuildHud(hudState);
+        hudQuads.clear();
+        if (glyphAtlas.IsReady() && textRenderer.IsReady())
+        {
+          Outpost::EmitQuads(hud, Outpost::TypefaceOf(glyphAtlas), interfaceFit, hudQuads);
+          static_cast<void>(textRenderer.Record(device, swapChain, glyphAtlas, hudQuads));
+        }
+      }
+
       static_cast<void>(swapChain.RecordReadyToPresent(device));
       if (device.EndFrameAndSubmit() && swapChain.Present())
       {
@@ -1103,11 +1278,20 @@ void RunProbe(const CoreWindow& _window)
   // has already gone.
   device.WaitForGpu();
 
+  textRenderer.Destroy();
+  glyphAtlas.Destroy();
   interfacePass.Destroy();
   presentStep.Destroy();
   sceneTarget.Destroy();
   swapChain.Destroy();
   device.Destroy();
+
+  // **THE SECOND TAP OF THE QUIT, AND ONLY THAT** (`Interface.md` section 6). After the teardown, so the
+  // graphics processor is idle and the log is complete before the process goes.
+  if (quitConfirmed)
+  {
+    CoreApplication::Exit();
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
