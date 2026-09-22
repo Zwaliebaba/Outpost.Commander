@@ -1,0 +1,10 @@
+# Outpost Commander - one material, identical on every mesh.
+# Diffuse is white on purpose: all albedo arrives through the vertex colour channel.
+newmtl OC_Hull
+Ka 0.200 0.250 0.320
+Kd 1.000 1.000 1.000
+Ks 0.220 0.240 0.280
+Ns 18.0
+Ke 0.000 0.000 0.000
+d 1.0
+illum 2

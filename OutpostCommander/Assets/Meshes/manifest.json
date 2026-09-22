@@ -1,0 +1,514 @@
+{
+  "format": "outpost-commander-asset-manifest/1",
+  "generated": "2026-09-22",
+  "source": "design_handoff_meshes/meshes.json (outpost-commander-mesh-handoff/2)",
+  "target": {
+    "platform": "UWP client",
+    "assetRoot": "Assets\\Meshes",
+    "packageUri": "ms-appx:///Assets/Meshes/<Name>.cmo",
+    "installLocationIsReadOnly": true,
+    "note": "The appx install location is read-only at runtime. Nothing writes beside these files; any derived or cached data goes to ApplicationData.Current.LocalFolder."
+  },
+  "conventions": {
+    "handedness": "left-handed, Y up, +Z forward; plane Y=0; mesh origin = simulated entity position",
+    "units": "world units 1:1, never scaled at draw time",
+    "shading": "flat — face-split vertices, baked per-face normals",
+    "indexFormat": "uint16",
+    "vertexStride": 52,
+    "vertexLayout": "position float3 (12) + normal float3 (12) + tangent float4 (16) + colour uint32 (4) + texcoord float2 (8)",
+    "deadWeightPerVertex": 24,
+    "emptyCmoSections": [
+      "textures (all 8 slots)",
+      "skinning",
+      "bone hierarchy",
+      "bone influences",
+      "animation clips"
+    ]
+  },
+  "vertexColorConvention": {
+    "R": "team selector. 0 = hull palette. 255 = the owning player's TEAM colour. Values between are reserved and unused in the MVP.",
+    "G": "hull tone index, quantised: 0 = HULL.DEEP, 128 = HULL.BASE, 255 = HULL.EDGE.",
+    "B": "reserved, always 0.",
+    "A": "always 255."
+  },
+  "palette": {
+    "hull": {
+      "DEEP": "#1B212A",
+      "BASE": "#414B58",
+      "EDGE": "#828E9C"
+    },
+    "team": {
+      "OWN": "#38D1F5",
+      "B": "#C4E838",
+      "C": "#F75FD0",
+      "D": "#A45CFF"
+    },
+    "reserved": {
+      "_note": "echoed. The hull palette must not collide with either.",
+      "damage": "#FF3B2F",
+      "armedAndPlacementRadius": "#FFB020"
+    },
+    "backdrop": "#04060A"
+  },
+  "light": {
+    "_decision": "MINE. The design states no light rig; the plates need one and it has to be stated or the plates are not reproducible.",
+    "key": {
+      "direction": [
+        -0.42,
+        0.8,
+        0.38
+      ],
+      "intensity": 0.85,
+      "note": "high, front-left. Pitched steeply so the plan view at tactical zoom is lit, which is where identification happens."
+    },
+    "fill": {
+      "direction": [
+        0.55,
+        -0.22,
+        -0.62
+      ],
+      "intensity": 0.16,
+      "note": "weak underside fill so a hull's keel does not go to pure backdrop at the combat view."
+    },
+    "ambient": {
+      "hex": "#334052",
+      "intensity": 0.7,
+      "note": "cool ambient, multiplied by albedo — never added flat, so it cannot lift the backdrop."
+    }
+  },
+  "material": {
+    "_note": "One CMO material per mesh, identical values for every mesh. CMO's material block carries ambient/diffuse/specular/emissive/power plus eight texture slots; every texture slot is empty.",
+    "name": "OC_Hull",
+    "ambient": [
+      0.2,
+      0.25,
+      0.32
+    ],
+    "diffuse": [
+      1,
+      1,
+      1
+    ],
+    "specular": [
+      0.22,
+      0.24,
+      0.28
+    ],
+    "specularPower": 18,
+    "emissive": [
+      0,
+      0,
+      0
+    ],
+    "textures": "all eight slots empty",
+    "note": "diffuse is white because the albedo arrives entirely through the vertex colour channel. A reader that ignores vertex colour will render every hull white, which is the intended loud failure."
+  },
+  "totals": {
+    "meshes": 13,
+    "triangles": 2674,
+    "vertices": 8022,
+    "cmoBytesEstimate": 436048,
+    "instancedDrawsPerFrame": 13
+  },
+  "landmarkTests": [
+    {
+      "mesh": "Frigate",
+      "assert": "the single vertex of maximum Z is the nose, at x ~ 0, z = +45",
+      "why": "catches a Z flip and an X skew"
+    },
+    {
+      "mesh": "ModuleShipyardL1",
+      "assert": "the 4-unit slice at minimum Z is ~30 units tall in Y (the solid command block plus bridge); the 4-unit slice at maximum Z is ~5 units tall (flat lattice booms)",
+      "why": "catches a Z flip on an asymmetric module. Compare Y, not X width: the lattice frame is WIDER than the command block, so an X comparison inverts."
+    },
+    {
+      "mesh": "ModuleOreProcessorL2",
+      "assert": "the maximum-Y vertex is the top hatch over the main drum, at negative X",
+      "why": "catches an X mirror. Do NOT compare max|X| at each side: the smaller stack sits further out than the larger drum is wide."
+    },
+    {
+      "mesh": "Station",
+      "assert": "extents are exactly 220 x 54 x 220 and the maximum-Y feature is central (within 46 units of the axis) - the hub tower",
+      "why": "catches any scale factor and a Y flip"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Scout",
+      "asset": "Assets\\Meshes\\Scout.cmo",
+      "source": "obj/Scout.obj",
+      "vcol": "obj/Scout.vcol",
+      "triangles": 158,
+      "vertices": 474,
+      "cmoBytesEstimate": 25816,
+      "extents": {
+        "min": [
+          -27,
+          -8,
+          -30
+        ],
+        "max": [
+          27,
+          10,
+          30
+        ],
+        "size": [
+          54,
+          18,
+          60
+        ],
+        "longest": 60
+      },
+      "drawGroup": "Scout",
+      "note": "small hull — blunt wide wedge, eight-point angular plan at 1.11:1. Five-section chined hull, two recessed drive nacelles, dorsal sensor blister. The Miner is a Scout with a mining laser in its one slot."
+    },
+    {
+      "name": "Frigate",
+      "asset": "Assets\\Meshes\\Frigate.cmo",
+      "source": "obj/Frigate.obj",
+      "vcol": "obj/Frigate.vcol",
+      "triangles": 190,
+      "vertices": 570,
+      "cmoBytesEstimate": 31000,
+      "extents": {
+        "min": [
+          -23.2,
+          -9,
+          -45
+        ],
+        "max": [
+          23.2,
+          10,
+          45
+        ],
+        "size": [
+          46.4,
+          19,
+          90
+        ],
+        "longest": 90
+      },
+      "drawGroup": "Frigate",
+      "note": "medium hull — long pointed spine, thirteen-point plan at 2.14:1 with a hard outrigger step. Five-section chined hull, two closed outrigger blisters, aft drive block. The Fighter is a Frigate with two mass drivers."
+    },
+    {
+      "name": "ModuleFrame",
+      "asset": "Assets\\Meshes\\ModuleFrame.cmo",
+      "source": "obj/ModuleFrame.obj",
+      "vcol": "obj/ModuleFrame.vcol",
+      "triangles": 248,
+      "vertices": 744,
+      "cmoBytesEstimate": 40396,
+      "extents": {
+        "min": [
+          -41.76,
+          -9,
+          -41.11
+        ],
+        "max": [
+          41.76,
+          9,
+          42.11
+        ],
+        "size": [
+          83.52,
+          18,
+          83.22
+        ],
+        "longest": 83.52
+      },
+      "drawGroup": "ModuleFrame",
+      "note": "empty base-module frame — octagonal beamed ring, four corner nodes, inner cross-bracing. One slot, no drive, never moves."
+    },
+    {
+      "name": "ModuleShipyardL1",
+      "asset": "Assets\\Meshes\\ModuleShipyardL1.cmo",
+      "source": "obj/ModuleShipyardL1.obj",
+      "vcol": "obj/ModuleShipyardL1.vcol",
+      "triangles": 204,
+      "vertices": 612,
+      "cmoBytesEstimate": 33268,
+      "extents": {
+        "min": [
+          -32.19,
+          -10,
+          -45
+        ],
+        "max": [
+          32.19,
+          20,
+          45
+        ],
+        "size": [
+          64.38,
+          30,
+          90
+        ],
+        "longest": 90
+      },
+      "drawGroup": "ModuleShipyardL1",
+      "note": "shipyard L1 — open lattice spine: keel boom, two converging outer booms, four transverse frames, three N-truss bays, two gantry posts, command block with bridge and side pods aft. Members 3–5 units on 18-unit bays: the voids are the shape."
+    },
+    {
+      "name": "ModuleShipyardL2",
+      "asset": "Assets\\Meshes\\ModuleShipyardL2.cmo",
+      "source": "obj/ModuleShipyardL2.obj",
+      "vcol": "obj/ModuleShipyardL2.vcol",
+      "triangles": 264,
+      "vertices": 792,
+      "cmoBytesEstimate": 42988,
+      "extents": {
+        "min": [
+          -32.19,
+          -10,
+          -45
+        ],
+        "max": [
+          32.19,
+          34,
+          45
+        ],
+        "size": [
+          64.38,
+          44,
+          90
+        ],
+        "longest": 90
+      },
+      "drawGroup": "ModuleShipyardL2",
+      "note": "shipyard L2 — the same lattice with a fourth bay and a third gantry post, plus a second stacked block and a mast on the command mass."
+    },
+    {
+      "name": "ModuleOreProcessorL1",
+      "asset": "Assets\\Meshes\\ModuleOreProcessorL1.cmo",
+      "source": "obj/ModuleOreProcessorL1.obj",
+      "vcol": "obj/ModuleOreProcessorL1.vcol",
+      "triangles": 212,
+      "vertices": 636,
+      "cmoBytesEstimate": 34564,
+      "extents": {
+        "min": [
+          -41.35,
+          -11,
+          -37
+        ],
+        "max": [
+          37,
+          17,
+          39.32
+        ],
+        "size": [
+          78.35,
+          28,
+          76.32
+        ],
+        "longest": 78.35
+      },
+      "drawGroup": "ModuleOreProcessorL1",
+      "note": "ore processor L1 — one closed 16-sided drum, top hatch, three intake pods. Solid mass: the type cue against the shipyard truss."
+    },
+    {
+      "name": "ModuleOreProcessorL2",
+      "asset": "Assets\\Meshes\\ModuleOreProcessorL2.cmo",
+      "source": "obj/ModuleOreProcessorL2.obj",
+      "vcol": "obj/ModuleOreProcessorL2.vcol",
+      "triangles": 268,
+      "vertices": 804,
+      "cmoBytesEstimate": 43636,
+      "extents": {
+        "min": [
+          -43.25,
+          -11,
+          -30
+        ],
+        "max": [
+          45.07,
+          17,
+          30
+        ],
+        "size": [
+          88.32,
+          28,
+          60
+        ],
+        "longest": 88.32
+      },
+      "drawGroup": "ModuleOreProcessorL2",
+      "note": "ore processor L2 — main drum plus a second stack joined by a transfer trunk, two intakes. Two masses: the count step."
+    },
+    {
+      "name": "Station",
+      "asset": "Assets\\Meshes\\Station.cmo",
+      "source": "obj/Station.obj",
+      "vcol": "obj/Station.vcol",
+      "triangles": 500,
+      "vertices": 1500,
+      "cmoBytesEstimate": 81220,
+      "extents": {
+        "min": [
+          -110,
+          -12,
+          -110
+        ],
+        "max": [
+          110,
+          42,
+          110
+        ],
+        "size": [
+          220,
+          54,
+          220
+        ],
+        "longest": 220
+      },
+      "drawGroup": "Station",
+      "note": "one per player, fixed, never moves. Chamfered plus-shaped plate, eight-sided hub tower, two point-defence mounts on the E/W arms, four arm-end docking nodes."
+    },
+    {
+      "name": "AsteroidA",
+      "asset": "Assets\\Meshes\\AsteroidA.cmo",
+      "source": "obj/AsteroidA.obj",
+      "vcol": "obj/AsteroidA.vcol",
+      "triangles": 126,
+      "vertices": 378,
+      "cmoBytesEstimate": 20632,
+      "extents": {
+        "min": [
+          -31.23,
+          -22.62,
+          -29.88
+        ],
+        "max": [
+          31.21,
+          22.62,
+          29.64
+        ],
+        "size": [
+          62.44,
+          45.24,
+          59.52
+        ],
+        "longest": 62.44
+      },
+      "drawGroup": "AsteroidA",
+      "note": "asteroid variant A, seed 10711; nine-sided, seven sections, no preferred axis"
+    },
+    {
+      "name": "AsteroidB",
+      "asset": "Assets\\Meshes\\AsteroidB.cmo",
+      "source": "obj/AsteroidB.obj",
+      "vcol": "obj/AsteroidB.vcol",
+      "triangles": 126,
+      "vertices": 378,
+      "cmoBytesEstimate": 20632,
+      "extents": {
+        "min": [
+          -38.52,
+          -30.3,
+          -38.83
+        ],
+        "max": [
+          43.97,
+          30.3,
+          38.33
+        ],
+        "size": [
+          82.49,
+          60.6,
+          77.16
+        ],
+        "longest": 82.49
+      },
+      "drawGroup": "AsteroidB",
+      "note": "asteroid variant B, seed 20443; nine-sided, seven sections, no preferred axis"
+    },
+    {
+      "name": "AsteroidC",
+      "asset": "Assets\\Meshes\\AsteroidC.cmo",
+      "source": "obj/AsteroidC.obj",
+      "vcol": "obj/AsteroidC.vcol",
+      "triangles": 126,
+      "vertices": 378,
+      "cmoBytesEstimate": 20632,
+      "extents": {
+        "min": [
+          -51.49,
+          -40.8,
+          -46.92
+        ],
+        "max": [
+          59.63,
+          40.8,
+          46.62
+        ],
+        "size": [
+          111.12,
+          81.6,
+          93.54
+        ],
+        "longest": 111.12
+      },
+      "drawGroup": "AsteroidC",
+      "note": "asteroid variant C, seed 31337; nine-sided, seven sections, no preferred axis"
+    },
+    {
+      "name": "AsteroidD",
+      "asset": "Assets\\Meshes\\AsteroidD.cmo",
+      "source": "obj/AsteroidD.obj",
+      "vcol": "obj/AsteroidD.vcol",
+      "triangles": 126,
+      "vertices": 378,
+      "cmoBytesEstimate": 20632,
+      "extents": {
+        "min": [
+          -66.77,
+          -48.27,
+          -69.41
+        ],
+        "max": [
+          55.29,
+          48.27,
+          58.46
+        ],
+        "size": [
+          122.06,
+          96.54,
+          127.87
+        ],
+        "longest": 127.87
+      },
+      "drawGroup": "AsteroidD",
+      "note": "asteroid variant D, seed 40961; nine-sided, seven sections, no preferred axis"
+    },
+    {
+      "name": "AsteroidE",
+      "asset": "Assets\\Meshes\\AsteroidE.cmo",
+      "source": "obj/AsteroidE.obj",
+      "vcol": "obj/AsteroidE.vcol",
+      "triangles": 126,
+      "vertices": 378,
+      "cmoBytesEstimate": 20632,
+      "extents": {
+        "min": [
+          -90.91,
+          -70.68,
+          -71.09
+        ],
+        "max": [
+          75.97,
+          70.68,
+          69.69
+        ],
+        "size": [
+          166.88,
+          141.36,
+          140.78
+        ],
+        "longest": 166.88
+      },
+      "drawGroup": "AsteroidE",
+      "note": "asteroid variant E, seed 55501; nine-sided, seven sections, no preferred axis"
+    }
+  ]
+}
