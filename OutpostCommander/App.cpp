@@ -42,13 +42,6 @@ using winrt::Windows::UI::Core::CoreWindow;
 
 namespace
 {
-void ReportLibrary(std::string_view _name)
-{
-  std::string line{_name};
-  line.push_back('\n');
-  OutputDebugStringA(line.c_str());
-}
-
 // ---------------------------------------------------------------------------------------------
 // M0.5 SCAFFOLDING, AND IT IS MEANT TO BE DELETED.
 //
@@ -492,12 +485,10 @@ struct App : winrt::implements<App, IFrameworkViewSource, IFrameworkView>
 
   void Initialize(const CoreApplicationView&)
   {
-    // The one thing this shell does today: name the libraries it was linked against, so that a
-    // deploy proves the whole chain reached the package rather than merely compiled.
-    ReportLibrary(Neuron::CoreLibraryName());
-    ReportLibrary(Neuron::ClientLibraryName());
-    ReportLibrary(Outpost::CoreLibraryName());
-    ReportLibrary(Outpost::ClientLibraryName());
+    // NOTHING HERE ANY MORE, AND THAT IS THE POINT. This named the four libraries it was linked
+    // against, which was M0.5's evidence that the whole chain reached the package rather than
+    // merely compiled. That gate is closed and the placeholder functions it read are gone with the
+    // rest of them (`Leaving M0`). What proves the chain now is that the client draws.
   }
 
   void Load(const winrt::hstring&) {}

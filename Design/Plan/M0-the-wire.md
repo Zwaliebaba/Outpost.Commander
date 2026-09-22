@@ -585,6 +585,31 @@ host on another machine is simulating; a tap puts a marker down immediately and 
 was sent; all six suites carry real tests and none carries `SuiteSmoke`; and the three gates have written
 their answers into the documents that predicted them.
 
+### Where it actually stands, 2026-09-22
+
+**Twenty-two of the twenty-three steps are built, and the milestone is not finished.** Two things are in
+the way and they are different kinds of thing.
+
+**The suites criterion is met.** All six carry real tests, `SuiteSmoke` is gone from the last one that had
+it, and the six library-name placeholders it existed to assert went with it — every one of them said
+*"delete it when the first real declaration lands"* and every library now has several. **All four
+configuration pairs build clean under `/warnaserror`**, which is worth stating because CI compiles exactly
+one of them: `Debug|x64`, `Release|x64`, `Debug|ARM64` and `Release|ARM64`, on 2026-09-22.
+
+**What is in the way, first: a step that does not exist** (`README.md` F10). Nothing in M0 draws into the
+scene target, so there is no shape for the gate to time and no drawn position for a tap to move. A step
+between M0.21 and M0.22 is owed — one shape on the plane through M0.20's camera at M0.19's interpolated
+position — and until it exists the two sentences above cannot both be true.
+
+**And second: M0.23 is a human gate on hardware.** It needs a Surface Pro, a host on a second machine, and
+an ARM64 leg that nothing automated compiles. It is not work that can be brought forward; it is the
+milestone's whole purpose, and it is the owner's.
+
+**M0.22 carries one piece of its own**, stated where it was left rather than implied: `IFrameworkView`
+still runs M0.5's probe rather than the frame loop. `GameClient/ClientFrame` is written and has a suite —
+drain, decode, fold, clock, clear acknowledged markers — and wiring it in is a wiring job the day there is
+something for the render step to call. That day is the step F10 names.
+
 **What M0 produces besides code:** ADR-012; measured figures replacing arithmetic in ADR-003 and ADR-007;
 ADR-008 amended with which loopback form is actually needed; and four of the eight owed measurements in
 `TechnicalDesign.md` §9 struck through — §9.1, §9.2, §9.4, §9.7, with §9.5 begun and standing.

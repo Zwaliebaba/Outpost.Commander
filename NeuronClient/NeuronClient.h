@@ -34,7 +34,4 @@
 
 namespace Neuron
 {
-/// The name of this library, so that a suite can prove it linked and that the include path reaches
-/// this header. Delete it when the first real declaration lands.
-[[nodiscard]] std::string_view ClientLibraryName() noexcept;
 } // namespace Neuron

@@ -201,8 +201,8 @@ Both are cheap, and both are why M0 is ordered the way it is.
 
 ## What planning found
 
-Nine things. **None is a criticism of the design and none is settled here** — each is a question the
-design has not been asked, a decision that has to be taken while building, or, in two cases, a sentence
+Ten things. **None is a criticism of the design and none is settled here** — each is a question the
+design has not been asked, a decision that has to be taken while building, or, in three cases, a sentence
 that contradicts another sentence. In the order they will be met:
 
 **F1 — There is no build path for shaders, and there is no shader anywhere in the tree.** R13's scaled
@@ -274,6 +274,26 @@ computed from the delay and the interval, which is three snapshots at the curren
 itself if either figure moves. The sentence is corrected to the arithmetic rather than to a
 number, so §6 now names no depth of its own to drift: `GameClient/ReplicaStore.h` computes it and §6 says
 so.
+
+**F10 — M0's headline needs a step M0 does not have: nothing ever draws into the scene target.** The
+milestone opens with *"the host simulates one moving entity and the packaged client draws it, and a tap
+moves it"* and closes with *"the packaged client, fullscreen on a Surface Pro, draws one shape that a host
+on another machine is simulating"*. **No step between those two sentences puts a pixel of the world on the
+screen.** M0.13 makes the device and the swap chain, M0.15 makes the scene target and blits it to the back
+buffer, M0.17 draws one rectangle *in the interface pass at physical resolution* — and M0.19 to M0.21 build
+the replica store, the camera and the tap without a consumer for any of them. The scene target is created,
+cleared, and presented empty.
+
+**It is not a gap in the design**, which is why this is a finding and not a question: `TechnicalDesign.md`
+§6 describes the world pass in detail and M1.9 authors the meshes it draws. What is missing is a **plan
+step** between M0.21 and M0.22 — call it the world draw — that puts one shape on the plane through M0.20's
+camera, at the interpolated position M0.19 produces. It needs a vertex and index buffer, a pipeline state,
+a constant buffer for the transform, and a shader pair, all of which M0.15 and M0.17 have already
+established the shape of.
+
+**M0.23 cannot run without it.** That gate times *"the first frame in which the drawn position differs"*,
+and there is no drawn position. The measurement the whole milestone exists to obtain is the thing the step
+list forgot to make possible.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
 Twenty-three steps against M2's fifteen, touching all eight projects, containing every subsystem that can
