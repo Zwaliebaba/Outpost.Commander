@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-nine answered, seven open.** Eight came from an adversarial review that also reversed two earlier
+**Thirty-nine answered, one half-answered, six open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -184,9 +184,14 @@ is a specification that was approved without a home.
 
 ## Open
 
-### Q26 — What is the asteroid count, and the spawn anchor radius? — **needed by M2**
+### Q26 — What is the asteroid count, and the spawn anchor radius? — **half answered; the rest needed by M2**
 
-Neither appears anywhere in this design, and both are inputs to things that do. The anchor radius sets how
+**THE ANCHOR RADIUS IS ANSWERED: 6,000 units, on the owner's instruction, 2026-09-22.** M1.5 could not
+place a station without one. It is written into `GameDesign.md` §3 and into `GameCore/Layout.h`, and
+`GameCoreTests` pins both crossings against §7's window rather than restating them. **The asteroid count
+is still open and still M2's**, and the reasoning below stands for it unchanged.
+
+Neither appeared anywhere in this design, and both are inputs to things that do. The anchor radius sets how
 long a strike force takes to cross the map, which is half of the raid arithmetic in `GameDesign.md` §7. The
 asteroid count sets the sparse ore budget from M3 (Q22) and how much a home field is worth holding.
 

@@ -17,6 +17,7 @@
 
 #include "Command.h"
 #include "Join.h"
+#include "Layout.h"
 
 #include "SizeClass.h"
 #include "Snapshot.h"

@@ -54,11 +54,15 @@ public:
   /// so a suite that never calls `BeginMatch` still has slots to hand out.
   Host();
 
-  /// Starts a match on a new seed, forgetting every seat -- which is what `Interface.md` section 7
-  /// has the host do at victory. **It does not reset the world**; M3 owns that, and this exists
-  /// now because ADR-013 makes the seed something a client is told rather than something compiled
-  /// in, and a seed nothing can set is not configuration.
-  void BeginMatch(std::uint64_t _matchSeed) noexcept;
+  /// Starts a match: **an empty world, `GameCore/Layout.h`'s stations placed on it, no seats and a
+  /// new seed.** That is what `Interface.md` section 7 has the host do at victory, and it is what a
+  /// host does when it starts.
+  ///
+  /// **IT RESETS THE WORLD, AND M1.5 IS WHY.** ADR-013 introduced this function for the seed alone
+  /// and said the world was M3's; placing the layout changed that, because a `BeginMatch` that
+  /// placed stations without clearing would place a second set on the second call. Resetting is
+  /// both simpler and what M3's restart wants anyway.
+  void BeginMatch(std::uint64_t _matchSeed);
 
   [[nodiscard]] std::uint64_t MatchSeed() const noexcept
   {

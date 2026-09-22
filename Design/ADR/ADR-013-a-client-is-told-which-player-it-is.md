@@ -114,6 +114,11 @@ The host holds the match seed, `Server.cpp` takes `--seed`, and the default is t
 M1 run (`GameDesign.md` §3). Every accepted join gets the seed, so a reconnecting client gets **the same
 seed** and redraws the same field.
 
+**`Host::BeginMatch` STARTS A MATCH RATHER THAN SETTING A NUMBER, AND M1.5 MADE THAT TRUE.** This
+record introduced it for the seed alone and said the world was M3's; the moment `GameCore/Layout.h`
+placed stations, a `BeginMatch` that did not clear would place a second set on a second call. It now
+empties the world, drops every seat and places the layout — which is what a restart wants in any case.
+
 ## Consequences
 
 **A client cannot tell that the host has reseeded**, and `Interface.md` §7 has the host reseeding and

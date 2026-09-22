@@ -77,12 +77,22 @@ Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::u
 
 Host::Host()
 {
-  m_sessions.Begin(PLAYER_COUNT, DEFAULT_MATCH_SEED);
+  BeginMatch(DEFAULT_MATCH_SEED);
 }
 
-void Host::BeginMatch(std::uint64_t _matchSeed) noexcept
+void Host::BeginMatch(std::uint64_t _matchSeed)
 {
+  m_world = World{};
+  m_intake = CommandIntake{};
   m_sessions.Begin(PLAYER_COUNT, _matchSeed);
+
+  // M1.5: the stations, from `GameCore`'s generator -- the same function the client runs to draw the
+  // same field (R23). A station needs no code of its own here because it is a row in the design
+  // table (ADR-006), so this is `World::Create` like anything else.
+  for (const Placement& placed : GenerateLayout(_matchSeed, PLAYER_COUNT))
+  {
+    static_cast<void>(m_world.Create(placed.position, placed.heading, placed.design, placed.owner));
+  }
 }
 
 bool Host::Open(std::uint16_t _port) noexcept

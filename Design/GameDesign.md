@@ -103,6 +103,11 @@ and the client run (`TechnicalDesign.md` §3). The client is not *told* the map;
 takes a large static payload off the wire and means the two sides cannot disagree about where an
 asteroid is.
 
+**At four players the adjacent crossing is 8,485 units — 60.6 seconds — and falls out of §7's window
+entirely.** Raids get materially shorter the moment the third and fourth slots ship (§2), so the radius
+may have to become a function of the player count. That is a consequence to measure at M4, not a reason to
+move the number now.
+
 **It is rotationally symmetric about the center, to the player count.** At four players one quadrant is
 generated and copied at 90°, 180° and 270°; **at the MVP's two players one half is generated and copied at
 180°**, which on integer positions is a negation and therefore exact. This is the cheapest possible
@@ -119,9 +124,9 @@ What a seed produces:
 | | |
 |---|---|
 | **The square** | 16,384 world units on a side, centered on the origin. A world unit is nominally a meter. A fighter crosses it in about two minutes, a miner in under three. |
-| **Four start anchors** | One per quadrant, at a fixed radius from the center. A station spawns on each. |
+| **Four start anchors** | One per quadrant, **6,000 units** from the center, on the axes. A station spawns on each, facing the center. Two opposed stations are then 12,000 apart — **85.7 seconds at the Fighter's 140 u/s**, inside §7's 80-to-100-second crossing, which is the arithmetic the raid balance rests on. |
 | **A home field** | A small asteroid cluster within about 1,500 units of each anchor. Enough to open on, not enough to win on. |
-| **The anchor radius and the asteroid count** | Not fixed here. Both are inputs to the raid arithmetic in §7 and to the replication budget, and both are on the register (`OpenQuestions.md` Q26). |
+| **The asteroid count** | Not fixed here. It is an input to the sparse ore budget from M3 and to how much a home field is worth holding, and it is still on the register (`OpenQuestions.md` Q26). |
 | **Contested fields** | Richer clusters toward the center, reachable by everyone. This is the map's only real proposition. |
 
 Nebulae, wrecks, hazards and anything that affects sensors are not in the MVP. The generator's interface

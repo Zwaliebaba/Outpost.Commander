@@ -8,6 +8,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)EntityRecord.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)GameCore.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Join.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)Layout.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Snapshot.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +21,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)GameCore.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SizeClass.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Join.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Layout.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Snapshot.h" />
   </ItemGroup>
 </Project>
