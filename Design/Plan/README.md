@@ -201,8 +201,8 @@ Both are cheap, and both are why M0 is ordered the way it is.
 
 ## What planning found
 
-Eight things. **None is a criticism of the design and none is settled here** — each is a question the
-design has not been asked, a decision that has to be taken while building, or, in one case, a sentence
+Nine things. **None is a criticism of the design and none is settled here** — each is a question the
+design has not been asked, a decision that has to be taken while building, or, in two cases, a sentence
 that contradicts another sentence. In the order they will be met:
 
 **F1 — There is no build path for shaders, and there is no shader anywhere in the tree.** R13's scaled
@@ -257,6 +257,20 @@ tested half takes **plain values** — a contact count, a translation, a scale, 
 header and names what is in them, but not every width — appropriate for a design and insufficient for an
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
 turns ADR-003's snapshot size from arithmetic into a measurement.
+
+**F9 — `TechnicalDesign.md` §6 holds two snapshots and draws 75 milliseconds behind, and those two
+clauses cannot both be true.** Two snapshots span one interval, 50 ms at 20 Hz, ending at the newest; a
+render time 75 ms behind the newest is 25 ms **older than the older of the two**, so the pair does not
+contain the frame being drawn. It is F4's defect one clause further on — the delay moved from 150 to 75
+and the depth it implies was never recomputed — and it was never right at 10 Hz either, where 150 behind
+the newest sits outside a 100 ms pair by the same margin.
+[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) reads the other way and is the one to trust:
+"a lost snapshot is a 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating"
+describes a buffer holding more than one interval of history. **A documentation defect rather than a
+decision**, like F4, and M0.19 builds to the arithmetic rather than to the sentence: the retained depth is
+computed from the delay and the interval, which is three snapshots at the current pair and becomes four by
+itself if either figure moves. **The sentence wants correcting in a pull request of its own**, and the
+figure to correct it to is the one `GameClient/ReplicaStore.h` computes.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
 Twenty-three steps against M2's fifteen, touching all eight projects, containing every subsystem that can

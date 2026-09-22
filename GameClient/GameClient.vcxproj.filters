@@ -2,10 +2,14 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="GameClient.cpp" />
+    <ClCompile Include="Interpolation.cpp" />
+    <ClCompile Include="ReplicaStore.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameClient.h" />
+    <ClInclude Include="Interpolation.h" />
+    <ClInclude Include="ReplicaStore.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
 </Project>

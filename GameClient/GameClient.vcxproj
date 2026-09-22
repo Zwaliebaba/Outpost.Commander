@@ -112,12 +112,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GameClient.cpp" />
+    <ClCompile Include="Interpolation.cpp" />
+    <ClCompile Include="ReplicaStore.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameClient.h" />
+    <ClInclude Include="Interpolation.h" />
+    <ClInclude Include="ReplicaStore.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
