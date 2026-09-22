@@ -113,6 +113,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CameraTests.cpp" />
     <ClCompile Include="GameClientTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="pch.cpp">

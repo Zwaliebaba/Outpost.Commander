@@ -111,6 +111,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="ReplicaStore.cpp" />
@@ -119,6 +120,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="ReplicaStore.h" />
