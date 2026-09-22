@@ -1,14 +1,23 @@
 #pragma once
 
 #include "CommandIntake.h"
+#include "Sessions.h"
 #include "World.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <vector>
+#include <span>
 
 namespace Outpost
 {
+
+/// **THE ONE FIXED SEED M0 AND M1 RUN** (`GameDesign.md` section 3: one seed with a hand-checked
+/// layout). ADR-013 makes the seed the host's and configuration -- `Server.cpp` takes `--seed` --
+/// and this is what it defaults to. It is an arbitrary number and is meant to be: what matters is
+/// that it does not move, because the layout it produces has been looked at by eye.
+///
+/// M1.5's `GameCore/Layout.h` is the first thing to consume it, and may be where it ends up.
+inline constexpr std::uint64_t DEFAULT_MATCH_SEED = 20260922;
 
 /// ADR-002's tick, in milliseconds, for the shell to hand to a schedule. IT IS A PLAIN INTEGER
 /// AND NOT A `std::chrono` TYPE, because this library is the simulation's and R16 keeps wall time
@@ -40,6 +49,21 @@ public:
   /// own constant, because there is one host and one port; when that scaffolding goes, this
   /// stays.
   static constexpr std::uint16_t DEFAULT_PORT = 49000;
+
+  /// Seats a match at `DEFAULT_MATCH_SEED`. **A `Host` is joinable the moment it is constructed**,
+  /// so a suite that never calls `BeginMatch` still has slots to hand out.
+  Host();
+
+  /// Starts a match on a new seed, forgetting every seat -- which is what `Interface.md` section 7
+  /// has the host do at victory. **It does not reset the world**; M3 owns that, and this exists
+  /// now because ADR-013 makes the seed something a client is told rather than something compiled
+  /// in, and a seed nothing can set is not configuration.
+  void BeginMatch(std::uint64_t _matchSeed) noexcept;
+
+  [[nodiscard]] std::uint64_t MatchSeed() const noexcept
+  {
+    return m_sessions.MatchSeed();
+  }
 
   /// False when the socket could not be opened; LastFault carries the reason.
   [[nodiscard]] bool Open(std::uint16_t _port) noexcept;
@@ -82,38 +106,63 @@ public:
     return m_snapshotSequence;
   }
 
+  /// Clients that have joined. **Not endpoints that have spoken** -- that is what it counted
+  /// before ADR-013, and the difference is the whole point of the join.
   [[nodiscard]] std::size_t ClientCount() const noexcept
   {
-    return m_clients.size();
+    return m_sessions.Count();
   }
 
-  /// Datagrams that arrived and were not a command packet this build could use.
+  [[nodiscard]] const Sessions& CurrentSessions() const noexcept
+  {
+    return m_sessions;
+  }
+
+  /// Datagrams that arrived and were not something this build could use.
   [[nodiscard]] std::uint64_t RejectedDatagramCount() const noexcept
   {
     return m_rejectedDatagrams;
   }
 
-private:
-  struct Client
+  /// Command packets from an endpoint with no session. **This is the teeth of ADR-013**: before
+  /// it, any endpoint that sent a command was believed and started receiving the world.
+  [[nodiscard]] std::uint64_t UnjoinedCommandCount() const noexcept
   {
-    Neuron::Endpoint endpoint{};
-    PlayerId player = NO_PLAYER;
-  };
+    return m_unjoinedCommands;
+  }
 
+  /// Command packets whose player byte disagreed with the session that sent them. The host
+  /// believes the session and counts this, which turns a stale packet from a previous match from
+  /// a silence into a number somebody can look at (ADR-013).
+  [[nodiscard]] std::uint64_t MisaddressedCommandCount() const noexcept
+  {
+    return m_misaddressedCommands;
+  }
+
+  [[nodiscard]] std::uint64_t JoinCount() const noexcept
+  {
+    return m_joins;
+  }
+
+private:
   void DrainAndApply();
   void SendSnapshots();
 
+  /// One join, answered. Split out because it is the one arm of the drain that WRITES to the
+  /// socket, and a drain loop that sends inside itself is worth being able to see on its own.
+  void AnswerJoin(std::span<const std::byte> _datagram, const Neuron::Endpoint& _sender) noexcept;
+
   World m_world;
   CommandIntake m_intake;
+  Sessions m_sessions;
   Neuron::WinsockTransport m_transport;
-
-  /// A vector rather than a map, and iterated in insertion order: four clients never justifies a
-  /// hash, and a hashed container's order is exactly what R16 forbids reaching an outcome.
-  std::vector<Client> m_clients;
 
   std::uint32_t m_tick = 0;
   std::uint16_t m_snapshotSequence = 0;
   std::uint64_t m_rejectedDatagrams = 0;
+  std::uint64_t m_unjoinedCommands = 0;
+  std::uint64_t m_misaddressedCommands = 0;
+  std::uint64_t m_joins = 0;
 };
 
 } // namespace Outpost

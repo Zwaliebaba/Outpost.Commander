@@ -41,18 +41,21 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1 has its model.** M1.1's catalog, M1.2's derivation and M1.3's entity are in, and the three of them
-together are ADR-006's claim made testable: a miner, a fighter and a station come out of one table with no
-special case, and `GameCoreTests` pins every combination the catalog can express rather than the three
-rows that ship.
+**M1 has its model and its protocol.** M1.1's catalog, M1.2's derivation and M1.3's entity are in, and
+the three of them together are ADR-006's claim made testable: a miner, a fighter and a station come out of
+one table with no special case, and `GameCoreTests` pins every combination the catalog can express rather
+than the three rows that ship. **M1.4 took the decision this plan said was not its to take** —
+[`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) — and the code behind it: a client is
+told which player it is, a reconnect gets its slot back, and a command from an endpoint the host never
+seated is refused instead of believed.
 
-**What is open is measurement and one decision**, not code:
+**What is open is measurement**, and no longer any decision:
 
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
 | **M0.23** | **Half closed.** Frame time is measured and settled — 1,118 microseconds mean GPU over 3,600 frames, three runs inside four microseconds of each other, in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md). Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
-| **M1.4** | **Blocked, and not on work.** F2: nothing tells an arriving client which player it is, and ADR-013 has not been written. Everything after M1.3 needs it — selection, validation and the credits readout all ask *whose* |
+| **M1.4** | **Closed.** The ADR is Accepted and the join is built. **What it has not had is two machines** — every one of its properties is pinned by a socket-free suite, and a reconnect across a real relaunch is one of the things M0.23's outstanding run is now worth watching for |
 
 **M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the frame times are in
 [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements, and **the scale that ships
@@ -228,7 +231,11 @@ snapshot, the command and the heartbeat — but nothing tells an arriving client
 blocks is *its own*, and nothing says what the host does when a second client appears.
 `TechnicalDesign.md` §5's "the protocol version in the header refuses a mismatched build" implies a
 handshake defined nowhere. M0 dodges it, having one entity and no ownership. **M1 cannot: selection,
-ownership validation and the credits readout all need it. Needs ADR-013 at M1.4.**
+ownership validation and the credits readout all need it. Answered:
+[`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md), Accepted 2026-09-22.** The host
+assigns the slot and a client does not choose; a returning client is recognized by a session token the
+host issued; and the record carries **the match seed**, which R23 had already made necessary and which
+this finding did not ask for.
 
 **F3 — The damage table is continuous and the tick is discrete, and the conversion is unspecified.**
 `GameDesign.md` §7 gives `MassDriver` 25 damage **per second**;

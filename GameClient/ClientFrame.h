@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "JoinState.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"
 #include "TapOrder.h"
@@ -44,6 +45,14 @@ public:
     std::uint32_t faulted = 0;
     /// Markers cleared because a snapshot acknowledged the command that made them.
     std::uint32_t markersCleared = 0;
+
+    /// Join replies folded in (ADR-013). **More than one per drain is ordinary**: the host answers
+    /// every retry, so a client that asked three times before the first answer arrived gets three.
+    std::uint32_t joinReplies = 0;
+
+    /// True when a reply moved the session token and it is worth writing to `LocalState`. The
+    /// caller does the writing; nothing below this class touches a file.
+    bool tokenChanged = false;
   };
 
   /// Takes everything waiting on the queue and folds it in, stamping each with the arrival time.
@@ -93,13 +102,24 @@ public:
     return m_replicas;
   }
 
-  /// Which player this client is. **There is no join yet** -- `README.md` F2 records that the
-  /// protocol has no way to tell a client which player it is, and M1.4 is where that arrives. Until
-  /// then it is configuration, defaulted here, and the marker clearing below reads the block it
-  /// names.
-  [[nodiscard]] PlayerId& Player() noexcept
+  /// Which player this client is, **as the host said** (ADR-013). `NO_PLAYER` until the join is
+  /// answered, which is what the marker clearing and the command path both check.
+  [[nodiscard]] PlayerId Player() const noexcept
   {
-    return m_player;
+    return m_join.Player();
+  }
+
+  /// **`MutableJoin` AND NOT `Join`**, matching `Host::MutableWorld`. A member function named
+  /// `Join` would hide the type `Outpost::Join` inside this class, which is the sort of thing that
+  /// compiles until the day somebody declares one here.
+  [[nodiscard]] JoinState& MutableJoin() noexcept
+  {
+    return m_join;
+  }
+
+  [[nodiscard]] const JoinState& CurrentJoin() const noexcept
+  {
+    return m_join;
   }
 
 private:
@@ -120,15 +140,11 @@ private:
   /// (4096, 2048) -- so the thing there is to see is on screen without anybody panning first.
   CameraPose m_camera{.focusX = 2048.0f, .focusY = 1024.0f, .headingRadians = 0.0f, .distance = 4000.0f};
 
-  /// **PLAYER ONE, AND ZERO WOULD BE `NO_PLAYER`** (`GameCore/Entity.h`). `CommandIntake` refuses a
-  /// packet from `NO_PLAYER` outright, before it looks at what the order touches, so a client that
-  /// defaults to zero has every order it ever sends discarded in silence -- which is exactly what
-  /// happened on the device the first time the tap was wired.
-  ///
-  /// **IT IS CONFIGURATION BECAUSE `README.md` F2 SAYS IT HAS TO BE**: the protocol has no join, so
-  /// a client cannot learn which player it is, and M1.4 is where that arrives. Until then the host
-  /// seeds player one and the client is told so here.
-  PlayerId m_player = 1;
+  /// **M1.4 REPLACED A COMPILED-IN PLAYER ONE WITH THIS.** Until ADR-013 the protocol had no way
+  /// to tell a client which player it was, so the client assumed -- and `CommandIntake` refuses a
+  /// packet from `NO_PLAYER` outright, so the assumption could not be `NO_PLAYER` and could not be
+  /// checked either. Now it is answered, and until it is answered this client sends nothing.
+  JoinState m_join;
 
   /// **ONE PAST WHAT THE HOST HAS ALREADY APPLIED, ADOPTED FROM THE FIRST SNAPSHOT THAT CARRIES
   /// THIS PLAYER'S BLOCK.** It starts at one and is corrected the moment the host says otherwise.

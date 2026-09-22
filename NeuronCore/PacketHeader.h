@@ -13,9 +13,17 @@ namespace Neuron
 /// mismatched build (TechnicalDesign.md section 5): there is no negotiation and no fallback, a
 /// packet from another version is dropped, and this number goes up whenever any record on the
 /// wire changes shape.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 1;
+///
+/// **1 UNTIL M1.4, WHEN THE JOIN ARRIVED.** Adding a packet type changes no existing record, so
+/// this could have stayed -- and must not. A build without Join cannot answer one, so a client on
+/// version 1 and a host on this one would talk past each other with every individual packet
+/// well-formed. The version is what turns that into a clean drop.
+///
+/// **A MISMATCH IS STILL A SILENCE, INCLUDING FOR THE JOIN** (ADR-013). The client shows the same
+/// overlay it shows for a host that is not running, which is the cost that decision names.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 2;
 
-/// What a datagram carries. The three the design names, and no more.
+/// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///
 /// ZERO IS NOT A TYPE, deliberately. A header that nobody set, a zero-filled buffer and a
 /// zero-length datagram all decode to type 0, and none of them should ever look like a heartbeat.
@@ -23,14 +31,21 @@ enum class PacketType : std::uint8_t
 {
   Snapshot = 1,
   Command = 2,
-  Heartbeat = 3
+  Heartbeat = 3,
+
+  /// A client asking to be told which player it is (ADR-013). It carries a session token or zero,
+  /// and the host answers every one of them -- including a repeat from a client that has already
+  /// joined, which is what makes a lost reply cost a retry rather than a slot.
+  Join = 4,
+  JoinReply = 5
 };
 
-/// True for a type this build knows. A fourth type means a line here; there is no switch to
+/// True for a type this build knows. A further type means a line here; there is no switch to
 /// forget to extend, because a switch would not have warned about it either.
 [[nodiscard]] constexpr bool IsKnown(PacketType _type) noexcept
 {
-  return _type == PacketType::Snapshot || _type == PacketType::Command || _type == PacketType::Heartbeat;
+  return (_type == PacketType::Snapshot) || (_type == PacketType::Command) || (_type == PacketType::Heartbeat) ||
+         (_type == PacketType::Join) || (_type == PacketType::JoinReply);
 }
 
 /// Why a header would not decode. Distinct values because the caller's response differs: a

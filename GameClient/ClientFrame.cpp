@@ -20,7 +20,38 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
   {
     ++result.datagrams;
 
-    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), byteCount}};
+    const std::span<const std::byte> datagram{buffer.data(), byteCount};
+
+    // THE TYPE IS READ BEFORE THE RECORD IS. Two records arrive on this socket since ADR-013, and
+    // a snapshot decoder handed a join reply reports a fault -- which would count a perfectly good
+    // reply as a corrupt datagram and hide the one thing the client is waiting for.
+    Neuron::ByteReader probe{datagram};
+    Neuron::PacketHeader header{};
+    if (Neuron::PacketHeader::Read(probe, header) != Neuron::PacketFault::None)
+    {
+      ++result.faulted;
+      continue;
+    }
+
+    if (header.type == Neuron::PacketType::JoinReply)
+    {
+      Neuron::ByteReader replyReader{datagram};
+      JoinReply reply{};
+      if (Decode(replyReader, reply) != JoinFault::None)
+      {
+        ++result.faulted;
+        continue;
+      }
+
+      ++result.joinReplies;
+
+      // OR, NOT ASSIGN. The host answers every retry, so several replies can land in one drain and
+      // only the one that moved the token has anything to persist.
+      result.tokenChanged = m_join.Accept(reply) || result.tokenChanged;
+      continue;
+    }
+
+    Neuron::ByteReader reader{datagram};
     Snapshot snapshot;
     if (Decode(reader, snapshot) != SnapshotFault::None)
     {
@@ -50,9 +81,10 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
   // acknowledgment, so markers would stay on screen forever; with two it reads the OTHER player's
   // sequence and clears markers on somebody else's progress.
   const Snapshot* newest = m_replicas.Newest();
-  if ((newest != nullptr) && (m_player != NO_PLAYER))
+  const PlayerId player = m_join.Player();
+  if ((newest != nullptr) && (player != NO_PLAYER))
   {
-    const std::size_t block = static_cast<std::size_t>(m_player) - 1;
+    const std::size_t block = static_cast<std::size_t>(player) - 1;
     if (block < newest->players.size())
     {
       const std::uint16_t applied = newest->players[block].lastCommandSequenceApplied;

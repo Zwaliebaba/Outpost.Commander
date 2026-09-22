@@ -270,7 +270,20 @@ comparison invert.
 removal list ([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)). Not retransmitted: a lost one
 costs a missing tracer.
 
-A client with nothing to say sends a heartbeat a few times a second so the host can time it out.
+**A client learns which player it is from a join, and nothing else on the wire tells it.** The client
+sends a `Join` carrying the session token it was issued last time, or zero; the host answers with the slot
+it assigned, a session token to keep, and **the match seed**, which R23 makes the one thing a client cannot
+derive for itself. The host assigns the slot -- there is no lobby to choose in (`GameDesign.md` §2) -- and a
+join with no slot free is refused with a reason rather than dropped. This is [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), and until it
+existed a client was told which player it was by a compiled-in constant.
+
+**The host resolves the sender from its session, not from the player byte the command packet carries.**
+The byte stays on the wire and the eight-byte command header above is unchanged; what changed is that a
+command from an endpoint which never joined is refused and counted.
+
+A client with nothing to say sends a heartbeat a few times a second so the host can time it out. **A
+timeout forgets an ENDPOINT and never a slot** -- §2's disconnected player keeps their slot indefinitely,
+and the two sentences describe different things ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)).
 
 ## 5. The transport, and the two socket APIs
 
@@ -322,7 +335,10 @@ client actually needs: if replies to a bound socket require the inbound form `-i
 single-machine loop stops being worth having.
 
 Encryption, authentication and any defense against a hostile client are not in the MVP. The protocol
-version in the header refuses a mismatched build, and that is the whole of it.
+version in the header refuses a mismatched build, and that is the whole of it -- **including the join**,
+so a client on another version is dropped rather than told, and a mismatched build is indistinguishable
+from an unreachable host ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)). The session token the join issues is a **name, not a
+credential**, for the same reason.
 
 ---
 

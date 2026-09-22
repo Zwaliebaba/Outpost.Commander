@@ -4,6 +4,7 @@
     <ClCompile Include="CatalogTests.cpp" />
     <ClCompile Include="DerivedStatsTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
+    <ClCompile Include="JoinTests.cpp" />
     <ClCompile Include="SnapshotTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>

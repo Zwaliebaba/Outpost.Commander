@@ -122,9 +122,10 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 // End of M0.5 scaffolding.
 // ---------------------------------------------------------------------------------------------
 
-[[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds)
+[[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds, std::uint64_t _matchSeed)
 {
   Outpost::Host host;
+  host.BeginMatch(_matchSeed);
   if (!host.Open(_port))
   {
     std::printf("host: could not open port %u, WSA fault %d\n", _port, host.LastFault());
@@ -132,6 +133,10 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   }
 
   PrintEndpoint("host: listening on", host.BoundEndpoint());
+  // The seed is printed because ADR-013 hands it to every client and R23 has both sides drawing the
+  // same field from it -- so the one number that has to match across two machines is the one number
+  // worth seeing in the log.
+  std::printf("host: match seed %llu\n", static_cast<unsigned long long>(host.MatchSeed()));
   std::printf("host: %lld ms a tick; Ctrl+C to stop\n", static_cast<long long>(Outpost::TICK_PERIOD_MILLISECONDS));
   std::fflush(stdout);
 
@@ -180,6 +185,9 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 
   std::printf("host: %llu ticks, %llu abandoned, %u snapshots\n", static_cast<unsigned long long>(schedule.TicksIssued()),
               static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence());
+  std::printf("host: %llu joins, %llu commands from nobody seated, %llu misaddressed\n", static_cast<unsigned long long>(host.JoinCount()),
+              static_cast<unsigned long long>(host.UnjoinedCommandCount()),
+              static_cast<unsigned long long>(host.MisaddressedCommandCount()));
   host.Close();
   return 0;
 }
@@ -188,6 +196,16 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 {
   return std::from_chars(_text.data(), _text.data() + _text.size(), _outValue).ec == std::errc{};
 }
+
+/// The seed is sixty-four bits, so it does not fit the parser above and does not get a cast that
+/// would quietly truncate it (ADR-013).
+[[nodiscard]] bool ParseSeed(std::string_view _text, std::uint64_t& _outValue) noexcept
+{
+  return std::from_chars(_text.data(), _text.data() + _text.size(), _outValue).ec == std::errc{};
+}
+
+/// One string, because four copies of it were four chances to add an option to three of them.
+inline constexpr const char* USAGE = "usage: Server [--port N] [--seconds N] [--seed N] [--probe]\n";
 } // namespace
 
 int main(int _argc, char** _argv)
@@ -196,6 +214,10 @@ int main(int _argc, char** _argv)
 
   std::uint32_t port = Outpost::Host::DEFAULT_PORT;
   std::uint32_t durationSeconds = 0;
+
+  // ADR-013 makes the match seed the host's, and configuration. Zero is a legal seed, so the
+  // default is a named constant rather than a sentinel.
+  std::uint64_t matchSeed = Outpost::DEFAULT_MATCH_SEED;
   bool probe = false;
 
   for (std::size_t index = 1; index < arguments.size(); ++index)
@@ -212,7 +234,16 @@ int main(int _argc, char** _argv)
       ++index;
       if (!ParseNumber(std::string_view{arguments[index]}, port) || (port > 65535))
       {
-        std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
+        std::fputs(USAGE, stderr);
+        return 2;
+      }
+    }
+    else if ((argument == "--seed") && hasValue)
+    {
+      ++index;
+      if (!ParseSeed(std::string_view{arguments[index]}, matchSeed))
+      {
+        std::fputs(USAGE, stderr);
         return 2;
       }
     }
@@ -221,16 +252,16 @@ int main(int _argc, char** _argv)
       ++index;
       if (!ParseNumber(std::string_view{arguments[index]}, durationSeconds))
       {
-        std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
+        std::fputs(USAGE, stderr);
         return 2;
       }
     }
     else
     {
-      std::fputs("usage: Server [--port N] [--seconds N] [--probe]\n", stderr);
+      std::fputs(USAGE, stderr);
       return 2;
     }
   }
 
-  return probe ? RunProbe(durationSeconds) : RunHost(static_cast<std::uint16_t>(port), durationSeconds);
+  return probe ? RunProbe(durationSeconds) : RunHost(static_cast<std::uint16_t>(port), durationSeconds, matchSeed);
 }

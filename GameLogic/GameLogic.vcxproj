@@ -104,6 +104,7 @@
     <ClCompile Include="CommandIntake.cpp" />
     <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="Host.cpp" />
+    <ClCompile Include="Sessions.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="Tick.cpp" />
     <ClCompile Include="World.cpp" />
@@ -115,6 +116,7 @@
     <ClInclude Include="CommandIntake.h" />
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="Host.h" />
+    <ClInclude Include="Sessions.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="Tick.h" />
     <ClInclude Include="World.h" />

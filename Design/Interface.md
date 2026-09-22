@@ -490,7 +490,9 @@ readout ships before M2.7 can say how it is computed.
 
 **A packaged application is suspended when it loses the foreground, and the match runs on without it.**
 On resume the client reconnects and shows a **reconnecting** overlay until the first snapshot lands, then
-returns straight to play. That is mechanically free: snapshots are self-contained
+returns straight to play. **It is recognized as the same player by the session token it kept**
+([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)); a relaunch and a resume are the same
+path, which is what makes this and `GameDesign.md` §2's disconnect one mechanism rather than two. That is mechanically free: snapshots are self-contained
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)), so there is nothing to catch up on and no
 resynchronisation to get wrong.
 

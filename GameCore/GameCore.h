@@ -16,6 +16,7 @@
 #include "EntityRecord.h"
 
 #include "Command.h"
+#include "Join.h"
 
 #include "SizeClass.h"
 #include "Snapshot.h"

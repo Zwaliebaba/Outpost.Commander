@@ -20,6 +20,7 @@
 #include "InterfacePass.h"
 #include "PresentStep.h"
 #include "SceneTarget.h"
+#include "SessionToken.h"
 #include "SwapChain.h"
 #include "WorldPass.h"
 

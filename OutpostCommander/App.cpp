@@ -63,7 +63,10 @@ inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
-inline constexpr std::chrono::milliseconds HELLO_INTERVAL{1000};
+/// **THE HELLO IS GONE AND THE JOIN REPLACED IT** (ADR-013). An empty command packet used to be
+/// what registered a client, because the host learned an endpoint from any packet that decoded.
+/// It no longer does: a command from an endpoint with no session is refused, and the cadence now
+/// lives in `Outpost::JoinState` where a suite can reach it.
 
 /// M0.16's measurement window. The first frames are thrown away because they are not frames the
 /// game would ever run: the pipeline state is created on the first of them, the driver is still
@@ -377,9 +380,11 @@ void RunProbe(const CoreWindow& _window)
 
   const CoreDispatcher dispatcher = _window.Dispatcher();
   const auto start = std::chrono::steady_clock::now();
-  auto nextHello = start;
+  // The token from `LocalState`, or zero on a first run. It is read once: the file is only
+  // written again when the host issues a different one.
+  clientFrame.MutableJoin().Begin(Neuron::ReadSessionToken());
   bool reportedReady = false;
-  std::uint16_t helloSequence = 0;
+  bool reportedSeat = false;
   std::uint64_t receivedCount = 0;
 
   // M0.23'S MEASUREMENT, AND IT IS AN OBSERVATION RATHER THAN AN ARITHMETIC (R20). The client
@@ -419,30 +424,43 @@ void RunProbe(const CoreWindow& _window)
       reportedReady = true;
     }
 
-    const auto now = std::chrono::steady_clock::now();
-    if (state == Neuron::TransportState::Ready && now >= nextHello)
+    const std::uint64_t nowMs = MillisecondsSince(start);
+
+    // ADR-013's join, and the arithmetic that decides when is `JoinState`'s rather than this
+    // loop's -- which is the same split the gesture seam and the interpolation clock take.
+    if ((state == Neuron::TransportState::Ready) && clientFrame.MutableJoin().ShouldSend(nowMs))
     {
-      // AN EMPTY COMMAND PACKET IS THE HELLO, because that is what the host registers a client
-      // from: `Host::DrainAndApply` learns an endpoint from a packet that decodes, and until it has
-      // one it sends no snapshots to anybody. It carries no commands -- the player has not tapped --
-      // and repeating it is what survives the one that gets lost.
-      std::array<std::byte, QUEUE_SLOT_BYTES> hello{};
-      Neuron::ByteWriter writer{hello};
-      const Outpost::CommandPacket packet{.sequence = helloSequence, .player = clientFrame.Player(), .commands = {}};
-      if (Outpost::Encode(packet, writer))
+      std::array<std::byte, QUEUE_SLOT_BYTES> outgoingJoin{};
+      Neuron::ByteWriter joinWriter{outgoingJoin};
+      if (Outpost::Encode(clientFrame.CurrentJoin().Outgoing(), joinWriter))
       {
-        const bool sent = transport.Send(std::span<const std::byte>{hello.data(), writer.WrittenBytes()});
-        Report(log, "TX hello seq=" + std::to_string(helloSequence) + (sent ? " sent" : " refused"));
+        const bool sent = transport.Send(std::span<const std::byte>{outgoingJoin.data(), joinWriter.WrittenBytes()});
+        Report(log, "TX join attempt=" + std::to_string(clientFrame.CurrentJoin().SentCount()) +
+                      " token=" + std::to_string(clientFrame.CurrentJoin().Token()) + (sent ? " sent" : " refused"));
       }
-      ++helloSequence;
-      nextHello = now + HELLO_INTERVAL;
     }
 
     // ONE DRAIN PER FRAME, AND IT IS `ClientFrame`'S (R20). Everything that used to be written out
     // here -- read a datagram, decode it, decide what to do with it -- is behind that class with a
     // suite over it, and this is the call plus a line in the log.
-    const std::uint64_t nowMs = MillisecondsSince(start);
     const Outpost::ClientFrame::DrainResult drained = clientFrame.DrainPackets(queue, nowMs);
+
+    if (drained.tokenChanged)
+    {
+      // **A FAILED WRITE IS LOGGED AND NOT ACTED ON.** ADR-013 names what it costs -- a client
+      // that takes a second slot after a relaunch -- and there is nothing better to do about it
+      // here than say so.
+      const bool written = Neuron::WriteSessionToken(clientFrame.CurrentJoin().Token());
+      Report(log, std::string{"SESSION token "} + (written ? "stored" : "COULD NOT BE STORED"));
+    }
+    if (!reportedSeat && (clientFrame.CurrentJoin().Phase() != Outpost::JoinPhase::Joining))
+    {
+      reportedSeat = true;
+      const Outpost::JoinState& join = clientFrame.CurrentJoin();
+      Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
+                    " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " seed=" + std::to_string(join.MatchSeed()));
+    }
+
     if (drained.datagrams > 0)
     {
       receivedCount += drained.accepted;
@@ -521,6 +539,15 @@ void RunProbe(const CoreWindow& _window)
       if (outcome.action != Outpost::TapAction::MoveTo)
       {
         Report(log, "TAP resolved to nothing to do");
+        continue;
+      }
+
+      if (!clientFrame.CurrentJoin().IsJoined())
+      {
+        // Before ADR-013 this could not happen, because the client assumed it was player one. Now
+        // the host refuses a command from an endpoint it has not seated, so sending one would be
+        // a marker on screen for an order nobody applied.
+        Report(log, "TAP ignored -- not seated yet");
         continue;
       }
 

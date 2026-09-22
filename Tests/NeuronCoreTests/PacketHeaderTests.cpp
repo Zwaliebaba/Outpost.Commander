@@ -112,6 +112,49 @@ public:
   }
 };
 
+/// ADR-013 added two types and moved the protocol version with them. **A new type changes no
+/// existing record**, which is exactly why the version had to move anyway: a build without `Join`
+/// cannot answer one, so two builds would talk past each other with every individual packet
+/// well-formed.
+TEST_CLASS(PacketTypes)
+{
+public:
+  TEST_METHOD(EveryTypeThisBuildSpeaksIsKnown)
+  {
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Snapshot));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Command));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Heartbeat));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Join));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::JoinReply));
+  }
+
+  /// **ZERO IS NOT A TYPE**, and the five that are occupy exactly one to five -- so everything else
+  /// a zero-filled or corrupt datagram can decode to is refused.
+  TEST_METHOD(NothingElseIsKnown)
+  {
+    for (unsigned value = 0; value <= 255; ++value)
+    {
+      const bool expected = (value >= 1) && (value <= 5);
+      Assert::AreEqual(expected, Neuron::IsKnown(static_cast<Neuron::PacketType>(value)));
+    }
+  }
+
+  /// The two join types are 4 and 5 on the wire, and a change to either is a format change rather
+  /// than a rename.
+  TEST_METHOD(TheJoinTypesAreFourAndFive)
+  {
+    Assert::AreEqual(4, static_cast<int>(Neuron::PacketType::Join));
+    Assert::AreEqual(5, static_cast<int>(Neuron::PacketType::JoinReply));
+  }
+
+  /// **THE VERSION MOVED WHEN THE JOIN LANDED.** It is asserted because the version going up is the
+  /// whole of what stops a version-1 client hanging against a version-2 host.
+  TEST_METHOD(TheProtocolVersionIsTwoSinceTheJoin)
+  {
+    Assert::AreEqual(std::uint8_t{2}, Neuron::PROTOCOL_VERSION);
+  }
+};
+
 TEST_CLASS(PacketHeaderRejection)
 {
 public:

@@ -8,9 +8,10 @@ with ring assignment, selection by tap and by double tap, a generated sky behind
 merely existing beside it. Two ships and a station come out of one catalog with no special case anywhere,
 and if that is going to be false it is false here, while it costs a few hundred lines to fix.
 
-**Read [`README.md`](README.md) first.** Sixteen steps and two gates — **plus M1.4, which is neither: it
-is a decision the design has not taken** (F2). Nothing tells an arriving client which player it is, and
-everything after M1.3 needs to know, so it blocks the milestone exactly as a gate would.
+**Read [`README.md`](README.md) first.** Sixteen steps and two gates — **plus M1.4, which was neither: it
+was a decision the design had not taken** (F2). Nothing told an arriving client which player it was, and
+everything after M1.3 needs to know, so it blocked the milestone exactly as a gate would. It is taken:
+[`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md), Accepted 2026-09-22.
 
 **Entry state.** M0 complete: bytes cross the wire, the host ticks, the client draws one shape and taps
 move it. Every suite carries real tests. One fixed seed, one entity, no ownership.
@@ -88,19 +89,26 @@ the entity's simulation heading stays 16-bit while the wire's stays 8.
 
 **Read first:** `README.md` F2; `GameDesign.md` §2; `TechnicalDesign.md` §4 and §5; ADR-003; ADR-008.
 
-**The decision first, and it is not the plan's to take.** `GameDesign.md` §2 configures the slots on the
-host before the match starts, and `TechnicalDesign.md` §4 specifies the snapshot, the command and the
-heartbeat — but **nothing tells an arriving client which of the per-player blocks is its own**, and nothing
-says what a host does with a client it was not expecting. §5's "the protocol version in the header refuses
-a mismatched build" implies a handshake that is defined nowhere.
+**THE DECISION IS TAKEN.** [`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) was
+Accepted on 2026-09-22 and this step is ordinary work against it. What follows is the question it
+answered, kept because a step that cites a ruling without stating what it was for is a step nobody can
+check.
+
+`GameDesign.md` §2 configures the slots on the host before the match starts, and `TechnicalDesign.md` §4
+specifies the snapshot, the command and the heartbeat — but **nothing told an arriving client which of the
+per-player blocks was its own**, and nothing said what a host does with a client it was not expecting.
+§5's "the protocol version in the header refuses a mismatched build" implied a handshake that was defined
+nowhere.
 
 Everything after this step needs the answer: selection needs to know which entities are mine, validation
 needs to know who is sending, and the credits readout needs to know which block to read.
 
-**What the ADR has to settle:** what a client sends on connect and what comes back; how a slot is claimed
-and whether a client may choose; what happens to a second client claiming a taken slot; how a reconnecting
-client (`GameDesign.md` §2, `Interface.md` §7) is recognized as the same player; whether the protocol
-version check lives here or stays in every packet header; and **the match seed**.
+**What the ADR settled:** a `Join` carrying a session token or zero, answered by a `JoinReply` carrying a
+result, the slot, a token and the seed; **the host assigns the slot and a client does not choose**, which
+collapses "a second client on a taken slot" into "no slot free" and answers it with a reason; a returning
+client is recognized by a token **the host issued**, not one the client chose; the version check stays in
+the packet header, so a mismatched build is dropped and looks like an unreachable host; and **a timeout
+forgets an endpoint but never a slot**, which is the one place §4 and §2 read as though they disagreed.
 
 **The seed was missing from this list and R23 already requires it.** The client runs the asteroid
 generator itself — that is the whole of R23 — so it cannot draw a map without the seed, and the join
@@ -108,14 +116,23 @@ record is the only place it can arrive. [`ADR-019`](../ADR/ADR-019-the-sky-is-ge
 is a second consumer and costs nothing extra because of it. Whether it also needs a reconnecting client to
 get the *same* seed back is part of what this ADR settles.
 
-**Files:** `Design/ADR/ADR-013-<slug>.md` and the row in `Design/ADR/README.md`; then
-`GameCore/Join.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`, and the client side of it; the project files and
-`.filters`; tests in all three suites.
+**Files:** [`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) and its row in
+`Design/ADR/README.md`; `NeuronCore/PacketHeader.h` for the two types and the version; `GameCore/Join.h`
+`.cpp`; `GameLogic/Sessions.h` `.cpp` and `GameLogic/Host.h` `.cpp`; `NeuronClient/SessionToken.h` `.cpp`
+for the file in `LocalState`; `GameClient/JoinState.h` `.cpp` and `GameClient/ClientFrame.h` `.cpp`;
+`Server/Server.cpp` for `--seed`; `OutpostCommander/App.cpp`; the project files and `.filters`; tests in
+**five** suites rather than three — the packet types are `NeuronCore`'s and the token file is
+`NeuronClient`'s.
 
 **Done when:** the ADR is Accepted; a client learns its player index and validates against it; a second
 client on a taken slot is refused in a way the client can show; and a reconnect is recognized rather than
 treated as a new player — which self-contained snapshots make cheap
 ([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)) and which nothing else makes correct.
+
+**All four are met and every one is pinned without a socket**, because `Sessions` holds no transport and
+`JoinState` holds no clock — the split M0.18 forced on the gesture seam, taken again here. What the suite
+cannot reach is the one thing that made the token necessary: **a client's endpoint changing across a real
+relaunch.** That is a two-machine observation and it belongs with M0.23's outstanding run.
 
 ---
 

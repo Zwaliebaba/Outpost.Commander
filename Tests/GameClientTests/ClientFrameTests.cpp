@@ -33,6 +33,15 @@ namespace
   return bytes;
 }
 
+/// **SEATS A FRAME THE WAY THE HOST DOES** (ADR-013). Before M1.4 a `ClientFrame` was player one
+/// by construction and these tests said nothing; now the player is what the host answered, so a
+/// test that wants one says so through the same reply the wire carries.
+void Seat(Outpost::ClientFrame& _frame, Outpost::PlayerId _player)
+{
+  static_cast<void>(_frame.MutableJoin().Accept(
+    Outpost::JoinReply{.result = Outpost::JoinResult::Accepted, .player = _player, .token = 0xABCDEF0123456789ull, .matchSeed = 99}));
+}
+
 [[nodiscard]] Outpost::OrderMarker MarkerFor(std::uint16_t _sequence)
 {
   Outpost::OrderMarker marker;
@@ -108,6 +117,7 @@ public:
   TEST_METHOD(TheAcknowledgmentInASnapshotClearsTheMarkers)
   {
     Outpost::ClientFrame frame;
+    Seat(frame, 1);
     frame.Markers().Add(MarkerFor(1));
     frame.Markers().Add(MarkerFor(2));
     frame.Markers().Add(MarkerFor(3));
@@ -144,7 +154,7 @@ public:
     Assert::IsTrue(Outpost::Encode(snapshot, writer));
 
     Outpost::ClientFrame frame;
-    frame.Player() = 1;
+    Seat(frame, 1);
     frame.Markers().Add(MarkerFor(3));
 
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
@@ -157,14 +167,33 @@ public:
     Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
   }
 
-  TEST_METHOD(ThisClientIsPlayerOneUntilThereIsAJoin)
+  /// **M1.4 INVERTED THIS TEST.** It used to assert that a fresh frame is player one, because
+  /// `README.md` F2 had the protocol unable to say and the client assuming. ADR-013 says, and a
+  /// client that has not been told is `NO_PLAYER` -- which is the value `CommandIntake` refuses
+  /// outright, so the assumption could not have been checked and this one can.
+  TEST_METHOD(AFreshFrameIsNobodyUntilTheHostSeatsIt)
   {
-    // `README.md` F2: the protocol cannot tell a client which player it is, so it is configuration
-    // until M1.4. Zero is NO_PLAYER and `CommandIntake` refuses a packet from it outright, so the
-    // default must never be zero.
     const Outpost::ClientFrame frame;
-    Assert::AreEqual(1, static_cast<int>(Outpost::ClientFrame{}.Player()));
+    Assert::AreEqual(static_cast<int>(Outpost::NO_PLAYER), static_cast<int>(frame.Player()));
+    Assert::IsFalse(frame.CurrentJoin().IsJoined());
     Assert::IsTrue(frame.Camera().distance < Outpost::MAXIMUM_CAMERA_DISTANCE);
+  }
+
+  /// A SEATED FRAME CLEARS MARKERS AND AN UNSEATED ONE DOES NOT, which is the whole practical
+  /// difference the join makes to this class. An unseated frame still folds snapshots in -- it is
+  /// the acknowledgment channel that needs to know whose block to read.
+  TEST_METHOD(AnUnseatedFrameFoldsSnapshotsAndClearsNothing)
+  {
+    Outpost::ClientFrame frame;
+    frame.Markers().Add(MarkerFor(3));
+
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 5, 0));
+
+    const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
+    Assert::AreEqual(1u, result.accepted);
+    Assert::AreEqual(0u, result.markersCleared);
+    Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
   }
 
   TEST_METHOD(TheClockAdvancesWithTheFrameAndNotWithArrivals)
@@ -205,6 +234,7 @@ public:
     Assert::IsTrue(Outpost::Encode(snapshot, writer));
 
     Outpost::ClientFrame frame;
+    Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
     queue.Push(bytes);
     static_cast<void>(frame.DrainPackets(queue, 1000));
@@ -219,6 +249,7 @@ public:
   TEST_METHOD(TheSequenceIsNotWoundBackwardsByALaterSnapshot)
   {
     Outpost::ClientFrame frame;
+    Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
 
     Outpost::Snapshot first;

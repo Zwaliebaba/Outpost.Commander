@@ -75,6 +75,16 @@ Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::u
   return snapshot;
 }
 
+Host::Host()
+{
+  m_sessions.Begin(PLAYER_COUNT, DEFAULT_MATCH_SEED);
+}
+
+void Host::BeginMatch(std::uint64_t _matchSeed) noexcept
+{
+  m_sessions.Begin(PLAYER_COUNT, _matchSeed);
+}
+
 bool Host::Open(std::uint16_t _port) noexcept
 {
   return m_transport.Open(_port);
@@ -83,7 +93,35 @@ bool Host::Open(std::uint16_t _port) noexcept
 void Host::Close() noexcept
 {
   m_transport.Close();
-  m_clients.clear();
+
+  // THE SEATS GO WITH THE SOCKET AND NOT WITH A DISCONNECT. `GameDesign.md` section 2 holds a
+  // slot indefinitely while the match runs; closing the host ends the match (ADR-013).
+  m_sessions.Clear();
+}
+
+void Host::AnswerJoin(std::span<const std::byte> _datagram, const Neuron::Endpoint& _sender) noexcept
+{
+  Neuron::ByteReader reader{_datagram};
+  Join join{};
+  if (Decode(reader, join) != JoinFault::None)
+  {
+    ++m_rejectedDatagrams;
+    return;
+  }
+
+  ++m_joins;
+  const JoinReply reply = m_sessions.Admit(join, _sender);
+
+  std::array<std::byte, JoinReply::SIZE_BYTES + Neuron::PacketHeader::SIZE_BYTES> outgoing{};
+  Neuron::ByteWriter writer{outgoing};
+  if (!Encode(reply, writer))
+  {
+    return;
+  }
+
+  // NOT RETRANSMITTED AND NOT ACKNOWLEDGED (ADR-013). A lost reply costs the client one retry,
+  // and the retry is answered with the same seat because `Admit` matches on the endpoint.
+  static_cast<void>(m_transport.Send(_sender, std::span<const std::byte>{outgoing.data(), writer.WrittenBytes()}));
 }
 
 void Host::DrainAndApply()
@@ -115,7 +153,33 @@ void Host::DrainAndApply()
       break;
     }
 
-    Neuron::ByteReader reader{std::span<const std::byte>{scratch.data(), byteCount}};
+    const std::span<const std::byte> datagram{scratch.data(), byteCount};
+
+    // THE TYPE IS READ BEFORE THE RECORD IS, because two records now arrive on one socket and a
+    // decoder that is handed the wrong one reports a fault rather than a miss. The header is read
+    // twice -- once here and once inside whichever decoder takes it -- which is six bytes.
+    Neuron::ByteReader probe{datagram};
+    Neuron::PacketHeader header{};
+    if (Neuron::PacketHeader::Read(probe, header) != Neuron::PacketFault::None)
+    {
+      ++m_rejectedDatagrams;
+      continue;
+    }
+
+    if (header.type == Neuron::PacketType::Join)
+    {
+      AnswerJoin(datagram, sender);
+      continue;
+    }
+    if (header.type != Neuron::PacketType::Command)
+    {
+      // A heartbeat, or a reply this side never receives. Neither is an error and neither has
+      // anywhere to go yet; both are counted rather than acted on.
+      ++m_rejectedDatagrams;
+      continue;
+    }
+
+    Neuron::ByteReader reader{datagram};
     CommandPacket packet;
     if (Decode(reader, packet) != CommandFault::None)
     {
@@ -123,23 +187,26 @@ void Host::DrainAndApply()
       continue;
     }
 
-    // A packet says who sent it, and the host takes that at face value: R19 makes the host
-    // authoritative over what an order DOES, and section 5 declines authentication outright.
-    // What it does not take on faith is what the order touches -- that is Q24, and CommandIntake
+    // **THE HOST RESOLVES THE SENDER FROM ITS SESSION, NOT FROM THE BYTE THE PACKET CARRIES**
+    // (ADR-013). An endpoint that never joined is refused outright -- which is the teeth of the
+    // join, because until it existed any endpoint that sent a command was believed.
+    //
+    // R19 still makes the host authoritative over what an order DOES, and section 5 still
+    // declines authentication: this is not a credential check, it is the host knowing who it
+    // seated. What it does not take on faith is what the order touches -- Q24, and CommandIntake
     // has already refused anything this player does not own.
-    bool known = false;
-    for (Client& client : m_clients)
+    const PlayerId seated = m_sessions.PlayerAt(sender);
+    if (seated == NO_PLAYER)
     {
-      if (client.endpoint == sender)
-      {
-        client.player = packet.player;
-        known = true;
-        break;
-      }
+      ++m_unjoinedCommands;
+      continue;
     }
-    if (!known && (m_clients.size() < CommandIntake::MAX_PLAYERS))
+    if (packet.player != seated)
     {
-      m_clients.push_back(Client{.endpoint = sender, .player = packet.player});
+      // A stale packet from a previous match, or a client that has not read its reply yet. The
+      // session wins and the disagreement becomes a number rather than a silence.
+      ++m_misaddressedCommands;
+      packet.player = seated;
     }
 
     static_cast<void>(m_intake.ApplyPacket(m_world, packet));
@@ -148,7 +215,7 @@ void Host::DrainAndApply()
 
 void Host::SendSnapshots()
 {
-  if (m_clients.empty())
+  if (m_sessions.Count() == 0)
   {
     // Still advance the sequence? No. A client watches the sequence advance by exactly one per
     // snapshot it receives, so a sequence that moved while nobody was listening would make the
@@ -171,10 +238,12 @@ void Host::SendSnapshots()
     return;
   }
 
+  // **TO SESSIONS, NOT TO ENDPOINTS THAT HAVE SPOKEN** (ADR-013). A client that has not joined
+  // sees nothing at all, which is a change from M0 and is the correct one.
   const std::span<const std::byte> datagram{scratch.data(), writer.WrittenBytes()};
-  for (const Client& client : m_clients)
+  for (const Sessions::Session& session : m_sessions.All())
   {
-    static_cast<void>(m_transport.Send(client.endpoint, datagram));
+    static_cast<void>(m_transport.Send(session.endpoint, datagram));
   }
 
   ++m_snapshotSequence;

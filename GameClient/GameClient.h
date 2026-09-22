@@ -15,6 +15,7 @@
 #include "Camera.h"
 #include "ClientFrame.h"
 #include "Interpolation.h"
+#include "JoinState.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"
 #include "TapOrder.h"

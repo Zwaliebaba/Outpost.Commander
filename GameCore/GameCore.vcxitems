@@ -30,6 +30,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)EntityRecord.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)Join.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)GameCore.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -45,6 +48,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Entity.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)EntityRecord.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)GameCore.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Join.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SizeClass.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Snapshot.h" />
   </ItemGroup>

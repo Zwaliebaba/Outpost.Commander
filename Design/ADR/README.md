@@ -15,6 +15,7 @@ this tree has taken no decisions before these.
 | [`ADR-008`](ADR-008-the-host-address-is-configuration.md) | The host address is a configuration file with a compiled-in default and no discovery; the loopback exemption is a development arrangement and not a shipping one | Accepted | 2026-09-20 |
 | [`ADR-009`](ADR-009-text-is-directwrite-into-an-atlas.md) | Text is DirectWrite rasterised into a Direct3D 12 atlas we own — no Direct2D and no D3D11On12, which R12 bans, and no dependency | Accepted | 2026-09-20 |
 | [`ADR-010`](ADR-010-selection-is-proximity-and-design.md) | A tap selects one ship and a hold selects the same design within a screen-space circle; no band select, so one-finger drag is unconditionally panning. Supersedes `Design/Interface.md` §3's hold-then-drag | Accepted | 2026-09-20 |
+| [`ADR-013`](ADR-013-a-client-is-told-which-player-it-is.md) | A client learns its player from a `Join` the host answers with a slot, a session token and the match seed; the host assigns the slot, a token is a name rather than a credential, and a timeout forgets an endpoint but never a slot | Accepted | 2026-09-22 |
 | [`ADR-015`](ADR-015-the-base-is-built-from-modules.md) | The base is built from modules, and a module is a separate destroyable entity placed by tap inside the point-defense radius; each upgrade level is its own component identity | Accepted | 2026-09-21 |
 | [`ADR-011`](ADR-011-the-interface-draws-after-the-scale.md) | The interface draws after the scale at physical resolution, in authored coordinates through the transform R13 already computes. Breaks R13's letter, keeps its intent; amends ADR-007 to bind the world only and supersedes ADR-009's pixel doubling | Accepted | 2026-09-20 |
 | [`ADR-012`](ADR-012-a-shader-is-compiled-into-a-header.md) | A shader is compiled by `dxc` at Shader Model 6.7, through `FxCompile`, into a checked-in header rather than a `.cso` on disk — `NeuronClient` is a static library with no package of its own, and a packaged `.cso` is read through an asynchronous API on the ASTA. Raises the minimum Windows to 10.0.22621.0 | Accepted | 2026-09-21 |
@@ -26,7 +27,7 @@ this tree has taken no decisions before these.
 | [`ADR-021`](ADR-021-content-ships-with-the-package.md) | Content files ship with the package; the line R14 drew is against dependencies, and R16's is against simulation data becoming files | Accepted | 2026-09-22 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All nineteen are Accepted** — ADR-002 to
+ruled; a proposed ADR is not something to write code against. **All twenty are Accepted** — ADR-002 to
 ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes; ADR-012
 on 2026-09-21 with the compiler changed from the one the plan recommended; ADR-021 on 2026-09-22, which
 also settled that a conflicting record is updated in place through the MVP rather than superseded; and
@@ -34,10 +35,10 @@ also settled that a conflicting record is updated in place through the MVP rathe
 mesh was a function. That last one is the exception below being stretched from contradictions to
 decisions, and the owner stretched it.
 
-**ADR-013 and ADR-014 do not exist yet and their numbers are reserved.** The implementation plan met three
-questions the design does not answer and named a number for each rather than answering them in passing:
-the shader build path (`Plan/README.md` F1) is now ADR-012 above, and the join record (F2, M1.4) and the
-firing interval with its integer rounding (F3, M3) are still owed. **A gap in this list is a reservation,
+**ADR-014 does not exist yet and its number is reserved.** The implementation plan met three questions
+the design does not answer and named a number for each rather than answering them in passing: the shader
+build path (`Plan/README.md` F1) became ADR-012, the join record (F2, M1.4) became ADR-013, and **the
+firing interval with its integer rounding (F3, M3) is still owed**. **A gap in this list is a reservation,
 not a lost file.**
 
 ## When to write one

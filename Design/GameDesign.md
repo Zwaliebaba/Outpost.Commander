@@ -85,7 +85,8 @@ remaining ships from the field. The alternative — leaving a beaten player's sh
 turns the last ten minutes of every match into a search problem, and no amount of tuning fixes that.
 
 **A player who disconnects keeps their slot.** Their ships hold position and keep whatever autonomous
-behavior they have, the slot is held indefinitely, and they may reconnect — which is mechanically free
+behavior they have, the slot is held indefinitely, and they may reconnect -- recognized by a session token
+the host issued when they first joined ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)) — which is mechanically free
 because snapshots are self-contained (`TechnicalDesign.md` §4), so there is nothing to catch up on. The
 cost is that an abandoned fleet sits on the board as free kills, and that is accepted rather than solved:
 an AI taking the slot is the better answer and it waits for M4, when there is an AI that can start from

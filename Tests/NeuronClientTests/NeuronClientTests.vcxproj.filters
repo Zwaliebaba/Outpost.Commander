@@ -7,6 +7,7 @@
     <ClCompile Include="InterfaceTransformTests.cpp" />
     <ClCompile Include="PacketQueueTests.cpp" />
     <ClCompile Include="SceneTargetTests.cpp" />
+    <ClCompile Include="SessionTokenTests.cpp" />
     <ClCompile Include="WindowMetricsTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
