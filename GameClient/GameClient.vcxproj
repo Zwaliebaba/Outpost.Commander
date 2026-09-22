@@ -116,10 +116,13 @@
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="CameraGesture.cpp" />
     <ClCompile Include="HullMesh.cpp" />
+    <ClCompile Include="GroupSelection.cpp" />
+    <ClCompile Include="HitTest.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="JoinState.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
     <ClCompile Include="ReplicaStore.cpp" />
+    <ClCompile Include="Selection.cpp" />
     <ClCompile Include="TapOrder.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -131,11 +134,14 @@
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="CameraGesture.h" />
     <ClInclude Include="HullMesh.h" />
+    <ClInclude Include="GroupSelection.h" />
+    <ClInclude Include="HitTest.h" />
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="MeshCatalog.g.h" />
     <ClInclude Include="JoinState.h" />
     <ClInclude Include="OrderMarker.h" />
     <ClInclude Include="ReplicaStore.h" />
+    <ClInclude Include="Selection.h" />
     <ClInclude Include="TapOrder.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

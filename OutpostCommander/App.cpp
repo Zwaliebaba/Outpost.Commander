@@ -291,6 +291,11 @@ void RunProbe(const CoreWindow& _window)
   Neuron::ManipulationGate gate;
   Outpost::CameraGesture cameraGesture;
 
+  // M1.10 and M1.11: what is selected, and what the last tap anchored -- which is all a double tap
+  // needs, because the expansion matches on IDENTITY rather than on screen distance (ADR-017).
+  Outpost::Selection selection;
+  std::uint16_t lastTapIdentity = 0;
+
   // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
   // because nothing here resizes: the scene target is created from the swap chain's size and both
   // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
@@ -557,9 +562,6 @@ void RunProbe(const CoreWindow& _window)
         continue;
       }
 
-      // M0's selection is the one entity there is. M1.13 is where a tap on a ship selects it and
-      // ADR-010's circle selects several; until then a tap on empty space orders what exists.
-      const std::uint16_t selected = newest->entities.front().identity;
       // THE ASPECT IS THE SCENE TARGET'S, NOT THE AUTHORED FRAME'S, and they answer different
       // questions. The authored width and height convert the tap's position into the normalized
       // range; the ASPECT builds the ray, and it has to be the one the world was DRAWN with or a
@@ -571,15 +573,48 @@ void RunProbe(const CoreWindow& _window)
       const float tapAspect = (sceneTarget.HeightPixels() > 0)
                                 ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
                                 : 1.0f;
-      const Outpost::TapOutcome outcome = Outpost::ResolveTap(clientFrame.Camera(), tapAspect, event.xAuthoredPixels, event.yAuthoredPixels,
-                                                              static_cast<float>(Neuron::INTERFACE_AUTHORED_WIDTH),
-                                                              static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT), {}, true);
 
-      if (outcome.action != Outpost::TapAction::MoveTo)
+      // **THE SELECTION DROPS WHAT THE NEWEST SNAPSHOT NO LONGER CARRIES** before anything is
+      // resolved against it: a selected ship that died is a selection the player cannot act on.
+      static_cast<void>(selection.RetainLiving(newest->entities));
+
+      const Outpost::HitTestRequest request{.authoredX = event.xAuthoredPixels,
+                                            .authoredY = event.yAuthoredPixels,
+                                            .authoredWidth = static_cast<float>(Neuron::INTERFACE_AUTHORED_WIDTH),
+                                            .authoredHeight = static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT),
+                                            .aspectRatio = tapAspect,
+                                            .player = clientFrame.Player()};
+
+      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, newest->entities);
+
+      // **THE FIRST TAP HAS ALREADY ACTED; THE SECOND ONLY UPGRADES IT** (ADR-017). Nothing is
+      // deferred waiting to see whether a second tap arrives, so no tap in this game got slower.
+      if ((event.tapCount >= 2) && (picked.verb == Outpost::OrderVerb::Select))
       {
-        Report(log, "TAP resolved to nothing to do");
+        const Outpost::ExpansionOutcome expanded =
+          Outpost::ExpandSelection(selection, clientFrame.Camera(), request, newest->entities, lastTapIdentity, picked.target);
+        if (expanded.expanded)
+        {
+          Report(log, "SELECT expanded to " + std::to_string(expanded.selected) + " of one design");
+        }
+      }
+      if (picked.verb == Outpost::OrderVerb::Select)
+      {
+        lastTapIdentity = picked.target;
+        Report(log, "SELECT " + std::to_string(picked.target) + ", " + std::to_string(selection.Count()) + " selected");
         continue;
       }
+
+      if (picked.verb != Outpost::OrderVerb::MoveTo)
+      {
+        // Attack, Mine and the build panel all need systems M1 has not finished. The verb is
+        // resolved and named rather than silently dropped, so the log says which row of
+        // `Interface.md` section 4's table a tap landed on.
+        Report(log, "TAP resolved to verb " + std::to_string(static_cast<int>(picked.verb)) + ", which M1.10 does not act on yet");
+        continue;
+      }
+
+      const Outpost::SelectionOutcome& outcome = picked;
 
       if (!clientFrame.CurrentJoin().IsJoined())
       {
@@ -594,8 +629,7 @@ void RunProbe(const CoreWindow& _window)
       std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
       Neuron::ByteWriter commandWriter{outgoing};
       Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
-      packet.commands.push_back(
-        Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, std::span<const std::uint16_t>{&selected, 1}));
+      packet.commands.push_back(Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, selection.Identities()));
 
       bool sent = false;
       if (Outpost::Encode(packet, commandWriter))
@@ -607,7 +641,9 @@ void RunProbe(const CoreWindow& _window)
       marker.targetX = packet.commands.front().targetX;
       marker.targetY = packet.commands.front().targetY;
       marker.commandSequence = sequence;
-      marker.selection.push_back(selected);
+      // The whole selection, because the marker's job is to say what was ordered (Q20) and M1.10
+      // made that more than one ship.
+      marker.selection.assign(selection.Identities().begin(), selection.Identities().end());
       clientFrame.Markers().Add(marker);
 
       // === M0.23'S MEASUREMENT ARMS ONLY ON A PARKED SHIP. ====================================
