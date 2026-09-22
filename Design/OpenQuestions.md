@@ -8,11 +8,12 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-one answered, five open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong. **All five open questions are under *Open* below**,
+**Thirty-one answered, six open.** Eight came from an adversarial review that also reversed two earlier
+answers and corrected three statements that were wrong. **All six open questions are under *Open* below**,
 each with the milestone that settles it. **Every one carries a recommendation**, which none of Q26, Q33
-and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37) and
-three are decisions somebody has to take (Q33, Q35, Q36).
+and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37), three
+are decisions somebody has to take (Q33, Q35, Q36), and one is a gap found while implementing rather than
+while designing (Q38).
 
 ---
 
@@ -326,6 +327,33 @@ modules leave room; a 300-unit station does not.
 [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) that is stronger than it was: a mesh is not scaled at
 draw time, so the catalog's number and the file's extent are two statements of one figure and **a script
 compares them** rather than a reader trusting both.
+
+### Q38 — Does the rotation deadzone rebase at its crossing, the way the tap slop does? — **needed by M1.8**
+
+`Interface.md` §3 gives the one-finger drag a sixteen-pixel slop and says exactly what happens at the
+crossing: **the pan begins at the point the threshold was crossed, so nothing jumps when it engages.**
+§5 gives rotation an eight-degree deadzone and a latch, and says nothing of the kind. Read literally —
+and M0.18 implements it literally, because the register is where a gap goes rather than the code — the
+camera ignores rotation until the cumulative exceeds eight degrees and then applies **the whole
+cumulative**, so the heading steps by eight degrees the instant the deadzone is crossed.
+
+The asymmetry is either deliberate or an oversight and the code cannot tell which, which is what makes it
+a row here rather than a judgment somebody took while implementing. It is also cheap either way: one
+subtraction and one more field on the gate.
+
+**Recommendation: rebase, for the reason §3 already gives about the pan.** The two deadzones exist for the
+same purpose — separate an intended gesture from the noise in an unintended one — and the argument against
+a jump is stronger for rotation than for translation, because eight degrees of heading is a visible lurch
+where sixteen authored pixels of pan is a nudge. **The argument the other way is that a deadzone which
+rebases costs the player its width every time**, so a deliberate small turn under eight degrees does
+nothing at all and then turns by nothing; against that, a rebasing pan has exactly the same property and
+§3 chose it anyway.
+
+**Why M1.8 rather than M0.18.** It can only be judged by turning a camera, and there is no camera until
+M1.8 — which is also where `Interface.md` §5's pitch floor and the zoom range's near end are pinned, and
+where ADR-018's first two owed measurements are taken. **If orbit is cut** — ADR-018 names it the
+candidate, and M1.16 is where that is decided — this row goes with it, along with the three constants it
+exists to protect.
 
 ---
 

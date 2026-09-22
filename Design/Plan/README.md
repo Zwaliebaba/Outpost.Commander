@@ -39,12 +39,13 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 **Every step from M0.1 to M0.15 is written and verified** — the wire, the numbers, the simulation, the
 host loop, the frame's foundations and the scaled present — and **the gates among them are a different
 matter**, because a gate is a measurement rather than code and no agent closes one. What is left inside
-M0 is the client, the package, and these three:
+M0 is the client, the package, and these four:
 
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, measured at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
 | **M0.17** | Written, and **neither built nor looked at** — it was written where nothing in this tree compiles, which §*The constraint, first* below says is the honest claim to make. Its transform is pinned by `NeuronClientTests` and its `Done when` is half met: the pixels are still owed a pair of eyes, and **the two `CompiledShader\` headers [`ADR-012`](../ADR/ADR-012-a-shader-is-compiled-into-a-header.md) requires to be checked in are the first Windows build's to produce and to commit** |
+| **M0.18** | Written, and **neither built nor run** — same constraint. Its arithmetic is pinned by `NeuronClientTests`: the two signs R21 names, the rotation deadzone and its latch, the scale deadzone, the tap slop either side with the pan starting at the crossing, palm rejection and the contact-count latch. The half that touches the `CoreWindow` has no suite and cannot have one (F6), so it is proved by being used, which is M0.21 |
 | **M0.23** | Unstarted — tap-to-visible latency and frame time, on the device |
 
 **M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the four frame times
@@ -53,8 +54,13 @@ ships is 1:1**, which is the decision that gate existed to take. The one thing i
 whether 1:1 at one sample beats 0.5 at four — waits on a resolve step that does not exist, and ADR-016
 carries it.
 
-**M0.18, the gesture seam, is the next step.** M0.17 went in behind M0.16 rather than ahead of it: the
-measurement that would have invalidated renderer work came out right first.
+**M0.19, the replica store and interpolation, is the next step.** M0.17 and M0.18 went in behind M0.16
+rather than ahead of it: the measurement that would have invalidated renderer work came out right first.
+
+**M0.18 put one question on the register rather than answering it** — `OpenQuestions.md` Q38, whether the
+rotation deadzone rebases at its crossing the way the tap slop does. `Interface.md` §3 says so for the pan
+and §5 says nothing for rotation, the code has to do one or the other, and it can only be judged by
+turning a camera. It is M1.8's.
 
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the

@@ -315,7 +315,10 @@ floor is for.
 about eight degrees, because two fingers dragging to pan are never exactly parallel and a camera that yaws
 whenever you pan is unusable. **Once it engages it stays engaged for the rest of that manipulation** —
 without the latch the camera stutters every time the player crosses back under the threshold mid-gesture,
-which is worse than no deadzone at all.
+which is worse than no deadzone at all. **What happens at the crossing itself is not settled here**: §3
+rebases the pan so nothing jumps when it engages, this paragraph says nothing equivalent, and whether
+rotation should rebase the same way is `OpenQuestions.md` Q38 — a gap M0.18 found rather than a decision
+it took.
 
 **Zoom needs a small deadzone too, and for the mirror-image reason.** Fingers that rotate also change
 separation slightly, so a pure orbit otherwise creeps the zoom — and since pitch is coupled to zoom, an

@@ -9,6 +9,8 @@
   <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
     <ClCompile Include="FitTransform.cpp" />
+    <ClCompile Include="GestureArithmetic.cpp" />
+    <ClCompile Include="GestureSeam.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="InterfacePass.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
@@ -23,6 +25,9 @@
     <ClInclude Include="DatagramTransport.h" />
     <ClInclude Include="FitTransform.h" />
     <ClInclude Include="FrameStatistics.h" />
+    <ClInclude Include="GestureArithmetic.h" />
+    <ClInclude Include="GestureSeam.h" />
+    <ClInclude Include="InputEvent.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="InterfacePass.h" />
     <ClInclude Include="NeuronClient.h" />
