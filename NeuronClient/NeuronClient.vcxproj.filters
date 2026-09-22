@@ -5,6 +5,8 @@
     <FxCompile Include="Shaders\InterfaceVS.hlsl" />
     <FxCompile Include="Shaders\PresentPS.hlsl" />
     <FxCompile Include="Shaders\PresentVS.hlsl" />
+    <FxCompile Include="Shaders\ShipPS.hlsl" />
+    <FxCompile Include="Shaders\ShipVS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DatagramTransport.cpp" />
@@ -17,6 +19,9 @@
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
     <ClCompile Include="CmoReader.cpp" />
+    <ClCompile Include="MeshBuffer.cpp" />
+    <ClCompile Include="MeshPass.cpp" />
+    <ClCompile Include="PackageFile.cpp" />
     <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SessionToken.cpp" />
     <ClCompile Include="SwapChain.cpp" />
@@ -38,6 +43,9 @@
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
     <ClInclude Include="CmoReader.h" />
+    <ClInclude Include="MeshBuffer.h" />
+    <ClInclude Include="MeshPass.h" />
+    <ClInclude Include="PackageFile.h" />
     <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SessionToken.h" />
     <ClInclude Include="SwapChain.h" />

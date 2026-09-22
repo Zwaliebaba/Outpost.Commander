@@ -100,6 +100,28 @@ about which scale should ship, which is the decision ADR-016 left to this figure
 build, which for GPU time matters less than it would for processor time and is still not the number
 that ships.
 
+### Frame time with the hulls — 2026-09-22, M1.9
+
+**1,482 microseconds mean GPU time, 1,464 minimum, 1,547 maximum, over 3,600 frames with none
+discarded**, on the same **Surface Pro ARM64** part at the same **1:1 scale** and **one sample** — but
+a **Release** build this time, and drawing **three CMO meshes as three instanced calls** rather than
+M0.21b's generated arrow.
+
+**Two runs before this one gave 1,491 and 1,476**, so the figure is steady in the way the arrow's was.
+
+**The hulls cost about 360 microseconds**, which is arithmetic on the two means rather than a separate
+measurement: 1,482 against 1,118. That is 2,674 triangles a frame over three draws, against five
+vertices in one.
+
+**Against a 16.7 ms budget at 60 Hz the mean is now 8.9% of a frame**, and against the panel's 120 Hz
+it is 17.8% of an 8.3 ms one. **The renderer is still nowhere near being the thing that decides the
+frame rate**, which is the claim this ADR's first measurement made and the one M1.9 could have broken.
+
+**THE TWO NUMBERS ARE NOT A CLEAN COMPARISON AND THAT IS STATED RATHER THAN GLOSSED.** The first is a
+Debug build and this is Release, so some of the 360 microseconds is the configuration rather than the
+geometry. What the comparison supports is the shape of the answer — hulls cost hundreds of
+microseconds, not milliseconds — and not the figure to three digits.
+
 ### Still owed
 
 Two:

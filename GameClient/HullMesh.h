@@ -100,4 +100,18 @@ void HullToneColor(float _tone, float& _outRed, float& _outGreen, float& _outBlu
 /// reading off the end.
 void TeamColor(PlayerId _player, float& _outRed, float& _outGreen, float& _outBlue) noexcept;
 
+/// What the pixel stage is told about the look, from the generated catalog. **The palette and the
+/// light rig are the content's, not this file's** -- both come out of `manifest.json` through
+/// `MeshCatalog.g.h`, so a hull tone that moved in the handoff moves here without anybody editing
+/// code.
+[[nodiscard]] Neuron::MeshPass::Look ShipLook() noexcept;
+
+/// One entity's per-instance data.
+///
+/// **THE POSITION AND HEADING ARE THE INTERPOLATED ONES AND ARE THE CALLER'S** -- M0.19 decides
+/// where a replica is drawn and this only converts. The heading's cosine and sine are computed here
+/// rather than in the shader, because a `sincos` per vertex to turn one entity is work the instanced
+/// arrangement exists to avoid.
+[[nodiscard]] Neuron::MeshInstance InstanceFor(float _worldX, float _worldY, Neuron::Angle _heading, PlayerId _owner) noexcept;
+
 } // namespace Outpost

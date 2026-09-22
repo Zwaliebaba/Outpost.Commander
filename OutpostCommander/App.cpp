@@ -61,6 +61,10 @@ namespace
 inline constexpr std::size_t QUEUE_SLOTS = 512;
 inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 
+/// M1.9's per-frame instance capacity. ADR-003's peak is **110 entities** in the reduced MVP and 220
+/// at four players; this is the second, so the third and fourth slots cost no allocation change.
+inline constexpr std::uint32_t MAXIMUM_INSTANCES = 220;
+
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
 /// **THE HELLO IS GONE AND THE JOIN REPLACED IT** (ADR-013). An empty command packet used to be
@@ -73,8 +77,15 @@ inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 /// compiling, and the fullscreen transition may not have finished settling. Sixty seconds of
 /// vsynced frames after that is a long enough sample that the mean stops moving.
 ///
-/// **The probe exits when this completes**, which it did not used to -- it ran until the window was
-/// closed. A gate run has to terminate by itself or it writes no figures at all.
+/// **IT WRITES ITS FIGURES AND KEEPS RUNNING, WHICH IS A CHANGE M1.9 MADE.** It used to exit here,
+/// because a gate run has to terminate by itself or it writes no figures at all -- and that was
+/// right while there was nothing to look at but a coloured rectangle. There are hulls now, and a
+/// client that closes itself after sixty seconds is hostile to the only way M1.9's remaining exit
+/// criteria can be met: somebody looking at the silhouettes.
+///
+/// **The figures are still written without anybody closing the window**, which is the property that
+/// mattered -- they are reported the moment the window completes rather than at teardown, and the
+/// sample stops there so a long look cannot change them.
 inline constexpr std::uint64_t WARMUP_FRAMES = 120;
 inline constexpr std::uint64_t MEASURE_FRAMES = 3600;
 
@@ -278,6 +289,16 @@ void RunProbe(const CoreWindow& _window)
   // clearing are all behind it with a suite over them, and what is left up here is the order they
   // happen in and a Direct3D call.
   Neuron::WorldPass worldPass;
+
+  // M1.9: the hulls. One `MeshBuffer` for each of the three meshes that ship, one instanced draw
+  // apiece, and a ring of per-instance buffers so a frame is never written while the graphics
+  // processor is still reading the last one.
+  Neuron::MeshPass meshPass;
+  Neuron::InstanceRing instanceRing;
+  std::array<Neuron::MeshBuffer, 3> meshBuffers;
+  std::array<bool, 3> meshReady{};
+  std::uint32_t instanceFrame = 0;
+  bool meshesLoaded = false;
   Outpost::ClientFrame clientFrame;
 
   // R21's one path in. The seam turns `CoreWindow` pointer events into plain records on the frame's
@@ -332,6 +353,14 @@ void RunProbe(const CoreWindow& _window)
   else if (!interfacePass.Create(device, swapChain))
   {
     Report(log, "probe: no interface pass, hresult " + std::to_string(interfacePass.LastHresult()));
+  }
+  else if (!meshPass.Create(device, sceneTarget))
+  {
+    Report(log, "probe: no mesh pass, hresult " + std::to_string(meshPass.LastHresult()));
+  }
+  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES))
+  {
+    Report(log, "probe: no instance ring, hresult " + std::to_string(instanceRing.LastHresult()));
   }
   else if (!worldPass.Create(device, sceneTarget))
   {
@@ -468,6 +497,17 @@ void RunProbe(const CoreWindow& _window)
     {
       reportedSeat = true;
       const Outpost::JoinState& join = clientFrame.CurrentJoin();
+
+      // **THE CAMERA OPENS ON YOUR OWN STATION**, which it could not do before: the opening pose was
+      // M0's convenience because nothing knew which player this was until the join answered. It is
+      // the same recenter a hold performs (ADR-018), done once, at the moment there is an answer.
+      if (join.IsJoined())
+      {
+        const Neuron::Vec2 home = Outpost::StartAnchor(2, join.Player());
+        clientFrame.Camera() = Outpost::Recenter(
+          clientFrame.Camera(), Outpost::RecenterRequest{.stationX = static_cast<float>(home.x) / static_cast<float>(Neuron::FIXED_ONE),
+                                                         .stationY = static_cast<float>(home.y) / static_cast<float>(Neuron::FIXED_ONE)});
+      }
       Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
                     " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " seed=" + std::to_string(join.MatchSeed()));
     }
@@ -677,6 +717,72 @@ void RunProbe(const CoreWindow& _window)
                     " markers=" + std::to_string(clientFrame.Markers().Count()) + " local_ms=" + std::to_string(nowMs));
     }
 
+    // === THE MESHES, READ ONCE BEFORE THE FRAME LOOP EVER DRAWS ONE. ========================
+    //
+    // ADR-021 names the failure this has to survive and it is not a read error: **the package not
+    // carrying the file on a clean install**, which does not appear on the machine that built it.
+    // So a mesh that does not load is reported BY NAME and the client keeps running -- M0.21b's
+    // generated arrow is what a design with no mesh gets, which is a visible, diagnosable outcome
+    // rather than a window that never appears.
+    //
+    // It is blocking I/O and it is done once, here. Four hundred kilobytes at launch is not a
+    // frame's worth of work to hide; the moment something has to load DURING a match this needs a
+    // worker and a handoff (`NeuronClient/PackageFile.h`).
+    if (!meshesLoaded)
+    {
+      meshesLoaded = true;
+      for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
+      {
+        const std::string_view name = Outpost::MeshesShippedAtM1()[slot];
+        const Outpost::MeshEntry* entry = Outpost::FindMesh(name);
+        if (entry == nullptr)
+        {
+          continue;
+        }
+
+        // The catalog states the `ms-appx:///` form, because that is what the manifest says and
+        // what a `StorageFile` route would take. An `ifstream` wants what is after the scheme, with
+        // backslashes.
+        constexpr std::wstring_view SCHEME = L"ms-appx:///";
+        std::wstring relative{entry->packageUri.substr(SCHEME.size())};
+        for (wchar_t& character : relative)
+        {
+          if (character == L'/')
+          {
+            character = L'\\';
+          }
+        }
+
+        std::vector<std::byte> bytes;
+        if (!Neuron::ReadPackageFile(relative, bytes))
+        {
+          Report(log, "MESH " + std::string{name} + " did not load -- the package may not carry it");
+          continue;
+        }
+
+        Neuron::CmoMesh read;
+        const Neuron::CmoFault fault = Neuron::ReadCmo(bytes, read);
+        if (fault != Neuron::CmoFault::None)
+        {
+          Report(log, "MESH " + std::string{name} + " did not decode, fault " + std::to_string(static_cast<int>(fault)));
+          continue;
+        }
+
+        Outpost::HullMesh hull;
+        if (!Outpost::LoadHullMesh(read, entry->longestUnits, hull))
+        {
+          Report(log, "MESH " + std::string{name} + " decoded but would not load");
+          continue;
+        }
+
+        const std::span<const std::byte> vertexBytes{reinterpret_cast<const std::byte*>(hull.vertices.data()),
+                                                     hull.vertices.size() * sizeof(Outpost::HullVertex)};
+        meshReady[slot] = meshBuffers[slot].Create(device, vertexBytes, sizeof(Outpost::HullVertex), hull.indices);
+        Report(log, "MESH " + std::string{name} + (meshReady[slot] ? " uploaded " : " FAILED to upload ") +
+                      std::to_string(hull.vertices.size()) + " vertices, " + std::to_string(hull.indices.size() / 3) + " triangles");
+      }
+    }
+
     // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
     // TARGET, the back buffer is cleared to black -- which is what the letterbox bars are -- the
     // present step fits one into the other, and the interface pass draws over that, straight into
@@ -706,6 +812,10 @@ void RunProbe(const CoreWindow& _window)
                                  : 1.0f;
           const Outpost::Matrix4 viewProjection = Outpost::ViewProjection(clientFrame.Camera(), aspect);
 
+          // One list per shipped mesh. Cleared and refilled every frame rather than kept, because a
+          // snapshot is self-contained and nothing here is worth carrying across one (ADR-003).
+          std::array<std::vector<Neuron::MeshInstance>, 3> instances;
+
           for (const Outpost::EntityRecord& newer : drawn.newer->entities)
           {
             // The older snapshot's record for this entity, matched on the WHOLE packed identity so
@@ -723,28 +833,55 @@ void RunProbe(const CoreWindow& _window)
               }
             }
 
-            const Outpost::Matrix4 world = Outpost::EntityTransform(
-              static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE),
-              static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE),
-              Outpost::DequantizeWireHeading(shown.heading));
+            const float entityX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
+            const float entityY = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
+            const Neuron::Angle entityHeading = Outpost::DequantizeWireHeading(shown.heading);
+            const auto entityDesign = static_cast<Outpost::DesignId>(shown.designIdentity);
+            const auto entityOwner = static_cast<Outpost::PlayerId>((shown.flags >> Outpost::FLAGS_TEAM_SHIFT) & Outpost::FLAGS_TEAM_MASK);
 
-            // world * viewProjection, row-vector convention, multiplied out here because this is
-            // the only place in the tree that composes two of these.
-            Outpost::Matrix4 combined;
-            for (int row = 0; row < 4; ++row)
+            // **BUCKETED BY MESH, NOT DRAWN HERE.** One instanced call per shape is the whole point
+            // of the arrangement; drawing inside this loop would be one call per entity, which is
+            // what M0.21b did with a generated arrow and what M1.9 exists to stop.
+            const std::string_view meshName = Outpost::MeshNameForDesign(entityDesign);
+            std::size_t bucket = meshBuffers.size();
+            for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
-              for (int column = 0; column < 4; ++column)
+              if (Outpost::MeshesShippedAtM1()[slot] == meshName)
               {
-                float sum = 0.0f;
-                for (int k = 0; k < 4; ++k)
-                {
-                  sum += world.m[(row * 4) + k] * viewProjection.m[(k * 4) + column];
-                }
-                combined.m[(row * 4) + column] = sum;
+                bucket = slot;
+                break;
               }
             }
 
-            static_cast<void>(worldPass.Record(device, sceneTarget, combined.m, 0.80f, 0.86f, 0.95f, 1.0f));
+            if ((bucket < meshBuffers.size()) && meshReady[bucket])
+            {
+              instances[bucket].push_back(Outpost::InstanceFor(entityX, entityY, entityHeading, entityOwner));
+            }
+            else
+            {
+              // **NO MESH, SO M0.21b's ARROW.** The `Cruiser` today, anything M4 adds before its
+              // geometry does, and -- the case that matters -- every hull on an install where the
+              // package did not carry the files. A visible, diagnosable outcome rather than a gap.
+              const Outpost::Matrix4 world = Outpost::EntityTransform(entityX, entityY, entityHeading);
+
+              // world * viewProjection, row-vector convention, multiplied out here because this is
+              // the only place in the tree that composes two of these.
+              Outpost::Matrix4 combined;
+              for (int row = 0; row < 4; ++row)
+              {
+                for (int column = 0; column < 4; ++column)
+                {
+                  float sum = 0.0f;
+                  for (int k = 0; k < 4; ++k)
+                  {
+                    sum += world.m[(row * 4) + k] * viewProjection.m[(k * 4) + column];
+                  }
+                  combined.m[(row * 4) + column] = sum;
+                }
+              }
+
+              static_cast<void>(worldPass.Record(device, sceneTarget, combined.m, 0.80f, 0.86f, 0.95f, 1.0f));
+            }
 
             // The first entity's drawn position is what M0.23 watches. One entity is all M0 has,
             // and taking the first is honest for exactly as long as that is true.
@@ -766,6 +903,53 @@ void RunProbe(const CoreWindow& _window)
                 awaitingVisible = false;
               }
             }
+          }
+
+          // === ONE INSTANCED CALL PER SHAPE. =================================================
+          //
+          // Team colour is per instance, which is what lets a single call cover every ship of a
+          // shape regardless of owner. A mesh that wanted a second material for its team would cost
+          // a draw call per owner, and that is a trade to argue rather than take.
+          //
+          // **THE RING IS INDEXED BY THE FRAME IN FLIGHT.** A single instance buffer would be
+          // written while the graphics processor was still reading the last frame's copy -- which
+          // does not crash, it draws one frame of ships at another frame's positions, intermittently.
+          if (meshPass.IsReady() && instanceRing.IsReady() && meshPass.Begin(device, sceneTarget, viewProjection.m, Outpost::ShipLook()))
+          {
+            // **ONE UPLOAD, THREE RANGES.** The ring writes from the start of the frame's buffer,
+            // so the three shapes are concatenated first and each draw points at its own offset --
+            // three separate writes would each start at zero and the last would win.
+            std::vector<Neuron::MeshInstance> packed;
+            std::array<std::uint32_t, 3> firstInstance{};
+            std::array<std::uint32_t, 3> instanceCount{};
+            for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
+            {
+              firstInstance[slot] = static_cast<std::uint32_t>(packed.size());
+              if (meshReady[slot])
+              {
+                packed.insert(packed.end(), instances[slot].begin(), instances[slot].end());
+              }
+              instanceCount[slot] = static_cast<std::uint32_t>(packed.size()) - firstInstance[slot];
+            }
+
+            const std::uint32_t accepted = instanceRing.Write(instanceFrame, packed);
+            for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
+            {
+              // A capacity smaller than the snapshot truncates rather than writing past the end, so
+              // a shape whose range fell off the end is skipped rather than drawn from rubbish.
+              if ((instanceCount[slot] == 0) || ((firstInstance[slot] + instanceCount[slot]) > accepted))
+              {
+                continue;
+              }
+
+              const std::uint64_t address = instanceRing.BufferAddress(instanceFrame) +
+                                            (static_cast<std::uint64_t>(firstInstance[slot]) * sizeof(Neuron::MeshInstance));
+              static_cast<void>(meshPass.Draw(device, meshBuffers[slot], address,
+                                              instanceCount[slot] * static_cast<std::uint32_t>(sizeof(Neuron::MeshInstance)),
+                                              instanceCount[slot]));
+            }
+
+            instanceFrame = (instanceFrame + 1) % Neuron::InstanceRing::FRAME_COUNT;
           }
         }
       }
@@ -792,14 +976,22 @@ void RunProbe(const CoreWindow& _window)
 
         // AFTER PresentedFrame, which is the wait that makes the slot's timestamps readable, and
         // only once the warm-up frames are behind us.
-        if (presentedFrames > WARMUP_FRAMES)
+        // **THE SAMPLE IS EXACTLY THE WINDOW.** It used to run until the client exited, which was
+        // the same thing while the client exited here; now that it keeps running, a long look would
+        // otherwise be folded into a figure that is supposed to be sixty seconds of steady state.
+        if ((presentedFrames > WARMUP_FRAMES) && (presentedFrames <= (WARMUP_FRAMES + MEASURE_FRAMES)))
         {
           gpuTime.Add(device.LastFrameGpuMicroseconds());
         }
-        if (presentedFrames >= (WARMUP_FRAMES + MEASURE_FRAMES))
+        if (presentedFrames == (WARMUP_FRAMES + MEASURE_FRAMES))
         {
-          Report(log, "probe: measurement window complete");
-          running = false;
+          // ONCE, ON THE FRAME THE WINDOW CLOSES, and the loop carries on. `==` rather than `>=` is
+          // what makes it once, and reporting here rather than at teardown is what keeps the gate's
+          // property: the figures are written whether or not anybody closes the window.
+          Report(log, "probe: measurement window complete, gpu us mean " + std::to_string(gpuTime.MeanMicroseconds()) + " min " +
+                        std::to_string(gpuTime.MinimumMicroseconds()) + " max " + std::to_string(gpuTime.MaximumMicroseconds()) + " over " +
+                        std::to_string(gpuTime.Count()) + " frames, " + std::to_string(gpuTime.DiscardedCount()) +
+                        " discarded -- the client keeps running so the hulls can be looked at");
         }
         if (presentedFrames == 1)
         {

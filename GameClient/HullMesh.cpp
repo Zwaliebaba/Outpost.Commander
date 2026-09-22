@@ -3,6 +3,7 @@
 #include "HullMesh.h"
 
 #include <array>
+#include <cmath>
 
 namespace Outpost
 {
@@ -126,6 +127,44 @@ void HullToneColor(float _tone, float& _outRed, float& _outGreen, float& _outBlu
   _outRed = HULL_PALETTE[low][0] + ((HULL_PALETTE[low + 1][0] - HULL_PALETTE[low][0]) * within);
   _outGreen = HULL_PALETTE[low][1] + ((HULL_PALETTE[low + 1][1] - HULL_PALETTE[low][1]) * within);
   _outBlue = HULL_PALETTE[low][2] + ((HULL_PALETTE[low + 1][2] - HULL_PALETTE[low][2]) * within);
+}
+
+Neuron::MeshPass::Look ShipLook() noexcept
+{
+  Neuron::MeshPass::Look look;
+
+  for (std::size_t channel = 0; channel < 3; ++channel)
+  {
+    look.hullDeep[channel] = HULL_PALETTE[0][channel];
+    look.hullBase[channel] = HULL_PALETTE[1][channel];
+    look.hullEdge[channel] = HULL_PALETTE[2][channel];
+    look.keyLight[channel] = KEY_LIGHT_DIRECTION[channel];
+    look.fillLight[channel] = FILL_LIGHT_DIRECTION[channel];
+    look.ambient[channel] = AMBIENT_COLOR[channel];
+  }
+
+  // The `w` of each light is its intensity, which is how six `float4` carry nine values without a
+  // seventh register. The three palette stops leave theirs at zero and nothing reads them.
+  look.keyLight[3] = KEY_LIGHT_INTENSITY;
+  look.fillLight[3] = FILL_LIGHT_INTENSITY;
+  look.ambient[3] = AMBIENT_INTENSITY;
+  return look;
+}
+
+Neuron::MeshInstance InstanceFor(float _worldX, float _worldY, Neuron::Angle _heading, PlayerId _owner) noexcept
+{
+  // The binary angle to radians. 65,536 to a turn (ADR-002), and this is the renderer rather than
+  // the simulation -- R16 does not reach here, which is what lets it be a float at all.
+  constexpr float FULL_TURN_RADIANS = 6.28318530717958647692f;
+  const float radians = (static_cast<float>(_heading) / 65536.0f) * FULL_TURN_RADIANS;
+
+  Neuron::MeshInstance instance;
+  instance.positionX = _worldX;
+  instance.positionY = _worldY;
+  instance.headingCosine = std::cos(radians);
+  instance.headingSine = std::sin(radians);
+  TeamColor(_owner, instance.teamRed, instance.teamGreen, instance.teamBlue);
+  return instance;
 }
 
 void TeamColor(PlayerId _player, float& _outRed, float& _outGreen, float& _outBlue) noexcept
