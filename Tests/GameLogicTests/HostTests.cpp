@@ -14,9 +14,9 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
-    const Outpost::EntityId first = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, 7, 1);
-    const Outpost::EntityId doomed = world.Create(Neuron::Vec2{}, 0, 1, 1);
-    const Outpost::EntityId third = world.Create(Neuron::Vec2{.x = 128, .y = 0}, 0, 9, 2);
+    const Outpost::EntityId first = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, Outpost::HullId::Station, 1);
+    const Outpost::EntityId doomed = world.Create(Neuron::Vec2{}, 0, Outpost::HullId::Scout, 1);
+    const Outpost::EntityId third = world.Create(Neuron::Vec2{.x = 128, .y = 0}, 0, Outpost::HullId::Scout, 2);
     Assert::IsTrue(world.Destroy(doomed));
 
     const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 42, 7, 2);
@@ -28,7 +28,12 @@ public:
 
     Assert::AreEqual(Outpost::PackIdentity(first.index, first.generation), snapshot.entities[0].identity);
     Assert::AreEqual(Outpost::PackIdentity(third.index, third.generation), snapshot.entities[1].identity);
-    Assert::AreEqual(std::uint8_t{7}, snapshot.entities[0].designIdentity);
+    // THE HULL REACHES THE WIRE, and this pins which byte. It asserted 7 until M1.1, when the hull
+    // stopped being a loose number and became a catalog identity -- there is no hull 7, and
+    // `Station` is 3. **The design identity is still the hull's and that is temporary**: ADR-003
+    // gives it its own byte because a DESIGN is what a client draws, and M1.3 is where an entity
+    // gains one.
+    Assert::AreEqual(static_cast<std::uint8_t>(Outpost::HullId::Station), snapshot.entities[0].designIdentity);
     Assert::AreEqual(std::uint8_t{0x12}, snapshot.entities[0].heading, L"the wire heading is the top eight bits");
   }
 
@@ -36,7 +41,7 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
-    static_cast<void>(world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, 1, 1));
+    static_cast<void>(world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, Outpost::HullId::Scout, 1));
 
     const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 0, 0, 2);
     Assert::AreEqual(Neuron::Fixed{4096}, Outpost::DequantizePosition(snapshot.entities[0].positionX));
@@ -49,7 +54,7 @@ public:
     // its sequence.
     Outpost::World world;
     Outpost::CommandIntake intake;
-    const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, 1, 1);
+    const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::HullId::Scout, 1);
     Assert::AreEqual(std::uint8_t{0}, static_cast<std::uint8_t>(
                                         intake.Apply(world, 1,
                                                      Outpost::Command{.sequence = 31,
@@ -69,8 +74,8 @@ public:
     Outpost::CommandIntake intake;
     for (int entity = 0; entity < 110; ++entity)
     {
-      static_cast<void>(
-        world.Create(Neuron::Vec2{.x = entity * 64, .y = -entity * 64}, 0, 1, static_cast<Outpost::PlayerId>((entity % 2) + 1)));
+      static_cast<void>(world.Create(Neuron::Vec2{.x = entity * 64, .y = -entity * 64}, 0, Outpost::HullId::Scout,
+                                     static_cast<Outpost::PlayerId>((entity % 2) + 1)));
     }
 
     const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 1, 1, 2);
@@ -100,7 +105,7 @@ public:
   TEST_METHOD(ATickAdvancesTheSimulation)
   {
     Outpost::Host host;
-    const Outpost::EntityId mover = host.MutableWorld().Create(Neuron::Vec2{}, 0, 1, 1);
+    const Outpost::EntityId mover = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::HullId::Scout, 1);
     Assert::IsTrue(host.MutableWorld().OrderMoveTo(mover, Neuron::Vec2{.x = 10000, .y = 0}, 7 * 256));
 
     const Neuron::Vec2 before = host.CurrentWorld().Find(mover)->position;

@@ -16,7 +16,8 @@ namespace
 
 /// A hull number with no meaning -- R24's catalog does not exist yet and the state hash only needs
 /// the field to be there and to be covered.
-inline constexpr Outpost::HullId SOME_HULL = 3;
+// Any hull; the tick does not read it. M1.1 made this an identity rather than a loose 3.
+inline constexpr Outpost::HullId SOME_HULL = Outpost::HullId::Station;
 } // namespace
 
 TEST_CLASS(EntityIdentity)
@@ -265,8 +266,8 @@ public:
     // pairs, waits for a determinism test with orders in it.
     const auto build = [](Outpost::World& _world)
     {
-      const Outpost::EntityId a = _world.Create(At(100, 200), 1000, 1);
-      const Outpost::EntityId b = _world.Create(At(-50, 75), 40000, 2);
+      const Outpost::EntityId a = _world.Create(At(100, 200), 1000, Outpost::HullId::Frigate);
+      const Outpost::EntityId b = _world.Create(At(-50, 75), 40000, Outpost::HullId::Cruiser);
       static_cast<void>(_world.OrderMoveTo(a, At(900, 200), 7));
       static_cast<void>(_world.OrderMoveTo(b, At(-50, -900), 13));
       for (int tick = 0; tick < 60; ++tick)
@@ -285,7 +286,7 @@ public:
   TEST_METHOD(EveryHashedFieldChangesIt)
   {
     Outpost::World world;
-    const Outpost::EntityId subject = world.Create(At(10, 20), 30, 40);
+    const Outpost::EntityId subject = world.Create(At(10, 20), 30, Outpost::HullId::Station);
     const std::uint64_t baseline = Outpost::StateHash(world);
 
     world.Find(subject)->position.x = 11;
@@ -301,10 +302,12 @@ public:
     Assert::AreNotEqual(baseline, Outpost::StateHash(world), L"heading is not covered");
 
     world.Find(subject)->heading = 30;
-    world.Find(subject)->hull = 41;
+    // A DIFFERENT identity, which is all this needs: the assertion is that the hash covers the
+    // field at all, and M1.1 made the field an identity rather than a loose number.
+    world.Find(subject)->hull = Outpost::HullId::ModuleFrame;
     Assert::AreNotEqual(baseline, Outpost::StateHash(world), L"hull is not covered");
 
-    world.Find(subject)->hull = 40;
+    world.Find(subject)->hull = Outpost::HullId::Station;
     Assert::AreEqual(baseline, Outpost::StateHash(world), L"restoring every field should restore the hash");
   }
 
@@ -312,11 +315,11 @@ public:
   {
     // Two worlds holding identical records at different indices are different states.
     Outpost::World left;
-    static_cast<void>(left.Create(At(1, 2), 3, 4));
+    static_cast<void>(left.Create(At(1, 2), 3, Outpost::HullId::Scout));
 
     Outpost::World right;
-    const Outpost::EntityId filler = right.Create(At(1, 2), 3, 4);
-    static_cast<void>(right.Create(At(1, 2), 3, 4));
+    const Outpost::EntityId filler = right.Create(At(1, 2), 3, Outpost::HullId::Scout);
+    static_cast<void>(right.Create(At(1, 2), 3, Outpost::HullId::Scout));
     static_cast<void>(right.Destroy(filler));
 
     Assert::AreNotEqual(Outpost::StateHash(left), Outpost::StateHash(right));
@@ -327,10 +330,10 @@ public:
     // A dead slot still holds its last occupant's record. Folding it in would report a divergence
     // between two hosts that merely reused slots in a different sequence.
     Outpost::World world;
-    const Outpost::EntityId survivor = world.Create(At(7, 7), 7, 7);
+    const Outpost::EntityId survivor = world.Create(At(7, 7), 7, Outpost::HullId::Scout);
     const std::uint64_t alone = Outpost::StateHash(world);
 
-    const Outpost::EntityId doomed = world.Create(At(9, 9), 9, 9);
+    const Outpost::EntityId doomed = world.Create(At(9, 9), 9, Outpost::HullId::Scout);
     Assert::AreNotEqual(alone, Outpost::StateHash(world));
     Assert::IsTrue(world.Destroy(doomed));
     Assert::AreEqual(alone, Outpost::StateHash(world), L"a destroyed entity is still reaching the hash");
@@ -356,9 +359,14 @@ public:
     // It is not the determinism test ADR-002 is owed -- that one needs commands and a scripted
     // order list, and it arrives with M0.10 -- but it is the same property, and it is cheap.
     Outpost::World world;
-    const Outpost::EntityId first = world.Create(At(-1237, 400), 12345, 2);
-    const Outpost::EntityId second = world.Create(At(900, -900), 54321, 9);
-    const Outpost::EntityId doomed = world.Create(At(0, 0), 7, 1);
+    // THREE DIFFERENT HULLS, because the hash folds the field and a run where they were all equal
+    // would not notice a hull that stopped being hashed. **These were 2, 9 and 1 until M1.1**, and
+    // 9 was never a hull -- it was a loose byte, which is what `HullId` was before there was a
+    // catalog to index into. Two of the three are unchanged; the 9 became `ModuleFrame`, which is
+    // why the literal below moved and is the only reason it moved.
+    const Outpost::EntityId first = world.Create(At(-1237, 400), 12345, Outpost::HullId::Cruiser);
+    const Outpost::EntityId second = world.Create(At(900, -900), 54321, Outpost::HullId::ModuleFrame);
+    const Outpost::EntityId doomed = world.Create(At(0, 0), 7, Outpost::HullId::Frigate);
 
     static_cast<void>(world.OrderMoveTo(first, At(1000, -250), 7));
     static_cast<void>(world.OrderMoveTo(second, At(-33, 33), 13));
@@ -374,7 +382,15 @@ public:
       }
     }
 
-    Assert::AreEqual(0xd2a4d77a1900bf40ull, Outpost::StateHash(world));
+    // **THE LITERAL MOVED AT M1.1 AND THAT IS THE ONLY TIME IT SHOULD.** It was
+    // 0xd2a4d77a1900bf40 when one of the three hulls above was the number 9, which the catalog
+    // makes unrepresentable -- there are five hulls and 9 was never one of them. The inputs
+    // changed by exactly that much and the hash changed with them.
+    //
+    // A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION. If this literal starts
+    // disagreeing without anybody editing the run above it, the tick has stopped being
+    // deterministic and that is what this test exists to say (R16, ADR-002).
+    Assert::AreEqual(0xd2a4e47a1900d557ull, Outpost::StateHash(world));
   }
 };
 

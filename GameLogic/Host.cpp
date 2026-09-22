@@ -67,7 +67,7 @@ Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::u
                                              // degrees, which is a rendering quantity (TechnicalDesign.md section 4).
                                              .heading = static_cast<std::uint8_t>(entity.heading >> 8),
                                              .hullPercentRemaining = 100,
-                                             .designIdentity = entity.hull,
+                                             .designIdentity = static_cast<std::uint8_t>(entity.hull),
                                              .flags = static_cast<std::uint8_t>((entity.owner & FLAGS_TEAM_MASK) << FLAGS_TEAM_SHIFT)});
   }
 

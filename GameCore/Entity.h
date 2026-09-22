@@ -5,6 +5,9 @@
 #include <compare>
 #include <cstdint>
 
+// M1.1: the hull identity is the catalog's.
+#include "Catalog.h"
+
 namespace Outpost
 {
 
@@ -51,11 +54,11 @@ using PlayerId = std::uint8_t;
 
 inline constexpr PlayerId NO_PLAYER = 0;
 
-/// Which hull an entity is built on. R24 has a built thing as a composition -- a hull, an optional
-/// drive, and a component per slot -- and nothing in the simulation knows a ship type by name. At
-/// M0 there is no catalog to index into and this is a number that rides along so the state hash
-/// has a fourth field to cover; M0.9 settles the width it goes on the wire as.
-using HullId = std::uint8_t;
+// HullId IS THE CATALOG'S NOW (M1.1). This was `using HullId = std::uint8_t` with a note saying
+// "at M0 there is no catalog to index into and this is a number that rides along" -- the catalog
+// exists, so the placeholder is gone and `Catalog.h` owns the identity. Nothing about the width
+// changed: the enumeration is `std::uint8_t`-backed, so the state hash folds the same byte it
+// always did (R16, ADR-002).
 
 /// THE REPLICATED RECORD, AND ONLY THAT. Everything here is state the client is sent and draws
 /// from; nothing here is a host-only decision. An order's destination, the speed a drive works out
@@ -70,7 +73,7 @@ struct Entity
   EntityId id{};
   Neuron::Vec2 position{};
   Neuron::Angle heading = 0;
-  HullId hull = 0;
+  HullId hull = HullId::Scout;
 
   /// NOT hashed. ADR-002 names four fields and this is not one of them, which is correct: a state
   /// hash detects two hosts drifting apart, and ownership is set once at creation and never moves.

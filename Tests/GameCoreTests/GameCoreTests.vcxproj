@@ -113,6 +113,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CatalogTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
     <ClCompile Include="SnapshotTests.cpp" />
     <ClCompile Include="pch.cpp">

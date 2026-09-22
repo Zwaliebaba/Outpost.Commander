@@ -64,7 +64,9 @@ std::uint64_t StateHash(const World& _world) noexcept
     FoldFixed(hash, entity.position.x);
     FoldFixed(hash, entity.position.y);
     FoldUInt16(hash, entity.heading);
-    FoldByte(hash, entity.hull);
+    // The same byte it has always folded: `HullId` is `std::uint8_t`-backed, so M1.1 turning it from
+    // a typedef into an enumeration changed the type and not the value (R16, ADR-002).
+    FoldByte(hash, static_cast<std::uint8_t>(entity.hull));
   }
 
   return hash;
