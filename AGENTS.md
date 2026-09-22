@@ -282,7 +282,7 @@ $suites = Get-ChildItem -Recurse -Filter '*Tests.vcxproj' | ForEach-Object { "x6
 
 **The two client suites are desktop test DLLs that link Windows Store libraries.** That direction works — the libraries were compiled against the narrower app family, so everything they call is available to a desktop host — and it is what buys a suite that runs in CI without an appx deploy, a developer-mode runner and a signing certificate. What it costs is stated plainly: **those suites do not compile or run under the UWP API family**, so they cannot catch an app-family violation. Nothing in this tree can; what stands in for it is the client libraries themselves being compiled for Windows Store, and the package build in CI.
 
-**vstest reports "no tests found" as a pass.** An empty suite is therefore worse than no suite: it is a green check mark over a library nobody exercised. Every test project ships a placeholder `SuiteSmoke` for exactly this reason; delete it when the first real test lands, never before. **Five of the six have reached that point** — `GameClientTests` is the one still carrying its placeholder, which is the same library `AGENTS.md` §0 names as the last shell.
+**vstest reports "no tests found" as a pass.** An empty suite is therefore worse than no suite: it is a green check mark over a library nobody exercised. A new test project ships a placeholder `SuiteSmoke` for exactly this reason; delete it when the first real test lands, never before. **All six have reached that point** and none carries one now — `GameClientTests` was the last, and lost it when `GameClient` stopped being a shell.
 
 **Check formatting before you push.** It is seconds, and it is what CI runs:
 

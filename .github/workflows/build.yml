@@ -193,8 +193,8 @@ jobs:
 
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL.
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite that
-      # passed -- and neither is a suite with no tests in it, which is why every one ships a
-      # SuiteSmoke placeholder (AGENTS.md section 3).
+      # passed -- and neither is a suite with no tests in it, which is why a new one ships a
+      # SuiteSmoke placeholder until its first real test lands (AGENTS.md section 3).
       - name: Check that every suite was built
         shell: pwsh
         run: |

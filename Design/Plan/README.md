@@ -51,6 +51,11 @@ the credits, selection, build and system panels with the quit's two taps. On the
 in 3 to 17 ms and uses 269 of its 512 rows; the quit was armed and confirmed by hand. **Whether the text
 reads is M1.16's**, and nobody has judged it yet.
 
+**The code M1's gates need is in, and nothing an agent can do is left.** After M1.14, a lost link puts up
+the reconnecting overlay and rejoins as the same player. The package also declares multiple instances,
+with each instance keeping its own session token, which gives M1.15 a one-machine route to try. Both
+gates are still open and both are a hand's.
+
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
 milestone with something behind it worth seeing.
