@@ -36,32 +36,39 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 
 ## Where it stands
 
-**Every step from M0.1 to M0.15 is written and verified** — the wire, the numbers, the simulation, the
-host loop, the frame's foundations and the scaled present — and **the gates among them are a different
-matter**, because a gate is a measurement rather than code and no agent closes one. What is left inside
-M0 is the client, the package, and these four:
+**M0 is written and its code is verified on the device.** Twenty-three steps, one of which grew an
+`M0.21b` the plan had left out (F10) — the wire, the numbers, the simulation, the host loop, the scaled
+present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
+moves a ship that the host, not the client, decided had moved.
+
+**M1 has its model.** M1.1's catalog, M1.2's derivation and M1.3's entity are in, and the three of them
+together are ADR-006's claim made testable: a miner, a fighter and a station come out of one table with no
+special case, and `GameCoreTests` pins every combination the catalog can express rather than the three
+rows that ship.
+
+**What is open is measurement and one decision**, not code:
 
 | | |
 |---|---|
-| **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, measured at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
-| **M0.17** | Written, and **neither built nor looked at** — it was written where nothing in this tree compiles, which §*The constraint, first* below says is the honest claim to make. Its transform is pinned by `NeuronClientTests` and its `Done when` is half met: the pixels are still owed a pair of eyes, and **the two `CompiledShader\` headers [`ADR-012`](../ADR/ADR-012-a-shader-is-compiled-into-a-header.md) requires to be checked in are the first Windows build's to produce and to commit** |
-| **M0.18** | Written, and **neither built nor run** — same constraint. Its arithmetic is pinned by `NeuronClientTests`: the two signs R21 names, the rotation deadzone and its latch, the scale deadzone, the tap slop either side with the pan starting at the crossing, palm rejection and the contact-count latch. The half that touches the `CoreWindow` has no suite and cannot have one (F6), so it is proved by being used, which is M0.21 |
-| **M0.23** | Unstarted — tap-to-visible latency and frame time, on the device |
+| **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
+| **M0.23** | **Half closed.** Frame time is measured and settled — 1,118 microseconds mean GPU over 3,600 frames, three runs inside four microseconds of each other, in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md). Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
+| **M1.4** | **Blocked, and not on work.** F2: nothing tells an arriving client which player it is, and ADR-013 has not been written. Everything after M1.3 needs it — selection, validation and the credits readout all ask *whose* |
 
-**M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the four frame times
-are in [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements, and **the scale that
-ships is 1:1**, which is the decision that gate existed to take. The one thing it could not answer —
-whether 1:1 at one sample beats 0.5 at four — waits on a resolve step that does not exist, and ADR-016
-carries it.
+**M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the frame times are in
+[`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements, and **the scale that ships
+is 1:1**, which is the decision that gate existed to take. The one thing it could not answer — whether
+1:1 at one sample beats 0.5 at four — waits on a resolve step that does not exist, and ADR-016 carries it.
 
-**M0.19, the replica store and interpolation, is the next step.** M0.17 and M0.18 went in behind M0.16
-rather than ahead of it: the measurement that would have invalidated renderer work came out right first.
+**Two of these steps were written before anything in this tree compiled** — M0.17 and M0.18 — and both
+went in behind M0.16 rather than ahead of it, because the measurement that would have invalidated renderer
+work came out right first. Both are now built and both have been looked at.
 
-**M0.18 put one question on the register and it came back answered** — `OpenQuestions.md` Q38, whether the
-rotation deadzone rebases at its crossing the way the tap slop does. It does; `Interface.md` §5 now says
-so, and the gate in `NeuronClient` implements it. **It is the first row this register took from writing
-code rather than from reviewing design**, and it was found the way those are: two paragraphs described the
-same kind of threshold and only one of them said what happens at the crossing.
+**Eight register rows came from building rather than from reviewing**, which is the kind this plan
+expected fewest of. `OpenQuestions.md` Q38 came out of M0.18 — whether the rotation deadzone rebases at
+its crossing the way the tap slop does; it does, and `Interface.md` §5 now says so. It was found the way
+those are: two paragraphs described the same kind of threshold and only one of them said what happens at
+the crossing. **Q39 to Q45 all came out of one afternoon integrating the mesh handoff**, and the register
+says why that is the expected shape rather than a failure of review.
 
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the

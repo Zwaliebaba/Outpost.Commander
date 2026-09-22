@@ -90,19 +90,10 @@ struct Playout
 /// apart, so the ship turns through north rather than sweeping the long way back around.
 [[nodiscard]] Neuron::Angle InterpolateHeading(Neuron::Angle _from, Neuron::Angle _to, Neuron::Fixed _fraction) noexcept;
 
-/// The wire's heading byte widened to the simulation's angle. ADR-003 sends 256 steps of 1.4
-/// degrees because that is a rendering quantity; `Neuron::Angle` carries 65,536, so the widening
-/// is a shift and is exact.
-///
-/// ITS INVERSE IS NOT HERE, and that is deliberate rather than forgotten. The host is what
-/// quantizes a heading onto the wire, and when it needs to it belongs beside
-/// `QuantizePosition` in `GameCore/EntityRecord.h` with the rest of the wire's rounding rules.
-/// Nothing encodes a heading yet, so this file takes the half it uses rather than opening a file
-/// it has no other reason to touch.
-[[nodiscard]] constexpr Neuron::Angle DequantizeWireHeading(std::uint8_t _wireHeading) noexcept
-{
-  return static_cast<Neuron::Angle>(static_cast<Neuron::Angle>(_wireHeading) << 8);
-}
+/// `DequantizeWireHeading` WAS HERE AND IS NOW IN `GameCore/EntityRecord.h`, beside
+/// `QuantizePosition` and the rest of the wire's rounding rules -- which is where this file said it
+/// would go "when the host needs it". M1.3 is when: `BuildSnapshot` was doing the shift by hand.
+/// Both halves are in `Outpost`, so nothing that called it moved.
 
 /// One entity, interpolated between the two snapshots that straddle the frame.
 ///

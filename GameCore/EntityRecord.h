@@ -111,4 +111,45 @@ inline constexpr Neuron::Fixed POSITION_WIRE_STEP = 64;
 
 [[nodiscard]] Neuron::Fixed DequantizePosition(std::int16_t _value) noexcept;
 
+/// The simulation's sixteen-bit heading onto ADR-003's byte, and back.
+///
+/// **M0.19 PUT THE WIDENING IN `GameClient` AND SAID WHY IT WOULD MOVE**: only the client needed it
+/// then, and "its inverse belongs beside `QuantizePosition` when the host needs it". M1.3 is when
+/// the host needs it -- `BuildSnapshot` was doing the shift by hand -- so both halves live here
+/// with the rest of the wire's rounding rules.
+///
+/// **THE LOSS IS ADR-003's AND IS NOT A ROUNDING CHOICE.** 256 steps of 1.4 degrees is a rendering
+/// quantity; the simulation keeps sixteen bits because movement and turning are computed in them.
+/// The quantizer truncates rather than rounding, because rounding up from 0xFF80 would wrap a
+/// heading past north and a ship pointing very slightly west would draw pointing east.
+[[nodiscard]] constexpr std::uint8_t QuantizeWireHeading(Neuron::Angle _heading) noexcept
+{
+  return static_cast<std::uint8_t>(_heading >> 8);
+}
+
+[[nodiscard]] constexpr Neuron::Angle DequantizeWireHeading(std::uint8_t _wireHeading) noexcept
+{
+  return static_cast<Neuron::Angle>(static_cast<Neuron::Angle>(_wireHeading) << 8);
+}
+
+/// Hull points to ADR-003's percentage byte, and back.
+///
+/// **ROUNDED TO NEAREST, AND THE TWO ENDS ARE EXACT.** A ship on its last point must not read as
+/// dead and an undamaged one must not read as damaged, so zero maps to zero and full maps to a
+/// hundred whatever the rounding would otherwise do -- everything between is nearest, which is what
+/// keeps the round trip inside one percent.
+///
+/// A maximum of zero is a design with no hull points, which the catalog does not contain; it reads
+/// as a hundred rather than dividing.
+///
+/// **AND NOTHING STILL ALIVE READS AS ZERO.** One point of a `Station`'s eight thousand rounds to
+/// nought, and a client that draws an empty bar over a base which is still firing has been told a
+/// worse lie than the one percent this floor tells instead.
+[[nodiscard]] std::uint8_t QuantizeHullPercent(std::uint32_t _remaining, std::uint32_t _maximum) noexcept;
+
+/// The percentage back to points. **It cannot be exact and is not meant to be**: a hundred buckets
+/// over a `Station`'s 8,000 points is 80 points a bucket, which is the resolution ADR-003 bought
+/// when it spent one byte on this. The client draws a bar with it and the host never reads it.
+[[nodiscard]] std::uint32_t DequantizeHullPoints(std::uint8_t _percent, std::uint32_t _maximum) noexcept;
+
 } // namespace Outpost

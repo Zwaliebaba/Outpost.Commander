@@ -71,4 +71,40 @@ Neuron::Fixed DequantizePosition(std::int16_t _value) noexcept
   return static_cast<Neuron::Fixed>(static_cast<std::int32_t>(_value) * POSITION_WIRE_STEP);
 }
 
+std::uint8_t QuantizeHullPercent(std::uint32_t _remaining, std::uint32_t _maximum) noexcept
+{
+  if (_maximum == 0)
+  {
+    return 100;
+  }
+  if (_remaining == 0)
+  {
+    return 0;
+  }
+  if (_remaining >= _maximum)
+  {
+    return 100;
+  }
+
+  // ROUNDED TO NEAREST, in integers. The two ends are handled above precisely so that neither can
+  // round into the other, and the floor below finishes the job: **a ship that is still alive must
+  // not quantize to zero.** One point of a Station's eight thousand is 0.0125%, which rounds to 0,
+  // and 0 is the value a client draws as destroyed -- an empty bar on a base that is still
+  // shooting. A whole percent is the cheapest honest lie here, and it is inside the one percent
+  // this field was ever worth.
+  const std::uint64_t scaled = (static_cast<std::uint64_t>(_remaining) * 100) + (_maximum / 2);
+  const std::uint64_t percent = scaled / _maximum;
+  if (percent == 0)
+  {
+    return 1;
+  }
+  return static_cast<std::uint8_t>((percent > 100) ? 100 : percent);
+}
+
+std::uint32_t DequantizeHullPoints(std::uint8_t _percent, std::uint32_t _maximum) noexcept
+{
+  const std::uint64_t points = (static_cast<std::uint64_t>(_percent) * _maximum) / 100;
+  return static_cast<std::uint32_t>(points);
+}
+
 } // namespace Outpost

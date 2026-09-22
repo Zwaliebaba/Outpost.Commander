@@ -60,15 +60,15 @@ Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::u
       continue;
     }
 
-    snapshot.entities.push_back(EntityRecord{.identity = PackIdentity(entity.id.index, entity.id.generation),
-                                             .positionX = QuantizePosition(entity.position.x),
-                                             .positionY = QuantizePosition(entity.position.y),
-                                             // The wire's heading is eight bits against the simulation's sixteen -- 1.4
-                                             // degrees, which is a rendering quantity (TechnicalDesign.md section 4).
-                                             .heading = static_cast<std::uint8_t>(entity.heading >> 8),
-                                             .hullPercentRemaining = 100,
-                                             .designIdentity = static_cast<std::uint8_t>(entity.hull),
-                                             .flags = static_cast<std::uint8_t>((entity.owner & FLAGS_TEAM_MASK) << FLAGS_TEAM_SHIFT)});
+    snapshot.entities.push_back(
+      EntityRecord{.identity = PackIdentity(entity.id.index, entity.id.generation),
+                   .positionX = QuantizePosition(entity.position.x),
+                   .positionY = QuantizePosition(entity.position.y),
+                   .heading = QuantizeWireHeading(entity.heading),
+                   // M1.3: the fields M0.9 encoded as zeroes now carry meaning.
+                   .hullPercentRemaining = QuantizeHullPercent(entity.hullRemaining, Derive(entity.design).hullPoints),
+                   .designIdentity = static_cast<std::uint8_t>(entity.design),
+                   .flags = static_cast<std::uint8_t>((entity.owner & FLAGS_TEAM_MASK) << FLAGS_TEAM_SHIFT)});
   }
 
   // M0 removes nothing and fires nothing. The lists are still encoded, which is what M0.9 proved.

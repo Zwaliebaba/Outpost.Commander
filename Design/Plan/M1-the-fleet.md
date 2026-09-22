@@ -24,8 +24,9 @@ move it. Every suite carries real tests. One fixed seed, one entity, no ownershi
 **Read first:** `GameDesign.md` §6; ADR-006; R24; `TechnicalDesign.md` §7's last paragraph — the catalog is
 `constexpr` tables in `GameCore`, not files, and a content format is post-MVP.
 
-**Adds:** the four hulls, the two drives and the three slot components of `GameDesign.md` §6, as tables
-referred to **by identity**. That indirection is the only property research needs (ADR-006), and it is the
+**Adds:** `GameDesign.md` §6's catalog — **five hulls**, two drives, three slot components and four
+module ones — as tables referred to **by identity**. The hull count is the section's own and includes the
+two that are not ships: the station is a hull and so is a module frame, which is what §5 is built on. That indirection is the only property research needs (ADR-006), and it is the
 whole reason the catalog is not three structs with baked numbers.
 
 **The size-class enumerators cannot be spelled `Small` or `Large`.** `TechnicalDesign.md` §1 names this
@@ -71,8 +72,13 @@ property rather than as a value.
 its own byte**, hull remaining as a percentage. The snapshot encoder does not change shape, which is the
 point: M0.9 built the format and M1 fills it.
 
-**Files:** `GameCore/Entity.h` `.cpp`, `GameCore/EntityRecord.cpp`; `GameLogic/World.cpp`;
-`Tests/GameCoreTests/SnapshotTests.cpp` extended.
+**Files:** `GameCore/Entity.h`, `GameCore/EntityRecord.h` `.cpp`; `GameLogic/World.h` `.cpp`,
+`GameLogic/Host.cpp`; `GameClient/Interpolation.h`; `Tests/GameCoreTests/SnapshotTests.cpp` extended and
+the `GameLogic` suites swept.
+
+**`Entity.cpp` IS NOT IN THAT LIST BECAUSE THERE IS NO SUCH FILE** — `Entity` is a header-only aggregate
+and this step did not give it a reason to stop being one. `EntityRecord.h` is in it because the heading
+quantizer M0.19 left in `GameClient` moved here, beside `QuantizePosition`, the day the host needed it.
 
 **Done when:** a design identity above four round trips intact — the two-bit packing ADR-003 corrected is
 the exact defect this asserts against; hull percentage quantizes and dequantises within one percent; and

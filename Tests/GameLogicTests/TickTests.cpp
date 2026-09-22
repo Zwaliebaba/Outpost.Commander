@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <cstdint>
+#include <limits>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -16,8 +17,9 @@ namespace
 
 /// A hull number with no meaning -- R24's catalog does not exist yet and the state hash only needs
 /// the field to be there and to be covered.
-// Any hull; the tick does not read it. M1.1 made this an identity rather than a loose 3.
-inline constexpr Outpost::HullId SOME_HULL = Outpost::HullId::Station;
+// Any design; the tick does not read it. M1.1 made this an identity rather than a loose 3 and
+// M1.3 made it a DESIGN, because a hull is derived from one rather than chosen beside it.
+inline constexpr Outpost::DesignId SOME_DESIGN = Outpost::DesignId::Station;
 } // namespace
 
 TEST_CLASS(EntityIdentity)
@@ -35,7 +37,7 @@ public:
   TEST_METHOD(TheFirstAllocationOfASlotIsGenerationOne)
   {
     Outpost::World world;
-    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(first.IsValid());
     Assert::AreEqual(std::uint16_t{0}, first.index);
     Assert::AreEqual(std::uint16_t{1}, first.generation);
@@ -45,10 +47,10 @@ public:
   {
     // M0.8's first exit criterion, and the reason an identity is two numbers rather than one.
     Outpost::World world;
-    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.Destroy(first));
 
-    const Outpost::EntityId second = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId second = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::AreEqual(first.index, second.index, L"the freed index should have been reused");
     Assert::AreNotEqual(first.generation, second.generation, L"a reused slot must not reissue a generation");
 
@@ -65,7 +67,7 @@ public:
     // Nothing has taken the slot yet, and the old identity is already gone. That matters because
     // a system holding a reference across a death must not see it come back to life.
     Outpost::World world;
-    const Outpost::EntityId doomed = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId doomed = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.Destroy(doomed));
     Assert::IsFalse(world.IsAlive(doomed));
     Assert::AreEqual(std::size_t{0}, world.AliveCount());
@@ -74,7 +76,7 @@ public:
   TEST_METHOD(DestroyingTwiceIsNotAnError)
   {
     Outpost::World world;
-    const Outpost::EntityId victim = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId victim = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.Destroy(victim));
     Assert::IsFalse(world.Destroy(victim), L"a thing killed twice in one tick is ordinary");
   }
@@ -86,9 +88,9 @@ public:
     // here is what stops a well-meaning change to the free list becoming a desynchronization that
     // only two machines can see.
     Outpost::World world;
-    const Outpost::EntityId zero = world.Create(At(0, 0), 0, SOME_HULL);
-    const Outpost::EntityId one = world.Create(At(0, 0), 0, SOME_HULL);
-    const Outpost::EntityId two = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId zero = world.Create(At(0, 0), 0, SOME_DESIGN);
+    const Outpost::EntityId one = world.Create(At(0, 0), 0, SOME_DESIGN);
+    const Outpost::EntityId two = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::AreEqual(std::uint16_t{0}, zero.index);
     Assert::AreEqual(std::uint16_t{1}, one.index);
     Assert::AreEqual(std::uint16_t{2}, two.index);
@@ -97,18 +99,18 @@ public:
     Assert::IsTrue(world.Destroy(one));
 
     // Pushed 0 then 1; taken from the back, so 1 comes first.
-    Assert::AreEqual(std::uint16_t{1}, world.Create(At(0, 0), 0, SOME_HULL).index);
-    Assert::AreEqual(std::uint16_t{0}, world.Create(At(0, 0), 0, SOME_HULL).index);
+    Assert::AreEqual(std::uint16_t{1}, world.Create(At(0, 0), 0, SOME_DESIGN).index);
+    Assert::AreEqual(std::uint16_t{0}, world.Create(At(0, 0), 0, SOME_DESIGN).index);
 
     // And once the free list is empty the store grows again rather than reusing a live slot.
-    Assert::AreEqual(std::uint16_t{3}, world.Create(At(0, 0), 0, SOME_HULL).index);
+    Assert::AreEqual(std::uint16_t{3}, world.Create(At(0, 0), 0, SOME_DESIGN).index);
   }
 
   TEST_METHOD(TheStoreNeverShrinks)
   {
     Outpost::World world;
-    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_HULL);
-    static_cast<void>(world.Create(At(0, 0), 0, SOME_HULL));
+    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_DESIGN);
+    static_cast<void>(world.Create(At(0, 0), 0, SOME_DESIGN));
     Assert::AreEqual(std::size_t{2}, world.SlotCount());
     Assert::IsTrue(world.Destroy(first));
     Assert::AreEqual(std::size_t{2}, world.SlotCount(), L"removing a slot would renumber every index above it");
@@ -132,7 +134,7 @@ public:
   TEST_METHOD(ItArrivesExactlyAndStops)
   {
     Outpost::World world;
-    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7));
 
     for (int tick = 0; tick < 500; ++tick)
@@ -154,7 +156,7 @@ public:
     // Seven does not divide a thousand, so the last step is a partial one and this is exactly the
     // arrangement that would oscillate.
     Outpost::World world;
-    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7));
 
     for (int tick = 0; tick < 200; ++tick)
@@ -176,7 +178,7 @@ public:
     // (3, 3) with a step of 1 the floored distance is 4, both components truncate 3/4 to zero,
     // and the entity never moves again. Rounding is what makes this arrive.
     Outpost::World world;
-    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.OrderMoveTo(mover, At(3, 3), 1));
 
     for (int tick = 0; tick < 32; ++tick)
@@ -198,7 +200,7 @@ public:
       for (const Neuron::Fixed y : offsets)
       {
         Outpost::World world;
-        const Outpost::EntityId mover = world.Create(At(x, y), 0, SOME_HULL);
+        const Outpost::EntityId mover = world.Create(At(x, y), 0, SOME_DESIGN);
         Assert::IsTrue(world.OrderMoveTo(mover, At(0, 0), 7));
 
         for (int tick = 0; tick < 1000; ++tick)
@@ -216,7 +218,7 @@ public:
   {
     // Legal, and the honest outcome: somewhere to be and no way to get there beats a teleport.
     Outpost::World world;
-    const Outpost::EntityId stuck = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId stuck = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.OrderMoveTo(stuck, At(1000, 0), 0));
 
     for (int tick = 0; tick < 100; ++tick)
@@ -230,7 +232,7 @@ public:
   TEST_METHOD(AnEntityWithNoOrderDoesNotMove)
   {
     Outpost::World world;
-    const Outpost::EntityId idle = world.Create(At(42, -42), 0, SOME_HULL);
+    const Outpost::EntityId idle = world.Create(At(42, -42), 0, SOME_DESIGN);
     for (int tick = 0; tick < 20; ++tick)
     {
       Outpost::Tick(world);
@@ -241,8 +243,8 @@ public:
   TEST_METHOD(ADeadEntityIsNotTicked)
   {
     Outpost::World world;
-    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_HULL);
-    const Outpost::EntityId second = world.Create(At(0, 0), 0, SOME_HULL);
+    const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_DESIGN);
+    const Outpost::EntityId second = world.Create(At(0, 0), 0, SOME_DESIGN);
     Assert::IsTrue(world.OrderMoveTo(first, At(1000, 0), 7));
     Assert::IsTrue(world.OrderMoveTo(second, At(0, 1000), 7));
     Assert::IsTrue(world.Destroy(first));
@@ -266,8 +268,8 @@ public:
     // pairs, waits for a determinism test with orders in it.
     const auto build = [](Outpost::World& _world)
     {
-      const Outpost::EntityId a = _world.Create(At(100, 200), 1000, Outpost::HullId::Frigate);
-      const Outpost::EntityId b = _world.Create(At(-50, 75), 40000, Outpost::HullId::Cruiser);
+      const Outpost::EntityId a = _world.Create(At(100, 200), 1000, Outpost::DesignId::Fighter);
+      const Outpost::EntityId b = _world.Create(At(-50, 75), 40000, Outpost::DesignId::Miner);
       static_cast<void>(_world.OrderMoveTo(a, At(900, 200), 7));
       static_cast<void>(_world.OrderMoveTo(b, At(-50, -900), 13));
       for (int tick = 0; tick < 60; ++tick)
@@ -286,7 +288,7 @@ public:
   TEST_METHOD(EveryHashedFieldChangesIt)
   {
     Outpost::World world;
-    const Outpost::EntityId subject = world.Create(At(10, 20), 30, Outpost::HullId::Station);
+    const Outpost::EntityId subject = world.Create(At(10, 20), 30, Outpost::DesignId::Station);
     const std::uint64_t baseline = Outpost::StateHash(world);
 
     world.Find(subject)->position.x = 11;
@@ -315,11 +317,11 @@ public:
   {
     // Two worlds holding identical records at different indices are different states.
     Outpost::World left;
-    static_cast<void>(left.Create(At(1, 2), 3, Outpost::HullId::Scout));
+    static_cast<void>(left.Create(At(1, 2), 3, Outpost::DesignId::Miner));
 
     Outpost::World right;
-    const Outpost::EntityId filler = right.Create(At(1, 2), 3, Outpost::HullId::Scout);
-    static_cast<void>(right.Create(At(1, 2), 3, Outpost::HullId::Scout));
+    const Outpost::EntityId filler = right.Create(At(1, 2), 3, Outpost::DesignId::Miner);
+    static_cast<void>(right.Create(At(1, 2), 3, Outpost::DesignId::Miner));
     static_cast<void>(right.Destroy(filler));
 
     Assert::AreNotEqual(Outpost::StateHash(left), Outpost::StateHash(right));
@@ -330,10 +332,10 @@ public:
     // A dead slot still holds its last occupant's record. Folding it in would report a divergence
     // between two hosts that merely reused slots in a different sequence.
     Outpost::World world;
-    const Outpost::EntityId survivor = world.Create(At(7, 7), 7, Outpost::HullId::Scout);
+    const Outpost::EntityId survivor = world.Create(At(7, 7), 7, Outpost::DesignId::Miner);
     const std::uint64_t alone = Outpost::StateHash(world);
 
-    const Outpost::EntityId doomed = world.Create(At(9, 9), 9, Outpost::HullId::Scout);
+    const Outpost::EntityId doomed = world.Create(At(9, 9), 9, Outpost::DesignId::Miner);
     Assert::AreNotEqual(alone, Outpost::StateHash(world));
     Assert::IsTrue(world.Destroy(doomed));
     Assert::AreEqual(alone, Outpost::StateHash(world), L"a destroyed entity is still reaching the hash");
@@ -359,14 +361,18 @@ public:
     // It is not the determinism test ADR-002 is owed -- that one needs commands and a scripted
     // order list, and it arrives with M0.10 -- but it is the same property, and it is cheap.
     Outpost::World world;
-    // THREE DIFFERENT HULLS, because the hash folds the field and a run where they were all equal
-    // would not notice a hull that stopped being hashed. **These were 2, 9 and 1 until M1.1**, and
-    // 9 was never a hull -- it was a loose byte, which is what `HullId` was before there was a
-    // catalog to index into. Two of the three are unchanged; the 9 became `ModuleFrame`, which is
-    // why the literal below moved and is the only reason it moved.
-    const Outpost::EntityId first = world.Create(At(-1237, 400), 12345, Outpost::HullId::Cruiser);
-    const Outpost::EntityId second = world.Create(At(900, -900), 54321, Outpost::HullId::ModuleFrame);
-    const Outpost::EntityId doomed = world.Create(At(0, 0), 7, Outpost::HullId::Frigate);
+    // THREE DIFFERENT DESIGNS, because the hash folds the hull and a run where they were all equal
+    // would not notice a hull that stopped being hashed.
+    //
+    // **THE LITERAL HAS MOVED TWICE IN ONE DAY AND BOTH TIMES WERE FORCED.** At M1.1 one of these
+    // was the number 9, which was never a hull -- it was a loose byte, which is what `HullId` was
+    // before there was a catalog to index into. At M1.3 `World::Create` stopped taking a hull at
+    // all: an entity is built from a DESIGN and the hull is derived, so the three hulls this run
+    // produces are now whatever the Miner, the Fighter and the Station are built on. Neither change
+    // was a choice about the hash.
+    const Outpost::EntityId first = world.Create(At(-1237, 400), 12345, Outpost::DesignId::Miner);
+    const Outpost::EntityId second = world.Create(At(900, -900), 54321, Outpost::DesignId::Fighter);
+    const Outpost::EntityId doomed = world.Create(At(0, 0), 7, Outpost::DesignId::Station);
 
     static_cast<void>(world.OrderMoveTo(first, At(1000, -250), 7));
     static_cast<void>(world.OrderMoveTo(second, At(-33, 33), 13));
@@ -382,16 +388,63 @@ public:
       }
     }
 
-    // **THE LITERAL MOVED AT M1.1 AND THAT IS THE ONLY TIME IT SHOULD.** It was
-    // 0xd2a4d77a1900bf40 when one of the three hulls above was the number 9, which the catalog
-    // makes unrepresentable -- there are five hulls and 9 was never one of them. The inputs
-    // changed by exactly that much and the hash changed with them.
-    //
     // A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION. If this literal starts
     // disagreeing without anybody editing the run above it, the tick has stopped being
     // deterministic and that is what this test exists to say (R16, ADR-002).
-    Assert::AreEqual(0xd2a4e47a1900d557ull, Outpost::StateHash(world));
+    Assert::AreEqual(0xc6340483e2d0eb26ull, Outpost::StateHash(world));
   }
 };
 
+/// M1.3: what `World::Create` derives, and the one piece of redundant state on `Entity`.
+TEST_CLASS(CreationFromADesign)
+{
+public:
+  /// **THE HULL AND THE DESIGN CANNOT DISAGREE**, because `Create` is the only writer of either
+  /// and it derives the first from the second (ADR-006, R24). `Entity` carries both on purpose --
+  /// ADR-002's hash covers the hull and the wire carries the design, so both are read on a hot path
+  /// -- and this is what pays for that redundancy.
+  TEST_METHOD(TheHullIsDerivedFromTheDesign)
+  {
+    Outpost::World world;
+    for (const Outpost::DesignEntry& design : Outpost::Designs())
+    {
+      const Outpost::EntityId id = world.Create(Neuron::Vec2{}, 0, design.id, 1);
+      const Outpost::Entity* entity = world.Find(id);
+      Assert::IsNotNull(entity);
+      Assert::AreEqual(static_cast<int>(design.id), static_cast<int>(entity->design));
+      Assert::AreEqual(static_cast<int>(design.hull), static_cast<int>(entity->hull));
+      Assert::AreEqual(static_cast<int>(Outpost::Design(design.id).hull), static_cast<int>(entity->hull));
+    }
+  }
+
+  /// A new entity starts undamaged, and **the figure is the derivation's rather than a literal**.
+  /// A `Station` is 8,000 points because `GameDesign.md` section 6 says so and `Derive` sums it,
+  /// not because anything here typed it.
+  TEST_METHOD(ANewEntityStartsAtFullHull)
+  {
+    Outpost::World world;
+    for (const Outpost::DesignEntry& design : Outpost::Designs())
+    {
+      const Outpost::EntityId id = world.Create(Neuron::Vec2{}, 0, design.id, 1);
+      const Outpost::Entity* entity = world.Find(id);
+      Assert::IsNotNull(entity);
+
+      const Outpost::DerivedStats stats = Outpost::Derive(design.id);
+      Assert::IsTrue(stats.hullPoints > 0, L"a design with no hull points would quantize as undamaged forever");
+      Assert::AreEqual(static_cast<std::uint32_t>(entity->hullRemaining), stats.hullPoints);
+      Assert::AreEqual(std::uint8_t{100}, Outpost::QuantizeHullPercent(entity->hullRemaining, stats.hullPoints));
+    }
+  }
+
+  /// **THE STORE HOLDS HULL POINTS AND THE WIRE HOLDS A PERCENTAGE**, and the widths have to be
+  /// able to carry the catalog's largest hull. A `Cruiser`'s 3,000 and a `Station`'s 8,000 both fit
+  /// sixteen bits with room; if a hull ever passes 65,535 this is the assertion that says so.
+  TEST_METHOD(EveryHullFitsTheRemainingField)
+  {
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      Assert::IsTrue(hull.hullPoints <= std::numeric_limits<std::uint16_t>::max());
+    }
+  }
+};
 } // namespace GameLogicTests

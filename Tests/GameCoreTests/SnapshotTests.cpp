@@ -393,4 +393,87 @@ public:
   }
 };
 
+/// M1.3: the fields M0.9 encoded as zeroes now carry meaning.
+TEST_CLASS(TheFieldsM1Filled)
+{
+public:
+  /// **THE EXACT DEFECT ADR-003 CORRECTED.** The design identity was packed into two bits of the
+  /// flags byte -- four designs, permanently -- until that ADR gave it a byte of its own, because
+  /// R24 has a design being an identity that research and a designer extend. A value above four is
+  /// what a two-bit field silently destroys, so that is what this asserts.
+  TEST_METHOD(ADesignIdentityAboveFourRoundTripsIntact)
+  {
+    for (const std::uint8_t identity : {std::uint8_t{5}, std::uint8_t{17}, std::uint8_t{200}, std::uint8_t{255}})
+    {
+      Outpost::EntityRecord written;
+      written.identity = Outpost::PackIdentity(3, 1);
+      written.designIdentity = identity;
+      // Every flag bit set, so a design identity that leaked into the flags byte -- or a flags byte
+      // that leaked into it -- could not pass unnoticed.
+      written.flags = 0xFF;
+
+      std::array<std::byte, Outpost::EntityRecord::SIZE_BYTES> bytes{};
+      Neuron::ByteWriter writer{bytes};
+      Assert::IsTrue(written.Write(writer));
+
+      Neuron::ByteReader reader{bytes};
+      Outpost::EntityRecord read;
+      Assert::IsTrue(Outpost::EntityRecord::Read(reader, read));
+
+      Assert::AreEqual(identity, read.designIdentity);
+      Assert::AreEqual(std::uint8_t{0xFF}, read.flags);
+    }
+  }
+
+  /// **WITHIN ONE PERCENT, OVER EVERY HULL IN THE CATALOG.** The `Station`'s 8,000 points over a
+  /// hundred buckets is 80 points a bucket, which is the resolution ADR-003 bought when it spent
+  /// one byte here.
+  TEST_METHOD(HullPercentageRoundTripsWithinOnePercent)
+  {
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      const std::uint32_t maximum = hull.hullPoints;
+      for (std::uint32_t remaining = 0; remaining <= maximum; remaining += (maximum / 37) + 1)
+      {
+        const std::uint8_t percent = Outpost::QuantizeHullPercent(remaining, maximum);
+        const std::uint32_t back = Outpost::DequantizeHullPoints(percent, maximum);
+
+        const std::uint32_t difference = (back > remaining) ? (back - remaining) : (remaining - back);
+        Assert::IsTrue(difference <= ((maximum / 100) + 1), L"the round trip must stay inside one percent");
+      }
+    }
+  }
+
+  /// The two ends are exact, which matters more than the middle: a ship on its last point must not
+  /// read as dead, and an undamaged one must not read as damaged.
+  TEST_METHOD(TheEndsOfTheHullPercentageAreExact)
+  {
+    Assert::AreEqual(std::uint8_t{0}, Outpost::QuantizeHullPercent(0, 8000));
+    Assert::AreEqual(std::uint8_t{100}, Outpost::QuantizeHullPercent(8000, 8000));
+
+    // One point of eight thousand is 0.0125%, which rounds to zero -- and must not, because zero is
+    // the thing a client would draw as destroyed.
+    Assert::IsTrue(Outpost::QuantizeHullPercent(1, 8000) > 0);
+  }
+
+  /// **THE SIMULATION'S HEADING IS SIXTEEN BITS AND THE WIRE'S IS EIGHT** (ADR-002,
+  /// `TechnicalDesign.md` section 4). The wire's is a rendering quantity at 1.4 degrees a step; the
+  /// simulation's is what movement and turning are computed in and it must not be narrowed to
+  /// match.
+  TEST_METHOD(TheSimulationHeadingStaysWiderThanTheWires)
+  {
+    static_assert(sizeof(Neuron::Angle) == 2);
+    static_assert(sizeof(Outpost::EntityRecord::heading) == 1);
+
+    // A heading whose low byte is non-zero: the wire keeps the top eight bits and loses the rest,
+    // which is the loss ADR-003 chose and not one to be surprised by.
+    const Neuron::Angle simulation = 0x1234;
+    const auto wire = static_cast<std::uint8_t>(simulation >> 8);
+    Assert::AreEqual(std::uint8_t{0x12}, wire);
+
+    // And widening it back lands on the top of the bucket rather than anywhere else.
+    Assert::AreEqual(static_cast<int>(Neuron::Angle{0x1200}), static_cast<int>(Outpost::DequantizeWireHeading(wire)));
+  }
+};
+
 } // namespace GameCoreTests

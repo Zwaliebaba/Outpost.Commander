@@ -14,7 +14,7 @@ namespace
 inline constexpr std::size_t MAX_SLOTS = std::numeric_limits<std::uint16_t>::max() + std::size_t{1};
 } // namespace
 
-EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, HullId _hull, PlayerId _owner) noexcept
+EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, DesignId _design, PlayerId _owner) noexcept
 {
   std::uint16_t index = 0;
 
@@ -45,8 +45,18 @@ EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, Hu
     generation = 1;
   }
 
-  slot.entity = Entity{
-    .id = EntityId{.index = index, .generation = generation}, .position = _position, .heading = _heading, .hull = _hull, .owner = _owner};
+  // THE ONE PLACE THE DESIGN BECOMES A HULL AND A HULL-POINT TOTAL. Both are derived here, so the
+  // redundancy `Entity` carries cannot drift -- there is no other writer (M1.3, ADR-006).
+  const DesignEntry& design = Design(_design);
+  const DerivedStats stats = Derive(design);
+
+  slot.entity = Entity{.id = EntityId{.index = index, .generation = generation},
+                       .position = _position,
+                       .heading = _heading,
+                       .hull = design.hull,
+                       .design = _design,
+                       .hullRemaining = static_cast<std::uint16_t>(stats.hullPoints),
+                       .owner = _owner};
   slot.order = MoveOrder{};
   slot.alive = true;
   ++m_aliveCount;

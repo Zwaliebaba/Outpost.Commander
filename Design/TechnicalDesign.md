@@ -144,7 +144,7 @@ An entity record is **ten bytes**:
 | Entity identity | 2 | Index and generation packed. |
 | Position x, y | 4 | Two `std::int16_t`. The 16,384-unit square over 65,536 steps is **a quarter of a world unit** per step — far finer than a ship is wide. |
 | Heading | 1 | 256 steps, 1.4°. A rendering quantity; the simulation's heading is 16-bit. |
-| Hull remaining | 1 | Percent. |
+| Hull remaining | 1 | Percent, rounded to nearest with **both ends exact** — and floored at 1 for anything still alive, because 0 is what a client draws as destroyed ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). |
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
 | Flags | 1 | **Team 2 bits, state 3 bits, cargo 2 bits, one spare.** |
 

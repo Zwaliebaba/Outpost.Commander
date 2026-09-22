@@ -5,8 +5,9 @@
 #include <compare>
 #include <cstdint>
 
-// M1.1: the hull identity is the catalog's.
+// M1.1: the hull identity is the catalog's. M1.3: so is the design.
 #include "Catalog.h"
+#include "Design.h"
 
 namespace Outpost
 {
@@ -73,7 +74,21 @@ struct Entity
   EntityId id{};
   Neuron::Vec2 position{};
   Neuron::Angle heading = 0;
+
+  /// **HASHED.** ADR-002 names four fields and this is the fourth.
   HullId hull = HullId::Scout;
+
+  /// What this entity was built as (R24, ADR-006). **The hull above is DERIVED from it and stored
+  /// beside it**, which is the one piece of redundant state in this struct and is deliberate:
+  /// ADR-002's hash covers the hull and the wire carries the DESIGN, so both are read on a hot
+  /// path and neither should be a table lookup away. `World::Create` sets them together from the
+  /// design and a test asserts they cannot disagree -- nothing else may write either.
+  DesignId design = DesignId::Miner;
+
+  /// Hull points remaining, in the simulation's own units rather than the wire's percentage.
+  /// `GameDesign.md` section 7 does damage in points; the percentage is a rendering quantity and
+  /// the encoder is where it becomes one.
+  std::uint16_t hullRemaining = 0;
 
   /// NOT hashed. ADR-002 names four fields and this is not one of them, which is correct: a state
   /// hash detects two hosts drifting apart, and ownership is set once at creation and never moves.

@@ -31,6 +31,13 @@ on the next one.
 An entity record is **ten bytes**: identity 2, position 4 as two `std::int16_t` quantized over the play
 area, heading 1, hull remaining 1, **design identity 1**, flags 1.
 
+**ONE PERCENT IS THE FLOOR, NOT ZERO, FOR ANYTHING STILL ALIVE.** The byte is a percentage and the
+rounding is to nearest, which means a `Station` on one of its eight thousand points quantizes to 0 — and
+0 is the value a client draws as destroyed. An empty bar over a base that is still firing is a worse lie
+than the whole percent the floor tells instead, and it is the kind that reads as a bug in the renderer.
+Both ends are therefore exact by construction: zero means dead, a hundred means undamaged, and everything
+between is nearest. `GameCore/EntityRecord.cpp` is where that lives and `GameCoreTests` pins it.
+
 **The design identity gets its own byte, and that is a correction.** It was packed into the flags byte
 alongside team and state, which left two bits — room for exactly four designs, forever. R24 and
 [`ADR-006`](ADR-006-a-ship-is-a-composition.md) rest on a design being an *identity* that research and a
