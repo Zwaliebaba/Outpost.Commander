@@ -1,0 +1,63 @@
+#pragma once
+
+#include "Catalog.h"
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
+namespace Outpost
+{
+
+/// **A DESIGN IS A ROW, NOT A TYPE** (ADR-006, R24). Nothing in the simulation knows what a
+/// "fighter" is; it knows a design, and a design is a hull, an optional drive, and a component in
+/// each of the hull's slots. `Miner` and `Fighter` are identities into this table and the station
+/// is a third row beside them -- **a grep for "fighter" outside a comment or a display string is
+/// this step having failed**.
+///
+/// **THE MVP SHIPS NO DESIGNER AND THAT CHANGES NOTHING HERE.** M4's designer screen writes rows
+/// into a second table; research gates a set of component identities. Neither needs this file to
+/// change, which is the claim ADR-006 exists to make and the reason a design is an identity rather
+/// than a struct somebody constructs.
+enum class DesignId : std::uint8_t
+{
+  Miner,
+  Fighter,
+  Station
+};
+
+/// The largest slot count any hull in the catalog has -- the `Cruiser`'s four.
+///
+/// **NAMED FOR THE SLOTS IT COUNTS**, because `GameLogic/World.h` has a `MAX_SLOTS` of its own that
+/// means something else entirely: how many ENTITIES the store holds. Two different things called
+/// the same thing in one namespace is a compile error today and would have been a confusing one to
+/// read; this is the component slots a hull has. A design carries a
+/// fixed array of this size and the entries past the hull's own slot count are `None`, which is
+/// what makes the derivation a sum over a fixed span rather than a container.
+inline constexpr std::size_t MAX_COMPONENT_SLOTS = 4;
+
+/// One row of ADR-006's design table.
+///
+/// R8: a public aggregate.
+struct DesignEntry
+{
+  DesignId id = DesignId::Miner;
+  HullId hull = HullId::Scout;
+
+  /// **`None` IS A LEGAL DRIVE** and it is what the station has. A hull with no drive does not
+  /// move, which is a composition rather than a special case (R24).
+  DriveId drive = DriveId::None;
+
+  /// Fitted in slot order. Entries past the hull's `slotCount` are `None` and contribute nothing.
+  std::array<ComponentId, MAX_COMPONENT_SLOTS> slots{};
+
+  [[nodiscard]] friend constexpr bool operator==(const DesignEntry&, const DesignEntry&) noexcept = default;
+};
+
+[[nodiscard]] std::span<const DesignEntry> Designs() noexcept;
+
+/// The row an identity names. Total, for the reason `Hull` is.
+[[nodiscard]] const DesignEntry& Design(DesignId _id) noexcept;
+
+} // namespace Outpost

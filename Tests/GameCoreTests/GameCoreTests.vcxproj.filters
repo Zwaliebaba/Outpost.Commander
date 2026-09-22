@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="CatalogTests.cpp" />
+    <ClCompile Include="DerivedStatsTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
     <ClCompile Include="SnapshotTests.cpp" />
     <ClCompile Include="pch.cpp" />

@@ -1,0 +1,205 @@
+#include "pch.h"
+
+#include <array>
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace GameCoreTests
+{
+
+namespace
+{
+constexpr std::array<Outpost::ComponentId, Outpost::MAX_COMPONENT_SLOTS> EMPTY{};
+
+[[nodiscard]] std::array<Outpost::ComponentId, Outpost::MAX_COMPONENT_SLOTS> Fitted(Outpost::ComponentId _component, std::size_t _count)
+{
+  std::array<Outpost::ComponentId, Outpost::MAX_COMPONENT_SLOTS> slots{};
+  for (std::size_t i = 0; (i < _count) && (i < Outpost::MAX_COMPONENT_SLOTS); ++i)
+  {
+    slots[i] = _component;
+  }
+  return slots;
+}
+} // namespace
+
+/// M1.2: the two shipped designs reproduce `GameDesign.md` section 6's table. **These are the three
+/// anchors Q46's figures were chosen against**, so a change to the catalog that breaks one of them
+/// is a balance change rather than a refactor.
+TEST_CLASS(TheShippedDesigns)
+{
+public:
+  TEST_METHOD(TheMinerIs150CreditsAt100UnitsASecond)
+  {
+    const Outpost::DerivedStats miner = Outpost::Derive(Outpost::DesignId::Miner);
+    Assert::AreEqual(150u, miner.cost);
+    Assert::AreEqual(100u, miner.speedUnitsPerSecond);
+    Assert::AreEqual(450u, miner.hullPoints);
+  }
+
+  TEST_METHOD(TheFighterIs300CreditsAt140UnitsASecond)
+  {
+    const Outpost::DerivedStats fighter = Outpost::Derive(Outpost::DesignId::Fighter);
+    Assert::AreEqual(300u, fighter.cost);
+    Assert::AreEqual(140u, fighter.speedUnitsPerSecond);
+    Assert::AreEqual(600u, fighter.hullPoints);
+  }
+
+  /// `GameDesign.md` section 6 cut the battleship at **2,400 credits against an income of about 15
+  /// a second**. That figure is as binding as the other two: it is the arithmetic the design used
+  /// to decide the MVP would not contain one, and a catalog where it no longer sums to 2,400 has
+  /// quietly reopened that decision.
+  TEST_METHOD(TheCutBattleshipStillCosts2400)
+  {
+    const Outpost::DerivedStats battleship =
+      Outpost::Derive(Outpost::HullId::Cruiser, Outpost::DriveId::BurnDrive, Fitted(Outpost::ComponentId::MassDriver, 4));
+    Assert::AreEqual(2400u, battleship.cost);
+  }
+
+  /// A station is a row in the same table, with no drive and two mounts.
+  TEST_METHOD(TheStationIsADesignWithNoDrive)
+  {
+    const Outpost::DerivedStats station = Outpost::Derive(Outpost::DesignId::Station);
+    Assert::AreEqual(0u, station.speedUnitsPerSecond);
+    Assert::AreEqual(8000u, station.hullPoints);
+    // Two point-defense mounts at 60 a second each.
+    Assert::AreEqual(120u, station.damagePerSecond);
+  }
+
+  /// **BOTH SHIPPED DIVISIONS ARE EXACT**, which is a property of Q46's numbers rather than of the
+  /// derivation. It is pinned because a later catalog change could make the speeds depend on which
+  /// way the truncation happens to fall, and that is the kind of thing nobody notices.
+  TEST_METHOD(NeitherShippedSpeedDependsOnRounding)
+  {
+    const Outpost::DerivedStats miner = Outpost::Derive(Outpost::DesignId::Miner);
+    const Outpost::DerivedStats fighter = Outpost::Derive(Outpost::DesignId::Fighter);
+
+    Assert::AreEqual(0u, Outpost::Drive(Outpost::DriveId::IonDrive).thrust % miner.mass);
+    Assert::AreEqual(0u, static_cast<std::uint32_t>(Outpost::Drive(Outpost::DriveId::BurnDrive).thrust) % fighter.mass);
+  }
+};
+
+/// M1.2's properties, asserted over the whole catalog rather than over the three rows that ship.
+TEST_CLASS(DerivationProperties)
+{
+public:
+  /// **A HULL WITH NO DRIVE DERIVES A SPEED OF ZERO RATHER THAN DIVIDING BY SOMETHING**, which is
+  /// M1.2's own wording. Every hull, with no drive and nothing fitted.
+  TEST_METHOD(NoDriveIsNoSpeedForEveryHull)
+  {
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      const Outpost::DerivedStats stats = Outpost::Derive(hull.id, Outpost::DriveId::None, EMPTY);
+      Assert::AreEqual(0u, stats.speedUnitsPerSecond);
+    }
+  }
+
+  /// ADR-006: "a cruiser with four plasma cannons is slower than an empty one **because of
+  /// arithmetic, not because anyone wrote it down**". Asserted as a property over every hull that
+  /// moves and every drive that works, rather than as a value on one design.
+  TEST_METHOD(AddingAComponentLowersTheSpeed)
+  {
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      for (const Outpost::DriveId drive : {Outpost::DriveId::IonDrive, Outpost::DriveId::BurnDrive})
+      {
+        const Outpost::DerivedStats empty = Outpost::Derive(hull.id, drive, EMPTY);
+        if (empty.speedUnitsPerSecond == 0)
+        {
+          continue;
+        }
+
+        for (std::size_t fitted = 1; fitted <= hull.slotCount; ++fitted)
+        {
+          const Outpost::DerivedStats loaded = Outpost::Derive(hull.id, drive, Fitted(Outpost::ComponentId::MassDriver, fitted));
+          Assert::IsTrue(loaded.speedUnitsPerSecond < empty.speedUnitsPerSecond, L"a loaded hull must be slower than an empty one");
+          Assert::IsTrue(loaded.mass > empty.mass);
+        }
+      }
+    }
+  }
+
+  /// `TechnicalDesign.md` section 8: **every catalog combination is pinned, including every
+  /// `Cruiser` one, which no MVP design uses.** This walks all of them and asserts the derivation
+  /// is total -- no combination crashes, and every one that has thrust and mass has a speed.
+  TEST_METHOD(EveryCatalogCombinationDerives)
+  {
+    std::size_t combinations = 0;
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      for (const Outpost::DriveEntry& drive : Outpost::Drives())
+      {
+        for (const Outpost::ComponentEntry& component : Outpost::Components())
+        {
+          for (std::size_t fitted = 0; fitted <= hull.slotCount; ++fitted)
+          {
+            const Outpost::DerivedStats stats = Outpost::Derive(hull.id, drive.id, Fitted(component.id, fitted));
+            ++combinations;
+
+            const bool moves = (drive.thrust > 0) && (stats.mass > 0);
+            Assert::AreEqual(moves, stats.speedUnitsPerSecond > 0);
+            Assert::IsTrue(stats.cost >= hull.cost);
+          }
+        }
+      }
+    }
+    // Three drives x eight components x the sum over hulls of (slotCount + 1), which is
+    // 2 + 3 + 5 + 3 + 2 = 15 for a Scout, Frigate, Cruiser, Station and ModuleFrame. 3 x 8 x 15.
+    // The count is asserted so that a catalog row added without a thought cannot quietly shrink
+    // this sweep -- which is the only thing making "every combination" mean anything.
+    Assert::AreEqual(static_cast<std::size_t>(360), combinations);
+  }
+
+  /// A component past the hull's slot count is not the hull's business. A malformed design must not
+  /// be able to carry weight it cannot mount.
+  TEST_METHOD(ComponentsPastTheSlotCountAreIgnored)
+  {
+    // A Scout has one slot; this fills all four.
+    const Outpost::DerivedStats overfilled =
+      Outpost::Derive(Outpost::HullId::Scout, Outpost::DriveId::IonDrive, Fitted(Outpost::ComponentId::MassDriver, 4));
+    const Outpost::DerivedStats correct =
+      Outpost::Derive(Outpost::HullId::Scout, Outpost::DriveId::IonDrive, Fitted(Outpost::ComponentId::MassDriver, 1));
+
+    Assert::AreEqual(correct.mass, overfilled.mass);
+    Assert::AreEqual(correct.cost, overfilled.cost);
+    Assert::AreEqual(correct.damagePerSecond, overfilled.damagePerSecond);
+  }
+
+  /// Q32: capacity and extraction rate are derived and summed over the hull's slots, so a two-slot
+  /// miner is a table row rather than a mechanic.
+  TEST_METHOD(MiningSumsOverTheSlots)
+  {
+    const Outpost::DerivedStats one =
+      Outpost::Derive(Outpost::HullId::Frigate, Outpost::DriveId::IonDrive, Fitted(Outpost::ComponentId::MiningLaser, 1));
+    const Outpost::DerivedStats two =
+      Outpost::Derive(Outpost::HullId::Frigate, Outpost::DriveId::IonDrive, Fitted(Outpost::ComponentId::MiningLaser, 2));
+
+    Assert::AreEqual(20u, one.orePerSecond);
+    Assert::AreEqual(100u, one.oreCapacity);
+    Assert::AreEqual(40u, two.orePerSecond);
+    Assert::AreEqual(200u, two.oreCapacity);
+    Assert::AreEqual(0u, two.damagePerSecond);
+  }
+
+  /// `GameDesign.md` section 6's relations, asserted rather than left to a reader comparing rows.
+  TEST_METHOD(TheBurnDriveIsMoreThrustForMoreMassAndMoreCost)
+  {
+    const Outpost::DriveEntry& ion = Outpost::Drive(Outpost::DriveId::IonDrive);
+    const Outpost::DriveEntry& burn = Outpost::Drive(Outpost::DriveId::BurnDrive);
+
+    Assert::IsTrue(burn.thrust > ion.thrust);
+    Assert::IsTrue(burn.mass > ion.mass);
+    Assert::IsTrue(burn.cost > ion.cost);
+  }
+
+  /// The question section 7 wants M4 to ask -- does speed counter mass -- needs the heavy hull to
+  /// actually be the slow one. It is, by arithmetic.
+  TEST_METHOD(TheCruiserIsTheSlowestThingThatMoves)
+  {
+    const Outpost::DerivedStats cruiser =
+      Outpost::Derive(Outpost::HullId::Cruiser, Outpost::DriveId::BurnDrive, Fitted(Outpost::ComponentId::MassDriver, 4));
+    Assert::IsTrue(cruiser.speedUnitsPerSecond < Outpost::Derive(Outpost::DesignId::Fighter).speedUnitsPerSecond);
+    Assert::IsTrue(cruiser.speedUnitsPerSecond < Outpost::Derive(Outpost::DesignId::Miner).speedUnitsPerSecond);
+  }
+};
+
+} // namespace GameCoreTests

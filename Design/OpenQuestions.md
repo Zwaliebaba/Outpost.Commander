@@ -8,13 +8,18 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-nine answered, six open.** Eight came from an adversarial review that also reversed two earlier
+**Thirty-nine answered, seven open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became. **All six
 remaining open questions are under *Open***, each with the milestone that settles it. **Every one carries
 a recommendation**, which none of Q26, Q33 and Q34 did before.
+
+**Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
+because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
+M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
+that the figures have somewhere to be argued with later.
 
 **Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
@@ -381,6 +386,73 @@ modules leave room; a 300-unit station does not.
 [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) that is stronger than it was: a mesh is not scaled at
 draw time, so the catalog's number and the file's extent are two statements of one figure and **a script
 compares them** rather than a reader trusting both.
+
+---
+
+### Q46 — What are the catalog's mass, thrust and per-item costs? — **needed by M1.2**
+
+**`GameDesign.md` §6 states them as relations and states the outcomes they have to produce.** A hull's
+mass is "low", "medium" or "high"; a drive is "balanced thrust, cheap" against "more thrust for more mass
+and more cost". No figure for either. What *is* fixed is what the arithmetic must yield:
+
+- **Miner** — `Scout` + `IonDrive` + 1× `MiningLaser` — **150 credits at 100 u/s**
+- **Fighter** — `Frigate` + `BurnDrive` + 2× `MassDriver` — **300 credits at 140 u/s**
+- **The cut battleship** — `Cruiser` + a drive + 4 weapons — **2,400 credits**, which is the figure §6
+  used to cut it and is therefore as binding as the other two
+
+**M1.2 cannot be written without numbers** — speed is thrust over mass and cost is a sum, and neither is
+computable from "low" and "medium". **M1.1 shipped the catalog without them** rather than inventing them,
+which is why this is here.
+
+**Recommendation.** One set that satisfies all three anchors exactly, in integers, with no rounding
+anywhere:
+
+| Hull | Mass | Cost |
+|---|---|---|
+| `Scout` | **10** | **60** |
+| `Frigate` | **20** | **100** |
+| `Cruiser` | **60** | **2,080** |
+| `Station`, `ModuleFrame` | — | — |
+
+| Drive | Mass | Thrust | Cost |
+|---|---|---|---|
+| `IonDrive` | **5** | **2,000** | **40** |
+| `BurnDrive` | **10** | **5,600** | **80** |
+
+| Slot component | Mass | Cost |
+|---|---|---|
+| `MiningLaser` | **5** | **50** |
+| `MassDriver` | **5** | **60** |
+| `PointDefense` | **5** | — |
+| The four modules | — | §6's own, already in the catalog |
+
+**What that reproduces, and it is not over-determined — three anchors, and all three land exactly:**
+
+| | Mass | Speed | Cost |
+|---|---|---|---|
+| Miner | 10 + 5 + 5 = **20** | 2,000 / 20 = **100 u/s** ✓ | 60 + 40 + 50 = **150** ✓ |
+| Fighter | 20 + 10 + 2×5 = **40** | 5,600 / 40 = **140 u/s** ✓ | 100 + 80 + 2×60 = **300** ✓ |
+| Cut battleship | 60 + 10 + 4×5 = 90 | 5,600 / 90 = 62 u/s | 2,080 + 80 + 4×60 = **2,400** ✓ |
+
+**Every division is exact for the two shipped designs**, which matters under R16: 2,000 over 20 and 5,600
+over 40 are whole numbers, so the figure does not depend on a rounding rule.
+
+**And the relations §6 states all hold rather than being asserted.** The `BurnDrive` has more thrust, more
+mass and more cost than the `IonDrive`. **An empty `Frigate` does 186 u/s against a loaded one's 140** —
+ADR-006's "a cruiser with four plasma cannons is slower than an empty one because of arithmetic, not
+because anyone wrote it down", which is now a property a test can assert rather than a claim. And the
+`Cruiser` is the slowest thing that moves, which is what makes §7's "does speed counter mass" a question
+M4 can actually ask.
+
+**A hull with no drive has no speed rather than a speed of zero from a division.** `Station` and
+`ModuleFrame` show a dash for mass in §6 because mass is unobservable without a drive — nothing divides by
+it — so the recommendation leaves them at zero and the derivation returns zero before it divides.
+
+**What this recommendation does NOT cover, deliberately: build time.** ADR-006 says "cost and build time
+are sums" and **no figure for it exists anywhere in the design**, nor any outcome it has to reproduce —
+there is no stated base build rate for the shipyard's ×1.5 to multiply. Inventing one here would be
+choosing a balance number nobody can check yet. **M1.6 is the step that first observes it** and is where
+it should be asked; M1.2's own exit criteria name cost and speed and not build time.
 
 ---
 

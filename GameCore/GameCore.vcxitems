@@ -18,6 +18,12 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)Catalog.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)DerivedStats.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)Design.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)Command.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -34,6 +40,8 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)Catalog.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Command.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DerivedStats.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Design.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Entity.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)EntityRecord.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)GameCore.h" />

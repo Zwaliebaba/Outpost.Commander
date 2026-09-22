@@ -31,12 +31,17 @@ namespace Outpost
 ///
 /// === WHAT THIS FILE DOES NOT CARRY, AND WHY ====================================================
 ///
-/// **MASS AND THRUST ARE NOT HERE.** `GameDesign.md` section 6 states a hull's mass as "low",
-/// "medium" or "high" and a drive as "balanced thrust, cheap" against "more thrust for more mass
-/// and more cost" -- relations rather than figures -- while fixing the two OUTCOMES they have to
-/// produce: a Miner at 100 u/s and a Fighter at 140. Many sets of numbers satisfy that and they
-/// disagree about every hull the MVP does not build. **That is Q46 on the register and M1.2 is
-/// where it is needed**, which is the step that writes the derivation.
+/// **MASS, THRUST AND PER-ITEM COST ARE Q46's**, answered 2026-09-22. `GameDesign.md` section 6
+/// states a hull's mass as "low", "medium" or "high" and a drive as "balanced thrust, cheap"
+/// against "more thrust for more mass and more cost" -- relations rather than figures -- while
+/// fixing three outcomes they have to reproduce: a Miner at 150 credits and 100 u/s, a Fighter at
+/// 300 and 140, and the cut battleship at 2,400. The register carries the arithmetic; **all three
+/// land exactly and every division is whole**, which matters under R16 because it means the figures
+/// do not depend on a rounding rule.
+///
+/// **BUILD TIME IS STILL NOT HERE.** ADR-006 says "cost and build time are sums" and no figure for
+/// it exists anywhere in the design, nor any outcome it must reproduce -- there is no base build
+/// rate for the shipyard's x1.5 to multiply. M1.6 is the step that first observes it.
 ///
 /// **SIZE IN WORLD UNITS IS NOT HERE EITHER.** That is Q37, still open, and R24 wants the catalog
 /// to name it so a script can compare the figure against the mesh's extent rather than a reader
@@ -89,6 +94,14 @@ struct HullEntry
   std::uint16_t hullPoints = 0;
   SizeClass sizeClass = SizeClass::Light;
 
+  /// Q46. **Zero for a hull that cannot carry a drive**, which is what section 6's dash means:
+  /// mass is unobservable without one, because nothing divides by it.
+  std::uint16_t mass = 0;
+
+  /// Q46, and zero for the two base structures -- a station is placed by the generator and a module
+  /// frame's cost is M2's (ADR-015), so neither is a row in a build menu that this sums for.
+  std::uint16_t cost = 0;
+
   /// **ONLY THE TWO BASE STRUCTURES CARRY ONE** (`GameDesign.md` section 6). Zero means the hull is
   /// damaged through section 7's size-class table instead, which is the other of the two mitigation
   /// models that section names -- and a dash in the design's table is this zero.
@@ -97,12 +110,18 @@ struct HullEntry
   [[nodiscard]] friend constexpr bool operator==(const HullEntry&, const HullEntry&) noexcept = default;
 };
 
-/// One row of the drive table. **It carries no figures yet** -- see Q46 in the header above.
+/// One row of the drive table. Its figures are Q46's.
 ///
 /// R8: a public aggregate.
 struct DriveEntry
 {
   DriveId id = DriveId::None;
+
+  /// Q46. **`None` carries zeros and that is what makes the derivation total** -- a station sums
+  /// over a drive like anything else and the one it has contributes nothing.
+  std::uint16_t mass = 0;
+  std::uint16_t thrust = 0;
+  std::uint16_t cost = 0;
 
   [[nodiscard]] friend constexpr bool operator==(const DriveEntry&, const DriveEntry&) noexcept = default;
 };
@@ -113,6 +132,9 @@ struct DriveEntry
 struct ComponentEntry
 {
   ComponentId id = ComponentId::None;
+
+  /// Q46. A module has none: it is bolted to a frame that never moves.
+  std::uint16_t mass = 0;
 
   /// Zero where the component does not reach -- a module does not have a range.
   std::uint16_t rangeUnits = 0;

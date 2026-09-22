@@ -194,10 +194,13 @@ public:
   /// count agrees**: "four module components" against five rows in its table.
   TEST_METHOD(TheCatalogHoldsFourModuleComponents)
   {
+    // COUNTED BY WHAT A MODULE IS, not by whether it has a cost. This asked for `cost > 0` until
+    // Q46 gave the weapons costs too, at which point it counted six and was right to. What makes a
+    // module a module is that it multiplies something the station does.
     std::size_t modules = 0;
     for (const Outpost::ComponentEntry& component : Outpost::Components())
     {
-      if (component.cost > 0)
+      if (component.multiplierPercent > 0)
       {
         ++modules;
       }

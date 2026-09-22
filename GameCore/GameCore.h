@@ -10,6 +10,8 @@
 // This library's own headers (AGENTS.md section 2): a consumer includes this one file and gets
 // the whole chain.
 #include "Catalog.h"
+#include "DerivedStats.h"
+#include "Design.h"
 #include "Entity.h"
 #include "EntityRecord.h"
 

@@ -12,11 +12,20 @@ namespace
 /// `GameDesign.md` section 6's hull table, in identity order. Hull points and hit values are the
 /// design's own figures; mass is not here (Q46) and neither is size in world units (Q37).
 constexpr std::array<HullEntry, 5> HULLS{{
-  {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .hitValue = 0},
-  {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .hitValue = 0},
-  {.id = HullId::Cruiser, .slotCount = 4, .hullPoints = 3000, .sizeClass = SizeClass::Heavy, .hitValue = 0},
+  {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .mass = 10, .cost = 60},
+  {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .mass = 20, .cost = 100},
+
+  // 2,080 is Q46's, and it is not a free choice: `GameDesign.md` section 6 cut the battleship at
+  // **2,400 credits**, so a Cruiser with a BurnDrive and four MassDrivers has to sum to exactly
+  // that. The hull is what is left over -- 2,400 less 80 less four sixties.
+  {.id = HullId::Cruiser, .slotCount = 4, .hullPoints = 3000, .sizeClass = SizeClass::Heavy, .mass = 60, .cost = 2080},
+
   // The two base structures, and the only two rows with a hit value. A dash in the design's table
   // is this zero, and it means the hull is damaged through section 7's size-class table instead.
+  //
+  // MASS AND COST ARE ZERO AND THAT IS THE DESIGN'S DASH, not a gap: neither carries a drive, so
+  // nothing divides by the mass, and neither is a row in a build menu this sums for -- a station is
+  // placed by the generator and a module frame's cost is M2's (ADR-015).
   {.id = HullId::Station, .slotCount = 2, .hullPoints = 8000, .sizeClass = SizeClass::Heavy, .hitValue = 300},
   {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300},
 }};
@@ -25,9 +34,17 @@ constexpr std::array<HullEntry, 5> HULLS{{
 /// than a null keeps the derivation total: it sums over a drive like any other, and the station's
 /// is the one that contributes nothing.
 constexpr std::array<DriveEntry, 3> DRIVES{{
+  // Zeros, and they are what make the derivation total rather than conditional.
   {.id = DriveId::None},
-  {.id = DriveId::IonDrive},
-  {.id = DriveId::BurnDrive},
+
+  // Q46. The two anchors: 2,000 over a Miner's mass of 20 is exactly 100 u/s, and 5,600 over a
+  // Fighter's 40 is exactly 140. **Both divisions are whole**, so neither figure depends on a
+  // rounding rule (R16).
+  {.id = DriveId::IonDrive, .mass = 5, .thrust = 2000, .cost = 40},
+
+  // "More thrust for more mass and more cost" (`GameDesign.md` section 6) -- all three, and the
+  // relations are asserted by the suite rather than left to a reader comparing rows.
+  {.id = DriveId::BurnDrive, .mass = 10, .thrust = 5600, .cost = 80},
 }};
 
 /// The three weapon components and the four module ones, and `None` for an empty slot.
@@ -40,12 +57,13 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
   {.id = ComponentId::None},
 
   // Does no damage, in as many words. Both figures sum over a hull's slots (Q32).
-  {.id = ComponentId::MiningLaser, .rangeUnits = 200, .damagePerSecond = 0, .orePerSecond = 20, .oreCapacity = 100},
-  {.id = ComponentId::MassDriver, .rangeUnits = 600, .damagePerSecond = 25},
+  {.id = ComponentId::MiningLaser, .mass = 5, .rangeUnits = 200, .damagePerSecond = 0, .orePerSecond = 20, .oreCapacity = 100, .cost = 50},
+  {.id = ComponentId::MassDriver, .mass = 5, .rangeUnits = 600, .damagePerSecond = 25, .cost = 60},
 
   // Reaches 400 against a mass driver's 600, which is Q10's answer expressed as two numbers: the
   // station kills a loiterer and not a besieger.
-  {.id = ComponentId::PointDefense, .rangeUnits = 400, .damagePerSecond = 60, .stationSlotsOnly = true},
+  // NO COST: it is not in a design anybody builds. A station arrives with its two mounts.
+  {.id = ComponentId::PointDefense, .mass = 5, .rangeUnits = 400, .damagePerSecond = 60, .stationSlotsOnly = true},
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build
   // rate; +25% and +50% on a delivered cargo.
