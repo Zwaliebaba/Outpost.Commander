@@ -20,8 +20,8 @@ indent_size = 2
 indent_size = 2
 max_line_length = 140
 
-# There is no HLSL in the tree yet. When there is, it is hand-written source and reads best at
-# the same width as the C++ that drives it.
+# Hand-written source, and it reads best at the same width as the C++ that drives it. clang-format
+# does not cover HLSL, so this section is the whole of what formats the two present shaders.
 [*.hlsl]
 indent_size = 2
 max_line_length = 140

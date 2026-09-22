@@ -36,6 +36,12 @@ inline constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_B8G8R8A8_UNORM;
 {
   return (_result == DXGI_ERROR_DEVICE_REMOVED) || (_result == DXGI_ERROR_DEVICE_RESET);
 }
+
+[[nodiscard]] bool OpenCommandList(const GraphicsDevice& _device, winrt::com_ptr<ID3D12GraphicsCommandList>& _outList) noexcept
+{
+  return (_device.CommandListUnknown() != nullptr) &&
+         SUCCEEDED(_device.CommandListUnknown()->QueryInterface(winrt::guid_of<ID3D12GraphicsCommandList>(), _outList.put_void()));
+}
 } // namespace
 
 SwapChain::SwapChain() noexcept
@@ -170,7 +176,12 @@ std::uint32_t SwapChain::CurrentBackBufferIndex() const noexcept
   return m_binding->ready ? m_binding->swapChain->GetCurrentBackBufferIndex() : 0;
 }
 
-bool SwapChain::RecordClear(const GraphicsDevice& _device, float _red, float _green, float _blue) noexcept
+std::uint32_t SwapChain::BackBufferFormatCode() const noexcept
+{
+  return static_cast<std::uint32_t>(BACK_BUFFER_FORMAT);
+}
+
+bool SwapChain::RecordBindAndClear(const GraphicsDevice& _device, float _red, float _green, float _blue) noexcept
 {
   SwapChainBinding& binding = *m_binding;
   if (!binding.ready)
@@ -179,8 +190,7 @@ bool SwapChain::RecordClear(const GraphicsDevice& _device, float _red, float _gr
   }
 
   winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  if ((_device.CommandListUnknown() == nullptr) ||
-      FAILED(_device.CommandListUnknown()->QueryInterface(winrt::guid_of<ID3D12GraphicsCommandList>(), commandList.put_void())))
+  if (!OpenCommandList(_device, commandList))
   {
     binding.lastHresult = E_NOINTERFACE;
     return false;
@@ -188,15 +198,12 @@ bool SwapChain::RecordClear(const GraphicsDevice& _device, float _red, float _gr
 
   const std::uint32_t index = binding.swapChain->GetCurrentBackBufferIndex();
 
-  // PRESENT to RENDER_TARGET and back again. A back buffer arrives in the present state and has to
-  // leave in it; skipping either half is the classic Direct3D 12 first-frame error, and the debug
-  // layer says so loudly while the retail runtime says nothing at all.
-  D3D12_RESOURCE_BARRIER barrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                 .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
-                                 .Transition = {.pResource = binding.backBuffers[index].get(),
-                                                .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                .StateBefore = D3D12_RESOURCE_STATE_PRESENT,
-                                                .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET}};
+  const D3D12_RESOURCE_BARRIER barrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                                       .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                                       .Transition = {.pResource = binding.backBuffers[index].get(),
+                                                      .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                                      .StateBefore = D3D12_RESOURCE_STATE_PRESENT,
+                                                      .StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET}};
   commandList->ResourceBarrier(1, &barrier);
 
   D3D12_CPU_DESCRIPTOR_HANDLE handle = binding.renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
@@ -205,9 +212,32 @@ bool SwapChain::RecordClear(const GraphicsDevice& _device, float _red, float _gr
   const std::array<float, 4> color{_red, _green, _blue, 1.0f};
   commandList->OMSetRenderTargets(1, &handle, FALSE, nullptr);
   commandList->ClearRenderTargetView(handle, color.data(), 0, nullptr);
+  return true;
+}
 
-  barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-  barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+bool SwapChain::RecordReadyToPresent(const GraphicsDevice& _device) noexcept
+{
+  SwapChainBinding& binding = *m_binding;
+  if (!binding.ready)
+  {
+    return false;
+  }
+
+  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
+  if (!OpenCommandList(_device, commandList))
+  {
+    binding.lastHresult = E_NOINTERFACE;
+    return false;
+  }
+
+  const std::uint32_t index = binding.swapChain->GetCurrentBackBufferIndex();
+
+  const D3D12_RESOURCE_BARRIER barrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                                       .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+                                       .Transition = {.pResource = binding.backBuffers[index].get(),
+                                                      .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                                      .StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET,
+                                                      .StateAfter = D3D12_RESOURCE_STATE_PRESENT}};
   commandList->ResourceBarrier(1, &barrier);
   return true;
 }

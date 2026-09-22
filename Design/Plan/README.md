@@ -36,10 +36,10 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 
 ## Where it stands
 
-**Every step from M0.1 to M0.14 is written and verified** — the wire, the numbers, the simulation, the
-host loop and the frame's foundations — and **the gates among them are a different matter**, because a
-gate is a measurement rather than code and no agent closes one. What is left inside M0 is the renderer
-from M0.15 on, the client, the package, and these three:
+**Every step from M0.1 to M0.15 is written and verified** — the wire, the numbers, the simulation, the
+host loop, the frame's foundations and the scaled present — and **the gates among them are a different
+matter**, because a gate is a measurement rather than code and no agent closes one. What is left inside
+M0 is the rest of the renderer from M0.17 on, the client, the package, and these three:
 
 | | |
 |---|---|
@@ -47,7 +47,9 @@ from M0.15 on, the client, the package, and these three:
 | **M0.16** | Unstarted, and it gates everything after it: *no renderer work past this point is safe until the filter is confirmed by eye* |
 | **M0.23** | Unstarted — tap-to-visible latency and frame time, on the device |
 
-**M0.15 is the next step an agent can take.** It was blocked on ADR-012 and no longer is.
+**M0.17, the interface pass, is the next step an agent can take** — but **M0.16 stands between them and
+it is a gate**, so an agent that takes M0.17 is running ahead of a measurement that invalidates renderer
+work if it comes out wrong.
 
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the

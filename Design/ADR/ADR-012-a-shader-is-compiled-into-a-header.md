@@ -116,7 +116,10 @@ convention has to be applied by hand.
 2. **The compiled sizes**: `PresentVS` 3,036 bytes and `PresentPS` 4,056 bytes of DXIL, from the generated
    headers. The binary cost of baking a blit in is four kilobytes, so "a blit is nothing" is now a figure.
 3. **Debug and Release produce byte-identical headers**, which is what makes checking them in coherent.
-
-**One is owed, at M0.15 or M0.16:** that a pipeline state built from this DXIL is actually *created* on
-the device. Compiling at 6.7 and the device reporting 6.7 are two facts; a driver accepting the blob is a
-third, and only the renderer can establish it.
+4. **A pipeline state built from this DXIL is created on the device, and draws.** Taken at **M0.15** on the
+   development machine — the Snapdragon X and Adreno X1-85 of measurement 1 — where
+   `NeuronClient/PresentStep.cpp` built a graphics pipeline state from both checked-in headers and the
+   packaged client then presented frames continuously from it. Compiling at 6.7 and the device reporting
+   6.7 were two facts; **the driver accepting the blob was the third and it is no longer owed.** What is
+   still unmeasured is any other machine, which is what the raised
+   `WindowsTargetPlatformMinVersion` is for.

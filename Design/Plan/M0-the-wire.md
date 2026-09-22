@@ -349,8 +349,11 @@ first change. Then the present step that fits the target into the back buffer th
 transform**, not the interface's. The
 first HLSL in the tree: a full-screen triangle and the sampler the transform's filter choice selects.
 
-**Files:** `NeuronClient/SceneTarget.h` `.cpp`, `NeuronClient/PresentStep.h` `.cpp`,
-`NeuronClient/Present.hlsl`; `NeuronClient.vcxproj` + `.filters`.
+**Files:** `NeuronClient/SceneTarget.h` `.cpp`, `NeuronClient/PresentStep.h` `.cpp`;
+`NeuronClient.vcxproj` + `.filters`. **The shader is two files rather than the one this line first
+proposed** — [`ADR-012`](../ADR/ADR-012-a-shader-is-compiled-into-a-header.md) fixed the layout as
+`Shaders\PresentVS.hlsl` and `Shaders\PresentPS.hlsl`, one file per stage, and put both of them and their
+project items in at M0.14; this step writes what they contain.
 
 **Done when:** the scene target reaches the back buffer at the right scale with the right filter,
 letterboxed where the aspect does not match, over several window sizes on a desktop machine. The

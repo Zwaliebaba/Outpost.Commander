@@ -11,9 +11,11 @@
 #include "FitTransform.h"
 #include "WindowMetrics.h"
 
-// GraphicsDevice and SwapChain declare their Direct3D state and DEFINE it in their .cpp, so
-// that <d3d12.h> and <dxgi1_6.h> reach neither this chain nor the desktop suites below it.
+// Every class here declares its Direct3D state and DEFINES it in its .cpp, so that <d3d12.h> and
+// <dxgi1_6.h> reach neither this chain nor the desktop suites below it.
 #include "GraphicsDevice.h"
+#include "PresentStep.h"
+#include "SceneTarget.h"
 #include "SwapChain.h"
 
 // This library's own headers, so that a consumer includes this one file and gets the whole chain

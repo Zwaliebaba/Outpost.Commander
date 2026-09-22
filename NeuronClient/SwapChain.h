@@ -54,10 +54,24 @@ public:
   /// The HRESULT of the last call that failed, or zero.
   [[nodiscard]] std::int32_t LastHresult() const noexcept;
 
-  /// Records a transition to render target, a clear, and a transition back to present, on the
-  /// device's open command list. THE WHOLE OF WHAT M0.13 DRAWS -- the passes that replace it come
-  /// with the renderer, and R13 puts them in a scene target rather than straight into this buffer.
-  [[nodiscard]] bool RecordClear(const GraphicsDevice& _device, float _red, float _green, float _blue) noexcept;
+  /// The back buffer's DXGI format, as the integer code it already is, so that a header which must
+  /// not include `<dxgi1_6.h>` can still say which format a pipeline state has to match. One place
+  /// decides it and this is how the present step reads it back.
+  [[nodiscard]] std::uint32_t BackBufferFormatCode() const noexcept;
+
+  /// Transitions the current back buffer to render target, binds it, and clears it, on the device's
+  /// open command list. THE COLOR IS THE LETTERBOX: R13 fits the scene target into this buffer with
+  /// the aspect preserved, and this is what shows wherever the fitted rectangle does not reach.
+  [[nodiscard]] bool RecordBindAndClear(const GraphicsDevice& _device, float _red, float _green, float _blue) noexcept;
+
+  /// Transitions it back to present, after every pass that draws into it.
+  ///
+  /// THE PAIR IS SPLIT BECAUSE TWO PASSES DRAW BETWEEN THEM, which is ADR-011's ordering constraint
+  /// and not a convenience: the present step's blit, then the interface pass straight into this
+  /// buffer at physical resolution, then this. A back buffer arrives in the present state and has
+  /// to leave in it -- skipping either half is the classic Direct3D 12 first-frame error, and the
+  /// debug layer says so loudly while the retail runtime says nothing at all.
+  [[nodiscard]] bool RecordReadyToPresent(const GraphicsDevice& _device) noexcept;
 
   /// False on a device loss, which the caller answers by rebuilding rather than by dying.
   [[nodiscard]] bool Present() noexcept;

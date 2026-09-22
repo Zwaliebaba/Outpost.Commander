@@ -104,6 +104,23 @@ void Report(std::ofstream& _log, const std::string& _line)
   return std::string{"127.0.0.1"};
 }
 
+/// Log formatting and nothing else, which is why it is here rather than in a library (R20). M0.16
+/// is a human reading this file beside the screen, and "filter 1" is a worse thing to read at that
+/// moment than "point".
+[[nodiscard]] const char* FilterName(Neuron::FitFilter _filter) noexcept
+{
+  switch (_filter)
+  {
+  case Neuron::FitFilter::None:
+    return "none";
+  case Neuron::FitFilter::Point:
+    return "point";
+  case Neuron::FitFilter::Bilinear:
+    return "bilinear";
+  }
+  return "?";
+}
+
 /// Before there is a log file to write to, and therefore the only way to see how far this got on a
 /// machine where it did not get far. It stays after the gate is over if the probe outlives it.
 void Trace(const char* _marker) noexcept
@@ -145,6 +162,14 @@ void RunProbe(const CoreWindow& _window)
 
   Neuron::GraphicsDevice device;
   Neuron::SwapChain swapChain;
+  Neuron::SceneTarget sceneTarget;
+  Neuron::PresentStep presentStep;
+
+  // THE WORLD FIT (ADR-016), and the one place this shell asks for one. It is computed once because
+  // nothing here resizes: the scene target is created from the swap chain's size and both are
+  // fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
+  Neuron::FitTransform worldFit{};
+
   if (!device.Create())
   {
     Report(log, "probe: no Direct3D 12 device, hresult " + std::to_string(device.LastHresult()));
@@ -153,14 +178,38 @@ void RunProbe(const CoreWindow& _window)
   {
     Report(log, "probe: no swap chain, hresult " + std::to_string(swapChain.LastHresult()));
   }
+  else if (!sceneTarget.Create(device, {.widthPixels = Neuron::WorldTargetWidthPixels(swapChain.WidthPixels()),
+                                        .heightPixels = Neuron::WorldTargetHeightPixels(swapChain.HeightPixels()),
+                                        .clearRed = 0.02f,
+                                        .clearGreen = 0.04f,
+                                        .clearBlue = 0.09f}))
+  {
+    Report(log, "probe: no scene target, hresult " + std::to_string(sceneTarget.LastHresult()));
+  }
+  else if (!presentStep.Create(device, swapChain))
+  {
+    // ADR-012's owed measurement fails here or nowhere: this is the first time a driver is asked to
+    // accept the Shader Model 6.7 blob the build compiled.
+    Report(log, "probe: no present step, hresult " + std::to_string(presentStep.LastHresult()));
+  }
   else
   {
+    worldFit = Neuron::ComputeFit(sceneTarget.WidthPixels(), sceneTarget.HeightPixels(), swapChain.WidthPixels(), swapChain.HeightPixels());
+
     // Major and minor out of the packed nibbles, because "0x" in front of a decimal is a lie.
     const std::uint32_t shaderModel = device.HighestShaderModel();
     Report(log, "probe: highest shader model " + std::to_string((shaderModel >> 4) & 0xF) + "." + std::to_string(shaderModel & 0xF));
     Report(log, "probe: swap chain " + std::to_string(swapChain.WidthPixels()) + "x" + std::to_string(swapChain.HeightPixels()) +
                   " physical, from " + std::to_string(static_cast<int>(metrics.widthDips)) + "x" +
                   std::to_string(static_cast<int>(metrics.heightDips)) + " dips at " + std::to_string(metrics.rawPixelsPerViewPixel) + "x");
+
+    // The figures M0.16 looks at, written down rather than inferred from the picture.
+    Report(log, "probe: scene target " + std::to_string(sceneTarget.WidthPixels()) + "x" + std::to_string(sceneTarget.HeightPixels()) +
+                  " at " + std::to_string(Neuron::WORLD_SCALE_NUMERATOR) + "/" + std::to_string(Neuron::WORLD_SCALE_DENOMINATOR) +
+                  " scale, " + std::to_string(Neuron::WORLD_SAMPLE_COUNT) + " sample");
+    Report(log, "probe: world fit scale " + std::to_string(worldFit.scale) + " filter " + FilterName(worldFit.filter) + " rect " +
+                  std::to_string(worldFit.width) + "x" + std::to_string(worldFit.height) + " at " + std::to_string(worldFit.offsetX) + "," +
+                  std::to_string(worldFit.offsetY));
   }
 
   bool running = true;
@@ -224,11 +273,20 @@ void RunProbe(const CoreWindow& _window)
                     " local_ms=" + std::to_string(arrivedAtMs));
     }
 
-    // Clear and present. All of M0.13's drawing, and R13 puts the real passes in a scene target
-    // rather than straight into this buffer -- that is M0.15's, behind ADR-012 and M0.16's gate.
-    if (swapChain.IsReady() && device.BeginFrame())
+    // M0.15's frame, and R13's arrangement in five lines: the world clears the SCENE TARGET, the
+    // back buffer is cleared to black -- which is what the letterbox bars are -- and the present
+    // step fits one into the other. The interface pass goes between the blit and the close (ADR-011)
+    // at M0.17.
+    //
+    // THE TWO CLEARS ARE DIFFERENT COLORS ON PURPOSE. At the 1:1 default the present is a pure copy
+    // and buys nothing visible, so the only way to see that it happened at all is that a blit which
+    // drew nothing leaves a black screen rather than a dark blue one.
+    if (swapChain.IsReady() && presentStep.IsReady() && device.BeginFrame())
     {
-      static_cast<void>(swapChain.RecordClear(device, 0.02f, 0.04f, 0.09f));
+      static_cast<void>(sceneTarget.RecordClear(device));
+      static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
+      static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));
+      static_cast<void>(swapChain.RecordReadyToPresent(device));
       if (device.EndFrameAndSubmit() && swapChain.Present())
       {
         device.PresentedFrame();
@@ -257,6 +315,16 @@ void RunProbe(const CoreWindow& _window)
                 std::to_string(queue.RejectedCount()) + " oversized " + std::to_string(transport.OversizedCount()) + " skippedSends " +
                 std::to_string(transport.SkippedSendCount()) + " presented " + std::to_string(presentedFrames));
   transport.Close();
+
+  // THE WAIT COMES FIRST, and this is the one ordering in the teardown that matters. Direct3D 12
+  // does not track whether the GPU is still reading a resource that is being released, so dropping
+  // the scene target with the last frame in flight is a use-after-free with a driver in the middle
+  // of it. The device's own Destroy waits too -- for the frames submitted after everything below
+  // has already gone.
+  device.WaitForGpu();
+
+  presentStep.Destroy();
+  sceneTarget.Destroy();
   swapChain.Destroy();
   device.Destroy();
 }

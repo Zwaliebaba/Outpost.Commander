@@ -13,7 +13,8 @@ on the network has nothing to show.
 **There is a wire, a simulation and a frame — and still no game.** M0 is roughly half the engineering
 in the MVP and it is the milestone labeled "no game at all"; what runs today is the host simulating one
 entity moving toward a point, at twenty ticks a second, encoding it into a single datagram, while the
-packaged client opens a Direct3D 12 device and presents a cleared frame.
+packaged client opens a Direct3D 12 device, clears an off-screen scene target and presents it into the
+back buffer at the scale and filter the window's size calls for.
 
 | | |
 |---|---|
@@ -21,12 +22,11 @@ packaged client opens a Direct3D 12 device and presents a cleared frame.
 | **The wire** | The packet header, the snapshot and the command packet, both encoded and decoded in full. A 110-entity snapshot measures **1,137 bytes** against the 1,232 pinned, so it is one datagram |
 | **The simulation** | Entities in a vector with a free list, a fixed-order tick, movement that arrives without oscillating, and a state hash that comes out **identical on x64 and ARM64, Debug and Release** |
 | **The host** | Winsock in, the tick, snapshots out — sixty seconds at exactly twenty ticks a second with no drift |
-| **The frame** | The window metrics and the two fit transforms, the device, a flip-model swap chain at the panel's **physical** pixels, and two frames in flight |
+| **The frame** | The window metrics and the two fit transforms, the device, a flip-model swap chain at the panel's **physical** pixels, two frames in flight, and the scene target fitted into that swap chain by the first shader in the tree |
 
-**226 tests** across six suites, run on all four configuration and platform pairs. What is not here: the
-scene target and the scaled present, the interface pass, the gesture seam, the client's replica store and
-camera — and therefore anything a player could look at. `GameClient` is the one library still holding a
-function that returns its own name.
+**233 tests** across six suites, run on all four configuration and platform pairs. What is not here: the
+interface pass, the gesture seam, the client's replica store and camera — and therefore anything a player
+could look at. `GameClient` is the one library still holding a function that returns its own name.
 
 ## The shape of it
 

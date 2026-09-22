@@ -9,6 +9,8 @@
     <ClCompile Include="FitTransform.cpp" />
     <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
+    <ClCompile Include="PresentStep.cpp" />
+    <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="WindowMetrics.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
@@ -19,6 +21,8 @@
     <ClInclude Include="FitTransform.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="PresentStep.h" />
+    <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="WindowMetrics.h" />
     <ClInclude Include="PacketQueue.h" />

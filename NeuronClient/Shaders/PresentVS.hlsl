@@ -1,4 +1,6 @@
-// TRIAL FILE for ADR-012. The real present shader is M0.15's.
+// R13's scaled present, the vertex half: one triangle that overhangs the viewport, generated from
+// the vertex identifier, with no vertex buffer and no input layout. Where it lands on the back
+// buffer is the viewport, which is M0.12's world fit -- nothing here knows the window's size.
 struct Output
 {
   float4 position : SV_Position;
