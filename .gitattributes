@@ -120,3 +120,9 @@
 # normalization pass can never corrupt one.
 *.rc            -text
 *.rc2           -text
+
+# A compiled mesh (ADR-005), produced by Scripts/BuildMeshes.py and shipped as appx payload. Git's
+# own heuristic calls it binary on the NUL bytes and the numstat agrees, but a normalization pass
+# that got it wrong would corrupt a vertex buffer into something that still loads -- so it is said
+# outright, exactly as the .rc rule above says it for the same reason.
+*.cmo           -text
