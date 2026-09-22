@@ -15,6 +15,7 @@
 // Every class here declares its Direct3D state and DEFINES it in its .cpp, so that <d3d12.h> and
 // <dxgi1_6.h> reach neither this chain nor the desktop suites below it.
 #include "GraphicsDevice.h"
+#include "InterfacePass.h"
 #include "PresentStep.h"
 #include "SceneTarget.h"
 #include "SwapChain.h"

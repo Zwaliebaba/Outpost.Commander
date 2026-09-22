@@ -394,8 +394,12 @@ is a rebuild path worth introducing beside the interface that needs it. **That d
 not the design's** — `GameDesign.md` §10 requires the interface *pass* at M0 and says nothing about its
 contents.
 
-**Files:** `NeuronClient/InterfacePass.h` `.cpp`, `NeuronClient/InterfaceQuad.hlsl`;
-`NeuronClient.vcxproj` + `.filters`; `Tests/NeuronClientTests/InterfaceTransformTests.cpp`.
+**Files:** `NeuronClient/InterfacePass.h` `.cpp`, `NeuronClient/Shaders/InterfaceVS.hlsl` and
+`InterfacePS.hlsl`; `NeuronClient.vcxproj` + `.filters`;
+`Tests/NeuronClientTests/InterfaceTransformTests.cpp`. **The shader is two files rather than the one
+this line first proposed**, for the reason M0.15's line already records:
+[`ADR-012`](../ADR/ADR-012-a-shader-is-compiled-into-a-header.md) fixed the layout as one file per
+stage under `Shaders\`, compiled into a checked-in header under `CompiledShader\`.
 
 **Done when:** an authored rectangle lands at the physically correct place at several window sizes — the
 transform asserted by a test and the pixels confirmed by looking once — and **nothing in the pass branches
