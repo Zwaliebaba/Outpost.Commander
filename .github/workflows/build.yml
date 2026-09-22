@@ -265,12 +265,14 @@ jobs:
         # compiles and passes every test; each surfaces as an x64-against-ARM64 desync months later.
         run: python3 Scripts/CheckDeterminism.py
 
-      # NO SPELLING STEP, and that is a decision rather than an omission (AGENTS.md section 1).
-      # Scripts/CheckSpelling.py still exists and R11 still stands; it is run occasionally by hand
-      # instead of on every push, because it walks every file in the tree -- 3,940 of them,
-      # including the generated C++/WinRT projection headers -- and takes minutes where every other
-      # gate here takes about a second. Those generated headers are also where 101 of its last 105
-      # findings were, so the run was mostly reporting Microsoft's spelling back to us.
+      # NO SPELLING STEP AND NO SPELLING SCRIPT, which is a decision rather than an omission
+      # (AGENTS.md section 1). R11 still stands and is review's problem. Scripts/CheckSpelling.py
+      # was de-gated on 2026-09-22 and deleted the same day, for one reason twice over: it walked
+      # every file in the tree -- 3,940 of them, including the generated C++/WinRT projection
+      # headers -- and took minutes where every other gate here takes about a second, and 101 of
+      # its last 105 findings were inside those same generated headers, so the run was mostly
+      # reporting Microsoft's spelling back to us. ANYTHING THAT REPLACES IT MUST SKIP GENERATED
+      # OUTPUT, or it will be slow and noisy for the same reason and switched off again.
 
       - name: The design documents agree
         # A figure here is stated in three places by design. When one moves and the others do not,
