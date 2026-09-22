@@ -368,10 +368,14 @@ seeded from the match.
   which are rounded shares with the leftover at the faint end rather than an exact division: the ratio
   sums to 364 and divides no round number evenly. The brightest tier being *eight* is the whole effect.
   Uniform brightness reads as salt and pepper.
-- **Size follows brightness**, 8 scene-target pixels down to 1.5, with a soft radial falloff in the
-  sprite. Apparent size is the point-spread function, not the star.
-- **Color is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
-  announces itself; real stars read very nearly white.
+- **Size follows brightness**, 10 scene-target pixels down to 2.4, **drawn continuously rather than one
+  size per tier** — six sizes for three thousand stars reads as six kinds of dot, and the faint end is a
+  rasterization floor: below about two pixels a sprite covers no pixel centre and is absent rather than
+  dim. Both were found by looking at it. The falloff is soft and radial, and apparent size is the
+  point-spread function, not the star.
+- **Color is blackbody, desaturated to about 38%.** Oversaturated tints are how a procedural sky
+  announces itself; real stars read very nearly white — but *nearly* white is the point, and 20% over a
+  narrow temperature range left every star the same off-white with no tint visible at all.
 - **Temperature correlates with magnitude** — bright tiers blue-white, faint ones orange — and star
   density rises toward the galactic plane. Draw color independently of brightness and the sky is subtly,
   unnameably wrong.

@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -165,28 +166,56 @@ public:
     }
   }
 
-  /// **SIZE FOLLOWS BRIGHTNESS** -- 8 scene-target pixels down to 1.5, because apparent size is the
-  /// point-spread function rather than the star.
-  TEST_METHOD(SizeRunsFromEightPixelsDownToOneAndAHalf)
+  /// **SIZE FOLLOWS BRIGHTNESS AND IS CONTINUOUS**, because apparent size is the point-spread function
+  /// rather than the star -- and because a sky drawn at six sizes reads as six kinds of dot.
+  ///
+  /// This is the assertion that would have caught the first version on a machine rather than on a
+  /// screen. It took one size per tier, so this whole field held exactly six distinct sizes; the test
+  /// that stood here checked the two ends were 8 and 1.5 and passed, because both ends were right and
+  /// the 2,998 stars between them were the problem.
+  TEST_METHOD(EveryStarHasItsOwnSizeRatherThanItsTiers)
   {
-    const std::vector<Neuron::Star> stars = Neuron::GenerateStarField(SEED, Shipped());
+    const Neuron::StarFieldDescription field = Shipped();
+    const std::vector<Neuron::Star> stars = Neuron::GenerateStarField(SEED, field);
 
-    float brightestSize = 0.0f;
-    float faintestSize = 1000.0f;
+    std::vector<float> sizes;
+    sizes.reserve(stars.size());
     for (const Neuron::Star& star : stars)
     {
-      if (star.tier == 0)
-      {
-        brightestSize = star.sizePixels;
-      }
-      if (star.tier == (Neuron::MAGNITUDE_TIER_COUNT - 1))
-      {
-        faintestSize = star.sizePixels;
-      }
+      Assert::IsTrue(star.sizePixels <= (field.brightestSizePixels + 0.001f), L"a star is larger than the bright end");
+      Assert::IsTrue(star.sizePixels >= (field.faintestSizePixels - 0.001f), L"a star is smaller than the faint end");
+      sizes.push_back(star.sizePixels);
     }
 
-    Assert::AreEqual(8.0f, brightestSize, 0.001f);
-    Assert::AreEqual(1.5f, faintestSize, 0.001f);
+    // **A SPRITE BELOW ABOUT TWO PIXELS DOES NOT RASTERIZE**: its radial falloff reaches zero at its
+    // own edge, so it covers no pixel centre at anything near its peak and the star is absent rather
+    // than dim. This is the floor that failure bought.
+    Assert::IsTrue(field.faintestSizePixels >= 2.0f, L"the faint end is below the rasterization floor");
+
+    std::sort(sizes.begin(), sizes.end());
+    const std::size_t distinct = static_cast<std::size_t>(std::distance(sizes.begin(), std::unique(sizes.begin(), sizes.end())));
+
+    // Six would mean one size per tier, which is exactly the bug. The real figure is in the thousands;
+    // a hundred is a threshold no per-tier implementation can reach and no continuous one can miss.
+    Assert::IsTrue(distinct > 100, L"the sky is drawn at a handful of sizes rather than a continuum");
+  }
+
+  /// The same claim for brightness, which had the same bug for the same reason.
+  TEST_METHOD(EveryStarHasItsOwnBrightnessRatherThanItsTiers)
+  {
+    const Neuron::StarFieldDescription field = Shipped();
+    const std::vector<Neuron::Star> stars = Neuron::GenerateStarField(SEED, field);
+
+    std::vector<float> values;
+    values.reserve(stars.size());
+    for (const Neuron::Star& star : stars)
+    {
+      values.push_back(std::max(star.red, std::max(star.green, star.blue)));
+    }
+
+    std::sort(values.begin(), values.end());
+    const std::size_t distinct = static_cast<std::size_t>(std::distance(values.begin(), std::unique(values.begin(), values.end())));
+    Assert::IsTrue(distinct > 100, L"the sky is drawn at a handful of brightnesses rather than a continuum");
   }
 
   /// **TEMPERATURE CORRELATES WITH BRIGHTNESS, AND THAT CORRELATION IS THE DETAIL THAT SELLS IT.** The

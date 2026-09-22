@@ -60,16 +60,30 @@ division; `Neuron::TierCounts` is where that rounding happens. The brightest tie
 field of uniformly bright dots reads as noise, and a field with a handful of standouts reads as a sky.
 
 **Size follows brightness, because apparent size is the point-spread function and not the star.** Every
-star is a point source; what differs is how much the eye and the sensor smear it. Sizes run from about
-**8 scene-target pixels for the brightest tier down to 1.5 for the faintest**, with a soft radial falloff
+star is a point source; what differs is how much the eye and the sensor smear it. Sizes run from
+**10 scene-target pixels at the bright end down to 2.4 at the faint one**, with a soft radial falloff
 baked into the sprite — which also approximates a bloom this design is not going to write.
 
-**Color is blackbody, and it is heavily desaturated.** Stellar color is surface temperature: hot stars
+**AND THE SIZE IS DRAWN CONTINUOUSLY, NOT TAKEN FROM THE TIER.** The tier decides how many stars there
+are and nothing else. The first implementation gave every star in a tier the same size and the same
+brightness, so three thousand stars were drawn at six sizes — which the eye reads immediately as six
+kinds of dot scattered at random, and which no test caught because both ends of the range were right.
+A star's size, brightness and temperature are drawn continuously across its tier's interval.
+
+**The faint end is a rasterization floor, not a taste.** This ADR first said 1.5 pixels. A 1.5-pixel
+quad whose radial falloff reaches zero at its own edge covers no pixel centre at anything near its peak,
+so the faint tiers — two thirds of the sky — did not appear on the device at all. Below about two pixels
+a sprite is not dim, it is absent.
+
+**Color is blackbody, and it is desaturated.** Stellar color is surface temperature: hot stars
 blue-white at 10,000 K and up, the Sun yellow at 5,800 K, cool dwarfs orange-red near 3,000 K. A pinned
 table of about eight temperature stops with linear interpolation gives the chromaticity — generated in
-code, no data file, and a table a test can pin exactly. **Then desaturate to roughly 20%.** Real stars
+code, no data file, and a table a test can pin exactly. **Then desaturate to about 38%.** Real stars
 read very nearly white and the tint is subtle; oversaturated red and blue confetti is the single most
-common way a procedural star field announces itself as fake.
+common way a procedural star field announces itself as fake. This said 20% and paired it with a narrow
+temperature range, which is the other end of the same failure: every star came out the same off-white,
+the tints were computed and not one of them was visible. Nearly white is not identically white, and the
+difference between those two is the whole texture of a sky.
 
 **Temperature correlates with brightness, and that correlation is the detail that sells it.** Hot stars
 are luminous, so the bright tiers skew blue-white and the faint ones skew orange. Drawing color
@@ -107,6 +121,16 @@ costs contrast is lit *area*, not peak value:
 
 **This is a constant and not a feeling**, because a backdrop that nobody pinned gets brighter one commit
 at a time.
+
+**THE CEILING IS NOT WHAT SETS THE BAND, THOUGH, AND THE FIRST VERSION LEARNED THAT ON A SCREEN.** The
+band sat at 12%-compliant 0.10 while the faintest two thirds of the stars sat at 0.08 — every figure
+inside its limit, and the result was a coloured smear with the stars lost inside it. A ceiling only says
+how bright a thing may be against *white*; it says nothing about how bright it may be against the stars
+it shares a frame with, which is the comparison that decides whether a sky reads. So there is a second
+ordering and it is not a ceiling but a floor: **the band's brightest point stays below the faintest
+star.** It ships at 0.030 against 0.18, and the band is barely tinted — the naked-eye Milky Way is too
+dim to engage colour vision at all, so a band with real colour in it is a colour wash rather than a
+galaxy. What makes the Milky Way visible here is mostly the stars crowding toward the plane.
 
 ### 5. It is client-only, seeded from the match
 
@@ -149,7 +173,26 @@ kept honest against §4's ceiling for the life of the project.
 
 ## Measurements
 
-None yet. Three are owed at **M1.16**:
+**The third one below was taken early, by looking, and it failed.** The sky was built, deployed and
+looked at on 2026-09-22, and it did not read as a sky: the stars were not visible and the galaxy was a
+coloured smear. Three causes, all now fixed and all recorded in the decisions above —
+
+1. **Six sizes and six brightnesses for three thousand stars.** Size, value and temperature were taken
+   once per tier rather than per star. The field now holds **2,999 distinct sizes across 3,000 stars**,
+   spanning 2.40 to 9.95 scene-target pixels.
+2. **The faint two thirds did not rasterize.** At 1.5 pixels with a falloff reaching zero at the quad's
+   edge, a sprite covers no pixel centre near its peak. The faint end is now 2.4.
+3. **The band outshone the stars it was a backdrop for** — 0.10 against 0.08 — and carried a third of a
+   channel of colour either way. It is now 0.030, barely tinted, and below the faintest star.
+
+Measured after the fix, from `GameClientTests::TheShippedSkyMeasured`: **2,999 distinct sizes, 2.40–9.95
+pixels, a widest per-star tint of 0.60 of the brightest channel, and a total lit area of 0.030% of a
+2880 × 1920 frame** — three orders of magnitude under the 12% ceiling, which was never the binding
+constraint.
+
+**Whether it now reads as a sky is not yet answered**, because that needs another look on the device.
+
+Three remain owed at **M1.16**:
 
 1. **The frame time with the sky present**, at both world scales, on the device — this is now the
    measurement `ADR-016` actually needs, because a black screen was never the content.

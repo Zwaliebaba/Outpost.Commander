@@ -63,16 +63,29 @@ struct GalaxyLook
 
   /// Peak luminance of the band at the centre, as a fraction of full white. **Under the area ceiling
   /// above**, which is what the suite asserts rather than trusting.
-  float centreLuminance = 0.10f;
-  float rimLuminance = 0.035f;
+  ///
+  /// **IT IS A LONG WAY UNDER THAT CEILING, AND THE CEILING IS NOT WHAT SETS IT.** The first version
+  /// of this sky put the centre at 0.10 -- compliant, and brighter than every star below the top two
+  /// tiers. What that draws is a coloured smear with the stars lost inside it, which is the exact
+  /// opposite of the effect: **the band is meant to be a texture the stars sit ON, not a light source
+  /// that competes with them.** So it sits below the faintest star rather than above it, and the
+  /// Milky Way is read mostly from the stars crowding toward the plane.
+  float centreLuminance = 0.030f;
+  float rimLuminance = 0.010f;
 
   /// The band's colour, before luminance. Warm at the core and cooler at the rim, which is what a
   /// galaxy actually is -- old red stars in the bulge, young blue ones in the arms.
+  ///
+  /// **BARELY TINTED, BECAUSE THE REAL ONE IS.** An earlier draft ran from a 0.66 blue at the core to
+  /// a 0.66 red at the rim, which is a third of a channel either way and reads as a colour wash rather
+  /// than as a galaxy. The naked-eye Milky Way is very nearly grey -- it is too dim to engage colour
+  /// vision at all -- so the tint here is a few per cent and its job is to keep the band from looking
+  /// like a flat grey stripe, not to be seen as colour.
   float coreRed = 1.0f;
-  float coreGreen = 0.86f;
-  float coreBlue = 0.66f;
-  float rimRed = 0.66f;
-  float rimGreen = 0.78f;
+  float coreGreen = 0.97f;
+  float coreBlue = 0.92f;
+  float rimRed = 0.93f;
+  float rimGreen = 0.96f;
   float rimBlue = 1.0f;
 
   /// **DUST LANES ARE SUBTRACTIVE AND THEY ARE NOT OPTIONAL.** This is how much of the band they may

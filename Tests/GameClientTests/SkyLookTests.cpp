@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -133,15 +134,87 @@ public:
     const std::vector<Neuron::StarInstance> instances = Outpost::ShippedStarInstances(SEED);
     Assert::AreEqual(static_cast<std::size_t>(3000), instances.size());
 
+    const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
     for (const Neuron::StarInstance& instance : instances)
     {
       const float length = std::sqrt((instance.direction[0] * instance.direction[0]) + (instance.direction[1] * instance.direction[1]) +
                                      (instance.direction[2] * instance.direction[2]));
       Assert::AreEqual(1.0f, length, 0.001f, L"an instance left the unit sphere");
 
-      Assert::IsTrue(instance.sizePixels >= 1.5f, L"a sprite is smaller than the faintest tier's size");
-      Assert::IsTrue(instance.sizePixels <= 8.0f, L"a sprite is larger than the brightest tier's size");
+      Assert::IsTrue(instance.sizePixels >= (field.faintestSizePixels - 0.001f), L"a sprite is smaller than the faint end");
+      Assert::IsTrue(instance.sizePixels <= (field.brightestSizePixels + 0.001f), L"a sprite is larger than the bright end");
     }
+  }
+
+  /// **WHAT THE SHIPPED SKY ACTUALLY IS**, written to the log rather than asserted -- the figures a
+  /// reader would otherwise have to re-derive, and the ones ADR-019's Measurements section quotes.
+  ///
+  /// It asserts only the two properties the numbers are for: that the variety is a continuum rather
+  /// than six steps, and that the lit area is nowhere near the ceiling.
+  TEST_METHOD(TheShippedSkyMeasured)
+  {
+    const std::vector<Neuron::Star> stars = Neuron::GenerateStarField(SEED, Outpost::ShippedStarField());
+
+    std::vector<float> sizes;
+    float smallest = 1000.0f;
+    float largest = 0.0f;
+    float widestTint = 0.0f;
+    for (const Neuron::Star& star : stars)
+    {
+      sizes.push_back(star.sizePixels);
+      smallest = std::min(smallest, star.sizePixels);
+      largest = std::max(largest, star.sizePixels);
+
+      const float peak = std::max(star.red, std::max(star.green, star.blue));
+      const float floor = std::min(star.red, std::min(star.green, star.blue));
+      widestTint = std::max(widestTint, (peak > 0.0f) ? ((peak - floor) / peak) : 0.0f);
+    }
+
+    std::sort(sizes.begin(), sizes.end());
+    const std::size_t distinctSizes = static_cast<std::size_t>(std::distance(sizes.begin(), std::unique(sizes.begin(), sizes.end())));
+    const float fraction = Neuron::LitAreaFraction(stars, FRAME_PIXELS);
+
+    Logger::WriteMessage(("SKY stars=" + std::to_string(stars.size()) + " distinctSizes=" + std::to_string(distinctSizes) +
+                          " sizePixels=" + std::to_string(smallest) + ".." + std::to_string(largest) +
+                          " widestTint=" + std::to_string(widestTint) + " litArea=" + std::to_string(fraction * 100.0f) + "%\n")
+                           .c_str());
+
+    Assert::IsTrue(distinctSizes > 100, L"the sky is drawn at a handful of sizes rather than a continuum");
+    Assert::IsTrue(fraction < 0.01f, L"the field covers more than one per cent of the frame");
+  }
+
+  /// **THE BAND IS DIMMER THAN THE FAINTEST STAR, AND THAT ORDERING IS THE WHOLE LOOK.**
+  ///
+  /// The first version of this sky had it the other way round -- a 0.10 band under 0.08 stars -- and
+  /// what that draws is a coloured smear with the stars lost inside it. The band is a texture the
+  /// stars sit on, not a light that competes with them, and this is the assertion that says so.
+  TEST_METHOD(TheBandIsDimmerThanTheFaintestStar)
+  {
+    const Neuron::StarFieldDescription field = Outpost::ShippedStarField();
+    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
+
+    Assert::IsTrue(galaxy.centreLuminance < field.faintestValue,
+                   L"the band's brightest point outshines the faintest star and will read as a smear");
+    Assert::IsTrue(field.faintestValue > (galaxy.centreLuminance * 3.0f), L"the faintest star does not clearly clear the band");
+  }
+
+  /// **THE BAND IS VERY NEARLY GREY.** The naked-eye Milky Way is too dim to engage colour vision at
+  /// all; a band running from a 0.66 blue to a 0.66 red -- which this had -- is a colour wash.
+  TEST_METHOD(TheBandIsBarelyTinted)
+  {
+    const Outpost::GalaxyLook galaxy = Outpost::ShippedGalaxy();
+
+    const float coreSpread = std::max(galaxy.coreRed, std::max(galaxy.coreGreen, galaxy.coreBlue)) -
+                             std::min(galaxy.coreRed, std::min(galaxy.coreGreen, galaxy.coreBlue));
+    const float rimSpread = std::max(galaxy.rimRed, std::max(galaxy.rimGreen, galaxy.rimBlue)) -
+                            std::min(galaxy.rimRed, std::min(galaxy.rimGreen, galaxy.rimBlue));
+
+    Assert::IsTrue(coreSpread < 0.15f, L"the band's core is a colour rather than a tint");
+    Assert::IsTrue(rimSpread < 0.15f, L"the band's rim is a colour rather than a tint");
+
+    // Not zero, though -- a perfectly grey band reads as a flat stripe.
+    Assert::IsTrue(coreSpread > 0.0f);
+    Assert::IsTrue(rimSpread > 0.0f);
   }
 
   /// **THE SAME SEED GIVES THE SAME SKY**, all the way through the conversion rather than only in the

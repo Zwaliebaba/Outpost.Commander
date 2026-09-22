@@ -28,14 +28,27 @@ inline constexpr float PI = 3.14159265358979323846f;
 }
 
 /// Linear between two ends, at a position along a count.
-[[nodiscard]] float Ramp(float _first, float _last, std::size_t _index, std::size_t _count) noexcept
+///
+/// **THE POSITION IS A FLOAT AND THAT IS THE WHOLE POINT.** An integer position gives one value per
+/// tier -- six sizes and six brightnesses for three thousand stars, which reads as six kinds of dot
+/// rather than as a sky. A star's position is its tier plus a fraction, so the values run continuously
+/// across the range while the POPULATION of each tier still follows the magnitude law.
+///
+/// **THE SPAN IS THE COUNT AND NOT THE COUNT LESS ONE**, which matters entirely because of the last
+/// tier. Dividing by `_count - 1` maps tier five's positions -- five to six -- onto the end of the
+/// range and clamps them all to exactly it, which would leave the two thousand faintest stars, two
+/// thirds of the sky, at one identical size again. Dividing by `_count` gives every tier an interval
+/// of its own, and the faintest end is approached rather than landed on.
+[[nodiscard]] float Ramp(float _first, float _last, float _position, std::size_t _count) noexcept
 {
-  if (_count <= 1)
+  if (_count == 0)
   {
     return _first;
   }
-  const float t = static_cast<float>(_index) / static_cast<float>(_count - 1);
-  return _first + ((_last - _first) * t);
+
+  const float span = static_cast<float>(_count);
+  const float clamped = (_position < 0.0f) ? 0.0f : ((_position > span) ? span : _position);
+  return _first + ((_last - _first) * (clamped / span));
 }
 
 /// An orthonormal basis whose third axis is the given pole. Used to put a direction sampled in
@@ -152,12 +165,26 @@ std::vector<Star> GenerateStarField(std::uint64_t _seed, const StarFieldDescript
 
   for (std::size_t tier = 0; tier < MAGNITUDE_TIER_COUNT; ++tier)
   {
-    const float size = Ramp(_description.brightestSizePixels, _description.faintestSizePixels, tier, MAGNITUDE_TIER_COUNT);
-    const float value = Ramp(_description.brightestValue, _description.faintestValue, tier, MAGNITUDE_TIER_COUNT);
-    const float kelvin = Ramp(_description.brightestKelvin, _description.faintestKelvin, tier, MAGNITUDE_TIER_COUNT);
-
     for (std::uint32_t index = 0; index < counts[tier]; ++index)
     {
+      // **NO TWO STARS ARE THE SAME SIZE, AND THAT IS THE DIFFERENCE BETWEEN A SKY AND CONFETTI.**
+      //
+      // The tier fixes how MANY stars there are -- that is the magnitude law and it is the realistic
+      // part -- but it must not fix what they look like. An earlier draft took one size, one value and
+      // one temperature per tier and gave them to every star in it: three thousand stars drawn at six
+      // sizes and six brightnesses, which reads as six kinds of dot arranged at random rather than as
+      // a continuum. Real magnitudes are continuous and so is this.
+      //
+      // The fraction is drawn before the position on the sphere so that a change to one does not
+      // silently reorder the other -- the generator is the sky's seed and its draw order IS its
+      // identity.
+      const float within = NextUnit(random);
+      const float position = static_cast<float>(tier) + within;
+
+      const float size = Ramp(_description.brightestSizePixels, _description.faintestSizePixels, position, MAGNITUDE_TIER_COUNT);
+      const float value = Ramp(_description.brightestValue, _description.faintestValue, position, MAGNITUDE_TIER_COUNT);
+      const float kelvin = Ramp(_description.brightestKelvin, _description.faintestKelvin, position, MAGNITUDE_TIER_COUNT);
+
       // **THE SINE OF THE GALACTIC LATITUDE, PULLED TOWARD THE PLANE.** A uniform sphere wants this
       // uniform on [-1, 1]; raising its magnitude to a power above one concentrates it near zero,
       // which is the band. The sign is kept, so both hemispheres fill.

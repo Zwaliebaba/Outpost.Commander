@@ -44,33 +44,52 @@ struct StarFieldDescription
   /// six holds roughly 5,000 to 6,000 stars, so a realistic count and a cheap count are the same count.
   std::uint32_t starCount = 3000;
 
-  /// In scene-target pixels, brightest tier first and faintest last. ADR-019: **8 down to 1.5**, and
-  /// the sizes are the point-spread function rather than the star.
-  float brightestSizePixels = 8.0f;
-  float faintestSizePixels = 1.5f;
+  /// In scene-target pixels, brightest end first and faintest last, and **every value between them
+  /// occurs** -- the size is drawn continuously rather than taken from the star's tier. The sizes are
+  /// the point-spread function rather than the star.
+  ///
+  /// **THE FAINT END IS A RASTERIZATION FLOOR AND NOT A TASTE.** ADR-019 said 1.5, and a 1.5-pixel
+  /// quad whose radial falloff reaches zero at its own edge is a sub-pixel dot: it covers one pixel
+  /// centre at best, at a fraction of its peak, and most of the faint tiers simply did not appear on
+  /// the device. Below about two pixels a sprite is not dim, it is absent -- and a star that vanishes
+  /// is worse than one that is too bright, because nothing on the screen says it was meant to be
+  /// there. 2.4 clears the floor with room for the falloff to be a falloff.
+  float brightestSizePixels = 10.0f;
+  float faintestSizePixels = 2.4f;
 
   /// The value the centre of a sprite reaches, as a fraction of full white. **ADR-019 caps the
-  /// brightest tier at 0.45** and puts the ceiling on lit AREA rather than on peak.
+  /// brightest at 0.45** and puts the ceiling on lit AREA rather than on peak.
+  ///
+  /// The faint end was 0.08, which is below the band it has to be seen against -- so the faint stars
+  /// were not merely dim, they were dimmer than the sky behind them. See `GameClient/SkyLook.h`, where
+  /// both ends of that comparison now live.
   float brightestValue = 0.45f;
-  float faintestValue = 0.08f;
+  float faintestValue = 0.18f;
 
   /// **TEMPERATURE CORRELATES WITH BRIGHTNESS, AND THAT CORRELATION IS THE DETAIL THAT SELLS IT.** Hot
   /// stars are luminous, so the bright tiers skew blue-white and the faint ones orange; drawing colour
   /// independently of magnitude gives a sky that is subtly, unnameably wrong.
-  float brightestKelvin = 12000.0f;
-  float faintestKelvin = 3400.0f;
+  /// **THE RANGE IS WIDER THAN THE REAL ONE ON PURPOSE**, because the desaturation below throws most
+  /// of it away again. 3,000 K is an orange dwarf and 15,000 K is a hot blue-white B star; both exist
+  /// in quantity and the pair spans what the naked eye can actually tell apart.
+  float brightestKelvin = 15000.0f;
+  float faintestKelvin = 3000.0f;
 
-  /// How far a star's temperature may wander from its tier's, in kelvin, so that a tier is a
-  /// distribution rather than six flat colours.
-  float temperatureJitterKelvin = 900.0f;
+  /// How far a star's temperature may wander from the one its magnitude implies, in kelvin. **The
+  /// correlation is a tendency and not a rule** -- a red supergiant is bright AND cool -- so without a
+  /// wide jitter the sky is a colour gradient by brightness, which is a pattern the eye picks out.
+  float temperatureJitterKelvin = 1600.0f;
 
-  /// ADR-019's "desaturate to roughly 20%".
-  float saturation = 0.2f;
+  /// How much of the blackbody tint survives. ADR-019 said "roughly 20%", which with the old narrow
+  /// temperature range left every star the same off-white -- the tints were there and none of them was
+  /// visible. **Real stars do read very nearly white, but not identically white**, and the difference
+  /// between those two is the whole texture of a sky.
+  float saturation = 0.38f;
 
   /// **STAR DENSITY RISES TOWARD THE GALACTIC PLANE**, which is what ties the two halves of the sky
   /// into one thing rather than a star field with a stripe painted over it. One is a uniform sphere;
   /// above one pulls stars toward the plane, and the exponent is applied to the sine of the latitude.
-  float planeConcentration = 1.7f;
+  float planeConcentration = 2.3f;
 
   /// The galactic pole, in world space -- the axis the band lies perpendicular to. Normalized on use,
   /// so a caller may state a direction rather than a unit vector.

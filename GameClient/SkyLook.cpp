@@ -17,36 +17,41 @@ Neuron::StarFieldDescription ShippedStarField() noexcept
   // are `TierCounts` rounding rather than a property of 3,000.
   description.starCount = 3000;
 
-  description.brightestSizePixels = 8.0f;
-  description.faintestSizePixels = 1.5f;
+  // **SIZE IS DRAWN CONTINUOUSLY BETWEEN THESE, NOT PICKED FROM SIX STEPS.** The first version of this
+  // sky took one size per tier, so three thousand stars were drawn at six sizes -- which the eye reads
+  // as six kinds of dot rather than as a range. `GenerateStarField` now varies it within the tier.
+  //
+  // The faint end is 2.4 rather than ADR-019's 1.5 because below about two pixels a sprite with a
+  // radial falloff covers no pixel centre at its peak and disappears entirely; see `StarField.h`.
+  description.brightestSizePixels = 10.0f;
+  description.faintestSizePixels = 2.4f;
 
   description.brightestValue = SKY_POINT_LUMINANCE_CEILING;
 
-  // **THE FAINT END IS NOT IN THE ADR AND IS DERIVED HERE**, against the two things it has to survive.
-  //
-  // Away from the band the baked cubemap is essentially zero, so a faint star there is the only light
-  // in its neighbourhood and almost any value would read. The binding case is a faint star ON the
-  // band, where it has to clear the rim's 0.035 and ideally the centre's 0.10. Eight per cent is a bit
-  // over twice the rim, which reads plainly, and a little under the centre, where the brightest tiers
-  // are what carry the sky anyway. It also has to leave the field's total lit area nowhere near the
-  // 12% ceiling, and the whole field comes to a small fraction of one per cent of the frame --
-  // `SkyLookTests` asserts both rather than assuming them.
-  description.faintestValue = 0.08f;
+  // **THE FAINT END IS NOT IN THE ADR AND IS DERIVED HERE**, against the thing it has to be seen
+  // against: the band. It was 0.08, chosen when the band's centre was 0.10 -- so the faintest two
+  // thirds of the sky were dimmer than the backdrop they sat on and simply were not there. The band is
+  // now 0.030 at its brightest and this is six times it, which is the ratio that makes a star a star
+  // rather than a slightly lighter patch of sky.
+  description.faintestValue = 0.18f;
 
-  // Hot stars are luminous, so the bright tiers skew blue-white and the faint ones orange. 12,000 K is
-  // solidly blue-white and 3,400 K is an orange dwarf; the Sun's 5,800 falls in the middle tiers, which
-  // is where most of the stars are.
-  description.brightestKelvin = 12000.0f;
-  description.faintestKelvin = 3400.0f;
-  description.temperatureJitterKelvin = 900.0f;
+  // Hot stars are luminous, so the bright end skews blue-white and the faint end orange. **The jitter
+  // is what stops that being a gradient**: it is wide enough that a bright star can be cool and a faint
+  // one hot, which is true of the real sky and is what keeps the correlation from reading as a rule.
+  description.brightestKelvin = 15000.0f;
+  description.faintestKelvin = 3000.0f;
+  description.temperatureJitterKelvin = 1600.0f;
 
-  // ADR-019: "desaturate to roughly 20%". Oversaturated red and blue confetti is the single most common
-  // way a procedural star field announces itself as fake.
-  description.saturation = 0.2f;
+  // ADR-019 said "roughly 20%", which over the old narrow temperature range left every star the same
+  // off-white -- the tints were computed and none of them was visible. Oversaturated confetti is still
+  // the failure to avoid, and 38% of a blackbody tint is nowhere near it: the reddest star here is
+  // still mostly white.
+  description.saturation = 0.38f;
 
   // **THE FIELD AND THE BAND SHARE A POLE**, which is what ties the two halves into one sky rather than
-  // a star field with a stripe painted over it.
-  description.planeConcentration = 1.7f;
+  // a star field with a stripe painted over it. The concentration is up from 1.7 because the band is
+  // now read mostly from the stars crowding toward the plane rather than from the baked glow.
+  description.planeConcentration = 2.3f;
   description.poleX = galaxy.poleX;
   description.poleY = galaxy.poleY;
   description.poleZ = galaxy.poleZ;
