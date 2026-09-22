@@ -285,6 +285,12 @@ void RunProbe(const CoreWindow& _window)
   // `GameClient`'s with a suite over it.
   Neuron::GestureSeam seam;
 
+  // M1.8: the two halves of the camera. The gate applies `Interface.md` section 5's deadzones, its
+  // latch and the tap slop; `CameraGesture` turns what comes out into ADR-018's single anchor solve.
+  // Both are in libraries with suites over them, and what is left up here is which one to call.
+  Neuron::ManipulationGate gate;
+  Outpost::CameraGesture cameraGesture;
+
   // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
   // because nothing here resizes: the scene target is created from the swap chain's size and both
   // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
@@ -502,11 +508,44 @@ void RunProbe(const CoreWindow& _window)
     for (std::size_t index = 0; index < eventCount; ++index)
     {
       const Neuron::InputEvent& event = events[index];
+
+      // **THE CAMERA, M1.8.** A manipulation is fed through the gate and then through one anchor
+      // solve; a hold recenters. Neither is a tap, so both leave before the tap handling below.
       if (event.kind != Neuron::InputEventKind::Tapped)
       {
-        // M0 has one verb. A hold recenters and a manipulation drives the camera (ADR-018), and
-        // both arrive with M1 -- the records are drained and dropped rather than queued, so a
-        // gesture nobody handles cannot accumulate.
+        const Neuron::GatedManipulation gated = Neuron::ApplyGate(gate, event);
+        const float cameraAspect = (sceneTarget.HeightPixels() > 0)
+                                     ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                     : 1.5f;
+
+        if (event.kind == Neuron::InputEventKind::ManipulationStarted)
+        {
+          static_cast<void>(cameraGesture.Begin(clientFrame.Camera(), cameraAspect, event.xAuthoredPixels, event.yAuthoredPixels));
+        }
+        else if (event.kind == Neuron::InputEventKind::ManipulationUpdated)
+        {
+          clientFrame.Camera() = cameraGesture.Update(gated, cameraAspect);
+        }
+        else if (event.kind == Neuron::InputEventKind::ManipulationCompleted)
+        {
+          clientFrame.Camera() = Outpost::CameraGesture::Complete(cameraGesture.Update(gated, cameraAspect));
+          cameraGesture.End();
+          Report(log, "CAMERA focus=" + std::to_string(clientFrame.Camera().focusX) + "," + std::to_string(clientFrame.Camera().focusY) +
+                        " distance=" + std::to_string(clientFrame.Camera().distance) +
+                        " heading=" + std::to_string(clientFrame.Camera().headingRadians));
+        }
+        else if (event.kind == Neuron::InputEventKind::Holding)
+        {
+          // **A HOLD ON EMPTY SPACE RECENTERS** (ADR-018). Nothing is selectable yet -- M1.10 is
+          // selection -- so it goes to this player's station, which is the half of it
+          // `GameDesign.md` section 7 actually names.
+          const Neuron::Vec2 station = Outpost::StartAnchor(2, clientFrame.Player());
+          clientFrame.Camera() =
+            Outpost::Recenter(clientFrame.Camera(),
+                              Outpost::RecenterRequest{.stationX = static_cast<float>(station.x) / static_cast<float>(Neuron::FIXED_ONE),
+                                                       .stationY = static_cast<float>(station.y) / static_cast<float>(Neuron::FIXED_ONE)});
+          Report(log, "RECENTER on the station");
+        }
         continue;
       }
 

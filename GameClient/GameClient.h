@@ -14,6 +14,7 @@
 // snapshots it runs over; the split is what lets a suite pin the arithmetic without a clock.
 #include "Camera.h"
 #include "ClientFrame.h"
+#include "CameraGesture.h"
 #include "Interpolation.h"
 #include "JoinState.h"
 #include "OrderMarker.h"

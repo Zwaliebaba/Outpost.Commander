@@ -300,10 +300,19 @@ Both are the same effect and one number bounds both.
 
 **The vertical field of view is 40° and the minimum pitch is 30° above the plane.** At that floor the top
 edge of the frame looks 10° down, which meets the plane at **5.67 camera heights against 1.73 at the
-frame's center — a 3.3× stretch, top to middle**, and the horizon is never on screen. Lowering the floor
-buys a more raking silhouette and pays for it on that ratio, which grows without bound as the top edge
-approaches the horizontal; raising it costs the look. **M1.8 pins both numbers and states the ratio it
-measured**, and the wedge ADR-010 warns about cannot be worse than this. The floor bounds a third thing:
+frame's center — a 3.27× stretch, top to middle** (M1.8, `GameClientTests`), and the horizon is never on
+screen. Lowering the floor buys a more raking silhouette and pays for it on that ratio, which grows
+without bound as the top edge approaches the horizontal; raising it costs the look. The wedge ADR-010
+warns about cannot be worse than this.
+
+**M1.8 measured a second ratio, because the one above is not the one that bounds a tap.** The
+ground-distance ratio is **not monotonic in pitch** — 3.27× at the 30° floor and **5.33× at the 85°
+ceiling** — which reads as though the camera is worse when zoomed out and is not: near top-down the
+frame's center sits almost directly beneath the camera, so a small absolute difference is a large ratio.
+What decides how much world a pixel covers is the projection's local scale, which goes as
+`1 / sin²` of the depression angle. **That ratio is monotonic and is worst exactly at the floor — 8.29×
+there against 1.21× fully out** — so it is the measure this paragraph's claim is true of, and both are
+pinned. The floor bounds a third thing:
 an anchor near the horizon would need an unbounded focus movement to stay under the finger (ADR-018).
 
 **The floor saturates the pitch; it does not end the zoom.** `pitch(distance)` clamps its *output* at 30°
@@ -346,10 +355,10 @@ feature loss.
 
 **The zoom range is about two gestures, which is why no gain constant is needed.** At the 40° field of
 view above, showing the whole 16,384-unit square puts the camera at **22,500 units**, and the 3:2 aspect
-gives roughly 24,600 units of visible width so the square fits on its height. The near end is not pinned;
-at a close view of about 1,500 world units it is near 1,400, making the range **16×** — and a comfortable
-pinch spans about 4× of scale, so the whole range is two gestures. M1.8 pins the near end, and if the
-range grows much past that the lever is a gain on the scale rather than a different gesture.
+gives roughly 24,600 units of visible width so the square fits on its height. **The near end is 1,400**
+(Q40), making the range **16.07×**, pinned by `GameClientTests` at M1.8 — and a comfortable pinch spans
+about 4× of scale, so two of them cover it. If the range ever grows much past this the lever is a gain on
+the scale rather than a different gesture.
 
 **The near plane is 50 units and the far plane is 50,000** (Q39). Neither was stated, and the range they
 span is wide: the tactical camera sits at 22,500 units over hulls 18 to 54 units tall. **Depth precision

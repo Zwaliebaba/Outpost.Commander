@@ -114,6 +114,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ClientFrame.cpp" />
     <ClCompile Include="GameClient.cpp" />
+    <ClCompile Include="CameraGesture.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="JoinState.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
@@ -127,6 +128,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ClientFrame.h" />
     <ClInclude Include="GameClient.h" />
+    <ClInclude Include="CameraGesture.h" />
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="JoinState.h" />
     <ClInclude Include="OrderMarker.h" />
