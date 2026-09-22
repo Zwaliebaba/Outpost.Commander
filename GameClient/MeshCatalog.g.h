@@ -7,6 +7,14 @@
 // EVERY FIGURE HERE IS THE CONTENT'S OWN. ADR-005 never scales a mesh at draw time, so an
 // authored extent IS the object's size -- which is why Q37's catalog row is checked against
 // this same manifest by Scripts/CheckMeshes.py rather than against this header.
+//
+// The format gate walks every tracked header, and no generated header will ever satisfy a
+// style -- a colour channel carries sixteen digits and the hex it came from, and the two
+// together overrun any column limit worth having. NeuronClient/CompiledShader/ answers the
+// same problem with a directory .clang-format; this file cannot, because GameClient/ also
+// holds hand-written code that must stay formatted. So the exemption is file-scoped, and
+// there is deliberately no `clang-format on` below it -- the whole file is generated.
+// clang-format off
 #pragma once
 
 #include <cstddef>
