@@ -25,7 +25,6 @@
 - [ ] `python3 Scripts/CheckProjectFiles.py` — AGENTS.md §3's table over every project file
 - [ ] `python3 Scripts/CheckDeterminism.py` — R16 over `GameCore` and `GameLogic`
 - [ ] `python3 Scripts/CheckDesign.py` — figures, citations and links across `Design/`
-- [ ] `python3 Scripts/CheckSpelling.py` — US spelling, in prose and identifiers (R11)
 - [ ] `clang-format --dry-run --Werror` over the files touched, on the pinned version
 
 **The build, which is slower and which CI only half covers:**

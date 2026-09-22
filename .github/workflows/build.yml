@@ -265,11 +265,12 @@ jobs:
         # compiles and passes every test; each surfaces as an x64-against-ARM64 desync months later.
         run: python3 Scripts/CheckDeterminism.py
 
-      - name: US spelling, in prose and identifiers alike
-        # R11's rule since day one for identifiers, extended to prose on 2026-09-21 and enforced
-        # by anything for the first time. It found a weapon identity in the catalog still spelled
-        # the British way, which is how long an unenforced naming rule survives.
-        run: python3 Scripts/CheckSpelling.py
+      # NO SPELLING STEP, and that is a decision rather than an omission (AGENTS.md section 1).
+      # Scripts/CheckSpelling.py still exists and R11 still stands; it is run occasionally by hand
+      # instead of on every push, because it walks every file in the tree -- 3,940 of them,
+      # including the generated C++/WinRT projection headers -- and takes minutes where every other
+      # gate here takes about a second. Those generated headers are also where 101 of its last 105
+      # findings were, so the run was mostly reporting Microsoft's spelling back to us.
 
       - name: The design documents agree
         # A figure here is stated in three places by design. When one moves and the others do not,
