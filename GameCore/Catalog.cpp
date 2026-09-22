@@ -12,13 +12,16 @@ namespace
 /// `GameDesign.md` section 6's hull table, in identity order. Hull points and hit values are the
 /// design's own figures; mass is not here (Q46) and neither is size in world units (Q37).
 constexpr std::array<HullEntry, 5> HULLS{{
-  {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .mass = 10, .cost = 60},
-  {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .mass = 20, .cost = 100},
+  {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .mass = 10, .cost = 60, .sizeUnits = 60},
+  {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .mass = 20, .cost = 100, .sizeUnits = 90},
 
   // 2,080 is Q46's, and it is not a free choice: `GameDesign.md` section 6 cut the battleship at
   // **2,400 credits**, so a Cruiser with a BurnDrive and four MassDrivers has to sum to exactly
   // that. The hull is what is left over -- 2,400 less 80 less four sixties.
-  {.id = HullId::Cruiser, .slotCount = 4, .hullPoints = 3000, .sizeClass = SizeClass::Heavy, .mass = 60, .cost = 2080},
+  //
+  // AND IT IS THE ONE SIZE NO FILE BACKS: nothing authored a Cruiser mesh, because nothing builds one.
+  // 150 sits between the Frigate's 90 and the Station's 220, and M4 authors to it.
+  {.id = HullId::Cruiser, .slotCount = 4, .hullPoints = 3000, .sizeClass = SizeClass::Heavy, .mass = 60, .cost = 2080, .sizeUnits = 150},
 
   // The two base structures, and the only two rows with a hit value. A dash in the design's table
   // is this zero, and it means the hull is damaged through section 7's size-class table instead.
@@ -26,8 +29,8 @@ constexpr std::array<HullEntry, 5> HULLS{{
   // MASS AND COST ARE ZERO AND THAT IS THE DESIGN'S DASH, not a gap: neither carries a drive, so
   // nothing divides by the mass, and neither is a row in a build menu this sums for -- a station is
   // placed by the generator and a module frame's cost is M2's (ADR-015).
-  {.id = HullId::Station, .slotCount = 2, .hullPoints = 8000, .sizeClass = SizeClass::Heavy, .hitValue = 300},
-  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300},
+  {.id = HullId::Station, .slotCount = 2, .hullPoints = 8000, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 220},
+  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 84},
 }};
 
 /// **`None` IS A ROW.** A hull with no drive does not move, and making absence an identity rather

@@ -20,10 +20,29 @@ enum class CommandType : std::uint8_t
   /// The selected entities go to a point. The target is a point.
   MoveTo = 1,
   /// The selected entities attack an entity. The target is an identity, in targetX.
-  Attack = 2
+  Attack = 2,
+
+  /// **Build a design at this player's station** (M1.6, `GameDesign.md` section 5). The design
+  /// identity is the low byte of targetX and **the selection must be empty**: a player has exactly
+  /// one station, so naming it would be a second thing to validate for nothing -- and an empty
+  /// selection is what keeps a malformed build order from smuggling 600 identities through the
+  /// amplification path Q24 is about.
+  Build = 3,
+
+  /// Cancel what is building, at a full refund (Q35). No target and no selection.
+  CancelBuild = 4
 };
 
 [[nodiscard]] constexpr bool IsKnown(CommandType _type) noexcept
+{
+  return (_type == CommandType::MoveTo) || (_type == CommandType::Attack) || (_type == CommandType::Build) ||
+         (_type == CommandType::CancelBuild);
+}
+
+/// True for the types that act on a selection. **The two that do not are the station's**, and the
+/// distinction is what the intake's empty-selection check turns on: an empty selection is malformed
+/// for a move and required for a build.
+[[nodiscard]] constexpr bool ActsOnSelection(CommandType _type) noexcept
 {
   return (_type == CommandType::MoveTo) || (_type == CommandType::Attack);
 }
@@ -55,8 +74,9 @@ struct Command
   CommandType type = CommandType::MoveTo;
 
   /// A wire position when the type takes a point; the low field is a packed identity when it
-  /// takes an entity. Wire units, so a target is bounded by what an `int16_t` can say before
-  /// anything validates it -- which does not make the host's clamp unnecessary, only cheap.
+  /// takes an entity, and its **low byte is a design identity** for `Build`. Wire units, so a target
+  /// is bounded by what an `int16_t` can say before anything validates it -- which does not make the
+  /// host's clamp unnecessary, only cheap.
   std::int16_t targetX = 0;
   std::int16_t targetY = 0;
 
@@ -66,6 +86,13 @@ struct Command
   [[nodiscard]] std::uint16_t TargetEntity() const noexcept
   {
     return static_cast<std::uint16_t>(targetX);
+  }
+
+  /// The design a `Build` names. **The low byte only**, so a client that left rubbish in the high
+  /// byte still names the design it meant rather than one the host has to reject.
+  [[nodiscard]] std::uint8_t TargetDesign() const noexcept
+  {
+    return static_cast<std::uint8_t>(static_cast<std::uint16_t>(targetX) & 0xFF);
   }
 
   [[nodiscard]] friend bool operator==(const Command&, const Command&) noexcept = default;

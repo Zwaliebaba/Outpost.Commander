@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BuildSystem.h"
 #include "CommandIntake.h"
 #include "Sessions.h"
 #include "World.h"
@@ -19,11 +20,6 @@ namespace Outpost
 /// M1.5's `GameCore/Layout.h` is the first thing to consume it, and may be where it ends up.
 inline constexpr std::uint64_t DEFAULT_MATCH_SEED = 20260922;
 
-/// ADR-002's tick, in milliseconds, for the shell to hand to a schedule. IT IS A PLAIN INTEGER
-/// AND NOT A `std::chrono` TYPE, because this library is the simulation's and R16 keeps wall time
-/// out of it -- the seam is `Neuron::TickSchedule`, in the engine, driven by `Server.cpp`.
-inline constexpr std::int64_t TICK_PERIOD_MILLISECONDS = 50;
-
 /// The world as one player is to be told about it. ADR-003: the host serializes a per-player
 /// entity set rather than the world, and in the MVP that set is everything -- but it is a list the
 /// host builds, so visibility later changes this function and not the wire format.
@@ -32,8 +28,8 @@ inline constexpr std::int64_t TICK_PERIOD_MILLISECONDS = 50;
 /// home. Entities are emitted IN INDEX ORDER, which costs nothing and makes two hosts running the
 /// same match produce byte-identical snapshots -- a property worth having even though nothing
 /// requires it yet.
-[[nodiscard]] Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::uint32_t _tick, std::uint16_t _sequence,
-                                     std::size_t _playerCount);
+[[nodiscard]] Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, const BuildSystem& _build, std::uint32_t _tick,
+                                     std::uint16_t _sequence, std::size_t _playerCount);
 
 /// The match, and the loop over it. `Server.cpp` holds the shell; this holds everything a suite
 /// could want to reach (R20, which names `Server` explicitly).
@@ -93,6 +89,16 @@ public:
   /// encode a snapshot and send it to every client that has spoken. The order is fixed and it is
   /// `TechnicalDesign.md` section 2's: commands in, then the tick, then what the tick produced.
   void RunOneTick();
+
+  [[nodiscard]] BuildSystem& MutableBuild() noexcept
+  {
+    return m_build;
+  }
+
+  [[nodiscard]] const BuildSystem& CurrentBuild() const noexcept
+  {
+    return m_build;
+  }
 
   [[nodiscard]] World& MutableWorld() noexcept
   {
@@ -158,6 +164,7 @@ private:
 
   World m_world;
   CommandIntake m_intake;
+  BuildSystem m_build;
   Sessions m_sessions;
   Neuron::WinsockTransport m_transport;
 

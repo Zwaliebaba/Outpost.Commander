@@ -37,9 +37,10 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(1, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(mine)}))));
     Assert::IsTrue(world.FindOrder(mine)->active, L"an accepted move should have produced an order");
     Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(MINE));
   }
@@ -50,10 +51,11 @@ public:
     // anyway, which is the point of the step.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     static_cast<void>(world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE));
     const Outpost::EntityId theirs = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, THEIRS);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::NotOwned), Code(intake.Apply(world, MINE, MoveTo(1, {Wire(theirs)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::NotOwned), Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(theirs)}))));
     Assert::IsFalse(world.FindOrder(theirs)->active, L"a rejected command must not move anything");
     Assert::AreEqual(std::uint16_t{0}, intake.LastAppliedSequence(MINE), L"a rejected command must not acknowledge");
   }
@@ -64,6 +66,7 @@ public:
     // far more identities than the sender owns entities, from an ordinary bug and no attacker.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
     std::vector<std::uint16_t> selection;
@@ -72,7 +75,7 @@ public:
       selection.push_back(Wire(mine));
     }
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::SelectionTooLong), Code(intake.Apply(world, MINE, MoveTo(1, selection))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::SelectionTooLong), Code(intake.Apply(world, build, MINE, MoveTo(1, selection))));
     Assert::IsFalse(world.FindOrder(mine)->active);
   }
 
@@ -82,6 +85,7 @@ public:
     // stops it resolving to the wrong ship.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId dead = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     const std::uint16_t staleWire = Wire(dead);
     Assert::IsTrue(world.Destroy(dead));
@@ -89,7 +93,7 @@ public:
     const Outpost::EntityId reborn = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     Assert::AreEqual(dead.index, reborn.index, L"the test needs the slot to have been reused");
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::StaleGeneration), Code(intake.Apply(world, MINE, MoveTo(1, {staleWire}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::StaleGeneration), Code(intake.Apply(world, build, MINE, MoveTo(1, {staleWire}))));
     Assert::IsFalse(world.FindOrder(reborn)->active, L"the new occupant must not have taken the dead one's order");
   }
 
@@ -100,12 +104,13 @@ public:
     // outside it.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
     Outpost::Command command = MoveTo(1, {Wire(mine)});
     command.targetX = 32767;
     command.targetY = -32768;
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, command)));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, command)));
 
     const Outpost::MoveOrder* order = world.FindOrder(mine);
     Assert::IsTrue(order->destination.x <= Outpost::PLAY_AREA_HALF_EXTENT);
@@ -119,15 +124,16 @@ public:
     // the rest of the match.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(65535, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(65535, {Wire(mine)}))));
     Assert::AreEqual(std::uint16_t{65535}, intake.LastAppliedSequence(MINE));
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(0, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(0, {Wire(mine)}))));
     Assert::AreEqual(std::uint16_t{0}, intake.LastAppliedSequence(MINE));
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(1, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(mine)}))));
     Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(MINE));
   }
 
@@ -137,10 +143,11 @@ public:
     // stay rejected, or a reordered packet would undo the match.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(5, {Wire(mine)}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::AlreadyApplied), Code(intake.Apply(world, MINE, MoveTo(65000, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(5, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::AlreadyApplied), Code(intake.Apply(world, build, MINE, MoveTo(65000, {Wire(mine)}))));
     Assert::AreEqual(std::uint16_t{5}, intake.LastAppliedSequence(MINE));
   }
 
@@ -150,9 +157,10 @@ public:
     // is the ORDINARY case rather than a fault -- and it has to change nothing at all.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(7, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(7, {Wire(mine)}))));
     for (int tick = 0; tick < 5; ++tick)
     {
       Outpost::Tick(world);
@@ -162,7 +170,7 @@ public:
 
     for (int resend = 0; resend < 10; ++resend)
     {
-      Assert::AreEqual(Code(Outpost::CommandRejection::AlreadyApplied), Code(intake.Apply(world, MINE, MoveTo(7, {Wire(mine)}))));
+      Assert::AreEqual(Code(Outpost::CommandRejection::AlreadyApplied), Code(intake.Apply(world, build, MINE, MoveTo(7, {Wire(mine)}))));
     }
 
     Assert::IsTrue(world.Find(mine)->position == moved, L"a resent command moved something");
@@ -174,11 +182,12 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, MINE, MoveTo(1, {}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, Outpost::NO_PLAYER, MoveTo(1, {Wire(mine)}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, 99, MoveTo(1, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, MINE, MoveTo(1, {}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, Outpost::NO_PLAYER, MoveTo(1, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, 99, MoveTo(1, {Wire(mine)}))));
   }
 
   TEST_METHOD(AHalfValidSelectionAppliesNoneOfIt)
@@ -187,6 +196,7 @@ public:
     // sequence number describes, and the client would never learn which half took.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     const Outpost::EntityId alsoMine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     static_cast<void>(world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE));
@@ -195,7 +205,7 @@ public:
     // THREE owned, so the selection-length bound passes and the ownership check is the one under
     // test. With two owned this fired SelectionTooLong first, which is correct and tests nothing.
     Assert::AreEqual(Code(Outpost::CommandRejection::NotOwned),
-                     Code(intake.Apply(world, MINE, MoveTo(1, {Wire(mine), Wire(alsoMine), Wire(theirs)}))));
+                     Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(mine), Wire(alsoMine), Wire(theirs)}))));
     Assert::IsFalse(world.FindOrder(mine)->active, L"the valid part of a refused command was applied");
     Assert::IsFalse(world.FindOrder(alsoMine)->active);
   }
@@ -204,11 +214,12 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     const Outpost::EntityId theirs = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, THEIRS);
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, MINE, MoveTo(50, {Wire(mine)}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, THEIRS, MoveTo(1, {Wire(theirs)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(50, {Wire(mine)}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, THEIRS, MoveTo(1, {Wire(theirs)}))));
     Assert::AreEqual(std::uint16_t{50}, intake.LastAppliedSequence(MINE));
     Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(THEIRS));
   }
@@ -217,6 +228,7 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
     Outpost::CommandPacket packet{};
@@ -225,7 +237,7 @@ public:
     packet.commands.push_back(MoveTo(2, {Wire(mine)}));
     packet.commands.push_back(MoveTo(2, {Wire(mine)}));
 
-    Assert::AreEqual(std::size_t{2}, intake.ApplyPacket(world, packet), L"the repeat should not have counted");
+    Assert::AreEqual(std::size_t{2}, intake.ApplyPacket(world, build, packet), L"the repeat should not have counted");
     Assert::AreEqual(std::uint16_t{2}, intake.LastAppliedSequence(MINE));
   }
 };

@@ -25,8 +25,8 @@ inline constexpr std::size_t SCRATCH_BYTES = 2048;
 inline constexpr std::size_t PLAYER_COUNT = 2;
 } // namespace
 
-Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::uint32_t _tick, std::uint16_t _sequence,
-                       std::size_t _playerCount)
+Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, const BuildSystem& _build, std::uint32_t _tick,
+                       std::uint16_t _sequence, std::size_t _playerCount)
 {
   Snapshot snapshot;
   snapshot.sequence = _sequence;
@@ -35,8 +35,12 @@ Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, std::u
   for (std::size_t player = 0; player < _playerCount; ++player)
   {
     const PlayerId identity = static_cast<PlayerId>(player + 1);
-    snapshot.players.push_back(PlayerBlock{
-      .credits = 0, .lastCommandSequenceApplied = _intake.LastAppliedSequence(identity), .buildingDesign = 0, .buildProgressPercent = 0});
+    // M1.6: all four fields carry meaning. The two build bytes are Q21's whole answer to the queue
+    // that had no wire record -- the item and its progress, and nothing else.
+    snapshot.players.push_back(PlayerBlock{.credits = _build.Credits(identity),
+                                           .lastCommandSequenceApplied = _intake.LastAppliedSequence(identity),
+                                           .buildingDesign = _build.WireBuildingDesign(identity),
+                                           .buildProgressPercent = _build.WireProgressPercent(identity)});
   }
 
   // Index order, which is the order everything else walks the store in.
@@ -84,6 +88,7 @@ void Host::BeginMatch(std::uint64_t _matchSeed)
 {
   m_world = World{};
   m_intake = CommandIntake{};
+  m_build.Begin(PLAYER_COUNT);
   m_sessions.Begin(PLAYER_COUNT, _matchSeed);
 
   // M1.5: the stations, from `GameCore`'s generator -- the same function the client runs to draw the
@@ -219,7 +224,7 @@ void Host::DrainAndApply()
       packet.player = seated;
     }
 
-    static_cast<void>(m_intake.ApplyPacket(m_world, packet));
+    static_cast<void>(m_intake.ApplyPacket(m_world, m_build, packet));
   }
 }
 
@@ -233,7 +238,7 @@ void Host::SendSnapshots()
     return;
   }
 
-  const Snapshot snapshot = BuildSnapshot(m_world, m_intake, m_tick, m_snapshotSequence, PLAYER_COUNT);
+  const Snapshot snapshot = BuildSnapshot(m_world, m_intake, m_build, m_tick, m_snapshotSequence, PLAYER_COUNT);
 
   std::array<std::byte, SCRATCH_BYTES> scratch{};
   Neuron::ByteWriter writer{scratch};
@@ -263,6 +268,11 @@ void Host::RunOneTick()
 {
   DrainAndApply();
   Tick(m_world);
+
+  // AFTER THE MOVEMENT, so a ship that appears this tick does not also move on it -- which would
+  // put it somewhere no snapshot ever said it started from.
+  m_build.Advance(m_world);
+
   ++m_tick;
   SendSnapshots();
 }

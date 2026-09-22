@@ -107,6 +107,23 @@ struct HullEntry
   /// models that section names -- and a dash in the design's table is this zero.
   std::uint16_t hitValue = 0;
 
+  /// Q37, answered 2026-09-22: **how big the hull is, in world units, along its longest axis.**
+  ///
+  /// **IT IS THE MESH'S EXTENT AND NOT A SEPARATE FIGURE.** ADR-005 draws a mesh at its authored
+  /// scale and never scales it at draw time, so whatever is in the file IS the size -- and R24
+  /// wants that named in the catalog rather than discovered by loading geometry, which is what
+  /// makes this a row and not a comment. `Scripts/CheckMeshes.py` compares the two statements at
+  /// M1.9; until then this is the one the simulation reasons with.
+  ///
+  /// **ROUNDED UP, BECAUSE IT IS A BOUND.** The delivered `ModuleFrame` is 83.52 units across and
+  /// this says 84: the figure is used for spacing things so they do not overlap and for how far in
+  /// front of a station a new ship appears, and both want the larger number.
+  ///
+  /// **THE `Cruiser` IS THE ONE ROW NO FILE BACKS.** It is cut from the MVP (`GameDesign.md`
+  /// section 6) so no mesh was authored for it; 150 sits between the `Frigate`'s 90 and the
+  /// `Station`'s 220, and M4 authors a mesh to this number rather than the other way round.
+  std::uint16_t sizeUnits = 0;
+
   [[nodiscard]] friend constexpr bool operator==(const HullEntry&, const HullEntry&) noexcept = default;
 };
 

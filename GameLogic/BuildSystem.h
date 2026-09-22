@@ -1,0 +1,178 @@
+#pragma once
+
+#include "Tick.h"
+#include "World.h"
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+
+namespace Outpost
+{
+
+/// `GameDesign.md` section 5's station, building. **A design is selected, credits are deducted WHEN THE
+/// ITEM STARTS, and the ship appears at the station's spawn point when it finishes.**
+///
+/// **THERE IS NO QUEUE** (Q21). `Interface.md` had specified a cancellable queue that no wire record
+/// could feed, and the MVP cut the queue rather than inventing a format for it -- so the snapshot
+/// carries the item currently building and its progress, two bytes per player, and this class holds
+/// exactly that much state. **There is no rally point either**: a new ship sits where it appears.
+///
+/// R16 reaches this file. Integers throughout, no clock, and the tick is the only thing that advances
+/// anything.
+
+/// `GameDesign.md` section 4: "a station begins with 1,000 credits".
+inline constexpr std::uint32_t STARTING_CREDITS = 1000;
+
+/// Why a build order was refused. Distinct values for the reason `CommandRejection` has them: a counter
+/// that says "refused" tells an operator nothing, and a test names the case it is pinning.
+enum class BuildRejection : std::uint8_t
+{
+  None,
+  /// `NO_PLAYER`, or a player this match does not have.
+  NoPlayer,
+  /// A design identity this build does not know.
+  UnknownDesign,
+  /// A design no player can order -- the station, and from M2 the modules, which are placed by tap
+  /// rather than queued (`GameCore/Design.h`).
+  NotBuildable,
+  /// **REFUSED AT THE HOST AND NOT AT THE CLIENT ALONE**, which is M1.6's exit criterion: R19 makes
+  /// the host authoritative, and a client that checked affordability and a host that did not would
+  /// disagree the first time two orders raced.
+  Unaffordable,
+  /// The player has no station to build at. **M3's elimination supersedes this**; until then it is
+  /// only reachable by a test that kills one.
+  NoStation
+};
+
+/// What one player is building. Two bytes on the wire (ADR-003's per-player block) and four fields here,
+/// because the wire carries a percentage and the simulation counts ticks (R16).
+///
+/// R8: a public aggregate.
+struct BuildItem
+{
+  bool active = false;
+  DesignId design = DesignId::Miner;
+
+  /// **MONOTONIC, AND IT REACHES `ticksRequired` EXACTLY.** One per tick, no rounding, no clock. The
+  /// percentage the wire carries is derived from these two and is never the thing that advances.
+  std::uint32_t ticksElapsed = 0;
+  std::uint32_t ticksRequired = 0;
+
+  /// What was deducted when it started, kept so a cancel can give back **exactly** what was taken
+  /// (Q35). Recomputing the cost at cancel time would be right today and wrong the day a catalog
+  /// change lands mid-match.
+  std::uint32_t creditsSpent = 0;
+
+  [[nodiscard]] friend constexpr bool operator==(const BuildItem&, const BuildItem&) noexcept = default;
+};
+
+class BuildSystem
+{
+public:
+  /// `GameCore/Entity.h`'s, which `CommandIntake` also uses -- one statement of the design's four
+  /// slots rather than two that have to agree.
+  static constexpr std::size_t MAX_PLAYERS = Outpost::MAX_PLAYERS;
+
+  /// **HOW FAST A STATION BUILDS, IN CREDITS OF COST A SECOND** -- and `OpenQuestions.md` Q47 is the
+  /// row this is, because the design states no build time anywhere. `GameCore/DerivedStats.h` said so
+  /// in as many words: ADR-006 names build time alongside cost and no figure for it exists, and M1.6
+  /// is the step that first observes one.
+  ///
+  /// **TWENTY, AND THE DERIVATION IS THE OPENING.** A station starts with 1,000 credits
+  /// (`GameDesign.md` section 4) and a running economy is about six miners at 150 each. At twenty a
+  /// second that opening bank takes fifty seconds to spend, against a match of five minutes -- so the
+  /// first minute is spending what you started with and after that income paces you, which is the
+  /// shape the economy section describes. At ten it would be a hundred seconds with credits piling up
+  /// unspent, which is a third of the match spent waiting.
+  ///
+  /// **IT SITS JUST ABOVE THE INCOME RATE ON PURPOSE.** Income is about 15 credits a second, so
+  /// building is very slightly faster than earning -- which is what leaves the shipyard multiplier
+  /// something to do (`GameDesign.md` section 5). Set it far above and credits always bind and the
+  /// multiplier is dead; far below and the station is the bottleneck and mining stops mattering.
+  static constexpr std::uint32_t BUILD_RATE_CREDITS_PER_SECOND = 20;
+
+  /// Ticks a second, from the tick period. Derived rather than restated, because two statements of
+  /// twenty that must agree is a defect waiting for one of them to move.
+  static constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(1000 / TICK_PERIOD_MILLISECONDS);
+
+  /// How long a design takes, in ticks, at a given build-rate multiplier in hundredths.
+  ///
+  /// **A HUNDRED IS NO SHIPYARD.** `GameDesign.md` section 5 has `ShipyardL1` at 150 and `ShipyardL2`
+  /// at 200; the modules that carry them are M2's (ADR-015), so nothing passes anything but 100 yet
+  /// and the parameter is here so that M2 has one call site to find rather than a formula to invent.
+  ///
+  /// **AT LEAST ONE TICK.** A design that costs nothing would otherwise complete before it started,
+  /// and the catalog contains rows with no cost.
+  [[nodiscard]] static std::uint32_t TicksToBuild(DesignId _design, std::uint32_t _multiplierPercent = 100) noexcept;
+
+  /// Starts a match: every player on `STARTING_CREDITS` and building nothing.
+  void Begin(std::size_t _playerCount) noexcept;
+
+  /// Orders a design. Deducts its cost **now** (`GameDesign.md` section 5).
+  ///
+  /// **AN ORDER WHILE SOMETHING IS BUILDING REPLACES IT, AT A FULL REFUND** (Q35, answered
+  /// 2026-09-22). The design handoff keeps all six build buttons live while something builds, so a
+  /// replacement is one tap on a button the player is already using -- it is the common path, not the
+  /// rare one, and silently burning the displaced item's credits would be the sharpest edge in the
+  /// interface.
+  ///
+  /// **THE REFUND HAPPENS BEFORE THE NEW COST IS CHECKED**, so replacing a Fighter with a Fighter
+  /// always works. Checking first would refuse a replacement a player can obviously afford.
+  [[nodiscard]] BuildRejection Start(World& _world, PlayerId _player, DesignId _design,
+                                     std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
+
+  /// Cancels what is building, refunding **in full** (Q35). False when nothing was building, which is
+  /// not an error -- a tap on a cancel target that has already completed is ordinary.
+  bool Cancel(PlayerId _player) noexcept;
+
+  /// One tick of every player's item, and the ship that finishes. **Called after movement**, so a ship
+  /// that appears this tick does not also move on it.
+  void Advance(World& _world) noexcept;
+
+  [[nodiscard]] std::uint32_t Credits(PlayerId _player) const noexcept;
+
+  /// **M2's INCOME HAS SOMEWHERE TO GO.** Nothing calls it yet -- a delivered cargo is M2's
+  /// (`GameDesign.md` section 4) -- and it is here so that the credit balance has exactly one owner
+  /// rather than two places that both add to it.
+  void Grant(PlayerId _player, std::uint32_t _credits) noexcept;
+
+  [[nodiscard]] const BuildItem& Item(PlayerId _player) const noexcept;
+
+  /// ADR-003's per-player block, both bytes.
+  ///
+  /// **ZERO MEANS NOTHING IS BUILDING, SO A DESIGN IS ITS IDENTITY PLUS ONE** -- and that is the one
+  /// place the wire's design byte is not `EntityRecord::designIdentity`'s raw value. The asymmetry is
+  /// deliberate: an entity always has a design and a player usually has nothing building, so the
+  /// sentinel is worth a byte here and would be a wasted value there.
+  [[nodiscard]] std::uint8_t WireBuildingDesign(PlayerId _player) const noexcept;
+
+  /// **0 TO 99 WHILE BUILDING, AND NEVER 100.** The item is gone on the tick it completes, so the
+  /// client's last sight of it is whatever the tick before showed; a hundred would mean "finished and
+  /// still here", which is not a state this system has.
+  [[nodiscard]] std::uint8_t WireProgressPercent(PlayerId _player) const noexcept;
+
+  /// Items that completed and had nowhere to go, refunded. See `BuildRejection::NoStation`.
+  [[nodiscard]] std::uint64_t StrandedCount() const noexcept
+  {
+    return m_stranded;
+  }
+
+private:
+  [[nodiscard]] bool Holds(PlayerId _player) const noexcept;
+
+  /// Where a finished ship appears: **in front of the station, clear of both hulls.** The offset is
+  /// half the station's size plus half the ship's (Q37's catalog figures), so the two never overlap
+  /// and nothing invents a distance. The station faces the center of the map
+  /// (`GameCore/Layout.h`), so ships appear on the side a player is looking toward.
+  [[nodiscard]] static Neuron::Vec2 SpawnPoint(const Entity& _station, DesignId _design) noexcept;
+
+  /// Index 0 is `NO_PLAYER` and is never used; players are numbered from one, as `CommandIntake` does.
+  std::array<std::uint32_t, MAX_PLAYERS + 1> m_credits{};
+  std::array<BuildItem, MAX_PLAYERS + 1> m_items{};
+
+  std::size_t m_playerCount = 0;
+  std::uint64_t m_stranded = 0;
+};
+
+} // namespace Outpost

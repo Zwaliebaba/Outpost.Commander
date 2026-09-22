@@ -14,14 +14,15 @@ namespace Neuron
 /// packet from another version is dropped, and this number goes up whenever any record on the
 /// wire changes shape.
 ///
-/// **1 UNTIL M1.4, WHEN THE JOIN ARRIVED.** Adding a packet type changes no existing record, so
-/// this could have stayed -- and must not. A build without Join cannot answer one, so a client on
-/// version 1 and a host on this one would talk past each other with every individual packet
-/// well-formed. The version is what turns that into a clean drop.
+/// **1 UNTIL M1.4, WHEN THE JOIN ARRIVED, AND 3 SINCE M1.6's BUILD ORDERS.** Neither change altered
+/// an existing record, so neither had to move this -- and both did, for one reason. A build that
+/// does not know a type refuses the packet CARRYING it: a version-2 host handed a command packet
+/// with a `Build` in it drops the move orders riding alongside, which is worse than not talking at
+/// all. The version is what turns that into a clean drop.
 ///
 /// **A MISMATCH IS STILL A SILENCE, INCLUDING FOR THE JOIN** (ADR-013). The client shows the same
 /// overlay it shows for a host that is not running, which is the cost that decision names.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 2;
+inline constexpr std::uint8_t PROTOCOL_VERSION = 3;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///

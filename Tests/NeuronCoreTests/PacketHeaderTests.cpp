@@ -112,10 +112,10 @@ public:
   }
 };
 
-/// ADR-013 added two types and moved the protocol version with them. **A new type changes no
-/// existing record**, which is exactly why the version had to move anyway: a build without `Join`
-/// cannot answer one, so two builds would talk past each other with every individual packet
-/// well-formed.
+/// ADR-013 added two packet types and M1.6 added two command types, and each moved the protocol
+/// version with it. **Neither changed an existing record**, which is exactly why the version had to
+/// move anyway: a build that does not know a type refuses the packet CARRYING it, so a version-2
+/// host handed a command packet with a `Build` in it drops the move orders riding alongside.
 TEST_CLASS(PacketTypes)
 {
 public:
@@ -147,11 +147,12 @@ public:
     Assert::AreEqual(5, static_cast<int>(Neuron::PacketType::JoinReply));
   }
 
-  /// **THE VERSION MOVED WHEN THE JOIN LANDED.** It is asserted because the version going up is the
-  /// whole of what stops a version-1 client hanging against a version-2 host.
-  TEST_METHOD(TheProtocolVersionIsTwoSinceTheJoin)
+  /// **THE VERSION MOVES WITH EVERY TYPE ADDED TO EITHER ENUMERATION.** It is asserted because the
+  /// version going up is the whole of what stops an older client hanging against a newer host -- 1
+  /// before the join, 2 with it, 3 since M1.6's build orders.
+  TEST_METHOD(TheProtocolVersionIsThreeSinceTheBuildOrders)
   {
-    Assert::AreEqual(std::uint8_t{2}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{3}, Neuron::PROTOCOL_VERSION);
   }
 };
 

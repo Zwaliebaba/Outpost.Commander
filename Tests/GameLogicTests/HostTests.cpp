@@ -14,12 +14,13 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId first = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, Outpost::DesignId::Station, 1);
     const Outpost::EntityId doomed = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, 1);
     const Outpost::EntityId third = world.Create(Neuron::Vec2{.x = 128, .y = 0}, 0, Outpost::DesignId::Miner, 2);
     Assert::IsTrue(world.Destroy(doomed));
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 42, 7, 2);
+    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 42, 7, 2);
 
     Assert::AreEqual(std::size_t{2}, snapshot.entities.size(), L"a dead slot reached the snapshot");
     Assert::AreEqual(std::uint32_t{42}, snapshot.tick);
@@ -41,9 +42,10 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     static_cast<void>(world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, Outpost::DesignId::Miner, 1));
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 0, 0, 2);
+    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
     Assert::AreEqual(Neuron::Fixed{4096}, Outpost::DequantizePosition(snapshot.entities[0].positionX));
     Assert::AreEqual(Neuron::Fixed{-8192}, Outpost::DequantizePosition(snapshot.entities[0].positionY));
   }
@@ -54,14 +56,15 @@ public:
     // its sequence.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, 1);
     Assert::AreEqual(std::uint8_t{0}, static_cast<std::uint8_t>(
-                                        intake.Apply(world, 1,
+                                        intake.Apply(world, build, 1,
                                                      Outpost::Command{.sequence = 31,
                                                                       .type = Outpost::CommandType::MoveTo,
                                                                       .selection = {Outpost::PackIdentity(mine.index, mine.generation)}})));
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 0, 0, 2);
+    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
     Assert::AreEqual(std::uint16_t{31}, snapshot.players[0].lastCommandSequenceApplied);
     Assert::AreEqual(std::uint16_t{0}, snapshot.players[1].lastCommandSequenceApplied);
   }
@@ -72,13 +75,14 @@ public:
     // synthetic records: 110 entities is the MVP's count.
     Outpost::World world;
     Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
     for (int entity = 0; entity < 110; ++entity)
     {
       static_cast<void>(world.Create(Neuron::Vec2{.x = entity * 64, .y = -entity * 64}, 0, Outpost::DesignId::Miner,
                                      static_cast<Outpost::PlayerId>((entity % 2) + 1)));
     }
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 1, 1, 2);
+    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 1, 1, 2);
     Assert::AreEqual(std::size_t{110}, snapshot.entities.size());
 
     // 1,136 of records and header, plus the fire count byte: the figure M0.9 measured, reached
@@ -93,7 +97,8 @@ public:
   {
     Outpost::World world;
     Outpost::CommandIntake intake;
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, 0, 0, 2);
+    Outpost::BuildSystem build;
+    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
     Assert::AreEqual(std::size_t{0}, snapshot.entities.size());
     Assert::AreEqual(std::size_t{2}, snapshot.players.size());
   }

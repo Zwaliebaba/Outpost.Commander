@@ -52,6 +52,15 @@ struct DesignEntry
   /// Fitted in slot order. Entries past the hull's `slotCount` are `None` and contribute nothing.
   std::array<ComponentId, MAX_COMPONENT_SLOTS> slots{};
 
+  /// **WHETHER A PLAYER CAN ORDER ONE.** `GameDesign.md` section 5 has a station placed by the
+  /// generator rather than built, and section 6 names exactly two buildable ships -- so this is a
+  /// property of the ROW, which is what R24 asks for, rather than a rule somewhere that knows a
+  /// `Station` is special.
+  ///
+  /// A module is a design too, from M2 (ADR-015), and it is placed by tap rather than queued, so
+  /// it will be false here as well.
+  bool buildable = false;
+
   [[nodiscard]] friend constexpr bool operator==(const DesignEntry&, const DesignEntry&) noexcept = default;
 };
 

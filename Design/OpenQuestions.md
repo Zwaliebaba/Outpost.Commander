@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-nine answered, one half-answered, six open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-one answered, one half-answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -265,7 +265,12 @@ story rather than 11% of it. **So M0.23 should time the two separately** — ord
 pan — because the first says 60 is plenty and only the second can argue for 120. The two are one constant
 apart, so this stays cheap to reverse.
 
-### Q35 — Does canceling *or replacing* a build refund, and how much? — **needed by M1**
+### Q35 — Does canceling *or replacing* a build refund, and how much? — **ANSWERED**
+
+**FULL REFUND, ON BOTH PATHS. The owner's answer, 2026-09-22**, and M1.6 is built to it: a cancel and a
+replacement both give back exactly what was taken, from the amount recorded on the item rather than
+recomputed from the catalog. `GameLogicTests` pins both paths, including the one that matters — replacing
+a design with itself, which only works because the refund happens before the new cost is checked.
 
 **The plan asked for this row by name.** M1.6's exit criterion reads *"canceling refunds what the design
 says it refunds — and if the design does not say, that is a register question rather than a guess in a
@@ -342,7 +347,19 @@ back. It evaluates no rule the host also evaluates, so it cannot disagree with t
 **What must not happen is shipping the omission for the handoff's stated reason**, which is false. "No data
 path" would make this a constraint; it is a choice, and it should be re-openable on evidence.
 
-### Q37 — How big is each hull, in world units? — **needed by M1.9**
+### Q37 — How big is each hull, in world units? — **ANSWERED**
+
+**THE DELIVERED EXTENTS, WRITTEN INTO THE CATALOG. The owner's answer, 2026-09-22.** `HullEntry` now
+carries a `sizeUnits` row — `Scout` 60, `Frigate` 90, `Station` 220, `ModuleFrame` 84 — taken from the
+thirteen delivered meshes and **rounded up, because the figure is a bound**: it is what spaces things so
+they do not overlap and what sets how far in front of a station a new ship appears. **The `Cruiser`'s 150
+is the one row no file backs**, because nothing authored a mesh for a design the MVP cut; M4 authors to
+the number rather than the other way round. M1.9 adds the script that compares the two statements.
+
+It landed at M1.6 rather than M1.9 because the build system needed a spawn offset and deriving one from
+two hull sizes beat inventing a distance.
+
+
 
 **No hull has a size anywhere in this design.** `GameDesign.md` §6's table gives a *size class* — Small,
 Medium, Large — and that is an axis of the damage table (§7) rather than a dimension: it says what a
@@ -393,6 +410,40 @@ draw time, so the catalog's number and the file's extent are two statements of o
 compares them** rather than a reader trusting both.
 
 ---
+
+### Q47 — How fast does a station build? — **needed by M1.6, and M1.6 is built to the recommendation**
+
+**THE DESIGN STATES NO BUILD TIME ANYWHERE.** `GameCore/DerivedStats.h` said so in as many words from
+M1.2: [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) names build time alongside cost and mass as a
+derived stat, `GameDesign.md` §5 has a shipyard multiplying a build *rate*, and no figure for that rate
+exists. M1.6 is the step that first needs one.
+
+**THIS ROW IS OUT OF ORDER AND THAT IS STATED RATHER THAN HIDDEN.** The register's rule is that a task
+needing an answer this design does not give **asks and gets it written in before the code is**. M1.6 was
+built to the recommendation below instead, because it is one constant
+(`BuildSystem::BUILD_RATE_CREDITS_PER_SECOND`) and stopping seven implementation steps on a balance number
+would have cost more than changing it will. **The figure is therefore NOT in `GameDesign.md`** — it lives
+in the code and on this row until the owner rules, which is what keeps the design document honest.
+
+- **A rate in credits of cost a second**, so build time falls out of cost the way mass and speed already
+  fall out of components (R24). A per-design time would be a second table to keep in step with the first.
+- **A flat time per design**, which is simpler and severs the relationship the shipyard multiplier acts on.
+- **A rate that varies by hull size class**, which is a third mechanic for the MVP to tune.
+
+**Recommendation: a rate, at 20 credits of cost a second.** The derivation is the opening. A station
+starts with **1,000 credits** (§4) and a running economy is about **six miners** at 150 each; at twenty a
+second that bank takes **45 seconds** to spend against a match of five minutes, so the first minute is
+spending what you started with and after that income paces you — which is the shape §4 describes. At ten
+it would be 90 seconds with credits piling up unspent, a third of the match spent waiting.
+
+**It sits just above the income rate on purpose.** Income is about 15 credits a second, so building is
+very slightly faster than earning — which is what leaves §5's shipyard multiplier something to do. Set it
+far above and credits always bind and the multiplier is dead; far below and the station is the bottleneck
+and mining stops mattering.
+
+**What it produces:** a Miner in 7.5 seconds and a Fighter in 15, both exact divisions at the 20 Hz tick
+(150 and 300 ticks), so neither figure depends on a rounding rule. With `ShipyardL1` a Fighter is 10
+seconds and with `ShipyardL2` it is 7.5.
 
 ### Q46 — What are the catalog's mass, thrust and per-item costs? — **needed by M1.2**
 

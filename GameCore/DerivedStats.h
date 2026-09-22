@@ -51,8 +51,11 @@ struct DerivedStats
 /// -- so neither figure depends on the rounding. That is a property of Q46's numbers and the suite
 /// pins it, because a later change to the catalog could quietly make it false.
 ///
-/// **NO BUILD TIME.** ADR-006 names it alongside cost and no figure for it exists anywhere in the
-/// design; M1.6 is the step that first observes one.
+/// **NO BUILD TIME, AND IT IS NOT DERIVED HERE.** ADR-006 names it alongside cost and no figure for it
+/// exists anywhere in the design. M1.6 was the step that first needed one and it did not put it here:
+/// build time is cost divided by the STATION's rate, which a shipyard module multiplies
+/// (`GameDesign.md` section 5), so it is a property of the thing building rather than of the thing
+/// built. `GameLogic/BuildSystem.h` owns it and `OpenQuestions.md` Q47 is the figure.
 [[nodiscard]] DerivedStats Derive(const DesignEntry& _design) noexcept;
 
 /// The same, for a design identity.

@@ -34,7 +34,7 @@ bool CommandIntake::IsNewer(std::uint16_t _sequence, std::uint16_t _lastApplied)
   return static_cast<std::int16_t>(_sequence - _lastApplied) > 0;
 }
 
-CommandRejection CommandIntake::Apply(World& _world, PlayerId _player, const Command& _command) noexcept
+CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, PlayerId _player, const Command& _command) noexcept
 {
   if ((_player == NO_PLAYER) || (_player > MAX_PLAYERS))
   {
@@ -44,7 +44,11 @@ CommandRejection CommandIntake::Apply(World& _world, PlayerId _player, const Com
   {
     return CommandRejection::UnknownType;
   }
-  if (_command.selection.empty())
+
+  // **THE SELECTION HAS TO MATCH THE TYPE, IN BOTH DIRECTIONS** (M1.6). A move with nothing selected
+  // is malformed; a build carrying identities is a build order with 600 of them in it, which is the
+  // amplification Q24 is about arriving through a door that did not exist when Q24 was written.
+  if (ActsOnSelection(_command.type) != !_command.selection.empty())
   {
     return CommandRejection::Empty;
   }
@@ -55,6 +59,21 @@ CommandRejection CommandIntake::Apply(World& _world, PlayerId _player, const Com
   if (m_hasApplied[_player] && !IsNewer(_command.sequence, m_lastApplied[_player]))
   {
     return CommandRejection::AlreadyApplied;
+  }
+
+  // THE STATION'S TWO ORDERS TOUCH NO ENTITY, so every check below this belongs to the other two.
+  // The acknowledgment still advances on a refusal, for the reason an Attack that resolves nothing
+  // does: the host UNDERSTOOD the order, and a sequence that did not advance would have the client
+  // repeat it forever.
+  if (!ActsOnSelection(_command.type))
+  {
+    const bool ordered = (_command.type == CommandType::Build)
+                           ? (_build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign())) == BuildRejection::None)
+                           : _build.Cancel(_player);
+
+    m_lastApplied[_player] = _command.sequence;
+    m_hasApplied[_player] = true;
+    return ordered ? CommandRejection::None : CommandRejection::BuildRefused;
   }
 
   // BOUNDED AT THE SENDER'S OWN ENTITY COUNT, which is the check that turns the amplification into
@@ -108,12 +127,12 @@ CommandRejection CommandIntake::Apply(World& _world, PlayerId _player, const Com
   return CommandRejection::None;
 }
 
-std::size_t CommandIntake::ApplyPacket(World& _world, const CommandPacket& _packet) noexcept
+std::size_t CommandIntake::ApplyPacket(World& _world, BuildSystem& _build, const CommandPacket& _packet) noexcept
 {
   std::size_t applied = 0;
   for (const Command& command : _packet.commands)
   {
-    if (Apply(_world, _packet.player, command) == CommandRejection::None)
+    if (Apply(_world, _build, _packet.player, command) == CommandRejection::None)
     {
       ++applied;
     }

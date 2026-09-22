@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BuildSystem.h"
 #include "World.h"
 
 #include <array>
@@ -26,8 +27,13 @@ enum class CommandRejection : std::uint8_t
   NotOwned,
   /// An identity whose slot has been reused since the sender saw it.
   StaleGeneration,
-  /// No player, or a selection with nothing in it.
-  Empty
+  /// No player, or a selection that is empty when the type needs one -- or carries identities when
+  /// the type does not (`GameCore/Command.h`).
+  Empty,
+  /// A `Build` or `CancelBuild` the build system refused. **The reason is `BuildSystem`'s and stays
+  /// there**: duplicating `BuildRejection` into this enumeration would be two lists to keep in step
+  /// for a distinction only the build suite ever asserts.
+  BuildRefused
 };
 
 /// The host's intake: apply in sequence order, ignore anything at or below what has been applied,
@@ -46,15 +52,19 @@ class CommandIntake
 public:
   /// The largest player number this holds state for. Q27 ships two and the design's ceiling is
   /// four; this is sized to the ceiling so the third and fourth player stay a runtime value.
-  static constexpr std::size_t MAX_PLAYERS = 4;
+  static constexpr std::size_t MAX_PLAYERS = Outpost::MAX_PLAYERS;
 
   /// Validates and applies one command on behalf of _player. The world is touched only when the
   /// answer is CommandRejection::None.
-  [[nodiscard]] CommandRejection Apply(World& _world, PlayerId _player, const Command& _command) noexcept;
+  ///
+  /// **IT TAKES THE BUILD SYSTEM BECAUSE M1.6 MADE A BUILD AN ORDER.** `GameDesign.md` section 5
+  /// has a design selected at the station, and an order is how a client says so -- which puts the
+  /// affordability check here, on the host, rather than at the client alone.
+  [[nodiscard]] CommandRejection Apply(World& _world, BuildSystem& _build, PlayerId _player, const Command& _command) noexcept;
 
   /// Every command in the packet, in the order it arrived. The packet's own player is used, not
   /// a caller's -- a packet says who sent it.
-  [[nodiscard]] std::size_t ApplyPacket(World& _world, const CommandPacket& _packet) noexcept;
+  [[nodiscard]] std::size_t ApplyPacket(World& _world, BuildSystem& _build, const CommandPacket& _packet) noexcept;
 
   /// What goes in the snapshot's per-player `lastCommandSeqApplied`, which is the whole
   /// acknowledgment channel (ADR-003). Zero for a player who has sent nothing.
