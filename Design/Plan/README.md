@@ -39,17 +39,21 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 **Every step from M0.1 to M0.15 is written and verified** — the wire, the numbers, the simulation, the
 host loop, the frame's foundations and the scaled present — and **the gates among them are a different
 matter**, because a gate is a measurement rather than code and no agent closes one. What is left inside
-M0 is the rest of the renderer from M0.17 on, the client, the package, and these three:
+M0 is the rest of the renderer from M0.17 on, the client, the package, and these two:
 
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, measured at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
-| **M0.16** | Unstarted, and it gates everything after it: *no renderer work past this point is safe until the filter is confirmed by eye* |
 | **M0.23** | Unstarted — tap-to-visible latency and frame time, on the device |
 
-**M0.17, the interface pass, is the next step an agent can take** — but **M0.16 stands between them and
-it is a gate**, so an agent that takes M0.17 is running ahead of a measurement that invalidates renderer
-work if it comes out wrong.
+**M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the four frame times
+are in [`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)'s Measurements, and **the scale that
+ships is 1:1**, which is the decision that gate existed to take. The one thing it could not answer —
+whether 1:1 at one sample beats 0.5 at four — waits on a resolve step that does not exist, and ADR-016
+carries it.
+
+**M0.17, the interface pass, is the next step**, and it is no longer running ahead of anything: the
+measurement that would have invalidated renderer work came out right.
 
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the
@@ -263,7 +267,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
-| 7 | **That the present step really takes the filter the scale calls for, and which world scale ships** | **M0.16** gate | By looking at it, at both scales, plus frame time at each on x64 and ARM64. R13's arrangement is worth nothing at a scale of 1.99 — or 0.999 ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |
+| 7 | ~~**That the present step really takes the filter the scale calls for, and which world scale ships**~~ **TAKEN** | **M0.16** gate, closed | Looked at on the device at both scales, plus frame time at each on x64 and ARM64. The filter is right at both and **1:1 ships** ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |
 | 8 | Which loopback exemption form a UDP client needs | **M0.5** gate | Remove the exemption and try again, exactly as `AGENTS.md` §3 instructs. |
 
 [`ADR-002`](../ADR/ADR-002-tick-and-numbers.md) owes a ninth that is not on that list and matters more than

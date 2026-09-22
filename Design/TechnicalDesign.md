@@ -492,13 +492,21 @@ not a definition is arithmetic on the design's own starting values. These are ow
    ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). The Surface Pro 11 is a Snapdragon X
    part, so **ARM64 is the target platform — and CI builds no ARM64 at all** (`AGENTS.md` §6). The platform this game is actually for is the one nothing automated
    ever compiles, which makes this a standing obligation rather than a one-off measurement.
+   **HALF-DISCHARGED at M0.16:** both scales, both platforms, **at one sample**, are measured on the
+   device and the figures are in ADR-016's Measurements — stated there and not repeated here, because
+   four copies of a frame time is how the other figures in this section went wrong. The four-sample half
+   waits on the resolve step. **And the figures are of a frame with nothing in it**, so they bound the
+   present path rather than the budget; ADR-016 says which is which.
 6. **The interface pass against the world pass**, which the review predicts will be the larger of the two:
    five instanced draws of simple geometry against an unbatched quad per glyph.
-7. **That the present step really takes the path the scale calls for on the device**, confirmed by looking
-   at it: unfiltered at the 1:1 default, point-sampled at an exact 2× if the scale goes to 0.5. R13's whole
-   arrangement is worthless if a conversion error lands the scale at 1.99 rather than 2, or at 0.999 rather
-   than 1. **And that the interface lands identically at both**, which is a test rather than a look and is
-   the regression ADR-016's two transforms exist to prevent.
+7. ~~**That the present step really takes the path the scale calls for on the device**~~ — **DISCHARGED
+   at M0.16.** Confirmed by looking at it on the device at both scales: unfiltered and pixel-exact at the
+   1:1 default, point-sampled at an exact 2× at 0.5, no soft edge at either. R13's whole arrangement was
+   worthless if a conversion error landed the scale at 1.99 rather than 2, or at 0.999 rather than 1, and
+   that is the error a one-pixel edge exists to show. **The same gate settled which scale ships — 1:1**
+   ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). ~~**And that the interface lands
+   identically at both**~~ — **DISCHARGED at M0.15**, by the two fit tests ADR-016's Measurements name; it
+   was a test rather than a look, and it is the regression ADR-016's two transforms exist to prevent.
 8. **Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by
    removing the exemption and trying again exactly as `AGENTS.md` §3 instructs.
 

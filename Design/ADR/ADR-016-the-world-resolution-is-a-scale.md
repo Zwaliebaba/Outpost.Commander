@@ -106,22 +106,84 @@ one by accident rather than by design.
 **The word "crisp" is retired for the upscaled path** wherever this corpus used it. Point sampling at an
 exact multiple is sharp and blocky; it was always correct about the filter and wrong about the result.
 
-**What would reopen it:** the M0.16 measurement. If 1:1 at one sample does not hold the frame budget on
-ARM64 on the device, or costs enough battery to matter across a match, the scale goes to 0.5 and **the
-constant is the only thing that changes** — which is the property this ADR exists to buy.
+**What would reopen it:** the M0.16 measurement — **which has since been taken, and did not.** 1:1 at one
+sample holds the frame budget on ARM64 on the device with most of it unspent, and the filter is right at
+both scales; see Measurements below, where the scale that ships is settled. What is left of this sentence
+is the part M0.16 could not reach: **whether it costs enough battery to matter across a match, and
+whether a frame with content in it still holds.** If either answers badly the scale goes to 0.5 and **the
+constant is the only thing that changes** — which is the property this ADR exists to buy, and which M0.16
+exercised end to end rather than assuming.
 
 ## Measurements
 
-None yet. Three are owed, and the first two at **M0.16**, which is already a gate:
+**M0.16 is closed, and the scale that ships is 1:1.** All three are now answered to the extent this build
+can answer them: the filter is confirmed by eye at both scales on the device, the frame times are taken at
+one sample of the two they need, and the interface regression is a test. What each still owes is stated
+under it.
 
-1. **Frame time at 2880 × 1920 and at 1440 × 960**, at one sample and at four, on an actual Surface Pro,
-   on **both x64 and ARM64**. The Surface Pro 11 is a Snapdragon X part, so ARM64 is the target platform
-   and `AGENTS.md` §6 says CI compiles none of it.
-2. **Whether 1:1 at one sample looks better than 0.5 at four**, judged by eye on the device on the same
-   scene — not on a screenshot on a desktop monitor, which is the wrong picture at the wrong scale.
-3. **That the interface lands identically at both world resolutions.** This is a test rather than a look,
-   it belongs with M0.12's fit tests, and it is the regression decision 1 exists to prevent.
+1. **Frame time at 2880 × 1920 and at 1440 × 960 — TAKEN AT ONE SAMPLE**, on the device, 2026-09-22.
+   GPU time from a timestamp pair either side of each frame's command list, meaned over **3,600 presented
+   frames** after 120 discarded as warm-up, fullscreen at the panel's 2,880 × 1,920, Release, one sample,
+   nothing discarded as an artifact:
 
-The figures above are **arithmetic on the panel's published specification**, not measurements: 5,529,600 is
-both 1,440 × 960 × 4 and 2,880 × 1,920 × 1; 22.1 MB is 5,529,600 × 4 bytes; 2.65 GB/s is 44.2 MB at 60 Hz;
-9.15 mm is 48 authored pixels at 133 authored pixels per inch.
+   | world scale | scene target | world fit | x64, microseconds | ARM64, microseconds |
+   |---|---|---|---|---|
+   | **1:1** — the default | 2880 × 1920 | ×1.000, unfiltered | 779 | **777** |
+   | **0.5** | 1440 × 960 | ×2.000, point | 525 | **525** |
+
+   The machine is a Surface Pro 11 — Snapdragon X X1P64100, Adreno X1-85, 2,880 × 1,920 — so **ARM64 is
+   native and x64 is emulated**, which is exactly what shipping an x64 build to this device would mean.
+   That the two agree to within three microseconds is itself the finding: this frame is GPU-bound and the
+   CPU's instruction set is not in the answer.
+
+   **READ THESE NARROWLY, because they measure a frame this game does not have.** The scene is a clear,
+   six one-pixel rectangle clears and the present blit — nothing else is drawn yet. They are a real
+   measurement of the **present path**, which is the cost this ADR predicted above at "about 22 MB read
+   and 22 MB written per frame", and they say nothing about the objection that matters more: four times
+   the pixel shader invocations over a scene with bloom in it. 777 microseconds is 4.7% of a 16.67 ms
+   budget. **The headroom question stays open until there is a scene worth measuring.**
+
+   **The four-sample half is not here and is not yet takeable.** A multisampled scene target needs a
+   resolve before the present step can sample it, `SceneTarget.cpp` asserts that at compile time, and the
+   resolve does not exist. It stays a standing obligation, as `Design/Plan/README.md` measurement 5 says.
+
+2. ~~**That the present step takes the filter the scale calls for**~~ — **CONFIRMED BY EYE at M0.16, on
+   the device, at both scales, 2026-09-22.** `SceneTarget::RecordCalibrationPattern` puts a hard
+   one-pixel edge in the scene target — outermost rows and columns plus a centre cross — and it reached
+   the glass unfiltered and pixel-exact at 1:1 and cleanly doubled at 0.5, with no soft edge at either.
+   **That is what R13's whole arrangement rested on**: a conversion error landing at 1.99 rather than 2,
+   or 0.999 rather than 1, shows as grey on a one-pixel edge and shows as almost nothing on anything
+   wider. Supporting it but not substituting for it: `CalibrationStrips` is pinned by a suite as exactly
+   one pixel, and the probe logs the fit it actually took — `1.000000/none` and `2.000000/point`,
+   integers either side.
+
+   **Whether 1:1 at one sample looks better than 0.5 at four is a different question and is still owed.**
+   It is not takeable until four samples exist, and it is the one that could still move this decision.
+
+3. ~~**That the interface lands identically at both world resolutions**~~ — **DISCHARGED at M0.15.**
+   `TheInterfaceDoesNotMoveWhenTheWorldDoes` in `Tests/NeuronClientTests/SceneTargetTests.cpp` and
+   `ItIsExactlyTwoWhicheverTheWorldIsDoing` in `FitTransformTests.cpp` pin the interface fit at exactly
+   2.0 at both settled world scales. It was always a test rather than a look, and the regression
+   decision 1 exists to prevent now fails a build instead of a reader.
+
+### Which scale ships: 1:1
+
+**Settled at M0.16 on 2026-09-22, and this is the decision that gate existed to take.** Decision 3 above
+defaulted to 1:1 on a judgment and said plainly it was not a measurement; it now is one, and the judgment
+survived it.
+
+1:1 costs **252 microseconds more per frame than 0.5 on ARM64** and holds the frame budget with most of
+it unspent, so the frame-time half of *what would reopen it* gives no reason to move. The filter is right
+at both scales, so the choice was a free one rather than a forced one. And the 0.5 path is not dead
+code — it stays exercised by M0.12's fit tests at both settled points, which is what keeps it a constant
+change rather than a rewrite.
+
+**Two things this does not settle, and neither is a reason to revisit it today.** *Or costs enough
+battery to matter across a match* is unmeasured. And every figure above is of a frame with nothing in it,
+so the real question — four times the pixel shader invocations over a scene with bloom in it — arrives
+with the scene. **What would reopen it** is unchanged and now has a sharper trigger: measurement 2, or
+the first content-bearing frame that misses the budget on ARM64.
+
+The figures in the sections above are **arithmetic on the panel's published specification**, not
+measurements: 5,529,600 is both 1,440 × 960 × 4 and 2,880 × 1,920 × 1; 22.1 MB is 5,529,600 × 4 bytes;
+2.65 GB/s is 44.2 MB at 60 Hz; 9.15 mm is 48 authored pixels at 133 authored pixels per inch.
