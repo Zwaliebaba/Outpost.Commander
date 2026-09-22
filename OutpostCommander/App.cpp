@@ -424,7 +424,13 @@ void RunProbe(const CoreWindow& _window)
       Report(log, "RX datagrams=" + std::to_string(drained.datagrams) + " accepted=" + std::to_string(drained.accepted) +
                     " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) +
                     " seq=" + std::to_string(newest != nullptr ? newest->sequence : 0) +
-                    " entities=" + std::to_string(newest != nullptr ? newest->entities.size() : 0) + " local_ms=" + std::to_string(nowMs));
+                    " entities=" + std::to_string(newest != nullptr ? newest->entities.size() : 0) +
+                    // THE DRAWN POSITION, because the last run could not answer "did it move?" from
+                    // the log alone. Working that out took reading the host's uptime against the
+                    // entity's journey time, to find that the ship had already arrived before the
+                    // client started and that nothing moving was correct rather than a defect.
+                    " drawn=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
+                    " awaiting=" + std::to_string(awaitingVisible ? 1 : 0) + " local_ms=" + std::to_string(nowMs));
     }
 
     // === M0.21's VERB, WIRED (M0.22). ==========================================================

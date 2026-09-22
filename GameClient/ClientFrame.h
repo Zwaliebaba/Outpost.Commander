@@ -105,8 +105,30 @@ public:
 private:
   ReplicaStore m_replicas;
   OrderMarkerSet m_markers;
-  CameraPose m_camera;
-  PlayerId m_player = 0;
+
+  /// **M0'S STARTING VIEW, AND IT IS A CONVENIENCE RATHER THAN A DESIGN DECISION.** The pose a
+  /// client opens on is `Interface.md` section 5's to settle and M1.8 pins the zoom range; this is
+  /// the one that makes M0 checkable by eye.
+  ///
+  /// A default-constructed pose is the far end of the zoom -- 22,500 units, where the whole
+  /// 16,384-unit square fits and a 30-unit ship is under two authored pixels. That is arithmetically
+  /// right and useless for looking at: **the arrow exists so that a wrong heading is visible**, and
+  /// nothing about a heading survives at two pixels. At 4,000 units the frame spans about 4,370
+  /// units across, so the same ship is roughly ten pixels and points somewhere.
+  ///
+  /// The focus sits at the middle of the path M0's host walks its one entity along -- origin to
+  /// (4096, 2048) -- so the thing there is to see is on screen without anybody panning first.
+  CameraPose m_camera{.focusX = 2048.0f, .focusY = 1024.0f, .headingRadians = 0.0f, .distance = 4000.0f};
+
+  /// **PLAYER ONE, AND ZERO WOULD BE `NO_PLAYER`** (`GameCore/Entity.h`). `CommandIntake` refuses a
+  /// packet from `NO_PLAYER` outright, before it looks at what the order touches, so a client that
+  /// defaults to zero has every order it ever sends discarded in silence -- which is exactly what
+  /// happened on the device the first time the tap was wired.
+  ///
+  /// **IT IS CONFIGURATION BECAUSE `README.md` F2 SAYS IT HAS TO BE**: the protocol has no join, so
+  /// a client cannot learn which player it is, and M1.4 is where that arrives. Until then the host
+  /// seeds player one and the client is told so here.
+  PlayerId m_player = 1;
   std::uint16_t m_nextCommandSequence = 1;
 
   /// Sized by what one datagram can be. ADR-003's MVP snapshot is 1,137 bytes and the MTU is what

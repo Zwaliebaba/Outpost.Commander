@@ -122,6 +122,51 @@ public:
     Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
   }
 
+  /// A PLAYER IDENTITY IS ONE-BASED AND A BLOCK INDEX IS NOT, and with a single player the two are
+  /// indistinguishable -- which is why this test carries TWO blocks. `players[m_player]` reads the
+  /// wrong one and `players[m_player - 1]` reads the right one, and only a second player can tell
+  /// them apart. The single-block test above passed against both spellings.
+  TEST_METHOD(TheAcknowledgmentReadIsThisPlayersBlockAndNotTheOthers)
+  {
+    Outpost::Snapshot snapshot;
+    snapshot.sequence = 1;
+
+    // Player one has applied nothing; player two has applied up to five.
+    Outpost::PlayerBlock first;
+    first.lastCommandSequenceApplied = 0;
+    Outpost::PlayerBlock second;
+    second.lastCommandSequenceApplied = 5;
+    snapshot.players.push_back(first);
+    snapshot.players.push_back(second);
+
+    std::vector<std::byte> bytes(Outpost::EncodedSize(snapshot));
+    Neuron::ByteWriter writer{bytes};
+    Assert::IsTrue(Outpost::Encode(snapshot, writer));
+
+    Outpost::ClientFrame frame;
+    frame.Player() = 1;
+    frame.Markers().Add(MarkerFor(3));
+
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(bytes);
+
+    // Player one acknowledged nothing, so the marker stays. Reading player two's block would clear
+    // it and the client would stop drawing an order the host has not applied.
+    const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
+    Assert::AreEqual(0u, result.markersCleared);
+    Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
+  }
+
+  TEST_METHOD(ThisClientIsPlayerOneUntilThereIsAJoin)
+  {
+    // `README.md` F2: the protocol cannot tell a client which player it is, so it is configuration
+    // until M1.4. Zero is NO_PLAYER and `CommandIntake` refuses a packet from it outright, so the
+    // default must never be zero.
+    const Outpost::ClientFrame frame;
+    Assert::AreEqual(1, static_cast<int>(Outpost::ClientFrame{}.Player()));
+    Assert::IsTrue(frame.Camera().distance < Outpost::MAXIMUM_CAMERA_DISTANCE);
+  }
+
   TEST_METHOD(TheClockAdvancesWithTheFrameAndNotWithArrivals)
   {
     Outpost::ClientFrame frame;
