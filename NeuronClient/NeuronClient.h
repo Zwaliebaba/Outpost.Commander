@@ -41,6 +41,7 @@
 // one. GestureSeam is why GestureArithmetic is a separate header above it -- everything a suite
 // has to reach lives there, and this one holds the half that cannot be tested at all.
 #include "DatagramTransport.h"
+#include "TransportRecovery.h"
 #include "GestureSeam.h"
 #include "HostAddress.h"
 #include "InstanceSlot.h"

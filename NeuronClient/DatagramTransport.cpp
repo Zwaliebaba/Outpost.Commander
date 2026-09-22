@@ -229,10 +229,17 @@ bool DatagramTransport::Send(std::span<const std::byte> _bytes) noexcept
 
     const std::weak_ptr<SocketBinding> weak = m_binding;
     m_binding->writer.StoreAsync().Completed(
-      [weak](auto&&, auto&&)
+      [weak](auto&&, auto&& _status)
       {
         if (const std::shared_ptr<SocketBinding> held = weak.lock())
         {
+          // **A STORE THAT DID NOT COMPLETE IS A SOCKET THAT IS GONE.** A packaged client's socket can be
+          // closed under it while it is suspended, and until this it said nothing: sends failed one at a
+          // time, forever, with the state still reading Ready. Failed is what lets the frame reopen it.
+          if (_status != Foundation::AsyncStatus::Completed)
+          {
+            held->state.store(TransportState::Failed);
+          }
           held->storeInFlight.store(false);
         }
       });
@@ -240,6 +247,8 @@ bool DatagramTransport::Send(std::span<const std::byte> _bytes) noexcept
   }
   catch (const winrt::hresult_error&)
   {
+    // The same, reached synchronously: a closed stream refuses the write before any store starts.
+    m_binding->state.store(TransportState::Failed);
     m_binding->storeInFlight.store(false);
     return false;
   }

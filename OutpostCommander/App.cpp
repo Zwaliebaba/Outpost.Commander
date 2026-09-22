@@ -197,6 +197,7 @@ void RunProbe(const CoreWindow& _window)
 
   Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
   Neuron::DatagramTransport transport{queue};
+  Neuron::TransportRecovery transportRecovery;
   if (!transport.Open(host, Neuron::ProbePacket::PORT))
   {
     Report(log, "probe: the socket could not be created at all");
@@ -487,19 +488,28 @@ void RunProbe(const CoreWindow& _window)
   {
     dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
-    const Neuron::TransportState state = transport.State();
-    if (state == Neuron::TransportState::Failed)
+    const std::uint64_t nowMs = MillisecondsSince(start);
+
+    // **A FAILED TRANSPORT IS REOPENED, NOT FATAL.** This loop used to break here, which turned a socket
+    // closed under a suspended client into a client that walked out of its match on resume. The cadence
+    // is `TransportRecovery`'s; the rejoin that follows needs nothing from here, because a new socket is
+    // a new endpoint the host never hears from, and `ClientFrame`'s silence detector rejoins with the
+    // token it holds.
+    if (transportRecovery.ShouldReopen(transport.State(), nowMs))
     {
-      Report(log, "probe: the transport failed -- on this side that is usually the capability or the exemption");
-      break;
+      Report(log, "probe: the transport failed, reopen " + std::to_string(transportRecovery.ReopenCount()) +
+                    " -- if it never comes up, that is usually the capability or the exemption");
+      transport.Close();
+      static_cast<void>(transport.Open(host, Neuron::ProbePacket::PORT));
+      reportedReady = false;
     }
+
+    const Neuron::TransportState state = transport.State();
     if (state == Neuron::TransportState::Ready && !reportedReady)
     {
       Report(log, "probe: transport ready");
       reportedReady = true;
     }
-
-    const std::uint64_t nowMs = MillisecondsSince(start);
 
     // ADR-013's join, and the arithmetic that decides when is `JoinState`'s rather than this
     // loop's -- which is the same split the gesture seam and the interpolation clock take.
@@ -524,7 +534,14 @@ void RunProbe(const CoreWindow& _window)
     // started goes out through the same `ShouldSend` above on the next frame.
     if (drained.linkLost)
     {
-      Report(log, "LINK lost after " + std::to_string(Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS) + " ms of silence, rejoining");
+      // **A FRESH SOCKET WITH EVERY REJOIN.** After a suspension the old one may be closed, or open and
+      // deaf, and nothing distinguishes a deaf socket from a quiet host -- so it is not trusted. The new
+      // one is a new endpoint, which is exactly what ADR-013's token exists to carry a player across.
+      transport.Close();
+      static_cast<void>(transport.Open(host, Neuron::ProbePacket::PORT));
+      reportedReady = false;
+      Report(log, "LINK lost after " + std::to_string(Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS) +
+                    " ms of silence, reopening the socket and rejoining");
     }
     if (drained.linkRestored)
     {

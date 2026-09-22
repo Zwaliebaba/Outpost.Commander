@@ -256,6 +256,7 @@
     <ClCompile Include="PackageFile.cpp" />
     <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SessionToken.cpp" />
+    <ClCompile Include="TransportRecovery.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="WindowMetrics.cpp" />
     <ClCompile Include="WorldPass.cpp" />
@@ -290,6 +291,7 @@
     <ClInclude Include="PackageFile.h" />
     <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SessionToken.h" />
+    <ClInclude Include="TransportRecovery.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="WindowMetrics.h" />
     <ClInclude Include="WorldPass.h" />

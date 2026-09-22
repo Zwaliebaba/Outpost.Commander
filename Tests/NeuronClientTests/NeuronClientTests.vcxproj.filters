@@ -13,6 +13,7 @@
     <ClCompile Include="StarFieldTests.cpp" />
     <ClCompile Include="SceneTargetTests.cpp" />
     <ClCompile Include="SessionTokenTests.cpp" />
+    <ClCompile Include="TransportRecoveryTests.cpp" />
     <ClCompile Include="WindowMetricsTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
