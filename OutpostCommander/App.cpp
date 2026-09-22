@@ -298,6 +298,16 @@ void RunProbe(const CoreWindow& _window)
   std::array<Neuron::MeshBuffer, 3> meshBuffers;
   std::array<bool, 3> meshReady{};
   std::uint32_t instanceFrame = 0;
+
+  // M1.9b: THE SKY (ADR-019). The galaxy bakes into a cubemap once, the stars upload once, and both
+  // are then drawn LAST with the depth test on so they shade no pixel the fleet already covers.
+  //
+  // **NEITHER CAN HAPPEN UNTIL THE JOIN REPLY LANDS**, because both are seeded from the match
+  // (R23) -- so the flag below is set when the seed arrives and the bake is recorded at the top of
+  // the next frame, which is the first moment there is a command list open to record it into.
+  Neuron::CubemapBake cubemapBake;
+  Neuron::PointSprites pointSprites;
+  bool skyBakePending = false;
   bool meshesLoaded = false;
   Outpost::ClientFrame clientFrame;
 
@@ -367,6 +377,14 @@ void RunProbe(const CoreWindow& _window)
     // M0.21b. It is created from the SCENE TARGET rather than the swap chain, because that is what
     // it renders into and a pipeline state has to agree with its target's formats and sample count.
     Report(log, "probe: no world pass, hresult " + std::to_string(worldPass.LastHresult()));
+  }
+  else if (!cubemapBake.Create(device, sceneTarget))
+  {
+    Report(log, "probe: no cubemap bake, hresult " + std::to_string(cubemapBake.LastHresult()));
+  }
+  else if (!pointSprites.Create(device, sceneTarget))
+  {
+    Report(log, "probe: no point sprites, hresult " + std::to_string(pointSprites.LastHresult()));
   }
   else
   {
@@ -510,6 +528,23 @@ void RunProbe(const CoreWindow& _window)
       }
       Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
                     " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " seed=" + std::to_string(join.MatchSeed()));
+
+      // **THE SEED HAS JUST ARRIVED, SO THIS IS THE FIRST MOMENT THE SKY EXISTS** (R23, ADR-019).
+      // Generated once and never updated: the field takes no time input at all, so the upload below
+      // is read unchanged for the rest of the match and there is no ring behind it.
+      if (join.IsJoined() && pointSprites.IsReady())
+      {
+        const std::vector<Neuron::StarInstance> stars = Outpost::ShippedStarInstances(join.MatchSeed());
+        if (pointSprites.Upload(device, stars))
+        {
+          skyBakePending = true;
+          Report(log, "SKY " + std::to_string(pointSprites.StarCount()) + " stars uploaded, galaxy bake queued");
+        }
+        else
+        {
+          Report(log, "SKY FAILED to upload stars, hresult " + std::to_string(pointSprites.LastHresult()));
+        }
+      }
     }
 
     if (drained.datagrams > 0)
@@ -793,6 +828,33 @@ void RunProbe(const CoreWindow& _window)
     // drew nothing leaves a black screen rather than a dark blue one.
     if (swapChain.IsReady() && presentStep.IsReady() && interfacePass.IsReady() && device.BeginFrame())
     {
+      // **THE GALAXY BAKES BEFORE ANYTHING IS BOUND, AND EXACTLY ONCE.** It sets its own render
+      // targets over the six cube faces, so it has to run before `RecordClear` binds the scene
+      // target rather than after -- and `RecordClear` then puts the scene target back, which is why
+      // nothing else here has to know the bake happened.
+      if (skyBakePending && cubemapBake.IsReady())
+      {
+        const Outpost::GalaxyConstants constants = Outpost::ToConstants(Outpost::ShippedGalaxy());
+
+        static_assert(sizeof(Outpost::GalaxyConstants) == (Neuron::CubemapBake::GALAXY_CONSTANT_COUNT * sizeof(float)),
+                      "The galaxy's constants are the bake's cbuffer and the two layouts must not disagree");
+
+        float galaxy[Neuron::CubemapBake::GALAXY_CONSTANT_COUNT]{};
+        std::memcpy(galaxy, &constants, sizeof(galaxy));
+
+        if (cubemapBake.Bake(device, galaxy))
+        {
+          skyBakePending = false;
+          Report(log, "SKY galaxy baked, " + std::to_string(Neuron::CubemapBake::FACE_COUNT) + " faces of " +
+                        std::to_string(Neuron::CubemapBake::FACE_PIXELS) + " square");
+        }
+        else
+        {
+          skyBakePending = false;
+          Report(log, "SKY FAILED to bake the galaxy, hresult " + std::to_string(cubemapBake.LastHresult()));
+        }
+      }
+
       static_cast<void>(sceneTarget.RecordClear(device));
 
       // M0.21b: THE WORLD, AND THE FIRST THING IN THIS TREE TO DRAW ONE. Into the scene target,
@@ -963,6 +1025,55 @@ void RunProbe(const CoreWindow& _window)
       // (`ADR-016`), so what is left is a white cross drawn over the world every frame. A closed
       // gate's instrumentation is debris, and this is the first milestone with something behind it
       // worth seeing.
+
+      // === THE SKY, DRAWN LAST (ADR-019). ================================================
+      //
+      // **LAST IS THE WHOLE OPTIMIZATION.** Both passes test depth and neither writes it, so every
+      // pixel the fleet already covers is rejected before it shades -- the backdrop's cube fetch and
+      // the sprites' falloff are paid only where there is sky to see. Drawn first they would shade
+      // the entire frame and then be painted over.
+      //
+      // It is outside the `worldPass.IsReady()` block above on purpose: the sky is the backdrop and
+      // does not depend on there being a snapshot to draw in front of it.
+      if (cubemapBake.IsBaked() || (pointSprites.StarCount() > 0))
+      {
+        const float skyAspect = (sceneTarget.HeightPixels() > 0)
+                                  ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                  : 1.0f;
+        const Outpost::CameraBasis basis = Outpost::BuildBasis(clientFrame.Camera());
+
+        // The half-angle the frame subtends, which is what turns a normalized coordinate into a ray.
+        const float halfHeight = std::tan(0.5f * Outpost::VERTICAL_FIELD_OF_VIEW_DEGREES * 3.14159265358979323846f / 180.0f);
+        const float halfWidth = halfHeight * skyAspect;
+
+        float ray[Neuron::CubemapBake::RAY_CONSTANT_COUNT]{};
+        ray[0] = basis.right.x * halfWidth;
+        ray[1] = basis.right.y * halfWidth;
+        ray[2] = basis.right.z * halfWidth;
+        ray[4] = basis.up.x * halfHeight;
+        ray[5] = basis.up.y * halfHeight;
+        ray[6] = basis.up.z * halfHeight;
+        ray[8] = basis.forward.x;
+        ray[9] = basis.forward.y;
+        ray[10] = basis.forward.z;
+
+        static_cast<void>(cubemapBake.DrawBackdrop(device, sceneTarget, ray));
+
+        // **THE TRANSLATION IS REMOVED BY ZEROING THE LAST ROW.** These matrices are row-major and
+        // applied to row vectors, so the last row IS the image of the origin -- the camera's
+        // position and nothing else. Zeroing it leaves the rotation and the projection, which is
+        // exactly the sky's transform: it turns with heading and pitch and does NOT slide with the
+        // pan (ADR-018, ADR-019). A sky that translated would read as a painted backdrop sliding
+        // behind the fleet, which is the single clearest tell that a sky is not a sky.
+        const Outpost::Matrix4 full = Outpost::ViewProjection(clientFrame.Camera(), skyAspect);
+        float rotationProjection[16];
+        for (std::size_t index = 0; index < 16; ++index)
+        {
+          rotationProjection[index] = (index >= 12) ? 0.0f : full.m[index];
+        }
+
+        static_cast<void>(pointSprites.Draw(device, sceneTarget, rotationProjection));
+      }
 
       static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
       static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));

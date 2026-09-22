@@ -111,6 +111,66 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\GalaxyVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\GalaxyPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\SkyPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\StarVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\StarPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
     <FxCompile Include="Shaders\ShipVS.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>6.7</ShaderModel>
@@ -202,6 +262,8 @@
     <ClCompile Include="InterfacePass.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
+    <ClCompile Include="CubemapBake.cpp" />
+    <ClCompile Include="PointSprites.cpp" />
     <ClCompile Include="Blackbody.cpp" />
     <ClCompile Include="CmoReader.cpp" />
     <ClCompile Include="StarField.cpp" />
@@ -230,6 +292,8 @@
     <ClInclude Include="InterfacePass.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
+    <ClInclude Include="CubemapBake.h" />
+    <ClInclude Include="PointSprites.h" />
     <ClInclude Include="Blackbody.h" />
     <ClInclude Include="CmoReader.h" />
     <ClInclude Include="StarField.h" />

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="CameraTests.cpp" />
     <ClCompile Include="ClientFrameTests.cpp" />
+    <ClCompile Include="SkyLookTests.cpp" />
     <ClCompile Include="OrderMarkerTests.cpp" />
     <ClCompile Include="WorldTransformTests.cpp" />
     <ClCompile Include="CameraGestureTests.cpp" />

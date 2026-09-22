@@ -22,11 +22,15 @@ Neuron::StarFieldDescription ShippedStarField() noexcept
 
   description.brightestValue = SKY_POINT_LUMINANCE_CEILING;
 
-  // **THE FAINT END IS NOT IN THE ADR AND IS DERIVED HERE.** It has to clear the backdrop -- #04060A,
-  // about 2% of white -- by enough to be a star rather than a hot pixel, and it has to leave the field's
-  // total lit area nowhere near the 12% ceiling. Eight per cent is four times the backdrop and the whole
-  // field comes to well under a tenth of one per cent of the frame, which `SkyLookTests` asserts rather
-  // than assumes.
+  // **THE FAINT END IS NOT IN THE ADR AND IS DERIVED HERE**, against the two things it has to survive.
+  //
+  // Away from the band the baked cubemap is essentially zero, so a faint star there is the only light
+  // in its neighbourhood and almost any value would read. The binding case is a faint star ON the
+  // band, where it has to clear the rim's 0.035 and ideally the centre's 0.10. Eight per cent is a bit
+  // over twice the rim, which reads plainly, and a little under the centre, where the brightest tiers
+  // are what carry the sky anyway. It also has to leave the field's total lit area nowhere near the
+  // 12% ceiling, and the whole field comes to a small fraction of one per cent of the frame --
+  // `SkyLookTests` asserts both rather than assuming them.
   description.faintestValue = 0.08f;
 
   // Hot stars are luminous, so the bright tiers skew blue-white and the faint ones orange. 12,000 K is
@@ -48,6 +52,34 @@ Neuron::StarFieldDescription ShippedStarField() noexcept
   description.poleZ = galaxy.poleZ;
 
   return description;
+}
+
+std::vector<Neuron::StarInstance> ShippedStarInstances(std::uint64_t _seed)
+{
+  const std::vector<Neuron::Star> stars = Neuron::GenerateStarField(_seed, ShippedStarField());
+
+  std::vector<Neuron::StarInstance> instances;
+  instances.reserve(stars.size());
+
+  for (const Neuron::Star& star : stars)
+  {
+    Neuron::StarInstance instance;
+    instance.direction[0] = star.directionX;
+    instance.direction[1] = star.directionY;
+    instance.direction[2] = star.directionZ;
+    instance.sizePixels = star.sizePixels;
+
+    // **THE COLOUR ARRIVES ALREADY LIT.** `GenerateStarField` has multiplied the tier's value through,
+    // so the pixel stage multiplies by its falloff and nothing else -- the tier's brightness never has
+    // to be found again at draw time, where it would be one more thing to get out of step.
+    instance.colour[0] = star.red;
+    instance.colour[1] = star.green;
+    instance.colour[2] = star.blue;
+
+    instances.push_back(instance);
+  }
+
+  return instances;
 }
 
 GalaxyLook ShippedGalaxy() noexcept

@@ -3,6 +3,7 @@
 #include "NeuronClient.h"
 
 #include <cstdint>
+#include <vector>
 
 namespace Outpost
 {
@@ -76,6 +77,14 @@ struct GalaxyLook
 
 /// This sky's star field. Every figure is ADR-019's and the derivation for each is beside it there.
 [[nodiscard]] Neuron::StarFieldDescription ShippedStarField() noexcept;
+
+/// This sky's stars for a match, ready to upload -- the field generated and then flattened into the
+/// layout the sprite draw wants.
+///
+/// **THE SEED IS THE MATCH'S** (R23). The client already has it for the asteroid generator, so seeding
+/// the sky from the same value costs nothing and means both players see the same sky without a byte on
+/// the wire.
+[[nodiscard]] std::vector<Neuron::StarInstance> ShippedStarInstances(std::uint64_t _seed);
 
 /// This sky's galaxy.
 [[nodiscard]] GalaxyLook ShippedGalaxy() noexcept;
