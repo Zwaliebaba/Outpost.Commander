@@ -1,0 +1,52 @@
+<!-- MeshAssets.vcxproj.xml
+     Paste into the UWP client's .vcxproj (C++/WinRT), or Import it as a shared fragment.
+     Every .cmo must be declared as deployment content or it will NOT be in the appx, and the
+     failure mode at runtime is a file-not-found on a path that looks correct in the source tree.
+
+     DeploymentContent=true  -> the file is packaged into the appx under the same relative path,
+                                so Assets\Meshes\Scout.cmo is reachable as
+                                ms-appx:///Assets/Meshes/Scout.cmo
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="Assets\Meshes\Scout.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\Frigate.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\ModuleFrame.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\ModuleShipyardL1.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\ModuleShipyardL2.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\ModuleOreProcessorL1.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\ModuleOreProcessorL2.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\Station.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\AsteroidA.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\AsteroidB.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\AsteroidC.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\AsteroidD.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Meshes\AsteroidE.cmo">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
+</Project>

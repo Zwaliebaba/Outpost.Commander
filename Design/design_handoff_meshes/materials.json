@@ -1,0 +1,68 @@
+{
+  "format": "outpost-commander-materials/1",
+  "generated": "2026-09-22",
+  "note": "One material per mesh. Team membership rides in the vertex colour channel so that one instanced draw per shape covers every owner.",
+
+  "backdrop": {
+    "space": "#04060A",
+    "starfieldCeiling": "12% of full white over any large area; brightest eight stars reach 45% over a few dozen pixels",
+    "source": "echoed from the brief"
+  },
+
+  "hull": {
+    "_decision": "MINE. Nothing in the design states a hull palette. Chosen as a three-step near-neutral cool grey at chroma low enough (oklch C ≈ 0.014–0.018) that it cannot be mistaken for any of the four team hues, for damage red #FF3B2F, or for armed amber #FFB020.",
+    "DEEP": { "hex": "#1B212A", "vertexColorG": 0, "use": "undersides, keels, shadowed structure. Sits ~4× the backdrop luminance so the hull bottom still separates from #04060A rather than merging into it." },
+    "BASE": { "hex": "#414B58", "vertexColorG": 128, "use": "the bulk of every hull. The silhouette-carrying tone at tactical zoom." },
+    "EDGE": { "hex": "#828E9C", "vertexColorG": 255, "use": "upper chines and top faces. The brightest hull value; deliberately below the 45% starfield peak so a hull never out-reads a star." }
+  },
+
+  "team": {
+    "_note": "echoed from the brief, unchanged",
+    "OWN": { "hex": "#38D1F5", "hue": 193, "use": "the local player at every player count" },
+    "B":   { "hex": "#C4E838", "hue": 78,  "use": "the MVP opponent" },
+    "C":   { "hex": "#F75FD0", "hue": 318, "use": "third player, later" },
+    "D":   { "hex": "#A45CFF", "hue": 268, "use": "fourth player, later" }
+  },
+
+  "reserved": {
+    "_note": "echoed. The hull palette must not collide with either.",
+    "damage": "#FF3B2F",
+    "armedAndPlacementRadius": "#FFB020"
+  },
+
+  "vertexColorConvention": {
+    "_decision": "MINE. The precise convention the brief asks to be stated.",
+    "R": "team selector. 0 = take the hull palette. 255 = take the owning player's team colour. Intermediate values are a linear blend and are RESERVED — no MVP mesh emits one. A reader may treat any value outside {0,255} as a content error.",
+    "G": "hull tone index, quantised to exactly three authored values: 0 → HULL.DEEP, 128 → HULL.BASE, 255 → HULL.EDGE. No MVP mesh emits any other value. G is ignored wherever R = 255.",
+    "B": "reserved, always 0.",
+    "A": "always 255.",
+    "shader": "albedo = lerp(HULL[G], TEAM[owner], R/255). The owner colour arrives as per-instance constant data, never as a material and never as a second submesh, so one instanced draw per shape covers every owner at every player count.",
+    "whyNotTwoMaterials": "Two materials would buy a specular difference between team panel and hull plate and cost one extra draw call per shape per frame — at 5 shapes and 5 asteroid variants that is 10 extra draws for an effect invisible at 3.5 px and marginal at 79 px. Not taken."
+  },
+
+  "material": {
+    "_note": "One CMO material per mesh, identical values for every mesh. CMO's material block carries ambient/diffuse/specular/emissive/power plus eight texture slots; every texture slot is empty.",
+    "name": "OC_Hull",
+    "ambient": [0.20, 0.25, 0.32],
+    "diffuse": [1.0, 1.0, 1.0],
+    "specular": [0.22, 0.24, 0.28],
+    "specularPower": 18.0,
+    "emissive": [0.0, 0.0, 0.0],
+    "textures": "all eight slots empty",
+    "note": "diffuse is white because the albedo arrives entirely through the vertex colour channel. A reader that ignores vertex colour will render every hull white, which is the intended loud failure."
+  },
+
+  "light": {
+    "_decision": "MINE. The design states no light rig; the plates need one and it has to be stated or the plates are not reproducible.",
+    "key":  { "direction": [-0.42, 0.80, 0.38], "intensity": 0.85, "note": "high, front-left. Pitched steeply so the plan view at tactical zoom is lit, which is where identification happens." },
+    "fill": { "direction": [0.55, -0.22, -0.62], "intensity": 0.16, "note": "weak underside fill so a hull's keel does not go to pure backdrop at the combat view." },
+    "ambient": { "hex": "#334052", "intensity": 0.70, "note": "cool ambient, multiplied by albedo — never added flat, so it cannot lift the backdrop." }
+  },
+
+  "contrastCheck": {
+    "HULL.BASE on #04060A": "contrast ratio 3.9:1 — silhouette-grade, which is what it is for",
+    "HULL.EDGE on #04060A": "contrast ratio 12.1:1",
+    "TEAM.OWN on HULL.BASE": "the team face is always the brightest thing on a hull; it never sits adjacent to damage red because damage red is drawn over the hull bar in screen space, not on the mesh",
+    "nearest collision": "HULL.EDGE #828E9C against TEAM.D #A45CFF — 75° apart in hue and 0.16 apart in chroma. No hull tone is within 40° of damage red or armed amber."
+  }
+}

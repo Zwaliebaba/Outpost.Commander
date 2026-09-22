@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="render.js"></script>
+<style>
+body{margin:0;background:#04060A;color:#BAC4D0;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#38D1F5;text-decoration:none;border-bottom:1px solid rgba(56,209,245,.35)}
+a:hover{color:#8EE6FB;border-bottom-color:rgba(142,230,251,.6)}
+</style></helmet>
+
+<div style="width:1560px;margin:0 auto;padding:56px 60px 120px;box-sizing:content-box;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:22px;border-bottom:1px solid rgba(130,142,156,.22);padding-bottom:34px">
+<div style="display:flex;gap:10px;align-items:center;font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(130,142,156,.9)">
+<span style="padding:4px 8px;border:1px solid rgba(56,209,245,.45);color:#38D1F5;border-radius:3px">DESIGN HANDOFF</span>
+<span>OUTPOST COMMANDER</span><span style="color:rgba(130,142,156,.45)">/</span><span>MVP MESHES</span>
+<span style="color:rgba(130,142,156,.45)">/</span><span>2026-09-22</span>
+</div>
+<h1 style="margin:0;font:600 40px/1.12 'IBM Plex Sans',sans-serif;color:#E6ECF3;letter-spacing:-.02em;max-width:22ch;text-wrap:pretty">Five meshes, and the two zooms that decide them</h1>
+<p style="margin:0;max-width:78ch;font:400 15px/1.62 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.82);text-wrap:pretty">Every plate below is rasterised from the vertex arrays in <code style="font:500 13px 'IBM Plex Mono',monospace;color:#38D1F5">meshes.json</code> by <code style="font:500 13px 'IBM Plex Mono',monospace;color:#38D1F5">render.js</code> — a flat-shaded, z-buffered software rasteriser in this folder. No silhouette on this page was drawn. The only 2D drawing is panel labels, dimension rules, and the overlay proposal on plate 7, each of which is marked as annotation where it appears.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:rgba(130,142,156,.2);border:1px solid rgba(130,142,156,.2);border-radius:4px;overflow:hidden">
+<div style="background:#0A0E15;padding:16px 18px;display:flex;flex-direction:column;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">THE VERDICT</span><span style="font:600 15px/1.3 'IBM Plex Sans',sans-serif;color:#FFB020">Geometry alone fails</span><span style="font:400 12px/1.5 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.7)">at 3.5 px. Overlay needed — plate 7.</span></div>
+<div style="background:#0A0E15;padding:16px 18px;display:flex;flex-direction:column;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">MESHES</span><span style="font:600 15px/1.3 'IBM Plex Sans',sans-serif;color:#E6ECF3">13 files</span><span style="font:400 12px/1.5 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.7)">2 hulls · 5 module-class · 1 station · 5 rocks</span></div>
+<div style="background:#0A0E15;padding:16px 18px;display:flex;flex-direction:column;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">TRIANGLES</span><span style="font:600 15px/1.3 'IBM Plex Sans',sans-serif;color:#E6ECF3">2,674 total</span><span style="font:400 12px/1.5 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.7)">126–500 per mesh · no budget, no ceiling</span></div>
+<div style="background:#0A0E15;padding:16px 18px;display:flex;flex-direction:column;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">DRAW CALLS</span><span style="font:600 15px/1.3 'IBM Plex Sans',sans-serif;color:#E6ECF3">13 instanced</span><span style="font:400 12px/1.5 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.7)">8 shapes + 5 rock variants, every owner</span></div>
+<div style="background:#0A0E15;padding:16px 18px;display:flex;flex-direction:column;gap:6px"><span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">PACKAGE</span><span style="font:600 15px/1.3 'IBM Plex Sans',sans-serif;color:#E6ECF3">≈ 426 KB CMO</span><span style="font:400 12px/1.5 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.7)">188 KB of it tangent + UV zeros</span></div>
+</div>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 11px/1 'IBM Plex Mono',monospace;padding:5px 8px;background:#38D1F5;color:#04060A;border-radius:3px">ASSUMPTIONS</span><span style="font:400 13px/1 'IBM Plex Sans',sans-serif;color:rgba(130,142,156,.9)">what I echoed, what I decided, and where the brief disagrees with itself</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px">
+
+<div style="background:#080B11;border:1px solid rgba(130,142,156,.2);border-radius:4px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+<span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">ECHOED, UNCHANGED</span>
+<ul style="margin:0;padding-left:18px;font:400 13px/1.66 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.82);display:flex;flex-direction:column;gap:5px">
+<li>16,384-unit map · 1440 × 960 authored frame · vfov 40°</li>
+<li>Tactical d 22,500 → 17.06 u/px. Combat 30° pitch floor.</li>
+<li>Sizes 60 / 90 / 90 / 220, and the 400-unit module radius</li>
+<li>"A faceted low-polygon hull reads as deliberate" — a look, not a count</li>
+<li>Four team colours, damage <span style="color:#FF3B2F">#FF3B2F</span>, armed <span style="color:#FFB020">#FFB020</span></li>
+<li>Backdrop <span style="color:#828E9C">#04060A</span> at a 12% starfield ceiling</li>
+<li>Left-handed, Y up, +Z forward, plane at Y = 0, origin = sim position</li>
+</ul>
+</div>
+
+<div style="background:#080B11;border:1px solid rgba(56,209,245,.3);border-radius:4px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+<span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#38D1F5">MINE — DECIDED HERE</span>
+<ul style="margin:0;padding-left:18px;font:400 13px/1.66 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.82);display:flex;flex-direction:column;gap:5px">
+<li>Shape language: blunt wide wedge vs long cruciform spine</li>
+<li>Hull palette — three tones, chroma under 0.018</li>
+<li>Vertex-colour convention: R = team selector, G = hull tone</li>
+<li>Triangle counts 126–500 — no budget; spend on section, hold the plan outline</li>
+<li>One light rig, stated in materials.json</li>
+<li>Four distinct module meshes plus the bare frame</li>
+<li>Five asteroid variants; jitter 0.75–1.35 scale, ±240 u off-plane</li>
+<li>Tactical plates rendered at 85° pitch (the brief says only "near top-down")</li>
+</ul>
+</div>
+
+<div style="background:#0F0B06;border:1px solid rgba(255,176,32,.32);border-radius:4px;padding:20px 22px;display:flex;flex-direction:column;gap:12px">
+<span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFB020">FLAGGED — BOTH LEFT STANDING</span>
+<ul style="margin:0;padding-left:18px;font:400 13px/1.66 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.82);display:flex;flex-direction:column;gap:5px">
+<li><strong style="color:#E6ECF3;font-weight:600">Combat distance.</strong> "~1,400 units" cannot produce "1,638 wide / 1.14 u/px / 53 and 79 px" at vfov 40°. Those need d = 1,500. The 7% gap is unresolved; plates use 1,500 and say so.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">The reference frame.</strong> The HUD handoff's 34° at focus distance 2,600 gives 1.97 u/px — a 60-unit hull at 30 px, not 53. The brief calls both a combat plate.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">Asteroid extents.</strong> The seeded variants land at 55–167 u longest, not exactly 60–180. Jitter covers the range; the figures are not reconciled to the table.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">The tree still states the old rule.</strong> ADR-005, TechnicalDesign §7, GameDesign §10, Design/README, M1.9, M2.4, M2.10b. Not touched here.</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:56px" id="plates">
+<div id="plate-host" style="display:flex;flex-direction:column;gap:56px"></div>
+</section>
+
+<footer style="border-top:1px solid rgba(130,142,156,.22);padding-top:34px;display:flex;flex-direction:column;gap:14px">
+<span style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:rgba(130,142,156,.8)">WHAT STILL NEEDS A RULING</span>
+<ul style="margin:0;padding-left:18px;font:400 13px/1.7 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.82);max-width:88ch;display:flex;flex-direction:column;gap:6px">
+<li><strong style="color:#E6ECF3;font-weight:600">Q37, hull sizes.</strong> Taken as recommended, unmoved. The 220-unit station is the packing constraint, not a free choice — a 300-unit station breaks the 400-unit module radius.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">The overlay.</strong> Plate 7 is a readout that is not on the MVP list. Asked for and approved; it needs a question-register entry and a HUD-handoff amendment before anybody builds it.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">Cruiser.</strong> Not authored, per the brief. Cost of authoring it later is in the README — it is one more file and one more draw call, but the shape language only has one axis left.</li>
+<li><strong style="color:#E6ECF3;font-weight:600">The CMO reader and the asset step.</strong> Both costs stand. The integration package at <code style="font:500 12px 'IBM Plex Mono',monospace;color:#38D1F5">integration/</code> ships a convert-ready OBJ set, an asset manifest, UWP content declarations for <code style="font:500 12px 'IBM Plex Mono',monospace;color:#38D1F5">Assets\Meshes\</code>, and <code style="font:500 12px 'IBM Plex Mono',monospace;color:#38D1F5">INTEGRATION_PROMPT.md</code>. Two figures still need measuring there, not estimating: the appx size delta (the 188 KB of zeros compresses away) and the VRAM vertex-buffer size (it does not).</li>
+<li><strong style="color:#E6ECF3;font-weight:600">The handedness flag.</strong> Whether <code style="font:500 12px 'IBM Plex Mono',monospace;color:#38D1F5">meshconvert</code> needs a flip for this input is unresolved. An earlier draft asserted it did not; that is withdrawn and replaced by four landmark tests that name the axis when they fail.</li>
+</ul>
+</footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;hullBase&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#414B58&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#414B58&quot;,&quot;#4A4438&quot;,&quot;#3B4A46&quot;,&quot;#474155&quot;],&quot;section&quot;:&quot;Hull palette&quot;,&quot;label&quot;:&quot;HULL.BASE tone&quot;},&quot;tacticalPitch&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:85,&quot;min&quot;:60,&quot;max&quot;:90,&quot;step&quot;:1,&quot;unit&quot;:&quot;°&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Camera&quot;,&quot;label&quot;:&quot;Tactical pitch above plane&quot;},&quot;overlayOnAcceptance&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Fallback&quot;,&quot;label&quot;:&quot;Draw the overlay on plates 1 and 2&quot;}}">
+class Component extends DCLogic {
+  state = { status: 'loading', error: null };
+
+  async componentDidMount() {
+    try {
+      const [meshes, mats] = await Promise.all([
+        fetch('meshes.json').then(r => r.json()),
+        fetch('materials.json').then(r => r.json())
+      ]);
+      this.meshes = meshes; this.mats = mats;
+      let waited = 0;
+      while (!window.OCRender && waited < 5000) { await new Promise(r => setTimeout(r, 50)); waited += 50; }
+      if (!window.OCRender) throw new Error('render.js did not load');
+      this.draw();
+      this.setState({ status: 'ready' });
+    } catch (e) {
+      this.setState({ status: 'error', error: String(e) });
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.meshes && prevProps !== this.props) this.draw();
+  }
+
+  draw() {
+    const host = document.getElementById('plate-host');
+    if (!host) return;
+    const mats = JSON.parse(JSON.stringify(this.mats));
+    if (this.props.hullBase) mats.hull.BASE.hex = this.props.hullBase;
+    if (this.props.tacticalPitch) window.OCRender.CAM.tacticalPitch = Number(this.props.tacticalPitch);
+    const plates = window.OCRender.plates(this.meshes, mats, {
+      overlayOnAcceptancePlate: !!this.props.overlayOnAcceptance
+    });
+    host.textContent = '';
+    for (const p of plates) {
+      const sec = document.createElement('section');
+      sec.setAttribute('data-screen-label', p.id);
+      sec.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+
+      const head = document.createElement('div');
+      head.style.cssText = 'display:flex;flex-direction:column;gap:7px;max-width:96ch';
+      const id = document.createElement('span');
+      id.textContent = p.id;
+      id.style.cssText = "font:600 10px/1 'IBM Plex Mono',monospace;letter-spacing:.1em;padding:4px 7px;background:rgba(130,142,156,.16);color:#BAC4D0;border-radius:3px;align-self:flex-start";
+      const h = document.createElement('h2');
+      h.textContent = p.title;
+      h.style.cssText = "margin:0;font:600 19px/1.32 'IBM Plex Sans',sans-serif;color:#E6ECF3;letter-spacing:-.01em;text-wrap:pretty";
+      const sub = document.createElement('p');
+      sub.textContent = p.caption;
+      sub.style.cssText = "margin:0;font:400 13px/1.6 'IBM Plex Sans',sans-serif;color:rgba(186,196,208,.72);text-wrap:pretty";
+      head.append(id, h, sub);
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'border:1px solid rgba(130,142,156,.22);border-radius:4px;overflow:hidden;background:' + (p.bg || '#04060A') + ';width:max-content';
+      const cv = document.createElement('canvas');
+      cv.style.cssText = 'display:block;width:' + p.width + 'px;height:' + p.height + 'px';
+      wrap.appendChild(cv);
+
+      sec.append(head, wrap);
+      host.appendChild(sec);
+      window.OCRender.renderPlate(cv, p, this.meshes, mats);
+    }
+  }
+
+  renderVals() { return {}; }
+}
+
+</script>
+</body>
+</html>
