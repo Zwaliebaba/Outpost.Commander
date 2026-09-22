@@ -50,8 +50,14 @@ struct GalaxyLook
   float centreY = 0.0f;
   float centreZ = 0.0f;
 
-  /// How far from the plane the band reaches, as a fraction of a right angle, away from the centre and
-  /// at it. **The bulge is the difference between the two** -- uniform thickness is the stain.
+  /// How far from the plane the band reaches, away from the centre and at it. **The bulge is the
+  /// difference between the two** -- uniform thickness is the stain.
+  ///
+  /// **THE UNIT IS THE SINE OF THE GALACTIC LATITUDE, NOT AN ANGLE**, because that is what the shader
+  /// has in hand: the latitude reaches it as a dot product against the pole and taking an arcsine to
+  /// divide by an angle would buy nothing. So 0.055 is one standard deviation at about 3.2 degrees off
+  /// the plane, and the band stays visible to two or three times that. Reading these as fractions of a
+  /// right angle -- which an earlier draft of this comment said -- overstates the band by half again.
   float thicknessAwayFromCentre = 0.055f;
   float thicknessAtCentre = 0.16f;
 

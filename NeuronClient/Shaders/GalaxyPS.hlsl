@@ -116,8 +116,9 @@ float4 main(Input _input) : SV_Target
   const float swell = towardCentre * towardCentre;
   const float thickness = lerp(g_shape.x, g_shape.y, swell);
 
-  // A Gaussian across the band. `thickness` is a fraction of a right angle, so the divide puts the
-  // latitude in units of it.
+  // A Gaussian across the band. **Both sides of this divide are sines of the galactic latitude**, so
+  // the result is in standard deviations and `thickness` is one of them -- see `GameClient/SkyLook.h`,
+  // where the figures are, for what that is in degrees.
   const float fromPlane = sineLatitude / max(thickness, 0.0001f);
   const float band = exp(-0.5f * fromPlane * fromPlane);
 
