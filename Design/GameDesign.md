@@ -512,6 +512,6 @@ After the MVP, in the order they are most likely worth doing: the designer scree
 and the interest set, delta replication, formations, and a mobile mothership hull.
 
 **What is deliberately not designed yet:** audio, any campaign or narrative, art direction beyond
-[`Interface.md`](Interface.md) and the generated meshes of `TechnicalDesign.md` §7, mods or content
-files, replays and saved matches. Each is worth doing against something running, and §10 says when that
+[`Interface.md`](Interface.md) and the meshes of `TechnicalDesign.md` §7, mods, replays and saved
+matches. Each is worth doing against something running, and §10 says when that
 is.

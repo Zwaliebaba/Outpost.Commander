@@ -8,30 +8,15 @@ restated below with its source named.
 
 **Where the output lands:** this folder, beside this prompt, as `design_handoff_meshes/`.
 
-**The owner ruling this prompt is written against, 2026-09-22:**
-[`ADR-005`](../ADR/ADR-005-meshes-are-generated-in-code.md)'s surviving half — *meshes are functions* — is
-withdrawn. Meshes are **CMO files**, authored as content and shipped with the package under
-[`ADR-021`](../ADR/ADR-021-content-ships-with-the-package.md). **The tree does not say this yet.** ADR-005,
-`TechnicalDesign.md` §7, `GameDesign.md` §10, `Design/README.md`, M1.9, M2.4 and M2.10b all still state the
-old rule, and correcting them is a separate change from this one.
-
-**Two costs of CMO that are worth having in hand before the handoff lands**, neither of them a reason not
-to do it:
-
-**CMO's only reader in the wild is DirectXTK12**, which R14 closes by name and which
-[`ADR-021`](../ADR/ADR-021-content-ships-with-the-package.md) names again in its first boundary. Choosing
-CMO therefore means writing a CMO reader in this tree. That is the same arrangement ADR-005 named as its
-own exit — "still no dependency" — but CMO is a heavier format than the "vertex count, index count and two
-arrays" it had in mind: materials with eight texture slots, a skinning section, bone hierarchies and
-animation clips, none of which the MVP uses and all of which a conforming reader has to skip correctly.
-Budget a few hundred lines, not forty.
-
-**Nothing authors CMO natively.** The path is FBX through `meshconvert` from DirectXMesh, which puts a
-third-party tool in the build — a tool rather than a linked library, so R14 survives, but it is the asset
-step ADR-021 costed and a class of failure that shows up on somebody else's machine. The alternative that
-keeps the whole chain inside this tree is a writer script in `Scripts/` that reads the handoff's
-`meshes.json` and emits the CMO bytes directly, which is worth costing against a converter before either
-is built.
+**The decision this prompt is written against** is
+[`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), ruled 2026-09-22: **a mesh is a CMO file**, authored
+as content and shipped with the package under
+[`ADR-021`](../ADR/ADR-021-content-ships-with-the-package.md). That record used to decide the opposite and
+was **replaced rather than superseded**, under the MVP exception in
+[`ADR/README.md`](../ADR/README.md). Read it before this: it carries the two costs that matter — that
+CMO's only reader in the wild is the DirectXTK12 R14 closes, so the reader is written here against a
+format far heavier than the MVP needs; and that nothing authors CMO natively, so a conversion step lands
+somewhere. **It does not settle which**, and the chain is owed at M1.9.
 
 ---
 

@@ -61,9 +61,18 @@ MANIFEST = [
      r"recenters", ["Design/Interface.md"]),
     # ADR-019 says it out loud: "a backdrop that nobody pinned gets brighter one commit at a time."
     ("the sky's luminance ceiling", [], r"12% of full white",
-     ["Design/ADR/ADR-005-meshes-are-generated-in-code.md",
+     ["Design/ADR/ADR-005-a-mesh-is-a-cmo-file.md",
       "Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md",
       "Design/Plan/M1-the-fleet.md"]),
+    # ADR-005 was REPLACED rather than amended -- a mesh was a function and is now a CMO file -- which
+    # moved one rule stated in seven documents at once. The `gone` patterns are the sentences that ASSERT
+    # the old rule; the old TITLE is quoted as history by ADR-005's own status line and by ADR-021, and a
+    # pattern matching that would fire on correct prose, which is how a checker gets switched off.
+    ("what a mesh is", [r"[Mm]eshes are functions rather than files",
+                        r"A hull is a function that emits a few dozen triangles",
+                        r"[Mm]eshes are generated in code\.", r"[Mm]eshes are still generated in code"],
+     r"\bCMO\b", ["Design/ADR/ADR-005-a-mesh-is-a-cmo-file.md", "Design/TechnicalDesign.md",
+                   "Design/Plan/M1-the-fleet.md", "Design/Plan/M2-the-field.md"]),
     ("the posture", [r"held at its sides and the thumbs reach"],
      r"kickstand on a desk", ["Design/Interface.md"]),
     ("the interface's own transform", [r"carried through \*{0,2}the same fit transform"],

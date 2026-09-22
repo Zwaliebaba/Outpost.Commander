@@ -109,13 +109,18 @@ And M0 exists to answer questions rather than to build a game. Three of them are
 
 An ADR marked **Proposed** is a decision this design takes and the owner has not yet ruled on. **It is not
 something to write code against.** **None are Proposed today** — ADR-002 to ADR-005 were ruled on
-2026-09-20 after the review, all four with changes.
+2026-09-20 after the review, all four with changes, and **ADR-005 was ruled a second time on 2026-09-22**,
+reversed rather than amended: a mesh is a CMO file where it had said a mesh was a function.
 
 ## What is deliberately not designed yet
 
-Audio, any campaign or narrative, art direction beyond `Interface.md` and the generated meshes of
-`TechnicalDesign.md` §7, a content file format, mods, replays and saved matches. Each is worth doing
-against something running, and `GameDesign.md` §10 says when that is.
+Audio, any campaign or narrative, art direction beyond `Interface.md` and the meshes of
+`TechnicalDesign.md` §7, mods, replays and saved matches. Each is worth doing against something running,
+and `GameDesign.md` §10 says when that is.
+
+**A content file format is no longer on that list.** [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)
+settled it: a mesh is a CMO file, with the reader written here because CMO's only reader in the wild is
+the DirectXTK12 that R14 closes.
 
 **Research and the ship designer are the exception**, and they are deliberately half-designed: the
 simulation is built so both are additive (`GameDesign.md` §9), but what research actually unlocks and in

@@ -19,12 +19,13 @@ that produces a package. So a `.cso` on disk has to be declared as package conte
 library that uses it cannot see — the shader would live in `NeuronClient`, and the thing carrying it would
 be an entry in `OutpostCommander.vcxproj` that nobody editing the renderer has any reason to open.
 
-[`ADR-005`](ADR-005-meshes-are-generated-in-code.md) drew this same line one subsystem over and is worth
-reading beside this one: a mesh is a function rather than a file, and a geometry change is a code change
-the compiler checks. **That record no longer bans content files**
-([`ADR-021`](ADR-021-content-ships-with-the-package.md)) and this one is unaffected either way — the
-argument below is about a static library with no package and an asynchronous read on the ASTA, neither of
-which is a question about whether files are allowed.
+[`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md) drew this same line one subsystem over and is worth
+reading beside this one: it keeps R14 closed against a mesh *library* while ruling that a mesh is a CMO
+*file* with a reader written here. **It used to argue the opposite** — a mesh was a function, and a
+geometry change was a code change the compiler checked — and this record is unaffected either way, because
+the argument below is about a static library with no package and an asynchronous read on the ASTA, neither
+of which is a question about whether files are allowed. **The two records diverge deliberately and both
+say why:** content is what a non-programmer changes, and a shader is not.
 
 ## Decision
 

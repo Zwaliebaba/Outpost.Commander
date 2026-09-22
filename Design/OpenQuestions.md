@@ -284,8 +284,10 @@ Medium, Large — and that is an axis of the damage table (§7) rather than a di
 `MassDriver` does to a small hull and nothing about how long a `Scout` is. **Three things need the number
 and none of them can be written without it:**
 
-- **[`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md)'s mesh function** (M1.9), which emits a hull
-  from parameters and has no absolute scale to hang them on.
+- **[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)'s authored meshes** (M1.9). A mesh is a CMO file
+  and **is not scaled at draw time**, so a hull's authored extent *is* its size — the number has to be
+  agreed before anything is modeled, and it is then a figure a script can check the file against rather
+  than a parameter somebody passes.
 - **Q19's ring slot assignment**, which spaces fifty ships around a point without knowing how wide any of
   them is.
 - **M2.10's placement validity**, which asks whether a module site is "clear of the station, clear of every
@@ -320,7 +322,10 @@ module's are solved together or M2.10 refuses placements it should allow. A 220-
 modules leave room; a 300-unit station does not.
 
 **What is required either way** is that the catalog *names* a size per hull, derived like every other stat
-(R24), rather than leaving it implicit in whatever the mesh function happens to emit.
+(R24), rather than leaving it implicit in whatever the mesh happens to contain. Under
+[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) that is stronger than it was: a mesh is not scaled at
+draw time, so the catalog's number and the file's extent are two statements of one figure and **a script
+compares them** rather than a reader trusting both.
 
 ---
 
