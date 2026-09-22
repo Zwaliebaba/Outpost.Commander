@@ -367,7 +367,14 @@ the number is stated. If the next snapshot has not arrived, the client
 extrapolates for a short bounded window and then holds position rather than sliding a ship somewhere it
 never was.
 
-**The frame is two passes, and the second one is a recorded departure from R13.**
+**The frame is three passes into two surfaces, and the last one is a recorded departure from R13.**
+
+**The world is two of them and they share the scene target.** The **ship pass** draws each authored hull
+once, instanced, with the position, heading and owner's colour per instance -- so one call covers every
+ship of a shape regardless of owner (M1.9). The **world pass** draws a generated arrow for anything with
+no authored mesh: the `Cruiser` today, and every hull on an install where the package did not carry the
+files, which is [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md)'s named failure made visible
+rather than silent.
 
 **The world** draws into a scene target and is fitted into the back buffer with the aspect preserved. Its
 resolution is **a scale of the panel, defaulting to 1:1 — 2880 × 1920**
@@ -460,18 +467,30 @@ is where a project reaches past it without noticing. There is no glTF loader her
 and no DirectXTex, and there will not be: a format used here has a reader written here, or is one the
 Windows SDK already reads — WIC for images, Media Foundation for audio, both inside R14 already.
 
-**Nothing loads on the frame thread.** `Package.Current.InstalledLocation` is asynchronous and the frame
-thread is an ASTA, where blocking on an asynchronous operation is a deadlock rather than a delay
-([`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md) records it as observed). Content is read
-before the frame loop starts or on a worker thread with a handoff.
+**Nothing blocks the frame thread on an asynchronous operation**, because the frame thread is an ASTA
+and blocking it on one is a deadlock rather than a delay
+([`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md) records it as observed).
+
+**THIS SAID `Package.Current.InstalledLocation` WAS ASYNCHRONOUS AND IT IS NOT** -- `InstalledLocation()`
+and its `Path()` are **properties**, safe anywhere; `GetFileAsync` is the asynchronous one. The
+distinction is the whole of how content gets read at all, and it is the same one
+`Neuron::ReadHostAddress` learned the expensive way at M0.22: the tidy-looking `GetFileAsync(...).get()`
+killed the client between opening its log and writing the first line into it. `NeuronClient/PackageFile.h`
+takes the path from the property and reads the file with an `ifstream`.
+
+**It is still blocking file I/O, and it runs once before the frame loop.** Four hundred kilobytes at
+launch is not a frame's worth of work to hide; the moment something has to load DURING a match it needs a
+worker and a handoff.
 
 **A mesh is a CMO file** ([`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)). The five MVP shapes —
 `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid — are modeled and shipped as package
 content rather than emitted by code, and `Design/design_handoff_meshes/` specifies them. **That record
 used to rule the opposite**, and it was replaced rather than superseded because nothing has shipped.
 
-**The reader is written here, which is the whole of how CMO stays inside R14.** CMO's only reader in the
-wild is DirectXTK12's, which the paragraph above closes by name. The MVP uses the position, the normal and
+**The reader is written here, which is the whole of how CMO stays inside R14.** It exists:
+`NeuronClient/CmoReader.h` (M1.9), and `Tests/NeuronClientTests/CmoReaderTests.cpp` feeds it a file
+carrying skinning, bones and animation clips to prove it walks past them. CMO's only reader in the wild is
+DirectXTK12's, which the paragraph above closes by name. The MVP uses the position, the normal and
 the vertex color of CMO's fixed vertex and writes tangent and texture coordinate as zeros — 24 dead bytes
 of 52 — and the reader **skips the materials' eight texture slots, the skinning buffer, the bones and the
 animation clips rather than rejecting a file that has them.**
@@ -501,13 +520,27 @@ change to what the handoff carries, requested when a tracer is actually drawn.
 
 **Three sizes, and they are not one number** (Q44). CMO's vertex is fixed at 52 bytes and this content uses
 28 of them — position, normal and vertex color — with the tangent and texture coordinate written as zeros.
-**On disk** the thirteen files are about **425 KiB**, which is the figure to quote for nothing. **In the
-appx** they are much less and the number is **not yet measured**: 188 KiB of literal zeros deflates to
-almost nothing, and package size is what that figure is for. **In VRAM** it is the full **≈ 417 KiB**,
-zeros included, because the GPU fetches the dead 24 bytes on every draw — which is the only one of the
-three that bears on frame time. **Repacking to a 28-byte vertex at load time is declined**: it halves
-vertex fetch, costs a load-time transform and a second vertex layout, and at 2,674 triangles across the
-whole game nothing is near a bottleneck. The measured appx figure is owed at M1.9.
+**All three are now measured** (M1.9, 2026-09-22):
+
+| | | |
+|---|---|---|
+| **On disk** | **430 KiB** over thirteen files | the figure to quote for nothing |
+| **In the appx** | **52 KiB** | 188 KiB of literal zeros deflates to almost nothing, and this is what package size means |
+| **In VRAM** | **266 KiB** for all thirteen, **85 KiB** for the three M1.9 ships | the only one of the three that bears on frame time |
+
+**THE VRAM FIGURE IS NOT WHAT THIS SECTION PREDICTED, AND THE REASON IS THAT Q44's PREMISE MOVED.** That
+row declined repacking the vertex — it "costs a load-time transform and a second vertex layout" — and
+said VRAM would be the full 423 KiB with the dead 24 bytes fetched on every draw. **The handedness
+conversion forces a load-time rebuild anyway**: the handoff authors Y-up and the camera is Z-up, so
+`GameClient/HullMesh.cpp` builds a new vertex array on load whatever it does with the width. Once that
+array is being built, dropping the tangent and the texture coordinate is free, and the client uploads a
+**32-byte vertex** — position, normal and the two shade channels. The dead bytes never reach the GPU.
+
+**So the decision was not overturned; the thing it was weighing disappeared.** What Q44 refused to pay for
+is a cost the conversion had already paid.
+
+**The instance buffers are 18 KiB** — 220 instances of 28 bytes across three frames in flight — which is
+the whole of what the per-frame path allocates.
 
 **What is given up is that a geometry change was a change the compiler checked.** The replacement is a
 script asserting each mesh's bounds against the size the catalog states, which is a gate rather than a

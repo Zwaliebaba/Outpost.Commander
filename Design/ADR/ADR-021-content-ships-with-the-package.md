@@ -114,5 +114,24 @@ more than it buys, the answer is to ship less of it rather than to ban files aga
 
 ## Measurements
 
-None, and none is owed. This is a decision about where a line sits, and the two lines it does not move —
-R14's dependency list and R16's determinism — are drawn elsewhere and are unchanged by it.
+**The line itself needs none** — it is a decision about where a boundary sits, and the two boundaries it
+does not move, R14's dependency list and R16's determinism, are drawn elsewhere and unchanged by it.
+
+**What it does owe is the check it names**, and M1.9 is when content first had to be read at runtime:
+
+### The package carries them — 2026-09-22, M1.9
+
+The thirteen `.cmo` files and `manifest.json` are declared as package content and appear in the build's
+own `.appxrecipe`, each mapped from its source path to `Assets\Meshes\<name>.cmo` inside the package.
+The registered install location carries all fourteen, **444 KiB**, and the client reads three of them and
+draws them.
+
+**THIS IS NOT THE CHECK THIS RECORD ASKED FOR AND THAT IS STATED PLAINLY.** ADR-021's named failure is
+**a clean install on a machine that did not build it**, and this was a loose-file registration of a build
+output on the machine that produced it — the one arrangement in which a missing payload declaration
+cannot show. What has been proved is that the declaration exists and that the runtime path finds the
+files; what has not is the thing the record was written about.
+
+**What makes the failure survivable rather than silent** is that a hull with no mesh draws M0.21b's
+generated arrow and the client logs the mesh by name. An install that did not carry the files shows a
+field of arrows and a log that says which ones, instead of a window that never appears.

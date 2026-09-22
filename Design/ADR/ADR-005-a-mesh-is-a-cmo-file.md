@@ -155,12 +155,30 @@ position, normal, tangent, color and one texture coordinate — **12 + 12 + 16 +
 the 24 for tangent and texture coordinate are dead here**, 46%. The reader confirms the layout against the
 format before anything depends on it.
 
-Three are owed:
+### The package cost — 2026-09-22, M1.9
 
-1. **The five shapes' total package bytes** (M1.9), against the 6.3 MB
-   [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) saved by not shipping a painted cubemap —
-   which is the only figure in this tree that says what a megabyte of content is worth here.
-2. **The asteroid field's draw count** once the variant count is settled (M2.4), against the one draw
+**52 KiB.** The thirteen delivered `.cmo` files are **430 KiB on disk** and **53,469 bytes deflated**,
+which is 12.1% — 188 KiB of the on-disk figure is literal zeros, the tangent and texture coordinate this
+content does not use, and those cost essentially nothing in a package.
+
+**Measured by deflating the thirteen files, not by reading a built appx's block map**, because the deploy
+used here is loose-file registration and no `.appx` was produced. An appx **is** a zip with deflate, so
+the proxy is faithful; it is stated rather than glossed because the two are not the same command.
+
+**Against the 6.3 MB [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) saved by not shipping a
+painted cubemap**, the entire mesh set is **0.8% of it**. That comparison is the one figure in this tree
+that says what a megabyte of content is worth here, and the answer it gives is that geometry is not where
+package size lives — a single baked texture is two orders of magnitude more.
+
+**In VRAM the set is 266 KiB rather than the 423 the 52-byte vertex implies**, because the client uploads
+a 32-byte vertex. See Q44: the decision not to repack was not overturned, the cost it was weighing
+disappeared into the handedness conversion.
+
+Two are still owed:
+1. **The asteroid field's draw count** once the variant count is settled (M2.4), against the one draw
    `TechnicalDesign.md` §6 currently states.
-3. **Whether the hulls read at the tactical zoom** (M2.13), which is looked at on the device rather than
-   computed, and which this decision exists to make answerable.
+2. **Whether the hulls read at the tactical zoom** (M2.13), which is looked at on the device rather than
+   computed, and which this decision exists to make answerable. **They have been looked at close up**, on
+   the device at M1.9, and what that found was a bug rather than an answer: the light rig was never
+   converted out of the authored frame, so the key pointed nearly along the plane and every hull read as
+   shapeless. Fixed; the tactical-zoom question is untouched and still M2.13's.

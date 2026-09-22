@@ -6,11 +6,13 @@ engineering rule never decides a game mechanic. Where a design decision has to c
 code, it is proposed as an `AGENTS.md` §5 rule citing the section here that is its source — the design is
 the source and `AGENTS.md` is the rule, in that order.
 
-**Status: DRAFT, 2026-09-20**, with the fifth and sixth rounds applied on 2026-09-21. Written against the
-brief and against `AGENTS.md`, starting from an empty `Design/` and a build shell with no game in it.
-**Thirty-one questions answered, five open. All nineteen ADRs Accepted** — the nineteenth is
-[`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md), which rules that content files ship and is the
-first record here to supersede part of an earlier one rather than amend it.
+**Status: DRAFT, 2026-09-20**, with the fifth and sixth rounds applied on 2026-09-21 and the eighth on
+2026-09-22. Written against the brief and against `AGENTS.md`, starting from an empty `Design/` and a
+build shell with no game in it.
+
+**Forty-one questions answered, one half-answered, four open. All twenty ADRs Accepted** — the twentieth
+is [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), which settles how a client learns
+which player it is and was the one number this plan reserved before it knew the answer.
 
 **A second designer was then asked to defeat it**, and the result is applied throughout. That review found
 a solved game in the combat numbers, a factual error in `AGENTS.md` itself, and several features specified
@@ -18,10 +20,15 @@ in one document with no data path in another. It produced eight new questions, r
 answers, and **cut roughly a third of the MVP**; `OpenQuestions.md`'s fourth round names what was wrong.
 
 What is left is **measurement rather than decision**: `TechnicalDesign.md` §9 lists eight figures that
-cannot be obtained until there is code. **The first is now discharged** — M0.9's encoder put the MVP
-snapshot at 1,137 bytes and corrected the design's arithmetic by a byte in five documents. Three of the
-remaining seven are owed at M0, and all three need hardware rather than code: tap-to-visible latency, loss
-and jitter on a real wireless link, and which loopback exemption form a UDP client actually needs.
+cannot be obtained until there is code, and **five of them are now in.** The snapshot is 1,137 bytes at
+110 entities; the filter and the world scale were confirmed by eye and 1:1 ships; frame time is 777
+microseconds over an empty frame and **1,482 with M1.9's hulls**; the loopback exemption form is known;
+and the meshes cost **52 KiB** in the package.
+
+**What still needs hardware rather than code is two machines.** Tap-to-visible latency is measured on
+loopback only, loss and jitter on a real wireless link are unmeasured, and
+[`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md)'s clean-install check has only been run on the
+machine that built the package — which is the one arrangement in which it cannot fail.
 
 ## The documents
 
@@ -31,8 +38,8 @@ and jitter on a real wireless link, and which loopback exemption form a UDP clie
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, where the line around content actually is, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
 | [`design_handoff_hud/`](design_handoff_hud/README.md) | **The HUD as drawn**: every rectangle in integer authored coordinates, the palette, the type scale and the motion table, with a `geometry.json` M1.14's test asserts against and four reference frames at 1440 × 960. It settles *where and what color*; `Interface.md` §6 *Where the geometry lives* settles which of the two wins where they overlap |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: thirty-one answered across six rounds, five open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-021`, with `ADR-013` and `ADR-014` reserved |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: forty-one answered across eight rounds, four open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong. **The eighth round came out of writing code**, which is the kind this design expected fewest of |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-021`, with `ADR-014` reserved for the firing interval M3 owes |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than

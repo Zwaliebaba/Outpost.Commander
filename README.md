@@ -10,23 +10,26 @@ on the network has nothing to show.
 
 ## The state of it
 
-**There is a wire, a simulation and a frame — and still no game.** M0 is roughly half the engineering
-in the MVP and it is the milestone labeled "no game at all"; what runs today is the host simulating one
-entity moving toward a point, at twenty ticks a second, encoding it into a single datagram, while the
-packaged client opens a Direct3D 12 device, clears an off-screen scene target and presents it into the
-back buffer at the scale and filter the window's size calls for.
+**There is a match, and you can look at it.** M0 is complete and M1 is built as far as its interface:
+the host places two stations 12,000 units apart on a seed both sides derive, builds ships and spends
+credits for them, and the packaged client joins, draws three authored hulls, and lets a tap select a ship,
+a double tap take every ship of its design in a circle, and a drag move the camera with the ground stuck
+to the finger.
 
 | | |
 |---|---|
 | **The numbers** | Fixed point at eight fractional bits, the vector over it, the binary angle, a 4,096-entry sine table and a PCG32 seeded from the match — all integer, because a simulation that cannot reproduce from its seed cannot be replayed |
-| **The wire** | The packet header, the snapshot and the command packet, both encoded and decoded in full. A 110-entity snapshot measures **1,137 bytes** against the 1,232 pinned, so it is one datagram |
-| **The simulation** | Entities in a vector with a free list, a fixed-order tick, movement that arrives without oscillating, and a state hash that comes out **identical on x64 and ARM64, Debug and Release** |
-| **The host** | Winsock in, the tick, snapshots out — sixty seconds at exactly twenty ticks a second with no drift |
-| **The frame** | The window metrics and the two fit transforms, the device, a flip-model swap chain at the panel's **physical** pixels, two frames in flight, and the scene target fitted into that swap chain by the first shader in the tree |
+| **The wire** | The packet header, the snapshot, the command packet and the join, encoded and decoded in full. A 110-entity snapshot measures **1,137 bytes** against the 1,232 pinned, so it is one datagram |
+| **The simulation** | A component catalog, designs derived from it, a build system, ring slot assignment so fifty ships ordered to one point do not stack — and a **determinism test**: a two-minute scripted match hashes to `0x37f846ed90b74ca1` identically on x64 and ARM64, Debug and Release |
+| **The session** | A client is told which player it is, keeps a session token, and gets its slot back on reconnect; a command from an endpoint the host never seated is refused |
+| **The frame** | A flip-model swap chain at the panel's **physical** pixels, a scene target fitted into it, and three CMO hulls drawn as three instanced calls with per-instance team colour — **1,482 microseconds** a frame on a Surface Pro |
 
-**233 tests** across six suites, run on all four configuration and platform pairs. What is not here: the
-interface pass, the gesture seam, the client's replica store and camera — and therefore anything a player
-could look at. `GameClient` is the one library still holding a function that returns its own name.
+**595 tests** across six suites, run on all four configuration and platform pairs.
+
+**What is not here yet**: the sky, the glyph atlas, the text renderer and the four panels — so there are
+no readouts, no build buttons and nothing on screen but the world. Mining, modules and combat are M2 and
+M3. **Two things are measured only on one machine**: tap-to-visible latency, and that the package carries
+its content on an install that did not build it.
 
 ## The shape of it
 
@@ -54,7 +57,7 @@ One suite per library, under [`Tests/`](Tests/), each an ordinary desktop test D
 | | |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** §2 is the project layout and why it is shaped this way. |
-| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft, but the decisions are ruled: eighteen ADRs Accepted.** |
+| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft, but the decisions are ruled: twenty ADRs Accepted.** |
 | [`.github/workflows/build.yml`](.github/workflows/build.yml) | What CI gates, and what it deliberately does not |
 
 ## Building it
@@ -85,6 +88,13 @@ Running the tests, and checking formatting before a push, are both in
 The client is a packaged application: it is deployed and launched rather than run from a shell, it
 needs developer mode, and it needs a host somewhere on the network to have a match to join — **a
 packaged client cannot reach a host on the same machine** without a loopback exemption.
+
+**Where it looks for that host is a one-line file**, `host.txt` in the package's `LocalState`, with
+`127.0.0.1` compiled in as the default ([`ADR-008`](Design/ADR/ADR-008-the-host-address-is-configuration.md)).
+There is no discovery and no address entry, because there is no keyboard. Beside it the client keeps
+`session.txt`, the token that gets its slot back on reconnect
+([`ADR-013`](Design/ADR/ADR-013-a-client-is-told-which-player-it-is.md)), and `probe-log.txt`, which is
+where every figure this project has measured on a device came from.
 
 **It needs Windows 11 22H2 or newer to run**, which is `10.0.22621.0` in the manifest. That is not
 caution: the shaders are compiled at Shader Model 6.7

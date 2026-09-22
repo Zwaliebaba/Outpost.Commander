@@ -317,18 +317,31 @@ different objects there. M2.13 judges it.
 `Tests/GameClientTests/HullMeshTests.cpp`; `Scripts/BuildMeshCatalog.py`; the project files and
 `.filters`.
 
-**WHAT IS BUILT, 2026-09-22.** The reader, and the suite that feeds it a file carrying skinning, bones
-and animation clips. `Scripts/BuildMeshCatalog.py` and the `MeshCatalog.g.h` it regenerates from
+**BUILT, 2026-09-22.** The reader, and the suite that feeds it a file carrying skinning, bones and
+animation clips. `Scripts/BuildMeshCatalog.py` and the `MeshCatalog.g.h` it regenerates from
 `manifest.json`. `GameClient/HullMesh`, which is the only part of the path that knows what a `Scout` is
 and is where the authored Y-up frame becomes the camera's Z-up one — a reflection, so every triangle's
-winding is reversed. `CheckMeshes.py`'s CMO stage, which was a stub that passed while asserting nothing
-and now decodes all thirteen files, runs the landmark tests on the decoded positions and catches the
-all-white colours that mean the vertex-colour injection was skipped. **And Q37's two statements now have
-a script between them**, which is what the register said would close that row.
+winding is reversed and back-face culling is left ON in the ship pass precisely so that a missed reversal
+shows as a hull that vanishes. `CheckMeshes.py`'s CMO stage, which was a stub that passed while asserting
+nothing and now decodes all thirteen files, runs the landmark tests on the decoded positions and catches
+the all-white colours that mean the vertex-colour injection was skipped. **Q37's two statements now have
+a script between them**, which is what the register said would close that row. And the renderer: upload
+buffers, a three-deep instance ring, the `Ship` shader pair and a mesh pass that draws each shape once.
 
-**WHAT IS NOT.** The vertex and index buffers, the upload, the instanced draw, the `Ship` shader pair and
-the world pass that would call them. The world still draws M0.21b's generated arrow. Both of the exit
-criteria below that are a screen rather than a test are therefore untouched.
+**MEASURED ON THE DEVICE: 1,482 microseconds a frame**, against 1,118 for M0.21b's arrow — about 360 for
+the hulls, and the two are Debug against Release so that supports the shape of the answer rather than
+three digits. In ADR-007.
+
+**WHAT THE LOOKING FOUND WAS A BUG, WHICH IS WHY IT IS DONE BY LOOKING.** `manifest.json` states the light
+rig in the authored Y-up frame like everything else it delivers; the vertices were converted and the
+lights were not, so the key pointed very nearly along the plane and a station's top plate — most of what a
+raking camera shows — was carried by ambient alone. It read as the meshes being vague rather than as the
+light being wrong. Both now go through one conversion.
+
+**STILL OWED, AND BOTH ARE A SCREEN.** The tactical-zoom silhouettes, which are M2.13's. And
+[`ADR-021`](../ADR/ADR-021-content-ships-with-the-package.md)'s clean install: the deploy used here was a
+loose-file registration of a build output on the machine that produced it, which is the one arrangement
+in which a missing payload declaration cannot show.
 
 **Done when:** **`Scout`, `Frigate` and the station** draw as one instanced call each with a per-instance
 transform and team color, at the sizes Q37 settles; the reader survives a file carrying skinning, bones

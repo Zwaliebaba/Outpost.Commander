@@ -117,8 +117,12 @@ convention has to be applied by hand.
 1. **Shader Model 6.7 is available on target-class hardware** — Adreno X1-85 on a Snapdragon X, reported
    by `D3D12_FEATURE_DATA_SHADER_MODEL`. `NeuronClient/GraphicsDevice.h` exposes it so the claim stays
    checkable rather than becoming folklore.
-2. **The compiled sizes**: `PresentVS` 3,036 bytes and `PresentPS` 4,056 bytes of DXIL, from the generated
-   headers. The binary cost of baking a blit in is four kilobytes, so "a blit is nothing" is now a figure.
+2. **The compiled sizes**, from the generated headers. `PresentVS` 3,036 bytes and `PresentPS` 4,056
+   bytes of DXIL: the binary cost of baking a blit in is four kilobytes, so "a blit is nothing" is now a
+   figure. **M1.9 added a third pair** and it is the largest so far — `ShipVS` **5,068 bytes** and
+   `ShipPS` **4,924** — for the instanced hull draw with its two-segment palette ramp and two lights.
+   **Eight stages come to about 32 KiB of DXIL across four checked-in header pairs**, against headers
+   that are 144 KiB of source text; the text is the cost of this decision and the DXIL is the thing.
 3. **Debug and Release produce byte-identical headers**, which is what makes checking them in coherent.
 4. **A pipeline state built from this DXIL is created on the device, and draws.** Taken at **M0.15** on the
    development machine — the Snapdragon X and Adreno X1-85 of measurement 1 — where

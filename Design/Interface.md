@@ -376,6 +376,15 @@ mesh handoff's combat plate was accepted against — and what it changes is the 
 `GameClient/Camera.h` was built to it; the handoff's README records the discrepancy and is corrected
 rather than this.
 
+**The camera opens on your own station at 2,400 units**, which shows about 2,620 units across — a
+220-unit station at roughly 120 authored pixels, with its 400-unit module radius on screen around it. It
+could not do this before [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), because nothing
+told the client which player it was; the opening pose was an arbitrary point near the middle. **A
+recenter moves the focus and leaves the zoom alone**, so the opening distance is what decides how large
+your base is, and it is deliberately not the near end: 1,400 would be pinned against the limit with
+nowhere to go but in, and — because pitch is coupled to zoom — would also be the most raking view the
+camera has.
+
 **There is no minimap.** Because pitch is coupled to zoom, **maximum zoom-out is already a top-down
 tactical view of the whole map** — a minimap would be a second, smaller, lower-fidelity copy of a view
 that is one gesture away, costing a second render of every entity, a second coordinate space and a second

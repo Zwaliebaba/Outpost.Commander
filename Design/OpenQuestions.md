@@ -12,9 +12,13 @@ with no milestone can wait indefinitely.
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
-with recommendations and answered the same day; the eighth round below is what they became. **All six
-remaining open questions are under *Open***, each with the milestone that settles it. **Every one carries
-a recommendation**, which none of Q26, Q33 and Q34 did before.
+with recommendations and answered the same day; the eighth round below is what they became.
+
+**THE *OPEN* SECTION HOLDS EIGHT ENTRIES AND HALF OF THEM ARE ANSWERED** — Q35, Q37 and Q46 in full, Q26
+in half — kept in place with their reasoning rather than flattened into a table row, because what each
+was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
+open are Q33, Q34, Q36 and Q47**, each with the milestone that settles it, and **every one carries a
+recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
 because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
@@ -177,7 +181,7 @@ is a specification that was approved without a home.
 | **Q41** | Where do weapons attach to a hull? | **The hull's origin, for the MVP.** Wrong by up to half a hull length for one frame of a tracer during an explosion. Not inferred from the vertices — the arrays are face-split with no groups to find a recess by, and a re-modeled hull would move every muzzle silently. Safe to defer because [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)'s event names entities and not positions. Authored transforms are requested when a tracer is drawn. | `TechnicalDesign.md` §7 |
 | **Q42** | What does an asteroid's ore state look like? | **Nothing — the number in the selection panel and nowhere else.** The question a player is asking is answered by that number, and four buckets over five variants is twenty combinations to author for one line of text. The cheap version if it is ever wanted is the vertex-color hull tone, which costs no material and no second draw. | `Interface.md` §7 |
 | **Q43** | May a mesh be authored off-origin? | **Yes, and what is asserted is the extent rather than the centroid.** Three of the thirteen are deliberately asymmetric and the station's centroid sits at Y ≈ +6, so a `min == -max` check — the one that looks obviously missing — fails all three. `Scripts/CheckMeshes.py` compares min and max per axis against the manifest instead. | `TechnicalDesign.md` §7 |
-| **Q44** | Repack CMO's 52-byte vertex to 28? | **No.** 24 bytes per vertex are dead and 2,674 triangles is nowhere near a bottleneck; repacking buys vertex fetch and costs a load-time transform and a second layout. **The real finding is that §7 carried one number for three things** — 425 KiB on disk, an unmeasured and much smaller figure in the appx, and ~417 KiB in VRAM — and only the last two mean anything. The appx measurement is owed at M1.9. | `TechnicalDesign.md` §7 |
+| **Q44** | Repack CMO's 52-byte vertex to 28? | **No — and M1.9 found the premise had moved.** The decision refused to pay for a load-time transform and a second layout; the **handedness conversion forces a load-time rebuild anyway** (the handoff is Y-up and the camera is Z-up), so once that array is being built the narrow vertex is free. The client uploads **32 bytes**. **The real finding stands and all three figures are now measured**: **430 KiB** on disk, **52 KiB** deflated in the appx, **266 KiB** in VRAM for all thirteen and **85 KiB** for the three M1.9 ships. | `TechnicalDesign.md` §7 |
 | **Q45** | Does the shape-coded overlay ship? | **Not in the MVP, and the dependency is recorded rather than the decision alone.** The hulls were tuned for the combat view instead of being bent into silhouettes legible at 3.5 px *because* the overlay was expected to carry tactical-zoom identification. Cutting it silently reopens that trade, and the answer would be re-authoring thirteen meshes. | `Interface.md` §7 |
 
 ---
@@ -445,7 +449,7 @@ and mining stops mattering.
 (150 and 300 ticks), so neither figure depends on a rounding rule. With `ShipyardL1` a Fighter is 10
 seconds and with `ShipyardL2` it is 7.5.
 
-### Q46 — What are the catalog's mass, thrust and per-item costs? — **needed by M1.2**
+### Q46 — What are the catalog's mass, thrust and per-item costs? — **ANSWERED**
 
 **`GameDesign.md` §6 states them as relations and states the outcomes they have to produce.** A hull's
 mass is "low", "medium" or "high"; a drive is "balanced thrust, cheap" against "more thrust for more mass

@@ -41,10 +41,15 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1 IS BUILT AS FAR AS ITS RENDERER.** M1.1 to M1.8, M1.10 and M1.11 are in, and M1.9 is half in.
-What that adds up to is a match: two stations placed 12,000 units apart on a seed both sides derive, a
-station that builds and refunds, fifty ships that take a ring slot each rather than stacking, a camera
-that sticks to the finger, and a tap that selects, expands and orders.
+**M1 IS BUILT AS FAR AS ITS INTERFACE, AND THE HULLS ARE ON THE SCREEN.** M1.1 to M1.11 are in.
+What that adds up to is a match you can look at: two stations placed 12,000 units apart on a seed both
+sides derive, a station that builds and refunds, fifty ships that take a ring slot each rather than
+stacking, a camera that sticks to the finger and opens on your own base, a tap that selects, expands and
+orders, and three authored CMO hulls drawn as three instanced calls.
+
+**Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
+still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
+milestone with something behind it worth seeing.
 
 **M1.4 took the decision this plan said was not its to take** —
 [`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) — and the code behind it: a client is
@@ -60,9 +65,9 @@ ran, every claim in that record about bit-identical behavior was an argument.
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
-| **M0.23** | **Half closed.** Frame time is measured and settled — 1,118 microseconds mean GPU over 3,600 frames, three runs inside four microseconds of each other, in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md). Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
+| **M0.23** | **Half closed, and the measured half has moved once.** Frame time was 1,118 microseconds over an empty frame at M0.23 and is **1,482 with M1.9's three hulls in it** — both in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md), and it is a standing figure rather than a settled one for exactly that reason. Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
 | **M1.4** | **Closed.** The ADR is Accepted and the join is built. **What it has not had is two machines** — every one of its properties is pinned by a socket-free suite, and a reconnect across a real relaunch is one of the things M0.23's outstanding run is now worth watching for |
-| **M1.9** | **Half built.** The CMO reader, the regenerated mesh catalog, the hull-to-mesh map with its handedness conversion and `CheckMeshes.py`'s CMO stage are in and tested; **nothing uploads a vertex buffer yet**, so the world still draws M0.21b's generated arrow. Both of the step's remaining exit criteria are a screen rather than a test |
+| **M1.9** | **Built, and looked at once.** Three hulls read out of the package, converted, uploaded and drawn instanced, at **1,482 microseconds** a frame. **What the looking found was a bug**: the light rig was never converted out of the authored frame, so the key pointed nearly along the plane and every hull read as shapeless. Fixed. **The tactical-zoom silhouettes are still M2.13's**, and ADR-021's clean-install check is still owed — the deploy used here was a loose-file registration on the machine that built it, which is the one arrangement in which a missing payload cannot show |
 | **M1.9b** | **Not started.** The sky is the one part of M1 with no code at all. Its blackbody table and its seeded star field are `NeuronClientTests`' to pin (`TechnicalDesign.md` §8); the cubemap bake and the draw are looked at rather than asserted |
 
 **M0.16 is CLOSED** — the filter was confirmed by eye on the device at both scales, the frame times are in
@@ -335,14 +340,22 @@ assigns all eight to a step, which is the whole of its contribution to them:
 | 2 | **Tap-to-visible latency on real hardware** | **M0.23** gate | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
 | 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
-| 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. |
+| 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
 | 7 | ~~**That the present step really takes the filter the scale calls for, and which world scale ships**~~ **TAKEN** | **M0.16** gate, closed | Looked at on the device at both scales, plus frame time at each on x64 and ARM64. The filter is right at both and **1:1 ships** ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |
 | 8 | Which loopback exemption form a UDP client needs | **M0.5** gate | Remove the exemption and try again, exactly as `AGENTS.md` §3 instructs. |
 
-[`ADR-002`](../ADR/ADR-002-tick-and-numbers.md) owes a ninth that is not on that list and matters more than
-most of it: **the determinism test passing on all four configuration and platform pairs.** The test lands
-at M1.7; running it on four pairs is standing work below, because nothing in CI will ever do it.
+**Q44 owed a ninth and M1.9 discharged it**: what the meshes cost **in the appx**, which is the only one
+of `TechnicalDesign.md` §7's three sizes that means anything for package size. **52 KiB deflated against
+430 on disk** — 0.8% of the 6.3 MB [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md)
+saved by not shipping a painted cubemap, which is what says that geometry is not where package size
+lives.
+
+[`ADR-002`](../ADR/ADR-002-tick-and-numbers.md) owes a tenth that is not on that list and matters more
+than most of it: **the determinism test passing on all four configuration and platform pairs.**
+**DISCHARGED at M1.7** — a two-minute scripted match from one seed hashes to `0x37f846ed90b74ca1`
+identically on Debug and Release, x64 and ARM64. Running it again after anything touches the simulation is
+standing work below, because nothing in CI will ever do it.
 
 ## The ADRs this plan expects
 
@@ -381,10 +394,15 @@ nobody reads carries none of them. **What is left is the noise**: `HeaderFilterR
 reported and not what is analyzed, so each run walks the Windows SDK headers, which is both why it is
 slow and why its findings are hard to see. Quiet it and it can run with `-Gate`, which is the point.
 
-**The determinism test on all four pairs, at every milestone boundary.** ADR-002's second owed
-measurement, and the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the property R16
-exists to protect is precisely the one the pipeline does not watch. Four `msbuild` invocations and four
-`vstest` runs comparing one state hash.
+**The determinism test on all four pairs, at every milestone boundary. THE TEST EXISTS AND HAS RUN
+ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — **and running it
+again is the standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
+behind is not. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
+property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
+invocations and four `vstest` runs comparing one state hash.
+
+**A change that moves the hash is either deliberate or it is a desynchronisation**, and the test says
+which by failing rather than by being run.
 
 ## What is deliberately not planned
 

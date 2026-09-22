@@ -136,20 +136,34 @@ under it.
    That the two agree to within three microseconds is itself the finding: this frame is GPU-bound and the
    CPU's instruction set is not in the answer.
 
-   **READ THESE NARROWLY, because they measure a frame this game does not have.** The scene is a clear,
-   six one-pixel rectangle clears and the present blit — nothing else is drawn yet. They are a real
+   **READ THESE NARROWLY, because they measured a frame this game did not have.** The scene was a clear,
+   six one-pixel rectangle clears and the present blit — nothing else was drawn yet. They are a real
    measurement of the **present path**, which is the cost this ADR predicted above at "about 22 MB read
    and 22 MB written per frame", and they say nothing about the objection that matters more: four times
    the pixel shader invocations over a scene with bloom in it. 777 microseconds is 4.7% of a 16.67 ms
-   budget. **The headroom question stays open until there is a scene worth measuring.**
+   budget.
+
+   **THERE IS NOW A SCENE, AND IT IS 1,482 MICROSECONDS** — M1.9, on the same device, ARM64 Release,
+   1:1, one sample, over 3,600 frames, with three CMO hulls drawn as three instanced calls
+   ([`ADR-007`](ADR-007-the-authored-frame-is-1440x960.md) carries the figure). Against the 777 above
+   that is **about 700 microseconds for the world**, which is arithmetic on two means rather than a
+   separate measurement — and the earlier figure was a Debug build, so it supports the shape of the
+   answer and not three digits.
+
+   **8.9% of a 16.67 ms budget with the fleet's geometry in it.** What is still absent is the pixel cost
+   this ADR is actually about: there is no sky, no bloom and no interface, and 2,674 triangles is
+   geometry rather than shading. **The headroom question stays open**, but it is no longer open over an
+   empty frame.
 
    **The four-sample half is not here and is not yet takeable.** A multisampled scene target needs a
    resolve before the present step can sample it, `SceneTarget.cpp` asserts that at compile time, and the
    resolve does not exist. It stays a standing obligation, as `Design/Plan/README.md` measurement 5 says.
 
 2. ~~**That the present step takes the filter the scale calls for**~~ — **CONFIRMED BY EYE at M0.16, on
-   the device, at both scales, 2026-09-22.** `SceneTarget::RecordCalibrationPattern` puts a hard
-   one-pixel edge in the scene target — outermost rows and columns plus a centre cross — and it reached
+   the device, at both scales, 2026-09-22.** **The pattern no longer draws**: M1.9 removed the call once
+   there were hulls behind it, because a closed gate's instrumentation is a white cross over the world.
+   `SceneTarget::RecordCalibrationPattern` remains and is still pinned by its suite, so re-confirming
+   this is one line rather than a rewrite. It put a hard one-pixel edge in the scene target — outermost rows and columns plus a centre cross — and it reached
    the glass unfiltered and pixel-exact at 1:1 and cleanly doubled at 0.5, with no soft edge at either.
    **That is what R13's whole arrangement rested on**: a conversion error landing at 1.99 rather than 2,
    or 0.999 rather than 1, shows as grey on a one-pixel edge and shows as almost nothing on anything
