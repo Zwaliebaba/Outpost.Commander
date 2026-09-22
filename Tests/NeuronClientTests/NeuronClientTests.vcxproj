@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FitTransformTests.cpp" />
+    <ClCompile Include="FrameStatisticsTests.cpp" />
     <ClCompile Include="PacketQueueTests.cpp" />
     <ClCompile Include="SceneTargetTests.cpp" />
     <ClCompile Include="WindowMetricsTests.cpp" />

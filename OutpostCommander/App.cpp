@@ -7,6 +7,10 @@
 #include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.Storage.h>
 
+// Fullscreen lives in its own translation unit rather than here, and ViewMode.h says why: one more
+// projection in this file is what tips it over C3859.
+#include "ViewMode.h"
+
 #include <array>
 #include <chrono>
 #include <cstddef>
@@ -66,6 +70,24 @@ inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
 inline constexpr std::chrono::milliseconds HELLO_INTERVAL{1000};
+
+/// M0.16's measurement window. The first frames are thrown away because they are not frames the
+/// game would ever run: the pipeline state is created on the first of them, the driver is still
+/// compiling, and the fullscreen transition may not have finished settling. Sixty seconds of
+/// vsynced frames after that is a long enough sample that the mean stops moving.
+///
+/// **The probe exits when this completes**, which it did not used to -- it ran until the window was
+/// closed. A gate run has to terminate by itself or it writes no figures at all.
+inline constexpr std::uint64_t WARMUP_FRAMES = 120;
+inline constexpr std::uint64_t MEASURE_FRAMES = 3600;
+
+/// How long the fullscreen transition is given, and what counts as having finished. A quarter of a
+/// second of an unchanging width is several refreshes at any rate this panel runs at, and the
+/// timeout is generous because overshooting it costs a second of a sixty-second run while
+/// undershooting it measures the wrong panel.
+inline constexpr std::chrono::milliseconds SETTLE_TIMEOUT{3000};
+inline constexpr std::chrono::milliseconds SETTLE_STABLE_FOR{250};
+inline constexpr std::chrono::milliseconds SETTLE_POLL_INTERVAL{8};
 
 [[nodiscard]] std::uint64_t MillisecondsSince(std::chrono::steady_clock::time_point _start) noexcept
 {
@@ -149,6 +171,74 @@ void RunProbe(const CoreWindow& _window)
     return;
   }
 
+  // M0.16 MEASURES THE PANEL, and a windowed client measures something else: the swap chain is
+  // created from the window's size exactly once, so at the default 1024 x 768 device-independent
+  // pixels the gate takes its figures at 2048 x 1536 and writes them down as the Surface Pro's.
+  // That is a wrong answer that looks like a right one, which is why the state is REPORTED below
+  // rather than assumed. The request itself was made in `SetWindow`, because it had to precede
+  // activation.
+  //
+  // THE TRANSITION IS NOT INSTANT. `Bounds()` keeps reporting the old size until the resize has
+  // been dispatched, so the loop below pumps until the width stops changing rather than trusting a
+  // fixed delay.
+  {
+    // THE REQUEST THAT MATTERS WAS ALREADY MADE, in `SetWindow`, before the view was activated --
+    // `PreferFullScreenLaunch`. This one is the fallback, and on this shell it has never once
+    // succeeded: asked before activation it is refused, asked after activation it is refused, and
+    // waiting for `CoreWindow::Activated` in between does not help because THAT EVENT NEVER FIRES
+    // HERE. A loop that waited for it burned 77 seconds and still reported "NOT activated".
+    //
+    // WHAT THOSE 77 SECONDS ACTUALLY WERE is worth writing down, because it looked like a hang in
+    // every tool that was pointed at it: a packaged application that is not in the foreground is
+    // SUSPENDED, and a suspended application blocks inside `ProcessEvents` rather than returning
+    // from it. A five-second deadline around a call that does not return is not a deadline. The
+    // probe therefore does not wait on the dispatcher for anything before it has a frame to draw.
+    const CoreDispatcher settleDispatcher = _window.Dispatcher();
+    static_cast<void>(Outpost::TryEnterFullScreen());
+
+    // SETTLED IS A DURATION AND NOT AN ITERATION COUNT, and that distinction is the whole
+    // correctness of this loop. `ProcessAllIfPresent` returns immediately when the queue is empty
+    // and `yield` does not sleep, so counting iterations spins through sixty of them in well under
+    // a millisecond -- before the resize this is waiting for has even been posted. It would then
+    // report the pre-transition 1024 x 768 as settled and the gate would measure the wrong panel,
+    // which is precisely the wrong answer that looks like a right one this block exists to prevent.
+    const auto begun = std::chrono::steady_clock::now();
+    auto stableSince = begun;
+    float previousWidth = -1.0f;
+    while (std::chrono::steady_clock::now() < (begun + SETTLE_TIMEOUT))
+    {
+      settleDispatcher.ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+
+      const float width = _window.Bounds().Width;
+      if (width != previousWidth)
+      {
+        previousWidth = width;
+        stableSince = std::chrono::steady_clock::now();
+      }
+      else if ((std::chrono::steady_clock::now() - stableSince) >= SETTLE_STABLE_FOR)
+      {
+        break;
+      }
+
+      std::this_thread::sleep_for(SETTLE_POLL_INTERVAL);
+    }
+    Report(log, "probe: window settled at " + std::to_string(static_cast<int>(previousWidth)) + " dips wide after " +
+                  std::to_string(MillisecondsSince(begun)) + " ms");
+
+    // THE STATE, ASKED ONCE, AFTER THE TRANSITION -- not the request's return value, which says
+    // only that the ask was accepted. This is the line that decides whether the figures below are
+    // M0.16's or a window's.
+    const bool fullScreen = Outpost::IsFullScreenMode();
+    Report(log, std::string{"probe: fullscreen "} + (fullScreen ? "yes" : "NO"));
+    if (!fullScreen)
+    {
+      // SAID PLAINLY, BECAUSE THE FAILURE IS SILENT OTHERWISE. Everything below still runs and
+      // still produces well-formed figures; they are simply a windowed measurement, and a number in
+      // ADR-016 that came from one is worse than no number at all.
+      Report(log, "probe: NOT FULLSCREEN -- the frame times below are a window's and are NOT M0.16's figures");
+    }
+  }
+
   // M0.13: the device, the swap chain, and the one thing this client draws.
   //
   // THE SWAP CHAIN IS CREATED AT PHYSICAL PIXELS AND THAT IS THE WHOLE POINT (ADR-007). The
@@ -215,6 +305,10 @@ void RunProbe(const CoreWindow& _window)
   bool running = true;
   const auto closed = _window.Closed(winrt::auto_revoke, [&running](const auto&, const auto&) { running = false; });
   std::uint64_t presentedFrames = 0;
+
+  // M0.16's four figures come from here. The arithmetic is in NeuronClient with a suite over it
+  // (R20); this shell only feeds it what the device reports.
+  Neuron::FrameStatistics gpuTime;
 
   const CoreDispatcher dispatcher = _window.Dispatcher();
   const auto start = std::chrono::steady_clock::now();
@@ -284,6 +378,12 @@ void RunProbe(const CoreWindow& _window)
     if (swapChain.IsReady() && presentStep.IsReady() && device.BeginFrame())
     {
       static_cast<void>(sceneTarget.RecordClear(device));
+
+      // M0.16's hard one-pixel edge, drawn into the scene target so the present step has something
+      // whose resampling is visible. At 1:1 it must reach the glass one physical pixel wide and
+      // fully white; at a 0.5 scale, two pixels wide and still fully white. Gray is the failure.
+      static_cast<void>(sceneTarget.RecordCalibrationPattern(device));
+
       static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
       static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));
       static_cast<void>(swapChain.RecordReadyToPresent(device));
@@ -291,6 +391,18 @@ void RunProbe(const CoreWindow& _window)
       {
         device.PresentedFrame();
         ++presentedFrames;
+
+        // AFTER PresentedFrame, which is the wait that makes the slot's timestamps readable, and
+        // only once the warm-up frames are behind us.
+        if (presentedFrames > WARMUP_FRAMES)
+        {
+          gpuTime.Add(device.LastFrameGpuMicroseconds());
+        }
+        if (presentedFrames >= (WARMUP_FRAMES + MEASURE_FRAMES))
+        {
+          Report(log, "probe: measurement window complete");
+          running = false;
+        }
         if (presentedFrames == 1)
         {
           // Once, on the first one. A frame counter every frame would bury the log; the question
@@ -311,6 +423,12 @@ void RunProbe(const CoreWindow& _window)
 
   // The queue's own counters, so that a gap in the log can be told apart from the network. A drop
   // here is this client failing to keep up; a gap with none of these is the link losing packets.
+  // M0.16 / TechnicalDesign.md section 9.5. GPU time, not the frame interval: Present(1, 0) waits
+  // for a vertical blank, so the interval is the refresh period whatever the renderer costs.
+  Report(log, "probe: gpu us mean " + std::to_string(gpuTime.MeanMicroseconds()) + " min " + std::to_string(gpuTime.MinimumMicroseconds()) +
+                " max " + std::to_string(gpuTime.MaximumMicroseconds()) + " over " + std::to_string(gpuTime.Count()) + " frames, " +
+                std::to_string(gpuTime.DiscardedCount()) + " discarded");
+
   Report(log, "probe: received " + std::to_string(receivedCount) + " dropped " + std::to_string(queue.DroppedCount()) + " rejected " +
                 std::to_string(queue.RejectedCount()) + " oversized " + std::to_string(transport.OversizedCount()) + " skippedSends " +
                 std::to_string(transport.SkippedSendCount()) + " presented " + std::to_string(presentedFrames));
@@ -352,7 +470,18 @@ struct App : winrt::implements<App, IFrameworkViewSource, IFrameworkView>
 
   void Load(const winrt::hstring&) {}
 
-  void SetWindow(const CoreWindow&) {}
+  void SetWindow(const CoreWindow&)
+  {
+    // M0.16 MEASURES THE PANEL, and a windowed client measures something else: the swap chain is
+    // created from the window's size exactly once, so at the default 1024 x 768 device-independent
+    // pixels the gate takes its figures at 2048 x 1536 and writes them down as the Surface Pro's.
+    //
+    // IT IS HERE AND NOT IN `Run` BECAUSE IT HAS TO PRECEDE ACTIVATION. This is a preference the
+    // platform consults when the view comes up; `Run` has already activated by the time it could
+    // ask, and asking afterwards -- `TryEnterFullScreen` -- is refused on this shell every time.
+    // M0.22 owns fullscreen-at-launch as shipped behavior; this is it, made early.
+    Outpost::PreferFullScreenLaunch();
+  }
 
   void Run()
   {

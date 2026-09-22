@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="DatagramTransport.h" />
     <ClInclude Include="FitTransform.h" />
+    <ClInclude Include="FrameStatistics.h" />
     <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />

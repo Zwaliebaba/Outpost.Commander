@@ -9,6 +9,7 @@
 
 // This library's own headers (AGENTS.md section 2).
 #include "FitTransform.h"
+#include "FrameStatistics.h"
 #include "WindowMetrics.h"
 
 // Every class here declares its Direct3D state and DEFINES it in its .cpp, so that <d3d12.h> and

@@ -38,6 +38,21 @@ struct DeviceBinding
 
   winrt::handle fenceEvent;
 
+  /// TWO TIMESTAMPS PER FRAME IN FLIGHT -- one either side of the frame's command list. A slot's
+  /// pair is only safe to read once the GPU has passed that slot's fence, which is exactly the wait
+  /// PresentedFrame already performs, so reading them costs no extra synchronization.
+  winrt::com_ptr<ID3D12QueryHeap> timestampHeap;
+
+  /// Persistently mapped. A readback buffer is host-visible and mapping it once is cheaper and no
+  /// less correct than mapping around each read.
+  winrt::com_ptr<ID3D12Resource> timestampReadback;
+  const std::uint64_t* timestampSamples = nullptr;
+
+  /// Ticks a second, from the queue. Zero if the device refused to report it, which is the case
+  /// where the measurement is simply unavailable rather than wrong.
+  std::uint64_t timestampFrequency = 0;
+  std::uint64_t lastFrameGpuMicroseconds = 0;
+
   std::uint32_t frameIndex = 0;
   std::uint32_t highestShaderModel = 0;
   DeviceState state = DeviceState::Absent;
@@ -50,6 +65,9 @@ namespace
 /// The floor this game targets. 11_0 is every part that runs Windows 10, and nothing in this
 /// renderer asks for more.
 inline constexpr D3D_FEATURE_LEVEL FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
+
+/// One either side of the frame's command list, so the difference is the whole frame's GPU time.
+inline constexpr std::uint32_t TIMESTAMPS_PER_FRAME = 2;
 
 [[nodiscard]] bool IsDeviceLost(HRESULT _result) noexcept
 {
@@ -179,6 +197,49 @@ bool GraphicsDevice::Create() noexcept
     }
   }
 
+  // The timestamp facility. A FAILURE HERE IS NOT A FAILURE TO CREATE A DEVICE: an adapter that
+  // will not serve timestamps still renders, and the only thing lost is a measurement. Every path
+  // below leaves timestampFrequency at zero, which is how LastFrameGpuMicroseconds reports "no
+  // figure" rather than reporting a wrong one.
+  {
+    const D3D12_QUERY_HEAP_DESC heapDescription{
+      .Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP, .Count = TIMESTAMPS_PER_FRAME * FRAMES_IN_FLIGHT, .NodeMask = 0};
+    if (SUCCEEDED(binding.device->CreateQueryHeap(&heapDescription, winrt::guid_of<ID3D12QueryHeap>(), binding.timestampHeap.put_void())))
+    {
+      const D3D12_HEAP_PROPERTIES readbackProperties{.Type = D3D12_HEAP_TYPE_READBACK,
+                                                     .CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+                                                     .MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
+                                                     .CreationNodeMask = 1,
+                                                     .VisibleNodeMask = 1};
+      const D3D12_RESOURCE_DESC readbackDescription{.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
+                                                    .Alignment = 0,
+                                                    .Width = sizeof(std::uint64_t) * TIMESTAMPS_PER_FRAME * FRAMES_IN_FLIGHT,
+                                                    .Height = 1,
+                                                    .DepthOrArraySize = 1,
+                                                    .MipLevels = 1,
+                                                    .Format = DXGI_FORMAT_UNKNOWN,
+                                                    .SampleDesc = {.Count = 1, .Quality = 0},
+                                                    .Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+                                                    .Flags = D3D12_RESOURCE_FLAG_NONE};
+      if (SUCCEEDED(binding.device->CreateCommittedResource(&readbackProperties, D3D12_HEAP_FLAG_NONE, &readbackDescription,
+                                                            D3D12_RESOURCE_STATE_COPY_DEST, nullptr, winrt::guid_of<ID3D12Resource>(),
+                                                            binding.timestampReadback.put_void())))
+      {
+        void* mapped = nullptr;
+        if (SUCCEEDED(binding.timestampReadback->Map(0, nullptr, &mapped)))
+        {
+          binding.timestampSamples = static_cast<const std::uint64_t*>(mapped);
+
+          UINT64 frequency = 0;
+          if (SUCCEEDED(binding.queue->GetTimestampFrequency(&frequency)) && (frequency != 0))
+          {
+            binding.timestampFrequency = frequency;
+          }
+        }
+      }
+    }
+  }
+
   binding.frameIndex = 0;
   binding.recording = false;
   binding.state = DeviceState::Ready;
@@ -200,6 +261,15 @@ void GraphicsDevice::Destroy() noexcept
   {
     allocator = nullptr;
   }
+
+  // The pointer goes first: it aliases the buffer's mapped range and must not outlive it. A
+  // readback buffer mapped for its whole life is unmapped by its own release, so there is no
+  // matching Unmap call to forget.
+  binding.timestampSamples = nullptr;
+  binding.timestampReadback = nullptr;
+  binding.timestampHeap = nullptr;
+  binding.timestampFrequency = 0;
+  binding.lastFrameGpuMicroseconds = 0;
   binding.fence = nullptr;
   binding.fenceEvent.close();
   binding.queue = nullptr;
@@ -281,7 +351,27 @@ void GraphicsDevice::PresentedFrame() noexcept
     }
   }
 
+  // THE SLOT JUST WAITED FOR IS THE ONE WHOSE TIMESTAMPS ARE NOW SAFE. Its fence has passed, so the
+  // resolve that wrote them has completed; the pair belongs to that slot's PREVIOUS frame, which is
+  // the most recent frame this device can honestly report on.
+  if ((binding.timestampSamples != nullptr) && (binding.timestampFrequency != 0))
+  {
+    const std::uint32_t first = binding.frameIndex * TIMESTAMPS_PER_FRAME;
+    const std::uint64_t begun = binding.timestampSamples[first];
+    const std::uint64_t ended = binding.timestampSamples[first + 1];
+    if (ended > begun)
+    {
+      constexpr std::uint64_t MICROSECONDS_PER_SECOND = 1000000;
+      binding.lastFrameGpuMicroseconds = ((ended - begun) * MICROSECONDS_PER_SECOND) / binding.timestampFrequency;
+    }
+  }
+
   binding.fenceValues[binding.frameIndex] = signaled + 1;
+}
+
+std::uint64_t GraphicsDevice::LastFrameGpuMicroseconds() const noexcept
+{
+  return m_binding->lastFrameGpuMicroseconds;
 }
 
 ::IUnknown* GraphicsDevice::CommandQueueUnknown() const noexcept
@@ -322,6 +412,11 @@ bool GraphicsDevice::BeginFrame() noexcept
     return false;
   }
 
+  if (binding.timestampHeap)
+  {
+    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, binding.frameIndex * TIMESTAMPS_PER_FRAME);
+  }
+
   binding.recording = true;
   return true;
 }
@@ -334,6 +429,17 @@ bool GraphicsDevice::EndFrameAndSubmit() noexcept
     return false;
   }
   binding.recording = false;
+
+  if (binding.timestampHeap)
+  {
+    const std::uint32_t first = binding.frameIndex * TIMESTAMPS_PER_FRAME;
+    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first + 1);
+
+    // Resolved on the GPU into the readback buffer, in the same command list. Doing it here rather
+    // than in a later frame is what makes the pair readable the moment this slot's fence passes.
+    binding.commandList->ResolveQueryData(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first, TIMESTAMPS_PER_FRAME,
+                                          binding.timestampReadback.get(), sizeof(std::uint64_t) * first);
+  }
 
   const HRESULT result = binding.commandList->Close();
   if (FAILED(result))

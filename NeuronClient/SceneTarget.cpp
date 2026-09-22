@@ -262,6 +262,58 @@ bool SceneTarget::RecordClear(const GraphicsDevice& _device) noexcept
   return true;
 }
 
+bool SceneTarget::RecordCalibrationPattern(const GraphicsDevice& _device) noexcept
+{
+  SceneTargetBinding& binding = *m_binding;
+  if (!binding.ready)
+  {
+    return false;
+  }
+
+  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
+  if (!OpenCommandList(_device, commandList))
+  {
+    binding.lastHresult = E_NOINTERFACE;
+    return false;
+  }
+
+  const D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView = binding.renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
+
+  // Full white, so that anything but full white on the glass is the resample this pattern exists to
+  // catch. The optimized clear value does not apply to a cleared RECTANGLE, so there is no fast
+  // path being given up here and no debug-layer complaint to answer.
+  const std::array<float, 4> white{1.0f, 1.0f, 1.0f, 1.0f};
+
+  // The strips are computed in the header, where a suite can reach them; all that happens here is
+  // the copy into the Direct3D type the header may not name.
+  const auto strips = CalibrationStrips(binding.widthPixels, binding.heightPixels);
+
+  std::array<D3D12_RECT, CALIBRATION_STRIP_COUNT> rects{};
+  UINT count = 0;
+  for (const CalibrationStrip& strip : strips)
+  {
+    if (strip.AreaPixels() > 0)
+    {
+      rects[count] = D3D12_RECT{.left = static_cast<LONG>(strip.left),
+                                .top = static_cast<LONG>(strip.top),
+                                .right = static_cast<LONG>(strip.right),
+                                .bottom = static_cast<LONG>(strip.bottom)};
+      ++count;
+    }
+  }
+
+  // A target too small to carry the pattern draws none of it rather than clearing the whole thing:
+  // ClearRenderTargetView with a count of zero and a null list clears the ENTIRE view, which would
+  // paint the frame white and read as a present step that had failed wide open.
+  if (count == 0)
+  {
+    return false;
+  }
+
+  commandList->ClearRenderTargetView(renderTargetView, white.data(), count, rects.data());
+  return true;
+}
+
 ::IUnknown* SceneTarget::ColorResourceUnknown() const noexcept
 {
   return m_binding->color.get();

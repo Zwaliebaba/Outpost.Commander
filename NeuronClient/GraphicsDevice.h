@@ -82,6 +82,17 @@ public:
   /// Blocks until the GPU has finished every frame submitted so far.
   void WaitForGpu() noexcept;
 
+  /// How long the GPU spent on the most recently completed frame, in microseconds, from a pair of
+  /// timestamps written either side of that frame's command list. Zero until one frame has both
+  /// been submitted and been waited for.
+  ///
+  /// IT IS THE GPU'S TIME AND NOT THE FRAME INTERVAL, which is the distinction the M0.16 gate
+  /// turns on. `Present(1, 0)` waits for a vertical blank, so the interval between frames is the
+  /// refresh period whatever the renderer costs -- it says whether the budget was held and says
+  /// nothing at all about how much of it was left. This is the figure ADR-016 and
+  /// `TechnicalDesign.md` section 9.5 are owed.
+  [[nodiscard]] std::uint64_t LastFrameGpuMicroseconds() const noexcept;
+
   /// Signals the current frame's fence, moves to the next slot, and waits for THAT slot's earlier
   /// work only. That is the whole of what "two frames in flight" means: the CPU is one frame ahead
   /// and never more.

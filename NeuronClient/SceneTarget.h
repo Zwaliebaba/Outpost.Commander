@@ -2,6 +2,7 @@
 
 #include "GraphicsDevice.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 
@@ -66,6 +67,69 @@ inline constexpr std::uint32_t WORLD_SAMPLE_COUNT = 1;
   return ScaledExtentPixels(_panelHeightPixels, WORLD_SCALE_NUMERATOR, WORLD_SCALE_DENOMINATOR);
 }
 
+/// One strip of M0.16's calibration pattern, in scene-target pixels, half-open on the right and the
+/// bottom as `D3D12_RECT` is -- so a strip one pixel thick has `right == left + 1`.
+///
+/// R8: a public aggregate. IT NAMES NO DIRECT3D TYPE, for the reason the binding below is declared
+/// here and defined in the .cpp: `<d3d12.h>` in this library's master include reaches the package's
+/// precompiled header and both desktop suites under it. The .cpp copies these into `D3D12_RECT`.
+struct CalibrationStrip
+{
+  std::int32_t left = 0;
+  std::int32_t top = 0;
+  std::int32_t right = 0;
+  std::int32_t bottom = 0;
+
+  /// Zero for the empty strip a degenerate target produces, which is how "nothing to draw" is said
+  /// without a second return value.
+  [[nodiscard]] constexpr std::int32_t AreaPixels() const noexcept
+  {
+    return ((right <= left) || (bottom <= top)) ? 0 : ((right - left) * (bottom - top));
+  }
+
+  [[nodiscard]] friend constexpr bool operator==(const CalibrationStrip&, const CalibrationStrip&) noexcept = default;
+};
+
+/// Four edges and a two-armed cross.
+inline constexpr std::size_t CALIBRATION_STRIP_COUNT = 6;
+
+/// Where M0.16's hard one-pixel edges go, at a given scene-target size.
+///
+/// IT IS ARITHMETIC AND IT IS THEREFORE HERE RATHER THAN INSIDE THE DEVICE CALL (R20). **The gate
+/// is the claim that these are one pixel**: a strip two pixels thick still looks like a line on the
+/// glass and tells a human nothing about whether the scale landed at 2 or at 1.99, so the one part
+/// of the pattern that can be wrong invisibly is the part a suite can reach. What is left in the
+/// .cpp is a clear per strip, which cannot be.
+///
+/// THE OUTERMOST ROWS AND COLUMNS, because the edge of the fitted rectangle is where an offset
+/// error has the least to hide behind; the center cross catches a scale error instead, which
+/// accumulates toward the middle.
+///
+/// A non-positive extent yields six empty strips rather than negative rectangles -- the same answer
+/// `ScaledExtentPixels` gives above, for the same reason: a window dragged between monitors can
+/// report a size that rounds to nothing for a single frame, and a negative `D3D12_RECT` is a
+/// debug-layer error rather than a blank frame.
+[[nodiscard]] constexpr std::array<CalibrationStrip, CALIBRATION_STRIP_COUNT> CalibrationStrips(std::int32_t _widthPixels,
+                                                                                                std::int32_t _heightPixels) noexcept
+{
+  if ((_widthPixels <= 0) || (_heightPixels <= 0))
+  {
+    return {};
+  }
+
+  const std::int32_t width = _widthPixels;
+  const std::int32_t height = _heightPixels;
+  const std::int32_t centerColumn = width / 2;
+  const std::int32_t centerRow = height / 2;
+
+  return {CalibrationStrip{.left = 0, .top = 0, .right = width, .bottom = 1},
+          CalibrationStrip{.left = 0, .top = height - 1, .right = width, .bottom = height},
+          CalibrationStrip{.left = 0, .top = 0, .right = 1, .bottom = height},
+          CalibrationStrip{.left = width - 1, .top = 0, .right = width, .bottom = height},
+          CalibrationStrip{.left = 0, .top = centerRow, .right = width, .bottom = centerRow + 1},
+          CalibrationStrip{.left = centerColumn, .top = 0, .right = centerColumn + 1, .bottom = height}};
+}
+
 /// The off-screen color target the world draws into, and the depth buffer that goes with it (R13).
 ///
 /// The depth buffer is here rather than deferred because the passes that need it are already named:
@@ -120,6 +184,20 @@ public:
   /// the renderer, and until they do this is one color whose only job is to be visibly different
   /// from the back buffer behind it, so that a present step which drew nothing is obvious.
   [[nodiscard]] bool RecordClear(const GraphicsDevice& _device) noexcept;
+
+  /// Draws M0.16's calibration pattern into this target: single-pixel white lines on the first and
+  /// last row and column, and a single-pixel cross through the center.
+  ///
+  /// **R13's whole arrangement is worth nothing if a conversion error lands the scale at 1.99
+  /// rather than 2, or at 0.999 rather than 1**, and a one-pixel edge is the only thing that shows
+  /// the difference. At 1:1 each line must reach the glass one physical pixel wide and fully white;
+  /// at a 0.5 scale, two physical pixels wide, fully white, with no gray either side. **Gray is the
+  /// failure** -- it means the sample landed between texels and the scale is not what it says.
+  ///
+  /// IT COSTS NO SHADER AND NO GEOMETRY. `ClearRenderTargetView` takes rectangles, so the pattern
+  /// is four clears of a one-pixel strip; nothing here is a pipeline state that could itself be the
+  /// thing under test.
+  [[nodiscard]] bool RecordCalibrationPattern(const GraphicsDevice& _device) noexcept;
 
   /// The color texture, and the shader-visible heap holding its one shader resource view, as
   /// `IUnknown` -- so PresentStep can sample this target without either header naming a Direct3D

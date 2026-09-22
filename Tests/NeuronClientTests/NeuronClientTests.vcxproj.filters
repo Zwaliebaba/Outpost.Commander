@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="FitTransformTests.cpp" />
+    <ClCompile Include="FrameStatisticsTests.cpp" />
     <ClCompile Include="PacketQueueTests.cpp" />
     <ClCompile Include="SceneTargetTests.cpp" />
     <ClCompile Include="WindowMetricsTests.cpp" />
