@@ -378,6 +378,12 @@ FodyWeavers.xsd
 # was hiding it. Both negations are needed and neither is sufficient alone.
 !OutpostCommander/Assets/Meshes/obj/*.obj
 
+# AND THE SAME TWO RULES OVER THE HANDOFF'S OWN COPY, which is the set the designer delivered. It is
+# provenance rather than input -- the build reads OutpostCommander/Assets/Meshes/obj/ -- but a
+# vendored bundle with its output silently missing is a bundle nobody can check a reissue against.
+!Design/design_handoff_meshes/integration/obj/
+!Design/design_handoff_meshes/integration/obj/*.obj
+
 # --- THE .cmo FILES ARE COMMITTED, AND THIS RECORDS WHY THE RULE THAT EXCLUDED THEM IS GONE -----
 # They were ignored here for one commit, on the argument that 460 KB of binary regenerated from
 # checked-in text by a pinned tool is the same geometry in the tree twice. The argument was fine and

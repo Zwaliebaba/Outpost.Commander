@@ -7,13 +7,31 @@ Claude Code with the repository open.
 The package is *convert-ready*, not merely described: the OBJ set is already generated and passes its own
 verifier. Nothing here has to be produced before work can start.
 
+> **AMENDED IN-TREE, 2026-09-22. `obj/` BELOW IS THE SET AS DELIVERED, AND IT IS NOT CONVERTIBLE.**
+> These files carry no texture coordinate, which was the stated contract. `meshconvert` cannot write a
+> CMO from such a file -- the CMO vertex carries a tangent, so the tool always computes a tangent frame,
+> and it refuses without texture coordinates, with no flag to suppress it:
+>
+> ```
+> ERROR: Computing tangents/bi-tangents requires texture coordinates
+> ```
+>
+> `scripts/meshes_to_obj.py` here was amended to emit one degenerate `vt 0 0` referenced by every face
+> corner, and `verify_cmo.py`'s matching assertion moved from "no `vt`" to "exactly one, and it is
+> `0 0`". **These delivered files were deliberately left as they arrived**, so a reissue from upstream
+> has something to diff against; they no longer match what the script beside them produces, and that
+> difference is the amendment rather than drift.
+>
+> The set the build actually reads is `OutpostCommander/Assets/Meshes/obj/`, regenerated from the
+> amended script. Its geometry is byte-identical to these; only the comments and the `f` records differ.
+
 ## Contents
 
 ```
 integration/
 ├── INTEGRATION_PROMPT.md     paste this into Claude Code
 ├── manifest.json             the asset contract — everything downstream reads this
-├── obj/                      13 × .obj + .vcol, plus OC_Hull.mtl   (convert-ready)
+├── obj/                      13 × .obj + .vcol, plus OC_Hull.mtl   (as delivered; see the note above)
 ├── scripts/
 │   ├── verify_cmo.py         runnable today: content check + landmark tests
 │   ├── meshes_to_obj.py      regenerate obj/ from meshes.json
