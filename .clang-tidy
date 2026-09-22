@@ -8,16 +8,21 @@
 # overlap: clang-tidy has no check that reports a wrong brace position or an over-long line, and
 # clang-format cannot see that a parameter is missing its `_`.
 #
-# -- Status: NOTHING RUNS THIS YET -------------------------------------------------------------
+# -- Status: DRIVEN, REPORTED, NOT GATED -------------------------------------------------------
 #
-# These are the settings, ready and unabridged. What is missing is the script that drives them:
-# clang-tidy needs each translation unit's include directories and preprocessor definitions, this
-# tree has eleven project files that hold them, and no tool here reads one and hands over the
-# other. So `.github/workflows/build.yml` gates FORMATTING and does not gate NAMING, and a green
-# build says nothing about whether an identifier conforms.
+# These are the settings, ready and unabridged. `Scripts/RunClangTidy.ps1` is the script that
+# drives them: it reads each project for its sources, include directories and preprocessor
+# definitions, follows the `.vcxitems` it imports, and runs clang-tidy in clang-cl driver mode.
+# That script carries where this stands, measured on the runner -- this file does not repeat it,
+# for the same reason AGENTS.md does not repeat these settings.
 #
-# Writing that script is worth doing. Until somebody does, naming is review's problem -- and this
-# file is not evidence to the contrary.
+# It REPORTS rather than gates, and the distance to a gate is noise rather than findings:
+# HeaderFilterRegex limits what is reported, not what is analyzed, so every run walks the Windows
+# SDK headers and generates tens of thousands of warnings to throw away. That is also why it is
+# slow. Quieting it is the work between here and `-Gate`.
+#
+# So a green build still says nothing about whether an identifier conforms, and naming is still
+# review's problem -- this file is not evidence to the contrary until the driver runs with -Gate.
 #
 # By hand, on a file you just wrote, from a Developer PowerShell (INCLUDE is what makes the Windows
 # SDK visible to clang):

@@ -47,9 +47,20 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Mondays, 06:00 UTC, for the `naming` job -- which runs on nothing else. The Debug|x64 build
+    # opts out of this run and the two cheap Linux jobs do not: `checks` and `format` read files
+    # and take seconds, so a weekly re-assertion of them over main is worth more than it costs.
+    # GitHub runs a scheduled workflow on the default branch only, which is what is wanted here:
+    # naming is swept on main rather than on a branch that may not survive the week.
+    - cron: '0 6 * * 1'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # THE EVENT IS PART OF THE GROUP because the weekly `naming` run shares this workflow and this
+  # ref with a push to main. Without it, cancel-in-progress lets a Monday sweep kill a build that
+  # is mid-flight -- or the reverse. Superseded pushes still cancel each other, which is the point
+  # of cancel-in-progress; they just no longer cancel across event types.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -58,6 +69,9 @@ permissions:
 jobs:
   build:
     name: Debug|x64
+    # Not on the Monday schedule: that run exists for `naming`, and a weekly rebuild of an
+    # unchanged main would prove nothing that the push build did not already prove.
+    if: github.event_name != 'schedule'
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -212,14 +226,9 @@ jobs:
         # BUILT -- leaves an empty suite as a green check mark over a library nobody exercised.
         run: python Scripts/CheckSuites.py TestResults
 
-      - name: Naming, via clang-tidy (report only)
-        shell: pwsh
-        continue-on-error: true
-        # NOT A GATE, deliberately. .clang-tidy has never been driven over this tree, clang is not
-        # MSVC, and /std:c++latest is ahead of what clang implements -- so a parse error here is a
-        # clang limitation rather than a defect. Read the output. Once this has run clean on the
-        # runner, pass -Gate and drop continue-on-error, in a pull request that says it did so.
-        run: pwsh Scripts/RunClangTidy.ps1
+      # NO CLANG-TIDY STEP HERE ANY MORE. It moved to the `naming` job below, which runs weekly
+      # and on demand rather than on every push -- see that job for why. Nothing about naming is
+      # checked on this path, and a green build here says nothing about it (AGENTS.md section 1).
 
       - name: Upload the build log
         if: always()
@@ -315,3 +324,42 @@ jobs:
           # `python -m pip install clang-format==<the version above>` then
           # `clang-format -i <file>` is how to fix what this reports.
           echo "$files" | xargs clang-format --dry-run --Werror
+
+  naming:
+    name: naming (clang-tidy)
+    # WEEKLY AND ON DEMAND, NOT ON EVERY PUSH, and that is the whole reason this job exists.
+    # It was a step on the Debug|x64 job until 2026-09-22 and it was wrong there three ways:
+    #
+    #   IT COULD NOT CATCH ANYTHING. Scripts/RunClangTidy.ps1 exits 0 unless it is passed -Gate,
+    #   and the step also carried continue-on-error -- so it only ever printed.
+    #
+    #   NOBODY COULD READ WHAT IT PRINTED. .clang-tidy's HeaderFilterRegex limits what is
+    #   REPORTED, not what is ANALYZED, so every translation unit walks the Windows SDK headers
+    #   and generates tens of thousands of warnings to throw away. The real diagnostics are in
+    #   there somewhere. That is also why it is slow.
+    #
+    #   IT COULD TURN MAIN RED BY BEING SLOW. It sat inside a job with timeout-minutes: 30, after
+    #   the tests. continue-on-error covers a non-zero exit; it does not cover a job timeout, so
+    #   the one outcome the step was configured never to have was the one it could still cause.
+    #
+    # On its own schedule none of the three costs anything. What is UNCHANGED is that naming is
+    # still review's problem (AGENTS.md section 1) -- moving a report does not make it a gate.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    # Generous, and deliberately not 30: this job has nothing to be late for.
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Naming, via clang-tidy (report only)
+        shell: pwsh
+        # NO continue-on-error, and that is not a gate sneaking in. The script exits 0 whatever
+        # clang-tidy reports unless -Gate is passed, so the only thing that can fail this job now
+        # is the SCRIPT ITSELF breaking -- which is worth a red mark on a job whose entire purpose
+        # is to be read, and which continue-on-error used to hide.
+        #
+        # IT CAN ALSO PASS WITHOUT RUNNING. clang-tidy ships with the optional "C++ Clang tools for
+        # Windows" component; when the runner image lacks it the script says so and exits 0. Read
+        # the log rather than the check mark -- the first line names the binary it found.
+        run: pwsh Scripts/RunClangTidy.ps1

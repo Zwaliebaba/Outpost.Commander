@@ -141,10 +141,13 @@ Each of these is `AGENTS.md` speaking, cited so the reason is one click away rat
   question the design has not answered is asked rather than assumed.
 - **Do not mark a gate done.**
 
-### The naming self-check, because nothing runs it
+### The naming self-check, because the driver reports rather than gates
 
-`.clang-tidy` is configured and nothing drives it (`AGENTS.md` §1), so **the last thing before handing a
-step back is reading your own diff against §1's table.** The five that get missed:
+`.clang-tidy` now has a driver — `Scripts/RunClangTidy.ps1` — but it reports and does not gate
+(`AGENTS.md` §1), its output arrives buried in the SDK-header warnings it analyzes but does not report
+on, and **since 2026-09-22 it does not run on your push at all** — it is a weekly job. So **the last
+thing before handing a step back is still reading your own diff against §1's table**, and a green build
+is not the second opinion it looks like. The five that get missed:
 
 `_camelCase` on every parameter · `m_camelCase` on private class state and plain `camelCase` on a public
 aggregate's fields · `UPPER_CASE` for a `constexpr` but `PascalCase` for an enumerator · no `I`, `C`, `E`,
@@ -297,10 +300,12 @@ never gets written — a gap in the sequence is cheaper than an ADR nobody meant
 
 ## Standing work, in no milestone
 
-Two things `AGENTS.md` says are worth doing and are not done, plus one this plan adds. **None belongs to a
-milestone, all three protect every milestone, and the plan proposes rather than schedules them.**
+Two things `AGENTS.md` says are worth doing, plus one this plan adds. **None belongs to a milestone, all
+three protect every milestone, and the plan proposes rather than schedules them.** Two are now done, and
+are kept here with what they actually became rather than deleted — the third is what is left.
 
-**The project-file check, before M0's project files start moving.** `AGENTS.md` §6 names it: a script that
+**The project-file check, before M0's project files start moving. DONE** — `Scripts/CheckProjectFiles.py`,
+a gate in the `static checks` job. `AGENTS.md` §6 names it: a script that
 reads the twelve project files and asserts §3's table — Debug and Release differing in exactly those rows
 and nothing else, no `ConformanceMode` or `LanguageStandard` drift, `EnableEnhancedInstructionSet` stated
 per platform, one pinned SDK, one pinned package version. Seconds rather than the minutes a second build
@@ -309,10 +314,13 @@ introduces the first shader item type, which is exactly when that table drifts**
 is before M0.13, not after M4. A script in `Build/`, which R14 explicitly does not bind. **This is the one
 piece of standing work an agent can do end to end on any platform**, since it reads XML and runs nothing.
 
-**The clang-tidy driver, before the tree gets big.** `AGENTS.md` §1: the configuration is in the tree and
-nothing runs it, so naming is review's problem. Review can carry a tree of eight files; it cannot carry the
-several hundred this plan adds. The natural moment is **between M0 and M1** — large enough for the script
-to be worth writing, small enough for its first run to be fixable in an afternoon.
+**The clang-tidy driver, before the tree gets big. WRITTEN, NOT FINISHED** — `Scripts/RunClangTidy.ps1`
+drives `.clang-tidy` and CI reports its output **weekly, in its own job, rather than on a push** — so naming
+is still review's problem (`AGENTS.md` §1).
+Review can carry a tree of eight files; it cannot carry the several hundred this plan adds, and a report
+nobody reads carries none of them. **What is left is the noise**: `HeaderFilterRegex` limits what is
+reported and not what is analyzed, so each run walks the Windows SDK headers, which is both why it is
+slow and why its findings are hard to see. Quiet it and it can run with `-Gate`, which is the point.
 
 **The determinism test on all four pairs, at every milestone boundary.** ADR-002's second owed
 measurement, and the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the property R16
