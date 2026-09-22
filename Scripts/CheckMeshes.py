@@ -21,7 +21,7 @@ rather than just saying "the mesh looks odd":
                                                                      or a scale factor crept in
 """
 
-import argparse, json, os, sys
+import argparse, json, os, struct, sys
 
 # --- WHERE THINGS ARE IN *THIS* TREE ------------------------------------------------------------
 # The handoff's scripts defaulted to a generic layout -- `Assets/Meshes` at the repository root and
@@ -205,18 +205,219 @@ def landmark(name, verts):
                        "central, so Y is flipped." % (top[0] ** 2 + top[2] ** 2) ** 0.5)
 
 
+# --- THE CMO WALK -------------------------------------------------------------------------------
+# The layout is BuildMeshes.py's, which grounded it field by field against real converter output.
+# It is duplicated here rather than imported because these two scripts are run at different moments
+# for different reasons -- the build produces, this verifies -- and a shared module would make the
+# verification depend on the thing it verifies.
+#
+# NeuronClient/CmoReader is the third statement of it, and the three are kept honest by all of them
+# asserting the same counts and extents out of manifest.json rather than by reading each other.
+#
+# The field that does not survive memory: a material's ambient, diffuse, specular and emissive are
+# float4, not float3, with the specular power a single float between specular and emissive.
+
+VERTEX_STRIDE = 52
+OFFSET_POSITION = 0
+OFFSET_COLOUR = 40
+
+
+def _u32(d, o):
+    return struct.unpack_from("<I", d, o)[0], o + 4
+
+
+def _skip_wstr(d, o):
+    n, o = _u32(d, o)
+    return o + (n * 2)
+
+
+def decode_cmo(data, name):
+    """(positions, colours, triangle_count, extents_min, extents_max), or raises Fail."""
+    o = 0
+    n_meshes, o = _u32(data, o)
+    if n_meshes != 1:
+        raise Fail("%s: %d meshes in one file; the handoff is one submesh per file" % (name, n_meshes))
+    o = _skip_wstr(data, o)
+
+    n_materials, o = _u32(data, o)
+    for _ in range(n_materials):
+        o = _skip_wstr(data, o)
+        o += 4 * (4 + 4 + 4 + 1 + 4)
+        o += 4 * 16
+        o = _skip_wstr(data, o)
+        for _ in range(8):
+            o = _skip_wstr(data, o)
+
+    skeletal = data[o]
+    o += 1
+
+    n_submeshes, o = _u32(data, o)
+    o += n_submeshes * 20
+
+    index_count = 0
+    n_ib, o = _u32(data, o)
+    for _ in range(n_ib):
+        n, o = _u32(data, o)
+        index_count += n
+        o += 2 * n
+
+    n_vb, o = _u32(data, o)
+    if n_vb != 1:
+        raise Fail("%s: %d vertex buffers; expected exactly one" % (name, n_vb))
+    vertex_count, o = _u32(data, o)
+
+    positions = []
+    colours = []
+    for v in range(vertex_count):
+        base = o + (v * VERTEX_STRIDE)
+        positions.append(struct.unpack_from("<3f", data, base + OFFSET_POSITION))
+        colours.append(struct.unpack_from("<I", data, base + OFFSET_COLOUR)[0])
+    o += vertex_count * VERTEX_STRIDE
+
+    n_skin, o = _u32(data, o)
+    for _ in range(n_skin):
+        n, o = _u32(data, o)
+        o += n * 32
+
+    ext = struct.unpack_from("<10f", data, o)
+    o += 40
+
+    if skeletal:
+        raise Fail("%s: the skeletal-animation byte is set; nothing in this handoff is skinned" % name)
+
+    if o != len(data):
+        raise Fail("%s: parsed %d of %d bytes -- this walk is out of step with the file"
+                   % (name, o, len(data)))
+
+    return positions, colours, index_count // 3, list(ext[4:7]), list(ext[7:10])
+
+
 def check_cmo_set(cmo_dir, manifest):
-    """CMO-stage verification. Read each file through the same CmoReader the client uses - not a
-    second parser written for the test, or you are verifying two bugs against each other."""
+    """CMO-stage verification: every file decodes, and what comes out of it is what the manifest
+    says went in."""
     missing = [m["name"] for m in manifest["meshes"]
                if not os.path.isfile(os.path.join(cmo_dir, m["name"] + ".cmo"))]
     if missing:
         return ["missing .cmo: " + ", ".join(missing)]
-    # TODO(implementer): for each file assert vertex count, triangle count and bounding box against
-    # the manifest, then run the same landmark() checks on the decoded positions. Also assert the
-    # colour DWORDs are not all white/zero - that is the signature of skipped vcol injection.
-    print("  %d .cmo files present; decode assertions not implemented yet" % len(manifest["meshes"]))
+
+    problems = []
+    for m in manifest["meshes"]:
+        name = m["name"]
+        with open(os.path.join(cmo_dir, name + ".cmo"), "rb") as fh:
+            data = fh.read()
+        try:
+            positions, colours, triangles, lo, hi = decode_cmo(data, name)
+        except Fail as e:
+            problems.append(str(e))
+            continue
+
+        if len(positions) != m["vertices"]:
+            problems.append("%s: %d vertices in the file, %d in the manifest"
+                            % (name, len(positions), m["vertices"]))
+        if triangles != m["triangles"]:
+            problems.append("%s: %d triangles in the file, %d in the manifest"
+                            % (name, triangles, m["triangles"]))
+
+        want_lo = m["extents"]["min"]
+        want_hi = m["extents"]["max"]
+        for i in range(3):
+            if not near(lo[i], want_lo[i]) or not near(hi[i], want_hi[i]):
+                problems.append("%s: %s extent is [%.2f, %.2f], the manifest says [%g, %g]"
+                                % (name, "XYZ"[i], lo[i], hi[i], want_lo[i], want_hi[i]))
+
+        # ALL WHITE OR ALL ZERO IS THE SIGNATURE OF SKIPPED VERTEX-COLOUR INJECTION, and it is a
+        # failure that renders: the material's diffuse is white on purpose because the albedo
+        # arrives entirely through this channel, so a hull with no colour draws white rather than
+        # not drawing at all.
+        distinct = set(colours)
+        if distinct <= {0xFFFFFFFF} or distinct <= {0}:
+            problems.append("%s: every vertex colour is %s -- the vcol injection was skipped"
+                            % (name, "white" if 0xFFFFFFFF in distinct else "zero"))
+
+        # The landmark tests again, on the DECODED positions rather than on the OBJ. An OBJ-stage
+        # pass and a CMO-stage failure is a converter bug, which is the whole reason the two stages
+        # are separate.
+        try:
+            landmark(name, positions)
+        except Fail as e:
+            problems.append("%s: %s" % (name, e))
+
+    problems += check_catalog_sizes(manifest)
+    problems += check_generated_catalog()
+
+    print("  %d .cmo files decoded" % len(manifest["meshes"]))
+    return problems
+
+
+def check_generated_catalog():
+    """GameClient/MeshCatalog.g.h is generated from this same manifest, so a manifest that moved
+    without the header moving is a client asserting against figures that are no longer true."""
+    import subprocess
+    script = os.path.join(REPO_ROOT, "Scripts", "BuildMeshCatalog.py")
+    result = subprocess.run([sys.executable, script, "--check"], capture_output=True, text=True)
+    if result.returncode != 0:
+        return [result.stderr.strip() or "MeshCatalog.g.h is stale"]
+    print("  MeshCatalog.g.h is current")
     return []
+
+
+# --- Q37: TWO STATEMENTS OF ONE FIGURE ----------------------------------------------------------
+# ADR-005 never scales a mesh at draw time, so a hull's authored extent IS its size -- and R24 wants
+# that size NAMED in the catalog rather than discovered by loading geometry. Both statements exist,
+# so this is the script between them.
+#
+# The catalog states a BOUND and rounds up: it is what spaces things so they do not overlap and how
+# far in front of a station a new ship appears, and both want the larger number.
+
+CATALOG_PATH = os.path.join(REPO_ROOT, "GameCore", "Catalog.cpp")
+
+# Which mesh backs which hull. The Cruiser is deliberately absent: it is cut from the MVP
+# (GameDesign.md section 6) so nothing authored a mesh for it, and M4 authors to the catalog's 150
+# rather than the other way round.
+HULL_MESHES = {
+    "Scout": "Scout",
+    "Frigate": "Frigate",
+    "Station": "Station",
+    "ModuleFrame": "ModuleFrame",
+}
+
+
+def check_catalog_sizes(manifest):
+    import re
+    problems = []
+    try:
+        with open(CATALOG_PATH, "r", encoding="utf-8") as fh:
+            catalog = fh.read()
+    except OSError as e:
+        return ["cannot read %s: %s" % (CATALOG_PATH, e)]
+
+    by_name = {m["name"]: m for m in manifest["meshes"]}
+    for hull, mesh in sorted(HULL_MESHES.items()):
+        entry = by_name.get(mesh)
+        if entry is None:
+            problems.append("Q37: the manifest has no mesh named %s for hull %s" % (mesh, hull))
+            continue
+
+        # The row, then its sizeUnits. Matched on the hull identity so a reordered table still works.
+        row = re.search(r"\{\.id = HullId::" + hull + r"\b(.*?)\}", catalog, re.S)
+        if row is None:
+            problems.append("Q37: no HullId::%s row in Catalog.cpp" % hull)
+            continue
+
+        stated = re.search(r"\.sizeUnits = (\d+)", row.group(1))
+        if stated is None:
+            problems.append("Q37: HullId::%s states no sizeUnits" % hull)
+            continue
+
+        import math
+        authored = math.ceil(entry["extents"]["longest"] - 1e-9)
+        if int(stated.group(1)) != authored:
+            problems.append("Q37: HullId::%s states sizeUnits %s, %s.cmo is %g units along its "
+                            "longest axis (ceiling %d)"
+                            % (hull, stated.group(1), mesh, entry["extents"]["longest"], authored))
+
+    print("  Q37: %d hull sizes checked against their meshes" % len(HULL_MESHES))
+    return problems
 
 
 def main():

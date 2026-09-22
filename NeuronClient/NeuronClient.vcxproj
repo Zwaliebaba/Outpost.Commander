@@ -182,6 +182,7 @@
     <ClCompile Include="InterfacePass.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
+    <ClCompile Include="CmoReader.cpp" />
     <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SessionToken.cpp" />
     <ClCompile Include="SwapChain.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="InterfacePass.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
+    <ClInclude Include="CmoReader.h" />
     <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SessionToken.h" />
     <ClInclude Include="SwapChain.h" />

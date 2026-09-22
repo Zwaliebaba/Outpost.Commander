@@ -19,6 +19,7 @@
 #include "GraphicsDevice.h"
 #include "InterfacePass.h"
 #include "PresentStep.h"
+#include "CmoReader.h"
 #include "SceneTarget.h"
 #include "SessionToken.h"
 #include "SwapChain.h"

@@ -15,6 +15,7 @@
 #include "Camera.h"
 #include "ClientFrame.h"
 #include "CameraGesture.h"
+#include "HullMesh.h"
 #include "Interpolation.h"
 #include "JoinState.h"
 #include "OrderMarker.h"

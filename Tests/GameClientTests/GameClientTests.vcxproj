@@ -118,6 +118,7 @@
     <ClCompile Include="OrderMarkerTests.cpp" />
     <ClCompile Include="WorldTransformTests.cpp" />
     <ClCompile Include="CameraGestureTests.cpp" />
+    <ClCompile Include="HullMeshTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="JoinStateTests.cpp" />
     <ClCompile Include="pch.cpp">
