@@ -50,18 +50,26 @@ only per second, and **ADR-014 records the decision** with whatever §7 figures 
 
 **Read first:** `GameDesign.md` §7; ADR-014; M1.1's size-class naming note.
 
-**Adds:** `base × modifier[weaponClass][targetSizeClass] / 100`, integer throughout, as one pure function
-beside M1.2's derived stats. The modifier table is six numbers and is the whole of the
-rock-paper-scissors.
+**Adds:** **two mitigation models, because §7 now has two**, as one pure function beside M1.2's derived
+stats. A ship takes `base × modifier[weaponClass][targetSizeClass] / 100`, where the modifier table is six
+numbers and is the whole of the rock-paper-scissors between ships. **A station or a module takes
+`base × 100 / (100 + hitValue)`** instead, where the hit value is derived from the hull and its components
+like any other stat (R24).
+
+**Multiply before dividing, in both.** `base × (100 / (100 + hitValue))` in integers truncates to zero
+before it multiplies, so every shot does nothing — and it is the kind of fault that passes a smoke test and
+fails a match.
 
 **Files:** `GameCore/DamageTable.h` `.cpp`; `GameCore.vcxitems` + `.filters`;
 `Tests/GameCoreTests/DamageTableTests.cpp`.
 
-**Done when:** every weapon against every size class is pinned; **§7's raid figures are reproduced by
-tests** — one fighter against one miner, one fighter against one fighter, three fighters against six
-miners, and `GameDesign.md` §5's ten fighters against a station — because those are the numbers the
-design's balance argument rests on, and **a rounding change must break a test rather than a match**; and
-ADR-014's cadence is one named constant.
+**Done when:** every weapon against every size class is pinned; **the two models are pinned against each
+other at the one point they agree** — a hit value of 300 and the Large column both quarter the damage, which
+is the identity §7 chose the number to preserve, so a test that stops seeing it is a balance change
+somebody made by accident; **§7's raid figures are reproduced by tests** — one fighter against one miner,
+one fighter against one fighter, three fighters against six miners, and `GameDesign.md` §5's ten fighters
+against a station — because those are the numbers the design's balance argument rests on, and **a rounding
+change must break a test rather than a match**; and ADR-014's cadence is one named constant.
 
 ### M3.2 — Weapons in the tick · `GameLogic` · `GameLogicTests` · agent
 

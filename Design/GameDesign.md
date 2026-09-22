@@ -271,13 +271,16 @@ possible without a second kind of thing in the simulation, and `Cruiser` stays i
 nothing in the MVP builds it — the derivation function and its tests cover every hull, and reinstating a
 heavy design later is a table row (§10).
 
-| Hull | Slots | Hull HP | Mass | Size class |
-|---|---|---|---|---|
-| `Scout` | 1 | **450** | low | Small |
-| `Frigate` | 2 | 600 | medium | Medium |
-| `Cruiser` | 4 | 3,000 | high | Large |
-| `Station` | 2 | **8,000** | — | Large |
-| `ModuleFrame` | 1 | 1,500 | — | Large |
+| Hull | Slots | Hull HP | Mass | Size class | Hit value |
+|---|---|---|---|---|---|
+| `Scout` | 1 | **450** | low | Small | — |
+| `Frigate` | 2 | 600 | medium | Medium | — |
+| `Cruiser` | 4 | 3,000 | high | Large | — |
+| `Station` | 2 | **8,000** | — | Large | **300** |
+| `ModuleFrame` | 1 | 1,500 | — | Large | **300** |
+
+**Only the two base structures carry a hit value**, and a dash means the hull is damaged through §7's
+size-class table instead. The two mitigation models are the cost §7 names.
 
 | Drive | Character |
 |---|---|
@@ -340,13 +343,13 @@ the destination**, ordered by entity identity so the assignment is deterministic
 the selection. No continuous separation force and no flocking: those are floating-point-shaped problems in
 an integer simulation, and a formation system later is this same assignment with a different slot layout.
 
-**A module is a target like anything else.** `ModuleFrame` is size class Large, so a `MassDriver` does 25%
-against it: one fighter needs about two minutes to kill a module and three need forty seconds. That is
-deliberate — a module is a raid objective a player has to commit to, not something a passing fighter
-removes. When a station dies its owner is eliminated and **their modules go with their ships** (§2).
+**A module is a target like anything else.** Its hit value quarters what reaches it, so one fighter needs
+about two minutes to kill a module and three need forty seconds. That is deliberate — a module is a raid
+objective a player has to commit to, not something a passing fighter removes. When a station dies its
+owner is eliminated and **their modules go with their ships** (§2).
 
-**Damage is `base × modifier[weaponClass][targetSizeClass] / 100`**, integer throughout. The modifier
-table is the whole of the rock-paper-scissors, and it is six numbers:
+**Damage to a ship is `base × modifier[weaponClass][targetSizeClass] / 100`**, integer throughout. The
+modifier table is the whole of the rock-paper-scissors between ships, and it is six numbers:
 
 | | Small | Medium | Large |
 |---|---|---|---|
@@ -355,6 +358,49 @@ table is the whole of the rock-paper-scissors, and it is six numbers:
 
 Mass drivers hurt small things and scratch heavy hulls; point defense is the mass driver taken further —
 it shreds anything small that loiters and is irrelevant to anything large.
+
+### The base is not damaged directly; it mitigates
+
+**A station and a module do not take damage through the table above.** What reaches them goes through a
+**hit value**, a stat of the structure:
+
+```
+damage = base × 100 / (100 + hitValue)
+```
+
+**Integer throughout, and it multiplies before it divides.** Writing it as `base × (100 / (100 + hitValue))`
+in integers truncates the fraction to zero before it multiplies anything, so every shot does no damage at
+all — the same class of silent arithmetic fault the rounding question below already warns about. A hit
+value of 0 is no mitigation; 100 halves what lands; 300 quarters it.
+
+| Structure | Hull HP | Hit value | What lands |
+|---|---|---|---|
+| `Station` | 8,000 | **300** | a quarter |
+| `ModuleFrame` | 1,500 | **300** | a quarter |
+
+**Hit value is derived, not baked on a type** (`AGENTS.md` R24). The hull carries it and a component may
+add to it, summed by the same pure integer function in `GameCore` that derives mass and speed — which is
+what leaves room for an armor module later without moving anything here.
+
+**Nothing in the raid arithmetic moves, and that is the point of the number chosen.** 300 is the hit value
+that reproduces the Large column exactly: `100 / (100 + 300)` is `0.25`, which is what a `MassDriver`
+already did against a Large hull. A fighter still needs about two minutes to kill a module and three still
+need forty seconds; a station still absorbs roughly ten and a half minutes of one fighter. **The formula
+changed and the balance did not**, which is what makes it safe to take before M3 has played a match.
+
+**What the curve buys over the table cell.** The base's toughness is now a number on the *structure*
+rather than a cell shared with every Large thing in the game, so a module can be made softer than a
+station without touching a weapon's row. And the returns diminish — each point of hit value is worth less
+than the last, and `100 / (100 + hitValue)` approaches zero without ever reaching it — so **no stack of
+defensive upgrades can make a base immune**, which a flat percentage cannot promise.
+
+**What it costs, and this is a real cost rather than a caveat.** There are now two mitigation models in
+one game and a reader has to know which one they are in: ships use the table, base structures use the
+curve. It also collapses the per-weapon distinction against the base, where `PointDefense` did 30% against
+Large and a `MassDriver` did 25%; both now do whatever the structure's hit value says. That column was
+close to dead content — point defense is station-slot-only at range 400 and two bases are never that close
+— but it is **gone rather than deferred**, and a weapon meant to be better against structures now needs a
+penetration term rather than a table row.
 
 ### The raid arithmetic, which was degenerate and is not any more
 
