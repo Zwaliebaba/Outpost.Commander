@@ -610,6 +610,14 @@ Running a second instance on one machine is a manifest declaration (`SupportsMul
 already-strained loopback exemption. The alternative is a second machine, which is not an engineering
 decision at all.
 
+**THE ONE-MACHINE ROUTE IS PREPARED, NOT CONFIRMED.** `Package.appxmanifest` declares
+`SupportsMultipleInstances` in both namespaces, and **that alone would have broken the gate**: two
+instances of one package share `LocalState`, so both would present the same session token and the host
+would seat them as one player (ADR-013). Each instance now claims a slot (`NeuronClient/InstanceSlot.h`)
+and names its token file and its log by it. Slot zero keeps the old names, so a lone client changes
+nothing. What nobody has done is launch two instances and check that each gets its own seat, and
+whether the loopback exemption covers the second one. That is this gate.
+
 **Done when:** the question is answered on the register, and two clients on one host are playing — on
 whatever number of machines the answer turned out to require.
 

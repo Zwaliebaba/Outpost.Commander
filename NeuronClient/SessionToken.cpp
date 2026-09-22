@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "SessionToken.h"
+#include "InstanceSlot.h"
 
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Storage.h>
@@ -93,14 +94,14 @@ std::string SessionTokenToFileContents(std::uint64_t _token)
   return text;
 }
 
-std::uint64_t ReadSessionToken() noexcept
+std::uint64_t ReadSessionToken(std::uint32_t _instanceSlot) noexcept
 {
   // The path is a property and the read is ordinary file I/O -- see `HostAddress.cpp` for why this
   // is not `GetFileAsync(...).get()`, and for what happened the day it was.
   try
   {
     const std::filesystem::path localState{std::wstring{winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path()}};
-    std::ifstream file{localState / SESSION_TOKEN_FILE_NAME};
+    std::ifstream file{localState / InstanceFileName(SESSION_TOKEN_FILE_NAME, _instanceSlot)};
     if (!file)
     {
       return NO_TOKEN;
@@ -116,12 +117,12 @@ std::uint64_t ReadSessionToken() noexcept
   }
 }
 
-bool WriteSessionToken(std::uint64_t _token) noexcept
+bool WriteSessionToken(std::uint64_t _token, std::uint32_t _instanceSlot) noexcept
 {
   try
   {
     const std::filesystem::path localState{std::wstring{winrt::Windows::Storage::ApplicationData::Current().LocalFolder().Path()}};
-    const std::filesystem::path path = localState / SESSION_TOKEN_FILE_NAME;
+    const std::filesystem::path path = localState / InstanceFileName(SESSION_TOKEN_FILE_NAME, _instanceSlot);
 
     if (_token == NO_TOKEN)
     {

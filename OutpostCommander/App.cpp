@@ -184,11 +184,15 @@ void RunProbe(const CoreWindow& _window)
   Trace("probe: entered");
   const std::filesystem::path localState{std::wstring{ApplicationData::Current().LocalFolder().Path()}};
   Trace("probe: have LocalState");
-  std::ofstream log{localState / L"probe-log.txt", std::ios::trunc};
+
+  // M1.15: a second client on this machine shares this folder, so the log and the session token are
+  // named by the slot this instance claims. Slot zero is the names they always had.
+  const std::uint32_t instanceSlot = Neuron::ClaimInstanceSlot();
+  std::ofstream log{localState / Neuron::InstanceFileName(L"probe-log.txt", instanceSlot), std::ios::trunc};
   Trace(log ? "probe: log open" : "probe: log NOT open");
 
   const std::string host = Neuron::ReadHostAddress();
-  Report(log, "probe: LocalState is " + localState.string());
+  Report(log, "probe: LocalState is " + localState.string() + ", instance slot " + std::to_string(instanceSlot));
   Report(log, "probe: host " + host + " port " + std::to_string(Neuron::ProbePacket::PORT));
 
   Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
@@ -453,7 +457,7 @@ void RunProbe(const CoreWindow& _window)
   const auto start = std::chrono::steady_clock::now();
   // The token from `LocalState`, or zero on a first run. It is read once: the file is only
   // written again when the host issues a different one.
-  clientFrame.MutableJoin().Begin(Neuron::ReadSessionToken());
+  clientFrame.MutableJoin().Begin(Neuron::ReadSessionToken(instanceSlot));
   bool reportedReady = false;
   bool reportedSeat = false;
   std::uint64_t receivedCount = 0;
@@ -533,7 +537,7 @@ void RunProbe(const CoreWindow& _window)
       // **A FAILED WRITE IS LOGGED AND NOT ACTED ON.** ADR-013 names what it costs -- a client
       // that takes a second slot after a relaunch -- and there is nothing better to do about it
       // here than say so.
-      const bool written = Neuron::WriteSessionToken(clientFrame.CurrentJoin().Token());
+      const bool written = Neuron::WriteSessionToken(clientFrame.CurrentJoin().Token(), instanceSlot);
       Report(log, std::string{"SESSION token "} + (written ? "stored" : "COULD NOT BE STORED"));
     }
     if (!reportedSeat && (clientFrame.CurrentJoin().Phase() != Outpost::JoinPhase::Joining))

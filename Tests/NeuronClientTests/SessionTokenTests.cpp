@@ -82,4 +82,41 @@ public:
   }
 };
 
+/// Two clients on one machine share `LocalState`, so each names its files by the slot it claimed --
+/// and a lone client, slot zero, must find every file exactly where it always was.
+TEST_CLASS(TheInstanceFileName)
+{
+public:
+  TEST_METHOD(SlotZeroIsTheNameUnchanged)
+  {
+    Assert::AreEqual(std::wstring{L"session.txt"}, Neuron::InstanceFileName(Neuron::SESSION_TOKEN_FILE_NAME, 0));
+    Assert::AreEqual(std::wstring{L"probe-log.txt"}, Neuron::InstanceFileName(L"probe-log.txt", 0));
+  }
+
+  TEST_METHOD(AnotherSlotGoesBeforeTheExtension)
+  {
+    Assert::AreEqual(std::wstring{L"session-1.txt"}, Neuron::InstanceFileName(L"session.txt", 1));
+    Assert::AreEqual(std::wstring{L"probe-log-3.txt"}, Neuron::InstanceFileName(L"probe-log.txt", 3));
+    Assert::AreEqual(std::wstring{L"archive.tar-2.gz"}, Neuron::InstanceFileName(L"archive.tar.gz", 2));
+  }
+
+  /// No extension, or a name that is only one, takes the suffix at the end rather than splitting.
+  TEST_METHOD(ANameWithNoExtensionTakesItAtTheEnd)
+  {
+    Assert::AreEqual(std::wstring{L"session-1"}, Neuron::InstanceFileName(L"session", 1));
+    Assert::AreEqual(std::wstring{L".hidden-1"}, Neuron::InstanceFileName(L".hidden", 1));
+  }
+
+  TEST_METHOD(EverySlotNamesADifferentFile)
+  {
+    for (std::uint32_t first = 0; first < Neuron::INSTANCE_SLOT_COUNT; ++first)
+    {
+      for (std::uint32_t second = first + 1; second < Neuron::INSTANCE_SLOT_COUNT; ++second)
+      {
+        Assert::AreNotEqual(Neuron::InstanceFileName(L"session.txt", first), Neuron::InstanceFileName(L"session.txt", second));
+      }
+    }
+  }
+};
+
 } // namespace NeuronClientTests

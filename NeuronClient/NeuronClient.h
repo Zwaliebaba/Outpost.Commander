@@ -43,6 +43,7 @@
 #include "DatagramTransport.h"
 #include "GestureSeam.h"
 #include "HostAddress.h"
+#include "InstanceSlot.h"
 #include "PacketQueue.h"
 
 namespace Neuron

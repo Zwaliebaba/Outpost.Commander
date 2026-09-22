@@ -3,7 +3,9 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  IgnorableNamespaces="uap mp">
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:iot2="http://schemas.microsoft.com/appx/manifest/iot/windows10/2"
+  IgnorableNamespaces="uap mp desktop4 iot2">
   <Identity
     Name="33d4751b-3c0c-48ff-82a8-5a1e187adf6a"
     Publisher="CN=zwali"
@@ -23,7 +25,13 @@
     <Resource Language="x-generate" />
   </Resources>
   <Applications>
-    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="OutpostCommander.App">
+    <!-- M1.15: two clients on one host, on one machine. A packaged application is single-instanced
+         unless it says otherwise, and the attribute is spelled twice because the platform reads it
+         from the desktop and the IoT namespaces separately (Windows 10 1803 and later; MinVersion is
+         above that). Each instance claims its own slot for its LocalState files, and
+         NeuronClient/InstanceSlot.h says why sharing one session token would seat both as one player. -->
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="OutpostCommander.App"
+      desktop4:SupportsMultipleInstances="true" iot2:SupportsMultipleInstances="true">
       <uap:VisualElements
         DisplayName="Outpost Commander"
         Description="A multiplayer real-time strategy game. The client is a view onto a match the host simulates."

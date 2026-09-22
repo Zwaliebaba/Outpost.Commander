@@ -43,11 +43,12 @@ inline constexpr std::uint64_t NO_TOKEN = 0;
 [[nodiscard]] std::string SessionTokenToFileContents(std::uint64_t _token);
 
 /// The token this run should present: `LocalState\session.txt` when it is there and readable, zero
-/// otherwise.
+/// otherwise. **_instanceSlot names the file** (`InstanceSlot.h`), because two clients on one machine
+/// that shared a token would share a seat; slot zero is `session.txt` itself.
 ///
 /// **NEVER THROWS AND NEVER FAILS**, for the reason `ReadHostAddress` does not: a client that will
 /// not start is worse than a client that joins as somebody new.
-[[nodiscard]] std::uint64_t ReadSessionToken() noexcept;
+[[nodiscard]] std::uint64_t ReadSessionToken(std::uint32_t _instanceSlot) noexcept;
 
 /// Keeps a token for next time. False when it could not be written, which the caller may ignore --
 /// **the cost of a failed write is a client that takes a second slot after a relaunch**, and
@@ -55,6 +56,6 @@ inline constexpr std::uint64_t NO_TOKEN = 0;
 ///
 /// Writing `NO_TOKEN` removes the file, so "I was refused" and "I have never joined" are one state
 /// rather than two.
-bool WriteSessionToken(std::uint64_t _token) noexcept;
+bool WriteSessionToken(std::uint64_t _token, std::uint32_t _instanceSlot) noexcept;
 
 } // namespace Neuron
