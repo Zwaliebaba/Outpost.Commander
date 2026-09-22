@@ -2,7 +2,19 @@
 
 #include "GestureSeam.h"
 
+// `<unknwn.h>` EXPLICITLY, AND THIS FILE IS THE FIRST IN THE TREE THAT HAS TO ASK. `NeuronCore.h`
+// defines `WIN32_LEAN_AND_MEAN` before `<windows.h>` (AGENTS.md section 4), which excludes the OLE
+// headers and therefore leaves `::IUnknown` as the forward declaration `GraphicsDevice.h` makes of
+// it. Every other file that dereferences one includes `<d3d12.h>` and gets the real thing as a side
+// effect; this one talks to the Windows Runtime and not to Direct3D, so it says so.
+#include <unknwn.h>
+
+// `Windows.Foundation.Collections.h` is not decoration either: `GestureRecognizer::ProcessMoveEvents`
+// takes a `winrt::param::vector`, which `winrt/base.h` only DECLARES -- passing the `IVector` that
+// `GetIntermediatePoints` returns needs the definition, and the error without it names the
+// conversion rather than the missing header.
 #include <winrt/Windows.Devices.Input.h>
+#include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.Core.h>
 #include <winrt/Windows.UI.Input.h>
@@ -430,8 +442,14 @@ bool GestureSeam::Attach(::IUnknown* _coreWindow, const AuthoredSpace& _space) n
     return false;
   }
 
-  Core::CoreWindow window{nullptr};
-  if (FAILED(_coreWindow->QueryInterface(winrt::guid_of<Core::CoreWindow>(), winrt::put_abi(window))))
+  // A REAL QueryInterface RATHER THAN A CAST. The caller hands this an `IUnknown` -- the same
+  // arrangement `SwapChain::Create` has, so that neither header names a Windows Runtime type -- and
+  // this is the one place that establishes it really is the window. `try_as` answers with an empty
+  // object rather than an exception, which is what a `noexcept` entry point wants.
+  winrt::com_ptr<::IUnknown> unknown;
+  unknown.copy_from(_coreWindow);
+  const Core::CoreWindow window = unknown.try_as<Core::CoreWindow>();
+  if (!window)
   {
     return false;
   }
