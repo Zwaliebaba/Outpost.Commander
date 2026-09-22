@@ -53,8 +53,12 @@ reads is M1.16's**, and nobody has judged it yet.
 
 **The code M1's gates need is in, and nothing an agent can do is left.** After M1.14, a lost link puts up
 the reconnecting overlay and rejoins as the same player. The package also declares multiple instances,
-with each instance keeping its own session token, which gives M1.15 a one-machine route to try. Both
-gates are still open and both are a hand's.
+with each instance keeping its own session token, which gives M1.15 a one-machine route to try. **That
+route has run once, on the Surface Pro at its lock screen.** Two instances took two seats from one host
+through one loopback exemption. Nobody has played on it, because a locked screen suspends both clients,
+and whether two can run visibly side by side is the half still open. A failed socket no longer ends
+the client either: it is reopened, and a lost link always gets a fresh one. Both gates are still open
+and both are a hand's.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

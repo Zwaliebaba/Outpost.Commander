@@ -615,8 +615,31 @@ decision at all.
 instances of one package share `LocalState`, so both would present the same session token and the host
 would seat them as one player (ADR-013). Each instance now claims a slot (`NeuronClient/InstanceSlot.h`)
 and names its token file and its log by it. Slot zero keeps the old names, so a lone client changes
-nothing. What nobody has done is launch two instances and check that each gets its own seat, and
-whether the loopback exemption covers the second one. That is this gate.
+nothing.
+
+**RUN ONCE ON THE SURFACE PRO, 2026-09-22, WITH THE SCREEN LOCKED, SO HALF ANSWERED.** Setup:
+`Release|ARM64` host and client on the Surface Pro 11, host at `127.0.0.1`, seed 20260922, both
+clients launched from the shell. What it showed:
+
+- **Two processes ran at once**, each with its own slot: `probe-log.txt` says slot 0 and
+  `probe-log-1.txt` says slot 1.
+- **Two seats.** Slot 0 presented its stored token and was seated as player 1. Slot 1 had no token, was
+  issued one, and was seated as player 2. The host reported `clients=2`.
+- **The one loopback exemption covers both instances**, since it is keyed on the package family and
+  not on a process. Both received snapshots and both drew three entities.
+
+**What it could not show is two people playing.** The device was at the lock screen, and Windows
+suspends a packaged application that is not visible: both clients stopped about four seconds after
+joining. **That is also the open half of the question.** A fullscreen client is not visible behind
+another one, so the expected answer is that on one panel only the foreground client runs, while the
+match goes on without the other. That is `Interface.md` §7's suspend, and it is exactly how two players
+could never share one screen. **Two things remain for a hand on an unlocked device.** First, whether
+that expectation holds when switching between the two. Second, whether two *snapped* windows, both
+visible, both keep running. The client asks for fullscreen at launch, so the second needs the window
+to leave fullscreen first.
+
+**The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
+test with, one player at a time" or "a second machine".
 
 **Done when:** the question is answered on the register, and two clients on one host are playing — on
 whatever number of machines the answer turned out to require.
