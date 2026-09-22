@@ -126,6 +126,11 @@ struct ManipulationGate
   /// threshold mid-gesture, which is worse than no deadzone at all.
   bool rotationEngaged = false;
 
+  /// The cumulative rotation AT THE MOMENT THE DEADZONE WAS CROSSED, which the heading is measured
+  /// from -- the same arrangement the pan has below, and settled as such rather than assumed
+  /// (`OpenQuestions.md` Q38).
+  float rotationOriginDegrees = 0.0f;
+
   /// Whether the travel has crossed the tap slop and become a pan. There is no way back: a pan that
   /// returned to within 16 pixels of its origin would otherwise become a tap again on release.
   bool panEngaged = false;
@@ -154,13 +159,15 @@ struct GatedManipulation
   /// One inside the deadzone. **Above one the fingers moved apart**, which is the sign R21 names.
   float scale = 1.0f;
 
-  /// Zero until the deadzone is crossed, and the cumulative rotation after. **Positive is
+  /// Zero until the deadzone is crossed, and measured FROM THE CROSSING after it. **Positive is
   /// clockwise**, the recognizer's convention, kept.
   ///
-  /// IT DOES NOT REBASE AT THE CROSSING THE WAY THE PAN DOES, so the heading steps by eight degrees
-  /// the instant rotation engages. That is `Interface.md` section 5 read literally, and whether it
-  /// is what the design meant is `OpenQuestions.md` Q38 -- asked rather than answered here, because
-  /// it can only be judged by turning a camera and there is no camera until M1.8.
+  /// IT REBASES AT THE CROSSING EXACTLY AS THE PAN DOES (`Interface.md` section 5,
+  /// `OpenQuestions.md` Q38), so engaging rotation moves nothing. The deadzone exists because a pan
+  /// and a pinch rotate by ACCIDENT, so the crossing is usually reached unintentionally -- passing
+  /// the whole cumulative through would snap the world eight degrees in the middle of a pan, which
+  /// makes the accident it exists to absorb worse rather than better. What it costs is about eight
+  /// degrees of every deliberate orbit.
   float rotationDegrees = 0.0f;
 };
 

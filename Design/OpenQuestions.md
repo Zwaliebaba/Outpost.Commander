@@ -8,12 +8,17 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-one answered, six open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong. **All six open questions are under *Open* below**,
+**Thirty-two answered, six open.** Eight came from an adversarial review that also reversed two earlier
+answers and corrected three statements that were wrong, and one — Q38, the seventh round — came from
+writing the code rather than from reading the design. **All six open questions are under *Open* below**,
 each with the milestone that settles it. **Every one carries a recommendation**, which none of Q26, Q33
-and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37), three
-are decisions somebody has to take (Q33, Q35, Q36), and one is a gap found while implementing rather than
-while designing (Q38).
+and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37) and
+three are decisions somebody has to take (Q33, Q35, Q36).
+
+**This line said "five open" while six were listed**, from the commit that registered Q37 and did not
+count again. It is the same defect `Plan/README.md`'s step counts had and for the same reason — a count is
+prose beside a list, and nothing reads the list. `Scripts/CheckDesign.py` recomputes the plan's counts and
+does not yet recompute these.
 
 ---
 
@@ -120,6 +125,29 @@ entities of headroom, and the next feature that wants a per-entity byte still ca
 long opening and not for a match" in a paragraph that reads as current — true from M3, false before it,
 since asteroids are inexhaustible until then. **A consistency checker cannot catch that**: it is a claim
 that is true in one milestone and false in another, not a figure that disagrees with itself.
+
+---
+
+## Answered — 2026-09-22, seventh round: implementing the seam
+
+| | Question | Answer | Recorded in |
+|---|---|---|---|
+| **Q38** | Does the rotation deadzone rebase at its crossing, the way the tap slop does? | **Yes, it rebases.** The heading follows the fingers from the point the eight degrees was passed, so engaging rotation moves nothing — exactly the rule `Interface.md` §3 already states for the pan. **The argument that settles it is what the deadzone is for**: a pan and a pinch rotate by accident, so the crossing is usually reached unintentionally, and passing the whole cumulative through would snap the world eight degrees in the middle of a pan — making the accident the deadzone exists to absorb worse rather than better. | `Interface.md` §5 |
+
+**What it costs is about eight degrees of every deliberate orbit**, against the fifty a kickstand grip has
+before a re-grip ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — roughly a sixth of a
+gesture. That is the same price §3 pays for the pan and it is paid for the same reason, but it is worth
+writing down, because **it is one more thing on the bill if orbit is cut at M1.16**: ADR-018 already names
+orbit the candidate and counts three constants that exist only to protect it.
+
+**A fourth constant was declined.** Ramping rotation in over the first few degrees past the threshold
+would cost neither the lurch nor the arc — and it would put the camera in a band where the ground turns at
+some fraction of the fingers, which is the "slides at a different rate from the finger" complaint ADR-018
+opens by rejecting rate-based cameras over.
+
+**This is the first row the register took from writing code rather than from reviewing design**, and it is
+worth noting how it was found: two paragraphs of `Interface.md` described the same kind of threshold and
+only one of them said what happens at the crossing. Nothing compares two paragraphs for that.
 
 ---
 
@@ -327,33 +355,6 @@ modules leave room; a 300-unit station does not.
 [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) that is stronger than it was: a mesh is not scaled at
 draw time, so the catalog's number and the file's extent are two statements of one figure and **a script
 compares them** rather than a reader trusting both.
-
-### Q38 — Does the rotation deadzone rebase at its crossing, the way the tap slop does? — **needed by M1.8**
-
-`Interface.md` §3 gives the one-finger drag a sixteen-pixel slop and says exactly what happens at the
-crossing: **the pan begins at the point the threshold was crossed, so nothing jumps when it engages.**
-§5 gives rotation an eight-degree deadzone and a latch, and says nothing of the kind. Read literally —
-and M0.18 implements it literally, because the register is where a gap goes rather than the code — the
-camera ignores rotation until the cumulative exceeds eight degrees and then applies **the whole
-cumulative**, so the heading steps by eight degrees the instant the deadzone is crossed.
-
-The asymmetry is either deliberate or an oversight and the code cannot tell which, which is what makes it
-a row here rather than a judgment somebody took while implementing. It is also cheap either way: one
-subtraction and one more field on the gate.
-
-**Recommendation: rebase, for the reason §3 already gives about the pan.** The two deadzones exist for the
-same purpose — separate an intended gesture from the noise in an unintended one — and the argument against
-a jump is stronger for rotation than for translation, because eight degrees of heading is a visible lurch
-where sixteen authored pixels of pan is a nudge. **The argument the other way is that a deadzone which
-rebases costs the player its width every time**, so a deliberate small turn under eight degrees does
-nothing at all and then turns by nothing; against that, a rebasing pan has exactly the same property and
-§3 chose it anyway.
-
-**Why M1.8 rather than M0.18.** It can only be judged by turning a camera, and there is no camera until
-M1.8 — which is also where `Interface.md` §5's pitch floor and the zoom range's near end are pinned, and
-where ADR-018's first two owed measurements are taken. **If orbit is cut** — ADR-018 names it the
-candidate, and M1.16 is where that is decided — this row goes with it, along with the three constants it
-exists to protect.
 
 ---
 

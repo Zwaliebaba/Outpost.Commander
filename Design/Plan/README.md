@@ -57,10 +57,11 @@ carries it.
 **M0.19, the replica store and interpolation, is the next step.** M0.17 and M0.18 went in behind M0.16
 rather than ahead of it: the measurement that would have invalidated renderer work came out right first.
 
-**M0.18 put one question on the register rather than answering it** — `OpenQuestions.md` Q38, whether the
-rotation deadzone rebases at its crossing the way the tap slop does. `Interface.md` §3 says so for the pan
-and §5 says nothing for rotation, the code has to do one or the other, and it can only be judged by
-turning a camera. It is M1.8's.
+**M0.18 put one question on the register and it came back answered** — `OpenQuestions.md` Q38, whether the
+rotation deadzone rebases at its crossing the way the tap slop does. It does; `Interface.md` §5 now says
+so, and the gate in `NeuronClient` implements it. **It is the first row this register took from writing
+code rather than from reviewing design**, and it was found the way those are: two paragraphs described the
+same kind of threshold and only one of them said what happens at the crossing.
 
 **The ordering inside a milestone is by risk, not by feature**, which is the principle `GameDesign.md` §10
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the

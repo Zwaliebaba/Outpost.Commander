@@ -223,12 +223,33 @@ TEST_CLASS(TheCameraDeadzones)
 public:
   TEST_METHOD(RotationIsPinnedEitherSideOfEightDegrees)
   {
+    // EXCEED, so exactly eight degrees is still inside. The update that crosses reports nothing --
+    // that is the rebase, pinned on its own below -- and the one after it is measured from there.
     Neuron::ManipulationGate gate{};
     static_cast<void>(Neuron::ApplyGate(gate, Started(2)));
 
     Assert::AreEqual(0.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 7.9f)).rotationDegrees, 0.001f);
     Assert::AreEqual(0.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 8.0f)).rotationDegrees, 0.001f);
-    Assert::AreEqual(8.1f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 8.1f)).rotationDegrees, 0.001f);
+    Assert::AreEqual(0.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 8.1f)).rotationDegrees, 0.001f);
+    Assert::AreEqual(11.9f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 20.0f)).rotationDegrees, 0.001f);
+  }
+
+  TEST_METHOD(RotationBeginsAtTheCrossingAndNotAtZero)
+  {
+    // `OpenQuestions.md` Q38, answered: the heading is measured from the point the eight degrees
+    // was passed, exactly as the pan is measured from the point the slop was. WHAT THIS PREVENTS IS
+    // AN ACCIDENT, not an inconvenience -- the deadzone exists because a pan and a pinch rotate by
+    // accident, so the crossing is usually reached unintentionally, and passing the cumulative
+    // through would snap the world eight degrees in the middle of somebody's pan.
+    Neuron::ManipulationGate gate{};
+    static_cast<void>(Neuron::ApplyGate(gate, Started(2)));
+
+    const Neuron::GatedManipulation crossing = Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 30.0f));
+    Assert::AreEqual(0.0f, crossing.rotationDegrees, 0.001f, L"the update that engages rotation turns nothing");
+
+    // And it tracks one for one after that, so the eight degrees is spent once rather than scaled.
+    Assert::AreEqual(15.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 45.0f)).rotationDegrees, 0.001f);
+    Assert::AreEqual(-10.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 20.0f)).rotationDegrees, 0.001f);
   }
 
   TEST_METHOD(TheRotationLatchHoldsWhenTheFingersCrossBack)
@@ -241,8 +262,10 @@ public:
     static_cast<void>(Neuron::ApplyGate(gate, Started(2)));
     static_cast<void>(Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 12.0f)));
 
-    Assert::AreEqual(3.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 3.0f)).rotationDegrees, 0.001f);
-    Assert::AreEqual(-1.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, -1.0f)).rotationDegrees, 0.001f);
+    // Measured from the crossing at twelve, so these are negative: the fingers came back past the
+    // point where rotation engaged, and the camera follows them back rather than freezing.
+    Assert::AreEqual(-9.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, 3.0f)).rotationDegrees, 0.001f);
+    Assert::AreEqual(-13.0f, Neuron::ApplyGate(gate, Update(0.0f, 0.0f, 1.0f, -1.0f)).rotationDegrees, 0.001f);
 
     // And the latch is the manipulation's, not the seam's: the next one starts closed.
     Neuron::ManipulationGate second{};
@@ -255,12 +278,16 @@ public:
     // R21 names this as a thing a package can hide and a test cannot. The recognizer reports
     // degrees with CLOCKWISE POSITIVE, and the gate passes that through rather than converting it:
     // a camera that orbits the wrong way is a one-character defect nobody can see in a diff.
+    // TWO UPDATES EITHER SIDE, because the first one only crosses the deadzone and is rebased to
+    // zero -- a sign test on the crossing itself would pin nothing.
     Neuron::ManipulationGate clockwise{};
     static_cast<void>(Neuron::ApplyGate(clockwise, Started(2)));
+    static_cast<void>(Neuron::ApplyGate(clockwise, Update(0.0f, 0.0f, 1.0f, 12.0f)));
     Assert::IsTrue(Neuron::ApplyGate(clockwise, Update(0.0f, 0.0f, 1.0f, 30.0f)).rotationDegrees > 0.0f);
 
     Neuron::ManipulationGate counterClockwise{};
     static_cast<void>(Neuron::ApplyGate(counterClockwise, Started(2)));
+    static_cast<void>(Neuron::ApplyGate(counterClockwise, Update(0.0f, 0.0f, 1.0f, -12.0f)));
     Assert::IsTrue(Neuron::ApplyGate(counterClockwise, Update(0.0f, 0.0f, 1.0f, -30.0f)).rotationDegrees < 0.0f);
   }
 

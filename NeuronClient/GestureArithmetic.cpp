@@ -94,11 +94,19 @@ GatedManipulation ApplyGate(ManipulationGate& _gate, const InputEvent& _event) n
   gated.panXAuthoredPixels = _gate.panEngaged ? (travelX - _gate.panOriginXAuthoredPixels) : 0.0f;
   gated.panYAuthoredPixels = _gate.panEngaged ? (travelY - _gate.panOriginYAuthoredPixels) : 0.0f;
 
-  // THE ROTATION DEADZONE, AND ITS LATCH. Crossing back under eight degrees does not disengage it:
-  // that is what stops the camera stuttering every time a two-finger pan wanders across the
-  // threshold, and it is the difference between this and a plain comparison.
-  _gate.rotationEngaged = _gate.rotationEngaged || OutsideDeadzone(_event.rotationDegrees, 0.0f, ROTATION_DEADZONE_DEGREES);
-  gated.rotationDegrees = _gate.rotationEngaged ? _event.rotationDegrees : 0.0f;
+  // THE ROTATION DEADZONE, ITS LATCH, AND ITS REBASE -- the same three moves the slop above makes,
+  // written the same way on purpose (`OpenQuestions.md` Q38). Crossing back under eight degrees does
+  // not disengage it, which is what stops the camera stuttering every time a two-finger pan wanders
+  // across the threshold; and the heading is measured from the crossing, so engaging rotation moves
+  // nothing. Passing the whole cumulative through instead would snap the world eight degrees in the
+  // middle of a pan -- and a pan is how this threshold is usually reached.
+  if (!_gate.rotationEngaged && OutsideDeadzone(_event.rotationDegrees, 0.0f, ROTATION_DEADZONE_DEGREES))
+  {
+    _gate.rotationEngaged = true;
+    _gate.rotationOriginDegrees = _event.rotationDegrees;
+  }
+
+  gated.rotationDegrees = _gate.rotationEngaged ? (_event.rotationDegrees - _gate.rotationOriginDegrees) : 0.0f;
 
   // THE SCALE DEADZONE, WHICH DOES NOT LATCH, and the asymmetry is deliberate rather than an
   // oversight: ADR-018 counts three constants here -- the eight degrees, its latch, and this two
