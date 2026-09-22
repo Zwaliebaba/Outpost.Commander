@@ -84,19 +84,34 @@ near.
 
 ## Measurements
 
-None yet. Accepted without them, because the alternative was writing no movement code; two are owed and
-until they land the bit-identical claim is an argument rather than a fact:
+**THE SECOND ONE IS CLOSED. 2026-09-22, at M1.7.**
+
+`GameLogicTests`' determinism test runs a two-minute scripted match from seed 20260922 — two players
+building whenever their station is idle, ordering every ship they own to a point every fifty ticks, one
+deliberate mid-build replacement — and the world hashes to
+
+> **`0x37f846ed90b74ca1`**
+
+**identically on Debug and Release, x64 and ARM64.** That is 2,400 ticks through the catalog, the design
+table, the derived-stat function, ring slot assignment, the build system and the fixed-point movement
+step. Until it ran, every claim in this ADR about bit-identical behavior was an argument; it is now a
+fact about four builds on one machine, which is what this measurement was ever able to be.
+
+**What it still does not prove** is two different machines, which is M0.23's outstanding run and not
+this one's. ARM64 here is cross-compiled and executed under the same operating system.
+
+One is still owed:
 
 1. **The cost of an empty tick and of a full one** at the MVP's 110 entities and at 220, against the 50 ms
-   budget. Ring slot assignment and target selection are the two candidates for consuming it.
-2. **The determinism test passing across all four configuration and platform pairs** — the same seed and
-   the same scripted orders producing the same state hash on x64 and ARM64, Debug and Release. Until that
-   runs, every claim in this ADR about bit-identical behavior is an argument rather than a fact.
+   budget. Ring slot assignment and target selection were the two candidates for consuming it; the first
+   of those now exists and is a sort over the selection plus one sine lookup a ship, which is nothing —
+   but "is nothing" is an argument and this list is for figures.
 
-**Nothing in CI will run that second one.** CI builds `Debug|x64` and no more (`AGENTS.md` §6), so three of
-the four pairs — including every ARM64 one, which is the target device — are checked only by whoever
-remembers to build them. That is the standing cost of this ADR: **the property it exists to guarantee is
-precisely the one the pipeline does not watch.**
+**Nothing in CI runs that test on more than one pair, and closing it once did not change that.** CI builds
+`Debug|x64` and no more (`AGENTS.md` §6), so three of the four pairs — including every ARM64 one, which is
+the target device — are checked only by whoever remembers to build them. That is the standing cost of this
+ADR: **the property it exists to guarantee is precisely the one the pipeline does not watch**, and the
+hash above is a snapshot of one afternoon rather than a guarantee that holds tomorrow.
 
 The figures in the Decision are definitions and arithmetic on them, not measurements: ±2,097,152 is
 16,384 × 256 ÷ 2, 0.088° is 360 ÷ 4,096, and eight kilobytes is 4,096 × 2.

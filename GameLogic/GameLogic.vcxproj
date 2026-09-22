@@ -105,6 +105,7 @@
     <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="BuildSystem.cpp" />
     <ClCompile Include="Host.cpp" />
+    <ClCompile Include="RingAssignment.cpp" />
     <ClCompile Include="Sessions.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="Tick.cpp" />
@@ -118,6 +119,7 @@
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="BuildSystem.h" />
     <ClInclude Include="Host.h" />
+    <ClInclude Include="RingAssignment.h" />
     <ClInclude Include="Sessions.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="Tick.h" />

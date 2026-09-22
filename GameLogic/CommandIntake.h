@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BuildSystem.h"
+#include "RingAssignment.h"
 #include "World.h"
 
 #include <array>
@@ -69,10 +70,6 @@ public:
   /// What goes in the snapshot's per-player `lastCommandSeqApplied`, which is the whole
   /// acknowledgment channel (ADR-003). Zero for a player who has sent nothing.
   [[nodiscard]] std::uint16_t LastAppliedSequence(PlayerId _player) const noexcept;
-
-  /// How fast an entity told to move goes. R24 will derive this from thrust over mass; at M0 the
-  /// intake needs a number to put on the order and this is it, in units per tick (R6).
-  static constexpr Neuron::Fixed MOVE_SPEED_PER_TICK = 7 * 256;
 
 private:
   [[nodiscard]] static bool IsNewer(std::uint16_t _sequence, std::uint16_t _lastApplied) noexcept;

@@ -92,9 +92,9 @@ public:
   /// multiplier is dead; far below and the station is the bottleneck and mining stops mattering.
   static constexpr std::uint32_t BUILD_RATE_CREDITS_PER_SECOND = 20;
 
-  /// Ticks a second, from the tick period. Derived rather than restated, because two statements of
-  /// twenty that must agree is a defect waiting for one of them to move.
-  static constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(1000 / TICK_PERIOD_MILLISECONDS);
+  /// `Tick.h`'s, named through this class because the build rate is stated in seconds and every use
+  /// of it here is in ticks.
+  static constexpr std::uint32_t TICKS_PER_SECOND = Outpost::TICKS_PER_SECOND;
 
   /// How long a design takes, in ticks, at a given build-rate multiplier in hundredths.
   ///

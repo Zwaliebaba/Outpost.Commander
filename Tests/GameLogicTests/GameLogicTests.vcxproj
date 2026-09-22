@@ -113,6 +113,8 @@
     <ClCompile Include="CommandValidationTests.cpp" />
     <ClCompile Include="HostTests.cpp" />
     <ClCompile Include="BuildTests.cpp" />
+    <ClCompile Include="DeterminismTests.cpp" />
+    <ClCompile Include="RingAssignmentTests.cpp" />
     <ClCompile Include="SessionsTests.cpp" />
     <ClCompile Include="TickTests.cpp" />
     <ClCompile Include="pch.cpp">

@@ -17,6 +17,7 @@
 #include "CommandIntake.h"
 #include "Host.h"
 #include "Sessions.h"
+#include "RingAssignment.h"
 #include "StateHash.h"
 #include "Tick.h"
 

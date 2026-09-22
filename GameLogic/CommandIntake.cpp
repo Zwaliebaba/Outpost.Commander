@@ -2,6 +2,8 @@
 
 #include "CommandIntake.h"
 
+#include <vector>
+
 namespace Outpost
 {
 
@@ -107,19 +109,24 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   const Neuron::Vec2 target =
     ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
 
-  for (const std::uint16_t wire : _command.selection)
+  if (_command.type == CommandType::MoveTo)
   {
-    const EntityId resolved = ResolveWireIdentity(_world, wire);
-    if (_command.type == CommandType::MoveTo)
+    // **ONE RING SLOT EACH, RATHER THAN FIFTY SHIPS ON ONE POINT** (Q19, M1.7). The whole selection
+    // goes to `RingAssignment` together, because a slot depends on who else is in the order -- which
+    // is why this is one call and not a loop.
+    std::vector<EntityId> resolved;
+    resolved.reserve(_command.selection.size());
+    for (const std::uint16_t wire : _command.selection)
     {
-      static_cast<void>(_world.OrderMoveTo(resolved, target, MOVE_SPEED_PER_TICK));
+      resolved.push_back(ResolveWireIdentity(_world, wire));
     }
-    else
-    {
-      // M0 has no weapons. ADR-004's fire resolution is M3's, and an Attack that reaches here
-      // moves nothing rather than pretending -- the command is still ACCEPTED, because the host
-      // understood it and the acknowledgment must advance or the client repeats it forever.
-    }
+    static_cast<void>(OrderFleetTo(_world, resolved, target));
+  }
+  else
+  {
+    // M0 has no weapons. ADR-004's fire resolution is M3's, and an Attack that reaches here moves
+    // nothing rather than pretending -- the command is still ACCEPTED, because the host understood
+    // it and the acknowledgment must advance or the client repeats it forever.
   }
 
   m_lastApplied[_player] = _command.sequence;

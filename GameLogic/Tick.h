@@ -12,6 +12,26 @@ namespace Outpost
 /// out of it -- the seam is `Neuron::TickSchedule`, in the engine, driven by `Server.cpp`.
 inline constexpr std::int64_t TICK_PERIOD_MILLISECONDS = 50;
 
+/// Twenty. Derived rather than restated, because two statements of it that must agree is a defect
+/// waiting for somebody to move one.
+inline constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(1000 / TICK_PERIOD_MILLISECONDS);
+
+/// **R24's SPEED, IN `Fixed` PER TICK** -- thrust over mass over the tick rate, which is what
+/// `GameCore/DerivedStats.h` computes and what M0 could not use because an entity had no design.
+///
+/// **IT REPLACED A CONSTANT WITH A COMMENT ON IT.** `CommandIntake::MOVE_SPEED_PER_TICK` was
+/// `7 * 256` and said "R24 will derive this from thrust over mass; at M0 the intake needs a number
+/// and this is it". Seven units a tick is exactly the `Fighter`'s, which is why nothing looked
+/// wrong: the Miner was moving at the Fighter's speed and only the Fighter's was right.
+///
+/// A design with no drive returns zero, which `World::OrderMoveTo` reads as an order that moves
+/// nothing -- a station told to move stays where it is rather than being a special case somewhere.
+[[nodiscard]] constexpr Neuron::Fixed SpeedPerTick(DesignId _design) noexcept
+{
+  const std::uint32_t unitsPerSecond = Derive(_design).speedUnitsPerSecond;
+  return static_cast<Neuron::Fixed>((unitsPerSecond * static_cast<std::uint32_t>(Neuron::FIXED_ONE)) / TICKS_PER_SECOND);
+}
+
 /// One pass over the world, in the fixed order `TechnicalDesign.md` section 2 names: drain
 /// incoming commands, then orders, AI, movement, weapons, mining, build queues, deaths, victory.
 /// No system reads another's half-updated output, and the order is not negotiable -- it is what
