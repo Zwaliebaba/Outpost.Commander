@@ -240,21 +240,28 @@ reading as brushwork rather than as light — while only about 130 pixels in the
 And one found by counting rather than looking: **3,000 stars put under half a standout in the frame**, so
 the count is now 8,000 (decision 2).
 
-**Owed from this change:** `TheShippedSkyMeasured` has not been re-run — the figures above it are from
-the 3,000-star field. A Python replica of the generator (same tiers, blackbody table, ramps and plane
-bias; not bit-exact, since it does not reproduce PCG32's sequence) reproduces the old 0.030% lit area
-and puts the new field at **about 0.14%**, still under the one per cent the suite asserts. **Whether it
-reads as a sky is again not yet answered** and needs a third look on the device.
+**THE THIRD LOOK, 2026-09-22: IT READS AS A SKY.** Built on Windows, deployed to the device and
+confirmed by eye. That closes the third measurement below ahead of M1.16, and it took three looks —
+which is the argument for this ADR's own position that the failure modes are specific and each has a
+named cause, because each of the three times it was wrong it was wrong for a reason that had a number
+behind it and none of the three was visible in a test until the test was written to look for it.
 
-Three remain owed at **M1.16**:
+**`TheShippedSkyMeasured` has now been re-run on the built code**, replacing the Python replica's
+estimate: **8,000 stars at 7,992 distinct sizes, 3.00–9.96 scene-target pixels, a widest per-star tint
+of 0.60 of the brightest channel, and a total lit area of 0.140% of a 2880 × 1920 frame.** The replica
+had put it at "about 0.14%" and was right, which is worth recording only because it means the replica
+can be trusted for the next figure it is asked for. Two orders of magnitude under the 12% ceiling.
+
+Two remain owed at **M1.16**:
 
 1. **The frame time with the sky present**, at both world scales, on the device — this is now the
    measurement `ADR-016` actually needs, because a black screen was never the content.
 2. **Whether the fleet still reads against it** at the tactical zoom, which is the thing `ADR-005` is
    worried about and is judged by looking rather than by a number.
-3. **Whether the sky looks like a sky.** The failure modes are known and specific: uniform brightness
-   reading as noise, oversaturated color reading as confetti, and faint stars that are in the frame but
-   not on the glass. All three are looked at, and all three have a named cause if they appear.
+3. ~~**Whether the sky looks like a sky.**~~ **Answered above on the third look.** The failure modes it
+   named were the right ones and two of them actually happened: faint stars in the frame but not on the
+   glass, twice, for two different reasons. The third — oversaturated colour reading as confetti — never
+   did, and the record should say that the 38% saturation it was worried about turned out to be fine.
 
 The star count, the magnitude ratio and the color temperatures are **arithmetic on the real sky** rather
 than measurements of this one: about 9,000 stars to magnitude 6.5, counts multiplying by about 2.5
