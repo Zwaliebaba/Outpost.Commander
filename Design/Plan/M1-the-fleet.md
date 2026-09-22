@@ -243,6 +243,31 @@ game, so `NeuronClient` gets the reader, the vertex and index buffers, the uploa
 `GameClient` gets the map from a hull identity to a file and the hull palette, which is the only part that
 knows what a `Scout` is.
 
+**THE CONTENT ARRIVED EARLY AND THIS STEP NO LONGER AUTHORS IT.** `Design/design_handoff_meshes/`
+delivered **thirteen** meshes rather than three, and the pipeline under them is built and green:
+`Scripts/MeshesToObj.py`, `Scripts/BuildMeshes.py` and `Scripts/CheckMeshes.py`, with `meshconvert` pinned
+by version and hash in `Tools/`, producing thirteen `.cmo` files that ship as appx payload. The
+handedness, the vertex-colour injection and the landmark tests are all closed and measured. **What this
+step keeps is everything downstream of a file existing**, and it is now a shorter list with sharper edges:
+
+- **`NeuronClient/CmoReader.h` `.cpp`** — nothing in the tree reads a `.cmo`. The format is grounded
+  against real converter output rather than recalled, including the one field that does not survive
+  memory: a material's ambient, diffuse, specular and emissive are `float4`, not `float3`, with the
+  specular power a single float between specular and emissive. A `float3` reading walks off the end inside
+  the eight texture slots and fails several kilobytes later, somewhere unrelated.
+- **The mesh catalog.** `MeshCatalog.g.h` came with the handoff and was dropped when its item groups were
+  folded into the project; nothing now carries the names, package URIs, counts, extents or the hull
+  palette as shader constants. It regenerates from `manifest.json`, which ships beside the meshes so the
+  runtime asserts against the file the build validated.
+- **`CheckMeshes.py`'s CMO stage**, which is still the handoff's stub and passes while asserting nothing.
+  The real verification lives in `BuildMeshes.py` and **should move behind `CmoReader`** once that exists,
+  so that the build and the client are not two parsers agreeing with each other.
+- **Q37's catalog row**, which this step is the reason to write: the delivered extents answer it, and R24
+  wants the size named in the catalog rather than left implicit in whatever the file contains, so a script
+  compares two statements of one figure.
+- **The measured appx size**, owed by Q44. `TechnicalDesign.md` §7 now names three different sizes and
+  marks the package one as unmeasured; the built appx's block map is where it comes from.
+
 **The reader is the risk in this step and the tests are its.** CMO carries a materials block with eight
 texture-name slots, a skinning vertex buffer, a bone hierarchy and animation clips, **none of which the
 MVP uses and all of which it must skip rather than reject** — so the suite feeds it a file that has them.

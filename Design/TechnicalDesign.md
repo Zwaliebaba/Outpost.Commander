@@ -466,6 +466,33 @@ vertex color channel** selecting between a hull palette and the owner's color, s
 covers every ship of a shape regardless of owner — the one property of the old decision that constrains
 the authoring, and the reason a shape may not spend a second material on its team.
 
+**A mesh may be authored off its own centre, and what is asserted is the extent rather than the
+centroid** (Q43). The mesh origin is the simulated position; nothing requires the *volume* to be balanced
+around it, and three of the thirteen deliberately are not — `ModuleOreProcessorL2` is asymmetric in X, the
+shipyard truss heavily so in Z, and the station's hub puts its centroid at **Y ≈ +6**. A sanity check that
+expects `min == -max` looks like the obviously missing one and fails all three;
+[`Scripts/CheckMeshes.py`](../Scripts/CheckMeshes.py) compares `min` and `max` per axis against the
+manifest instead, which catches a mesh that moved without caring where its middle is.
+
+**A weapon fires from the hull's origin in the MVP** (Q41). The mining laser and the two `MassDriver`
+mounts have positions implied by hull geometry and **authored nowhere**, and they are not inferred from the
+vertices — the arrays are face-split with no groups to find a recess by, and a re-modeled hull would move
+every muzzle silently. The origin is wrong by up to half a hull length, about 45 units on a `Frigate`, for
+one frame of a thin bright line while something is exploding. **What makes it safe to defer is that
+[`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)'s event names entities and not positions**, so
+nothing on the wire or in the simulation depends on the answer; authored attachment transforms are a
+change to what the handoff carries, requested when a tracer is actually drawn.
+
+**Three sizes, and they are not one number** (Q44). CMO's vertex is fixed at 52 bytes and this content uses
+28 of them — position, normal and vertex color — with the tangent and texture coordinate written as zeros.
+**On disk** the thirteen files are about **425 KiB**, which is the figure to quote for nothing. **In the
+appx** they are much less and the number is **not yet measured**: 188 KiB of literal zeros deflates to
+almost nothing, and package size is what that figure is for. **In VRAM** it is the full **≈ 417 KiB**,
+zeros included, because the GPU fetches the dead 24 bytes on every draw — which is the only one of the
+three that bears on frame time. **Repacking to a 28-byte vertex at load time is declined**: it halves
+vertex fetch, costs a load-time transform and a second vertex layout, and at 2,674 triangles across the
+whole game nothing is near a bottleneck. The measured appx figure is owed at M1.9.
+
 **What is given up is that a geometry change was a change the compiler checked.** The replacement is a
 script asserting each mesh's bounds against the size the catalog states, which is a gate rather than a
 compile error — the arrangement `Scripts/CheckHudGeometry.py` already has for the interface pass. And the

@@ -338,6 +338,13 @@ rather than left in the design as-is.
    the pixel figures are the ones the acceptance criterion is written in — but 1,400 is the number in the
    camera table and I have not overwritten it.
 
+   > **ANSWERED 2026-09-22 — Q40: 1,400.** A 60-unit hull is 57 authored pixels at 1,400 against 53 at
+   > 1,500, both inside the 53–79 this plate was accepted against, so the difference is not visible and the
+   > plates stand as rendered. `Interface.md` §5 and ADR-018 both already said 1,400 and
+   > `GameClient/Camera.h` was built to it, so correcting this one document beats correcting three. **The
+   > plates were rendered at 1,500 and are not re-rendered** — they are evidence of silhouette and scale,
+   > and four authored pixels does not change what they are evidence of.
+
 2. **The HUD reference frame is not a combat frame.** The brief offers "34° above the plane at a focus
    distance of 2,600 units" as *"a good middle for a combat plate"*, and separately asks for the combat
    plate to show hulls at 53–79 px. At 2,600 units the scale is 1.97 u/px and a 60-unit hull is 30 px —

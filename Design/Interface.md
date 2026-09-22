@@ -351,6 +351,22 @@ at a close view of about 1,500 world units it is near 1,400, making the range **
 pinch spans about 4× of scale, so the whole range is two gestures. M1.8 pins the near end, and if the
 range grows much past that the lever is a gain on the scale rather than a different gesture.
 
+**The near plane is 50 units and the far plane is 50,000** (Q39). Neither was stated, and the range they
+span is wide: the tactical camera sits at 22,500 units over hulls 18 to 54 units tall. **Depth precision
+is set by the near plane, not the far one** — at a 24-bit buffer, near 1 resolves about 30 units at
+tactical range and the station's 12-unit plate step disappears into z-fighting; near 50 resolves about
+**0.6 units**, a factor of twenty in hand, and is still far closer than the 1,400-unit camera ever gets to
+a hull. **The case to look at on the device is the station at maximum zoom-out**, where every term is at
+its worst at once; a reversed-Z buffer is the lever if it is ever not enough.
+
+**The close end of the zoom is 1,400 units and the plates were rendered at 1,500** (Q40). The difference
+is not visible — a 60-unit hull is 57 authored pixels at 1,400 and 53 at 1,500, both inside the 53–79 the
+mesh handoff's combat plate was accepted against — and what it changes is the zoom range, 16.07× against
+15.0×. **1,400 stands** because this document and
+[`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) both already said it and
+`GameClient/Camera.h` was built to it; the handoff's README records the discrepancy and is corrected
+rather than this.
+
 **There is no minimap.** Because pitch is coupled to zoom, **maximum zoom-out is already a top-down
 tactical view of the whole map** — a minimap would be a second, smaller, lower-fidelity copy of a view
 that is one gesture away, costing a second render of every entity, a second coordinate space and a second
@@ -498,6 +514,22 @@ nothing, and a verb spent on something marginal is not there when something real
 a map-wide select-by-design were each considered and each declined; the jump-to-station that was declined
 with them is what ADR-018 has now put back, which is worth noticing — it was declined for want of a verb
 and returned the moment there was one.
+
+**An asteroid's ore level has no appearance, and that is a decision** (Q42). Q22 replicates a quantized
+ore bucket from M3 and the client draws it **as the number in the selection panel and nowhere else**. The
+question a player is asking — is this field worth holding — is answered by that number, and four buckets
+across five authored variants is twenty combinations to model for one line of text. **The cheap version if
+it is ever wanted** is the vertex-color hull tone: the `G` channel already selects between three palette
+entries, so a depleted rock could shift toward the deep tone with no new material and no second draw.
+
+**The shape-coded overlay is not in the MVP, and cutting it has a cost worth naming** (Q45). Plate 7 of
+the mesh handoff specifies a readout that identifies hulls at tactical zoom by shape rather than by
+silhouette. It is approved as a specification and it is not on the MVP list — the readouts that ship are
+the selection panel and [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)'s edge
+alert. **What must not happen is cutting it silently**: the hulls were tuned for the combat view rather
+than bent into silhouettes that stay legible at 3.5 pixels, *because* the overlay was expected to carry
+identification at tactical zoom. Dropping it reopens that trade, and the answer to it would be re-authoring
+thirteen meshes rather than adjusting a number.
 
 ### When a match ends
 

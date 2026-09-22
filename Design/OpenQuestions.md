@@ -8,12 +8,19 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Thirty-two answered, six open.** Eight came from an adversarial review that also reversed two earlier
-answers and corrected three statements that were wrong, and one — Q38, the seventh round — came from
-writing the code rather than from reading the design. **All six open questions are under *Open* below**,
-each with the milestone that settles it. **Every one carries a recommendation**, which none of Q26, Q33
-and Q34 did before: three are measurements with a starting value to be moved from (Q26, Q34, Q37) and
-three are decisions somebody has to take (Q33, Q35, Q36).
+**Thirty-nine answered, six open.** Eight came from an adversarial review that also reversed two earlier
+answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
+from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
+first time a body of authored content met this design and asked it questions. Those seven were registered
+with recommendations and answered the same day; the eighth round below is what they became. **All six
+remaining open questions are under *Open***, each with the milestone that settles it. **Every one carries
+a recommendation**, which none of Q26, Q33 and Q34 did before.
+
+**Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
+delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
+`Station` 220, asteroids 62 to 167 against a recommended 60–180. **Closing it wants the catalog row
+written at the same time** (R24), so that the figure and the file are two statements of one number with a
+script between them rather than one number nobody stated. M1.9 carries that as a step.
 
 **This line said "five open" while six were listed**, from the commit that registered Q37 and did not
 count again. It is the same defect `Plan/README.md`'s step counts had and for the same reason — a count is
@@ -148,6 +155,25 @@ opens by rejecting rate-based cameras over.
 **This is the first row the register took from writing code rather than from reviewing design**, and it is
 worth noting how it was found: two paragraphs of `Interface.md` described the same kind of threshold and
 only one of them said what happens at the crossing. Nothing compares two paragraphs for that.
+
+---
+
+## Answered — 2026-09-22, eighth round: the mesh handoff
+
+**Seven, and they are the first questions a body of authored content asked this design.** Every one came
+from integrating `Design/design_handoff_meshes/` rather than from reading the documents: three are numbers
+the design never stated and the content needed, three are decisions about what the client draws, and one
+is a specification that was approved without a home.
+
+| | Question | Answer | Recorded in |
+|---|---|---|---|
+| **Q39** | What are the near and far clip planes? | **Near 50, far 50,000.** The near plane is what sets depth precision, not the far one: at 24 bits, near 1 resolves ~30 units at the 22,500-unit tactical camera and the station's 12-unit plate step z-fights away; near 50 resolves ~0.6 units and is still far closer than the camera ever gets to a hull. Reversed-Z is the lever if it is ever not enough. | `Interface.md` §5 |
+| **Q40** | Combat camera at 1,400 units or 1,500? | **1,400.** A 60-unit hull is 57 authored pixels at 1,400 and 53 at 1,500 — both inside the 53–79 the handoff's combat plate was accepted against, so it is not visible. This document and [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) both already said 1,400 and `GameClient/Camera.h` was built to it; **the handoff's README is corrected rather than the design**, which is one document instead of three. | `Interface.md` §5 |
+| **Q41** | Where do weapons attach to a hull? | **The hull's origin, for the MVP.** Wrong by up to half a hull length for one frame of a tracer during an explosion. Not inferred from the vertices — the arrays are face-split with no groups to find a recess by, and a re-modeled hull would move every muzzle silently. Safe to defer because [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)'s event names entities and not positions. Authored transforms are requested when a tracer is drawn. | `TechnicalDesign.md` §7 |
+| **Q42** | What does an asteroid's ore state look like? | **Nothing — the number in the selection panel and nowhere else.** The question a player is asking is answered by that number, and four buckets over five variants is twenty combinations to author for one line of text. The cheap version if it is ever wanted is the vertex-color hull tone, which costs no material and no second draw. | `Interface.md` §7 |
+| **Q43** | May a mesh be authored off-origin? | **Yes, and what is asserted is the extent rather than the centroid.** Three of the thirteen are deliberately asymmetric and the station's centroid sits at Y ≈ +6, so a `min == -max` check — the one that looks obviously missing — fails all three. `Scripts/CheckMeshes.py` compares min and max per axis against the manifest instead. | `TechnicalDesign.md` §7 |
+| **Q44** | Repack CMO's 52-byte vertex to 28? | **No.** 24 bytes per vertex are dead and 2,674 triangles is nowhere near a bottleneck; repacking buys vertex fetch and costs a load-time transform and a second layout. **The real finding is that §7 carried one number for three things** — 425 KiB on disk, an unmeasured and much smaller figure in the appx, and ~417 KiB in VRAM — and only the last two mean anything. The appx measurement is owed at M1.9. | `TechnicalDesign.md` §7 |
+| **Q45** | Does the shape-coded overlay ship? | **Not in the MVP, and the dependency is recorded rather than the decision alone.** The hulls were tuned for the combat view instead of being bent into silhouettes legible at 3.5 px *because* the overlay was expected to carry tactical-zoom identification. Cutting it silently reopens that trade, and the answer would be re-authoring thirteen meshes. | `Interface.md` §7 |
 
 ---
 
