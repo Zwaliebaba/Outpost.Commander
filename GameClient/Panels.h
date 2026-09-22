@@ -1,6 +1,7 @@
 #pragma once
 
 #include "HudLayout.h"
+#include "JoinState.h"
 #include "PanelHitTest.h"
 #include "Selection.h"
 
@@ -15,21 +16,6 @@
 
 namespace Outpost
 {
-
-/// What the system panel says about the connection. **There is no reconnecting phase at M1**: nothing
-/// yet detects a resume (`Interface.md` §7), so the state exists for the overlay to be drawn from and
-/// nothing sets it.
-enum class LinkState : std::uint8_t
-{
-  Joining,
-  Linked,
-
-  /// The host answered and had no slot (ADR-013). **The client shows it** -- M1.4's criterion -- in the
-  /// reconnect overlay's block, since a refused client has nothing else to look at.
-  Refused,
-
-  Reconnecting
-};
 
 /// One design's row in the selection panel. R8: a public aggregate.
 struct SelectionGroupSummary

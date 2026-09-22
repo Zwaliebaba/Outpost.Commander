@@ -11,6 +11,19 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
 {
   DrainResult result;
 
+  // **THE SILENCE IS JUDGED BEFORE ANYTHING IS DRAINED**, and that order is what makes a resume show the
+  // overlay. A suspended client's socket can hold datagrams that land on the first frame back; judged
+  // after the drain they would be stamped now and the loss would never be seen. Judged first, the gap is
+  // the suspension, the rejoin starts, and those stale snapshots cannot clear it -- only one that arrives
+  // after the host has seated this client again can.
+  if (m_join.IsJoined() && m_heardSnapshot && ((_nowMilliseconds - m_lastHeardMilliseconds) >= LINK_SILENCE_MILLISECONDS))
+  {
+    m_join.Rejoin();
+    m_reconnecting = true;
+    m_lastHeardMilliseconds = _nowMilliseconds;
+    result.linkLost = true;
+  }
+
   // On the stack and sized once. A frame must not allocate to read its own input -- the queue went
   // to the trouble of allocating every slot up front for exactly this reason.
   std::array<std::byte, DATAGRAM_BUFFER_BYTES> buffer{};
@@ -62,6 +75,8 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     if (m_replicas.Accept(snapshot, _nowMilliseconds))
     {
       ++result.accepted;
+      m_lastHeardMilliseconds = _nowMilliseconds;
+      m_heardSnapshot = true;
     }
     else
     {
@@ -105,7 +120,36 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     }
   }
 
+  // **SEATED AGAIN AND A SNAPSHOT IN HAND**, in either order within the drain -- the host answers the join
+  // and goes on sending, so both commonly arrive together. `Interface.md` section 7: the overlay stays
+  // until the first snapshot lands, and then play resumes straight away.
+  if (m_reconnecting && m_join.IsJoined() && (result.accepted > 0))
+  {
+    m_reconnecting = false;
+    result.linkRestored = true;
+  }
+
   return result;
+}
+
+LinkState ClientFrame::Link() const noexcept
+{
+  // REFUSED FIRST: a rejoin the host answers with `MatchFull` is terminal, and showing it as a reconnect
+  // would promise the player something that retrying will not deliver.
+  switch (m_join.Phase())
+  {
+  case JoinPhase::Refused:
+    return LinkState::Refused;
+  case JoinPhase::Joined:
+  case JoinPhase::Joining:
+    break;
+  }
+
+  if (m_reconnecting)
+  {
+    return LinkState::Reconnecting;
+  }
+  return m_join.IsJoined() ? LinkState::Linked : LinkState::Joining;
 }
 
 ReplicaStore::Frame ClientFrame::Advance(std::uint64_t _nowMilliseconds) const noexcept

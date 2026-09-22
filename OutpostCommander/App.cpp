@@ -516,6 +516,18 @@ void RunProbe(const CoreWindow& _window)
     // suite over it, and this is the call plus a line in the log.
     const Outpost::ClientFrame::DrainResult drained = clientFrame.DrainPackets(queue, nowMs);
 
+    // `Interface.md` section 7's reconnect, decided in `ClientFrame` and only reported here. The rejoin it
+    // started goes out through the same `ShouldSend` above on the next frame.
+    if (drained.linkLost)
+    {
+      Report(log, "LINK lost after " + std::to_string(Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS) + " ms of silence, rejoining");
+    }
+    if (drained.linkRestored)
+    {
+      Report(log, std::string{"LINK restored, "} + (clientFrame.CurrentJoin().Resumed() ? "rejoined" : "accepted") +
+                    " player=" + std::to_string(static_cast<unsigned>(clientFrame.Player())));
+    }
+
     if (drained.tokenChanged)
     {
       // **A FAILED WRITE IS LOGGED AND NOT ACTED ON.** ADR-013 names what it costs -- a client
@@ -1186,10 +1198,7 @@ void RunProbe(const CoreWindow& _window)
         hudState.buildPanelOpen = buildPanelOpen;
         hudState.quitArmed = quitConfirm.IsArmed(nowMs);
 
-        const Outpost::JoinPhase phase = clientFrame.CurrentJoin().Phase();
-        hudState.link = (phase == Outpost::JoinPhase::Refused)  ? Outpost::LinkState::Refused
-                        : (phase == Outpost::JoinPhase::Joined) ? Outpost::LinkState::Linked
-                                                                : Outpost::LinkState::Joining;
+        hudState.link = clientFrame.Link();
 
         if (const Outpost::Snapshot* latest = clientFrame.Replicas().Newest(); latest != nullptr)
         {

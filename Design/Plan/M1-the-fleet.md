@@ -580,8 +580,12 @@ constants the client actually draws from.
 exempts are the alert, the world-anchored elements, and the module row's armed and unavailable states and
 cargo, which are M2's and M3's. **What is not built:** the module row (no module exists until ADR-015 at
 M2, and *unavailable* means "build something else first", which nobody at M1 can do); **motion**, which
-the handoff's own build order puts last; and a **reconnecting** state, because nothing yet detects a resume
-— the overlay is drawn from a state nothing sets. **Two things the handoff did not settle and this step
+the handoff's own build order puts last. ~~A **reconnecting** state, because nothing yet detects a
+resume~~ — **BUILT AFTERWARDS, 2026-09-22**: `ClientFrame` calls the link lost after a second with no
+snapshot, which is how a resume shows up (the frame clock jumps and the last arrival is old). It rejoins
+with the token it holds and keeps the overlay up until the first snapshot after the host seats it again.
+`ClientFrame::Link` is now the one place the link state is decided. It used to be decided in `App.cpp`,
+where no suite could reach it. `ClientFrameLink` and `TheRejoin` pin it. **Two things the handoff did not settle and this step
 did:** a refused join shows `MATCH FULL` in the reconnect overlay's block, and the system panel keeps
 `LINK` rather than `RECONNECTING` because the longer word does not fit its 72 pixels before the quit.
 
@@ -645,6 +649,9 @@ seven, and two ADRs added their own since this step was written:
    ADR-005's worry. And **whether the sky looks like a sky**, whose three failure modes each have a named
    cause: uniform brightness reading as noise, oversaturated color as confetti, faint stars in the frame
    but not on the glass.
+7. **The link-silence threshold**: one second of no snapshots before the reconnecting overlay goes up
+   (`GameClient/ClientFrame.h`). It is not tuned. Check that a resume shows the overlay and then clears it,
+   and that a bad wireless second does not put it up over a match that is still arriving.
 
 **Done when:** all of them are answered on hardware and written into the documents that asked for them.
 

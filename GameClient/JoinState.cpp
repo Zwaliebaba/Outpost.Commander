@@ -42,6 +42,18 @@ bool JoinState::ShouldSend(std::uint64_t _nowMilliseconds) noexcept
   return true;
 }
 
+void JoinState::Rejoin() noexcept
+{
+  if (m_phase != JoinPhase::Joined)
+  {
+    return;
+  }
+
+  m_phase = JoinPhase::Joining;
+  m_lastSentMilliseconds = 0;
+  m_sent = 0;
+}
+
 bool JoinState::Accept(const JoinReply& _reply) noexcept
 {
   if (_reply.result == JoinResult::MatchFull)

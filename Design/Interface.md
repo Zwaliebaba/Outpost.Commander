@@ -510,7 +510,10 @@ readout ships before M2.7 can say how it is computed.
 On resume the client reconnects and shows a **reconnecting** overlay until the first snapshot lands, then
 returns straight to play. **It is recognized as the same player by the session token it kept**
 ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)); a relaunch and a resume are the same
-path, which is what makes this and `GameDesign.md` §2's disconnect one mechanism rather than two. That is mechanically free: snapshots are self-contained
+path, which is what makes this and `GameDesign.md` §2's disconnect one mechanism rather than two. **A resume is noticed as silence**: a seated client that goes a second without a
+snapshot calls the link lost, rejoins with its token and raises the overlay. A suspension is always
+longer than that, and a dropped link is the same event, so there is no separate suspend path to get
+wrong. The second is untuned and M1.16 looks at it. That is mechanically free: snapshots are self-contained
 ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)), so there is nothing to catch up on and no
 resynchronisation to get wrong.
 

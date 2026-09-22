@@ -30,6 +30,23 @@ enum class JoinPhase : std::uint8_t
   Refused
 };
 
+/// What the system panel says about the connection, which is the join's phase plus one fact the join
+/// cannot know: **whether this client had a link and lost it.** `ClientFrame::Link` is the one place
+/// that decides it.
+enum class LinkState : std::uint8_t
+{
+  Joining,
+  Linked,
+
+  /// The host answered and had no slot (ADR-013). **The client shows it** -- M1.4's criterion -- in the
+  /// reconnect overlay's block, since a refused client has nothing else to look at.
+  Refused,
+
+  /// Seated once, then silent (`Interface.md` section 7). Drawn until the first snapshot after the
+  /// rejoin lands.
+  Reconnecting
+};
+
 class JoinState
 {
 public:
@@ -49,6 +66,15 @@ public:
   /// The first call after `Begin` always says yes: there is no reason to wait a quarter second
   /// before asking.
   [[nodiscard]] bool ShouldSend(std::uint64_t _nowMilliseconds) noexcept;
+
+  /// **ASKS AGAIN WITHOUT FORGETTING WHO THIS CLIENT WAS.** A seated client goes back to `Joining` and
+  /// presents the token it holds, so the host answers `Rejoined` into the same slot -- at a new endpoint
+  /// if the old one is gone (ADR-013). Unlike `Begin`, the player and the seed are kept: the panels go on
+  /// reading this player's block behind the overlay rather than blanking to nobody's.
+  ///
+  /// The first `ShouldSend` after it says yes at once, as after `Begin`. A client that is not seated is
+  /// left alone -- a refused one stays refused and a joining one is already asking.
+  void Rejoin() noexcept;
 
   /// What to put in it.
   [[nodiscard]] Join Outgoing() const noexcept

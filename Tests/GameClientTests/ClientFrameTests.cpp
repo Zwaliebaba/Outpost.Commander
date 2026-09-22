@@ -306,6 +306,146 @@ public:
   }
 };
 
+/// `Interface.md` section 7: a client that loses the link shows the reconnecting overlay and rejoins as
+/// itself, and it comes down with the first snapshot after the host seats it again.
+TEST_CLASS(ClientFrameLink)
+{
+public:
+  TEST_METHOD(TheLinkFollowsTheJoinUntilAnythingIsLost)
+  {
+    Outpost::ClientFrame frame;
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Joining);
+
+    Seat(frame, 1);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Linked);
+
+    Outpost::ClientFrame refused;
+    static_cast<void>(refused.MutableJoin().Accept(
+      Outpost::JoinReply{.result = Outpost::JoinResult::MatchFull, .player = Outpost::NO_PLAYER, .token = 0, .matchSeed = 0}));
+    Assert::IsTrue(refused.Link() == Outpost::LinkState::Refused);
+  }
+
+  /// A snapshot a second, less a millisecond, is a link that is still there.
+  TEST_METHOD(ASilenceShorterThanTheThresholdIsNotALoss)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+
+    const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS - 1);
+    Assert::IsFalse(result.linkLost);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Linked);
+    Assert::IsTrue(frame.CurrentJoin().IsJoined());
+  }
+
+  /// **THE LOSS STARTS A REJOIN, AND THE PLAYER IS KEPT** so the panels behind the overlay are still this
+  /// player's.
+  TEST_METHOD(ASilenceStartsARejoinAndShowsTheOverlay)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 2);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+
+    const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS);
+    Assert::IsTrue(result.linkLost);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
+    Assert::IsTrue(frame.CurrentJoin().Phase() == Outpost::JoinPhase::Joining);
+    Assert::AreEqual(2, static_cast<int>(frame.Player()));
+    Assert::IsTrue(frame.MutableJoin().ShouldSend(2000), L"the rejoin goes out on the next frame");
+  }
+
+  /// **A RESUME IS A SILENCE**, and the stale snapshots a suspended socket was holding land on the same
+  /// frame the loss is seen. They must not take the overlay down: only a snapshot after the host has
+  /// seated this client again can.
+  TEST_METHOD(SnapshotsBeforeTheRejoinIsAnsweredDoNotEndIt)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+
+    // Suspended for a minute; two stale snapshots were waiting in the socket.
+    queue.Push(EncodedSnapshot(2, 0, 0));
+    queue.Push(EncodedSnapshot(3, 0, 0));
+    const Outpost::ClientFrame::DrainResult resumed = frame.DrainPackets(queue, 61000);
+    Assert::IsTrue(resumed.linkLost);
+    Assert::AreEqual(2u, resumed.accepted);
+    Assert::IsFalse(resumed.linkRestored);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
+  }
+
+  /// `Interface.md` section 7: until the first snapshot lands, **then straight back to play** -- and the
+  /// reply and the snapshot commonly arrive in one drain.
+  TEST_METHOD(TheFirstSnapshotAfterTheReplyRestoresTheLink)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+    static_cast<void>(frame.DrainPackets(queue, 61000));
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
+
+    // The reply alone seats the client and does not end the overlay; there is still nothing new to draw.
+    static_cast<void>(frame.MutableJoin().Accept(
+      Outpost::JoinReply{.result = Outpost::JoinResult::Rejoined, .player = 1, .token = 0xABCDEF0123456789ull, .matchSeed = 99}));
+    Assert::IsFalse(frame.DrainPackets(queue, 61050).linkRestored);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
+
+    queue.Push(EncodedSnapshot(2, 0, 0));
+    const Outpost::ClientFrame::DrainResult restored = frame.DrainPackets(queue, 61100);
+    Assert::IsTrue(restored.linkRestored);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Linked);
+  }
+
+  /// **A REJOIN THAT IS ANSWERED BUT NEVER FOLLOWED BY A SNAPSHOT ASKS ONCE A SECOND**, not once a frame.
+  /// The silence is measured again from the rejoin.
+  TEST_METHOD(AnAnsweredRejoinWithNoSnapshotRetriesAtTheThreshold)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+    Assert::IsTrue(frame.DrainPackets(queue, 5000).linkLost);
+
+    Seat(frame, 1);
+    Assert::IsFalse(frame.DrainPackets(queue, 5000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS - 1).linkLost);
+    Assert::IsTrue(frame.DrainPackets(queue, 5000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS).linkLost);
+  }
+
+  /// A client that has never had a snapshot has no link to lose, however long the host takes to send one.
+  TEST_METHOD(NoSnapshotYetIsNotALoss)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    Assert::IsFalse(frame.DrainPackets(queue, 60000).linkLost);
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Linked);
+  }
+
+  /// **A REFUSED REJOIN IS SHOWN AS A REFUSAL.** The host had restarted and filled the slot; retrying
+  /// will not help and the overlay must not say it will.
+  TEST_METHOD(ARefusedRejoinIsRefusedAndNotReconnecting)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedSnapshot(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+    static_cast<void>(frame.DrainPackets(queue, 5000));
+
+    static_cast<void>(frame.MutableJoin().Accept(
+      Outpost::JoinReply{.result = Outpost::JoinResult::MatchFull, .player = Outpost::NO_PLAYER, .token = 0, .matchSeed = 0}));
+    Assert::IsTrue(frame.Link() == Outpost::LinkState::Refused);
+  }
+};
+
 /// ADR-008: the address is configuration, and the fallback is the part that has to be right.
 TEST_CLASS(HostAddressFallback)
 {

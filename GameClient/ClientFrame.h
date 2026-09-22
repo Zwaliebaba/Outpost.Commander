@@ -53,7 +53,24 @@ public:
     /// True when a reply moved the session token and it is worth writing to `LocalState`. The
     /// caller does the writing; nothing below this class touches a file.
     bool tokenChanged = false;
+
+    /// This drain found the link silent and started a rejoin. Once per loss, for the log.
+    bool linkLost = false;
+
+    /// This drain landed the first snapshot after a rejoin, which is what takes the overlay down.
+    bool linkRestored = false;
   };
+
+  /// **HOW LONG A SEATED CLIENT HEARS NOTHING BEFORE IT CALLS THE LINK LOST: ONE SECOND.**
+  ///
+  /// Twenty snapshots at 20 Hz, against ADR-003's 75-millisecond buffer that already covers a lost one or
+  /// two without the player seeing anything. A burst that long is not jitter, and it is far shorter than
+  /// any suspension -- a packaged client loses the foreground for seconds at least, and `Interface.md`
+  /// section 7's resume is detected by exactly this: the frame clock jumps and the last arrival is old.
+  /// **Not tuned.** Too short and a bad wireless second throws an overlay over a match that is still
+  /// arriving; too long and a player taps into a dead link. M1.16 is where it gets looked at, with the
+  /// other constants.
+  static constexpr std::uint64_t LINK_SILENCE_MILLISECONDS = 1000;
 
   /// Takes everything waiting on the queue and folds it in, stamping each with the arrival time.
   ///
@@ -122,6 +139,10 @@ public:
     return m_join;
   }
 
+  /// What the system panel shows. **The one place the link state is decided** (R20) -- the package used
+  /// to map the join phase itself, and it could not see a loss because the loss is a fact about arrivals.
+  [[nodiscard]] LinkState Link() const noexcept;
+
 private:
   ReplicaStore m_replicas;
   OrderMarkerSet m_markers;
@@ -168,6 +189,19 @@ private:
   /// Adopted once. After that the client owns its own counter, and a snapshot that has not yet
   /// caught up with the orders in flight must not wind it backwards.
   bool m_adoptedSequence = false;
+
+  /// **WHEN THE LAST SNAPSHOT WAS FOLDED IN, OR WHEN THE LAST REJOIN BEGAN**, whichever is later. The
+  /// second is what stops a rejoin that is answered but never followed by a snapshot from starting
+  /// another one every frame: the silence is measured again from the rejoin, so it asks once a second.
+  std::uint64_t m_lastHeardMilliseconds = 0;
+
+  /// A client that has never had a snapshot has no link to lose. Without this the first second of a
+  /// join to a host that seats but has not yet sent would read as a loss.
+  bool m_heardSnapshot = false;
+
+  /// Set when a silence starts a rejoin, cleared by the first snapshot after the host seats this client
+  /// again.
+  bool m_reconnecting = false;
 
   /// Sized by what one datagram can be. ADR-003's MVP snapshot is 1,137 bytes and the MTU is what
   /// bounds the rest, so this is the buffer a drain hands the queue.

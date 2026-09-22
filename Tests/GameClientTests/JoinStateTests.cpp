@@ -186,4 +186,49 @@ public:
   }
 };
 
+/// `Interface.md` section 7's reconnect: a seated client asks again **as itself**.
+TEST_CLASS(TheRejoin)
+{
+public:
+  /// The token goes out again, so the host answers `Rejoined` into the same slot -- and the player and
+  /// the seed are kept, so the panels behind the overlay still read this player's block.
+  TEST_METHOD(ARejoinAsksAgainWithTheSameTokenAndKeepsTheSeat)
+  {
+    Outpost::JoinState join;
+    join.Begin(Outpost::NO_SESSION_TOKEN);
+    Assert::IsTrue(join.ShouldSend(0));
+    static_cast<void>(join.Accept(Seated(Outpost::JoinResult::Accepted, 2, 0x5151ull)));
+    Assert::IsFalse(join.ShouldSend(10 * INTERVAL));
+
+    join.Rejoin();
+    Assert::IsTrue(join.Phase() == Outpost::JoinPhase::Joining);
+    Assert::IsTrue(join.ShouldSend(10 * INTERVAL), L"the first join after a loss goes out at once");
+    Assert::AreEqual(0x5151ull, join.Outgoing().token);
+    Assert::AreEqual(2, static_cast<int>(join.Player()));
+    Assert::AreEqual(0xFEEDFACEull, join.MatchSeed());
+
+    Assert::IsFalse(join.Accept(Seated(Outpost::JoinResult::Rejoined, 2, 0x5151ull)));
+    Assert::IsTrue(join.IsJoined());
+    Assert::IsTrue(join.Resumed());
+  }
+
+  /// **A REFUSAL IS NOT UNDONE BY A LOSS**, and a client still asking is already doing what a rejoin
+  /// would make it do.
+  TEST_METHOD(OnlyASeatedClientRejoins)
+  {
+    Outpost::JoinState refused;
+    refused.Begin(Outpost::NO_SESSION_TOKEN);
+    static_cast<void>(refused.Accept(Seated(Outpost::JoinResult::MatchFull, Outpost::NO_PLAYER, 0)));
+    refused.Rejoin();
+    Assert::IsTrue(refused.Phase() == Outpost::JoinPhase::Refused);
+    Assert::IsFalse(refused.ShouldSend(100 * INTERVAL));
+
+    Outpost::JoinState joining;
+    joining.Begin(Outpost::NO_SESSION_TOKEN);
+    Assert::IsTrue(joining.ShouldSend(0));
+    joining.Rejoin();
+    Assert::IsFalse(joining.ShouldSend(1), L"the retry cadence is not reset by a rejoin that did nothing");
+  }
+};
+
 } // namespace GameClientTests
