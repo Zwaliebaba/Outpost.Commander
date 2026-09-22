@@ -126,19 +126,23 @@ private:
   ReplicaStore m_replicas;
   OrderMarkerSet m_markers;
 
-  /// **M0'S STARTING VIEW, AND IT IS A CONVENIENCE RATHER THAN A DESIGN DECISION.** The pose a
-  /// client opens on is `Interface.md` section 5's to settle and M1.8 pins the zoom range; this is
-  /// the one that makes M0 checkable by eye.
+  /// **THE OPENING VIEW: YOUR OWN BASE, CLOSE ENOUGH TO READ.**
   ///
-  /// A default-constructed pose is the far end of the zoom -- 22,500 units, where the whole
-  /// 16,384-unit square fits and a 30-unit ship is under two authored pixels. That is arithmetically
-  /// right and useless for looking at: **the arrow exists so that a wrong heading is visible**, and
-  /// nothing about a heading survives at two pixels. At 4,000 units the frame spans about 4,370
-  /// units across, so the same ship is roughly ten pixels and points somewhere.
+  /// The focus is the origin and is replaced the moment the join answers -- `App.cpp` recenters on
+  /// this player's station, which it could not do before ADR-013 because nothing knew which player
+  /// this was. What this constant actually decides is the DISTANCE, because a recenter moves the
+  /// focus and leaves the zoom alone (ADR-018).
   ///
-  /// The focus sits at the middle of the path M0's host walks its one entity along -- origin to
-  /// (4096, 2048) -- so the thing there is to see is on screen without anybody panning first.
-  CameraPose m_camera{.focusX = 2048.0f, .focusY = 1024.0f, .headingRadians = 0.0f, .distance = 4000.0f};
+  /// **2,400 UNITS, AND IT IS THE STATION THAT SETS IT.** At a 40-degree field of view the frame
+  /// spans `1.092 x distance` across, so 2,400 shows about 2,620 units and a 220-unit station is
+  /// roughly **120 authored pixels** -- readable, with its 400-unit module radius on screen around
+  /// it. M0 opened at 4,000, where the same station is 72 pixels and reads as a smudge; the far end
+  /// of the range, 22,500, puts it at 13.
+  ///
+  /// **IT IS DELIBERATELY NOT THE NEAR END.** 1,400 would be larger still and pinned against the
+  /// zoom limit, with nowhere to go but out -- and because pitch is coupled to zoom
+  /// (`Interface.md` section 5), it would also be the most raking view the camera has.
+  CameraPose m_camera{.focusX = 0.0f, .focusY = 0.0f, .headingRadians = 0.0f, .distance = 2400.0f};
 
   /// **M1.4 REPLACED A COMPILED-IN PLAYER ONE WITH THIS.** Until ADR-013 the protocol had no way
   /// to tell a client which player it was, so the client assumed -- and `CommandIntake` refuses a

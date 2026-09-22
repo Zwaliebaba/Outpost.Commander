@@ -22,19 +22,21 @@ constexpr std::array<std::string_view, 3> SHIPPED_AT_M1{"Scout", "Frigate", "Sta
 }
 } // namespace
 
+void ToWorldDirection(float _authoredX, float _authoredY, float _authoredZ, float& _outX, float& _outY, float& _outZ) noexcept
+{
+  // world x = authored z, world y = -authored x, world z = authored y. See the header for why the
+  // middle one is negated and what it costs in winding.
+  _outX = _authoredZ;
+  _outY = -_authoredX;
+  _outZ = _authoredY;
+}
+
 HullVertex ToWorldVertex(const Neuron::CmoVertex& _vertex) noexcept
 {
   HullVertex out;
 
-  // world x = authored z, world y = -authored x, world z = authored y. See the header for why the
-  // middle one is negated and what it costs in winding.
-  out.x = _vertex.positionZ;
-  out.y = -_vertex.positionX;
-  out.z = _vertex.positionY;
-
-  out.normalX = _vertex.normalZ;
-  out.normalY = -_vertex.normalX;
-  out.normalZ = _vertex.normalY;
+  ToWorldDirection(_vertex.positionX, _vertex.positionY, _vertex.positionZ, out.x, out.y, out.z);
+  ToWorldDirection(_vertex.normalX, _vertex.normalY, _vertex.normalZ, out.normalX, out.normalY, out.normalZ);
 
   out.teamBlend = Channel(_vertex.color, 0);
   out.hullTone = Channel(_vertex.color, 8);
@@ -138,10 +140,18 @@ Neuron::MeshPass::Look ShipLook() noexcept
     look.hullDeep[channel] = HULL_PALETTE[0][channel];
     look.hullBase[channel] = HULL_PALETTE[1][channel];
     look.hullEdge[channel] = HULL_PALETTE[2][channel];
-    look.keyLight[channel] = KEY_LIGHT_DIRECTION[channel];
-    look.fillLight[channel] = FILL_LIGHT_DIRECTION[channel];
     look.ambient[channel] = AMBIENT_COLOR[channel];
   }
+
+  // **CONVERTED WITH THE GEOMETRY, WHICH IT WAS NOT WHEN M1.9 FIRST DREW A HULL.** The rig is
+  // authored Y-up like everything else the handoff states; passed through unconverted, the key
+  // points very nearly along the plane instead of down onto it, and a station's top plate -- which
+  // is most of what a raking camera shows -- is carried by ambient alone. It read as the hulls
+  // being vague rather than as the light being wrong, which is why it is worth this paragraph.
+  ToWorldDirection(KEY_LIGHT_DIRECTION[0], KEY_LIGHT_DIRECTION[1], KEY_LIGHT_DIRECTION[2], look.keyLight[0], look.keyLight[1],
+                   look.keyLight[2]);
+  ToWorldDirection(FILL_LIGHT_DIRECTION[0], FILL_LIGHT_DIRECTION[1], FILL_LIGHT_DIRECTION[2], look.fillLight[0], look.fillLight[1],
+                   look.fillLight[2]);
 
   // The `w` of each light is its intensity, which is how six `float4` carry nine values without a
   // seventh register. The three palette stops leave theirs at zero and nothing reads them.

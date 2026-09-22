@@ -954,20 +954,33 @@ void RunProbe(const CoreWindow& _window)
         }
       }
 
-      // M0.16's hard one-pixel edge, drawn into the scene target so the present step has something
-      // whose resampling is visible. At 1:1 it must reach the glass one physical pixel wide and
-      // fully white; at a 0.5 scale, two pixels wide and still fully white. Gray is the failure.
-      static_cast<void>(sceneTarget.RecordCalibrationPattern(device));
+      // **M0.16's CALIBRATION PATTERN IS GONE, AND THAT GATE IS CLOSED.** It drew a one-pixel border
+      // and a one-pixel cross through the middle of the scene target, so that the present step's
+      // resampling had a hard edge to be judged on: at 1:1 one physical pixel and fully white, at a
+      // 0.5 scale two pixels and still fully white, with gray the failure.
+      //
+      // The filter was confirmed by eye on the device and the scale that ships is 1:1
+      // (`ADR-016`), so what is left is a white cross drawn over the world every frame. A closed
+      // gate's instrumentation is debris, and this is the first milestone with something behind it
+      // worth seeing.
 
       static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
       static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));
 
-      // ADR-011'S ORDERING CONSTRAINT, and it lives here because it is the caller's: after the
-      // present blit, before the back buffer is closed. Moving this line above the blit draws the
-      // interface and then paints the world over it, which is a defect nothing in either class can
-      // catch.
-      static_cast<void>(interfacePass.Record(device, swapChain, interfaceFit,
-                                             {.rect = INTERFACE_PROBE_RECT, .red = 0.98f, .green = 0.73f, .blue = 0.18f, .alpha = 1.0f}));
+      // **M0.17'S PROBE RECTANGLE IS GONE, AND THAT GATE IS CLOSED TOO.** It drew the 48 x 48 touch
+      // floor inset by its 16 pixels of clear space, in the bottom left, so that a pair of eyes
+      // could check the authored-to-physical transform lands where `Interface.md` section 1 says --
+      // 96 physical pixels and 9.15 mm on the target panel. It did, and the figures are in the log
+      // at startup rather than on the glass.
+      //
+      // **THE PASS STILL RUNS AND STILL DRAWS NOTHING**, which is deliberate: ADR-011's ordering is
+      // the thing that would break silently, and a pass that is present and empty keeps the
+      // constraint under test until M1.14 gives it panels to draw.
+      //
+      // ADR-011'S ORDERING CONSTRAINT lives here because it is the caller's: after the present
+      // blit, before the back buffer is closed. Moving this line above the blit draws the interface
+      // and then paints the world over it, which is a defect nothing in either class can catch.
+      static_cast<void>(interfacePass.Record(device, swapChain, interfaceFit, {}));
       static_cast<void>(swapChain.RecordReadyToPresent(device));
       if (device.EndFrameAndSubmit() && swapChain.Present())
       {

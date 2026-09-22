@@ -70,6 +70,16 @@ struct HullMesh
 /// thing drawn in the world pass wrong instead, which is a worse trade for the same arithmetic.
 [[nodiscard]] HullVertex ToWorldVertex(const Neuron::CmoVertex& _vertex) noexcept;
 
+/// **THE SAME MAPPING, FOR A BARE DIRECTION.** The light rig in `manifest.json` is stated in the
+/// authored frame like everything else the handoff delivers, and **a light that is not converted
+/// with the geometry points somewhere else entirely** -- the key at `[-0.42, 0.8, 0.38]` reads as
+/// high and front-left in an authored Y-up frame and as very nearly HORIZONTAL in this Z-up one, so
+/// the top face of a station is left to ambient and the whole hull goes shapeless.
+///
+/// That is the defect this function exists to make impossible, and it is why the conversion is one
+/// expression both callers share rather than two that agree today.
+void ToWorldDirection(float _authoredX, float _authoredY, float _authoredZ, float& _outX, float& _outY, float& _outZ) noexcept;
+
 /// Which mesh a hull draws. **Empty for a hull nothing authored**, which is the `Cruiser`: it is cut
 /// from the MVP (`GameDesign.md` section 6), so no mesh exists and M4 authors one to the catalog's
 /// stated size rather than the other way round.
