@@ -23,6 +23,7 @@
 #include "AtlasPacker.h"
 #include "GlyphAtlas.h"
 #include "TextLayout.h"
+#include "TextRenderer.h"
 #include "Blackbody.h"
 #include "CmoReader.h"
 #include "StarField.h"

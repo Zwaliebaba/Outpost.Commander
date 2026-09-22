@@ -2,6 +2,8 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <FxCompile Include="Shaders\StarVS.hlsl" />
+    <FxCompile Include="Shaders\GlyphVS.hlsl" />
+    <FxCompile Include="Shaders\GlyphPS.hlsl" />
     <FxCompile Include="Shaders\StarPS.hlsl" />
     <FxCompile Include="Shaders\InterfacePS.hlsl" />
     <FxCompile Include="Shaders\InterfaceVS.hlsl" />
@@ -23,6 +25,8 @@
     <ClCompile Include="PointSprites.cpp" />
     <ClCompile Include="AtlasPacker.cpp" />
     <ClCompile Include="GlyphAtlas.cpp" />
+    <ClCompile Include="TextLayout.cpp" />
+    <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Blackbody.cpp" />
     <ClCompile Include="CmoReader.cpp" />
     <ClCompile Include="StarField.cpp" />
@@ -53,6 +57,7 @@
     <ClInclude Include="AtlasPacker.h" />
     <ClInclude Include="GlyphAtlas.h" />
     <ClInclude Include="TextLayout.h" />
+    <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Blackbody.h" />
     <ClInclude Include="CmoReader.h" />
     <ClInclude Include="StarField.h" />

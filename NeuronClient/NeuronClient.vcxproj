@@ -121,6 +121,26 @@
       <EnableDebuggingInformation>false</EnableDebuggingInformation>
       <DisableOptimizations>false</DisableOptimizations>
     </FxCompile>
+    <FxCompile Include="Shaders\GlyphVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\GlyphPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
     <FxCompile Include="Shaders\StarPS.hlsl">
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>6.7</ShaderModel>
@@ -225,6 +245,8 @@
     <ClCompile Include="PointSprites.cpp" />
     <ClCompile Include="AtlasPacker.cpp" />
     <ClCompile Include="GlyphAtlas.cpp" />
+    <ClCompile Include="TextLayout.cpp" />
+    <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Blackbody.cpp" />
     <ClCompile Include="CmoReader.cpp" />
     <ClCompile Include="StarField.cpp" />
@@ -257,6 +279,7 @@
     <ClInclude Include="AtlasPacker.h" />
     <ClInclude Include="GlyphAtlas.h" />
     <ClInclude Include="TextLayout.h" />
+    <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Blackbody.h" />
     <ClInclude Include="CmoReader.h" />
     <ClInclude Include="StarField.h" />
