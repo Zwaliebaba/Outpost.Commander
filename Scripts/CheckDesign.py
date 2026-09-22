@@ -64,6 +64,14 @@ MANIFEST = [
      ["Design/ADR/ADR-005-a-mesh-is-a-cmo-file.md",
       "Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md",
       "Design/Plan/M1-the-fleet.md"]),
+    # The magnitude tiers were arithmetic nobody had run: 1:3:9:27:81:243 sums to 364, which divides no
+    # round number of stars evenly, and two documents plus the suite and two comments all stated an
+    # "exact" division that was neither exact nor what the code computed. A six-number list is
+    # value-shaped rather than claim-shaped, which this file warns against -- it is safe here only
+    # because the whole list appears nowhere except as an assertion of these counts.
+    ("the star field's magnitude tiers", [r"8, 25, 74, 222, 667 and 2,004"],
+     r"8, 25, 74, 223, 668 and 2,002",
+     ["Design/ADR/ADR-019-the-sky-is-generated-from-the-seed.md", "Design/Plan/M1-the-fleet.md"]),
     # ADR-005 was REPLACED rather than amended -- a mesh was a function and is now a CMO file -- which
     # moved one rule stated in seven documents at once. The `gone` patterns are the sentences that ASSERT
     # the old rule; the old TITLE is quoted as history by ADR-005's own status line and by ADR-021, and a

@@ -20,6 +20,7 @@
 #include "HitTest.h"
 #include "Interpolation.h"
 #include "Selection.h"
+#include "SkyLook.h"
 #include "JoinState.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"

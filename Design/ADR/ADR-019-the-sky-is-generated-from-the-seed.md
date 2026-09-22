@@ -54,7 +54,9 @@ a cheap count are the same count.**
 
 **Brightness follows the magnitude law, which is what stops it looking like salt and pepper.** Real star
 counts multiply by about 2.5 per magnitude step, so six tiers in the ratio **1 : 3 : 9 : 27 : 81 : 243**
-— roughly 8, 25, 74, 222, 667 and 2,004 stars. The brightest tier being *eight* is the whole effect: a
+— **8, 25, 74, 223, 668 and 2,002 stars**. The ratio sums to 364, which divides no round number of stars
+evenly, so those are the rounded shares with the leftover given to the faintest tier rather than an exact
+division; `Neuron::TierCounts` is where that rounding happens. The brightest tier being *eight* is the whole effect: a
 field of uniformly bright dots reads as noise, and a field with a handful of standouts reads as a sky.
 
 **Size follows brightness, because apparent size is the point-spread function and not the star.** Every

@@ -13,6 +13,7 @@
     <ClCompile Include="OrderMarker.cpp" />
     <ClCompile Include="ReplicaStore.cpp" />
     <ClCompile Include="Selection.cpp" />
+    <ClCompile Include="SkyLook.cpp" />
     <ClCompile Include="TapOrder.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
@@ -30,6 +31,7 @@
     <ClInclude Include="OrderMarker.h" />
     <ClInclude Include="ReplicaStore.h" />
     <ClInclude Include="Selection.h" />
+    <ClInclude Include="SkyLook.h" />
     <ClInclude Include="TapOrder.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

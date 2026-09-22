@@ -18,7 +18,9 @@
     <ClCompile Include="InterfacePass.cpp" />
     <ClCompile Include="NeuronClient.cpp" />
     <ClCompile Include="PresentStep.cpp" />
+    <ClCompile Include="Blackbody.cpp" />
     <ClCompile Include="CmoReader.cpp" />
+    <ClCompile Include="StarField.cpp" />
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="MeshPass.cpp" />
     <ClCompile Include="PackageFile.cpp" />
@@ -42,7 +44,9 @@
     <ClInclude Include="InterfacePass.h" />
     <ClInclude Include="NeuronClient.h" />
     <ClInclude Include="PresentStep.h" />
+    <ClInclude Include="Blackbody.h" />
     <ClInclude Include="CmoReader.h" />
+    <ClInclude Include="StarField.h" />
     <ClInclude Include="MeshBuffer.h" />
     <ClInclude Include="MeshPass.h" />
     <ClInclude Include="PackageFile.h" />

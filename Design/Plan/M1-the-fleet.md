@@ -364,9 +364,10 @@ seeded from the match.
 
 **What makes it read as a sky is four properties, and each has a way of failing that is worth knowing:**
 
-- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — roughly 8, 25, 74, 222, 667 and 2,004
-  stars. The brightest tier being *eight* is the whole effect. Uniform brightness reads as salt and
-  pepper.
+- **Magnitude tiers in the ratio 1 : 3 : 9 : 27 : 81 : 243** — 8, 25, 74, 223, 668 and 2,002 stars,
+  which are rounded shares with the leftover at the faint end rather than an exact division: the ratio
+  sums to 364 and divides no round number evenly. The brightest tier being *eight* is the whole effect.
+  Uniform brightness reads as salt and pepper.
 - **Size follows brightness**, 8 scene-target pixels down to 1.5, with a soft radial falloff in the
   sprite. Apparent size is the point-spread function, not the star.
 - **Color is blackbody, desaturated to about 20%.** Oversaturated tints are how a procedural sky
