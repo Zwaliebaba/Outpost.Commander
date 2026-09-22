@@ -118,21 +118,13 @@ void Report(std::ofstream& _log, const std::string& _line)
 /// absent or unreadable. M0.22 owns the real thing and it belongs in a library with a suite; this
 /// is the same mechanism in the shell so that the gate's two-machine run can point the Surface Pro
 /// at a LAN address without a rebuild, which is the whole reason ADR-008 made it a file.
-[[nodiscard]] std::string ReadHostAddress(const std::filesystem::path& _path)
-{
-  std::ifstream file{_path};
-  std::string line;
-  if (file && std::getline(file, line))
-  {
-    const std::size_t first = line.find_first_not_of(" \t\r\n");
-    const std::size_t last = line.find_last_not_of(" \t\r\n");
-    if (first != std::string::npos)
-    {
-      return line.substr(first, (last - first) + 1);
-    }
-  }
-  return std::string{"127.0.0.1"};
-}
+/// **M0.22 MOVED THE BODY OF THIS DOWN INTO `NeuronClient` (R20, ADR-008).** It used to read the
+/// file here with an `ifstream`, which worked and which no suite could reach -- so the fallback
+/// that decides whether the client starts at all was the one piece of it nobody could pin.
+/// `Neuron::ReadHostAddress` is that same decision with `Neuron::HostAddressFromFileContents`
+/// split out in front of it and a suite over the split.
+///
+/// What is left here is the comment, because the note above it is about the shell.
 
 /// Log formatting and nothing else, which is why it is here rather than in a library (R20). M0.16
 /// is a human reading this file beside the screen, and "filter 1" is a worse thing to read at that
@@ -167,7 +159,7 @@ void RunProbe(const CoreWindow& _window)
   std::ofstream log{localState / L"probe-log.txt", std::ios::trunc};
   Trace(log ? "probe: log open" : "probe: log NOT open");
 
-  const std::string host = ReadHostAddress(localState / L"host.txt");
+  const std::string host = Neuron::ReadHostAddress();
   Report(log, "probe: LocalState is " + localState.string());
   Report(log, "probe: host " + host + " port " + std::to_string(Neuron::ProbePacket::PORT));
 

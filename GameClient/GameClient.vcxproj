@@ -112,6 +112,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ClientFrame.cpp" />
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
@@ -123,6 +124,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ClientFrame.h" />
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="OrderMarker.h" />

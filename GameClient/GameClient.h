@@ -13,6 +13,7 @@
 // (AGENTS.md section 2). Interpolation is the arithmetic and ReplicaStore is what holds the
 // snapshots it runs over; the split is what lets a suite pin the arithmetic without a clock.
 #include "Camera.h"
+#include "ClientFrame.h"
 #include "Interpolation.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"

@@ -29,6 +29,7 @@
 // has to reach lives there, and this one holds the half that cannot be tested at all.
 #include "DatagramTransport.h"
 #include "GestureSeam.h"
+#include "HostAddress.h"
 #include "PacketQueue.h"
 
 namespace Neuron
