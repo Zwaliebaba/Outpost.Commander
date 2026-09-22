@@ -14,7 +14,9 @@
 // snapshots it runs over; the split is what lets a suite pin the arithmetic without a clock.
 #include "Camera.h"
 #include "Interpolation.h"
+#include "OrderMarker.h"
 #include "ReplicaStore.h"
+#include "TapOrder.h"
 
 namespace Outpost
 {

@@ -27,6 +27,16 @@ inline constexpr float TAP_SLOP_AUTHORED_PIXELS = 16.0f;
 /// (`Interface.md` section 2). 78 authored pixels is 14.9 mm; a fingertip is 8 to 12.
 inline constexpr float CONTACT_REJECTION_AUTHORED_PIXELS = 78.0f;
 
+/// How far from a tap something can be and still be what was tapped -- 24 authored pixels, 4.58 mm,
+/// half the 48-pixel touch floor, so a world tap has the same reach as an interface target and a
+/// four-pixel ship at tactical zoom is still hittable (`Interface.md` section 1).
+///
+/// IT IS HERE RATHER THAN WITH THE PICK because `Interface.md` section 1 states four constants in
+/// one table and three of them were already on this page. What USES it is game vocabulary -- the
+/// tier order, own ship before hostile before asteroid -- and that lives in `GameClient/TapOrder.h`
+/// where the game is. The number is the engine's; the order is the game's.
+inline constexpr float PICK_RADIUS_AUTHORED_PIXELS = 24.0f;
+
 /// Rotation is ignored until a manipulation's cumulative rotation exceeds this, because two fingers
 /// dragging to pan are never exactly parallel and a camera that yaws whenever you pan is unusable
 /// (`Interface.md` section 5).
