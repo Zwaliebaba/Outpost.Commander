@@ -20,11 +20,12 @@ namespace Outpost
 /// fifth degree of freedom is not a feature to add later; it is ADR-001 being reversed, and the
 /// gesture budget R21 leaves has nothing to spend on it.
 ///
-/// THERE IS NO 4x4 MATRIX IN THIS FILE, deliberately. Nothing draws the world yet -- M0 has the
-/// present blit and the interface pass and no world renderer -- so a projection matrix here would
-/// be an API with no consumer, written against a pipeline that has not been chosen. What the plan
-/// asks of M0.20 is the geometry: a ray onto the plane, a point back onto the screen, and the solve
-/// between them. The matrix arrives with the renderer that needs one.
+/// THE MATRIX ARRIVED WITH THE RENDERER THAT NEEDED ONE (M0.21b). M0.20 shipped none and said why:
+/// nothing drew the world, so a projection here would have been an API with no consumer, written
+/// against a pipeline nobody had chosen. That is no longer true, and `ViewProjection` below is it.
+/// What M0.20 built stands unchanged underneath it -- a ray onto the plane, a point back onto the
+/// screen, and the solve between them -- and the suite asserts the two agree to within a pixel,
+/// which is what stops the renderer and the tap disagreeing about where a ship is.
 
 /// `Interface.md` section 5, pinned there rather than derived: 40 degrees vertical.
 inline constexpr float VERTICAL_FIELD_OF_VIEW_DEGREES = 40.0f;
@@ -193,6 +194,42 @@ void ClampFocus(CameraPose& _pose) noexcept;
 /// authored pixels count down from the top and the projection counts up.
 void AuthoredToNormalized(float _authoredX, float _authoredY, float _authoredWidth, float _authoredHeight, float& _outScreenX,
                           float& _outScreenY) noexcept;
+
+/// A 4x4 transform, row-major, in the order a constant buffer wants it.
+///
+/// **M0.20 SHIPPED NO MATRIX AND SAID WHY**: a projection with no consumer is written against a pipeline
+/// nobody has chosen. M0.21b chooses one, so here it is, and the header above is amended rather than
+/// left claiming there is none.
+///
+/// R8: a public aggregate.
+struct Matrix4
+{
+  /// Row-major: `m[row * 4 + column]`. HLSL defaults to column-major packing, so the shader that
+  /// consumes this is declared `row_major` -- one word there against a transpose on every frame here.
+  float m[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+};
+
+/// View times projection, for the pose given.
+///
+/// **LEFT-HANDED, WITH DEPTH IN [0, 1]**, which is Direct3D's convention and the handoff's: +Z forward,
+/// Y up, and the near plane at zero rather than at minus one. Getting this wrong produces a picture that
+/// looks plausible and is mirrored, which is the failure `CameraTests` pins directly rather than through a
+/// round trip -- a round trip inverts twice and agrees with itself.
+///
+/// The clip planes are Q39's: near 50, far 50,000.
+[[nodiscard]] Matrix4 ViewProjection(const CameraPose& _pose, float _aspectRatio) noexcept;
+
+/// Where one entity goes: its position on the plane and its heading, as a world transform.
+///
+/// The heading rotates about Y, which is the axis out of the plane (`Vector3`'s note). A wire heading
+/// widens through `DequantizeWireHeading` before it gets here.
+[[nodiscard]] Matrix4 EntityTransform(float _worldX, float _worldY, Neuron::Angle _heading) noexcept;
+
+/// Q39's clip planes, from `Interface.md` section 5. The near plane is what sets depth precision and it
+/// is far closer than the camera ever gets to a hull; the far plane has room for the whole play area from
+/// the far end of the zoom.
+inline constexpr float NEAR_CLIP_PLANE = 50.0f;
+inline constexpr float FAR_CLIP_PLANE = 50000.0f;
 
 /// How far the plane stretches at the top edge of the frame against its center, in camera heights.
 ///

@@ -4,6 +4,7 @@
     <ClCompile Include="CameraTests.cpp" />
     <ClCompile Include="ClientFrameTests.cpp" />
     <ClCompile Include="OrderMarkerTests.cpp" />
+    <ClCompile Include="WorldTransformTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>

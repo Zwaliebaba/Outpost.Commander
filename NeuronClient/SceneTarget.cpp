@@ -231,6 +231,16 @@ std::int32_t SceneTarget::HeightPixels() const noexcept
   return m_binding->heightPixels;
 }
 
+std::uint32_t SceneTarget::ColorFormatCode() const noexcept
+{
+  return static_cast<std::uint32_t>(COLOR_FORMAT);
+}
+
+std::uint32_t SceneTarget::DepthFormatCode() const noexcept
+{
+  return static_cast<std::uint32_t>(DEPTH_FORMAT);
+}
+
 std::int32_t SceneTarget::LastHresult() const noexcept
 {
   return static_cast<std::int32_t>(m_binding->lastHresult);

@@ -111,6 +111,26 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\WorldVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
+    <FxCompile Include="Shaders\WorldPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>6.7</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <VariableName>g_p%(Filename)</VariableName>
+      <ObjectFileOutput />
+      <EnableDebuggingInformation>false</EnableDebuggingInformation>
+      <DisableOptimizations>false</DisableOptimizations>
+    </FxCompile>
     <FxCompile Include="Shaders\InterfaceVS.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>6.7</ShaderModel>
@@ -165,6 +185,7 @@
     <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="WindowMetrics.cpp" />
+    <ClCompile Include="WorldPass.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -185,6 +206,7 @@
     <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="WindowMetrics.h" />
+    <ClInclude Include="WorldPass.h" />
     <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

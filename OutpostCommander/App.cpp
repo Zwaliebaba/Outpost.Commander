@@ -249,6 +249,13 @@ void RunProbe(const CoreWindow& _window)
   Neuron::PresentStep presentStep;
   Neuron::InterfacePass interfacePass;
 
+  // M0.21b's world pass, and the client state it draws from. `ClientFrame` is `GameClient`'s and it
+  // is where R20 draws its line: the drain, the decode, the interpolation clock and the marker
+  // clearing are all behind it with a suite over them, and what is left up here is the order they
+  // happen in and a Direct3D call.
+  Neuron::WorldPass worldPass;
+  Outpost::ClientFrame clientFrame;
+
   // THE TWO FITS (ADR-016), and the one place this shell asks for either. They are computed once
   // because nothing here resizes: the scene target is created from the swap chain's size and both
   // are fixed for the life of the probe. A resize path belongs with the frame loop at M0.22.
@@ -285,6 +292,12 @@ void RunProbe(const CoreWindow& _window)
   else if (!interfacePass.Create(device, swapChain))
   {
     Report(log, "probe: no interface pass, hresult " + std::to_string(interfacePass.LastHresult()));
+  }
+  else if (!worldPass.Create(device, sceneTarget))
+  {
+    // M0.21b. It is created from the SCENE TARGET rather than the swap chain, because that is what
+    // it renders into and a pipeline state has to agree with its target's formats and sample count.
+    Report(log, "probe: no world pass, hresult " + std::to_string(worldPass.LastHresult()));
   }
   else
   {
@@ -333,7 +346,6 @@ void RunProbe(const CoreWindow& _window)
   bool reportedReady = false;
   std::uint16_t helloSequence = 0;
   std::uint64_t receivedCount = 0;
-  std::array<std::byte, QUEUE_SLOT_BYTES> datagram{};
 
   while (running)
   {
@@ -354,10 +366,14 @@ void RunProbe(const CoreWindow& _window)
     const auto now = std::chrono::steady_clock::now();
     if (state == Neuron::TransportState::Ready && now >= nextHello)
     {
-      std::array<std::byte, Neuron::ProbePacket::SIZE_BYTES> hello{};
+      // AN EMPTY COMMAND PACKET IS THE HELLO, because that is what the host registers a client
+      // from: `Host::DrainAndApply` learns an endpoint from a packet that decodes, and until it has
+      // one it sends no snapshots to anybody. It carries no commands -- the player has not tapped --
+      // and repeating it is what survives the one that gets lost.
+      std::array<std::byte, QUEUE_SLOT_BYTES> hello{};
       Neuron::ByteWriter writer{hello};
-      const Neuron::ProbePacket packet{.sequence = helloSequence, .sentAtMs = MillisecondsSince(start)};
-      if (packet.Write(writer))
+      const Outpost::CommandPacket packet{.sequence = helloSequence, .player = clientFrame.Player(), .commands = {}};
+      if (Outpost::Encode(packet, writer))
       {
         const bool sent = transport.Send(std::span<const std::byte>{hello.data(), writer.WrittenBytes()});
         Report(log, "TX hello seq=" + std::to_string(helloSequence) + (sent ? " sent" : " refused"));
@@ -366,22 +382,19 @@ void RunProbe(const CoreWindow& _window)
       nextHello = now + HELLO_INTERVAL;
     }
 
-    std::size_t byteCount = 0;
-    while (queue.Drain(datagram, byteCount))
+    // ONE DRAIN PER FRAME, AND IT IS `ClientFrame`'S (R20). Everything that used to be written out
+    // here -- read a datagram, decode it, decide what to do with it -- is behind that class with a
+    // suite over it, and this is the call plus a line in the log.
+    const std::uint64_t nowMs = MillisecondsSince(start);
+    const Outpost::ClientFrame::DrainResult drained = clientFrame.DrainPackets(queue, nowMs);
+    if (drained.datagrams > 0)
     {
-      const std::uint64_t arrivedAtMs = MillisecondsSince(start);
-      Neuron::ByteReader reader{std::span<const std::byte>{datagram.data(), byteCount}};
-      Neuron::ProbePacket packet{};
-      const Neuron::PacketFault fault = Neuron::ProbePacket::Read(reader, packet);
-      if (fault != Neuron::PacketFault::None)
-      {
-        Report(log, "RXBAD fault=" + std::to_string(static_cast<unsigned>(fault)));
-        continue;
-      }
-
-      ++receivedCount;
-      Report(log, "RX seq=" + std::to_string(packet.sequence) + " host_ms=" + std::to_string(packet.sentAtMs) +
-                    " local_ms=" + std::to_string(arrivedAtMs));
+      receivedCount += drained.accepted;
+      const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
+      Report(log, "RX datagrams=" + std::to_string(drained.datagrams) + " accepted=" + std::to_string(drained.accepted) +
+                    " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) +
+                    " seq=" + std::to_string(newest != nullptr ? newest->sequence : 0) +
+                    " entities=" + std::to_string(newest != nullptr ? newest->entities.size() : 0) + " local_ms=" + std::to_string(nowMs));
     }
 
     // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
@@ -395,6 +408,66 @@ void RunProbe(const CoreWindow& _window)
     if (swapChain.IsReady() && presentStep.IsReady() && interfacePass.IsReady() && device.BeginFrame())
     {
       static_cast<void>(sceneTarget.RecordClear(device));
+
+      // M0.21b: THE WORLD, AND THE FIRST THING IN THIS TREE TO DRAW ONE. Into the scene target,
+      // which `RecordClear` has just bound, before the present step fits it into the back buffer.
+      //
+      // The frame the clock hands back is a pair of snapshots and a fraction between them
+      // (`TechnicalDesign.md` section 6), and every entity in the newer one is interpolated toward
+      // it. Nothing here simulates: R19's line is that the host said where these are and the client
+      // only says where they are BETWEEN the two things the host said.
+      if (worldPass.IsReady())
+      {
+        const Outpost::ReplicaStore::Frame drawn = clientFrame.Advance(nowMs);
+        if (drawn.newer != nullptr)
+        {
+          const float aspect = (sceneTarget.HeightPixels() > 0)
+                                 ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                 : 1.0f;
+          const Outpost::Matrix4 viewProjection = Outpost::ViewProjection(clientFrame.Camera(), aspect);
+
+          for (const Outpost::EntityRecord& newer : drawn.newer->entities)
+          {
+            // The older snapshot's record for this entity, matched on the WHOLE packed identity so
+            // a reused slot is two ships rather than one that teleported (`Interpolation.h`).
+            Outpost::EntityRecord shown = newer;
+            if (drawn.older != nullptr)
+            {
+              for (const Outpost::EntityRecord& older : drawn.older->entities)
+              {
+                if (older.identity == newer.identity)
+                {
+                  static_cast<void>(Outpost::InterpolateRecord(older, newer, drawn.playout.fraction, shown));
+                  break;
+                }
+              }
+            }
+
+            const Outpost::Matrix4 world = Outpost::EntityTransform(
+              static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE),
+              static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE),
+              Outpost::DequantizeWireHeading(shown.heading));
+
+            // world * viewProjection, row-vector convention, multiplied out here because this is
+            // the only place in the tree that composes two of these.
+            Outpost::Matrix4 combined;
+            for (int row = 0; row < 4; ++row)
+            {
+              for (int column = 0; column < 4; ++column)
+              {
+                float sum = 0.0f;
+                for (int k = 0; k < 4; ++k)
+                {
+                  sum += world.m[(row * 4) + k] * viewProjection.m[(k * 4) + column];
+                }
+                combined.m[(row * 4) + column] = sum;
+              }
+            }
+
+            static_cast<void>(worldPass.Record(device, sceneTarget, combined.m, 0.80f, 0.86f, 0.95f, 1.0f));
+          }
+        }
+      }
 
       // M0.16's hard one-pixel edge, drawn into the scene target so the present step has something
       // whose resampling is visible. At 1:1 it must reach the glass one physical pixel wide and

@@ -543,6 +543,47 @@ breaks the architecture.
 on the acknowledgment that covers it — including the case where one later sequence clears two markers at
 once; and **nothing in `GameClient` moves an entity.**
 
+### M0.21b — The world draw · `NeuronClient`, `GameClient` · `NeuronClientTests` · agent
+
+**Read first:** R13; ADR-011 for the ordering this sits inside; ADR-001 and ADR-018 for the transform;
+`README.md` F10, which is why this step exists at all.
+
+**THIS STEP WAS MISSING AND THE MILESTONE COULD NOT CLOSE WITHOUT IT.** M0 opens with *"the host simulates
+one moving entity and the packaged client draws it"* and M0.23 times *"the first frame in which the drawn
+position differs"* — and nothing between M0.13 and M0.22 put a pixel of the world on the screen. The scene
+target was created, cleared and presented empty; the replica store, the camera and the tap were built with
+no consumer. It is a **`b` step rather than a renumbering** so that the twenty-three step numbers this plan
+has been counted by do not move.
+
+**Adds:** one shape per replicated entity, drawn into the scene target through M0.20's camera at M0.19's
+interpolated position, before the present blit and therefore long before the interface pass.
+
+**The split is R9's and it falls the same way M0.17's did.** `NeuronClient` gets the pass — root
+signature, pipeline state, the draw — and knows nothing about an entity; `GameClient` gets what a replica
+becomes, which is a transform and a color. **The camera grows a matrix here and not before**: M0.20
+deliberately shipped none, because a projection matrix with no consumer is written against a pipeline
+nobody has chosen, and this is the step that chooses one.
+
+**The shape is generated from `SV_VertexID`**, as M0.17's rectangle is, so there is no vertex buffer, no
+index buffer and no descriptor heap for a step whose entire job is to prove the transform. What it draws
+is an arrow rather than a square, because **a heading that is drawn wrongly must be visible**: a square
+turns and looks identical, and M0.19 pins the heading interpolation that nothing has yet seen.
+
+**Depth on, and that is not free scenery.** The scene target has a depth buffer (M0.15) and nothing has
+written to it. Two entities overlapping at tactical zoom is the first thing that reads wrongly without it.
+
+**Files:** `NeuronClient/WorldPass.h` `.cpp`, `NeuronClient/Shaders/WorldVS.hlsl` and `WorldPS.hlsl`,
+`GameClient/EntityDraw.h` `.cpp`, `GameClient/Camera.h` `.cpp` gaining the matrix; both `.vcxproj` and
+`.filters`; `Tests/GameClientTests/WorldTransformTests.cpp` — **this line first said `NeuronClientTests`**, and the test follows the code: the matrix is `GameClient`'s because the camera is.
+
+**Done when:** an entity at the focus point projects to the center of the frame at several pitches; the
+arrow's heading on screen turns the way the wire heading says and the short way round across the wrap; an
+entity behind the camera is not drawn; the matrix agrees with `PlaneToScreen` to within a pixel, which is
+what stops the renderer and the tap disagreeing about where a ship is; and **one shape is visibly on the
+panel with the host running**, which is a pair of eyes rather than a test.
+
+---
+
 ### M0.22 — The package · `OutpostCommander`, `GameClient` · hand · agent
 
 **Read first:** ADR-008; `OpenQuestions.md` Q23; R18 and R20; `Interface.md` §1.

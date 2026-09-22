@@ -19,6 +19,7 @@
     <ClCompile Include="SceneTarget.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="WindowMetrics.cpp" />
+    <ClCompile Include="WorldPass.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
@@ -37,6 +38,7 @@
     <ClInclude Include="SceneTarget.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="WindowMetrics.h" />
+    <ClInclude Include="WorldPass.h" />
     <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

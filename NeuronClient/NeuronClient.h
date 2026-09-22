@@ -21,6 +21,7 @@
 #include "PresentStep.h"
 #include "SceneTarget.h"
 #include "SwapChain.h"
+#include "WorldPass.h"
 
 // This library's own headers, so that a consumer includes this one file and gets the whole chain
 // (AGENTS.md section 2). DatagramTransport.h and GestureSeam.h deliberately pull in no C++/WinRT

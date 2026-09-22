@@ -179,6 +179,15 @@ public:
   /// The HRESULT of the last call that failed, or zero.
   [[nodiscard]] std::int32_t LastHresult() const noexcept;
 
+  /// The `DXGI_FORMAT` of the color target and of the depth buffer, as plain numbers so that this
+  /// header pulls in no Direct3D.
+  ///
+  /// **A PASS THAT DRAWS INTO THIS TARGET READS THEM RATHER THAN RESTATING THEM**, which is the
+  /// arrangement `SwapChain::BackBufferFormatCode` already has: a pipeline state has to agree with
+  /// the target it renders into, and two places stating a format is two places to change it.
+  [[nodiscard]] std::uint32_t ColorFormatCode() const noexcept;
+  [[nodiscard]] std::uint32_t DepthFormatCode() const noexcept;
+
   /// Binds the color target and the depth buffer and clears both, on the device's open command
   /// list. THE WHOLE OF WHAT M0.15 DRAWS INTO IT -- the world passes that will fill it arrive with
   /// the renderer, and until they do this is one color whose only job is to be visibly different

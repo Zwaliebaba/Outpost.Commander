@@ -218,6 +218,84 @@ void AuthoredToNormalized(float _authoredX, float _authoredY, float _authoredWid
   _outScreenY = 1.0f - ((_authoredY / _authoredHeight) * 2.0f);
 }
 
+Matrix4 ViewProjection(const CameraPose& _pose, float _aspectRatio) noexcept
+{
+  const CameraBasis basis = BuildBasis(_pose);
+
+  // THE VIEW IS THE BASIS TRANSPOSED, WITH THE EYE PROJECTED ONTO IT. An orthonormal basis inverts
+  // by transposition, which is why nothing here inverts a matrix -- the rows are right, up and
+  // forward, and the translation is minus the eye resolved onto each.
+  const Vector3& r = basis.right;
+  const Vector3& u = basis.up;
+  const Vector3& f = basis.forward;
+  const Vector3& e = basis.eye;
+
+  const float tx = -Dot(r, e);
+  const float ty = -Dot(u, e);
+  const float tz = -Dot(f, e);
+
+  // Left-handed, depth in [0, 1] (Direct3D). The perspective divide is by the forward component,
+  // which this basis makes positive in front of the camera.
+  const float tangent = TangentOfHalfFieldOfView();
+  const float yScale = 1.0f / tangent;
+  const float xScale = yScale / _aspectRatio;
+  const float zRange = FAR_CLIP_PLANE - NEAR_CLIP_PLANE;
+  const float zScale = FAR_CLIP_PLANE / zRange;
+  const float zBias = (-NEAR_CLIP_PLANE * FAR_CLIP_PLANE) / zRange;
+
+  // view * projection, multiplied out rather than composed from two matrices: the projection is
+  // diagonal but for one column, so most of the products are zero and writing them is noise.
+  Matrix4 out;
+  out.m[0] = r.x * xScale;
+  out.m[1] = u.x * yScale;
+  out.m[2] = f.x * zScale;
+  out.m[3] = f.x;
+
+  out.m[4] = r.y * xScale;
+  out.m[5] = u.y * yScale;
+  out.m[6] = f.y * zScale;
+  out.m[7] = f.y;
+
+  out.m[8] = r.z * xScale;
+  out.m[9] = u.z * yScale;
+  out.m[10] = f.z * zScale;
+  out.m[11] = f.z;
+
+  out.m[12] = tx * xScale;
+  out.m[13] = ty * yScale;
+  out.m[14] = (tz * zScale) + zBias;
+  out.m[15] = tz;
+  return out;
+}
+
+Matrix4 EntityTransform(float _worldX, float _worldY, Neuron::Angle _heading) noexcept
+{
+  // The binary angle to radians. 65,536 to a turn (ADR-002), so this is the one place the format
+  // meets a trigonometric function and it is the renderer rather than the simulation.
+  const float radians = (static_cast<float>(_heading) / 65536.0f) * FULL_TURN_RADIANS;
+  const float c = std::cos(radians);
+  const float s = std::sin(radians);
+
+  // A ROTATION ABOUT Z, because Z is the axis out of the plane in this file (`Vector3`). It is
+  // worth saying twice: the mesh handoff authors Y-up and this camera is Z-up, so the day a CMO is
+  // drawn rather than a generated arrow (M1.9) there is a conversion between them, and it belongs
+  // where the mesh is loaded rather than smuggled into this transform.
+  //
+  // Nothing scales: ADR-005 says the authored extent IS the object's size and is never scaled at
+  // draw time.
+  //
+  // Row-vector convention throughout, matching `ViewProjection` -- the translation is row three.
+  Matrix4 out;
+  out.m[0] = c;
+  out.m[1] = s;
+  out.m[4] = -s;
+  out.m[5] = c;
+  out.m[12] = _worldX;
+  out.m[13] = _worldY;
+  out.m[14] = 0.0f;
+  return out;
+}
+
 float GroundDistanceAtScreenTop(float _pitchRadians) noexcept
 {
   // The top edge looks half a field of view above the camera's own pitch, so it meets the plane at
