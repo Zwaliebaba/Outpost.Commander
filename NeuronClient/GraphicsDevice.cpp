@@ -33,7 +33,7 @@ struct DeviceBinding
   winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
   winrt::com_ptr<ID3D12Fence> fence;
 
-  /// The value each frame slot signalled, so a slot waits only for its OWN previous work.
+  /// The value each frame slot signaled, so a slot waits only for its OWN previous work.
   std::array<std::uint64_t, GraphicsDevice::FRAMES_IN_FLIGHT> fenceValues{};
 
   winrt::handle fenceEvent;
@@ -262,8 +262,8 @@ void GraphicsDevice::PresentedFrame() noexcept
     return;
   }
 
-  const std::uint64_t signalled = binding.fenceValues[binding.frameIndex];
-  if (FAILED(binding.queue->Signal(binding.fence.get(), signalled)))
+  const std::uint64_t signaled = binding.fenceValues[binding.frameIndex];
+  if (FAILED(binding.queue->Signal(binding.fence.get(), signaled)))
   {
     return;
   }
@@ -281,7 +281,7 @@ void GraphicsDevice::PresentedFrame() noexcept
     }
   }
 
-  binding.fenceValues[binding.frameIndex] = signalled + 1;
+  binding.fenceValues[binding.frameIndex] = signaled + 1;
 }
 
 ::IUnknown* GraphicsDevice::CommandQueueUnknown() const noexcept
