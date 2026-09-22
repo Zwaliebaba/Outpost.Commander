@@ -57,6 +57,19 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     {
       const std::uint16_t applied = newest->players[block].lastCommandSequenceApplied;
       result.markersCleared = static_cast<std::uint32_t>(m_markers.ClearAcknowledged(applied));
+
+      // ONCE, FROM THE FIRST SNAPSHOT THAT NAMES THIS PLAYER. See the field's comment: a client
+      // that always starts counting at one is refused by the host for as long as it takes to count
+      // back past the previous session, which is the difference between reconnecting and resuming.
+      //
+      // ONLY FORWARDS. An acknowledgment lags the orders in flight, so adopting it more than once
+      // would wind the counter back over commands the client has already sent and get them refused
+      // as duplicates.
+      if (!m_adoptedSequence)
+      {
+        m_adoptedSequence = true;
+        m_nextCommandSequence = static_cast<std::uint16_t>(applied + 1);
+      }
     }
   }
 

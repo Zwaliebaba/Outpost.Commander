@@ -157,11 +157,72 @@ None yet. Four are owed, and three of them at **M0**, which exists largely to ob
 
 1. **The encoded size of a full snapshot** at the MVP's 110 entities and at 220, from the encoder rather
    than from this table — and specifically that the MVP's really is one datagram.
-2. **Tap-to-visible latency on real hardware**, against the 152 ms this ADR now predicts. Owed at M0: it
-   is the number that decides how the game feels, and every other decision here is cheap beside it.
+2. ~~**Tap-to-visible latency on real hardware**, against the 152 ms this ADR now predicts.~~ —
+   **MEASURED ON LOOPBACK at M0.23, and it is not yet the figure this owes.** See below.
 2. **The cost of encoding and sending four of them**, against the tick's 50 ms budget.
 3. **Loss and jitter on a real wireless link between two machines**, which is what decides whether 10 Hz
    and two-fragment snapshots survive contact.
+
+
+### Tap-to-visible, measured on loopback — 2026-09-22
+
+**76 ms mean, 46 to 98, median 82, over nine taps**, every one of them with the playout clock
+interpolating rather than starved. Two further taps were discarded by the instrument because the
+ship was still moving from the previous order, which is what it is supposed to do with them.
+
+| | |
+|---|---|
+| Device | Surface Pro, ARM64, fullscreen, 2880 × 1920 |
+| Build | **Debug** |
+| Host | **the same machine** — loopback |
+| Input | **injected touch**, not a finger |
+| World scale | 1:1 |
+
+**THIS IS NOT THE MEASUREMENT THIS ADR OWES AND IT IS RECORDED AS A STAGE RATHER THAN AN ANSWER.**
+Three of its conditions are wrong for the question. The host is on the same machine, so the network
+term — the thing a wireless link actually costs — is absent entirely. It is a Debug build. And the
+touch is injected at the operating system rather than pressed onto the digitizer, so the panel's own
+input latency is not in it either. **M0.23 asks for a host on another machine**; that run is still
+owed and this figure will move when it happens.
+
+**What it does establish is that the chain works end to end and where the remaining terms are.**
+
+**THE PREDICTION AND THE MEASUREMENT ARE NOT THE SAME QUANTITY, and that is the finding worth
+keeping.** The 152 ms above is a *settle* time: send wait, host tick, snapshot wait, and then the
+full 75 ms interpolation delay before the client is drawing the state the host reached. What the
+gate measures — `Design/Plan/M0-the-wire.md` M0.23's own words — is *"the first frame in which the
+drawn position differs"*, which is the **onset** of the movement and arrives much earlier.
+
+The onset is early because of how interpolation works rather than in spite of it. A snapshot becomes
+the far end of the straddling pair about **25 ms** after it arrives, not 75; from that moment the
+client is blending toward it and the drawn position starts to move. So the onset is roughly one host
+tick plus that, which is where 76 ms comes from, while the full 75 ms delay is still there and is
+what the ship takes to *catch up*.
+
+**Both numbers are real and they answer different questions.** A player feels the onset — the thing
+that says "it heard me" — and the settle is when the picture is true. **This ADR predicted only the
+second and the interface was designed against it**, so the 152 ms is not wrong; it is answering "when
+is the ship where the host says" where §4's own argument about a dead interface is about "when does
+anything happen at all". The second number is the better one for that argument and it did not exist
+until now.
+
+### What the same run turned up
+
+**About 1.4% of frames fall through the playout buffer** — nine starved frames in 21 seconds of
+steady running, three of them at startup before three snapshots have arrived and six scattered
+through the rest. This ADR says a lost snapshot is "a 50-millisecond gap inside a 75-millisecond
+buffer, covered without extrapolating"; on this evidence the margin is thinner in practice than the
+arithmetic makes it look. One loopback run on one machine — it wants repeating before anybody acts
+on it.
+
+**A reconnecting client was mute, and this ADR's own claim is what hid it.** "Suspend and resume cost
+nothing structurally … on resume the client reconnects and the first self-contained snapshot restores
+everything" is true of **state** and was not true of **commands**: `CommandIntake` refuses a command
+whose sequence is not newer than the last it applied for that player and remembers that for the whole
+match, so a client that relaunched and counted from one again had every order discarded until it
+caught up. On the device that was thirty-eight seconds of tapping a ship that would not move. The
+client now adopts `lastCommandSequenceApplied` from the first snapshot naming it — a field that has
+been on the wire since M0.9 for exactly this and that nothing read until M0.23 needed it.
 
 **The snapshot size is now measured, and it was one byte short.** M0.9's encoder produces **1,137 bytes**
 at 110 entities and **2,253** at 220; `Tests/GameCoreTests/SnapshotTests.cpp` pins both and writes them into

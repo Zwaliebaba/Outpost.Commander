@@ -129,7 +129,25 @@ private:
   /// a client cannot learn which player it is, and M1.4 is where that arrives. Until then the host
   /// seeds player one and the client is told so here.
   PlayerId m_player = 1;
+
+  /// **ONE PAST WHAT THE HOST HAS ALREADY APPLIED, ADOPTED FROM THE FIRST SNAPSHOT THAT CARRIES
+  /// THIS PLAYER'S BLOCK.** It starts at one and is corrected the moment the host says otherwise.
+  ///
+  /// A COUNTER THAT ALWAYS STARTS AT ONE MAKES A RECONNECTING CLIENT MUTE. `CommandIntake` refuses
+  /// a command whose sequence is not NEWER than the last it applied for that player (Q24), and it
+  /// remembers that for the life of the match -- so a client that relaunches and starts again at
+  /// one has every order discarded until it counts back past where the last session finished. On
+  /// the device that was thirty-eight seconds of tapping a ship that would not move.
+  ///
+  /// **ADR-003 SAYS RESUME COSTS NOTHING AND THAT IS TRUE OF STATE, NOT OF COMMANDS.** A
+  /// self-contained snapshot restores everything the client DRAWS; nothing restored what it is
+  /// allowed to SAY. `lastCommandSequenceApplied` has been in every snapshot since M0.9 for exactly
+  /// this, and until now nothing read it.
   std::uint16_t m_nextCommandSequence = 1;
+
+  /// Adopted once. After that the client owns its own counter, and a snapshot that has not yet
+  /// caught up with the orders in flight must not wind it backwards.
+  bool m_adoptedSequence = false;
 
   /// Sized by what one datagram can be. ADR-003's MVP snapshot is 1,137 bytes and the MTU is what
   /// bounds the rest, so this is the buffer a drain hands the queue.

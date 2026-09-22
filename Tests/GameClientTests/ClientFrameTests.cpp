@@ -187,6 +187,71 @@ public:
     Assert::AreEqual(2, static_cast<int>(drawn.newer->sequence));
   }
 
+  /// **A RECONNECTING CLIENT MUST NOT BE MUTE.** `CommandIntake` refuses a command whose sequence is
+  /// not newer than the last it applied for that player and remembers that for the whole match, so
+  /// a client that relaunches and counts from one again has every order discarded until it catches
+  /// up. This is the fix, and it was found by tapping a ship on the device for thirty-eight seconds
+  /// and watching it not move.
+  TEST_METHOD(TheSequenceIsAdoptedFromWhatTheHostHasApplied)
+  {
+    Outpost::Snapshot snapshot;
+    snapshot.sequence = 1;
+    Outpost::PlayerBlock block;
+    block.lastCommandSequenceApplied = 40;
+    snapshot.players.push_back(block);
+
+    std::vector<std::byte> bytes(Outpost::EncodedSize(snapshot));
+    Neuron::ByteWriter writer{bytes};
+    Assert::IsTrue(Outpost::Encode(snapshot, writer));
+
+    Outpost::ClientFrame frame;
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(bytes);
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+
+    // One past what the host has applied, so the very first order this client sends is accepted.
+    Assert::AreEqual(41, static_cast<int>(frame.TakeCommandSequence()));
+    Assert::AreEqual(42, static_cast<int>(frame.TakeCommandSequence()));
+  }
+
+  /// ADOPTED ONCE AND ONLY FORWARDS. An acknowledgment lags the orders in flight; adopting it again
+  /// would wind the counter back over commands already sent and have them refused as duplicates.
+  TEST_METHOD(TheSequenceIsNotWoundBackwardsByALaterSnapshot)
+  {
+    Outpost::ClientFrame frame;
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+
+    Outpost::Snapshot first;
+    first.sequence = 1;
+    Outpost::PlayerBlock a;
+    a.lastCommandSequenceApplied = 40;
+    first.players.push_back(a);
+    std::vector<std::byte> firstBytes(Outpost::EncodedSize(first));
+    Neuron::ByteWriter firstWriter{firstBytes};
+    Assert::IsTrue(Outpost::Encode(first, firstWriter));
+    queue.Push(firstBytes);
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+
+    // The client sends three orders; the host has acknowledged none of them yet.
+    Assert::AreEqual(41, static_cast<int>(frame.TakeCommandSequence()));
+    Assert::AreEqual(42, static_cast<int>(frame.TakeCommandSequence()));
+    Assert::AreEqual(43, static_cast<int>(frame.TakeCommandSequence()));
+
+    Outpost::Snapshot later;
+    later.sequence = 2;
+    Outpost::PlayerBlock b;
+    b.lastCommandSequenceApplied = 41;
+    later.players.push_back(b);
+    std::vector<std::byte> laterBytes(Outpost::EncodedSize(later));
+    Neuron::ByteWriter laterWriter{laterBytes};
+    Assert::IsTrue(Outpost::Encode(later, laterWriter));
+    queue.Push(laterBytes);
+    static_cast<void>(frame.DrainPackets(queue, 1050));
+
+    // Still counting on from where it was, not back to 42.
+    Assert::AreEqual(44, static_cast<int>(frame.TakeCommandSequence()));
+  }
+
   TEST_METHOD(CommandSequencesAreHandedOutInOrderAndWrap)
   {
     Outpost::ClientFrame frame;

@@ -79,7 +79,30 @@ interface.
 
 ## Measurements
 
-None yet. Two are owed:
+### Frame time on the device — 2026-09-22
+
+**1,118 microseconds mean GPU time, 1,089 minimum, over 3,600 frames with none discarded**, on the
+**Surface Pro's ARM64** part at the **1:1 world scale** (2,880 × 1,920) and **one sample**, in a
+**Debug** build.
+
+**Three separate runs put the mean at 1,119, 1,115 and 1,118** — a spread of four microseconds, which
+is what makes this a figure rather than a reading. **The maximum is not stable in the same way**: the
+same three runs gave 1,803, 5,001 and 5,056 microseconds. A worst frame that moves by a factor of
+three across runs while the mean does not move at all is the compositor rather than the renderer, and
+it is the reason the mean is quoted first.
+
+**Against a 16.7 ms budget at 60 Hz the mean is 6.7% of a frame.** **The renderer is nowhere near
+being the thing that decides the frame rate**, which is the answer this measurement existed to get.
+
+**IT IS ONE CELL OF THE TABLE BELOW AND NOT THE TABLE.** What is still owed is four samples against
+one, and x64 against ARM64, and the 0.5 scale against 1:1 — and until those exist this says nothing
+about which scale should ship, which is the decision ADR-016 left to this figure. It is also a Debug
+build, which for GPU time matters less than it would for processor time and is still not the number
+that ships.
+
+### Still owed
+
+Two:
 
 1. **The frame time on an actual Surface Pro**, at one sample and at four, on **both x64 and
    ARM64** — and since [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) at **both** 2880 × 1920 and
