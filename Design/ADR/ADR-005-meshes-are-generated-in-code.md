@@ -1,6 +1,11 @@
-# ADR-005 — Meshes are generated in code; the MVP has no content pipeline
+# ADR-005 — Meshes are generated in code
 
-**Status:** Accepted — **amended 2026-09-21 by
+**Status:** Accepted — **updated 2026-09-22 alongside
+[`ADR-021`](ADR-021-content-ships-with-the-package.md)**, which rules that content files ship with the
+package. This record was titled "…; the MVP has no content pipeline" and closed on a sentence that was
+read afterwards as a ban on shipping any file at all. **That was never what it argued**, so the sentence
+is corrected rather than annotated and the title no longer claims it. The dependency line this record
+actually drew is unchanged. Also **amended 2026-09-21 by
 [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md)**, which makes the backdrop near-black with a
 stated luminance ceiling rather than an absence, and **by
 [`ADR-015`](ADR-015-the-base-is-built-from-modules.md)**, which added a sixth thing to draw after this
@@ -40,7 +45,10 @@ cache to optimize at this scale.
 **Team color is a vertex attribute** selecting between a hull palette and the owner's color, so one
 instanced draw covers every ship of a hull regardless of owner.
 
-There is **no mesh file, no loader, no asset build step and no texture** in the MVP.
+**There is no mesh file, no loader and no texture in the MVP — because none has been written yet, not
+because none may be.** [`ADR-021`](ADR-021-content-ships-with-the-package.md) rules that content files
+ship; what this record forbids is reaching for a *library* to read one. That is R14's line and it is the
+only one here.
 
 ## Consequences
 
@@ -68,8 +76,9 @@ full white over any large area**, with only the brightest eight stars reaching 4
 pixels. If the fleet stops reading at the tactical zoom, that ceiling is the first number to move — not
 the triangle count.
 
-It also means **there is no way for anyone but a programmer to change a ship's shape**, which forecloses
-art as a parallel activity for as long as it stands.
+It also meant **there was no way for anyone but a programmer to change a ship's shape**, which foreclosed
+art as a parallel activity. **[`ADR-021`](ADR-021-content-ships-with-the-package.md) is what bought that
+back**, and this paragraph is the cost it names as its reason for doing so.
 
 **What reopens it:** the first ship that needs to look like something a function cannot describe. The
 answer then is a small hand-rolled binary format — a vertex count, an index count and two arrays — written

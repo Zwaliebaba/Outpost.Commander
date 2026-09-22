@@ -417,10 +417,21 @@ for itself a second time. The same is true of a player who disconnects outright 
 
 ---
 
-## 7. Content, and why there is no content pipeline
+## 7. Content, and where the line around it actually is
 
-**R14 closes the dependency list**, and a mesh format is where a project reaches for a library without
-noticing. There is no glTF loader here, no FBX, no DirectXTK12, and there will not be one in the MVP.
+**Content files ship** ([`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md)). Meshes, textures,
+fonts and audio may be authored as files and carried in the package; `OutpostCommander` declares them as
+package content and `Server` reads from its own directory.
+
+**The line is against dependencies, not against files.** R14 closes the dependency list, and a mesh format
+is where a project reaches past it without noticing. There is no glTF loader here, no FBX, no DirectXTK12
+and no DirectXTex, and there will not be: a format used here has a reader written here, or is one the
+Windows SDK already reads — WIC for images, Media Foundation for audio, both inside R14 already.
+
+**Nothing loads on the frame thread.** `Package.Current.InstalledLocation` is asynchronous and the frame
+thread is an ASTA, where blocking on an asynchronous operation is a deadlock rather than a delay
+([`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md) records it as observed). Content is read
+before the frame loop starts or on a worker thread with a handoff.
 
 **Meshes are generated in code.** A hull is a function that emits a few dozen triangles — a fuselage, an
 engine block, a pair of wings — parameterised so the three hulls share the code that makes them. Normals
@@ -428,14 +439,17 @@ are baked per face onto split vertices, which is flat shading, which is what a l
 wants anyway; there is no smoothing group to decide and no tangent basis to get wrong. Team color is a
 vertex attribute selecting between a hull palette and the owner's color.
 
-This costs nothing today and buys an MVP with **no file format, no loader, no asset build step and no
-third-party anything**. It is [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md), and what reopens it
-is the first time a ship needs to look like something a function cannot describe — at which point a small
-hand-rolled binary format read by `GameClient` is the answer, still with no dependency.
+**That is what the tree holds today, and it is a description rather than a constraint.** It is
+[`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md), whose surviving half is that meshes are
+functions. The first ship that needs to look like something a function cannot describe gets a small
+hand-rolled binary format read by `GameClient` — still no dependency, and still the cheapest thing that
+works before any library is considered.
 
-The component catalog, the designs and the damage table are `constexpr` tables in `GameCore` for the MVP,
-not files. A content file format is worth designing when there is something to put in it and when mods are
-a goal; both are post-MVP.
+**Presentation may be data; rules stay code.** The component catalog, the designs and the damage table are
+`constexpr` tables in `GameCore` and do not become files. A table the host and the client can disagree
+about is a desync with a file format in front of it, which is what R16 and R23 exist to prevent — and it
+is the one part of this section that is a constraint rather than a description. Moving that line is a
+decision of its own and ADR-021 explicitly does not take it.
 
 ---
 
@@ -499,7 +513,8 @@ shaped:
 | [`ADR-002`](ADR/ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the binary angle and the sine table, the pinned PRNG, and ordering as a correctness property. |
 | [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz with no delta and no acknowledgment; a ten-byte record with the design identity its own byte; a removal list; commands made reliable by a sequence the snapshot already carries and validated by the host. |
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
-| [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | No content pipeline and no mesh format in the MVP. |
+| [`ADR-005`](ADR/ADR-005-meshes-are-generated-in-code.md) | Meshes are functions rather than files, because a mesh format is where a project reaches past R14's dependency line. |
+| [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md) | Content files ship with the package. The line is against dependencies and against simulation data becoming files, not against files as such. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
 | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) | The authored frame was pinned at 1440 × 960 for an exact 2× fit; amended by ADR-016, which makes it a scale. |
 | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) | The host address is configuration with a compiled-in default; no discovery, and the loopback exemption is a development arrangement. |

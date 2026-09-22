@@ -20,8 +20,11 @@ library that uses it cannot see — the shader would live in `NeuronClient`, and
 be an entry in `OutpostCommander.vcxproj` that nobody editing the renderer has any reason to open.
 
 [`ADR-005`](ADR-005-meshes-are-generated-in-code.md) drew this same line one subsystem over and is worth
-reading beside this one: no mesh file, no loader, no asset build step, and a geometry change is a code
-change the compiler checks.
+reading beside this one: a mesh is a function rather than a file, and a geometry change is a code change
+the compiler checks. **That record no longer bans content files**
+([`ADR-021`](ADR-021-content-ships-with-the-package.md)) and this one is unaffected either way — the
+argument below is about a static library with no package and an asynchronous read on the ASTA, neither of
+which is a question about whether files are allowed.
 
 ## Decision
 

@@ -8,10 +8,14 @@ backdrop being black. It is now near-black, and this ADR puts a number on how ne
 
 ## Context
 
-**Procedural is not a preference here; R14 makes it the only option.** There is no DDS loader, no
-DirectXTex and no content pipeline ([`ADR-005`](ADR-005-meshes-are-generated-in-code.md)), so a painted
-cubemap could not be loaded even if one existed. The question is therefore only *how* to generate it and
-what it costs.
+**Procedural is a choice here and this record has to earn it.** An earlier draft said R14 made it the only
+option, because there is no DDS loader and no DirectXTex
+([`ADR-005`](ADR-005-meshes-are-generated-in-code.md)) and a painted cubemap therefore could not be loaded
+even if one existed. **[`ADR-021`](ADR-021-content-ships-with-the-package.md) settled that content files
+ship**, so that argument is gone and the decision stands on the rest: a seeded sky costs no wire bytes,
+cannot desync anything, takes no time input so it is generated once and never updated, and is 6.3 MB the
+package does not have to carry. A painted one would beat it on art direction alone, which is the trade
+whenever somebody wants to make it.
 
 **The naive answer attacks a decision taken three days ago.**
 [`ADR-016`](ADR-016-the-world-resolution-is-a-scale.md) defaults the world to 1:1 — 2,880 × 1,920 — and
