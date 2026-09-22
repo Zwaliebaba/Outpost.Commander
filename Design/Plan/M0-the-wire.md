@@ -455,12 +455,15 @@ single site that performs it.
 
 ### M0.19 — The replica store and interpolation · `GameClient` · `GameClientTests` · agent
 
-**Read first:** `TechnicalDesign.md` §6 and §4; ADR-003. **And `README.md` F4: build to 75 milliseconds.**
-`TechnicalDesign.md` §6 says 150, which is the 10 Hz figure surviving the rate change; §4 and ADR-003 both
-say 75, and both call it "one snapshot interval plus a jitter margin", which at 20 Hz is 75.
+**Read first:** `TechnicalDesign.md` §6 and §4; ADR-003. **And `README.md` F4 and F9, both of which are
+now corrected in §6 rather than outstanding against it.** The delay is 75 milliseconds — §4 and ADR-003
+always said so, §6 said 150 until it was fixed, and all three call it "one snapshot interval plus a jitter
+margin", which at 20 Hz is 75. The depth that delay implies is three snapshots and is computed rather than
+quoted (F9).
 
-**Adds:** the two most recent snapshots, the interpolation clock, and drawing 75 milliseconds behind the
-newest. Positions and headings interpolate and headings go the short way round, which the binary angle
+**Adds:** the snapshots the delay reaches back over — **three** at 20 Hz, computed from the delay and the
+interval rather than fixed, and not the two this line first said (`README.md` F9) — the interpolation
+clock, and drawing 75 milliseconds behind the newest. Positions and headings interpolate and headings go the short way round, which the binary angle
 makes a subtraction rather than a special case. If the next snapshot has not arrived, the client
 extrapolates for a short bounded window and then **holds position rather than sliding a ship somewhere it
 never was.**

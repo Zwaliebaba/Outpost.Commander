@@ -331,10 +331,23 @@ version in the header refuses a mismatched build, and that is the whole of it.
 One drain of the `CoreWindow` dispatcher per frame (R18), then the packet queue, then the interpolation
 clock, then render, then present.
 
-**The client renders the past.** It holds the two most recent snapshots and draws at a time **75
-milliseconds** behind the newest — one snapshot interval at 20 Hz plus a jitter margin. Positions and
-headings are interpolated between the two; headings interpolate the short way round, which the binary
-angle makes a subtraction rather than a special case. If the next snapshot has not arrived, the client
+**The client renders the past.** It draws at a time **75 milliseconds** behind the newest snapshot — one
+snapshot interval at 20 Hz plus a jitter margin — and holds **enough snapshots to reach back that far**,
+which is **three** at 20 Hz. Positions and headings are interpolated between whichever pair straddles
+that moment; headings interpolate the short way round, which the binary angle makes a subtraction rather
+than a special case.
+
+**This said "the two most recent snapshots" and that was arithmetically impossible.** Two snapshots span
+one interval, 50 ms, ending at the newest; a render time 75 ms behind the newest is 25 ms *older than the
+older of the two*, so the pair never contained the frame being drawn. It was wrong at 10 Hz too, where
+150 ms behind the newest sits outside a 100 ms pair by the same margin, so this is not residue from the
+rate change the way the 150 itself was — it never held.
+[`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) has always read the other way: a lost snapshot
+being "a 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating" describes a
+buffer with more than one interval of history in it. **The depth is not a figure to quote from here**:
+`GameClient/ReplicaStore.h` computes it from the delay and the interval, so it follows either of them
+when one moves, and the three above is what that arithmetic currently yields rather than a second place
+the number is stated. If the next snapshot has not arrived, the client
 extrapolates for a short bounded window and then holds position rather than sliding a ship somewhere it
 never was.
 

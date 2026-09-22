@@ -236,8 +236,10 @@ register question, needed by M3**: it moves balance, so it is the design's to an
 **F4 — `TechnicalDesign.md` §6 says the client draws 150 milliseconds behind; §4 and
 [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) say 75.** Both call it "one snapshot interval
 plus a jitter margin", which at 20 Hz is 75. The 150 is the 10 Hz figure surviving the rate change. **A
-documentation defect rather than a decision** — the plan builds to 75, and that sentence wants correcting
-in a pull request of its own.
+documentation defect rather than a decision** — the plan builds to 75. **CORRECTED**: §6 says 75, and the
+only 150s left in it are the 10 Hz row of the latency table, where the figure is history rather than a
+claim. **This entry went on saying §6 was wrong after it had been fixed**, which is the same defect one
+level up and is why F9 above records its own correction rather than leaving the next reader to check.
 
 **F5 — M1 wants two clients on one host and a packaged application is single-instanced.** A second
 instance of `OutpostCommander` on one machine is a manifest declaration (`SupportsMultipleInstances`, in
@@ -258,8 +260,8 @@ header and names what is in them, but not every width — appropriate for a desi
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
 turns ADR-003's snapshot size from arithmetic into a measurement.
 
-**F9 — `TechnicalDesign.md` §6 holds two snapshots and draws 75 milliseconds behind, and those two
-clauses cannot both be true.** Two snapshots span one interval, 50 ms at 20 Hz, ending at the newest; a
+**F9 — `TechnicalDesign.md` §6 held two snapshots and drew 75 milliseconds behind, and those two clauses
+could not both be true. CORRECTED 2026-09-22**, in §6 and in M0.19's own line. Two snapshots span one interval, 50 ms at 20 Hz, ending at the newest; a
 render time 75 ms behind the newest is 25 ms **older than the older of the two**, so the pair does not
 contain the frame being drawn. It is F4's defect one clause further on — the delay moved from 150 to 75
 and the depth it implies was never recomputed — and it was never right at 10 Hz either, where 150 behind
@@ -269,8 +271,9 @@ the newest sits outside a 100 ms pair by the same margin.
 describes a buffer holding more than one interval of history. **A documentation defect rather than a
 decision**, like F4, and M0.19 builds to the arithmetic rather than to the sentence: the retained depth is
 computed from the delay and the interval, which is three snapshots at the current pair and becomes four by
-itself if either figure moves. **The sentence wants correcting in a pull request of its own**, and the
-figure to correct it to is the one `GameClient/ReplicaStore.h` computes.
+itself if either figure moves. The sentence is corrected to the arithmetic rather than to a
+number, so §6 now names no depth of its own to drift: `GameClient/ReplicaStore.h` computes it and §6 says
+so.
 
 **F8 — M0 is about half the engineering in the MVP, and it is the milestone labeled "no game at all".**
 Twenty-three steps against M2's fifteen, touching all eight projects, containing every subsystem that can
