@@ -132,7 +132,10 @@ treated as a new player — which self-contained snapshots make cheap
 **All four are met and every one is pinned without a socket**, because `Sessions` holds no transport and
 `JoinState` holds no clock — the split M0.18 forced on the gesture seam, taken again here. What the suite
 cannot reach is the one thing that made the token necessary: **a client's endpoint changing across a real
-relaunch.** That is a two-machine observation and it belongs with M0.23's outstanding run.
+relaunch.** **Observed 2026-09-23 on one machine instead**: ADR-022's churner closed its socket and
+rejoined on a new one nineteen times against a real `Server`, and it was resumed into the same seat each
+time. A new socket is a new endpoint, which is exactly what a relaunch presents. The two-machine
+version of this was withdrawn with the rest (`OpenQuestions.md` Q50).
 
 ---
 
@@ -689,6 +692,15 @@ Six things the step did not anticipate were decided while writing, and each is s
 - **What needs the owner:** ruling ADR-022. **This step doesn't close M1.15.** That gate asks whether two
   *people* can play.
 
+**RUN 2026-09-23 ON THE SURFACE PRO, AND DONE.** It was built on all four pairs earlier that day. Then
+`Release|ARM64` `Bot` ran against a real `Server` on the same machine, and neither process is in an
+AppContainer, so no loopback exemption applied to either. Both players were seated, their commands were
+acknowledged, and a churner kept its seat across nineteen rejoins. The host ticked 3,499 times with none
+abandoned under a flooder, and 128 players held a one-tick update gap. **The figures are in ADR-022's
+Measurements**, and the provisional ceiling of 128 is now a measured one. One finding: a flooder's real
+rate is about one datagram a tick whatever it asks for, because the transport refuses a send while one
+is in flight. ADR-022 says so.
+
 ### M1.14c — ADR-024's replication, and the player count · `NeuronCore`, `GameCore`, `GameLogic`, `GameClient`, `Server` · every suite · agent
 
 **Read first:** [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) in full, then
@@ -776,6 +788,14 @@ and will say which document it missed.
   has not moved. ADR-022's harness at eight players seats eight on `--players 8 --stress` and reports the
   refresh interval per entity. Both are ADR-024's owed measurements and are written into it.
 
+**PARTLY RUN 2026-09-23 ON THE SURFACE PRO.** The agent half was met at build: the hash held on all four
+pairs, and the full update encodes to exactly 1,232 bytes. On the machine, ADR-022's harness seated eight
+on `--players 8 --stress`, and every entity refreshed every tick. The same run at 2, 32, 64, 125 and 128
+seats is in ADR-022, and the host's CPU per client per tick, as an upper bound, is in ADR-024. **Still
+owed, and both need the packaged client with a finger on it**: that a two-player match on the device
+draws as it did, and the loopback tap-to-visible re-run against the 76 ms. Both are ADR-024's fifth
+measurement, and M1.16 is the session that takes them.
+
 ---
 
 ## The gates
@@ -818,12 +838,35 @@ that expectation holds when switching between the two. Second, whether two *snap
 visible, both keep running. The client asks for fullscreen at launch, so the second needs the window
 to leave fullscreen first.
 
-**THE OWNER CHOSE THE ROUTE, 2026-09-23: two snapped, visible windows on the unlocked Surface Pro, and a
-second machine only if that fails.** **The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
-test with, one player at a time" or "a second machine".
+**THE OWNER CHOSE THE ROUTE, 2026-09-23: two snapped, visible windows on the unlocked Surface Pro.** The
+fallback of a second machine is gone. **The register's answer is
+[`OpenQuestions.md`](../OpenQuestions.md) Q50, the same day: one machine, and no second one.** So if two
+snapped windows both keep running, this gate closes on them. If they don't, it closes on what the lock-screen
+run already showed: two seats from one host, played one foreground window at a time. **Which of those two
+it is still needs a hand on the unlocked device.**
 
-**Done when:** the question is answered on the register, and two clients on one host are playing — on
-whatever number of machines the answer turned out to require.
+**Done when:** the question is answered on the register — **it is, Q50** — and two clients on one host
+are playing on one machine.
+
+**CLOSED 2026-09-23, ON THE FALLBACK: two seats on one host, played one foreground window at a time.**
+Setup: the unlocked Surface Pro 11, a `Release|ARM64` `Server` on `127.0.0.1` with the plain two-seat
+host and seed 20260922, and two instances of the package launched from the shell. Both run on the one
+loopback exemption. What the run showed:
+
+- **Two seats, held.** Slot 0 was seated as player 1 and slot 1 as player 2. The host showed `clients=2`
+  for the whole run and abandoned no tick. When slot 0 closed and was launched again, it was **rejoined
+  as player 1** on its stored token.
+- **Both were played.** Taps and camera gestures reached each instance, as each one's log records.
+- **Only the window in front runs.** This is the owner's own observation, and the logs agree with it. Slot 1's updates
+  stop for 1 to 4 seconds at a time, six times in 42 seconds (ticks 274→286, 334→364, 456→541,
+  639→715, 727→790 and 831→847). Each gap ends in `LINK lost … rejoined`, which is `Interface.md` §7's
+  suspend and resume, working as designed. **Two snapped windows that both keep running were not
+  achieved**, so the route the owner preferred did not close this gate. The fallback did.
+
+**What it means for testing:** two people cannot share this one panel at the same moment. A two-player
+match on one machine is played by switching windows, and the match goes on without whichever client is
+behind. That is enough to test the protocol, the seats and the rejoin. It is not a test of two people
+playing at once, and with no second machine (Q50) nothing in this tree will be.
 
 ### M1.16 — GATE: the confirmations · — · hand · **human**
 

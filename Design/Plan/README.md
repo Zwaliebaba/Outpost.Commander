@@ -36,12 +36,16 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 
 ## Where it stands
 
-**M0 is written and its code is verified on the device.** Twenty-three steps, one of which grew an
+**M0 IS FINISHED, 2026-09-23.** All three gates are closed: M0.16 on the device, and M0.5 and M0.23
+when the owner ruled that this game is tested on one machine and withdrew their two-machine runs
+([`OpenQuestions.md`](../OpenQuestions.md) Q50). Twenty-three steps, one of which grew an
 `M0.21b` the plan had left out (F10) — the wire, the numbers, the simulation, the host loop, the scaled
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1'S CODE IS IN; ITS TWO GATES ARE NOT.** M1.1 to M1.14c are built, and M1.15 and M1.16 are a hand's.
+**M1'S CODE IS IN AND ITS HOST-SIDE MEASUREMENTS ARE TAKEN. M1.15 IS CLOSED AND M1.16 IS NOT.** M1.15 closed
+on 2026-09-23 on its fallback: two seats on one host, played one foreground window at a time, because only
+the window in front runs. M1.1 to M1.14c are built, and M1.15 and M1.16 are a hand's.
 What that adds up to is a match you can look at: two stations placed 12,000 units apart on a seed both
 sides derive, a station that builds and refunds, fifty ships that take a ring slot each rather than
 stacking, a camera that sticks to the finger and opens on your own base, a tap that selects, expands and
@@ -58,11 +62,14 @@ and for a replication that keeps every datagram whole at a hundred players, whic
 [`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)). **Both compile and every suite passes on
 `Debug|x64` in CI**, and that is the whole of what is known: no other pair has been built, and neither has
 run against a real host. The table below says what each owes. *(2026-09-23, later: all four pairs now build
-and pass on the Surface Pro, and the determinism hash held on each. Neither step has run against a host yet.)*
+and pass on the Surface Pro, and the determinism hash held on each. Later again: **both have run against a
+real `Server` on the Surface Pro**, from two seats to 128, with no tick abandoned. What M1.14c still owes
+needs the packaged client and a finger.)*
 
 **The code M1's gates need is in, and what is left for an agent is fixing what the Windows runs find.** After M1.14, a lost link puts up
 the reconnecting overlay and rejoins as the same player. The package also declares multiple instances,
-with each instance keeping its own session token, which gives M1.15 a one-machine route to try. **That
+with each instance keeping its own session token, which gives M1.15 a one-machine route to try. **It is the
+only route now**, since the owner ruled out a second machine (Q50). **That
 route has run once, on the Surface Pro at its lock screen.** Two instances took two seats from one host
 through one loopback exemption. Nobody has played on it, because a locked screen suspends both clients,
 and whether two can run visibly side by side is the half still open. A failed socket no longer ends
@@ -91,11 +98,11 @@ ran, every claim in that record about bit-identical behavior was an argument.
 
 | | |
 |---|---|
-| **M0.5** | **Two of its four runs are answered.** Loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter; and, on 2026-09-23, **the exemption removed and tried again: `-a` alone is enough**, and without it the client cannot send at all — [`ADR-008`](../ADR/ADR-008-the-host-address-is-configuration.md)'s Measurements. **Two are open** and both need a second machine: the LAN run, and loss and jitter on a real wireless link |
-| **M0.23** | **Half closed, and the measured half has moved once.** Frame time was 1,118 microseconds over an empty frame at M0.23 and is **1,482 with M1.9's three hulls in it** — both in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md), and it is a standing figure rather than a settled one for exactly that reason. Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
-| **M1.4** | **Closed.** The ADR is Accepted and the join is built. **What it has not had is two machines** — every one of its properties is pinned by a socket-free suite, and a reconnect across a real relaunch is one of the things M0.23's outstanding run is now worth watching for |
-| **M1.14b** | **Built on all four pairs, not run.** `Bot` and the four classes that decide for it, pinned by `GameClientTests`. **Owed on Windows, against a real `Server` with no loopback exemption:** that an unpackaged process reaches the host at all, players seated and acknowledged, a churner holding its seat over ten rejoins, the host's tick unbroken under the flooder, and the harness's real ceiling in place of the provisional 128. Those are [`ADR-022`](../ADR/ADR-022-a-bot-is-a-headless-client.md)'s measurements |
-| **M1.14c** | **Built on all four pairs, not run.** Updates replace the snapshot and the host seats past four under `--stress`. **The determinism hash `0x37f846ed90b74ca1` held on all four pairs**, 2026-09-23, so nothing simulated moved. **Owed:** a two-player match on the device refreshing every entity every tick; tap-to-visible on loopback against the 76 ms; the accumulator's cost per client per tick; and eight harness players seated on `--players 8 --stress`. Those are [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md)'s measurements |
+| **M0.5** | **CLOSED 2026-09-23.** The two runs that needed a second machine were withdrawn by the owner (Q50). Before that: **two of its four runs were answered.** Loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter; and, on 2026-09-23, **the exemption removed and tried again: `-a` alone is enough**, and without it the client cannot send at all — [`ADR-008`](../ADR/ADR-008-the-host-address-is-configuration.md)'s Measurements. The two withdrawn runs were the LAN run and loss and jitter on a real wireless link |
+| **M0.23** | **CLOSED 2026-09-23, on loopback, by the owner's ruling (Q50)**, and the measured half has moved once. Frame time was 1,118 microseconds over an empty frame at M0.23 and is **1,482 with M1.9's three hulls in it** — both in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md), and it is a standing figure rather than a settled one for exactly that reason. Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run was withdrawn**, so 76 ms stands and no network term is in it |
+| **M1.4** | **Closed.** The ADR is Accepted and the join is built. Every one of its properties is pinned by a socket-free suite, and **a rejoin on a new endpoint is now observed against a real host**: ADR-022's churner was resumed into its own seat nineteen times, 2026-09-23 |
+| **M1.14b** | **DONE, 2026-09-23: run against a real `Server` on the Surface Pro, and every owed measurement is in [`ADR-022`](../ADR/ADR-022-a-bot-is-a-headless-client.md).** Players were seated and acknowledged, a churner held its seat over 19 rejoins, the host abandoned no tick under a flooder, and 128 bots held a one-tick gap, which makes the ceiling measured. Before that: built on all four pairs, not run. `Bot` and the four classes that decide for it, pinned by `GameClientTests`. **Owed on Windows, against a real `Server` with no loopback exemption:** that an unpackaged process reaches the host at all, players seated and acknowledged, a churner holding its seat over ten rejoins, the host's tick unbroken under the flooder, and the harness's real ceiling in place of the provisional 128. Those are [`ADR-022`](../ADR/ADR-022-a-bot-is-a-headless-client.md)'s measurements |
+| **M1.14c** | **Host side run, 2026-09-23**: eight seated on `--players 8 --stress` and every entity refreshed every tick; the full update is exactly 1,232 bytes; the host's CPU per client per tick is bounded in [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md). **Still owed, by hand:** the two-player match drawing on the device, and tap-to-visible re-run against the 76 ms. Before that: built on all four pairs, not run. Updates replace the snapshot and the host seats past four under `--stress`. **The determinism hash `0x37f846ed90b74ca1` held on all four pairs**, 2026-09-23, so nothing simulated moved. **Owed:** a two-player match on the device refreshing every entity every tick; tap-to-visible on loopback against the 76 ms; the accumulator's cost per client per tick; and eight harness players seated on `--players 8 --stress`. Those are [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md)'s measurements |
 | **M1.9** | **Built, and looked at once.** Three hulls read out of the package, converted, uploaded and drawn instanced, at **1,482 microseconds** a frame. **What the looking found was a bug**: the light rig was never converted out of the authored frame, so the key pointed nearly along the plane and every hull read as shapeless. Fixed. **The tactical-zoom silhouettes are still M2.13's**, and ADR-021's clean-install check is still owed — the deploy used here was a loose-file registration on the machine that built it, which is the one arrangement in which a missing payload cannot show |
 | **M1.9b** | **Built, looked at twice, and the band withdrawn.** The blackbody table is pinned at all eight stops and between them, the seeded field gives the same sky twice, and the ceiling is asserted rather than intended — 38 tests across `NeuronClientTests` and `GameClientTests`. **The asserted half found the design's own arithmetic wrong**: 1:3:9:27:81:243 sums to 364 and divides no round number of stars evenly, so the division three documents called exact was neither exact nor what the code computed. **The looked-at half found the sky wrong twice**: first a band outshining invisible stars, then — dimmed — a band whose noise read as a painting behind the fleet while the faint stars delivered about 16 of 255 to a pixel. [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) now withdraws the band: the sky is 8,000 stars and nothing else, the tiers are 22, 66, 198, 593, 1,780 and 5,341, the faint end is 3.0 pixels at 0.24 under a flat-topped falloff, and the clear is black. **Built, measured and CONFIRMED on the device at the third look**: 8,000 stars at 7,992 distinct sizes, 3.00–9.96 pixels, lit area 0.140% of the frame. It reads as a sky, which closes the third of ADR-019's owed measurements ahead of M1.16 and leaves two. The withdrawal commit could not run `dxc`, so its `StarPS.hlsl` and the checked-in DXIL disagreed until the build here regenerated it |
 
@@ -302,7 +309,8 @@ instance of `OutpostCommander` on one machine is a manifest declaration (`Suppor
 the `desktop4`/`iot2` namespace — confirm the current form before relying on it), not a code change, and it
 interacts with [`ADR-008`](../ADR/ADR-008-the-host-address-is-configuration.md)'s loopback exemption, which
 is already strained. The alternative is a second machine, which is not an engineering decision at all. **A
-register question, needed by M1**, because one of its answers is "buy a tablet".
+register question, needed by M1**, because one of its answers is "buy a tablet". **Answered: Q50, 2026-09-23 —
+one machine, and no second one.**
 
 **F6 — Nothing in this tree can construct a `CoreWindow`, so the seam must be split for testability.** The
 two client suites are desktop test DLLs (`AGENTS.md` §3) and a test host has no `CoreWindow`. R21 and
@@ -366,9 +374,9 @@ assigns all eight to a step, which is the whole of its contribution to them:
 | §9 | The figure | Taken at | How |
 |---|---|---|---|
 | 1 | The snapshot's real size at 110 entities and at 220 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
-| 2 | **Tap-to-visible latency on real hardware** | **M0.23** gate | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
+| 2 | **Tap-to-visible latency on real hardware** — **TAKEN on loopback, 76 ms; the two-machine run withdrawn (Q50)** | **M0.23** gate, closed | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
 | 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
-| 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
+| 4 | ~~Packet loss and jitter on a real wireless link~~ **WITHDRAWN by the owner (Q50)** | **M0.5** gate, closed | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
 | 7 | ~~**That the present step really takes the filter the scale calls for, and which world scale ships**~~ **TAKEN** | **M0.16** gate, closed | Looked at on the device at both scales, plus frame time at each on x64 and ARM64. The filter is right at both and **1:1 ships** ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |

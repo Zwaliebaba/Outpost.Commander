@@ -180,10 +180,14 @@ None yet. Four are owed, and three of them at **M0**, which exists largely to ob
 1. **The encoded size of a full snapshot** at the MVP's 110 entities and at 220, from the encoder rather
    than from this table — and specifically that the MVP's really is one datagram.
 2. ~~**Tap-to-visible latency on real hardware**, against the 152 ms this ADR now predicts.~~ —
-   **MEASURED ON LOOPBACK at M0.23, and it is not yet the figure this owes.** See below.
+   **MEASURED ON LOOPBACK at M0.23, and that is the figure this ADR keeps**: the owner withdrew the
+   two-machine run on 2026-09-23. See below.
 2. **The cost of encoding and sending four of them**, against the tick's 50 ms budget.
-3. **Loss and jitter on a real wireless link between two machines**, which is what decides whether 10 Hz
-   and two-fragment snapshots survive contact.
+3. ~~**Loss and jitter on a real wireless link between two machines**, which is what decides whether 10 Hz
+   and two-fragment snapshots survive contact.~~ — **WITHDRAWN by the owner, 2026-09-23: this game is
+   tested on one machine and no second machine will be used.** The only link ever measured is loopback,
+   at zero loss (ADR-008, and ADR-022's harness runs). ADR-024 removed the fragments this item worried
+   about, so what it leaves unknown is only how a real radio treats one whole datagram.
 
 
 ### Tap-to-visible, measured on loopback — 2026-09-22
@@ -200,12 +204,13 @@ ship was still moving from the previous order, which is what it is supposed to d
 | Input | **injected touch**, not a finger |
 | World scale | 1:1 |
 
-**THIS IS NOT THE MEASUREMENT THIS ADR OWES AND IT IS RECORDED AS A STAGE RATHER THAN AN ANSWER.**
-Three of its conditions are wrong for the question. The host is on the same machine, so the network
+**IT WAS RECORDED AS A STAGE RATHER THAN AN ANSWER, AND IS NOW THE ANSWER BY RULING, NOT BY
+MEASUREMENT.** Three of its conditions are wrong for the question, and all three still hold. The host is on the same machine, so the network
 term — the thing a wireless link actually costs — is absent entirely. It is a Debug build. And the
 touch is injected at the operating system rather than pressed onto the digitizer, so the panel's own
-input latency is not in it either. **M0.23 asks for a host on another machine**; that run is still
-owed and this figure will move when it happens.
+input latency is not in it either. **M0.23 asked for a host on another machine, and on 2026-09-23 the
+owner withdrew that run**: this game is tested on one machine. So this loopback figure stands as M0.23's
+answer, and the network term stays unmeasured.
 
 **What it does establish is that the chain works end to end and where the remaining terms are.**
 

@@ -163,16 +163,37 @@ All figures above are `Scripts/DatagramBudget.py`, run 2026-09-23, on the design
 are `--players`, `--ships`, `--in-view`, `--datagrams` and `--upstream`. **Owed at
 `Plan/M1-the-fleet.md` M1.14c**, on the machine that builds it:
 
-1. **The encoder's own `EncodedSize` of a full update**, replacing the 1,232 and 99 above with what
-   `GameCoreTests` measures, as M0.9 did for the snapshot.
+1. ~~**The encoder's own `EncodedSize` of a full update**, replacing the 1,232 and 99 above with what
+   `GameCoreTests` measures, as M0.9 did for the snapshot.~~ — **DISCHARGED at M1.14c.** The encoder
+   agrees with the arithmetic: 99 records, three removals and two fire events encode to **exactly
+   1,232 bytes**, and a hundredth record does not fit. `Tests/GameCoreTests/UpdateTests.cpp` pins both and
+   writes the figure into the log. That test passed on all four pairs on 2026-09-23.
 2. ~~**That M1.7's determinism hash is unchanged**, `0x37f846ed90b74ca1` on all four pairs, which is the
    proof that nothing simulated moved.~~ — **DISCHARGED 2026-09-23, at `5aff739`.** All four pairs built
    clean through the solution on the Surface Pro 11, and `TheScriptedMatchHashesToItsPinnedValue` passed
    on each, among 774 of 774 tests a pair. ARM64 ran natively on the device and x64 under its emulation.
    The hash did not move.
-3. **Refresh interval per entity at the MVP with the cap at two**, observed from the client's store over
-   a two-minute match: every entity every tick is the prediction.
-4. **The accumulator's cost per client per tick** at 110 and, with ADR-022's harness, at every player
-   count the host will seat, against the 50 ms tick.
+3. ~~**Refresh interval per entity at the MVP with the cap at two**, observed from the client's store over
+   a two-minute match: every entity every tick is the prediction.~~ — **CONFIRMED 2026-09-23.** It was
+   observed from `ReplicaStore`, the same store the packaged client uses, through ADR-022's harness over a
+   150-second two-seat match: **mean 1.00, max 1 tick over 15,379 refreshes.** Every entity refreshed every
+   tick. At higher seat counts the figures are in ADR-022's Measurements, and they hold at every tick
+   through 32 seats.
+4. **The accumulator's cost per client per tick** — **BOUNDED, NOT ISOLATED, 2026-09-23.** Nothing
+   times the accumulator on its own. What was measured is the whole `Server` process's CPU time over
+   60 seconds of ADR-022's harness, on the Surface Pro 11, `Release|ARM64`. That covers the tick, the
+   sockets, the encoder and the accumulator together, so it is an upper bound on the accumulator:
+
+   | Seated | Host CPU per tick | Per client per tick, upper bound |
+   |---|---|---|
+   | 2 | 0.42 ms | 0.21 ms |
+   | 8 | 0.50 ms | 0.06 ms |
+   | 32 | 2.45 ms | 0.08 ms |
+   | 128 | 11.2 ms | 0.09 ms |
+
+   The host's CPU time was sampled when the harness exited, and divided by the 1,216 ticks the host had
+   run by then. **At 128 seats the whole host spends about a fifth of its 50 ms tick**, and it never
+   abandoned a tick. The accumulator's own share of that is still owed. It is M2.10's tick-cost
+   instrument to take, at 110 entities.
 5. **Tap-to-visible on loopback**, re-run against ADR-003's measured 76 ms, because the path from a
    command to the update that shows it has changed shape and the figure must not have.

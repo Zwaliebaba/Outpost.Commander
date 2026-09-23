@@ -614,13 +614,17 @@ not a definition is arithmetic on the design's own starting values. These are ow
    ADRs: §4's arithmetic omitted the fire-event count byte this same section specifies two paragraphs
    below. **Historical since [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)**, which owes
    the update's measured size in their place, and the four other figures its Measurements list.
-2. **Tap-to-visible latency on real hardware** — timestamp the `Tapped` event and the first frame in which
-   the ship's drawn heading changes. §4 predicts 152 ms average. **Owed at M0**, because it is the number
-   that decides how the game feels and every other decision is cheap to change beside it.
+2. ~~**Tap-to-visible latency on real hardware**~~ — timestamp the `Tapped` event and the first frame in
+   which the ship's drawn heading changes. §4 predicts 152 ms average. **CLOSED AT M0.23 ON LOOPBACK**,
+   by the owner's ruling of 2026-09-23 that this game is tested on one machine: the figure and the three
+   ways it differs from §4's question are in
+   [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)'s Measurements. The network term is not in it
+   and will not be.
 3. **The tick's cost** at 110 entities on the host, and how far from 50 milliseconds it is. Ring slot
    assignment and target selection are the two candidates for consuming it.
-4. **Packet loss and jitter on a real wireless link between two machines** — owed at M0, the cheapest
-   possible moment to find out the answer is no.
+4. ~~**Packet loss and jitter on a real wireless link between two machines**~~ — **WITHDRAWN by the
+   owner, 2026-09-23**: this game is tested on one machine and no second machine will be used. Loopback
+   is the only link measured, at zero loss.
 5. **The frame time on an actual Surface Pro** at **2880 × 1920 and at 1440 × 960**, at one sample and at
    four, on **both x64 and ARM64** — the four figures that settle which scale ships
    ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). The Surface Pro 11 is a Snapdragon X

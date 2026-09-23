@@ -114,8 +114,9 @@ version. That is a line, not a decision (R14). **R20 applies:** a decision found
   ceiling is**, and the harness refuses to start more bots than it has been shown to sustain, so a
   harness bottleneck isn't reported as a host result.
 - **Hosting the harness and the host on one machine measures them together.** The one-location setup is
-  what the owner asked for, and it is right for finding failures. **For a figure about the host's
-  capacity, the harness runs on a second machine.**
+  what the owner asked for, and it is right for finding failures. **It is also the only setup there will
+  be**: on 2026-09-23 the owner ruled that this game is tested on one machine. So every capacity figure
+  below is the host and the harness sharing one Surface Pro, and it says so.
 
 **What it enables and doesn't include:** a CI step that starts `Server` and a small harness on the Windows
 runner, asserts that every player is seated, that a command round-trips and that the host survives the
@@ -126,17 +127,46 @@ reuse and turns this into a second client implementation, and the right response
 
 ## Measurements
 
-None yet. **Owed at the step that builds it** (`Plan/M1-the-fleet.md` M1.14b), on the machine that
-builds it:
+**ALL FOUR DISCHARGED, 2026-09-23, at `14ff375`.** Measured on the Surface Pro 11, `Release|ARM64`
+`Server` and `Bot` both started from a shell on the same machine, host on `127.0.0.1:49000`, match seed
+20260922, harness seed 20260923. The figures are the harness's own report and the host's console. Neither
+process is an AppContainer, so no loopback exemption applies to either.
 
-- **That an unpackaged process can use `DatagramSocket` against a host on loopback with no exemption.**
-  Everything above rests on this. It is documented Windows behavior, not yet observed in this tree.
-- **That players are seated, that a churner keeps its seat across a rejoin on a new endpoint, that a
-  command is acknowledged by a later update, and that the host keeps ticking under the flooder.** All
-  against the real `Server`.
-- **How many bots one harness process sustains** before its own update tick gap degrades with the
-  host idle. That is the harness's ceiling, and it is stated here once measured. **Until then the harness
-  refuses more than 128** (`HARNESS_BOT_CEILING`, `GameClient/StressReport.h`), a provisional bound and not
-  a measured one.
-- **The refresh interval per entity at every seated count the host allows**, against ADR-024's sweep,
-  which is the measurement that record cannot take without this harness.
+- ~~**That an unpackaged process can use `DatagramSocket` against a host on loopback with no
+  exemption.**~~ — **It can.** Every bot in every run below joined and received updates, with zero
+  updates lost to any player.
+- ~~**That players are seated, that a churner keeps its seat, that a command is acknowledged, and that
+  the host keeps ticking under the flooder.**~~ — **All four, in one run**: a plain host seating two,
+  one player, one churner and one flooder at `--flood-rate 32`, for 3,000 harness ticks.
+
+  | | |
+  |---|---|
+  | Player | Seated first time; 2,999 updates, 0 lost; 83 commands acknowledged, mean 73 ms, max 305 ms |
+  | Churner | **19 rejoins on a new socket each, 19 resumed into the same seat**, 0 refused; the host held `clients=2` throughout |
+  | Flooder | Refused a seat once (`MatchFull`); 3,231 datagrams sent |
+  | Host | **3,499 ticks in 175 s, 0 abandoned**; 671 joins and 645 commands from an unseated endpoint refused by name, and 1,936 datagrams rejected by its decoders |
+
+  **The flooder's rate is the transport's, not the schedule's.** It asked for 32 datagrams a tick and
+  sent about one, with 92,769 sends skipped because the previous one was still in flight. So "the highest
+  rate the schedule offers" is really about 20 datagrams a second from one flooder. More load means more
+  flooders, not a higher rate.
+- ~~**How many bots one harness process sustains**~~ — **At least 128, which is the ceiling, so
+  `HARNESS_BOT_CEILING` is now measured rather than provisional.** At 128 players, all seated, the
+  update tick gap was **mean 1.00, max 2** over 150,254 updates, and no update was lost. The real
+  ceiling is above that. Finding it means raising the constant, and nothing needs it yet.
+- ~~**The refresh interval per entity at every seated count the host allows**~~ — measured at the counts
+  below, each for 1,200 harness ticks against `--players N --stress`, with players only:
+
+  | Seated | Refresh interval per entity, ticks | Update tick gap | Host |
+  |---|---|---|---|
+  | 2 | mean 1.00, max 1 | max 2 | 0 abandoned |
+  | 8 | mean 1.00, max 1 | max 1 | 0 abandoned |
+  | 32 | mean 1.00, max 1 | max 1 | 0 abandoned |
+  | 64 | mean 1.02, max 2 | max 1 | 0 abandoned |
+  | 125 | mean 1.48, max 4 | max 2 | 0 abandoned |
+  | 128 | mean 1.47, max 4 | max 2 | 0 abandoned |
+
+  The 2-seat row is the 3,000-tick run above. **Up to 32 seats every entity refreshes every tick; at 128
+  the worst entity waits four ticks, 200 ms.** That stays well inside ADR-024's sweep. It is also the
+  first figure [`OpenQuestions.md`](../OpenQuestions.md) Q49 said to revisit against, and a bot cannot
+  say whether a player would notice it.

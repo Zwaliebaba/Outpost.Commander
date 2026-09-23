@@ -126,6 +126,12 @@ request:
 **If the single-machine loop turns out not to be usable, that is this gate succeeding.** `GameDesign.md`
 §10 wants that answer in week one, and it is far better to know it before there is a renderer to deploy.
 
+**CLOSED 2026-09-23.** Runs 2 and 3 are answered on the Surface Pro: packets arrive under Visual Studio's
+exemption, and `-a` alone is enough without it (ADR-008's Measurements). **Runs 1 and 4 were withdrawn by
+the owner the same day.** This game is tested on one machine ([`OpenQuestions.md`](../OpenQuestions.md)
+Q50), so neither the LAN run nor the wireless one will happen. ADR-008, ADR-003 and `TechnicalDesign.md`
+§9.4 each say so where the run was owed.
+
 ---
 
 ## The numbers, and the host
@@ -617,16 +623,33 @@ how they were measured, and **§9's predictions are confirmed or corrected in th
 `GameDesign.md` §10 calls tap-to-visible the number that decides how the game feels, and every other
 decision in the design is cheap beside it.
 
+**CLOSED 2026-09-23, on one machine, by the owner's ruling** ([`OpenQuestions.md`](../OpenQuestions.md)
+Q50). Tap-to-visible is **76 ms on loopback** on the Surface Pro, and it stands as the answer: ADR-003's
+Measurements give the figure and the three ways it differs from §4's question. Frame time at both world
+scales, at one sample, on x64 and ARM64, is in ADR-016's Measurements from M0.16, and it is standing work
+after that. §9.2 is struck through with the reason. **No network term was ever measured, and none will
+be.**
+
 ---
 
 ## Leaving M0
 
 **The milestone is finished when** the packaged client, fullscreen on a Surface Pro, draws one shape that a
-host on another machine is simulating; a tap puts a marker down immediately and the shape arrives where it
-was sent; all six suites carry real tests and none carries `SuiteSmoke`; and the three gates have written
-their answers into the documents that predicted them.
+host is simulating — **on the same machine**, since the owner's ruling of 2026-09-23 (Q50); a tap puts a
+marker down immediately and the shape arrives where it was sent; all six suites carry real tests and none
+carries `SuiteSmoke`; and the three gates have written their answers into the documents that predicted
+them.
 
-### Where it actually stands, 2026-09-22
+### M0 IS FINISHED, 2026-09-23
+
+**All twenty-three steps are built and all three gates are closed.** M0.16 closed on the device. M0.5
+and M0.23 closed when the owner withdrew their two-machine runs (Q50). What they measured on one machine
+is their answer, and each document that owed a two-machine figure now says it was withdrawn and what
+would reopen it. The world draw that F10 found missing is M0.21b, and the milestone sentence above has
+been true since a tap on the Surface Pro first moved a ship the host had moved. The section below is
+kept as the record of how it stood a day earlier.
+
+### Where it actually stood, 2026-09-22
 
 **Twenty-two of the twenty-three steps are built, and the milestone is not finished.** Two things are in
 the way and they are different kinds of thing.

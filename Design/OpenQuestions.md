@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-four answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-five answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS TEN ENTRIES AND SIX OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46 and Q47,
-all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS ELEVEN ENTRIES AND SEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47
+and Q50, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -592,6 +592,28 @@ which is roughly the sweep-to-refresh ratio at which 1,000 entities in view stil
 at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
+
+### Q50 — Is a second machine part of how this game is tested? — **ANSWERED**
+
+**NO. The owner's answer, 2026-09-23: everything is tested on one machine, the Surface Pro, and a second
+machine will not be used.** This is the answer `Plan/README.md` F5 and M1.15 asked the register for.
+
+**Why it was a question at all.** A packaged client cannot reach a host on the same machine without a
+loopback exemption (ADR-008), and a second instance on one machine needed a manifest declaration and a
+per-instance session token (M1.15). The other answer was to buy a second device, which was the owner's to
+decide. M0 and M1 had four runs that asked for one:
+
+| | What it asked | What happens to it |
+|---|---|---|
+| M0.5 run 1 | Host and client on two machines over a LAN | **Withdrawn.** ADR-008's second measurement says so, and what would reopen it |
+| M0.5 run 4 | Loss and jitter on a real wireless link | **Withdrawn.** ADR-003 and `TechnicalDesign.md` §9.4 say so |
+| M0.23 | Tap-to-visible with the host on another machine | **The loopback figure stands as the answer.** ADR-003 says what it leaves out |
+| M1.15 | Two clients on one host | **Closed on one machine, 2026-09-23**: two seats on one host through the package's multiple instances, played one foreground window at a time, because only the window in front runs |
+
+**What it costs, stated once.** No figure in this tree has a real network term in it. Tap-to-visible is
+loopback. Loss is loopback's, which is zero. Every capacity figure is the host sharing one CPU with
+whatever loads it. **What would reopen it** is a second machine arriving, and then ADR-008's LAN run is
+the first thing to try.
 
 ---
 

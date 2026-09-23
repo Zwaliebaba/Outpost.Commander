@@ -79,10 +79,12 @@ and the listener process it would have to keep running, is not needed. **The tra
 unchanged**: without the exemption, same-machine play does not work at all, and nothing but a developer
 with administrator rights can grant it.
 
-One is still owed at **M0**:
+None is owed now:
 
 1. ~~**Which loopback exemption form a UDP client actually needs**, `-a` alone or `-a` and `-is`, which
    decides whether the single-machine development loop is usable.~~ — **DISCHARGED**, above.
-2. **That the client reaches a host on another machine over the LAN** with `privateNetworkClientServer`
-   and nothing else declared — the capability set is read from Microsoft's documentation and has not been
-   run.
+2. ~~**That the client reaches a host on another machine over the LAN** with `privateNetworkClientServer`
+   and nothing else declared.~~ — **WITHDRAWN by the owner, 2026-09-23: this game is tested on one
+   machine, the Surface Pro, and no second machine will be used.** The capability set is therefore still
+   read from Microsoft's documentation and has never been run over a LAN. **What would reopen it** is the
+   first time a host and a client sit on two machines, and then it is the first thing to try.
