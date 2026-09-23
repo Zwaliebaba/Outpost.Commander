@@ -647,8 +647,8 @@ finds the project by itself, so check it passes and don't edit it to make it pas
 **Not this step:** A CI job running `Server` against the harness, which ADR-022 names as enabled and which changes the workflow. And anything that makes a bot a
 better player, which is Q48.
 
-**WRITTEN 2026-09-23 AND NOT YET BUILT.** Like M1.14c, it was written on a machine without MSVC: the format
-check and the gates are the whole of what was verified, and nothing here has been compiled, linked or run.
+**WRITTEN 2026-09-23 ON A MACHINE WITHOUT MSVC; BUILT AND TESTED ON `Debug|x64` IN CI THE SAME DAY
+(f7f1f5b), AND NOT RUN.** No other pair has been built and `Bot` has not been started against a host.
 Six things the step did not anticipate were decided while writing, and each is stated where it lives:
 
 - **`BotPolicy` owns its orders until the host applies them.** ADR-003 repeats a command in every packet
@@ -729,15 +729,15 @@ ADR-023 in a fifth.
    their per-player state at `Begin`. `GameCore/Layout.h` gains the layout above four through the sine
    table. `Panels` draws a player past the palette in the last team color.
 
-**WRITTEN 2026-09-23 AND NOT YET BUILT.** Parts 1 to 4 landed as one commit, not four: the transport
+**WRITTEN 2026-09-23; BUILT AND TESTED ON `Debug|x64` IN CI THE SAME DAY (792fd78), AND NOT RUN.** Parts 1 to 4 landed as one commit, not four: the transport
 header, the record, the update, the host and the client change together or nothing links, so no split of
 them compiles. The additive 24-bit codec went in first as its own commit. Two things the step did not
 anticipate were decided while writing and are recorded in ADR-024: **the sweep is computed from a 65-record
 floor**, with removals capped at 48 an update and fire events at 40, because a guarantee cannot be computed
 from the typical fill; and **a seated client sends an empty command packet four times a second** as its view
-report, because commands only go out when the player taps. **Nothing here has been compiled or run** -- it
-was written on a machine without MSVC, and the format check and the four gates are the whole of what was
-verified. **Part 5 landed as its own commit the same day, equally unbuilt**: `Server --players N --stress`,
+report, because commands only go out when the player taps. It was written on a machine without MSVC;
+CI's first compile found two tests still asserting the old join size and an unknown player the new capacity
+seats, both fixed in 792fd78. **Part 5 landed as its own commit the same day**: `Server --players N --stress`,
 `MATCH_PLAYERS` split from a `MAX_PLAYERS` of 254, the stress layout through the sine table, and the last
 team color past the palette -- with ADR-023 amended where the tables ended up sized to the capacity rather
 than at `Begin`.
