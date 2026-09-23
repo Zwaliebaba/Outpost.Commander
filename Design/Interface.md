@@ -568,24 +568,26 @@ means relaunching a packaged application.
 None of these is a question. All are **confirmations owed at M1**, and all are settled by using the thing
 rather than by arguing about it:
 
-1. **Whether 192 pixels is the right circle** (§4) — and specifically whether the raking-camera case
+1. ~~**Whether 192 pixels is the right circle** (§4) — and specifically whether the raking-camera case
    selects the wrong ships, since a circle on screen is a wedge in the world
    ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)). §5's pitch floor now bounds how bad
-   that can get; what it cannot say is whether the bound is comfortable.
+   that can get; what it cannot say is whether the bound is comfortable.~~ — **CONFIRMED by the owner on the Surface Pro, 2026-09-23.**
 2. ~~**Whether the interface pass costs more GPU time than the world pass**, which is likely: five instanced
    draws of simple geometry against an unbatched quad per glyph.~~ — **It does not**: 50 µs against the
    world's 852 on the device, 2026-09-23. `TechnicalDesign.md` §9.6 has the setup.
-3. **Whether §1's gesture constants are right** — the 16-pixel tap slop above all, because it is the one
+3. ~~**Whether §1's gesture constants are right** — the 16-pixel tap slop above all, because it is the one
    that decides how often an intended order becomes a pan. The 24-pixel pick radius and the 300-millisecond
-   double-tap window are the other two, and all three are single constants behind a tested pure function.
+   double-tap window are the other two, and all three are single constants behind a tested pure function.~~
+   — **CONFIRMED by the owner on the Surface Pro, 2026-09-23.** All three constants stand.
 4. **Whether occlusion, rather than reach, is the constraint that binds.** Which side the panels go on is
    answered (`OpenQuestions.md` Q33: a setting, right-handed by default); whether the model behind it is
    right is what playing checks.
-5. **Whether the ground actually sticks to the finger** across the pitch range
+5. ~~**Whether the ground actually sticks to the finger** across the pitch range
    ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The failure is drift over a long
-   gesture, and a test catches that only if it already knows the tolerance to expect.
-6. **Whether orbit is usable one-handed on a kickstand**, and how often a re-grip is needed. This is the
-   one that decides whether orbit and its three protecting constants survive §5's kill-switch.
+   gesture, and a test catches that only if it already knows the tolerance to expect.~~ — **CONFIRMED by the owner on the Surface Pro, 2026-09-23.**
+6. ~~**Whether orbit is usable one-handed on a kickstand**, and how often a re-grip is needed. This is the
+   one that decides whether orbit and its three protecting constants survive §5's kill-switch.~~ —
+   **CONFIRMED by the owner on the Surface Pro, 2026-09-23.** Orbit survives.
 7. **The near end of the zoom range** (§5), which is the only one of the two that arithmetic does not
    already give.
 

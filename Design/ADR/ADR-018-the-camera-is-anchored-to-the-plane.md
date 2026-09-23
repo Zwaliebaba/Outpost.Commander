@@ -102,7 +102,10 @@ writing down twice.
 
 ## Measurements
 
-None yet. Three are owed at **M1.16**, and the first two are looked at rather than asserted:
+**The first two are CONFIRMED by the owner on the Surface Pro, 2026-09-23**: the ground sticks to the
+finger across the pitch range, and orbit is usable one-handed on a kickstand, **so decision 4 and its
+three protecting constants survive.** The third is M1.8's pin and was not part of that session. As they
+were owed at **M1.16**, the first two looked at rather than asserted:
 
 1. **Whether the ground actually sticks** across the pitch range, judged on the device — the failure is
    drift over a long gesture, which a test can catch only if it knows what tolerance to expect.

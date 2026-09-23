@@ -85,5 +85,8 @@ What is owed at **M1** is that someone uses it on a Surface Pro and says whether
 circle. That figure is arithmetic on `Design/Interface.md` §1's touch target, not a measurement: four times
 48, which is 36.6 mm in radius at 5.24 authored pixels per millimetre.
 
+**CONFIRMED by the owner on the Surface Pro, 2026-09-23.** 192 pixels is the right circle, and the raking-camera case does not select the wrong
+ships badly enough to matter. The mitigation that is one number stays unused.
+
 **This supersedes `Design/Interface.md` §3's hold-then-drag band select**, which was written on the same
 day and never built.

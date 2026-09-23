@@ -255,9 +255,11 @@ can be trusted for the next figure it is asked for. Two orders of magnitude unde
 Two remain owed at **M1.16**:
 
 1. **The frame time with the sky present**, at both world scales, on the device — this is now the
-   measurement `ADR-016` actually needs, because a black screen was never the content.
-2. **Whether the fleet still reads against it** at the tactical zoom, which is the thing `ADR-005` is
-   worried about and is judged by looking rather than by a number.
+   measurement `ADR-016` actually needs, because a black screen was never the content. **TAKEN
+   2026-09-23**: 1,539 µs mean at the 1:1 scale that ships and 1,096 at 0.5, `Release|ARM64`, with the
+   sky, three hulls and the panels. Both are in ADR-016's Measurements.
+2. ~~**Whether the fleet still reads against it** at the tactical zoom, which is the thing `ADR-005` is
+   worried about and is judged by looking rather than by a number.~~ — **CONFIRMED by the owner on the Surface Pro, 2026-09-23.**
 3. ~~**Whether the sky looks like a sky.**~~ **Answered above on the third look.** The failure modes it
    named were the right ones and two of them actually happened: faint stars in the frame but not on the
    glass, twice, for two different reasons. The third — oversaturated colour reading as confetti — never

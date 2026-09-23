@@ -913,6 +913,31 @@ seven, and two ADRs added their own since this step was written:
 
 **Done when:** all of them are answered on hardware and written into the documents that asked for them.
 
+**THE HAND SESSION WAS HELD ON 2026-09-23, AND M1.16 IS NOT YET CLOSED.** The owner confirmed on the
+Surface Pro:
+
+- **1, the circle.** 192 pixels is right, and the raking case is acceptable (ADR-010).
+- **2, the text.** It reads at 24 authored pixels.
+- **4, the gesture constants.** The 16-pixel tap slop, the pick radius and the double-tap window all stand.
+- **5, the camera.** The ground sticks, and orbit is usable one-handed on a kickstand, so orbit survives
+  (ADR-018).
+- **6, in part.** The fleet reads against the sky (ADR-019).
+- **7, the link-silence threshold.** A resume shows the overlay and clears it. M1.15's run logged the
+  same cycle six times.
+- **M1.14c's half.** A two-player match draws as it did.
+
+Each is written where it was asked. **3 is measured**, above, and **6's frame time is measured at both
+scales**: 1,539 µs at 1:1 and 1,096 at 0.5, in ADR-016. **What is still open is one number, and it
+cannot be judged by eye:**
+
+- **Tap-to-visible re-run against the 76 ms** (ADR-024's fifth). The session logged no `TAPVISIBLE`
+  line. The instrument watches the *first drawn entity* and arms only on a tap that orders it while it
+  is parked. That was right for M0's one ship and may not be for M1's match, whose first record need
+  not be a ship the player owns.
+
+`Interface.md` §7 also lists two items the session did not cover: **whether occlusion binds** (its 4)
+and **the near end of the zoom range** (its 7, which is M1.8's pin).
+
 ---
 
 ## Leaving M1

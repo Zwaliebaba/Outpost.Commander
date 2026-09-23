@@ -155,6 +155,21 @@ under it.
    geometry rather than shading. **The headroom question stays open**, but it is no longer open over an
    empty frame.
 
+   **WITH THE SKY AND THE INTERFACE, BOTH SCALES, 2026-09-23** — M1.16, the same device, ARM64 Release,
+   one sample, over 3,600 frames. The whole frame is split into three spans by the two timestamps
+   `TechnicalDesign.md` §9.6 describes. The 0.5 figure is from a build with the denominator set to 2 for
+   the run and reverted after:
+
+   | world scale | whole frame | world | present | interface |
+   |---|---|---|---|---|
+   | **1:1** | **1,539** | 852 | 636 | 50 |
+   | **0.5** | **1,096** | 413 | 605 | 77 |
+
+   **1:1 now costs 443 microseconds more than 0.5**, against 252 over the empty frame, and nearly all of
+   that is the world pass, which halves with its pixels. **9.2% of a 16.67 ms budget at the scale that
+   ships**, so the decision below still holds with the whole of the MVP's content in the frame except
+   bloom. The present barely moves between the scales because it writes the full back buffer at both.
+
    **The four-sample half is not here and is not yet takeable.** A multisampled scene target needs a
    resolve before the present step can sample it, `SceneTarget.cpp` asserts that at compile time, and the
    resolve does not exist. It stays a standing obligation, as `Design/Plan/README.md` measurement 5 says.

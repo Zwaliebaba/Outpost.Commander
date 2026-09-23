@@ -88,7 +88,8 @@ gesture budget has been.
 
 The register has one entry open, but several answers are **confirmations owed against hardware** rather
 than choices already validated: whether 192 pixels is the right selection circle and whether the interface
-pass outweighs the world pass, both at M1; and whether the repaired raid arithmetic and the station's safe
+pass outweighs the world pass, both at M1 and **both settled on 2026-09-23** — the circle confirmed by the
+owner, and the interface measured at 50 µs against the world's 852; and whether the repaired raid arithmetic and the station's safe
 zone actually play, at M3.
 
 And M0 exists to answer questions rather than to build a game. Three of them are uncomfortable:
