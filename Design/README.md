@@ -59,7 +59,7 @@ and nothing else does. This is what makes the MVP reachable, and the tactical z-
 **Replication is prioritized absolute-state records, one whole datagram at a time**
 ([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)). R19 already ruled out lockstep by refusing
 the client a simulation; every record is a self-contained fact about one entity at one tick, a per-client
-accumulator fills each **1,232-byte** update with the records most due, and a sweep guarantees nothing goes
+priority accumulator fills each **1,232-byte** update with the records most due, and a sweep guarantees nothing goes
 unrefreshed for long — so there is no baseline, no acknowledgment, no ordering and no fragmentation, at a
 hundred players as at two. The record's fields and the pinned payload are
 [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)'s. Updates go out at **20 Hz**, which is a

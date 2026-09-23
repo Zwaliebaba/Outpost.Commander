@@ -613,7 +613,7 @@ flooders. Past that it needs M1.14c.
 `DatagramTransport` and `PacketQueue` per bot, runs the one loop, and prints. Everything that decides
 lives in `GameClient`, where `GameClientTests` reaches it (R20):
 
-- **`BotPolicy`**, the player's decisions. It takes the bot's newest snapshot, its player and its
+- **`BotPolicy`**, the player's decisions. It takes the bot's replica store, its player and its
   `Neuron::Pcg32`, and returns zero or more `Command`s, acting only when the snapshot tick has advanced by
   its decision interval. It queues a `Build` its credits cover, occasionally sends a `CancelBuild`, and
   sends a `MoveTo` for a random subset of its own ships to a point inside the playfield (`BuildMoveCommand`
@@ -623,8 +623,8 @@ lives in `GameClient`, where `GameClientTests` reaches it (R20):
 - **`FloodSchedule`**, which says which malformed or refusable datagram a flooder sends on which harness
   tick: a join past a full match, a command from an unseated endpoint, a truncated header, a wrong
   version, and an impossible count. The malformed ones are built by hand, since the encoder would refuse them.
-- **`StressReport`**, the counters ADR-022 lists, including snapshot tick gaps and command-to-acknowledge
-  time, accumulated per role and formatted as text.
+- **`StressReport`**, the counters ADR-022 lists, including update tick gaps, the refresh interval per
+  entity and command-to-acknowledge time, accumulated per role and formatted as text.
 
 The decision interval, the churn interval and the flood rates are constants in their headers, with the
 reason written beside each, not tuned numbers.
@@ -644,7 +644,8 @@ Also **`AGENTS.md`**: in §2 the executables paragraph, the import table row
 Add `Bot/` to `.clang-tidy`'s `HeaderFilterRegex` if it names directories. `Scripts/CheckProjectFiles.py`
 finds the project by itself, so check it passes and don't edit it to make it pass.
 
-**Not this step:** a player count past two, which is M1.14c's. A CI job running `Server` against the
+**Not this step:** ADR-024's replication and a player count past two, both M1.14c's; until it lands
+the harness runs at two seats against the snapshot as it stands. A CI job running `Server` against the
 harness, which ADR-022 names as enabled and which changes the workflow. And anything that makes a bot a
 better player, which is Q48.
 
@@ -665,49 +666,79 @@ better player, which is Q48.
 - **What needs the owner:** ruling ADR-022. **This step doesn't close M1.15.** That gate asks whether two
   *people* can play.
 
-### M1.14c — Ownership by group, and a player count past four · `GameCore`, `GameLogic`, `GameClient`, `Server` · all three suites · agent
+### M1.14c — ADR-024's replication, and the player count · `NeuronCore`, `GameCore`, `GameLogic`, `GameClient`, `Server` · every suite · agent
 
-**Read first:** [`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)
-in full, and **do not start while it is Proposed**. Then ADR-003's record and header, ADR-013, M0.9, and
-`.claude/skills/datagram-budget/`, **whose script is run before and after**.
+**Read first:** [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) in full, then
+[`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md); ADR-003 as cut down, for the record's
+field semantics and the command path, which do not move; `TechnicalDesign.md` §4 and §6; `OpenQuestions.md`
+Q49; `.claude/skills/datagram-budget/`, **whose script is run before and after**, and
+`.claude/skills/determinism-audit/`, because the accumulator lives in `GameLogic` and must not touch the
+tick. **There is no backward compatibility to keep**: the owner ruled it, so the old snapshot goes rather
+than being kept beside the new update.
 
-**Adds:** the format half and the stress half of ADR-023, in two commits in that order, because the
-format half has a deadline and the stress half doesn't.
+**Adds:** the replication of ADR-024 end to end, in four commits in this order, and the player count of
+ADR-023 in a fifth.
 
-1. **The format.** The per-player block gains a two-byte `entityCount`. The encoder emits records grouped
-   by owner in ascending identity index, with any unowned records last. The two team bits leave the flags
-   byte, and the decoder gains a `SnapshotFault` for group counts that exceed the entity count. The
-   replica store records each entity's owner as it decodes, and `GameClient/HitTest.cpp` reads it from
-   there, not from `flags`. `Scripts/DatagramBudget.py`'s model gains the field and the two freed bits.
-2. **The count.** `Server` takes the player count and a stress switch on its command line, and refuses a
-   count above four without the switch or above what the entity index can hold at `Begin`. The per-player
-   arrays in `CommandIntake`, `Sessions` and `BuildSystem` are sized at `Begin`. `GameCore/Layout.h`
-   gains the stress layout above four, through the sine table. A client past the palette draws the last
-   team color. **The encoder still refuses a snapshot past 1,232 B**: until M4.2, the run chooses a fleet
-   size that fits, and the harness's player policy takes a ship cap on its command line to do that.
+1. **The wire.** `PacketHeader` loses its two fragment fields and is four bytes. `EntityRecord` is twelve:
+   a three-byte identity (16-bit index, 8-bit generation, and `WIRE_INDEX_BITS` moves with it), an owner
+   byte, and the team bits gone from `flags`. `Snapshot` becomes `Update`: the twenty-one-byte header
+   with the live entity count and **the recipient's own block**, then records, then three-byte removals,
+   then seven-byte fire events. `CommandPacket`'s header gains the view center and radius, and a selected
+   identity is three bytes. `EncodedSize` of a full update is what `GameCoreTests` measures, and the
+   figure goes into ADR-024's Measurements in the same commit.
+2. **The host.** `GameLogic/Accumulator.h` `.cpp`: per session, a score and a last-sent tick per live
+   entity; the relevance sum at Q49's weights, each a named constant with its reason; the sweep computed
+   from the live count; removals and fire events queued per session with their repeat counts; and
+   `Fill`, which returns up to `UPDATES_PER_TICK` (two) whole updates for one client from the world.
+   `Host.cpp` calls it per session instead of `BuildSnapshot`, and resets a session's scores on
+   `Rejoined`. **Nothing in `Tick` changes.** The accumulator reads the world after the tick and writes
+   nothing the hash covers; `CheckDeterminism.py --review` will still see it, and the `determinism-audit`
+   skill's judgment for it is stated in ADR-024.
+3. **The client.** `ReplicaStore` holds two samples per entity by tick, drops a record whose tick is not
+   newer, holds an entity with no sample past the render time, and forgets one three sweeps silent.
+   `ClientFrame::DrainPackets` decodes updates, applies removals it has not seen, and clears the store on
+   a rejoin. `HitTest` reads the owner from the record. The command packet carries the camera's view
+   center and radius, which `Camera` already knows. `Panels` reads credits and the build item from the
+   own block.
+4. **The bot** (M1.14b) needs no change beyond recompiling, which is the point of reusing `GameClient`,
+   and its report now carries the refresh interval per entity, which is ADR-022's added measurement.
+5. **The count.** `Server` takes `--players N` and `--stress` and refuses a count above four without
+   the switch or above what the entity index holds. `Sessions`, `CommandIntake` and `BuildSystem` size
+   their per-player state at `Begin`. `GameCore/Layout.h` gains the layout above four through the sine
+   table. `Panels` draws a player past the palette in the last team color.
 
-**Files:** `GameCore/Snapshot.h` `.cpp`, `GameCore/EntityRecord.h`, `GameCore/Entity.h`,
-`GameCore/Layout.h` `.cpp`; `GameLogic/Host.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`,
-`GameLogic/CommandIntake.h` `.cpp`, `GameLogic/BuildSystem.h` `.cpp`; `Server/Server.cpp`;
-`GameClient/ReplicaStore.h` `.cpp`, `GameClient/HitTest.h` `.cpp`, `GameClient/Panels.cpp`; the tests in
-`GameCoreTests`, `GameLogicTests` and `GameClientTests`; `Scripts/DatagramBudget.py`. **And every
-document that states the header or the record**: `TechnicalDesign.md` §4 (the table and the per-player
-list), ADR-003's field list and cost table, and the comments in `Snapshot.h` and `EntityRecord.h` that
-spell out thirty and forty-six bytes. `CheckDesign.py` recomputes the datagram figures and will say which
-it missed.
+**Files:** `NeuronCore/PacketHeader.h` `.cpp`; `GameCore/EntityRecord.h` `.cpp`, `GameCore/Entity.h`,
+`GameCore/Snapshot.h` `.cpp` **renamed** `Update.h` `.cpp`, `GameCore/Command.h` `.cpp`,
+`GameCore/Layout.h` `.cpp`; `GameCore.vcxitems` + `.filters`; `GameLogic/Accumulator.h` `.cpp`,
+`GameLogic/Host.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`, `GameLogic/CommandIntake.h` `.cpp`,
+`GameLogic/BuildSystem.h` `.cpp`; `GameLogic.vcxproj` + `.filters`; `Server/Server.cpp`;
+`GameClient/ReplicaStore.h` `.cpp`, `GameClient/ClientFrame.h` `.cpp`, `GameClient/Interpolation.h`
+`.cpp`, `GameClient/HitTest.h` `.cpp`, `GameClient/Panels.cpp`, `GameClient/TapOrder.h` `.cpp`;
+`Tests/NeuronCoreTests/PacketHeaderTests.cpp`, `Tests/GameCoreTests/SnapshotTests.cpp` **renamed**
+`UpdateTests.cpp`, `Tests/GameCoreTests/CommandTests.cpp`, `Tests/GameCoreTests/LayoutTests.cpp`,
+`Tests/GameLogicTests/AccumulatorTests.cpp`, `Tests/GameLogicTests/HostTests.cpp`,
+`Tests/GameClientTests/ReplicaStoreTests.cpp`, `Tests/GameClientTests/ClientFrameTests.cpp`, and the
+suites' `.vcxproj` + `.filters`; `Scripts/DatagramBudget.py` if a width the encoder settles differs
+from its model; and **the documents that quote the figures**: ADR-024's Measurements, ADR-003's
+Measurements (a line saying the 1,137 is history), `TechnicalDesign.md` §4's table, and the comments
+in `EntityRecord.h` and `Update.h` that spell the widths out. `CheckDesign.py` recomputes the figures
+and will say which document it missed.
 
 **Done when:**
 
-- **What an agent can establish:** `EncodedSize` reproduces the budget script's figures at two and four
-  players (1,141 B and 2,261 B by ADR-023's arithmetic, or the script's figure if the model moved), and
-  those figures replace the arithmetic in ADR-023's Measurements. A snapshot round-trips with owned and
-  unowned records mixed, and one whose group counts overrun is refused by name. The layout at two and
-  four is unchanged, bit for bit, against M1.5's pinned output. Above four it is deterministic and every
-  start is inside the playfield. `CheckDesign.py` and `CheckDeterminism.py`, including `--review`, are
-  clean. **M1.7's determinism hash is re-run**: the state hash covers ownership, so any change to it is
-  something to explain, not something to accept.
-- **What needs a Windows machine:** a two-player match is unchanged on the device, and a stress run of
-  eight players at five ships each (901 B by ADR-023's table) seats eight harness players on one host.
+- **What an agent can establish:** `GameCoreTests` measures a full update at exactly the pinned payload
+  with 99 records at three removals and two fire events, and round-trips every record type. The
+  accumulator's suite pins that an update never exceeds the payload, that no entity goes a sweep unsent
+  whatever the scores, that a removal rides ten consecutive updates and a fire event three, that the
+  same world and view give the same sent set twice, and that a rejoin resets the scores.
+  `ReplicaStoreTests` pins the drop-older rule, the hold, and the three-sweep forget. **M1.7's
+  determinism test still hashes to `0x37f846ed90b74ca1`**, which is the proof nothing simulated moved.
+  `CheckDeterminism.py`, including `--review`, `CheckDesign.py` and `CheckProjectFiles.py` are clean.
+  The layout at two and four is unchanged bit for bit against M1.5's pinned output.
+- **What needs a Windows machine:** a two-player match on the device draws as it did — every entity every
+  tick, which the client's store can count — and ADR-003's loopback tap-to-visible of 76 ms is re-run and
+  has not moved. ADR-022's harness at eight players seats eight on `--players 8 --stress` and reports the
+  refresh interval per entity. Both are ADR-024's owed measurements and are written into it.
 
 ---
 

@@ -271,8 +271,8 @@ the correction.
 **The packet is filled oldest-first and stops when the next command will not fit.** "Repeated until
 acknowledged" bounds the packet by how many commands are outstanding, and nothing about the format bounds
 *that*: at the peak 110-identity selection a command is 338 bytes, so **three fit in the pinned 1,232-byte
-payload and a fourth would fragment**. What reaches six is not a fast player — touch cannot issue five orders in
-200 ms — it is a **stalled acknowledgment**: a host hitch or a run of lost snapshots, which is exactly the
+payload and a fourth would fragment**. What reaches four is not a fast player — touch cannot issue three orders in
+150 ms — it is a **stalled acknowledgment**: a host hitch or a run of lost snapshots, which is exactly the
 load under which a fragmented command packet is worst. Filling oldest-first makes the bound structural
 rather than a constant to tune: the packet cannot exceed the payload, no order is ever dropped, and the
 sequence never gains a gap — which matters because the host applies in sequence order and ignores anything

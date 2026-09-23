@@ -39,8 +39,12 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 # A figure earns a row by having actually drifted. Version pins are NOT checked here -- prose about a
 # version is usually a cautionary tale; Scripts/CheckProjectFiles.py reads the real project files.
 MANIFEST = [
-    ("snapshot rate", [r"[Ss]napshots go out at 10 Hz"], r"[Ss]napshots go out at\*{0,2} 20 Hz",
+    ("update rate", [r"[Ss]napshots go out at 10 Hz"], r"(?:[Ss]napshots|[Uu]pdates) go out at\*{0,2} 20 Hz",
      ["Design/TechnicalDesign.md"]),
+    # ADR-024 replaced the full snapshot; a document still asserting it as the design is stale.
+    ("the replication unit", [r"[Rr]eplication is full self-contained snapshots\*\*\s*\(",
+                              r"^\*\*Every snapshot is self-contained\.\*\*"],
+     r"priority accumulator", ["Design/TechnicalDesign.md", "Design/README.md"]),
     ("interpolation delay", [r"client renders \*{0,2}150 milliseconds\*{0,2} behind"],
      r"client renders \*{0,2}75 milliseconds\*{0,2} behind", ["Design/TechnicalDesign.md"]),
     ("MVP entity count", [r"\b102 entities in the reduced MVP"], r"\b110 entities in th\w* reduced MVP",
@@ -159,16 +163,21 @@ def check_datagram(root, files):
     budget = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(budget)
 
-    entities, record, header, total = budget.budget(2, 50, 4, 3, 0, 0)
+    b = budget.budget(2, 50, 4, 3, 2, 0, 0)
     pinned = budget.PINNED
-    headroom = pinned - total
-    derived = [(f"the snapshot ({total} B)", rf"\b{total:,}\b".replace(",", ",?")),
+    per_client = pinned * 20 / 1000
+    # ADR-024: the update's figures. The record and header widths are stated in prose as words or
+    # digits; the per-datagram count and the per-client rate are digits wherever they appear.
+    derived = [(f"the record ({b['record']} B)", r"\btwelve bytes\b|\b12 B\b|\brecord 12\b"),
+               (f"the header ({b['header']} B)", r"\b[Tt]wenty-one bytes\b|\b21 B\b|\bheader 21\b"),
+               (f"records per datagram ({b['records per datagram']})",
+                rf"\b{b['records per datagram']} records\b"),
                (f"the pin ({pinned} B)", rf"\b{pinned:,}\b".replace(",", ",?")),
-               (f"the headroom ({headroom} B)", rf"\b{headroom}\b")]
+               (f"the per-client rate ({per_client:.1f} KB/s)", rf"\b{per_client:.1f} KB/s")]
     for name, pattern in derived:
         where = [p for p in files if re.search(pattern, flat(p.read_text(encoding="utf-8")))]
         if not where:
-            faults.append(f"Design/: budget.py computes {name} and no document states it")
+            faults.append(f"Design/: DatagramBudget.py computes {name} and no document states it")
 
     # Any four-digit byte figure near the word "payload" that is not the pin is a stale pin.
     for path in files:

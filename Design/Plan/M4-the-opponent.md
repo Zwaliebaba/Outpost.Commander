@@ -27,9 +27,11 @@ generator's symmetry (M2.2), the AI count and the snapshot's per-player blocks a
 runtime player count, so this step should be small. **If it is not small, that is the finding**, and it is
 worth reporting as one rather than absorbing.
 
-**If ADR-023 is taken, M1.14c has already done most of this step.** The count is already a host argument
-and the arrays are already sized at `Begin`. What is left is running a real match at three and four, and
-the header figure below becomes that record's ten-byte-block total, not forty-six.
+**M1.14c has already done most of this step** ([`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)).
+The count is a host argument and the arrays are sized at `Begin`. What is left is running a real match at
+three and four. **The 46-byte header below is history**: since
+[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) the header is twenty-one bytes at any
+player count, and the criterion becomes that the four-player update measures the same as the two-player one.
 
 **Files:** `GameLogic/Match.cpp`, `GameCore/Snapshot.cpp`; tests in both suites extended.
 
@@ -48,9 +50,10 @@ all-or-nothing** under one sequence number with an index and a count, and an inc
 why: with a single slot, any cross-snapshot reorder discards a snapshot whose fragments had all arrived.
 That is the bug this step exists to not have.
 
-**If ADR-023 is taken, the fragment count is not two.** A stress run sends as many fragments as the header
-can count, and the reassembler holds partial sets of any size up to that, still all-or-nothing and still
-for the two most recent sequences.
+**SUPERSEDED BY ADR-024 ON 2026-09-23 AND NOT TO BE BUILT.** There is no fragmentation in the transport
+any more: the fragment fields left the packet header at M1.14c, and a datagram that would not fit is a
+datagram the accumulator does not send. The step is kept so the numbering and this milestone's count stand;
+its text below is what it was for.
 
 **Files:** `NeuronCore/Reassembler.h` `.cpp`; `NeuronCore.vcxitems` + `.filters`;
 `Tests/NeuronCoreTests/ReassemblerTests.cpp`.
@@ -63,13 +66,15 @@ arriving between fragments of *n*, with both delivered.
 
 **Read first:** ADR-003's cost table; `TechnicalDesign.md` §4; M0.9's measurement.
 
-**Adds:** nothing structural — the encoder already handles 220 entities and M0.9 already measured it. What
-this step does is **put the measured four-player size against ADR-003's 2,092-byte arithmetic** and
-confirm the two-datagram claim on the wire rather than in a test.
+**Adds:** nothing structural. Under [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) a
+four-player match sends the same 1,232-byte updates a two-player one does; what changes is the refresh
+interval, which the budget puts at every entity within two ticks at the cap of two updates. This step
+**measures that on the wire** with four real clients, and it is where Q49's weights get their first look
+with a full field on screen.
 
-**Done when:** a four-player match's snapshots are measured in flight; the fragment count matches the
-prediction; and **loss is re-measured, because snapshot loss is now roughly twice packet loss** rather than
-equal to it, which is the cost ADR-003 says returns with the fourth player.
+**Done when:** the refresh interval per entity is measured over a four-player match at the design's fleet
+and matches the budget's prediction; loss is measured and is packet loss, not a multiple of it; and Q49
+is either confirmed at its recommendation or moved, with the figure written beside the constant.
 
 ### M4.4 — The `Cruiser` reinstated · `GameCore` · `GameCoreTests` · agent
 
