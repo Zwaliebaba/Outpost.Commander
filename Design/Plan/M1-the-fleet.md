@@ -839,6 +839,9 @@ every other ship is always avoided. The device's exact case is now a test. The h
 `0xc8b1069f59fa3f85`, the same on all four pairs, because the scripted match's ships are all ordered as
 whole fleets.
 
+**CONFIRMED ON THE DEVICE, 2026-09-23**, by the owner: ships turn as they fly and go around stations and
+each other. **M1.17 is done.**
+
 **BUILT 2026-09-23, ALL FOUR PAIRS, NOT YET LOOKED AT.** `BearingOf` in `NeuronCore` is a binary
 search of the sine table's first octant, pinned exact at the cardinals and diagonals and within one
 step all the way round. Turn rate is `TURN_GAIN` × thrust ÷ mass: 23,400 for a Miner and 32,760 for a
@@ -966,7 +969,8 @@ seven, and two ADRs added their own since this step was written:
 
 **Done when:** all of them are answered on hardware and written into the documents that asked for them.
 
-**THE HAND SESSION WAS HELD ON 2026-09-23, AND M1.16 IS NOT YET CLOSED.** The owner confirmed on the
+**CLOSED 2026-09-23, with two of `Interface.md` §7's items carried forward** (see *Leaving M1*). **The
+hand session was held on 2026-09-23.** The owner confirmed on the
 Surface Pro:
 
 - **1, the circle.** 192 pixels is right, and the raking case is acceptable (ADR-010).
@@ -1004,6 +1008,41 @@ reads; and `GameCoreTests` covers every catalog combination including the `Cruis
 confirmations above; the determinism test run on all four pairs for the first time; and §9.6 struck
 through.
 
-**The thing to watch** is M1.2. If two ships and a station do **not** fall out of one catalog with no
+### M1 IS FINISHED, 2026-09-23
+
+**Closed on the owner's word, on the Surface Pro, and with every step and both gates behind it.** The
+criterion above is met, on one machine (`OpenQuestions.md` Q50):
+
+- **Two commanders on one host.** M1.15 held two seats from one host, played one foreground window at a
+  time, because only the window in front runs.
+- **Build, select, order, arrive.** Miners and Fighters come out of one catalog and are selected by tap
+  and by double tap. M1.17 made them turn as they fly and route around stations and each other, and a
+  fleet fills its ring without jamming. The owner confirmed all of it on the device.
+- **The interface reads.** M1.16 confirmed it, and the interface costs 50 µs against the world's 852.
+- **`GameCoreTests` covers every catalog combination**, the `Cruiser` included, now with a turn rate
+  beside every speed.
+
+**What M1 produced besides code:** ADR-013, ADR-022, ADR-023 and ADR-024; Q50 to Q53 on the register;
+M1.16's confirmations; tap-to-visible re-run by finger at 79 ms; the frame time at both world scales
+with the sky in it; §9.6 struck through; and the determinism test run on all four pairs three times,
+with the hash moved twice on purpose and now `0xc8b1069f59fa3f85`.
+
+**CARRIED FORWARD, NOT ANSWERED.** These three are open, and M1 closed without them by the owner's
+decision:
+
+1. **`Interface.md` §7 item 4, whether occlusion binds rather than reach**, and **item 7, the near end
+   of the zoom range.** Neither was part of the M1.16 session. Both are for the next hand session.
+2. **The tap-to-visible instrument measures the wrong onset since M1.17.** It fires on the first frame
+   the drawn *position* changes. A ship that now turns before it flies logged 414 to 665 ms in the last
+   session, and that is the turn, not the latency. `TechnicalDesign.md` §9.2 defines the onset as the
+   drawn *heading* changing. So the instrument should fire on either, and be re-run against the 79 ms,
+   which was taken before ships turned and stays M1's figure.
+
+**The thing that was watched** was M1.2, and it held. No stat and no rule special-cases a station.
+The one comparison with `DesignId::Station` in the simulation is `BuildSystem::StationOf`, which finds
+the entity that owns a player's build queue. That is a lookup, not a rule. M1.17's structures are
+"anything with no drive", which is a derived stat, not a name.
+
+**The thing to watch** was M1.2. If two ships and a station do **not** fall out of one catalog with no
 special case — if a `if (design == Station)` appears anywhere in the simulation — then ADR-006's central
 claim is wrong and it is worth saying so loudly while the tree is still small enough to act on it.

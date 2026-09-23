@@ -43,9 +43,12 @@ when the owner ruled that this game is tested on one machine and withdrew their 
 present, the gesture seam, the camera, the world draw and the packaged client. A tap on a Surface Pro
 moves a ship that the host, not the client, decided had moved.
 
-**M1'S CODE IS IN AND ITS HOST-SIDE MEASUREMENTS ARE TAKEN. M1.15 IS CLOSED AND M1.16 IS NOT.** M1.15 closed
-on 2026-09-23 on its fallback: two seats on one host, played one foreground window at a time, because only
-the window in front runs. M1.1 to M1.14c are built, and M1.15 and M1.16 are a hand's.
+**M1 IS FINISHED, 2026-09-23**, on the owner's word and with both gates closed. M1.15 closed on its
+fallback: two seats on one host, played one foreground window at a time, because only the window in
+front runs. M1.16's session confirmed the interface, the camera and the gestures. M1.17, found by that
+session, made ships turn as they fly and route around stations and each other (Q51 to Q53). **Three
+things are carried forward rather than answered**, and `M1-the-fleet.md` *Leaving M1* names them. What
+follows is how it stood as M1 was built.
 What that adds up to is a match you can look at: two stations placed 12,000 units apart on a seed both
 sides derive, a station that builds and refunds, fifty ships that take a ring slot each rather than
 stacking, a camera that sticks to the finger and opens on your own base, a tap that selects, expands and

@@ -579,7 +579,8 @@ rather than by arguing about it:
    that decides how often an intended order becomes a pan. The 24-pixel pick radius and the 300-millisecond
    double-tap window are the other two, and all three are single constants behind a tested pure function.~~
    — **CONFIRMED by the owner on the Surface Pro, 2026-09-23.** All three constants stand.
-4. **Whether occlusion, rather than reach, is the constraint that binds.** Which side the panels go on is
+4. **Whether occlusion, rather than reach, is the constraint that binds.** *Not checked at M1, which closed
+   without it on 2026-09-23; carried to the next hand session.* Which side the panels go on is
    answered (`OpenQuestions.md` Q33: a setting, right-handed by default); whether the model behind it is
    right is what playing checks.
 5. ~~**Whether the ground actually sticks to the finger** across the pitch range
@@ -589,7 +590,7 @@ rather than by arguing about it:
    one that decides whether orbit and its three protecting constants survive §5's kill-switch.~~ —
    **CONFIRMED by the owner on the Surface Pro, 2026-09-23.** Orbit survives.
 7. **The near end of the zoom range** (§5), which is the only one of the two that arithmetic does not
-   already give.
+   already give. *Not checked at M1 either, and carried forward with item 4.*
 
 **Anything a second player needs to say to a first is out of the MVP deliberately.** There is no chat, no
 ping and no map drawing; solo against AI is the only configuration the MVP can test, and the gesture a
