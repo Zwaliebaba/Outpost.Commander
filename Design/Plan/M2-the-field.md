@@ -443,6 +443,30 @@ this step proves**, and it is what ADR-015 claims about levels being component i
 **Done when:** derived stats are pinned for every module at every level, and the suite fails if a level's
 cost or hull is changed without the test being updated.
 
+**BUILT, 2026-09-23, AND SMALLER THAN WRITTEN.** The `ModuleFrame` hull and the four module components were
+already in the catalog from M1.2. What was missing were **the module designs**: ADR-015 makes a module a
+design, and M2.11 needs a `DesignId` to create one. So `DesignId` gains `ModuleShipyardL1`, `L2`,
+`ModuleOreProcessorL1` and `L2`, named as their meshes are. Each is a frame, no drive, and one component,
+with **one row per level**, and none is buildable because a module is placed by a tap. **The derivation did
+not change**, which is the claim this step exists to prove.
+
+**One figure settled rather than invented: the frame costs nothing.** `Catalog.h` said a frame's cost was
+M2's. `GameDesign.md` §5 and `design_handoff_hud`'s build panel both price a module by its level: 400,
+700, 350, 600. That is the component's cost, so the frame adds none and a module's derived cost is the
+design's figure.
+
+`DerivedStatsTests`' `EveryModuleIsPinnedAtEveryLevel` pins each level by literal: frame, no drive, its
+component and multiplier, cost, 1,500 hull points, no mass, speed, damage or ore, and not buildable.
+`TheModuleFrameAddsNoCost` pins the frame's zero. The panels name the modules as the handoff does.
+
+**Left for M2.11, because nothing creates a module before it:**
+- `TierOf` still sends a tap on any own non-station entity to the own-ship tier, where `Interface.md` §1
+  puts modules with the station.
+- `MeshNameForDesign` answers `ModuleFrame` for all four, which nothing loads yet (M2.10b).
+- Whether an L2 upgrade costs its full figure or the difference is unsettled.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC.**
+
 ---
 
 ### M2.10 — Placement validity · `GameCore` · `GameCoreTests` · agent

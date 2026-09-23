@@ -24,7 +24,15 @@ enum class DesignId : std::uint8_t
 {
   Miner,
   Fighter,
-  Station
+  Station,
+
+  /// **THE FOUR MODULES** (M2.9, ADR-015): a `ModuleFrame` carrying one module component, **one row per
+  /// level**, because each level is its own component identity and upgrading replaces one with the next.
+  /// Named as their meshes are (`Design/design_handoff_meshes/`).
+  ModuleShipyardL1,
+  ModuleShipyardL2,
+  ModuleOreProcessorL1,
+  ModuleOreProcessorL2
 };
 
 /// The largest slot count any hull in the catalog has -- the `Cruiser`'s four.
@@ -57,8 +65,8 @@ struct DesignEntry
   /// property of the ROW, which is what R24 asks for, rather than a rule somewhere that knows a
   /// `Station` is special.
   ///
-  /// A module is a design too, from M2 (ADR-015), and it is placed by tap rather than queued, so
-  /// it will be false here as well.
+  /// A module is a design too (ADR-015, M2.9), and it is placed by tap rather than queued, so it is
+  /// false here as well: the build panel's module row is M2.11's, not this flag's.
   bool buildable = false;
 
   [[nodiscard]] friend constexpr bool operator==(const DesignEntry&, const DesignEntry&) noexcept = default;

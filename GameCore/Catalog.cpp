@@ -27,8 +27,9 @@ constexpr std::array<HullEntry, 5> HULLS{{
   // is this zero, and it means the hull is damaged through section 7's size-class table instead.
   //
   // MASS AND COST ARE ZERO AND THAT IS THE DESIGN'S DASH, not a gap: neither carries a drive, so
-  // nothing divides by the mass, and neither is a row in a build menu this sums for -- a station is
-  // placed by the generator and a module frame's cost is M2's (ADR-015).
+  // nothing divides by the mass. A station is placed by the generator, and **a module frame costs
+  // nothing on its own** (M2.9): `GameDesign.md` section 5 prices a module by its level -- 400, 700, 350,
+  // 600 -- and that is the component's cost, so the frame adds none and the sum is the design's figure.
   {.id = HullId::Station,
    .slotCount = 2,
    .hullPoints = 8000,

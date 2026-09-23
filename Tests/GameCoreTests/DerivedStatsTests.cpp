@@ -204,6 +204,53 @@ public:
     Assert::IsFalse(Outpost::Derive(Outpost::DesignId::Miner).acceptsOre);
   }
 
+  /// **EVERY MODULE AT EVERY LEVEL, PINNED BY LITERAL** (M2.9, ADR-015). A module is a `ModuleFrame` with one
+  /// component and no drive, and the derivation needed no change to price it -- which is what this step proves.
+  /// The literals are `GameDesign.md` section 5's table, so a level whose cost, hull or component moves fails
+  /// here until this is updated with it.
+  TEST_METHOD(EveryModuleIsPinnedAtEveryLevel)
+  {
+    struct Expected
+    {
+      Outpost::DesignId design;
+      Outpost::ComponentId component;
+      std::uint32_t cost;
+      std::uint16_t multiplierPercent;
+    };
+    const Expected modules[] = {
+      {Outpost::DesignId::ModuleShipyardL1, Outpost::ComponentId::ShipyardL1, 400, 150},
+      {Outpost::DesignId::ModuleShipyardL2, Outpost::ComponentId::ShipyardL2, 700, 200},
+      {Outpost::DesignId::ModuleOreProcessorL1, Outpost::ComponentId::OreProcessorL1, 350, 125},
+      {Outpost::DesignId::ModuleOreProcessorL2, Outpost::ComponentId::OreProcessorL2, 600, 150},
+    };
+
+    for (const Expected& module : modules)
+    {
+      const Outpost::DesignEntry& design = Outpost::Design(module.design);
+      Assert::IsTrue(design.hull == Outpost::HullId::ModuleFrame, L"a module is not on a module frame");
+      Assert::IsTrue(design.drive == Outpost::DriveId::None, L"a module has a drive");
+      Assert::IsTrue(design.slots[0] == module.component, L"a level carries the wrong component");
+      Assert::IsFalse(design.buildable, L"a module is placed by a tap, not queued");
+      Assert::AreEqual(static_cast<int>(module.multiplierPercent), static_cast<int>(Outpost::Component(design.slots[0]).multiplierPercent));
+
+      const Outpost::DerivedStats stats = Outpost::Derive(module.design);
+      Assert::AreEqual(module.cost, stats.cost, L"a module's price moved");
+      Assert::AreEqual(1500u, stats.hullPoints);
+      Assert::AreEqual(0u, stats.mass);
+      Assert::AreEqual(0u, stats.speedUnitsPerSecond, L"a module moved");
+      Assert::AreEqual(0u, stats.damagePerSecond);
+      Assert::AreEqual(0u, stats.oreCapacity);
+      Assert::IsFalse(stats.acceptsOre, L"a module accepts ore: an ore processor multiplies deliveries, it does not take them");
+    }
+  }
+
+  /// **THE FRAME COSTS NOTHING**, so a module's price is its component's and nothing is counted twice.
+  TEST_METHOD(TheModuleFrameAddsNoCost)
+  {
+    Assert::AreEqual(0, static_cast<int>(Outpost::Hull(Outpost::HullId::ModuleFrame).cost));
+    Assert::AreEqual(1, static_cast<int>(Outpost::Hull(Outpost::HullId::ModuleFrame).slotCount));
+  }
+
   /// `GameDesign.md` section 6's relations, asserted rather than left to a reader comparing rows.
   TEST_METHOD(TheBurnDriveIsMoreThrustForMoreMassAndMoreCost)
   {

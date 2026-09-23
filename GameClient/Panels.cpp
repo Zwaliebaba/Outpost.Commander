@@ -121,6 +121,15 @@ private:
     return L"FIGHTER";
   case DesignId::Station:
     return L"STATION";
+  // `design_handoff_hud`'s build panel names, which M2.11's two-line buttons split at the space.
+  case DesignId::ModuleShipyardL1:
+    return L"SHIPYARD L1";
+  case DesignId::ModuleShipyardL2:
+    return L"SHIPYARD L2";
+  case DesignId::ModuleOreProcessorL1:
+    return L"ORE PROC L1";
+  case DesignId::ModuleOreProcessorL2:
+    return L"ORE PROC L2";
   }
   return L"";
 }

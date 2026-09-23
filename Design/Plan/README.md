@@ -81,7 +81,8 @@ deliberately, to `0xc8f7f00e056d4d46`**, and the four-pair run is owed again (AD
 loop pay**: credits come from what is unloaded, cargo reaches the selection panel as chips, and income shows
 only as the change flash (Q36, Q53). The pin moved again, to `0x18e094912655348f`. **M2.8 lets a player
 ask for it**: a tap on a rock, aimed where the rock is drawn, sends the miners in the selection to mine it
-and the rest to it, in one packet. That leaves M2.9 onward, the modules, and the three gates.
+and the rest to it, in one packet. **M2.9 adds the four module designs**: a free frame plus a component each, so a module's price is §5's
+figure. That leaves M2.10 onward, placing and building modules, and the three gates.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

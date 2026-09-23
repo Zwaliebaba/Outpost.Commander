@@ -98,8 +98,8 @@ struct HullEntry
   /// mass is unobservable without one, because nothing divides by it.
   std::uint16_t mass = 0;
 
-  /// Q46, and zero for the two base structures -- a station is placed by the generator and a module
-  /// frame's cost is M2's (ADR-015), so neither is a row in a build menu that this sums for.
+  /// Q46, and zero for the two base structures -- a station is placed by the generator, and a module is
+  /// priced by its component alone (M2.9, `GameDesign.md` section 5), so the frame adds nothing.
   std::uint16_t cost = 0;
 
   /// **ONLY THE TWO BASE STRUCTURES CARRY ONE** (`GameDesign.md` section 6). Zero means the hull is
