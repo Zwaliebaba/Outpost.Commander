@@ -386,6 +386,12 @@ they do not overlap and what sets how far in front of a station a new ship appea
 is the one row no file backs**, because nothing authored a mesh for a design the MVP cut; M4 authors to
 the number rather than the other way round. M1.9 adds the script that compares the two statements.
 
+**`ModuleFrame` moved from 84 to 90 at M2.10b, by this ruling's own rule.** Each module level draws with its
+own mesh, and both shipyards are 90 units long where the bare frame is 83.52 — so a hull is bounded by every
+mesh that draws it, and `Scripts/CheckMeshes.py` and `HullMeshTests` now take the longest of them. At 84, two
+shipyards placed exactly clear would have overlapped by six units. M2.10's clearances follow: 155 from the
+station and 90 between modules.
+
 It landed at M1.6 rather than M1.9 because the build system needed a spawn offset and deriving one from
 two hull sizes beat inventing a distance.
 

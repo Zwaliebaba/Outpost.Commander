@@ -32,7 +32,7 @@ namespace
 } // namespace
 
 /// M2.10. **The five refusals and the accept, each on its own**, against a station at the origin: a 220-unit
-/// station and 84-unit frames, so a frame clears the station at 152 and another frame at 84.
+/// station and 90-unit frames (M2.10b), so a frame clears the station at 155 and another frame at 90.
 TEST_CLASS(TheModuleSite)
 {
 public:
@@ -72,21 +72,21 @@ public:
     Assert::AreEqual(Code(Outpost::ModuleSiteFault::OutsideRadius), Code(past.fault));
   }
 
-  /// **TOUCHING THE STATION IS CLEAR, AND A STEP CLOSER IS NOT**: 110 + 42 = 152.
+  /// **TOUCHING THE STATION IS CLEAR, AND A STEP CLOSER IS NOT**: 110 + 45 = 155.
   TEST_METHOD(AFrameOverlappingTheStationIsRefused)
   {
-    Assert::IsTrue(Check({}, At(152, 0)).Legal());
-    const Outpost::ModuleSiteVerdict inside = Check({}, Neuron::Vec2{.x = (152 * Neuron::FIXED_ONE) - 1, .y = 0});
+    Assert::IsTrue(Check({}, At(155, 0)).Legal());
+    const Outpost::ModuleSiteVerdict inside = Check({}, Neuron::Vec2{.x = (155 * Neuron::FIXED_ONE) - 1, .y = 0});
     Assert::AreEqual(Code(Outpost::ModuleSiteFault::OnStation), Code(inside.fault));
     Assert::AreEqual(Code(Outpost::ModuleSiteFault::OnStation), Code(Check({}, At(0, 0)).fault));
   }
 
-  /// **TOUCHING ANOTHER FRAME IS CLEAR, AND A STEP CLOSER IS NOT**: 42 + 42 = 84.
+  /// **TOUCHING ANOTHER FRAME IS CLEAR, AND A STEP CLOSER IS NOT**: 45 + 45 = 90.
   TEST_METHOD(AFrameOverlappingAnotherModuleIsRefused)
   {
     const std::vector<Outpost::PlacedModule> one{Module(7, 300, 0)};
-    Assert::IsTrue(Check(one, At(300, 84)).Legal());
-    const Outpost::ModuleSiteVerdict overlap = Check(one, Neuron::Vec2{.x = 300 * Neuron::FIXED_ONE, .y = (84 * Neuron::FIXED_ONE) - 1});
+    Assert::IsTrue(Check(one, At(300, 90)).Legal());
+    const Outpost::ModuleSiteVerdict overlap = Check(one, Neuron::Vec2{.x = 300 * Neuron::FIXED_ONE, .y = (90 * Neuron::FIXED_ONE) - 1});
     Assert::AreEqual(Code(Outpost::ModuleSiteFault::OnModule), Code(overlap.fault));
     Assert::AreEqual(Outpost::WireIdentity{7}, overlap.blockedBy);
   }

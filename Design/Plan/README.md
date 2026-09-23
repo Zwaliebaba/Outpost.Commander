@@ -82,8 +82,9 @@ loop pay**: credits come from what is unloaded, cargo reaches the selection pane
 only as the change flash (Q36, Q53). The pin moved again, to `0x18e094912655348f`. **M2.8 lets a player
 ask for it**: a tap on a rock, aimed where the rock is drawn, sends the miners in the selection to mine it
 and the rest to it, in one packet. **M2.9 adds the four module designs**: a free frame plus a component each, so a module's price is §5's
-figure, and **M2.10 the one rule for where a module may go**, which both sides will call. That leaves
-M2.10b onward, drawing, placing and building modules, and the three gates.
+figure, and **M2.10 the one rule for where a module may go**, which both sides will call. **M2.10b draws
+each module level with its own mesh**, and found that the frame's size had to be the longest of them: 90,
+not 84. That leaves M2.11 onward, placing and building modules, and the three gates.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

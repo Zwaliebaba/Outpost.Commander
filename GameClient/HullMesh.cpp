@@ -10,9 +10,11 @@ namespace Outpost
 
 namespace
 {
-/// The three the client uploads at M1.9. The other ten in the catalog are M2's modules and
-/// asteroids; listing them here would allocate buffers for geometry nothing draws.
-constexpr std::array<std::string_view, 3> SHIPPED_AT_M1{"Scout", "Frigate", "Station"};
+/// Every mesh a design draws with: M1.9's three and, since M2.10b, one per module level. The bare
+/// `ModuleFrame` and the five asteroids are not here -- no design draws the first, and the second are
+/// `AsteroidMesh`'s, baked per match rather than instanced per entity.
+constexpr std::array<std::string_view, SHIPPED_MESH_COUNT> SHIPPED_MESHES{
+  "Scout", "Frigate", "Station", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2"};
 
 /// **A CHANNEL, AS A FRACTION.** The file stores the colour as a 32-bit DWORD the converter wrote
 /// little-endian, so the low byte is red: `0x00BBGGRR` with alpha on top.
@@ -65,6 +67,24 @@ std::string_view MeshNameForHull(HullId _hull) noexcept
 
 std::string_view MeshNameForDesign(DesignId _design) noexcept
 {
+  // **A MODULE IS DRAWN BY ITS LEVEL, NOT ITS HULL** (M2.10b). All four share the `ModuleFrame` hull, and
+  // ADR-015's raid depends on telling a shipyard from an ore processor at a glance -- which one frame mesh
+  // drawn four ways could not do, and four authored meshes can. Every other design draws its hull.
+  switch (_design)
+  {
+  case DesignId::ModuleShipyardL1:
+    return "ModuleShipyardL1";
+  case DesignId::ModuleShipyardL2:
+    return "ModuleShipyardL2";
+  case DesignId::ModuleOreProcessorL1:
+    return "ModuleOreProcessorL1";
+  case DesignId::ModuleOreProcessorL2:
+    return "ModuleOreProcessorL2";
+  case DesignId::Miner:
+  case DesignId::Fighter:
+  case DesignId::Station:
+    break;
+  }
   if (static_cast<std::size_t>(_design) >= Designs().size())
   {
     return {};
@@ -72,9 +92,9 @@ std::string_view MeshNameForDesign(DesignId _design) noexcept
   return MeshNameForHull(Design(_design).hull);
 }
 
-std::span<const std::string_view> MeshesShippedAtM1() noexcept
+std::span<const std::string_view> ShippedMeshes() noexcept
 {
-  return SHIPPED_AT_M1;
+  return SHIPPED_MESHES;
 }
 
 bool LoadHullMesh(const Neuron::CmoMesh& _read, float _longestUnits, HullMesh& _outMesh)

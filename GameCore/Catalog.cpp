@@ -37,7 +37,7 @@ constexpr std::array<HullEntry, 5> HULLS{{
    .hitValue = 300,
    .sizeUnits = 220,
    .acceptsOre = true},
-  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 84},
+  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 90},
 }};
 
 /// **`None` IS A ROW.** A hull with no drive does not move, and making absence an identity rather

@@ -338,13 +338,13 @@ void RunProbe(const CoreWindow& _window)
   // happen in and a Direct3D call.
   Neuron::WorldPass worldPass;
 
-  // M1.9: the hulls. One `MeshBuffer` for each of the three meshes that ship, one instanced draw
-  // apiece, and a ring of per-instance buffers so a frame is never written while the graphics
+  // M1.9: the hulls. One `MeshBuffer` for each mesh that ships -- three hulls and, since M2.10b, one per
+  // module level -- one instanced draw apiece, and a ring of per-instance buffers so a frame is never written while the graphics
   // processor is still reading the last one.
   Neuron::MeshPass meshPass;
   Neuron::InstanceRing instanceRing;
-  std::array<Neuron::MeshBuffer, 3> meshBuffers;
-  std::array<bool, 3> meshReady{};
+  std::array<Neuron::MeshBuffer, Outpost::SHIPPED_MESH_COUNT> meshBuffers;
+  std::array<bool, Outpost::SHIPPED_MESH_COUNT> meshReady{};
   std::uint32_t instanceFrame = 0;
 
   // M2.4: THE ASTEROID FIELD. The five variants as read, kept on the processor, and one static buffer
@@ -1028,7 +1028,7 @@ void RunProbe(const CoreWindow& _window)
       meshesLoaded = true;
       for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
       {
-        const std::string_view name = Outpost::MeshesShippedAtM1()[slot];
+        const std::string_view name = Outpost::ShippedMeshes()[slot];
         Outpost::HullMesh hull;
         if (!ReadShippedMesh(name, log, hull))
         {
@@ -1162,7 +1162,7 @@ void RunProbe(const CoreWindow& _window)
 
           // One list per shipped mesh. Cleared and refilled every frame rather than kept: the store
           // already carries what is worth carrying across frames, and this is only the drawing of it.
-          std::array<std::vector<Neuron::MeshInstance>, 3> instances;
+          std::array<std::vector<Neuron::MeshInstance>, Outpost::SHIPPED_MESH_COUNT> instances;
 
           for (const Outpost::EntityRecord& shown : drawnRecords)
           {
@@ -1179,7 +1179,7 @@ void RunProbe(const CoreWindow& _window)
             std::size_t bucket = meshBuffers.size();
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
-              if (Outpost::MeshesShippedAtM1()[slot] == meshName)
+              if (Outpost::ShippedMeshes()[slot] == meshName)
               {
                 bucket = slot;
                 break;
@@ -1253,8 +1253,8 @@ void RunProbe(const CoreWindow& _window)
             // so the three shapes are concatenated first and each draw points at its own offset --
             // three separate writes would each start at zero and the last would win.
             std::vector<Neuron::MeshInstance> packed;
-            std::array<std::uint32_t, 3> firstInstance{};
-            std::array<std::uint32_t, 3> instanceCount{};
+            std::array<std::uint32_t, Outpost::SHIPPED_MESH_COUNT> firstInstance{};
+            std::array<std::uint32_t, Outpost::SHIPPED_MESH_COUNT> instanceCount{};
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
               firstInstance[slot] = static_cast<std::uint32_t>(packed.size());

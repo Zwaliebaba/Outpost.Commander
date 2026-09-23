@@ -73,8 +73,8 @@ struct ModuleSiteVerdict
 /// The checks run in a fixed order, so the fault is the same on both sides whatever the order of _existing:
 /// not a module, then the cap, then the radius, then the station, then the modules. **"Clear of" is the
 /// catalog's sizes** (Q37 made `sizeUnits` the bound that spaces things): two footprints are clear when their
-/// centers are at least half of each size apart -- 152 units from a 220-unit station for an 84-unit frame, and
-/// 84 between two frames. Touching is clear; overlapping by a step is not.
+/// centers are at least half of each size apart -- 155 units from a 220-unit station for a 90-unit frame, and
+/// 90 between two frames. Touching is clear; overlapping by a step is not.
 ///
 /// The radius is inclusive: a site exactly 400 out is inside it.
 [[nodiscard]] ModuleSiteVerdict CheckModuleSite(const Neuron::Vec2& _stationPosition, DesignId _stationDesign,

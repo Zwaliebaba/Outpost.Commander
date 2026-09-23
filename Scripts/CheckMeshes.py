@@ -371,14 +371,17 @@ def check_generated_catalog():
 
 CATALOG_PATH = os.path.join(REPO_ROOT, "GameCore", "Catalog.cpp")
 
-# Which mesh backs which hull. The Cruiser is deliberately absent: it is cut from the MVP
+# Which meshes draw which hull. The Cruiser is deliberately absent: it is cut from the MVP
 # (GameDesign.md section 6) so nothing authored a mesh for it, and M4 authors to the catalog's 150
 # rather than the other way round.
+#
+# A HULL IS BOUNDED BY EVERY MESH THAT DRAWS IT, and since M2.10b the ModuleFrame is drawn by five: the
+# bare frame and one mesh per module level. Its size is the longest of them, rounded up.
 HULL_MESHES = {
-    "Scout": "Scout",
-    "Frigate": "Frigate",
-    "Station": "Station",
-    "ModuleFrame": "ModuleFrame",
+    "Scout": ["Scout"],
+    "Frigate": ["Frigate"],
+    "Station": ["Station"],
+    "ModuleFrame": ["ModuleFrame", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2"],
 }
 
 
@@ -392,11 +395,14 @@ def check_catalog_sizes(manifest):
         return ["cannot read %s: %s" % (CATALOG_PATH, e)]
 
     by_name = {m["name"]: m for m in manifest["meshes"]}
-    for hull, mesh in sorted(HULL_MESHES.items()):
-        entry = by_name.get(mesh)
-        if entry is None:
-            problems.append("Q37: the manifest has no mesh named %s for hull %s" % (mesh, hull))
+    for hull, meshes in sorted(HULL_MESHES.items()):
+        entries = [by_name.get(mesh) for mesh in meshes]
+        missing = [mesh for mesh, entry in zip(meshes, entries) if entry is None]
+        if missing:
+            problems.append("Q37: the manifest has no mesh named %s for hull %s" % (", ".join(missing), hull))
             continue
+        longest_mesh, longest = max(((mesh, entry["extents"]["longest"]) for mesh, entry in zip(meshes, entries)),
+                                    key=lambda pair: pair[1])
 
         # The row, then its sizeUnits. Matched on the hull identity so a reordered table still works.
         row = re.search(r"\{\.id = HullId::" + hull + r"\b(.*?)\}", catalog, re.S)
@@ -410,11 +416,11 @@ def check_catalog_sizes(manifest):
             continue
 
         import math
-        authored = math.ceil(entry["extents"]["longest"] - 1e-9)
+        authored = math.ceil(longest - 1e-9)
         if int(stated.group(1)) != authored:
             problems.append("Q37: HullId::%s states sizeUnits %s, %s.cmo is %g units along its "
                             "longest axis (ceiling %d)"
-                            % (hull, stated.group(1), mesh, entry["extents"]["longest"], authored))
+                            % (hull, stated.group(1), longest_mesh, longest, authored))
 
     print("  Q37: %d hull sizes checked against their meshes" % len(HULL_MESHES))
     return problems

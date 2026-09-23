@@ -115,9 +115,13 @@ struct HullEntry
   /// makes this a row and not a comment. `Scripts/CheckMeshes.py` compares the two statements at
   /// M1.9; until then this is the one the simulation reasons with.
   ///
-  /// **ROUNDED UP, BECAUSE IT IS A BOUND.** The delivered `ModuleFrame` is 83.52 units across and
-  /// this says 84: the figure is used for spacing things so they do not overlap and for how far in
-  /// front of a station a new ship appears, and both want the larger number.
+  /// **ROUNDED UP, BECAUSE IT IS A BOUND.** The figure is used for spacing things so they do not overlap and
+  /// for how far in front of a station a new ship appears, and both want the larger number.
+  ///
+  /// **A HULL IS BOUNDED BY EVERY MESH THAT DRAWS IT**, and since M2.10b that is more than one for the
+  /// `ModuleFrame`: each module level has its own mesh, and both shipyards are 90 units long where the bare
+  /// frame is 83.52. So this says 90, which is the handoff's own "module envelope" -- where it said 84 until
+  /// then, and two shipyards placed exactly clear would have overlapped by six units.
   ///
   /// **THE `Cruiser` IS THE ONE ROW NO FILE BACKS.** It is cut from the MVP (`GameDesign.md`
   /// section 6) so no mesh was authored for it; 150 sits between the `Frigate`'s 90 and the

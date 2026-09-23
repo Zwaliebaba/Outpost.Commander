@@ -462,7 +462,7 @@ component and multiplier, cost, 1,500 hull points, no mass, speed, damage or ore
 **Left for M2.11, because nothing creates a module before it:**
 - `TierOf` still sends a tap on any own non-station entity to the own-ship tier, where `Interface.md` §1
   puts modules with the station.
-- `MeshNameForDesign` answers `ModuleFrame` for all four, which nothing loads yet (M2.10b).
+- `MeshNameForDesign` answers `ModuleFrame` for all four, which nothing loads yet (M2.10b, since done).
 - Whether an L2 upgrade costs its full figure or the difference is unsettled.
 
 **Compiled and run under g++ with a stand-in for the test framework, not under MSVC.**
@@ -496,8 +496,8 @@ modules in:
 5. overlapping another module.
 
 **"Clear of" is Q37's sizes**, which that ruling made the bound "used for spacing things so they do not
-overlap": centers at least half of each size apart. That is 152 from the station and 84 between frames, and
-touching is clear. **The blocker is the lowest identity among the overlaps**, found in one pass rather than
+overlap": centers at least half of each size apart. That is 155 from the station and 90 between frames since M2.10b
+moved the frame to 90 (84 when this step landed), and touching is clear. **The blocker is the lowest identity among the overlaps**, found in one pass rather than
 by sorting, so it cannot depend on list order (R16). `MODULE_BUILD_RADIUS_UNITS` and
 `MAXIMUM_MODULES_PER_STATION` are named, and a test holds the radius equal to point defense's range,
 ADR-015's reason for it.
@@ -552,6 +552,23 @@ cheaper if it works.
 **Done when:** a module draws as an instanced call off the same function as the hulls, four sit inside the
 400-unit placement radius without touching (M2.10), and **a shipyard is distinguishable from an ore
 processor at the tactical zoom** — which M2.13 judges rather than this step.
+
+**BUILT.** **Four authored meshes, one per level, rather than one frame drawn four ways** — the handoff
+delivered them, and the file-per-mesh rule makes each a draw call and nothing more. `MeshNameForDesign`
+answers a module's level mesh and every other design's hull mesh; `ShippedMeshes()` (renamed from
+`MeshesShippedAtM1`) is seven entries, and the renderer's arrays are sized by `SHIPPED_MESH_COUNT`. The five
+`.cmo` files were already declared in the package. The bare `ModuleFrame.cmo` ships and nothing draws it.
+
+**This step found a defect in M2.10's inputs.** Both shipyard meshes are 90 units long and the frame hull
+said 84, which was the bare frame's 83.52 rounded up — so two shipyards placed exactly clear would have
+overlapped by six. **A hull is now bounded by every mesh that draws it** (Q37's note): `ModuleFrame` is 90,
+`CheckMeshes.py` compares the ceiling of the longest mesh per hull, and `HullMeshTests` does the same against
+the generated catalog. M2.10's clearances move to 155 and 90, and its tests with them.
+
+`HullMeshTests` pins each module's mesh name, the seven shipped, and that every design draws with a
+shipped mesh. **Whether a shipyard reads apart from an ore processor at the tactical zoom is M2.13's.**
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC, and not drawn.**
 
 ### M2.11 — Building and placing a module · `GameLogic`, `GameClient` · both · agent
 
