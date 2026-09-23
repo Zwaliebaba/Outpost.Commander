@@ -326,8 +326,8 @@ mining range and `acceptsOre`, and `CommandTests` the rock index round trip.
 take the fleet moves, and at tick 1,500 everything is moved, miners included. It delivers 37 holds. **The
 pin moved, deliberately, from `0x37f846ed90b74ca1` to `0xc8f7f00e056d4d46`.** The new value was computed off
 Windows, under g++ and clang at two optimization levels, which agreed. The old value still reproduces with
-this code and the old script. **The four-pair MSVC run is owed**, and M1.14c's own check of the old hash has
-to be run at M1.14c's commit.
+this code and the old script. **The four-pair MSVC run is owed.** M1.14c's own check of the old hash was run at
+M1.14c's commit, `5aff739`, and held on all four pairs (ADR-024).
 
 **Not here, and whose it is.** Credits from deliveries: `MiningSystem::Deliveries()` produces them and M2.7
 turns them into credits, so the script's flat grant of 15 a second stays until then. The client's mine
