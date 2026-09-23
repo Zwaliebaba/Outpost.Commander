@@ -1,0 +1,179 @@
+UNEDITED SPECIALIST REPORT, Phase 1 of the 2026-09-23 mid-implementation review. Written in isolation from the Lead's map; the synthesis in ../../2026-09-23-mid-implementation-review.md supersedes it where they disagree. File and line references are to commit 67a4ad8; paths under /tmp refer to the review session's scratch directory and are reproduced under ../harness/.
+
+## (a) Summary
+
+I read the Lead's map and harness results, then GameDesign, Interface, Design/README, OpenQuestions (Q8–Q57), ADR-001/004/006/010/015/017/018/019/020/022/024, the M3/M4 plans, the M1.15/M1.16/M2.13 gates, TechnicalDesign §2/§4/§8/§9 and the HUD handoff in full, and the client tap/selection/panel/placement code and the logic build/mine/intake/ring/tick code (nothing in the repository was modified). I then compiled the shipped GameCore+GameLogic on Linux with the Lead's stub (code unmodified; `scratchpad/r4/r4sim.cpp`) to measure rush timelines under five openings, the host commands each opening needs, and the hex-ring geometry of a standoff around a station; D1–D11 are not repeated, and R4-1/2/3/6/7 build on D2, D3 and D5.
+
+## (b) Mechanic → pillar(s) served → verdict
+
+| Mechanic (map §2) | Pillar(s) | Verdict |
+|---|---|---|
+| Composition model: catalog, 7-row design table, derived stats (ADR-006) | P2 | keep — inert to the MVP player, built, zero runtime cost; no MVP decision touches it |
+| Cruiser hull row (no mesh, no design) | P2 (M4.7 only) | keep as data — costs one test row, decides nothing until M4 |
+| Research station placeholder | P2 | defer (already out of the catalog, Catalog.cpp:62-65) |
+| Movement: straight line, no acceleration, no collision | P3 | keep |
+| Turn rate / facing (RN, D2) | P1 | build — client-derived facing; strike M3.2's arc (R4-3) |
+| Ring slot assignment on move orders | P1, P3, P4 | keep; the attack order needs an arc layout (R4-2) |
+| Spawn stacking, no rally point | none | cut — ring spawn + auto-mine at spawn (R4-6, R4-7) |
+| Symmetric generator, exact rotations | P5 | keep |
+| Contested fields "richer" (RN, D4) | P1 | defer until M3.9 gives a number; make ore the match clock (R4-1) |
+| Mining loop: standing order, unload query, cargo | P1 | keep |
+| Finite ore / husk / retarget (M3.9, DN) | P1, P5 | keep and pull forward — it is the match clock (R4-1) |
+| Economy: 1 ore = 1 credit, exact remainders | P4 | keep |
+| Build: one slot, 20 cr/s, cost at start, full refund, replace-on-tap | P3 | keep the slot; add client-side repeat (R4-6) |
+| Shipyard L1/L2 | P2 | keep — a mandatory step, not a choice, until credits bind (D3) |
+| Ore processor L1/L2 | P2 | keep conditionally — measured live only at ×2 build rate with <7 miners, dead at ×1 |
+| Upgrade in place at the difference (Q54) | P2, P3 | keep |
+| Module cap of 4 with best-of-kind effects | — | merge: cap 2, or state the decoy (R4-12) |
+| Placement radius = PD range, "which side you build on" | P1 (intended) | cut the claim (R4-5) |
+| Command validation (Q24) | P4 | keep |
+| Attack order (DN, D8) | P1 | build, with a standoff arc layout (R4-2) |
+| Weapons, size-class damage table, cadence (DN, F3) | P1, P2 | keep; decide M3.0 first |
+| Hit-value curve for structures (DN) | P2 (future armor) | merge into the size-class table (R4-9) |
+| Point defense 400 < MassDriver 600, safe zone | P1 | keep — sound as a rule |
+| Miner flight (DN) | P1 | keep; fix the "no order" condition (R4-4) |
+| Death, removals, wrecks (DN) | P1, P4 | keep |
+| Elimination = last station standing, ships removed | P5 | keep |
+| Restart on victory (DN) | P5 | keep — the most-used operation |
+| Stub AI (M3.10) | P5 | keep; add one defend reflex (R4-8) |
+| Bot harness: player / churner / flooder roles | none of P1–P5 (owner's stress target) | defer the churner/flooder and 8-seat runs past M3.11 (R4-13) |
+| Replication: 12-B record, accumulator, 2 updates/tick, 100-player target | P4 | keep the format; defer the 100-player measurements (R4-13) |
+| Client interpolation, hold-never-extrapolate | P4 | keep |
+| Camera: pan, pinch-zoom with pitch coupling, clamp, no inertia | P3 | keep |
+| Orbit and its four constants | P1 (weak) | cut for the MVP under ADR-018's own kill switch (R4-10) |
+| Hold-recenter | P3 | keep; implement the selection half (R4-11) |
+| Selection: tap, double-tap circle, panel narrow, clear | P3 | keep |
+| Order markers and lines | P3 | keep |
+| Credits panel + change flash, no income rate (Q36) | P3 | keep |
+| Selection panel: counts, hull, cargo chips | P3, P1 | keep |
+| Build panel: six under-fire buttons, progress, cancel | P3 | keep; repeat makes the under-fire tier a fallback (R4-6) |
+| System panel, two-tap quit | P3 | keep |
+| Damage alert, hull bars on damaged ships, tracers (DN) | P1 | keep — the one information channel |
+| Generated sky (ADR-019) | P1 | keep |
+| Minimap, audio, chat, ping, pause, save (decided out) | — | keep out |
+| Fog, formations, designer, research (post-MVP) | P2 | defer (already) |
+
+The two things that must be built for the loop to be a loop: an attack order with a specified standoff formation and 360° weapons (R4-2, R4-3), and a rally for miners plus a build repeat so the one slot is not a tap every 7 seconds (R4-6).
+
+## (c) Findings
+
+[R4-1] [Reviewer 4 Coherence] [Blocker] [Balance]
+Claim: Under the rules as written a five-minute match is reachable only as an unanswered rush; nothing forces a contested symmetric match to end, so "twenty matches in an evening" has no mechanism behind it, and the lever that would supply one — the finite ore budget — is unspecified.
+Evidence: FACT: Station 8,000 HP, hitValue 300 (Catalog.cpp:33-40); MassDriver 25 dps, two mounts on the Fighter (Catalog.cpp:71, Design.cpp:18-22) → 12.5 effective dps per fighter, 640 fighter-seconds per station (GameDesign §5:211-213, §7:413). FACT: build slot 20 cr/s (BuildSystem.h:108); 12,000-unit crossing at 140 u/s = 85.7 s (Layout.h:27-30). FACT (measured with the shipped code, r4sim.cpp): the earliest ten-fighter siege ends at 300 s (opening D: 4 miners, shipyard L1+L2, ore processor L1+L2, then fighters), 314 s (C: no ore processor), 330 s (B: no modules), and a three-fighter pure rush at 344 s — all with a defender that does nothing. FACT: asteroids are inexhaustible before M3.9 (GameDesign §4:169-174); Q26's 200 ore per home rock is "provisional" and contested rocks carry no figure (D4). FACT: an idle armed ship engages the nearest hostile in range on its own (GameDesign §7:360-361) and fighter-v-fighter is a symmetric 20 s trade (§7:439).
+Scenario / proof: Both players run opening D: 10 fighters each at 150 s, 29 at 300 s (measured). The defender's fighters sit 155 units in front of the station (BuildSystem.cpp:107), inside PD and within 600 of any standoff point, so an attacker at 500 is met at 1:1 while the defender builds at the same rate and the attacker is 86 s from reinforcement. INFERENCE: the equilibrium is mutual fighter production with no break-through; a match ends when one player stops responding — which is what M3.11's question 3 already suspects and arithmetic can settle now. With M3.9 at Q26's provisional figure, a home field is 2,000 credits, extracted by four miners in about 80 s of laser time, after which both economies stop (contested rocks yield 0.67–1.33 cr/s, harness-results.txt:38-49); matches then end by attrition of ~7-fighter fleets, decided by micro rather than by §7's table.
+Why it matters: P5 is the MVP's stated purpose (GameDesign §2:69-71, §10:537-540). Twenty matches at 10–15 minutes is 4–5 hours, and a match decided by who stopped responding says nothing about the raid table; M3.11's answers would be about match length, not balance.
+Recommendation: Make the ore budget the match clock and gate it before M3.11: (1) at M3.9 set home rocks to 10 × 300 ore and contested rocks to 6 × 500 per cluster (richer per rock, closing D4); (2) add the per-rock throughput limit Q26 assumed and D5 found missing (one miner extracting per rock, others wait in ToOre), so a six-miner economy needs six rocks and field spread matters; (3) add a harness acceptance test on the Linux build (r4sim.cpp is 150 lines): scripted rush vs idle defender ends ≤ 5:30, scripted mirror (both run opening D, attack at ten fighters) ends ≤ 8:00; if the mirror fails, cut station hull to 5,000 before touching the raid table. Alternative: keep asteroids infinite and end the match at 10:00 with the higher-hull station winning — a change to §2's "last station standing" that guarantees the evening but not the balance answer.
+Confidence: High on the 5.0–5.7-minute bound (arithmetic on shipped constants); Medium on the typical length (moves with M3.0's cadence and M3.9's ore numbers; a defender who never responds makes the bound the typical).
+
+[R4-2] [Reviewer 4 Coherence] [Major] [Logic]
+Claim: The order model cannot put ten fighters "standing off at 500": with hex-ring slots at Fighter spacing 90, at most seven fighters fit the 200-unit band between point-defense and mass-driver range, and the attack order M3.2 adds names no standoff distance at all.
+Evidence: FACT: ring k sits at radius k × spacing and holds 6k slots, spacing = widest hull in the selection (RingAssignment.cpp:41-63, :65-88; RingAssignment.h:23-26); Fighter hull 90 units (Catalog.cpp:16). FACT: PD range 400, MassDriver 600 (Catalog.cpp:71,76). FACT (computed with the shipped RingSlotOffset, r4sim.cpp): the best move-order point on the approach axis puts, for n=10, 7 ships in the band and 3 inside PD; n=20: 12 in band, 4 inside PD, 4 out of range; n=50: 21 / 13 / 16. FACT: M3.2 adds "a ship with an attack order pursuing its target" with no distance (M3-the-fight.md:77-79); M3.1 must reproduce "§5's ten fighters against a station" (M3-the-fight.md:70-71); M3.5 asserts "a fighter at 500 units takes no return fire" (M3-the-fight.md:203). FACT: PD kills a Medium hull at 2 × 60 × 0.9 = 108 dps, 5.6 s (GameDesign §7 table).
+Scenario / proof: Ten fighters are ordered to a point 500 from the enemy station. Ring 2 (radius 180) puts three of them at ≤ 320 from the station: dead in 17 s; the seven survivors shell at 87.5 dps, 91 s per station instead of §5's 64. Ordered to 600 instead, three are out of range and the rest sit on the boundary, where the wire's quarter-unit rounding decides whether they fire. With an attack order, if pursuit stops at "in range" every ship halts at ≈600 on its own approach line and stacks; if it pursues to contact, all die to PD.
+Why it matters: This is one of the two things the loop cannot exist without: a way to bring a fleet to a target that produces §5's siege rather than a coin flip on formation geometry. M3.11's question 2 (safe zone too safe?) would be answered by the ring layout, not by the safe zone.
+Recommendation: Specify the attack order at M3.2 as pursue-to-standoff with an arc layout: standoff radius = the target's longest weapon range + 100 (500 against a station), slots spaced by the widest hull along the standoff circle (34 slots at r = 500), assigned nearest-first with identity ties exactly as OrderFleetTo does, overflow to a second arc at +90 (still in range); re-solved each tick for a moving target. This is the "different slot layout" Q19 promised. Alternative: keep hex rings and halve the spacing for attack formations (45 units: 19 fighters fit a 90-radius disc inside the band) — overlap is harmless without collision.
+Confidence: High (arithmetic on shipped code); what would change it is a standoff rule in M3.2 that does not exist today.
+
+[R4-3] [Reviewer 4 Coherence] [Major] [Logic]
+Claim: M3.2's "range and arc are checked at the fire tick" would be evaluated against a heading that is the station's spawn heading for the whole match, so whether a ship can fire would depend on which station built it; and P1's silhouette pillar has no mechanism until facing exists.
+Evidence: FACT: every built ship is created with the station's heading (BuildSystem.cpp:316-318); a station faces the map centre (Layout.h:118-122); nothing writes heading afterwards and the client draws it as sent (D2). FACT: ADR-004:25-26 and M3-the-fight.md:89 require an arc check. FACT: "ships that bank as they turn and read as silhouettes" is a pillar statement (GameDesign §1:27-29).
+Scenario / proof: Player 1's fifty ships face +x from spawn to death. Head-on engagements along the x axis satisfy any forward arc for both sides; a raid on a home field at y ≠ 0, or a flanking approach, is inside the arc for one side and outside for the other by spawn geometry alone. INFERENCE: with a 180° arc roughly half of all off-axis engagements are one-sided.
+Why it matters: A balance answer taken from fights that are asymmetric by construction is not an answer, and the silhouette pillar is currently fifty identical arrows pointing at the map centre.
+Recommendation: Strike "arc" from M3.2's Done-when and from ADR-004 for the MVP (360° weapons, one range check), and derive facing on the client from the motion vector between the two samples the interpolation already holds, keeping the last facing at rest — presentation only, R19-clean, zero wire and zero hash change. Alternative: host-side heading written at OrderMoveTo from the destination delta via a 16-step binary search over the pinned sine table (integer, R16-clean, moves the determinism pin deliberately), which later gives M3.2 a real arc if one is ever wanted.
+Confidence: High.
+
+[R4-4] [Reviewer 4 Coherence] [Major] [Logic]
+Claim: Miner flight as specified never applies to a working miner, because every productive miner carries the standing mine order and flight is conditioned on "no order"; the flight row of §7's raid table is computed for a rule that cannot fire.
+Evidence: FACT: "A mine order is the only standing order… keeps mining until it is told to do something else" (GameDesign §4:153-155); the order's phase is non-None through the whole cycle (World.h:49-63, MiningSystem.cpp:93-179). FACT: "A miner with no order that is fired upon flees to its station" (GameDesign §7:449-450); M3.6: "With no order is the condition and it matters — a miner explicitly ordered to mine keeps mining" (M3-the-fight.md:214-217). FACT: the table's "Miners lost fleeing 1,500 units to the station: about 3½" of six (GameDesign §7:436-442) assumes miners at the field flee.
+Scenario / proof: Three fighters reach a home rock where six miners shuttle. None flees; each dies in 12.9 s at the rock or on its ≈15-s loop; all six are lost in 25.7 s — the "was" column §7 says the redesign fixed. The only miners that ever flee are those with no order: freshly built ones sitting 140 units in front of the station, already inside point defense.
+Why it matters: §7 calls flight the thing without which "the defender must be watching the right part of a 16,384-unit map at the right moment to have any counterplay at all"; M3.11's question 1 would test a raid that is a slaughter by rule rather than by numbers.
+Recommendation: Make flight a phase of the mine order: a miner in ToOre or Extracting that a fire event names as target enters Fleeing (HeadFor its unload target) and returns to ToOre on the same rock after 60 ticks unfired; a miner under an explicit MoveTo does not flee, which keeps the player override M3.6 wants. Alternative: keep "no order" semantics but count a mine order as no order for flight, re-issuing the same rock when the miner reaches the station.
+Confidence: High.
+
+[R4-5] [Reviewer 4 Coherence] [Major] [Coherence]
+Claim: "Which side of your station you build on is a decision" is false under the rules: ships move freely with no collision and no facing, so a standoff fighter chooses its bearing and every module inside 400 is reachable from a point outside point defense on that bearing; the attacker at 500 loses nothing and the defender's only reply is fighter parity.
+Evidence: FACT: GameDesign §5:261-264; ADR-015:40-43; M3's scope names "the near-side standoff they create" (GameDesign §10:528). FACT: modules within 400 of the station (ModuleSite.h:28); PD 400, MassDriver 600 (Catalog.cpp:71,76); movement is a straight line through everything (Tick.cpp:23-74). FACT: no turrets or other structures (GameDesign §5:276-278); a module cannot move (ADR-015:90).
+Scenario / proof: A module at r ≤ 400 on bearing θ; a fighter at 500 on bearing θ is 500 − r ≤ 345 from it, inside 600 and outside PD. One fighter kills it in 120 s (§7:371-373); nothing the defender owns reaches the fighter except fighters, which trade 1:1.
+Why it matters: M3's headline positional mechanic describes a decision the player never gets to make; placement is aesthetic and its four gestures per match are chores.
+Recommendation: Delete the sentence from §5 and ADR-015, drop "the near-side standoff" from M3's scope, and test the safe zone at M3.11 as a radius question only. Alternative that makes placement a real decision inside the composition model: let the ore processor be the forward unload point §4:159-162 already anticipates — a `placementRadiusUnits` per component (400 for a shipyard, the player's region for an ore processor) and `acceptsOre` on a frame carrying one; placed at a contested cluster it halves that cluster's round trip and becomes a raid target worth defending.
+Confidence: High for the claim; Medium that the alternative is worth its cost (it reopens the 400-radius rule for one design).
+
+[R4-6] [Reviewer 4 Coherence] [Major] [Coherence]
+Claim: A five-minute match is about four real decisions and forty-plus chore commands, because the one-slot queue needs a tap per item, each tap needs the station on screen with the panel open, every spawned miner needs a hand-issued mine order, and the build panel's choice is a solved sequence.
+Evidence: FACT (measured, r4sim.cpp): opening D issues 42 host commands in 300 s (34 builds, 4 mine orders, 2 placements, 2 upgrades) — one every 7 s — and beats C and B (29 vs 21 vs 18 fighters at 300 s), so the module row is a sequence to execute, not a trade-off. FACT: there is no queue (BuildSystem.h:16-19, Q21); the panel opens on a station tap and closes on any ship selection or clear (App.cpp:930-943, :778-783); a hold recenters on the station only (App.cpp:745-757). FACT: a new ship sits at a fixed spawn point with no order (BuildSystem.cpp:101-118, GameDesign §5:199-200). FACT: the 96-px "under fire" tier exists because build buttons "are hit while something is exploding" (Interface §1:80, §6:430-432), and a tap on any live button replaces the item in progress (Interface §6:426).
+Scenario / proof: A player who has just sent the fleet (double tap + tap) must, every 7–15 s: hold to recenter, tap the station, tap FIGHTER, then pan back to the fleet — three to four gestures per item, on the order of a hundred per match, during which a mis-tap on MINER replaces the fighter in progress. Real decisions: miners-before-fighters (solved: four), module order (solved: D), where to park fighters, and when to attack — one per ~75 s.
+Why it matters: Twenty matches of this measure a player's tolerance for a build chore, not §7; and a tier sized for taps under fire is sized for a tap the game should not need.
+Recommendation: Two small builds: (1) client-side repeat — a double tap on a build button (Tapped with a count, no new verb) arms repeat, and the client re-sends Build when its own block shows the slot empty and credits cover the cost, exactly as BotPolicy::Decide already does (BotPolicy.cpp:59-77); zero host and wire change, R19-clean; (2) auto-mine at spawn — BuildSystem::Advance issues OrderMine to the nearest rock with ore (M3.9's retarget function, identity tie-break) for any design with oreCapacity > 0; this is the rally §5 declined, for miners only — fighters spawn idle and auto-engage, which is the right default. Alternative: a host-side four-deep queue (8 B per player block, costed with DatagramBudget.py) plus a client-side rally tap.
+Confidence: High on the counts; Medium on the gesture overhead (M1.16 has not confirmed the panel on the device).
+
+[R4-7] [Reviewer 4 Coherence] [Major] [Coherence]
+Claim: The one decision that matters — attack now, with how many — has no information channel: every unmoved enemy ship stacks on one point, no readout counts enemy entities, and at tactical zoom a stack of thirty fighters is one 5-px silhouette.
+Evidence: FACT: SpawnPoint is one fixed offset (BuildSystem.cpp:101-118) and nothing collides. FACT: the HUD may read no enemy counts, kills or credits (design_handoff_hud/README.md, "Data the HUD may read"); the selection panel counts own ships only (Panels.cpp:703-746). FACT: a Frigate is 5.3 px at tactical zoom (M2-the-field.md:729-731); the shape overlay is cut (Q45); no minimap (Interface §5:395-399); "with no fog of war in the MVP you can always see the target" is the stated channel (Interface §4:266-267).
+Scenario / proof: Both players keep fighters at home; each sees the other's base as one dot in front of the station. INFERENCE: neither can tell 3 from 30 until the enemy moves, so the attack decision is a guess, and the twenty matches cannot separate "the raid arithmetic is wrong" from "the attacker guessed wrong".
+Why it matters: The no-fog premise justified cutting attack-move and the minimap; a stack defeats it silently, for both players.
+Recommendation: Spawn on ring slots: SpawnPoint adds RingSlotOffset(builtCount mod 7, 90) around a point 245 units in front of the station (all seven slots inside PD and clear of the 110-unit hull); a stack then reads as a disc for both sides and own-ship picks stop being ties. Alternative: a client-side count badge — a HudItem text at the projected centroid of three or more same-owner records within 24 px, drawn in the interface pass — exact and zero-sim, at the cost of one more world-anchored element.
+Confidence: Medium (nothing M2 added has been looked at on the device; the stub AI moves its fighters, a human may not).
+
+[R4-8] [Reviewer 4 Coherence] [Major] [Coherence] — explicit pillar finding on P5
+Claim: P5's mechanism is wrong as stated: twenty human-vs-stub matches cannot answer §7's balance questions, because M3.10's stub never defends, escorts or raids modules, while the arithmetic questions M3.11 asks can be answered by the deterministic harness in minutes.
+Evidence: FACT: M3.10 "builds miners, mines, builds fighters and eventually attacks" (M3-the-fight.md:322-323); §8's M4 AI adds no defense either (GameDesign §8:477-480). FACT: M3.11's questions 1–3 are raid exchange, safe-zone size and match length (M3-the-fight.md:340-352). FACT: the owner chose two snapped windows on one device for two clients (M1-the-fleet.md:821) — one person on both sides. FACT: the shipped simulation runs a five-minute match in milliseconds on Linux (harness-results.txt:67-70, r4sim.cpp).
+Scenario / proof: A human raids the stub's miners: no flight (R4-4) and no response, so every raid is a slaughter and question 1 reads "the raid table is too strong". The stub attacks the human: it stands off (or not, R4-2) at a station whose defender always responds, so question 2 reads "the safe zone is too safe". Both answers are properties of the stub.
+Why it matters: The design's stated reason for the reduced MVP is that it "turns the balance questions in §7 into answers rather than opinions" (GameDesign §10:537-540); against a non-defending stub they are opinions with a sample size.
+Recommendation: Split M3.11: (a) a harness gate — twenty scripted matches on the Linux/CI build (rush vs idle, mirror, three fighters vs six fleeing miners, a module raid at 500) with the resulting figures written into §7 and re-run whenever a constant moves; (b) five human matches for the feel questions only (question 0's alert habituation, tap precision, orbit); and give M3.10's stub one reflex so the human meets a defender: on a fire event naming its entity, send idle fighters at the shooter (≈20 lines, same command path, R16-clean). Alternative: two humans on two devices for the twenty, accepting that the one-person configuration answers nothing about balance.
+Confidence: High that the stub cannot answer §7; Medium on the split (depends on how the owner weighs feel data against balance data).
+
+[R4-9] [Reviewer 4 Coherence] [Minor] [Scope]
+Claim: The hit-value curve is dead content in the MVP by the design's own construction (300 ≡ Large × 0.25), so M3.1 would build and test a second mitigation model that changes no number.
+Evidence: FACT: "300 is the hit value that reproduces the Large column exactly… the formula changed and the balance did not" (GameDesign §7:410-414); the cost is named at §7:422-428. FACT: Station and ModuleFrame are already SizeClass::Heavy (Catalog.cpp:36,40) and no armor component exists (Catalog.cpp:66-84). FACT: M3.1 asks for both models, pinned against each other (M3-the-fight.md:53-72).
+Scenario / proof: Every damage the curve computes at the MVP is base × 25 / 100 for both weapons, where the table would give PD 30 — one cell moved by five points for a weapon that never reaches a base.
+Why it matters: One function, one rounding rule (F3/ADR-014) and one test class fewer in the milestone that "can undo §7 by accident"; a reader has one model to hold.
+Recommendation: M3.1 implements the size-class table only; keep `hitValue` in the catalog as data and add the curve with the first component that changes it. Alternative: keep both as designed and accept the cost §7 names — a clarity cost, not a balance one.
+Confidence: High.
+
+[R4-10] [Reviewer 4 Coherence] [Minor] [Scope]
+Claim: Orbit — ADR-018's own named cut — currently buys nothing: every ship faces its spawn heading forever, so orbiting shows a fleet of identical arrows from another angle, at the price of four constants and eight degrees of every gesture.
+Evidence: FACT: ADR-018:92-97 "the named candidate to cut… removes four constants"; Interface §5:355-361. FACT: heading fixed at spawn (BuildSystem.cpp:316; D2). FACT: M1.16 item 6 (usable one-handed on a kickstand) is unmeasured.
+Scenario / proof: INFERENCE: the only P1 payoff of orbit, a silhouette in profile, needs facing (R4-3); on a rotationally symmetric map with a north-up snap there is no tactical payoff.
+Why it matters: Pinch and pan are the gestures the game is driven by, and the deadzone, latch and rebase constants exist only to protect orbit.
+Recommendation: Cut orbit for the MVP under ADR-018's kill switch (pinch becomes pure zoom; the sky stays as decoration) and reinstate it with facing. Alternative: keep orbit but make the release snap unconditional to the four cardinals, which removes the rebase and the 2% scale deadzone.
+Confidence: Medium (M1.16 may find orbit fine on the device; then the cost is only the constants).
+
+[R4-11] [Reviewer 4 Coherence] [Minor] [Logic]
+Claim: The hold recenters on the station unconditionally rather than "on the selection, or on your station when nothing is selected", so with something selected — the normal state, since deselect is a panel button — there is no way back to your own fleet but panning.
+Evidence: FACT: App.cpp:745-757 ("Nothing is selectable yet — M1.10 is selection — so it goes to this player's station"), against ADR-018:64-70 (decision 7) and Interface §3:163, §5:408-413. Not in the Lead's D-list.
+Scenario / proof: The fleet is sent to the enemy field; the player recenters home to build; returning to the fleet is a 12,000-unit pan or a zoom out and in.
+Why it matters: The recenter is "the cheap half of a minimap" (Interface §5:408-413); the missing half is the one the attack decision uses.
+Recommendation: Implement the selection half: focus = centroid of the selected records' newest samples, zoom unchanged. Alternative: tapping a selection-panel group cell recenters on that group — a hit rect the table already has, no new gesture.
+Confidence: High.
+
+[R4-12] [Reviewer 4 Coherence] [Minor] [Coherence]
+Claim: With two module kinds and best-of-kind effects, only two of the four module slots can ever do anything; the other two are 350–700-credit decoys, and the "past the cap" unavailable state is reachable only by building them.
+Evidence: FACT: MAXIMUM_MODULES_PER_STATION = 4 (ModuleSite.h:32); best of kind, no stacking (ModuleEffects.h:14-16, ADR-015:112-114); two kinds in the MVP (GameDesign §5:247-252); M2.11b dims a placement past the cap (Interface §6:426).
+Scenario / proof: A second Shipyard L1 costs 400 and adds nothing, but it absorbs 120 fighter-seconds of a raid and a raider cannot tell which shipyard counts.
+Why it matters: A rule the player will discover is either a decoy mechanic — a real, cheap decision — or an error; today it is unstated.
+Recommendation: State it in §5 as a decoy ("a second module of a kind adds hull and nothing else") and keep the cap. Alternative: cap at one per kind (two for the MVP) and delete the unreachable state.
+Confidence: High.
+
+[R4-13] [Reviewer 4 Coherence] [Minor] [Scope]
+Claim: The churner and flooder roles and the 100-player replication measurements serve the owner's stress target, not any pillar of the four-slot game, and their owed hardware runs compete with M3.11 for the project's scarce resource, hands-on-device time.
+Evidence: FACT: three roles (ADR-022:39-45); ADR-022's Measurements and ADR-024's Measurements 3–5 all owed "on the machine that builds it"; Plan/README's owed table lists M1.14b and M1.14c beside M0.5, M0.23, M1.15, M1.16's seven confirmations, M2.13, M2.14 and the four-pair determinism run. FACT: at 2–4 players the accumulator costs 16–75 µs a tick (harness-results.txt:68-69); D6 is a 100-client problem only. INFERENCE (Lead §0): device time is the binding resource.
+Scenario / proof: Every device hour spent seating eight bots is an hour not spent on the twenty matches or on M1.16, which decides whether the interface works at all.
+Why it matters: The MVP's goal is the twenty matches; the stress target is not on the path to it.
+Recommendation: Reorder Plan/README's owed table to put M1.14b/M1.14c's runs after M3.11, or move them into the CI Windows job ADR-022:120-122 already names (Server plus a small harness asserting seats, a round trip and survival under the flooder) — zero owner time. Alternative: keep the order but cap the MVP harness at 8 seats and drop the 128-ceiling measurement.
+Confidence: Medium (the time budget is unstated; Lead §0).
+
+## (d) Checked and found sound
+
+- One plane, one tap = one order (ADR-001, R21/R22); the 16-px slop asymmetry (a sloppy tap pans rather than ordering); interface-first pick order; the 24-px pick radius, which at tactical zoom is 410 units and comfortably covers a 50-ship ring.
+- The mining loop as a standing order that re-issues work inside the pass, with the unload target as a query (MiningSystem.cpp) — the right shape for a forward unload point later.
+- Ring assignment sorted nearest-first with identity tie-breaks (RingAssignment.cpp:65-88) — deterministic and the right base for any formation layout.
+- Double tap that acts on the first tap and only upgrades on the second (ADR-017); the camera as the group-size control; no subset selection — at fifty ships of two designs with no collision, subsets have nothing to express.
+- No attack-move, no stop, no queue in the MVP: correct given no fog and no collision, and idle ships that engage on their own already are attack-move.
+- Full refund on cancel and replace (Q35) — the only honest rule for a one-slot queue.
+- Victory as the last station standing with the loser's ships removed (no search problem), and restart on victory as the most-used operation (Q25).
+- Point defense outranging nothing (Q10, Q16) is sound as a rule; only the "side" claim built on it is not (R4-5).
+- Modules as separate, destroyable entities (ADR-015): the cripple-without-killing play is real, and upgrade-in-place at the difference (Q54) keeps the panel readable.
+- The build rate as a rate over cost (Q47) is the right structure; only the number is off (D3).
+- The quiet map (hull bars on damaged ships only), no income rate (Q36, revisit stands), and the change flash — correct scope for the MVP.
+- The order marker as presentation, never prediction (Q20, R19).
+- The seeded, dim, static sky (ADR-019): confirmed on the device, under a millisecond, and a compass while orbit exists.
+- The symmetric generator with exact quarter-turn copies (R23) — the cheapest fairness guarantee and the reason twenty matches need no map analysis.

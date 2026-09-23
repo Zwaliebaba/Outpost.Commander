@@ -1,0 +1,70 @@
+FIELD seed 20260922, 2 players: 44 rocks, 22 per region
+idx kind      x       y   dAnchor dOrigin
+ 0  home       -5400    525      797     5425
+ 1  home       -5928   1047     1049     6020
+ 2  home       -6693   -845     1093     6746
+ 3  home       -5196    677     1051     5240
+ 4  home       -4681   -190     1333     4685
+ 5  home       -7037    648     1223     7067
+ 6  home       -5196    890     1199     5272
+ 7  home       -5313   -440      816     5331
+ 8  home       -4506    -69     1496     4507
+ 9  home       -4971     28     1029     4971
+10  contested  -1436  -2123     5034     2563
+11  contested  -1500  -2809     5305     3184
+12  contested  -1239  -2411     5337     2711
+13  contested  -2096  -3033     4944     3687
+14  contested  -2143  -2336     4509     3170
+15  contested  -2144  -2871     4807     3583
+16  contested  -1382   2594     5297     2939
+17  contested  -1679   3399     5498     3791
+18  contested   -993   3041     5858     3199
+19  contested  -1922   3217     5194     3747
+20  contested  -1867   2573     4868     3179
+21  contested  -1609   2648     5128     3099
+
+INCOME per miner (credits/s at steady state, one miner, 5 min), one-slot Miner at 100 u/s, laser 20 ore/s, unload 50/s
+idx dAnchor  cr/s  first-delivery-tick  (cycle from delivery spacing)
+ 0     797   6.40      289
+ 1    1049   4.67      409
+ 2    1093   4.67      446
+ 3    1051   4.67      389
+ 4    1333   4.00      494
+ 5    1223   4.00      502
+ 6    1199   4.00      453
+ 7     816   6.00      294
+ 8    1496   3.33      560
+ 9    1029   4.67      372
+10    5034   0.71     1978
+11    5305   0.67     2088
+12    5337   0.67     2100
+13    4944   1.33     1945
+14    4509   1.33     1769
+15    4807   1.33     1891
+16    5297   0.67     2083
+17    5498   0.67     2166
+18    5858   0.67     2310
+19    5194   0.67     2045
+20    4868   1.33     1914
+21    5128   0.67     2017
+
+BEST home rock 0 at 6.40 cr/s per miner. With OreProcessorL1: 8.00, L2: 9.60
+Six miners on the best rock: 38.40 cr/s total (no per-rock throughput limit before M3)
+
+OPENING: player 1 builds miners back to back, each ordered to the nearest home rock (0); build rate 20 cr/s, no shipyard
+time  credits  miners  income(cr/s over last 30 s)
+ 30s      530       4     4.3
+ 60s      730       8    26.7
+ 90s     1730      12    53.3
+120s     3530      16    80.0
+150s     6115      20   106.2
+180s     9365      24   128.3
+210s    13365      28   153.3
+240s    18165      32   180.0
+270s    23765      36   206.7
+300s    30165      40   233.3
+
+HOST COST (this machine, g++ -O2, single thread; order of magnitude only)
+players   2, entities   110: simulation     12.6 us/tick, accumulator      17.2 us/tick (8.6 us per client), updates/tick 4.0
+players   4, entities   220: simulation     25.2 us/tick, accumulator      73.0 us/tick (18.2 us per client), updates/tick 8.0
+players 100, entities  5500: simulation    649.2 us/tick, accumulator   51789.4 us/tick (517.9 us per client), updates/tick 200.0

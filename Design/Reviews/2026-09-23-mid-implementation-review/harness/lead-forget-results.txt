@@ -1,0 +1,18 @@
+entities 110, sweep 1 ticks, forget after 3 ticks
+
+scenario 0: silence ticks 20..22
+  tick 23 datagram 0: records 100 applied 100 refused 0 forgotten 10 held-after 100
+  tick 23 datagram 1: records 10 applied 10 refused 0 forgotten 0 held-after 110
+  tick 24 datagram 0: records 100 applied 100 refused 0 forgotten 0 held-after 110
+  tick 24 datagram 1: records 10 applied 10 refused 0 forgotten 0 held-after 110
+
+scenario 1: silence ticks 20..23
+  tick 24 datagram 0: records 100 applied 100 refused 0 forgotten 10 held-after 100
+  tick 24 datagram 1: records 10 applied 10 refused 0 forgotten 0 held-after 110
+  tick 25 datagram 0: records 100 applied 100 refused 0 forgotten 0 held-after 110
+  tick 25 datagram 1: records 10 applied 10 refused 0 forgotten 0 held-after 110
+
+scenario 2: silence ticks 20..23, then the second datagram of the next tick lost
+  tick 24 datagram 0: records 100 applied 100 refused 0 forgotten 10 held-after 100
+  tick 25 datagram 0: records 100 applied 100 refused 0 forgotten 0 held-after 100
+  tick 25 datagram 1: records 10 applied 10 refused 0 forgotten 0 held-after 110

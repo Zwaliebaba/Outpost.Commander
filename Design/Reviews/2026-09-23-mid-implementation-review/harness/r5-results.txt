@@ -1,0 +1,65 @@
+HOST COST baseline (unmodified code, this machine, g++ -O2, single thread)
+  players   2, entities   110: simulation     13.1 us/tick, accumulator      16.7 us/tick (8.4 us per client), updates/tick 4.0
+  players   4, entities   220: simulation     25.4 us/tick, accumulator      76.7 us/tick (19.2 us per client), updates/tick 8.0
+  players 100, entities  5500: simulation    673.5 us/tick, accumulator   53406.8 us/tick (534.1 us per client), updates/tick 200.0
+
+A. TARGETING PASS (grid query per armed entity per tick, sorted by identity, nearest hostile)
+  players   2 spread entities   110: rebuild     1.4 us/tick, targeting     11.4 us/tick,  52.0 queries/tick,    6.8 candidates/query,  0.0% found a target
+  players   2 brawl  entities   110: rebuild     1.4 us/tick, targeting    103.7 us/tick,  52.0 queries/tick,   54.7 candidates/query, 96.2% found a target
+  players   4 spread entities   220: rebuild     2.3 us/tick, targeting     25.8 us/tick, 104.0 queries/tick,    7.2 candidates/query,  0.0% found a target
+  players   4 brawl  entities   220: rebuild     2.2 us/tick, targeting    437.4 us/tick, 104.0 queries/tick,  106.5 candidates/query, 96.2% found a target
+  players 100 spread entities  5500: rebuild    47.5 us/tick, targeting   6686.7 us/tick, 2600.0 queries/tick,   52.6 candidates/query, 100.0% found a target
+
+B. ACCUMULATOR: real Fill vs a timed replica vs the fix (records once per tick, lean candidate, top-K select)
+  players   2 entities   110: REAL Fill      16.9 us/tick (8.5 us/client) | replica      19.2 us/tick [removal scan 5, scores 7, sort 4, fill 2]
+      fix, records once (3 us/tick shared) + full sort:       7.6 us/tick (3.8 us/client) [scan 0, scores 1, sort 4, fill 1]
+      fix, records once + top-K select:                   7.2 us/tick (3.6 us/client) [scan 0, scores 1, select 4, fill 1]; records sent real/replica/fix: 8800/8800/8800
+  players   4 entities   220: REAL Fill      79.3 us/tick (19.8 us/client) | replica      80.3 us/tick [removal scan 21, scores 28, sort 27, fill 4]
+      fix, records once (6 us/tick shared) + full sort:      39.4 us/tick (9.8 us/client) [scan 1, scores 6, sort 27, fill 5]
+      fix, records once + top-K select:                  37.1 us/tick (9.3 us/client) [scan 1, scores 5, select 26, fill 4]; records sent real/replica/fix: 32000/32000/32000
+  players 100 entities  5500: REAL Fill   51816.5 us/tick (518.2 us/client) | replica   53390.5 us/tick [removal scan 9860, scores 17893, sort 25402, fill 222]
+      fix, records once (171 us/tick shared) + full sort:   31917.5 us/tick (319.2 us/client) [scan 2648, scores 3681, sort 25365, fill 211]
+      fix, records once + top-K select:               11115.5 us/tick (111.2 us/client) [scan 2480, scores 3537, select 4927, fill 163]; records sent real/replica/fix: 800000/800000/800000
+  sent-order check at 4 players over 40 ticks: 32000 records compared, 0 out of order/missing against the real Accumulator
+
+C. FIRE EVENTS: 40 per update cap, 3 repeats each, only the FIRST update of a tick carries them (Accumulator.cpp:221)
+   10 mounts every  1 ticks: demanded   6000 sends, sent   5970 to player 1 in 200 ticks -> backlog     30 (0.1/tick); oldest completed tracer 2 ticks late; keeps up
+   10 mounts every  4 ticks: demanded   1500 sends, sent   1480 to player 1 in 200 ticks -> backlog     20 (0.1/tick); oldest completed tracer 2 ticks late; keeps up
+   10 mounts every  5 ticks: demanded   1200 sends, sent   1180 to player 1 in 200 ticks -> backlog     20 (0.1/tick); oldest completed tracer 2 ticks late; keeps up
+   10 mounts every  8 ticks: demanded    750 sends, sent    730 to player 1 in 200 ticks -> backlog     20 (0.1/tick); oldest completed tracer 2 ticks late; keeps up
+   10 mounts every 10 ticks: demanded    600 sends, sent    580 to player 1 in 200 ticks -> backlog     20 (0.1/tick); oldest completed tracer 2 ticks late; keeps up
+   10 mounts every 20 ticks: demanded    300 sends, sent    280 to player 1 in 200 ticks -> backlog     20 (0.1/tick); oldest completed tracer 2 ticks late; UNBOUNDED
+   20 mounts every  1 ticks: demanded  12000 sends, sent   7980 to player 1 in 200 ticks -> backlog   4020 (20.1/tick); oldest completed tracer 67 ticks late; UNBOUNDED
+   20 mounts every  4 ticks: demanded   3000 sends, sent   2960 to player 1 in 200 ticks -> backlog     40 (0.2/tick); oldest completed tracer 2 ticks late; keeps up
+   20 mounts every  5 ticks: demanded   2400 sends, sent   2360 to player 1 in 200 ticks -> backlog     40 (0.2/tick); oldest completed tracer 2 ticks late; keeps up
+   20 mounts every  8 ticks: demanded   1500 sends, sent   1460 to player 1 in 200 ticks -> backlog     40 (0.2/tick); oldest completed tracer 2 ticks late; keeps up
+   20 mounts every 10 ticks: demanded   1200 sends, sent   1160 to player 1 in 200 ticks -> backlog     40 (0.2/tick); oldest completed tracer 2 ticks late; keeps up
+   20 mounts every 20 ticks: demanded    600 sends, sent    560 to player 1 in 200 ticks -> backlog     40 (0.2/tick); oldest completed tracer 2 ticks late; UNBOUNDED
+   50 mounts every  1 ticks: demanded  30000 sends, sent   8000 to player 1 in 200 ticks -> backlog  22000 (110.0/tick); oldest completed tracer 145 ticks late; UNBOUNDED
+   50 mounts every  4 ticks: demanded   7500 sends, sent   7360 to player 1 in 200 ticks -> backlog    140 (0.7/tick); oldest completed tracer 5 ticks late; keeps up
+   50 mounts every  5 ticks: demanded   6000 sends, sent   5880 to player 1 in 200 ticks -> backlog    120 (0.6/tick); oldest completed tracer 5 ticks late; keeps up
+   50 mounts every  8 ticks: demanded   3750 sends, sent   3640 to player 1 in 200 ticks -> backlog    110 (0.6/tick); oldest completed tracer 5 ticks late; keeps up
+   50 mounts every 10 ticks: demanded   3000 sends, sent   2890 to player 1 in 200 ticks -> backlog    110 (0.6/tick); oldest completed tracer 5 ticks late; keeps up
+   50 mounts every 20 ticks: demanded   1500 sends, sent   1390 to player 1 in 200 ticks -> backlog    110 (0.6/tick); oldest completed tracer 5 ticks late; UNBOUNDED
+  100 mounts every  1 ticks: demanded  60000 sends, sent   8000 to player 1 in 200 ticks -> backlog  52000 (260.0/tick); oldest completed tracer 171 ticks late; UNBOUNDED
+  100 mounts every  4 ticks: demanded  15000 sends, sent   7880 to player 1 in 200 ticks -> backlog   7120 (35.6/tick); oldest completed tracer 94 ticks late; UNBOUNDED
+  100 mounts every  5 ticks: demanded  12000 sends, sent   7840 to player 1 in 200 ticks -> backlog   4160 (20.8/tick); oldest completed tracer 69 ticks late; UNBOUNDED
+  100 mounts every  8 ticks: demanded   7500 sends, sent   7220 to player 1 in 200 ticks -> backlog    280 (1.4/tick); oldest completed tracer 8 ticks late; keeps up
+  100 mounts every 10 ticks: demanded   6000 sends, sent   5740 to player 1 in 200 ticks -> backlog    260 (1.3/tick); oldest completed tracer 8 ticks late; keeps up
+  100 mounts every 20 ticks: demanded   3000 sends, sent   2740 to player 1 in 200 ticks -> backlog    260 (1.3/tick); oldest completed tracer 8 ticks late; UNBOUNDED
+  bound: a shooter set of M mounts needs a cadence of at least ceil(3M/40) ticks -- 100 mounts: 8 ticks (400 ms); 50: 4; 20: 2
+
+D. BURST LOSS vs the real ReplicaStore (110 entities: sweep 1 tick, forget after 3 ticks; link lost after 1000 ms)
+   0 ticks lost (   0 ms): held 110 -> 110; holding before recovery 0; forgotten on recovery 0 (total over run 0); starved in first recovered frame 0; ticks with starved after 0
+   1 ticks lost (  50 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 0 (total over run 0); starved in first recovered frame 0; ticks with starved after 0
+   2 ticks lost ( 100 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 0 (total over run 0); starved in first recovered frame 0; ticks with starved after 0
+   3 ticks lost ( 150 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+   4 ticks lost ( 200 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+   5 ticks lost ( 250 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+   6 ticks lost ( 300 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+  10 ticks lost ( 500 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+  19 ticks lost ( 950 ms): held 110 -> 110; holding before recovery 110; forgotten on recovery 10 (total over run 10); starved in first recovered frame 10; ticks with starved after 0
+
+E. ELIMINATION: destroy all of player 2 in one tick (cap 48 removals/update, 10 repeats)
+  destroyed 55; removals per update from tick 6: 48 48 48 48 48 48 48 48 48 48 7 7 7 7 7 7 7 7 7 7 0 0 0 0 0
+  55 of 55 removals completed their 10 repeats; the last completed at tick 25 (19 ticks after the death)

@@ -1,0 +1,167 @@
+#include "pch.h"
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <set>
+
+using namespace Outpost;
+namespace {
+double Units(Neuron::Fixed f) { return double(f) / 256.0; }
+double Dist(const Neuron::Vec2& a, const Neuron::Vec2& b) {
+  const double dx = Units(a.x) - Units(b.x), dy = Units(a.y) - Units(b.y);
+  return std::sqrt(dx*dx + dy*dy);
+}
+Neuron::Vec2 At(int x, int y) { return Neuron::Vec2{ x * 256, y * 256 }; }
+WireIdentity Wire(EntityId id) { return PackIdentity(id.index, id.generation); }
+const char* PhaseName(MiningPhase p) {
+  switch (p) { case MiningPhase::None: return "None"; case MiningPhase::ToOre: return "ToOre"; case MiningPhase::Extracting: return "Extracting";
+               case MiningPhase::ToUnload: return "ToUnload"; case MiningPhase::Unloading: return "Unloading"; }
+  return "?";
+}
+void Step(World& w, MiningSystem& m, Economy& e, BuildSystem& b) { Tick(w); m.Advance(w); e.Credit(m.Deliveries(), w, b); b.Advance(w); }
+}
+
+int main() {
+  // ---------------------------------------------------------------- S1: what the state hash does not see
+  {
+    World world; world.SetField(GenerateField(20260922ull, 2));
+    for (const Placement& p : GenerateLayout(20260922ull, 2)) world.Create(p.position, p.heading, p.design, p.owner);
+    const EntityId miner = world.Create(At(-5800, 0), 0, DesignId::Miner, 1);
+    const std::uint64_t h0 = StateHash(world);
+    world.Find(miner)->hullRemaining = 1;                 const std::uint64_t h1 = StateHash(world);
+    world.MineInSlot(miner.index).cargoMilliOre = 99000;  const std::uint64_t h2 = StateHash(world);
+    world.MineInSlot(miner.index).phase = MiningPhase::Unloading; const std::uint64_t h3 = StateHash(world);
+    world.Find(miner)->owner = 2;                          const std::uint64_t h4 = StateHash(world);
+    world.OrderInSlot(miner.index) = MoveOrder{At(0,0), 1280, true}; const std::uint64_t h5 = StateHash(world);
+    std::printf("S1 hash: base %016llx | hull 450->1 %s | cargo 0->99000 %s | phase None->Unloading %s | owner 1->2 %s | move order %s\n",
+      (unsigned long long)h0, h1==h0?"UNCHANGED":"changed", h2==h0?"UNCHANGED":"changed", h3==h0?"UNCHANGED":"changed", h4==h0?"UNCHANGED":"changed", h5==h0?"UNCHANGED":"changed");
+  }
+  // ---------------------------------------------------------------- S2: a selection with one dead ship
+  {
+    World world; BuildSystem build; CommandIntake intake; build.Begin(2);
+    world.Create(At(-6000,0), 0, DesignId::Station, 1);
+    const EntityId a = world.Create(At(-5800, 0), 0, DesignId::Fighter, 1);
+    const EntityId b = world.Create(At(-5800, 50), 0, DesignId::Fighter, 1);
+    const EntityId c = world.Create(At(-5800, 100), 0, DesignId::Fighter, 1);
+    world.Destroy(c); // died this tick, the client has not heard yet
+    Command move{.sequence = 7, .type = CommandType::MoveTo, .targetX = 0, .targetY = 0, .selection = {Wire(a), Wire(b), Wire(c)}};
+    const CommandRejection r = intake.Apply(world, build, 1, move);
+    std::printf("S2 move of {a,b,dead c}: rejection=%d (StaleGeneration=%d), lastApplied=%u, a has order=%d, b has order=%d\n",
+      (int)r, (int)CommandRejection::StaleGeneration, intake.LastAppliedSequence(1), (int)world.FindOrder(a)->active, (int)world.FindOrder(b)->active);
+    // the same command resent (client repeat) is refused again, forever, until any newer command lands
+    std::printf("S2 resend: rejection=%d; then seq 8 with {a,b}: rejection=%d lastApplied=%u\n", (int)intake.Apply(world, build, 1, move),
+      (int)intake.Apply(world, build, 1, Command{.sequence = 8, .type = CommandType::MoveTo, .selection = {Wire(a), Wire(b)}}), intake.LastAppliedSequence(1));
+  }
+  // ---------------------------------------------------------------- S3: mining edge cases
+  {
+    // a. acceptor dies mid-unload, then a new one appears
+    World world; MiningSystem mining; Economy economy; BuildSystem build; build.Begin(2); economy.Begin();
+    std::vector<Placement> field; field.push_back(Placement{.kind = PlacedKind::Asteroid, .field = FieldKind::Home, .owner = NO_PLAYER, .position = At(800, 0)});
+    world.SetField(field);
+    EntityId station = world.Create(At(0,0), 0, DesignId::Station, 1);
+    const EntityId miner = world.Create(At(160, 0), 0, DesignId::Miner, 1);
+    world.OrderMine(miner, 0);
+    int t = 0; while (world.FindMine(miner)->phase != MiningPhase::Unloading && t < 2000) { Step(world, mining, economy, build); ++t; }
+    Step(world, mining, economy, build); ++t; // one tick of unloading
+    const std::uint32_t before = world.FindMine(miner)->cargoMilliOre;
+    world.Destroy(station);
+    Step(world, mining, economy, build); ++t;
+    std::printf("S3a acceptor dies mid-unload at t=%d: phase=%s cargo %u->%u, move active=%d, credits=%u\n", t, PhaseName(world.FindMine(miner)->phase), before,
+      world.FindMine(miner)->cargoMilliOre, (int)world.FindOrder(miner)->active, build.Credits(1));
+    for (int i = 0; i < 40; ++i) Step(world, mining, economy, build);
+    std::printf("S3a  40 ticks later: phase=%s cargo=%u (waiting full, %s)\n", PhaseName(world.FindMine(miner)->phase), world.FindMine(miner)->cargoMilliOre,
+      world.FindOrder(miner)->active ? "moving" : "halted");
+    station = world.Create(At(0, 400), 0, DesignId::Station, 1);
+    for (int i = 0; i < 200; ++i) Step(world, mining, economy, build);
+    std::printf("S3a  new station 400 away, 200 ticks later: phase=%s cargo=%u credits=%u\n", PhaseName(world.FindMine(miner)->phase), world.FindMine(miner)->cargoMilliOre, build.Credits(1));
+
+    // b. rock index past the field (a standing order across a field change)
+    world.MineInSlot(miner.index).rock = 9; world.MineInSlot(miner.index).phase = MiningPhase::ToOre;
+    Step(world, mining, economy, build);
+    std::printf("S3b rock 9 of a 1-rock field: phase=%s (silently ended, cargo kept=%u)\n", PhaseName(world.FindMine(miner)->phase), world.FindMine(miner)->cargoMilliOre);
+
+    // c. Mine with a full hold
+    world.MineInSlot(miner.index).cargoMilliOre = 100000; world.OrderMine(miner, 0);
+    Step(world, mining, economy, build);
+    std::printf("S3c mine order on a full miner: phase after one tick=%s\n", PhaseName(world.FindMine(miner)->phase));
+
+    // d. Move mid-extraction keeps cargo; a later Mine resumes
+    world.MineInSlot(miner.index).cargoMilliOre = 0; world.OrderMine(miner, 0);
+    t = 0; while (world.FindMine(miner)->phase != MiningPhase::Extracting && t < 2000) { Step(world, mining, economy, build); ++t; }
+    for (int i = 0; i < 40; ++i) Step(world, mining, economy, build);
+    const std::uint32_t half = world.FindMine(miner)->cargoMilliOre;
+    world.StopMining(miner); world.OrderMoveTo(miner, At(0, -600), SpeedPerTick(DesignId::Miner));
+    for (int i = 0; i < 10; ++i) Step(world, mining, economy, build);
+    std::printf("S3d move mid-extraction: cargo %u kept=%u phase=%s; ", half, world.FindMine(miner)->cargoMilliOre, PhaseName(world.FindMine(miner)->phase));
+    world.OrderMine(miner, 0); Step(world, mining, economy, build);
+    std::printf("mine again -> phase=%s, heading to rock=%d\n", PhaseName(world.FindMine(miner)->phase), (int)(world.FindOrder(miner)->destination == At(800,0)));
+
+    // e. EXTRACTING NEVER RE-CHECKS RANGE: an external move (a flee) while extracting keeps extracting at any distance
+    world.MineInSlot(miner.index).cargoMilliOre = 0; world.OrderMine(miner, 0);
+    t = 0; while (world.FindMine(miner)->phase != MiningPhase::Extracting && t < 2000) { Step(world, mining, economy, build); ++t; }
+    world.OrderMoveTo(miner, At(0, 0), SpeedPerTick(DesignId::Miner)); // "flee to the station" written as a move order, phase untouched
+    for (int i = 0; i < 60; ++i) Step(world, mining, economy, build);
+    std::printf("S3e flee-as-move while Extracting: after 60 ticks phase=%s, distance to rock=%.0f units (range 200), cargo=%u -> extracting out of range\n",
+      PhaseName(world.FindMine(miner)->phase), Dist(world.Find(miner)->position, At(800,0)), world.FindMine(miner)->cargoMilliOre);
+
+    // f. ToOre overrides an external move on the same tick
+    world.StopMining(miner); world.MineInSlot(miner.index).cargoMilliOre = 0;
+    world.OrderMine(miner, 0); // ToOre, far from the rock
+    world.OrderMoveTo(miner, At(0, 0), SpeedPerTick(DesignId::Miner)); // a flee issued after the order, before the mining pass
+    const Neuron::Vec2 posBefore = world.Find(miner)->position;
+    Step(world, mining, economy, build);
+    std::printf("S3f flee-as-move while ToOre: after the pass the move destination is %s (flee target was the station at 0,0); moved %.1f units\n",
+      world.FindOrder(miner)->destination == At(800,0) ? "THE ROCK" : "the station", Dist(posBefore, world.Find(miner)->position));
+  }
+  // ---------------------------------------------------------------- S4: an upgrade in flight when the module dies
+  {
+    World world; BuildSystem build; MiningSystem mining; Economy economy; build.Begin(2); economy.Begin();
+    world.Create(At(0,0), 0, DesignId::Station, 1);
+    const EntityId module = world.Create(At(0, 300), 0, DesignId::ModuleShipyardL1, 1);
+    const BuildRejection r = build.StartUpgrade(world, 1, module, DesignId::ModuleShipyardL2, 100);
+    std::printf("S4 upgrade start: rejection=%d credits=%u ticksRequired=%u\n", (int)r, build.Credits(1), build.Item(1).ticksRequired);
+    for (int i = 0; i < 10; ++i) Step(world, mining, economy, build);
+    world.Destroy(module);
+    Step(world, mining, economy, build);
+    std::printf("S4 module destroyed at tick 11: wire design byte=%u progress=%u%% credits=%u (still deducted, item still shown)\n",
+      build.WireBuildingDesign(1), build.WireProgressPercent(1), build.Credits(1));
+    int t = 11; while (build.Item(1).active) { Step(world, mining, economy, build); ++t; }
+    std::printf("S4 refunded at tick %d: credits=%u stranded=%llu\n", t, build.Credits(1), (unsigned long long)build.StrandedCount());
+    // the build-rate multiplier is baked at start
+    build.Cancel(1);
+    const std::uint32_t withYard = build.TicksToBuild(DesignId::Fighter, BuildRateMultiplierPercent(world, 1));
+    std::printf("S4b multiplier read at start: Fighter ticks with the (now dead) shipyard's world = %u; a live L1 would give %u, none %u\n",
+      withYard, build.TicksToBuild(DesignId::Fighter, 150), build.TicksToBuild(DesignId::Fighter, 100));
+  }
+  // ---------------------------------------------------------------- S5: 55 removals in one tick against the cap of 48
+  {
+    World world; Accumulator acc; acc.Begin();
+    std::vector<EntityId> ids;
+    ids.push_back(world.Create(At(-6000,0), 0, DesignId::Station, 2));
+    for (int i = 0; i < 4; ++i) ids.push_back(world.Create(At(-6000 + 100*i, 300), 0, DesignId::ModuleShipyardL1, 2));
+    for (int i = 0; i < 50; ++i) ids.push_back(world.Create(At(-5000 + 20*i, 0), 0, DesignId::Fighter, 2));
+    for (int i = 0; i < 5; ++i) world.Create(At(6000, 20*i), 0, DesignId::Fighter, 1);
+    acc.SetView(1, QuantizePosition(-6000*256), 0, 3000);
+    PlayerBlock own{};
+    for (std::uint32_t t = 1; t <= 3; ++t) acc.Fill(world, 1, own, t); // everything sent
+    for (const EntityId id : ids) world.Destroy(id); // elimination: station, 4 modules, 50 ships in one tick
+    std::set<WireIdentity> seen; std::uint32_t t = 4;
+    std::printf("S5 elimination of 55 entities at tick 4; removals per update and first-seen counts:\n");
+    for (; t <= 30 && seen.size() < ids.size(); ++t) {
+      const std::vector<Update> ups = acc.Fill(world, 1, own, t);
+      std::size_t fresh = 0;
+      for (const WireIdentity r : ups.front().removals) if (seen.insert(r).second) ++fresh;
+      if (!ups.front().removals.empty()) std::printf("   tick %2u: %2zu removals in the update, %2zu new, %2zu of 55 delivered so far\n", t, ups.front().removals.size(), fresh, seen.size());
+    }
+  }
+  // ---------------------------------------------------------------- S6: free list order
+  {
+    World world; std::vector<EntityId> ids;
+    for (int i = 0; i < 6; ++i) ids.push_back(world.Create(At(0,0), 0, DesignId::Fighter, 1));
+    world.Destroy(ids[1]); world.Destroy(ids[4]); world.Destroy(ids[2]);
+    const EntityId n1 = world.Create(At(0,0), 0, DesignId::Fighter, 1), n2 = world.Create(At(0,0), 0, DesignId::Fighter, 1), n3 = world.Create(At(0,0), 0, DesignId::Fighter, 1);
+    std::printf("S6 freed 1,4,2 -> reused %u,%u,%u (LIFO; World.h:79 says 'lowest-numbered free slot')\n", n1.index, n2.index, n3.index);
+  }
+  return 0;
+}
