@@ -123,6 +123,9 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
 
   const Neuron::Fixed spacing = RingSpacingFor(_world, _selection);
 
+  // One group for everything this order moves (Q53): they share a ring and do not avoid each other.
+  const std::uint32_t group = _world.NewOrderGroup();
+
   std::size_t ordered = 0;
   for (std::size_t slot = 0; slot < candidates.size(); ++slot)
   {
@@ -138,7 +141,7 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
     // **R24, AT LAST.** The intake carried a constant with a comment saying this would be derived from
     // thrust over mass; M1.2 made the derivation and M1.3 put the design on the entity, so the number
     // is now the ship's own. A Miner moves 5 units a tick and a Fighter 7.
-    if (_world.OrderMoveTo(candidates[slot].id, destination, SpeedPerTick(entity->design), TurnAnglePerTick(entity->design)))
+    if (_world.OrderMoveTo(candidates[slot].id, destination, SpeedPerTick(entity->design), TurnAnglePerTick(entity->design), group))
     {
       ++ordered;
     }

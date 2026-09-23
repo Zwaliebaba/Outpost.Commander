@@ -36,10 +36,6 @@ inline constexpr std::int64_t GRID_ORIGIN_UNITS = (GRID_CELL_UNITS * GRID_CELLS_
 /// part of its stream rather than in its way.
 inline constexpr std::int32_t SAME_STREAM_ANGLE = 8192;
 
-/// Q53: within this many of its own sizes of its destination, a ship ignores other ships and flies
-/// straight into its slot. Three sizes is two ship-to-ship steering radii.
-inline constexpr std::int64_t FINAL_APPROACH_SIZES = 3;
-
 /// One entity as it stood at the start of the tick, in whole world units. Units rather than `Fixed`,
 /// because the blocking test multiplies two squared distances and at `Fixed` precision that is past 2^64.
 struct Occupant
@@ -55,8 +51,11 @@ struct Occupant
   /// No drive: a station or a module (Q52). Always avoided, final approach or not.
   bool structure;
 
-  /// Has an order it is carrying out, at a speed above zero. A parked ship is always avoided.
+  /// Has an order it is carrying out, at a speed above zero.
   bool moving;
+
+  /// The group of its latest order (Q53). A ship does not avoid another in its own group.
+  std::uint32_t group;
 };
 
 /// **THE WORLD AS IT STOOD WHEN THE TICK BEGAN**, so which ship moves first in index order never changes
@@ -103,7 +102,8 @@ struct Snapshot
                             .halfSizeUnits = HalfSizeUnits(entity.design),
                             .heading = entity.heading,
                             .structure = Derive(entity.design).speedUnitsPerSecond == 0,
-                            .moving = order.active && (order.speedPerTick > 0)};
+                            .moving = order.active && (order.speedPerTick > 0),
+                            .group = order.group};
 
     const std::size_t cell = static_cast<std::size_t>((CellOf(occupant.yUnits) * GRID_CELLS_ACROSS) + CellOf(occupant.xUnits));
     snapshot.cells[cell].push_back(static_cast<std::uint32_t>(snapshot.occupants.size()));
@@ -116,8 +116,8 @@ struct Snapshot
 ///
 /// **Q52 AND Q53, RECOMPUTED EVERY TICK AND STORED NOWHERE.** Something blocks when the straight line
 /// from the ship to its destination passes inside its steering circle, and neither the ship nor the
-/// destination is inside its keep-out circle. Q53's three exceptions apply to ships and never to
-/// structures: a ship flying the same way, a ship met on the final approach, and anything past the
+/// destination is inside its keep-out circle. Q53's exceptions apply to ships and never to
+/// structures: a ship given the same order, a moving ship flying the same way, and anything past the
 /// look-ahead. The nearest along the line wins, and the lower entity index breaks a tie. The ship then
 /// steers for the tangent on the side of the line the obstacle is not on.
 ///
@@ -141,8 +141,6 @@ struct Snapshot
   }
 
   const std::int64_t moverHalf = _mover.halfSizeUnits;
-  const std::int64_t finalApproach = FINAL_APPROACH_SIZES * 2 * moverHalf;
-  const bool onFinalApproach = pathSquared <= (finalApproach * finalApproach);
 
   const Occupant* nearest = nullptr;
   std::int64_t nearestAlong = 0;
@@ -177,7 +175,7 @@ struct Snapshot
 
         if (!other.structure)
         {
-          if (onFinalApproach)
+          if ((other.group != NO_ORDER_GROUP) && (other.group == _mover.group))
           {
             continue;
           }

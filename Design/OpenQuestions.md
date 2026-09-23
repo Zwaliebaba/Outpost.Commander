@@ -660,9 +660,11 @@ plain version jams or weaves:
 2. **Except a ship flying the same way.** A moving ship whose heading is within an eighth of a turn of
    the mover's is in the same stream, and is not avoided. Without this, a fleet flying in formation
    swerves around itself, because the ring puts neighbors exactly one hull apart.
-3. **The final approach is clear.** Within two steering radii of its own destination, a ship ignores
-   other ships and flies straight in. Without this, a ship bound for an inner ring slot could never get
-   past the ships already parked around it. The cost is that it overlaps a neighbor briefly at the end.
+3. **Ships given the same order ignore each other.** One fleet order is one group, and the group
+   outlives the order. Without this, a ship bound for an inner ring slot could never get past the ships
+   already parked around it. **It replaced a first attempt the same day**, a final approach within three
+   ship sizes of the destination. That rule let a Fighter fly straight through a Miner parked 98 units
+   past its destination, which is how the device found it.
 4. **Only what is within 400 world units is considered**, structures included, found through
    `TechnicalDesign.md` §2's uniform grid of 512-unit cells. Four hundred is well past the 45-unit
    turning radius (Q51) and the widest steering circle, so a ship still starts its swerve in time. The
@@ -673,10 +675,12 @@ plain version jams or weaves:
 never changes what the other one sees. The nearest obstacle along the line wins, and the lower entity
 index breaks a tie.
 
-**What it costs, measured 2026-09-23** with ADR-022's harness on the Surface Pro, `Release|ARM64`, the
-host's whole CPU over 60 seconds: **17.8 ms a tick at 128 seats, against 11.2 before Q53**, and still
-no tick abandoned. At two seats it is 0.36 ms, which is lost in the noise. So avoidance is about a third
-of what the host now spends at the stress ceiling, and the grid is why it is not most of it.
+**What it costs, measured 2026-09-23** with ADR-022's harness on the Surface Pro, `Release|ARM64`, as the
+host's whole CPU over 60 seconds. **At 128 seats it was 17.8 ms a tick with the first rule and 15.6
+with the order groups, against 11.2 before Q53**, and no tick was abandoned. At two seats it is 0.36 ms,
+lost in the noise. **Read these as a check and not a benchmark.** One run with the groups measured
+5.3 ms, and it delivered about a third fewer updates than the others, for a reason nobody has found. So
+it is not quoted as the figure. The grid is why avoidance costs a fraction of the tick and not most of it.
 
 **What would reopen it** is a formation or a battle that jams anyway. That is M3's to find, when fleets
 first meet on purpose.

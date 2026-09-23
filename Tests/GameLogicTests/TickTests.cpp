@@ -457,6 +457,28 @@ public:
     Assert::IsTrue(world.Find(parked)->position == InUnits(0, 0), L"the parked ship was moved");
   }
 
+  TEST_METHOD(AShipGoesAroundAShipParkedBesideItsDestination)
+  {
+    // THE CASE THE DEVICE FOUND, from the log of 2026-09-23 and relative to the parked Miner: a Fighter
+    // sent from in front of its station to a point 98 units past the Miner, on a line straight through
+    // it. A "final approach" exception let it fly through, and Q53's order groups replaced it.
+    Outpost::World world;
+    const Outpost::EntityId parked = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
+    const Outpost::EntityId fighter = world.Create(InUnits(716, 175), 32768, Outpost::DesignId::Fighter);
+    Assert::IsTrue(world.OrderMoveTo(fighter, InUnits(-96, -22), Outpost::SpeedPerTick(Outpost::DesignId::Fighter),
+                                     Outpost::TurnAnglePerTick(Outpost::DesignId::Fighter)));
+
+    const std::int64_t keepOut =
+      (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Fighter).hull).sizeUnits) / 2) + (ShipKeepOutUnits() / 2);
+    for (int tick = 0; tick < 800; ++tick)
+    {
+      Outpost::Tick(world);
+      Assert::IsTrue(DistanceSquaredUnits(world.Find(fighter)->position, world.Find(parked)->position) >= (keepOut * keepOut),
+                     L"the Fighter flew through the parked Miner");
+    }
+    Assert::IsTrue(world.Find(fighter)->position == InUnits(-96, -22), L"the Fighter did not arrive");
+  }
+
   TEST_METHOD(ShipsFlyingTheSameWayDoNotSwerve)
   {
     // Q53's first exception: two abreast, one hull apart as the ring places them, flying the same way.
@@ -478,8 +500,9 @@ public:
 
   TEST_METHOD(AFleetOrderedToOnePointFillsItsRingWithoutJamming)
   {
-    // Q53's second exception is what lets this hold: the inner slots are reached through the ships
-    // already parked around them. Twelve Miners, the first two rings and five of the third.
+    // Q53's order group is what lets this hold: the ships of one order do not avoid each other, so the
+    // inner slots are reached through the ones already parked around them. Twelve Miners, the first
+    // two rings and five of the third.
     Outpost::World world;
     std::vector<Outpost::EntityId> fleet;
     for (std::int32_t index = 0; index < 12; ++index)

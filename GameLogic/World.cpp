@@ -105,17 +105,27 @@ const Entity* World::Find(EntityId _id) const noexcept
   return (found == nullptr) ? nullptr : &found->entity;
 }
 
-bool World::OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick,
-                        std::uint16_t _turnAnglePerTick) noexcept
+bool World::OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick, std::uint16_t _turnAnglePerTick,
+                        std::uint32_t _group) noexcept
 {
   if (ResolveSlot(_id) == nullptr)
   {
     return false;
   }
 
-  m_slots[_id.index].order =
-    MoveOrder{.destination = _destination, .speedPerTick = _speedPerTick, .turnAnglePerTick = _turnAnglePerTick, .active = true};
+  m_slots[_id.index].order = MoveOrder{
+    .destination = _destination, .speedPerTick = _speedPerTick, .turnAnglePerTick = _turnAnglePerTick, .group = _group, .active = true};
   return true;
+}
+
+std::uint32_t World::NewOrderGroup() noexcept
+{
+  ++m_lastOrderGroup;
+  if (m_lastOrderGroup == NO_ORDER_GROUP)
+  {
+    ++m_lastOrderGroup;
+  }
+  return m_lastOrderGroup;
 }
 
 const MoveOrder* World::FindOrder(EntityId _id) const noexcept

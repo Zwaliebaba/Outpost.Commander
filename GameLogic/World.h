@@ -9,6 +9,10 @@
 namespace Outpost
 {
 
+/// Q53: the group of a move order that was given to no fleet -- a test's, or the host's M0 demo ship's.
+/// Two ships in no group are strangers, and avoid each other.
+inline constexpr std::uint32_t NO_ORDER_GROUP = 0;
+
 /// Where an entity has been told to go, and how fast it gets there. HOST-ONLY, which is why it is
 /// here and not on `GameCore`'s Entity: the client is never sent an order, it is sent the position
 /// the order produced (R19). R24 will derive the speed from thrust over mass once there is a
@@ -26,6 +30,10 @@ struct MoveOrder
   /// Binary-angle units a tick the heading may swing toward where it is going (Q51). Half a turn or
   /// more turns at once.
   std::uint16_t turnAnglePerTick = 0;
+
+  /// Q53: **ships given the same order do not avoid each other**, which is what lets a fleet fill its
+  /// ring. It outlives the order, so a straggler still slots in among the ones that arrived first.
+  std::uint32_t group = NO_ORDER_GROUP;
 
   bool active = false;
 };
@@ -70,7 +78,13 @@ public:
   /// False on a stale identity. A speed of zero is legal and means an entity that has somewhere to
   /// be and no way to get there; it never arrives, and that is the honest outcome rather than a
   /// teleport.
-  bool OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick, std::uint16_t _turnAnglePerTick) noexcept;
+  bool OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick, std::uint16_t _turnAnglePerTick,
+                   std::uint32_t _group = NO_ORDER_GROUP) noexcept;
+
+  /// A group no order has had yet, for one fleet order's ships (Q53). Counted, never zero, and a pure
+  /// function of how many groups came before it -- so two hosts given the same commands number them
+  /// the same.
+  [[nodiscard]] std::uint32_t NewOrderGroup() noexcept;
 
   [[nodiscard]] const MoveOrder* FindOrder(EntityId _id) const noexcept;
 
@@ -118,6 +132,7 @@ private:
   std::vector<std::uint16_t> m_freeIndices;
 
   std::size_t m_aliveCount = 0;
+  std::uint32_t m_lastOrderGroup = NO_ORDER_GROUP;
 };
 
 } // namespace Outpost

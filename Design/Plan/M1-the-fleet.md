@@ -831,6 +831,14 @@ grid, and it moved the hash a second time, to `0x3a759511ba284377`, again the sa
 before it was pinned. The suite adds a head-on meeting, a parked ship in the way, a stream that must not
 swerve, and a fleet of twelve that fills its ring without jamming.
 
+**THE DEVICE LOOKED AGAIN AND A SHIP STILL FLEW THROUGH ANOTHER.** The log showed why. A Fighter was
+sent 98 units past a parked Miner, and Q53's final-approach rule ignored every ship within three of its
+own sizes of its destination. That is 270 units for a Fighter, which covers any short order near
+another ship. **Order groups replaced the rule**: the ships of one fleet order ignore each other, and
+every other ship is always avoided. The device's exact case is now a test. The hash went back to
+`0xc8b1069f59fa3f85`, the same on all four pairs, because the scripted match's ships are all ordered as
+whole fleets.
+
 **BUILT 2026-09-23, ALL FOUR PAIRS, NOT YET LOOKED AT.** `BearingOf` in `NeuronCore` is a binary
 search of the sine table's first octant, pinned exact at the cardinals and diagonals and within one
 step all the way round. Turn rate is `TURN_GAIN` × thrust ÷ mass: 23,400 for a Miner and 32,760 for a

@@ -363,8 +363,8 @@ the selection. A formation system later is this same assignment with a different
 **A ship does not fly through anything solid.** A station, a module or another ship whose keep-out
 circle lies across a ship's line gets steered around, on the side the ship is already on, and the route
 is recomputed every tick rather than stored (`OpenQuestions.md` Q52, Q53). Three exceptions keep a
-fleet from jamming. A ship flying the same way is part of the same stream. A ship on its final approach
-flies straight into its slot. And only what is within 400 units counts.
+fleet from jamming. Ships sent by one order ignore each other. A ship flying the same way is part of the
+same stream. And only what is within 400 units counts.
 
 **A module is a target like anything else.** Its hit value quarters what reaches it, so one fighter needs
 about two minutes to kill a module and three need forty seconds. That is deliberate — a module is a raid
