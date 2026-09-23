@@ -57,8 +57,8 @@ struct ExpansionOutcome
 ///
 /// The anchor itself is always included -- it is inside its own circle at distance zero, and saying so
 /// is cheaper than a reader wondering.
-[[nodiscard]] std::vector<std::uint16_t> ShipsInGroupCircle(const CameraPose& _pose, const HitTestRequest& _request,
-                                                            std::span<const EntityRecord> _entities, std::uint16_t _anchorIdentity);
+[[nodiscard]] std::vector<WireIdentity> ShipsInGroupCircle(const CameraPose& _pose, const HitTestRequest& _request,
+                                                           std::span<const EntityRecord> _entities, WireIdentity _anchorIdentity);
 
 /// The second tap. **It is an upgrade and it can only ever add**, so a selection that was already
 /// expanded and is tapped again simply stays expanded.
@@ -66,7 +66,7 @@ struct ExpansionOutcome
 /// _anchorIdentity is what the FIRST tap selected; _tappedIdentity is what this tap resolved to.
 /// Returns `expanded = false` and changes nothing when they differ.
 [[nodiscard]] ExpansionOutcome ExpandSelection(Selection& _selection, const CameraPose& _pose, const HitTestRequest& _request,
-                                               std::span<const EntityRecord> _entities, std::uint16_t _anchorIdentity,
-                                               std::uint16_t _tappedIdentity);
+                                               std::span<const EntityRecord> _entities, WireIdentity _anchorIdentity,
+                                               WireIdentity _tappedIdentity);
 
 } // namespace Outpost

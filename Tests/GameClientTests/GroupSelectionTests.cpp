@@ -30,7 +30,7 @@ constexpr float FRAME_ASPECT = FRAME_WIDTH / FRAME_HEIGHT;
   record.positionX = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(_worldX * Neuron::FIXED_ONE));
   record.positionY = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(_worldY * Neuron::FIXED_ONE));
   record.designIdentity = static_cast<std::uint8_t>(_design);
-  record.flags = static_cast<std::uint8_t>((_owner & Outpost::FLAGS_TEAM_MASK) << Outpost::FLAGS_TEAM_SHIFT);
+  record.owner = _owner;
   return record;
 }
 
@@ -89,7 +89,7 @@ public:
     entities.push_back(Ship(4, 0.0f, insideUnits, OURS, Outpost::DesignId::Miner));    // wrong design
     entities.push_back(Ship(5, 0.0f, insideUnits, ENEMY, Outpost::DesignId::Fighter)); // wrong owner
 
-    const std::vector<std::uint16_t> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
+    const std::vector<Outpost::WireIdentity> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
 
     Assert::AreEqual(static_cast<std::size_t>(3), taken.size());
   }
@@ -101,7 +101,7 @@ public:
     const Outpost::CameraPose pose = Overhead(6000.0f);
     const std::vector<Outpost::EntityRecord> entities{Ship(1, 0.0f, 0.0f, OURS, Outpost::DesignId::Fighter)};
 
-    const std::vector<std::uint16_t> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
+    const std::vector<Outpost::WireIdentity> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
     Assert::AreEqual(static_cast<std::size_t>(1), taken.size());
     Assert::AreEqual(static_cast<int>(Outpost::PackIdentity(1, 1)), static_cast<int>(taken[0]));
   }
@@ -118,7 +118,7 @@ public:
     entities.push_back(Ship(2, 0.0f, (Outpost::GROUP_RADIUS_AUTHORED_PIXELS - 1.0f) / perUnit, OURS, Outpost::DesignId::Fighter));
     entities.push_back(Ship(3, 0.0f, (Outpost::GROUP_RADIUS_AUTHORED_PIXELS + 8.0f) / perUnit, OURS, Outpost::DesignId::Fighter));
 
-    const std::vector<std::uint16_t> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
+    const std::vector<Outpost::WireIdentity> taken = Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1));
 
     Assert::AreEqual(static_cast<std::size_t>(2), taken.size(), L"the ship on the edge was not taken, or the one past it was");
   }
@@ -185,7 +185,7 @@ public:
                      Outpost::ShipsInGroupCircle(pose, Request(), entities, Outpost::PackIdentity(1, 1)).size());
   }
 
-  TEST_METHOD(AnAnchorTheSnapshotDoesNotCarryTakesNothing)
+  TEST_METHOD(AnAnchorTheStoreDoesNotCarryTakesNothing)
   {
     const Outpost::CameraPose pose = Overhead(6000.0f);
     const std::vector<Outpost::EntityRecord> entities{Ship(1, 0.0f, 0.0f, OURS, Outpost::DesignId::Fighter)};

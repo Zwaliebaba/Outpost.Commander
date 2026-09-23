@@ -7,7 +7,7 @@
     <ClCompile Include="JoinTests.cpp" />
     <ClCompile Include="LayoutTests.cpp" />
     <ClCompile Include="GeneratorTests.cpp" />
-    <ClCompile Include="SnapshotTests.cpp" />
+    <ClCompile Include="UpdateTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -81,12 +81,12 @@ public:
     Assert::AreEqual(std::uint64_t{0}, received.sentAtMs, L"a refused packet must leave the destination alone");
   }
 
-  TEST_METHOD(ARealSnapshotIsRefusedRatherThanReadAsAProbe)
+  TEST_METHOD(ARealUpdateIsRefusedRatherThanReadAsAProbe)
   {
     std::array<std::byte, Neuron::ProbePacket::SIZE_BYTES> buffer{};
     Neuron::ByteWriter writer{buffer};
-    const Neuron::PacketHeader snapshot{.type = Neuron::PacketType::Snapshot, .sequence = 5};
-    Assert::IsTrue(snapshot.Write(writer));
+    const Neuron::PacketHeader update{.type = Neuron::PacketType::Update, .sequence = 5};
+    Assert::IsTrue(update.Write(writer));
     Assert::IsTrue(writer.WriteUInt64(1234));
 
     Neuron::ByteReader reader{buffer};

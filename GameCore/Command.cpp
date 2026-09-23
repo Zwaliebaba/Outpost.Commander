@@ -9,7 +9,7 @@ namespace Outpost
 
 std::size_t EncodedSize(const Command& _command) noexcept
 {
-  return Command::FIXED_BYTES + (_command.selection.size() * sizeof(std::uint16_t));
+  return Command::FIXED_BYTES + (_command.selection.size() * Command::IDENTITY_BYTES);
 }
 
 std::size_t EncodedSize(const CommandPacket& _packet) noexcept
@@ -46,6 +46,9 @@ bool Encode(const CommandPacket& _packet, Neuron::ByteWriter& _writer) noexcept
 
   static_cast<void>(_writer.WriteUInt8(_packet.player));
   static_cast<void>(_writer.WriteUInt8(static_cast<std::uint8_t>(_packet.commands.size())));
+  static_cast<void>(_writer.WriteInt16(_packet.viewX));
+  static_cast<void>(_writer.WriteInt16(_packet.viewY));
+  static_cast<void>(_writer.WriteUInt16(_packet.viewRadiusUnits));
 
   for (const Command& command : _packet.commands)
   {
@@ -54,9 +57,9 @@ bool Encode(const CommandPacket& _packet, Neuron::ByteWriter& _writer) noexcept
     static_cast<void>(_writer.WriteInt16(command.targetX));
     static_cast<void>(_writer.WriteInt16(command.targetY));
     static_cast<void>(_writer.WriteUInt8(static_cast<std::uint8_t>(command.selection.size())));
-    for (const std::uint16_t selected : command.selection)
+    for (const WireIdentity selected : command.selection)
     {
-      static_cast<void>(_writer.WriteUInt16(selected));
+      static_cast<void>(_writer.WriteUInt24(selected));
     }
   }
 
@@ -82,13 +85,12 @@ CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noex
   {
     return CommandFault::WrongType;
   }
-  if (!header.IsSingleFragment())
-  {
-    return CommandFault::Fragmented;
-  }
 
   const std::uint8_t player = _reader.ReadUInt8();
   const std::uint8_t commandCount = _reader.ReadUInt8();
+  const std::int16_t viewX = _reader.ReadInt16();
+  const std::int16_t viewY = _reader.ReadInt16();
+  const std::uint16_t viewRadiusUnits = _reader.ReadUInt16();
   if (_reader.Faulted())
   {
     return CommandFault::Truncated;
@@ -97,6 +99,16 @@ CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noex
   CommandPacket lifted;
   lifted.sequence = header.sequence;
   lifted.player = player;
+  lifted.viewX = viewX;
+  lifted.viewY = viewY;
+  lifted.viewRadiusUnits = viewRadiusUnits;
+
+  // NOT RESERVED FROM THE COUNT. Every command is at least `Command::FIXED_BYTES`, so a count the rest
+  // of the datagram cannot hold is refused here rather than turned into an allocation.
+  if ((static_cast<std::size_t>(commandCount) * Command::FIXED_BYTES) > _reader.RemainingBytes())
+  {
+    return CommandFault::Malformed;
+  }
   lifted.commands.reserve(commandCount);
 
   for (std::uint8_t index = 0; index < commandCount; ++index)
@@ -121,7 +133,7 @@ CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noex
     // THE COUNT IS CHECKED AGAINST WHAT IS LEFT BEFORE ANYTHING IS RESERVED FOR IT -- a selection
     // count is whatever the datagram said, and ADR-003's whole amplification argument is that a
     // packet can name far more identities than any match contains.
-    if ((static_cast<std::size_t>(selectionCount) * sizeof(std::uint16_t)) > _reader.RemainingBytes())
+    if ((static_cast<std::size_t>(selectionCount) * Command::IDENTITY_BYTES) > _reader.RemainingBytes())
     {
       return CommandFault::Malformed;
     }
@@ -129,7 +141,7 @@ CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noex
     command.selection.reserve(selectionCount);
     for (std::uint8_t selected = 0; selected < selectionCount; ++selected)
     {
-      command.selection.push_back(_reader.ReadUInt16());
+      command.selection.push_back(_reader.ReadUInt24());
     }
     lifted.commands.push_back(std::move(command));
   }

@@ -3,6 +3,7 @@
     <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
+  <Project Path="Bot/Bot.vcxproj" Id="{daabb847-a12c-4daf-9bff-74c215a013ab}" />
   <Project Path="GameClient/GameClient.vcxproj" Id="{e984c62f-3a5e-4b4c-b86f-471e8ced9419}" />
   <Project Path="GameCore/GameCore.vcxitems" Id="{e3b6e2e3-ea70-4f7e-a235-4306602eb3f7}" />
   <Project Path="GameLogic/GameLogic.vcxproj" Id="{fab7f7ca-841a-4a36-83b0-9681839fafbd}" />

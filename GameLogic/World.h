@@ -85,7 +85,7 @@ public:
 
   /// How many live entities a player owns. THE BOUND Q24 PUTS ON A SELECTION: a command naming
   /// more identities than the sender has entities is refused outright, which is what turns
-  /// ADR-003's 5.5x amplification into a rejected packet rather than a loop.
+  /// ADR-003's amplification (3.7x since ADR-024) into a rejected packet rather than a loop.
   [[nodiscard]] std::size_t OwnedCount(PlayerId _owner) const noexcept;
 
   [[nodiscard]] bool IsSlotAlive(std::size_t _slot) const noexcept;

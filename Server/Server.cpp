@@ -122,10 +122,11 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 // End of M0.5 scaffolding.
 // ---------------------------------------------------------------------------------------------
 
-[[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds, std::uint64_t _matchSeed)
+[[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds, std::uint64_t _matchSeed, std::size_t _playerCount,
+                          bool _stress)
 {
   Outpost::Host host;
-  host.BeginMatch(_matchSeed);
+  host.BeginMatch(_matchSeed, _playerCount);
   if (!host.Open(_port))
   {
     std::printf("host: could not open port %u, WSA fault %d\n", _port, host.LastFault());
@@ -137,11 +138,13 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   // same field from it -- so the one number that has to match across two machines is the one number
   // worth seeing in the log.
   std::printf("host: match seed %llu\n", static_cast<unsigned long long>(host.MatchSeed()));
+  // **A STRESS RUN SAYS SO**, first thing, because its layout is not fair and its numbers are not a match's.
+  std::printf("host: %zu players%s\n", host.PlayerCount(), _stress ? " -- STRESS CONFIGURATION, not a match" : "");
   std::printf("host: %lld ms a tick; Ctrl+C to stop\n", static_cast<long long>(Outpost::TICK_PERIOD_MILLISECONDS));
   std::fflush(stdout);
 
   // One entity that goes somewhere, which is the whole of the simulation at M0 and is what makes
-  // a client's snapshot show something moving rather than an empty world.
+  // a client's updates show something moving rather than an empty world.
   const Outpost::EntityId first = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, 1);
   static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288}, 7 * 256));
 
@@ -171,10 +174,10 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
     if (second != reportedAtSecond)
     {
       reportedAtSecond = second;
-      std::printf("host: t=%llus ticks=%llu abandoned=%llu snapshot=%u clients=%zu rejected=%llu\n",
+      std::printf("host: t=%llus ticks=%llu abandoned=%llu updates=%llu clients=%zu rejected=%llu\n",
                   static_cast<unsigned long long>(second), static_cast<unsigned long long>(schedule.TicksIssued()),
-                  static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence(), host.ClientCount(),
-                  static_cast<unsigned long long>(host.RejectedDatagramCount()));
+                  static_cast<unsigned long long>(schedule.TicksAbandoned()), static_cast<unsigned long long>(host.UpdatesSent()),
+                  host.ClientCount(), static_cast<unsigned long long>(host.RejectedDatagramCount()));
       std::fflush(stdout);
     }
 
@@ -183,8 +186,8 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
     std::this_thread::sleep_until(schedule.NextDeadline());
   }
 
-  std::printf("host: %llu ticks, %llu abandoned, %u snapshots\n", static_cast<unsigned long long>(schedule.TicksIssued()),
-              static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence());
+  std::printf("host: %llu ticks, %llu abandoned, %llu updates\n", static_cast<unsigned long long>(schedule.TicksIssued()),
+              static_cast<unsigned long long>(schedule.TicksAbandoned()), static_cast<unsigned long long>(host.UpdatesSent()));
   std::printf("host: %llu joins, %llu commands from nobody seated, %llu misaddressed\n", static_cast<unsigned long long>(host.JoinCount()),
               static_cast<unsigned long long>(host.UnjoinedCommandCount()),
               static_cast<unsigned long long>(host.MisaddressedCommandCount()));
@@ -205,7 +208,8 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 }
 
 /// One string, because four copies of it were four chances to add an option to three of them.
-inline constexpr const char* USAGE = "usage: Server [--port N] [--seconds N] [--seed N] [--probe]\n";
+inline constexpr const char* USAGE = "usage: Server [--port N] [--seconds N] [--seed N] [--players N [--stress]] [--probe]\n"
+                                     "  --players is 1 to 4, or up to 254 with --stress (ADR-023)\n";
 } // namespace
 
 int main(int _argc, char** _argv)
@@ -218,6 +222,8 @@ int main(int _argc, char** _argv)
   // ADR-013 makes the match seed the host's, and configuration. Zero is a legal seed, so the
   // default is a named constant rather than a sentinel.
   std::uint64_t matchSeed = Outpost::DEFAULT_MATCH_SEED;
+  std::uint32_t playerCount = static_cast<std::uint32_t>(Outpost::Host::DEFAULT_PLAYER_COUNT);
+  bool stress = false;
   bool probe = false;
 
   for (std::size_t index = 1; index < arguments.size(); ++index)
@@ -228,6 +234,19 @@ int main(int _argc, char** _argv)
     if (argument == "--probe")
     {
       probe = true;
+    }
+    else if (argument == "--stress")
+    {
+      stress = true;
+    }
+    else if ((argument == "--players") && hasValue)
+    {
+      ++index;
+      if (!ParseNumber(std::string_view{arguments[index]}, playerCount))
+      {
+        std::fputs(USAGE, stderr);
+        return 2;
+      }
     }
     else if ((argument == "--port") && hasValue)
     {
@@ -263,5 +282,13 @@ int main(int _argc, char** _argv)
     }
   }
 
-  return probe ? RunProbe(durationSeconds) : RunHost(static_cast<std::uint16_t>(port), durationSeconds, matchSeed);
+  // CHECKED AFTER EVERY ARGUMENT IS READ, so `--stress` may come before or after `--players`.
+  if (!Outpost::PlayerCountAllowed(playerCount, stress))
+  {
+    std::fputs(USAGE, stderr);
+    return 2;
+  }
+
+  return probe ? RunProbe(durationSeconds)
+               : RunHost(static_cast<std::uint16_t>(port), durationSeconds, matchSeed, static_cast<std::size_t>(playerCount), stress);
 }

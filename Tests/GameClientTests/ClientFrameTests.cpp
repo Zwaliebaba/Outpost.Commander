@@ -9,27 +9,25 @@ namespace GameClientTests
 
 namespace
 {
-/// A snapshot encoded onto the wire, which is what a frame actually receives -- these tests drive
-/// the drain through the real decoder rather than handing it a struct, because the decode is half
-/// of what the drain does.
-[[nodiscard]] std::vector<std::byte> EncodedSnapshot(std::uint16_t _sequence, std::uint16_t _lastCommandApplied, std::int16_t _positionX)
+/// An update encoded onto the wire, which is what a frame actually receives -- these tests drive the
+/// drain through the real decoder rather than handing it a struct, because the decode is half of what
+/// the drain does. One entity, at a tick that doubles as the sequence, and this client's own block.
+[[nodiscard]] std::vector<std::byte> EncodedUpdate(std::uint16_t _tick, std::uint16_t _lastCommandApplied, std::int16_t _positionX)
 {
-  Outpost::Snapshot snapshot;
-  snapshot.sequence = _sequence;
-  snapshot.tick = _sequence;
-
-  Outpost::PlayerBlock player;
-  player.lastCommandSequenceApplied = _lastCommandApplied;
-  snapshot.players.push_back(player);
+  Outpost::Update update;
+  update.sequence = _tick;
+  update.tick = _tick;
+  update.liveEntityCount = 1;
+  update.own.lastCommandSequenceApplied = _lastCommandApplied;
 
   Outpost::EntityRecord record;
-  record.identity = Outpost::PackIdentity(1, 0);
+  record.identity = Outpost::PackIdentity(1, 1);
   record.positionX = _positionX;
-  snapshot.entities.push_back(record);
+  update.records.push_back(record);
 
-  std::vector<std::byte> bytes(Outpost::EncodedSize(snapshot));
+  std::vector<std::byte> bytes(Outpost::EncodedSize(update));
   Neuron::ByteWriter writer{bytes};
-  Assert::IsTrue(Outpost::Encode(snapshot, writer));
+  Assert::IsTrue(Outpost::Encode(update, writer));
   return bytes;
 }
 
@@ -61,9 +59,9 @@ public:
   TEST_METHOD(ADrainTakesEverythingWaiting)
   {
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    const std::vector<std::byte> first = EncodedSnapshot(1, 0, 10);
-    const std::vector<std::byte> second = EncodedSnapshot(2, 0, 20);
-    const std::vector<std::byte> third = EncodedSnapshot(3, 0, 30);
+    const std::vector<std::byte> first = EncodedUpdate(1, 0, 10);
+    const std::vector<std::byte> second = EncodedUpdate(2, 0, 20);
+    const std::vector<std::byte> third = EncodedUpdate(3, 0, 30);
     queue.Push(first);
     queue.Push(second);
     queue.Push(third);
@@ -83,7 +81,7 @@ public:
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
     const std::array<std::byte, 4> rubbish{std::byte{9}, std::byte{9}, std::byte{9}, std::byte{9}};
     queue.Push(rubbish);
-    const std::vector<std::byte> good = EncodedSnapshot(1, 0, 10);
+    const std::vector<std::byte> good = EncodedUpdate(1, 0, 10);
     queue.Push(good);
 
     Outpost::ClientFrame frame;
@@ -96,25 +94,28 @@ public:
     Assert::AreEqual(1u, result.accepted);
   }
 
-  TEST_METHOD(AnOutOfOrderSnapshotIsRefusedRatherThanFaulted)
+  /// **AN OUT-OF-ORDER UPDATE IS STILL HEARD; ITS STALE RECORD IS NOT** (ADR-024). Ordering is per entity,
+  /// by tick, so the late update is folded in and the record it carries is refused.
+  TEST_METHOD(AnOutOfOrderUpdateIsFoldedButItsStaleRecordIsRefused)
   {
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    const std::vector<std::byte> newer = EncodedSnapshot(5, 0, 50);
-    const std::vector<std::byte> older = EncodedSnapshot(4, 0, 40);
+    const std::vector<std::byte> newer = EncodedUpdate(5, 0, 50);
+    const std::vector<std::byte> older = EncodedUpdate(4, 0, 40);
     queue.Push(newer);
     queue.Push(older);
 
     Outpost::ClientFrame frame;
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
 
-    Assert::AreEqual(1u, result.accepted);
+    Assert::AreEqual(2u, result.accepted);
     Assert::AreEqual(1u, result.refused);
     Assert::AreEqual(0u, result.faulted);
+    Assert::AreEqual(std::int16_t{50}, frame.Replicas().Entities()[0].positionX, L"the stale record moved the entity");
   }
 
-  /// Q20: the marker is cleared by the snapshot whose acknowledgment covers it, and the frame reads
-  /// that from the newest snapshot rather than from each one it drained.
-  TEST_METHOD(TheAcknowledgmentInASnapshotClearsTheMarkers)
+  /// Q20: the marker is cleared by the update whose acknowledgment covers it, and the frame reads that
+  /// from the newest update rather than from each one it drained.
+  TEST_METHOD(TheAcknowledgmentInAnUpdateClearsTheMarkers)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
@@ -123,8 +124,8 @@ public:
     frame.Markers().Add(MarkerFor(3));
 
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    const std::vector<std::byte> snapshot = EncodedSnapshot(1, 2, 10);
-    queue.Push(snapshot);
+    const std::vector<std::byte> update = EncodedUpdate(1, 2, 10);
+    queue.Push(update);
 
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
 
@@ -132,39 +133,23 @@ public:
     Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
   }
 
-  /// A PLAYER IDENTITY IS ONE-BASED AND A BLOCK INDEX IS NOT, and with a single player the two are
-  /// indistinguishable -- which is why this test carries TWO blocks. `players[m_player]` reads the
-  /// wrong one and `players[m_player - 1]` reads the right one, and only a second player can tell
-  /// them apart. The single-block test above passed against both spellings.
-  TEST_METHOD(TheAcknowledgmentReadIsThisPlayersBlockAndNotTheOthers)
+  /// **THE ACKNOWLEDGMENT FOLLOWS THE NEWEST TICK.** An update carries this client's own block and nobody
+  /// else's (ADR-024), so the old danger -- reading another player's block -- is gone with the list. The
+  /// one that remains is a late update winding the acknowledgment back, and this is it: the late one
+  /// acknowledges nothing and must not stop the newer one's clearing.
+  TEST_METHOD(TheAcknowledgmentIsTheNewestTicksAndNotTheLatestArrivals)
   {
-    Outpost::Snapshot snapshot;
-    snapshot.sequence = 1;
-
-    // Player one has applied nothing; player two has applied up to five.
-    Outpost::PlayerBlock first;
-    first.lastCommandSequenceApplied = 0;
-    Outpost::PlayerBlock second;
-    second.lastCommandSequenceApplied = 5;
-    snapshot.players.push_back(first);
-    snapshot.players.push_back(second);
-
-    std::vector<std::byte> bytes(Outpost::EncodedSize(snapshot));
-    Neuron::ByteWriter writer{bytes};
-    Assert::IsTrue(Outpost::Encode(snapshot, writer));
-
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     frame.Markers().Add(MarkerFor(3));
 
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(bytes);
+    queue.Push(EncodedUpdate(9, 5, 0));
+    queue.Push(EncodedUpdate(8, 0, 0));
 
-    // Player one acknowledged nothing, so the marker stays. Reading player two's block would clear
-    // it and the client would stop drawing an order the host has not applied.
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
-    Assert::AreEqual(0u, result.markersCleared);
-    Assert::AreEqual(static_cast<std::size_t>(1), frame.Markers().Count());
+    Assert::AreEqual(1u, result.markersCleared);
+    Assert::AreEqual(static_cast<std::size_t>(0), frame.Markers().Count());
   }
 
   /// **M1.4 INVERTED THIS TEST.** It used to assert that a fresh frame is player one, because
@@ -180,15 +165,14 @@ public:
   }
 
   /// A SEATED FRAME CLEARS MARKERS AND AN UNSEATED ONE DOES NOT, which is the whole practical
-  /// difference the join makes to this class. An unseated frame still folds snapshots in -- it is
-  /// the acknowledgment channel that needs to know whose block to read.
-  TEST_METHOD(AnUnseatedFrameFoldsSnapshotsAndClearsNothing)
+  /// difference the join makes to this class. An unseated frame still folds updates in.
+  TEST_METHOD(AnUnseatedFrameFoldsUpdatesAndClearsNothing)
   {
     Outpost::ClientFrame frame;
     frame.Markers().Add(MarkerFor(3));
 
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 5, 0));
+    queue.Push(EncodedUpdate(1, 5, 0));
 
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
     Assert::AreEqual(1u, result.accepted);
@@ -203,17 +187,17 @@ public:
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
     for (std::uint16_t sequence = 1; sequence <= 3; ++sequence)
     {
-      const std::vector<std::byte> bytes = EncodedSnapshot(sequence, 0, static_cast<std::int16_t>(sequence * 10));
+      const std::vector<std::byte> bytes = EncodedUpdate(sequence, 0, static_cast<std::int16_t>(sequence * 10));
       queue.Push(bytes);
       static_cast<void>(frame.DrainPackets(queue, 1000 + (static_cast<std::uint64_t>(sequence) * 50)));
     }
 
-    // Arrivals at 1050, 1100, 1150; the frame at 1150 draws 75 behind, which is 1075 -- between the
-    // first two. The case two retained snapshots could not have served.
-    const Outpost::ReplicaStore::Frame drawn = frame.Advance(1150);
-    Assert::IsTrue(drawn.playout.state == Outpost::PlayoutState::Interpolating);
-    Assert::AreEqual(1, static_cast<int>(drawn.older->sequence));
-    Assert::AreEqual(2, static_cast<int>(drawn.newer->sequence));
+    // Arrivals at 1050, 1100, 1150; the frame at 1150 draws 75 behind, which is 1075 -- halfway between
+    // the entity's first two samples. The case two retained samples could not have served.
+    std::vector<Outpost::EntityRecord> drawn;
+    const Outpost::DrawnSummary summary = frame.Advance(1150, drawn);
+    Assert::AreEqual(1u, summary.interpolating);
+    Assert::AreEqual(std::int16_t{15}, drawn[0].positionX);
   }
 
   /// **A RECONNECTING CLIENT MUST NOT BE MUTE.** `CommandIntake` refuses a command whose sequence is
@@ -223,20 +207,10 @@ public:
   /// and watching it not move.
   TEST_METHOD(TheSequenceIsAdoptedFromWhatTheHostHasApplied)
   {
-    Outpost::Snapshot snapshot;
-    snapshot.sequence = 1;
-    Outpost::PlayerBlock block;
-    block.lastCommandSequenceApplied = 40;
-    snapshot.players.push_back(block);
-
-    std::vector<std::byte> bytes(Outpost::EncodedSize(snapshot));
-    Neuron::ByteWriter writer{bytes};
-    Assert::IsTrue(Outpost::Encode(snapshot, writer));
-
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(bytes);
+    queue.Push(EncodedUpdate(1, 40, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
 
     // One past what the host has applied, so the very first order this client sends is accepted.
@@ -246,21 +220,13 @@ public:
 
   /// ADOPTED ONCE AND ONLY FORWARDS. An acknowledgment lags the orders in flight; adopting it again
   /// would wind the counter back over commands already sent and have them refused as duplicates.
-  TEST_METHOD(TheSequenceIsNotWoundBackwardsByALaterSnapshot)
+  TEST_METHOD(TheSequenceIsNotWoundBackwardsByALaterUpdate)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
 
-    Outpost::Snapshot first;
-    first.sequence = 1;
-    Outpost::PlayerBlock a;
-    a.lastCommandSequenceApplied = 40;
-    first.players.push_back(a);
-    std::vector<std::byte> firstBytes(Outpost::EncodedSize(first));
-    Neuron::ByteWriter firstWriter{firstBytes};
-    Assert::IsTrue(Outpost::Encode(first, firstWriter));
-    queue.Push(firstBytes);
+    queue.Push(EncodedUpdate(1, 40, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
 
     // The client sends three orders; the host has acknowledged none of them yet.
@@ -268,15 +234,7 @@ public:
     Assert::AreEqual(42, static_cast<int>(frame.TakeCommandSequence()));
     Assert::AreEqual(43, static_cast<int>(frame.TakeCommandSequence()));
 
-    Outpost::Snapshot later;
-    later.sequence = 2;
-    Outpost::PlayerBlock b;
-    b.lastCommandSequenceApplied = 41;
-    later.players.push_back(b);
-    std::vector<std::byte> laterBytes(Outpost::EncodedSize(later));
-    Neuron::ByteWriter laterWriter{laterBytes};
-    Assert::IsTrue(Outpost::Encode(later, laterWriter));
-    queue.Push(laterBytes);
+    queue.Push(EncodedUpdate(2, 41, 0));
     static_cast<void>(frame.DrainPackets(queue, 1050));
 
     // Still counting on from where it was, not back to 42.
@@ -299,15 +257,16 @@ public:
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000);
     Assert::AreEqual(0u, result.datagrams);
 
-    // And there is still a frame to draw, which is Starved rather than an error.
-    const Outpost::ReplicaStore::Frame drawn = frame.Advance(1000);
-    Assert::IsTrue(drawn.playout.state == Outpost::PlayoutState::Starved);
-    Assert::IsNull(drawn.newer);
+    // And there is still a frame to draw, with nothing in it rather than an error.
+    std::vector<Outpost::EntityRecord> drawn;
+    const Outpost::DrawnSummary summary = frame.Advance(1000, drawn);
+    Assert::AreEqual(std::size_t{0}, drawn.size());
+    Assert::AreEqual(0u, summary.interpolating + summary.holding + summary.starved);
   }
 };
 
 /// `Interface.md` section 7: a client that loses the link shows the reconnecting overlay and rejoins as
-/// itself, and it comes down with the first snapshot after the host seats it again.
+/// itself, and it comes down with the first update after the host seats it again.
 TEST_CLASS(ClientFrameLink)
 {
 public:
@@ -325,13 +284,13 @@ public:
     Assert::IsTrue(refused.Link() == Outpost::LinkState::Refused);
   }
 
-  /// A snapshot a second, less a millisecond, is a link that is still there.
+  /// An update a second, less a millisecond, ago is a link that is still there.
   TEST_METHOD(ASilenceShorterThanTheThresholdIsNotALoss)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
 
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS - 1);
@@ -347,7 +306,7 @@ public:
     Outpost::ClientFrame frame;
     Seat(frame, 2);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
 
     const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS);
@@ -358,20 +317,20 @@ public:
     Assert::IsTrue(frame.MutableJoin().ShouldSend(2000), L"the rejoin goes out on the next frame");
   }
 
-  /// **A RESUME IS A SILENCE**, and the stale snapshots a suspended socket was holding land on the same
-  /// frame the loss is seen. They must not take the overlay down: only a snapshot after the host has
+  /// **A RESUME IS A SILENCE**, and the stale updates a suspended socket was holding land on the same
+  /// frame the loss is seen. They must not take the overlay down: only an update after the host has
   /// seated this client again can.
-  TEST_METHOD(SnapshotsBeforeTheRejoinIsAnsweredDoNotEndIt)
+  TEST_METHOD(UpdatesBeforeTheRejoinIsAnsweredDoNotEndIt)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
 
-    // Suspended for a minute; two stale snapshots were waiting in the socket.
-    queue.Push(EncodedSnapshot(2, 0, 0));
-    queue.Push(EncodedSnapshot(3, 0, 0));
+    // Suspended for a minute; two stale updates were waiting in the socket.
+    queue.Push(EncodedUpdate(2, 0, 0));
+    queue.Push(EncodedUpdate(3, 0, 0));
     const Outpost::ClientFrame::DrainResult resumed = frame.DrainPackets(queue, 61000);
     Assert::IsTrue(resumed.linkLost);
     Assert::AreEqual(2u, resumed.accepted);
@@ -379,14 +338,14 @@ public:
     Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
   }
 
-  /// `Interface.md` section 7: until the first snapshot lands, **then straight back to play** -- and the
-  /// reply and the snapshot commonly arrive in one drain.
-  TEST_METHOD(TheFirstSnapshotAfterTheReplyRestoresTheLink)
+  /// `Interface.md` section 7: until the first update lands, **then straight back to play** -- and the
+  /// reply and the update commonly arrive in one drain.
+  TEST_METHOD(TheFirstUpdateAfterTheReplyRestoresTheLink)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
     static_cast<void>(frame.DrainPackets(queue, 61000));
     Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
@@ -397,20 +356,20 @@ public:
     Assert::IsFalse(frame.DrainPackets(queue, 61050).linkRestored);
     Assert::IsTrue(frame.Link() == Outpost::LinkState::Reconnecting);
 
-    queue.Push(EncodedSnapshot(2, 0, 0));
+    queue.Push(EncodedUpdate(2, 0, 0));
     const Outpost::ClientFrame::DrainResult restored = frame.DrainPackets(queue, 61100);
     Assert::IsTrue(restored.linkRestored);
     Assert::IsTrue(frame.Link() == Outpost::LinkState::Linked);
   }
 
-  /// **A REJOIN THAT IS ANSWERED BUT NEVER FOLLOWED BY A SNAPSHOT ASKS ONCE A SECOND**, not once a frame.
+  /// **A REJOIN THAT IS ANSWERED BUT NEVER FOLLOWED BY AN UPDATE ASKS ONCE A SECOND**, not once a frame.
   /// The silence is measured again from the rejoin.
-  TEST_METHOD(AnAnsweredRejoinWithNoSnapshotRetriesAtTheThreshold)
+  TEST_METHOD(AnAnsweredRejoinWithNoUpdateRetriesAtTheThreshold)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
     Assert::IsTrue(frame.DrainPackets(queue, 5000).linkLost);
 
@@ -419,8 +378,8 @@ public:
     Assert::IsTrue(frame.DrainPackets(queue, 5000 + Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS).linkLost);
   }
 
-  /// A client that has never had a snapshot has no link to lose, however long the host takes to send one.
-  TEST_METHOD(NoSnapshotYetIsNotALoss)
+  /// A client that has never had an update has no link to lose, however long the host takes to send one.
+  TEST_METHOD(NoUpdateYetIsNotALoss)
   {
     Outpost::ClientFrame frame;
     Seat(frame, 1);
@@ -436,7 +395,7 @@ public:
     Outpost::ClientFrame frame;
     Seat(frame, 1);
     Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
-    queue.Push(EncodedSnapshot(1, 0, 0));
+    queue.Push(EncodedUpdate(1, 0, 0));
     static_cast<void>(frame.DrainPackets(queue, 1000));
     static_cast<void>(frame.DrainPackets(queue, 5000));
 
@@ -485,6 +444,60 @@ public:
   {
     Assert::IsTrue(Neuron::HostAddressFromFileContents("surface-pro.local") == "surface-pro.local");
     Assert::IsTrue(Neuron::HostAddressFromFileContents("not an address") == "not an address");
+  }
+
+  /// **A LOST LINK EMPTIES THE STORE** (ADR-024). The host resets this client's accumulator when it answers
+  /// the rejoin, so everything comes again within one sweep -- and whatever died meanwhile had its
+  /// removals stop repeating long ago, so anything kept could be a ghost.
+  TEST_METHOD(ALostLinkEmptiesTheStore)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    queue.Push(EncodedUpdate(1, 0, 0));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+    Assert::AreEqual(std::size_t{1}, frame.Replicas().HeldCount());
+
+    Assert::IsTrue(frame.DrainPackets(queue, 61000).linkLost);
+    Assert::AreEqual(std::size_t{0}, frame.Replicas().HeldCount());
+  }
+};
+
+/// ADR-024's view report: the empty command packet a client sends on a cadence so the host's accumulator
+/// knows what it is looking at when it has nothing to order.
+TEST_CLASS(ClientFrameView)
+{
+public:
+  /// Never before the host has seated this client -- the host refuses a packet from an endpoint it does
+  /// not know, and a report it refuses reports nothing.
+  TEST_METHOD(NoReportBeforeTheJoinIsAnswered)
+  {
+    Outpost::ClientFrame frame;
+    Assert::IsFalse(frame.ShouldReportView(1000));
+  }
+
+  TEST_METHOD(AReportGoesOutAtTheCadenceAndNoFaster)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    Assert::IsTrue(frame.ShouldReportView(1000), L"the first report goes at once");
+    Assert::IsFalse(frame.ShouldReportView(1000 + Outpost::ClientFrame::VIEW_REPORT_INTERVAL_MILLISECONDS - 1));
+    Assert::IsTrue(frame.ShouldReportView(1000 + Outpost::ClientFrame::VIEW_REPORT_INTERVAL_MILLISECONDS));
+  }
+
+  /// The camera's focus on the wire's own grid, and its distance as the radius in whole world units.
+  TEST_METHOD(TheViewIsTheCamerasFocusAndDistance)
+  {
+    Outpost::ClientFrame frame;
+    frame.Camera().focusX = 1000.0f;
+    frame.Camera().focusY = -250.0f;
+    frame.Camera().distance = 2400.0f;
+
+    Outpost::CommandPacket packet{};
+    frame.StampView(packet);
+    Assert::AreEqual(std::int16_t{4000}, packet.viewX, L"a world unit is four wire steps");
+    Assert::AreEqual(std::int16_t{-1000}, packet.viewY);
+    Assert::AreEqual(std::uint16_t{2400}, packet.viewRadiusUnits);
   }
 };
 

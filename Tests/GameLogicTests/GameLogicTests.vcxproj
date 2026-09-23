@@ -112,6 +112,7 @@
   <ItemGroup>
     <ClCompile Include="CommandValidationTests.cpp" />
     <ClCompile Include="HostTests.cpp" />
+    <ClCompile Include="AccumulatorTests.cpp" />
     <ClCompile Include="BuildTests.cpp" />
     <ClCompile Include="DeterminismTests.cpp" />
     <ClCompile Include="RingAssignmentTests.cpp" />

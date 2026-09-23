@@ -43,6 +43,52 @@ public:
     Assert::AreEqual(std::uint8_t{0x01}, Octet(buffer[1]));
   }
 
+  /// ADR-024's identity width. Three bytes, least significant first like every other width, and the
+  /// fourth byte of the argument is not written -- the buffer is one byte longer than the field so a
+  /// fourth write would show.
+  TEST_METHOD(TwentyFourBitsGoOutLeastSignificantFirstInThreeBytes)
+  {
+    std::array<std::byte, 4> buffer{UNTOUCHED, UNTOUCHED, UNTOUCHED, UNTOUCHED};
+    Neuron::ByteWriter writer{buffer};
+
+    Assert::IsTrue(writer.WriteUInt24(0xAA010203u));
+
+    Assert::AreEqual(std::size_t{3}, writer.WrittenBytes());
+    Assert::AreEqual(std::uint8_t{0x03}, Octet(buffer[0]));
+    Assert::AreEqual(std::uint8_t{0x02}, Octet(buffer[1]));
+    Assert::AreEqual(std::uint8_t{0x01}, Octet(buffer[2]));
+    Assert::AreEqual(Octet(UNTOUCHED), Octet(buffer[3]));
+  }
+
+  /// The read half, including the extremes: the top byte of the result is zero whatever was on the
+  /// wire, because there was no fourth byte to read it from.
+  TEST_METHOD(TwentyFourBitsRoundTripAtTheirExtremes)
+  {
+    for (const std::uint32_t value : {0u, 1u, 0x00800000u, 0x00FFFFFFu})
+    {
+      std::array<std::byte, 3> buffer{};
+      Neuron::ByteWriter writer{buffer};
+      Assert::IsTrue(writer.WriteUInt24(value));
+
+      Neuron::ByteReader reader{buffer};
+      Assert::AreEqual(value, reader.ReadUInt24());
+      Assert::IsFalse(reader.Faulted());
+    }
+  }
+
+  /// Two bytes left is not three, and the field is refused whole on both sides.
+  TEST_METHOD(TwentyFourBitsDoNotFitInTwoBytes)
+  {
+    std::array<std::byte, 2> buffer{UNTOUCHED, UNTOUCHED};
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsFalse(writer.WriteUInt24(0x00010203u));
+    Assert::AreEqual(Octet(UNTOUCHED), Octet(buffer[0]));
+
+    Neuron::ByteReader reader{buffer};
+    Assert::AreEqual(0u, reader.ReadUInt24());
+    Assert::IsTrue(reader.Faulted());
+  }
+
   TEST_METHOD(ThirtyTwoBitsGoOutLeastSignificantFirst)
   {
     std::array<std::byte, 4> buffer{};

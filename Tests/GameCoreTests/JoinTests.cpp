@@ -19,10 +19,12 @@ constexpr std::size_t REPLY_BYTES = Neuron::PacketHeader::SIZE_BYTES + Outpost::
 TEST_CLASS(TheJoinRecords)
 {
 public:
-  TEST_METHOD(AJoinIsFourteenBytesAndAReplyIsTwentyFour)
+  /// **TWELVE AND TWENTY-TWO SINCE ADR-024**, which took the two fragment fields out of the transport header
+  /// in front of them. The records themselves did not change.
+  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsTwentyTwo)
   {
-    Assert::AreEqual(static_cast<std::size_t>(14), JOIN_BYTES);
-    Assert::AreEqual(static_cast<std::size_t>(24), REPLY_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(12), JOIN_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(22), REPLY_BYTES);
   }
 
   TEST_METHOD(AJoinRoundTrips)
@@ -147,15 +149,15 @@ public:
 
   /// A snapshot decoder handed a join reply says `WrongType` rather than reporting a fault that
   /// reads as corruption -- which is what the client's drain switches on.
-  TEST_METHOD(ASnapshotDecoderRefusesAJoinReply)
+  TEST_METHOD(AnUpdateDecoderRefusesAJoinReply)
   {
     std::array<std::byte, REPLY_BYTES> bytes{};
     Neuron::ByteWriter writer{bytes};
     Assert::IsTrue(Outpost::Encode(Outpost::JoinReply{.result = Outpost::JoinResult::Accepted, .player = 1}, writer));
 
     Neuron::ByteReader reader{bytes};
-    Outpost::Snapshot snapshot;
-    Assert::IsTrue(Outpost::Decode(reader, snapshot) == Outpost::SnapshotFault::WrongType);
+    Outpost::Update update;
+    Assert::IsTrue(Outpost::Decode(reader, update) == Outpost::UpdateFault::WrongType);
   }
 
   /// A datagram that ends inside a field is truncated rather than decoding out of whatever follows.

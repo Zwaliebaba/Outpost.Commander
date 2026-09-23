@@ -87,12 +87,18 @@ turns the last ten minutes of every match into a search problem, and no amount o
 **A player who disconnects keeps their slot.** Their ships hold position and keep whatever autonomous
 behavior they have, the slot is held indefinitely, and they may reconnect -- recognized by a session token
 the host issued when they first joined ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)) — which is mechanically free
-because snapshots are self-contained (`TechnicalDesign.md` §4), so there is nothing to catch up on. The
+because every update is self-contained (`TechnicalDesign.md` §4), so a returning client is current again
+within one sweep of the accumulator. The
 cost is that an abandoned fleet sits on the board as free kills, and that is accepted rather than solved:
 an AI taking the slot is the better answer and it waits for M4, when there is an AI that can start from
 arbitrary mid-match state. Suspend and resume are the same path (`Interface.md` §7).
 
 There is no pause and no save in the MVP. A host with no clients keeps simulating.
+
+**Four is the game's number and stays so.** A host started in a stress configuration may seat more
+([`ADR-023`](ADR/ADR-023-the-player-count-is-configurable.md)), and the wire carries any number of them
+([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)). That configuration exists to load the
+host, and it doesn't claim the fair starts or the balance this section is about.
 
 ---
 
@@ -191,6 +197,11 @@ dies. **Building is a single queue.**
 A design is selected, it is added to the queue, credits are deducted when the item starts, and the ship
 appears at the station's spawn point when the item finishes. There is no rally point in the MVP; new
 ships sit where they appear.
+
+**Building goes at a rate of 20 credits of cost a second** (`OpenQuestions.md` Q47), so build time is a
+design's cost over the rate and falls out of the composition the way mass and speed do: a Miner in 7.5
+seconds, a Fighter in 15. The shipyard (§6) multiplies the rate. It sits just above the income a running
+economy earns, so building is very slightly faster than earning and the multiplier has something to do.
 
 **A station is a hull with slots, like everything else**, and it carries two `PointDefense` mounts. It
 has no drive, which is the only thing that distinguishes it from a ship — §6's model allows a hull without
@@ -466,6 +477,12 @@ the match's pinned PRNG for anything random.
 
 Difficulty levels, personalities and anything resembling strategic planning are post-MVP.
 
+**A bot client is not this AI.** [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) (Proposed) adds
+headless clients that join like people, run many to a process, and load the host from outside it. They are
+a stress harness, and nothing in this section waits on them or is replaced by them. **Whether this AI is
+written so that a bot can run the same code is [`OpenQuestions.md`](OpenQuestions.md) Q48**, and it has to
+be settled before M4.5 is written.
+
 ---
 
 ## 9. Research, and what the MVP must not foreclose
@@ -515,7 +532,9 @@ in an evening. That is the only mechanism this project has for turning the balan
 the register into answers rather than opinions, and one long four-player match cannot supply it.
 
 After the MVP, in the order they are most likely worth doing: the designer screen, research, fog of war
-and the interest set, delta replication, formations, and a mobile mothership hull.
+(the interest set is already per client since [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md),
+so fog is a change to what the accumulator scores rather than to the wire), formations, and a mobile
+mothership hull.
 
 **What is deliberately not designed yet:** audio, any campaign or narrative, art direction beyond
 [`Interface.md`](Interface.md) and the meshes of `TechnicalDesign.md` §7, mods, replays and saved

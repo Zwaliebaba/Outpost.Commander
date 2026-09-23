@@ -64,7 +64,7 @@ station. It also gives the station something to do in the first two minutes besi
 eight more entities: **110 entities, 1,137 bytes, still one datagram — but 95 bytes of headroom where there
 were 175.** Nine entities, where there were seventeen.
 
-[`ADR-003`](ADR-003-replication-is-full-snapshots.md)'s headline benefit survives this change and **would
+[`ADR-003`](ADR-003-the-record-and-the-command.md)'s headline benefit survives this change and **would
 survive one more of the same size with fifteen bytes left** -- one entity, which is not room to plan with.
 **This ADR previously said it would NOT survive another, and that was wrong**: eight more module entities
 is eighty bytes against ninety-five of headroom, and `TechnicalDesign.md` §4 has done that subtraction

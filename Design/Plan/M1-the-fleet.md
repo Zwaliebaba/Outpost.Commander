@@ -127,7 +127,7 @@ for the file in `LocalState`; `GameClient/JoinState.h` `.cpp` and `GameClient/Cl
 **Done when:** the ADR is Accepted; a client learns its player index and validates against it; a second
 client on a taken slot is refused in a way the client can show; and a reconnect is recognized rather than
 treated as a new player — which self-contained snapshots make cheap
-([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)) and which nothing else makes correct.
+([`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md)) and which nothing else makes correct.
 
 **All four are met and every one is pinned without a socket**, because `Sessions` holds no transport and
 `JoinState` holds no clock — the split M0.18 forced on the gesture seam, taken again here. What the suite
@@ -567,7 +567,8 @@ this step was first written against — a Surface Pro is used on a kickstand wit
 held at its sides — so the binding constraint is **occlusion** rather than reach: a reaching hand covers
 its target and a wedge of screen around it. That is why the selection panel sits opposite the build panel;
 it is the readout the player reads while their hand is on the glass. **Which side each takes is
-`OpenQuestions.md` Q33, open and settled at M1 by playing**, so this step cannot hard-code a side.
+`OpenQuestions.md` Q33**, open when this step was written, so it could not hard-code a side. *(Answered
+2026-09-23: a setting, right-handed by default.)*
 
 **Files:** `GameClient/Panels.h` `.cpp`, `GameClient/HudLayout.h` `.cpp`, `GameClient/PanelHitTest.h`
 `.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`;
@@ -595,6 +596,185 @@ at a time, and a combat-tier target passing on the 48 floor is the way it erodes
 `geometry.json` rect for rect**, so the drawn interface and the designed one cannot diverge silently; a
 tap inside a panel never reaches the world; **the two bottom panels swap sides on one value**, so Q33
 costs a setting rather than a rewrite; and the selection panel's grouping matches what M1.11 selected.
+
+### M1.14b — The stress harness · `GameClient`, `Bot` · `GameClientTests`, hand · agent
+
+**Read first:** [`ADR-022`](../ADR/ADR-022-a-bot-is-a-headless-client.md) in full, and **do not start
+while it is Proposed**. Then ADR-013 (above all, that a slot is never given back), ADR-008 and ADR-003's
+command reliability; `GameDesign.md` §2 and §8; `AGENTS.md` §2, R19 and R20.
+
+**Adds:** a third executable, `Bot`, an unpackaged C++/WinRT desktop console application that runs **many
+headless clients from one process** against one host, in three roles: **players**, **churners** and
+**flooders** (ADR-022's table). The run is the command line: host address, a count per role, a seed, and
+a length in ticks after which the process prints its report and exits. **Nothing on the host and nothing
+on the wire changes in this step.** A host started plainly seats two, so a run is two players or churners
+plus any number of flooders; past that the host is started with `--players N --stress` (M1.14c).
+
+**The executable holds only glue.** It parses the command line, initializes the apartment, owns one
+`DatagramTransport` and `PacketQueue` per bot, runs the one loop, and prints. Everything that decides
+lives in `GameClient`, where `GameClientTests` reaches it (R20):
+
+- **`BotPolicy`**, the player's decisions. It takes the bot's replica store, its player and its
+  `Neuron::Pcg32`, and returns zero or more `Command`s, acting only when the update tick has advanced by
+  its decision interval. It queues a `Build` its credits cover, occasionally sends a `CancelBuild`, and
+  sends a `MoveTo` for a random subset of its own ships to a point inside the playfield (`BuildMoveCommand`
+  already builds that). It never names an entity it doesn't own.
+- **`ChurnSchedule`**, which says when a churner drops its transport and when it rejoins with the token it
+  holds, by harness tick.
+- **`FloodSchedule`**, which says which malformed or refusable datagram a flooder sends on which harness
+  tick: a join past a full match, a command from an unseated endpoint, a truncated header, a wrong
+  version, and an impossible count. The malformed ones are built by hand, since the encoder would refuse them.
+- **`StressReport`**, the counters ADR-022 lists, including update tick gaps, the refresh interval per
+  entity and command-to-acknowledge time, accumulated per role and formatted as text.
+
+The decision interval, the churn interval and the flood rates are constants in their headers, with the
+reason written beside each, not tuned numbers.
+
+**Three `NeuronClient` functions are off limits. ADR-022's table says why:** `ReadHostAddress`,
+`ReadSessionToken` and `WriteSessionToken` need package identity. **If anything the bot does call turns
+out to reach `ApplicationData`**, stop and report it rather than hide it behind a `try`.
+
+**Files:** `GameClient/BotPolicy.h` `.cpp`, `GameClient/ChurnSchedule.h` `.cpp`,
+`GameClient/FloodSchedule.h` `.cpp`, `GameClient/StressReport.h` `.cpp`; `GameClient.vcxproj` + `.filters`;
+`GameClient/GameClient.h`; `Tests/GameClientTests/` one test file per class, plus the suite's `.vcxproj`
+and `.filters`; `Bot/Bot.cpp`, `Bot/pch.h`, `Bot/pch.cpp`, `Bot/Bot.vcxproj` + `.filters`,
+`Bot/packages.config` at the pinned `Microsoft.Windows.CppWinRT` version; `OutpostCommander.slnx`.
+Also **`AGENTS.md`**: in §2 the executables paragraph, the import table row
+`Bot | — | GameClient, NeuronClient`, the master-include diagram and the count of C++/WinRT projects; in
+§3 what `Bot` is (unpackaged, desktop, no manifest); and §5's R20 sentence, which names the executables.
+Add `Bot/` to `.clang-tidy`'s `HeaderFilterRegex` if it names directories. `Scripts/CheckProjectFiles.py`
+finds the project by itself, so check it passes and don't edit it to make it pass.
+
+**Not this step:** A CI job running `Server` against the harness, which ADR-022 names as enabled and which changes the workflow. And anything that makes a bot a
+better player, which is Q48.
+
+**WRITTEN 2026-09-23 ON A MACHINE WITHOUT MSVC; BUILT AND TESTED ON `Debug|x64` IN CI THE SAME DAY
+(f7f1f5b), AND NOT RUN.** No other pair has been built and `Bot` has not been started against a host.
+Six things the step did not anticipate were decided while writing, and each is stated where it lives:
+
+- **`BotPolicy` owns its orders until the host applies them.** ADR-003 repeats a command in every packet
+  until the block acknowledges it, and the packaged client does not, so the policy numbers its own commands
+  -- adopting from the host's `lastCommandSequenceApplied` as `ClientFrame` does -- keeps the outstanding
+  ones and retires them on acknowledgment. That is also where the command-to-acknowledge time is measured.
+- **The refresh interval is counted by the store.** `ReplicaStore::AcceptResult` and
+  `ClientFrame::DrainResult` gained three counters, and `ReplicaStoreBehavior` a test, because the store is
+  the only thing that knows an entity's previous tick. Nothing in the frame reads them.
+- **A flooder's join waits for a full match.** A join into a free slot is not refused, it takes the slot
+  for good (ADR-013). So `FloodSchedule` sends none until the harness has seen every player and churner
+  seated, and stops both unseated kinds the first time the host seats it anyway; `Bot` prints that it was.
+- **Two of the five flood kinds are not refused by a decoder.** The join past a full match and the command
+  from an unseated endpoint are well-formed on purpose, and the host refuses them by `MatchFull` and by the
+  session table. The suite pins that they decode cleanly and carry what gets them refused; the other three
+  are pinned to their decoder faults by name. Only the run against `Server` sees the refusal itself.
+- **The harness tick is the host's 50 ms**, counted by the loop, which polls every 2 ms between ticks. The
+  churner and flooder act once a harness tick; the policy is paced by the update's tick.
+- **The ceiling is provisional.** `HARNESS_BOT_CEILING` is 128, a hundred players and a few more, until the
+  first run measures the real one. The transport refuses a send while the previous one is in flight, so a
+  flooder's real rate is bounded below its schedule's; the report counts those skips.
+
+**Done when:**
+
+- **What an agent can establish:** the suites pin that each of the four classes, fed the same inputs and
+  seed, produces the same output twice. They pin that `BotPolicy` never commands an entity it doesn't own,
+  never builds what its credits can't cover, and is silent between decision ticks. They pin that a churner
+  always presents the token it was issued, and that every datagram `FloodSchedule` produces is one the
+  host's decoders reject by name. `GameClient` still links no `GameLogic`, and `Bot/` holds no decision
+  a test could have pinned.
+- **What needs a Windows machine:** `Bot` builds on `Debug|x64`, and on the other three pairs or the report
+  says it didn't. Against a real `Server` on the same machine, **with no loopback exemption granted to
+  anything**: two players are seated and their commands are acknowledged, a churner keeps its seat across
+  ten rejoins, and the host's tick is unbroken under a flooder at the highest rate the schedule offers.
+  That run discharges ADR-022's owed measurements, and they are written into it, **including the
+  harness's own ceiling in bots per process.**
+- **What needs the owner:** ruling ADR-022. **This step doesn't close M1.15.** That gate asks whether two
+  *people* can play.
+
+### M1.14c — ADR-024's replication, and the player count · `NeuronCore`, `GameCore`, `GameLogic`, `GameClient`, `Server` · every suite · agent
+
+**Read first:** [`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) in full, then
+[`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md); ADR-003 as cut down, for the record's
+field semantics and the command path, which do not move; `TechnicalDesign.md` §4 and §6; `OpenQuestions.md`
+Q49; `.claude/skills/datagram-budget/`, **whose script is run before and after**, and
+`.claude/skills/determinism-audit/`, because the accumulator lives in `GameLogic` and must not touch the
+tick. **There is no backward compatibility to keep**: the owner ruled it, so the old snapshot goes rather
+than being kept beside the new update.
+
+**Adds:** the replication of ADR-024 end to end, in four commits in this order, and the player count of
+ADR-023 in a fifth.
+
+1. **The wire.** `PacketHeader` loses its two fragment fields and is four bytes. `EntityRecord` is twelve:
+   a three-byte identity (16-bit index, 8-bit generation, and `WIRE_INDEX_BITS` moves with it), an owner
+   byte, and the team bits gone from `flags`. `Snapshot` becomes `Update`: the twenty-one-byte header
+   with the live entity count and **the recipient's own block**, then records, then three-byte removals,
+   then seven-byte fire events. `CommandPacket`'s header gains the view center and radius, and a selected
+   identity is three bytes. `EncodedSize` of a full update is what `GameCoreTests` measures, and the
+   figure goes into ADR-024's Measurements in the same commit.
+2. **The host.** `GameLogic/Accumulator.h` `.cpp`: per session, a score and a last-sent tick per live
+   entity; the relevance sum at Q49's weights, each a named constant with its reason; the sweep computed
+   from the live count; removals and fire events queued per session with their repeat counts; and
+   `Fill`, which returns up to `UPDATES_PER_TICK` (two) whole updates for one client from the world.
+   `Host.cpp` calls it per session instead of `BuildSnapshot`, and resets a session's scores on
+   `Rejoined`. **Nothing in `Tick` changes.** The accumulator reads the world after the tick and writes
+   nothing the hash covers; `CheckDeterminism.py --review` will still see it, and the `determinism-audit`
+   skill's judgment for it is stated in ADR-024.
+3. **The client.** `ReplicaStore` holds three samples per entity by tick, drops a record whose tick is not
+   newer, holds an entity with no sample past the render time, and forgets one three sweeps silent.
+   `ClientFrame::DrainPackets` decodes updates, applies removals it has not seen, and clears the store on
+   a rejoin. `HitTest` reads the owner from the record. The command packet carries the camera's view
+   center and radius, which `Camera` already knows. `Panels` reads credits and the build item from the
+   own block.
+4. **The bot** (M1.14b) needs no change beyond recompiling, which is the point of reusing `GameClient`,
+   and its report now carries the refresh interval per entity, which is ADR-022's added measurement.
+5. **The count.** `Server` takes `--players N` and `--stress` and refuses a count above four without
+   the switch or above what the entity index holds. `Sessions`, `CommandIntake` and `BuildSystem` size
+   their per-player state at `Begin`. `GameCore/Layout.h` gains the layout above four through the sine
+   table. `Panels` draws a player past the palette in the last team color.
+
+**WRITTEN 2026-09-23; BUILT AND TESTED ON `Debug|x64` IN CI THE SAME DAY (792fd78), AND NOT RUN.** Parts 1 to 4 landed as one commit, not four: the transport
+header, the record, the update, the host and the client change together or nothing links, so no split of
+them compiles. The additive 24-bit codec went in first as its own commit. Two things the step did not
+anticipate were decided while writing and are recorded in ADR-024: **the sweep is computed from a 65-record
+floor**, with removals capped at 48 an update and fire events at 40, because a guarantee cannot be computed
+from the typical fill; and **a seated client sends an empty command packet four times a second** as its view
+report, because commands only go out when the player taps. It was written on a machine without MSVC;
+CI's first compile found two tests still asserting the old join size and an unknown player the new capacity
+seats, both fixed in 792fd78. **Part 5 landed as its own commit the same day**: `Server --players N --stress`,
+`MATCH_PLAYERS` split from a `MAX_PLAYERS` of 254, the stress layout through the sine table, and the last
+team color past the palette -- with ADR-023 amended where the tables ended up sized to the capacity rather
+than at `Begin`.
+
+**Files:** `NeuronCore/PacketHeader.h` `.cpp`; `GameCore/EntityRecord.h` `.cpp`, `GameCore/Entity.h`,
+`GameCore/Snapshot.h` `.cpp` **renamed** `Update.h` `.cpp`, `GameCore/Command.h` `.cpp`,
+`GameCore/Layout.h` `.cpp`; `GameCore.vcxitems` + `.filters`; `GameLogic/Accumulator.h` `.cpp`,
+`GameLogic/Host.h` `.cpp`, `GameLogic/Sessions.h` `.cpp`, `GameLogic/CommandIntake.h` `.cpp`,
+`GameLogic/BuildSystem.h` `.cpp`; `GameLogic.vcxproj` + `.filters`; `Server/Server.cpp`;
+`GameClient/ReplicaStore.h` `.cpp`, `GameClient/ClientFrame.h` `.cpp`, `GameClient/Interpolation.h`
+`.cpp`, `GameClient/HitTest.h` `.cpp`, `GameClient/Panels.cpp`, `GameClient/TapOrder.h` `.cpp`;
+`Tests/NeuronCoreTests/PacketHeaderTests.cpp`, `Tests/GameCoreTests/SnapshotTests.cpp` **renamed**
+`UpdateTests.cpp`, `Tests/GameCoreTests/CommandTests.cpp`, `Tests/GameCoreTests/LayoutTests.cpp`,
+`Tests/GameLogicTests/AccumulatorTests.cpp`, `Tests/GameLogicTests/HostTests.cpp`,
+`Tests/GameClientTests/ReplicaStoreTests.cpp`, `Tests/GameClientTests/ClientFrameTests.cpp`, and the
+suites' `.vcxproj` + `.filters`; `Scripts/DatagramBudget.py` if a width the encoder settles differs
+from its model; and **the documents that quote the figures**: ADR-024's Measurements, ADR-003's
+Measurements (a line saying the 1,137 is history), `TechnicalDesign.md` §4's table, and the comments
+in `EntityRecord.h` and `Update.h` that spell the widths out. `CheckDesign.py` recomputes the figures
+and will say which document it missed.
+
+**Done when:**
+
+- **What an agent can establish:** `GameCoreTests` measures a full update at exactly the pinned payload
+  with 99 records at three removals and two fire events, and round-trips every record type. The
+  accumulator's suite pins that an update never exceeds the payload, that no entity goes a sweep unsent
+  whatever the scores, that a removal rides ten consecutive updates and a fire event three, that the
+  same world and view give the same sent set twice, and that a rejoin resets the scores.
+  `ReplicaStoreTests` pins the drop-older rule, the hold, and the three-sweep forget. **M1.7's
+  determinism test still hashes to `0x37f846ed90b74ca1`**, which is the proof nothing simulated moved.
+  `CheckDeterminism.py`, including `--review`, `CheckDesign.py` and `CheckProjectFiles.py` are clean.
+  The layout at two and four is unchanged bit for bit against M1.5's pinned output.
+- **What needs a Windows machine:** a two-player match on the device draws as it did — every entity every
+  tick, which the client's store can count — and ADR-003's loopback tap-to-visible of 76 ms is re-run and
+  has not moved. ADR-022's harness at eight players seats eight on `--players 8 --stress` and reports the
+  refresh interval per entity. Both are ADR-024's owed measurements and are written into it.
 
 ---
 
@@ -638,7 +818,8 @@ that expectation holds when switching between the two. Second, whether two *snap
 visible, both keep running. The client asks for fullscreen at launch, so the second needs the window
 to leave fullscreen first.
 
-**The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
+**THE OWNER CHOSE THE ROUTE, 2026-09-23: two snapped, visible windows on the unlocked Surface Pro, and a
+second machine only if that fails.** **The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
 test with, one player at a time" or "a second machine".
 
 **Done when:** the question is answered on the register, and two clients on one host are playing — on

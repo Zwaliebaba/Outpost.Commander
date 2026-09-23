@@ -27,20 +27,50 @@ constexpr Neuron::Vec2 BASE_ANCHOR{.x = -ANCHOR_RADIUS, .y = 0};
   {
     return ANCHOR_COUNT;
   }
-  if (_playerCount > ANCHOR_COUNT)
-  {
-    return ANCHOR_COUNT;
-  }
 
   // 4 / count: two quarter turns apart at two players, one at four. Integer division, and the comment in
   // the header says what three does with it.
   const std::size_t step = ANCHOR_COUNT / _playerCount;
   return ((static_cast<std::size_t>(_player) - 1) * step) % ANCHOR_COUNT;
 }
+
+/// True when this count takes ADR-023's stress layout rather than the quarter-turn anchors.
+[[nodiscard]] constexpr bool IsStressCount(std::size_t _playerCount) noexcept
+{
+  return _playerCount > ANCHOR_COUNT;
+}
+
+/// Where player _player of a stress count sits around the circle, as a binary angle from the base anchor.
+/// Exact integer division of a full turn, so every player's angle is the same number on every machine.
+[[nodiscard]] constexpr Neuron::Angle StressAngle(std::size_t _playerCount, PlayerId _player) noexcept
+{
+  return static_cast<Neuron::Angle>(((static_cast<std::uint32_t>(_player) - 1) * 65536u) / static_cast<std::uint32_t>(_playerCount));
+}
+
+/// True for a player a count seats at all.
+[[nodiscard]] constexpr bool IsSeated(std::size_t _playerCount, PlayerId _player) noexcept
+{
+  return (_player != NO_PLAYER) && (static_cast<std::size_t>(_player) <= _playerCount);
+}
 } // namespace
 
 Neuron::Vec2 StartAnchor(std::size_t _playerCount, PlayerId _player) noexcept
 {
+  if (IsStressCount(_playerCount))
+  {
+    if (!IsSeated(_playerCount, _player))
+    {
+      return Neuron::Vec2{};
+    }
+
+    // The base anchor, (-R, 0), turned by the player's angle: (-R cos, -R sin). Q1.15 over 32,768 in 64
+    // bits, so a radius of six thousand units cannot overflow on the way.
+    const Neuron::Angle angle = StressAngle(_playerCount, _player);
+    const std::int64_t radius = static_cast<std::int64_t>(ANCHOR_RADIUS);
+    return Neuron::Vec2{.x = static_cast<Neuron::Fixed>(-(radius * Neuron::Cosine(angle)) / 32768),
+                        .y = static_cast<Neuron::Fixed>(-(radius * Neuron::Sine(angle)) / 32768)};
+  }
+
   const std::size_t turns = QuarterTurnsFor(_playerCount, _player);
   if (turns >= ANCHOR_COUNT)
   {
@@ -59,6 +89,13 @@ Neuron::Vec2 StartAnchor(std::size_t _playerCount, PlayerId _player) noexcept
 
 Neuron::Angle StartHeading(std::size_t _playerCount, PlayerId _player) noexcept
 {
+  // FACING THE CENTER, as the quarter turns do: the base anchor faces heading zero, and turning the anchor
+  // by an angle turns its heading by the same angle.
+  if (IsStressCount(_playerCount))
+  {
+    return IsSeated(_playerCount, _player) ? StressAngle(_playerCount, _player) : Neuron::Angle{0};
+  }
+
   const std::size_t turns = QuarterTurnsFor(_playerCount, _player);
   if (turns >= ANCHOR_COUNT)
   {
@@ -77,7 +114,9 @@ std::vector<Placement> GenerateLayout(std::uint64_t _seed, std::size_t _playerCo
   // that can least afford the question -- and M2 is this function reading it rather than a new one.
   static_cast<void>(_seed);
 
-  const std::size_t players = (_playerCount > ANCHOR_COUNT) ? ANCHOR_COUNT : _playerCount;
+  // Up to every `PlayerId` there is. Above four is ADR-023's stress layout; whether a count that large is
+  // allowed at all is the host's decision, made before it gets here.
+  const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
 
   std::vector<Placement> placed;
   placed.reserve(players);

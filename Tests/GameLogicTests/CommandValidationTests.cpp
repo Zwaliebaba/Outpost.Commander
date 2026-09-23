@@ -18,12 +18,12 @@ inline constexpr Outpost::PlayerId THEIRS = 2;
   return static_cast<std::uint8_t>(_rejection);
 }
 
-[[nodiscard]] std::uint16_t Wire(Outpost::EntityId _id) noexcept
+[[nodiscard]] Outpost::WireIdentity Wire(Outpost::EntityId _id) noexcept
 {
   return Outpost::PackIdentity(_id.index, _id.generation);
 }
 
-[[nodiscard]] Outpost::Command MoveTo(std::uint16_t _sequence, std::vector<std::uint16_t> _selection)
+[[nodiscard]] Outpost::Command MoveTo(std::uint16_t _sequence, std::vector<Outpost::WireIdentity> _selection)
 {
   return Outpost::Command{
     .sequence = _sequence, .type = Outpost::CommandType::MoveTo, .targetX = 100, .targetY = 100, .selection = std::move(_selection)};
@@ -69,7 +69,7 @@ public:
     Outpost::BuildSystem build;
     const Outpost::EntityId mine = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
 
-    std::vector<std::uint16_t> selection;
+    std::vector<Outpost::WireIdentity> selection;
     for (int repeat = 0; repeat < 200; ++repeat)
     {
       selection.push_back(Wire(mine));
@@ -87,7 +87,7 @@ public:
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
     const Outpost::EntityId dead = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
-    const std::uint16_t staleWire = Wire(dead);
+    const Outpost::WireIdentity staleWire = Wire(dead);
     Assert::IsTrue(world.Destroy(dead));
 
     const Outpost::EntityId reborn = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
@@ -187,7 +187,10 @@ public:
 
     Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, MINE, MoveTo(1, {}))));
     Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, Outpost::NO_PLAYER, MoveTo(1, {Wire(mine)}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, 99, MoveTo(1, {Wire(mine)}))));
+    // PAST WHAT A `PlayerId` CAN SEAT. It was 99 while the capacity was four; ADR-023 made 99 a player a
+    // stress run can have, so the one number that can never be seated is the one past the capacity.
+    Assert::AreEqual(Code(Outpost::CommandRejection::Empty),
+                     Code(intake.Apply(world, build, static_cast<Outpost::PlayerId>(Outpost::MAX_PLAYERS + 1), MoveTo(1, {Wire(mine)}))));
   }
 
   TEST_METHOD(AHalfValidSelectionAppliesNoneOfIt)

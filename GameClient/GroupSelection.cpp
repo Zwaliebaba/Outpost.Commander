@@ -30,7 +30,7 @@ namespace
   return true;
 }
 
-[[nodiscard]] const EntityRecord* FindRecord(std::span<const EntityRecord> _entities, std::uint16_t _identity) noexcept
+[[nodiscard]] const EntityRecord* FindRecord(std::span<const EntityRecord> _entities, WireIdentity _identity) noexcept
 {
   for (const EntityRecord& record : _entities)
   {
@@ -43,10 +43,10 @@ namespace
 }
 } // namespace
 
-std::vector<std::uint16_t> ShipsInGroupCircle(const CameraPose& _pose, const HitTestRequest& _request,
-                                              std::span<const EntityRecord> _entities, std::uint16_t _anchorIdentity)
+std::vector<WireIdentity> ShipsInGroupCircle(const CameraPose& _pose, const HitTestRequest& _request,
+                                             std::span<const EntityRecord> _entities, WireIdentity _anchorIdentity)
 {
-  std::vector<std::uint16_t> taken;
+  std::vector<WireIdentity> taken;
 
   const EntityRecord* anchor = FindRecord(_entities, _anchorIdentity);
   if (anchor == nullptr)
@@ -108,7 +108,7 @@ std::vector<std::uint16_t> ShipsInGroupCircle(const CameraPose& _pose, const Hit
 }
 
 ExpansionOutcome ExpandSelection(Selection& _selection, const CameraPose& _pose, const HitTestRequest& _request,
-                                 std::span<const EntityRecord> _entities, std::uint16_t _anchorIdentity, std::uint16_t _tappedIdentity)
+                                 std::span<const EntityRecord> _entities, WireIdentity _anchorIdentity, WireIdentity _tappedIdentity)
 {
   ExpansionOutcome outcome;
   outcome.selected = _selection.Count();
@@ -116,12 +116,12 @@ ExpansionOutcome ExpandSelection(Selection& _selection, const CameraPose& _pose,
   // **THE SAME ENTITY, MATCHED ON IDENTITY.** Two taps on DIFFERENT ships stay two single taps --
   // ADR-017's third case, and the reason this compares identities rather than screen positions: the
   // fleet is moving, which is when the gesture is used.
-  if ((_anchorIdentity == 0) || (_anchorIdentity != _tappedIdentity))
+  if ((_anchorIdentity == NO_WIRE_IDENTITY) || (_anchorIdentity != _tappedIdentity))
   {
     return outcome;
   }
 
-  const std::vector<std::uint16_t> group = ShipsInGroupCircle(_pose, _request, _entities, _anchorIdentity);
+  const std::vector<WireIdentity> group = ShipsInGroupCircle(_pose, _request, _entities, _anchorIdentity);
   if (group.empty())
   {
     return outcome;
@@ -129,7 +129,7 @@ ExpansionOutcome ExpandSelection(Selection& _selection, const CameraPose& _pose,
 
   // **IT CAN ONLY ADD.** The first tap already selected the anchor and already fired; this upgrades
   // that result, so a selection that was already expanded and is tapped again simply stays expanded.
-  for (const std::uint16_t identity : group)
+  for (const WireIdentity identity : group)
   {
     _selection.Add(identity);
   }

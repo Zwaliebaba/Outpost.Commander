@@ -292,7 +292,7 @@ no new mesh code either way, because M1.9's reader already reads whatever this s
 kills your ore processor and leaves has done real damage without touching your station"*. That move needs
 **an attacker who can pick the right target and a defender who can see what they lost**, from the
 near-top-down tactical camera (`Interface.md` §5) — the client knows each module's design identity from
-the snapshot's own byte ([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)), so what is missing
+the snapshot's own byte ([`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md)), so what is missing
 is what it draws with it, not what it knows.
 
 **[`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md) is what makes this tractable and it is the largest

@@ -7,18 +7,18 @@
 namespace Outpost
 {
 
-bool Selection::Contains(std::uint16_t _identity) const noexcept
+bool Selection::Contains(WireIdentity _identity) const noexcept
 {
   return std::find(m_identities.begin(), m_identities.end(), _identity) != m_identities.end();
 }
 
-void Selection::ReplaceWith(std::uint16_t _identity)
+void Selection::ReplaceWith(WireIdentity _identity)
 {
   m_identities.clear();
   m_identities.push_back(_identity);
 }
 
-void Selection::Add(std::uint16_t _identity)
+void Selection::Add(WireIdentity _identity)
 {
   if (!Contains(_identity))
   {
@@ -33,7 +33,7 @@ std::size_t Selection::RetainLiving(std::span<const EntityRecord> _entities)
   // **THE WHOLE PACKED IDENTITY, NOT THE INDEX.** A slot reused since the selection was made carries
   // a new generation, so comparing the whole value is what stops the selection silently becoming
   // somebody else's ship -- which is the same guard `InterpolateRecord` applies for the same reason.
-  const auto missing = [&_entities](std::uint16_t _identity) noexcept
+  const auto missing = [&_entities](WireIdentity _identity) noexcept
   {
     for (const EntityRecord& record : _entities)
     {
@@ -103,7 +103,7 @@ SelectionOutcome Selection::Tap(const CameraPose& _pose, const HitTestRequest& _
   outcome.verb = VerbForPick(resolved, !m_identities.empty());
   outcome.worldX = resolved.worldX;
   outcome.worldY = resolved.worldY;
-  outcome.target = (resolved.action == TapAction::Occupied) ? resolved.hit.identity : 0;
+  outcome.target = (resolved.action == TapAction::Occupied) ? resolved.hit.identity : NO_WIRE_IDENTITY;
 
   if (outcome.verb == OrderVerb::Select)
   {

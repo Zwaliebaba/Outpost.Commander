@@ -12,7 +12,8 @@ bool EntityRecord::Write(Neuron::ByteWriter& _writer) const noexcept
   // In the order the table in the header gives, and that order is the format. ByteWriter refuses
   // a field that will not fit and latches, so checking once at the end is enough -- a partial
   // record never reaches the buffer in a state a reader could mistake for a whole one.
-  static_cast<void>(_writer.WriteUInt16(identity));
+  static_cast<void>(_writer.WriteUInt24(identity));
+  static_cast<void>(_writer.WriteUInt8(owner));
   static_cast<void>(_writer.WriteInt16(positionX));
   static_cast<void>(_writer.WriteInt16(positionY));
   static_cast<void>(_writer.WriteUInt8(heading));
@@ -25,7 +26,8 @@ bool EntityRecord::Write(Neuron::ByteWriter& _writer) const noexcept
 bool EntityRecord::Read(Neuron::ByteReader& _reader, EntityRecord& _outRecord) noexcept
 {
   EntityRecord lifted{};
-  lifted.identity = _reader.ReadUInt16();
+  lifted.identity = _reader.ReadUInt24();
+  lifted.owner = _reader.ReadUInt8();
   lifted.positionX = _reader.ReadInt16();
   lifted.positionY = _reader.ReadInt16();
   lifted.heading = _reader.ReadUInt8();

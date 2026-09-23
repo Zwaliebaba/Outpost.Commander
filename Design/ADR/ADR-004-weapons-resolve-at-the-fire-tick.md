@@ -12,7 +12,7 @@ stated.
 `Design/GameDesign.md` §10 caps the field at about 200 ships. A projectile with a travel time of around a
 second would therefore put **as many projectiles in flight as there are ships**.
 
-[`ADR-003`](ADR-003-replication-is-full-snapshots.md) makes every entity a per-snapshot cost, so doubling
+[`ADR-003`](ADR-003-the-record-and-the-command.md) makes every entity a per-snapshot cost, so doubling
 the entity count doubles the replication budget outright. It also doubles the simulation's per-tick
 integration and collision work, and adds a spawn-and-destroy churn that the entity storage would feel
 every tick rather than occasionally.
@@ -30,7 +30,7 @@ removal list, behind a count byte. It is unreliable in the sense that it is not 
 snapshot costs a missing tracer and nothing else, which is why it is not worth a reliability path of its
 own. **This ADR originally referred to a fire event and a death event without specifying either**, which
 left two wire records named in prose and defined nowhere. The death event is the removal list
-[`ADR-003`](ADR-003-replication-is-full-snapshots.md) now carries; this is the other.
+[`ADR-003`](ADR-003-the-record-and-the-command.md) now carries; this is the other.
 
 **The client draws it.** A tracer, a beam or a muzzle flash, entirely client-side, on a client-side timer.
 The same applies to wrecks: a destroyed ship leaves debris the client spawns from a death event and decays

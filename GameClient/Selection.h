@@ -50,7 +50,7 @@ struct SelectionOutcome
   float worldY = 0.0f;
 
   /// Meaningful for `Attack`, `Mine`, `OpenBuildPanel` and `Select`: the packed wire identity.
-  std::uint16_t target = 0;
+  WireIdentity target = NO_WIRE_IDENTITY;
 
   /// True when the selection changed, so a caller knows whether to redraw the panel.
   bool selectionChanged = false;
@@ -66,7 +66,7 @@ class Selection
 {
 public:
   /// What is selected now.
-  [[nodiscard]] std::span<const std::uint16_t> Identities() const noexcept
+  [[nodiscard]] std::span<const WireIdentity> Identities() const noexcept
   {
     return m_identities;
   }
@@ -81,7 +81,7 @@ public:
     return m_identities.size();
   }
 
-  [[nodiscard]] bool Contains(std::uint16_t _identity) const noexcept;
+  [[nodiscard]] bool Contains(WireIdentity _identity) const noexcept;
 
   /// **THE ONLY WAY TO DESELECT** is the panel's clear target (`Interface.md` section 4): a tap on
   /// empty space is already a move order, so there is no gesture for it.
@@ -91,10 +91,10 @@ public:
   }
 
   /// Replaces the selection with one entity, which is what a tap on your own ship does.
-  void ReplaceWith(std::uint16_t _identity);
+  void ReplaceWith(WireIdentity _identity);
 
   /// Adds without duplicating, which is what M1.11's expansion needs.
-  void Add(std::uint16_t _identity);
+  void Add(WireIdentity _identity);
 
   /// **DROPS EVERYTHING THE NEWEST SNAPSHOT NO LONGER CARRIES.** A selected ship that died is a
   /// selection the player cannot act on and a panel that counts wrong; a slot reused since is worse,
@@ -109,7 +109,7 @@ public:
   [[nodiscard]] SelectionOutcome Tap(const CameraPose& _pose, const HitTestRequest& _request, std::span<const EntityRecord> _entities);
 
 private:
-  std::vector<std::uint16_t> m_identities;
+  std::vector<WireIdentity> m_identities;
 };
 
 /// The verb a resolved pick becomes. Separated from `Selection::Tap` so the table itself is a pure

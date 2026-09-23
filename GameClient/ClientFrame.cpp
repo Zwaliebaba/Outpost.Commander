@@ -2,6 +2,7 @@
 
 #include "ClientFrame.h"
 
+#include <algorithm>
 #include <array>
 
 namespace Outpost
@@ -14,11 +15,16 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
   // **THE SILENCE IS JUDGED BEFORE ANYTHING IS DRAINED**, and that order is what makes a resume show the
   // overlay. A suspended client's socket can hold datagrams that land on the first frame back; judged
   // after the drain they would be stamped now and the loss would never be seen. Judged first, the gap is
-  // the suspension, the rejoin starts, and those stale snapshots cannot clear it -- only one that arrives
+  // the suspension, the rejoin starts, and those stale updates cannot clear it -- only one that arrives
   // after the host has seated this client again can.
-  if (m_join.IsJoined() && m_heardSnapshot && ((_nowMilliseconds - m_lastHeardMilliseconds) >= LINK_SILENCE_MILLISECONDS))
+  if (m_join.IsJoined() && m_heardUpdate && ((_nowMilliseconds - m_lastHeardMilliseconds) >= LINK_SILENCE_MILLISECONDS))
   {
     m_join.Rejoin();
+
+    // **THE STORE STARTS AGAIN FROM NOTHING** (ADR-024). The host resets this client's accumulator when
+    // it answers the rejoin, so everything is sent within one sweep -- and the removals of whatever died
+    // meanwhile have long stopped repeating, so anything kept here could be a ghost.
+    m_replicas.Clear();
     m_reconnecting = true;
     m_lastHeardMilliseconds = _nowMilliseconds;
     result.linkLost = true;
@@ -36,7 +42,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     const std::span<const std::byte> datagram{buffer.data(), byteCount};
 
     // THE TYPE IS READ BEFORE THE RECORD IS. Two records arrive on this socket since ADR-013, and
-    // a snapshot decoder handed a join reply reports a fault -- which would count a perfectly good
+    // an update decoder handed a join reply reports a fault -- which would count a perfectly good
     // reply as a corrupt datagram and hide the one thing the client is waiting for.
     Neuron::ByteReader probe{datagram};
     Neuron::PacketHeader header{};
@@ -65,64 +71,54 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     }
 
     Neuron::ByteReader reader{datagram};
-    Snapshot snapshot;
-    if (Decode(reader, snapshot) != SnapshotFault::None)
+    Update update;
+    if (Decode(reader, update) != UpdateFault::None)
     {
       ++result.faulted;
       continue;
     }
 
-    if (m_replicas.Accept(snapshot, _nowMilliseconds))
-    {
-      ++result.accepted;
-      m_lastHeardMilliseconds = _nowMilliseconds;
-      m_heardSnapshot = true;
-    }
-    else
-    {
-      ++result.refused;
-    }
+    // EVERY UPDATE IS HEARD, WHATEVER BECAME OF ITS RECORDS. An update whose records were all refused as
+    // reordered still says the link is alive and still carries the tick and this client's block.
+    const ReplicaStore::AcceptResult accepted = m_replicas.Accept(update, _nowMilliseconds);
+    ++result.accepted;
+    result.refused += accepted.refused;
+    result.refreshed += accepted.refreshed;
+    result.refreshTicksTotal += accepted.refreshTicksTotal;
+    result.refreshTicksMax = std::max(result.refreshTicksMax, accepted.refreshTicksMax);
+    m_lastHeardMilliseconds = _nowMilliseconds;
+    m_heardUpdate = true;
   }
 
-  // THE ACKNOWLEDGMENT IS READ FROM THE NEWEST SNAPSHOT AND NOT FROM EACH ONE DRAINED. They are a
-  // high-water mark, so the newest covers every marker the older ones would have, and clearing once
-  // per frame is both cheaper and easier to reason about (Q20).
-  // A PLAYER IDENTITY IS ONE-BASED AND A BLOCK INDEX IS NOT. `GameCore/Entity.h` reserves zero for
-  // `NO_PLAYER`, so the host numbers players from one (`GameLogic/Host.cpp`), while the snapshot's
-  // per-player blocks are an array starting at zero -- player one's block is index zero.
+  // THE ACKNOWLEDGMENT IS READ FROM THE NEWEST UPDATE AND NOT FROM EACH ONE DRAINED. It is a high-water
+  // mark, so the newest covers every marker the older ones would have, and clearing once per frame is
+  // both cheaper and easier to reason about (Q20).
   //
-  // Reading `players[m_player]` looks obviously right and is off by one in a way nothing complains
-  // about: with one player it indexes past the end and the bounds check silently skips every
-  // acknowledgment, so markers would stay on screen forever; with two it reads the OTHER player's
-  // sequence and clears markers on somebody else's progress.
-  const Snapshot* newest = m_replicas.Newest();
-  const PlayerId player = m_join.Player();
-  if ((newest != nullptr) && (player != NO_PLAYER))
+  // **THE BLOCK IS THIS CLIENT'S OWN** (ADR-024): an update carries its recipient's block and nobody
+  // else's, so there is no longer an index to get wrong -- the one-based player and zero-based block that
+  // this comment used to warn about are gone with the per-player list.
+  const PlayerBlock* own = m_replicas.Own();
+  if ((own != nullptr) && (m_join.Player() != NO_PLAYER))
   {
-    const std::size_t block = static_cast<std::size_t>(player) - 1;
-    if (block < newest->players.size())
-    {
-      const std::uint16_t applied = newest->players[block].lastCommandSequenceApplied;
-      result.markersCleared = static_cast<std::uint32_t>(m_markers.ClearAcknowledged(applied));
+    const std::uint16_t applied = own->lastCommandSequenceApplied;
+    result.markersCleared = static_cast<std::uint32_t>(m_markers.ClearAcknowledged(applied));
 
-      // ONCE, FROM THE FIRST SNAPSHOT THAT NAMES THIS PLAYER. See the field's comment: a client
-      // that always starts counting at one is refused by the host for as long as it takes to count
-      // back past the previous session, which is the difference between reconnecting and resuming.
-      //
-      // ONLY FORWARDS. An acknowledgment lags the orders in flight, so adopting it more than once
-      // would wind the counter back over commands the client has already sent and get them refused
-      // as duplicates.
-      if (!m_adoptedSequence)
-      {
-        m_adoptedSequence = true;
-        m_nextCommandSequence = static_cast<std::uint16_t>(applied + 1);
-      }
+    // ONCE, FROM THE FIRST UPDATE THAT CARRIES THIS PLAYER'S BLOCK. See the field's comment: a client that
+    // always starts counting at one is refused by the host for as long as it takes to count back past the
+    // previous session, which is the difference between reconnecting and resuming.
+    //
+    // ONLY FORWARDS. An acknowledgment lags the orders in flight, so adopting it more than once would wind
+    // the counter back over commands the client has already sent and get them refused as duplicates.
+    if (!m_adoptedSequence)
+    {
+      m_adoptedSequence = true;
+      m_nextCommandSequence = static_cast<std::uint16_t>(applied + 1);
     }
   }
 
-  // **SEATED AGAIN AND A SNAPSHOT IN HAND**, in either order within the drain -- the host answers the join
+  // **SEATED AGAIN AND AN UPDATE IN HAND**, in either order within the drain -- the host answers the join
   // and goes on sending, so both commonly arrive together. `Interface.md` section 7: the overlay stays
-  // until the first snapshot lands, and then play resumes straight away.
+  // until the first update lands, and then play resumes straight away.
   if (m_reconnecting && m_join.IsJoined() && (result.accepted > 0))
   {
     m_reconnecting = false;
@@ -152,9 +148,39 @@ LinkState ClientFrame::Link() const noexcept
   return m_join.IsJoined() ? LinkState::Linked : LinkState::Joining;
 }
 
-ReplicaStore::Frame ClientFrame::Advance(std::uint64_t _nowMilliseconds) const noexcept
+DrawnSummary ClientFrame::Advance(std::uint64_t _nowMilliseconds, std::vector<EntityRecord>& _outRecords) const
 {
-  return m_replicas.FrameAt(ReplicaStore::RenderMilliseconds(_nowMilliseconds));
+  return m_replicas.Drawn(ReplicaStore::RenderMilliseconds(_nowMilliseconds), _outRecords);
+}
+
+bool ClientFrame::ShouldReportView(std::uint64_t _nowMilliseconds) noexcept
+{
+  if (!m_join.IsJoined())
+  {
+    return false;
+  }
+  if (m_reportedView && ((_nowMilliseconds - m_lastViewReportMilliseconds) < VIEW_REPORT_INTERVAL_MILLISECONDS))
+  {
+    return false;
+  }
+  m_reportedView = true;
+  m_lastViewReportMilliseconds = _nowMilliseconds;
+  return true;
+}
+
+void ClientFrame::StampView(CommandPacket& _packet) const noexcept
+{
+  // Through `Fixed` and the wire's own quantizer, as a move order's target is, so the rounding and the
+  // saturation at the play area's corner are the wire's rules rather than this file's.
+  const auto fixedX = static_cast<Neuron::Fixed>(m_camera.focusX * static_cast<float>(Neuron::FIXED_ONE));
+  const auto fixedY = static_cast<Neuron::Fixed>(m_camera.focusY * static_cast<float>(Neuron::FIXED_ONE));
+  _packet.viewX = QuantizePosition(fixedX);
+  _packet.viewY = QuantizePosition(fixedY);
+
+  // Saturated rather than wrapped: the camera's far end is 22,500 units, which a sixteen-bit radius holds,
+  // and anything past 65,535 means "all of it" either way.
+  const float radius = (m_camera.distance < 0.0f) ? 0.0f : m_camera.distance;
+  _packet.viewRadiusUnits = (radius >= 65535.0f) ? std::uint16_t{65535} : static_cast<std::uint16_t>(radius);
 }
 
 } // namespace Outpost

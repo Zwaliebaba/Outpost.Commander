@@ -178,10 +178,71 @@ public:
     Assert::AreEqual(static_cast<std::size_t>(0), Outpost::GenerateLayout(0, 0).size());
   }
 
-  /// A count past the design's four slots is clamped rather than refused, the way `Sessions` clamps it.
-  TEST_METHOD(APlayerCountPastFourIsClamped)
+  /// **ABOVE FOUR, EVERY PLAYER GETS A STATION** (ADR-023's stress layout), up to every `PlayerId` there
+  /// is -- and a count past that is clamped rather than refused, the way `Sessions` clamps it.
+  TEST_METHOD(AStressCountSeatsEveryPlayerUpToTheCapacity)
   {
-    Assert::AreEqual(Outpost::ANCHOR_COUNT, Outpost::GenerateLayout(0, 99).size());
+    Assert::AreEqual(std::size_t{8}, Outpost::GenerateLayout(0, 8).size());
+    Assert::AreEqual(std::size_t{100}, Outpost::GenerateLayout(0, 100).size());
+    Assert::AreEqual(Outpost::MAX_PLAYERS, Outpost::GenerateLayout(0, 300).size());
+  }
+
+  /// Integer arithmetic on a pinned table, so the same count gives the same starts twice (R16, R23) -- and
+  /// every start is on the anchor circle, inside the play area, and not on top of another.
+  TEST_METHOD(TheStressLayoutIsDeterministicDistinctAndOnTheCircle)
+  {
+    for (const std::size_t players : {std::size_t{5}, std::size_t{8}, std::size_t{16}, std::size_t{100}})
+    {
+      const std::vector<Outpost::Placement> first = Outpost::GenerateLayout(0, players);
+      Assert::IsTrue(first == Outpost::GenerateLayout(0, players), L"the stress layout moved between two calls");
+
+      for (std::size_t index = 0; index < first.size(); ++index)
+      {
+        const Neuron::Vec2 anchor = first[index].position;
+        Assert::IsTrue(Outpost::ClampToPlayArea(anchor) == anchor, L"a stress start had to be clamped");
+
+        // On the circle to within the table's one part in 32,768 -- a fraction of a world unit.
+        const std::int64_t xUnits = anchor.x / Neuron::FIXED_ONE;
+        const std::int64_t yUnits = anchor.y / Neuron::FIXED_ONE;
+        const std::int64_t radiusSquared = (xUnits * xUnits) + (yUnits * yUnits);
+        const std::int64_t expected = static_cast<std::int64_t>(Outpost::ANCHOR_RADIUS_UNITS) * Outpost::ANCHOR_RADIUS_UNITS;
+        Assert::IsTrue((radiusSquared > expected - 30000) && (radiusSquared < expected + 30000), L"a stress start is off the circle");
+
+        for (std::size_t other = index + 1; other < first.size(); ++other)
+        {
+          Assert::IsFalse(first[other].position == anchor, L"two stress starts share a place");
+        }
+      }
+    }
+  }
+
+  /// **FACING THE CENTER**, as the quarter-turn anchors do -- within the table's rounding, since an eighth of
+  /// a turn is not exact.
+  TEST_METHOD(EveryStressStationFacesTheCenter)
+  {
+    constexpr std::size_t PLAYERS = 12;
+    for (std::size_t index = 1; index <= PLAYERS; ++index)
+    {
+      const Neuron::Vec2 anchor = Outpost::StartAnchor(PLAYERS, static_cast<Outpost::PlayerId>(index));
+      const Neuron::Angle heading = Outpost::StartHeading(PLAYERS, static_cast<Outpost::PlayerId>(index));
+
+      const std::int64_t towardX = (static_cast<std::int64_t>(Neuron::Cosine(heading)) * Outpost::ANCHOR_RADIUS) / Neuron::SINE_ONE;
+      const std::int64_t towardY = (static_cast<std::int64_t>(Neuron::Sine(heading)) * Outpost::ANCHOR_RADIUS) / Neuron::SINE_ONE;
+      const std::int64_t missX = static_cast<std::int64_t>(anchor.x) + towardX;
+      const std::int64_t missY = static_cast<std::int64_t>(anchor.y) + towardY;
+
+      // Within two world units of the origin, which is what the table's resolution leaves at six thousand.
+      Assert::IsTrue((missX * missX) + (missY * missY) < (4 * Neuron::FIXED_ONE * Neuron::FIXED_ONE), L"a stress station looks away");
+    }
+  }
+
+  /// **TWO AND FOUR ARE UNTOUCHED BY IT.** The stress path starts above four, so the fair layouts every other
+  /// test here pins are the same bit for bit.
+  TEST_METHOD(TheFairLayoutsDoNotTakeTheStressPath)
+  {
+    Assert::IsTrue(Outpost::StartAnchor(2, 1) == Neuron::Vec2{.x = -Outpost::ANCHOR_RADIUS, .y = 0});
+    Assert::IsTrue(Outpost::StartAnchor(4, 1) == Neuron::Vec2{.x = -Outpost::ANCHOR_RADIUS, .y = 0});
+    Assert::AreEqual(0, static_cast<int>(Outpost::StartHeading(4, 1)));
   }
 };
 

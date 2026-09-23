@@ -48,17 +48,27 @@ inline constexpr EntityId NO_ENTITY{};
 /// and players are numbered from one, so a default-constructed Entity is owned by no one rather
 /// than by player zero.
 ///
-/// It rides the wire in the flags byte's two team bits (`GameCore/EntityRecord.h`), which is why
-/// it is on the replicated record rather than beside it: the client draws ownership, and the host
-/// validates commands against it (ADR-003, Q24).
+/// It rides the wire as its own byte on every record (`GameCore/EntityRecord.h`, ADR-024) -- two
+/// team bits in the flags until then, which could name four players and no more. It is on the
+/// replicated record rather than beside it because the client draws ownership, and the host validates
+/// commands against it (ADR-003, Q24).
 using PlayerId = std::uint8_t;
 
 inline constexpr PlayerId NO_PLAYER = 0;
 
-/// The design's slot count (`GameDesign.md` section 2: "a match is four slots"). **Here rather than on
-/// one of the systems that needs it**, because two of them do -- the command intake and the build
-/// system -- and two constants that must agree is a defect waiting for somebody to move one.
-inline constexpr std::size_t MAX_PLAYERS = 4;
+/// **THE GAME'S NUMBER: A MATCH IS FOUR SLOTS** (`GameDesign.md` section 2). A host seats more only in a
+/// stress configuration (ADR-023), and nothing about a real match is designed past this.
+inline constexpr std::size_t MATCH_PLAYERS = 4;
+
+/// **THE MOST A HOST CAN SEAT, WHICH IS A CAPACITY AND NOT A DESIGN.** A `PlayerId` is one byte and zero
+/// is nobody, so 254 is its own ceiling -- and the wire carries any of them, since ADR-024 put the owner on
+/// every record. It was four until ADR-023, when it was the design's slot count doing both jobs.
+///
+/// **THE PER-PLAYER STATE IS SIZED TO THIS, NOT TO THE MATCH.** The command intake and the build system
+/// keep an array entry per possible player -- a few kilobytes at 255 entries -- rather than a vector sized
+/// when the match begins. That is ADR-023 amended: an array needs no count threaded into a constructor, no
+/// "was `Begin` called" to assert, and cannot be indexed past by any `PlayerId` there is.
+inline constexpr std::size_t MAX_PLAYERS = 254;
 
 // HullId IS THE CATALOG'S NOW (M1.1). This was `using HullId = std::uint8_t` with a note saying
 // "at M0 there is no catalog to index into and this is a number that rides along" -- the catalog

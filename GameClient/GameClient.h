@@ -29,6 +29,12 @@
 #include "ReplicaStore.h"
 #include "TapOrder.h"
 
+// ADR-022's stress harness: the decisions the `Bot` executable must not hold (R20).
+#include "BotPolicy.h"
+#include "ChurnSchedule.h"
+#include "FloodSchedule.h"
+#include "StressReport.h"
+
 namespace Outpost
 {
 } // namespace Outpost

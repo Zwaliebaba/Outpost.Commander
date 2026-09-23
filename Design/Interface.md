@@ -111,7 +111,8 @@ hands, and at 287 mm across the far bottom corner is outside a comfortable thumb
 in covers the target and a wedge of screen around it with hand and forearm, on the side of their dominant
 hand. The frequently used controls still belong along the bottom edge, where they are out of the way of
 the playfield and close to a resting hand — but *which* corner is a handedness question rather than a
-reach question, and it is on the register (`OpenQuestions.md` Q33) rather than settled here.
+reach question. **It is a setting, right-handed by default** (`OpenQuestions.md` Q33, answered 2026-09-23):
+left-handed is the mirror, and nothing else changes.
 
 **One consequence is already actionable**: anything the player must *read* while their hand is on the
 screen must not be under that hand. The selection panel is the readout that matters during a gesture, and
@@ -513,9 +514,9 @@ returns straight to play. **It is recognized as the same player by the session t
 path, which is what makes this and `GameDesign.md` §2's disconnect one mechanism rather than two. **A resume is noticed as silence**: a seated client that goes a second without a
 snapshot calls the link lost, rejoins with its token and raises the overlay. A suspension is always
 longer than that, and a dropped link is the same event, so there is no separate suspend path to get
-wrong. The second is untuned and M1.16 looks at it. That is mechanically free: snapshots are self-contained
-([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)), so there is nothing to catch up on and no
-resynchronisation to get wrong.
+wrong. The second is untuned and M1.16 looks at it. That is mechanically cheap: every record is self-contained
+([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)), so a rejoined client is current within
+one sweep and there is no resynchronization to get wrong.
 
 **The player's fleet was at risk the whole time they were away**, and nothing mitigates that. It is the
 honest consequence of a match that does not pause, and it is the same behavior a disconnected player gets
@@ -576,8 +577,9 @@ rather than by arguing about it:
 3. **Whether §1's gesture constants are right** — the 16-pixel tap slop above all, because it is the one
    that decides how often an intended order becomes a pan. The 24-pixel pick radius and the 300-millisecond
    double-tap window are the other two, and all three are single constants behind a tested pure function.
-4. **Which side the panels belong on** (`OpenQuestions.md` Q33), which is a handedness question now that
-   occlusion rather than reach is the binding constraint.
+4. **Whether occlusion, rather than reach, is the constraint that binds.** Which side the panels go on is
+   answered (`OpenQuestions.md` Q33: a setting, right-handed by default); whether the model behind it is
+   right is what playing checks.
 5. **Whether the ground actually sticks to the finger** across the pitch range
    ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)). The failure is drift over a long
    gesture, and a test catches that only if it already knows the tolerance to expect.

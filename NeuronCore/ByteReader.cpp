@@ -21,6 +21,11 @@ std::uint16_t ByteReader::ReadUInt16() noexcept
   return static_cast<std::uint16_t>(Read(sizeof(std::uint16_t)));
 }
 
+std::uint32_t ByteReader::ReadUInt24() noexcept
+{
+  return static_cast<std::uint32_t>(Read(3));
+}
+
 std::uint32_t ByteReader::ReadUInt32() noexcept
 {
   return static_cast<std::uint32_t>(Read(sizeof(std::uint32_t)));

@@ -58,7 +58,7 @@ the model is right, and it costs nothing today.
 flags byte alongside team and state, leaving two bits — room for exactly four designs, permanently. A
 two-bit cap is a hardcoded limit wearing the costume of an identity, and it would have been discovered
 while building the designer this ADR exists to make cheap.
-[`ADR-003`](ADR-003-replication-is-full-snapshots.md) now gives the design identity its own byte.
+[`ADR-003`](ADR-003-the-record-and-the-command.md) now gives the design identity its own byte.
 
 **The designer and research become additive.** The designer is a screen that writes a row into a table the
 simulation already reads. Research is a gate over identities the code already treats as data. Neither

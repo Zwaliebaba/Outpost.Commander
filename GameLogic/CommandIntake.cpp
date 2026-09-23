@@ -7,7 +7,7 @@
 namespace Outpost
 {
 
-EntityId ResolveWireIdentity(const World& _world, std::uint16_t _wireIdentity) noexcept
+EntityId ResolveWireIdentity(const World& _world, WireIdentity _wireIdentity) noexcept
 {
   const std::uint16_t index = IndexOf(_wireIdentity);
   if (!_world.IsSlotAlive(index))
@@ -17,10 +17,10 @@ EntityId ResolveWireIdentity(const World& _world, std::uint16_t _wireIdentity) n
 
   const EntityId stored = _world.EntityInSlot(index).id;
 
-  // Six bits is all the wire carries, so this compares six bits. The store's generation is wider
+  // Eight bits is all the wire carries, so this compares eight bits. The store's generation is wider
   // and that is deliberate (R16 does not owe the wire its precision); what matters here is that a
   // sender naming a slot's previous occupant is refused.
-  if (GenerationOf(_wireIdentity) != (stored.generation & WIRE_GENERATION_MASK))
+  if (GenerationOf(_wireIdentity) != static_cast<std::uint16_t>(stored.generation & WIRE_GENERATION_MASK))
   {
     return NO_ENTITY;
   }
@@ -90,7 +90,7 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   // EVERY IDENTITY IS RESOLVED AND CHECKED BEFORE ANY OF THEM IS ACTED ON. A command that is
   // half applied and then refused would leave the match in a state no sequence number describes,
   // and the client would never learn which half took.
-  for (const std::uint16_t wire : _command.selection)
+  for (const WireIdentity wire : _command.selection)
   {
     const EntityId resolved = ResolveWireIdentity(_world, wire);
     if (!resolved.IsValid())
@@ -116,7 +116,7 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     // is why this is one call and not a loop.
     std::vector<EntityId> resolved;
     resolved.reserve(_command.selection.size());
-    for (const std::uint16_t wire : _command.selection)
+    for (const WireIdentity wire : _command.selection)
     {
       resolved.push_back(ResolveWireIdentity(_world, wire));
     }

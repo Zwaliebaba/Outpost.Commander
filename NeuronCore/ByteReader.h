@@ -35,6 +35,9 @@ public:
 
   [[nodiscard]] std::uint8_t ReadUInt8() noexcept;
   [[nodiscard]] std::uint16_t ReadUInt16() noexcept;
+
+  /// Three bytes into the low twenty-four bits; the top byte of the result is always zero.
+  [[nodiscard]] std::uint32_t ReadUInt24() noexcept;
   [[nodiscard]] std::uint32_t ReadUInt32() noexcept;
   [[nodiscard]] std::uint64_t ReadUInt64() noexcept;
 

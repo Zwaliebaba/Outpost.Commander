@@ -7,7 +7,7 @@ this tree has taken no decisions before these.
 |---|---|---|---|
 | [`ADR-001`](ADR-001-the-playfield-is-a-plane.md) | The simulation is two-dimensional and the camera is not, because a tap is a ray and a ray has no depth | Accepted | 2026-09-20 |
 | [`ADR-002`](ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the 16-bit binary angle over a 4,096-entry sine table, the pinned PRNG, and candidate ordering as a correctness property | Accepted | 2026-09-20 |
-| [`ADR-003`](ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz, no delta and no acknowledgment; a ten-byte record, an explicit removal list, host-side command validation, and commands made reliable by a sequence the snapshot already carries | Accepted | 2026-09-20 |
+| [`ADR-003`](ADR-003-the-record-and-the-command.md) | The entity record's fields and semantics, the 1,232-byte payload, 20 Hz and the 75 ms delay, commands made reliable by the acknowledgment the downstream state carries, and host-side validation. **Cut down 2026-09-23**: its full snapshot, per-player header, once-sent removals and fragmentation are ADR-024's | Accepted | 2026-09-23 |
 | [`ADR-004`](ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities in the MVP: damage lands on the tick a weapon fires and the client draws an event | Accepted | 2026-09-20 |
 | [`ADR-005`](ADR-005-a-mesh-is-a-cmo-file.md) | A mesh is a CMO file, authored as content, with the reader written here — R14 closes a list of libraries and not a list of files. **Replaced 2026-09-22**, having decided the opposite: a mesh was a function | Accepted | 2026-09-22 |
 | [`ADR-006`](ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function | Accepted | 2026-09-20 |
@@ -25,9 +25,12 @@ this tree has taken no decisions before these.
 | [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus seeded instanced stars, modeled on the real magnitude and color distributions and capped at 12% large-area luminance | Accepted | 2026-09-21 |
 | [`ADR-020`](ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Damage off screen shows as a directional indicator at the edge, derived from data the client already has and tappable to recenter | Accepted | 2026-09-21 |
 | [`ADR-021`](ADR-021-content-ships-with-the-package.md) | Content files ship with the package; the line R14 drew is against dependencies, and R16's is against simulation data becoming files | Accepted | 2026-09-22 |
+| [`ADR-022`](ADR-022-a-bot-is-a-headless-client.md) | A bot is a headless client, and `Bot`, an unpackaged C++/WinRT console application, runs many of them from one process as players, churners and flooders to load the host. It reuses `GameClient` and `NeuronClient` and is not the AI of `GameDesign.md` §8 | Accepted | 2026-09-23 |
+| [`ADR-023`](ADR-023-the-player-count-is-configurable.md) | The host's player count is a run-time argument, past four only in a stress configuration; the layout above four is deterministic and not fair. Its first draft's owner grouping was dropped for ADR-024 | Accepted | 2026-09-23 |
+| [`ADR-024`](ADR-024-replication-is-prioritized-records.md) | Replication is prioritized absolute-state records: a per-client accumulator fills one whole datagram a tick (two at most), a sweep bounds staleness, removals repeat, the header carries only the recipient's block, and fragmentation leaves the transport. Supports a hundred players at 24.6 KB/s per client per update | Accepted | 2026-09-23 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **All twenty are Accepted** — ADR-002 to
+ruled; a proposed ADR is not something to write code against. **All twenty-three are Accepted** — ADR-022 to ADR-024 on 2026-09-23, on records written from a proposal the owner ruled on in review; ADR-024 cut ADR-003 down in place and ADR-023 lost half of itself to it the same day, both under the exception below; ADR-002 to
 ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes; ADR-012
 on 2026-09-21 with the compiler changed from the one the plan recommended; ADR-021 on 2026-09-22, which
 also settled that a conflicting record is updated in place through the MVP rather than superseded; and

@@ -51,7 +51,7 @@ class JoinState
 {
 public:
   /// ADR-013's cadence. **Four a second, which is not tuned and does not need to be**: a join is
-  /// 14 bytes, the loss that makes a retry necessary is measured in percent, and the only thing
+  /// 12 bytes, the loss that makes a retry necessary is measured in percent, and the only thing
   /// the interval decides is how long a player looks at an overlay after the host comes up.
   static constexpr std::uint64_t RETRY_INTERVAL_MILLISECONDS = 250;
 

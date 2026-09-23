@@ -59,7 +59,7 @@ enum class JoinResult : std::uint8_t
 /// R8: a wire record, so plain fields and brace initialization.
 struct Join
 {
-  /// Eight bytes of payload behind the six-byte header.
+  /// Eight bytes of payload behind the four-byte header.
   static constexpr std::size_t SIZE_BYTES = 8;
 
   SessionToken token = NO_SESSION_TOKEN;
@@ -102,7 +102,6 @@ enum class JoinFault : std::uint8_t
   VersionMismatch,
   /// A well-formed packet that is not the join record being looked for.
   WrongType,
-  Fragmented,
   /// A result byte this build does not know.
   Malformed
 };

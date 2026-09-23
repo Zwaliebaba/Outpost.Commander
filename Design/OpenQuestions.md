@@ -8,16 +8,16 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-two answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-four answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS EIGHT ENTRIES AND HALF OF THEM ARE ANSWERED** — Q26, Q35, Q37 and Q46, all in
-full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS TEN ENTRIES AND SIX OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46 and Q47,
+all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
-open are Q33, Q34, Q36 and Q47**, each with the milestone that settles it, and **every one carries a
+open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
@@ -45,7 +45,7 @@ does not yet recompute these.
 | **Q1** | Is the playfield a volume, a plane, or a plane with altitude bands? | **A plane.** A tap is a ray and a ray has no depth, and R21 leaves no second input to supply one. | [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md) |
 | **Q2** | Is the home base a fixed station or a mobile mothership? | **A fixed station.** Removes base pathfinding, docking and a class of AI problem from the MVP; a mothership is a hull like any other later. | `GameDesign.md` §5 |
 | **Q3** | How much of the *Warzone 2100* design system lands in the MVP? | **The model, not the interface.** Hull, drive and slots in the simulation and on the wire from the first line; three fixed designs and no designer screen. | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) |
-| **Q4** | What fleet scale should the MVP target? | **About fifty ships a player** — with the station and four modules that is **110 entities in the reduced MVP** (Q27, Q28) and 220 at four players, and 110 is what makes a snapshot fit one datagram, with nine entities of headroom. | `GameDesign.md` §10, [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) |
+| **Q4** | What fleet scale should the MVP target? | **About fifty ships a player** — with the station and four modules that is **110 entities in the reduced MVP** (Q27, Q28) and 220 at four players, and 110 is what makes a snapshot fit one datagram, with nine entities of headroom. | `GameDesign.md` §10, [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) |
 | **Q5** | How does a client find a host? | **It does not — the address is configuration.** A one-line file in `LocalState` with `127.0.0.1` compiled in as the default; no discovery, no address entry. The loopback exemption this implies is a development arrangement and never a shipping one. | [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md) |
 | **Q6** | What is the target device? | **The Surface Pro.** 13-inch 3:2, 2880 × 1920 at 267 PPI, 200% scale, 1440 × 960 DIPs. The current model is ARM64, which makes that CI leg a real target. | `Interface.md` §1, [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md) |
 | **Q7** | Is the authored frame 16:9 or 3:2? | **3:2** — it follows from Q6 rather than being a separate choice, and there is no letterbox on the target panel at any scale. The 16:9 recommendation this register carried was wrong once the device was known. **The resolution behind it moved**: [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) makes the world a scale of the panel defaulting to 1:1, and leaves the interface's authored 1440 × 960 alone as a statement about fingertips. | [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md), [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) |
@@ -93,7 +93,7 @@ because they were simply wrong.**
 | **Q23** | Is the client forced fullscreen? | **Yes, at launch.** Nothing previously forced it, which made [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)'s exact 2× an accident of however the window happened to be sized. | `Interface.md` §1, `TechnicalDesign.md` §5 |
 | **Q24** | What does the host validate on a command? | **Ownership, selection length, generation, target bounds and sequence wraparound** — labeled correctness rather than security, so it is not filed under the anti-cheat exclusion again. A 1,232-byte packet holds 608 identities against a peak of 110, reachable from an ordinary bug with no attacker anywhere. | `TechnicalDesign.md` §4, §8 |
 | **Q25** | How does a match end, and how do you start another? | **The host reseeds and restarts; the client shows a result overlay and reconnects.** Nothing said what happened at victory, and restart is the most-used operation in a solo testing loop — twenty matches an evening is impossible if playing again means relaunching a package. | `Interface.md` §7, `GameDesign.md` §10 |
-| **Q27** | Does the MVP ship two players or four? | **Two, through M3.** The generator's symmetry, the AI count and the snapshot's per-player blocks are all sized by a runtime player count, so the other two slots are configuration rather than a change. Two buys a five-minute match, a single-datagram snapshot, and twenty matches an evening. | `GameDesign.md` §2, §10, [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) |
+| **Q27** | Does the MVP ship two players or four? | **Two, through M3.** The generator's symmetry, the AI count and the snapshot's per-player blocks are all sized by a runtime player count, so the other two slots are configuration rather than a change. Two buys a five-minute match, a single-datagram snapshot, and twenty matches an evening. | `GameDesign.md` §2, §10, [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) |
 
 **The three corrections, which were not questions:** R16's FMA argument — contractions are *not* generated
 by default under `/fp:precise` from Visual Studio 2022 onward and the tree pins `v145`, so the rule was
@@ -235,7 +235,15 @@ exactly what `GameDesign.md` §4 asks of a home field once M3 makes asteroids fi
 **What is required either way** is that the generator *names* both rather than leaving them implicit in
 code.
 
-### Q33 — Which side do the panels belong on? — **needed by M1**
+### Q33 — Which side do the panels belong on? — **ANSWERED**
+
+**A SETTING, RIGHT-HANDED BY DEFAULT. The owner's answer, 2026-09-23**, on the recommendation below: the
+build panel sits under the right hand and the selection panel opposite it, and left-handed is the mirror
+`Scripts/CheckHudGeometry.py` already gates. **What is not built is the control that flips it**: there is no
+settings surface in the interface yet, so until one is designed the value is `LEFT_HANDED` in
+`OutpostCommander/App.cpp`, false. **What stays open is not this row's**: whether the occlusion model behind
+`Interface.md` §1 is right at all is M1.16's to confirm by playing.
+
 
 Asked in the sixth round and not answered there. **The posture assumption underneath it was wrong**: a
 Surface Pro 11 is 287 × 208 mm and 895 g, so it is used on a kickstand with index fingers rather than held
@@ -310,7 +318,7 @@ tap on a 96-pixel button a player is already using. The handoff raises it and de
 correctly — it is a `GameCore` rule, not an interface one.
 
 **Recommendation: full refund, on both paths.** The MVP has one queue slot and no way to queue ahead
-([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md), Q21), so the only thing a cancel can express
+([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md), Q21), so the only thing a cancel can express
 is *I picked the wrong one* — which is the mis-tap case, not a strategic one. A proportional refund buys a
 decision the MVP gives the player no other way to make interesting, and pays a rounding rule for it.
 
@@ -426,7 +434,14 @@ compares them** rather than a reader trusting both.
 
 ---
 
-### Q47 — How fast does a station build? — **needed by M1.6, and M1.6 is built to the recommendation**
+### Q47 — How fast does a station build? — **ANSWERED**
+
+**A RATE, AT 20 CREDITS OF COST A SECOND. The owner's answer, 2026-09-23**, on the recommendation below, which
+M1.6 was already built to (`BuildSystem::BUILD_RATE_CREDITS_PER_SECOND`). The figure is now in
+`GameDesign.md` §5, so the paragraph below that says it is not is the history of why this row was out of
+order, not its state. **What would reopen it** is M3's or M4's playtesting finding the first minute wrong,
+which is a constant.
+
 
 **THE DESIGN STATES NO BUILD TIME ANYWHERE.** `GameCore/DerivedStats.h` said so in as many words from
 M1.2: [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) names build time alongside cost and mass as a
@@ -524,6 +539,59 @@ are sums" and **no figure for it exists anywhere in the design**, nor any outcom
 there is no stated base build rate for the shipyard's ×1.5 to multiply. Inventing one here would be
 choosing a balance number nobody can check yet. **M1.6 is the step that first observes it** and is where
 it should be asked; M1.2's own exit criteria name cost and speed and not build time.
+
+### Q48 — Is the AI of §8 written so that a bot client can run it too? — **needed by M4.5, and decided before it is written**
+
+**The question.** `GameDesign.md` §8 puts the AI on the host, inside `GameLogic`, on the tick. Written the
+obvious way, it reads the host's `World`: exact positions, every entity's full state, everything the host
+knows. [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md)'s bot can never run code like that, because
+a client links no simulation (R19). So there would be two decision-makers that can't share a line: the
+stress harness's rule-based policy and the real AI. The owner asked whether the bot can simply reuse the
+game's bot logic. Today there is none to reuse, and whether there ever is depends on how M4.5 is written.
+
+**The options, and what each costs:**
+
+- **Host-only, as §8 reads now.** The AI takes the `World`. It is the simplest to write, has full
+  precision, and M4.5 needs nothing new. The bot keeps its own policy for good. §8's rule that the AI "is
+  not given information a human in its position would not have" is kept by discipline, and nothing checks it.
+- **Written against what a player sees, and living in `GameCore`.** The AI's input is a view built from
+  snapshot-shaped records: the entities a player is sent, at wire precision, plus that player's block. On
+  the host the view is built from the host's own encoded snapshot for that player. On a bot it is the
+  decoded snapshot. **One decision function then runs in both places**, and §8's no-cheating rule is kept
+  by construction, because the function has nothing else to read. It costs three things. The AI works at
+  wire precision (positions to a quarter unit, heading to 256 steps, hull as a percentage) even on the host.
+  It must obey R16 in full, because on the host it is simulation. And the view has to be cheap enough to
+  build each decision interval. M4.6's takeover of an abandoned slot comes nearly free, because the
+  function never assumed it had been running from the start.
+- **Shared policy primitives only.** Target choice, build choice and threat scoring are shared, and each
+  side builds its own loop. Less coupling than the second option and less reuse, and the no-cheating
+  property is back to discipline.
+
+**Recommendation: the second.** §8 already demands that the AI see only what a human would, and this is
+the only option where the code enforces it. It also makes M4.6's hardest clause, "an AI that can start
+from arbitrary mid-match state", a property of the input and not a thing to test for. Wire precision is
+enough for a player to play on, so it is enough for an AI that §8 deliberately keeps modest. **Settle it
+before M4.5 is written**, because retrofitting it means rewriting the AI's inputs. If it is taken,
+`BotPolicy` (ADR-022) is replaced by that function, not grown into it.
+
+### Q49 — What are the accumulator's weights, and is a cap of two updates a tick enough? — **needed by M4.8, built to the recommendation at M1.14c**
+
+**The question.** [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) scores each entity's
+relevance to each client as an integer sum — a base, a term for being in view, a term for having moved or
+changed, a term for being the client's own — and sends up to two whole updates a tick. The weights decide
+what a player sees refreshed first when more is on screen than fits, and nothing in the design derives
+them: they are the kind of number that is right when a match looks right and not otherwise. **Two things
+have to be played, not argued.** Whether a stationary enemy fleet at the edge of a tactical view may
+refresh every half second without anyone noticing, and whether a four-player match at the design's fleet
+ever wants the second update — the budget says the MVP wants it every tick and 220 entities need it to
+refresh everything within two.
+
+**Recommendation, and M1.14c builds to it:** base 1, in view 4, moved or changed 2, own 2, so an entity
+in view that moved scores 7 a tick against a stationary one out of view at 1 — a seven-to-one ratio,
+which is roughly the sweep-to-refresh ratio at which 1,000 entities in view still refresh within six ticks
+at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
+first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
+numbers are constants beside the accumulator, so the answer costs an edit and a test.
 
 ---
 

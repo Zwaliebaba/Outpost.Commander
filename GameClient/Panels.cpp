@@ -505,7 +505,7 @@ HudFrame BuildHud(const HudState& _state)
   return frame;
 }
 
-std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const std::uint16_t> _selection, std::span<const EntityRecord> _entities)
+std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdentity> _selection, std::span<const EntityRecord> _entities)
 {
   struct Tally
   {
@@ -514,7 +514,7 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const std::uint1
   };
   std::array<Tally, 256> tallies{};
 
-  for (const std::uint16_t identity : _selection)
+  for (const WireIdentity identity : _selection)
   {
     for (const EntityRecord& record : _entities)
     {
@@ -545,8 +545,8 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const std::uint1
 
 std::size_t NarrowToDesign(Selection& _selection, std::span<const EntityRecord> _entities, DesignId _design)
 {
-  std::vector<std::uint16_t> kept;
-  for (const std::uint16_t identity : _selection.Identities())
+  std::vector<WireIdentity> kept;
+  for (const WireIdentity identity : _selection.Identities())
   {
     for (const EntityRecord& record : _entities)
     {
@@ -559,7 +559,7 @@ std::size_t NarrowToDesign(Selection& _selection, std::span<const EntityRecord> 
   }
 
   _selection.Clear();
-  for (const std::uint16_t identity : kept)
+  for (const WireIdentity identity : kept)
   {
     _selection.Add(identity);
   }

@@ -24,7 +24,7 @@ namespace Neuron
 /// R8: a wire record, so plain fields and brace initialization.
 struct ProbePacket
 {
-  /// The header's six bytes and one more field. Well under any MTU; this is not a size test.
+  /// The header's four bytes and one more field. Well under any MTU; this is not a size test.
   static constexpr std::size_t SIZE_BYTES = PacketHeader::SIZE_BYTES + 8;
 
   /// Below the Windows ephemeral range, which starts at 49152, so that a fixed bind cannot

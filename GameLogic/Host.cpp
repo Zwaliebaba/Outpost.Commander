@@ -11,72 +11,17 @@ namespace Outpost
 
 namespace
 {
-/// ADR-003's pinned payload. A snapshot larger than this would fragment, which is the property the
-/// whole replication design exists to keep.
-inline constexpr std::size_t PAYLOAD_BYTES = 1232;
-
 /// Comfortably larger than any datagram this build sends or accepts, so a receive is never
 /// measuring the buffer instead of the packet.
 inline constexpr std::size_t SCRATCH_BYTES = 2048;
-
-/// Q27 ships two through M3. It is a runtime value everywhere it matters -- the snapshot sizes its
-/// per-player blocks by a count in the header -- so raising it is configuration and not a format
-/// change.
-inline constexpr std::size_t PLAYER_COUNT = 2;
 } // namespace
 
-Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, const BuildSystem& _build, std::uint32_t _tick,
-                       std::uint16_t _sequence, std::size_t _playerCount)
+PlayerBlock PlayerBlockFor(const CommandIntake& _intake, const BuildSystem& _build, PlayerId _player) noexcept
 {
-  Snapshot snapshot;
-  snapshot.sequence = _sequence;
-  snapshot.tick = _tick;
-
-  for (std::size_t player = 0; player < _playerCount; ++player)
-  {
-    const PlayerId identity = static_cast<PlayerId>(player + 1);
-    // M1.6: all four fields carry meaning. The two build bytes are Q21's whole answer to the queue
-    // that had no wire record -- the item and its progress, and nothing else.
-    snapshot.players.push_back(PlayerBlock{.credits = _build.Credits(identity),
-                                           .lastCommandSequenceApplied = _intake.LastAppliedSequence(identity),
-                                           .buildingDesign = _build.WireBuildingDesign(identity),
-                                           .buildProgressPercent = _build.WireProgressPercent(identity)});
-  }
-
-  // Index order, which is the order everything else walks the store in.
-  const std::size_t slotCount = _world.SlotCount();
-  snapshot.entities.reserve(_world.AliveCount());
-  for (std::size_t slot = 0; slot < slotCount; ++slot)
-  {
-    if (!_world.IsSlotAlive(slot))
-    {
-      continue;
-    }
-
-    const Entity& entity = _world.EntityInSlot(slot);
-
-    // An index the wire cannot name is dropped rather than truncated: a truncated identity does
-    // not fail, it names a different entity. The store allows 65,536 slots and the wire ten bits
-    // of index, so this is unreachable at the design's counts and is written for the day it is
-    // not (see EntityRecord.h).
-    if (!FitsWireIdentity(entity.id.index))
-    {
-      continue;
-    }
-
-    snapshot.entities.push_back(
-      EntityRecord{.identity = PackIdentity(entity.id.index, entity.id.generation),
-                   .positionX = QuantizePosition(entity.position.x),
-                   .positionY = QuantizePosition(entity.position.y),
-                   .heading = QuantizeWireHeading(entity.heading),
-                   // M1.3: the fields M0.9 encoded as zeroes now carry meaning.
-                   .hullPercentRemaining = QuantizeHullPercent(entity.hullRemaining, Derive(entity.design).hullPoints),
-                   .designIdentity = static_cast<std::uint8_t>(entity.design),
-                   .flags = static_cast<std::uint8_t>((entity.owner & FLAGS_TEAM_MASK) << FLAGS_TEAM_SHIFT)});
-  }
-
-  // M0 removes nothing and fires nothing. The lists are still encoded, which is what M0.9 proved.
-  return snapshot;
+  return PlayerBlock{.credits = _build.Credits(_player),
+                     .lastCommandSequenceApplied = _intake.LastAppliedSequence(_player),
+                     .buildingDesign = _build.WireBuildingDesign(_player),
+                     .buildProgressPercent = _build.WireProgressPercent(_player)};
 }
 
 Host::Host()
@@ -84,17 +29,23 @@ Host::Host()
   BeginMatch(DEFAULT_MATCH_SEED);
 }
 
-void Host::BeginMatch(std::uint64_t _matchSeed)
+void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
 {
+  // A RUNTIME VALUE EVERYWHERE IT MATTERS (Q27, ADR-023): an update carries only its recipient's block, so
+  // nothing on the wire is sized by it (ADR-024), and every table is sized to the capacity. Raising it is
+  // configuration and not a format change.
+  const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
+
   m_world = World{};
   m_intake = CommandIntake{};
-  m_build.Begin(PLAYER_COUNT);
-  m_sessions.Begin(PLAYER_COUNT, _matchSeed);
+  m_build.Begin(players);
+  m_sessions.Begin(players, _matchSeed);
+  m_accumulator.Begin();
 
   // M1.5: the stations, from `GameCore`'s generator -- the same function the client runs to draw the
   // same field (R23). A station needs no code of its own here because it is a row in the design
   // table (ADR-006), so this is `World::Create` like anything else.
-  for (const Placement& placed : GenerateLayout(_matchSeed, PLAYER_COUNT))
+  for (const Placement& placed : GenerateLayout(_matchSeed, players))
   {
     static_cast<void>(m_world.Create(placed.position, placed.heading, placed.design, placed.owner));
   }
@@ -126,6 +77,14 @@ void Host::AnswerJoin(std::span<const std::byte> _datagram, const Neuron::Endpoi
 
   ++m_joins;
   const JoinReply reply = m_sessions.Admit(join, _sender);
+
+  // **A SEATED CLIENT STARTS FROM NOTHING** (ADR-024). It clears its store on a join or a rejoin, so the
+  // accumulator forgets what it had sent it and everything is due within one sweep. A repeat of a join
+  // already answered resets it again, which costs one sweep of records and nothing else.
+  if ((reply.result == JoinResult::Accepted) || (reply.result == JoinResult::Rejoined))
+  {
+    m_accumulator.Reset(reply.player);
+  }
 
   std::array<std::byte, JoinReply::SIZE_BYTES + Neuron::PacketHeader::SIZE_BYTES> outgoing{};
   Neuron::ByteWriter writer{outgoing};
@@ -172,7 +131,7 @@ void Host::DrainAndApply()
 
     // THE TYPE IS READ BEFORE THE RECORD IS, because two records now arrive on one socket and a
     // decoder that is handed the wrong one reports a fault rather than a miss. The header is read
-    // twice -- once here and once inside whichever decoder takes it -- which is six bytes.
+    // twice -- once here and once inside whichever decoder takes it -- which is four bytes.
     Neuron::ByteReader probe{datagram};
     Neuron::PacketHeader header{};
     if (Neuron::PacketHeader::Read(probe, header) != Neuron::PacketFault::None)
@@ -224,44 +183,39 @@ void Host::DrainAndApply()
       packet.player = seated;
     }
 
+    // THE VIEW RIDES EVERY COMMAND PACKET, INCLUDING AN EMPTY ONE (ADR-024). The client sends one on a
+    // cadence for exactly this, and a lost one leaves the accumulator scoring against the last it saw.
+    m_accumulator.SetView(seated, packet.viewX, packet.viewY, packet.viewRadiusUnits);
+
     static_cast<void>(m_intake.ApplyPacket(m_world, m_build, packet));
   }
 }
 
-void Host::SendSnapshots()
+void Host::SendUpdates()
 {
-  if (m_sessions.Count() == 0)
-  {
-    // Still advance the sequence? No. A client watches the sequence advance by exactly one per
-    // snapshot it receives, so a sequence that moved while nobody was listening would make the
-    // first snapshot after a join look like a gap.
-    return;
-  }
-
-  const Snapshot snapshot = BuildSnapshot(m_world, m_intake, m_build, m_tick, m_snapshotSequence, PLAYER_COUNT);
-
   std::array<std::byte, SCRATCH_BYTES> scratch{};
-  Neuron::ByteWriter writer{scratch};
-  if (!Encode(snapshot, writer))
-  {
-    return;
-  }
-  if (writer.WrittenBytes() > PAYLOAD_BYTES)
-  {
-    // ADR-003's property, checked at run time rather than only in a test. Sending this would
-    // fragment, and fragmentation is what the whole replication design declines.
-    return;
-  }
 
-  // **TO SESSIONS, NOT TO ENDPOINTS THAT HAVE SPOKEN** (ADR-013). A client that has not joined
-  // sees nothing at all, which is a change from M0 and is the correct one.
-  const std::span<const std::byte> datagram{scratch.data(), writer.WrittenBytes()};
+  // **TO SESSIONS, NOT TO ENDPOINTS THAT HAVE SPOKEN** (ADR-013). A client that has not joined sees
+  // nothing at all. Each seated client gets its own updates: its own block, its own sequence, and the
+  // records its own accumulator says are due (ADR-024).
   for (const Sessions::Session& session : m_sessions.All())
   {
-    static_cast<void>(m_transport.Send(session.endpoint, datagram));
-  }
+    const PlayerBlock own = PlayerBlockFor(m_intake, m_build, session.player);
+    for (const Update& update : m_accumulator.Fill(m_world, session.player, own, m_tick))
+    {
+      Neuron::ByteWriter writer{scratch};
 
-  ++m_snapshotSequence;
+      // `Encode` refuses an update past the pinned payload, so what reaches the socket is one datagram
+      // by construction rather than by a check here. A refusal is a bug in the accumulator's arithmetic
+      // and is dropped rather than sent broken.
+      if (!Encode(update, writer))
+      {
+        continue;
+      }
+      static_cast<void>(m_transport.Send(session.endpoint, std::span<const std::byte>{scratch.data(), writer.WrittenBytes()}));
+      ++m_updatesSent;
+    }
+  }
 }
 
 void Host::RunOneTick()
@@ -270,11 +224,11 @@ void Host::RunOneTick()
   Tick(m_world);
 
   // AFTER THE MOVEMENT, so a ship that appears this tick does not also move on it -- which would
-  // put it somewhere no snapshot ever said it started from.
+  // put it somewhere no update ever said it started from.
   m_build.Advance(m_world);
 
   ++m_tick;
-  SendSnapshots();
+  SendUpdates();
 }
 
 } // namespace Outpost

@@ -284,7 +284,7 @@ public:
     }
   }
 
-  /// Nobody's ships take the hull's own base tone rather than reading off the end of the table.
+  /// Nobody's ships take the hull's own base tone.
   TEST_METHOD(NoPlayerTakesTheHullBase)
   {
     float r = 0.0f;
@@ -292,9 +292,27 @@ public:
     float b = 0.0f;
     Outpost::TeamColor(Outpost::NO_PLAYER, r, g, b);
     Assert::AreEqual(0x41 / 255.0f, r, 0.002f);
+  }
 
-    Outpost::TeamColor(99, r, g, b);
-    Assert::AreEqual(0x41 / 255.0f, r, 0.002f);
+  /// **A PLAYER PAST THE PALETTE TAKES ITS LAST COLOR** (ADR-023), never an index off the end of the table
+  /// -- which is what a stress run's ninety-ninth player would otherwise read.
+  TEST_METHOD(APlayerPastThePaletteTakesTheLastColor)
+  {
+    float lastR = 0.0f;
+    float lastG = 0.0f;
+    float lastB = 0.0f;
+    Outpost::TeamColor(4, lastR, lastG, lastB);
+
+    for (const Outpost::PlayerId player : {Outpost::PlayerId{5}, Outpost::PlayerId{99}, Outpost::PlayerId{254}})
+    {
+      float r = 0.0f;
+      float g = 0.0f;
+      float b = 0.0f;
+      Outpost::TeamColor(player, r, g, b);
+      Assert::AreEqual(lastR, r);
+      Assert::AreEqual(lastG, g);
+      Assert::AreEqual(lastB, b);
+    }
   }
 };
 
