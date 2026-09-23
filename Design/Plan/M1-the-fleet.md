@@ -596,6 +596,64 @@ at a time, and a combat-tier target passing on the 48 floor is the way it erodes
 tap inside a panel never reaches the world; **the two bottom panels swap sides on one value**, so Q33
 costs a setting rather than a rewrite; and the selection panel's grouping matches what M1.11 selected.
 
+### M1.14b — The headless bot · `GameClient`, `Bot` · `GameClientTests`, hand · agent
+
+**Read first:** [`ADR-022`](../ADR/ADR-022-a-bot-is-a-headless-client.md) in full, and **do not start
+while it is Proposed**. After that, ADR-013, ADR-008 and ADR-003's command reliability; `GameDesign.md`
+§2 and §8; `AGENTS.md` §2, R19 and R20.
+
+**Adds:** a third executable, `Bot`, which is an unpackaged C++/WinRT desktop console application. It joins a
+host the way the packaged client does, takes a seat, and sends commands chosen by a rule-based policy.
+**Nothing on the host and nothing on the wire changes.** The executable has four jobs: parse the command
+line (host address, policy seed, and an optional run length in ticks after which it exits cleanly),
+initialize the apartment, run the loop, and log. The loop is `DatagramTransport` into `PacketQueue`,
+`ClientFrame::DrainPackets`, `JoinState::ShouldSend`, then `BotPolicy`, then an encoded `CommandPacket`
+sent through the same transport. **Everything that makes a decision is in `GameClient`**, where
+`GameClientTests` can reach it (R20).
+
+**`BotPolicy` is the new piece, and it is small on purpose.** It takes the newest snapshot, the bot's
+player and a `Neuron::Pcg32`, and returns zero or more `Command`s. It acts only when the snapshot's tick
+has moved on by its decision interval. At M1 it does three things. It queues a `Build` of a design its
+credits cover. It occasionally sends a `CancelBuild`, so the refund path gets traffic. And it sends a
+`MoveTo` for a random subset of its own ships to a point drawn inside the playfield (`BuildMoveCommand` already builds that).
+**It never names an entity it does not own.** The host would refuse the command, but a fixture that sends
+refusable commands is testing the wrong thing. **The decision interval, and what "occasionally" means, are
+constants in `BotPolicy.h` with the reason written beside them**, not tuned numbers.
+
+**Three `NeuronClient` functions are off limits, and why is ADR-022's table**: `ReadHostAddress`,
+`ReadSessionToken` and `WriteSessionToken` need package identity and throw inside an unpackaged process.
+The bot keeps its token in memory and parses its address with `HostAddressFromFileContents`. **If anything
+the bot does call turns out to reach `ApplicationData`**, stop and report it. That is ADR-022's
+regression, and hiding it behind a `try` defeats the purpose.
+
+**Files:** `GameClient/BotPolicy.h` `.cpp`; `GameClient.vcxproj` + `.filters`; `GameClient/GameClient.h`
+(master include); `Tests/GameClientTests/BotPolicyTests.cpp` + the suite's `.vcxproj` and `.filters`;
+`Bot/Bot.cpp`, `Bot/pch.h`, `Bot/pch.cpp`, `Bot/Bot.vcxproj` + `.filters`, `Bot/packages.config` at the
+pinned `Microsoft.Windows.CppWinRT` version; `OutpostCommander.slnx`; **`AGENTS.md` §2**, meaning the
+executables paragraph, the import table row `Bot | — | GameClient, NeuronClient`, the master-include
+diagram and the count of C++/WinRT projects, **§3** for what `Bot` is and is not (unpackaged, a desktop
+application type, no manifest), and §5's R20 sentence, which names the executables. `.clang-tidy`'s
+`HeaderFilterRegex` if it names `Bot/`'s directory. `Scripts/CheckProjectFiles.py` finds the project by
+itself, so check that it passes and don't edit it to make it pass.
+
+**Not this step:** a CI job that runs `Server` against bots. ADR-022 names it as what this enables, and
+it changes the workflow, which is a change of its own. Also not this step is anything that makes the bot
+a better player. ADR-022 says what that would reopen.
+
+**Done when:**
+
+- **What an agent can establish:** `BotPolicyTests` pins that a policy fed the same snapshots and the same
+  seed produces the same commands twice; that it never commands an entity it does not own; that it never
+  builds what its credits cannot cover; and that it is silent between decision ticks. `GameClient` still
+  links no `GameLogic`, and `Bot/` holds no decision a test could have pinned.
+- **What needs a Windows machine:** `Bot` builds on `Debug|x64`, and on the other three pairs or the report
+  says it did not. Against a real `Server` on the same machine, **with no loopback exemption granted to
+  anything**, one bot is seated, a second bot takes the next slot, and a command from each is acknowledged
+  by a later snapshot. The same run discharges ADR-022's two owed measurements, and they are written into
+  that record.
+- **What needs the owner:** nothing beyond ruling ADR-022. **This step does not close M1.15.** That gate asks
+  whether two *people* can play. The bot changes what the gate costs to try, not what it has to show.
+
 ---
 
 ## The gates

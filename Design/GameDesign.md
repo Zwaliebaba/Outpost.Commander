@@ -466,6 +466,10 @@ the match's pinned PRNG for anything random.
 
 Difficulty levels, personalities and anything resembling strategic planning are post-MVP.
 
+**A bot client is not this AI.** [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) (Proposed) adds a
+headless client that joins like a person and plays a rule-based policy from outside the host. It is a
+fixture for exercising the protocol, and nothing in this section waits on it or is replaced by it.
+
 ---
 
 ## 9. Research, and what the MVP must not foreclose
