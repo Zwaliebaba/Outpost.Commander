@@ -35,6 +35,12 @@ public:
 
   bool WriteUInt8(std::uint8_t _value) noexcept;
   bool WriteUInt16(std::uint16_t _value) noexcept;
+
+  /// **THREE BYTES, AND ONLY THE LOW TWENTY-FOUR BITS OF _value.** ADR-024's entity identity is a
+  /// 16-bit index and an 8-bit generation, and a fourth byte on every record would be one record in
+  /// twelve spent on nothing. The top byte of _value is not checked: an identity is packed by
+  /// `GameCore/EntityRecord.h`, which cannot set it.
+  bool WriteUInt24(std::uint32_t _value) noexcept;
   bool WriteUInt32(std::uint32_t _value) noexcept;
   bool WriteUInt64(std::uint64_t _value) noexcept;
 

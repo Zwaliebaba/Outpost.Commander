@@ -21,6 +21,11 @@ bool ByteWriter::WriteUInt16(std::uint16_t _value) noexcept
   return Write(static_cast<std::uint64_t>(_value), sizeof(std::uint16_t));
 }
 
+bool ByteWriter::WriteUInt24(std::uint32_t _value) noexcept
+{
+  return Write(static_cast<std::uint64_t>(_value & 0x00FFFFFFu), 3);
+}
+
 bool ByteWriter::WriteUInt32(std::uint32_t _value) noexcept
 {
   return Write(static_cast<std::uint64_t>(_value), sizeof(std::uint32_t));
