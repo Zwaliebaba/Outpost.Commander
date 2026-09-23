@@ -34,6 +34,10 @@ constexpr Neuron::QuadColor ORE = Neuron::HexColor(0xD8A23C);
 constexpr Neuron::QuadColor SIG_ARMED = Neuron::HexColor(0xFFB020);
 constexpr Neuron::QuadColor PLATE_ARMED = Neuron::HexColor(0x17120A, 0.94f);
 constexpr Neuron::QuadColor TEXT_ARMED = Neuron::HexColor(0xFFE1A8);
+constexpr Neuron::QuadColor PLATE_DIM = Neuron::HexColor(0x090C0E, 0.92f);
+constexpr Neuron::QuadColor RULE_DIM = Neuron::HexColor(0x232C31);
+constexpr Neuron::QuadColor TEXT_DIM = Neuron::HexColor(0x6B7A80);
+constexpr Neuron::QuadColor HATCH = Neuron::HexColor(0x5A6A72, 0.22f);
 
 constexpr Neuron::QuadColor TEXT = Neuron::HexColor(0xE8ECEC);
 constexpr Neuron::QuadColor TEXT_2 = Neuron::HexColor(0x93A0A5);
@@ -374,6 +378,28 @@ constexpr std::array<ModuleButton, 4> MODULE_ROW{ModuleButton{.rect = BUILD_BUTT
   return Derive(_design).cost;
 }
 
+/// **THE UNAVAILABLE HATCH** (`design_handoff_hud`): 45-degree lines 12 pixels apart, inset a pixel. The interface
+/// draws rectangles and nothing else, so each line is dotted a pixel every three -- the geometric cue that keeps
+/// the state readable in peripheral vision and without its hue.
+void EmitHatch(Emitter& _emit, const HudRect& _button)
+{
+  constexpr std::int32_t SPACING = 12;
+  constexpr std::int32_t DOT_STEP = 3;
+  const HudRect inner{_button.x + 1, _button.y + 1, _button.w - 2, _button.h - 2};
+  // Each line is x - y = offset, taken from the bottom-left corner to the top-right.
+  for (std::int32_t offset = -inner.h + (SPACING / 2); offset < inner.w; offset += SPACING)
+  {
+    for (std::int32_t y = 0; y < inner.h; y += DOT_STEP)
+    {
+      const std::int32_t x = offset + y;
+      if ((x >= 0) && (x < inner.w))
+      {
+        _emit.Solid({inner.x + x, inner.y + (inner.h - 1 - y), 1, 1}, HATCH);
+      }
+    }
+  }
+}
+
 /// **THE PLACEMENT RADIUS** (M2.11), in `SIG.ARMED` at the handoff's 0.70 -- under the panels, so a panel over
 /// the ring still reads as a panel, and never in the hit table.
 void EmitPlacementRing(const HudState& _state, Emitter& _emit)
@@ -439,15 +465,31 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   // placement takes the armed plate, a 2-pixel `SIG.ARMED` outline and a 4-pixel rule along its top edge. The
   // handoff's pulse on that outline is not drawn -- the interface has no clock of its own, and the geometric cue
   // carries the state without it. **An L2 shows what it will charge**, which is the difference (Q54).
+  //
+  // **AND UNAVAILABLE, WHICH WINS** (M2.11b): an L2 with nothing to upgrade, or a placement past the cap, dims
+  // and hatches the whole button and leaves the hit table -- the panel still swallows the tap, and nothing arms.
   for (const ModuleButton& place : MODULE_ROW)
   {
     const DesignId design = place.design;
     const std::uint32_t cost = ModuleCostCredits(design);
-    const bool armed = _state.moduleArmed && (_state.armedModule == design);
-    const bool affordable = _state.credits >= cost;
+    const BuildButtonState look = ModuleButtonState(design, _state);
+    const bool armed = look == BuildButtonState::Armed;
+    const bool affordable = look != BuildButtonState::Unaffordable;
     const HudRect button = ForHand(place.rect, left);
     const std::wstring name = DesignDisplayName(design);
     const std::size_t space = name.rfind(L' ');
+
+    if (look == BuildButtonState::Unavailable)
+    {
+      EmitButton(_emit, button, PLATE_DIM, RULE_DIM, RULE, left);
+      EmitHatch(_emit, button);
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), name.substr(0, space), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,
+                 TEXT_DIM);
+      _emit.Text(BUTTON_NAME_LINE2.Within(button), (space == std::wstring::npos) ? std::wstring{} : name.substr(space + 1),
+                 Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT_DIM);
+      _emit.Text(BUTTON_COST.Within(button), std::to_wstring(cost), Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f, TEXT_DIM);
+      continue;
+    }
 
     if (armed)
     {
@@ -565,6 +607,35 @@ void EmitResultOverlay(const HudState& _state, Emitter& _emit)
              TRACK_OVERLAY, TEXT_2);
 }
 } // namespace
+
+bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) noexcept
+{
+  if (IsPlacedLevel(_design))
+  {
+    return _ownModules.size() < MAXIMUM_MODULES_PER_STATION;
+  }
+  for (const DesignId owned : _ownModules)
+  {
+    if (UpgradesTo(owned, _design))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+BuildButtonState ModuleButtonState(DesignId _design, const HudState& _state) noexcept
+{
+  if (!ModuleAvailable(_design, _state.ownModules))
+  {
+    return BuildButtonState::Unavailable;
+  }
+  if (_state.moduleArmed && (_state.armedModule == _design))
+  {
+    return BuildButtonState::Armed;
+  }
+  return (_state.credits >= ModuleCostCredits(_design)) ? BuildButtonState::Live : BuildButtonState::Unaffordable;
+}
 
 bool BuildingDesign(std::uint8_t _wire, DesignId& _outDesign) noexcept
 {

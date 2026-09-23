@@ -275,6 +275,8 @@ public:
     state.moduleArmed = true;
     state.armedModule = Outpost::DesignId::ModuleOreProcessorL1;
     state.placementRing = {Outpost::HudRect{700, 400, 2, 2}};
+    // One of each kind built, so every button is available (M2.11b) and in the hit table.
+    state.ownModules = {Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleOreProcessorL1};
     const Outpost::HudFrame frame = Outpost::BuildHud(state);
 
     std::size_t ringAt = frame.items.size();
@@ -321,6 +323,7 @@ public:
     state.credits = 5000;
     state.buildPanelOpen = true;
     state.link = Outpost::LinkState::Linked;
+    state.ownModules = {Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleOreProcessorL1};
     const Outpost::HudFrame frame = Outpost::BuildHud(state);
 
     bool yard = false;

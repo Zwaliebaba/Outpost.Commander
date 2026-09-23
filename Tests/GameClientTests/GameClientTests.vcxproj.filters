@@ -9,6 +9,7 @@
     <ClCompile Include="CameraGestureTests.cpp" />
     <ClCompile Include="HullMeshTests.cpp" />
     <ClCompile Include="GroupSelectionTests.cpp" />
+    <ClCompile Include="BuildPanelTests.cpp" />
     <ClCompile Include="HitTestTests.cpp" />
     <ClCompile Include="ModulePlacementTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />

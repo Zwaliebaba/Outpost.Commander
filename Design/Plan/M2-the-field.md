@@ -649,6 +649,27 @@ reason they should not look alike.
 looking, and an item that is both unaffordable *and* unavailable reads as unavailable — the state you
 cannot fix with credits wins.
 
+**BUILT.** `ModuleButtonState` names the four looks: live, unaffordable, unavailable and armed.
+`ModuleAvailable` is the rule, from the designs of the player's own modules. The panel emits the handoff's
+values for each:
+- **Unavailable** takes `PLATE.DIM`, the dim border, `TEXT.DIM` name and cost, and the 45-degree hatch, dotted a
+  pixel every three. The interface draws rectangles and nothing else. The button leaves the hit table, and the
+  panel still consumes the tap.
+- **Unaffordable** keeps the lit plate, the red cost and the bottom rule, and stays a target.
+
+**Two things are unavailable in the MVP:**
+- an L2 with no L1 of its kind, which is Q54's gate;
+- a placed level at the cap of four, because an armed placement there could only ever be refused.
+
+This step adds the second, and says so here. An upgrade stays available at the cap, since it adds nothing.
+The ship row has nothing to gate until M4's shipyard levels, so it keeps its two states. An armed module that
+stops being available is disarmed.
+
+`BuildPanelTests` is new, in the project and its `.filters`. It asserts both states on the emitted colors, the
+hatch, the hit table, and unavailable winning when both apply.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC, and not drawn.**
+
 ### M2.12 — What the modules do · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §5's table; ADR-015 on integer percentages and where they round.

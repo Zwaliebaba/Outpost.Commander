@@ -1440,7 +1440,13 @@ void RunProbe(const CoreWindow& _window)
 
         // M2.11: the armed button and the radius around the station, projected through the camera the world was
         // drawn with. The ring is world space and the panels are not, so it is recomputed every frame.
-        if (!buildPanelOpen)
+        // M2.11b: what this player has built decides which module buttons are available -- and an armed one that
+        // stopped being available (the fourth module landed, say) is disarmed rather than left pointing at nothing.
+        for (const Outpost::PlacedModule& owned : Outpost::OwnModules(clientFrame.Replicas().Entities(), clientFrame.Player()))
+        {
+          hudState.ownModules.push_back(owned.design);
+        }
+        if (!buildPanelOpen || (moduleArming.IsArmed() && !Outpost::ModuleAvailable(moduleArming.Armed(), hudState.ownModules)))
         {
           moduleArming.Disarm();
         }
