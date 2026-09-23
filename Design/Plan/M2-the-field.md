@@ -35,6 +35,9 @@ it may not be anonymous.
 **Done when:** both figures are on the register with an answer and written into `GameDesign.md` §3, even if
 the answer is "this, for now, and M3's twenty matches will move it".
 
+**ANSWERED BY THE OWNER.** The anchor radius is 6,000 (2026-09-22). The asteroid count is ten per home
+field plus two contested clusters of six per region (2026-09-23). Both are on the register and in §3.
+
 ### M2.1 — The generator · `GameCore` · `GameCoreTests` · agent
 
 **Read first:** `TechnicalDesign.md` §3; R23; R16; `GameDesign.md` §3; ADR-002's PRNG and ordering
@@ -65,6 +68,20 @@ wrecks, hazards, none of which are in the MVP — does not change its shape.
 **Done when:** `TechnicalDesign.md` §8's requirement is met — **the generator's output is pinned for a
 seed** against a checked-in table; Q26's two figures are named constants and appear in the test by name;
 and running the generator twice on one seed produces byte-identical output, asserted rather than assumed.
+
+**BUILT, 2026-09-23**, as `GameCore/Generator.h` `.cpp`. `GenerateRegion(seed, players)` places player
+one's region: ten rocks between 600 and 1,500 units from the anchor, then two contested clusters of six
+whose centers sit 1,500 to 3,500 from the middle. It draws from its own PCG32 stream, 3. **It generates the
+region and nothing copies it yet**: at two players that is the half `x < 0`, and at four the quarter
+between the diagonals. M2.2 does the copy. Every rock keeps half the 150-unit spacing from the region's
+edge, and the suite already applies the rotations by hand to prove the copies keep their spacing too.
+
+**Two proposed names were not used.** There is no `PlacedObject.h`: `Layout.h`'s `Placement` gained a
+`PlacedKind` and a `FieldKind`, because an asteroid is not a design and two row types for one list
+would disagree. And the host is unchanged. It still places stations through `GenerateLayout`, because
+asteroids are not simulated or replicated before M3 and nothing on either side reads the field until
+M2.3. `GeneratorTests` pins seed 20260922 row by row, runs the generator twice, and checks the counts,
+the annulus, the band, the spacing and the region over 200 seeds at two and four players.
 
 ### M2.2 — The symmetry · `GameCore` · `GameCoreTests` · agent
 

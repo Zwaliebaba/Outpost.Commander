@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-one answered, one half-answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-two answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS EIGHT ENTRIES AND HALF OF THEM ARE ANSWERED** — Q35, Q37 and Q46 in full, Q26
-in half — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS EIGHT ENTRIES AND HALF OF THEM ARE ANSWERED** — Q26, Q35, Q37 and Q46, all in
+full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q33, Q34, Q36 and Q47**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -188,12 +188,23 @@ is a specification that was approved without a home.
 
 ## Open
 
-### Q26 — What is the asteroid count, and the spawn anchor radius? — **half answered; the rest needed by M2**
+### Q26 — What is the asteroid count, and the spawn anchor radius? — **answered, provisionally, 2026-09-23**
 
 **THE ANCHOR RADIUS IS ANSWERED: 6,000 units, on the owner's instruction, 2026-09-22.** M1.5 could not
 place a station without one. It is written into `GameDesign.md` §3 and into `GameCore/Layout.h`, and
-`GameCoreTests` pins both crossings against §7's window rather than restating them. **The asteroid count
-is still open and still M2's**, and the reasoning below stands for it unchanged.
+`GameCoreTests` pins both crossings against §7's window rather than restating them.
+
+**THE ASTEROID COUNT IS ANSWERED: ten per home field and two contested clusters of six per player's
+region, on the owner's instruction, 2026-09-23.** That is 22 rocks a region and 44 on a two-player map
+once M2.2 copies it. The home field is the recommendation below. The contested half had no
+recommendation and was chosen over two alternatives, 10 home with contested fields deferred and one
+cluster of eight, because it builds both kinds of field the design names and lets M2.2's symmetry test
+cover both. Every figure the generator needs is a named constant in `GameCore/Generator.h` and
+`GameCoreTests` checks each one by name. That includes the four the register never asked about: the
+600-unit inner edge of a home field, which keeps rocks off the 400-unit module ring, the 1,500-to-3,500
+band where a contested cluster may sit, its 600-unit spread, and 150 units between rocks. **All of it
+is provisional**, and M3's twenty matches are where it is expected to move. The reasoning below is why
+these were the starting values.
 
 Neither appeared anywhere in this design, and both are inputs to things that do. The anchor radius sets how
 long a strike force takes to cross the map, which is half of the raid arithmetic in `GameDesign.md` §7. The

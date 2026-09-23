@@ -126,7 +126,7 @@ What a seed produces:
 | **The square** | 16,384 world units on a side, centered on the origin. A world unit is nominally a meter. A fighter crosses it in about two minutes, a miner in under three. |
 | **Four start anchors** | One per quadrant, **6,000 units** from the center, on the axes. A station spawns on each, facing the center. Two opposed stations are then 12,000 apart — **85.7 seconds at the Fighter's 140 u/s**, inside §7's 80-to-100-second crossing, which is the arithmetic the raid balance rests on. |
 | **A home field** | A small asteroid cluster within about 1,500 units of each anchor. Enough to open on, not enough to win on. |
-| **The asteroid count** | Not fixed here. It is an input to the sparse ore budget from M3 and to how much a home field is worth holding, and it is still on the register (`OpenQuestions.md` Q26). |
+| **The asteroid count** | **Ten in each home field, and two contested clusters of six in each player's region**: 22 a region, 44 on a two-player map. It sets the sparse ore budget from M3 and how much a home field is worth holding. Provisional, and named in `GameCore/Generator.h` so it can move (`OpenQuestions.md` Q26). |
 | **Contested fields** | Richer clusters toward the center, reachable by everyone. This is the map's only real proposition. |
 
 Nebulae, wrecks, hazards and anything that affects sensors are not in the MVP. The generator's interface

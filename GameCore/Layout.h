@@ -20,8 +20,9 @@ namespace Outpost
 /// is in the signature from the first line anyway: M2's generator is this function growing asteroids, not
 /// a different function, and a parameter added later is a call site to find everywhere.
 ///
-/// **WHAT IS HERE IS THE STATIONS AND NOTHING ELSE.** Home fields and contested fields are M2's, and the
-/// asteroid half of Q26 is still open; the anchor half is answered and is below.
+/// **WHAT IS HERE IS THE STATIONS AND NOTHING ELSE.** The asteroids are `Generator.h`'s (M2.1), which
+/// places them into the same `Placement` rows; the anchor half of Q26 is below and the asteroid half is
+/// there.
 
 /// Q26, answered 2026-09-22: **6,000 world units.** Two opposed stations then sit 12,000 apart, which at
 /// the `Fighter`'s 140 units a second is **86 seconds** -- inside `GameDesign.md` section 7's stated 80 to
@@ -39,13 +40,35 @@ inline constexpr Neuron::Fixed ANCHOR_RADIUS = ANCHOR_RADIUS_UNITS * Neuron::FIX
 /// coincidence.
 inline constexpr std::size_t ANCHOR_COUNT = 4;
 
+/// What a placed object is. **An asteroid is not a design** -- it has no hull, no slots and no derived
+/// stats (R24 is about built things) -- so the row says which it is rather than borrowing a `DesignId`.
+enum class PlacedKind : std::uint8_t
+{
+  Station,
+  Asteroid
+};
+
+/// Which field an asteroid belongs to (`GameDesign.md` section 3). **Nothing reads it before M3**, where
+/// contested fields are the richer ones and ore is first finite; it is here so that the generator, which
+/// is the only thing that knows, says so once rather than M3 re-deriving it from a distance.
+enum class FieldKind : std::uint8_t
+{
+  None,
+  Home,
+  Contested
+};
+
 /// One placed object. `GameDesign.md` section 3: "the generator's interface is a seed in and a list of
-/// placed objects out, so adding a kind later does not change its shape" -- which is why an asteroid,
-/// when M2 has one, is another row here rather than a second function.
+/// placed objects out, so adding a kind later does not change its shape" -- which is why an asteroid is
+/// another row here rather than a second type.
 ///
 /// R8: a public aggregate.
 struct Placement
 {
+  PlacedKind kind = PlacedKind::Station;
+  FieldKind field = FieldKind::None;
+
+  /// Meaningful for a station only. An asteroid leaves it at its default and nothing reads it.
   DesignId design = DesignId::Station;
 
   /// `NO_PLAYER` for anything nobody owns, which is what an asteroid will be.
