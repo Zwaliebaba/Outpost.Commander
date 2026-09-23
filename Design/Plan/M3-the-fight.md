@@ -162,11 +162,12 @@ through M1.14's gate, which now covers the alert's rects.
 
 **Read first:** ADR-003's removal-list paragraph; ADR-004; `TechnicalDesign.md` §4.
 
-**Adds:** the removal list carrying something for the first time. **This is the step ADR-003 added the list
-for**: without it a death is learned by *absence*, which works only while the interest set is everything —
-and the day fog of war ships, absence means "died" or "left my view" and every wreck, selection eviction
-and death effect fires wrongly. **The list is what makes "fog is additive" true rather than stated**, and
-it is worth building the client's handling against that future rather than against today's simpler truth.
+**Adds:** the removals carrying something for the first time. **This is the step ADR-003 added the list
+for**: without it a death is learned by *absence* — and since
+[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) absence is ambiguous from the first tick,
+because the accumulator sends what is due and not everything. **A removal rides ten consecutive updates
+and the client ignores one it has applied**; M1.14c built that path with nothing to carry, and this is
+where it carries a death.
 
 A wreck is **presentation and not simulation**: spawned by the client from the death, decaying on a
 client-side timer, and the host never knows it exists.
@@ -247,7 +248,7 @@ testing loop this is the single most-used operation in the project** — twenty 
 possible if playing again means relaunching a packaged application.
 
 **It costs almost nothing structurally**, which is
-[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) paying for itself a third time: snapshots
+[`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) paying for itself a third time: snapshots
 are self-contained, so there is no resynchronisation path to write. The client's derived state —
 selection, markers, wrecks — is what must be cleared, and it is the only thing that must be.
 

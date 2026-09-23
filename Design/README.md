@@ -56,10 +56,13 @@ axis does not survive contact with R21 — a tap is a ray and a ray has no depth
 input to supply one. The camera still orbits and zooms over the plane; the simulation has two dimensions
 and nothing else does. This is what makes the MVP reachable, and the tactical z-axis is what it costs.
 
-**Replication is full self-contained snapshots**
-([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). R19 already ruled out lockstep by refusing
-the client a simulation; at the MVP's 110 entities a snapshot is **1,137 bytes — one datagram** — so there
-is no baseline, no acknowledgment, no history and no fragmentation. They go out at **20 Hz**, which is a
+**Replication is prioritized absolute-state records, one whole datagram at a time**
+([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)). R19 already ruled out lockstep by refusing
+the client a simulation; every record is a self-contained fact about one entity at one tick, a per-client
+accumulator fills each **1,232-byte** update with the records most due, and a sweep guarantees nothing goes
+unrefreshed for long — so there is no baseline, no acknowledgment, no ordering and no fragmentation, at a
+hundred players as at two. The record's fields and the pinned payload are
+[`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)'s. Updates go out at **20 Hz**, which is a
 latency decision and not a bandwidth one: tap-to-visible is 152 ms average where 10 Hz made it 252 ms, and
 on a touchscreen the tap is the only feedback a player gets.
 

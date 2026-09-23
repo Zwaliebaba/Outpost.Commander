@@ -127,7 +127,7 @@ for the file in `LocalState`; `GameClient/JoinState.h` `.cpp` and `GameClient/Cl
 **Done when:** the ADR is Accepted; a client learns its player index and validates against it; a second
 client on a taken slot is refused in a way the client can show; and a reconnect is recognized rather than
 treated as a new player — which self-contained snapshots make cheap
-([`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md)) and which nothing else makes correct.
+([`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md)) and which nothing else makes correct.
 
 **All four are met and every one is pinned without a socket**, because `Sessions` holds no transport and
 `JoinState` holds no clock — the split M0.18 forced on the gesture seam, taken again here. What the suite
@@ -667,7 +667,7 @@ better player, which is Q48.
 
 ### M1.14c — Ownership by group, and a player count past four · `GameCore`, `GameLogic`, `GameClient`, `Server` · all three suites · agent
 
-**Read first:** [`ADR-023`](../ADR/ADR-023-ownership-is-a-group-and-the-player-count-is-configurable.md)
+**Read first:** [`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)
 in full, and **do not start while it is Proposed**. Then ADR-003's record and header, ADR-013, M0.9, and
 `.claude/skills/datagram-budget/`, **whose script is run before and after**.
 

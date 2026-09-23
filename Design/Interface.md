@@ -513,9 +513,9 @@ returns straight to play. **It is recognized as the same player by the session t
 path, which is what makes this and `GameDesign.md` §2's disconnect one mechanism rather than two. **A resume is noticed as silence**: a seated client that goes a second without a
 snapshot calls the link lost, rejoins with its token and raises the overlay. A suspension is always
 longer than that, and a dropped link is the same event, so there is no separate suspend path to get
-wrong. The second is untuned and M1.16 looks at it. That is mechanically free: snapshots are self-contained
-([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)), so there is nothing to catch up on and no
-resynchronisation to get wrong.
+wrong. The second is untuned and M1.16 looks at it. That is mechanically cheap: every record is self-contained
+([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)), so a rejoined client is current within
+one sweep and there is no resynchronization to get wrong.
 
 **The player's fleet was at risk the whole time they were away**, and nothing mitigates that. It is the
 honest consequence of a match that does not pause, and it is the same behavior a disconnected player gets

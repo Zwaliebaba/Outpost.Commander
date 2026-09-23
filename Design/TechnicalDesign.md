@@ -18,7 +18,7 @@ design onto them:
 | Concern | Library | Why there |
 |---|---|---|
 | Fixed point, binary angles and the sine table, the PRNG, integer square root | `NeuronCore` | Engine, and both sides need it. |
-| Packet header, fragmentation and reassembly | `NeuronCore` | Transport framing knows nothing about the game (R9), and the two sides must agree on it byte for byte. |
+| Packet header | `NeuronCore` | Transport framing knows nothing about the game (R9), and the two sides must agree on it byte for byte. |
 | The UDP endpoint over `DatagramSocket` | `NeuronClient` | C++/WinRT, Windows Store family. |
 | Direct3D 12 device, swap chain, scene target, the scaled present | `NeuronClient` | R12, R13. |
 | The DirectWrite glyph atlas and the text quad renderer | `NeuronClient` | Engine: a glyph cache knows nothing about the game (R9). |
@@ -130,54 +130,76 @@ R19 settles the architecture before anything else does: **the client links no si
 impossible.** The host simulates and sends state; the client renders what it was sent and sends commands.
 There is nothing to re-litigate here.
 
-### Downstream: full snapshots, no delta
+### Downstream: prioritized records, one datagram at a time
 
-**Every snapshot is self-contained.** No baselines, no acknowledgments, no per-client history, no
-accumulated client state. A client that misses a packet misses one frame of animation and is fully correct
-on the next one. This is [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) and it is the single
-largest simplification in the MVP.
+**The unit of replication is the entity record, and a datagram is a bag of them at one tick.** A record is
+a self-contained fact — this entity, at this tick, was here, facing this way, at this hull, of this design,
+owned by this player — and nothing in it depends on any earlier record. So any subset of a datagram is
+meaningful on its own, a lost datagram delays some entities' refresh by a tick and breaks nothing, and
+there is no baseline, no acknowledgment, no ordering and no reassembly anywhere in the design. This is
+[`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md), and it keeps the property
+[`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) chose the full snapshot for — nothing on the client
+can diverge, because nothing on the client is computed — at any player count rather than at 110 entities.
 
-An entity record is **ten bytes**:
+An entity record is **twelve bytes**:
 
 | Field | Bytes | Note |
 |---|---|---|
-| Entity identity | 2 | Index and generation packed. |
+| Entity identity | 3 | A 16-bit index and an 8-bit generation. Ten and six were enough for a 1,024-entity world; a hundred-player match holds thousands, and the generation must survive index reuse under loss. |
+| Owner | 1 | A `PlayerId`. On the record rather than in two flag bits, because a record must say whose it is without the datagram being grouped or complete. |
 | Position x, y | 4 | Two `std::int16_t`. The 16,384-unit square over 65,536 steps is **a quarter of a world unit** per step — far finer than a ship is wide. |
 | Heading | 1 | 256 steps, 1.4°. A rendering quantity; the simulation's heading is 16-bit. |
-| Hull remaining | 1 | Percent, rounded to nearest with **both ends exact** — and floored at 1 for anything still alive, because 0 is what a client draws as destroyed ([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)). |
+| Hull remaining | 1 | Percent, rounded to nearest with **both ends exact** — and floored at 1 for anything still alive, because 0 is what a client draws as destroyed ([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)). |
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
-| Flags | 1 | **Team 2 bits, state 3 bits, cargo 2 bits, one spare.** |
+| Flags | 1 | **State 3 bits, cargo 2 bits, three spare.** The team bits left with ADR-024. |
 
-The header carries the protocol version, the type, the snapshot sequence, the tick, the entity count, the
-**player count**, the **removal count**, and then one block per player: credits, last applied command
-sequence, and the **currently building design and its progress**.
+**The datagram is an update, and its header is twenty-one bytes at any player count**: the transport's
+four — version, type, and a sequence the receiver uses only to count loss (`NeuronCore/PacketHeader.h`;
+the two fragment fields M0.2 reserved are gone, because nothing fragments) — then the tick every record
+describes, the **live entity count**, **the recipient's own player block** (credits 4, last applied
+command sequence 2, the currently building design 1 and its progress 1) and nothing about anyone else's,
+and a count each of records, removals and fire events. What a client draws about a rival is on the
+rival's entities: a station's hull is on the station's record.
 
-**The first six of those bytes are the transport's, and M0.2 has pinned how they divide**:
-version 1, type 1, **sequence 2**, fragment index 1, fragment count 1 (`NeuronCore/PacketHeader.h`). Two
-things in that are worth stating rather than leaving to the code. The **sequence is two bytes, not four** —
-at 20 Hz it wraps after about 55 minutes, against a match of five (`GameDesign.md` §2), so the width buys
-the fragment fields instead. And **the fragment fields are present from the first packet although the MVP
-never fragments**: [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) puts the two-fragment path at
-the fourth player, and a field always there is a fast path where a field added later is a format change.
-The total is unchanged either way, which is why the budget below did not move. Sizing the per-player blocks by a count
-in the header is what makes the third and fourth player a runtime value rather than a format change.
+**The host fills one update per client per tick from a priority accumulator.** Each client has an integer
+score per live entity; every tick it grows by the entity's relevance to that client, and sending the
+entity resets it. The host takes the highest scores that fit — **99 records** at the pinned payload with
+three removals and two fire events riding along — and sends them. Relevance is a sum of a base of one, a
+term for being inside the client's view, a term for having moved or changed since last sent to this
+client, and a term for being the client's own; the weights are constants beside the accumulator in
+`GameLogic`, and tuning them is `OpenQuestions.md` Q49. **The sweep is the guarantee under the scores**:
+any entity unsent for ⌈live entities ÷ records per tick⌉ ticks goes into the next update ahead of every
+score, so relevance decides how *often* an entity refreshes and the sweep bounds how *long* it can go
+without. The client computes the sweep from the header's entity count and **forgets an entity that has
+gone three sweeps without a record**, which is the only way an entity leaves a client without a removal
+and is what makes a rejoin correct after the removals it missed have stopped repeating.
 
-**Cargo rides in the flags byte and could not have had one of its own.** A miner's fill level has to reach
-the client or a player cannot see why a ship turned for home, but **a byte per entity is 110 bytes against
-96 of headroom — it would split the datagram**. Two bits give four buckets, which is all a fill bar needs,
-and the flags byte had them spare once the design identity moved out
-([`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md)).
+**A client may receive up to two updates a tick, each of them whole.** When more records are due than one
+holds, the host sends a second. Each is complete and separately renderable, which is the test that
+separates rate separation from fragmentation (`.claude/skills/datagram-budget/`): losing one loses those
+records' refresh, not the frame. At the MVP's 110 entities the second update is what keeps every entity
+refreshed every tick; at a hundred players the cap is what bounds bandwidth and the accumulator ranks
+what fits.
 
-**A removal list closes the snapshot** — one count byte, two bytes per removed identity, typically zero to
-three. Without it a death is learned by *absence*, which works only while the interest set is everything;
-the day fog of war ships, absence means "died" or "left my view" and every wreck, selection eviction and
-death effect fires wrongly. The removal list is what makes "fog is additive" true rather than stated.
+**Ordering is a per-entity tick comparison, and there is nothing else.** The client keeps, per entity,
+the tick of the newest sample it holds, and drops a record whose tick is not newer. No sequence window,
+no reorder buffer, no reassembler.
 
-**Snapshots go out at 20 Hz** and the client renders **75 milliseconds** behind — one snapshot interval
+**Removals and fire events are repeated facts.** A removal — the three-byte identity, generation
+included — rides every update to a client for **ten consecutive ticks** after the death, and the client
+ignores one it has already applied; without a removal a death would be learned by *absence*, which the
+accumulator makes ambiguous from the first tick. A fire event
+([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md): shooter 3, target 3, weapon 1) rides for
+**three**. Losing a death needs ten consecutive losses, once in 10¹³ updates at 5% packet loss.
+
+**Cargo rides in the flags byte**, two bits and four buckets, which is all a fill bar needs
+([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)).
+
+**Updates go out at 20 Hz** and the client renders **75 milliseconds** behind — one update interval
 plus a jitter margin. This was 10 Hz and 150 ms, and the change is about **latency**, which ADR-003
 originally never computed:
 
-| tap → visible | send wait | host tick | snapshot wait | interpolation | **total** |
+| tap → visible | send wait | host tick | update wait | interpolation | **total** |
 |---|---|---|---|---|---|
 | 10 Hz / 150 ms — average | 25 | 25 | 50 | 150 | **252 ms** |
 | **20 Hz / 75 ms — average** | 25 | 25 | 25 | 75 | **152 ms** |
@@ -186,69 +208,70 @@ originally never computed:
 On a touchscreen there is no cursor and no hover: **the tap is the only feedback the player gets**, so a
 quarter-second of nothing is a dead interface.
 
-### What it costs, for both configurations
+### What it costs, and what a client sees
 
-| | entities | header | snapshot | datagrams | per client @20 Hz | host egress |
-|---|---|---|---|---|---|---|
-| **MVP — 2 players × (50 ships + 1 station + 4 modules)** | 110 | 30 B | **1,137 B** | **one** | 22.7 KB/s | 23 KB/s (182 kbit/s) |
-| Post-M2 — 4 players, same per player | 220 | 46 B | 2,253 B | two | 45.0 KB/s | 180 KB/s (1.44 Mbit/s) |
+| | live entities | records a tick | per client | host egress | every entity refreshed within |
+|---|---|---|---|---|---|
+| **MVP — 2 players × (50 ships + 1 station + 4 modules)**, two updates a tick | 110 | 198 | 49.3 KB/s | 0.1 MB/s | **every tick** |
+| Post-M2 — 4 players, same per player, two updates | 220 | 198 | 49.3 KB/s | 0.2 MB/s | 2 ticks |
+| 100 players, same per player, two updates | 5,500 | 198 | 49.3 KB/s | **4.93 MB/s** (39 Mbit/s) | 28 ticks, 1.4 s |
+| 100 players, one update | 5,500 | 99 | 24.6 KB/s | 2.46 MB/s (19.7 Mbit/s) | 56 ticks, 2.8 s |
 
-**Before changing any of this, run the budget.** `.claude/skills/datagram-budget/` computes the table
-above from the record layout rather than restating it, ranks the levers for buying room cheapest-first,
-and applies the one test that separates a legitimate split from fragmentation with a better name: *can the
-client draw a correct frame from one datagram without the other?* These figures have disagreed with
-ADR-003's copy of them before; when one moves, move both.
+**The per-client cost is 24.6 KB/s per update per tick whatever the entity count**; what the entity count
+moves is the refresh interval, and the accumulator spends the refreshes on what the client is looking at.
+A screen holding 200 entities refreshes each every two ticks at the cap; a tactical view of 1,000 ships
+as 3.5-pixel silhouettes refreshes each every six, 300 ms, and holds between, which at that size is not
+visible. **5,500 in one view is the cap's true ceiling** — each every 1.4 seconds, the nearest and the
+moving far more often — and a match that wants a whole hundred-player war on one screen wants a higher
+cap and the bandwidth that goes with it.
 
-**Modules cost the single-datagram property most of its headroom, and the cap of four exists because of
-it.** Eight module entities is 80 bytes: the MVP snapshot goes from 1,057 to **1,137 against the 1,232-byte
-payload — 95 bytes, nine entities, where there were 175 and seventeen**. It survives this change and would
-survive one more of the same size with fifteen bytes left — one entity, which is not room to plan with — so
-**raising the module cap is still a replication decision**
-([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)), not a game one. Modules are ordinary entity
-records: they never move, but their hull does, so they cannot be treated as static the way asteroids are.
+**Before changing any of this, run the budget.** `.claude/skills/datagram-budget/` computes the figures
+above from the record layout rather than restating them — `--in-view` gives the refresh interval, and
+`--datagrams` the cap — and applies the one test that separates a legitimate split from fragmentation
+with a better name: *can the client draw a correct frame from one datagram without the other?* These
+figures have disagreed with the ADRs' copies before; when one moves, move both.
 
-**The snapshot column is measured**; M0.9's encoder produced 1,137 and 2,253 and `GameCoreTests` pins
-both. The rest of the table is arithmetic. The earlier version of this section quoted only the four-player figure
-— against a configuration `GameDesign.md` §2 says the MVP cannot run, since the MVP is one human against
-one AI and therefore **one client**.
+**Modules are ordinary entity records** ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)):
+they never move, so the accumulator refreshes them rarely, but their hull does, so they cannot be treated
+as static the way asteroids are. Their cap of four was a replication decision under the full snapshot and
+is a design one now.
 
-**The MVP does not fragment**, which removes the sharpest cost this design had. At 1,137 bytes a snapshot
-is one datagram, so snapshot loss equals packet loss instead of roughly twice it, and a lost snapshot is a
-**50-millisecond gap inside a 75-millisecond buffer** — covered without extrapolating. Two consecutive
-losses are needed to show anything: at 2% packet loss, once every two minutes.
-
-Fragmentation returns with the fourth player. **The reassembler holds partial sets for the two most recent
-sequences**, because with one slot any cross-snapshot reorder discards a snapshot whose fragments all
-arrived.
+**Resume is a sweep, not a snapshot.** On a rejoin the host resets that client's scores so everything is
+sent within one sweep — two ticks at the MVP, 56 at 5,500 entities — and the client clears its store so
+nothing stale survives. The reconnecting overlay (`Interface.md` §7) stays up until the first update
+after the rejoin lands.
 
 **Asteroids are not replicated at all before M3**, because inexhaustible asteroids have no simulation
 state (`GameDesign.md` §4) and the client derives their positions from the seed (R23). From M3, ore
-remaining is sent **sparsely** — only asteroids whose quantized ore bucket changed since the last
-snapshot, which is at most one per active miner, four bytes each.
+remaining rides an ordinary record whose owner is `NO_PLAYER`, and the accumulator sends it when its
+bucket changes.
 
-**The host serializes a per-player entity set, not the world.** The MVP has no fog of war and that set is
-everything, but it is a list the host builds, so visibility later changes one function and not the format.
+**The accumulator is per-client host state and not simulation.** A score and a last-sent tick per entity
+per client — a few megabytes at 100 × 5,500 — never hashed, never replayed, never reaching the tick's
+outcome. `GameLogic`'s tick does not know that replication is per client, and M1.7's determinism hash must
+be the same after ADR-024 as before it.
 
-### Upstream: commands, made reliable by the snapshot
+### Upstream: commands, made reliable by the update
 
 A command is an order: a type, a target point or entity, and the identities of the selected ships. Commands
 carry a per-player sequence number and are **repeated in every outgoing packet until acknowledged** by the
-`lastCommandSeqApplied` field the snapshot already carries. The host applies in sequence order and ignores
+`lastCommandSeqApplied` field the update's own player block carries. The host applies in sequence order and ignores
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
 
-**The widths are measured, and M0.10's encoder is where they became facts.** The packet header is
-**eight bytes** -- the transport's six (`NeuronCore/PacketHeader.h`) plus the player identity and the
-command count -- and one command is **eight bytes and two per selected identity**. `CommandTests` pins
-both. `Scripts/DatagramBudget.py` modelled the header as four until that encoder was written, because it
+**The widths are measured, and M0.10's encoder is where they became facts; ADR-024 moved two of them.**
+The packet header is **twelve bytes** -- the transport's four (`NeuronCore/PacketHeader.h`), the player
+identity, the command count, and **the client's view center (4) and view radius (2)**, which is what the
+host's accumulator scores relevance against; a lost one leaves the host scoring against the last view it
+saw. One command is **eight bytes and three per selected identity**. `CommandTests` pins both. `Scripts/DatagramBudget.py` modelled the header as four until that encoder was written, because it
 carried only the `version` and `type` of the header as it stood before M0.2 and never gained the sequence
 and fragment fields; the figures below are the corrected ones, and the retransmit window is unchanged by
 the correction.
 
 **The packet is filled oldest-first and stops when the next command will not fit.** "Repeated until
 acknowledged" bounds the packet by how many commands are outstanding, and nothing about the format bounds
-*that*: at the peak 110-identity selection a command is 228 bytes, so **five fit in the pinned 1,232-byte
-payload and a sixth fragments**. What reaches six is not a fast player — touch cannot issue five orders in
+*that*: at the peak 110-identity selection a command is 338 bytes, so **three fit in the pinned 1,232-byte
+payload and a fourth would fragment**. What reaches six is not a fast player — touch cannot issue five orders in
 200 ms — it is a **stalled acknowledgment**: a host hitch or a run of lost snapshots, which is exactly the
 load under which a fragmented command packet is worst. Filling oldest-first makes the bound structural
 rather than a constant to tune: the packet cannot exceed the payload, no order is ever dropped, and the
@@ -259,16 +282,16 @@ on the stall that made it deep.
 
 **The host validates every command, and this is correctness rather than security.** §5 declines
 authentication and any defense against a hostile client; that exclusion silently covered ownership and
-bounds checks too, which are a different category. A 1,232-byte command packet holds **608 identities
-against a peak of 110** — a 5.5× amplification into a single-threaded loop, reachable from an ordinary bug
+bounds checks too, which are a different category. A 1,232-byte command packet holds **404 identities
+against a peak of 110** — a 3.7× amplification into a single-threaded loop, reachable from an ordinary bug
 or a reordered packet with no attacker anywhere. So the host: rejects entities the sender does not own,
 bounds the selection at the sender's own entity count, rejects stale generations, clamps target points to
 the play area, and handles `uint16` sequence wraparound explicitly rather than letting the "at or below"
 comparison invert.
 
-**A fire event rides the snapshot** — shooter 2, target 2, weapon 1, behind a count byte, after the
-removal list ([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)). Not retransmitted: a lost one
-costs a missing tracer.
+**A fire event rides the update** — shooter 3, target 3, weapon 1, behind a count byte, after the
+removals ([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md)) — for three consecutive ticks;
+losing a tracer takes three losses in a row.
 
 **A client learns which player it is from a join, and nothing else on the wire tells it.** The client
 sends a `Join` carrying the session token it was issued last time, or zero; the host answers with the slot
@@ -347,25 +370,27 @@ credential**, for the same reason.
 One drain of the `CoreWindow` dispatcher per frame (R18), then the packet queue, then the interpolation
 clock, then render, then present.
 
-**The client renders the past.** It draws at a time **75 milliseconds** behind the newest snapshot — one
-snapshot interval at 20 Hz plus a jitter margin — and holds **enough snapshots to reach back that far**,
-which is **three** at 20 Hz. Positions and headings are interpolated between whichever pair straddles
-that moment; headings interpolate the short way round, which the binary angle makes a subtraction rather
-than a special case.
+**The client renders the past, per entity.** It draws at a time **75 milliseconds** behind the newest
+update — one update interval at 20 Hz plus a jitter margin. Since
+[`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) a datagram is a bag of records rather than
+the world, so the store holds **two samples per entity**, each stamped with its tick, and a record whose
+tick is not newer than the sample it holds is dropped, which is the whole of the reordering logic.
+Positions and headings are interpolated between the pair when it straddles the render time; headings
+interpolate the short way round, which the binary angle makes a subtraction rather than a special case.
+**An entity whose newest sample is older than the render time holds its last position** and never
+extrapolates: at a hundred players the accumulator refreshes a distant, stationary ship rarely on
+purpose, and a hold is what "rarely" looks like.
 
 **This said "the two most recent snapshots" and that was arithmetically impossible.** Two snapshots span
 one interval, 50 ms, ending at the newest; a render time 75 ms behind the newest is 25 ms *older than the
 older of the two*, so the pair never contained the frame being drawn. It was wrong at 10 Hz too, where
 150 ms behind the newest sits outside a 100 ms pair by the same margin, so this is not residue from the
 rate change the way the 150 itself was — it never held.
-[`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) has always read the other way: a lost snapshot
+[`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) has always read the other way: a lost snapshot
 being "a 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating" describes a
-buffer with more than one interval of history in it. **The depth is not a figure to quote from here**:
-`GameClient/ReplicaStore.h` computes it from the delay and the interval, so it follows either of them
-when one moves, and the three above is what that arithmetic currently yields rather than a second place
-the number is stated. If the next snapshot has not arrived, the client
-extrapolates for a short bounded window and then holds position rather than sliding a ship somewhere it
-never was.
+buffer with more than one interval of history in it. **That paragraph described a snapshot ring that no longer exists**: under ADR-024 the
+store is two samples per entity, the pair is whatever two ticks that entity was last sent at, and there
+is no depth to compute. The hold above is what a missing sample does.
 
 **The frame is three passes into two surfaces, and the last one is a recorded departure from R13.**
 
@@ -449,11 +474,11 @@ instant the gesture resolves, and clears it when `lastCommandSeqApplied` passes 
 **Nothing is predicted and no rule is bent**: R19 forbids the client simulating, not the client drawing
 what it asked for. The ships themselves do not move until the host says they did.
 
-**Suspend and resume cost nothing structurally.** A packaged application is suspended when it loses the
-foreground and the match runs on; on resume the client reconnects and the first self-contained snapshot
-restores everything, with a reconnecting overlay in between (`Interface.md` §7). There is no
-resynchronisation path to write, which is [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) paying
-for itself a second time. The same is true of a player who disconnects outright (`GameDesign.md` §2).
+**Suspend and resume cost one sweep.** A packaged application is suspended when it loses the
+foreground and the match runs on; on resume the client reconnects, clears its store, and the host resets
+its scores so everything is sent within one sweep — two ticks at the MVP — with a reconnecting overlay in
+between (`Interface.md` §7). There is no resynchronization path to write beyond that, which is
+[`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) keeping what ADR-003 bought. The same is true of a player who disconnects outright (`GameDesign.md` §2).
 
 ---
 
@@ -564,12 +589,12 @@ and the placeholder goes the day the first real test lands.
 
 | Suite | Owns |
 |---|---|
-| `NeuronCoreTests` | Fixed-point multiply and divide at the edges of `int32`, the sine table against a reference, integer square root, the PRNG's first thousand outputs pinned, fragmentation and reassembly including a lost fragment and a duplicate. |
+| `NeuronCoreTests` | Fixed-point multiply and divide at the edges of `int32`, the sine table against a reference, integer square root, the PRNG's first thousand outputs pinned, and the packet header's round trip including a refused version. |
 | `NeuronClientTests` | The blackbody temperature-to-chromaticity table — eight stops, interpolated, **pinned exactly**, because it is the number that decides whether the sky reads as a sky or as confetti ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)); that the magnitude tiers come out in the 1 : 3 : 9 : 27 : 81 : 243 ratio for a given seed, and that the same seed gives the same sky twice. The device-independent-pixel to physical-pixel conversion (R18), the present-scaling fit at 1:1, at integer multiples and at neither, and the gesture arithmetic — **the sign of a pinch and of a rotation**, which R21 points out a package can hide and a test cannot. Plus atlas packing, that a glyph's advance width survives the round trip, and **the interface's own authored-to-physical transform**, which is a second value from the same computation rather than the present step's ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)) — pinned at both world scales, because it must not move when the world's does. Plus the gesture constants `Interface.md` §1 derives: the 16-pixel tap slop either side of its threshold, the rotation deadzone's **latch**, the 2% scale deadzone, and that a contact wider than 78 authored pixels never becomes an input record. |
 | `NeuronServerTests` | The Winsock2 endpoint against a loopback peer: send, receive, a short read, a datagram larger than the buffer. |
-| `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**, and every module level; **module placement validity** — inside the radius, outside it, overlapping the station, overlapping another module, and the fifth module against a cap of four; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including a removal list, a fire event and a snapshot at both player counts. |
-| `GameClientTests` | Interpolation between two snapshots including the wrap-around case, the camera's transform, hit-testing a tap against the plane at several camera angles; **the anchor solve** ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — the property is *project the anchor and it lands on the centroid*, across the pitch range, for one contact and for two, with the scale and rotation applied, and with **no drift over a long synthetic gesture**, which is the failure this model actually has; that the clamp stops the focus and lets the anchor slip rather than fighting it; and that `pitch(distance)` **saturates** at the floor instead of ending the zoom range; **the double-tap selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)), now bounded by `Interface.md` §5's pitch floor; **that the first tap selects one ship and only a second tap resolving to the same entity expands it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)), including two taps on *different* ships staying two single taps; the 24-pixel pick radius and its tier order against overlapping candidates; the order marker's lifetime against an acknowledgment; and **the alert** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)) — that a fire event naming one of your entities raises one and a fire event naming somebody else's does not, that an event already on screen raises none, that several hits in one place cluster to one indicator with the right count, and that its bearing is right at several camera headings including behind the camera. |
-| `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory; **the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both as integer percentages, and that elimination removes a player's modules with their ships**; **ring slot assignment** — that the same selection ordered to the same point yields the same slots in the same order; **command validation** — a foreign entity, an over-long selection, a stale generation, a wrapped sequence, an out-of-map target; and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
+| `GameCoreTests` | Derived design stats for every catalog combination **including `Cruiser`, which no MVP design uses**, and every module level; **module placement validity** — inside the radius, outside it, overlapping the station, overlapping another module, and the fifth module against a cap of four; the damage table; the generator's output pinned for a seed **with its symmetry asserted at both two and four players**; and every wire record encoded and decoded round trip, including removals, a fire event and **a full update, whose measured size is ADR-024's figure**. |
+| `GameClientTests` | Interpolation between an entity's two samples including the wrap-around case, **that a record older than the held sample is dropped and a newer one replaces the older of the pair, and that an entity three sweeps silent is forgotten** ([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)), the camera's transform, hit-testing a tap against the plane at several camera angles; **the anchor solve** ([`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md)) — the property is *project the anchor and it lands on the centroid*, across the pitch range, for one contact and for two, with the scale and rotation applied, and with **no drift over a long synthetic gesture**, which is the failure this model actually has; that the clamp stops the focus and lets the anchor slip rather than fighting it; and that `pitch(distance)` **saturates** at the floor instead of ending the zoom range; **the double-tap selection circle** — which ships a 192-pixel screen-space radius takes at several zoom levels, including a ship exactly on the edge and **the raking-camera case where the circle's world footprint is a wedge** ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)), now bounded by `Interface.md` §5's pitch floor; **that the first tap selects one ship and only a second tap resolving to the same entity expands it** ([`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md)), including two taps on *different* ships staying two single taps; the 24-pixel pick radius and its tier order against overlapping candidates; the order marker's lifetime against an acknowledgment; and **the alert** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)) — that a fire event naming one of your entities raises one and a fire event naming somebody else's does not, that an event already on screen raises none, that several hits in one place cluster to one indicator with the right count, and that its bearing is right at several camera headings including behind the camera. |
+| `GameLogicTests` | The simulation: movement toward a point, the mining loop, combat resolution, elimination and victory; **the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both as integer percentages, and that elimination removes a player's modules with their ships**; **ring slot assignment** — that the same selection ordered to the same point yields the same slots in the same order; **command validation** — a foreign entity, an over-long selection, a stale generation, a wrapped sequence, an out-of-map target; **the accumulator** ([`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)) — that an update never exceeds the payload, that no entity goes a sweep unsent whatever the scores, that a removal rides ten consecutive updates, that the sent set is the same twice from the same state and view, and that a client's scores reset on rejoin; and **the determinism test**, which runs a fixed tick count from a seed against a scripted order list and asserts the state hash. That last one is what protects R16, and it is the most valuable test in the tree. |
 
 ---
 
@@ -583,7 +608,8 @@ not a definition is arithmetic on the design's own starting values. These are ow
    of headroom, nine entity records. `Tests/GameCoreTests/SnapshotTests.cpp` pins both and writes them
    through `Logger::WriteMessage` so they land in every CI log. The figure was 1,136 here and in three
    ADRs: §4's arithmetic omitted the fire-event count byte this same section specifies two paragraphs
-   below. The module cap of four survives — see §4, and ADR-015's Measurements.
+   below. **Historical since [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md)**, which owes
+   the update's measured size in their place, and the four other figures its Measurements list.
 2. **Tap-to-visible latency on real hardware** — timestamp the `Tapped` event and the first frame in which
    the ship's drawn heading changes. §4 predicts 152 ms average. **Owed at M0**, because it is the number
    that decides how the game feels and every other decision is cheap to change beside it.
@@ -623,7 +649,10 @@ shaped:
 |---|---|
 | [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md) | The simulation is two-dimensional; the camera is not. |
 | [`ADR-002`](ADR/ADR-002-tick-and-numbers.md) | The 20 Hz tick, the 1/256 position unit, the binary angle and the sine table, the pinned PRNG, and ordering as a correctness property. |
-| [`ADR-003`](ADR/ADR-003-replication-is-full-snapshots.md) | Full self-contained snapshots at 20 Hz with no delta and no acknowledgment; a ten-byte record with the design identity its own byte; a removal list; commands made reliable by a sequence the snapshot already carries and validated by the host. |
+| [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) | The entity record's fields, the 1,232-byte payload, 20 Hz and the 75 ms delay, and commands made reliable by a sequence the downstream state carries and validated by the host. Its full snapshot is replaced by ADR-024. |
+| [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) | Replication is prioritized absolute-state records: one whole datagram at a time from a per-client accumulator with a sweep guarantee, a twelve-byte record, a header that does not scale with players, repeated removals, no fragmentation and no ordering. |
+| [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) | A bot is a headless client, and one unpackaged process runs many of them as players, churners and flooders to load the host. |
+| [`ADR-023`](ADR/ADR-023-the-player-count-is-configurable.md) | The host's player count is a run-time argument, past four only in a stress configuration. |
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
 | [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) | A mesh is a CMO file, authored as content, with the reader written here because CMO's only reader in the wild is the DirectXTK12 R14 closes. Replaced the opposite decision, that meshes are functions. |
 | [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md) | Content files ship with the package. The line is against dependencies and against simulation data becoming files, not against files as such. |

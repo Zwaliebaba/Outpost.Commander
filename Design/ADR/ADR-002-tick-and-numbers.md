@@ -62,7 +62,7 @@ distance — breaks on identity, never on which cell was visited first.
 **The tick rate is the input-latency floor, not only a fidelity knob**, and this ADR originally did not
 say so. A tap waits up to one client send interval, then up to one tick to be applied, then up to one
 snapshot interval to be reported, then the client's interpolation delay before anything is drawn — and two
-of those four terms are this number. [`ADR-003`](ADR-003-replication-is-full-snapshots.md) now carries the
+of those four terms are this number. [`ADR-003`](ADR-003-the-record-and-the-command.md) now carries the
 arithmetic and the 20 Hz snapshot rate that follows from it.
 
 Twenty hertz is a movement update every 50 ms and a fighter moving seven position units a tick. The client

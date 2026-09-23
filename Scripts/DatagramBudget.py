@@ -5,67 +5,80 @@ The design's figures are arithmetic on the record layout and the entity counts.
 This reproduces that arithmetic so a proposal is costed rather than estimated
 (AGENTS.md section 6), and so the same numbers come out every time.
 
-    python3 budget.py                          # the snapshot as it stands
-    python3 budget.py --add-bytes 1            # cost of one more byte per entity
-    python3 budget.py --players 4 --modules 4  # a different match shape
-    python3 budget.py --audit-fields           # what each field spends vs what it draws
-    python3 budget.py --upstream               # the command packet, host-bound
-    python3 budget.py --all                    # every section, for a wire-format change
-    python3 budget.py --reshape --index-bits 12   # lever 0, columnar and table candidates
+Since ADR-024 the downstream unit is an UPDATE: one datagram per client per
+tick, filled with the entity records a priority accumulator says are due. An
+update never fragments, whatever the entity count; what the count changes is
+how often each entity is refreshed. That is the figure this script exists to
+state, and the one that used to be "does the snapshot still fit".
+
+    python3 DatagramBudget.py                       # the update as it stands, MVP shape
+    python3 DatagramBudget.py --players 100 --ships 50   # a different match shape
+    python3 DatagramBudget.py --in-view 400         # refresh rate for a screen holding 400
+    python3 DatagramBudget.py --add-bytes 1         # cost of one more byte per record
+    python3 DatagramBudget.py --datagrams 2         # a second update per tick
+    python3 DatagramBudget.py --audit-fields        # what each field spends vs what it draws
+    python3 DatagramBudget.py --upstream            # the command packet, host-bound
+    python3 DatagramBudget.py --all                 # every section, for a wire-format change
 """
 import argparse
-import math
 import os
 import sys
 
-# The record, field by field, as Design/TechnicalDesign.md section 4 defines it.
-RECORD = [("identity", 2), ("position", 4), ("heading", 1),
+# The record, field by field, as Design/TechnicalDesign.md section 4 defines it under ADR-024.
+# Every record is a self-contained fact about one entity at the update's tick; nothing in it
+# depends on an earlier record. The identity is three bytes -- a 16-bit index and an 8-bit
+# generation -- because a 100-player match has thousands of live entities and the generation
+# has to survive index reuse under loss. The owner is a byte, so a record says whose it is
+# without the update having to be grouped or complete.
+RECORD = [("identity", 3), ("owner", 1), ("position", 4), ("heading", 1),
           ("hull", 1), ("design identity", 1), ("flags", 1)]
 
-# Fixed header, then one block per player. The first six bytes are the TRANSPORT header and their
-# split is pinned by NeuronCore/PacketHeader.h rather than by this table -- a 2-byte sequence that
-# buys the two fragment fields, where this model previously spent all four on the sequence. Same
-# fourteen bytes either way, which is why nothing below moved when M0.2 landed.
-HEADER_FIXED = [("version", 1), ("type", 1), ("sequence", 2),
-                ("fragment index", 1), ("fragment count", 1), ("tick", 4),
-                ("entity count", 2), ("player count", 1), ("removal count", 1)]
-HEADER_PER_PLAYER = [("credits", 4), ("last command applied", 2),
-                     ("building design", 1), ("build progress", 1)]
+# The update's header. The first four bytes are the TRANSPORT header (NeuronCore/PacketHeader.h):
+# version, type, and a sequence the receiver uses only to count loss. ADR-024 removed the two
+# fragment fields M0.2 reserved, because nothing fragments any more. Then the tick every record
+# in the datagram describes, the live entity count (which is what lets the client bound how long
+# an entity may go unrefreshed), the RECIPIENT'S OWN player block and nothing about anyone
+# else's, and three counts. Nothing here scales with the player count, which is the point.
+HEADER = [("version", 1), ("type", 1), ("sequence", 2),
+          ("tick", 4), ("entity count", 2),
+          ("own credits", 4), ("own last command applied", 2),
+          ("own building design", 1), ("own build progress", 1),
+          ("record count", 1), ("removal count", 1), ("fire count", 1)]
 
-# After the removal list, not in the header: ADR-004 puts the fire events behind a count byte at
-# the very end, so the header's shape does not change on the day weapons arrive. THIS BYTE WAS
-# MISSING FROM THIS MODEL until M0.9's encoder measured a snapshot one byte larger than the design
-# said -- TechnicalDesign.md section 4 specified it one line below the table that left it out.
-TRAILER = [("fire event count", 1)]
+# After the records. A removal is an identity, repeated in REMOVAL_REPEAT_TICKS consecutive
+# updates so a lost datagram cannot leave a ghost; a fire event (ADR-004) is repeated for
+# FIRE_REPEAT_TICKS so a lost datagram costs a tracer only when three in a row are lost.
+REMOVAL_BYTES = 3
+FIRE_BYTES = 7                      # shooter 3, target 3, weapon 1
+REMOVAL_REPEAT_TICKS = 10
+FIRE_REPEAT_TICKS = 3
 
-# Field-width audit. "wire" is what the record spends today; "draws" is the number of bits the
-# client actually needs to draw the field. Those are different questions, and only the second
-# one sizes a wire field -- width on the wire is decoupled from width in the simulation, which
-# keeps its own precision regardless (R16). A reserved field is one deliberately widened for a
-# decision already taken; its slack is not recoverable and is excluded from the total.
+# Field-width audit. "wire" is what the record spends; "draws" is the number of bits the client
+# actually needs to draw the field. Width on the wire is decoupled from width in the simulation,
+# which keeps its own precision regardless (R16). A reserved field is one deliberately widened
+# for a decision already taken; its slack is not recoverable and is excluded from the total.
 #                field              wire draws reserved why that many bits are enough
-FIELD_AUDIT = [("identity",           16, 16, False, "correctness, not display: the client matches records across frames"),
+FIELD_AUDIT = [("identity",           24, 24, False, "correctness, not display: the client matches records across ticks"),
+               ("owner",               8,  7, False, "254 players is the PlayerId's own ceiling; the eighth bit is spare"),
                ("position x",         16, 16, False, "16,384 units over 65,536 steps is an exact fit at 1/4 unit"),
                ("position y",         16, 16, False, "as above -- there is no slack to find here"),
                ("heading",             8,  7, False, "7 bits is 2.8 deg and reads smooth; 6 steps visibly on a turning ship"),
-               ("hull",                8,  4, False, "a hull BAR resolves about 16 levels; the percent is a number nobody reads"),
-               ("design identity",     8,  8, True,  "RESERVED: widened on purpose for R24, research and the designer"),
-               ("flags",               8,  7, False, "team 2 + state 3 + cargo 2 = 7 in use, 1 spare")]
+               ("hull",                8,  4, False, "a bar resolves 16 levels; 0 and 100 are the two that must be exact"),
+               ("design identity",     8,  8, True,  "R24 widened it on purpose: research and a designer extend it"),
+               ("flags: state",        3,  3, False, "idle, moving, mining, returning, fighting -- five states, three bits"),
+               ("flags: cargo",        2,  2, False, "four buckets is all a fill bar needs (ADR-003)"),
+               ("flags: spare",        3,  0, False, "three bits nothing has claimed; the team bits left with ADR-024")]
 
-# Upstream. Section 5 states the command packet in prose rather than a table -- a type, a target,
-# the selected identities, a per-player sequence, retransmitted every packet until the snapshot
-# acknowledges it. This is that prose costed. If section 5 ever gains a table, move this to match.
-# THIS WAS FOUR BYTES UNTIL M0.10 ENCODED ONE. It carried `version` and `type` -- the whole of the
-# packet header as it stood before M0.2 -- and never gained the sequence and the two fragment fields
-# that landed with NeuronCore/PacketHeader.h. The same omission the fire-event count byte was, in
-# the other direction: a field the design settled elsewhere and this model was never told about.
-# GameCore/Command.h now states it as PacketHeader::SIZE_BYTES + 2, and CommandTests pins it.
+# Upstream. Section 4 states the command packet: the transport header, the player identity, the
+# command count, and -- since ADR-024 -- the client's view center and radius, which is what the
+# host's accumulator scores relevance against. Then commands: a per-player sequence, the type,
+# a target, and the selected identities, repeated every packet until the update acknowledges.
 COMMAND_HEADER = [("version", 1), ("type", 1), ("sequence", 2),
-                  ("fragment index", 1), ("fragment count", 1),
-                  ("player identity", 1), ("command count", 1)]
+                  ("player identity", 1), ("command count", 1),
+                  ("view center", 4), ("view radius", 2)]
 COMMAND_FIXED = [("sequence", 2), ("order type", 1), ("target point or entity", 4),
                  ("selection count", 1)]
-IDENTITY_BYTES = 2
+IDENTITY_BYTES = 3
 
 # Payload available to UDP under each path assumption, ascending. The design pins 1232: the
 # IPv6 minimum-MTU payload exactly, which is the largest any conformant IPv6 path must carry
@@ -79,44 +92,81 @@ MTU = [("QUIC's floor, IPv6",   1200, "1232 less 32 B of room for an extension h
        ("LAN Ethernet, IPv4",   1472, "1500 - 20 - 8 -- the MVP's stated target")]
 
 
-def budget(players, ships, modules, removals, extra_per_entity, extra_header):
+def ceil_div(n, d):
+    return -(-n // d)
+
+
+def budget(players, ships, modules, removals, fires, extra_per_record, extra_header,
+           datagrams=1, payload=PINNED):
+    """The update, as arithmetic. Returns a dict so the checker can name what it asserts."""
     entities = players * (ships + 1 + modules)
-    record = sum(b for _, b in RECORD) + extra_per_entity
-    header = (sum(b for _, b in HEADER_FIXED)
-              + players * sum(b for _, b in HEADER_PER_PLAYER) + extra_header)
-    trailer = sum(b for _, b in TRAILER)
-    return entities, record, header, entities * record + header + removals * 2 + trailer
+    record = sum(b for _, b in RECORD) + extra_per_record
+    header = sum(b for _, b in HEADER) + extra_header
+    tail = removals * REMOVAL_BYTES + fires * FIRE_BYTES
+    per_datagram = (payload - header - tail) // record
+    per_tick = per_datagram * datagrams
+    return {
+        "entities": entities,
+        "record": record,
+        "header": header,
+        "tail": tail,
+        "records per datagram": per_datagram,
+        "records per tick": per_tick,
+        "datagram bytes": payload,
+        # The sweep: how many ticks a full round-robin over every live entity takes. ADR-024's
+        # guarantee is that nothing goes longer than this unrefreshed, whatever its relevance.
+        "sweep ticks": ceil_div(entities, per_tick),
+    }
 
 
-def snapshot(a):
-    entities, record, header, total = budget(a.players, a.ships, a.modules,
-                                             a.removals, a.add_bytes, a.add_header)
+def update(a):
+    b = budget(a.players, a.ships, a.modules, a.removals, a.fires, a.add_bytes, a.add_header,
+               a.datagrams)
+    per_client = b["datagram bytes"] * a.datagrams * a.rate_hz
     print(f"  {a.players} players x ({a.ships} ships + 1 station + {a.modules} modules)"
-          f" = {entities} entities")
-    print(f"  record {record} B ({sum(b for _, b in RECORD)} + {a.add_bytes} proposed)"
-          f" · header {header} B · removals {a.removals * 2} B"
-          f" · fire count {sum(b for _, b in TRAILER)} B")
-    print(f"  SNAPSHOT {total} B   at {a.rate_hz} Hz = {total * a.rate_hz / 1000:.1f} KB/s per client\n")
+          f" = {b['entities']} live entities")
+    print(f"  record {b['record']} B ({sum(v for _, v in RECORD)} + {a.add_bytes} proposed)"
+          f" · header {b['header']} B · {a.removals} removals {a.removals * REMOVAL_BYTES} B"
+          f" · {a.fires} fires {a.fires * FIRE_BYTES} B")
+    print(f"  UPDATE {b['datagram bytes']} B, always one datagram: {b['records per datagram']} records"
+          f" in it, {a.datagrams} per tick = {b['records per tick']} records a tick")
+    print(f"  per client {per_client / 1000:.1f} KB/s ({per_client * 8 / 1000:.0f} kbit/s)"
+          f" at {a.rate_hz} Hz, whatever the entity count;"
+          f" host egress at {a.clients} clients {per_client * a.clients / 1e6:.2f} MB/s"
+          f" ({per_client * a.clients * 8 / 1e6:.1f} Mbit/s)")
+    sweep = b["sweep ticks"]
+    print(f"  SWEEP {sweep} tick(s) = {sweep * 1000 / a.rate_hz:.0f} ms: no entity goes longer"
+          f" unrefreshed, and the client forgets one after {3 * sweep} ticks with no record\n")
 
+    in_view = a.in_view if a.in_view else b["entities"]
+    refresh = max(1, ceil_div(in_view, b["records per tick"]))
+    print(f"  A view holding {in_view} entities refreshes each every {refresh} tick(s)"
+          f" = {refresh * 1000 / a.rate_hz:.0f} ms, if the accumulator sends nothing else.")
+    if refresh > 1:
+        need = ceil_div(in_view, b["records per datagram"])
+        print(f"  Every tick would need {need} datagrams per tick (--datagrams {need}),"
+              f" {b['datagram bytes'] * need * a.rate_hz / 1000:.1f} KB/s per client.")
+    print()
     for name, cap, why in MTU:
-        free = cap - total
-        frags = -(-total // cap)
-        fit = f"ONE datagram, {free:5d} B free = {free // record:3d} entities" if frags == 1 \
-              else f"{frags} datagrams -- FRAGMENTS, loss rate roughly x{frags}"
+        bb = budget(a.players, a.ships, a.modules, a.removals, a.fires, a.add_bytes,
+                    a.add_header, a.datagrams, cap)
         pin = " <- PINNED" if cap == PINNED else ""
-        print(f"  {name:22s} {cap:5d} B  {fit}{pin}")
+        print(f"  {name:22s} {cap:5d} B  {bb['records per datagram']:4d} records,"
+              f" sweep {bb['sweep ticks']:3d} tick(s){pin}")
         print(f"  {'':22s}        {why}")
 
     if a.add_bytes or a.add_header:
-        _, _, _, was = budget(a.players, a.ships, a.modules, a.removals, 0, 0)
-        print(f"\n  the proposal costs {total - was} B "
-              f"({was} -> {total}), {(total - was) // max(record, 1)} entities of headroom")
-    return entities, record, total
+        was = budget(a.players, a.ships, a.modules, a.removals, a.fires, 0, 0, a.datagrams)
+        print(f"\n  the proposal costs {was['records per datagram'] - b['records per datagram']}"
+              f" records per datagram ({was['records per datagram']} ->"
+              f" {b['records per datagram']}) and moves the sweep"
+              f" {was['sweep ticks']} -> {b['sweep ticks']} tick(s)")
+    return b
 
 
 def audit_fields(a):
     """What the record spends against what the client draws."""
-    entities, record, _, total = budget(a.players, a.ships, a.modules, a.removals, 0, 0)
+    b = budget(a.players, a.ships, a.modules, a.removals, a.fires, 0, 0, a.datagrams)
     print("  field              wire  draws  slack")
     wire = draws = recoverable = 0
     for name, w, d, reserved, why in FIELD_AUDIT:
@@ -129,22 +179,19 @@ def audit_fields(a):
         print(f"  {name:18s} {w:4d} {d:6d} {mark}   {why}")
     held = (wire - draws) - recoverable
     note = f", {held} held by a reserved field" if held else ""
-    print(f"  {'TOTAL':18s} {wire:4d} {draws:6d} {recoverable:4d}   recoverable bits per entity{note}\n")
-
+    print(f"  {'TOTAL':18s} {wire:4d} {draws:6d} {recoverable:4d}   recoverable bits per record{note}\n")
     if not recoverable:
         print("  No recoverable slack. Every field is already the width it draws.")
         return
     packed_bits = wire - recoverable
-    block_now = entities * record
-    block_packed = -(-entities * packed_bits // 8)
-    saved = block_now - block_packed
+    packed = (PINNED - b["header"] - b["tail"]) * 8 // packed_bits
     print(f"  record {wire} bits -> {packed_bits} bits; the record stops being byte-aligned")
-    print(f"  {entities} entities: {block_now} B -> {block_packed} B, saves {saved} B")
-    print(f"  snapshot {total} B -> {total - saved} B,"
-          f" headroom against {PINNED} goes {PINNED - total} -> {PINNED - total + saved} B\n")
+    print(f"  records per datagram {b['records per datagram']} -> {packed},"
+          f" sweep {b['sweep ticks']} -> {ceil_div(b['entities'], packed * a.datagrams)} tick(s)\n")
     print("  Costs: a bit writer on both sides instead of a memcpy of a packed struct, and a")
     print("  record whose fields no longer line up with anything a debugger or a capture shows.")
-    print("  Worth it when the alternative is a second datagram; not worth it before then.")
+    print("  Under ADR-024 the alternative is a slower refresh, not a second datagram -- so this")
+    print("  buys refresh rate, and it is worth taking only when a measured refresh is too slow.")
 
 
 def upstream(a):
@@ -155,77 +202,13 @@ def upstream(a):
     total = fixed + a.in_flight * one
     capacity = (PINNED - fixed - per_command) // IDENTITY_BYTES
     fits = (PINNED - fixed) // one
-    print(f"  header {fixed} B \u00b7 per command {per_command} B + 2 B per selected identity")
+    print(f"  header {fixed} B · per command {per_command} B + {IDENTITY_BYTES} B per selected identity")
     print(f"  one command at a {a.selection}-identity selection = {one} B")
-    print(f"  {a.in_flight} unacknowledged in flight (retransmitted until the snapshot acks)"
-          f" = COMMAND PACKET {total} B")
-    verdict = "ONE datagram" if total <= PINNED else "FRAGMENTS"
-    print(f"  against the pinned {PINNED} B: {PINNED - total} B free"
-          f" \u2014 {100 * total // PINNED}% used, {verdict}\n")
-    print(f"  Room for {capacity} identities in one command against a peak selection of"
-          f" {a.selection} \u2014 the")
-    cite = " section 5 makes the host validate away" if a.selection == 110 else \
-           " an unvalidated selection would buy an attacker"
-    print(f"  {capacity / max(a.selection, 1):.1f}x amplification{cite}. The FORMAT is not the")
-    print(f"  constraint. The RETRANSMIT WINDOW is: at a full selection, {fits} commands in flight"
-          f" fit and")
-    print(f"  {fits + 1} fragment. That count is behavior, not format \u2014 a stalled ack, not a"
-          " fast player.")
-    print("  Section 5 answers it structurally: the packet is filled OLDEST-FIRST and stops when the")
-    print("  next command will not fit, so it cannot exceed the payload, no order is dropped, and the")
-    print("  sequence gains no gap the host would discard. No lever from the list below applies.")
-    print(f"  A change is upstream's problem only if it makes ONE command exceed {PINNED - fixed} B,")
-    print("  which today needs a designer that submits a design DEFINITION rather than an identity")
-    print("  (M4+). Re-run with --selection raised, or --add-bytes on the command, the day it lands.")
-
-
-def reshape(a):
-    """Lever 0. Only available while no build has shipped -- see SKILL.md."""
-    entities, record, _, total = budget(a.players, a.ships, a.modules, a.removals, 0, 0)
-
-    print("  A DESIGN TABLE in the header, with a short index per entity, against a byte per record.")
-    print(f"  Today: 1 B x {entities} entities = {entities} B of design identity.\n")
-    print("   designs   index bits   table B   entity B   total B   saves")
-    best = None
-    for designs in (2, 4, 8, 16, 24, 32, 64):
-        bits = max(1, (designs - 1).bit_length())
-        table = a.players * designs
-        block = -(-entities * bits // 8)
-        cost = table + block
-        saves = entities - cost
-        if best is None or saves > best[1]:
-            best = (designs, saves)
-        print(f"  {designs:8d} {bits:12d} {table:9d} {block:10d} {cost:9d} {saves:7d}")
-    print(f"\n  Break-even is where saves goes negative. A 50-ship fleet repeating a handful of")
-    print(f"  designs is the left of this table, where it is worth {best[1]} B -- more than the whole")
-    print(f"  field audit. It costs a header that varies with the designs in play.\n")
-
-    print("  THE IDENTITY COLUMN is the largest single block in the snapshot"
-          f" ({entities} x 2 = {entities * 2} B).")
-    if not a.index_bits:
-        print("  Section 4 does not state the index/generation split inside those 2 bytes, and the")
-        print("  saving depends entirely on it. Settle the split, then re-run with --index-bits N.")
-        return
-    n = a.index_bits
-    gen = 16 - n
-    pool = 1 << n
-    if entities > pool:
-        print(f"  --index-bits {n} gives a {pool}-entity pool, below the {entities} live entities.")
-        return
-    # log2 C(pool, entities): the exact information content of a sorted distinct index set.
-    floor_bits = (math.lgamma(pool + 1) - math.lgamma(entities + 1)
-                  - math.lgamma(pool - entities + 1)) / math.log(2)
-    floor = -(-int(floor_bits + entities * gen) // 8)
-    print(f"  At a {n}-bit index ({pool} pool) and a {gen}-bit generation, a sorted distinct index set")
-    print(f"  carries log2(C({pool},{entities})) = {floor_bits:.0f} bits, and generations add"
-          f" {entities * gen}.")
-    print(f"  FLOOR {floor} B against {entities * 2} B spent -- at best {entities * 2 - floor} B,"
-          f" and no encoding beats it.")
-    print(f"  That is a bound, not a design: a real encoder lands short of it. Quote the bound as a")
-    print(f"  bound, and measure the encoder once it exists (AGENTS.md section 6).\n")
-    print(f"  Snapshot floor if BOTH landed perfectly: {total} -> "
-          f"{total - (entities * 2 - floor) - best[1]} B. Neither is written. Neither is free to")
-    print("  keep: a columnar, delta-coded record is not a struct anyone can read off a capture.")
+    print(f"  {a.in_flight} unacknowledged in flight (retransmitted until the update acks)"
+          f" = {total} B: {'ONE datagram' if total <= PINNED else 'FRAGMENTS'}")
+    print(f"  a packet holds {capacity} identities in one command, {fits} commands at this selection\n")
+    print("  The format is not the constraint; the retransmit window is, and section 4 bounds it")
+    print("  structurally: the packet is filled oldest-first and stops when the next will not fit.")
 
 
 def main():
@@ -233,29 +216,31 @@ def main():
     p.add_argument("--players", type=int, default=2)
     p.add_argument("--ships", type=int, default=50, help="ships per player")
     p.add_argument("--modules", type=int, default=4, help="modules per player")
-    p.add_argument("--removals", type=int, default=3, help="typical removals per snapshot")
-    p.add_argument("--add-bytes", type=int, default=0, help="proposed extra bytes per entity")
+    p.add_argument("--removals", type=int, default=3, help="removals riding a typical update")
+    p.add_argument("--fires", type=int, default=2, help="fire events riding a typical update")
+    p.add_argument("--clients", type=int, default=0,
+                   help="connected clients for the egress figure; defaults to the player count")
+    p.add_argument("--in-view", type=int, default=0,
+                   help="entities inside one client's view; defaults to every live entity")
+    p.add_argument("--datagrams", type=int, default=1, help="updates per client per tick")
+    p.add_argument("--add-bytes", type=int, default=0, help="proposed extra bytes per record")
     p.add_argument("--add-header", type=int, default=0, help="proposed extra header bytes")
     p.add_argument("--rate-hz", type=int, default=20)
     p.add_argument("--selection", type=int, default=110,
-                   help="peak identities in one command (section 5's own figure)")
+                   help="peak identities in one command (section 4's own figure)")
     p.add_argument("--in-flight", type=int, default=4,
                    help="unacknowledged commands retransmitted in one packet")
     p.add_argument("--audit-fields", action="store_true",
                    help="what each field spends against what the client draws")
     p.add_argument("--upstream", action="store_true", help="the command packet")
-    p.add_argument("--reshape", action="store_true",
-                   help="lever 0: design table and identity column, while nothing has shipped")
-    p.add_argument("--index-bits", type=int, default=0,
-                   help="bits of the 2-byte identity that are index; section 4 does not say")
-    p.add_argument("--all", action="store_true", help="snapshot, field audit and upstream")
+    p.add_argument("--all", action="store_true", help="update, field audit and upstream")
     a = p.parse_args()
+    if not a.clients:
+        a.clients = a.players
 
-    sections = [("DOWNSTREAM -- the snapshot", snapshot)]
+    sections = [("DOWNSTREAM -- the update", update)]
     if a.audit_fields or a.all:
         sections.append(("FIELD AUDIT -- spent against drawn", audit_fields))
-    if a.reshape or a.all:
-        sections.append(("RESHAPE -- lever 0, while nothing has shipped", reshape))
     if a.upstream or a.all:
         sections.append(("UPSTREAM -- the command packet", upstream))
 

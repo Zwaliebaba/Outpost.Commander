@@ -54,7 +54,7 @@ tested only against itself is a codec that agrees with itself about being wrong.
 
 ### M0.2 — The packet header · `NeuronCore` · `NeuronCoreTests` · agent
 
-**Read first:** [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) Decision; `TechnicalDesign.md`
+**Read first:** [`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) Decision; `TechnicalDesign.md`
 §4.
 
 **Adds:** protocol version, packet type, sequence, and the fragment index and count. **The fragment fields

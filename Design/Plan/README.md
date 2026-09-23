@@ -78,7 +78,7 @@ ran, every claim in that record about bit-identical behavior was an argument.
 | | |
 |---|---|
 | **M0.5** | One of its four runs is answered — loopback under the exemption Visual Studio grants, at zero loss and sub-millisecond jitter. **Three are open** and all three need two machines, admin rights or a real wireless link |
-| **M0.23** | **Half closed, and the measured half has moved once.** Frame time was 1,118 microseconds over an empty frame at M0.23 and is **1,482 with M1.9's three hulls in it** — both in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md), and it is a standing figure rather than a settled one for exactly that reason. Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
+| **M0.23** | **Half closed, and the measured half has moved once.** Frame time was 1,118 microseconds over an empty frame at M0.23 and is **1,482 with M1.9's three hulls in it** — both in [`ADR-007`](../ADR/ADR-007-the-authored-frame-is-1440x960.md), and it is a standing figure rather than a settled one for exactly that reason. Tap-to-visible is measured **on loopback only** — 76 ms mean over nine taps, recorded in [`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) as a stage rather than as the answer, because one machine is not the network §4's 152 ms predicts. **The two-machine run is owed** |
 | **M1.4** | **Closed.** The ADR is Accepted and the join is built. **What it has not had is two machines** — every one of its properties is pinned by a socket-free suite, and a reconnect across a real relaunch is one of the things M0.23's outstanding run is now worth watching for |
 | **M1.9** | **Built, and looked at once.** Three hulls read out of the package, converted, uploaded and drawn instanced, at **1,482 microseconds** a frame. **What the looking found was a bug**: the light rig was never converted out of the authored frame, so the key pointed nearly along the plane and every hull read as shapeless. Fixed. **The tactical-zoom silhouettes are still M2.13's**, and ADR-021's clean-install check is still owed — the deploy used here was a loose-file registration on the machine that built it, which is the one arrangement in which a missing payload cannot show |
 | **M1.9b** | **Built, looked at twice, and the band withdrawn.** The blackbody table is pinned at all eight stops and between them, the seeded field gives the same sky twice, and the ceiling is asserted rather than intended — 38 tests across `NeuronClientTests` and `GameClientTests`. **The asserted half found the design's own arithmetic wrong**: 1:3:9:27:81:243 sums to 364 and divides no round number of stars evenly, so the division three documents called exact was neither exact nor what the code computed. **The looked-at half found the sky wrong twice**: first a band outshining invisible stars, then — dimmed — a band whose noise read as a painting behind the fleet while the faint stars delivered about 16 of 255 to a pixel. [`ADR-019`](../ADR/ADR-019-the-sky-is-generated-from-the-seed.md) now withdraws the band: the sky is 8,000 stars and nothing else, the tiers are 22, 66, 198, 593, 1,780 and 5,341, the faint end is 3.0 pixels at 0.24 under a flat-topped falloff, and the clear is black. **Built, measured and CONFIRMED on the device at the third look**: 8,000 stars at 7,992 distinct sizes, 3.00–9.96 pixels, lit area 0.140% of the frame. It reads as a sky, which closes the third of ADR-019's owed measurements ahead of M1.16 and leaves two. The withdrawal commit could not run `dxc`, so its `StarPS.hlsl` and the checked-in DXIL disagreed until the build here regenerated it |
@@ -274,7 +274,7 @@ the most carefully argued part of the design and this is the step that can quiet
 register question, needed by M3**: it moves balance, so it is the design's to answer and not the plan's.
 
 **F4 — `TechnicalDesign.md` §6 says the client draws 150 milliseconds behind; §4 and
-[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) say 75.** Both call it "one snapshot interval
+[`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) say 75.** Both call it "one snapshot interval
 plus a jitter margin", which at 20 Hz is 75. The 150 is the 10 Hz figure surviving the rate change. **A
 documentation defect rather than a decision** — the plan builds to 75. **CORRECTED**: §6 says 75, and the
 only 150s left in it are the 10 Hz row of the latency table, where the figure is history rather than a
@@ -295,7 +295,7 @@ tested half takes **plain values** — a contact count, a translation, a scale, 
 `PointerPoint`. That shape is forced at M0.18 and it is far easier to write than to retrofit.
 
 **F7 — The wire format is specified as totals, not as fields.**
-[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) gives a ten-byte record and a thirty-byte
+[`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) gives a ten-byte record and a thirty-byte
 header and names what is in them, but not every width — appropriate for a design and insufficient for an
 encoder. **M0.9 is where the widths become facts**, and the test that measures the encoded size is what
 turns ADR-003's snapshot size from arithmetic into a measurement.
@@ -306,7 +306,7 @@ render time 75 ms behind the newest is 25 ms **older than the older of the two**
 contain the frame being drawn. It is F4's defect one clause further on — the delay moved from 150 to 75
 and the depth it implies was never recomputed — and it was never right at 10 Hz either, where 150 behind
 the newest sits outside a 100 ms pair by the same margin.
-[`ADR-003`](../ADR/ADR-003-replication-is-full-snapshots.md) reads the other way and is the one to trust:
+[`ADR-003`](../ADR/ADR-003-the-record-and-the-command.md) reads the other way and is the one to trust:
 "a lost snapshot is a 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating"
 describes a buffer holding more than one interval of history. **A documentation defect rather than a
 decision**, like F4, and M0.19 builds to the arithmetic rather than to the sentence: the retained depth is

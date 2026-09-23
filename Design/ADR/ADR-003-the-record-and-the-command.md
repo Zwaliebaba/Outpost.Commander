@@ -1,10 +1,16 @@
-# ADR-003 — Replication is full snapshots, and commands are made reliable by them
+# ADR-003 — The entity record, the pinned payload, and commands made reliable by the state that acknowledges them
 
 **Status:** Accepted — ruled 2026-09-20 following an adversarial review, **with changes**: 20 Hz rather than
 10, a ten-byte record with the design identity its own byte, an explicit removal list, host-side command
 validation, and figures stated for both player counts. **Amended 2026-09-21:** the payload is pinned at
 1,232 rather than 1,200 — stated under *Decision* — and the command packet is filled oldest-first so its
 size is bounded by construction (`TechnicalDesign.md` §5).
+**Cut down 2026-09-23 by [`ADR-024`](ADR-024-replication-is-prioritized-records.md), which replaced the
+full snapshot with prioritized per-entity records.** This file is edited in place rather than superseded
+(README, *the MVP exception*), and its title and slug changed with it, because a file asserting a decision
+it no longer takes is the defect that rule exists to prevent. **The table at the top of *Decision* says
+which paragraphs are still live**; the replaced ones are kept below it, marked, because the latency and
+loss arguments in them are why 20 Hz and 75 ms were chosen and those two figures did not move.
 **Date:** 2026-09-20
 **Owner:** Stefan Zwaal
 
@@ -24,11 +30,20 @@ aged out must be recovered. The design's entity count — four players at fifty 
 
 ## Decision
 
-**Every snapshot is self-contained.** No baselines, no acknowledgments, no per-client history, no
+| Still decided here | Replaced by ADR-024 |
+|---|---|
+| The entity record's **fields and their semantics**: position as two `std::int16_t` over the play area, heading in 256 steps, hull as a percent with the one-percent floor, the design identity as its own byte, cargo in two flag bits | The record's **width and identity**: it is twelve bytes with a three-byte identity and an owner byte, not ten with team bits |
+| **The payload pinned at 1,232 bytes**, and why it is not 1,200 | **The snapshot as a unit**: there is no self-contained world-at-a-tick; the datagram is an update filled by a priority accumulator |
+| **20 Hz and the 75-millisecond interpolation delay**, and the latency table that chose them | **The header**: it carries the recipient's own block and no per-player list |
+| **Commands made reliable by `lastCommandSeqApplied`**, applied in order, oldest-first fill | **The removal list sent once**: removals and fire events are repeated facts |
+| **Host-side validation as correctness**, all five checks | **Fragmentation and the two-slot reassembler**: removed from the transport |
+| **Delta encoding declined**, and the reason | **"The host serializes a per-player entity set"**: it does, and now it is a different set per tick |
+
+**Replaced by ADR-024 — Every snapshot is self-contained.** No baselines, no acknowledgments, no per-client history, no
 accumulated client state. A client that misses a packet misses one frame of animation and is fully correct
 on the next one.
 
-An entity record is **ten bytes**: identity 2, position 4 as two `std::int16_t` quantized over the play
+**Widths replaced by ADR-024; semantics live.** An entity record was **ten bytes**: identity 2, position 4 as two `std::int16_t` quantized over the play
 area, heading 1, hull remaining 1, **design identity 1**, flags 1.
 
 **ONE PERCENT IS THE FLOOR, NOT ZERO, FOR ANYTHING STILL ALIVE.** The byte is a percentage and the
@@ -44,13 +59,13 @@ alongside team and state, which left two bits — room for exactly four designs,
 designer extend; a two-bit cap is a hardcoded limit wearing the costume of an identity, and the wire
 format would have contradicted the rule at the moment the designer arrived. One byte, +1.1%.
 
-A snapshot header carries the protocol version, the type, the snapshot sequence, the tick, the entity
+**Replaced by ADR-024.** A snapshot header carries the protocol version, the type, the snapshot sequence, the tick, the entity
 count, **the player count**, **the removal count**, and then one block per player: credits, last applied
 command sequence, and the **currently building design and its progress**. **Thirty bytes at two players,
 forty-six at four** — the per-player block is sized by the count in the header, so growing the match from
 two players to four is a runtime value and not a format change.
 
-**A removal list closes the snapshot.** One count byte in the header, then two bytes per removed entity
+**Replaced by ADR-024, which repeats each removal for ten ticks.** A removal list closes the snapshot: one count byte in the header, then two bytes per removed entity
 identity. Typically zero to three per snapshot.
 
 **The payload is pinned at 1,232 bytes, and that is the IPv6 minimum-MTU payload exactly.** Every
@@ -91,12 +106,12 @@ player gets that anything happened.** A quarter of a second of nothing is a dead
 75-millisecond interpolation delay — one snapshot interval plus a jitter margin — buy a hundred
 milliseconds of that back, and what they cost is bandwidth the MVP has in abundance.
 
-**Fragments reassemble all-or-nothing**, under one sequence number with an index and a count; an
+**Replaced by ADR-024, which removed fragmentation from the transport.** Fragments reassemble all-or-nothing, under one sequence number with an index and a count; an
 incomplete set is discarded. **The reassembler holds partial sets for the two most recent sequences**, not
 one: with a single slot, any cross-snapshot reorder discards a snapshot whose fragments had all arrived.
 **The MVP does not fragment at all** — see below.
 
-**The host serializes a per-player entity set, not the world.** The MVP has no fog of war and that set is
+**Replaced by ADR-024, whose accumulator builds a different set every tick.** The host serializes a per-player entity set, not the world. The MVP has no fog of war and that set is
 everything, but it is a list the host builds, so adding visibility later changes one function and not the
 wire format.
 
@@ -127,7 +142,7 @@ inference. "Nothing can diverge" is true of positions and was never true of the 
 removal list above is what makes the derived state correct; without it the sentence was doing more work
 than it could carry.
 
-**What it costs is bandwidth, stated for both configurations rather than only the larger one.**
+**What it cost was bandwidth, stated for both configurations. Historical since ADR-024**, whose per-client cost does not depend on the entity count:
 
 | | entities | header | snapshot | fragments | per client @20 Hz | host egress |
 |---|---|---|---|---|---|---|
@@ -154,7 +169,7 @@ delta saves most when nothing is moving and least when everything is**, so it op
 degenerates to a full snapshot plus a bitmask during the battle that is the only time the budget is under
 pressure.
 
-**What would reopen it:** a measured entity count materially above 204 — a later milestone raising the
+**What reopened it was exactly this:** the owner set a 100-player target on 2026-09-23, which is an entity count far above 204, and ADR-024 is the answer. The clause as written was: a measured entity count materially above 204 — a later milestone raising the
 fleet cap, or structures, or projectiles as entities — or measured loss on a real wireless link that
 neither the single fragment nor the 75-millisecond buffer rescues.
 

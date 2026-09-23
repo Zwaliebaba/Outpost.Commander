@@ -1,13 +1,13 @@
 # ADR-022 — A bot is a headless client, and one process runs many of them to load the host
 
-**Status:** Proposed
+**Status:** Accepted — ruled 2026-09-23 by the owner: the placement, the purpose (stress testing the host from one machine) and a rule-based policy, on the record as proposed.
 **Date:** 2026-09-23
-**Owner:** the owner. They chose the placement, the purpose (stress testing the host from one machine) and a rule-based policy on 2026-09-23. The record's text has not been ruled on.
+**Owner:** Stefan Zwaal
 
 ## Context
 
 Every client in this tree is a person with a finger on a packaged application. **Nothing can load the
-host.** The join, the snapshot and the command are each pinned by a socket-free suite (M1.4). But no run
+host.** The join, the update and the command are each pinned by a socket-free suite (M1.4). But no run
 puts many real clients on one host's wire at once. So there has been no measurement of what the host
 does under a full complement of seats, under join churn, or under traffic that is malformed or hostile.
 The owner's need is exactly that: **stress-test the server by running many clients from one location.**
@@ -24,9 +24,9 @@ bot can share it is [`OpenQuestions.md`](../OpenQuestions.md) Q48, and it is not
 
 **A bot is a client with no window, and `Bot` is an unpackaged desktop console application written in
 C++/WinRT that runs many of them.** Each bot has its own socket and endpoint, joins as the packaged client
-does (a `Join`, a slot and a token, ADR-013), receives snapshots and sends commands. The host cannot tell
+does (a `Join`, a slot and a token, ADR-013), receives updates and sends commands. The host cannot tell
 a bot from a person. **Nothing changes on the host or the wire for the bot's sake.** The player count it
-needs past four is [`ADR-023`](ADR-023-ownership-is-a-group-and-the-player-count-is-configurable.md)'s.
+needs past four is [`ADR-023`](ADR-023-the-player-count-is-configurable.md)'s.
 
 **One process, many clients, one thread for the loop.** A run is described on the command line: the host
 address, how many of each role, a seed, and a length in ticks. The process starts one client per
@@ -40,7 +40,7 @@ Datagram arrival is still asynchronous, one `DatagramSocket` per bot delivering 
 
 | Role | What it does | What it loads |
 |---|---|---|
-| **Player** | Takes a seat and plays the rule-based policy below | The command path, the per-client snapshot fan-out, egress |
+| **Player** | Takes a seat and plays the rule-based policy below | The command path, the per-client accumulator and its egress ([`ADR-024`](ADR-024-replication-is-prioritized-records.md)) |
 | **Churner** | Takes a seat, drops its socket, and rejoins with its token on a new endpoint, at a seeded interval | ADR-013's rejoin, endpoint rebinding, the session table |
 | **Flooder** | Never seated. Sends joins after the match is full, commands from an endpoint the host never seated, and malformed datagrams: truncated, wrong version, impossible counts | Every refusal path, and that the host stays up and keeps its tick |
 
@@ -71,10 +71,10 @@ the harness on one machine work from a shell on any Windows box with the build, 
 
 **The policy is rule-based, lives in `GameClient`, and is deterministic given the snapshots.** The
 executable holds the Windows Runtime glue, the loop and the command-line parsing, and nothing else (R20).
-The player's decision half is `BotPolicy`. It is a pure function of that bot's newest snapshot, its
+The player's decision half is `BotPolicy`. It is a pure function of that bot's replica store, its
 player, and a `Neuron::Pcg32` seeded from the run seed and the bot's index, and it returns the commands to
 send, or none. The churner's and flooder's schedules are the same kind of function. **All three key their
-pacing on the snapshot's tick, or on a tick counted by the harness loop, never on the wall clock**, so a
+pacing on the newest update's tick, or on a tick counted by the harness loop, never on the wall clock**, so a
 suite can feed them inputs and assert what comes out. R16 doesn't bind a client, but a stress run that
 can't be replayed from its inputs can't be debugged from a report of what it did.
 
@@ -83,9 +83,10 @@ moves subsets of its own ships to points on the plane. **It never commands an en
 flooder is the role that sends refusable commands, deliberately and counted. It gains `Attack` when M3 does.
 
 **The harness reports, and it reports what it saw on the wire, not what the host says.** Per role it
-counts: seats taken and refused, snapshots received, the gap between consecutive snapshot ticks (a host
-that falls behind shows up here first), commands sent and acknowledged, and the time from sending a
-command to the snapshot acknowledging it. **The host's own tick cost is the host's to report.** It is
+counts: seats taken and refused, updates received and lost (the transport sequence is for exactly this),
+the gap between consecutive update ticks (a host that falls behind shows up here first), **the refresh
+interval per entity**, which is ADR-024's figure and the one a stress run exists to measure, commands sent
+and acknowledged, and the time from sending a command to the update acknowledging it. **The host's own tick cost is the host's to report.** It is
 M2.10's measurement, and the harness doesn't try to infer it from outside.
 
 **It is not the AI of `GameDesign.md` §8 and it doesn't replace M4.5.** §8's AI runs on the host, on the
@@ -131,7 +132,9 @@ builds it:
 - **That an unpackaged process can use `DatagramSocket` against a host on loopback with no exemption.**
   Everything above rests on this. It is documented Windows behavior, not yet observed in this tree.
 - **That players are seated, that a churner keeps its seat across a rejoin on a new endpoint, that a
-  command is acknowledged by a later snapshot, and that the host keeps ticking under the flooder.** All
+  command is acknowledged by a later update, and that the host keeps ticking under the flooder.** All
   against the real `Server`.
 - **How many bots one harness process sustains** before its own snapshot-gap figure degrades with the
   host idle. That is the harness's ceiling, and it is stated here once measured.
+- **The refresh interval per entity at every seated count the host allows**, against ADR-024's sweep,
+  which is the measurement that record cannot take without this harness.
