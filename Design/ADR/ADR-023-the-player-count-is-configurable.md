@@ -43,7 +43,7 @@ by `PlayerCountAllowed` in `GameLogic/Host.h`, which a suite pins.
 
 **Above four, the start layout does not claim to be fair.** Two and four keep the quarter-turn anchors,
 exact and symmetric, and three keeps its admitted unfairness. Above four, player *k* of *N* starts at
-binary angle `k × 65536 / N` on the anchor radius, placed through `NeuronCore`'s sine table and facing
+binary angle `(k − 1) × 65536 / N` on the anchor radius, placed through `NeuronCore`'s sine table and facing
 the center. Integer arithmetic on a pinned table satisfies R16, and both sides compute it identically
 (R23). It is not exactly symmetric, and the stress configuration exists to load the host, not to be
 played.
@@ -59,8 +59,8 @@ the count in the join reply is the fix if a person ever plays one.
 ## Consequences
 
 **What it costs:** a second code path in `GameCore/Layout.h` that only stress runs exercise, which is the
-usual fate of test-only branches, so it gets a test; and arrays sized at run time where they were
-`std::array`, which is a `std::vector` and an assertion that `Begin` came first.
+usual fate of test-only branches, so it gets tests; and per-player arrays of 255 entries where they had
+five, which is a few kilobytes of state that a two-player match never touches.
 
 **What it forecloses:** nothing about the game. A stress run is not a match, and the switch that permits
 it is the line between the two.
