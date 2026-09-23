@@ -20,6 +20,8 @@
 #include "Sessions.h"
 #include "RingAssignment.h"
 #include "UniformGrid.h"
+#include "UnloadTarget.h"
+#include "MiningSystem.h"
 #include "StateHash.h"
 #include "Tick.h"
 

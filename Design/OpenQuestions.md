@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-five answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-seven answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS ELEVEN ENTRIES AND SEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47
-and Q50, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS THIRTEEN ENTRIES AND NINE OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
+Q50, Q51 and Q52, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -24,7 +24,7 @@ recommendation**, which none of Q26, Q33 and Q34 did before.
 because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
 M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
 that the figures have somewhere to be argued with later. **Q50 is the second**, found while writing M2.3
-and ruled before its code was.
+and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2.6 the same way.
 
 **Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
@@ -616,6 +616,46 @@ before that, the camera's opening recenter, had `2` compiled in.
   wrong and then redrawn, and at M3 a destroyed station changes the answer.
 
 **Recommendation: the byte.** It is the only option that is right on the first frame and stays right.
+
+### Q51 — How long does a miner unload, and how close must it be? — **ANSWERED**
+
+**50 ORE A SECOND, ONCE TOUCHING. The owner's answer, 2026-09-23**, on the recommendation below, before
+M2.6's code. Both figures are named and provisional, like Q26's: `MiningSystem.h`'s `UNLOAD_ORE_PER_SECOND`
+and `UnloadTarget.h`'s `UNLOAD_SLACK_UNITS`. They are also in `GameDesign.md` §4.
+
+**The gap.** `GameDesign.md` §4 names five states and "unloading" is one of them, but no figure gives it a
+duration or a reach. §7 says point defense protects "the unloading area", so how long a miner sits there is
+part of the raid arithmetic rather than a detail.
+
+- **50 ore a second, touching**: two seconds for a one-laser hold, once the hulls touch. Touching is a
+  center distance of at most the two sizes' halves (Q37) plus 20 units of slack, 160 for a `Scout` at the
+  station. It is a real dwell inside point defense's 400, and small next to a round trip.
+- **Instant**: one tick on arrival. Simplest, but the unloading state is one tick long and §7's protected
+  unloading area has nothing in it to protect.
+- **At the extraction rate**, 20 a second: symmetric, but it doubles the time at the station and cuts §4's
+  per-miner income by about a sixth.
+
+**Recommendation: 50 a second, touching.** **What it produces**, arithmetic on the design's figures at 20 Hz:
+1,000 thousandths of ore a tick extracted and 2,500 unloaded, so a hold takes 100 ticks to fill and 40 to
+empty. `MiningTests` pins a full cycle against a rock 2,000 units out at 794 ticks.
+
+### Q52 — How does a mine order name its asteroid? — **ANSWERED**
+
+**BY ITS INDEX IN THE GENERATED FIELD. The owner's answer, 2026-09-23**, on the recommendation below,
+before M2.6's code.
+
+**The gap.** A mine order targets a rock, and a rock is not a world entity before M3 (Q22), so there is no
+entity identity to put in the command.
+
+- **The field index**: the rock's position in `GenerateField`'s order, carried in `targetX` with `targetY`
+  zero. Both sides derive the same rows from the same seed and count (R23, Q50), so the index names the
+  same rock on both. The host refuses one past the field's size, and it is the natural key for M3's
+  per-asteroid ore.
+- **The tapped point**, with the host picking the nearest rock inside a tolerance. It needs no new identity
+  scheme, but a quantized point can land nearer the wrong rock in a dense cluster, and it adds a lookup and
+  a tolerance to validation.
+
+**Recommendation: the index.** It is exact, it is one bounds check, and it is what M3 needs anyway.
 
 ---
 

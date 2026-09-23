@@ -108,6 +108,8 @@
     <ClCompile Include="Host.cpp" />
     <ClCompile Include="RingAssignment.cpp" />
     <ClCompile Include="UniformGrid.cpp" />
+    <ClCompile Include="MiningSystem.cpp" />
+    <ClCompile Include="UnloadTarget.cpp" />
     <ClCompile Include="Sessions.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="Tick.cpp" />
@@ -124,6 +126,8 @@
     <ClInclude Include="Host.h" />
     <ClInclude Include="RingAssignment.h" />
     <ClInclude Include="UniformGrid.h" />
+    <ClInclude Include="MiningSystem.h" />
+    <ClInclude Include="UnloadTarget.h" />
     <ClInclude Include="Sessions.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="Tick.h" />

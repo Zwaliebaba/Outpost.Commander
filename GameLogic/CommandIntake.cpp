@@ -109,6 +109,12 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   const Neuron::Vec2 target =
     ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
 
+  // A ROCK THE FIELD HAS, before anything is acted on -- the same all-or-nothing rule as the identities.
+  if ((_command.type == CommandType::Mine) && (_command.TargetRock() >= _world.Field().size()))
+  {
+    return CommandRejection::NoSuchRock;
+  }
+
   if (_command.type == CommandType::MoveTo)
   {
     // **ONE RING SLOT EACH, RATHER THAN FIFTY SHIPS ON ONE POINT** (Q19, M1.7). The whole selection
@@ -121,6 +127,29 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
       resolved.push_back(ResolveWireIdentity(_world, wire));
     }
     static_cast<void>(OrderFleetTo(_world, resolved, target));
+
+    // **A MOVE ENDS A MINE ORDER AND KEEPS THE CARGO** (M2.6). The standing order is the one that does not
+    // complete, so it is the one another order has to end explicitly.
+    for (const EntityId id : resolved)
+    {
+      static_cast<void>(_world.StopMining(id));
+    }
+  }
+  else if (_command.type == CommandType::Mine)
+  {
+    // **ONLY WHAT CAN MINE TAKES THE ORDER** (`GameDesign.md` section 4): a design whose derived capacity is
+    // zero is skipped and keeps whatever it was doing. The command is still accepted -- M2.8's mixed
+    // selection sends the rest a separate move -- and the mining system does the travelling, so nothing
+    // moves here.
+    for (const WireIdentity wire : _command.selection)
+    {
+      const EntityId id = ResolveWireIdentity(_world, wire);
+      const Entity* entity = _world.Find(id);
+      if ((entity != nullptr) && (Derive(entity->design).oreCapacity > 0))
+      {
+        static_cast<void>(_world.OrderMine(id, _command.TargetRock()));
+      }
+    }
   }
   else
   {

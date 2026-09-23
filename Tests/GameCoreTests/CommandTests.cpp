@@ -119,6 +119,31 @@ public:
     Assert::AreEqual(sent.viewRadiusUnits, received.viewRadiusUnits);
   }
 
+  /// **A MINE ORDER NAMES A ROCK BY ITS FIELD INDEX** (M2.6, Q52), and the index survives the wire. A
+  /// negative `targetX` reads as a large unsigned index, which the host refuses as past the field.
+  TEST_METHOD(AMineOrderRoundTripsItsRockIndex)
+  {
+    Outpost::CommandPacket sent{};
+    sent.player = 1;
+    Outpost::Command mine{.sequence = 3, .type = Outpost::CommandType::Mine, .selection = {7}};
+    mine.AimAtRock(87);
+    sent.commands.push_back(mine);
+
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+    Assert::IsTrue(received.commands[0].type == Outpost::CommandType::Mine);
+    Assert::AreEqual(std::uint16_t{87}, received.commands[0].TargetRock());
+    Assert::IsTrue(Outpost::ActsOnSelection(Outpost::CommandType::Mine));
+
+    const Outpost::Command negative{.type = Outpost::CommandType::Mine, .targetX = -1};
+    Assert::AreEqual(std::uint16_t{65535}, negative.TargetRock());
+  }
+
   TEST_METHOD(AnEmptySelectionRoundTrips)
   {
     // Legal on the wire and refused at intake. The codec's job is to carry what was written.

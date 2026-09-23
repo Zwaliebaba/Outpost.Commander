@@ -29,7 +29,13 @@ constexpr std::array<HullEntry, 5> HULLS{{
   // MASS AND COST ARE ZERO AND THAT IS THE DESIGN'S DASH, not a gap: neither carries a drive, so
   // nothing divides by the mass, and neither is a row in a build menu this sums for -- a station is
   // placed by the generator and a module frame's cost is M2's (ADR-015).
-  {.id = HullId::Station, .slotCount = 2, .hullPoints = 8000, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 220},
+  {.id = HullId::Station,
+   .slotCount = 2,
+   .hullPoints = 8000,
+   .sizeClass = SizeClass::Heavy,
+   .hitValue = 300,
+   .sizeUnits = 220,
+   .acceptsOre = true},
   {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 84},
 }};
 

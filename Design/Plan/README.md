@@ -74,7 +74,9 @@ clusters of six, pinned for seed 20260922 — and copies it by exact quarter tur
 every player's field is the same field to the unit. The client derives it from the join, which since M2.3
 carries the player count as well as the seed (Q50, ADR-013 amended), and since M2.4 draws it as the five
 authored rock variants, baked per variant into five draws (ADR-005 amended). Nobody has looked at it yet.
-M2.5's uniform grid is built, with nothing calling it until M2.6's mining loop.
+M2.5's uniform grid is built, and **M2.6's mining loop is the first thing that queries it**: a mine order
+is a standing order across four phases, with an unload query over the grid. **It moved the determinism pin,
+deliberately, to `0xc8f7f00e056d4d46`**, and the four-pair run is owed again (ADR-002).
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
@@ -431,7 +433,8 @@ slow and why its findings are hard to see. Quiet it and it can run with `-Gate`,
 **The determinism test on all four pairs, at every milestone boundary. THE TEST EXISTS AND HAS RUN
 ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — **and running it
 again is the standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
-behind is not. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
+behind is not. **It is owed now**: M2.6 moved the pin to `0xc8f7f00e056d4d46` when the script began to mine,
+computed off Windows and not yet run on any MSVC pair. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
 property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
 invocations and four `vstest` runs comparing one state hash.
 

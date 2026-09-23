@@ -29,7 +29,8 @@ namespace Neuron
 ///
 /// **5 SINCE M2.3**, when the join reply gained the match's player count (ADR-013 amended): the field is
 /// derived from the seed AND the count, and a version-4 client reading a version-5 reply would take the
-/// count's byte as the first of its token.
+/// count's byte as the first of its token. **M2.6's `Mine` command type rides the same version**: neither
+/// change has left this branch, so one step covers both.
 inline constexpr std::uint8_t PROTOCOL_VERSION = 5;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.

@@ -31,6 +31,8 @@ enum class CommandRejection : std::uint8_t
   /// No player, or a selection that is empty when the type needs one -- or carries identities when
   /// the type does not (`GameCore/Command.h`).
   Empty,
+  /// A `Mine` naming a rock the field does not have (Q52).
+  NoSuchRock,
   /// A `Build` or `CancelBuild` the build system refused. **The reason is `BuildSystem`'s and stays
   /// there**: duplicating `BuildRejection` into this enumeration would be two lists to keep in step
   /// for a distinction only the build suite ever asserts.

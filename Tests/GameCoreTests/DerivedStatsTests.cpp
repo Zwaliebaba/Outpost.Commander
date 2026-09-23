@@ -180,6 +180,30 @@ public:
     Assert::AreEqual(0u, two.damagePerSecond);
   }
 
+  /// **THE MINING RANGE IS THE LONGEST TOOL'S, NOT A SUM** (M2.6), and only a tool that extracts has one:
+  /// two lasers still reach 200, and a mass driver's 600 is not a mining range.
+  TEST_METHOD(TheMiningRangeIsTheLongestMiningTool)
+  {
+    Assert::AreEqual(200u, Outpost::Derive(Outpost::DesignId::Miner).miningRangeUnits);
+    Assert::AreEqual(
+      200u,
+      Outpost::Derive(Outpost::HullId::Frigate, Outpost::DriveId::IonDrive, Fitted(Outpost::ComponentId::MiningLaser, 2)).miningRangeUnits);
+    Assert::AreEqual(0u, Outpost::Derive(Outpost::DesignId::Fighter).miningRangeUnits);
+    Assert::AreEqual(0u, Outpost::Derive(Outpost::DesignId::Station).miningRangeUnits);
+  }
+
+  /// **ONLY THE STATION ACCEPTS ORE**, because its hull row says so -- which is what makes a mining factory
+  /// later a row and not a branch (`GameDesign.md` section 4).
+  TEST_METHOD(OnlyTheStationAcceptsOre)
+  {
+    for (const Outpost::HullEntry& hull : Outpost::Hulls())
+    {
+      Assert::AreEqual(hull.id == Outpost::HullId::Station, hull.acceptsOre);
+    }
+    Assert::IsTrue(Outpost::Derive(Outpost::DesignId::Station).acceptsOre);
+    Assert::IsFalse(Outpost::Derive(Outpost::DesignId::Miner).acceptsOre);
+  }
+
   /// `GameDesign.md` section 6's relations, asserted rather than left to a reader comparing rows.
   TEST_METHOD(TheBurnDriveIsMoreThrustForMoreMassAndMoreCost)
   {

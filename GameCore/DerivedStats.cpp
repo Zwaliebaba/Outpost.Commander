@@ -12,6 +12,7 @@ DerivedStats Derive(HullId _hull, DriveId _drive, const std::array<ComponentId, 
 
   DerivedStats stats;
   stats.hullPoints = hull.hullPoints;
+  stats.acceptsOre = hull.acceptsOre;
 
   // MASS IS THE HULL PLUS ITS CONTENTS, and the drive is contents like anything else. `None`
   // contributes zero, which is what makes this a sum rather than a branch on whether there is one.
@@ -31,6 +32,10 @@ DerivedStats Derive(HullId _hull, DriveId _drive, const std::array<ComponentId, 
     stats.orePerSecond += component.orePerSecond;
     stats.oreCapacity += component.oreCapacity;
     stats.damagePerSecond += component.damagePerSecond;
+    if ((component.orePerSecond > 0) && (component.rangeUnits > stats.miningRangeUnits))
+    {
+      stats.miningRangeUnits = component.rangeUnits;
+    }
   }
 
   // ZERO BEFORE THE DIVISION AND NOT FROM IT. A hull with no drive has no speed; a mass of zero --

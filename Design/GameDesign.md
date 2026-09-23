@@ -179,7 +179,8 @@ a management burden the MVP accepts rather than solves.
 
 Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
 extracts at 20 per second, so the one-slot miner fills in five seconds; a round trip to the home field is
-roughly thirty seconds, which puts one miner at about 2.5 credits per second. **From M3, when asteroids
+roughly thirty seconds, which puts one miner at about 2.5 credits per second. **It unloads at 50 ore a second once its hull touches
+the station's**, two seconds a hold, which is a dwell inside the point defense's reach (Q51, provisional). **From M3, when asteroids
 become finite, a home field holds enough for a long opening and not for a match** — before M3 it holds
 everything, because there is nothing to exhaust.
 

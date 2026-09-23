@@ -31,13 +31,20 @@ enum class CommandType : std::uint8_t
   Build = 3,
 
   /// Cancel what is building, at a full refund (Q35). No target and no selection.
-  CancelBuild = 4
+  CancelBuild = 4,
+
+  /// **The selected miners mine an asteroid, and keep mining until told otherwise** (M2.6, `GameDesign.md`
+  /// section 4) -- the one standing order. The target is the rock's **index in `GenerateField`'s order**,
+  /// in `targetX`, with `targetY` zero (`OpenQuestions.md` Q52): asteroids are not world entities before
+  /// M3, and both sides derive the same list from the same seed and count, so an index names the same
+  /// rock on both.
+  Mine = 5
 };
 
 [[nodiscard]] constexpr bool IsKnown(CommandType _type) noexcept
 {
   return (_type == CommandType::MoveTo) || (_type == CommandType::Attack) || (_type == CommandType::Build) ||
-         (_type == CommandType::CancelBuild);
+         (_type == CommandType::CancelBuild) || (_type == CommandType::Mine);
 }
 
 /// True for the types that act on a selection. **The two that do not are the station's**, and the
@@ -45,7 +52,7 @@ enum class CommandType : std::uint8_t
 /// for a move and required for a build.
 [[nodiscard]] constexpr bool ActsOnSelection(CommandType _type) noexcept
 {
-  return (_type == CommandType::MoveTo) || (_type == CommandType::Attack);
+  return (_type == CommandType::MoveTo) || (_type == CommandType::Attack) || (_type == CommandType::Mine);
 }
 
 /// An order, as `TechnicalDesign.md` section 4 upstream describes it: a type, a target point or
@@ -101,6 +108,20 @@ struct Command
   {
     targetX = static_cast<std::int16_t>(IndexOf(_identity));
     targetY = static_cast<std::int16_t>(GenerationOf(_identity));
+  }
+
+  /// The rock a `Mine` names, as an index into the generated field. **Unsigned**, so a negative `targetX`
+  /// reads as a large index the host refuses rather than as a small one it would accept.
+  [[nodiscard]] std::uint16_t TargetRock() const noexcept
+  {
+    return static_cast<std::uint16_t>(targetX);
+  }
+
+  /// The inverse.
+  void AimAtRock(std::uint16_t _rockIndex) noexcept
+  {
+    targetX = static_cast<std::int16_t>(_rockIndex);
+    targetY = 0;
   }
 
   /// The design a `Build` names. **The low byte only**, so a client that left rubbish in the high

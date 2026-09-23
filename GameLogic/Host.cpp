@@ -42,6 +42,11 @@ void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
   m_sessions.Begin(players, _matchSeed);
   m_accumulator.Begin();
 
+  // M2.6: THE FIELD, FROM THE SAME FUNCTION THE CLIENT CALLS (R23) -- the host's half, which until mining
+  // needed a rock to go to had nothing to do with it. Asteroids are not entities before M3 (Q22), so the
+  // rows sit beside the store and a mine order names one by index (Q52).
+  m_world.SetField(GenerateField(_matchSeed, players));
+
   // M1.5: the stations, from `GameCore`'s generator -- the same function the client runs to draw the
   // same field (R23). A station needs no code of its own here because it is a row in the design
   // table (ADR-006), so this is `World::Create` like anything else.
@@ -222,6 +227,10 @@ void Host::RunOneTick()
 {
   DrainAndApply();
   Tick(m_world);
+
+  // M2.6: MINING, AFTER MOVEMENT AND BEFORE BUILD QUEUES (`TechnicalDesign.md` section 2). Its deliveries are
+  // M2.7's to turn into credits.
+  m_mining.Advance(m_world);
 
   // AFTER THE MOVEMENT, so a ship that appears this tick does not also move on it -- which would
   // put it somewhere no update ever said it started from.

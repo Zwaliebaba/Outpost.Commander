@@ -261,6 +261,12 @@ carry a per-player sequence number and are **repeated in every outgoing packet u
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
 
+**A mine order names its rock by index** (M2.6, `OpenQuestions.md` Q52): `Mine` is command type 5, carrying
+the rock's position in `GenerateField`'s order in `targetX`. Asteroids are not entities before M3 (Q22), and
+both sides derive the same rows from the join's seed and count (R23). The host refuses an index past the
+field. Ships in the selection that cannot mine are skipped, not refused. **The command's layout does not
+change**: eight bytes and three per identity, like every other.
+
 **The widths are measured, and M0.10's encoder is where they became facts; ADR-024 moved two of them.**
 The packet header is **twelve bytes** -- the transport's four (`NeuronCore/PacketHeader.h`), the player
 identity, the command count, and **the client's view center (4) and view radius (2)**, which is what the

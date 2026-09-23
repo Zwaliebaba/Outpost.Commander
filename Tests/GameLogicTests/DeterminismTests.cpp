@@ -20,6 +20,10 @@ constexpr std::uint32_t TICKS = 2400;
 /// completion path.
 constexpr std::uint32_t REPLACEMENT_TICK = 910;
 
+/// **THE TICK THE MINERS ARE ORDERED ELSEWHERE** (M2.6), so abandoning the loop mid-cycle, cargo aboard, is
+/// inside the hash -- and the mine orders after it pick the cycle back up.
+constexpr std::uint32_t ABANDON_TICK = 1500;
+
 [[nodiscard]] std::int16_t WirePoint(std::int32_t _units) noexcept
 {
   return Outpost::QuantizePosition(_units * Neuron::FIXED_ONE);
@@ -65,6 +69,40 @@ constexpr std::uint32_t REPLACEMENT_TICK = 910;
   return out;
 }
 
+/// A player's ships of one design, in slot order -- the fleet split the script orders separately since
+/// M2.6, because a move order ends a mine order and a script that moved the miners every fifty ticks would
+/// never let one finish a cycle.
+[[nodiscard]] std::vector<Outpost::WireIdentity> OwnedOf(const Outpost::World& _world, Outpost::PlayerId _player, Outpost::DesignId _design,
+                                                         bool _onlyIdleMiners)
+{
+  std::vector<Outpost::WireIdentity> out;
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (!_world.IsSlotAlive(slot))
+    {
+      continue;
+    }
+    const Outpost::Entity& entity = _world.EntityInSlot(slot);
+    if ((entity.owner != _player) || (entity.design != _design))
+    {
+      continue;
+    }
+    if (_onlyIdleMiners && (_world.MineInSlot(slot).phase != Outpost::MiningPhase::None))
+    {
+      continue;
+    }
+    out.push_back(Outpost::PackIdentity(entity.id.index, entity.id.generation));
+  }
+  return out;
+}
+
+[[nodiscard]] Outpost::Command MineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::vector<Outpost::WireIdentity> _selection)
+{
+  Outpost::Command command{.sequence = _sequence, .type = Outpost::CommandType::Mine, .selection = std::move(_selection)};
+  command.AimAtRock(_rock);
+  return command;
+}
+
 /// What one run produced, so the assertions below share one script rather than two copies of it.
 struct MatchResult
 {
@@ -72,6 +110,7 @@ struct MatchResult
   std::size_t alive = 0;
   std::uint32_t creditsOfPlayerOne = 0;
   std::size_t shipsOfPlayerOne = 0;
+  std::uint64_t deliveredMilliOre = 0;
 };
 
 /// **THE WHOLE MATCH, AS A FUNCTION.** A seed in, a state hash out. Everything the tick touches is
@@ -81,11 +120,22 @@ struct MatchResult
 /// whenever their station is idle, move everything they own every fifty ticks, and one of them replaces
 /// an item mid-build. That reaches entity creation, ring assignment over a growing fleet, arrival,
 /// re-ordering a fleet that is already moving, and Q35's refund.
+///
+/// **SINCE M2.6 THE MINERS MINE.** Every fifty ticks, offset from the fleet's moves, each player's idle
+/// miners are sent to one of their ten home rocks -- a different one each time, so the unload query runs
+/// from many places -- and the fighters alone take the fleet moves. At `ABANDON_TICK` everything is moved,
+/// miners included. That reaches the whole five-state loop, the unload query, abandonment with cargo aboard
+/// and a standing order picked back up.
 [[nodiscard]] MatchResult RunScriptedMatch()
 {
   Outpost::World world;
   Outpost::CommandIntake intake;
   Outpost::BuildSystem build;
+  Outpost::MiningSystem mining;
+  std::uint64_t deliveredMilliOre = 0;
+
+  world.SetField(Outpost::GenerateField(MATCH_SEED, PLAYERS));
+  const std::size_t regionRocks = world.Field().size() / Outpost::FieldCopyCount(PLAYERS);
 
   for (const Outpost::Placement& placed : Outpost::GenerateLayout(MATCH_SEED, PLAYERS))
   {
@@ -125,11 +175,28 @@ struct MatchResult
       static_cast<void>(intake.Apply(world, build, 1, BuildOrder(++sequence, Outpost::DesignId::Fighter)));
     }
 
+    if ((tick % 50) == 25)
+    {
+      for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
+      {
+        std::vector<Outpost::WireIdentity> idle = OwnedOf(world, player, Outpost::DesignId::Miner, true);
+        if (!idle.empty())
+        {
+          // Player k's home field is copy k - 1 of the region (M2.2), and its first ten rows are the home
+          // field (M2.1).
+          const std::size_t rock =
+            (static_cast<std::size_t>(player - 1) * regionRocks) + ((tick / 50) % Outpost::HOME_FIELD_ASTEROID_COUNT);
+          static_cast<void>(intake.Apply(world, build, player, MineCommand(++sequence, static_cast<std::uint16_t>(rock), std::move(idle))));
+        }
+      }
+    }
+
     if ((tick % 50) == 0)
     {
       for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
       {
-        std::vector<Outpost::WireIdentity> selection = OwnedShips(world, player);
+        std::vector<Outpost::WireIdentity> selection =
+          (tick == ABANDON_TICK) ? OwnedShips(world, player) : OwnedOf(world, player, Outpost::DesignId::Fighter, false);
         if (!selection.empty())
         {
           const std::int32_t sign = (player == 1) ? 1 : -1;
@@ -139,13 +206,19 @@ struct MatchResult
     }
 
     Outpost::Tick(world);
+    mining.Advance(world);
+    for (const Outpost::OreDelivery& delivery : mining.Deliveries())
+    {
+      deliveredMilliOre += delivery.milliOre;
+    }
     build.Advance(world);
   }
 
   return MatchResult{.hash = Outpost::StateHash(world),
                      .alive = world.AliveCount(),
                      .creditsOfPlayerOne = build.Credits(1),
-                     .shipsOfPlayerOne = OwnedShips(world, 1).size()};
+                     .shipsOfPlayerOne = OwnedShips(world, 1).size(),
+                     .deliveredMilliOre = deliveredMilliOre};
 }
 } // namespace
 
@@ -165,10 +238,14 @@ public:
   /// **A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION.** If this literal starts
   /// disagreeing without anybody editing the script above it, the tick has stopped being deterministic.
   ///
-  /// Verified identical on Debug and Release, x64 and ARM64, on 2026-09-22.
+  /// **MOVED DELIBERATELY AT M2.6**, from `0x37f846ed90b74ca1` -- verified identical on Debug and Release, x64
+  /// and ARM64, on 2026-09-22 -- because the script now mines. The new value was computed off Windows, under
+  /// g++ and clang at two optimization levels, which agreed; **it is owed on the four MSVC pairs**, and until
+  /// that run it is a pin and not yet ADR-002's measurement. The old value still reproduces with the M2.6 code
+  /// in place and the old script, which says the loop moved nothing that does not mine.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x37f846ed90b74ca1ull, RunScriptedMatch().hash);
+    Assert::AreEqual(0xc8f7f00e056d4d46ull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static
@@ -190,6 +267,10 @@ public:
     Assert::IsTrue(result.alive > 2, L"nothing was ever built");
     Assert::IsTrue(result.shipsOfPlayerOne >= 7, L"the fleet is too small to have outgrown the first ring");
     Assert::IsTrue(result.creditsOfPlayerOne < Outpost::STARTING_CREDITS, L"nothing was ever spent");
+
+    // M2.6: WHOLE HOLDS, AND MANY OF THEM. A script whose miners never finished a cycle would hash stably
+    // and pin nothing about the loop.
+    Assert::IsTrue(result.deliveredMilliOre >= 20u * 100u * Outpost::MILLI_ORE_PER_ORE, L"the miners barely mined");
   }
 };
 

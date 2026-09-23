@@ -286,6 +286,55 @@ it was carrying**; a two-slot design with two mining lasers is pinned at twice t
 rate, which is the derivation being exercised rather than asserted; and the loop is pinned by the
 determinism test's scripted orders, not only by its own.
 
+**BUILT, 2026-09-23, AFTER TWO REGISTER QUESTIONS.** The design gave unloading neither a duration nor a
+reach, and a mine order had no way to name a rock, because a rock is not an entity. **Q51**: the owner ruled
+50 ore a second, once the hulls touch plus 20 units of slack. **Q52**: the rock's index in the generated
+field. Both were ruled before the code.
+
+**Where it lives.** A `MineOrder` sits on each `World` slot beside its `MoveOrder`, so creating or
+destroying a slot clears it, and `CommandIntake::Apply` keeps its signature. **The cargo is on the order and
+outlives it**: `StopMining` ends the phase and keeps the load. `World` also holds the field now, which
+`Host::BeginMatch` sets from `GenerateField`. That is R23's host half, and it is what lets the intake refuse
+an index past the field. Cargo is counted in thousandths of ore, so a laser's 20 a second is 1,000 a tick
+and unloading's 50 is 2,500. In whole ore the unload would be 2.5 a tick.
+
+**The loop.** `GameLogic/MiningSystem` runs after movement, as TechnicalDesign §2 orders it, in index
+order, and rebuilds M2.5's grid first. Phase changes happen **inside the same pass**: a miner extracts on the
+tick it arrives, leaves on the tick it fills, and heads back on the tick it empties. So every leg lasts
+exactly its figure. **The one exception is a fresh order**, which starts moving a tick after it is given,
+because mining runs after movement. `GameLogic/UnloadTarget` is the "nearest owned thing that accepts ore"
+query, with ties broken on identity through `UniformGrid::Nearest`. "Accepts ore" is `acceptsOre` on the hull
+row, carried into `DerivedStats`, and only the `Station` sets it. The mining range is derived too: the longest
+reach among the tools that extract, not a sum. **A move ends a mine order and keeps the cargo.** A `Mine`
+command skips any ship whose derived capacity is zero and still accepts. With nowhere to unload, a miner
+waits full where it is.
+
+**Pinned.** `MiningTests` covers:
+- a full cycle against a rock 2,000 units out: 328 ticks out, 100 extracting, 328 back, 40 unloading, 794 a
+  cycle, then the next cycle with no further order;
+- a hold filling to exactly full from part-way;
+- abandonment keeping 50 ore, and a second order filling in the 50 ticks left;
+- a full hold going straight to unload;
+- the unload query ignoring a nearer station of another player, and breaking a tie on identity;
+- a miner with nowhere to unload waiting until a station exists;
+- the intake refusing a rock past the field or a foreign miner, and skipping a fighter.
+
+The two-laser derivation was already pinned at M1.2 (`MiningSumsOverTheSlots`). `DerivedStatsTests` adds the
+mining range and `acceptsOre`, and `CommandTests` the rock index round trip.
+
+**The determinism script now mines.** Idle miners are sent to a home rock every fifty ticks, fighters alone
+take the fleet moves, and at tick 1,500 everything is moved, miners included. It delivers 37 holds. **The
+pin moved, deliberately, from `0x37f846ed90b74ca1` to `0xc8f7f00e056d4d46`.** The new value was computed off
+Windows, under g++ and clang at two optimization levels, which agreed. The old value still reproduces with
+this code and the old script. **The four-pair MSVC run is owed**, and M1.14c's own check of the old hash has
+to be run at M1.14c's commit.
+
+**Not here, and whose it is.** Credits from deliveries: `MiningSystem::Deliveries()` produces them and M2.7
+turns them into credits, so the script's flat grant of 15 a second stays until then. The client's mine
+order is M2.8. A mining laser drawn to a rock lifted off the plane (M2.4) is a presentation question for
+when the laser is drawn. **Compiled and run under g++ with a stand-in for the test framework, not under
+MSVC.**
+
 ### M2.7 — Credits, and the readout · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** `GameDesign.md` §4; `OpenQuestions.md` Q36; ADR-003's per-player block; `Interface.md` §6.

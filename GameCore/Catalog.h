@@ -124,6 +124,12 @@ struct HullEntry
   /// `Station`'s 220, and M4 authors a mesh to this number rather than the other way round.
   std::uint16_t sizeUnits = 0;
 
+  /// **WHETHER A MINER MAY UNLOAD HERE** (M2.6, `GameDesign.md` section 4): "the nearest thing you own that
+  /// accepts ore". A property of the hull and not of a type, so the station accepts it because its row
+  /// says so -- and a mining factory at a contested field later is a hull with this set, not a branch in
+  /// the mining loop. Only the `Station` sets it today.
+  bool acceptsOre = false;
+
   [[nodiscard]] friend constexpr bool operator==(const HullEntry&, const HullEntry&) noexcept = default;
 };
 
