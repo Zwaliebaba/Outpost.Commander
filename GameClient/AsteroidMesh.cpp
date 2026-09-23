@@ -132,6 +132,21 @@ HullVertex PlaceRockVertex(const HullVertex& _vertex, const Placement& _rock, co
   return out;
 }
 
+std::vector<RockPickPoint> RockPickPoints(std::span<const Placement> _rocks, std::span<const RockLook> _looks)
+{
+  std::vector<RockPickPoint> points;
+  const std::size_t count = std::min(_rocks.size(), _looks.size());
+  points.reserve(count);
+  for (std::size_t index = 0; index < count; ++index)
+  {
+    points.push_back(RockPickPoint{.worldX = static_cast<float>(_rocks[index].position.x) / static_cast<float>(Neuron::FIXED_ONE),
+                                   .worldY = static_cast<float>(_rocks[index].position.y) / static_cast<float>(Neuron::FIXED_ONE),
+                                   .liftUnits = static_cast<float>(_looks[index].liftUnits),
+                                   .rock = static_cast<std::uint16_t>(index)});
+  }
+  return points;
+}
+
 bool BuildVariantField(const HullMesh& _variantMesh, std::uint8_t _variant, std::span<const Placement> _rocks,
                        std::span<const RockLook> _looks, HullMesh& _outMesh)
 {

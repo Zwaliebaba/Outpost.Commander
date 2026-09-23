@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HitTest.h"
 #include "HullMesh.h"
 
 #include "GameCore.h"
@@ -108,6 +109,10 @@ struct RockLook
 /// and lift. **The normal turns and is not scaled**: a rotation keeps it unit, and a uniform scale does not
 /// change its direction. Neither changes a triangle's winding, so the indices copy as they are.
 [[nodiscard]] HullVertex PlaceRockVertex(const HullVertex& _vertex, const Placement& _rock, const RockLook& _look) noexcept;
+
+/// **WHERE EACH ROCK IS DRAWN, FOR THE TAP** (M2.8): its plane position and its lift, in field order. The lift
+/// is the same six-draw look the bake uses, so a tap aims where the rock is on screen.
+[[nodiscard]] std::vector<RockPickPoint> RockPickPoints(std::span<const Placement> _rocks, std::span<const RockLook> _looks);
 
 /// **ONE VARIANT'S ROCKS AS ONE MESH**: every rock whose look chose _variant, placed and appended, with its
 /// indices offset. False when the result would pass the 16-bit index limit -- 173 rocks of one variant,

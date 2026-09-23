@@ -78,7 +78,9 @@ M2.5's uniform grid is built, and **M2.6's mining loop is the first thing that q
 is a standing order across four phases, with an unload query over the grid. **It moved the determinism pin,
 deliberately, to `0xc8f7f00e056d4d46`**, and the four-pair run is owed again (ADR-002). **M2.7 makes the
 loop pay**: credits come from what is unloaded, cargo reaches the selection panel as chips, and income shows
-only as the change flash (Q36, Q53). The pin moved again, to `0x18e094912655348f`.
+only as the change flash (Q36, Q53). The pin moved again, to `0x18e094912655348f`. **M2.8 lets a player
+ask for it**: a tap on a rock, aimed where the rock is drawn, sends the miners in the selection to mine it
+and the rest to it, in one packet. That leaves M2.9 onward, the modules, and the three gates.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

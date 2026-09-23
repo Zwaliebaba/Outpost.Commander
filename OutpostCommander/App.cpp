@@ -358,6 +358,9 @@ void RunProbe(const CoreWindow& _window)
   std::uint64_t bakedFieldSeed = 0;
   std::size_t bakedFieldPlayers = 0;
 
+  // M2.8: where each rock is drawn, for the tap to aim at -- set with the bake, from the same looks.
+  std::vector<Outpost::RockPickPoint> rockPicks;
+
   // M1.9b: THE SKY (ADR-019). Stars and nothing else: they upload once and are then drawn LAST with
   // the depth test on so they shade no pixel the fleet already covers.
   //
@@ -855,7 +858,7 @@ void RunProbe(const CoreWindow& _window)
                                             .aspectRatio = tapAspect,
                                             .player = clientFrame.Player()};
 
-      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known);
+      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known, rockPicks);
 
       // **THE FIRST TAP HAS ALREADY ACTED; THE SECOND ONLY UPGRADES IT** (ADR-017). Nothing is
       // deferred waiting to see whether a second tap arrives, so no tap in this game got slower.
@@ -882,6 +885,57 @@ void RunProbe(const CoreWindow& _window)
         buildPanelOpen = false;
         lastTapIdentity = picked.target;
         Report(log, "SELECT " + std::to_string(picked.target) + ", " + std::to_string(selection.Count()) + " selected");
+        continue;
+      }
+
+      // === M2.8: A TAP ON AN ASTEROID. ============================================================
+      //
+      // **THE ONE ROW OF THE TABLE THAT SPLITS A SELECTION** (`Interface.md` section 4): the miners take a
+      // standing mine order and the rest move to the rock, from one gesture, as two commands in one packet.
+      // Which is which is `SplitForMine`'s, in `GameClient`, where a suite pins it (R20).
+      if (picked.verb == Outpost::OrderVerb::Mine)
+      {
+        if (!clientFrame.CurrentJoin().IsJoined())
+        {
+          Report(log, "TAP ignored -- not seated yet");
+          continue;
+        }
+
+        const Outpost::MineSplit split = Outpost::SplitForMine(selection.Identities(), known);
+        Outpost::CommandPacket packet{.sequence = 0, .player = clientFrame.Player(), .commands = {}};
+        if (!split.miners.empty())
+        {
+          packet.commands.push_back(Outpost::BuildMineCommand(clientFrame.TakeCommandSequence(), picked.rock, split.miners));
+        }
+        if (!split.others.empty())
+        {
+          packet.commands.push_back(
+            Outpost::BuildMoveCommand(clientFrame.TakeCommandSequence(), picked.worldX, picked.worldY, split.others));
+        }
+        if (packet.commands.empty())
+        {
+          continue;
+        }
+        packet.sequence = packet.commands.front().sequence;
+        clientFrame.StampView(packet);
+
+        std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+        Neuron::ByteWriter commandWriter{outgoing};
+        const bool sent = Outpost::Encode(packet, commandWriter) &&
+                          transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+
+        // ONE MARKER PER COMMAND, at the rock's place on the plane, each cleared by its own acknowledgment.
+        for (const Outpost::Command& command : packet.commands)
+        {
+          Outpost::OrderMarker marker;
+          marker.targetX = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(picked.worldX * static_cast<float>(Neuron::FIXED_ONE)));
+          marker.targetY = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(picked.worldY * static_cast<float>(Neuron::FIXED_ONE)));
+          marker.commandSequence = command.sequence;
+          marker.selection = command.selection;
+          clientFrame.Markers().Add(marker);
+        }
+        Report(log, "MINE rock " + std::to_string(picked.rock) + ": " + std::to_string(split.miners.size()) + " mining, " +
+                      std::to_string(split.others.size()) + " moving" + (sent ? "" : " NOT SENT"));
         continue;
       }
 
@@ -1022,6 +1076,7 @@ void RunProbe(const CoreWindow& _window)
                                                  : 0.0f;
       }
       const std::vector<Outpost::RockLook> looks = Outpost::RockLooks(field.MatchSeed(), field.Rocks(), radii);
+      rockPicks = Outpost::RockPickPoints(field.Rocks(), looks);
 
       std::size_t rocksDrawn = 0;
       for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)

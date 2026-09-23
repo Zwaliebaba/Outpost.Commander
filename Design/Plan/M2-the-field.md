@@ -402,6 +402,31 @@ intent and is worth a test of its own because it is the only row that splits a s
 gesture; and the host's validation accepts both, which means M0.10's validation is exercised by a case it
 has not seen.
 
+**BUILT, 2026-09-23.** **Rocks are hit-test candidates at their drawn centers.** `RockPickPoint` carries a
+rock's plane position, the lift M2.4 drew it at, and its field index. `WorldToScreen` generalizes
+`PlaneToScreen` to project a point off the plane. `App.cpp` computes the points when it bakes the field.
+They sit at the asteroid tier, below own ships, own structures and hostiles, so a ship over a rock takes
+the tap. **An unowned record is no longer a candidate**: `TierOf` put one in the asteroid tier, from before
+rocks existed, where it would now have been ordered to mine rock zero. `TheTierOrderBeatsDistance` uses a
+real rock for its asteroid instead.
+
+**The split.** `Selection::Tap` returns `Mine` with the rock's index and its plane position.
+`SplitForMine` separates the selection by derived capacity, the same test the host applies. An identity the
+update no longer carries goes with the movers, for the host to judge. `App.cpp` sends a `Mine` command for
+the miners and a `MoveTo` to the rock for the rest, **as two commands in one packet**, with one order marker
+each.
+
+**Pinned:**
+- `HitTestTests`' new `TheTapOnAnAsteroid`: the mixed tap end to end at a rock lifted 240 units, an unknown
+  identity going with the movers, a ship over a rock winning, no verb with nothing selected, no unowned
+  record as a candidate, and pick points following the field and its looks.
+- `MiningTests`' `ASplitOrderFromOneTapIsAcceptedWhole`: the host accepts both commands from one packet,
+  the miner takes the standing order, the fighter heads for the rock, and the acknowledgment reaches the
+  second command.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC; nobody has tapped a
+rock on the device.**
+
 ---
 
 ### M2.9 — The module frame and its catalog · `GameCore` · `GameCoreTests` · agent

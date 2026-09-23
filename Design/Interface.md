@@ -206,6 +206,11 @@ hit empty space, and the fleet you had selected flies there. With something sele
 
 A tap on empty space with **nothing** selected does nothing.
 
+**A rock is picked where it is drawn** (M2.8): at its center, including the height the client drew it at,
+up to 240 units off the plane (ADR-005). A tap aims at what is on screen. The order still names the rock by
+its field index, and the ships that cannot mine are sent to its place on the plane, since the simulation has
+no height (R22).
+
 ### Selecting more than one
 
 **A double tap on one of your ships selects it and then every ship of the same design within a circle

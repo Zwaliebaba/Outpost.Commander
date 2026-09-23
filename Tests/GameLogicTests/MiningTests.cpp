@@ -319,6 +319,31 @@ public:
     Assert::IsTrue(scene.world.FindMine(fighter)->phase == Outpost::MiningPhase::None);
   }
 
+  /// **M2.8's PACKET, AS THE HOST SEES IT**: one tap on a rock with a mixed selection arrives as a mine order for
+  /// the miner and a move to the rock for the fighter, in one packet -- and validation accepts both, which is
+  /// intake exercised by a case it had not seen before M2.8.
+  TEST_METHOD(ASplitOrderFromOneTapIsAcceptedWhole)
+  {
+    Scene scene;
+    const Outpost::EntityId fighter = scene.world.Create(At(300, 300), 0, Outpost::DesignId::Fighter, MINE);
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    Outpost::CommandPacket packet{.sequence = 1, .player = MINE, .commands = {}};
+    packet.commands.push_back(MineCommand(1, 0, {Wire(scene.miner)}));
+    Outpost::Command move{.sequence = 2, .type = Outpost::CommandType::MoveTo, .selection = {Wire(fighter)}};
+    move.targetX = Outpost::QuantizePosition(At(2000, 0).x);
+    move.targetY = Outpost::QuantizePosition(At(2000, 0).y);
+    packet.commands.push_back(move);
+
+    Assert::AreEqual(std::size_t{2}, intake.ApplyPacket(scene.world, build, packet));
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::ToOre);
+    Assert::IsTrue(scene.world.FindOrder(fighter)->active, L"the fighter was not sent to the rock");
+    Assert::IsTrue(scene.world.FindMine(fighter)->phase == Outpost::MiningPhase::None);
+    Assert::AreEqual(std::uint16_t{2}, intake.LastAppliedSequence(MINE));
+  }
+
   /// Somebody else's miner is refused the way any foreign identity is.
   TEST_METHOD(AForeignMinerIsRefused)
   {
