@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-four answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-five answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS TEN ENTRIES AND SIX OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46 and Q47,
-all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS ELEVEN ENTRIES AND SEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47
+and Q50, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -23,7 +23,8 @@ recommendation**, which none of Q26, Q33 and Q34 did before.
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
 because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
 M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
-that the figures have somewhere to be argued with later.
+that the figures have somewhere to be argued with later. **Q50 is the second**, found while writing M2.3
+and ruled before its code was.
 
 **Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
@@ -592,6 +593,29 @@ which is roughly the sweep-to-refresh ratio at which 1,000 entities in view stil
 at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
+
+### Q50 — How does a client learn the player count its field is derived from? — **ANSWERED**
+
+**A BYTE ON THE JOIN REPLY. The owner's answer, 2026-09-23**, on the recommendation below, asked and ruled
+before M2.3's code was written. Recorded in
+[`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)'s amendment and in R23.
+
+**The gap.** R23 reads as though the seed is the generator's one input, and ADR-013 sends the seed and
+nothing else about the match. **M2.1 and M2.2 made the count a second input**: `GameDesign.md` §3 copies a
+half at two players and a quarter at four, so one seed is two maps. Nothing else on the wire carries the
+count, because since ADR-024 an update carries only its recipient's block. It went unnoticed until M2.3
+because nothing on the client called the generator until then. The one client that needed the count
+before that, the camera's opening recenter, had `2` compiled in.
+
+- **A byte on `JoinReply`**: 22 bytes to 23, protocol version 4 to 5, and ADR-013 amended. It rides the
+  one record that already exists to carry what a snapshot cannot, and a rejoin gets it again for free.
+- **A count-free field**: always a quarter copied four ways. Nothing on the wire moves, but §3's half at
+  two players goes, M2.1's table is repinned, and two home fields on a two-player map belong to nobody.
+- **Inferred from the replica store**, from the station owners it has heard of. Nothing on the wire
+  moves, but ADR-024's records arrive in priority order over several ticks, so the field could be drawn
+  wrong and then redrawn, and at M3 a destroyed station changes the answer.
+
+**Recommendation: the byte.** It is the only option that is right on the first frame and stays right.
 
 ---
 

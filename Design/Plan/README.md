@@ -68,10 +68,11 @@ and whether two can run visibly side by side is the half still open. A failed so
 the client either: it is reopened, and a lost link always gets a fresh one. Both gates are still open
 and both are a hand's.
 
-**M2 HAS STARTED, ALONGSIDE THOSE TWO GATES.** Its opening gate, Q26, is answered, and M2.1 and M2.2 are
+**M2 HAS STARTED, ALONGSIDE THOSE TWO GATES.** Its opening gate, Q26, is answered, and M2.1 to M2.3 are
 built. The generator places one player's region from the seed — a ten-rock home field and two contested
 clusters of six, pinned for seed 20260922 — and copies it by exact quarter turns to the player count, so
-every player's field is the same field to the unit. Nothing draws it yet, which is M2.3.
+every player's field is the same field to the unit. The client derives it from the join, which since M2.3
+carries the player count as well as the seed (Q50, ADR-013 amended). Nothing draws it yet, which is M2.4.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

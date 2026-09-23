@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <cstdint>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -117,6 +118,34 @@ public:
     const Outpost::Host host;
     Assert::AreEqual(std::size_t{2}, host.PlayerCount());
     Assert::AreEqual(std::size_t{2}, host.CurrentWorld().AliveCount());
+  }
+
+  /// **NO ASTEROID IS IN THE WORLD, SO NONE CAN REACH THE WIRE** (M2.3, R23, Q22). An update carries
+  /// records of world entities and nothing else (ADR-024), so a match that begins with a station per
+  /// player and not one entity more sends no map -- and nothing in the world sits where a rock does. M3's
+  /// finite ore is where this is expected to change, and it fails here when it does.
+  TEST_METHOD(AMatchBeginsWithNoAsteroidInTheWorld)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      Outpost::Host host;
+      host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, players);
+      Assert::AreEqual(players, host.CurrentWorld().AliveCount(), L"something besides the stations was created");
+
+      const std::vector<Outpost::Placement> field = Outpost::GenerateField(Outpost::DEFAULT_MATCH_SEED, players);
+      for (std::size_t slot = 0; slot < host.CurrentWorld().SlotCount(); ++slot)
+      {
+        if (!host.CurrentWorld().IsSlotAlive(slot))
+        {
+          continue;
+        }
+        const Neuron::Vec2 position = host.CurrentWorld().EntityInSlot(slot).position;
+        for (const Outpost::Placement& rock : field)
+        {
+          Assert::IsFalse(position == rock.position, L"an entity sits on a rock");
+        }
+      }
+    }
   }
 
   TEST_METHOD(TheTickPeriodIsTheDesigns)

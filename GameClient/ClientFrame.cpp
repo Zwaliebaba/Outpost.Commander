@@ -67,6 +67,11 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
       // OR, NOT ASSIGN. The host answers every retry, so several replies can land in one drain and
       // only the one that moved the token has anything to persist.
       result.tokenChanged = m_join.Accept(reply) || result.tokenChanged;
+
+      // R23: THE FIELD FOLLOWS THE JOIN, AND ONLY THE JOIN. A refusal zeroes the count and clears it; a
+      // repeat of the same seat is the same pair and costs nothing. A late refusal to a seated client is
+      // ignored by `Accept`, so it leaves the pair -- and the field -- where they were.
+      static_cast<void>(m_field.Derive(m_join.MatchSeed(), m_join.PlayerCount()));
       continue;
     }
 

@@ -577,13 +577,17 @@ void RunProbe(const CoreWindow& _window)
       // the same recenter a hold performs (ADR-018), done once, at the moment there is an answer.
       if (join.IsJoined())
       {
-        const Neuron::Vec2 home = Outpost::StartAnchor(2, join.Player());
+        // THE HOST'S COUNT, FROM THE REPLY (M2.3). This read 2 until the join carried one, which put a
+        // four-player match's second player on the far side of the map from their station.
+        const Neuron::Vec2 home = Outpost::StartAnchor(join.PlayerCount(), join.Player());
         clientFrame.Camera() = Outpost::Recenter(
           clientFrame.Camera(), Outpost::RecenterRequest{.stationX = static_cast<float>(home.x) / static_cast<float>(Neuron::FIXED_ONE),
                                                          .stationY = static_cast<float>(home.y) / static_cast<float>(Neuron::FIXED_ONE)});
       }
       Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
-                    " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " seed=" + std::to_string(join.MatchSeed()));
+                    " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " of " + std::to_string(join.PlayerCount()) +
+                    " seed=" + std::to_string(join.MatchSeed()) + " field=" + std::to_string(clientFrame.Field().Rocks().size()) +
+                    " rocks");
 
       // **THE SEED HAS JUST ARRIVED, SO THIS IS THE FIRST MOMENT THE SKY EXISTS** (R23, ADR-019).
       // Generated once and never updated: the field takes no time input at all, so the upload below
@@ -670,7 +674,7 @@ void RunProbe(const CoreWindow& _window)
           // **A HOLD ON EMPTY SPACE RECENTERS** (ADR-018). Nothing is selectable yet -- M1.10 is
           // selection -- so it goes to this player's station, which is the half of it
           // `GameDesign.md` section 7 actually names.
-          const Neuron::Vec2 station = Outpost::StartAnchor(2, clientFrame.Player());
+          const Neuron::Vec2 station = Outpost::StartAnchor(clientFrame.CurrentJoin().PlayerCount(), clientFrame.Player());
           clientFrame.Camera() =
             Outpost::Recenter(clientFrame.Camera(),
                               Outpost::RecenterRequest{.stationX = static_cast<float>(station.x) / static_cast<float>(Neuron::FIXED_ONE),

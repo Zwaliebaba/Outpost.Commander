@@ -298,7 +298,7 @@ losing a tracer takes three losses in a row.
 
 **A client learns which player it is from a join, and nothing else on the wire tells it.** The client
 sends a `Join` carrying the session token it was issued last time, or zero; the host answers with the slot
-it assigned, a session token to keep, and **the match seed**, which R23 makes the one thing a client cannot
+it assigned, a session token to keep, and **the match seed and player count**, which R23 makes the two things a client cannot
 derive for itself. The host assigns the slot -- there is no lobby to choose in (`GameDesign.md` §2) -- and a
 join with no slot free is refused with a reason rather than dropped. This is [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), and until it
 existed a client was told which player it was by a compiled-in constant.

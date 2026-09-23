@@ -12,6 +12,7 @@
     <ClCompile Include="HitTestTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="JoinStateTests.cpp" />
+    <ClCompile Include="FieldViewTests.cpp" />
     <ClCompile Include="HudLayoutTests.cpp" />
     <ClCompile Include="BotPolicyTests.cpp" />
     <ClCompile Include="ChurnScheduleTests.cpp" />

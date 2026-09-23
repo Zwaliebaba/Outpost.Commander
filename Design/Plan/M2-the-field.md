@@ -134,6 +134,30 @@ asteroids have no simulation state, so there is nothing to send.
 the outputs are identical — **the one test that can catch an R23 violation before it presents as rocks in
 the wrong place**; and a `grep` finds no asteroid position anywhere on the wire.
 
+**BUILT, 2026-09-23, AND IT FOUND A GAP FIRST.** The field is derived from the seed **and the player
+count**: M2.2 copies a half at two players and a quarter at four. The join reply carried only the seed, and
+nothing else on the wire carries the count. **`OpenQuestions.md` Q50** records the gap, and the owner
+ruled for a byte on `JoinReply`: 22 bytes to 23, `PROTOCOL_VERSION` 4 to 5,
+[`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md) amended, and R23 now names both inputs.
+`Sessions::Admit` sends the configured count, not how many have joined, and zero on a refusal.
+`JoinState` keeps it.
+
+`GameClient/FieldView` holds the derived rows. `ClientFrame` owns one and rederives it after each join
+reply is folded in: once on a seat, as a no-op on a repeat or a rejoin into the same match, and cleared
+by a refusal. **So the Bot derives the field too**, which M2.6's miners will want. `App.cpp`'s two
+`StartAnchor(2, …)` calls, the opening recenter and the hold recenter, now use the count from the join,
+and the seat log names the field's size.
+
+**"The host's and the client's entry points" had to be read, because the host does not generate the
+field.** The host's side, since M2.1, does not generate asteroids at all. So the host's entry point is
+the pair it sends and the client's is the pair it decodes. `SessionsTests` pins that every seat carries
+the configured count and seed. `FieldViewTests` encodes the reply, drains it through `ClientFrame`, and
+compares every row with `GenerateField` at counts 1, 2, 3, 4 and 8 and at the seed's extremes. **It cannot
+catch x64 disagreeing with ARM64**, which is still the standing four-pair run. **For the grep**,
+`HostTests` asserts that a match begins with one entity per station and nothing at any rock's position.
+An update carries only world entities (ADR-024), so no rock reaches the wire. `grep -rn GenerateField
+GameLogic` finds nothing.
+
 ### M2.4 — The asteroid variants · `GameClient` · hand · agent
 
 **Read first:** [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md), whose *Consequences* name this step's

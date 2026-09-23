@@ -25,6 +25,7 @@
 #include "Selection.h"
 #include "SkyLook.h"
 #include "JoinState.h"
+#include "FieldView.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"
 #include "TapOrder.h"

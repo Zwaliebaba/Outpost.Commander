@@ -34,6 +34,39 @@ public:
     Assert::IsTrue(reply.token != Outpost::NO_SESSION_TOKEN, L"zero is what a client sends to say it has none");
   }
 
+  /// **THE HOST'S HALF OF R23** (M2.3): every seat carries the seed and the CONFIGURED count -- not how
+  /// many have joined -- so the first client of a four-player match derives the four-player field. A
+  /// rejoin carries the same pair and a refusal carries neither.
+  TEST_METHOD(EverySeatCarriesTheConfiguredCountAndARefusalDoesNot)
+  {
+    for (const std::size_t players : {std::size_t{1}, std::size_t{2}, std::size_t{4}, std::size_t{8}})
+    {
+      Outpost::Sessions sessions;
+      sessions.Begin(players, SEED);
+
+      Outpost::JoinReply first{};
+      for (std::size_t client = 0; client < players; ++client)
+      {
+        const Outpost::JoinReply reply = sessions.Admit(Outpost::Join{}, At(1, static_cast<std::uint16_t>(100 + client)));
+        Assert::IsTrue(reply.result == Outpost::JoinResult::Accepted);
+        Assert::AreEqual(players, static_cast<std::size_t>(reply.playerCount));
+        Assert::AreEqual(SEED, reply.matchSeed);
+        if (client == 0)
+        {
+          first = reply;
+        }
+      }
+
+      const Outpost::JoinReply back = sessions.Admit(Outpost::Join{.token = first.token}, At(2, 200));
+      Assert::IsTrue(back.result == Outpost::JoinResult::Rejoined);
+      Assert::AreEqual(players, static_cast<std::size_t>(back.playerCount));
+
+      const Outpost::JoinReply refused = sessions.Admit(Outpost::Join{}, At(9, 999));
+      Assert::IsTrue(refused.result == Outpost::JoinResult::MatchFull);
+      Assert::AreEqual(0, static_cast<int>(refused.playerCount));
+    }
+  }
+
   /// **THE HOST ASSIGNS AND THE CLIENT DOES NOT CHOOSE** (ADR-013), lowest slot first -- so a solo
   /// client is always player one and a suite does not have to care about arrival order.
   TEST_METHOD(SlotsAreHandedOutLowestFirst)
