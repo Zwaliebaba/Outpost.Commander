@@ -198,6 +198,11 @@ A design is selected, it is added to the queue, credits are deducted when the it
 appears at the station's spawn point when the item finishes. There is no rally point in the MVP; new
 ships sit where they appear.
 
+**Building goes at a rate of 20 credits of cost a second** (`OpenQuestions.md` Q47), so build time is a
+design's cost over the rate and falls out of the composition the way mass and speed do: a Miner in 7.5
+seconds, a Fighter in 15. The shipyard (§6) multiplies the rate. It sits just above the income a running
+economy earns, so building is very slightly faster than earning and the multiplier has something to do.
+
 **A station is a hull with slots, like everything else**, and it carries two `PointDefense` mounts. It
 has no drive, which is the only thing that distinguishes it from a ship — §6's model allows a hull without
 one, and giving the station hull a drive later is how a mothership arrives.

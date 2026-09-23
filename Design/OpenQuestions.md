@@ -8,16 +8,16 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-two answered, six open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-four answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS TEN ENTRIES AND FOUR OF THEM ARE ANSWERED** — Q26, Q35, Q37 and Q46, all in
-full — kept in place with their reasoning rather than flattened into a table row, because what each
-was weighing is worth more than the row would be. Their headings say so. **The six that are genuinely
-open are Q33, Q34, Q36, Q47, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
+**THE *OPEN* SECTION HOLDS TEN ENTRIES AND SIX OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46 and Q47,
+all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
+open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
@@ -235,7 +235,15 @@ exactly what `GameDesign.md` §4 asks of a home field once M3 makes asteroids fi
 **What is required either way** is that the generator *names* both rather than leaving them implicit in
 code.
 
-### Q33 — Which side do the panels belong on? — **needed by M1**
+### Q33 — Which side do the panels belong on? — **ANSWERED**
+
+**A SETTING, RIGHT-HANDED BY DEFAULT. The owner's answer, 2026-09-23**, on the recommendation below: the
+build panel sits under the right hand and the selection panel opposite it, and left-handed is the mirror
+`Scripts/CheckHudGeometry.py` already gates. **What is not built is the control that flips it**: there is no
+settings surface in the interface yet, so until one is designed the value is `LEFT_HANDED` in
+`OutpostCommander/App.cpp`, false. **What stays open is not this row's**: whether the occlusion model behind
+`Interface.md` §1 is right at all is M1.16's to confirm by playing.
+
 
 Asked in the sixth round and not answered there. **The posture assumption underneath it was wrong**: a
 Surface Pro 11 is 287 × 208 mm and 895 g, so it is used on a kickstand with index fingers rather than held
@@ -426,7 +434,14 @@ compares them** rather than a reader trusting both.
 
 ---
 
-### Q47 — How fast does a station build? — **needed by M1.6, and M1.6 is built to the recommendation**
+### Q47 — How fast does a station build? — **ANSWERED**
+
+**A RATE, AT 20 CREDITS OF COST A SECOND. The owner's answer, 2026-09-23**, on the recommendation below, which
+M1.6 was already built to (`BuildSystem::BUILD_RATE_CREDITS_PER_SECOND`). The figure is now in
+`GameDesign.md` §5, so the paragraph below that says it is not is the history of why this row was out of
+order, not its state. **What would reopen it** is M3's or M4's playtesting finding the first minute wrong,
+which is a constant.
+
 
 **THE DESIGN STATES NO BUILD TIME ANYWHERE.** `GameCore/DerivedStats.h` said so in as many words from
 M1.2: [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) names build time alongside cost and mass as a

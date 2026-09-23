@@ -567,7 +567,8 @@ this step was first written against — a Surface Pro is used on a kickstand wit
 held at its sides — so the binding constraint is **occlusion** rather than reach: a reaching hand covers
 its target and a wedge of screen around it. That is why the selection panel sits opposite the build panel;
 it is the readout the player reads while their hand is on the glass. **Which side each takes is
-`OpenQuestions.md` Q33, open and settled at M1 by playing**, so this step cannot hard-code a side.
+`OpenQuestions.md` Q33**, open when this step was written, so it could not hard-code a side. *(Answered
+2026-09-23: a setting, right-handed by default.)*
 
 **Files:** `GameClient/Panels.h` `.cpp`, `GameClient/HudLayout.h` `.cpp`, `GameClient/PanelHitTest.h`
 `.cpp`; `GameClient.vcxproj` + `.filters`; `Tests/GameClientTests/HudLayoutTests.cpp`;
@@ -817,7 +818,8 @@ that expectation holds when switching between the two. Second, whether two *snap
 visible, both keep running. The client asks for fullscreen at launch, so the second needs the window
 to leave fullscreen first.
 
-**The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
+**THE OWNER CHOSE THE ROUTE, 2026-09-23: two snapped, visible windows on the unlocked Surface Pro, and a
+second machine only if that fails.** **The register still owes the answer**, and it is the owner's. It is either "one machine is enough to
 test with, one player at a time" or "a second machine".
 
 **Done when:** the question is answered on the register, and two clients on one host are playing — on
