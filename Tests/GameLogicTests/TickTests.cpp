@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -281,6 +282,12 @@ bool OrderAsMiner(Outpost::World& _world, Outpost::EntityId _id, const Neuron::V
          (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Miner).hull).sizeUnits) / 2);
 }
 
+/// Q53's keep-out between two Miners: half one plus half the other.
+[[nodiscard]] std::int64_t ShipKeepOutUnits() noexcept
+{
+  return static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Miner).hull).sizeUnits);
+}
+
 [[nodiscard]] std::int64_t DistanceSquaredUnits(const Neuron::Vec2& _a, const Neuron::Vec2& _b) noexcept
 {
   const std::int64_t x = Neuron::FixedToWholeUnitsFloor(_a.x - _b.x);
@@ -289,7 +296,8 @@ bool OrderAsMiner(Outpost::World& _world, Outpost::EntityId _id, const Neuron::V
 }
 } // namespace
 
-/// M1.17: `OpenQuestions.md` Q51, a ship turns while it flies, and Q52, it routes around structures.
+/// M1.17: `OpenQuestions.md` Q51, a ship turns while it flies; Q52, it routes around structures; and
+/// Q53, it routes around other ships too.
 TEST_CLASS(Steering)
 {
 public:
@@ -410,22 +418,92 @@ public:
     Assert::IsTrue(world.Find(ship)->position == InUnits(40, 10));
   }
 
-  TEST_METHOD(ShipsStillPassThroughEachOther)
+  TEST_METHOD(TwoShipsMeetingHeadOnPassEachOther)
   {
-    // Q52 routes around structures and nothing else: GameDesign.md section 7 keeps ships free of
-    // separation, so two Miners crossing head on each fly straight.
+    // Q53: what the M1.16 device check saw, two ships flying through each other. Both keep right, and
+    // neither enters the other's keep-out on the way past.
     Outpost::World world;
-    const Outpost::EntityId east = world.Create(InUnits(-500, 0), 0, Outpost::DesignId::Miner);
-    const Outpost::EntityId west = world.Create(InUnits(500, 0), 32768, Outpost::DesignId::Miner);
-    Assert::IsTrue(OrderAsMiner(world, east, InUnits(500, 0)));
-    Assert::IsTrue(OrderAsMiner(world, west, InUnits(-500, 0)));
+    const Outpost::EntityId east = world.Create(InUnits(-1000, 0), 0, Outpost::DesignId::Miner);
+    const Outpost::EntityId west = world.Create(InUnits(1000, 0), 32768, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, east, InUnits(1000, 0)));
+    Assert::IsTrue(OrderAsMiner(world, west, InUnits(-1000, 0)));
+
+    const std::int64_t keepOut = ShipKeepOutUnits();
+    for (int tick = 0; tick < 800; ++tick)
+    {
+      Outpost::Tick(world);
+      Assert::IsTrue(DistanceSquaredUnits(world.Find(east)->position, world.Find(west)->position) >= (keepOut * keepOut),
+                     L"two ships met head on and flew through each other");
+    }
+    Assert::IsTrue(world.Find(east)->position == InUnits(1000, 0));
+    Assert::IsTrue(world.Find(west)->position == InUnits(-1000, 0));
+  }
+
+  TEST_METHOD(AShipRoutesAroundAParkedShip)
+  {
+    Outpost::World world;
+    const Outpost::EntityId parked = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
+    const Outpost::EntityId ship = world.Create(InUnits(-1000, 0), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, ship, InUnits(1000, 0)));
+
+    const std::int64_t keepOut = ShipKeepOutUnits();
+    for (int tick = 0; tick < 800; ++tick)
+    {
+      Outpost::Tick(world);
+      Assert::IsTrue(DistanceSquaredUnits(world.Find(ship)->position, world.Find(parked)->position) >= (keepOut * keepOut),
+                     L"a ship flew through a parked one");
+    }
+    Assert::IsTrue(world.Find(ship)->position == InUnits(1000, 0));
+    Assert::IsTrue(world.Find(parked)->position == InUnits(0, 0), L"the parked ship was moved");
+  }
+
+  TEST_METHOD(ShipsFlyingTheSameWayDoNotSwerve)
+  {
+    // Q53's first exception: two abreast, one hull apart as the ring places them, flying the same way.
+    // Without it each would swerve around the other all the way there.
+    Outpost::World world;
+    const Outpost::EntityId left = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
+    const Outpost::EntityId right = world.Create(InUnits(10, 60), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, left, InUnits(1500, 0)));
+    Assert::IsTrue(OrderAsMiner(world, right, InUnits(1510, 60)));
 
     for (int tick = 0; tick < 400; ++tick)
     {
       Outpost::Tick(world);
-      Assert::AreEqual(Neuron::Fixed{0}, world.Find(east)->position.y, L"a ship swerved around another ship");
+      Assert::AreEqual(Neuron::Fixed{0}, world.Find(left)->position.y, L"a ship swerved around its own stream");
     }
-    Assert::IsTrue(world.Find(east)->position == InUnits(500, 0));
+    Assert::IsTrue(world.Find(left)->position == InUnits(1500, 0));
+    Assert::IsTrue(world.Find(right)->position == InUnits(1510, 60));
+  }
+
+  TEST_METHOD(AFleetOrderedToOnePointFillsItsRingWithoutJamming)
+  {
+    // Q53's second exception is what lets this hold: the inner slots are reached through the ships
+    // already parked around them. Twelve Miners, the first two rings and five of the third.
+    Outpost::World world;
+    std::vector<Outpost::EntityId> fleet;
+    for (std::int32_t index = 0; index < 12; ++index)
+    {
+      fleet.push_back(world.Create(InUnits(-1500 + ((index % 4) * 70), (index / 4) * 70), 0, Outpost::DesignId::Miner));
+    }
+    Assert::AreEqual(fleet.size(), Outpost::OrderFleetTo(world, fleet, InUnits(1500, 0)));
+
+    std::vector<Neuron::Vec2> slots;
+    for (const Outpost::EntityId id : fleet)
+    {
+      slots.push_back(world.FindOrder(id)->destination);
+    }
+
+    for (int tick = 0; tick < 1600; ++tick)
+    {
+      Outpost::Tick(world);
+    }
+
+    for (std::size_t index = 0; index < fleet.size(); ++index)
+    {
+      Assert::IsFalse(world.FindOrder(fleet[index])->active, L"a ship never reached its ring slot");
+      Assert::IsTrue(world.Find(fleet[index])->position == slots[index]);
+    }
   }
 };
 

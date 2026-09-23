@@ -100,8 +100,9 @@ fact about four builds on one machine, which is what this measurement was ever a
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
 it on 2026-09-23 (`OpenQuestions.md` Q50). ARM64 here is compiled on, and runs natively on, the Surface Pro.
 
-**THE HASH MOVED ONCE, DELIBERATELY, 2026-09-23, to `0xc8b1069f59fa3f85`**, when M1.17 made ships turn
-as they fly and route around structures (Q51, Q52). The same script, now with steering in the tick,
+**THE HASH MOVED DELIBERATELY ON 2026-09-23, TWICE, AND IS NOW `0x3a759511ba284377`.** M1.17 first
+made ships turn as they fly and route around structures (Q51, Q52), which gave `0xc8b1069f59fa3f85`, and
+then made them route around each other too (Q53). The same script, now with steering in the tick,
 hashed to that value on Debug and Release, x64 and ARM64, before the literal was changed. That is the
 test doing its job: a change that moves the hash is deliberate, and it is re-pinned from four
 agreeing builds, never from one.

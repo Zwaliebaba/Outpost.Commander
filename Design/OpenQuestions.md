@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-seven answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-eight answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS THIRTEEN ENTRIES AND NINE OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
-Q50, Q51 and Q52, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS FOURTEEN ENTRIES AND TEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
+Q50, Q51, Q52 and Q53, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -86,7 +86,7 @@ because they were simply wrong.**
 
 | | Question | Answer | Recorded in |
 |---|---|---|---|
-| **Q19** | How do fifty ships occupy one point? | **A ring slot per ship, assigned at order time, ordered by entity identity.** No separation force and no flocking — those are floating-point-shaped problems in an integer simulation, and a formation system later is this same assignment with a different slot layout. The cost is *induced by* [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md): in a volume ships miss each other in the third dimension, on a plane they stack. It was named once and owned by nobody. | `GameDesign.md` §7, `TechnicalDesign.md` §1, §8 |
+| **Q19** | How do fifty ships occupy one point? | **A ring slot per ship, assigned at order time, ordered by entity identity.** No separation force and no flocking — those are floating-point-shaped problems in an integer simulation, and a formation system later is this same assignment with a different slot layout. **The ring stands; "no separation" was reversed on 2026-09-23 by Q53**, which has every ship steer around every other. The cost is *induced by* [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md): in a volume ships miss each other in the third dimension, on a plane they stack. It was named once and owned by nobody. | `GameDesign.md` §7, `TechnicalDesign.md` §1, §8 |
 | **Q20** | What does the client draw between a tap and confirmation? | **A destination marker and a line, drawn the instant the gesture resolves and cleared when the host acknowledges that sequence.** Pure presentation: R19 forbids the client simulating, not the client drawing what it asked for. Without it there are 152 ms of nothing on a device that has no cursor. | `Interface.md` §4, `TechnicalDesign.md` §6 |
 | **Q21** | Does the build queue have a wire record? | **There is no queue — the snapshot carries the item currently building and its progress, two bytes per player.** `Interface.md` had specified a cancellable queue that no wire record could feed; the MVP cuts the queue rather than inventing a format for it. | `Interface.md` §6, `TechnicalDesign.md` §4 |
 | **Q22** | Is asteroid ore replicated, and at what cost? | **Not at all before M3**, since inexhaustible asteroids have no simulation state and the client derives their positions from the seed. From M3, sparsely: only asteroids whose quantized ore bucket changed, at most one per active miner. The budget had excluded a thing R23 said must be replicated. | `GameDesign.md` §4, `TechnicalDesign.md` §4 |
@@ -626,6 +626,9 @@ asked for the same reason as Q51: the M1.16 session watched a Miner fly through 
 - **Keep passing through**, recorded as deliberate.
 - **Decide at M2**, when asteroids are a second kind of obstacle.
 
+**Q53 widened this the same day to other ships**, with the rules it needed; what follows is the structure
+half, and it is unchanged apart from Q53's 400-unit look-ahead.
+
 **Built to this, which is the recommendation under the answer.** A **structure** is anything with no drive:
 a station or a module, anyone's. Its keep-out circle is **half its size plus half the ship's**, both
 from Q37's `sizeUnits`, so no figure is new. Each tick a moving ship takes the nearest structure its
@@ -634,6 +637,49 @@ straight line crosses, ties broken on identity, and steers for the tangent on th
 built in front of its station can leave it, and an order onto a station arrives. No waypoint is stored:
 the route is recomputed every tick from the world, so there is nothing new to keep in step. **Asteroids
 are not in it yet**. When M2 draws them, whether they are obstacles is the question to ask.
+
+### Q53 — Do ships avoid each other? — **ANSWERED**
+
+**YES, EVERY SHIP AVOIDS EVERY OTHER SHIP. The owner's answer, 2026-09-23, and it reverses half of Q19.**
+Q19 ruled out separation between ships, and M1.17 built Q52 to that. On the device the owner then
+watched two ships fly through each other and chose full avoidance over two cheaper options:
+
+- **Avoid parked ships only.** Moving ships would still overlap briefly mid-flight.
+- **Full avoidance** — the owner's choice. Every ship steers around every other ship, moving or not.
+- **Keep passing through**, and record it as deliberate.
+
+**What stays from Q19 is the ring.** Ships ordered to one point still get distinct slots, ordered by
+identity. What goes is "no separation": a ship now steers around another ship the way Q52 steers it
+around a structure, by the tangent past it, recomputed every tick and stored nowhere.
+
+**Built to these rules, which are the recommendation under the answer.** Each one exists because the
+plain version jams or weaves:
+
+1. **Every other ship is an obstacle**, anyone's, parked or moving. Its keep-out is half its size plus
+   half the mover's, from Q37's `sizeUnits`, the same as Q52.
+2. **Except a ship flying the same way.** A moving ship whose heading is within an eighth of a turn of
+   the mover's is in the same stream, and is not avoided. Without this, a fleet flying in formation
+   swerves around itself, because the ring puts neighbors exactly one hull apart.
+3. **The final approach is clear.** Within two steering radii of its own destination, a ship ignores
+   other ships and flies straight in. Without this, a ship bound for an inner ring slot could never get
+   past the ships already parked around it. The cost is that it overlaps a neighbor briefly at the end.
+4. **Only what is within 400 world units is considered**, structures included, found through
+   `TechnicalDesign.md` §2's uniform grid of 512-unit cells. Four hundred is well past the 45-unit
+   turning radius (Q51) and the widest steering circle, so a ship still starts its swerve in time. The
+   grid is what keeps a 128-player stress run from checking every pair.
+5. **Head on, both pass on the right**, which is Q52's fixed rule for an obstacle dead on the line.
+
+**Positions are read as they were at the start of the tick**, so which ship moves first in index order
+never changes what the other one sees. The nearest obstacle along the line wins, and the lower entity
+index breaks a tie.
+
+**What it costs, measured 2026-09-23** with ADR-022's harness on the Surface Pro, `Release|ARM64`, the
+host's whole CPU over 60 seconds: **17.8 ms a tick at 128 seats, against 11.2 before Q53**, and still
+no tick abandoned. At two seats it is 0.36 ms, which is lost in the noise. So avoidance is about a third
+of what the host now spends at the stress ceiling, and the grid is why it is not most of it.
+
+**What would reopen it** is a formation or a battle that jams anyway. That is M3's to find, when fleets
+first meet on purpose.
 
 ### Q50 — Is a second machine part of how this game is tested? — **ANSWERED**
 

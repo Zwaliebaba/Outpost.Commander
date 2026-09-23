@@ -798,7 +798,7 @@ measurement, and M1.16 is the session that takes them.
 
 ### M1.17 — Ships turn, and route around structures · `NeuronCore`, `GameCore`, `GameLogic` · three suites · agent
 
-**Read first:** `OpenQuestions.md` Q51 and Q52 in full, both answered by the owner on 2026-09-23;
+**Read first:** `OpenQuestions.md` Q51, Q52 and Q53 in full, all answered by the owner on 2026-09-23;
 `GameDesign.md` §6 and §7; ADR-002; `.claude/skills/determinism-audit/`, because this rewrites the tick's
 only system. **It was found by M1.16's hand session**, which is why it is numbered after the steps it
 follows and sits outside the gates it was found by.
@@ -823,6 +823,13 @@ steers for a tangent past the nearest structure its line crosses (Q52).
   it. **The determinism hash moves, deliberately**, and is re-pinned from all four pairs agreeing.
   `CheckDeterminism.py`, including `--review`, is clean.
 - **What needs the device:** a ship visibly turns as it goes, and goes around its station.
+
+**THE DEVICE LOOKED, 2026-09-23: turning and the station detour both work, and two ships still flew
+through each other.** That was Q19 as built, and the owner reversed it: Q53, every ship avoids every
+other, with the three exceptions that keep a fleet from jamming. Q53 was built in this same step, on a
+grid, and it moved the hash a second time, to `0x3a759511ba284377`, again the same on all four pairs
+before it was pinned. The suite adds a head-on meeting, a parked ship in the way, a stream that must not
+swerve, and a fleet of twelve that fills its ring without jamming.
 
 **BUILT 2026-09-23, ALL FOUR PAIRS, NOT YET LOOKED AT.** `BearingOf` in `NeuronCore` is a binary
 search of the sine table's first octant, pinned exact at the cardinals and diagonals and within one

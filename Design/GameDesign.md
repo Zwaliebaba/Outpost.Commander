@@ -358,13 +358,13 @@ sent to one coordinate stack; in a volume they would have missed each other in t
 this is a cost the plane induces ([`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md)) and it was
 previously named once and owned by nobody. The order assigns each selected ship a **slot on a ring around
 the destination**, ordered by entity identity so the assignment is deterministic, with the ring sized to
-the selection. No continuous separation force and no flocking: those are floating-point-shaped problems in
-an integer simulation, and a formation system later is this same assignment with a different slot layout.
+the selection. A formation system later is this same assignment with a different slot layout.
 
-**A ship does not fly through a structure.** Ships still pass through each other, as above. But a
-station or a module whose keep-out circle lies across a ship's line gets steered around, on the side
-the ship is already on, and the route is recomputed every tick rather than stored
-(`OpenQuestions.md` Q52).
+**A ship does not fly through anything solid.** A station, a module or another ship whose keep-out
+circle lies across a ship's line gets steered around, on the side the ship is already on, and the route
+is recomputed every tick rather than stored (`OpenQuestions.md` Q52, Q53). Three exceptions keep a
+fleet from jamming. A ship flying the same way is part of the same stream. A ship on its final approach
+flies straight into its slot. And only what is within 400 units counts.
 
 **A module is a target like anything else.** Its hit value quarters what reaches it, so one fighter needs
 about two minutes to kill a module and three need forty seconds. That is deliberate — a module is a raid

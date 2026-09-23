@@ -167,11 +167,11 @@ public:
   ///
   /// Verified identical on Debug and Release, x64 and ARM64, on 2026-09-22. **MOVED DELIBERATELY ON
   /// 2026-09-23** from `0x37f846ed90b74ca1`, by M1.17: ships now turn as they fly and route around
-  /// structures (`OpenQuestions.md` Q51, Q52). The new value was the same on all four pairs before it
-  /// was pinned.
+  /// structures and each other (`OpenQuestions.md` Q51, Q52, Q53). Each value was the same on all four
+  /// pairs before it was pinned, and it was pinned twice that day, once per question answered.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xc8b1069f59fa3f85ull, RunScriptedMatch().hash);
+    Assert::AreEqual(0x3a759511ba284377ull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

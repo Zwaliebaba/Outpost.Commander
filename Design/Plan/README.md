@@ -93,8 +93,8 @@ seated is refused instead of believed.
 **ADR-002's second owed measurement is closed.** M1.7's determinism test runs a two-minute scripted match
 from one seed and hashes to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. Until it
 ran, every claim in that record about bit-identical behavior was an argument. **M1.17 moved it
-deliberately on 2026-09-23 to `0xc8b1069f59fa3f85`**, the same on all four pairs, when ships began to
-turn and route around structures.
+deliberately on 2026-09-23 to `0x3a759511ba284377`**, the same on all four pairs, when ships began to
+turn and to route around structures and each other.
 
 **What is open is the geometry, and two measurements**:
 
@@ -438,7 +438,7 @@ slow and why its findings are hard to see. Quiet it and it can run with `-Gate`,
 
 **The determinism test on all four pairs, at every milestone boundary. THE TEST EXISTS AND HAS RUN
 ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — and again at M1.17,
-when it moved on purpose to `0xc8b1069f59fa3f85` and agreed on all four pairs. **Running it again is the
+when it moved on purpose to `0x3a759511ba284377` and agreed on all four pairs. **Running it again is the
 standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
 behind is not. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
 property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
