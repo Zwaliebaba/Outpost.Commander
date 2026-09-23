@@ -19,10 +19,12 @@ constexpr std::size_t REPLY_BYTES = Neuron::PacketHeader::SIZE_BYTES + Outpost::
 TEST_CLASS(TheJoinRecords)
 {
 public:
-  TEST_METHOD(AJoinIsFourteenBytesAndAReplyIsTwentyFour)
+  /// **TWELVE AND TWENTY-TWO SINCE ADR-024**, which took the two fragment fields out of the transport header
+  /// in front of them. The records themselves did not change.
+  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsTwentyTwo)
   {
-    Assert::AreEqual(static_cast<std::size_t>(14), JOIN_BYTES);
-    Assert::AreEqual(static_cast<std::size_t>(24), REPLY_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(12), JOIN_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(22), REPLY_BYTES);
   }
 
   TEST_METHOD(AJoinRoundTrips)

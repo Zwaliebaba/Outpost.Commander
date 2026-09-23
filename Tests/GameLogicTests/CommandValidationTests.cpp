@@ -187,7 +187,10 @@ public:
 
     Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, MINE, MoveTo(1, {}))));
     Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, Outpost::NO_PLAYER, MoveTo(1, {Wire(mine)}))));
-    Assert::AreEqual(Code(Outpost::CommandRejection::Empty), Code(intake.Apply(world, build, 99, MoveTo(1, {Wire(mine)}))));
+    // PAST WHAT A `PlayerId` CAN SEAT. It was 99 while the capacity was four; ADR-023 made 99 a player a
+    // stress run can have, so the one number that can never be seated is the one past the capacity.
+    Assert::AreEqual(Code(Outpost::CommandRejection::Empty),
+                     Code(intake.Apply(world, build, static_cast<Outpost::PlayerId>(Outpost::MAX_PLAYERS + 1), MoveTo(1, {Wire(mine)}))));
   }
 
   TEST_METHOD(AHalfValidSelectionAppliesNoneOfIt)

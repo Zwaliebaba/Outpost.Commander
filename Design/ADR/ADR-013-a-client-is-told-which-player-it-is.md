@@ -153,8 +153,9 @@ in silence.
 **No measurement. Both figures below are arithmetic on the record layouts above**, which is the whole of
 what this decision costs on the wire:
 
-- A `Join` is **14 bytes** — six of `Neuron::PacketHeader` and eight of token.
-- A `JoinReply` is **24 bytes** — six of header, then 1 + 1 + 8 + 8.
+- A `Join` is **12 bytes** — four of `Neuron::PacketHeader` and eight of token. It was 14 until ADR-024 took the
+  header's two fragment fields out.
+- A `JoinReply` is **22 bytes** — four of header, then 1 + 1 + 8 + 8. It was 24 for the same reason.
 
 Neither is in ADR-003's datagram budget and neither can affect it: both are sent outside the snapshot
 path, once per join rather than twenty times a second, and `Scripts/DatagramBudget.py` models the snapshot
