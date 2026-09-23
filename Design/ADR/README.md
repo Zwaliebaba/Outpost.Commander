@@ -25,10 +25,11 @@ this tree has taken no decisions before these.
 | [`ADR-019`](ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus seeded instanced stars, modeled on the real magnitude and color distributions and capped at 12% large-area luminance | Accepted | 2026-09-21 |
 | [`ADR-020`](ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Damage off screen shows as a directional indicator at the edge, derived from data the client already has and tappable to recenter | Accepted | 2026-09-21 |
 | [`ADR-021`](ADR-021-content-ships-with-the-package.md) | Content files ship with the package; the line R14 drew is against dependencies, and R16's is against simulation data becoming files | Accepted | 2026-09-22 |
-| [`ADR-022`](ADR-022-a-bot-is-a-headless-client.md) | A bot is an unpackaged C++/WinRT console client that reuses `GameClient` and `NeuronClient`, joins like a person and plays a rule-based policy; a fixture for exercising the protocol, not the AI of `GameDesign.md` §8 | Proposed | 2026-09-23 |
+| [`ADR-022`](ADR-022-a-bot-is-a-headless-client.md) | A bot is a headless client, and `Bot`, an unpackaged C++/WinRT console application, runs many of them from one process as players, churners and flooders to load the host. It reuses `GameClient` and `NeuronClient` and is not the AI of `GameDesign.md` §8 | Proposed | 2026-09-23 |
+| [`ADR-023`](ADR-023-ownership-is-a-group-and-the-player-count-is-configurable.md) | Ownership leaves the entity record: the snapshot groups records by owner, and each player block carries its group's count. The host's player count becomes configurable past four, for stress runs only | Proposed | 2026-09-23 |
 
 **Accepted** means the owner decided it. **Proposed** means the design takes it and the owner has not yet
-ruled; a proposed ADR is not something to write code against. **Twenty of the twenty-one are Accepted, and ADR-022 is Proposed** — ADR-002 to
+ruled; a proposed ADR is not something to write code against. **Twenty of the twenty-two are Accepted, and ADR-022 and ADR-023 are Proposed** — ADR-002 to
 ADR-005 were ruled on 2026-09-20 following an adversarial review, three of them with changes; ADR-012
 on 2026-09-21 with the compiler changed from the one the plan recommended; ADR-021 on 2026-09-22, which
 also settled that a conflicting record is updated in place through the MVP rather than superseded; and

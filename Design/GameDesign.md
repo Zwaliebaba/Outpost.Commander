@@ -94,6 +94,11 @@ arbitrary mid-match state. Suspend and resume are the same path (`Interface.md` 
 
 There is no pause and no save in the MVP. A host with no clients keeps simulating.
 
+**Four is the game's number and stays so.** A host started in a stress configuration may seat more
+([`ADR-023`](ADR/ADR-023-ownership-is-a-group-and-the-player-count-is-configurable.md), Proposed). That
+configuration exists to load the host, and it doesn't claim the fair starts or the balance this section
+is about.
+
 ---
 
 ## 3. The area
@@ -466,9 +471,11 @@ the match's pinned PRNG for anything random.
 
 Difficulty levels, personalities and anything resembling strategic planning are post-MVP.
 
-**A bot client is not this AI.** [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) (Proposed) adds a
-headless client that joins like a person and plays a rule-based policy from outside the host. It is a
-fixture for exercising the protocol, and nothing in this section waits on it or is replaced by it.
+**A bot client is not this AI.** [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) (Proposed) adds
+headless clients that join like people, run many to a process, and load the host from outside it. They are
+a stress harness, and nothing in this section waits on them or is replaced by them. **Whether this AI is
+written so that a bot can run the same code is [`OpenQuestions.md`](OpenQuestions.md) Q48**, and it has to
+be settled before M4.5 is written.
 
 ---
 

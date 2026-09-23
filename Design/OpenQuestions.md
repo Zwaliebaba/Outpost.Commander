@@ -8,16 +8,16 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-one answered, one half-answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-one answered, one half-answered, five open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS EIGHT ENTRIES AND HALF OF THEM ARE ANSWERED** — Q35, Q37 and Q46 in full, Q26
+**THE *OPEN* SECTION HOLDS NINE ENTRIES AND FOUR OF THEM ARE ANSWERED** — Q35, Q37 and Q46 in full, Q26
 in half — kept in place with their reasoning rather than flattened into a table row, because what each
-was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
-open are Q33, Q34, Q36 and Q47**, each with the milestone that settles it, and **every one carries a
+was weighing is worth more than the row would be. Their headings say so. **The five that are genuinely
+open are Q33, Q34, Q36, Q47 and Q48**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
@@ -513,6 +513,40 @@ are sums" and **no figure for it exists anywhere in the design**, nor any outcom
 there is no stated base build rate for the shipyard's ×1.5 to multiply. Inventing one here would be
 choosing a balance number nobody can check yet. **M1.6 is the step that first observes it** and is where
 it should be asked; M1.2's own exit criteria name cost and speed and not build time.
+
+### Q48 — Is the AI of §8 written so that a bot client can run it too? — **needed by M4.5, and decided before it is written**
+
+**The question.** `GameDesign.md` §8 puts the AI on the host, inside `GameLogic`, on the tick. Written the
+obvious way, it reads the host's `World`: exact positions, every entity's full state, everything the host
+knows. [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md)'s bot can never run code like that, because
+a client links no simulation (R19). So there would be two decision-makers that can't share a line: the
+stress harness's rule-based policy and the real AI. The owner asked whether the bot can simply reuse the
+game's bot logic. Today there is none to reuse, and whether there ever is depends on how M4.5 is written.
+
+**The options, and what each costs:**
+
+- **Host-only, as §8 reads now.** The AI takes the `World`. It is the simplest to write, has full
+  precision, and M4.5 needs nothing new. The bot keeps its own policy for good. §8's rule that the AI "is
+  not given information a human in its position would not have" is kept by discipline, and nothing checks it.
+- **Written against what a player sees, and living in `GameCore`.** The AI's input is a view built from
+  snapshot-shaped records: the entities a player is sent, at wire precision, plus that player's block. On
+  the host the view is built from the host's own encoded snapshot for that player. On a bot it is the
+  decoded snapshot. **One decision function then runs in both places**, and §8's no-cheating rule is kept
+  by construction, because the function has nothing else to read. It costs three things. The AI works at
+  wire precision (positions to a quarter unit, heading to 256 steps, hull as a percentage) even on the host.
+  It must obey R16 in full, because on the host it is simulation. And the view has to be cheap enough to
+  build each decision interval. M4.6's takeover of an abandoned slot comes nearly free, because the
+  function never assumed it had been running from the start.
+- **Shared policy primitives only.** Target choice, build choice and threat scoring are shared, and each
+  side builds its own loop. Less coupling than the second option and less reuse, and the no-cheating
+  property is back to discipline.
+
+**Recommendation: the second.** §8 already demands that the AI see only what a human would, and this is
+the only option where the code enforces it. It also makes M4.6's hardest clause, "an AI that can start
+from arbitrary mid-match state", a property of the input and not a thing to test for. Wire precision is
+enough for a player to play on, so it is enough for an AI that §8 deliberately keeps modest. **Settle it
+before M4.5 is written**, because retrofitting it means rewriting the AI's inputs. If it is taken,
+`BotPolicy` (ADR-022) is replaced by that function, not grown into it.
 
 ---
 

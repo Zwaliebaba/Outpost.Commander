@@ -1,117 +1,137 @@
-# ADR-022 — A bot is a headless client, and it is a fixture rather than an opponent
+# ADR-022 — A bot is a headless client, and one process runs many of them to load the host
 
 **Status:** Proposed
 **Date:** 2026-09-23
-**Owner:** the owner — placement, purpose and the policy's kind were chosen on 2026-09-23; the record's text has not been ruled on
+**Owner:** the owner. They chose the placement, the purpose (stress testing the host from one machine) and a rule-based policy on 2026-09-23. The record's text has not been ruled on.
 
 ## Context
 
-Every client in this tree is a person with a finger on a packaged application. That leaves three things
-nothing can do today:
+Every client in this tree is a person with a finger on a packaged application. **Nothing can load the
+host.** The join, the snapshot and the command are each pinned by a socket-free suite (M1.4). But no run
+puts many real clients on one host's wire at once. So there has been no measurement of what the host
+does under a full complement of seats, under join churn, or under traffic that is malformed or hostile.
+The owner's need is exactly that: **stress-test the server by running many clients from one location.**
 
-- **Fill a second seat without a second person.** M1.15 needs two clients on one host, and its one-machine
-  route runs into the fact that Windows suspends a packaged application that is not visible
-  (`Plan/M1-the-fleet.md` M1.15, `Plan/README.md` F5). That gate is about two people playing, so a bot does
-  not close it. What it does is make "a second client is connected and issuing orders" something a bot
-  can provide, so one person can check everything else about a two-client match.
-- **Exercise the protocol end to end with nobody watching.** Every property of the join, the snapshot and
-  the command is pinned by a socket-free suite (M1.4). Nothing puts a real host and a real client on the
-  same wire unattended: no soak test, no reconnect check across a real socket, and no run of four seats
-  when M4 opens them.
-- **Test the command path from outside the host.** `GameDesign.md` §8 says an AI "issues the same orders a
-  human does, through the same command path" and "is not given information a human in its position would
-  not have". The host-side AI of §8 meets that by discipline. A client meets it by construction, because
-  it holds no simulation (R19) and knows only what it was sent.
+A packaged client can't provide this. Each instance needs a visible window or Windows suspends it
+(`Plan/M1-the-fleet.md` M1.15). Each one also needs the loopback exemption, which is already strained
+(ADR-008). And it takes one process per seat, driven by a finger.
 
-`GameDesign.md` §2 already expects this: *"Four AI players and no human is not a game; it is a test
-fixture, and it is worth having for exactly that."* It never says where such a fixture lives. This record
-says where.
+**There is no bot logic in the tree to reuse.** The tick's comment lists an AI phase, but it is not
+written. The stub AI is M3's and the AI of `GameDesign.md` §8 is M4.5's. Whether M4.5's AI is written so a
+bot can share it is [`OpenQuestions.md`](../OpenQuestions.md) Q48, and it is not decided here.
 
 ## Decision
 
-**A bot is a third executable, `Bot`: an unpackaged desktop console application written in C++/WinRT.**
-It connects to the host exactly as `OutpostCommander` does. It sends a `Join`, is given a slot and a token
-(ADR-013), receives snapshots and sends commands, and the host cannot tell it apart from a person. **Nothing
-changes on the host and nothing changes on the wire.**
+**A bot is a client with no window, and `Bot` is an unpackaged desktop console application written in
+C++/WinRT that runs many of them.** Each bot has its own socket and endpoint, joins as the packaged client
+does (a `Join`, a slot and a token, ADR-013), receives snapshots and sends commands. The host cannot tell
+a bot from a person. **Nothing changes on the host or the wire for the bot's sake.** The player count it
+needs past four is [`ADR-023`](ADR-023-ownership-is-a-group-and-the-player-count-is-configurable.md)'s.
 
-**It reuses the client libraries instead of copying them.** `Bot` references `GameClient` and
-`NeuronClient`, the same pair the two client suites link, and for the same reason: a desktop binary can
-link Windows Store static libraries (`AGENTS.md` §3). It uses `DatagramTransport` and `PacketQueue` for
-the socket, `JoinState` for the handshake, and `ClientFrame` and `ReplicaStore` to turn snapshots into
-state. So a bot and a person cannot disagree about the protocol, because there is only one client-side
-implementation of it. It links no `GameLogic`, which keeps R19 true.
+**One process, many clients, one thread for the loop.** A run is described on the command line: the host
+address, how many of each role, a seed, and a length in ticks. The process starts one client per
+requested bot and drives them all from one loop. Each client drains its own queue, advances its own join
+state and policy, and sends. **A thousand clients should not cost a thousand processes**, and a single
+loop makes the harness's own scheduling deterministic, so a run is repeatable apart from the network.
+Datagram arrival is still asynchronous, one `DatagramSocket` per bot delivering into that bot's
+`PacketQueue`, exactly as the packaged client works.
 
-**Being unpackaged, it cannot use the three facilities that need package identity, and it does not
-try:**
+**Bots come in three roles, because a host has more to survive than players:**
+
+| Role | What it does | What it loads |
+|---|---|---|
+| **Player** | Takes a seat and plays the rule-based policy below | The command path, the per-client snapshot fan-out, egress |
+| **Churner** | Takes a seat, drops its socket, and rejoins with its token on a new endpoint, at a seeded interval | ADR-013's rejoin, endpoint rebinding, the session table |
+| **Flooder** | Never seated. Sends joins after the match is full, commands from an endpoint the host never seated, and malformed datagrams: truncated, wrong version, impossible counts | Every refusal path, and that the host stays up and keeps its tick |
+
+**It reuses the client libraries, not copies of them.** `Bot` references `GameClient` and `NeuronClient`,
+the same pair the two client suites link, and for the same reason: a desktop binary can link Windows Store
+static libraries (`AGENTS.md` §3). Players and churners use `DatagramTransport` and `PacketQueue`,
+`JoinState`, and `ClientFrame` with its `ReplicaStore`. So a bot and a person cannot disagree about the
+protocol, because there is one client-side implementation of it. **Flooders deliberately don't use it.**
+They write bytes the encoder would refuse, which is their job. It links no `GameLogic`, so R19 holds.
+
+**Being unpackaged, it can't use the three facilities that need package identity, and doesn't try:**
 
 | Packaged client | Bot |
 |---|---|
 | Host address from `LocalState` (`ReadHostAddress`, ADR-008) | From the command line, parsed by `HostAddressFromFileContents` so there is still one parser |
-| Session token in `LocalState\session.txt`, or `session-<n>.txt` per instance slot (`ReadSessionToken`) | Kept in memory for the life of the process. A restarted bot is a new player, which is right for a fixture |
-| Instance slot claimed across processes (`InstanceSlot.h`) | Not needed. Two bots are two tokens without any coordination |
+| Session token in `LocalState\session.txt`, or `session-<n>.txt` per instance slot (`ReadSessionToken`) | Held in memory per bot for the life of the process |
+| Instance slot claimed across processes (`InstanceSlot.h`) | Not needed. Every bot presents its own token |
 
-**It needs no loopback exemption**, because an unpackaged process is not in an AppContainer. That exemption
-is what makes same-machine play strain ADR-008. The bot is unaffected by it, so a bot and a host on one
-machine is an arrangement that works from a shell on any Windows box with the build, a CI runner included.
+**A seat is never given back, so the harness must never waste one.** ADR-013 holds a slot indefinitely
+and forgets an endpoint but never a slot. A bot that restarts without its token is a new player and takes
+a second seat, and a stress run that restarts bots would exhaust the match in a few cycles. So **a churner
+always rejoins with the token it holds**, and a process that exits takes its seats with it. **To run
+again, restart the host.** The harness says so when it is refused, and doesn't treat `MatchFull` as a
+flake.
 
-**The policy is rule-based, it lives in `GameClient`, and it is deterministic given the snapshots.** The
-executable holds the Windows Runtime glue and the loop, and nothing else (R20). The decision half is
-`BotPolicy`. It is a pure function of the replica store's newest snapshot, the bot's player, and a
-`Neuron::Pcg32` seeded from the command line, and it returns the commands to send, or none. It keys its
-pacing on the snapshot's tick, never on the wall clock, so a suite can feed it snapshots and assert what
-comes out. R16 does not bind a client, but a fixture that cannot be replayed from its inputs cannot be
-debugged from a report of what it did. The one thing outside its control is which snapshots arrive, and
-that is the network's.
+**It needs no loopback exemption**, because an unpackaged process isn't in an AppContainer. The host and
+the harness on one machine work from a shell on any Windows box with the build, a CI runner included.
 
-**At M1 the policy only uses what M1 has**: it builds what it can afford, cancels occasionally, and moves
-selections of its own ships to points on the plane. **It gains `Attack` when M3 does**, and nothing else
-in it has to change for that.
+**The policy is rule-based, lives in `GameClient`, and is deterministic given the snapshots.** The
+executable holds the Windows Runtime glue, the loop and the command-line parsing, and nothing else (R20).
+The player's decision half is `BotPolicy`. It is a pure function of that bot's newest snapshot, its
+player, and a `Neuron::Pcg32` seeded from the run seed and the bot's index, and it returns the commands to
+send, or none. The churner's and flooder's schedules are the same kind of function. **All three key their
+pacing on the snapshot's tick, or on a tick counted by the harness loop, never on the wall clock**, so a
+suite can feed them inputs and assert what comes out. R16 doesn't bind a client, but a stress run that
+can't be replayed from its inputs can't be debugged from a report of what it did.
 
-**It is not the AI of `GameDesign.md` §8, and it does not replace M4.5.** §8's AI runs on the host, on the
-tick, under R16, and can take over an abandoned slot from arbitrary mid-match state (M4.6). A bot can do
-none of that: it is a process that has to be started, and a slot it leaves is a slot it leaves.
-**The two exist for different reasons.** §8's AI is how one person gets an opponent. The bot is how the
-protocol gets exercised by something that is not a person. If the bot's policy ever grows into something
-worth playing against, that is the point to revisit this record, not a reason to grow it.
+**At M1 the player policy uses only what M1 has.** It builds what it can afford, cancels occasionally, and
+moves subsets of its own ships to points on the plane. **It never commands an entity it doesn't own**; the
+flooder is the role that sends refusable commands, deliberately and counted. It gains `Attack` when M3 does.
+
+**The harness reports, and it reports what it saw on the wire, not what the host says.** Per role it
+counts: seats taken and refused, snapshots received, the gap between consecutive snapshot ticks (a host
+that falls behind shows up here first), commands sent and acknowledged, and the time from sending a
+command to the snapshot acknowledging it. **The host's own tick cost is the host's to report.** It is
+M2.10's measurement, and the harness doesn't try to infer it from outside.
+
+**It is not the AI of `GameDesign.md` §8 and it doesn't replace M4.5.** §8's AI runs on the host, on the
+tick, under R16, and can take over an abandoned slot mid-match (M4.6). The bot is how the host gets loaded
+by something that isn't a person. Whether the two share their decision code is Q48.
 
 ## Consequences
 
-**This adds a project row to `AGENTS.md` §2**, and it is the first executable that references the client
-libraries without being packaged. The import table gains `Bot | — | GameClient, NeuronClient`, the
-executable list becomes three, and `packages.config` is on a sixth C++/WinRT project at the same pinned
-version. That is a line and not a decision (R14). **R20 applies to it as it does to the other two:** a
-policy decision found in `Bot/` is a defect.
+**This adds a project row to `AGENTS.md` §2**, and `Bot` is the first executable that references the
+client libraries without being packaged. The import table gains `Bot | — | GameClient, NeuronClient`, the
+executable list becomes three, and `packages.config` goes on a sixth C++/WinRT project at the same pinned
+version. That is a line, not a decision (R14). **R20 applies:** a decision found in `Bot/` is a defect.
 
-**What it forecloses:** a bot that reads simulation state it was not sent. It cannot, because it links
-nothing that holds any, and that is the property worth keeping. A bot that "just peeks" at `GameLogic` for
-a better decision is R19 broken with extra steps.
+**What it forecloses:** a bot that reads simulation state it wasn't sent. It links nothing that holds any.
 
-**What it costs:** a third executable to build on four configuration pairs, only one of which CI builds
-(`AGENTS.md` §6). It also depends on the client libraries staying linkable into an unpackaged process.
-**Today three functions in `NeuronClient` call `ApplicationData::Current()`**: `ReadSessionToken`,
-`WriteSessionToken` and `ReadHostAddress`. The bot calls none of them. A client-library function that
-reaches package identity on a path the bot does use (`ClientFrame`, `JoinState`, `ReplicaStore`,
-`DatagramTransport`) is a regression against this record. The bot notices it at run time, as a
-`winrt::hresult_error` at start-up, not at link time.
+**What it costs:**
 
-**What it enables and does not include:** a CI step that starts `Server` and two bots on the Windows runner,
-asserts that both are seated and that a command round-trips, and fails if not. That is the first check in
-this tree that puts two real endpoints on one wire. It is a separate step because it changes the workflow,
-and `AGENTS.md` §6 says a prose copy of the workflow is not where decisions go.
+- **A third executable to build on four configuration pairs**, only one of which CI builds (`AGENTS.md` §6).
+- **The client libraries must stay linkable into an unpackaged process.** Today `ReadSessionToken`,
+  `WriteSessionToken` and `ReadHostAddress` call `ApplicationData::Current()`, and the bot calls none of
+  them. A client-library function that reaches package identity on a path the bot does use is a
+  regression against this record. It shows up at run time as a `winrt::hresult_error`, not at link time.
+- **One socket per bot.** The harness's ceiling is the machine's, not the protocol's: ephemeral ports,
+  handles, and the thread pool that delivers `MessageReceived`. **The first run measures where that
+  ceiling is**, and the harness refuses to start more bots than it has been shown to sustain, so a
+  harness bottleneck isn't reported as a host result.
+- **Hosting the harness and the host on one machine measures them together.** The one-location setup is
+  what the owner asked for, and it is right for finding failures. **For a figure about the host's
+  capacity, the harness runs on a second machine.**
 
-**What would reopen it:** a client library that can no longer be linked outside a package, which ends the
-reuse and turns this into a second client implementation. That is a worse trade than the fixture is worth,
-and the right response is to fix the library. The other trigger is the policy growing past a fixture, as
-above.
+**What it enables and doesn't include:** a CI step that starts `Server` and a small harness on the Windows
+runner, asserts that every player is seated, that a command round-trips and that the host survives the
+flooder, and fails otherwise. It is a separate step because it changes the workflow.
+
+**What would reopen it:** a client library that can no longer be linked outside a package. That ends the
+reuse and turns this into a second client implementation, and the right response is to fix the library.
 
 ## Measurements
 
-None yet, and none of this record's claims is a figure. **Owed at the step that builds it**
-(`Plan/M1-the-fleet.md` M1.14b), on the machine that builds it:
+None yet. **Owed at the step that builds it** (`Plan/M1-the-fleet.md` M1.14b), on the machine that
+builds it:
 
 - **That an unpackaged process can use `DatagramSocket` against a host on loopback with no exemption.**
-  This is the claim everything above rests on. It is documented Windows behavior, but not yet observed in
-  this tree.
-- **That the bot is seated, that its token survives a rejoin, and that a command it sends is acknowledged
-  by a later snapshot**, all against the real `Server`. These are the same properties M1.4's suites pin
-  without a socket, observed here with one.
+  Everything above rests on this. It is documented Windows behavior, not yet observed in this tree.
+- **That players are seated, that a churner keeps its seat across a rejoin on a new endpoint, that a
+  command is acknowledged by a later snapshot, and that the host keeps ticking under the flooder.** All
+  against the real `Server`.
+- **How many bots one harness process sustains** before its own snapshot-gap figure degrades with the
+  host idle. That is the harness's ceiling, and it is stated here once measured.

@@ -27,6 +27,10 @@ generator's symmetry (M2.2), the AI count and the snapshot's per-player blocks a
 runtime player count, so this step should be small. **If it is not small, that is the finding**, and it is
 worth reporting as one rather than absorbing.
 
+**If ADR-023 is taken, M1.14c has already done most of this step.** The count is already a host argument
+and the arrays are already sized at `Begin`. What is left is running a real match at three and four, and
+the header figure below becomes that record's ten-byte-block total, not forty-six.
+
 **Files:** `GameLogic/Match.cpp`, `GameCore/Snapshot.cpp`; tests in both suites extended.
 
 **Done when:** a match runs at two, three and four players with no format change and no branch on the
@@ -43,6 +47,10 @@ all-or-nothing** under one sequence number with an index and a count, and an inc
 **The reassembler holds partial sets for the two most recent sequences, not one**, and ADR-003 says exactly
 why: with a single slot, any cross-snapshot reorder discards a snapshot whose fragments had all arrived.
 That is the bug this step exists to not have.
+
+**If ADR-023 is taken, the fragment count is not two.** A stress run sends as many fragments as the header
+can count, and the reassembler holds partial sets of any size up to that, still all-or-nothing and still
+for the two most recent sequences.
 
 **Files:** `NeuronCore/Reassembler.h` `.cpp`; `NeuronCore.vcxitems` + `.filters`;
 `Tests/NeuronCoreTests/ReassemblerTests.cpp`.
