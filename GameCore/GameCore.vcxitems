@@ -33,6 +33,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)Layout.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)Generator.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)Join.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -53,6 +56,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)GameCore.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Join.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Layout.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Generator.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SizeClass.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Snapshot.h" />
   </ItemGroup>

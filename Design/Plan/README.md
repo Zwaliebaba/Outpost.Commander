@@ -60,6 +60,11 @@ and whether two can run visibly side by side is the half still open. A failed so
 the client either: it is reopened, and a lost link always gets a fresh one. Both gates are still open
 and both are a hand's.
 
+**M2 HAS STARTED, ALONGSIDE THOSE TWO GATES.** Its opening gate, Q26, is answered, and M2.1's generator is
+built. It places one player's region from the seed: a ten-rock home field and two contested clusters of
+six, pinned for seed 20260922. Nothing copies the region yet, which is M2.2, and nothing draws it yet,
+which is M2.3.
+
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
 milestone with something behind it worth seeing.
