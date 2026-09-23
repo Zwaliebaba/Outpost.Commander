@@ -19,7 +19,7 @@ namespace
 TEST_CLASS(TheEconomy)
 {
 public:
-  /// **ONE ORE, ONE CREDIT** -- the design's "100 credits of capacity" -- until M2.12's processor multiplies it.
+  /// **ONE ORE, ONE CREDIT** -- the design's "100 credits of capacity" -- with no ore processor, which multiplies it (M2.12, `ModuleEffectTests`).
   TEST_METHOD(AnOreIsACredit)
   {
     Assert::AreEqual(1u, Outpost::CREDITS_PER_ORE);

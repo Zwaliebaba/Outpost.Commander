@@ -66,7 +66,8 @@ struct DesignEntry
   /// `Station` is special.
   ///
   /// A module is a design too (ADR-015, M2.9), and it is placed by tap rather than queued, so it is
-  /// false here as well: the build panel's module row is M2.11's, not this flag's.
+  /// false here as well: the build panel's module row arms a placement (M2.11), which `PlaceModule`
+  /// carries, and a `Build` naming a module is refused.
   bool buildable = false;
 
   [[nodiscard]] friend constexpr bool operator==(const DesignEntry&, const DesignEntry&) noexcept = default;

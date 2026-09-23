@@ -401,8 +401,8 @@ public:
     Assert::IsTrue(seconds < 60);
   }
 
-  /// `GameDesign.md` section 5's shipyard levels, through the parameter M2's modules will pass.
-  /// **Nothing passes anything but 100 yet** and the mechanism is pinned so M2 inherits it working.
+  /// `GameDesign.md` section 5's shipyard levels, through the parameter the intake passes since M2.12
+  /// (`ModuleEffectTests` pins where it comes from and which way it rounds).
   TEST_METHOD(AShipyardMultiplierShortensTheBuild)
   {
     const std::uint32_t plain = Outpost::BuildSystem::TicksToBuild(Outpost::DesignId::Fighter, 100);
