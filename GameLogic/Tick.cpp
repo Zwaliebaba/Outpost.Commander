@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Tick.h"
+#include "UniformGrid.h"
 
 #include <cstdint>
 #include <vector>
@@ -21,16 +22,16 @@ namespace
 }
 
 /// Q61: only what is this close is considered, in world units. Well past Q59's 45-unit turning radius
-/// and the widest steering circle, so a swerve still starts in time, and inside one grid cell, so the
-/// cells around the mover's own hold everything it has to look at.
+/// and the widest steering circle, so a swerve still starts in time.
 inline constexpr std::int64_t LOOK_AHEAD_UNITS = 400;
 
-/// `TechnicalDesign.md` section 2's uniform grid: 512-unit cells, 32 x 32 over the 16,384-unit square.
-/// A candidate structure only -- which obstacle wins is decided by distance and identity, never by
-/// which cell was visited first.
-inline constexpr std::int64_t GRID_CELL_UNITS = 512;
-inline constexpr std::int64_t GRID_CELLS_ACROSS = 32;
-inline constexpr std::int64_t GRID_ORIGIN_UNITS = (GRID_CELL_UNITS * GRID_CELLS_ACROSS) / 2;
+/// **WHY THE GRID IS ASKED FOR MORE THAN THE LOOK-AHEAD.** M2.5's `UniformGrid` tests distance against
+/// where an entity is *now*, and a ship earlier in index order has already moved this tick, while
+/// avoidance reads the start-of-tick snapshot. So the query reaches further by more than any ship moves
+/// in a tick (a Fighter's is 7 units), plus the unit conversion's rounding, and the snapshot then decides
+/// on exactly the look-ahead. What the tick considers is therefore the same set a grid of its own found.
+inline constexpr std::int64_t QUERY_MARGIN_UNITS = 64;
+inline constexpr Neuron::Fixed QUERY_RADIUS = static_cast<Neuron::Fixed>((LOOK_AHEAD_UNITS + QUERY_MARGIN_UNITS) * Neuron::FIXED_ONE);
 
 /// Q61: a moving ship within an eighth of a turn of the mover's heading is flying the same way, and is
 /// part of its stream rather than in its way.
@@ -59,11 +60,12 @@ struct Occupant
 };
 
 /// **THE WORLD AS IT STOOD WHEN THE TICK BEGAN**, so which ship moves first in index order never changes
-/// what the others see (Q61). Occupants are in index order, and so is each cell's list.
+/// what the others see (Q61), and M2.5's grid rebuilt from the same moment to find candidates in.
+/// `bySlot` is indexed by slot; a dead slot's entry is never read, because the grid returns only the live.
 struct Snapshot
 {
-  std::vector<Occupant> occupants;
-  std::vector<std::vector<std::uint32_t>> cells;
+  std::vector<Occupant> bySlot;
+  UniformGrid grid;
 };
 
 [[nodiscard]] std::int64_t HalfSizeUnits(DesignId _design) noexcept
@@ -76,18 +78,10 @@ struct Snapshot
   return static_cast<std::int64_t>(_value) >> Neuron::FIXED_FRACTION_BITS;
 }
 
-/// A cell coordinate, clamped, so anything past the edge of the square lands in the edge cell rather
-/// than outside the grid.
-[[nodiscard]] std::int64_t CellOf(std::int64_t _units) noexcept
+void TakeSnapshot(const World& _world, Snapshot& _outSnapshot)
 {
-  const std::int64_t cell = (_units + GRID_ORIGIN_UNITS) / GRID_CELL_UNITS;
-  return (_units + GRID_ORIGIN_UNITS < 0) ? 0 : ((cell >= GRID_CELLS_ACROSS) ? (GRID_CELLS_ACROSS - 1) : cell);
-}
-
-[[nodiscard]] Snapshot TakeSnapshot(const World& _world)
-{
-  Snapshot snapshot;
-  snapshot.cells.resize(static_cast<std::size_t>(GRID_CELLS_ACROSS * GRID_CELLS_ACROSS));
+  _outSnapshot.grid.Rebuild(_world);
+  _outSnapshot.bySlot.assign(_world.SlotCount(), Occupant{});
   for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
   {
     if (!_world.IsSlotAlive(slot))
@@ -105,11 +99,8 @@ struct Snapshot
                             .moving = order.active && (order.speedPerTick > 0),
                             .group = order.group};
 
-    const std::size_t cell = static_cast<std::size_t>((CellOf(occupant.yUnits) * GRID_CELLS_ACROSS) + CellOf(occupant.xUnits));
-    snapshot.cells[cell].push_back(static_cast<std::uint32_t>(snapshot.occupants.size()));
-    snapshot.occupants.push_back(occupant);
+    _outSnapshot.bySlot[slot] = occupant;
   }
-  return snapshot;
 }
 
 /// The bearing to fly at: straight at the destination, or past the nearest thing in the way.
@@ -124,8 +115,8 @@ struct Snapshot
 /// **THE STEERING CIRCLE IS WIDER THAN THE KEEP-OUT** by half the mover again. A ship chasing a tangent
 /// turns at a finite rate (Q59), so it cuts slightly inside the circle it steers by, and the margin is
 /// what keeps that cut outside the circle it must not enter.
-[[nodiscard]] Neuron::Angle DesiredBearing(const Occupant& _mover, const Entity& _entity, const Neuron::Vec2& _destination,
-                                           const Snapshot& _snapshot) noexcept
+[[nodiscard]] Neuron::Angle DesiredBearing(const World& _world, const Occupant& _mover, const Entity& _entity,
+                                           const Neuron::Vec2& _destination, const Snapshot& _snapshot, std::vector<EntityId>& _scratch)
 {
   const std::int64_t fromX = _mover.xUnits;
   const std::int64_t fromY = _mover.yUnits;
@@ -146,78 +137,68 @@ struct Snapshot
   std::int64_t nearestAlong = 0;
   std::int64_t nearestSteer = 0;
 
-  const std::int64_t cellX = CellOf(fromX);
-  const std::int64_t cellY = CellOf(fromY);
-  for (std::int64_t y = cellY - 1; y <= cellY + 1; ++y)
+  // THE CANDIDATES, FROM M2.5'S GRID, in identity order. Which one wins is decided below by distance
+  // along the line and then by index, so the order they arrive in reaches nothing.
+  _snapshot.grid.Query(_world, _entity.position, QUERY_RADIUS, _scratch);
+  for (const EntityId id : _scratch)
   {
-    for (std::int64_t x = cellX - 1; x <= cellX + 1; ++x)
+    const Occupant& other = _snapshot.bySlot[id.index];
+    if (other.slot == _mover.slot)
     {
-      if ((x < 0) || (y < 0) || (x >= GRID_CELLS_ACROSS) || (y >= GRID_CELLS_ACROSS))
+      continue;
+    }
+
+    const std::int64_t toX = other.xUnits - fromX;
+    const std::int64_t toY = other.yUnits - fromY;
+    const std::int64_t toSquared = (toX * toX) + (toY * toY);
+    if (toSquared > (LOOK_AHEAD_UNITS * LOOK_AHEAD_UNITS))
+    {
+      continue;
+    }
+
+    if (!other.structure)
+    {
+      if ((other.group != NO_ORDER_GROUP) && (other.group == _mover.group))
       {
         continue;
       }
-
-      for (const std::uint32_t index : _snapshot.cells[static_cast<std::size_t>((y * GRID_CELLS_ACROSS) + x)])
+      const std::int32_t apart = Neuron::AngleDifference(_mover.heading, other.heading);
+      if (other.moving && (apart >= -SAME_STREAM_ANGLE) && (apart <= SAME_STREAM_ANGLE))
       {
-        const Occupant& other = _snapshot.occupants[index];
-        if (other.slot == _mover.slot)
-        {
-          continue;
-        }
-
-        const std::int64_t toX = other.xUnits - fromX;
-        const std::int64_t toY = other.yUnits - fromY;
-        const std::int64_t toSquared = (toX * toX) + (toY * toY);
-        if (toSquared > (LOOK_AHEAD_UNITS * LOOK_AHEAD_UNITS))
-        {
-          continue;
-        }
-
-        if (!other.structure)
-        {
-          if ((other.group != NO_ORDER_GROUP) && (other.group == _mover.group))
-          {
-            continue;
-          }
-          const std::int32_t apart = Neuron::AngleDifference(_mover.heading, other.heading);
-          if (other.moving && (apart >= -SAME_STREAM_ANGLE) && (apart <= SAME_STREAM_ANGLE))
-          {
-            continue;
-          }
-        }
-
-        const std::int64_t keepOut = other.halfSizeUnits + moverHalf;
-        const std::int64_t steer = keepOut + moverHalf;
-        const std::int64_t endX = other.xUnits - Units(_destination.x);
-        const std::int64_t endY = other.yUnits - Units(_destination.y);
-
-        // Inside it already, or ordered into it: it is not in the way, it is where the ship is going.
-        if ((toSquared <= (keepOut * keepOut)) || (((endX * endX) + (endY * endY)) <= (keepOut * keepOut)))
-        {
-          continue;
-        }
-
-        // Behind the ship, or past the destination: the line does not reach it.
-        const std::int64_t along = (toX * pathX) + (toY * pathY);
-        if ((along <= 0) || (along >= pathSquared))
-        {
-          continue;
-        }
-
-        // The squared distance from the line to the center, times the path's squared length, so there
-        // is no division: |to|^2 - along^2 / |path|^2 < steer^2, multiplied through by |path|^2.
-        if (((toSquared * pathSquared) - (along * along)) >= ((steer * steer) * pathSquared))
-        {
-          continue;
-        }
-
-        if ((nearest == nullptr) || (along < nearestAlong) || ((along == nearestAlong) && (other.slot < nearest->slot)))
-        {
-          nearest = &other;
-          nearestAlong = along;
-          nearestSteer = steer;
-        }
+        continue;
       }
+    }
+
+    const std::int64_t keepOut = other.halfSizeUnits + moverHalf;
+    const std::int64_t steer = keepOut + moverHalf;
+    const std::int64_t endX = other.xUnits - Units(_destination.x);
+    const std::int64_t endY = other.yUnits - Units(_destination.y);
+
+    // Inside it already, or ordered into it: it is not in the way, it is where the ship is going.
+    if ((toSquared <= (keepOut * keepOut)) || (((endX * endX) + (endY * endY)) <= (keepOut * keepOut)))
+    {
+      continue;
+    }
+
+    // Behind the ship, or past the destination: the line does not reach it.
+    const std::int64_t along = (toX * pathX) + (toY * pathY);
+    if ((along <= 0) || (along >= pathSquared))
+    {
+      continue;
+    }
+
+    // The squared distance from the line to the center, times the path's squared length, so there
+    // is no division: |to|^2 - along^2 / |path|^2 < steer^2, multiplied through by |path|^2.
+    if (((toSquared * pathSquared) - (along * along)) >= ((steer * steer) * pathSquared))
+    {
+      continue;
+    }
+
+    if ((nearest == nullptr) || (along < nearestAlong) || ((along == nearestAlong) && (other.slot < nearest->slot)))
+    {
+      nearest = &other;
+      nearestAlong = along;
+      nearestSteer = steer;
     }
   }
 
@@ -253,8 +234,9 @@ struct Snapshot
 /// component toward the target, so the distance only ever falls.
 void MoveEverything(World& _world)
 {
-  const Snapshot snapshot = TakeSnapshot(_world);
-  std::size_t next = 0;
+  Snapshot snapshot;
+  TakeSnapshot(_world, snapshot);
+  std::vector<EntityId> scratch;
 
   const std::size_t slotCount = _world.SlotCount();
   for (std::size_t slot = 0; slot < slotCount; ++slot)
@@ -264,9 +246,7 @@ void MoveEverything(World& _world)
       continue;
     }
 
-    // The snapshot holds every live slot in index order, so this walks it in step with the loop.
-    const Occupant& mover = snapshot.occupants[next];
-    ++next;
+    const Occupant& mover = snapshot.bySlot[slot];
 
     MoveOrder& order = _world.OrderInSlot(slot);
     if (!order.active)
@@ -291,7 +271,7 @@ void MoveEverything(World& _world)
     }
 
     // THE TURN, bounded by the rate. A rate of half a turn or more reaches any bearing at once.
-    const Neuron::Angle wanted = DesiredBearing(mover, entity, order.destination, snapshot);
+    const Neuron::Angle wanted = DesiredBearing(_world, mover, entity, order.destination, snapshot, scratch);
     const std::int32_t error = Neuron::AngleDifference(entity.heading, wanted);
     const std::int32_t limit = static_cast<std::int32_t>(order.turnAnglePerTick);
     const std::int32_t swing = (error > limit) ? limit : ((error < -limit) ? -limit : error);

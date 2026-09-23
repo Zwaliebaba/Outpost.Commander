@@ -857,11 +857,13 @@ plain version jams or weaves:
    already parked around it. **It replaced a first attempt the same day**, a final approach within three
    ship sizes of the destination. That rule let a Fighter fly straight through a Miner parked 98 units
    past its destination, which is how the device found it.
-4. **Only what is within 400 world units is considered**, structures included, found through a grid of
-   `TechnicalDesign.md` §2's shape, 512-unit cells. **It is the tick's own**, built beside M2.5's
-   `UniformGrid` on a branch that did not have it, and folding the two into one is owed. Four hundred is well past the 45-unit
-   turning radius (Q59) and the widest steering circle, so a ship still starts its swerve in time. The
-   grid is what keeps a 128-player stress run from checking every pair.
+4. **Only what is within 400 world units is considered**, structures included, found through M2.5's
+   `UniformGrid`. Four hundred is well past the 45-unit turning radius (Q59) and the widest steering
+   circle, so a ship still starts its swerve in time. The grid is what keeps a 128-player stress run from
+   checking every pair. **The tick first had a grid of its own**, built on a branch that did not yet
+   have M2.5's. The two were folded into one after the merge, and the pinned hash did not move. The
+   query reaches 64 units past the look-ahead, because the grid measures from where a ship is now, and
+   the start-of-tick snapshot then decides on exactly 400.
 5. **Head on, both pass on the right**, which is Q60's fixed rule for an obstacle dead on the line.
 
 **Positions are read as they were at the start of the tick**, so which ship moves first in index order
