@@ -22,6 +22,12 @@ sixth thing to draw; and updated 2026-09-22 alongside
 axes and lifted off the plane, **baked on the processor rather than instanced**, and the draw count and
 package bytes this record owed. See *The asteroid at M2.4* under Consequences.
 
+**Amended 2026-09-23 at M2.10b** for the modules: **each module level draws with its own mesh**, the four the
+handoff delivered, so a shipyard reads apart from an ore processor. The bare `ModuleFrame` mesh ships and no
+design draws it. Seven meshes are drawn instanced (three hulls and four module levels) beside the five baked
+asteroid variants. And **a hull's size is bounded by every mesh that draws it**, which moved the frame's
+catalog figure from 84 to 90 (`OpenQuestions.md` Q37's note).
+
 **Date:** 2026-09-22 (this decision); 2026-09-20 (the record it replaces)
 **Owner:** Stefan Zwaal
 
@@ -38,7 +44,8 @@ What it inferred from it was that geometry therefore had to be *emitted by code*
 libraries, not a list of files.** ADR-021 removed the prohibition and deliberately stopped there — "this
 record removes a prohibition; it does not order a pipeline". **This record orders one.**
 
-**The MVP needs five shapes**: `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid. `Cruiser`
+**The MVP needs five shapes**: `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid — as this was
+ruled; the module is four meshes since M2.10b, one per level, and the asteroid five variants. `Cruiser`
 is a sixth hull the catalog carries and the MVP never draws (`GameDesign.md` §10).
 
 **Two costs the old decision named against itself are what spend it.** It foreclosed art as a parallel

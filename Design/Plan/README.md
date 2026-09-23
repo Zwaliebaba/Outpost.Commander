@@ -98,8 +98,9 @@ milestone with something behind it worth seeing.
 told which player it is, a reconnect gets its slot back, and a command from an endpoint the host never
 seated is refused instead of believed.
 
-**ADR-002's second owed measurement is closed.** M1.7's determinism test runs a two-minute scripted match
-from one seed and hashes to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. Until it
+**ADR-002's second owed measurement is closed.** M1.7's determinism test ran a two-minute scripted match
+from one seed and hashed to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. **The pin
+has moved twice since, deliberately** (M2.6 and M2.7, below). Until it
 ran, every claim in that record about bit-identical behavior was an argument.
 
 **What is open is the geometry, and two measurements**:
@@ -382,7 +383,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 |---|---|---|---|
 | 1 | The snapshot's real size at 110 entities and at 220 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
 | 2 | **Tap-to-visible latency on real hardware** | **M0.23** gate | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
-| 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
+| 3 | The tick's cost at 110 entities | **M2.14** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
@@ -445,8 +446,8 @@ slow and why its findings are hard to see. Quiet it and it can run with `-Gate`,
 ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — **and running it
 again is the standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
 behind is not. **It is owed now**: M2.6 moved the pin to `0xc8f7f00e056d4d46` when the script began to mine, and M2.7
-to `0x18e094912655348f` when its income became mined. Both were computed off Windows, and only CI's
-`Debug|x64` has checked either. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
+to `0x18e094912655348f` when its income became mined. Both were computed off Windows. CI's
+`Debug|x64` confirmed the first; the second has not been confirmed by CI yet, and no other pair has run either. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
 property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
 invocations and four `vstest` runs comparing one state hash.
 

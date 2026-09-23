@@ -28,11 +28,13 @@ and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2
 the fifth**, from M2.7, **and Q54 to Q57 four more**, from M2.11 and M2.12, ruled together before either step's
 code.
 
-**Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
+**Q37 was left open deliberately until the owner answered it on 2026-09-22**, and this paragraph is the
+reason as it stood. It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
 `Station` 220, asteroids 62 to 167 against a recommended 60–180. **Closing it wants the catalog row
 written at the same time** (R24), so that the figure and the file are two statements of one number with a
-script between them rather than one number nobody stated. M1.9 carries that as a step.
+script between them rather than one number nobody stated. M1.9 carried that as a step, and M2.10b moved the
+module frame to 90 (Q37's note).
 
 **This line said "five open" while six were listed**, from the commit that registered Q37 and did not
 count again. It is the same defect `Plan/README.md`'s step counts had and for the same reason — a count is
@@ -381,7 +383,7 @@ path" would make this a constraint; it is a choice, and it should be re-openable
 ### Q37 — How big is each hull, in world units? — **ANSWERED**
 
 **THE DELIVERED EXTENTS, WRITTEN INTO THE CATALOG. The owner's answer, 2026-09-22.** `HullEntry` now
-carries a `sizeUnits` row — `Scout` 60, `Frigate` 90, `Station` 220, `ModuleFrame` 84 — taken from the
+carries a `sizeUnits` row — `Scout` 60, `Frigate` 90, `Station` 220, `ModuleFrame` 84, **90 since M2.10b** — taken from the
 thirteen delivered meshes and **rounded up, because the figure is a bound**: it is what spaces things so
 they do not overlap and what sets how far in front of a station a new ship appears. **The `Cruiser`'s 150
 is the one row no file backs**, because nothing authored a mesh for a design the MVP cut; M4 authors to

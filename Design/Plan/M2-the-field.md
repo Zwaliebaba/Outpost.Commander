@@ -9,8 +9,8 @@ the map that can be shot, and until there is one, `GameDesign.md` §4's claim th
 a player can see failing is untested.
 
 **Read [`README.md`](README.md) first.** Fifteen steps, three gates, and **the first is a gate on Q26**:
-nothing can be generated until it has an answer. **Q36 is the milestone's other open question** and it does
-not gate the start — it is owed by M2.7, where the income rate goes live.
+nothing can be generated until it has an answer. **Q36 was the milestone's other open question**; it did
+not gate the start, and it was answered before M2.7 (2026-09-23: no income rate, the change flash only).
 
 **Entry state.** M1 complete: two commanders, one catalog, two designs, selection, orders, the interface.
 One fixed seed with a hand-checked layout, and `GameCore/Layout` waiting to become a generator.
@@ -340,7 +340,8 @@ MSVC.**
 **Read first:** `GameDesign.md` §4; `OpenQuestions.md` Q36; ADR-003's per-player block; `Interface.md` §6.
 
 **Adds:** credits accruing on unload, carried in the per-player block M0.9 already encodes, **and the
-cargo bucket in the flags byte** — two bits, four buckets, which is what a fill bar needs and is all the
+cargo bucket in the flags byte** — two bits, four buckets as this step was written, three bits and five
+states as built (Q53), which is what a fill bar needs and is all the
 snapshot has room for (`TechnicalDesign.md` §4), and the top-left
 readout M1.14 already draws going live — and **the income rate, which `Interface.md` §6 says appears
 "once there is one"**, if it ships at all. **It may not.** `design_handoff_hud/` draws the credits panel
@@ -461,9 +462,10 @@ component and multiplier, cost, 1,500 hull points, no mass, speed, damage or ore
 
 **Left for M2.11, because nothing creates a module before it:**
 - `TierOf` still sends a tap on any own non-station entity to the own-ship tier, where `Interface.md` §1
-  puts modules with the station.
+  puts modules with the station (since done at M2.11, Q57).
 - `MeshNameForDesign` answers `ModuleFrame` for all four, which nothing loads yet (M2.10b, since done).
-- Whether an L2 upgrade costs its full figure or the difference is unsettled.
+- Whether an L2 upgrade costs its full figure or the difference is unsettled (since ruled: the difference,
+  Q54).
 
 **Compiled and run under g++ with a stand-in for the test framework, not under MSVC.**
 
@@ -504,8 +506,8 @@ ADR-015's reason for it.
 
 **The one inexactness is the inputs'.** The host passes exact positions and the client the quarter-unit
 ones it was sent, so a preview can differ from the host by that much at an edge. The host decides.
-**Nothing calls it yet.** M2.11 has the host validate a placement with it and the client preview one, and
-the grep for `CheckModuleSite` is then that step's to show.
+**Nothing called it at M2.10.** Since M2.11 the host validates a placement with it and the client previews
+one, and those are the two calls a grep for `CheckModuleSite` finds.
 
 `ModuleSiteTests` covers:
 - the accept, which is the handoff's own four-frame plate at 354;
@@ -676,7 +678,8 @@ hatch, the hit table, and unavailable winning when both apply.
 
 **Adds:** the shipyard's build-rate multiplier and the ore processor's cargo multiplier, both applied as
 integer percentages. **Where each rounds is the question ADR-014 is reserved for** (`README.md` F3) — this
-step must not invent an answer; it applies the rule ADR-014 sets, or waits.
+step must not invent an answer; it applies the rule ADR-014 sets, or waits. *(The owner ruled it on the register
+instead, as Q56; see the note below.)*
 
 **Files:** `GameLogic/BuildQueue.cpp`, `GameLogic/Mining.cpp`;
 `Tests/GameLogicTests/ModuleEffectTests.cpp` new, in the project and its `.filters`.
