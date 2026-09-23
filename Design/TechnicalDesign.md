@@ -641,8 +641,11 @@ not a definition is arithmetic on the design's own starting values. These are ow
    ([`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md)). ~~**And that the interface lands
    identically at both**~~ — **DISCHARGED at M0.15**, by the two fit tests ADR-016's Measurements name; it
    was a test rather than a look, and it is the regression ADR-016's two transforms exist to prevent.
-8. **Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by
-   removing the exemption and trying again exactly as `AGENTS.md` §3 instructs.
+8. ~~**Which loopback exemption form a UDP client needs**, `-a` alone or `-a` and `-is`, established at M0 by
+   removing the exemption and trying again exactly as `AGENTS.md` §3 instructs.~~ — **DISCHARGED at
+   M0.5, 2026-09-23: `-a` alone.** Without it the client cannot even send; with it, replies arrive with no
+   listener running. The runs are in [`ADR-008`](ADR/ADR-008-the-host-address-is-configuration.md)'s
+   Measurements.
 
 ## 10. The decisions this design takes
 

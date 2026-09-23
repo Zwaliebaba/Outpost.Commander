@@ -61,10 +61,28 @@ numeric keypad this decision declined — perhaps eighty lines — or real match
 
 ## Measurements
 
-None yet. Two are owed at **M0**, which exists partly to obtain them:
+**THE FIRST ONE IS CLOSED. 2026-09-23, at M0.5's third run.**
 
-1. **Which loopback exemption form a UDP client actually needs**, `-a` alone or `-a` and `-is`, which
-   decides whether the single-machine development loop is usable.
+**`-a` alone is enough, and the single-machine loop is usable.** Measured on the Surface Pro 11 with a
+`Release|ARM64` `Server` on `127.0.0.1` and the package registered from the same build, seed 20260922,
+the client launched from the shell rather than by F5, and three runs of the same setup:
+
+| Exemption | Client | Host |
+|---|---|---|
+| As Visual Studio left it | `JOIN accepted` on the first attempt, an update every tick, `lost=0` | `clients=1` |
+| **Removed** (`-d`) | 19 join attempts in 20 seconds, **no datagram received** | `clients=0`, `updates=0` — **no join ever arrived** |
+| **`-a` only**, no `CheckNetIsolation.exe` left running | `JOIN accepted` on the first attempt, 95 datagrams, `lost=0` | 599 ticks, 0 abandoned, 547 updates, 1 join |
+
+**The exemption blocks the client's own outbound datagrams**, not only replies, since the host never saw
+a join. And a reply to the client's bound socket needs nothing more than `-a`, so the inbound form `-is`,
+and the listener process it would have to keep running, is not needed. **The trap above stands
+unchanged**: without the exemption, same-machine play does not work at all, and nothing but a developer
+with administrator rights can grant it.
+
+One is still owed at **M0**:
+
+1. ~~**Which loopback exemption form a UDP client actually needs**, `-a` alone or `-a` and `-is`, which
+   decides whether the single-machine development loop is usable.~~ — **DISCHARGED**, above.
 2. **That the client reaches a host on another machine over the LAN** with `privateNetworkClientServer`
    and nothing else declared — the capability set is read from Microsoft's documentation and has not been
    run.

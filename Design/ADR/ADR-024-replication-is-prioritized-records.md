@@ -165,8 +165,11 @@ are `--players`, `--ships`, `--in-view`, `--datagrams` and `--upstream`. **Owed 
 
 1. **The encoder's own `EncodedSize` of a full update**, replacing the 1,232 and 99 above with what
    `GameCoreTests` measures, as M0.9 did for the snapshot.
-2. **That M1.7's determinism hash is unchanged**, `0x37f846ed90b74ca1` on all four pairs, which is the
-   proof that nothing simulated moved.
+2. ~~**That M1.7's determinism hash is unchanged**, `0x37f846ed90b74ca1` on all four pairs, which is the
+   proof that nothing simulated moved.~~ — **DISCHARGED 2026-09-23, at `5aff739`.** All four pairs built
+   clean through the solution on the Surface Pro 11, and `TheScriptedMatchHashesToItsPinnedValue` passed
+   on each, among 774 of 774 tests a pair. ARM64 ran natively on the device and x64 under its emulation.
+   The hash did not move.
 3. **Refresh interval per entity at the MVP with the cap at two**, observed from the client's store over
    a two-minute match: every entity every tick is the prediction.
 4. **The accumulator's cost per client per tick** at 110 and, with ADR-022's harness, at every player
