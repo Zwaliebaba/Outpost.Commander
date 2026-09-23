@@ -114,8 +114,8 @@ public:
   /// How long a design takes, in ticks, at a given build-rate multiplier in hundredths.
   ///
   /// **A HUNDRED IS NO SHIPYARD.** `GameDesign.md` section 5 has `ShipyardL1` at 150 and `ShipyardL2`
-  /// at 200; the modules that carry them are M2's (ADR-015), so nothing passes anything but 100 yet
-  /// and the parameter is here so that M2 has one call site to find rather than a formula to invent.
+  /// at 200; since M2.12 the intake passes the player's own (`ModuleEffects.h`). **The ticks round up**
+  /// (`OpenQuestions.md` Q56), so a shipyard never builds faster than its stated rate.
   ///
   /// **AT LEAST ONE TICK.** A design that costs nothing would otherwise complete before it started,
   /// and the catalog contains rows with no cost.

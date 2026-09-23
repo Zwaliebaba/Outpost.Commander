@@ -77,10 +77,10 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build
   // rate; +25% and +50% on a delivered cargo.
-  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150},
-  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200},
-  {.id = ComponentId::OreProcessorL1, .cost = 350, .multiplierPercent = 125},
-  {.id = ComponentId::OreProcessorL2, .cost = 600, .multiplierPercent = 150},
+  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150, .effect = ModuleEffect::BuildRate},
+  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200, .effect = ModuleEffect::BuildRate},
+  {.id = ComponentId::OreProcessorL1, .cost = 350, .multiplierPercent = 125, .effect = ModuleEffect::CargoValue},
+  {.id = ComponentId::OreProcessorL2, .cost = 600, .multiplierPercent = 150, .effect = ModuleEffect::CargoValue},
 }};
 
 // AN IDENTITY IS AN INDEX, and these are what make that true rather than hoped for. A table that

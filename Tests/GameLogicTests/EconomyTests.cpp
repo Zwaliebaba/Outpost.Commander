@@ -29,6 +29,7 @@ public:
   /// is carried and completes on the next, so nothing is lost to the division and nothing is granted early.
   TEST_METHOD(AHoldUnloadedOverFortyTicksIsExactlyAHundredCredits)
   {
+    const Outpost::World world;
     Outpost::BuildSystem build;
     build.Begin(2);
     Outpost::Economy economy;
@@ -38,7 +39,7 @@ public:
     for (int tick = 0; tick < 40; ++tick)
     {
       const std::vector<Outpost::OreDelivery> deliveries{Delivery(1, 2500)};
-      economy.Credit(deliveries, build);
+      economy.Credit(deliveries, world, build);
       Assert::IsTrue(economy.PendingMilliCredits(1) < Outpost::MILLI_ORE_PER_ORE, L"a whole credit was held back");
     }
     Assert::AreEqual(before + 100u, build.Credits(1));
@@ -48,6 +49,7 @@ public:
   /// **EACH PLAYER'S REMAINDER IS THEIR OWN**: half a credit from one player does not complete another's.
   TEST_METHOD(RemaindersDoNotCrossPlayers)
   {
+    const Outpost::World world;
     Outpost::BuildSystem build;
     build.Begin(2);
     Outpost::Economy economy;
@@ -56,7 +58,7 @@ public:
     const std::uint32_t two = build.Credits(2);
 
     const std::vector<Outpost::OreDelivery> deliveries{Delivery(1, 500), Delivery(2, 500)};
-    economy.Credit(deliveries, build);
+    economy.Credit(deliveries, world, build);
     Assert::AreEqual(one, build.Credits(1));
     Assert::AreEqual(two, build.Credits(2));
     Assert::AreEqual(500u, economy.PendingMilliCredits(1));
@@ -66,12 +68,13 @@ public:
   /// A delivery with no player -- which nothing produces -- is dropped rather than indexed.
   TEST_METHOD(ADeliveryWithNoPlayerIsIgnored)
   {
+    const Outpost::World world;
     Outpost::BuildSystem build;
     build.Begin(2);
     Outpost::Economy economy;
     economy.Begin();
     const std::vector<Outpost::OreDelivery> deliveries{Delivery(Outpost::NO_PLAYER, 5000)};
-    economy.Credit(deliveries, build);
+    economy.Credit(deliveries, world, build);
     Assert::AreEqual(0u, economy.PendingMilliCredits(Outpost::NO_PLAYER));
   }
 
@@ -98,7 +101,7 @@ public:
     {
       Outpost::Tick(world);
       mining.Advance(world);
-      economy.Credit(mining.Deliveries(), build);
+      economy.Credit(mining.Deliveries(), world, build);
     }
     Assert::AreEqual(before + 100u, build.Credits(1));
     Assert::AreEqual(before, build.Credits(2), L"somebody else was paid for player one's ore");

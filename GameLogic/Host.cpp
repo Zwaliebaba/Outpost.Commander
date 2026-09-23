@@ -232,7 +232,7 @@ void Host::RunOneTick()
   // M2.6: MINING, AFTER MOVEMENT AND BEFORE BUILD QUEUES (`TechnicalDesign.md` section 2) -- and M2.7's
   // credits from what it delivered, before the build queue spends them.
   m_mining.Advance(m_world);
-  m_economy.Credit(m_mining.Deliveries(), m_build);
+  m_economy.Credit(m_mining.Deliveries(), m_world, m_build);
 
   // AFTER THE MOVEMENT, so a ship that appears this tick does not also move on it -- which would
   // put it somewhere no update ever said it started from.

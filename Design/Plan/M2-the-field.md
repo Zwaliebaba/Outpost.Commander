@@ -684,6 +684,33 @@ step must not invent an answer; it applies the rule ADR-014 sets, or waits.
 **Done when:** the multipliers are pinned at both levels, and a test asserts the rounding direction rather
 than accepting whatever the code does.
 
+**BUILT.** **The rounding was ruled rather than invented** (`OpenQuestions.md` Q56, 2026-09-23). The owner took
+it on the register and kept ADR-014 for M3's damage, which is the question that ADR was reserved for.
+
+**The build rounds up.** `BuildSystem::TicksForCost` is the one division. 400 credits at ×1.5 is 267 ticks, and a
+shipyard never builds faster than its stated rate. Every ship divides exactly at both levels, so no ship's time
+moved. The intake passes the player's rate when an item starts, and the item keeps that rate.
+
+**The cargo is exact.** `Economy` carries each player's remainder in hundredths of a thousandth of a credit, and
+applies the percentage before any division. A 100-ore hold is exactly 100, 125 or 150 credits, and an awkward
+delivery is carried rather than rounded.
+
+**Which effect a module has is its catalog row's.** `ComponentEntry` gained `ModuleEffect`, either `BuildRate` or
+`CargoValue`, so nothing in `GameLogic` names a shipyard (R24). `GameLogic/ModuleEffects` reads the player's
+modules from the world each time. **The best of a kind counts, not the sum.** Section 5 does not say two
+shipyards stack, so a second one adds nothing, and stacking would go on the register first. Files, against what
+this step named: `BuildSystem.cpp`, `Economy.cpp` (not `Mining.cpp`) and the new `ModuleEffects`.
+
+`ModuleEffectTests` is new, in the project and its `.filters`. It pins:
+- both multipliers at both levels, and the best-not-sum rule;
+- the rounding direction, at 267, 234 and 167, with the ships exact;
+- the intake's rate, and the exact holds;
+- that the effect is in the catalog.
+
+**The determinism pin did not move**: the script builds no module. It was re-run under g++ at -O0 and -O2.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC.**
+
 ---
 
 ## The gates

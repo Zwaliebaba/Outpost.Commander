@@ -84,7 +84,10 @@ ask for it**: a tap on a rock, aimed where the rock is drawn, sends the miners i
 and the rest to it, in one packet. **M2.9 adds the four module designs**: a free frame plus a component each, so a module's price is §5's
 figure, and **M2.10 the one rule for where a module may go**, which both sides will call. **M2.10b draws
 each module level with its own mesh**, and found that the frame's size had to be the longest of them: 90,
-not 84. That leaves M2.11 onward, placing and building modules, and the three gates.
+not 84. **M2.11 builds and places them**: a tap in the drawn radius, judged by that rule on both sides, and an
+L2 by upgrading an L1 in place (Q54 to Q57). **M2.11b** tells unaffordable from unavailable, and **M2.12** makes
+them work. The build rounds up and cargo is exact. That leaves the two closing gates, M2.13's silhouettes and
+M2.14's tick cost, which are a hand's and a pair of eyes'.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first

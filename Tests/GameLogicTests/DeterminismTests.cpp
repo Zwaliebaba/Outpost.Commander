@@ -204,7 +204,7 @@ struct MatchResult
     // **INCOME IS MINED SINCE M2.7.** Until then the script granted fifteen credits a second by hand, the
     // design's running rate, because nothing delivered ore; now the miners' unloads are the only income
     // there is, as in a match.
-    economy.Credit(mining.Deliveries(), build);
+    economy.Credit(mining.Deliveries(), world, build);
     build.Advance(world);
   }
 

@@ -109,6 +109,7 @@
     <ClCompile Include="RingAssignment.cpp" />
     <ClCompile Include="UniformGrid.cpp" />
     <ClCompile Include="MiningSystem.cpp" />
+    <ClCompile Include="ModuleEffects.cpp" />
     <ClCompile Include="UnloadTarget.cpp" />
     <ClCompile Include="Economy.cpp" />
     <ClCompile Include="Sessions.cpp" />
@@ -128,6 +129,7 @@
     <ClInclude Include="RingAssignment.h" />
     <ClInclude Include="UniformGrid.h" />
     <ClInclude Include="MiningSystem.h" />
+    <ClInclude Include="ModuleEffects.h" />
     <ClInclude Include="UnloadTarget.h" />
     <ClInclude Include="Economy.h" />
     <ClInclude Include="Sessions.h" />

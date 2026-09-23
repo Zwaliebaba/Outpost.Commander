@@ -67,9 +67,13 @@ std::uint32_t BuildSystem::TicksForCost(std::uint32_t _costCredits, std::uint32_
 
   // cost / (rate * multiplier / 100) seconds, times the tick rate. Written as one division so there is
   // one rounding rather than two, and both sides of the wire compute it the same way (R16).
+  //
+  // **AND IT ROUNDS UP** (M2.12, `OpenQuestions.md` Q56): a shipyard never makes anything faster than its
+  // stated rate, so 400 credits at x1.5 is 267 ticks and not 266. Every ship divides exactly at both levels;
+  // only a module needs the rule.
   const std::uint64_t numerator = cost * TICKS_PER_SECOND * 100;
   const std::uint64_t denominator = static_cast<std::uint64_t>(BUILD_RATE_CREDITS_PER_SECOND) * multiplier;
-  const std::uint64_t ticks = numerator / denominator;
+  const std::uint64_t ticks = (numerator + denominator - 1) / denominator;
 
   // AT LEAST ONE. A design with no cost would otherwise complete on the tick it started, and the
   // catalog has rows with no cost in it.

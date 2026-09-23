@@ -69,11 +69,14 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   // repeat it forever.
   if (!ActsOnSelection(_command.type))
   {
+    // **THE PLAYER'S OWN SHIPYARD SETS THE RATE, AT THE START** (M2.12): an item keeps the rate it began at, so a
+    // shipyard finished or lost mid-build changes the next item and not this one.
+    const std::uint32_t buildRate = BuildRateMultiplierPercent(_world, _player);
     bool ordered = false;
     switch (_command.type)
     {
     case CommandType::Build:
-      ordered = _build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign())) == BuildRejection::None;
+      ordered = _build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign()), buildRate) == BuildRejection::None;
       break;
     case CommandType::PlaceModule:
     {
@@ -81,13 +84,13 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
       // it -- clamped for the reason every point here is.
       const Neuron::Vec2 site =
         ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
-      ordered = _build.StartModule(_world, _player, static_cast<DesignId>(_command.placedDesign), site) == BuildRejection::None;
+      ordered = _build.StartModule(_world, _player, static_cast<DesignId>(_command.placedDesign), site, buildRate) == BuildRejection::None;
       break;
     }
     case CommandType::UpgradeModule:
       // A stale or unknown identity resolves to nothing, which the build system refuses as not upgradeable.
       ordered = _build.StartUpgrade(_world, _player, ResolveWireIdentity(_world, _command.TargetEntity()),
-                                    static_cast<DesignId>(_command.UpgradeLevel())) == BuildRejection::None;
+                                    static_cast<DesignId>(_command.UpgradeLevel()), buildRate) == BuildRejection::None;
       break;
     case CommandType::CancelBuild:
       ordered = _build.Cancel(_player);

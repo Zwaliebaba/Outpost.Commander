@@ -153,6 +153,18 @@ struct DriveEntry
   [[nodiscard]] friend constexpr bool operator==(const DriveEntry&, const DriveEntry&) noexcept = default;
 };
 
+/// **WHAT A MODULE COMPONENT'S MULTIPLIER MULTIPLIES** (M2.12). A property of the row and not of a name, so the
+/// simulation applies a shipyard's rate because its component says `BuildRate` -- and a third kind of module at
+/// M4 is a row with a third value here, not a branch on an identity (R24).
+enum class ModuleEffect : std::uint8_t
+{
+  None,
+  /// The owning station's build rate (`GameDesign.md` section 5's shipyard).
+  BuildRate,
+  /// What a delivered cargo is worth (section 5's ore processor).
+  CargoValue
+};
+
 /// One row of the slot-component tables, weapons and modules alike.
 ///
 /// R8: a public aggregate.
@@ -183,6 +195,9 @@ struct ComponentEntry
   /// cargo's worth. **In hundredths, because the simulation is integers (R16)**: 150 is x1.5 and
   /// 125 is +25%. One hundred, or zero, is no effect.
   std::uint16_t multiplierPercent = 0;
+
+  /// Which of the two `multiplierPercent` applies to, or `None` for anything that is not a module.
+  ModuleEffect effect = ModuleEffect::None;
 
   /// `PointDefense` is station slots only (`GameDesign.md` section 6). The rule is stated here so
   /// that build validation reads it from the catalog rather than naming the component.

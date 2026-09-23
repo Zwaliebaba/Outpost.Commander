@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BuildSystem.h"
+#include "ModuleEffects.h"
 #include "RingAssignment.h"
 #include "World.h"
 
