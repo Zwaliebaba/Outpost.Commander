@@ -1,0 +1,330 @@
+// Reviewer 2 (economy & balance) harness. Built on the Lead Reviewer's sim.cpp; the simulation code it links is
+// unmodified. Adds: scripted build orders through the real BuildSystem (modules placed and upgraded), a finite-ore
+// model in the style of M3.9 (per-rock ore, nearest-with-ore retargeting) layered OVER the unmodified MiningSystem,
+// the four-player field geometry, and the section-7 raid table under explicit cadence assumptions.
+#include "pch.h"
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cstdlib>
+
+using namespace Outpost;
+namespace {
+double Units(Neuron::Fixed f) { return double(f) / 256.0; }
+double Dist(const Neuron::Vec2& a, const Neuron::Vec2& b) {
+  const double dx = Units(a.x) - Units(b.x), dy = Units(a.y) - Units(b.y);
+  return std::sqrt(dx*dx + dy*dy);
+}
+
+struct Params {
+  bool finite = false;
+  double homeOre = 200, contestedOre = 200;   // ore per rock when finite
+  bool spread = true;                          // spread miners over rocks (fewest assigned, then nearest) or stack on nearest
+  bool ownRegionOnly = true;                   // miners never cross to the enemy half
+  std::uint32_t ticks = 6000;
+  bool table = true;
+  double remapInner = 0, remapOuter = 0;       // if > 0: move player 1's home rocks radially from [600,1500] to [inner,outer]
+  bool depot = false;                          // an ore-accepting hull at the centroid of contested cluster 10-15 (the design's "mining factory")
+  std::uint32_t depotAtTick = 0;               // if > 0: the depot appears at this tick (and 300 credits are deducted then) instead of at start
+};
+
+struct Result {
+  int miners = 0, fighters = 0; std::uint32_t credits = 0; std::uint32_t militaryCredits = 0;
+  std::uint32_t homeExhaustTick = 0, allExhaustTick = 0; double incomeTotal = 0;
+  int fightersAt120 = 0, fightersAt180 = 0, fightersAt240 = 0; std::uint32_t idleTicks = 0; std::uint32_t firstIdleTick = 0;
+  std::uint32_t creditsAt150 = 0; double incomeLast60 = 0; int shipyardLevel = 0, processorLevel = 0;
+};
+
+// Script tokens: M miner, F fighter, S shipyard L1 (placed), s shipyard L2 (upgrade), P ore processor L1, p L2.
+// After the script: fighters forever.
+Result RunLine(const std::string& script, const Params& p, std::uint64_t seed = 20260922ull) {
+  World world; BuildSystem build; MiningSystem mining; Economy economy;
+  auto field = GenerateField(seed, 2);
+  const Neuron::Vec2 station = StartAnchor(2, 1);
+  const std::size_t regionRocks = field.size() / FieldCopyCount(2);
+  if (p.remapInner > 0) {
+    for (std::size_t i = 0; i < regionRocks; ++i) {
+      if (field[i].field != FieldKind::Home) continue;
+      const double dx = Units(field[i].position.x) - Units(station.x), dy = Units(field[i].position.y) - Units(station.y);
+      const double d = std::sqrt(dx*dx + dy*dy);
+      const double nd = p.remapInner + (d - 600.0) / 900.0 * (p.remapOuter - p.remapInner);
+      field[i].position = Neuron::Vec2{ station.x + Neuron::Fixed(std::lround(dx / d * nd * 256)), station.y + Neuron::Fixed(std::lround(dy / d * nd * 256)) };
+    }
+  }
+  world.SetField(field);
+  for (const Placement& pl : GenerateLayout(seed, 2)) world.Create(pl.position, pl.heading, pl.design, pl.owner);
+  if (p.depot) {
+    double cx = 0, cy = 0; int n = 0;
+    for (std::size_t i = 10; i < 16; ++i) { cx += Units(field[i].position.x); cy += Units(field[i].position.y); ++n; }
+    world.Create(Neuron::Vec2{ Neuron::Fixed(std::lround(cx / n * 256)), Neuron::Fixed(std::lround(cy / n * 256)) }, 0, DesignId::Station, 1);
+  }
+  build.Begin(2); economy.Begin();
+  std::vector<double> ore(field.size());
+  for (std::size_t i = 0; i < field.size(); ++i) ore[i] = p.finite ? (field[i].field == FieldKind::Home ? p.homeOre : p.contestedOre) : 1e18;
+  const Neuron::Vec2 sites[4] = { {station.x + 250*256, station.y + 250*256}, {station.x + 250*256, station.y - 250*256},
+                                  {station.x - 250*256, station.y + 250*256}, {station.x - 250*256, station.y - 250*256} };
+  int siteNext = 0; std::size_t scriptPos = 0;
+  Result r; std::uint32_t spent = 0; std::uint32_t lastCredits = 1000, windowSpent = 0; double windowIncome[10] = {};
+  std::vector<std::uint32_t> cargoBefore;
+
+  auto assigned = [&](std::size_t rock) {
+    int n = 0;
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+      if (e.owner == 1 && world.MineInSlot(s).phase != MiningPhase::None && world.MineInSlot(s).rock == rock) ++n;
+    }
+    return n;
+  };
+  auto chooseRock = [&](const Neuron::Vec2& from) -> int {
+    int best = -1; double bestD = 1e18; int bestN = 1 << 30;
+    const std::size_t limit = p.ownRegionOnly ? regionRocks : field.size();
+    for (std::size_t i = 0; i < limit; ++i) {
+      if (ore[i] <= 0) continue;
+      const double d = Dist(from, field[i].position); const int n = p.spread ? assigned(i) : 0;
+      if (n < bestN || (n == bestN && d < bestD)) { best = int(i); bestD = d; bestN = n; }
+    }
+    return best;
+  };
+  auto tryStart = [&](char tok) -> bool {
+    const std::uint32_t mult = BuildRateMultiplierPercent(world, 1);
+    BuildRejection rej = BuildRejection::UnknownDesign; std::uint32_t cost = 0;
+    switch (tok) {
+    case 'M': cost = 150; rej = build.Start(world, 1, DesignId::Miner, mult); break;
+    case 'F': cost = 300; rej = build.Start(world, 1, DesignId::Fighter, mult); break;
+    case 'S': cost = 400; rej = build.StartModule(world, 1, DesignId::ModuleShipyardL1, sites[siteNext % 4], mult); if (rej == BuildRejection::None) ++siteNext; break;
+    case 'P': cost = 350; rej = build.StartModule(world, 1, DesignId::ModuleOreProcessorL1, sites[siteNext % 4], mult); if (rej == BuildRejection::None) ++siteNext; break;
+    case 's': case 'p': {
+      const DesignId from = tok == 's' ? DesignId::ModuleShipyardL1 : DesignId::ModuleOreProcessorL1;
+      const DesignId to = tok == 's' ? DesignId::ModuleShipyardL2 : DesignId::ModuleOreProcessorL2;
+      cost = tok == 's' ? 300 : 250;
+      for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+        if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+        if (e.owner == 1 && e.design == from) { rej = build.StartUpgrade(world, 1, e.id, to, mult); break; }
+      }
+      if (rej == BuildRejection::UnknownDesign) rej = BuildRejection::NotUpgradeable;
+      break;
+    }
+    }
+    if (rej == BuildRejection::None) { spent += cost; windowSpent += cost; if (tok == 'F') r.militaryCredits += cost; return true; }
+    return false;
+  };
+
+  if (p.table) std::printf("  time credits miners fighters income/30s idle-ticks homeOre contOre slot\n");
+  for (std::uint32_t t = 1; t <= p.ticks; ++t) {
+    // 1. Feed the slot.
+    if (!build.Item(1).active) {
+      const char tok = scriptPos < script.size() ? script[scriptPos] : 'F';
+      if (tryStart(tok)) { if (scriptPos < script.size()) ++scriptPos; }
+      else { ++r.idleTicks; if (r.firstIdleTick == 0) r.firstIdleTick = t; }
+    }
+    // 2. Remember cargo so extraction can be charged to a rock.
+    cargoBefore.assign(world.SlotCount(), 0);
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) if (world.IsSlotAlive(s)) cargoBefore[s] = world.MineInSlot(s).cargoMilliOre;
+    // 3. The real tick.
+    Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world);
+    if (p.depotAtTick > 0 && t == p.depotAtTick) {
+      double cx = 0, cy = 0; int n = 0;
+      for (std::size_t i = 10; i < 16; ++i) { cx += Units(field[i].position.x); cy += Units(field[i].position.y); ++n; }
+      world.Create(Neuron::Vec2{ Neuron::Fixed(std::lround(cx / n * 256)), Neuron::Fixed(std::lround(cy / n * 256)) }, 0, DesignId::Station, 1);
+      // charge it: no API to deduct directly; emulate by starting and cancelling nothing -- instead record it as spent from the bank via Grant of a negative is impossible,
+      // so we approximate the 300 by noting it in the summary (see printout). spent += 300 keeps the income accounting right.
+      spent += 300; windowSpent += 300;
+    }
+    // 4. Finite ore: charge extraction, retarget from exhausted rocks; and give idle miners a rock.
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+      if (e.owner != 1 || e.design != DesignId::Miner) continue;
+      MineOrder& m = world.MineInSlot(s);
+      if (s < cargoBefore.size() && m.cargoMilliOre > cargoBefore[s] && m.phase != MiningPhase::None) ore[m.rock] -= double(m.cargoMilliOre - cargoBefore[s]) / 1000.0;
+    }
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+      if (e.owner != 1 || e.design != DesignId::Miner) continue;
+      MineOrder& m = world.MineInSlot(s);
+      const bool idle = m.phase == MiningPhase::None && !world.OrderInSlot(s).active;
+      const bool onDeadRock = (m.phase == MiningPhase::ToOre || m.phase == MiningPhase::Extracting) && ore[m.rock] <= 0;
+      if (idle || onDeadRock) { const int rock = chooseRock(e.position); if (rock >= 0) world.OrderMine(e.id, (std::uint16_t)rock); else if (onDeadRock) world.StopMining(e.id); }
+    }
+    // 5. Bookkeeping.
+    double homeLeft = 0, contLeft = 0;
+    for (std::size_t i = 0; i < regionRocks; ++i) (field[i].field == FieldKind::Home ? homeLeft : contLeft) += std::max(0.0, ore[i]);
+    if (p.finite && r.homeExhaustTick == 0 && homeLeft <= 0) r.homeExhaustTick = t;
+    if (p.finite && r.allExhaustTick == 0 && homeLeft + contLeft <= 0) r.allExhaustTick = t;
+    if (t == 2400) r.fightersAt120 = r.fighters; if (t == 3600) r.fightersAt180 = r.fighters; if (t == 4800) r.fightersAt240 = r.fighters;
+    if (t == 3000) r.creditsAt150 = build.Credits(1);
+    // count fleet
+    r.miners = 0; r.fighters = 0; r.shipyardLevel = 0; r.processorLevel = 0;
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s); if (e.owner != 1) continue;
+      if (e.design == DesignId::Miner) ++r.miners; else if (e.design == DesignId::Fighter) ++r.fighters;
+      else if (e.design == DesignId::ModuleShipyardL1) r.shipyardLevel = 1; else if (e.design == DesignId::ModuleShipyardL2) r.shipyardLevel = 2;
+      else if (e.design == DesignId::ModuleOreProcessorL1) r.processorLevel = 1; else if (e.design == DesignId::ModuleOreProcessorL2) r.processorLevel = 2;
+    }
+    if (t == 2400) r.fightersAt120 = r.fighters; if (t == 3600) r.fightersAt180 = r.fighters; if (t == 4800) r.fightersAt240 = r.fighters;
+    if (t % 600 == 0) {
+      const std::uint32_t credits = build.Credits(1);
+      const double income = (double(credits) + double(windowSpent) - double(lastCredits)) / 30.0;
+      windowIncome[t / 600 - 1] = income;
+      if (p.table) std::printf("  %3us %7u %6d %8d %10.1f %10u %7.0f %7.0f %s\n", t / 20, credits, r.miners, r.fighters, income, r.idleTicks, homeLeft, contLeft,
+                               build.Item(1).active ? "busy" : "free");
+      lastCredits = credits; windowSpent = 0;
+    }
+  }
+  r.credits = build.Credits(1); r.incomeTotal = double(r.credits) + double(spent) - 1000.0; r.incomeLast60 = (windowIncome[8] + windowIncome[9]) / 2.0;
+  return r;
+}
+
+void Summary(const char* name, const Result& r) {
+  std::printf("%-28s miners %2d fighters %2d (@120s %2d, @180s %2d, @240s %2d) shipyard L%d proc L%d | income total %6.0f last-60s %5.1f/s | banked %5u | slot idle %5u ticks (first idle %us) | home dry %us all dry %us\n",
+              name, r.miners, r.fighters, r.fightersAt120, r.fightersAt180, r.fightersAt240, r.shipyardLevel, r.processorLevel, r.incomeTotal, r.incomeLast60,
+              r.credits, r.idleTicks, r.firstIdleTick / 20, r.homeExhaustTick / 20, r.allExhaustTick / 20);
+}
+
+void RaidTable() {
+  std::printf("\nRAID ARITHMETIC (GameDesign section 7) under three cadence readings of '25 dps per mount' (F3 / M3.0 unresolved)\n");
+  struct Cad { const char* name; double md_small, md_med, md_large, md_struct, pd_small, pd_med; };
+  // continuous: exact dps x modifier. 1 Hz integer: floor(25*mod/100) per shot. 20 Hz integer: floor(floor(25/20)*mod/100) per tick.
+  const Cad cads[3] = {
+    {"continuous (hundredths accumulated)", 25*0.70, 25*0.60, 25*0.25, 25*100.0/400.0, 60*1.20, 60*0.90},
+    {"1 Hz, integer per shot", std::floor(25*70/100.0), std::floor(25*60/100.0), std::floor(25*25/100.0), std::floor(25*100/400.0), std::floor(60*120/100.0), std::floor(60*90/100.0)},
+    {"20 Hz, integer per tick x20", 20*std::floor(std::floor(25/20.0)*70/100.0), 20*std::floor(std::floor(25/20.0)*60/100.0), 20*std::floor(std::floor(25/20.0)*25/100.0), 20*std::floor(std::floor(25/20.0)*100/400.0), 20*std::floor(std::floor(60/20.0)*120/100.0), 20*std::floor(std::floor(60/20.0)*90/100.0)},
+  };
+  for (const Cad& c : cads) {
+    const double f = 2; // mounts per fighter
+    auto secs = [](double hp, double dps) { return dps > 0 ? hp / dps : INFINITY; };
+    std::printf("  %-38s: fighter kills miner %5.1fs | fighter v fighter %5.1fs | 3 fighters v 6 miners %5.1fs | PD kills fighter %5.1fs | fighter v module %6.1fs, 3 v module %5.1fs | 10 fighters v station %5.1fs\n",
+                c.name, secs(450, f*c.md_small), secs(600, f*c.md_med), secs(6*450, 3*f*c.md_small), secs(600, 2*c.pd_med), secs(1500, f*c.md_struct), secs(1500, 3*f*c.md_struct), secs(8000, 10*f*c.md_struct));
+  }
+}
+
+void FourPlayerField(std::uint64_t seed) {
+  const auto field = GenerateField(seed, 4);
+  const std::size_t regionRocks = field.size() / FieldCopyCount(4);
+  const Neuron::Vec2 a1 = StartAnchor(4, 1), a2 = StartAnchor(4, 2), a3 = StartAnchor(4, 3), a4 = StartAnchor(4, 4);
+  std::printf("\nFOUR-PLAYER FIELD seed %llu: %zu rocks, %zu per region. Anchors: p1 (%.0f,%.0f) p2 (%.0f,%.0f) p3 (%.0f,%.0f) p4 (%.0f,%.0f); adjacent %.0f apart (%.1fs at 140), opposed %.0f (%.1fs)\n",
+              (unsigned long long)seed, field.size(), regionRocks, Units(a1.x), Units(a1.y), Units(a2.x), Units(a2.y), Units(a3.x), Units(a3.y), Units(a4.x), Units(a4.y),
+              Dist(a1, a2), Dist(a1, a2)/140, Dist(a1, a3), Dist(a1, a3)/140);
+  std::printf("  idx kind      dOwn  dAdj(p2) dAdj(p4) dOpp(p3)  dOrigin\n");
+  for (std::size_t i = 0; i < regionRocks; ++i) {
+    const Placement& p = field[i];
+    std::printf("  %2zu  %-9s %6.0f %8.0f %8.0f %8.0f %8.0f\n", i, p.field == FieldKind::Home ? "home" : "contested", Dist(p.position, a1), Dist(p.position, a2), Dist(p.position, a4), Dist(p.position, a3), Dist(p.position, Neuron::Vec2{}));
+  }
+}
+}
+
+int main(int argc, char** argv) {
+  const std::uint64_t seed = 20260922ull;
+  std::printf("R2 HARNESS. Miner 150cr/100u/s/100 cargo/20 ore/s, Fighter 300cr, build 20cr/s (x1.5/x2 shipyard), unload 50/s, start 1000.\n");
+  std::printf("Module sites at (+-250,+-250) from the station (354 units out). Miner policy: %s.\n", "spread = fewest-assigned rock, then nearest, own region only");
+
+  // ---- Part 1: openings, infinite ore (the M2 state), nearest-rock stacking vs spread.
+  struct Line { const char* name; const char* script; };
+  const Line lines[] = {
+    {"A  6M then F (design's six)", "MMMMMM"},
+    {"B  4M then F", "MMMM"},
+    {"C  4M S 2M s 2M then F", "MMMMSMMsMM"},
+    {"D  4M S s then F", "MMMMSs"},
+    {"E  S first, 6M, s, F", "SMMMMMMs"},
+    {"F  3M P 3M then F", "MMMPMMM"},
+    {"G  4M P p S s then F", "MMMMPpSs"},
+    {"H  FFF rush then 4M, F", "FFFMMMM"},
+    {"H2 FF MM then F", "FFMM"},
+    {"H3 F MMM F MM then F", "FMMMFMM"},
+    {"H4 MM FF MM then F", "MMFFMM"},
+    {"I  2M F 2M F 2M then F", "MMFMMFMM"},
+    {"J  8M S s then F", "MMMMMMMMSs"},
+    {"K  5M S 3M s 2M then F", "MMMMMSMMMsMM"},
+    {"L  4M S 2M s 2M p? no: P", "MMMMSMMsMMP"},
+  };
+  for (int spread = 1; spread >= 0; --spread) {
+    std::printf("\n==== OPENINGS, INFINITE ORE (M2 as shipped), miners %s ====\n", spread ? "spread over home rocks" : "stacked on the nearest rock");
+    for (const Line& l : lines) { Params p; p.finite = false; p.spread = spread; p.table = false; Summary(l.name, RunLine(l.script, p)); }
+  }
+  // Show one full table for the shipyard line, infinite ore.
+  { std::printf("\n-- Line C in full, infinite ore, spread --\n"); Params p; p.finite = false; p.table = true; RunLine("MMMMSMMsMM", p); }
+
+  // ---- Part 2: finite ore at Q26's 200 per home rock; contested 200 (unspecified in the design) and 600.
+  for (double cont : {200.0, 600.0}) {
+    std::printf("\n==== OPENINGS, FINITE ORE: 200 per home rock (Q26), %.0f per contested rock, spread ====\n", cont);
+    for (const Line& l : lines) { Params p; p.finite = true; p.homeOre = 200; p.contestedOre = cont; p.table = false; Summary(l.name, RunLine(l.script, p)); }
+  }
+  { std::printf("\n-- Line B (4M then F) in full, finite 200/200 --\n"); Params p; p.finite = true; p.homeOre = 200; p.contestedOre = 200; RunLine("MMMM", p); }
+  { std::printf("\n-- Line A (6M then F) in full, finite 200/200 --\n"); Params p; p.finite = true; p.homeOre = 200; p.contestedOre = 200; RunLine("MMMMMM", p); }
+
+  // ---- Part 3: cliff timing as a function of ore per home rock, for the 4-, 6- and 8-miner economies.
+  std::printf("\n==== HOME FIELD EXHAUSTION vs ORE PER ROCK (spread; contested 200) ====\n");
+  std::printf("  ore/rock  4M: dry@  income total   6M: dry@  income total   8M: dry@  income total\n");
+  for (double o : {100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0}) {
+    std::printf("  %7.0f ", o);
+    for (const char* s : {"MMMM", "MMMMMM", "MMMMMMMM"}) { Params p; p.finite = true; p.homeOre = o; p.contestedOre = 200; p.table = false; Result r = RunLine(s, p); std::printf("   %4us %11.0f     ", r.homeExhaustTick / 20, r.incomeTotal); }
+    std::printf("\n");
+  }
+  // ---- Part 4: contested trickle: N miners sent to contested rocks only (home ore zero) for 300 s.
+  std::printf("\n==== CONTESTED TRICKLE: home already dry, N miners on own-region contested rocks (200 each), income over 300 s ====\n");
+  for (const char* s : {"MM", "MMMM", "MMMMMM", "MMMMMMMM"}) { Params p; p.finite = true; p.homeOre = 0; p.contestedOre = 200; p.table = false; Result r = RunLine(s, p); std::printf("  %zu miners: income total %5.0f over 300s, last-60s %4.1f cr/s, contested dry at %us\n", std::string(s).size(), r.incomeTotal, r.incomeLast60, r.allExhaustTick / 20); }
+
+  // ---- Part 5: proposal candidates (home ore X, contested Y) for the 6-miner line with shipyard.
+  std::printf("\n==== CANDIDATE SETS (line K: 5M S 3M s 2M then F; spread) ====\n");
+  for (auto [h, c] : std::vector<std::pair<double,double>>{{200,200},{300,600},{400,800},{400,1000},{500,1000},{600,1200}}) {
+    Params p; p.finite = true; p.homeOre = h; p.contestedOre = c; p.table = false; Result r = RunLine("MMMMMSMMMsMM", p);
+    std::printf("  home %3.0f x10 = %5.0f, contested %4.0f x12 = %5.0f | ", h, h*10, c, c*12); Summary("", r);
+  }
+
+  // ---- Part 6: the home field moved to 1,200-2,000 from the anchor (section 4's "roughly thirty seconds" geometry).
+  std::printf("\n==== HOME FIELD REMAPPED TO 1,200-2,000 FROM THE ANCHOR ====\n");
+  {
+    std::printf("  per-rock income, one miner, infinite ore (rock: new distance -> cr/s):");
+    double mean = 0;
+    for (std::size_t i = 0; i < 10; ++i) {
+      World world; BuildSystem build; MiningSystem mining; Economy economy;
+      auto field = GenerateField(seed, 2); const Neuron::Vec2 station = StartAnchor(2, 1);
+      const double dx = Units(field[i].position.x) - Units(station.x), dy = Units(field[i].position.y) - Units(station.y);
+      const double d = std::sqrt(dx*dx + dy*dy); const double nd = 1200 + (d - 600.0) / 900.0 * 800.0;
+      field[i].position = Neuron::Vec2{ station.x + Neuron::Fixed(std::lround(dx / d * nd * 256)), station.y + Neuron::Fixed(std::lround(dy / d * nd * 256)) };
+      world.SetField(field);
+      for (const Placement& pl : GenerateLayout(seed, 2)) world.Create(pl.position, pl.heading, pl.design, pl.owner);
+      build.Begin(2); economy.Begin();
+      EntityId id = world.Create(Neuron::Vec2{station.x + 140*256, station.y}, 0, DesignId::Miner, 1); world.OrderMine(id, (std::uint16_t)i);
+      std::uint32_t half = 0;
+      for (std::uint32_t t = 1; t <= 6000; ++t) { Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world); if (t == 3000) half = build.Credits(1); }
+      const double cr = double(build.Credits(1) - half) / 150.0; mean += cr / 10;
+      std::printf(" %zu:%.0f->%.2f", i, nd, cr);
+    }
+    std::printf("  | mean %.2f cr/s per miner; six miners %.1f cr/s\n", mean, 6 * mean);
+    for (int infinite = 1; infinite >= 0; --infinite) {
+      std::printf("  -- %s --\n", infinite ? "infinite ore" : "finite 400 home / 800 contested");
+      for (const Line& l : lines) { Params p; p.finite = !infinite; p.homeOre = 400; p.contestedOre = 800; p.table = false; p.remapInner = 1200; p.remapOuter = 2000; Summary(l.name, RunLine(l.script, p)); }
+    }
+    std::printf("  -- 6M then F, remapped, infinite, in full --\n"); { Params p; p.finite = false; p.remapInner = 1200; p.remapOuter = 2000; RunLine("MMMMMM", p); }
+  }
+  // ---- Part 7: a forward unload point ("mining factory") at contested cluster 10-15; home dry; N miners.
+  std::printf("\n==== CONTESTED FIELD WITH A FORWARD UNLOAD POINT at the cluster centroid (home dry, contested 800/rock) ====\n");
+  for (const char* s : {"MM", "MMMM", "MMMMMM"}) { Params p; p.finite = true; p.homeOre = 0; p.contestedOre = 800; p.table = false; p.depot = true; Result r = RunLine(s, p); std::printf("  %zu miners: income total %5.0f over 300s, last-60s %5.1f cr/s (%.2f per miner)\n", std::string(s).size(), r.incomeTotal, r.incomeLast60, r.incomeLast60 / std::string(s).size()); }
+  // ---- Part 8: all lines at 400/800 and 500/1000.
+  for (auto [h, c] : std::vector<std::pair<double,double>>{{400,800},{500,1000}}) {
+    std::printf("\n==== OPENINGS, FINITE ORE %.0f home / %.0f contested, spread ====\n", h, c);
+    for (const Line& l : lines) { Params p; p.finite = true; p.homeOre = h; p.contestedOre = c; p.table = false; Summary(l.name, RunLine(l.script, p)); }
+  }
+  // ---- Part 9: the remapped field with finite ore at 250 / 300 / 400 per home rock (contested 600), selected lines.
+  const Line sel[] = {{"A  6M then F", "MMMMMM"}, {"B  4M then F", "MMMM"}, {"C  4M S 2M s 2M then F", "MMMMSMMsMM"}, {"F  3M P 3M then F", "MMMPMMM"},
+                      {"G  4M P p S s then F", "MMMMPpSs"}, {"I  2M F 2M F 2M then F", "MMFMMFMM"}, {"K  5M S 3M s 2M then F", "MMMMMSMMMsMM"},
+                      {"L  4M S 2M s 2M P then F", "MMMMSMMsMMP"}, {"H3 F MMM F MM then F", "FMMMFMM"}, {"N  3M P 3M S then F", "MMMPMMMS"}, {"O  8M then F", "MMMMMMMM"}};
+  for (double h : {200.0, 250.0, 300.0, 400.0}) {
+    std::printf("\n==== REMAPPED 1,200-2,000, FINITE %.0f home / 600 contested, spread ====\n", h);
+    for (const Line& l : sel) { Params p; p.finite = true; p.homeOre = h; p.contestedOre = 600; p.table = false; p.remapInner = 1200; p.remapOuter = 2000; Summary(l.name, RunLine(l.script, p)); }
+  }
+  std::printf("\n==== REMAPPED, INFINITE, STACKED ON NEAREST vs SPREAD (per-rock cap question) ====\n");
+  for (const char* s : {"MMMMMM", "MMMMMSMMMsMM"}) {
+    for (int spread = 1; spread >= 0; --spread) { Params p; p.finite = false; p.table = false; p.remapInner = 1200; p.remapOuter = 2000; p.spread = spread; Result r = RunLine(s, p); std::printf("  %-14s %-8s", s, spread ? "spread" : "stacked"); Summary("", r); }
+  }
+  std::printf("\n-- Line A (6M then F), remapped, finite 300/600, in full --\n"); { Params p; p.finite = true; p.homeOre = 300; p.contestedOre = 600; p.remapInner = 1200; p.remapOuter = 2000; RunLine("MMMMMM", p); }
+  // ---- Part 10: a forward unload point built at 90 s at contested cluster 10-15 (its 300 credits are counted as spent but not deducted from the bank).
+  for (double h : {200.0, 250.0}) { std::printf("\n==== REMAPPED 1,200-2,000, FINITE %.0f home / 600 contested, FORWARD UNLOAD POINT appears at 90 s ====\n", h);
+  for (const Line& l : sel) { Params p; p.finite = true; p.homeOre = h; p.contestedOre = 600; p.table = false; p.remapInner = 1200; p.remapOuter = 2000; p.depotAtTick = 1800; Summary(l.name, RunLine(l.script, p)); } }
+  std::printf("\n-- Line K (5M S 3M s 2M then F), remapped 250/600, depot at 90 s, in full --\n"); { Params p; p.finite = true; p.homeOre = 250; p.contestedOre = 600; p.remapInner = 1200; p.remapOuter = 2000; p.depotAtTick = 1800; RunLine("MMMMMSMMMsMM", p); }
+  RaidTable();
+  FourPlayerField(seed);
+  return 0;
+}

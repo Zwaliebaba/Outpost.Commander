@@ -1,0 +1,34 @@
+#include "pch.h"
+#include "Sessions.h"
+#include <cstdio>
+using namespace Outpost;
+static Neuron::Endpoint At(std::uint32_t a, std::uint16_t p) { return Neuron::Endpoint{a, p}; }
+static const char* R(JoinResult r) { return r == JoinResult::Accepted ? "Accepted" : r == JoinResult::Rejoined ? "Rejoined" : "MatchFull"; }
+static void Scenario(const char* title, std::uint64_t seed1, std::uint64_t seed2, bool bFirst) {
+  Sessions run1; run1.Begin(2, seed1);
+  const JoinReply A1 = run1.Admit(Join{}, At(10, 1000));   // tablet A joins first: player 1
+  const JoinReply B1 = run1.Admit(Join{}, At(20, 2000));   // tablet B second: player 2
+  Sessions run2; run2.Begin(2, seed2);                     // host restarted, or Host::BeginMatch at victory
+  const Neuron::Endpoint a2 = At(10, 1001), b2 = At(20, 2001);   // relaunched clients: new ports, old tokens from LocalState
+  JoinReply first{}, second{};
+  if (bFirst) { first = run2.Admit(Join{.token = B1.token}, b2); second = run2.Admit(Join{.token = A1.token}, a2); }
+  else        { first = run2.Admit(Join{.token = A1.token}, a2); second = run2.Admit(Join{.token = B1.token}, b2); }
+  std::printf("%s\n  match 1: A=player %u token %016llx, B=player %u token %016llx\n", title, A1.player, (unsigned long long)A1.token, B1.player, (unsigned long long)B1.token);
+  std::printf("  match 2 (%s rejoins first): %s -> %s player %u token %016llx; %s -> %s player %u token %016llx\n", bFirst ? "B" : "A",
+              bFirst ? "B" : "A", R(first.result), first.player, (unsigned long long)first.token,
+              bFirst ? "A" : "B", R(second.result), second.player, (unsigned long long)second.token);
+  std::printf("  seats held: %zu; PlayerAt(A)=%u PlayerAt(B)=%u\n", run2.Count(), run2.PlayerAt(a2), run2.PlayerAt(b2));
+  if (run2.PlayerAt(a2) == NO_PLAYER || run2.PlayerAt(b2) == NO_PLAYER) {
+    // the evicted client hears nothing for 1 s, rejoins with the token it holds (ClientFrame.cpp:20-31)
+    const bool aEvicted = run2.PlayerAt(a2) == NO_PLAYER;
+    const JoinReply again = run2.Admit(Join{.token = aEvicted ? second.token : first.token}, aEvicted ? At(10, 1002) : At(20, 2002));
+    std::printf("  evicted %s rejoins after 1 s: %s player %u; now PlayerAt(A)=%u PlayerAt(B)=%u, seats held %zu -> the two alternate on seat 1, seat 2 stays empty\n",
+                aEvicted ? "A" : "B", R(again.result), again.player, run2.PlayerAt(aEvicted ? At(10,1002) : a2), run2.PlayerAt(aEvicted ? b2 : At(20,2002)), run2.Count());
+  }
+}
+int main() {
+  Scenario("SAME SEED, A rejoins first (default seed 20260922 both runs)", 20260922, 20260922, false);
+  Scenario("SAME SEED, B rejoins first", 20260922, 20260922, true);
+  Scenario("DIFFERENT SEED (M3.8 reseed), B rejoins first", 20260922, 20260923, true);
+  return 0;
+}

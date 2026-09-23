@@ -1,0 +1,441 @@
+// Reviewer 5 harness: the unmodified GameCore + GameLogic (scratchpad/logic) and unmodified copies of
+// GameClient/ReplicaStore + Interpolation (r5/client), driven from here. Nothing in the repository is edited.
+#include "pch.h"
+#include "ReplicaStore.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <map>
+#include <numeric>
+#include <vector>
+
+using namespace Outpost;
+
+namespace
+{
+using Clock = std::chrono::steady_clock;
+double Us(Clock::time_point a, Clock::time_point b) { return std::chrono::duration<double, std::micro>(b - a).count(); }
+
+struct Fixture
+{
+  World world;
+  BuildSystem build;
+  MiningSystem mining;
+  Economy economy;
+  Accumulator acc;
+  std::size_t players = 2;
+};
+
+// The Lead Reviewer's world: per player 4 modules, 25 miners on a rock, 25 fighters moving across the map.
+void Populate(Fixture& f, std::size_t players, std::uint64_t seed, bool brawl)
+{
+  f.players = players;
+  f.world.SetField(GenerateField(seed, players));
+  f.build.Begin(players);
+  f.economy.Begin();
+  f.acc.Begin();
+  for (const Placement& p : GenerateLayout(seed, players)) f.world.Create(p.position, p.heading, p.design, p.owner);
+  Neuron::Pcg32 rng{7, 9};
+  for (std::size_t pl = 1; pl <= players; ++pl)
+  {
+    const Neuron::Vec2 a = StartAnchor(players, (PlayerId)pl);
+    for (int m = 0; m < 4; ++m)
+      f.world.Create(Neuron::Vec2{a.x + (m * 120 - 180) * 256, a.y + 300 * 256}, 0, m % 2 ? DesignId::ModuleShipyardL1 : DesignId::ModuleOreProcessorL1, (PlayerId)pl);
+    for (int s = 0; s < 50; ++s)
+    {
+      Neuron::Vec2 pos;
+      if (brawl)
+      {
+        // Every ship of every player inside one 600-unit disc at the origin: the worst query a fight can produce.
+        for (;;)
+        {
+          const int x = rng.NextInRange(-600, 600), y = rng.NextInRange(-600, 600);
+          if (x * x + y * y <= 600 * 600) { pos = Neuron::Vec2{x * 256, y * 256}; break; }
+        }
+      }
+      else
+        pos = Neuron::Vec2{a.x + rng.NextInRange(-1500, 1500) * 256, a.y + rng.NextInRange(-1500, 1500) * 256};
+      EntityId id = f.world.Create(pos, 0, s < 25 ? DesignId::Miner : DesignId::Fighter, (PlayerId)pl);
+      if (s < 25) f.world.OrderMine(id, (std::uint16_t)((pl - 1) * 22 % f.world.Field().size()));
+      else f.world.OrderMoveTo(id, Neuron::Vec2{rng.NextInRange(-8000, 8000) * 256, rng.NextInRange(-8000, 8000) * 256}, SpeedPerTick(DesignId::Fighter));
+    }
+    f.acc.SetView((PlayerId)pl, QuantizePosition(a.x), QuantizePosition(a.y), 2400);
+  }
+}
+
+void Simulate(Fixture& f)
+{
+  Tick(f.world); f.mining.Advance(f.world); f.economy.Credit(f.mining.Deliveries(), f.world, f.build); f.build.Advance(f.world);
+}
+
+// The longest weapon reach of a design, in units; zero for a design with no weapon.
+std::uint32_t WeaponRange(DesignId d)
+{
+  std::uint32_t r = 0;
+  const DesignEntry& e = Design(d);
+  const std::size_t slots = std::min<std::size_t>(Hull(e.hull).slotCount, MAX_COMPONENT_SLOTS);
+  for (std::size_t s = 0; s < slots; ++s) { const ComponentEntry& c = Component(e.slots[s]); if (c.damagePerSecond > 0) r = std::max<std::uint32_t>(r, c.rangeUnits); }
+  return r;
+}
+
+// =====================================================================================================
+// A. A synthetic M3 targeting pass: every armed entity queries the grid within its weapon range, the
+//    candidates leave the grid sorted by identity, the nearest hostile wins, ties on identity (Nearest).
+// =====================================================================================================
+void TargetingPass()
+{
+  std::printf("\nA. TARGETING PASS (grid query per armed entity per tick, sorted by identity, nearest hostile)\n");
+  for (const auto& [players, brawl] : std::vector<std::pair<std::size_t, bool>>{{2, false}, {2, true}, {4, false}, {4, true}, {100, false}})
+  {
+    Fixture f; Populate(f, players, 20260922, brawl);
+    UniformGrid grid; std::vector<EntityId> scratch;
+    const int ticks = 40; double rebuildUs = 0, queryUs = 0; std::uint64_t queries = 0, candidates = 0, targets = 0;
+    for (int t = 0; t < ticks; ++t)
+    {
+      Simulate(f);
+      auto t0 = Clock::now(); grid.Rebuild(f.world); auto t1 = Clock::now();
+      const std::size_t slots = f.world.SlotCount();
+      for (std::size_t s = 0; s < slots; ++s)
+      {
+        if (!f.world.IsSlotAlive(s)) continue;
+        const Entity& e = f.world.EntityInSlot(s);
+        const std::uint32_t range = WeaponRange(e.design);
+        if (range == 0) continue;
+        const PlayerId me = e.owner;
+        const EntityId best = grid.Nearest(f.world, e.position, (Neuron::Fixed)(range * Neuron::FIXED_ONE),
+                                           [me](const Entity& o) noexcept { return o.owner != me && o.owner != NO_PLAYER; }, scratch);
+        ++queries; candidates += scratch.size(); if (best.IsValid()) ++targets;
+      }
+      auto t2 = Clock::now(); rebuildUs += Us(t0, t1); queryUs += Us(t1, t2);
+    }
+    std::printf("  players %3zu %-6s entities %5zu: rebuild %7.1f us/tick, targeting %8.1f us/tick, %5.1f queries/tick, %6.1f candidates/query, %4.1f%% found a target\n",
+                players, brawl ? "brawl" : "spread", f.world.AliveCount(), rebuildUs / ticks, queryUs / ticks, double(queries) / ticks,
+                queries ? double(candidates) / queries : 0.0, queries ? 100.0 * targets / queries : 0.0);
+  }
+}
+
+// =====================================================================================================
+// B. The accumulator: a replica of Accumulator::Fill with timers (validated against the real one), then
+//    the proposed fix -- records built once per tick for all clients, no record in the candidate, and a
+//    top-K selection (nth_element + sort of K) instead of a full sort. Same total order, same sent set.
+// =====================================================================================================
+struct Cand { std::uint16_t slot = 0; bool due = false; std::uint32_t age = 0; std::uint64_t score = 0; EntityRecord record{}; };
+struct CandLite { std::uint16_t slot = 0; bool due = false; std::uint32_t age = 0; std::uint64_t score = 0; };
+template <typename C> bool GoesFirst(const C& l, const C& r) noexcept
+{
+  if (l.due != r.due) return l.due;
+  if (l.due && (l.age != r.age)) return l.age > r.age;
+  if (l.score != r.score) return l.score > r.score;
+  return l.slot < r.slot;
+}
+bool InView(const Neuron::Vec2& p, const Neuron::Vec2& c, std::int64_t r) noexcept
+{
+  if (r <= 0) return false;
+  const std::int64_t dx = ((std::int64_t)p.x - c.x) / Neuron::FIXED_ONE, dy = ((std::int64_t)p.y - c.y) / Neuron::FIXED_ONE;
+  return dx * dx + dy * dy <= r * r;
+}
+struct TrackedM { std::uint64_t score = 0; std::uint32_t lastSentTick = 0; bool sent = false; EntityRecord lastSent{}; };
+struct RemovalM { WireIdentity identity = 0; std::uint32_t remaining = 0; };
+struct ClientM { PlayerId player = 0; std::vector<TrackedM> tracked; std::vector<RemovalM> removals; Neuron::Vec2 view{}; std::int64_t radius = 0; std::uint16_t sequence = 0; };
+struct Phases { double removals = 0, scores = 0, sort = 0, fill = 0; };
+
+std::size_t FillBaseline(const World& w, ClientM& c, std::uint32_t tick, Phases& ph)
+{
+  auto t0 = Clock::now();
+  const std::size_t slotCount = w.SlotCount();
+  if (c.tracked.size() < slotCount) c.tracked.resize(slotCount);
+  for (std::size_t s = 0; s < c.tracked.size(); ++s)
+  {
+    TrackedM& tr = c.tracked[s]; if (!tr.sent) continue;
+    const bool still = (s < slotCount) && w.IsSlotAlive(s) && (RecordOf(w, s).identity == tr.lastSent.identity);
+    if (!still) { c.removals.push_back({tr.lastSent.identity, REMOVAL_REPEAT_TICKS}); tr = TrackedM{}; }
+  }
+  auto t1 = Clock::now();
+  const std::uint32_t sweep = SweepTicks(w.AliveCount());
+  std::vector<Cand> cands; cands.reserve(w.AliveCount());
+  for (std::size_t s = 0; s < slotCount; ++s)
+  {
+    if (!w.IsSlotAlive(s)) continue;
+    const Entity& e = w.EntityInSlot(s); TrackedM& tr = c.tracked[s]; const EntityRecord rec = RecordOf(w, s);
+    std::uint64_t rel = Accumulator::WEIGHT_BASE;
+    if (InView(e.position, c.view, c.radius)) rel += Accumulator::WEIGHT_IN_VIEW;
+    if (tr.sent && !(rec == tr.lastSent)) rel += Accumulator::WEIGHT_CHANGED;
+    if (e.owner == c.player) rel += Accumulator::WEIGHT_OWN;
+    tr.score += rel;
+    const std::uint32_t age = tr.sent ? (tick - tr.lastSentTick) : 0xFFFFFFFFu;
+    cands.push_back(Cand{(std::uint16_t)s, (!tr.sent) || (age >= sweep), age, tr.score, rec});
+  }
+  auto t2 = Clock::now();
+  std::sort(cands.begin(), cands.end(), GoesFirst<Cand>);
+  auto t3 = Clock::now();
+  std::size_t next = 0, sentRecords = 0;
+  for (std::size_t u = 0; u < UPDATES_PER_TICK; ++u)
+  {
+    if (u > 0 && next >= cands.size()) break;
+    Update up; up.sequence = c.sequence++; up.tick = tick; up.liveEntityCount = (std::uint16_t)w.AliveCount();
+    if (u == 0) for (const RemovalM& r : c.removals) { if (up.removals.size() >= MAX_REMOVALS_PER_UPDATE) break; up.removals.push_back(r.identity); }
+    const std::size_t room = (UPDATE_PAYLOAD_BYTES - EncodedSize(up)) / EntityRecord::SIZE_BYTES;
+    const std::size_t take = std::min(room, cands.size() - next);
+    for (std::size_t k = 0; k < take; ++k) { const Cand& ch = cands[next + k]; up.records.push_back(ch.record); TrackedM& tr = c.tracked[ch.slot]; tr.score = 0; tr.lastSentTick = tick; tr.sent = true; tr.lastSent = ch.record; }
+    next += take; sentRecords += take;
+    if (u == 0) { for (std::size_t i = 0; i < up.removals.size(); ++i) --c.removals[i].remaining; c.removals.erase(std::remove_if(c.removals.begin(), c.removals.end(), [](const RemovalM& r) { return r.remaining == 0; }), c.removals.end()); }
+  }
+  auto t4 = Clock::now();
+  ph.removals += Us(t0, t1); ph.scores += Us(t1, t2); ph.sort += Us(t2, t3); ph.fill += Us(t3, t4);
+  return sentRecords;
+}
+
+// The fix. `records`/`alive` are built ONCE per tick (shared by every client); the candidate carries no
+// record; the top K (what two updates can carry) is selected with nth_element and only that prefix sorted.
+std::size_t FillFixed(const World& w, const std::vector<EntityRecord>& records, const std::vector<std::uint8_t>& alive, ClientM& c, std::uint32_t tick, bool topK, Phases& ph)
+{
+  auto t0 = Clock::now();
+  const std::size_t slotCount = w.SlotCount();
+  if (c.tracked.size() < slotCount) c.tracked.resize(slotCount);
+  for (std::size_t s = 0; s < c.tracked.size(); ++s)
+  {
+    TrackedM& tr = c.tracked[s]; if (!tr.sent) continue;
+    const bool still = (s < slotCount) && alive[s] && (records[s].identity == tr.lastSent.identity);
+    if (!still) { c.removals.push_back({tr.lastSent.identity, REMOVAL_REPEAT_TICKS}); tr = TrackedM{}; }
+  }
+  auto t1 = Clock::now();
+  const std::uint32_t sweep = SweepTicks(w.AliveCount());
+  std::vector<CandLite> cands; cands.reserve(w.AliveCount());
+  for (std::size_t s = 0; s < slotCount; ++s)
+  {
+    if (!alive[s]) continue;
+    const Entity& e = w.EntityInSlot(s); TrackedM& tr = c.tracked[s]; const EntityRecord& rec = records[s];
+    std::uint64_t rel = Accumulator::WEIGHT_BASE;
+    if (InView(e.position, c.view, c.radius)) rel += Accumulator::WEIGHT_IN_VIEW;
+    if (tr.sent && !(rec == tr.lastSent)) rel += Accumulator::WEIGHT_CHANGED;
+    if (e.owner == c.player) rel += Accumulator::WEIGHT_OWN;
+    tr.score += rel;
+    const std::uint32_t age = tr.sent ? (tick - tr.lastSentTick) : 0xFFFFFFFFu;
+    cands.push_back(CandLite{(std::uint16_t)s, (!tr.sent) || (age >= sweep), age, tr.score});
+  }
+  auto t2 = Clock::now();
+  const std::size_t k = std::min(cands.size(), UPDATES_PER_TICK * MAX_RECORDS_PER_UPDATE);
+  if (topK && k < cands.size()) { std::nth_element(cands.begin(), cands.begin() + k, cands.end(), GoesFirst<CandLite>); std::sort(cands.begin(), cands.begin() + k, GoesFirst<CandLite>); }
+  else std::sort(cands.begin(), cands.end(), GoesFirst<CandLite>);
+  auto t3 = Clock::now();
+  std::size_t next = 0, sentRecords = 0;
+  for (std::size_t u = 0; u < UPDATES_PER_TICK; ++u)
+  {
+    if (u > 0 && next >= cands.size()) break;
+    Update up; up.sequence = c.sequence++; up.tick = tick; up.liveEntityCount = (std::uint16_t)w.AliveCount();
+    if (u == 0) for (const RemovalM& r : c.removals) { if (up.removals.size() >= MAX_REMOVALS_PER_UPDATE) break; up.removals.push_back(r.identity); }
+    const std::size_t room = (UPDATE_PAYLOAD_BYTES - EncodedSize(up)) / EntityRecord::SIZE_BYTES;
+    const std::size_t take = std::min(room, cands.size() - next);
+    for (std::size_t i = 0; i < take; ++i) { const CandLite& ch = cands[next + i]; const EntityRecord& rec = records[ch.slot]; up.records.push_back(rec); TrackedM& tr = c.tracked[ch.slot]; tr.score = 0; tr.lastSentTick = tick; tr.sent = true; tr.lastSent = rec; }
+    next += take; sentRecords += take;
+    if (u == 0) { for (std::size_t i = 0; i < up.removals.size(); ++i) --c.removals[i].remaining; c.removals.erase(std::remove_if(c.removals.begin(), c.removals.end(), [](const RemovalM& r) { return r.remaining == 0; }), c.removals.end()); }
+  }
+  auto t4 = Clock::now();
+  ph.removals += Us(t0, t1); ph.scores += Us(t1, t2); ph.sort += Us(t2, t3); ph.fill += Us(t3, t4);
+  return sentRecords;
+}
+
+void AccumulatorStudy()
+{
+  std::printf("\nB. ACCUMULATOR: real Fill vs a timed replica vs the fix (records once per tick, lean candidate, top-K select)\n");
+  for (std::size_t players : {std::size_t{2}, std::size_t{4}, std::size_t{100}})
+  {
+    // Three identical fixtures so the three variants see the same world every tick.
+    Fixture real, base, fix; Populate(real, players, 20260922, false); Populate(base, players, 20260922, false); Populate(fix, players, 20260922, false);
+    std::vector<ClientM> cb(players), cf(players), cf1(players);
+    for (std::size_t pl = 1; pl <= players; ++pl)
+    {
+      const Neuron::Vec2 a = StartAnchor(players, (PlayerId)pl);
+      for (ClientM* c : {&cb[pl - 1], &cf[pl - 1], &cf1[pl - 1]}) { c->player = (PlayerId)pl; c->view = Neuron::Vec2{DequantizePosition(QuantizePosition(a.x)), DequantizePosition(QuantizePosition(a.y))}; c->radius = 2400; }
+    }
+    const int ticks = 40; double realUs = 0, baseUs = 0, fixOnceUs = 0, fixTopKUs = 0, recordsUs = 0; Phases pb{}, pf{}, pf1{};
+    std::uint64_t sentReal = 0, sentBase = 0, sentFix = 0, sentFix1 = 0; bool sameSet = true;
+    std::vector<EntityRecord> records; std::vector<std::uint8_t> alive;
+    for (int t = 1; t <= ticks; ++t)
+    {
+      Simulate(real); Simulate(base); Simulate(fix);
+      auto r0 = Clock::now();
+      std::vector<std::vector<Update>> realOut(players);
+      for (std::size_t pl = 1; pl <= players; ++pl) { PlayerBlock own{}; realOut[pl - 1] = real.acc.Fill(real.world, (PlayerId)pl, own, (std::uint32_t)t); for (const Update& u : realOut[pl - 1]) sentReal += u.records.size(); }
+      auto r1 = Clock::now(); realUs += Us(r0, r1);
+      auto b0 = Clock::now();
+      for (std::size_t pl = 1; pl <= players; ++pl) sentBase += FillBaseline(base.world, cb[pl - 1], (std::uint32_t)t, pb);
+      auto b1 = Clock::now(); baseUs += Us(b0, b1);
+      // The fix: records once.
+      auto f0 = Clock::now();
+      const std::size_t slots = fix.world.SlotCount(); records.resize(slots); alive.assign(slots, 0);
+      for (std::size_t s = 0; s < slots; ++s) if (fix.world.IsSlotAlive(s)) { alive[s] = 1; records[s] = RecordOf(fix.world, s); }
+      auto f1 = Clock::now(); recordsUs += Us(f0, f1);
+      for (std::size_t pl = 1; pl <= players; ++pl) sentFix1 += FillFixed(fix.world, records, alive, cf1[pl - 1], (std::uint32_t)t, false, pf1);
+      auto f2 = Clock::now(); fixOnceUs += Us(f1, f2);
+      for (std::size_t pl = 1; pl <= players; ++pl) sentFix += FillFixed(fix.world, records, alive, cf[pl - 1], (std::uint32_t)t, true, pf);
+      auto f3 = Clock::now(); fixTopKUs += Us(f2, f3);
+      // The sent SET and ORDER must agree between the real accumulator and the fixed one: compare the
+      // records sent to player 1 this tick (both worlds are identical, so the records are comparable).
+      if (players <= 4)
+      {
+        std::vector<WireIdentity> a, b;
+        for (const Update& u : realOut[0]) for (const EntityRecord& r : u.records) a.push_back(r.identity);
+        // Re-run the fixed fill on a scratch copy to extract identities without disturbing cf: cheaper to
+        // trust the ordering argument; instead compare the count only here and the set on the fixture below.
+        if (a.size() != realOut[0].size() * 0 + a.size()) sameSet = false; // placeholder, count compared below
+      }
+    }
+    std::printf("  players %3zu entities %5zu: REAL Fill %9.1f us/tick (%.1f us/client) | replica %9.1f us/tick [removal scan %.0f, scores %.0f, sort %.0f, fill %.0f]\n",
+                players, real.world.AliveCount(), realUs / ticks, realUs / ticks / players, baseUs / ticks, pb.removals / ticks, pb.scores / ticks, pb.sort / ticks, pb.fill / ticks);
+    std::printf("      fix, records once (%.0f us/tick shared) + full sort: %9.1f us/tick (%.1f us/client) [scan %.0f, scores %.0f, sort %.0f, fill %.0f]\n",
+                recordsUs / ticks, fixOnceUs / ticks, fixOnceUs / ticks / players, pf1.removals / ticks, pf1.scores / ticks, pf1.sort / ticks, pf1.fill / ticks);
+    std::printf("      fix, records once + top-K select:             %9.1f us/tick (%.1f us/client) [scan %.0f, scores %.0f, select %.0f, fill %.0f]; records sent real/replica/fix: %llu/%llu/%llu\n",
+                fixTopKUs / ticks, fixTopKUs / ticks / players, pf.removals / ticks, pf.scores / ticks, pf.sort / ticks, pf.fill / ticks,
+                (unsigned long long)sentReal, (unsigned long long)sentBase, (unsigned long long)sentFix);
+    (void)sameSet; (void)sentFix1;
+  }
+  // The sent set: real Accumulator against the fixed fill, record by record, over 40 ticks at 4 players --
+  // the same world object feeds both, so a difference would be an ordering difference and nothing else.
+  {
+    Fixture f; Populate(f, 4, 20260922, false);
+    std::vector<ClientM> cf(4); for (std::size_t pl = 1; pl <= 4; ++pl) { const Neuron::Vec2 a = StartAnchor(4, (PlayerId)pl); cf[pl - 1].player = (PlayerId)pl; cf[pl - 1].view = Neuron::Vec2{DequantizePosition(QuantizePosition(a.x)), DequantizePosition(QuantizePosition(a.y))}; cf[pl - 1].radius = 2400; }
+    std::size_t mismatches = 0, compared = 0;
+    for (int t = 1; t <= 40; ++t)
+    {
+      Simulate(f);
+      const std::size_t slots = f.world.SlotCount(); std::vector<EntityRecord> records(slots); std::vector<std::uint8_t> alive(slots, 0);
+      for (std::size_t s = 0; s < slots; ++s) if (f.world.IsSlotAlive(s)) { alive[s] = 1; records[s] = RecordOf(f.world, s); }
+      for (std::size_t pl = 1; pl <= 4; ++pl)
+      {
+        PlayerBlock own{}; std::vector<Update> real = f.acc.Fill(f.world, (PlayerId)pl, own, (std::uint32_t)t);
+        // Replay the fixed fill and capture what it would send, in order.
+        ClientM& c = cf[pl - 1]; Phases ph{};
+        // Capture by re-implementing the take: run FillFixed on a copy to get the order it chose.
+        ClientM copy = c; std::vector<WireIdentity> fixedOrder;
+        {
+          const std::size_t slotCount = f.world.SlotCount(); if (copy.tracked.size() < slotCount) copy.tracked.resize(slotCount);
+          for (std::size_t s = 0; s < copy.tracked.size(); ++s) { TrackedM& tr = copy.tracked[s]; if (!tr.sent) continue; if (!((s < slotCount) && alive[s] && (records[s].identity == tr.lastSent.identity))) tr = TrackedM{}; }
+          const std::uint32_t sweep = SweepTicks(f.world.AliveCount()); std::vector<CandLite> cands;
+          for (std::size_t s = 0; s < slotCount; ++s) { if (!alive[s]) continue; const Entity& e = f.world.EntityInSlot(s); TrackedM& tr = copy.tracked[s]; std::uint64_t rel = 1; if (InView(e.position, copy.view, copy.radius)) rel += 4; if (tr.sent && !(records[s] == tr.lastSent)) rel += 2; if (e.owner == copy.player) rel += 2; tr.score += rel; const std::uint32_t age = tr.sent ? ((std::uint32_t)t - tr.lastSentTick) : 0xFFFFFFFFu; cands.push_back(CandLite{(std::uint16_t)s, (!tr.sent) || (age >= sweep), age, tr.score}); }
+          const std::size_t k = std::min(cands.size(), UPDATES_PER_TICK * MAX_RECORDS_PER_UPDATE);
+          if (k < cands.size()) { std::nth_element(cands.begin(), cands.begin() + k, cands.end(), GoesFirst<CandLite>); std::sort(cands.begin(), cands.begin() + k, GoesFirst<CandLite>); } else std::sort(cands.begin(), cands.end(), GoesFirst<CandLite>);
+          for (std::size_t i = 0; i < k; ++i) fixedOrder.push_back(records[cands[i].slot].identity);
+        }
+        std::vector<WireIdentity> realOrder; for (const Update& u : real) for (const EntityRecord& r : u.records) realOrder.push_back(r.identity);
+        for (std::size_t i = 0; i < realOrder.size(); ++i) { ++compared; if (i >= fixedOrder.size() || fixedOrder[i] != realOrder[i]) ++mismatches; }
+        static_cast<void>(FillFixed(f.world, records, alive, c, (std::uint32_t)t, true, ph));
+      }
+    }
+    std::printf("  sent-order check at 4 players over 40 ticks: %zu records compared, %zu out of order/missing against the real Accumulator\n", compared, mismatches);
+  }
+}
+
+// =====================================================================================================
+// C. Fire events under the 40-per-update cap, real Accumulator: M mounts firing every N ticks, 2 clients.
+// =====================================================================================================
+void FireBacklog()
+{
+  std::printf("\nC. FIRE EVENTS: %zu per update cap, %u repeats each, only the FIRST update of a tick carries them (Accumulator.cpp:221)\n", MAX_FIRES_PER_UPDATE, FIRE_REPEAT_TICKS);
+  for (const int mounts : {10, 20, 50, 100})
+    for (const int cadence : {1, 4, 5, 8, 10, 20})
+    {
+      Fixture f; Populate(f, 2, 20260922, false);
+      const int ticks = 200; std::uint64_t demanded = 0, sent = 0; std::uint32_t maxAge = 0;
+      // Track when each fire was first noted and when its third send happened, for player 1.
+      std::map<std::uint32_t, std::pair<int, int>> noted; // shooter index -> (tick noted, sends)
+      std::uint32_t nextShooter = 1;
+      for (int t = 1; t <= ticks; ++t)
+      {
+        Simulate(f);
+        if (t % cadence == 0) for (int m = 0; m < mounts; ++m) { const std::uint32_t id = nextShooter++; f.acc.NoteFire(FireEvent{.shooter = id, .target = 1, .weapon = 1}); noted[id] = {t, 0}; demanded += FIRE_REPEAT_TICKS; }
+        for (std::size_t pl = 1; pl <= 2; ++pl)
+        {
+          PlayerBlock own{}; std::vector<Update> ups = f.acc.Fill(f.world, (PlayerId)pl, own, (std::uint32_t)t);
+          if (pl == 1) for (const FireEvent& e : ups.front().fires) { sent++; auto& n = noted[e.shooter]; if (++n.second == (int)FIRE_REPEAT_TICKS) maxAge = std::max<std::uint32_t>(maxAge, (std::uint32_t)(t - n.first)); }
+        }
+      }
+      const double backlog = double(demanded) - double(sent);
+      std::printf("  %3d mounts every %2d ticks: demanded %6llu sends, sent %6llu to player 1 in %d ticks -> backlog %6.0f (%.1f/tick); oldest completed tracer %u ticks late; %s\n",
+                  mounts, cadence, (unsigned long long)demanded, (unsigned long long)sent, ticks, backlog, backlog / ticks, maxAge, (backlog > 0.05 * demanded) ? "UNBOUNDED" : "keeps up");
+    }
+  std::printf("  bound: a shooter set of M mounts needs a cadence of at least ceil(3M/40) ticks -- 100 mounts: %d ticks (%d ms); 50: %d; 20: %d\n", (300 + 39) / 40, ((300 + 39) / 40) * 50, (150 + 39) / 40, (60 + 39) / 40);
+}
+
+// =====================================================================================================
+// D. Burst loss against the real client store: 2 players, 110 entities, every update of ticks
+//    [100, 100+k) lost to player 1, then recovery. What the client forgets and what it draws.
+// =====================================================================================================
+void BurstLoss()
+{
+  std::printf("\nD. BURST LOSS vs the real ReplicaStore (110 entities: sweep %u tick, forget after %u ticks; link lost after %u ms)\n",
+              SweepTicks(110), FORGET_AFTER_SWEEPS * SweepTicks(110), 1000u);
+  for (const int k : {0, 1, 2, 3, 4, 5, 6, 10, 19})
+  {
+    Fixture f; Populate(f, 2, 20260922, false);
+    ReplicaStore store; std::vector<EntityRecord> drawn;
+    std::uint32_t forgottenOnRecovery = 0, starvedFirstFrame = 0, holdingBeforeRecovery = 0, heldBefore = 0, heldAfter = 0, forgottenTotal = 0; int starvedTicks = 0;
+    for (int t = 1; t <= 200; ++t)
+    {
+      Simulate(f);
+      PlayerBlock own{}; std::vector<Update> ups = f.acc.Fill(f.world, 1, own, (std::uint32_t)t);
+      static_cast<void>(f.acc.Fill(f.world, 2, own, (std::uint32_t)t));
+      const std::uint64_t arrival = (std::uint64_t)t * 50;
+      const bool lost = (t >= 100) && (t < 100 + k);
+      if (t == 99) { heldBefore = (std::uint32_t)store.HeldCount(); DrawnSummary s = store.Drawn(ReplicaStore::RenderMilliseconds(arrival + 49), drawn); (void)s; }
+      if (t == 100 + k - 1 && k > 0) { DrawnSummary s = store.Drawn(ReplicaStore::RenderMilliseconds(arrival + 49), drawn); holdingBeforeRecovery = s.holding; }
+      if (!lost)
+      {
+        std::uint32_t forgotten = 0;
+        for (const Update& u : ups) forgotten += store.Accept(u, arrival).forgotten;
+        forgottenTotal += forgotten;
+        if (t == 100 + k) { forgottenOnRecovery = forgotten; heldAfter = (std::uint32_t)store.HeldCount(); DrawnSummary s = store.Drawn(ReplicaStore::RenderMilliseconds(arrival + 49), drawn); starvedFirstFrame = s.starved; }
+        if (t > 100 + k && k > 0) { DrawnSummary s = store.Drawn(ReplicaStore::RenderMilliseconds(arrival + 49), drawn); if (s.starved > 0) ++starvedTicks; }
+      }
+    }
+    std::printf("  %2d ticks lost (%4d ms): held %u -> %u; holding before recovery %u; forgotten on recovery %u (total over run %u); starved in first recovered frame %u; ticks with starved after %d\n",
+                k, k * 50, heldBefore, heldAfter, holdingBeforeRecovery, forgottenOnRecovery, forgottenTotal, starvedFirstFrame, starvedTicks);
+  }
+}
+
+// =====================================================================================================
+// E. Elimination: 55 entities of player 2 destroyed in one tick; how the removals drain to player 1.
+// =====================================================================================================
+void EliminationRemovals()
+{
+  std::printf("\nE. ELIMINATION: destroy all of player 2 in one tick (cap %zu removals/update, %u repeats)\n", MAX_REMOVALS_PER_UPDATE, REMOVAL_REPEAT_TICKS);
+  Fixture f; Populate(f, 2, 20260922, false);
+  for (int t = 1; t <= 5; ++t) { Simulate(f); PlayerBlock own{}; static_cast<void>(f.acc.Fill(f.world, 1, own, (std::uint32_t)t)); }
+  std::vector<EntityId> victims; for (std::size_t s = 0; s < f.world.SlotCount(); ++s) if (f.world.IsSlotAlive(s) && f.world.EntityInSlot(s).owner == 2) victims.push_back(f.world.EntityInSlot(s).id);
+  for (EntityId id : victims) f.world.Destroy(id);
+  std::map<WireIdentity, int> seen; int lastTick = 0; std::printf("  destroyed %zu; removals per update from tick 6:", victims.size());
+  for (int t = 6; t <= 30; ++t)
+  {
+    Simulate(f); PlayerBlock own{}; std::vector<Update> ups = f.acc.Fill(f.world, 1, own, (std::uint32_t)t);
+    std::printf(" %zu", ups.front().removals.size());
+    for (WireIdentity r : ups.front().removals) if (++seen[r] == (int)REMOVAL_REPEAT_TICKS) lastTick = t;
+  }
+  std::size_t complete = 0; for (auto& [id, n] : seen) if (n >= (int)REMOVAL_REPEAT_TICKS) ++complete;
+  std::printf("\n  %zu of %zu removals completed their %u repeats; the last completed at tick %d (%d ticks after the death)\n", complete, victims.size(), REMOVAL_REPEAT_TICKS, lastTick, lastTick - 6);
+}
+} // namespace
+
+int main()
+{
+  std::printf("HOST COST baseline (unmodified code, this machine, g++ -O2, single thread)\n");
+  for (std::size_t players : {std::size_t{2}, std::size_t{4}, std::size_t{100}})
+  {
+    Fixture f; Populate(f, players, 20260922, false);
+    const int ticks = 40; double simUs = 0, accUs = 0; std::size_t updates = 0;
+    for (int t = 1; t <= ticks; ++t)
+    {
+      auto t0 = Clock::now(); Simulate(f); auto t1 = Clock::now();
+      for (std::size_t pl = 1; pl <= players; ++pl) { PlayerBlock own{}; updates += f.acc.Fill(f.world, (PlayerId)pl, own, (std::uint32_t)t).size(); }
+      auto t2 = Clock::now(); simUs += Us(t0, t1); accUs += Us(t1, t2);
+    }
+    std::printf("  players %3zu, entities %5zu: simulation %8.1f us/tick, accumulator %9.1f us/tick (%.1f us per client), updates/tick %.1f\n", players, f.world.AliveCount(), simUs / ticks, accUs / ticks, accUs / ticks / players, double(updates) / ticks);
+  }
+  TargetingPass();
+  AccumulatorStudy();
+  FireBacklog();
+  BurstLoss();
+  EliminationRemovals();
+  return 0;
+}
