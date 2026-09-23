@@ -103,6 +103,22 @@ no seed can be unlucky. It is also visibly artificial, and `GameDesign.md` §3 t
 two and four players**, although the MVP runs only two. For each placed object there is exactly one
 counterpart at the rotated position, with no rounding anywhere and no object landing on the center twice.
 
+**BUILT, 2026-09-23**, as `GenerateField(seed, players)` in `GameCore/Generator.h` `.cpp`. It returns the
+region and then each copy turned one step further round — 180° at two players, 90° at four — so **copy k is
+the region of the player whose anchor is k steps round**, and a row's index modulo the region's size says
+which rock it copies. It draws nothing from the PRNG, so M2.1's pinned table is still the field's first
+rows. **The rotation is `Layout.h`'s `QuarterTurn`, moved out of `Layout.cpp`'s anonymous namespace** so
+that the anchors and the rocks turn by one function rather than two that could disagree about which way is
+a quarter turn. `FieldCopyCount` treats one player as two and three and every stress count as four, the way
+`GenerateRegion` already did.
+
+`GeneratorTests`' new `TheSymmetry` pins the 180° copy of seed 20260922 by number, and over 200 seeds at two
+and four players asserts exactly one counterpart per rock at the rotated position, to the fixed-point bit
+and through a rotation written out by hand rather than through `QuarterTurn`; no rock on the center; and
+each copy's home field inside the annulus around its own player's anchor. M2.1's spacing test now runs
+over `GenerateField` rather than its own hand copy. **The host is still unchanged**, as at M2.1: nothing
+simulates or replicates an asteroid before M3, and the client's call is M2.3.
+
 ### M2.3 — The client derives the field · `GameClient` · `GameClientTests` · agent
 
 **Read first:** R23; `TechnicalDesign.md` §3 and §4; `OpenQuestions.md` Q22.
