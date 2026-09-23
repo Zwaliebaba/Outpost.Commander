@@ -179,16 +179,20 @@ Neuron::MeshInstance InstanceFor(float _worldX, float _worldY, Neuron::Angle _he
 
 void TeamColor(PlayerId _player, float& _outRed, float& _outGreen, float& _outBlue) noexcept
 {
-  if ((_player == NO_PLAYER) || (static_cast<std::size_t>(_player) > MAX_PLAYERS))
+  if (_player == NO_PLAYER)
   {
-    // Nobody's, which takes the hull's own base tone rather than reading off the end of the table.
+    // Nobody's, which takes the hull's own base tone.
     _outRed = HULL_PALETTE[1][0];
     _outGreen = HULL_PALETTE[1][1];
     _outBlue = HULL_PALETTE[1][2];
     return;
   }
 
-  const std::size_t index = static_cast<std::size_t>(_player) - 1;
+  // **A PLAYER PAST THE PALETTE TAKES ITS LAST COLOR** (ADR-023). The palette is the design's four; a
+  // stress run seats more, and its client draws them in one color rather than reading off the table.
+  constexpr std::size_t PALETTE_SIZE = sizeof(TEAM_PALETTE) / sizeof(TEAM_PALETTE[0]);
+  const std::size_t player = static_cast<std::size_t>(_player);
+  const std::size_t index = ((player > PALETTE_SIZE) ? PALETTE_SIZE : player) - 1;
   _outRed = TEAM_PALETTE[index][0];
   _outGreen = TEAM_PALETTE[index][1];
   _outBlue = TEAM_PALETTE[index][2];

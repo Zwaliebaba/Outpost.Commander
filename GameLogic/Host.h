@@ -21,6 +21,15 @@ namespace Outpost
 /// M1.5's `GameCore/Layout.h` is the first thing to consume it, and may be where it ends up.
 inline constexpr std::uint64_t DEFAULT_MATCH_SEED = 20260922;
 
+/// **WHETHER A HOST MAY SEAT THIS MANY** (ADR-023). One to four always -- the game's number, and Q27 ships
+/// two -- and up to every `PlayerId` there is only when the host was started in a stress configuration, so a
+/// real match can never be configured past the design by accident. Zero is never allowed: a match with no
+/// slots seats nobody, which is a mistake rather than a configuration.
+[[nodiscard]] constexpr bool PlayerCountAllowed(std::size_t _playerCount, bool _stress) noexcept
+{
+  return (_playerCount >= 1) && (_playerCount <= (_stress ? MAX_PLAYERS : MATCH_PLAYERS));
+}
+
 /// One player's own block, which is the only player block an update carries (ADR-024). M1.6: all four
 /// fields carry meaning -- the two build bytes are Q21's whole answer to the queue that had no wire record.
 [[nodiscard]] PlayerBlock PlayerBlockFor(const CommandIntake& _intake, const BuildSystem& _build, PlayerId _player) noexcept;
@@ -40,7 +49,11 @@ public:
   /// stays.
   static constexpr std::uint16_t DEFAULT_PORT = 49000;
 
-  /// Seats a match at `DEFAULT_MATCH_SEED`. **A `Host` is joinable the moment it is constructed**,
+  /// **Q27 SHIPS TWO THROUGH M3**, and this is that number as a default rather than a constant. `Server.cpp`
+  /// takes `--players`, and past four only with `--stress` (ADR-023).
+  static constexpr std::size_t DEFAULT_PLAYER_COUNT = 2;
+
+  /// Seats a two-player match at `DEFAULT_MATCH_SEED`. **A `Host` is joinable the moment it is constructed**,
   /// so a suite that never calls `BeginMatch` still has slots to hand out.
   Host();
 
@@ -52,7 +65,16 @@ public:
   /// and said the world was M3's; placing the layout changed that, because a `BeginMatch` that
   /// placed stations without clearing would place a second set on the second call. Resetting is
   /// both simpler and what M3's restart wants anyway.
-  void BeginMatch(std::uint64_t _matchSeed);
+  ///
+  /// **_playerCount IS TRUSTED HERE AND CHECKED BEFORE IT.** The caller asks `PlayerCountAllowed` with its
+  /// stress switch; this seats whatever it is given, clamped only to what a table can hold.
+  void BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount = DEFAULT_PLAYER_COUNT);
+
+  /// How many slots this match has.
+  [[nodiscard]] std::size_t PlayerCount() const noexcept
+  {
+    return m_sessions.PlayerCount();
+  }
 
   [[nodiscard]] std::uint64_t MatchSeed() const noexcept
   {

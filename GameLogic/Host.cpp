@@ -14,11 +14,6 @@ namespace
 /// Comfortably larger than any datagram this build sends or accepts, so a receive is never
 /// measuring the buffer instead of the packet.
 inline constexpr std::size_t SCRATCH_BYTES = 2048;
-
-/// Q27 ships two through M3. It is a runtime value everywhere it matters -- an update carries only its
-/// recipient's block, so nothing on the wire is sized by it (ADR-024) -- and raising it is configuration
-/// and not a format change.
-inline constexpr std::size_t PLAYER_COUNT = 2;
 } // namespace
 
 PlayerBlock PlayerBlockFor(const CommandIntake& _intake, const BuildSystem& _build, PlayerId _player) noexcept
@@ -34,18 +29,23 @@ Host::Host()
   BeginMatch(DEFAULT_MATCH_SEED);
 }
 
-void Host::BeginMatch(std::uint64_t _matchSeed)
+void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
 {
+  // A RUNTIME VALUE EVERYWHERE IT MATTERS (Q27, ADR-023): an update carries only its recipient's block, so
+  // nothing on the wire is sized by it (ADR-024), and every table is sized to the capacity. Raising it is
+  // configuration and not a format change.
+  const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
+
   m_world = World{};
   m_intake = CommandIntake{};
-  m_build.Begin(PLAYER_COUNT);
-  m_sessions.Begin(PLAYER_COUNT, _matchSeed);
+  m_build.Begin(players);
+  m_sessions.Begin(players, _matchSeed);
   m_accumulator.Begin();
 
   // M1.5: the stations, from `GameCore`'s generator -- the same function the client runs to draw the
   // same field (R23). A station needs no code of its own here because it is a row in the design
   // table (ADR-006), so this is `World::Create` like anything else.
-  for (const Placement& placed : GenerateLayout(_matchSeed, PLAYER_COUNT))
+  for (const Placement& placed : GenerateLayout(_matchSeed, players))
   {
     static_cast<void>(m_world.Create(placed.position, placed.heading, placed.design, placed.owner));
   }

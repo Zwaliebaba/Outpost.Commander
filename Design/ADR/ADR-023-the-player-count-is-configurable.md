@@ -24,13 +24,22 @@ gets `MatchFull` (ADR-013). Four things are sized to four, and only one of them 
 ## Decision
 
 **The player count is a host argument, not a constant.** `PlayerId` stays one byte, so the ceiling is
-254, because zero is `NO_PLAYER`. The per-player arrays are sized at `Sessions::Begin`, and `MAX_PLAYERS`
-stops being a capacity. The live entity count is bounded separately, by ADR-024's 16-bit index: a run
-that would exceed it is refused at `Begin`, not wrapped.
+254, because zero is `NO_PLAYER`. **`MAX_PLAYERS` becomes that capacity, 254, and the game's four becomes
+`MATCH_PLAYERS`** (`GameCore/Entity.h`), where one constant had been doing both jobs. The live entity count
+is bounded separately, by ADR-024's 16-bit index: the store has 65,536 slots and refuses a creation past
+them rather than wrapping an identity.
+
+**Amended while building (M1.14c): the per-player tables are sized to the capacity, not at `Begin`.**
+This record first had them sized when the match starts. The command intake and the build system keep an
+array entry per possible player instead -- 255 entries, a few kilobytes -- because an array needs no count
+threaded into a constructor, no "was `Begin` called" to assert, and cannot be indexed past by any
+`PlayerId` there is. What a match's count decides is how many slots `Sessions` hands out and how many
+stations the layout places; nothing else reads it.
 
 **Four is still the game's number.** `GameDesign.md` §2's "a match is four slots" does not move. The host
 refuses a count above four unless it is started in a **stress configuration**, named on its command line,
-so a real match can never be configured past the design by accident.
+so a real match can never be configured past the design by accident: `Server --players N --stress`, checked
+by `PlayerCountAllowed` in `GameLogic/Host.h`, which a suite pins.
 
 **Above four, the start layout does not claim to be fair.** Two and four keep the quarter-turn anchors,
 exact and symmetric, and three keeps its admitted unfairness. Above four, player *k* of *N* starts at
@@ -39,8 +48,13 @@ the center. Integer arithmetic on a pinned table satisfies R16, and both sides c
 (R23). It is not exactly symmetric, and the stress configuration exists to load the host, not to be
 played.
 
-**A client names a player past the palette with the last team color.** The packaged client can join a
-stress run and draw it. It will not draw it well, and it doesn't have to.
+**A client names a player past the palette with the last team color**, in the HUD and on the hulls. The
+packaged client can join a stress run and draw it. It will not draw it well, and it doesn't have to.
+
+**One limitation is known and left.** The packaged client recenters its camera on `StartAnchor(2, player)`
+when it is seated, because the join does not tell it the player count. In a stress run its camera opens in
+the wrong place, and a pan fixes it. The harness has no camera, so this costs a stress run nothing; putting
+the count in the join reply is the fix if a person ever plays one.
 
 ## Consequences
 

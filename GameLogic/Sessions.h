@@ -28,9 +28,10 @@ namespace Outpost
 class Sessions
 {
 public:
-  /// The design's ceiling (`GameDesign.md` section 2), which `CommandIntake` already sizes itself
-  /// to. Named through it rather than restated, because two fours that must agree are a defect
-  /// waiting for somebody to change one.
+  /// The most a host can seat (`GameCore/Entity.h`), which `CommandIntake` already sizes itself to. Named
+  /// through it rather than restated, because two ceilings that must agree are a defect waiting for
+  /// somebody to change one. **Not the design's four**: whether a count past four is allowed is the host's
+  /// stress switch to decide (ADR-023), and this only bounds what a table can hold.
   static constexpr std::size_t MAX_PLAYERS = CommandIntake::MAX_PLAYERS;
 
   /// **THE FIRST CLAIM ANYONE HAS MADE ON PCG32's STREAM SPACE.** `NeuronCore/Pcg32.h` left the
@@ -57,8 +58,8 @@ public:
   /// Seats a match: how many slots it has and what seed every joining client is told. Clears
   /// whatever was held before, which is what starting another match means.
   ///
-  /// _playerCount above MAX_PLAYERS is clamped rather than refused -- there is no caller that can
-  /// reach it and no useful thing to return.
+  /// _playerCount above MAX_PLAYERS is clamped rather than refused -- `PlayerCountAllowed` refuses it
+  /// before any caller gets here, and there is no useful thing to return.
   void Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcept;
 
   /// ADR-013's handshake, and the only thing that hands out a slot.

@@ -245,13 +245,18 @@ public:
     Assert::AreEqual(SEED + 5, after.matchSeed);
   }
 
-  /// A player count above the design's ceiling is clamped rather than refused, because there is no
-  /// caller that can reach it and nothing useful to return.
-  TEST_METHOD(ThePlayerCountIsClampedToTheCeiling)
+  /// A player count above the capacity is clamped rather than refused, because `PlayerCountAllowed`
+  /// refuses it before any caller gets here and there is nothing useful to return. **A stress count below
+  /// it is kept** (ADR-023): ninety-nine is a count a host can seat.
+  TEST_METHOD(ThePlayerCountIsClampedToTheCapacity)
   {
     Outpost::Sessions sessions;
     sessions.Begin(99, SEED);
+    Assert::AreEqual(std::size_t{99}, sessions.PlayerCount());
+
+    sessions.Begin(300, SEED);
     Assert::AreEqual(Outpost::Sessions::MAX_PLAYERS, sessions.PlayerCount());
+    Assert::AreEqual(std::size_t{254}, Outpost::Sessions::MAX_PLAYERS);
   }
 
   /// A match with no slots seats nobody, which is the honest answer rather than a crash.

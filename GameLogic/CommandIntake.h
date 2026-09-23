@@ -51,8 +51,8 @@ enum class CommandRejection : std::uint8_t
 class CommandIntake
 {
 public:
-  /// The largest player number this holds state for. Q27 ships two and the design's ceiling is
-  /// four; this is sized to the ceiling so the third and fourth player stay a runtime value.
+  /// The largest player number this holds state for: every `PlayerId` there is (`GameCore/Entity.h`), so
+  /// the player count stays a runtime value at any size a stress run asks for (ADR-023).
   static constexpr std::size_t MAX_PLAYERS = Outpost::MAX_PLAYERS;
 
   /// Validates and applies one command on behalf of _player. The world is touched only when the

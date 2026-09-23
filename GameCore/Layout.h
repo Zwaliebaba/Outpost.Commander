@@ -97,6 +97,12 @@ struct Placement
 /// occur are two and four. Three lands on anchors 0, 1 and 2 -- exact, adjacent, and unfair, which is
 /// stated here rather than discovered.
 ///
+/// **ABOVE FOUR, A STRESS LAYOUT THAT DOES NOT CLAIM TO BE FAIR** (ADR-023). Player *k* of *N* starts at
+/// binary angle `(k - 1) * 65536 / N` around the same radius, placed through `NeuronCore`'s sine table: integer
+/// arithmetic on a pinned table, so both sides compute it identically (R16, R23), and not exactly symmetric,
+/// because an eighth of a turn is not a swap and a negation. It exists to seat a host's stress run, not to be
+/// played. Two and four are untouched and so is three.
+///
 /// _player is one-based; `NO_PLAYER` and anything past the count returns the origin, which no anchor is.
 [[nodiscard]] Neuron::Vec2 StartAnchor(std::size_t _playerCount, PlayerId _player) noexcept;
 

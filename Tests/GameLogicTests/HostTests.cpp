@@ -85,6 +85,40 @@ public:
     Assert::AreEqual(std::size_t{0}, host.ClientCount());
   }
 
+  /// **FOUR IS THE GAME'S NUMBER; PAST IT ONLY UNDER THE STRESS SWITCH** (ADR-023), and never zero.
+  TEST_METHOD(ThePlayerCountIsAllowedByTheSwitch)
+  {
+    Assert::IsFalse(Outpost::PlayerCountAllowed(0, false));
+    Assert::IsFalse(Outpost::PlayerCountAllowed(0, true));
+    for (std::size_t players = 1; players <= 4; ++players)
+    {
+      Assert::IsTrue(Outpost::PlayerCountAllowed(players, false));
+      Assert::IsTrue(Outpost::PlayerCountAllowed(players, true));
+    }
+    Assert::IsFalse(Outpost::PlayerCountAllowed(5, false), L"a real match was configured past the design");
+    Assert::IsTrue(Outpost::PlayerCountAllowed(5, true));
+    Assert::IsTrue(Outpost::PlayerCountAllowed(254, true));
+    Assert::IsFalse(Outpost::PlayerCountAllowed(255, true), L"past what a PlayerId can name");
+  }
+
+  /// A stress match seats as many as it was given: a station each, and a slot each.
+  TEST_METHOD(AStressMatchSeatsEveryPlayer)
+  {
+    Outpost::Host host;
+    host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, 8);
+    Assert::AreEqual(std::size_t{8}, host.PlayerCount());
+    Assert::AreEqual(std::size_t{8}, host.CurrentWorld().AliveCount());
+    Assert::AreEqual(std::size_t{8}, host.CurrentSessions().PlayerCount());
+  }
+
+  /// And a host nobody configured is the MVP's two, which is Q27's answer.
+  TEST_METHOD(TheDefaultIsTwoPlayers)
+  {
+    const Outpost::Host host;
+    Assert::AreEqual(std::size_t{2}, host.PlayerCount());
+    Assert::AreEqual(std::size_t{2}, host.CurrentWorld().AliveCount());
+  }
+
   TEST_METHOD(TheTickPeriodIsTheDesigns)
   {
     Assert::AreEqual(std::int64_t{50}, Outpost::TICK_PERIOD_MILLISECONDS);

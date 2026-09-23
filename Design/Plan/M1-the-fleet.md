@@ -715,7 +715,10 @@ floor**, with removals capped at 48 an update and fire events at 40, because a g
 from the typical fill; and **a seated client sends an empty command packet four times a second** as its view
 report, because commands only go out when the player taps. **Nothing here has been compiled or run** -- it
 was written on a machine without MSVC, and the format check and the four gates are the whole of what was
-verified. Part 5 is the next commit.
+verified. **Part 5 landed as its own commit the same day, equally unbuilt**: `Server --players N --stress`,
+`MATCH_PLAYERS` split from a `MAX_PLAYERS` of 254, the stress layout through the sine table, and the last
+team color past the palette -- with ADR-023 amended where the tables ended up sized to the capacity rather
+than at `Begin`.
 
 **Files:** `NeuronCore/PacketHeader.h` `.cpp`; `GameCore/EntityRecord.h` `.cpp`, `GameCore/Entity.h`,
 `GameCore/Snapshot.h` `.cpp` **renamed** `Update.h` `.cpp`, `GameCore/Command.h` `.cpp`,

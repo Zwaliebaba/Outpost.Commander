@@ -70,8 +70,8 @@ struct BuildItem
 class BuildSystem
 {
 public:
-  /// `GameCore/Entity.h`'s, which `CommandIntake` also uses -- one statement of the design's four
-  /// slots rather than two that have to agree.
+  /// `GameCore/Entity.h`'s, which `CommandIntake` also uses -- one statement of the capacity rather
+  /// than two that have to agree.
   static constexpr std::size_t MAX_PLAYERS = Outpost::MAX_PLAYERS;
 
   /// **HOW FAST A STATION BUILDS, IN CREDITS OF COST A SECOND** -- and `OpenQuestions.md` Q47 is the
