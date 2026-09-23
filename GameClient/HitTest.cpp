@@ -21,8 +21,9 @@ PickTier TierOf(const EntityRecord& _record, PlayerId _player) noexcept
   {
     // **A STATION IS A STRUCTURE AND A SHIP IS A SHIP**, and the difference is what the tier order
     // exists for: a tap that lands on both takes the ship, because replacing the selection is the
-    // commoner intent than opening the build panel.
-    return (design == DesignId::Station) ? PickTier::OwnStructure : PickTier::OwnShip;
+    // commoner intent than opening the build panel. **A module is a structure too** (M2.11,
+    // `Interface.md` section 1's pick order puts it with the station).
+    return ((design == DesignId::Station) || IsModule(design)) ? PickTier::OwnStructure : PickTier::OwnShip;
   }
 
   if (owner != NO_PLAYER)

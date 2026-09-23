@@ -268,6 +268,13 @@ both sides derive the same rows from the join's seed and count (R23). The host r
 field. Ships in the selection that cannot mine are skipped, not refused. **The command's layout does not
 change**: eight bytes and three per identity, like every other.
 
+**A module is placed and upgraded by two more types** (M2.11, `OpenQuestions.md` Q55). `PlaceModule` (6) carries
+its point in the target at full wire precision, **plus a ninth fixed byte for the design**, which no other type
+writes. `UpgradeModule` (7) is eight bytes: the module's identity in the target, as an attack's is, and the level
+in `targetY`'s spare high byte. Neither carries a selection, so neither moves the worst case:
+`Scripts/DatagramBudget.py --upstream` measures a placement at 9 bytes and an upgrade at 8. The host judges the
+site with `CheckModuleSite` before anything is spent.
+
 **The widths are measured, and M0.10's encoder is where they became facts; ADR-024 moved two of them.**
 The packet header is **twelve bytes** -- the transport's four (`NeuronCore/PacketHeader.h`), the player
 identity, the command count, and **the client's view center (4) and view radius (2)**, which is what the

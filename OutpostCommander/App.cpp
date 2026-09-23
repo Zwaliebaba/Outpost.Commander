@@ -404,6 +404,10 @@ void RunProbe(const CoreWindow& _window)
   // alone, so "the station is selected" is its own client-local fact rather than a selection entry.
   bool buildPanelOpen = false;
 
+  // M2.11: the armed module, if one is. It lives only while the build panel is open -- the station being
+  // selected is the arming's precondition (`Interface.md` section 6) -- and is dropped the moment it closes.
+  Outpost::ModuleArming moduleArming;
+
   // OpenQuestions.md Q33: right-handed is the default. This is the one value that swaps the two bottom
   // panels, and until there is a settings surface it is a constant here.
   constexpr bool LEFT_HANDED = false;
@@ -801,6 +805,12 @@ void RunProbe(const CoreWindow& _window)
           }
           break;
 
+        case Outpost::HudAction::ArmModule:
+          // **ARMING SENDS NOTHING.** The tap on the plane that follows is the order (M2.11).
+          moduleArming.Toggle(design);
+          Report(log, std::string{"HUD module "} + std::to_string(hudHit.argument) + (moduleArming.IsArmed() ? " armed" : " disarmed"));
+          break;
+
         case Outpost::HudAction::ArmQuit:
           quitConfirm.Arm(nowMs);
           Report(log, "HUD quit armed");
@@ -857,6 +867,52 @@ void RunProbe(const CoreWindow& _window)
                                             .authoredHeight = static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT),
                                             .aspectRatio = tapAspect,
                                             .player = clientFrame.Player()};
+
+      // === M2.11: AN ARMED TAP IS THE PLACEMENT'S. ================================================
+      //
+      // Resolved in `GameClient` against the host's own rule (`ResolvePlacementTap`, R20); what is left here is
+      // sending what it decided. Only a tap on one of your own ships falls through to the selection below, and
+      // that selection closes the build panel and the arming with it.
+      if (!buildPanelOpen)
+      {
+        moduleArming.Disarm();
+      }
+      if (moduleArming.IsArmed())
+      {
+        const Outpost::PlacementOutcome placement =
+          Outpost::ResolvePlacementTap(clientFrame.Camera(), request, known, rockPicks, moduleArming.Armed());
+        if ((placement.action == Outpost::PlacementAction::Place) || (placement.action == Outpost::PlacementAction::Upgrade))
+        {
+          if (!clientFrame.CurrentJoin().IsJoined())
+          {
+            Report(log, "TAP ignored -- not seated yet");
+            continue;
+          }
+          const std::uint16_t sequence = clientFrame.TakeCommandSequence();
+          Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+          clientFrame.StampView(packet);
+          packet.commands.push_back((placement.action == Outpost::PlacementAction::Place)
+                                      ? Outpost::BuildPlaceModuleCommand(sequence, placement.site, moduleArming.Armed())
+                                      : Outpost::BuildUpgradeModuleCommand(sequence, placement.module, moduleArming.Armed()));
+
+          std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+          Neuron::ByteWriter commandWriter{outgoing};
+          const bool sent = Outpost::Encode(packet, commandWriter) &&
+                            transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+          Report(log, std::string{(placement.action == Outpost::PlacementAction::Place) ? "PLACE module " : "UPGRADE module "} +
+                        std::to_string(static_cast<int>(moduleArming.Armed())) + " seq=" + std::to_string(sequence) +
+                        (sent ? " sent" : " NOT SENT"));
+          // ONE ORDER PER ARMING: the next module is a fresh choice in the panel.
+          moduleArming.Disarm();
+          continue;
+        }
+        if (placement.action == Outpost::PlacementAction::Nothing)
+        {
+          Report(log, "PLACE refused by the preview, fault " + std::to_string(static_cast<int>(placement.fault)));
+          continue;
+        }
+        moduleArming.Disarm();
+      }
 
       const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known, rockPicks);
 
@@ -1381,6 +1437,26 @@ void RunProbe(const CoreWindow& _window)
         hudState.leftHanded = LEFT_HANDED;
         hudState.player = clientFrame.Player();
         hudState.buildPanelOpen = buildPanelOpen;
+
+        // M2.11: the armed button and the radius around the station, projected through the camera the world was
+        // drawn with. The ring is world space and the panels are not, so it is recomputed every frame.
+        if (!buildPanelOpen)
+        {
+          moduleArming.Disarm();
+        }
+        hudState.moduleArmed = moduleArming.IsArmed();
+        hudState.armedModule = moduleArming.Armed();
+        if (Outpost::EntityRecord station{};
+            moduleArming.IsArmed() && Outpost::OwnStation(clientFrame.Replicas().Entities(), clientFrame.Player(), station))
+        {
+          const float ringAspect = (sceneTarget.HeightPixels() > 0)
+                                     ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                     : 1.0f;
+          hudState.placementRing = Outpost::PlacementRingSquares(
+            clientFrame.Camera(), ringAspect, static_cast<float>(Neuron::INTERFACE_AUTHORED_WIDTH),
+            static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT),
+            Neuron::Vec2{.x = Outpost::DequantizePosition(station.positionX), .y = Outpost::DequantizePosition(station.positionY)});
+        }
         hudState.quitArmed = quitConfirm.IsArmed(nowMs);
 
         hudState.link = clientFrame.Link();

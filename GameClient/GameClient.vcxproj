@@ -120,6 +120,7 @@
     <ClCompile Include="HitTest.cpp" />
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="JoinState.cpp" />
+    <ClCompile Include="ModulePlacement.cpp" />
     <ClCompile Include="FieldView.cpp" />
     <ClCompile Include="AsteroidMesh.cpp" />
     <ClCompile Include="CreditFlash.cpp" />
@@ -149,6 +150,7 @@
     <ClInclude Include="Interpolation.h" />
     <ClInclude Include="MeshCatalog.g.h" />
     <ClInclude Include="JoinState.h" />
+    <ClInclude Include="ModulePlacement.h" />
     <ClInclude Include="FieldView.h" />
     <ClInclude Include="AsteroidMesh.h" />
     <ClInclude Include="CreditFlash.h" />

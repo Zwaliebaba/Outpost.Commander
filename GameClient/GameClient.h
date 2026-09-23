@@ -27,6 +27,7 @@
 #include "Selection.h"
 #include "SkyLook.h"
 #include "JoinState.h"
+#include "ModulePlacement.h"
 #include "FieldView.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"

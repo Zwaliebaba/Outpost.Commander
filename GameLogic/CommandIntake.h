@@ -33,7 +33,7 @@ enum class CommandRejection : std::uint8_t
   Empty,
   /// A `Mine` naming a rock the field does not have (Q52).
   NoSuchRock,
-  /// A `Build` or `CancelBuild` the build system refused. **The reason is `BuildSystem`'s and stays
+  /// A `Build`, `CancelBuild`, `PlaceModule` or `UpgradeModule` the build system refused. **The reason is `BuildSystem`'s and stays
   /// there**: duplicating `BuildRejection` into this enumeration would be two lists to keep in step
   /// for a distinction only the build suite ever asserts.
   BuildRefused

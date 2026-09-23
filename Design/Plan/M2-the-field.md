@@ -585,6 +585,49 @@ the build command and validated by the host with M2.10's function.
 **Done when:** a module is built, appears at the tapped point, and survives a reconnect — which is the
 snapshot carrying it correctly. A placement the host refuses leaves the credits unspent.
 
+**BUILT**, on four rulings taken before the code (`OpenQuestions.md` Q54 to Q57), with the files named for what
+the tree holds rather than what this step guessed. `BuildSystem` is the queue, `CommandIntake` does the
+validation, and `Panels` and `ModulePlacement` are the build panel.
+
+**The wire.** Two command types ride protocol 5 (Q55):
+- `PlaceModule` (6) is a point plus a ninth byte for the design;
+- `UpgradeModule` (7) is a module identity plus the level, in eight bytes.
+
+`DatagramBudget.py --upstream` puts them at 9 and 8 bytes with no selection, so the worst case does not move.
+
+**The host.** `BuildSystem::StartModule` checks the site with `CheckModuleSite`, against this player's station and
+its own modules, **before the queue is touched**. A refused placement therefore spends nothing and cancels
+nothing, which `ARefusedPlacementSpendsNothingAndCancelsNothing` pins. Past that it is `Start`: the same slot,
+the same refund-first replacement (Q35), and the cost deducted at the start. The module is created at the site,
+facing the way the station does.
+
+`StartUpgrade` pays the difference and builds for the difference's time (Q54). It then changes the same entity's
+design in place. A module lost while its upgrade built is a refund. `GameCore` gained:
+- `UpgradesTo`, `IsPlacedLevel` and `UpgradeCostCredits`, so an L2 cannot be placed;
+- `IsModule`, made public.
+
+**The client.** The module row draws in its four places, each arming a placement (`HudAction::ArmModule`), with
+the handoff's armed look minus the outline pulse, since the interface has no clock. An L2 shows the difference it
+will charge. `ResolvePlacementTap` resolves an armed tap against the host's own rule, on the wire's grid:
+- empty space inside the radius places;
+- an own L1 of the armed L2's kind upgrades;
+- an own ship falls through to selection, closing the panel and the arming;
+- anything else does nothing.
+
+The radius is drawn as 24 dashes of a 48-segment world circle, projected and stepped as 2-pixel squares in the
+interface pass, under the panels. **Modules pick at the structure tier and a tap on one has no verb** (Q57).
+
+**It survives a reconnect** because a module is an entity: `AModuleIsInTheSnapshotARejoiningClientIsSent`
+fills a fresh accumulator and finds it at its design and its site.
+
+**Suites:**
+- `BuildTests`' `BuildingModules` has ten tests;
+- `ModulePlacementTests` is new, in the project and its `.filters`;
+- `CommandTests` has the two round trips and the truncated design byte;
+- `ModuleSiteTests` has the upgrade pairs and prices.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC, and not drawn or touched.**
+
 ---
 
 ### M2.11b — Two reasons a build button is dead · `GameClient` · `GameClientTests` · agent

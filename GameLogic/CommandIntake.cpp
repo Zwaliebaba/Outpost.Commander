@@ -63,15 +63,41 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     return CommandRejection::AlreadyApplied;
   }
 
-  // THE STATION'S TWO ORDERS TOUCH NO ENTITY, so every check below this belongs to the other two.
+  // THE STATION'S ORDERS ACT ON NO SELECTION, so every check below this belongs to the other three.
   // The acknowledgment still advances on a refusal, for the reason an Attack that resolves nothing
   // does: the host UNDERSTOOD the order, and a sequence that did not advance would have the client
   // repeat it forever.
   if (!ActsOnSelection(_command.type))
   {
-    const bool ordered = (_command.type == CommandType::Build)
-                           ? (_build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign())) == BuildRejection::None)
-                           : _build.Cancel(_player);
+    bool ordered = false;
+    switch (_command.type)
+    {
+    case CommandType::Build:
+      ordered = _build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign())) == BuildRejection::None;
+      break;
+    case CommandType::PlaceModule:
+    {
+      // THE SITE IS THE BUILD SYSTEM'S TO JUDGE, with `CheckModuleSite` (M2.11), from the point as the wire said
+      // it -- clamped for the reason every point here is.
+      const Neuron::Vec2 site =
+        ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
+      ordered = _build.StartModule(_world, _player, static_cast<DesignId>(_command.placedDesign), site) == BuildRejection::None;
+      break;
+    }
+    case CommandType::UpgradeModule:
+      // A stale or unknown identity resolves to nothing, which the build system refuses as not upgradeable.
+      ordered = _build.StartUpgrade(_world, _player, ResolveWireIdentity(_world, _command.TargetEntity()),
+                                    static_cast<DesignId>(_command.UpgradeLevel())) == BuildRejection::None;
+      break;
+    case CommandType::CancelBuild:
+      ordered = _build.Cancel(_player);
+      break;
+    case CommandType::MoveTo:
+    case CommandType::Attack:
+    case CommandType::Mine:
+      // Unreachable: these act on a selection and were sent below by `ActsOnSelection`.
+      break;
+    }
 
     m_lastApplied[_player] = _command.sequence;
     m_hasApplied[_player] = true;

@@ -67,6 +67,15 @@ struct HudState
   std::uint8_t buildingWire = 0;
   std::uint8_t buildProgressPercent = 0;
 
+  /// **THE ARMED MODULE, IF ONE IS** (M2.11). Client-local: the button draws armed, and a tap on the plane is
+  /// the placement's.
+  bool moduleArmed = false;
+  DesignId armedModule = DesignId::ModuleShipyardL1;
+
+  /// **THE PLACEMENT RADIUS, ALREADY PROJECTED** (`ModulePlacement.h`'s `PlacementRingSquares`), in authored
+  /// pixels. Empty when nothing is armed. Drawn under the panels and never in the hit table.
+  std::vector<HudRect> placementRing;
+
   LinkState link = LinkState::Joining;
   bool quitArmed = false;
 

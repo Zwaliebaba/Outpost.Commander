@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-nine answered, three open.** Eight came from an adversarial review that also reversed two earlier
+**Fifty-four answered, three open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS FOURTEEN ENTRIES AND ELEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
-Q46, Q47, Q50, Q51, Q52 and Q53, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS EIGHTEEN ENTRIES AND FIFTEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
+Q46, Q47 and Q50 to Q57, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The three that are genuinely
 open are Q34, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -25,7 +25,8 @@ because it is not the pattern: it was registered with its recommendation, the ow
 M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
 that the figures have somewhere to be argued with later. **Q50 is the second**, found while writing M2.3
 and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2.6 the same way, **and Q53
-the fifth**, from M2.7.
+the fifth**, from M2.7, **and Q54 to Q57 four more**, from M2.11 and M2.12, ruled together before either step's
+code.
 
 **Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
@@ -689,6 +690,75 @@ said how a group of several miners aggregates.
 
 **Recommendation: three bits.** A group lights **its members' mean, rounded to nearest**, which is how the
 hull bar already aggregates. `GameCore/EntityRecord.h`'s `CargoChips` is the mapping, and `UpdateTests` pins it.
+
+### Q54 — How does a level-2 module come about? — **ANSWERED**
+
+**AN UPGRADE IN PLACE, AT THE DIFFERENCE. The owner's answer, 2026-09-23**, on the recommendation below, before
+M2.11's code.
+
+**The gap.** ADR-015 says upgrading "replaces `ShipyardL1` with `ShipyardL2`", and M2.11b's dimmed state needs
+something that gates an item. Neither says how a player gets an L2.
+
+- **An upgrade in place, paying the difference**: an L2 button upgrades one of your L1 modules of that kind.
+  You arm it and tap the L1. It pays 300 for a shipyard and 250 for an ore processor, so an L2 costs §5's
+  figure in total. It builds through the station's queue, and L2 is dimmed without an L1.
+- **An upgrade in place, at full price**: the same interaction, with 700 or 600 on top of the L1 already paid.
+  A shipyard L2 then costs 1,100 in all.
+- **An L2 placed fresh**: its own module, anywhere in the radius, at full price, with no prerequisite. It is
+  the simplest, but "upgrade" stops meaning anything, M2.11b has nothing to dim, and two shipyards of different
+  levels can coexist.
+
+**Recommendation: in place, at the difference.** `GameCore/ModuleSite.h` holds the pairs (`UpgradesTo`) and the
+price (`UpgradeCostCredits`). The host refuses a placement naming an L2. The upgrade is the same entity with a
+new design.
+
+### Q55 — How does a placement carry both a design and a point? — **ANSWERED**
+
+**A NEW COMMAND TYPE WITH ONE MORE BYTE. The owner's answer, 2026-09-23**, on the recommendation below.
+
+**The gap.** A command's target is four bytes. A `Build` puts its design in `targetX`'s low byte, and a point
+needs all four.
+
+- **A new type, one more byte**: `PlaceModule` (6) carries the point at full wire precision in `targetX` and
+  `targetY`, plus a ninth fixed byte for the design that only this type carries. An in-place upgrade fits the
+  existing layout as `UpgradeModule` (7): the module's identity in the target, and the level in `targetY`'s
+  spare high byte. It rides protocol 5, which has not left the branch.
+- **Pack the design and an offset**: no codec change. The point is a 1-unit offset from the station in 11
+  bits, with 5 bits of design per axis field. It caps designs at 32, which fights R24's growth at M4, and the
+  packing is clever rather than obvious.
+
+**Recommendation: the new type.** The upstream is never the constraint: `Scripts/DatagramBudget.py --upstream`
+puts a placement at 9 bytes and an upgrade at 8, with no selection. The worst case is unchanged.
+
+### Q56 — Where does the shipyard's build-rate multiplier round? — **ANSWERED**
+
+**TICKS ROUND UP. The owner's answer, 2026-09-23**, on the recommendation below, before M2.12's code.
+
+**The gap.** M2.12 says it "must not invent" where a multiplier rounds, and points at ADR-014. Ships divide
+exactly under both levels. A module does not: 400 credits at ×1.5 is 266.67 ticks.
+
+- **Round up**: a shipyard never makes anything faster than its stated rate, so that is 267 ticks.
+- **Round down**: today's truncation, 266 ticks, a third of a tick faster than the rate.
+- **Round to nearest**: 267 here, but a .5 case picks a direction arbitrarily.
+
+**Recommendation: round up.** The ore processor needs no rule, because cargo is carried in thousandths of ore
+per player: 2,500 at 125% is 3,125, exactly. **This is recorded here, and ADR-014 stays reserved for M3's
+damage**, which is the rounding question it was held for. `BuildSystem::TicksForCost` is the one division.
+
+### Q57 — What does a tap on one of your own modules do? — **ANSWERED**
+
+**NOTHING, UNLESS AN UPGRADE IS ARMED. The owner's answer, 2026-09-23**, on the recommendation below.
+
+**The gap.** `Interface.md` §4's table has no row for a module, and §1's pick order puts modules in the
+station's tier.
+
+- **Nothing, unless upgrading**: picked at the structure tier, so it wins over rocks and hostiles underneath,
+  and then it has no verb, except as the target of an armed L2 upgrade. The selection is unchanged.
+- **Opens the build panel**: treated like the station. It is consistent with "own structure", but it makes
+  modules a second way to open the same panel.
+
+**Recommendation: nothing, unless upgrading.** `Selection::Tap` gives a module no verb, and `ResolvePlacementTap`
+turns it into an upgrade when one is armed.
 
 ---
 

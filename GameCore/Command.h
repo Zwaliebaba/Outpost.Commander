@@ -38,16 +38,35 @@ enum class CommandType : std::uint8_t
   /// in `targetX`, with `targetY` zero (`OpenQuestions.md` Q52): asteroids are not world entities before
   /// M3, and both sides derive the same list from the same seed and count, so an index names the same
   /// rock on both.
-  Mine = 5
+  Mine = 5,
+
+  /// **Build a module at a point** (M2.11, `OpenQuestions.md` Q55). The point is the target at full wire
+  /// precision, and the design is **a ninth fixed byte that only this type carries** -- the target's four
+  /// bytes are all spent on the point. The selection is empty, as a `Build`'s is. The host validates the
+  /// site with `CheckModuleSite` before anything is spent.
+  PlaceModule = 6,
+
+  /// **Upgrade one of this player's modules in place** (M2.11, Q54, Q55). The target is the module's
+  /// packed identity, as an `Attack`'s is, and **the level it becomes is `targetY`'s high byte**, which an
+  /// identity leaves spare. Eight bytes, an empty selection, and the host pays the difference.
+  UpgradeModule = 7
 };
 
 [[nodiscard]] constexpr bool IsKnown(CommandType _type) noexcept
 {
   return (_type == CommandType::MoveTo) || (_type == CommandType::Attack) || (_type == CommandType::Build) ||
-         (_type == CommandType::CancelBuild) || (_type == CommandType::Mine);
+         (_type == CommandType::CancelBuild) || (_type == CommandType::Mine) || (_type == CommandType::PlaceModule) ||
+         (_type == CommandType::UpgradeModule);
 }
 
-/// True for the types that act on a selection. **The two that do not are the station's**, and the
+/// **THE ONE TYPE WHOSE FIXED PART IS NINE BYTES** (Q55): a `PlaceModule` carries a design byte after the
+/// target. Every other type is eight, which is why a count is still bounded by `Command::FIXED_BYTES`.
+[[nodiscard]] constexpr bool CarriesDesignByte(CommandType _type) noexcept
+{
+  return _type == CommandType::PlaceModule;
+}
+
+/// True for the types that act on a selection. **The four that do not are the station's**, and the
 /// distinction is what the intake's empty-selection check turns on: an empty selection is malformed
 /// for a move and required for a build.
 [[nodiscard]] constexpr bool ActsOnSelection(CommandType _type) noexcept
@@ -63,7 +82,8 @@ enum class CommandType : std::uint8_t
 /// generation in the low byte of `targetY` -- and leaves the fourth zero (ADR-024). That is
 /// why there is one target field rather than a point and an identity side by side -- a command
 /// carries one target, and a record with room for both would let an encoder write a command that
-/// means two things.
+/// means two things. **`PlaceModule` is the one exception**, a ninth byte for a design beside a point
+/// (M2.11, Q55), and it is written only for that type.
 ///
 /// R8: a wire record, so plain fields and brace initialization.
 struct Command
@@ -91,6 +111,10 @@ struct Command
   /// host's clamp unnecessary, only cheap.
   std::int16_t targetX = 0;
   std::int16_t targetY = 0;
+
+  /// **A `PlaceModule`'s design, and on the wire for no other type** (Q55). Zero and ignored everywhere
+  /// else, so a decoder that did not read it leaves it zero and a round trip compares equal.
+  std::uint8_t placedDesign = 0;
 
   /// Packed wire identities, as an EntityRecord's identity is packed.
   std::vector<WireIdentity> selection;
@@ -122,6 +146,19 @@ struct Command
   {
     targetX = static_cast<std::int16_t>(_rockIndex);
     targetY = 0;
+  }
+
+  /// The module an `UpgradeModule` names, and the level it becomes in `targetY`'s spare high byte.
+  void AimAtUpgrade(WireIdentity _module, DesignId _level) noexcept
+  {
+    AimAt(_module);
+    targetY = static_cast<std::int16_t>(static_cast<std::uint16_t>(GenerationOf(_module) | (static_cast<std::uint16_t>(_level) << 8)));
+  }
+
+  /// The inverse's second half: the level an `UpgradeModule` asks for.
+  [[nodiscard]] std::uint8_t UpgradeLevel() const noexcept
+  {
+    return static_cast<std::uint8_t>(static_cast<std::uint16_t>(targetY) >> 8);
   }
 
   /// The design a `Build` names. **The low byte only**, so a client that left rubbish in the high

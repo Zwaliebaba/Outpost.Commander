@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -39,6 +40,41 @@ void Seat(Outpost::World& _world, std::size_t _players)
     }
   }
   return 0;
+}
+
+/// The player's station, which every placement is measured from.
+[[nodiscard]] const Outpost::Entity& StationOf(const Outpost::World& _world, Outpost::PlayerId _player)
+{
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    const Outpost::Entity& entity = _world.EntityInSlot(slot);
+    if (_world.IsSlotAlive(slot) && (entity.owner == _player) && (entity.design == Outpost::DesignId::Station))
+    {
+      return entity;
+    }
+  }
+  return _world.EntityInSlot(0);
+}
+
+/// A point offset from the player's station, in whole world units.
+[[nodiscard]] Neuron::Vec2 NearStation(const Outpost::World& _world, Outpost::PlayerId _player, std::int32_t _dx, std::int32_t _dy)
+{
+  const Neuron::Vec2 station = StationOf(_world, _player).position;
+  return Neuron::Vec2{.x = station.x + (_dx * Neuron::FIXED_ONE), .y = station.y + (_dy * Neuron::FIXED_ONE)};
+}
+
+/// The one module this player owns, or `NO_ENTITY`.
+[[nodiscard]] Outpost::EntityId OnlyModuleOf(const Outpost::World& _world, Outpost::PlayerId _player)
+{
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    const Outpost::Entity& entity = _world.EntityInSlot(slot);
+    if (_world.IsSlotAlive(slot) && (entity.owner == _player) && Outpost::IsModule(entity.design))
+    {
+      return entity.id;
+    }
+  }
+  return Outpost::NO_ENTITY;
 }
 } // namespace
 
@@ -581,6 +617,233 @@ public:
       Assert::AreEqual(static_cast<std::size_t>(1), read.commands.size());
       Assert::IsTrue(read.commands[0].type == type);
     }
+  }
+};
+
+/// M2.11. **A module is built through the station's one queue and appears where it was placed**; an L2 comes
+/// about by upgrading an L1 in place, at the difference (`OpenQuestions.md` Q54).
+TEST_CLASS(BuildingModules)
+{
+public:
+  TEST_METHOD(APlacedModuleAppearsAtItsSiteWhenItFinishes)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    const Neuron::Vec2 site = NearStation(world, MINE, 250, 250);
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site)));
+    Assert::AreEqual(600u, build.Credits(MINE), L"section 5's 400, deducted at the start");
+    Assert::AreEqual(400u, build.Item(MINE).ticksRequired, L"400 credits at 20 a second is 20 seconds");
+
+    Assert::AreEqual(400u, RunToCompletion(build, world, MINE));
+    const Outpost::Entity* module = world.Find(OnlyModuleOf(world, MINE));
+    Assert::IsNotNull(module);
+    Assert::IsTrue(module->design == Outpost::DesignId::ModuleShipyardL1);
+    Assert::IsTrue(module->position == site);
+    Assert::AreEqual(StationOf(world, MINE).heading, module->heading, L"it faces the way the station does");
+  }
+
+  /// **THE EXIT CRITERION: A REFUSED PLACEMENT LEAVES THE CREDITS UNSPENT** -- and what was building still
+  /// building, because the site is judged before the queue is touched.
+  TEST_METHOD(ARefusedPlacementSpendsNothingAndCancelsNothing)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
+    const Outpost::BuildItem before = build.Item(MINE);
+
+    for (const Neuron::Vec2 site : {NearStation(world, MINE, 0, 0), NearStation(world, MINE, 401, 0)})
+    {
+      Assert::AreEqual(Code(Outpost::BuildRejection::IllegalSite),
+                       Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleOreProcessorL1, site)));
+      Assert::AreEqual(700u, build.Credits(MINE));
+      Assert::IsTrue(build.Item(MINE) == before);
+    }
+  }
+
+  TEST_METHOD(OnlyAFirstLevelModuleIsPlaced)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Neuron::Vec2 site = NearStation(world, MINE, 300, 0);
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
+                     Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL2, site)),
+                     L"an L2 is upgraded into, not placed");
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotBuildable), Code(build.StartModule(world, MINE, Outpost::DesignId::Miner, site)));
+    Assert::AreEqual(Code(Outpost::BuildRejection::UnknownDesign),
+                     Code(build.StartModule(world, MINE, static_cast<Outpost::DesignId>(200), site)));
+    Assert::AreEqual(1000u, build.Credits(MINE));
+  }
+
+  /// **FOUR TO A STATION**, and the host is what holds that line.
+  TEST_METHOD(AFifthModuleIsRefused)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Neuron::Angle heading = StationOf(world, MINE).heading;
+    for (const auto& [dx, dy] : {std::pair{250, 250}, std::pair{-250, 250}, std::pair{-250, -250}, std::pair{250, -250}})
+    {
+      static_cast<void>(world.Create(NearStation(world, MINE, dx, dy), heading, Outpost::DesignId::ModuleOreProcessorL1, MINE));
+    }
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::IllegalSite),
+                     Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, NearStation(world, MINE, 0, 350))));
+    Assert::AreEqual(1000u, build.Credits(MINE));
+  }
+
+  /// **ANOTHER PLAYER'S MODULES DO NOT CROWD YOURS**: the site is checked against your own.
+  TEST_METHOD(OnlyYourOwnModulesBlockASite)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Neuron::Vec2 site = NearStation(world, MINE, 300, 0);
+    static_cast<void>(world.Create(site, 0, Outpost::DesignId::ModuleShipyardL1, THEIRS));
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site)));
+  }
+
+  /// **AN UPGRADE PAYS THE DIFFERENCE AND CHANGES THE MODULE IN PLACE** (Q54): the same identity at the same
+  /// point, a new level, 300 credits and the build time of 300.
+  TEST_METHOD(AnUpgradePaysTheDifferenceAndKeepsTheModule)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Neuron::Vec2 site = NearStation(world, MINE, -300, 0);
+    static_cast<void>(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site));
+    static_cast<void>(RunToCompletion(build, world, MINE));
+    const Outpost::EntityId module = OnlyModuleOf(world, MINE);
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::None),
+                     Code(build.StartUpgrade(world, MINE, module, Outpost::DesignId::ModuleShipyardL2)));
+    Assert::AreEqual(300u, build.Credits(MINE));
+    Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::ModuleShipyardL2, L"the wire shows the level it becomes");
+    Assert::AreEqual(300u, build.Item(MINE).ticksRequired);
+    Assert::IsTrue(world.Find(module)->design == Outpost::DesignId::ModuleShipyardL1, L"not until it finishes");
+
+    Assert::AreEqual(300u, RunToCompletion(build, world, MINE));
+    Assert::IsTrue(world.Find(module)->design == Outpost::DesignId::ModuleShipyardL2);
+    Assert::IsTrue(world.Find(module)->position == site);
+    Assert::IsTrue(OnlyModuleOf(world, MINE) == module, L"no second entity");
+  }
+
+  TEST_METHOD(AnUpgradeOfTheWrongThingIsRefusedAndSpendsNothing)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Outpost::EntityId mine = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, MINE);
+    const Outpost::EntityId theirs = world.Create(NearStation(world, THEIRS, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, THEIRS);
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
+                     Code(build.StartUpgrade(world, MINE, mine, Outpost::DesignId::ModuleOreProcessorL2)), L"the other kind");
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
+                     Code(build.StartUpgrade(world, MINE, theirs, Outpost::DesignId::ModuleShipyardL2)), L"somebody else's");
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
+                     Code(build.StartUpgrade(world, MINE, StationOf(world, MINE).id, Outpost::DesignId::ModuleShipyardL2)));
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
+                     Code(build.StartUpgrade(world, MINE, Outpost::NO_ENTITY, Outpost::DesignId::ModuleShipyardL2)));
+    Assert::AreEqual(1000u, build.Credits(MINE));
+    Assert::IsFalse(build.Item(MINE).active);
+  }
+
+  /// **A MODULE THAT DIED WHILE ITS UPGRADE BUILT IS A REFUND**, as a station that died is.
+  TEST_METHOD(AnUpgradeWhoseModuleIsGoneIsRefunded)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Outpost::EntityId module = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleOreProcessorL1, MINE);
+    static_cast<void>(build.StartUpgrade(world, MINE, module, Outpost::DesignId::ModuleOreProcessorL2));
+    Assert::AreEqual(750u, build.Credits(MINE));
+    static_cast<void>(world.Destroy(module));
+
+    static_cast<void>(RunToCompletion(build, world, MINE));
+    Assert::AreEqual(1000u, build.Credits(MINE));
+    Assert::AreEqual(std::uint64_t{1}, build.StrandedCount());
+  }
+
+  /// Through the intake, both orders: the point and design of a placement, the identity and level of an upgrade.
+  TEST_METHOD(BothModuleOrdersArriveThroughTheIntake)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    const Neuron::Vec2 site = NearStation(world, MINE, 0, -300);
+    const Outpost::Command place{.sequence = 1,
+                                 .type = Outpost::CommandType::PlaceModule,
+                                 .targetX = Outpost::QuantizePosition(site.x),
+                                 .targetY = Outpost::QuantizePosition(site.y),
+                                 .placedDesign = static_cast<std::uint8_t>(Outpost::DesignId::ModuleOreProcessorL1)};
+    Assert::IsTrue(intake.Apply(world, build, MINE, place) == Outpost::CommandRejection::None);
+    Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::ModuleOreProcessorL1);
+    static_cast<void>(RunToCompletion(build, world, MINE));
+    const Outpost::EntityId module = OnlyModuleOf(world, MINE);
+    Assert::IsTrue(module.IsValid());
+
+    Outpost::Command upgrade{.sequence = 2, .type = Outpost::CommandType::UpgradeModule};
+    upgrade.AimAtUpgrade(Outpost::PackIdentity(module.index, module.generation), Outpost::DesignId::ModuleOreProcessorL2);
+    Assert::IsTrue(intake.Apply(world, build, MINE, upgrade) == Outpost::CommandRejection::None);
+    Assert::IsTrue(build.Item(MINE).upgrade == module);
+
+    // A refused placement is understood, so it still acknowledges -- and spends nothing.
+    const std::uint32_t before = build.Credits(MINE);
+    const Outpost::Command refused{.sequence = 3,
+                                   .type = Outpost::CommandType::PlaceModule,
+                                   .targetX = Outpost::QuantizePosition(site.x),
+                                   .targetY = Outpost::QuantizePosition(site.y),
+                                   .placedDesign = static_cast<std::uint8_t>(Outpost::DesignId::ModuleShipyardL1)};
+    Assert::IsTrue(intake.Apply(world, build, MINE, refused) == Outpost::CommandRejection::BuildRefused);
+    Assert::AreEqual(std::uint16_t{3}, intake.LastAppliedSequence(MINE));
+    Assert::AreEqual(before, build.Credits(MINE));
+  }
+
+  /// **THE EXIT CRITERION: IT SURVIVES A RECONNECT**, which is the snapshot carrying it. A client that
+  /// rejoins is a fresh accumulator's first fill, and the module is in it at its design and its site.
+  TEST_METHOD(AModuleIsInTheSnapshotARejoiningClientIsSent)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Neuron::Vec2 site = NearStation(world, MINE, 200, -300);
+    static_cast<void>(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site));
+    static_cast<void>(RunToCompletion(build, world, MINE));
+    const Outpost::EntityId module = OnlyModuleOf(world, MINE);
+
+    Outpost::Accumulator rejoined;
+    bool found = false;
+    for (const Outpost::Update& update : rejoined.Fill(world, MINE, Outpost::PlayerBlock{}, 1))
+    {
+      for (const Outpost::EntityRecord& record : update.records)
+      {
+        if (record.identity == Outpost::PackIdentity(module.index, module.generation))
+        {
+          found = true;
+          Assert::AreEqual(static_cast<int>(Outpost::DesignId::ModuleShipyardL1), static_cast<int>(record.designIdentity));
+          Assert::AreEqual(Outpost::QuantizePosition(site.x), record.positionX);
+          Assert::AreEqual(Outpost::QuantizePosition(site.y), record.positionY);
+        }
+      }
+    }
+    Assert::IsTrue(found);
   }
 };
 

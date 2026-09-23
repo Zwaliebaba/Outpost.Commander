@@ -253,9 +253,8 @@ inline constexpr HudRect BUILD_TICK_BOTTOM_INNER{880, 944, 2, 16};
 inline constexpr HudRect BUILD_BUTTON_SHIP_0{896, 656, 120, 96};  // geometry: build.btn.miner
 inline constexpr HudRect BUILD_BUTTON_SHIP_1{1032, 656, 120, 96}; // geometry: build.btn.fighter
 
-/// The module row's four places. **Nothing draws in them at M1**: ADR-015's modules are M2's, the
-/// catalog has none, and a button for a thing that cannot exist is not "unavailable" in the handoff's
-/// sense -- that state means *build something else first*, which no player at M1 could do.
+/// The module row's four places, drawn since M2.11: each arms a placement, or for an L2 an upgrade
+/// (`OpenQuestions.md` Q54), rather than queueing anything itself.
 inline constexpr HudRect BUILD_BUTTON_YARD_L1{896, 768, 120, 96};  // geometry: build.btn.yard.l1
 inline constexpr HudRect BUILD_BUTTON_YARD_L2{1032, 768, 120, 96}; // geometry: build.btn.yard.l2
 inline constexpr HudRect BUILD_BUTTON_ORE_L1{1168, 768, 120, 96};  // geometry: build.btn.ore.l1

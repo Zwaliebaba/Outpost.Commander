@@ -110,6 +110,31 @@ public:
     Assert::AreEqual(Code(Outpost::ModuleSiteFault::NotAModule), Code(Check(four, At(0, 0), Outpost::DesignId::Fighter).fault));
   }
 
+  /// **AN L1 IS PLACED AND AN L2 IS UPGRADED INTO** (M2.11, `OpenQuestions.md` Q54), and only within a kind.
+  TEST_METHOD(EachFirstLevelUpgradesToItsOwnSecond)
+  {
+    Assert::IsTrue(Outpost::UpgradesTo(Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleShipyardL2));
+    Assert::IsTrue(Outpost::UpgradesTo(Outpost::DesignId::ModuleOreProcessorL1, Outpost::DesignId::ModuleOreProcessorL2));
+    Assert::IsFalse(Outpost::UpgradesTo(Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleOreProcessorL2));
+    Assert::IsFalse(Outpost::UpgradesTo(Outpost::DesignId::ModuleShipyardL2, Outpost::DesignId::ModuleShipyardL1));
+
+    Assert::IsTrue(Outpost::IsPlacedLevel(Outpost::DesignId::ModuleShipyardL1));
+    Assert::IsTrue(Outpost::IsPlacedLevel(Outpost::DesignId::ModuleOreProcessorL1));
+    Assert::IsFalse(Outpost::IsPlacedLevel(Outpost::DesignId::ModuleShipyardL2));
+    Assert::IsFalse(Outpost::IsPlacedLevel(Outpost::DesignId::ModuleOreProcessorL2));
+    Assert::IsFalse(Outpost::IsPlacedLevel(Outpost::DesignId::Miner));
+  }
+
+  /// **AN UPGRADE PAYS THE DIFFERENCE** (Q54): 700 - 400 and 600 - 350, so an L2 costs section 5's figure in all.
+  TEST_METHOD(AnUpgradeCostsTheDifference)
+  {
+    Assert::AreEqual(std::uint32_t{300},
+                     Outpost::UpgradeCostCredits(Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleShipyardL2));
+    Assert::AreEqual(std::uint32_t{250},
+                     Outpost::UpgradeCostCredits(Outpost::DesignId::ModuleOreProcessorL1, Outpost::DesignId::ModuleOreProcessorL2));
+    Assert::AreEqual(std::uint32_t{0}, Outpost::UpgradeCostCredits(Outpost::DesignId::Miner, Outpost::DesignId::Fighter));
+  }
+
   /// **THE RADIUS IS THE POINT-DEFENSE RANGE, BY DESIGN** (ADR-015): moving one without the other fails here.
   TEST_METHOD(TheBuildRadiusIsThePointDefenseRange)
   {

@@ -2,6 +2,8 @@
 
 #include "ModuleSite.h"
 
+#include <array>
+
 namespace Outpost
 {
 
@@ -22,11 +24,61 @@ namespace
   return ((first + second) * Neuron::FIXED_ONE) / 2;
 }
 
-[[nodiscard]] bool IsModule(DesignId _design) noexcept
+/// Q54's pairs, lower level first.
+struct ModuleUpgrade
+{
+  DesignId from;
+  DesignId to;
+};
+
+constexpr std::array<ModuleUpgrade, 2> MODULE_UPGRADES{
+  ModuleUpgrade{.from = DesignId::ModuleShipyardL1, .to = DesignId::ModuleShipyardL2},
+  ModuleUpgrade{.from = DesignId::ModuleOreProcessorL1, .to = DesignId::ModuleOreProcessorL2}};
+} // namespace
+
+bool IsModule(DesignId _design) noexcept
 {
   return (static_cast<std::size_t>(_design) < Designs().size()) && (Design(_design).hull == HullId::ModuleFrame);
 }
-} // namespace
+
+bool UpgradesTo(DesignId _from, DesignId _to) noexcept
+{
+  for (const ModuleUpgrade& upgrade : MODULE_UPGRADES)
+  {
+    if ((upgrade.from == _from) && (upgrade.to == _to))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool IsPlacedLevel(DesignId _design) noexcept
+{
+  if (!IsModule(_design))
+  {
+    return false;
+  }
+  for (const ModuleUpgrade& upgrade : MODULE_UPGRADES)
+  {
+    if (upgrade.to == _design)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::uint32_t UpgradeCostCredits(DesignId _from, DesignId _to) noexcept
+{
+  if (!UpgradesTo(_from, _to))
+  {
+    return 0;
+  }
+  const std::uint32_t before = Derive(_from).cost;
+  const std::uint32_t after = Derive(_to).cost;
+  return (after > before) ? (after - before) : 0;
+}
 
 ModuleSiteVerdict CheckModuleSite(const Neuron::Vec2& _stationPosition, DesignId _stationDesign, std::span<const PlacedModule> _existing,
                                   const Neuron::Vec2& _site, DesignId _moduleDesign) noexcept

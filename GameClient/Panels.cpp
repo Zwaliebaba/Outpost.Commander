@@ -32,6 +32,8 @@ constexpr Neuron::QuadColor TICK_BAR = Neuron::HexColor(0x3A454B);
 constexpr Neuron::QuadColor TRACK = Neuron::HexColor(0x1A2024);
 constexpr Neuron::QuadColor ORE = Neuron::HexColor(0xD8A23C);
 constexpr Neuron::QuadColor SIG_ARMED = Neuron::HexColor(0xFFB020);
+constexpr Neuron::QuadColor PLATE_ARMED = Neuron::HexColor(0x17120A, 0.94f);
+constexpr Neuron::QuadColor TEXT_ARMED = Neuron::HexColor(0xFFE1A8);
 
 constexpr Neuron::QuadColor TEXT = Neuron::HexColor(0xE8ECEC);
 constexpr Neuron::QuadColor TEXT_2 = Neuron::HexColor(0x93A0A5);
@@ -342,6 +344,46 @@ void EmitSelection(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   _hits.AddTarget({.hit = clear, .tier = TouchTier::Combat, .action = HudAction::ClearSelection, .argument = 0, .surface = 'l'});
 }
 
+/// The module row's four places, and the design in each (`design_handoff_hud`: yard L1, yard L2, ore L1, ore L2).
+struct ModuleButton
+{
+  HudRect rect;
+  DesignId design;
+};
+
+constexpr std::array<ModuleButton, 4> MODULE_ROW{ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
+                                                 ModuleButton{.rect = BUILD_BUTTON_YARD_L2, .design = DesignId::ModuleShipyardL2},
+                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L1, .design = DesignId::ModuleOreProcessorL1},
+                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2}};
+
+/// **WHAT A MODULE BUTTON CHARGES**: a placed level its design's cost, and an upgrade the difference from the
+/// level it upgrades (Q54) -- `GameCore`'s figure, so the panel and the host cannot disagree about it.
+[[nodiscard]] std::uint32_t ModuleCostCredits(DesignId _design) noexcept
+{
+  if (IsPlacedLevel(_design))
+  {
+    return Derive(_design).cost;
+  }
+  for (const DesignEntry& from : Designs())
+  {
+    if (UpgradesTo(from.id, _design))
+    {
+      return UpgradeCostCredits(from.id, _design);
+    }
+  }
+  return Derive(_design).cost;
+}
+
+/// **THE PLACEMENT RADIUS** (M2.11), in `SIG.ARMED` at the handoff's 0.70 -- under the panels, so a panel over
+/// the ring still reads as a panel, and never in the hit table.
+void EmitPlacementRing(const HudState& _state, Emitter& _emit)
+{
+  for (const HudRect& square : _state.placementRing)
+  {
+    _emit.Solid(square, WithAlpha(SIG_ARMED, 0.70f));
+  }
+}
+
 void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
 {
   if (!_state.buildPanelOpen)
@@ -387,6 +429,51 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     _hits.AddTarget({.hit = button,
                      .tier = TouchTier::UnderFire,
                      .action = HudAction::Build,
+                     .argument = static_cast<std::uint8_t>(design),
+                     .surface = 'b'});
+  }
+
+  // === THE MODULE ROW (M2.11) ======================================================================
+  //
+  // **ARMED OR NOT, AND ARMED IS ITS OWN LOOK** (`design_handoff_hud`'s four states): the button that arms a
+  // placement takes the armed plate, a 2-pixel `SIG.ARMED` outline and a 4-pixel rule along its top edge. The
+  // handoff's pulse on that outline is not drawn -- the interface has no clock of its own, and the geometric cue
+  // carries the state without it. **An L2 shows what it will charge**, which is the difference (Q54).
+  for (const ModuleButton& place : MODULE_ROW)
+  {
+    const DesignId design = place.design;
+    const std::uint32_t cost = ModuleCostCredits(design);
+    const bool armed = _state.moduleArmed && (_state.armedModule == design);
+    const bool affordable = _state.credits >= cost;
+    const HudRect button = ForHand(place.rect, left);
+    const std::wstring name = DesignDisplayName(design);
+    const std::size_t space = name.rfind(L' ');
+
+    if (armed)
+    {
+      EmitButton(_emit, button, PLATE_ARMED, SIG_ARMED, SIG_ARMED, left);
+      _emit.Outline(button, 2, SIG_ARMED);
+      _emit.Solid({button.x, button.y, button.w, 4}, SIG_ARMED);
+    }
+    else
+    {
+      EmitButton(_emit, button, PLATE, RULE_LIT, affordable ? RULE_LIT : SIG_SHORT, left);
+    }
+    const Neuron::QuadColor nameColor = armed ? TEXT_ARMED : TEXT;
+    _emit.Text(BUTTON_NAME_LINE1.Within(button), name.substr(0, space), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,
+               nameColor);
+    _emit.Text(BUTTON_NAME_LINE2.Within(button), (space == std::wstring::npos) ? std::wstring{} : name.substr(space + 1),
+               Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, nameColor);
+    _emit.Text(BUTTON_COST.Within(button), std::to_wstring(cost), Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f,
+               armed ? TEXT_ARMED : (affordable ? TEXT : SIG_SHORT));
+    if (!armed && !affordable)
+    {
+      _emit.Solid(BUTTON_SHORT_RULE.Within(button), SIG_SHORT);
+    }
+
+    _hits.AddTarget({.hit = button,
+                     .tier = TouchTier::UnderFire,
+                     .action = HudAction::ArmModule,
                      .argument = static_cast<std::uint8_t>(design),
                      .surface = 'b'});
   }
@@ -517,6 +604,7 @@ HudFrame BuildHud(const HudState& _state)
   // of it: an overlay's scrim dims the panels without hiding them, and suppresses nothing (the handoff's
   // *Overlays*) -- the hit table is untouched by it, so QUIT still answers under the result.
   EmitFrameTicks(emit);
+  EmitPlacementRing(_state, emit);
   EmitCredits(_state, emit, frame.hits);
   EmitSystem(_state, emit, frame.hits);
   EmitSelection(_state, emit, frame.hits);

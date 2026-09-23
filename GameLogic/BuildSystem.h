@@ -42,7 +42,14 @@ enum class BuildRejection : std::uint8_t
   Unaffordable,
   /// The player has no station to build at. **M3's elimination supersedes this**; until then it is
   /// only reachable by a test that kills one.
-  NoStation
+  NoStation,
+  /// **A PLACEMENT `CheckModuleSite` REFUSES** (M2.11): past the cap, outside the radius, or overlapping the
+  /// station or a module. Refused before the current item is touched, so **a refused placement spends
+  /// nothing and cancels nothing** -- which is the step's exit criterion.
+  IllegalSite,
+  /// A placement naming a level that only comes about by upgrade (Q54), or an upgrade naming a module this
+  /// player does not own, one that is gone, or a level it does not upgrade to.
+  NotUpgradeable
 };
 
 /// What one player is building. Two bytes on the wire (ADR-003's per-player block) and four fields here,
@@ -63,6 +70,14 @@ struct BuildItem
   /// (Q35). Recomputing the cost at cancel time would be right today and wrong the day a catalog
   /// change lands mid-match.
   std::uint32_t creditsSpent = 0;
+
+  /// **WHERE A MODULE GOES** (M2.11): the point the placement named, and where the module appears when the
+  /// item finishes. Unused for a ship, which appears at the spawn point.
+  Neuron::Vec2 site{};
+
+  /// **THE MODULE AN UPGRADE BECOMES** (Q54), or `NO_ENTITY` for anything else. The item's design is then
+  /// the level it becomes, which is what the wire's design byte shows while it builds.
+  EntityId upgrade{};
 
   [[nodiscard]] friend constexpr bool operator==(const BuildItem&, const BuildItem&) noexcept = default;
 };
@@ -106,6 +121,10 @@ public:
   /// and the catalog contains rows with no cost.
   [[nodiscard]] static std::uint32_t TicksToBuild(DesignId _design, std::uint32_t _multiplierPercent = 100) noexcept;
 
+  /// The same, for a cost rather than a design -- which an upgrade needs, because what it builds is the
+  /// difference between two designs (Q54).
+  [[nodiscard]] static std::uint32_t TicksForCost(std::uint32_t _costCredits, std::uint32_t _multiplierPercent = 100) noexcept;
+
   /// Starts a match: every player on `STARTING_CREDITS` and building nothing.
   void Begin(std::size_t _playerCount) noexcept;
 
@@ -121,6 +140,21 @@ public:
   /// always works. Checking first would refuse a replacement a player can obviously afford.
   [[nodiscard]] BuildRejection Start(World& _world, PlayerId _player, DesignId _design,
                                      std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
+
+  /// **A MODULE, AT A POINT** (M2.11). The site is checked with `CheckModuleSite` against this player's station
+  /// and modules **before anything else is touched**, so a refused placement leaves the credits and whatever
+  /// is building exactly as they were. Past that it is `Start`: the same queue slot, the same refund-first
+  /// replacement, the cost deducted now. The module appears at the site when the item finishes.
+  ///
+  /// **ONLY A PLACED LEVEL** (Q54): an L2 comes about by `StartUpgrade` and is refused here.
+  [[nodiscard]] BuildRejection StartModule(World& _world, PlayerId _player, DesignId _design, const Neuron::Vec2& _site,
+                                           std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
+
+  /// **AN UPGRADE IN PLACE** (Q54): one of this player's modules becomes _level when the item finishes, at the
+  /// difference in cost and the build time of that difference. The module is checked before anything is
+  /// touched, as a placement's site is.
+  [[nodiscard]] BuildRejection StartUpgrade(World& _world, PlayerId _player, EntityId _module, DesignId _level,
+                                            std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
 
   /// Cancels what is building, refunding **in full** (Q35). False when nothing was building, which is
   /// not an error -- a tap on a cancel target that has already completed is ordinary.
@@ -159,6 +193,10 @@ public:
 
 private:
   [[nodiscard]] bool Holds(PlayerId _player) const noexcept;
+
+  /// The half of every start that is the same: refund what is building, charge _item's cost if the
+  /// balance covers it, and hold _item. **Only called once everything about the order has been checked.**
+  [[nodiscard]] BuildRejection Commit(PlayerId _player, const BuildItem& _item) noexcept;
 
   /// Where a finished ship appears: **in front of the station, clear of both hulls.** The offset is
   /// half the station's size plus half the ship's (Q37's catalog figures), so the two never overlap

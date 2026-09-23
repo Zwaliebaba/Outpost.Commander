@@ -106,6 +106,22 @@ SelectionOutcome Selection::Tap(const CameraPose& _pose, const HitTestRequest& _
   outcome.worldY = resolved.worldY;
   outcome.target = (resolved.action == TapAction::Occupied) ? resolved.hit.identity : NO_WIRE_IDENTITY;
 
+  // **A TAP ON YOUR OWN MODULE HAS NO VERB** (M2.11, `OpenQuestions.md` Q57). It is picked at the structure tier,
+  // so it wins over whatever is underneath, and then it does nothing: the station is the one structure that
+  // opens the build panel, and an armed upgrade -- the one thing a module is the target of -- is resolved
+  // before this is reached (`ResolvePlacementTap`).
+  if (outcome.verb == OrderVerb::OpenBuildPanel)
+  {
+    for (const EntityRecord& record : _entities)
+    {
+      if ((record.identity == outcome.target) && IsModule(static_cast<DesignId>(record.designIdentity)))
+      {
+        outcome.verb = OrderVerb::None;
+        break;
+      }
+    }
+  }
+
   if (outcome.verb == OrderVerb::Mine)
   {
     // THE ROCK AND WHERE IT IS ON THE PLANE -- its field position, not the tap's, and not its drawn height:

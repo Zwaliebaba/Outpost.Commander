@@ -202,6 +202,7 @@ hit empty space, and the fleet you had selected flies there. With something sele
 | A hostile ship or station | Attack it. |
 | An asteroid with ore | Mine it — miners in the selection take it, the rest move to it. **This is a standing order**: the miner shuttles until told otherwise. |
 | Your own station | Opens the build panel; the selection is unchanged. |
+| One of your own modules | **Nothing**, and the selection is unchanged, **unless an L2 upgrade is armed**, when it upgrades that module if it is the level the upgrade takes (`OpenQuestions.md` Q54, Q57). |
 | One of your own ships | Replaces the selection with that ship. |
 
 A tap on empty space with **nothing** selected does nothing.
@@ -451,7 +452,11 @@ empty space is a move order, and the station cannot move. So with the station se
 
 **The radius is drawn while a module is armed** — 400 world units around the station, the same distance as
 its point defense — and a tap outside it, on the station, or on another module does nothing. A second tap
-on the armed module in the panel disarms it.
+on the armed module in the panel disarms it. **A tap on one of your own ships is still a selection**, which
+closes the panel and the arming with it. One order is sent per arming.
+
+**An L2 is an upgrade, not a placement** (`OpenQuestions.md` Q54): arming it and tapping one of your L1
+modules of that kind upgrades it in place, for the difference in cost. Its button shows that difference.
 
 The preview is client-side and the host validates: the same rule evaluated on both sides, from `GameCore`,
 which is what R19 permits and what R23 already does for the map.

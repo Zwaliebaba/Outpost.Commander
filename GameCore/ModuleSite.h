@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DerivedStats.h"
 #include "Design.h"
 #include "EntityRecord.h"
 
@@ -80,5 +81,21 @@ struct ModuleSiteVerdict
 [[nodiscard]] ModuleSiteVerdict CheckModuleSite(const Neuron::Vec2& _stationPosition, DesignId _stationDesign,
                                                 std::span<const PlacedModule> _existing, const Neuron::Vec2& _site,
                                                 DesignId _moduleDesign) noexcept;
+
+/// True when the design's hull is a `ModuleFrame`. False for an identity the table does not have.
+[[nodiscard]] bool IsModule(DesignId _design) noexcept;
+
+/// **WHICH LEVEL BECOMES WHICH** (M2.11, `OpenQuestions.md` Q54): true when _from is a module level that an
+/// in-place upgrade turns into _to. A table of pairs and not a rule about names, so a third level at M4 is a
+/// row (R24) -- and the only statement anywhere of what an upgrade is.
+[[nodiscard]] bool UpgradesTo(DesignId _from, DesignId _to) noexcept;
+
+/// **A LEVEL THAT IS PLACED RATHER THAN UPGRADED INTO** (Q54): a module no upgrade produces. An L2 only
+/// comes about by upgrading an L1 in place, so a `PlaceModule` naming one is refused.
+[[nodiscard]] bool IsPlacedLevel(DesignId _design) noexcept;
+
+/// **WHAT AN UPGRADE COSTS: THE DIFFERENCE** (Q54), so an L2 costs `GameDesign.md` section 5's figure in total
+/// -- 300 for a shipyard, 250 for an ore processor. Zero when _from does not upgrade to _to.
+[[nodiscard]] std::uint32_t UpgradeCostCredits(DesignId _from, DesignId _to) noexcept;
 
 } // namespace Outpost

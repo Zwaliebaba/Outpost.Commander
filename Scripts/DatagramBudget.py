@@ -87,6 +87,8 @@ COMMAND_HEADER = [("version", 1), ("type", 1), ("sequence", 2),
 COMMAND_FIXED = [("sequence", 2), ("order type", 1), ("target point or entity", 4),
                  ("selection count", 1)]
 IDENTITY_BYTES = 3
+# M2.11, Q55: a PlaceModule carries one design byte past the fixed part, and no other type does.
+PLACEMENT_DESIGN_BYTES = 1
 
 # Payload available to UDP under each path assumption, ascending. The design pins 1232: the
 # IPv6 minimum-MTU payload exactly, which is the largest any conformant IPv6 path must carry
@@ -217,7 +219,9 @@ def upstream(a):
     print(f"  one command at a {a.selection}-identity selection = {one} B")
     print(f"  {a.in_flight} unacknowledged in flight (retransmitted until the update acks)"
           f" = {total} B: {'ONE datagram' if total <= PINNED else 'FRAGMENTS'}")
-    print(f"  a packet holds {capacity} identities in one command, {fits} commands at this selection\n")
+    print(f"  a packet holds {capacity} identities in one command, {fits} commands at this selection")
+    print(f"  a module placement is {per_command + PLACEMENT_DESIGN_BYTES} B and an upgrade {per_command} B:"
+          " neither carries a selection, so neither moves the worst case\n")
     print("  The format is not the constraint; the retransmit window is, and section 4 bounds it")
     print("  structurally: the packet is filled oldest-first and stops when the next will not fit.")
 
