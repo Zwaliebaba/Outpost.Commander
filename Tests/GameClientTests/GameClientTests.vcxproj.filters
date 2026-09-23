@@ -9,9 +9,14 @@
     <ClCompile Include="CameraGestureTests.cpp" />
     <ClCompile Include="HullMeshTests.cpp" />
     <ClCompile Include="GroupSelectionTests.cpp" />
+    <ClCompile Include="BuildPanelTests.cpp" />
     <ClCompile Include="HitTestTests.cpp" />
+    <ClCompile Include="ModulePlacementTests.cpp" />
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="JoinStateTests.cpp" />
+    <ClCompile Include="FieldViewTests.cpp" />
+    <ClCompile Include="AsteroidMeshTests.cpp" />
+    <ClCompile Include="CreditFlashTests.cpp" />
     <ClCompile Include="HudLayoutTests.cpp" />
     <ClCompile Include="BotPolicyTests.cpp" />
     <ClCompile Include="ChurnScheduleTests.cpp" />

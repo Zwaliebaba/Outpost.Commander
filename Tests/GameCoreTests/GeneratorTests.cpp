@@ -214,38 +214,20 @@ public:
     }
   }
 
-  /// **NO TWO ROCKS WITHIN 150 -- INCLUDING THE COPIES M2.2 WILL MAKE.** The rotations are applied here, by
-  /// hand, so the spacing across the region's edge is pinned before the code that copies across it exists.
+  /// **NO TWO ROCKS WITHIN 150 ANYWHERE ON THE MAP**, including across the edges the copies meet at. M2.1
+  /// pinned this with the rotations applied by hand; since M2.2 it is the field `GenerateField` returns.
   TEST_METHOD(RocksKeepTheirSpacingAcrossTheCopies)
   {
     for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
     {
-      const std::size_t copies = (players == 2) ? 2 : 4;
       for (std::uint64_t seed = 0; seed < SEEDS_SWEPT; ++seed)
       {
-        std::vector<std::array<std::int32_t, 2>> map;
-        for (const Outpost::Placement& placed : Outpost::GenerateRegion(seed, players))
+        const std::vector<Outpost::Placement> field = Outpost::GenerateField(seed, players);
+        for (std::size_t first = 0; first < field.size(); ++first)
         {
-          std::int32_t x = WholeX(placed);
-          std::int32_t y = WholeY(placed);
-          for (std::size_t copy = 0; copy < copies; ++copy)
+          for (std::size_t second = first + 1; second < field.size(); ++second)
           {
-            map.push_back({x, y});
-            // A quarter turn, or two of them at two players: the same exact integer rotation Layout uses.
-            for (std::size_t turn = 0; turn < (4 / copies); ++turn)
-            {
-              const std::int32_t turned = -y;
-              y = x;
-              x = turned;
-            }
-          }
-        }
-
-        for (std::size_t first = 0; first < map.size(); ++first)
-        {
-          for (std::size_t second = first + 1; second < map.size(); ++second)
-          {
-            Assert::IsTrue(WholeDistanceSquared(map[first][0], map[first][1], map[second][0], map[second][1]) >=
+            Assert::IsTrue(WholeDistanceSquared(WholeX(field[first]), WholeY(field[first]), WholeX(field[second]), WholeY(field[second])) >=
                              Squared(Outpost::ASTEROID_SPACING_UNITS),
                            L"two rocks closer than the spacing");
           }
@@ -269,6 +251,149 @@ public:
           Assert::IsTrue((WholeY(placed) > -halfExtent) && (WholeY(placed) < halfExtent));
         }
       }
+    }
+  }
+};
+
+/// M2.2. **Every player's start is the same start** (`GameDesign.md` section 3), asserted at two and at four
+/// players although the MVP runs only two -- `TechnicalDesign.md` section 8's requirement in full.
+TEST_CLASS(TheSymmetry)
+{
+public:
+  TEST_METHOD(TwoPlayersMakeTwoCopiesAndFourMakeFour)
+  {
+    Assert::AreEqual(std::size_t{0}, Outpost::FieldCopyCount(0));
+    Assert::AreEqual(std::size_t{2}, Outpost::FieldCopyCount(1));
+    Assert::AreEqual(std::size_t{2}, Outpost::FieldCopyCount(2));
+    Assert::AreEqual(std::size_t{4}, Outpost::FieldCopyCount(3));
+    Assert::AreEqual(std::size_t{4}, Outpost::FieldCopyCount(4));
+    Assert::AreEqual(std::size_t{4}, Outpost::FieldCopyCount(8), L"a stress count gets the four-player field");
+
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      Assert::AreEqual(REGION_ASTEROIDS * Outpost::FieldCopyCount(players), Outpost::GenerateField(MATCH_SEED, players).size());
+    }
+    Assert::AreEqual(std::size_t{0}, Outpost::GenerateField(MATCH_SEED, 0).size());
+  }
+
+  /// **THE REGION IS THE FIELD'S FIRST ROWS, UNCHANGED**, so the table M2.1 pinned still pins the map and
+  /// copying cost the generator no draws.
+  TEST_METHOD(TheFieldOpensWithTheRegion)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      const std::vector<Outpost::Placement> region = Outpost::GenerateRegion(MATCH_SEED, players);
+      const std::vector<Outpost::Placement> field = Outpost::GenerateField(MATCH_SEED, players);
+      for (std::size_t index = 0; index < region.size(); ++index)
+      {
+        Assert::IsTrue(field[index] == region[index], L"the field does not open with the region");
+      }
+    }
+  }
+
+  /// **THE 180-DEGREE COPY OF THE PINNED TABLE, BY NUMBER.** A negation of both coordinates and nothing else,
+  /// so the second player's field is pinned exactly as the first's is.
+  TEST_METHOD(TheSecondPlayersFieldIsThePinnedRegionNegated)
+  {
+    const std::vector<Outpost::Placement> field = Outpost::GenerateField(MATCH_SEED, 2);
+    for (std::size_t index = 0; index < PINNED_REGION.size(); ++index)
+    {
+      const Outpost::Placement& copy = field[PINNED_REGION.size() + index];
+      Assert::IsTrue(copy.field == PINNED_REGION[index].field, L"a copy changed field");
+      Assert::AreEqual(-PINNED_REGION[index].x, WholeX(copy));
+      Assert::AreEqual(-PINNED_REGION[index].y, WholeY(copy));
+    }
+  }
+
+  /// **FOR EACH PLACED OBJECT, EXACTLY ONE COUNTERPART AT THE ROTATED POSITION** -- `M2.2`'s exit criterion,
+  /// to the fixed-point bit and not to the unit. The rotation here is written out by hand rather than
+  /// through `QuarterTurn`, so a wrong turn in the one the generator uses cannot pass by agreeing with
+  /// itself.
+  TEST_METHOD(EveryRockHasExactlyOneCounterpartOneStepRound)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      const std::size_t turnsPerStep = Outpost::ANCHOR_COUNT / Outpost::FieldCopyCount(players);
+      for (std::uint64_t seed = 0; seed < SEEDS_SWEPT; ++seed)
+      {
+        const std::vector<Outpost::Placement> field = Outpost::GenerateField(seed, players);
+        for (const Outpost::Placement& placed : field)
+        {
+          Neuron::Fixed x = placed.position.x;
+          Neuron::Fixed y = placed.position.y;
+          for (std::size_t turn = 0; turn < turnsPerStep; ++turn)
+          {
+            const Neuron::Fixed turned = -y;
+            y = x;
+            x = turned;
+          }
+
+          std::size_t counterparts = 0;
+          for (const Outpost::Placement& other : field)
+          {
+            if ((other.position.x == x) && (other.position.y == y))
+            {
+              ++counterparts;
+              Assert::IsTrue(other.field == placed.field, L"a rock's counterpart is in another kind of field");
+              Assert::IsTrue(other.kind == placed.kind);
+            }
+          }
+          Assert::AreEqual(std::size_t{1}, counterparts, L"a rock without exactly one counterpart");
+        }
+      }
+    }
+  }
+
+  /// **NOTHING SITS ON THE CENTER**, the one point every rotation fixes -- a rock there would be its own
+  /// counterpart and would be placed once per copy. The region keeps half the spacing from every edge, so
+  /// it cannot happen; this says so over the sweep.
+  TEST_METHOD(NoRockLandsOnTheCenter)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      for (std::uint64_t seed = 0; seed < SEEDS_SWEPT; ++seed)
+      {
+        for (const Outpost::Placement& placed : Outpost::GenerateField(seed, players))
+        {
+          Assert::IsFalse((placed.position.x == 0) && (placed.position.y == 0), L"a rock on the center");
+        }
+      }
+    }
+  }
+
+  /// **COPY k IS PLAYER k + 1's**: its home field sits in the annulus around that player's anchor, which is
+  /// what lets a later step say whose home field a rock is in without measuring.
+  TEST_METHOD(EachCopysHomeFieldSurroundsItsPlayersAnchor)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      for (std::uint64_t seed = 0; seed < SEEDS_SWEPT; ++seed)
+      {
+        const std::vector<Outpost::Placement> field = Outpost::GenerateField(seed, players);
+        for (std::size_t index = 0; index < field.size(); ++index)
+        {
+          if (field[index].field != Outpost::FieldKind::Home)
+          {
+            continue;
+          }
+          const Outpost::PlayerId player = static_cast<Outpost::PlayerId>((index / REGION_ASTEROIDS) + 1);
+          const Neuron::Vec2 anchor = Outpost::StartAnchor(players, player);
+          const std::int64_t fromAnchor =
+            WholeDistanceSquared(WholeX(field[index]), WholeY(field[index]), anchor.x / Neuron::FIXED_ONE, anchor.y / Neuron::FIXED_ONE);
+          Assert::IsTrue(fromAnchor >= Squared(Outpost::HOME_FIELD_INNER_RADIUS_UNITS), L"a copied home rock sits on a base");
+          Assert::IsTrue(fromAnchor <= Squared(Outpost::HOME_FIELD_OUTER_RADIUS_UNITS), L"a copied home rock is not around its anchor");
+        }
+      }
+    }
+  }
+
+  /// Run twice, compared whole, as the region is.
+  TEST_METHOD(TheSameSeedProducesTheSameField)
+  {
+    for (const std::size_t players : {std::size_t{1}, std::size_t{2}, std::size_t{4}})
+    {
+      Assert::IsTrue(Outpost::GenerateField(MATCH_SEED, players) == Outpost::GenerateField(MATCH_SEED, players),
+                     L"the field disagreed with itself");
     }
   }
 };

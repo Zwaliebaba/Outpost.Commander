@@ -2,6 +2,8 @@
 
 #include "BuildSystem.h"
 
+#include <vector>
+
 namespace Outpost
 {
 
@@ -10,7 +12,31 @@ namespace
 /// The player's station, or nullptr. A linear scan over the store, which at the design's 110 entities
 /// is nothing -- and the alternative, a per-player cached identity, is a second thing to keep correct
 /// across a death that M3 has not written yet.
-[[nodiscard]] const Entity* StationOf(const World& _world, PlayerId _player) noexcept
+[[nodiscard]] const Entity* StationOf(const World& _world, PlayerId _player) noexcept;
+
+/// **THIS PLAYER'S MODULES, AS `CheckModuleSite` TAKES THEM** (M2.11) -- the same list the client builds from
+/// its records, which is what lets the two sides evaluate one rule. In slot order; the rule does not care.
+[[nodiscard]] std::vector<PlacedModule> ModulesOf(const World& _world, PlayerId _player)
+{
+  std::vector<PlacedModule> modules;
+  const std::size_t slotCount = _world.SlotCount();
+  for (std::size_t slot = 0; slot < slotCount; ++slot)
+  {
+    if (!_world.IsSlotAlive(slot))
+    {
+      continue;
+    }
+    const Entity& entity = _world.EntityInSlot(slot);
+    if ((entity.owner == _player) && IsModule(entity.design))
+    {
+      modules.push_back(PlacedModule{
+        .identity = PackIdentity(entity.id.index, entity.id.generation), .position = entity.position, .design = entity.design});
+    }
+  }
+  return modules;
+}
+
+const Entity* StationOf(const World& _world, PlayerId _player) noexcept
 {
   const std::size_t slotCount = _world.SlotCount();
   for (std::size_t slot = 0; slot < slotCount; ++slot)
@@ -31,14 +57,23 @@ namespace
 
 std::uint32_t BuildSystem::TicksToBuild(DesignId _design, std::uint32_t _multiplierPercent) noexcept
 {
+  return TicksForCost(Derive(_design).cost, _multiplierPercent);
+}
+
+std::uint32_t BuildSystem::TicksForCost(std::uint32_t _costCredits, std::uint32_t _multiplierPercent) noexcept
+{
   const std::uint32_t multiplier = (_multiplierPercent == 0) ? 100 : _multiplierPercent;
-  const std::uint64_t cost = Derive(_design).cost;
+  const std::uint64_t cost = _costCredits;
 
   // cost / (rate * multiplier / 100) seconds, times the tick rate. Written as one division so there is
   // one rounding rather than two, and both sides of the wire compute it the same way (R16).
+  //
+  // **AND IT ROUNDS UP** (M2.12, `OpenQuestions.md` Q56): a shipyard never makes anything faster than its
+  // stated rate, so 400 credits at x1.5 is 267 ticks and not 266. Every ship divides exactly at both levels;
+  // only a module needs the rule.
   const std::uint64_t numerator = cost * TICKS_PER_SECOND * 100;
   const std::uint64_t denominator = static_cast<std::uint64_t>(BUILD_RATE_CREDITS_PER_SECOND) * multiplier;
-  const std::uint64_t ticks = numerator / denominator;
+  const std::uint64_t ticks = (numerator + denominator - 1) / denominator;
 
   // AT LEAST ONE. A design with no cost would otherwise complete on the tick it started, and the
   // catalog has rows with no cost in it.
@@ -101,6 +136,90 @@ BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _des
     return BuildRejection::NoStation;
   }
 
+  const std::uint32_t cost = Derive(_design).cost;
+  return Commit(_player, BuildItem{.active = true,
+                                   .design = _design,
+                                   .ticksElapsed = 0,
+                                   .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
+                                   .creditsSpent = cost});
+}
+
+BuildRejection BuildSystem::StartModule(World& _world, PlayerId _player, DesignId _design, const Neuron::Vec2& _site,
+                                        std::uint32_t _buildRateMultiplierPercent) noexcept
+{
+  if (!Holds(_player))
+  {
+    return BuildRejection::NoPlayer;
+  }
+  if (static_cast<std::size_t>(_design) >= Designs().size())
+  {
+    return BuildRejection::UnknownDesign;
+  }
+  if (!IsModule(_design))
+  {
+    return BuildRejection::NotBuildable;
+  }
+  if (!IsPlacedLevel(_design))
+  {
+    return BuildRejection::NotUpgradeable;
+  }
+  const Entity* station = StationOf(_world, _player);
+  if (station == nullptr)
+  {
+    return BuildRejection::NoStation;
+  }
+
+  // **THE SITE BEFORE THE QUEUE** (M2.11): refused here, nothing has been refunded, charged or cancelled.
+  const std::vector<PlacedModule> placed = ModulesOf(_world, _player);
+  if (!CheckModuleSite(station->position, station->design, placed, _site, _design).Legal())
+  {
+    return BuildRejection::IllegalSite;
+  }
+
+  const std::uint32_t cost = Derive(_design).cost;
+  return Commit(_player, BuildItem{.active = true,
+                                   .design = _design,
+                                   .ticksElapsed = 0,
+                                   .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
+                                   .creditsSpent = cost,
+                                   .site = _site});
+}
+
+BuildRejection BuildSystem::StartUpgrade(World& _world, PlayerId _player, EntityId _module, DesignId _level,
+                                         std::uint32_t _buildRateMultiplierPercent) noexcept
+{
+  if (!Holds(_player))
+  {
+    return BuildRejection::NoPlayer;
+  }
+  if (static_cast<std::size_t>(_level) >= Designs().size())
+  {
+    return BuildRejection::UnknownDesign;
+  }
+  if (StationOf(_world, _player) == nullptr)
+  {
+    return BuildRejection::NoStation;
+  }
+
+  // **YOURS, ALIVE, AND A LEVEL THAT BECOMES THIS ONE** -- all before the queue is touched, as a site is.
+  const Entity* module = _world.Find(_module);
+  if ((module == nullptr) || (module->owner != _player) || !UpgradesTo(module->design, _level))
+  {
+    return BuildRejection::NotUpgradeable;
+  }
+
+  const std::uint32_t cost = UpgradeCostCredits(module->design, _level);
+  return Commit(_player, BuildItem{.active = true,
+                                   .design = _level,
+                                   .ticksElapsed = 0,
+                                   .ticksRequired = TicksForCost(cost, _buildRateMultiplierPercent),
+                                   .creditsSpent = cost,
+                                   .site = module->position,
+                                   .upgrade = _module});
+}
+
+BuildRejection BuildSystem::Commit(PlayerId _player, const BuildItem& _item) noexcept
+{
   // THE REFUND FIRST (Q35). Replacing a Fighter with a Fighter has to work, and it would not if the
   // new cost were checked against a balance the old item was still holding.
   BuildItem& item = m_items[static_cast<std::size_t>(_player)];
@@ -108,8 +227,7 @@ BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _des
   const std::uint32_t refunded = replacing ? item.creditsSpent : 0;
   m_credits[static_cast<std::size_t>(_player)] += refunded;
 
-  const std::uint32_t cost = Derive(_design).cost;
-  if (m_credits[static_cast<std::size_t>(_player)] < cost)
+  if (m_credits[static_cast<std::size_t>(_player)] < _item.creditsSpent)
   {
     // Nothing was spent, so the refund above stands and the old item is simply cancelled -- which is
     // what a player who taps something they cannot afford has asked for, and the interface will show
@@ -118,12 +236,8 @@ BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _des
     return BuildRejection::Unaffordable;
   }
 
-  m_credits[static_cast<std::size_t>(_player)] -= cost;
-  item = BuildItem{.active = true,
-                   .design = _design,
-                   .ticksElapsed = 0,
-                   .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
-                   .creditsSpent = cost};
+  m_credits[static_cast<std::size_t>(_player)] -= _item.creditsSpent;
+  item = _item;
   return BuildRejection::None;
 }
 
@@ -176,8 +290,29 @@ void BuildSystem::Advance(World& _world) noexcept
       continue;
     }
 
-    // Copied before `Create`, which may reallocate the store out from under the pointer above.
-    const Neuron::Vec2 spawn = SpawnPoint(*station, item.design);
+    // **AN UPGRADE CHANGES THE MODULE IN PLACE** (Q54): the same entity, the same identity and position, a
+    // new level. The hull it has taken stays taken -- both levels carry the frame's hull points -- and a
+    // module that died while the upgrade built is a refund, as a station that died is.
+    if (item.upgrade.IsValid())
+    {
+      Entity* module = _world.Find(item.upgrade);
+      if ((module == nullptr) || (module->owner != static_cast<PlayerId>(player)))
+      {
+        m_credits[player] += item.creditsSpent;
+        ++m_stranded;
+      }
+      else
+      {
+        module->design = item.design;
+      }
+      item = BuildItem{};
+      continue;
+    }
+
+    // Copied before `Create`, which may reallocate the store out from under the pointer above. **A module
+    // appears where it was placed** (M2.11) and faces the way the station does; a ship at the spawn point.
+    const bool isModule = IsModule(item.design);
+    const Neuron::Vec2 spawn = isModule ? item.site : SpawnPoint(*station, item.design);
     const Neuron::Angle heading = station->heading;
 
     static_cast<void>(_world.Create(spawn, heading, item.design, static_cast<PlayerId>(player)));

@@ -27,6 +27,11 @@ enum class HudAction : std::uint8_t
   /// Starts building a design. The argument is the `DesignId`.
   Build,
 
+  /// **Arms a module placement, or disarms it** (M2.11, `Interface.md` section 6). The argument is the design.
+  /// A module is not queued by a tap on its button the way a ship is: the tap on the plane that follows is
+  /// what sends the order.
+  ArmModule,
+
   /// Cancels the item in progress, for the refund `OpenQuestions.md` Q35 settled.
   CancelBuild,
 

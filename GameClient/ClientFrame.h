@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "FieldView.h"
 #include "JoinState.h"
 #include "OrderMarker.h"
 #include "ReplicaStore.h"
@@ -167,6 +168,14 @@ public:
     return m_join;
   }
 
+  /// The asteroid field (M2.3), derived from the join's seed and count whenever a reply moves either --
+  /// so it exists from the drain that seats this client and is cleared by one that refuses it. Nothing
+  /// from an update touches it.
+  [[nodiscard]] const FieldView& Field() const noexcept
+  {
+    return m_field;
+  }
+
   /// What the system panel shows. **The one place the link state is decided** (R20) -- the package used
   /// to map the join phase itself, and it could not see a loss because the loss is a fact about arrivals.
   [[nodiscard]] LinkState Link() const noexcept;
@@ -198,6 +207,9 @@ private:
   /// packet from `NO_PLAYER` outright, so the assumption could not be `NO_PLAYER` and could not be
   /// checked either. Now it is answered, and until it is answered this client sends nothing.
   JoinState m_join;
+
+  /// Follows `m_join`: rederived after a reply is folded in, and a no-op when the reply repeats the pair.
+  FieldView m_field;
 
   /// **ONE PAST WHAT THE HOST HAS ALREADY APPLIED, ADOPTED FROM THE FIRST UPDATE THAT CARRIES
   /// THIS PLAYER'S BLOCK.** It starts at one and is corrected the moment the host says otherwise.

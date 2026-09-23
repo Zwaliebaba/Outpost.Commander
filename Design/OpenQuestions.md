@@ -8,28 +8,33 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-four answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Fifty-four answered, three open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS TEN ENTRIES AND SIX OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46 and Q47,
-all in full — kept in place with their reasoning rather than flattened into a table row, because what each
-was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
-open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
+**THE *OPEN* SECTION HOLDS EIGHTEEN ENTRIES AND FIFTEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
+Q46, Q47 and Q50 to Q57, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+was weighing is worth more than the row would be. Their headings say so. **The three that are genuinely
+open are Q34, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
 because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
 M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
-that the figures have somewhere to be argued with later.
+that the figures have somewhere to be argued with later. **Q50 is the second**, found while writing M2.3
+and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2.6 the same way, **and Q53
+the fifth**, from M2.7, **and Q54 to Q57 four more**, from M2.11 and M2.12, ruled together before either step's
+code.
 
-**Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
+**Q37 was left open deliberately until the owner answered it on 2026-09-22**, and this paragraph is the
+reason as it stood. It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
 `Station` 220, asteroids 62 to 167 against a recommended 60–180. **Closing it wants the catalog row
 written at the same time** (R24), so that the figure and the file are two statements of one number with a
-script between them rather than one number nobody stated. M1.9 carries that as a step.
+script between them rather than one number nobody stated. M1.9 carried that as a step, and M2.10b moved the
+module frame to 90 (Q37's note).
 
 **This line said "five open" while six were listed**, from the commit that registered Q37 and did not
 count again. It is the same defect `Plan/README.md`'s step counts had and for the same reason — a count is
@@ -133,7 +138,7 @@ module arrives with fog, post-MVP.
 
 **The wire could not afford a cargo byte.** A fill level per entity is 110 bytes against 96 of headroom,
 which would have split the MVP's single datagram. Cargo is **two bits in the flags byte** — four buckets,
-which is what a bar needs — in the space the design identity vacated when Q28's review moved it to a byte
+which is what a bar needs, **and three bits since M2.7** (Q53), because four chips need five states — in the space the design identity vacated when Q28's review moved it to a byte
 of its own. It is a small illustration of the thing ADR-015 warned about: the datagram now has nine
 entities of headroom, and the next feature that wants a per-entity byte still cannot have one.
 
@@ -322,7 +327,12 @@ correctly — it is a `GameCore` rule, not an interface one.
 is *I picked the wrong one* — which is the mis-tap case, not a strategic one. A proportional refund buys a
 decision the MVP gives the player no other way to make interesting, and pays a rounding rule for it.
 
-### Q36 — Does the income rate ship at all, and if so how and over what window? — **needed by M2**
+### Q36 — Does the income rate ship at all, and if so how and over what window? — **ANSWERED**
+
+**NO RATE IN THE MVP; THE CHANGE FLASH ONLY. The owner's answer, 2026-09-23**, on the recommendation below,
+before M2.7's code. `GameClient/CreditFlash` draws the handoff's flash under the balance, cyan on a gain and
+amber on a spend, and nothing derives income. **Revisit after M3's twenty matches**, by the route the last
+paragraphs give. The reason is the one below, not the handoff's "no data path", which is false.
 
 **This question grew a first half.** `design_handoff_hud/` draws the credits panel — 272 × 88, a label, the
 balance and a change flash — with **no room for a rate**, and states flatly that there is none because it
@@ -373,11 +383,17 @@ path" would make this a constraint; it is a choice, and it should be re-openable
 ### Q37 — How big is each hull, in world units? — **ANSWERED**
 
 **THE DELIVERED EXTENTS, WRITTEN INTO THE CATALOG. The owner's answer, 2026-09-22.** `HullEntry` now
-carries a `sizeUnits` row — `Scout` 60, `Frigate` 90, `Station` 220, `ModuleFrame` 84 — taken from the
+carries a `sizeUnits` row — `Scout` 60, `Frigate` 90, `Station` 220, `ModuleFrame` 84, **90 since M2.10b** — taken from the
 thirteen delivered meshes and **rounded up, because the figure is a bound**: it is what spaces things so
 they do not overlap and what sets how far in front of a station a new ship appears. **The `Cruiser`'s 150
 is the one row no file backs**, because nothing authored a mesh for a design the MVP cut; M4 authors to
 the number rather than the other way round. M1.9 adds the script that compares the two statements.
+
+**`ModuleFrame` moved from 84 to 90 at M2.10b, by this ruling's own rule.** Each module level draws with its
+own mesh, and both shipyards are 90 units long where the bare frame is 83.52 — so a hull is bounded by every
+mesh that draws it, and `Scripts/CheckMeshes.py` and `HullMeshTests` now take the longest of them. At 84, two
+shipyards placed exactly clear would have overlapped by six units. M2.10's clearances follow: 155 from the
+station and 90 between modules.
 
 It landed at M1.6 rather than M1.9 because the build system needed a spawn offset and deriving one from
 two hull sizes beat inventing a distance.
@@ -592,6 +608,159 @@ which is roughly the sweep-to-refresh ratio at which 1,000 entities in view stil
 at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
+
+### Q50 — How does a client learn the player count its field is derived from? — **ANSWERED**
+
+**A BYTE ON THE JOIN REPLY. The owner's answer, 2026-09-23**, on the recommendation below, asked and ruled
+before M2.3's code was written. Recorded in
+[`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)'s amendment and in R23.
+
+**The gap.** R23 reads as though the seed is the generator's one input, and ADR-013 sends the seed and
+nothing else about the match. **M2.1 and M2.2 made the count a second input**: `GameDesign.md` §3 copies a
+half at two players and a quarter at four, so one seed is two maps. Nothing else on the wire carries the
+count, because since ADR-024 an update carries only its recipient's block. It went unnoticed until M2.3
+because nothing on the client called the generator until then. The one client that needed the count
+before that, the camera's opening recenter, had `2` compiled in.
+
+- **A byte on `JoinReply`**: 22 bytes to 23, protocol version 4 to 5, and ADR-013 amended. It rides the
+  one record that already exists to carry what a snapshot cannot, and a rejoin gets it again for free.
+- **A count-free field**: always a quarter copied four ways. Nothing on the wire moves, but §3's half at
+  two players goes, M2.1's table is repinned, and two home fields on a two-player map belong to nobody.
+- **Inferred from the replica store**, from the station owners it has heard of. Nothing on the wire
+  moves, but ADR-024's records arrive in priority order over several ticks, so the field could be drawn
+  wrong and then redrawn, and at M3 a destroyed station changes the answer.
+
+**Recommendation: the byte.** It is the only option that is right on the first frame and stays right.
+
+### Q51 — How long does a miner unload, and how close must it be? — **ANSWERED**
+
+**50 ORE A SECOND, ONCE TOUCHING. The owner's answer, 2026-09-23**, on the recommendation below, before
+M2.6's code. Both figures are named and provisional, like Q26's: `MiningSystem.h`'s `UNLOAD_ORE_PER_SECOND`
+and `UnloadTarget.h`'s `UNLOAD_SLACK_UNITS`. They are also in `GameDesign.md` §4.
+
+**The gap.** `GameDesign.md` §4 names five states and "unloading" is one of them, but no figure gives it a
+duration or a reach. §7 says point defense protects "the unloading area", so how long a miner sits there is
+part of the raid arithmetic rather than a detail.
+
+- **50 ore a second, touching**: two seconds for a one-laser hold, once the hulls touch. Touching is a
+  center distance of at most the two sizes' halves (Q37) plus 20 units of slack, 160 for a `Scout` at the
+  station. It is a real dwell inside point defense's 400, and small next to a round trip.
+- **Instant**: one tick on arrival. Simplest, but the unloading state is one tick long and §7's protected
+  unloading area has nothing in it to protect.
+- **At the extraction rate**, 20 a second: symmetric, but it doubles the time at the station and cuts §4's
+  per-miner income by about a sixth.
+
+**Recommendation: 50 a second, touching.** **What it produces**, arithmetic on the design's figures at 20 Hz:
+1,000 thousandths of ore a tick extracted and 2,500 unloaded, so a hold takes 100 ticks to fill and 40 to
+empty. `MiningTests` pins a full cycle against a rock 2,000 units out at 794 ticks.
+
+### Q52 — How does a mine order name its asteroid? — **ANSWERED**
+
+**BY ITS INDEX IN THE GENERATED FIELD. The owner's answer, 2026-09-23**, on the recommendation below,
+before M2.6's code.
+
+**The gap.** A mine order targets a rock, and a rock is not a world entity before M3 (Q22), so there is no
+entity identity to put in the command.
+
+- **The field index**: the rock's position in `GenerateField`'s order, carried in `targetX` with `targetY`
+  zero. Both sides derive the same rows from the same seed and count (R23, Q50), so the index names the
+  same rock on both. The host refuses one past the field's size, and it is the natural key for M3's
+  per-asteroid ore.
+- **The tapped point**, with the host picking the nearest rock inside a tolerance. It needs no new identity
+  scheme, but a quantized point can land nearer the wrong rock in a dense cluster, and it adds a lookup and
+  a tolerance to validation.
+
+**Recommendation: the index.** It is exact, it is one bounds check, and it is what M3 needs anyway.
+
+### Q53 — How does a two-bit cargo bucket fill four chips? — **ANSWERED**
+
+**THREE BITS, ZERO TO FOUR CHIPS. The owner's answer, 2026-09-23**, on the recommendation below, before M2.7's
+code.
+
+**The gap.** `design_handoff_hud` draws **four** cargo chips per selection group. The wire carried a **two-bit**
+bucket, which has four states, so "empty" and "all four lit" could not both be drawn. The handoff also never
+said how a group of several miners aggregates.
+
+- **Three bits, 0 to 4 chips**: cargo takes one of the flags byte's three spare bits, for five states. Quarters
+  are rounded up, so any ore lights a chip and a full hold lights all four. The record stays twelve bytes and
+  every refresh figure in `Scripts/DatagramBudget.py` is unchanged. The field audit's recoverable bits go from
+  nine to eight.
+- **Two bits, drawn as 0, 2, 3 and 4 chips**: no format change, but one chip is never lit alone and the
+  discrete buckets read unevenly.
+- **Two bits, three chips**: exact, but it contradicts the handoff's four-chip geometry and the gate that pins
+  it.
+
+**Recommendation: three bits.** A group lights **its members' mean, rounded to nearest**, which is how the
+hull bar already aggregates. `GameCore/EntityRecord.h`'s `CargoChips` is the mapping, and `UpdateTests` pins it.
+
+### Q54 — How does a level-2 module come about? — **ANSWERED**
+
+**AN UPGRADE IN PLACE, AT THE DIFFERENCE. The owner's answer, 2026-09-23**, on the recommendation below, before
+M2.11's code.
+
+**The gap.** ADR-015 says upgrading "replaces `ShipyardL1` with `ShipyardL2`", and M2.11b's dimmed state needs
+something that gates an item. Neither says how a player gets an L2.
+
+- **An upgrade in place, paying the difference**: an L2 button upgrades one of your L1 modules of that kind.
+  You arm it and tap the L1. It pays 300 for a shipyard and 250 for an ore processor, so an L2 costs §5's
+  figure in total. It builds through the station's queue, and L2 is dimmed without an L1.
+- **An upgrade in place, at full price**: the same interaction, with 700 or 600 on top of the L1 already paid.
+  A shipyard L2 then costs 1,100 in all.
+- **An L2 placed fresh**: its own module, anywhere in the radius, at full price, with no prerequisite. It is
+  the simplest, but "upgrade" stops meaning anything, M2.11b has nothing to dim, and two shipyards of different
+  levels can coexist.
+
+**Recommendation: in place, at the difference.** `GameCore/ModuleSite.h` holds the pairs (`UpgradesTo`) and the
+price (`UpgradeCostCredits`). The host refuses a placement naming an L2. The upgrade is the same entity with a
+new design.
+
+### Q55 — How does a placement carry both a design and a point? — **ANSWERED**
+
+**A NEW COMMAND TYPE WITH ONE MORE BYTE. The owner's answer, 2026-09-23**, on the recommendation below.
+
+**The gap.** A command's target is four bytes. A `Build` puts its design in `targetX`'s low byte, and a point
+needs all four.
+
+- **A new type, one more byte**: `PlaceModule` (6) carries the point at full wire precision in `targetX` and
+  `targetY`, plus a ninth fixed byte for the design that only this type carries. An in-place upgrade fits the
+  existing layout as `UpgradeModule` (7): the module's identity in the target, and the level in `targetY`'s
+  spare high byte. It rides protocol 5, which has not left the branch.
+- **Pack the design and an offset**: no codec change. The point is a 1-unit offset from the station in 11
+  bits, with 5 bits of design per axis field. It caps designs at 32, which fights R24's growth at M4, and the
+  packing is clever rather than obvious.
+
+**Recommendation: the new type.** The upstream is never the constraint: `Scripts/DatagramBudget.py --upstream`
+puts a placement at 9 bytes and an upgrade at 8, with no selection. The worst case is unchanged.
+
+### Q56 — Where does the shipyard's build-rate multiplier round? — **ANSWERED**
+
+**TICKS ROUND UP. The owner's answer, 2026-09-23**, on the recommendation below, before M2.12's code.
+
+**The gap.** M2.12 says it "must not invent" where a multiplier rounds, and points at ADR-014. Ships divide
+exactly under both levels. A module does not: 400 credits at ×1.5 is 266.67 ticks.
+
+- **Round up**: a shipyard never makes anything faster than its stated rate, so that is 267 ticks.
+- **Round down**: today's truncation, 266 ticks, a third of a tick faster than the rate.
+- **Round to nearest**: 267 here, but a .5 case picks a direction arbitrarily.
+
+**Recommendation: round up.** The ore processor needs no rule, because cargo is carried in thousandths of ore
+per player: 2,500 at 125% is 3,125, exactly. **This is recorded here, and ADR-014 stays reserved for M3's
+damage**, which is the rounding question it was held for. `BuildSystem::TicksForCost` is the one division.
+
+### Q57 — What does a tap on one of your own modules do? — **ANSWERED**
+
+**NOTHING, UNLESS AN UPGRADE IS ARMED. The owner's answer, 2026-09-23**, on the recommendation below.
+
+**The gap.** `Interface.md` §4's table has no row for a module, and §1's pick order puts modules in the
+station's tier.
+
+- **Nothing, unless upgrading**: picked at the structure tier, so it wins over rocks and hostiles underneath,
+  and then it has no verb, except as the target of an armed L2 upgrade. The selection is unchanged.
+- **Opens the build panel**: treated like the station. It is consistent with "own structure", but it makes
+  modules a second way to open the same panel.
+
+**Recommendation: nothing, unless upgrading.** `Selection::Tap` gives a module no verb, and `ResolvePlacementTap`
+turns it into an upgrade when one is armed.
 
 ---
 

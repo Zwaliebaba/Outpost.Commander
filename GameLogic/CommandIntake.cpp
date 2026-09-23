@@ -63,15 +63,44 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     return CommandRejection::AlreadyApplied;
   }
 
-  // THE STATION'S TWO ORDERS TOUCH NO ENTITY, so every check below this belongs to the other two.
+  // THE STATION'S ORDERS ACT ON NO SELECTION, so every check below this belongs to the other three.
   // The acknowledgment still advances on a refusal, for the reason an Attack that resolves nothing
   // does: the host UNDERSTOOD the order, and a sequence that did not advance would have the client
   // repeat it forever.
   if (!ActsOnSelection(_command.type))
   {
-    const bool ordered = (_command.type == CommandType::Build)
-                           ? (_build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign())) == BuildRejection::None)
-                           : _build.Cancel(_player);
+    // **THE PLAYER'S OWN SHIPYARD SETS THE RATE, AT THE START** (M2.12): an item keeps the rate it began at, so a
+    // shipyard finished or lost mid-build changes the next item and not this one.
+    const std::uint32_t buildRate = BuildRateMultiplierPercent(_world, _player);
+    bool ordered = false;
+    switch (_command.type)
+    {
+    case CommandType::Build:
+      ordered = _build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign()), buildRate) == BuildRejection::None;
+      break;
+    case CommandType::PlaceModule:
+    {
+      // THE SITE IS THE BUILD SYSTEM'S TO JUDGE, with `CheckModuleSite` (M2.11), from the point as the wire said
+      // it -- clamped for the reason every point here is.
+      const Neuron::Vec2 site =
+        ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
+      ordered = _build.StartModule(_world, _player, static_cast<DesignId>(_command.placedDesign), site, buildRate) == BuildRejection::None;
+      break;
+    }
+    case CommandType::UpgradeModule:
+      // A stale or unknown identity resolves to nothing, which the build system refuses as not upgradeable.
+      ordered = _build.StartUpgrade(_world, _player, ResolveWireIdentity(_world, _command.TargetEntity()),
+                                    static_cast<DesignId>(_command.UpgradeLevel()), buildRate) == BuildRejection::None;
+      break;
+    case CommandType::CancelBuild:
+      ordered = _build.Cancel(_player);
+      break;
+    case CommandType::MoveTo:
+    case CommandType::Attack:
+    case CommandType::Mine:
+      // Unreachable: these act on a selection and were sent below by `ActsOnSelection`.
+      break;
+    }
 
     m_lastApplied[_player] = _command.sequence;
     m_hasApplied[_player] = true;
@@ -109,6 +138,12 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   const Neuron::Vec2 target =
     ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
 
+  // A ROCK THE FIELD HAS, before anything is acted on -- the same all-or-nothing rule as the identities.
+  if ((_command.type == CommandType::Mine) && (_command.TargetRock() >= _world.Field().size()))
+  {
+    return CommandRejection::NoSuchRock;
+  }
+
   if (_command.type == CommandType::MoveTo)
   {
     // **ONE RING SLOT EACH, RATHER THAN FIFTY SHIPS ON ONE POINT** (Q19, M1.7). The whole selection
@@ -121,6 +156,29 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
       resolved.push_back(ResolveWireIdentity(_world, wire));
     }
     static_cast<void>(OrderFleetTo(_world, resolved, target));
+
+    // **A MOVE ENDS A MINE ORDER AND KEEPS THE CARGO** (M2.6). The standing order is the one that does not
+    // complete, so it is the one another order has to end explicitly.
+    for (const EntityId id : resolved)
+    {
+      static_cast<void>(_world.StopMining(id));
+    }
+  }
+  else if (_command.type == CommandType::Mine)
+  {
+    // **ONLY WHAT CAN MINE TAKES THE ORDER** (`GameDesign.md` section 4): a design whose derived capacity is
+    // zero is skipped and keeps whatever it was doing. The command is still accepted -- M2.8's mixed
+    // selection sends the rest a separate move -- and the mining system does the travelling, so nothing
+    // moves here.
+    for (const WireIdentity wire : _command.selection)
+    {
+      const EntityId id = ResolveWireIdentity(_world, wire);
+      const Entity* entity = _world.Find(id);
+      if ((entity != nullptr) && (Derive(entity->design).oreCapacity > 0))
+      {
+        static_cast<void>(_world.OrderMine(id, _command.TargetRock()));
+      }
+    }
   }
   else
   {

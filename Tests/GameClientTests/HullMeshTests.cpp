@@ -170,23 +170,49 @@ public:
     Assert::AreEqual(std::string_view{"Frigate"}, Outpost::MeshNameForDesign(Outpost::DesignId::Fighter));
     Assert::AreEqual(std::string_view{"Station"}, Outpost::MeshNameForDesign(Outpost::DesignId::Station));
 
+    // M2.10b: a module draws by its level, so four designs on one hull are four shapes.
+    Assert::AreEqual(std::string_view{"ModuleShipyardL1"}, Outpost::MeshNameForDesign(Outpost::DesignId::ModuleShipyardL1));
+    Assert::AreEqual(std::string_view{"ModuleShipyardL2"}, Outpost::MeshNameForDesign(Outpost::DesignId::ModuleShipyardL2));
+    Assert::AreEqual(std::string_view{"ModuleOreProcessorL1"}, Outpost::MeshNameForDesign(Outpost::DesignId::ModuleOreProcessorL1));
+    Assert::AreEqual(std::string_view{"ModuleOreProcessorL2"}, Outpost::MeshNameForDesign(Outpost::DesignId::ModuleOreProcessorL2));
+
     Assert::IsTrue(Outpost::MeshNameForDesign(static_cast<Outpost::DesignId>(99)).empty());
   }
 
-  /// **THREE MESHES SHIP AT M1.9**, and every one of them is a mesh the manifest has.
-  TEST_METHOD(TheThreeShippedMeshesAreInTheCatalog)
+  /// **SEVEN MESHES SHIP**: M1.9's three and M2.10b's four module levels, and every one of them is a
+  /// mesh the manifest has.
+  TEST_METHOD(TheSevenShippedMeshesAreInTheCatalog)
   {
-    Assert::AreEqual(static_cast<std::size_t>(3), Outpost::MeshesShippedAtM1().size());
-    for (const std::string_view name : Outpost::MeshesShippedAtM1())
+    Assert::AreEqual(static_cast<std::size_t>(7), Outpost::ShippedMeshes().size());
+    for (const std::string_view name : Outpost::ShippedMeshes())
     {
       Assert::IsNotNull(Outpost::FindMesh(name));
+    }
+  }
+
+  /// **EVERY DESIGN DRAWS WITH A MESH THAT SHIPS**, which is what sizes the renderer's arrays: a design
+  /// whose mesh is not uploaded would be an entity nobody sees.
+  TEST_METHOD(EveryDesignDrawsWithAShippedMesh)
+  {
+    for (const Outpost::DesignEntry& design : Outpost::Designs())
+    {
+      const std::string_view name = Outpost::MeshNameForDesign(design.id);
+      bool shipped = false;
+      for (const std::string_view candidate : Outpost::ShippedMeshes())
+      {
+        shipped = shipped || candidate == name;
+      }
+      Assert::IsTrue(shipped, L"a design draws with a mesh the client does not upload");
     }
   }
 
   /// **Q37's TWO STATEMENTS, AGAIN, IN THE CLIENT.** `Scripts/CheckMeshes.py` compares the catalog
   /// against the FILE; this compares it against the generated header, so a manifest that changed
   /// without the catalog moving fails the build as well as the script.
-  TEST_METHOD(EveryHullSizeMatchesItsMeshsLongestAxis)
+  ///
+  /// **A HULL IS BOUNDED BY EVERY MESH THAT DRAWS IT** (M2.10b): its own, and each design's on that hull,
+  /// which for the `ModuleFrame` is four module levels whose shipyards are longer than the bare frame.
+  TEST_METHOD(EveryHullSizeMatchesItsLongestMesh)
   {
     for (const Outpost::HullEntry& hull : Outpost::Hulls())
     {
@@ -197,9 +223,20 @@ public:
       }
       const Outpost::MeshEntry* entry = Outpost::FindMesh(name);
       Assert::IsNotNull(entry);
+      float longestUnits = entry->longestUnits;
+      for (const Outpost::DesignEntry& design : Outpost::Designs())
+      {
+        if (design.hull != hull.id)
+        {
+          continue;
+        }
+        const Outpost::MeshEntry* drawn = Outpost::FindMesh(Outpost::MeshNameForDesign(design.id));
+        Assert::IsNotNull(drawn);
+        longestUnits = drawn->longestUnits > longestUnits ? drawn->longestUnits : longestUnits;
+      }
 
       // The catalog rounds UP, because the figure is a bound.
-      const auto authored = static_cast<std::uint16_t>(entry->longestUnits + 0.9999f);
+      const auto authored = static_cast<std::uint16_t>(longestUnits + 0.9999f);
       Assert::AreEqual(static_cast<int>(authored), static_cast<int>(hull.sizeUnits), L"Q37's two statements disagree");
     }
   }

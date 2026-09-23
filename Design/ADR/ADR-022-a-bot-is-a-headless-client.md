@@ -87,7 +87,7 @@ counts: seats taken and refused, updates received and lost (the transport sequen
 the gap between consecutive update ticks (a host that falls behind shows up here first), **the refresh
 interval per entity**, which is ADR-024's figure and the one a stress run exists to measure, commands sent
 and acknowledged, and the time from sending a command to the update acknowledging it. **The host's own tick cost is the host's to report.** It is
-M2.10's measurement, and the harness doesn't try to infer it from outside.
+M2.14's measurement (numbered M2.10 when this was written), and the harness doesn't try to infer it from outside.
 
 **It is not the AI of `GameDesign.md` §8 and it doesn't replace M4.5.** §8's AI runs on the host, on the
 tick, under R16, and can take over an abandoned slot mid-match (M4.6). The bot is how the host gets loaded

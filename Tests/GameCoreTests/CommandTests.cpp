@@ -119,6 +119,96 @@ public:
     Assert::AreEqual(sent.viewRadiusUnits, received.viewRadiusUnits);
   }
 
+  /// **A MINE ORDER NAMES A ROCK BY ITS FIELD INDEX** (M2.6, Q52), and the index survives the wire. A
+  /// negative `targetX` reads as a large unsigned index, which the host refuses as past the field.
+  TEST_METHOD(AMineOrderRoundTripsItsRockIndex)
+  {
+    Outpost::CommandPacket sent{};
+    sent.player = 1;
+    Outpost::Command mine{.sequence = 3, .type = Outpost::CommandType::Mine, .selection = {7}};
+    mine.AimAtRock(87);
+    sent.commands.push_back(mine);
+
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+    Assert::IsTrue(received.commands[0].type == Outpost::CommandType::Mine);
+    Assert::AreEqual(std::uint16_t{87}, received.commands[0].TargetRock());
+    Assert::IsTrue(Outpost::ActsOnSelection(Outpost::CommandType::Mine));
+
+    const Outpost::Command negative{.type = Outpost::CommandType::Mine, .targetX = -1};
+    Assert::AreEqual(std::uint16_t{65535}, negative.TargetRock());
+  }
+
+  /// **A PLACEMENT IS NINE BYTES: A POINT AND A DESIGN** (M2.11, Q55). The point survives at full wire
+  /// precision and the design byte is written for this type only, so the same command as a move is eight.
+  TEST_METHOD(APlacementRoundTripsItsPointAndDesign)
+  {
+    Outpost::CommandPacket sent{};
+    sent.player = 2;
+    const Outpost::Command place{.sequence = 9,
+                                 .type = Outpost::CommandType::PlaceModule,
+                                 .targetX = -1234,
+                                 .targetY = 567,
+                                 .placedDesign = static_cast<std::uint8_t>(Outpost::DesignId::ModuleOreProcessorL1)};
+    sent.commands.push_back(place);
+    Assert::AreEqual(std::size_t{9}, Outpost::EncodedSize(place));
+    Assert::AreEqual(std::size_t{8}, Outpost::EncodedSize(Outpost::Command{.type = Outpost::CommandType::Build}));
+    Assert::IsFalse(Outpost::ActsOnSelection(Outpost::CommandType::PlaceModule));
+
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+    Assert::AreEqual(Outpost::EncodedSize(sent), writer.WrittenBytes());
+
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+    Assert::IsTrue(received.commands[0] == place);
+  }
+
+  /// **AN UPGRADE NAMES A MODULE AND A LEVEL IN EIGHT BYTES** (Q55): the identity as an attack carries it,
+  /// and the level in the high byte of `targetY` that an identity leaves spare.
+  TEST_METHOD(AnUpgradeRoundTripsItsModuleAndLevel)
+  {
+    Outpost::Command upgrade{.sequence = 4, .type = Outpost::CommandType::UpgradeModule};
+    const Outpost::WireIdentity module = Outpost::PackIdentity(301, 255);
+    upgrade.AimAtUpgrade(module, Outpost::DesignId::ModuleShipyardL2);
+    Assert::AreEqual(module, upgrade.TargetEntity());
+    Assert::AreEqual(static_cast<int>(Outpost::DesignId::ModuleShipyardL2), static_cast<int>(upgrade.UpgradeLevel()));
+    Assert::AreEqual(std::size_t{8}, Outpost::EncodedSize(upgrade));
+
+    Outpost::CommandPacket sent{};
+    sent.player = 1;
+    sent.commands.push_back(upgrade);
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+    Assert::IsTrue(received.commands[0] == upgrade);
+  }
+
+  /// A placement cut off before its design byte is truncated, not read as a design of zero.
+  TEST_METHOD(APlacementWithoutItsDesignByteIsTruncated)
+  {
+    Outpost::CommandPacket sent{};
+    sent.commands.push_back(Outpost::Command{.type = Outpost::CommandType::PlaceModule, .placedDesign = 5});
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+
+    // Header and one command's first seven bytes, then nothing: the design byte and the count are missing.
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), Outpost::CommandPacket::HEADER_BYTES + 7}};
+    Outpost::CommandPacket received;
+    Assert::AreNotEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+  }
+
   TEST_METHOD(AnEmptySelectionRoundTrips)
   {
     // Legal on the wire and refused at intake. The codec's job is to carry what was written.

@@ -130,8 +130,14 @@ bool ScreenToPlane(const CameraPose& _pose, float _aspectRatio, float _screenX, 
 bool PlaneToScreen(const CameraPose& _pose, float _aspectRatio, float _worldX, float _worldY, float& _outScreenX,
                    float& _outScreenY) noexcept
 {
+  return WorldToScreen(_pose, _aspectRatio, _worldX, _worldY, 0.0f, _outScreenX, _outScreenY);
+}
+
+bool WorldToScreen(const CameraPose& _pose, float _aspectRatio, float _worldX, float _worldY, float _worldZ, float& _outScreenX,
+                   float& _outScreenY) noexcept
+{
   const CameraBasis basis = BuildBasis(_pose);
-  const Vector3 toPoint{_worldX - basis.eye.x, _worldY - basis.eye.y, -basis.eye.z};
+  const Vector3 toPoint{_worldX - basis.eye.x, _worldY - basis.eye.y, _worldZ - basis.eye.z};
 
   const float depth = Dot(toPoint, basis.forward);
   if (depth <= 0.0f)

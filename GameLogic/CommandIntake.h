@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BuildSystem.h"
+#include "ModuleEffects.h"
 #include "RingAssignment.h"
 #include "World.h"
 
@@ -31,7 +32,9 @@ enum class CommandRejection : std::uint8_t
   /// No player, or a selection that is empty when the type needs one -- or carries identities when
   /// the type does not (`GameCore/Command.h`).
   Empty,
-  /// A `Build` or `CancelBuild` the build system refused. **The reason is `BuildSystem`'s and stays
+  /// A `Mine` naming a rock the field does not have (Q52).
+  NoSuchRock,
+  /// A `Build`, `CancelBuild`, `PlaceModule` or `UpgradeModule` the build system refused. **The reason is `BuildSystem`'s and stays
   /// there**: duplicating `BuildRejection` into this enumeration would be two lists to keep in step
   /// for a distinction only the build suite ever asserts.
   BuildRefused

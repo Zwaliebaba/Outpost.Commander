@@ -11,6 +11,7 @@
 // projection in this file is what tips it over C3859.
 #include "ViewMode.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -64,6 +65,10 @@ inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 /// M1.9's per-frame instance capacity. ADR-003's peak is **110 entities** in the reduced MVP and 220
 /// at four players; this is the second, so the third and fourth slots cost no allocation change.
 inline constexpr std::uint32_t MAXIMUM_INSTANCES = 220;
+
+/// M2.4: the one identity instance every asteroid variant's draw shares. The rocks are already placed in
+/// their vertices (`GameClient/AsteroidMesh.h`), so the instance puts them at the origin, unturned.
+inline constexpr std::uint32_t FIELD_INSTANCES = 1;
 
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
@@ -120,6 +125,53 @@ void Report(std::ofstream& _log, const std::string& _line)
   OutputDebugStringA(terminated.c_str());
   _log << terminated;
   _log.flush();
+}
+
+/// **ONE MESH OUT OF THE PACKAGE, BY ITS CATALOG NAME, OR A REPORT SAYING WHY NOT.** The hulls and the
+/// asteroid variants take the same route, so the route is written once: every way this can fail names the
+/// mesh, because the failure ADR-021 expects is a clean install whose package did not carry the file.
+[[nodiscard]] bool ReadShippedMesh(std::string_view _name, std::ofstream& _log, Outpost::HullMesh& _outMesh)
+{
+  const Outpost::MeshEntry* entry = Outpost::FindMesh(_name);
+  if (entry == nullptr)
+  {
+    Report(_log, "MESH " + std::string{_name} + " is not in the catalog");
+    return false;
+  }
+
+  // The catalog states the `ms-appx:///` form, because that is what the manifest says and what a
+  // `StorageFile` route would take. An `ifstream` wants what is after the scheme, with backslashes.
+  constexpr std::wstring_view SCHEME = L"ms-appx:///";
+  std::wstring relative{entry->packageUri.substr(SCHEME.size())};
+  for (wchar_t& character : relative)
+  {
+    if (character == L'/')
+    {
+      character = L'\\';
+    }
+  }
+
+  std::vector<std::byte> bytes;
+  if (!Neuron::ReadPackageFile(relative, bytes))
+  {
+    Report(_log, "MESH " + std::string{_name} + " did not load -- the package may not carry it");
+    return false;
+  }
+
+  Neuron::CmoMesh read;
+  const Neuron::CmoFault fault = Neuron::ReadCmo(bytes, read);
+  if (fault != Neuron::CmoFault::None)
+  {
+    Report(_log, "MESH " + std::string{_name} + " did not decode, fault " + std::to_string(static_cast<int>(fault)));
+    return false;
+  }
+
+  if (!Outpost::LoadHullMesh(read, entry->longestUnits, _outMesh))
+  {
+    Report(_log, "MESH " + std::string{_name} + " decoded but would not load");
+    return false;
+  }
+  return true;
 }
 
 /// ADR-008: a one-line text file in LocalState, falling back to the compiled-in default when it is
@@ -286,14 +338,28 @@ void RunProbe(const CoreWindow& _window)
   // happen in and a Direct3D call.
   Neuron::WorldPass worldPass;
 
-  // M1.9: the hulls. One `MeshBuffer` for each of the three meshes that ship, one instanced draw
-  // apiece, and a ring of per-instance buffers so a frame is never written while the graphics
+  // M1.9: the hulls. One `MeshBuffer` for each mesh that ships -- three hulls and, since M2.10b, one per
+  // module level -- one instanced draw apiece, and a ring of per-instance buffers so a frame is never written while the graphics
   // processor is still reading the last one.
   Neuron::MeshPass meshPass;
   Neuron::InstanceRing instanceRing;
-  std::array<Neuron::MeshBuffer, 3> meshBuffers;
-  std::array<bool, 3> meshReady{};
+  std::array<Neuron::MeshBuffer, Outpost::SHIPPED_MESH_COUNT> meshBuffers;
+  std::array<bool, Outpost::SHIPPED_MESH_COUNT> meshReady{};
   std::uint32_t instanceFrame = 0;
+
+  // M2.4: THE ASTEROID FIELD. The five variants as read, kept on the processor, and one static buffer
+  // per variant holding that variant's rocks already placed -- baked when the join names a field and
+  // drawn through `meshPass` with one identity instance. The pair it was baked for is what says when
+  // to bake again; a seed of zero with a count of zero is "never".
+  std::array<Outpost::HullMesh, Outpost::ASTEROID_VARIANT_COUNT> asteroidVariants;
+  std::array<bool, Outpost::ASTEROID_VARIANT_COUNT> asteroidLoaded{};
+  std::array<Neuron::MeshBuffer, Outpost::ASTEROID_VARIANT_COUNT> fieldBuffers;
+  std::array<bool, Outpost::ASTEROID_VARIANT_COUNT> fieldReady{};
+  std::uint64_t bakedFieldSeed = 0;
+  std::size_t bakedFieldPlayers = 0;
+
+  // M2.8: where each rock is drawn, for the tap to aim at -- set with the bake, from the same looks.
+  std::vector<Outpost::RockPickPoint> rockPicks;
 
   // M1.9b: THE SKY (ADR-019). Stars and nothing else: they upload once and are then drawn LAST with
   // the depth test on so they shade no pixel the fleet already covers.
@@ -329,11 +395,18 @@ void RunProbe(const CoreWindow& _window)
   Outpost::HudFrame hud;
   std::vector<Neuron::GlyphQuad> hudQuads;
   Outpost::QuitConfirm quitConfirm;
+
+  // M2.7: the credits panel's change flash (Q36), fed the balance each frame the own block is held.
+  Outpost::CreditFlash creditFlash;
   bool quitConfirmed = false;
 
   // `Interface.md` section 4: a tap on your own station opens the build panel and leaves the selection
   // alone, so "the station is selected" is its own client-local fact rather than a selection entry.
   bool buildPanelOpen = false;
+
+  // M2.11: the armed module, if one is. It lives only while the build panel is open -- the station being
+  // selected is the arming's precondition (`Interface.md` section 6) -- and is dropped the moment it closes.
+  Outpost::ModuleArming moduleArming;
 
   // OpenQuestions.md Q33: right-handed is the default. This is the one value that swaps the two bottom
   // panels, and until there is a settings surface it is a constant here.
@@ -377,7 +450,7 @@ void RunProbe(const CoreWindow& _window)
   {
     Report(log, "probe: no mesh pass, hresult " + std::to_string(meshPass.LastHresult()));
   }
-  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES))
+  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES + FIELD_INSTANCES))
   {
     Report(log, "probe: no instance ring, hresult " + std::to_string(instanceRing.LastHresult()));
   }
@@ -577,13 +650,17 @@ void RunProbe(const CoreWindow& _window)
       // the same recenter a hold performs (ADR-018), done once, at the moment there is an answer.
       if (join.IsJoined())
       {
-        const Neuron::Vec2 home = Outpost::StartAnchor(2, join.Player());
+        // THE HOST'S COUNT, FROM THE REPLY (M2.3). This read 2 until the join carried one, which put a
+        // four-player match's second player on the far side of the map from their station.
+        const Neuron::Vec2 home = Outpost::StartAnchor(join.PlayerCount(), join.Player());
         clientFrame.Camera() = Outpost::Recenter(
           clientFrame.Camera(), Outpost::RecenterRequest{.stationX = static_cast<float>(home.x) / static_cast<float>(Neuron::FIXED_ONE),
                                                          .stationY = static_cast<float>(home.y) / static_cast<float>(Neuron::FIXED_ONE)});
       }
       Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
-                    " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " seed=" + std::to_string(join.MatchSeed()));
+                    " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " of " + std::to_string(join.PlayerCount()) +
+                    " seed=" + std::to_string(join.MatchSeed()) + " field=" + std::to_string(clientFrame.Field().Rocks().size()) +
+                    " rocks");
 
       // **THE SEED HAS JUST ARRIVED, SO THIS IS THE FIRST MOMENT THE SKY EXISTS** (R23, ADR-019).
       // Generated once and never updated: the field takes no time input at all, so the upload below
@@ -670,7 +747,7 @@ void RunProbe(const CoreWindow& _window)
           // **A HOLD ON EMPTY SPACE RECENTERS** (ADR-018). Nothing is selectable yet -- M1.10 is
           // selection -- so it goes to this player's station, which is the half of it
           // `GameDesign.md` section 7 actually names.
-          const Neuron::Vec2 station = Outpost::StartAnchor(2, clientFrame.Player());
+          const Neuron::Vec2 station = Outpost::StartAnchor(clientFrame.CurrentJoin().PlayerCount(), clientFrame.Player());
           clientFrame.Camera() =
             Outpost::Recenter(clientFrame.Camera(),
                               Outpost::RecenterRequest{.stationX = static_cast<float>(station.x) / static_cast<float>(Neuron::FIXED_ONE),
@@ -726,6 +803,12 @@ void RunProbe(const CoreWindow& _window)
                      ((type == Outpost::CommandType::Build) ? "build design " + std::to_string(hudHit.argument) : std::string{"cancel"}) +
                      " seq=" + std::to_string(sequence) + (sent ? " sent" : " NOT SENT"));
           }
+          break;
+
+        case Outpost::HudAction::ArmModule:
+          // **ARMING SENDS NOTHING.** The tap on the plane that follows is the order (M2.11).
+          moduleArming.Toggle(design);
+          Report(log, std::string{"HUD module "} + std::to_string(hudHit.argument) + (moduleArming.IsArmed() ? " armed" : " disarmed"));
           break;
 
         case Outpost::HudAction::ArmQuit:
@@ -785,7 +868,53 @@ void RunProbe(const CoreWindow& _window)
                                             .aspectRatio = tapAspect,
                                             .player = clientFrame.Player()};
 
-      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known);
+      // === M2.11: AN ARMED TAP IS THE PLACEMENT'S. ================================================
+      //
+      // Resolved in `GameClient` against the host's own rule (`ResolvePlacementTap`, R20); what is left here is
+      // sending what it decided. Only a tap on one of your own ships falls through to the selection below, and
+      // that selection closes the build panel and the arming with it.
+      if (!buildPanelOpen)
+      {
+        moduleArming.Disarm();
+      }
+      if (moduleArming.IsArmed())
+      {
+        const Outpost::PlacementOutcome placement =
+          Outpost::ResolvePlacementTap(clientFrame.Camera(), request, known, rockPicks, moduleArming.Armed());
+        if ((placement.action == Outpost::PlacementAction::Place) || (placement.action == Outpost::PlacementAction::Upgrade))
+        {
+          if (!clientFrame.CurrentJoin().IsJoined())
+          {
+            Report(log, "TAP ignored -- not seated yet");
+            continue;
+          }
+          const std::uint16_t sequence = clientFrame.TakeCommandSequence();
+          Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+          clientFrame.StampView(packet);
+          packet.commands.push_back((placement.action == Outpost::PlacementAction::Place)
+                                      ? Outpost::BuildPlaceModuleCommand(sequence, placement.site, moduleArming.Armed())
+                                      : Outpost::BuildUpgradeModuleCommand(sequence, placement.module, moduleArming.Armed()));
+
+          std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+          Neuron::ByteWriter commandWriter{outgoing};
+          const bool sent = Outpost::Encode(packet, commandWriter) &&
+                            transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+          Report(log, std::string{(placement.action == Outpost::PlacementAction::Place) ? "PLACE module " : "UPGRADE module "} +
+                        std::to_string(static_cast<int>(moduleArming.Armed())) + " seq=" + std::to_string(sequence) +
+                        (sent ? " sent" : " NOT SENT"));
+          // ONE ORDER PER ARMING: the next module is a fresh choice in the panel.
+          moduleArming.Disarm();
+          continue;
+        }
+        if (placement.action == Outpost::PlacementAction::Nothing)
+        {
+          Report(log, "PLACE refused by the preview, fault " + std::to_string(static_cast<int>(placement.fault)));
+          continue;
+        }
+        moduleArming.Disarm();
+      }
+
+      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known, rockPicks);
 
       // **THE FIRST TAP HAS ALREADY ACTED; THE SECOND ONLY UPGRADES IT** (ADR-017). Nothing is
       // deferred waiting to see whether a second tap arrives, so no tap in this game got slower.
@@ -812,6 +941,57 @@ void RunProbe(const CoreWindow& _window)
         buildPanelOpen = false;
         lastTapIdentity = picked.target;
         Report(log, "SELECT " + std::to_string(picked.target) + ", " + std::to_string(selection.Count()) + " selected");
+        continue;
+      }
+
+      // === M2.8: A TAP ON AN ASTEROID. ============================================================
+      //
+      // **THE ONE ROW OF THE TABLE THAT SPLITS A SELECTION** (`Interface.md` section 4): the miners take a
+      // standing mine order and the rest move to the rock, from one gesture, as two commands in one packet.
+      // Which is which is `SplitForMine`'s, in `GameClient`, where a suite pins it (R20).
+      if (picked.verb == Outpost::OrderVerb::Mine)
+      {
+        if (!clientFrame.CurrentJoin().IsJoined())
+        {
+          Report(log, "TAP ignored -- not seated yet");
+          continue;
+        }
+
+        const Outpost::MineSplit split = Outpost::SplitForMine(selection.Identities(), known);
+        Outpost::CommandPacket packet{.sequence = 0, .player = clientFrame.Player(), .commands = {}};
+        if (!split.miners.empty())
+        {
+          packet.commands.push_back(Outpost::BuildMineCommand(clientFrame.TakeCommandSequence(), picked.rock, split.miners));
+        }
+        if (!split.others.empty())
+        {
+          packet.commands.push_back(
+            Outpost::BuildMoveCommand(clientFrame.TakeCommandSequence(), picked.worldX, picked.worldY, split.others));
+        }
+        if (packet.commands.empty())
+        {
+          continue;
+        }
+        packet.sequence = packet.commands.front().sequence;
+        clientFrame.StampView(packet);
+
+        std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+        Neuron::ByteWriter commandWriter{outgoing};
+        const bool sent = Outpost::Encode(packet, commandWriter) &&
+                          transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+
+        // ONE MARKER PER COMMAND, at the rock's place on the plane, each cleared by its own acknowledgment.
+        for (const Outpost::Command& command : packet.commands)
+        {
+          Outpost::OrderMarker marker;
+          marker.targetX = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(picked.worldX * static_cast<float>(Neuron::FIXED_ONE)));
+          marker.targetY = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(picked.worldY * static_cast<float>(Neuron::FIXED_ONE)));
+          marker.commandSequence = command.sequence;
+          marker.selection = command.selection;
+          clientFrame.Markers().Add(marker);
+        }
+        Report(log, "MINE rock " + std::to_string(picked.rock) + ": " + std::to_string(split.miners.size()) + " mining, " +
+                      std::to_string(split.others.size()) + " moving" + (sent ? "" : " NOT SENT"));
         continue;
       }
 
@@ -904,45 +1084,10 @@ void RunProbe(const CoreWindow& _window)
       meshesLoaded = true;
       for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
       {
-        const std::string_view name = Outpost::MeshesShippedAtM1()[slot];
-        const Outpost::MeshEntry* entry = Outpost::FindMesh(name);
-        if (entry == nullptr)
-        {
-          continue;
-        }
-
-        // The catalog states the `ms-appx:///` form, because that is what the manifest says and
-        // what a `StorageFile` route would take. An `ifstream` wants what is after the scheme, with
-        // backslashes.
-        constexpr std::wstring_view SCHEME = L"ms-appx:///";
-        std::wstring relative{entry->packageUri.substr(SCHEME.size())};
-        for (wchar_t& character : relative)
-        {
-          if (character == L'/')
-          {
-            character = L'\\';
-          }
-        }
-
-        std::vector<std::byte> bytes;
-        if (!Neuron::ReadPackageFile(relative, bytes))
-        {
-          Report(log, "MESH " + std::string{name} + " did not load -- the package may not carry it");
-          continue;
-        }
-
-        Neuron::CmoMesh read;
-        const Neuron::CmoFault fault = Neuron::ReadCmo(bytes, read);
-        if (fault != Neuron::CmoFault::None)
-        {
-          Report(log, "MESH " + std::string{name} + " did not decode, fault " + std::to_string(static_cast<int>(fault)));
-          continue;
-        }
-
+        const std::string_view name = Outpost::ShippedMeshes()[slot];
         Outpost::HullMesh hull;
-        if (!Outpost::LoadHullMesh(read, entry->longestUnits, hull))
+        if (!ReadShippedMesh(name, log, hull))
         {
-          Report(log, "MESH " + std::string{name} + " decoded but would not load");
           continue;
         }
 
@@ -952,6 +1097,67 @@ void RunProbe(const CoreWindow& _window)
         Report(log, "MESH " + std::string{name} + (meshReady[slot] ? " uploaded " : " FAILED to upload ") +
                       std::to_string(hull.vertices.size()) + " vertices, " + std::to_string(hull.indices.size() / 3) + " triangles");
       }
+
+      // M2.4: THE FIVE ASTEROID VARIANTS, READ AND KEPT ON THE PROCESSOR. Nothing is uploaded until a
+      // join says which field to draw, because what goes to the device is each variant's rocks already
+      // placed (`GameClient/AsteroidMesh.h`), not the variant alone.
+      for (std::size_t variant = 0; variant < asteroidVariants.size(); ++variant)
+      {
+        asteroidLoaded[variant] = ReadShippedMesh(Outpost::AsteroidVariantNames()[variant], log, asteroidVariants[variant]);
+      }
+    }
+
+    // === M2.4: THE FIELD, BAKED ONCE A MATCH AND BEFORE THE FRAME RECORDS. ==================
+    //
+    // The field never moves, so each variant's rocks are placed on the processor into one static
+    // mesh and drawn with one identity instance -- five draws for every rock on the map. It is redone
+    // only when the join names a different pair, and then after `WaitForGpu`: the old buffers may
+    // still be read by a frame in flight, and a destroyed buffer under a recorded draw is a removed
+    // device rather than a wrong picture.
+    const Outpost::FieldView& field = clientFrame.Field();
+    if (meshesLoaded && field.IsDerived() && ((field.MatchSeed() != bakedFieldSeed) || (field.PlayerCount() != bakedFieldPlayers)))
+    {
+      device.WaitForGpu();
+      bakedFieldSeed = field.MatchSeed();
+      bakedFieldPlayers = field.PlayerCount();
+
+      // The exact sphere of each loaded variant, and the catalog's looser one for a variant that did not
+      // load -- which draws nothing, but still has to be kept clear of by its neighbors' clamp.
+      std::array<float, Outpost::ASTEROID_VARIANT_COUNT> radii{};
+      for (std::size_t variant = 0; variant < radii.size(); ++variant)
+      {
+        const Outpost::MeshEntry* entry = Outpost::FindMesh(Outpost::AsteroidVariantNames()[variant]);
+        radii[variant] = asteroidLoaded[variant] ? Outpost::BoundingRadiusUnits(asteroidVariants[variant])
+                         : (entry != nullptr)    ? Outpost::BoundingRadiusUnits(*entry)
+                                                 : 0.0f;
+      }
+      const std::vector<Outpost::RockLook> looks = Outpost::RockLooks(field.MatchSeed(), field.Rocks(), radii);
+      rockPicks = Outpost::RockPickPoints(field.Rocks(), looks);
+
+      std::size_t rocksDrawn = 0;
+      for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)
+      {
+        fieldBuffers[variant].Destroy();
+        fieldReady[variant] = false;
+
+        Outpost::HullMesh placed;
+        if (!asteroidLoaded[variant] ||
+            !Outpost::BuildVariantField(asteroidVariants[variant], static_cast<std::uint8_t>(variant), field.Rocks(), looks, placed) ||
+            placed.vertices.empty())
+        {
+          continue;
+        }
+
+        const std::span<const std::byte> vertexBytes{reinterpret_cast<const std::byte*>(placed.vertices.data()),
+                                                     placed.vertices.size() * sizeof(Outpost::HullVertex)};
+        fieldReady[variant] = fieldBuffers[variant].Create(device, vertexBytes, sizeof(Outpost::HullVertex), placed.indices);
+        if (fieldReady[variant])
+        {
+          rocksDrawn += placed.vertices.size() / asteroidVariants[variant].vertices.size();
+        }
+      }
+      Report(log, "FIELD " + std::to_string(rocksDrawn) + " of " + std::to_string(field.Rocks().size()) + " rocks baked for seed " +
+                    std::to_string(bakedFieldSeed) + " at " + std::to_string(bakedFieldPlayers) + " players");
     }
 
     // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
@@ -1000,7 +1206,10 @@ void RunProbe(const CoreWindow& _window)
       if (worldPass.IsReady())
       {
         const Outpost::DrawnSummary drawn = clientFrame.Advance(nowMs, drawnRecords);
-        if (!drawnRecords.empty())
+        // THE FIELD DRAWS WITH NO SHIPS IN VIEW, so an empty store no longer skips the pass -- it skips
+        // only the loop over entities, which has nothing to do.
+        const bool fieldBaked = std::any_of(fieldReady.begin(), fieldReady.end(), [](bool _ready) { return _ready; });
+        if (!drawnRecords.empty() || fieldBaked)
         {
           const float aspect = (sceneTarget.HeightPixels() > 0)
                                  ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
@@ -1009,7 +1218,7 @@ void RunProbe(const CoreWindow& _window)
 
           // One list per shipped mesh. Cleared and refilled every frame rather than kept: the store
           // already carries what is worth carrying across frames, and this is only the drawing of it.
-          std::array<std::vector<Neuron::MeshInstance>, 3> instances;
+          std::array<std::vector<Neuron::MeshInstance>, Outpost::SHIPPED_MESH_COUNT> instances;
 
           for (const Outpost::EntityRecord& shown : drawnRecords)
           {
@@ -1026,7 +1235,7 @@ void RunProbe(const CoreWindow& _window)
             std::size_t bucket = meshBuffers.size();
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
-              if (Outpost::MeshesShippedAtM1()[slot] == meshName)
+              if (Outpost::ShippedMeshes()[slot] == meshName)
               {
                 bucket = slot;
                 break;
@@ -1100,8 +1309,8 @@ void RunProbe(const CoreWindow& _window)
             // so the three shapes are concatenated first and each draw points at its own offset --
             // three separate writes would each start at zero and the last would win.
             std::vector<Neuron::MeshInstance> packed;
-            std::array<std::uint32_t, 3> firstInstance{};
-            std::array<std::uint32_t, 3> instanceCount{};
+            std::array<std::uint32_t, Outpost::SHIPPED_MESH_COUNT> firstInstance{};
+            std::array<std::uint32_t, Outpost::SHIPPED_MESH_COUNT> instanceCount{};
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
               firstInstance[slot] = static_cast<std::uint32_t>(packed.size());
@@ -1111,6 +1320,11 @@ void RunProbe(const CoreWindow& _window)
               }
               instanceCount[slot] = static_cast<std::uint32_t>(packed.size()) - firstInstance[slot];
             }
+
+            // M2.4's identity instance, last, in the same write -- a second write would start at zero and
+            // overwrite the ships'. White, and unread: every rock vertex takes the hull palette.
+            const std::uint32_t fieldInstance = static_cast<std::uint32_t>(packed.size());
+            packed.push_back(Neuron::MeshInstance{});
 
             const std::uint32_t accepted = instanceRing.Write(instanceFrame, packed);
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
@@ -1127,6 +1341,21 @@ void RunProbe(const CoreWindow& _window)
               static_cast<void>(meshPass.Draw(device, meshBuffers[slot], address,
                                               instanceCount[slot] * static_cast<std::uint32_t>(sizeof(Neuron::MeshInstance)),
                                               instanceCount[slot]));
+            }
+
+            // === M2.4: ONE DRAW PER ASTEROID VARIANT, FIVE FOR THE WHOLE FIELD. ============
+            if (fieldInstance < accepted)
+            {
+              const std::uint64_t address =
+                instanceRing.BufferAddress(instanceFrame) + (static_cast<std::uint64_t>(fieldInstance) * sizeof(Neuron::MeshInstance));
+              for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)
+              {
+                if (fieldReady[variant])
+                {
+                  static_cast<void>(
+                    meshPass.Draw(device, fieldBuffers[variant], address, static_cast<std::uint32_t>(sizeof(Neuron::MeshInstance)), 1));
+                }
+              }
             }
 
             instanceFrame = (instanceFrame + 1) % Neuron::InstanceRing::FRAME_COUNT;
@@ -1208,6 +1437,32 @@ void RunProbe(const CoreWindow& _window)
         hudState.leftHanded = LEFT_HANDED;
         hudState.player = clientFrame.Player();
         hudState.buildPanelOpen = buildPanelOpen;
+
+        // M2.11: the armed button and the radius around the station, projected through the camera the world was
+        // drawn with. The ring is world space and the panels are not, so it is recomputed every frame.
+        // M2.11b: what this player has built decides which module buttons are available -- and an armed one that
+        // stopped being available (the fourth module landed, say) is disarmed rather than left pointing at nothing.
+        for (const Outpost::PlacedModule& owned : Outpost::OwnModules(clientFrame.Replicas().Entities(), clientFrame.Player()))
+        {
+          hudState.ownModules.push_back(owned.design);
+        }
+        if (!buildPanelOpen || (moduleArming.IsArmed() && !Outpost::ModuleAvailable(moduleArming.Armed(), hudState.ownModules)))
+        {
+          moduleArming.Disarm();
+        }
+        hudState.moduleArmed = moduleArming.IsArmed();
+        hudState.armedModule = moduleArming.Armed();
+        if (Outpost::EntityRecord station{};
+            moduleArming.IsArmed() && Outpost::OwnStation(clientFrame.Replicas().Entities(), clientFrame.Player(), station))
+        {
+          const float ringAspect = (sceneTarget.HeightPixels() > 0)
+                                     ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                     : 1.0f;
+          hudState.placementRing = Outpost::PlacementRingSquares(
+            clientFrame.Camera(), ringAspect, static_cast<float>(Neuron::INTERFACE_AUTHORED_WIDTH),
+            static_cast<float>(Neuron::INTERFACE_AUTHORED_HEIGHT),
+            Neuron::Vec2{.x = Outpost::DequantizePosition(station.positionX), .y = Outpost::DequantizePosition(station.positionY)});
+        }
         hudState.quitArmed = quitConfirm.IsArmed(nowMs);
 
         hudState.link = clientFrame.Link();
@@ -1218,7 +1473,17 @@ void RunProbe(const CoreWindow& _window)
           hudState.credits = own->credits;
           hudState.buildingWire = own->buildingDesign;
           hudState.buildProgressPercent = own->buildProgressPercent;
+          creditFlash.Observe(own->credits, nowMs);
         }
+
+        // A LINK THAT IS NOT UP FORGETS THE BALANCE, so the first update after a rejoin records it rather than
+        // flashing whatever it moved by while this client was away.
+        if (hudState.link != Outpost::LinkState::Linked)
+        {
+          creditFlash.Reset();
+        }
+        hudState.creditFlash = creditFlash.Showing(nowMs);
+        hudState.creditFlashAlpha = creditFlash.Alpha(nowMs);
 
         // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
         // hand covers the double tap's circle.

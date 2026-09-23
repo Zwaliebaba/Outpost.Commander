@@ -128,14 +128,15 @@ public:
     float y = 0.0f;
     Assert::IsTrue(AuthoredOf(pose, 0.0f, 0.0f, x, y));
 
-    // Four things within the radius, the own ship furthest away of the four.
+    // Four things within the radius, the own ship furthest away of the four. **The asteroid is a rock from the
+    // field since M2.8**, not an unowned record: rocks are not entities, and an unowned record is skipped.
     std::vector<Outpost::EntityRecord> entities;
-    entities.push_back(Record(1, 0.0f, 0.0f, NO_OWNER, Outpost::DesignId::Miner));
     entities.push_back(Record(2, 6.0f, 0.0f, THEIRS, Outpost::DesignId::Fighter));
     entities.push_back(Record(3, 12.0f, 0.0f, MINE, Outpost::DesignId::Station));
     entities.push_back(Record(4, 18.0f, 0.0f, MINE, Outpost::DesignId::Fighter));
+    const std::vector<Outpost::RockPickPoint> rocks{{.worldX = 0.0f, .worldY = 0.0f, .liftUnits = 0.0f, .rock = 0}};
 
-    const std::vector<Outpost::PickCandidate> found = Outpost::CandidatesUnderTap(pose, At(x, y), entities);
+    const std::vector<Outpost::PickCandidate> found = Outpost::CandidatesUnderTap(pose, At(x, y), entities, rocks);
     Assert::AreEqual(static_cast<std::size_t>(4), found.size());
 
     Outpost::PickCandidate hit;
@@ -335,6 +336,134 @@ public:
     selection.Add(5);
     selection.Add(5);
     Assert::AreEqual(static_cast<std::size_t>(1), selection.Count());
+  }
+};
+
+namespace
+{
+/// Where a drawn point -- a rock, off the plane -- lands in authored pixels.
+[[nodiscard]] bool AuthoredOfDrawn(const Outpost::CameraPose& _pose, float _worldX, float _worldY, float _worldZ, float& _outX,
+                                   float& _outY) noexcept
+{
+  float screenX = 0.0f;
+  float screenY = 0.0f;
+  if (!Outpost::WorldToScreen(_pose, ASPECT, _worldX, _worldY, _worldZ, screenX, screenY))
+  {
+    return false;
+  }
+  _outX = ((screenX + 1.0f) * 0.5f) * AUTHORED_WIDTH;
+  _outY = ((1.0f - screenY) * 0.5f) * AUTHORED_HEIGHT;
+  return true;
+}
+} // namespace
+
+/// M2.8. **The third row of the tap table, and the only one that splits a selection.**
+TEST_CLASS(TheTapOnAnAsteroid)
+{
+public:
+  /// **A MIXED SELECTION DOES TWO THINGS FROM ONE TAP**: the miner takes a mine order for the rock's field
+  /// index, the fighter moves to the rock's place on the plane -- its field position, not the tap's and not
+  /// its drawn height.
+  TEST_METHOD(AMixedSelectionMinesAndMovesFromOneTap)
+  {
+    const Outpost::CameraPose pose = TopDown();
+    std::vector<Outpost::EntityRecord> entities;
+    entities.push_back(Record(1, -2000.0f, 0.0f, MINE, Outpost::DesignId::Miner));
+    entities.push_back(Record(2, -2100.0f, 0.0f, MINE, Outpost::DesignId::Fighter));
+    const std::vector<Outpost::RockPickPoint> rocks{{.worldX = 1500.0f, .worldY = 800.0f, .liftUnits = 240.0f, .rock = 17}};
+
+    Outpost::Selection selection;
+    selection.Add(Outpost::PackIdentity(1, 1));
+    selection.Add(Outpost::PackIdentity(2, 1));
+
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOfDrawn(pose, 1500.0f, 800.0f, 240.0f, x, y));
+    const Outpost::SelectionOutcome outcome = selection.Tap(pose, At(x, y), entities, rocks);
+    Assert::IsTrue(outcome.verb == Outpost::OrderVerb::Mine);
+    Assert::AreEqual(std::uint16_t{17}, outcome.rock);
+    Assert::AreEqual(1500.0f, outcome.worldX, 0.001f);
+    Assert::AreEqual(800.0f, outcome.worldY, 0.001f);
+    Assert::AreEqual(std::size_t{2}, selection.Count(), L"a tap on a rock changed the selection");
+
+    const Outpost::MineSplit split = Outpost::SplitForMine(selection.Identities(), entities);
+    Assert::AreEqual(std::size_t{1}, split.miners.size());
+    Assert::AreEqual(Outpost::PackIdentity(1, 1), split.miners[0]);
+    Assert::AreEqual(std::size_t{1}, split.others.size());
+    Assert::AreEqual(Outpost::PackIdentity(2, 1), split.others[0]);
+
+    const Outpost::Command mine = Outpost::BuildMineCommand(40, outcome.rock, split.miners);
+    Assert::IsTrue(mine.type == Outpost::CommandType::Mine);
+    Assert::AreEqual(std::uint16_t{17}, mine.TargetRock());
+    const Outpost::Command move = Outpost::BuildMoveCommand(41, outcome.worldX, outcome.worldY, split.others);
+    Assert::IsTrue(move.type == Outpost::CommandType::MoveTo);
+    Assert::AreEqual(Outpost::QuantizePosition(1500 * Neuron::FIXED_ONE), move.targetX);
+  }
+
+  /// **AN IDENTITY THE UPDATE NO LONGER CARRIES GOES WITH THE MOVERS**, for the host to refuse or skip; the client
+  /// does not guess that it was a miner.
+  TEST_METHOD(AnUnknownIdentityIsNotCountedAsAMiner)
+  {
+    std::vector<Outpost::EntityRecord> entities;
+    entities.push_back(Record(1, 0.0f, 0.0f, MINE, Outpost::DesignId::Miner));
+    const std::vector<Outpost::WireIdentity> selection{Outpost::PackIdentity(1, 1), Outpost::PackIdentity(9, 1)};
+    const Outpost::MineSplit split = Outpost::SplitForMine(selection, entities);
+    Assert::AreEqual(std::size_t{1}, split.miners.size());
+    Assert::AreEqual(std::size_t{1}, split.others.size());
+  }
+
+  /// **THE PICK ORDER HOLDS**: a ship over a rock takes the tap, because the asteroid tier is last among things.
+  TEST_METHOD(AShipOverARockTakesTheTap)
+  {
+    const Outpost::CameraPose pose = TopDown();
+    std::vector<Outpost::EntityRecord> entities;
+    entities.push_back(Record(3, 0.0f, 0.0f, MINE, Outpost::DesignId::Fighter));
+    const std::vector<Outpost::RockPickPoint> rocks{{.worldX = 0.0f, .worldY = 0.0f, .liftUnits = 0.0f, .rock = 2}};
+
+    Outpost::Selection selection;
+    selection.Add(Outpost::PackIdentity(3, 1));
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 0.0f, 0.0f, x, y));
+    Assert::IsTrue(selection.Tap(pose, At(x, y), entities, rocks).verb == Outpost::OrderVerb::Select);
+  }
+
+  /// With nothing selected, a tap on a rock does nothing -- there is nobody to send.
+  TEST_METHOD(ATapOnARockWithNothingSelectedDoesNothing)
+  {
+    const Outpost::CameraPose pose = TopDown();
+    const std::vector<Outpost::RockPickPoint> rocks{{.worldX = 0.0f, .worldY = 0.0f, .liftUnits = 0.0f, .rock = 0}};
+    Outpost::Selection selection;
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 0.0f, 0.0f, x, y));
+    Assert::IsTrue(selection.Tap(pose, At(x, y), {}, rocks).verb == Outpost::OrderVerb::None);
+  }
+
+  /// **AN UNOWNED RECORD IS NOT A ROCK**: it is skipped, where it would otherwise have reached the asteroid tier
+  /// and been ordered as rock zero.
+  TEST_METHOD(AnUnownedRecordIsNotACandidate)
+  {
+    const Outpost::CameraPose pose = TopDown();
+    std::vector<Outpost::EntityRecord> entities;
+    entities.push_back(Record(4, 0.0f, 0.0f, Outpost::NO_PLAYER, Outpost::DesignId::Miner));
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 0.0f, 0.0f, x, y));
+    Assert::AreEqual(std::size_t{0}, Outpost::CandidatesUnderTap(pose, At(x, y), entities).size());
+  }
+
+  /// **THE POINT SET IS THE FIELD'S, IN ITS ORDER**, with each rock's drawn lift from its look.
+  TEST_METHOD(PickPointsFollowTheFieldAndItsLooks)
+  {
+    const std::vector<Outpost::Placement> field = Outpost::GenerateField(20260922, 2);
+    std::vector<Outpost::RockLook> looks(field.size());
+    looks[5].liftUnits = -123;
+    const std::vector<Outpost::RockPickPoint> points = Outpost::RockPickPoints(field, looks);
+    Assert::AreEqual(field.size(), points.size());
+    Assert::AreEqual(std::uint16_t{5}, points[5].rock);
+    Assert::AreEqual(-123.0f, points[5].liftUnits);
+    Assert::AreEqual(static_cast<float>(field[5].position.x) / static_cast<float>(Neuron::FIXED_ONE), points[5].worldX);
   }
 };
 

@@ -26,7 +26,12 @@ namespace Neuron
 /// **4 SINCE M1.14c**, which changed every record at once (ADR-024): this header lost its fragment
 /// fields, the snapshot became an update, the entity record grew to twelve bytes and a command packet
 /// gained the view. The one change in this tree that no build before it can read a byte of.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 4;
+///
+/// **5 SINCE M2.3**, when the join reply gained the match's player count (ADR-013 amended): the field is
+/// derived from the seed AND the count, and a version-4 client reading a version-5 reply would take the
+/// count's byte as the first of its token. **M2.6's `Mine` command type and M2.7's third cargo bit ride the
+/// same version**: none of the three has left this branch, so one step covers them all.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 5;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///

@@ -31,6 +31,14 @@ struct DerivedStats
   std::uint32_t orePerSecond = 0;
   std::uint32_t oreCapacity = 0;
 
+  /// **HOW CLOSE A MINER MUST BE TO EXTRACT** (M2.6): the longest reach among its mining tools, and zero
+  /// for a design with none. **The longest, not a sum** -- two lasers side by side do not reach twice as
+  /// far -- and only the tools that extract count, so a mass driver's 600 is not a mining range.
+  std::uint32_t miningRangeUnits = 0;
+
+  /// The hull's, carried through so the mining loop asks the derivation and not the catalog (R24).
+  bool acceptsOre = false;
+
   /// Summed over the slots, per mount. A `Frigate` with two mass drivers does 50 a second.
   std::uint32_t damagePerSecond = 0;
 

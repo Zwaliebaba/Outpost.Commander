@@ -157,6 +157,12 @@ struct CameraBasis
 [[nodiscard]] bool PlaneToScreen(const CameraPose& _pose, float _aspectRatio, float _worldX, float _worldY, float& _outScreenX,
                                  float& _outScreenY) noexcept;
 
+/// **THE SAME, FOR A POINT OFF THE PLANE** (M2.8): a rock is drawn up to 240 units above or below it
+/// (ADR-001, M2.4), and a tap aims at what is drawn. Nothing the simulation owns has a height (R22) --
+/// this is the renderer's height, asked where the renderer put it. `PlaneToScreen` is this at zero.
+[[nodiscard]] bool WorldToScreen(const CameraPose& _pose, float _aspectRatio, float _worldX, float _worldY, float _worldZ,
+                                 float& _outScreenX, float& _outScreenY) noexcept;
+
 /// ADR-018's solve, which is the whole camera: the focus that puts _anchor under the screen point
 /// _screenX, _screenY **at the pose given**.
 ///

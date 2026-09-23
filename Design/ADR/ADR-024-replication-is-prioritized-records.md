@@ -40,7 +40,7 @@ this record keeps the record and drops the snapshot around it.
 
 **The record is twelve bytes:** identity 3 (a 16-bit index and an 8-bit generation), owner 1, position 4
 as two `std::int16_t` over the play area, heading 1, hull 1, design identity 1, flags 1 (state 3, cargo 2,
-three spare). The identity grew because a match can hold thousands of entities and the generation has to
+three spare; cargo became three bits at M2.7, `OpenQuestions.md` Q53). The identity grew because a match can hold thousands of entities and the generation has to
 survive index reuse under loss; the owner is a byte because a record must say whose it is without the
 datagram being grouped or complete. Everything else is ADR-003's, including the hull's one-percent floor.
 
@@ -169,7 +169,8 @@ are `--players`, `--ships`, `--in-view`, `--datagrams` and `--upstream`. **Owed 
    proof that nothing simulated moved.~~ — **DISCHARGED 2026-09-23, at `5aff739`.** All four pairs built
    clean through the solution on the Surface Pro 11, and `TheScriptedMatchHashesToItsPinnedValue` passed
    on each, among 774 of 774 tests a pair. ARM64 ran natively on the device and x64 under its emulation.
-   The hash did not move.
+   The hash did not move. **The pin has since moved deliberately**, at M2.6 and M2.7, because the
+   scripted match began to mine and then to earn its income by mining (ADR-002).
 3. **Refresh interval per entity at the MVP with the cap at two**, observed from the client's store over
    a two-minute match: every entity every tick is the prediction.
 4. **The accumulator's cost per client per tick** at 110 and, with ADR-022's harness, at every player

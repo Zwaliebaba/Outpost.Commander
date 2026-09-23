@@ -11,9 +11,13 @@
 namespace Outpost
 {
 
-/// One entity as a client is told about it. **The one place the lossy step of replication happens**:
-/// positions, heading and hull are quantized here and nowhere else on the host.
-[[nodiscard]] EntityRecord RecordOf(const Entity& _entity) noexcept;
+/// The live entity in _slot as a client is told about it. **The one place the lossy step of replication
+/// happens**: positions, heading and hull are quantized here and nowhere else on the host.
+///
+/// **IT TAKES THE SLOT AND NOT THE ENTITY SINCE M2.7**, because the record carries the hold's cargo chips
+/// (Q53) and the cargo is on the slot's `MineOrder`, not on `Entity`. A signature that took the entity
+/// alone would let a caller build a record with the cargo left out, and nothing would say so.
+[[nodiscard]] EntityRecord RecordOf(const World& _world, std::size_t _slot) noexcept;
 
 /// ADR-024's priority accumulator: which entity records each client is sent, tick by tick.
 ///

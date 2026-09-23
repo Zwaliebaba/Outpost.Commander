@@ -97,6 +97,14 @@ table, the derived-stat function, ring slot assignment, the build system and the
 step. Until it ran, every claim in this ADR about bit-identical behavior was an argument; it is now a
 fact about four builds on one machine, which is what this measurement was ever able to be.
 
+**MOVED DELIBERATELY AT M2.6, TO `0xc8f7f00e056d4d46`, AND AGAIN AT M2.7, TO `0x18e094912655348f`, AND
+NEITHER VALUE IS YET THIS MEASUREMENT.** At M2.7 the script's income stopped being a hand-written grant and
+became what the miners deliver. CI's `Debug|x64` confirmed the M2.6 value. The
+script now mines: idle miners are sent to a home rock every fifty ticks, fighters alone take the fleet moves,
+and at tick 1,500 everything is moved, miners included. The new value was computed off Windows, under g++
+and clang at two optimization levels, which agreed. **It is owed on the four MSVC pairs.** The old value
+still reproduces with the M2.6 code and the old script, which says the loop moved nothing that does not mine.
+
 **What it still does not prove** is two different machines, which is M0.23's outstanding run and not
 this one's. ARM64 here is cross-compiled and executed under the same operating system.
 

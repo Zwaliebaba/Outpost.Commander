@@ -98,8 +98,8 @@ struct HullEntry
   /// mass is unobservable without one, because nothing divides by it.
   std::uint16_t mass = 0;
 
-  /// Q46, and zero for the two base structures -- a station is placed by the generator and a module
-  /// frame's cost is M2's (ADR-015), so neither is a row in a build menu that this sums for.
+  /// Q46, and zero for the two base structures -- a station is placed by the generator, and a module is
+  /// priced by its component alone (M2.9, `GameDesign.md` section 5), so the frame adds nothing.
   std::uint16_t cost = 0;
 
   /// **ONLY THE TWO BASE STRUCTURES CARRY ONE** (`GameDesign.md` section 6). Zero means the hull is
@@ -115,14 +115,24 @@ struct HullEntry
   /// makes this a row and not a comment. `Scripts/CheckMeshes.py` compares the two statements at
   /// M1.9; until then this is the one the simulation reasons with.
   ///
-  /// **ROUNDED UP, BECAUSE IT IS A BOUND.** The delivered `ModuleFrame` is 83.52 units across and
-  /// this says 84: the figure is used for spacing things so they do not overlap and for how far in
-  /// front of a station a new ship appears, and both want the larger number.
+  /// **ROUNDED UP, BECAUSE IT IS A BOUND.** The figure is used for spacing things so they do not overlap and
+  /// for how far in front of a station a new ship appears, and both want the larger number.
+  ///
+  /// **A HULL IS BOUNDED BY EVERY MESH THAT DRAWS IT**, and since M2.10b that is more than one for the
+  /// `ModuleFrame`: each module level has its own mesh, and both shipyards are 90 units long where the bare
+  /// frame is 83.52. So this says 90, which is the handoff's own "module envelope" -- where it said 84 until
+  /// then, and two shipyards placed exactly clear would have overlapped by six units.
   ///
   /// **THE `Cruiser` IS THE ONE ROW NO FILE BACKS.** It is cut from the MVP (`GameDesign.md`
   /// section 6) so no mesh was authored for it; 150 sits between the `Frigate`'s 90 and the
   /// `Station`'s 220, and M4 authors a mesh to this number rather than the other way round.
   std::uint16_t sizeUnits = 0;
+
+  /// **WHETHER A MINER MAY UNLOAD HERE** (M2.6, `GameDesign.md` section 4): "the nearest thing you own that
+  /// accepts ore". A property of the hull and not of a type, so the station accepts it because its row
+  /// says so -- and a mining factory at a contested field later is a hull with this set, not a branch in
+  /// the mining loop. Only the `Station` sets it today.
+  bool acceptsOre = false;
 
   [[nodiscard]] friend constexpr bool operator==(const HullEntry&, const HullEntry&) noexcept = default;
 };
@@ -141,6 +151,18 @@ struct DriveEntry
   std::uint16_t cost = 0;
 
   [[nodiscard]] friend constexpr bool operator==(const DriveEntry&, const DriveEntry&) noexcept = default;
+};
+
+/// **WHAT A MODULE COMPONENT'S MULTIPLIER MULTIPLIES** (M2.12). A property of the row and not of a name, so the
+/// simulation applies a shipyard's rate because its component says `BuildRate` -- and a third kind of module at
+/// M4 is a row with a third value here, not a branch on an identity (R24).
+enum class ModuleEffect : std::uint8_t
+{
+  None,
+  /// The owning station's build rate (`GameDesign.md` section 5's shipyard).
+  BuildRate,
+  /// What a delivered cargo is worth (section 5's ore processor).
+  CargoValue
 };
 
 /// One row of the slot-component tables, weapons and modules alike.
@@ -173,6 +195,9 @@ struct ComponentEntry
   /// cargo's worth. **In hundredths, because the simulation is integers (R16)**: 150 is x1.5 and
   /// 125 is +25%. One hundred, or zero, is no effect.
   std::uint16_t multiplierPercent = 0;
+
+  /// Which of the two `multiplierPercent` applies to, or `None` for anything that is not a module.
+  ModuleEffect effect = ModuleEffect::None;
 
   /// `PointDefense` is station slots only (`GameDesign.md` section 6). The rule is stated here so
   /// that build validation reads it from the catalog rather than naming the component.

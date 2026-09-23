@@ -69,10 +69,25 @@ and whether two can run visibly side by side is the half still open. A failed so
 the client either: it is reopened, and a lost link always gets a fresh one. Both gates are still open
 and both are a hand's.
 
-**M2 HAS STARTED, ALONGSIDE THOSE TWO GATES.** Its opening gate, Q26, is answered, and M2.1's generator is
-built. It places one player's region from the seed: a ten-rock home field and two contested clusters of
-six, pinned for seed 20260922. Nothing copies the region yet, which is M2.2, and nothing draws it yet,
-which is M2.3.
+**M2 HAS STARTED, ALONGSIDE THOSE TWO GATES.** Its opening gate, Q26, is answered, and M2.1 to M2.3 are
+built. The generator places one player's region from the seed — a ten-rock home field and two contested
+clusters of six, pinned for seed 20260922 — and copies it by exact quarter turns to the player count, so
+every player's field is the same field to the unit. The client derives it from the join, which since M2.3
+carries the player count as well as the seed (Q50, ADR-013 amended), and since M2.4 draws it as the five
+authored rock variants, baked per variant into five draws (ADR-005 amended). Nobody has looked at it yet.
+M2.5's uniform grid is built, and **M2.6's mining loop is the first thing that queries it**: a mine order
+is a standing order across four phases, with an unload query over the grid. **It moved the determinism pin,
+deliberately, to `0xc8f7f00e056d4d46`**, and the four-pair run is owed again (ADR-002). **M2.7 makes the
+loop pay**: credits come from what is unloaded, cargo reaches the selection panel as chips, and income shows
+only as the change flash (Q36, Q53). The pin moved again, to `0x18e094912655348f`. **M2.8 lets a player
+ask for it**: a tap on a rock, aimed where the rock is drawn, sends the miners in the selection to mine it
+and the rest to it, in one packet. **M2.9 adds the four module designs**: a free frame plus a component each, so a module's price is §5's
+figure, and **M2.10 the one rule for where a module may go**, which both sides will call. **M2.10b draws
+each module level with its own mesh**, and found that the frame's size had to be the longest of them: 90,
+not 84. **M2.11 builds and places them**: a tap in the drawn radius, judged by that rule on both sides, and an
+L2 by upgrading an L1 in place (Q54 to Q57). **M2.11b** tells unaffordable from unavailable, and **M2.12** makes
+them work. The build rounds up and cargo is exact. That leaves the two closing gates, M2.13's silhouettes and
+M2.14's tick cost, which are a hand's and a pair of eyes'.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
@@ -83,8 +98,9 @@ milestone with something behind it worth seeing.
 told which player it is, a reconnect gets its slot back, and a command from an endpoint the host never
 seated is refused instead of believed.
 
-**ADR-002's second owed measurement is closed.** M1.7's determinism test runs a two-minute scripted match
-from one seed and hashes to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. Until it
+**ADR-002's second owed measurement is closed.** M1.7's determinism test ran a two-minute scripted match
+from one seed and hashed to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. **The pin
+has moved twice since, deliberately** (M2.6 and M2.7, below). Until it
 ran, every claim in that record about bit-identical behavior was an argument.
 
 **What is open is the geometry, and two measurements**:
@@ -367,7 +383,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 |---|---|---|---|
 | 1 | The snapshot's real size at 110 entities and at 220 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
 | 2 | **Tap-to-visible latency on real hardware** | **M0.23** gate | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
-| 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
+| 3 | The tick's cost at 110 entities | **M2.14** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
 | 4 | Packet loss and jitter on a real wireless link | **M0.5** gate | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
 | 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
@@ -429,7 +445,9 @@ slow and why its findings are hard to see. Quiet it and it can run with `-Gate`,
 **The determinism test on all four pairs, at every milestone boundary. THE TEST EXISTS AND HAS RUN
 ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — **and running it
 again is the standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
-behind is not. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
+behind is not. **It is owed now**: M2.6 moved the pin to `0xc8f7f00e056d4d46` when the script began to mine, and M2.7
+to `0x18e094912655348f` when its income became mined. Both were computed off Windows. CI's
+`Debug|x64` confirmed the first; the second has not been confirmed by CI yet, and no other pair has run either. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
 property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
 invocations and four `vstest` runs comparing one state hash.
 

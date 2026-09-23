@@ -43,6 +43,18 @@ struct HitTestRequest
   PlayerId player = NO_PLAYER;
 };
 
+/// **WHERE A ROCK IS DRAWN, FOR THE TAP TO AIM AT** (M2.8): its place on the plane from the generated field,
+/// and the height the client drew it at (M2.4). A tap aims at what is on screen, and a rock 240 units above
+/// the plane is on screen somewhere other than its plane position. R8: a public aggregate.
+struct RockPickPoint
+{
+  float worldX = 0.0f;
+  float worldY = 0.0f;
+  float liftUnits = 0.0f;
+  /// Its index in the field, which is what the mine order carries (Q52).
+  std::uint16_t rock = 0;
+};
+
 /// Everything within the pick radius, in no particular order -- `ResolvePick` is what orders them.
 ///
 /// **THE RADIUS IS `Neuron::PICK_RADIUS_AUTHORED_PIXELS`** and is not restated here: `Interface.md`
@@ -51,8 +63,13 @@ struct HitTestRequest
 ///
 /// An entity behind the camera contributes nothing: `PlaneToScreen` refuses it, and a candidate that
 /// projected to the far side of the eye would be selectable through the floor.
+///
+/// **ROCKS ARE CANDIDATES TOO SINCE M2.8**, at the asteroid tier -- after own ships, own structures and
+/// hostiles, as `Interface.md` section 1's pick order has it -- measured from their drawn centers. An
+/// empty _rocks is a client with no field yet, and nothing is lost by it.
 [[nodiscard]] std::vector<PickCandidate> CandidatesUnderTap(const CameraPose& _pose, const HitTestRequest& _request,
-                                                            std::span<const EntityRecord> _entities);
+                                                            std::span<const EntityRecord> _entities,
+                                                            std::span<const RockPickPoint> _rocks = {});
 
 /// Which tier a record falls in, for a given player.
 ///
