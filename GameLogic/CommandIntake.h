@@ -17,7 +17,7 @@ enum class CommandRejection : std::uint8_t
 {
   None,
   /// At or below what has already been applied. THE ORDINARY CASE, not a fault: ADR-003 repeats
-  /// every command in every packet until the snapshot acknowledges it, so most arrivals of most
+  /// every command in every packet until an update acknowledges it, so most arrivals of most
   /// commands are this.
   AlreadyApplied,
   /// A type this build does not know.
@@ -43,7 +43,7 @@ enum class CommandRejection : std::uint8_t
 /// VALIDATION IS CORRECTNESS, NOT SECURITY (Q24), and the distinction is not pedantry. Section 5
 /// declines authentication and any defense against a hostile client, and that exclusion silently
 /// covered ownership and bounds checks too -- which are a different category. A 1,232-byte command
-/// packet holds 610 identities against a peak of 110, a 5.5x amplification into a single-threaded
+/// packet holds 404 identities against a peak of 110, a 3.7x amplification into a single-threaded
 /// loop, and it is reachable from an ordinary bug or a reordered packet with no attacker anywhere.
 ///
 /// AT M0 THERE IS ONE ENTITY AND THE OWNERSHIP CHECK HAS NOTHING TO REJECT. It is written anyway:
@@ -67,7 +67,7 @@ public:
   /// a caller's -- a packet says who sent it.
   [[nodiscard]] std::size_t ApplyPacket(World& _world, BuildSystem& _build, const CommandPacket& _packet) noexcept;
 
-  /// What goes in the snapshot's per-player `lastCommandSeqApplied`, which is the whole
+  /// What goes in the update's own block as `lastCommandSeqApplied`, which is the whole
   /// acknowledgment channel (ADR-003). Zero for a player who has sent nothing.
   [[nodiscard]] std::uint16_t LastAppliedSequence(PlayerId _player) const noexcept;
 
@@ -80,8 +80,8 @@ private:
 };
 
 /// A packed wire identity to the store's own, or NO_ENTITY when it does not resolve. THE
-/// GENERATION IS CHECKED AGAINST ITS LOW SIX BITS, which is all the wire carries -- see
+/// GENERATION IS CHECKED AGAINST ITS LOW EIGHT BITS, which is all the wire carries -- see
 /// `GameCore/EntityRecord.h` for why six is enough and what would have to happen to alias.
-[[nodiscard]] EntityId ResolveWireIdentity(const World& _world, std::uint16_t _wireIdentity) noexcept;
+[[nodiscard]] EntityId ResolveWireIdentity(const World& _world, WireIdentity _wireIdentity) noexcept;
 
 } // namespace Outpost

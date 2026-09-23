@@ -12,6 +12,12 @@ namespace Outpost
 /// THE CLIENT RENDERS THE PAST, and this file is the arithmetic that decides how far past and
 /// where between two snapshots the frame actually sits (`TechnicalDesign.md` section 6).
 ///
+/// **SINCE ADR-024 THE TWO ARE ONE ENTITY'S OWN SAMPLES, NOT TWO SNAPSHOTS.** An update is a bag of
+/// records rather than the world, so `ReplicaStore` interpolates each entity between the two samples it
+/// holds of it. The arithmetic here did not change and neither did its names; read "snapshot" below as
+/// "sample". What did change is that the store never asks for a fraction past the newer sample -- an
+/// entity past its newest holds, and the extrapolation states below go unused by it.
+///
 /// IT TOUCHES NOTHING BUT NUMBERS. The store above it owns which snapshots are held; the renderer
 /// below it owns what a position becomes on screen. What is here takes milliseconds and wire
 /// values and returns wire values, so a suite can pin it without a socket, a clock or a device --

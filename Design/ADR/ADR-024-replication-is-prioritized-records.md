@@ -59,8 +59,12 @@ moved or changed since it was last sent to this client; and a term for being the
 weights are constants in `GameLogic` beside the accumulator, with the reason written beside each, and
 they are [`OpenQuestions.md`](../OpenQuestions.md) Q49's to tune by playing.
 
-**The sweep is a guarantee, not a hope.** Any entity unsent to a client for **⌈live entities ÷ records per
-tick⌉ ticks** — the sweep — goes into the next update ahead of every score. So relevance decides *how often*
+**The sweep is a guarantee, not a hope.** Any entity unsent to a client for **⌈live entities ÷ (65 × the
+cap)⌉ ticks** — the sweep — goes into the next update ahead of every score. **Sixty-five is the floor**: the
+records an update holds when its repeated sections are full. Each section is capped, removals at 48 and
+fire events at 40 an update, so that the floor is a constant both sides can compute; a typical update
+holds 99, but a guarantee computed from a typical figure is not one. One tick at the MVP's 110 entities,
+43 at 5,500 (`GameCore/Update.h`, `SweepTicks`). So relevance decides *how often*
 an entity is refreshed, and the sweep bounds *how long* it can go without being. The client knows the
 sweep because the header carries the live entity count, and **it forgets an entity that has gone three
 sweeps without a record.** That is the only way an entity leaves a client without a removal, and it is what
@@ -77,8 +81,8 @@ At 100 players the cap is what bounds bandwidth, and the accumulator ranks what 
 **Ordering is a per-entity tick comparison.** Every update carries the tick it describes. The client keeps,
 per entity, the tick of the newest sample it holds, and drops any record whose tick is not newer. There is
 no sequence window, no reassembly and no reorder buffer. The interpolation clock of
-`TechnicalDesign.md` §6 is unchanged, except that the two samples it interpolates between are per
-entity rather than per snapshot; an entity whose newest sample is older than the render time holds
+`TechnicalDesign.md` §6 is unchanged, except that the samples it interpolates between are per entity
+rather than per snapshot -- three an entity, the depth the store already computed for snapshots; an entity whose newest sample is older than the render time holds
 its last position and never extrapolates (R19).
 
 **Removals and fire events are repeated facts.** A removal — the three-byte identity, generation included
@@ -88,8 +92,11 @@ target 3, weapon 1) rides for **three**. Losing a death now needs ten consecutiv
 packet loss is once in 10¹³ updates; losing a tracer needs three.
 
 **The client tells the host what it is looking at.** The command packet's header gains the view center
-(4 B) and view radius (2 B), so it is twelve bytes. It is sent as often as it was, it is unreliable as it
-was, and a lost one leaves the host scoring against the last view it saw. A view is not state and reveals
+(4 B) and view radius (2 B), so it is twelve bytes. It is unreliable as it was, and a lost one leaves the
+host scoring against the last view it saw. **Commands only go out when the player taps, so a seated client
+also sends an empty command packet four times a second**: a twelve-byte view report, which the host reads
+the view from and applies no command from. The radius is the camera's distance in whole world units, a
+deliberately generous circle around the focus. A view is not state and reveals
 nothing; when fog of war arrives, relevance switches to distance from owned entities and this field stays.
 
 **Fragmentation is gone from the transport, not deferred.** The two fragment fields M0.2 reserved in the
@@ -110,11 +117,10 @@ Mbit/s. The host's accumulator is 100 clients × 5,500 scores a tick, updated an
 order of 10⁷ integer operations a second, which is nothing beside the simulation.
 
 **What a client sees is a refresh rate, and it degrades with what is on screen rather than failing.** At
-the MVP, everything every tick. With 220 entities in view, every 3 ticks at one update or 2 at the cap.
-With 1,000 in view — a 100-player match at tactical zoom, drawing 3.5-pixel silhouettes — each refreshes
-every 11 ticks, 550 ms, and holds between; at that size the hold is not visible. **5,500 in view is the
-true ceiling of the cap**: each refreshes every 2.8 seconds, the nearest and moving ones far more often,
-and that is visible. A match that wants a whole 100-player war on one screen at once needs a higher cap
+the MVP, everything every tick. With 220 entities in view, every 2 ticks at the cap. With 1,000 in view — a
+100-player match at tactical zoom, drawing 3.5-pixel silhouettes — each refreshes every 6 ticks, 300 ms, and
+holds between; at that size the hold is not visible. **5,500 in view is the true ceiling of the cap**: each
+refreshes every 28 ticks, 1.4 seconds, the nearest and moving ones far more often, and that is visible. A match that wants a whole 100-player war on one screen at once needs a higher cap
 and the bandwidth that goes with it. The budget script states all of these with `--in-view`.
 
 **What it costs:**
@@ -122,8 +128,8 @@ and the bandwidth that goes with it. The budget script states all of these with 
 - **The MVP pays two updates a tick where one snapshot did**, 49.3 KB/s against 22.7. Bandwidth the MVP
   has in abundance, and the honest price of a twelve-byte record with a three-byte identity.
 - **Resume is a sweep, not a snapshot.** ADR-003 restored a resumed client with one datagram. Now the
-  host resets that client's scores so everything is sent within one sweep — two ticks at the MVP, 56 at
-  5,500 entities, 2.8 seconds — and the client clears its store on rejoin so nothing stale survives. The
+  host resets that client's scores so everything is sent within one sweep — one tick at the MVP, 43 at
+  5,500 entities, 2.15 seconds — and the client clears its store on rejoin so nothing stale survives. The
   reconnecting overlay (`Interface.md` §7) stays up until the first update after the rejoin, as it does
   now.
 - **Per-client host state.** A score per entity per client, and a last-sent tick per entity per client.
@@ -131,7 +137,7 @@ and the bandwidth that goes with it. The budget script states all of these with 
   replayed and never reaches the tick's outcome. `Scripts/CheckDeterminism.py` sweeps `GameLogic` and
   will see integer code either way; the `determinism-audit` skill's judgment is that this is the seam
   where per-client state may live because nothing downstream of it is simulation.
-- **The interpolation store is per entity.** `ReplicaStore` stops holding snapshots and holds two samples
+- **The interpolation store is per entity.** `ReplicaStore` stops holding snapshots and holds three samples
   per entity, which is what a bag of facts needs and what a snapshot ring cannot give it.
 - **A fire event costs seven bytes, not five**, and a removal three, not two. Both ride along for several
   ticks. At the defaults that is 23 bytes of the update, and it is in the script.

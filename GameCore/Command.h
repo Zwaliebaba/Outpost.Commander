@@ -19,7 +19,8 @@ enum class CommandType : std::uint8_t
 {
   /// The selected entities go to a point. The target is a point.
   MoveTo = 1,
-  /// The selected entities attack an entity. The target is an identity, in targetX.
+  /// The selected entities attack an entity. The target is a packed identity across both target
+  /// fields -- see `Command::TargetEntity`.
   Attack = 2,
 
   /// **Build a design at this player's station** (M1.6, `GameDesign.md` section 5). The design
@@ -51,7 +52,8 @@ enum class CommandType : std::uint8_t
 /// entity, the identities of the selected ships, and a per-player sequence number.
 ///
 /// EIGHT FIXED BYTES, and the target is four of them whichever kind it is. A point spends them as
-/// two wire positions; an entity spends two on an identity and leaves the other two zero. That is
+/// two wire positions; an entity spends three on a packed identity -- the index in `targetX`, the
+/// generation in the low byte of `targetY` -- and leaves the fourth zero (ADR-024). That is
 /// why there is one target field rather than a point and an identity side by side -- a command
 /// carries one target, and a record with room for both would let an encoder write a command that
 /// means two things.
@@ -61,6 +63,9 @@ struct Command
 {
   /// sequence 2, type 1, target 4, selection count 1.
   static constexpr std::size_t FIXED_BYTES = 8;
+
+  /// A selected identity on the wire: three bytes since ADR-024, as a record's is.
+  static constexpr std::size_t IDENTITY_BYTES = 3;
 
   /// The largest selection the count byte can name. ADR-003's peak is 110 entities, so this is
   /// not a limit anything reaches -- it is the limit the FORMAT imposes, and the host bounds the
@@ -73,19 +78,29 @@ struct Command
 
   CommandType type = CommandType::MoveTo;
 
-  /// A wire position when the type takes a point; the low field is a packed identity when it
-  /// takes an entity, and its **low byte is a design identity** for `Build`. Wire units, so a target
+  /// A wire position when the type takes a point; the two together are a packed identity when it
+  /// takes an entity, and `targetX`'s **low byte is a design identity** for `Build`. Wire units, so a target
   /// is bounded by what an `int16_t` can say before anything validates it -- which does not make the
   /// host's clamp unnecessary, only cheap.
   std::int16_t targetX = 0;
   std::int16_t targetY = 0;
 
   /// Packed wire identities, as an EntityRecord's identity is packed.
-  std::vector<std::uint16_t> selection;
+  std::vector<WireIdentity> selection;
 
-  [[nodiscard]] std::uint16_t TargetEntity() const noexcept
+  /// The entity an `Attack` names: the index from `targetX` and the generation from `targetY`'s low
+  /// byte, which is the split `PackIdentity` makes.
+  [[nodiscard]] WireIdentity TargetEntity() const noexcept
   {
-    return static_cast<std::uint16_t>(targetX);
+    return PackIdentity(static_cast<std::uint16_t>(targetX), static_cast<std::uint16_t>(static_cast<std::uint16_t>(targetY) & 0xFF));
+  }
+
+  /// The inverse, so that nothing outside this struct has to know which half of the identity went in
+  /// which field.
+  void AimAt(WireIdentity _identity) noexcept
+  {
+    targetX = static_cast<std::int16_t>(IndexOf(_identity));
+    targetY = static_cast<std::int16_t>(GenerationOf(_identity));
   }
 
   /// The design a `Build` names. **The low byte only**, so a client that left rubbish in the high
@@ -98,19 +113,32 @@ struct Command
   [[nodiscard]] friend bool operator==(const Command&, const Command&) noexcept = default;
 };
 
-/// A packet of them. ADR-003: commands are repeated in every outgoing packet until the snapshot's
+/// A packet of them. ADR-003: commands are repeated in every outgoing packet until the update's
 /// `lastCommandSeqApplied` reaches them, so a packet holds however many are outstanding -- and
 /// `TechnicalDesign.md` section 4 bounds that structurally by filling OLDEST-FIRST and stopping
 /// when the next one will not fit.
+///
+/// **IT ALSO CARRIES WHAT THE CLIENT IS LOOKING AT** (ADR-024): the view's center as two wire positions
+/// and its radius in whole world units, which is what the host's accumulator scores relevance against.
+/// A packet with no commands in it is therefore not empty -- it is how a client reports its view when
+/// it has nothing to order, and the client sends one on a cadence for exactly that.
 struct CommandPacket
 {
-  /// The transport's six, plus the player identity and the command count.
-  static constexpr std::size_t HEADER_BYTES = Neuron::PacketHeader::SIZE_BYTES + 2;
+  /// The transport's four, the player identity, the command count, and the view: center 4, radius 2.
+  static constexpr std::size_t HEADER_BYTES = Neuron::PacketHeader::SIZE_BYTES + 2 + 6;
 
   static constexpr std::size_t MAX_COMMANDS = 255;
 
   std::uint16_t sequence = 0;
   PlayerId player = NO_PLAYER;
+
+  /// Where the client's camera is looking, on the wire's own grid, and how far around it is on screen.
+  /// **Zero radius means no view**: a client that has not reported one is scored as looking at nothing,
+  /// which is what a client at the join is.
+  std::int16_t viewX = 0;
+  std::int16_t viewY = 0;
+  std::uint16_t viewRadiusUnits = 0;
+
   std::vector<Command> commands;
 };
 
@@ -121,7 +149,6 @@ enum class CommandFault : std::uint8_t
   VersionMismatch,
   /// A well-formed packet that is not a command packet.
   WrongType,
-  Fragmented,
   /// A type this build does not know, or a count the rest of the datagram cannot satisfy.
   Malformed
 };
@@ -137,8 +164,8 @@ enum class CommandFault : std::uint8_t
 [[nodiscard]] CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noexcept;
 
 /// OLDEST FIRST, STOPPING WHEN THE NEXT ONE WILL NOT FIT. `TechnicalDesign.md` section 4: what
-/// reaches a deep retransmit window is not a fast player -- touch cannot issue five orders in
-/// 200 ms -- it is a stalled acknowledgment, which is exactly the load under which a fragmented
+/// reaches a deep retransmit window is not a fast player -- touch cannot issue three orders in
+/// 150 ms -- it is a stalled acknowledgment, which is exactly the load under which a fragmented
 /// command packet is worst. Filling this way makes the bound structural rather than a constant to
 /// tune: the packet cannot exceed the payload, no order is ever dropped, and the sequence never
 /// gains a gap, which matters because the host applies in sequence order and discards a gap

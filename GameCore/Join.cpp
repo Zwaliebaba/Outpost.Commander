@@ -28,12 +28,6 @@ namespace
   {
     return JoinFault::WrongType;
   }
-  if (!header.IsSingleFragment())
-  {
-    // Unreachable at these sizes and written anyway: a fragment is a packet this build drops
-    // rather than half-reads, and that rule is not the record's to make an exception to.
-    return JoinFault::Fragmented;
-  }
   return JoinFault::None;
 }
 

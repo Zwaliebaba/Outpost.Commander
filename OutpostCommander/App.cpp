@@ -151,24 +151,15 @@ void Report(std::ofstream& _log, const std::string& _line)
   return "?";
 }
 
-/// Log formatting, like `FilterName` above. **`Starved` in a steady run is the one to notice**: it
-/// means no retained pair straddled the render time, so the frame fell back to the newest snapshot
-/// and was NOT drawn 75 milliseconds behind -- which is ADR-003's buffer not doing its job, and it
-/// would make every latency figure optimistic.
-[[nodiscard]] const char* PlayoutName(Outpost::PlayoutState _state) noexcept
+/// Log formatting, like `FilterName` above: how many entities the frame drew between two samples, how
+/// many it held at their newest, and how many had one sample. **Under ADR-024 holding is ordinary** for a
+/// distant idle entity the accumulator refreshes rarely; at the MVP, where every entity is refreshed every
+/// tick, a rising hold count is the playout buffer not doing its job and would make every latency figure
+/// optimistic.
+[[nodiscard]] std::string DrawnText(const Outpost::DrawnSummary& _summary)
 {
-  switch (_state)
-  {
-  case Outpost::PlayoutState::Interpolating:
-    return "interp";
-  case Outpost::PlayoutState::Extrapolating:
-    return "extrap";
-  case Outpost::PlayoutState::Holding:
-    return "hold";
-  case Outpost::PlayoutState::Starved:
-    return "STARVED";
-  }
-  return "?";
+  return "interp=" + std::to_string(_summary.interpolating) + " hold=" + std::to_string(_summary.holding) +
+         " starved=" + std::to_string(_summary.starved);
 }
 
 /// Before there is a log file to write to, and therefore the only way to see how far this got on a
@@ -326,7 +317,7 @@ void RunProbe(const CoreWindow& _window)
   // M1.10 and M1.11: what is selected, and what the last tap anchored -- which is all a double tap
   // needs, because the expansion matches on IDENTITY rather than on screen distance (ADR-017).
   Outpost::Selection selection;
-  std::uint16_t lastTapIdentity = 0;
+  Outpost::WireIdentity lastTapIdentity = Outpost::NO_WIRE_IDENTITY;
 
   // M1.12 to M1.14: THE INTERFACE. The atlas is rasterized once, on the first frame, because its upload
   // is recorded on the frame's command list; the renderer draws every plate and glyph as one instanced
@@ -469,7 +460,7 @@ void RunProbe(const CoreWindow& _window)
   // a distribution; nothing here averages anything.
   //
   // WHY IT IS THE DRAWN POSITION AND NOT THE SNAPSHOT'S. The gate's question is what the PLAYER
-  // sees, and the client renders 75 ms behind the newest snapshot -- so a snapshot that already
+  // sees, and the client renders 75 ms behind the newest update -- so an update that already
   // carries the move is still not the moment the ship appears to move.
   std::uint64_t tapAtMs = 0;
   float tapFromX = 0.0f;
@@ -483,6 +474,10 @@ void RunProbe(const CoreWindow& _window)
   /// moves zero, so the two are not close.
   float previousDrawnX = 0.0f;
   float previousDrawnY = 0.0f;
+
+  // THE FRAME'S ENTITIES, INTERPOLATED, kept across frames so steady state allocates nothing. Filled by
+  // `ClientFrame::Advance` (ADR-024: per entity, between its own two samples).
+  std::vector<Outpost::EntityRecord> drawnRecords;
 
   while (running)
   {
@@ -522,6 +517,21 @@ void RunProbe(const CoreWindow& _window)
         const bool sent = transport.Send(std::span<const std::byte>{outgoingJoin.data(), joinWriter.WrittenBytes()});
         Report(log, "TX join attempt=" + std::to_string(clientFrame.CurrentJoin().SentCount()) +
                       " token=" + std::to_string(clientFrame.CurrentJoin().Token()) + (sent ? " sent" : " refused"));
+      }
+    }
+
+    // **THE VIEW, WHEN THERE IS NOTHING TO ORDER** (ADR-024). An empty command packet carries it, on a
+    // cadence `ClientFrame` decides; the host's accumulator scores relevance against it. Not logged: it
+    // goes four times a second and says nothing a reader of the log needs.
+    if ((state == Neuron::TransportState::Ready) && clientFrame.ShouldReportView(nowMs))
+    {
+      Outpost::CommandPacket report{.sequence = 0, .player = clientFrame.Player(), .commands = {}};
+      clientFrame.StampView(report);
+      std::array<std::byte, QUEUE_SLOT_BYTES> outgoingView{};
+      Neuron::ByteWriter viewWriter{outgoingView};
+      if (Outpost::Encode(report, viewWriter))
+      {
+        static_cast<void>(transport.Send(std::span<const std::byte>{outgoingView.data(), viewWriter.WrittenBytes()}));
       }
     }
 
@@ -595,27 +605,23 @@ void RunProbe(const CoreWindow& _window)
     if (drained.datagrams > 0)
     {
       receivedCount += drained.accepted;
-      const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
-      // The same query the draw makes a few lines later. It walks a ring of three and allocates
-      // nothing, and asking twice is cheaper than carrying the answer across half a frame.
-      const Outpost::ReplicaStore::Frame shown = clientFrame.Advance(nowMs);
+      // The same query the draw makes a few lines later, into the same vector, so it allocates nothing
+      // once the vector has grown; asking twice is cheaper than carrying the answer across half a frame.
+      const Outpost::DrawnSummary shown = clientFrame.Advance(nowMs, drawnRecords);
       Report(log, "RX datagrams=" + std::to_string(drained.datagrams) + " accepted=" + std::to_string(drained.accepted) +
-                    " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) +
-                    " seq=" + std::to_string(newest != nullptr ? newest->sequence : 0) +
-                    " entities=" + std::to_string(newest != nullptr ? newest->entities.size() : 0) +
+                    " refused=" + std::to_string(drained.refused) + " faulted=" + std::to_string(drained.faulted) + " tick=" +
+                    std::to_string(clientFrame.Replicas().NewestTick()) + " lost=" + std::to_string(clientFrame.Replicas().LostCount()) +
+                    " entities=" + std::to_string(clientFrame.Replicas().HeldCount()) +
                     // THE DRAWN POSITION, because the last run could not answer "did it move?" from
                     // the log alone. Working that out took reading the host's uptime against the
                     // entity's journey time, to find that the ship had already arrived before the
                     // client started and that nothing moving was correct rather than a defect.
                     " drawn=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
                     " awaiting=" + std::to_string(awaitingVisible ? 1 : 0) +
-                    // WHAT THE PLAYOUT CLOCK IS ACTUALLY DOING. A run that says STARVED is not
-                    // drawing 75 milliseconds behind at all -- it is drawing the newest snapshot --
-                    // and every latency figure taken from it would be optimistic by the whole
-                    // buffer. The two sequences either side say which pair it is between.
-                    " playout=" + PlayoutName(shown.playout.state) +
-                    " pair=" + std::to_string(shown.older != nullptr ? shown.older->sequence : 0) + "-" +
-                    std::to_string(shown.newer != nullptr ? shown.newer->sequence : 0) + " local_ms=" + std::to_string(nowMs));
+                    // WHAT THE PLAYOUT CLOCK IS ACTUALLY DOING, per entity. At the MVP every entity is
+                    // refreshed every tick, so anything but interpolating in a steady run is the buffer
+                    // not covering the delay, and every latency figure taken from it would be optimistic.
+                    " " + DrawnText(shown) + " local_ms=" + std::to_string(nowMs));
     }
 
     // === M0.21's VERB, WIRED (M0.22). ==========================================================
@@ -674,7 +680,8 @@ void RunProbe(const CoreWindow& _window)
         continue;
       }
 
-      const Outpost::Snapshot* newest = clientFrame.Replicas().Newest();
+      // THE TRUTH AS LAST TOLD, NOT THE INTERPOLATED PICTURE: the newest record of every entity held.
+      const std::span<const Outpost::EntityRecord> known = clientFrame.Replicas().Entities();
 
       // === THE INTERFACE FIRST (`design_handoff_hud` *Pick order*). ============================
       //
@@ -687,11 +694,8 @@ void RunProbe(const CoreWindow& _window)
         switch (hudHit.action)
         {
         case Outpost::HudAction::SelectGroup:
-          if (newest != nullptr)
-          {
-            Report(log, "HUD narrowed to " + std::to_string(Outpost::NarrowToDesign(selection, newest->entities, design)) + " of design " +
-                          std::to_string(hudHit.argument));
-          }
+          Report(log, "HUD narrowed to " + std::to_string(Outpost::NarrowToDesign(selection, known, design)) + " of design " +
+                        std::to_string(hudHit.argument));
           break;
 
         case Outpost::HudAction::ClearSelection:
@@ -710,6 +714,7 @@ void RunProbe(const CoreWindow& _window)
             const Outpost::CommandType type =
               (hudHit.action == Outpost::HudAction::Build) ? Outpost::CommandType::Build : Outpost::CommandType::CancelBuild;
             Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+            clientFrame.StampView(packet);
             packet.commands.push_back(Outpost::BuildStationCommand(sequence, type, design));
 
             std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
@@ -750,7 +755,7 @@ void RunProbe(const CoreWindow& _window)
         continue;
       }
 
-      if ((newest == nullptr) || newest->entities.empty())
+      if (known.empty())
       {
         Report(log, "TAP at " + std::to_string(event.xAuthoredPixels) + "," + std::to_string(event.yAuthoredPixels) +
                       " -- nothing is replicated yet, so nothing is selected");
@@ -771,7 +776,7 @@ void RunProbe(const CoreWindow& _window)
 
       // **THE SELECTION DROPS WHAT THE NEWEST SNAPSHOT NO LONGER CARRIES** before anything is
       // resolved against it: a selected ship that died is a selection the player cannot act on.
-      static_cast<void>(selection.RetainLiving(newest->entities));
+      static_cast<void>(selection.RetainLiving(known));
 
       const Outpost::HitTestRequest request{.authoredX = event.xAuthoredPixels,
                                             .authoredY = event.yAuthoredPixels,
@@ -780,14 +785,14 @@ void RunProbe(const CoreWindow& _window)
                                             .aspectRatio = tapAspect,
                                             .player = clientFrame.Player()};
 
-      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, newest->entities);
+      const Outpost::SelectionOutcome picked = selection.Tap(clientFrame.Camera(), request, known);
 
       // **THE FIRST TAP HAS ALREADY ACTED; THE SECOND ONLY UPGRADES IT** (ADR-017). Nothing is
       // deferred waiting to see whether a second tap arrives, so no tap in this game got slower.
       if ((event.tapCount >= 2) && (picked.verb == Outpost::OrderVerb::Select))
       {
         const Outpost::ExpansionOutcome expanded =
-          Outpost::ExpandSelection(selection, clientFrame.Camera(), request, newest->entities, lastTapIdentity, picked.target);
+          Outpost::ExpandSelection(selection, clientFrame.Camera(), request, known, lastTapIdentity, picked.target);
         if (expanded.expanded)
         {
           Report(log, "SELECT expanded to " + std::to_string(expanded.selected) + " of one design");
@@ -834,6 +839,7 @@ void RunProbe(const CoreWindow& _window)
       std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
       Neuron::ByteWriter commandWriter{outgoing};
       Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+      clientFrame.StampView(packet);
       packet.commands.push_back(Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, selection.Identities()));
 
       bool sent = false;
@@ -987,46 +993,31 @@ void RunProbe(const CoreWindow& _window)
       // M0.21b: THE WORLD, AND THE FIRST THING IN THIS TREE TO DRAW ONE. Into the scene target,
       // which `RecordClear` has just bound, before the present step fits it into the back buffer.
       //
-      // The frame the clock hands back is a pair of snapshots and a fraction between them
-      // (`TechnicalDesign.md` section 6), and every entity in the newer one is interpolated toward
-      // it. Nothing here simulates: R19's line is that the host said where these are and the client
-      // only says where they are BETWEEN the two things the host said.
+      // The clock hands back every held entity, each interpolated between its own two samples or held
+      // at its newest (`TechnicalDesign.md` section 6, ADR-024). Nothing here simulates: R19's line is
+      // that the host said where these are and the client only says where they are BETWEEN the two
+      // things the host said.
       if (worldPass.IsReady())
       {
-        const Outpost::ReplicaStore::Frame drawn = clientFrame.Advance(nowMs);
-        if (drawn.newer != nullptr)
+        const Outpost::DrawnSummary drawn = clientFrame.Advance(nowMs, drawnRecords);
+        if (!drawnRecords.empty())
         {
           const float aspect = (sceneTarget.HeightPixels() > 0)
                                  ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
                                  : 1.0f;
           const Outpost::Matrix4 viewProjection = Outpost::ViewProjection(clientFrame.Camera(), aspect);
 
-          // One list per shipped mesh. Cleared and refilled every frame rather than kept, because a
-          // snapshot is self-contained and nothing here is worth carrying across one (ADR-003).
+          // One list per shipped mesh. Cleared and refilled every frame rather than kept: the store
+          // already carries what is worth carrying across frames, and this is only the drawing of it.
           std::array<std::vector<Neuron::MeshInstance>, 3> instances;
 
-          for (const Outpost::EntityRecord& newer : drawn.newer->entities)
+          for (const Outpost::EntityRecord& shown : drawnRecords)
           {
-            // The older snapshot's record for this entity, matched on the WHOLE packed identity so
-            // a reused slot is two ships rather than one that teleported (`Interpolation.h`).
-            Outpost::EntityRecord shown = newer;
-            if (drawn.older != nullptr)
-            {
-              for (const Outpost::EntityRecord& older : drawn.older->entities)
-              {
-                if (older.identity == newer.identity)
-                {
-                  static_cast<void>(Outpost::InterpolateRecord(older, newer, drawn.playout.fraction, shown));
-                  break;
-                }
-              }
-            }
-
             const float entityX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
             const float entityY = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
             const Neuron::Angle entityHeading = Outpost::DequantizeWireHeading(shown.heading);
             const auto entityDesign = static_cast<Outpost::DesignId>(shown.designIdentity);
-            const auto entityOwner = static_cast<Outpost::PlayerId>((shown.flags >> Outpost::FLAGS_TEAM_SHIFT) & Outpost::FLAGS_TEAM_MASK);
+            const Outpost::PlayerId entityOwner = shown.owner;
 
             // **BUCKETED BY MESH, NOT DRAWN HERE.** One instanced call per shape is the whole point
             // of the arrangement; drawing inside this loop would be one call per entity, which is
@@ -1074,7 +1065,7 @@ void RunProbe(const CoreWindow& _window)
 
             // The first entity's drawn position is what M0.23 watches. One entity is all M0 has,
             // and taking the first is honest for exactly as long as that is true.
-            if (&newer == &drawn.newer->entities.front())
+            if (&shown == &drawnRecords.front())
             {
               previousDrawnX = drawnX;
               previousDrawnY = drawnY;
@@ -1087,8 +1078,8 @@ void RunProbe(const CoreWindow& _window)
               if (awaitingVisible && ((std::fabs(drawnX - tapFromX) > 0.5f) || (std::fabs(drawnY - tapFromY) > 0.5f)))
               {
                 Report(log, "TAPVISIBLE ms=" + std::to_string(nowMs - tapAtMs) + " from=" + std::to_string(tapFromX) + "," +
-                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
-                              " playout=" + PlayoutName(drawn.playout.state));
+                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY) + " " +
+                              DrawnText(drawn));
                 awaitingVisible = false;
               }
             }
@@ -1208,7 +1199,7 @@ void RunProbe(const CoreWindow& _window)
 
       // === M1.14: THE FOUR PANELS, AS ONE INSTANCED DRAW. =========================================
       //
-      // Everything the panels need is read here and nowhere else: the newest snapshot's block for THIS
+      // Everything the panels need is read here and nowhere else: the newest update's block for THIS
       // player (one-based identity, zero-based block -- `ClientFrame.cpp` says why that matters), the
       // selection, and the client-local facts. `BuildHud` is pure and has a suite over it; this is the
       // gathering and the call (R20).
@@ -1221,20 +1212,17 @@ void RunProbe(const CoreWindow& _window)
 
         hudState.link = clientFrame.Link();
 
-        if (const Outpost::Snapshot* latest = clientFrame.Replicas().Newest(); latest != nullptr)
+        // **THIS CLIENT'S OWN BLOCK**, which is the only one an update carries (ADR-024).
+        if (const Outpost::PlayerBlock* own = clientFrame.Replicas().Own(); own != nullptr)
         {
-          const std::size_t block = static_cast<std::size_t>(hudState.player) - 1;
-          if ((hudState.player != Outpost::NO_PLAYER) && (block < latest->players.size()))
-          {
-            hudState.credits = latest->players[block].credits;
-            hudState.buildingWire = latest->players[block].buildingDesign;
-            hudState.buildProgressPercent = latest->players[block].buildProgressPercent;
-          }
-
-          // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
-          // hand covers the double tap's circle.
-          hudState.groups = Outpost::SummarizeSelection(selection.Identities(), latest->entities);
+          hudState.credits = own->credits;
+          hudState.buildingWire = own->buildingDesign;
+          hudState.buildProgressPercent = own->buildProgressPercent;
         }
+
+        // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
+        // hand covers the double tap's circle.
+        hudState.groups = Outpost::SummarizeSelection(selection.Identities(), clientFrame.Replicas().Entities());
 
         hud = Outpost::BuildHud(hudState);
         hudQuads.clear();

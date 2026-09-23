@@ -76,7 +76,7 @@ public:
   /// rather than the player byte the packet carries (ADR-013).
   [[nodiscard]] PlayerId PlayerAt(const Neuron::Endpoint& _endpoint) const noexcept;
 
-  /// Everyone seated, in the order they were, so a snapshot goes to each exactly once.
+  /// Everyone seated, in the order they were, so each is sent its updates exactly once.
   [[nodiscard]] std::span<const Session> All() const noexcept
   {
     return m_sessions;

@@ -53,6 +53,14 @@ FIRE_BYTES = 7                      # shooter 3, target 3, weapon 1
 REMOVAL_REPEAT_TICKS = 10
 FIRE_REPEAT_TICKS = 3
 
+# The caps on each repeated section of one update (GameCore/Update.h). They exist so that the records an
+# update can ALWAYS hold is a constant, and THE SWEEP IS COMPUTED FROM THAT FLOOR, not from the typical
+# fill: a guarantee computed from a typical figure is not one. The client computes the same number to
+# decide when an entity it has heard nothing about is gone, so this must match the code exactly.
+MAX_REMOVALS_PER_UPDATE = 48
+MAX_FIRES_PER_UPDATE = 40
+FORGET_AFTER_SWEEPS = 3
+
 # Field-width audit. "wire" is what the record spends; "draws" is the number of bits the client
 # actually needs to draw the field. Width on the wire is decoupled from width in the simulation,
 # which keeps its own precision regardless (R16). A reserved field is one deliberately widened
@@ -105,6 +113,7 @@ def budget(players, ships, modules, removals, fires, extra_per_record, extra_hea
     tail = removals * REMOVAL_BYTES + fires * FIRE_BYTES
     per_datagram = (payload - header - tail) // record
     per_tick = per_datagram * datagrams
+    floor = (payload - header - MAX_REMOVALS_PER_UPDATE * REMOVAL_BYTES - MAX_FIRES_PER_UPDATE * FIRE_BYTES) // record
     return {
         "entities": entities,
         "record": record,
@@ -113,9 +122,10 @@ def budget(players, ships, modules, removals, fires, extra_per_record, extra_hea
         "records per datagram": per_datagram,
         "records per tick": per_tick,
         "datagram bytes": payload,
-        # The sweep: how many ticks a full round-robin over every live entity takes. ADR-024's
-        # guarantee is that nothing goes longer than this unrefreshed, whatever its relevance.
-        "sweep ticks": ceil_div(entities, per_tick),
+        "records floor": floor,
+        # The sweep: ADR-024's guarantee that nothing goes longer than this unrefreshed, whatever its
+        # relevance. From the FLOOR and the cap, as GameCore/Update.h's SweepTicks computes it.
+        "sweep ticks": max(1, ceil_div(entities, floor * datagrams)),
     }
 
 
@@ -135,8 +145,9 @@ def update(a):
           f" host egress at {a.clients} clients {per_client * a.clients / 1e6:.2f} MB/s"
           f" ({per_client * a.clients * 8 / 1e6:.1f} Mbit/s)")
     sweep = b["sweep ticks"]
-    print(f"  SWEEP {sweep} tick(s) = {sweep * 1000 / a.rate_hz:.0f} ms: no entity goes longer"
-          f" unrefreshed, and the client forgets one after {3 * sweep} ticks with no record\n")
+    print(f"  SWEEP {sweep} tick(s) = {sweep * 1000 / a.rate_hz:.0f} ms, from the {b['records floor']}-record floor:"
+          f" no entity goes longer unrefreshed, and the client forgets one after"
+          f" {FORGET_AFTER_SWEEPS * sweep} ticks with no record\n")
 
     in_view = a.in_view if a.in_view else b["entities"]
     refresh = max(1, ceil_div(in_view, b["records per tick"]))
@@ -222,7 +233,7 @@ def main():
                    help="connected clients for the egress figure; defaults to the player count")
     p.add_argument("--in-view", type=int, default=0,
                    help="entities inside one client's view; defaults to every live entity")
-    p.add_argument("--datagrams", type=int, default=1, help="updates per client per tick")
+    p.add_argument("--datagrams", type=int, default=2, help="updates per client per tick; the design caps it at two")
     p.add_argument("--add-bytes", type=int, default=0, help="proposed extra bytes per record")
     p.add_argument("--add-header", type=int, default=0, help="proposed extra header bytes")
     p.add_argument("--rate-hz", type=int, default=20)

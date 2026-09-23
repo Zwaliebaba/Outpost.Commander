@@ -49,9 +49,11 @@ Two things follow, and both are absolute:
   one number every byte on the record moves.
 - **Per client per update** — 24.6 KB/s at 20 Hz, and it does not depend on the entity count. It depends
   on the cap: two updates a tick is 49.3.
-- **The sweep** — ⌈live entities ÷ records per tick⌉ ticks. ADR-024's guarantee: no entity goes longer
-  unrefreshed whatever its relevance, and the client forgets one after three sweeps of silence. Two ticks
-  at the MVP, 56 at 5,500 entities with one update, 28 with two.
+- **The sweep** — ⌈live entities ÷ (floor × cap)⌉ ticks, where the floor is the 65 records an update
+  holds with its removal and fire sections full. ADR-024's guarantee: no entity goes longer unrefreshed
+  whatever its relevance, and the client forgets one after three sweeps of silence. One tick at the MVP,
+  43 at 5,500 entities at the cap of two. **A byte on the record moves the floor as well as the typical
+  fill**, so it moves the sweep, and the script says by how much.
 - **The refresh interval for a view** (`--in-view N`) — how often each of N entities on one screen is
   refreshed if the accumulator sends nothing else. This is the number a player feels. A hold between
   refreshes is invisible on a 3.5-pixel silhouette and visible on a ship filling the screen, so quote

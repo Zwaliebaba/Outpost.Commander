@@ -694,7 +694,7 @@ ADR-023 in a fifth.
    `Rejoined`. **Nothing in `Tick` changes.** The accumulator reads the world after the tick and writes
    nothing the hash covers; `CheckDeterminism.py --review` will still see it, and the `determinism-audit`
    skill's judgment for it is stated in ADR-024.
-3. **The client.** `ReplicaStore` holds two samples per entity by tick, drops a record whose tick is not
+3. **The client.** `ReplicaStore` holds three samples per entity by tick, drops a record whose tick is not
    newer, holds an entity with no sample past the render time, and forgets one three sweeps silent.
    `ClientFrame::DrainPackets` decodes updates, applies removals it has not seen, and clears the store on
    a rejoin. `HitTest` reads the owner from the record. The command packet carries the camera's view
@@ -706,6 +706,16 @@ ADR-023 in a fifth.
    the switch or above what the entity index holds. `Sessions`, `CommandIntake` and `BuildSystem` size
    their per-player state at `Begin`. `GameCore/Layout.h` gains the layout above four through the sine
    table. `Panels` draws a player past the palette in the last team color.
+
+**WRITTEN 2026-09-23 AND NOT YET BUILT.** Parts 1 to 4 landed as one commit, not four: the transport
+header, the record, the update, the host and the client change together or nothing links, so no split of
+them compiles. The additive 24-bit codec went in first as its own commit. Two things the step did not
+anticipate were decided while writing and are recorded in ADR-024: **the sweep is computed from a 65-record
+floor**, with removals capped at 48 an update and fire events at 40, because a guarantee cannot be computed
+from the typical fill; and **a seated client sends an empty command packet four times a second** as its view
+report, because commands only go out when the player taps. **Nothing here has been compiled or run** -- it
+was written on a machine without MSVC, and the format check and the four gates are the whole of what was
+verified. Part 5 is the next commit.
 
 **Files:** `NeuronCore/PacketHeader.h` `.cpp`; `GameCore/EntityRecord.h` `.cpp`, `GameCore/Entity.h`,
 `GameCore/Snapshot.h` `.cpp` **renamed** `Update.h` `.cpp`, `GameCore/Command.h` `.cpp`,

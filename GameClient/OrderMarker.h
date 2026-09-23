@@ -41,7 +41,7 @@ struct OrderMarker
   /// What the line is drawn from. Copied because the selection can change under the player's
   /// finger while an order is still outstanding, and the line belongs to the order rather than to
   /// whatever is selected now.
-  std::vector<std::uint16_t> selection;
+  std::vector<WireIdentity> selection;
 
   [[nodiscard]] friend bool operator==(const OrderMarker&, const OrderMarker&) noexcept = default;
 };

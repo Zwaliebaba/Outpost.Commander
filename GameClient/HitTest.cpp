@@ -9,7 +9,7 @@ namespace Outpost
 
 PlayerId OwnerOf(const EntityRecord& _record) noexcept
 {
-  return static_cast<PlayerId>((_record.flags >> FLAGS_TEAM_SHIFT) & FLAGS_TEAM_MASK);
+  return _record.owner;
 }
 
 PickTier TierOf(const EntityRecord& _record, PlayerId _player) noexcept

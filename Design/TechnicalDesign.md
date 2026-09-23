@@ -168,11 +168,13 @@ three removals and two fire events riding along — and sends them. Relevance is
 term for being inside the client's view, a term for having moved or changed since last sent to this
 client, and a term for being the client's own; the weights are constants beside the accumulator in
 `GameLogic`, and tuning them is `OpenQuestions.md` Q49. **The sweep is the guarantee under the scores**:
-any entity unsent for ⌈live entities ÷ records per tick⌉ ticks goes into the next update ahead of every
+any entity unsent for ⌈live entities ÷ (65 × the cap)⌉ ticks goes into the next update ahead of every
 score, so relevance decides how *often* an entity refreshes and the sweep bounds how *long* it can go
 without. The client computes the sweep from the header's entity count and **forgets an entity that has
 gone three sweeps without a record**, which is the only way an entity leaves a client without a removal
-and is what makes a rejoin correct after the removals it missed have stopped repeating.
+and is what makes a rejoin correct after the removals it missed have stopped repeating. **Sixty-five is
+the floor, not the typical fill**: removals are capped at 48 an update and fire events at 40, and the
+records an update holds with both sections full is the constant both sides compute the sweep from.
 
 **A client may receive up to two updates a tick, each of them whole.** When more records are due than one
 holds, the host sends a second. Each is complete and separately renderable, which is the test that
@@ -214,8 +216,8 @@ quarter-second of nothing is a dead interface.
 |---|---|---|---|---|---|
 | **MVP — 2 players × (50 ships + 1 station + 4 modules)**, two updates a tick | 110 | 198 | 49.3 KB/s | 0.1 MB/s | **every tick** |
 | Post-M2 — 4 players, same per player, two updates | 220 | 198 | 49.3 KB/s | 0.2 MB/s | 2 ticks |
-| 100 players, same per player, two updates | 5,500 | 198 | 49.3 KB/s | **4.93 MB/s** (39 Mbit/s) | 28 ticks, 1.4 s |
-| 100 players, one update | 5,500 | 99 | 24.6 KB/s | 2.46 MB/s (19.7 Mbit/s) | 56 ticks, 2.8 s |
+| 100 players, same per player, two updates | 5,500 | 198 | 49.3 KB/s | **4.93 MB/s** (39 Mbit/s) | 43 ticks, 2.15 s |
+| 100 players, one update | 5,500 | 99 | 24.6 KB/s | 2.46 MB/s (19.7 Mbit/s) | 85 ticks, 4.25 s |
 
 **The per-client cost is 24.6 KB/s per update per tick whatever the entity count**; what the entity count
 moves is the refresh interval, and the accumulator spends the refreshes on what the client is looking at.
@@ -237,7 +239,7 @@ as static the way asteroids are. Their cap of four was a replication decision un
 is a design one now.
 
 **Resume is a sweep, not a snapshot.** On a rejoin the host resets that client's scores so everything is
-sent within one sweep — two ticks at the MVP, 56 at 5,500 entities — and the client clears its store so
+sent within one sweep — one tick at the MVP, 43 at 5,500 entities — and the client clears its store so
 nothing stale survives. The reconnecting overlay (`Interface.md` §7) stays up until the first update
 after the rejoin lands.
 
@@ -263,7 +265,8 @@ about thirty lines, with no general reliability layer.
 The packet header is **twelve bytes** -- the transport's four (`NeuronCore/PacketHeader.h`), the player
 identity, the command count, and **the client's view center (4) and view radius (2)**, which is what the
 host's accumulator scores relevance against; a lost one leaves the host scoring against the last view it
-saw. One command is **eight bytes and three per selected identity**. `CommandTests` pins both. `Scripts/DatagramBudget.py` modelled the header as four until that encoder was written, because it
+saw. **A seated client sends an empty command packet four times a second** as a view report, since commands
+only go out when the player taps (`GameClient/ClientFrame.h`). One command is **eight bytes and three per selected identity**. `CommandTests` pins both. `Scripts/DatagramBudget.py` modelled the header as four until that encoder was written, because it
 carried only the `version` and `type` of the header as it stood before M0.2 and never gained the sequence
 and fragment fields; the figures below are the corrected ones, and the retransmit window is unchanged by
 the correction.
@@ -373,7 +376,7 @@ clock, then render, then present.
 **The client renders the past, per entity.** It draws at a time **75 milliseconds** behind the newest
 update — one update interval at 20 Hz plus a jitter margin. Since
 [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) a datagram is a bag of records rather than
-the world, so the store holds **two samples per entity**, each stamped with its tick, and a record whose
+the world, so the store holds **three samples per entity**, each stamped with its tick, and a record whose
 tick is not newer than the sample it holds is dropped, which is the whole of the reordering logic.
 Positions and headings are interpolated between the pair when it straddles the render time; headings
 interpolate the short way round, which the binary angle makes a subtraction rather than a special case.
@@ -389,8 +392,9 @@ rate change the way the 150 itself was — it never held.
 [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) has always read the other way: a lost snapshot
 being "a 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating" describes a
 buffer with more than one interval of history in it. **That paragraph described a snapshot ring that no longer exists**: under ADR-024 the
-store is two samples per entity, the pair is whatever two ticks that entity was last sent at, and there
-is no depth to compute. The hold above is what a missing sample does.
+store is three samples per entity -- the depth `GameClient/ReplicaStore.h` computes from the delay and the
+interval, as it once did for snapshots -- and the pair is whichever two of that entity's samples straddle the
+render time. The hold above is what a missing sample does.
 
 **The frame is three passes into two surfaces, and the last one is a recorded departure from R13.**
 
@@ -476,7 +480,7 @@ what it asked for. The ships themselves do not move until the host says they did
 
 **Suspend and resume cost one sweep.** A packaged application is suspended when it loses the
 foreground and the match runs on; on resume the client reconnects, clears its store, and the host resets
-its scores so everything is sent within one sweep — two ticks at the MVP — with a reconnecting overlay in
+its scores so everything is sent within one sweep — one tick at the MVP — with a reconnecting overlay in
 between (`Interface.md` §7). There is no resynchronization path to write beyond that, which is
 [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) keeping what ADR-003 bought. The same is true of a player who disconnects outright (`GameDesign.md` §2).
 

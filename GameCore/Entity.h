@@ -48,9 +48,10 @@ inline constexpr EntityId NO_ENTITY{};
 /// and players are numbered from one, so a default-constructed Entity is owned by no one rather
 /// than by player zero.
 ///
-/// It rides the wire in the flags byte's two team bits (`GameCore/EntityRecord.h`), which is why
-/// it is on the replicated record rather than beside it: the client draws ownership, and the host
-/// validates commands against it (ADR-003, Q24).
+/// It rides the wire as its own byte on every record (`GameCore/EntityRecord.h`, ADR-024) -- two
+/// team bits in the flags until then, which could name four players and no more. It is on the
+/// replicated record rather than beside it because the client draws ownership, and the host validates
+/// commands against it (ADR-003, Q24).
 using PlayerId = std::uint8_t;
 
 inline constexpr PlayerId NO_PLAYER = 0;

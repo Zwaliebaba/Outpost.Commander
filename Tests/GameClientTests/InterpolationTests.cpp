@@ -7,21 +7,23 @@ namespace GameClientTests
 
 namespace
 {
-/// A snapshot carrying one entity at a position and heading, which is all any test here needs.
-/// The wire fields it does not set are zero and stay that way.
-[[nodiscard]] Outpost::Snapshot MakeSnapshot(std::uint16_t _sequence, std::int16_t _positionX, std::uint8_t _heading)
+/// An update carrying one entity at a position and heading, at a tick -- which is all any test here
+/// needs. The wire fields it does not set are zero and stay that way.
+[[nodiscard]] Outpost::Update MakeUpdate(std::uint32_t _tick, std::int16_t _positionX, std::uint8_t _heading,
+                                         Outpost::WireIdentity _identity = Outpost::PackIdentity(1, 1))
 {
-  Outpost::Snapshot snapshot;
-  snapshot.sequence = _sequence;
-  snapshot.tick = _sequence;
+  Outpost::Update update;
+  update.sequence = static_cast<std::uint16_t>(_tick);
+  update.tick = _tick;
+  update.liveEntityCount = 1;
 
   Outpost::EntityRecord record;
-  record.identity = Outpost::PackIdentity(1, 0);
+  record.identity = _identity;
   record.positionX = _positionX;
   record.heading = _heading;
-  snapshot.entities.push_back(record);
+  update.records.push_back(record);
 
-  return snapshot;
+  return update;
 }
 } // namespace
 
@@ -162,19 +164,19 @@ public:
 };
 
 /// The store: what it keeps, what it refuses, and that its clock only ever goes forwards.
+/// ADR-024's store: per entity, ordered by tick, holding rather than extrapolating, forgetting after
+/// three sweeps.
 TEST_CLASS(ReplicaStoreBehavior)
 {
 public:
   TEST_METHOD(ItRetainsEnoughToCoverTheDelay)
   {
-    // The depth is arithmetic on the delay and the interval rather than a chosen number -- at 75
-    // over 50 that is three. Two would not reach: a pair spans one interval and the render time
-    // is an interval and a half behind the newest.
+    // Three samples an entity at 75 over 50: two intervals reach back 100 milliseconds, which is past
+    // the delay, and the third is the one on the near side of it.
     Assert::AreEqual(static_cast<std::size_t>(3), Outpost::ReplicaStore::RETAINED_COUNT);
-
-    const std::uint64_t deepestReach =
+    const std::uint64_t spanned =
       static_cast<std::uint64_t>(Outpost::ReplicaStore::RETAINED_COUNT - 1) * Outpost::SNAPSHOT_INTERVAL_MILLISECONDS;
-    Assert::IsTrue(deepestReach >= Outpost::INTERPOLATION_DELAY_MILLISECONDS);
+    Assert::IsTrue(spanned >= Outpost::INTERPOLATION_DELAY_MILLISECONDS);
   }
 
   TEST_METHOD(TheClockNeverRunsAheadOfTheDelay)
@@ -184,104 +186,166 @@ public:
     Assert::AreEqual(static_cast<std::uint64_t>(25), Outpost::ReplicaStore::RenderMilliseconds(100));
   }
 
-  TEST_METHOD(AnOutOfOrderArrivalIsRefused)
+  /// **ORDERING IS A TICK COMPARISON AND NOTHING ELSE.** A record no newer than the entity's newest
+  /// sample is refused, whatever order the updates arrived in.
+  TEST_METHOD(ARecordNoNewerThanWhatIsHeldIsRefused)
   {
     Outpost::ReplicaStore store;
-    Assert::IsTrue(store.Accept(MakeSnapshot(10, 0, 0), 1000));
-    Assert::IsTrue(store.Accept(MakeSnapshot(11, 100, 0), 1050));
+    Assert::AreEqual(1u, store.Accept(MakeUpdate(10, 0, 0), 1000).applied);
+    Assert::AreEqual(1u, store.Accept(MakeUpdate(11, 100, 0), 1050).applied);
 
-    // The straggler, and the duplicate.
-    Assert::IsFalse(store.Accept(MakeSnapshot(10, 999, 0), 1060));
-    Assert::IsFalse(store.Accept(MakeSnapshot(11, 999, 0), 1060));
+    Assert::AreEqual(1u, store.Accept(MakeUpdate(10, 999, 0), 1060).refused, L"an older tick was admitted");
+    Assert::AreEqual(1u, store.Accept(MakeUpdate(11, 999, 0), 1060).refused, L"the same tick was admitted twice");
     Assert::AreEqual(static_cast<std::uint64_t>(2), store.RefusedCount());
-
-    // And it did not become the newest, which is the thing that would move the clock backwards.
-    Assert::AreEqual(11, static_cast<int>(store.Newest()->sequence));
+    Assert::AreEqual(std::int16_t{100}, store.Entities()[0].positionX, L"a refused record moved the entity");
   }
 
   TEST_METHOD(TheSequenceComparisonSurvivesTheWrap)
   {
-    Assert::IsTrue(Outpost::SequenceIsNewer(0, 65535));
     Assert::IsTrue(Outpost::SequenceIsNewer(1, 65535));
-    Assert::IsFalse(Outpost::SequenceIsNewer(65535, 0));
-    Assert::IsFalse(Outpost::SequenceIsNewer(10, 10));
+    Assert::IsFalse(Outpost::SequenceIsNewer(65535, 1));
+    Assert::IsFalse(Outpost::SequenceIsNewer(7, 7));
   }
 
-  TEST_METHOD(ItFindsThePairThatStraddlesTheRenderTime)
+  /// The sequence orders nothing; it counts loss. Two updates that never came are two lost.
+  TEST_METHOD(AGapInTheSequenceIsCountedAsLoss)
   {
     Outpost::ReplicaStore store;
-    Assert::IsTrue(store.Accept(MakeSnapshot(1, 0, 0), 1000));
-    Assert::IsTrue(store.Accept(MakeSnapshot(2, 100, 0), 1050));
-    Assert::IsTrue(store.Accept(MakeSnapshot(3, 200, 0), 1100));
-
-    // Now is 1100 -- the newest has just arrived -- so the frame is drawn at 1025, which is
-    // between the first two. THIS IS THE CASE TWO SNAPSHOTS CANNOT SERVE.
-    const std::uint64_t renderTime = Outpost::ReplicaStore::RenderMilliseconds(1100);
-    Assert::AreEqual(static_cast<std::uint64_t>(1025), renderTime);
-
-    const Outpost::ReplicaStore::Frame frame = store.FrameAt(renderTime);
-    Assert::IsTrue(frame.playout.state == Outpost::PlayoutState::Interpolating);
-    Assert::AreEqual(1, static_cast<int>(frame.older->sequence));
-    Assert::AreEqual(2, static_cast<int>(frame.newer->sequence));
-    Assert::AreEqual(Neuron::FIXED_ONE / 2, frame.playout.fraction);
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(4, 0, 0), 1150));
+    Assert::AreEqual(static_cast<std::uint64_t>(2), store.LostCount());
   }
 
-  TEST_METHOD(AMissingSnapshotExtrapolatesAndThenHolds)
+  TEST_METHOD(ItInterpolatesBetweenTheEntitysOwnSamples)
   {
     Outpost::ReplicaStore store;
-    Assert::IsTrue(store.Accept(MakeSnapshot(1, 0, 0), 1000));
-    Assert::IsTrue(store.Accept(MakeSnapshot(2, 100, 0), 1050));
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(2, 100, 0), 1050));
+    static_cast<void>(store.Accept(MakeUpdate(3, 200, 0), 1100));
 
-    // Nothing arrives after 1050. The render clock walks past the newest and the frame goes from
-    // interpolating, to guessing, to still.
-    Assert::IsTrue(store.FrameAt(1040).playout.state == Outpost::PlayoutState::Interpolating);
-    Assert::IsTrue(store.FrameAt(1060).playout.state == Outpost::PlayoutState::Extrapolating);
-    Assert::IsTrue(store.FrameAt(1200).playout.state == Outpost::PlayoutState::Holding);
+    // 75 behind 1,100 is 1,025, which is halfway between the first two samples.
+    std::vector<Outpost::EntityRecord> drawn;
+    const Outpost::DrawnSummary summary = store.Drawn(Outpost::ReplicaStore::RenderMilliseconds(1100), drawn);
+    Assert::AreEqual(1u, summary.interpolating);
+    Assert::AreEqual(std::size_t{1}, drawn.size());
+    Assert::AreEqual(std::int16_t{50}, drawn[0].positionX);
   }
 
-  TEST_METHOD(OneSnapshotIsStarvedRatherThanAnError)
+  /// **PAST THE NEWEST SAMPLE IT HOLDS, AND NEVER EXTRAPOLATES** (ADR-024). A distant entity the
+  /// accumulator has not refreshed stays where the host last said it was.
+  TEST_METHOD(PastTheNewestSampleItHolds)
   {
     Outpost::ReplicaStore store;
-    Assert::IsTrue(store.Accept(MakeSnapshot(1, 0, 0), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(2, 100, 0), 1050));
 
-    const Outpost::ReplicaStore::Frame frame = store.FrameAt(1000);
-    Assert::IsTrue(frame.playout.state == Outpost::PlayoutState::Starved);
-    // Still something to draw, and both ends are the same snapshot.
-    Assert::IsNotNull(frame.older);
-    Assert::IsTrue(frame.older == frame.newer);
+    std::vector<Outpost::EntityRecord> drawn;
+    const Outpost::DrawnSummary summary = store.Drawn(5000, drawn);
+    Assert::AreEqual(1u, summary.holding);
+    Assert::AreEqual(std::int16_t{100}, drawn[0].positionX, L"a held entity moved past its newest sample");
+  }
+
+  TEST_METHOD(OneSampleIsStarvedRatherThanAnError)
+  {
+    Outpost::ReplicaStore store;
+    static_cast<void>(store.Accept(MakeUpdate(1, 40, 0), 1000));
+    std::vector<Outpost::EntityRecord> drawn;
+    Assert::AreEqual(1u, store.Drawn(1000, drawn).starved);
+    Assert::AreEqual(std::int16_t{40}, drawn[0].positionX);
   }
 
   TEST_METHOD(AnEmptyStoreHandsBackNothingToDraw)
   {
     const Outpost::ReplicaStore store;
-    const Outpost::ReplicaStore::Frame frame = store.FrameAt(1000);
-    Assert::IsNull(frame.older);
-    Assert::IsNull(frame.newer);
-    Assert::IsTrue(frame.playout.state == Outpost::PlayoutState::Starved);
+    std::vector<Outpost::EntityRecord> drawn{Outpost::EntityRecord{}};
+    const Outpost::DrawnSummary summary = store.Drawn(1000, drawn);
+    Assert::AreEqual(std::size_t{0}, drawn.size(), L"the output was not cleared");
+    Assert::AreEqual(0u, summary.interpolating + summary.holding + summary.starved);
+    Assert::IsNull(store.Own());
   }
 
-  TEST_METHOD(TheRingKeepsTheNewestWhenItOverflows)
+  /// **AN ENTITY ABSENT FROM AN UPDATE IS NOT DEAD.** It was not due; it stays.
+  TEST_METHOD(AnEntityAbsentFromAnUpdateIsKept)
   {
     Outpost::ReplicaStore store;
-    for (std::uint16_t sequence = 1; sequence <= 6; ++sequence)
-    {
-      const std::uint64_t arrival = 1000 + (static_cast<std::uint64_t>(sequence) * 50);
-      Assert::IsTrue(store.Accept(MakeSnapshot(sequence, static_cast<std::int16_t>(sequence * 10), 0), arrival));
-    }
+    static_cast<void>(store.Accept(MakeUpdate(1, 10, 0, Outpost::PackIdentity(1, 1)), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(2, 20, 0, Outpost::PackIdentity(2, 1)), 1050));
+    Assert::AreEqual(std::size_t{2}, store.HeldCount());
+  }
 
-    Assert::AreEqual(Outpost::ReplicaStore::RETAINED_COUNT, store.HeldCount());
-    Assert::AreEqual(6, static_cast<int>(store.Newest()->sequence));
+  /// **DEATH IS A REMOVAL**, matched on the whole identity, and a repeat of one already applied takes
+  /// nothing -- in particular not a new occupant of the same slot.
+  TEST_METHOD(ARemovalTakesOnlyTheEntityItNames)
+  {
+    Outpost::ReplicaStore store;
+    static_cast<void>(store.Accept(MakeUpdate(1, 10, 0, Outpost::PackIdentity(1, 1)), 1000));
 
-    // The pair around the render time is still found after the ring has wrapped several times,
-    // which is what proves the indexing rather than the first three arrivals doing so.
-    const Outpost::ReplicaStore::Frame frame = store.FrameAt(1275);
-    Assert::IsTrue(frame.playout.state == Outpost::PlayoutState::Interpolating);
-    Assert::AreEqual(5, static_cast<int>(frame.older->sequence));
-    Assert::AreEqual(6, static_cast<int>(frame.newer->sequence));
+    Outpost::Update death = MakeUpdate(2, 20, 0, Outpost::PackIdentity(1, 2));
+    death.records.clear();
+    death.removals.push_back(Outpost::PackIdentity(1, 2));
+    Assert::AreEqual(0u, store.Accept(death, 1050).removed, L"a removal naming another generation took the entity");
+
+    death.tick = 3;
+    death.removals = {Outpost::PackIdentity(1, 1)};
+    Assert::AreEqual(1u, store.Accept(death, 1100).removed);
+    Assert::AreEqual(std::size_t{0}, store.HeldCount());
+
+    death.tick = 4;
+    Assert::AreEqual(0u, store.Accept(death, 1150).removed, L"a repeated removal counted twice");
+  }
+
+  /// A reused slot is a new entity: it starts from its own first sample, never from the old occupant's.
+  TEST_METHOD(AReusedSlotStartsAgainFromNothing)
+  {
+    Outpost::ReplicaStore store;
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0, Outpost::PackIdentity(1, 1)), 1000));
+    static_cast<void>(store.Accept(MakeUpdate(2, 500, 0, Outpost::PackIdentity(1, 2)), 1050));
+
+    std::vector<Outpost::EntityRecord> drawn;
+    Assert::AreEqual(1u, store.Drawn(1025, drawn).starved, L"the new occupant was interpolated from the old one");
+    Assert::AreEqual(std::int16_t{500}, drawn[0].positionX);
+  }
+
+  /// **FORGETTING IS THE SWEEP.** One live entity is a sweep of one tick, so an entity three ticks
+  /// behind the newest update stays and one further behind is gone.
+  TEST_METHOD(AnEntityThreeSweepsSilentIsForgotten)
+  {
+    Outpost::ReplicaStore store;
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0, Outpost::PackIdentity(7, 1)), 1000));
+
+    Outpost::Update quiet = MakeUpdate(4, 0, 0, Outpost::PackIdentity(8, 1));
+    Assert::AreEqual(0u, store.Accept(quiet, 1150).forgotten, L"forgotten inside three sweeps");
+    Assert::AreEqual(std::size_t{2}, store.HeldCount());
+
+    quiet.tick = 5;
+    Assert::AreEqual(1u, store.Accept(quiet, 1200).forgotten);
+    Assert::AreEqual(std::size_t{1}, store.HeldCount());
+  }
+
+  /// The own block follows the newest tick, so a late update cannot wind the credits back.
+  TEST_METHOD(TheOwnBlockFollowsTheNewestTick)
+  {
+    Outpost::ReplicaStore store;
+    Outpost::Update newer = MakeUpdate(9, 0, 0);
+    newer.own.credits = 900;
+    Outpost::Update older = MakeUpdate(8, 0, 0);
+    older.own.credits = 100;
+
+    static_cast<void>(store.Accept(newer, 1000));
+    static_cast<void>(store.Accept(older, 1010));
+    Assert::AreEqual(900u, store.Own()->credits);
+  }
+
+  TEST_METHOD(ClearForgetsEverything)
+  {
+    Outpost::ReplicaStore store;
+    static_cast<void>(store.Accept(MakeUpdate(1, 0, 0), 1000));
+    store.Clear();
+    Assert::AreEqual(std::size_t{0}, store.HeldCount());
+    Assert::IsNull(store.Own());
   }
 };
 
-/// One entity across the pair, and the trap the generation exists to close.
 TEST_CLASS(RecordInterpolation)
 {
 public:

@@ -101,6 +101,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Accumulator.cpp" />
     <ClCompile Include="CommandIntake.cpp" />
     <ClCompile Include="GameLogic.cpp" />
     <ClCompile Include="BuildSystem.cpp" />
@@ -115,6 +116,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Accumulator.h" />
     <ClInclude Include="CommandIntake.h" />
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="BuildSystem.h" />

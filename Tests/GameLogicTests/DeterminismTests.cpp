@@ -25,7 +25,8 @@ constexpr std::uint32_t REPLACEMENT_TICK = 910;
   return Outpost::QuantizePosition(_units * Neuron::FIXED_ONE);
 }
 
-[[nodiscard]] Outpost::Command MoveTo(std::uint16_t _sequence, std::int32_t _x, std::int32_t _y, std::vector<std::uint16_t> _selection)
+[[nodiscard]] Outpost::Command MoveTo(std::uint16_t _sequence, std::int32_t _x, std::int32_t _y,
+                                      std::vector<Outpost::WireIdentity> _selection)
 {
   return Outpost::Command{.sequence = _sequence,
                           .type = Outpost::CommandType::MoveTo,
@@ -46,9 +47,9 @@ constexpr std::uint32_t REPLACEMENT_TICK = 910;
 /// Every wire identity a player's SHIPS carry, in slot order -- which is what a client's hit test would
 /// produce and is therefore the order the host actually receives. The station is left out because it
 /// cannot move and an order naming it would prove nothing.
-[[nodiscard]] std::vector<std::uint16_t> OwnedShips(const Outpost::World& _world, Outpost::PlayerId _player)
+[[nodiscard]] std::vector<Outpost::WireIdentity> OwnedShips(const Outpost::World& _world, Outpost::PlayerId _player)
 {
-  std::vector<std::uint16_t> out;
+  std::vector<Outpost::WireIdentity> out;
   for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
   {
     if (!_world.IsSlotAlive(slot))
@@ -128,7 +129,7 @@ struct MatchResult
     {
       for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
       {
-        std::vector<std::uint16_t> selection = OwnedShips(world, player);
+        std::vector<Outpost::WireIdentity> selection = OwnedShips(world, player);
         if (!selection.empty())
         {
           const std::int32_t sign = (player == 1) ? 1 : -1;

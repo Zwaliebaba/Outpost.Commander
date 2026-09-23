@@ -147,15 +147,15 @@ public:
 
   /// A snapshot decoder handed a join reply says `WrongType` rather than reporting a fault that
   /// reads as corruption -- which is what the client's drain switches on.
-  TEST_METHOD(ASnapshotDecoderRefusesAJoinReply)
+  TEST_METHOD(AnUpdateDecoderRefusesAJoinReply)
   {
     std::array<std::byte, REPLY_BYTES> bytes{};
     Neuron::ByteWriter writer{bytes};
     Assert::IsTrue(Outpost::Encode(Outpost::JoinReply{.result = Outpost::JoinResult::Accepted, .player = 1}, writer));
 
     Neuron::ByteReader reader{bytes};
-    Outpost::Snapshot snapshot;
-    Assert::IsTrue(Outpost::Decode(reader, snapshot) == Outpost::SnapshotFault::WrongType);
+    Outpost::Update update;
+    Assert::IsTrue(Outpost::Decode(reader, update) == Outpost::UpdateFault::WrongType);
   }
 
   /// A datagram that ends inside a field is truncated rather than decoding out of whatever follows.

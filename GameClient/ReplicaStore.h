@@ -7,115 +7,167 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <vector>
 
 namespace Outpost
 {
 
-/// The snapshots the client is currently drawing from, and the clock that decides which.
+/// What one drawn frame found, per entity, for the log and the harness. R8: a public aggregate.
+struct DrawnSummary
+{
+  /// Entities drawn between two samples.
+  std::uint32_t interpolating = 0;
+  /// Entities whose newest sample is older than the render time, drawn where it put them. **The
+  /// ordinary state of a distant, idle entity under ADR-024**, which the accumulator refreshes rarely on
+  /// purpose -- not a fault.
+  std::uint32_t holding = 0;
+  /// Entities with a single sample, drawn as it stands.
+  std::uint32_t starved = 0;
+};
+
+/// Every entity the client has been told about, a few samples of each, and the clock that decides
+/// where between them the frame is drawn.
 ///
-/// R19: the client links no simulation. What this holds is state it was SENT, kept just long
-/// enough to draw a smooth frame out of it, and it is discarded as soon as a newer pair covers
-/// the render time. Nothing here advances anything -- no ship moves because this class was called.
+/// **PER ENTITY, SINCE ADR-024.** An update is a bag of records at one tick, not the world, so there is
+/// no snapshot to hold: each entity keeps its own samples, stamped with the tick they describe and the
+/// local time they arrived, and interpolates between its own pair. An entity absent from an update is
+/// neither dead nor unchanged -- it was not due. **Death is a removal, and forgetting is the sweep.**
+///
+/// **ORDERING IS A TICK COMPARISON AND NOTHING ELSE.** A record whose tick is not newer than the newest
+/// sample held for that entity is refused. There is no sequence window and no reorder buffer.
+///
+/// R19: the client links no simulation. What this holds is state it was SENT, kept just long enough to
+/// draw a smooth frame. Nothing here advances anything.
 class ReplicaStore
 {
 public:
-  /// HOW MANY SNAPSHOTS IT TAKES TO COVER THE DELAY, COMPUTED RATHER THAN CHOSEN -- and computing
-  /// it is deliberate, because the design's stated figure and the design's stated delay do not
-  /// agree and this is the seam where that shows.
-  ///
-  /// `TechnicalDesign.md` section 6 says the client "holds the two most recent snapshots and
-  /// draws at a time 75 milliseconds behind the newest". Those two clauses cannot both hold at
-  /// 20 Hz. Two snapshots span one interval, 50 milliseconds, ending at the newest; a render time
-  /// 75 milliseconds behind the newest is 25 milliseconds OLDER than the older of the two, so the
-  /// pair does not contain the frame being drawn. It is the same 10 Hz residue as `README.md` F4,
-  /// one clause further on: the delay moved from 150 to 75 and the depth it implies was never
-  /// recomputed. ADR-003 reads the other way and is the one to trust -- "a lost snapshot is a
-  /// 50-millisecond gap inside a 75-millisecond buffer, covered without extrapolating" describes
-  /// a buffer holding more than one interval of history, which two snapshots do not.
-  ///
-  /// So the depth is arithmetic on the two constants that are agreed: enough intervals to reach
-  /// back past the delay, plus the snapshot on the near side of it. At 75 over 50 that is three,
-  /// and it becomes four by itself the day either figure moves.
+  /// HOW MANY SAMPLES AN ENTITY KEEPS, COMPUTED RATHER THAN CHOSEN. Enough intervals to reach back past
+  /// the interpolation delay, plus the sample on the near side of it: three at 75 over 50. This is the
+  /// arithmetic `TechnicalDesign.md` section 6 used to state as a snapshot count; under ADR-024 it is the
+  /// same arithmetic per entity, and it becomes four by itself the day either figure moves.
   static constexpr std::size_t INTERVALS_SPANNED =
     (INTERPOLATION_DELAY_MILLISECONDS + SNAPSHOT_INTERVAL_MILLISECONDS - 1) / SNAPSHOT_INTERVAL_MILLISECONDS;
   static constexpr std::size_t RETAINED_COUNT = INTERVALS_SPANNED + 1;
   static_assert(RETAINED_COUNT >= 2, "Interpolation needs a pair to sit between.");
 
-  /// Takes a snapshot that has arrived, stamped with the local time it arrived at.
-  ///
-  /// FALSE MEANS IT WAS REFUSED, and the caller counts it rather than retrying: it is older than
-  /// one already held, or a duplicate of one. ADR-003 makes that free -- every snapshot is
-  /// self-contained, so a refused one costs a frame of animation and nothing else.
-  ///
-  /// _arrivalMilliseconds is from the same monotonic clock as RenderMilliseconds' argument. The
-  /// store never reads a clock itself, which is what lets a suite drive it.
-  bool Accept(const Snapshot& _snapshot, std::uint64_t _arrivalMilliseconds) noexcept;
-
-  /// Where the frame is drawn: the delay behind now, on the caller's clock.
-  ///
-  /// IT IS DRIVEN BY NOW AND NOT BY THE NEWEST ARRIVAL, which is what makes it monotonic. A late
-  /// snapshot, an out-of-order one or a burst of three at once all leave this untouched -- the
-  /// clock cannot be moved backwards by anything arriving, because nothing arriving is an input
-  /// to it. Before the delay has elapsed at all there is no past to draw, so it reads zero.
-  [[nodiscard]] static std::uint64_t RenderMilliseconds(std::uint64_t _nowMilliseconds) noexcept;
-
-  /// The pair the render time sits between, and where between them.
-  ///
-  /// Both pointers are into the store and are invalidated by the next Accept. When fewer than two
-  /// snapshots are held, or the render time is past everything held, `older` and `newer` are the
-  /// same snapshot and the state says why -- so a caller always has something to draw and never
-  /// has to decide what to do with a half-answer.
-  struct Frame
+  /// What one update did to the store. R8: a public aggregate.
+  struct AcceptResult
   {
-    const Snapshot* older = nullptr;
-    const Snapshot* newer = nullptr;
-    Playout playout;
+    /// Records that became an entity's newest sample.
+    std::uint32_t applied = 0;
+    /// Records no newer than what the entity already held -- reordered, or a repeat.
+    std::uint32_t refused = 0;
+    /// Removals that took an entity out. A repeat of one already applied takes nothing and is not
+    /// counted.
+    std::uint32_t removed = 0;
+    /// Entities forgotten because they had gone three sweeps without a record.
+    std::uint32_t forgotten = 0;
   };
 
-  [[nodiscard]] Frame FrameAt(std::uint64_t _renderMilliseconds) const noexcept;
+  /// Folds in an update that has arrived, stamped with the local time it arrived at.
+  ///
+  /// _arrivalMilliseconds is from the same monotonic clock as `RenderMilliseconds`' argument. The store
+  /// never reads a clock itself, which is what lets a suite drive it.
+  AcceptResult Accept(const Update& _update, std::uint64_t _arrivalMilliseconds);
+
+  /// Where the frame is drawn: the delay behind now, on the caller's clock. Driven by now rather than by
+  /// any arrival, so nothing arriving can move it backwards. Zero before the delay has elapsed.
+  [[nodiscard]] static std::uint64_t RenderMilliseconds(std::uint64_t _nowMilliseconds) noexcept;
+
+  /// Every held entity at the render time, interpolated between its own two samples where they straddle
+  /// it and held at its newest where they do not. **It never extrapolates** (ADR-024, R19): an entity
+  /// the accumulator has not refreshed stays where the host last said it was.
+  ///
+  /// _outRecords is cleared and refilled, in index order, so a caller keeps one vector across frames and
+  /// allocates nothing in steady state.
+  DrawnSummary Drawn(std::uint64_t _renderMilliseconds, std::vector<EntityRecord>& _outRecords) const;
+
+  /// The newest record of every held entity, in index order. What selection, hit testing and the
+  /// panels read -- the truth as last told, not the interpolated picture.
+  [[nodiscard]] std::span<const EntityRecord> Entities() const noexcept
+  {
+    return m_newest;
+  }
+
+  /// This client's own block from the newest update, or nullptr before one has arrived.
+  [[nodiscard]] const PlayerBlock* Own() const noexcept
+  {
+    return m_hasUpdate ? &m_own : nullptr;
+  }
+
+  /// The newest tick any update has described. Zero before one has arrived.
+  [[nodiscard]] std::uint32_t NewestTick() const noexcept
+  {
+    return m_newestTick;
+  }
 
   [[nodiscard]] std::size_t HeldCount() const noexcept
   {
-    return m_heldCount;
+    return m_newest.size();
   }
 
-  /// Snapshots refused by Accept. A counter rather than a log: one is ordinary on a wireless
-  /// link, and a rising rate is the thing worth seeing.
+  /// Records refused across every update, because they were no newer than what was held. A counter
+  /// rather than a log: some are ordinary, and a rising rate is the thing worth seeing.
   [[nodiscard]] std::uint64_t RefusedCount() const noexcept
   {
     return m_refusedCount;
   }
 
-  /// The newest snapshot held, or nullptr when none is. This is what a caller draws from when the
-  /// playout is Starved.
-  [[nodiscard]] const Snapshot* Newest() const noexcept;
+  /// Updates the transport sequence says never arrived. **The stress harness's loss figure** (ADR-022);
+  /// the sequence orders nothing, so this is the only thing it is read for.
+  [[nodiscard]] std::uint64_t LostCount() const noexcept
+  {
+    return m_lostCount;
+  }
+
+  /// Forgets everything. What a rejoin does: the host resets this client's accumulator at the same
+  /// moment, so everything is sent again within one sweep and nothing stale survives.
+  void Clear() noexcept;
 
 private:
-  struct Slot
+  struct Sample
   {
-    Snapshot snapshot;
+    EntityRecord record{};
+    std::uint32_t tick = 0;
     std::uint64_t arrivalMilliseconds = 0;
   };
 
-  /// A ring, so that steady state neither allocates nor moves a snapshot: Accept assigns into the
-  /// slot it is about to overwrite, and a `std::vector` assigned over keeps the capacity it
-  /// already had. The first few snapshots of a match allocate and then it stops.
-  std::array<Slot, RETAINED_COUNT> m_slots{};
+  /// One entity's samples, oldest to newest in a ring. Indexed by the wire index, so a slot reused by a
+  /// new entity is noticed by the whole identity differing and starts again from nothing.
+  struct Held
+  {
+    std::array<Sample, RETAINED_COUNT> samples{};
+    std::size_t count = 0;
+    std::size_t writeIndex = 0;
 
-  /// Where the next snapshot goes. The newest held is the slot before it.
-  std::size_t m_writeIndex = 0;
-  std::size_t m_heldCount = 0;
+    [[nodiscard]] const Sample& Newest() const noexcept
+    {
+      return samples[(writeIndex + RETAINED_COUNT - 1) % RETAINED_COUNT];
+    }
+    [[nodiscard]] const Sample& FromOldest(std::size_t _step) const noexcept
+    {
+      return samples[(writeIndex + RETAINED_COUNT - count + _step) % RETAINED_COUNT];
+    }
+  };
+
+  void RebuildNewest();
+
+  std::vector<Held> m_held;
+  std::vector<EntityRecord> m_newest;
+
+  PlayerBlock m_own{};
+  bool m_hasUpdate = false;
+  std::uint32_t m_newestTick = 0;
+  std::uint16_t m_liveEntityCount = 0;
+
+  std::uint16_t m_lastSequence = 0;
   std::uint64_t m_refusedCount = 0;
+  std::uint64_t m_lostCount = 0;
 };
 
 /// Serial-number comparison over the wire's 16-bit sequence -- true when _candidate is newer than
-/// _reference, across the wrap.
-///
-/// A PLAIN `>` IS WRONG HERE AND THE MATCH IS NOT SHORT ENOUGH TO HIDE IT. The sequence wraps
-/// after about 55 minutes at 20 Hz against a match of five (`TechnicalDesign.md` section 4), so a
-/// single match never wraps -- but a client that stays up across matches meets 65,535 followed by
-/// 0, and a plain comparison would refuse every snapshot of the new match forever. The difference
-/// taken in the unsigned type and read as signed is the standard answer and costs one cast.
+/// _reference, across the wrap. Since ADR-024 it orders nothing and is read only to count loss.
 [[nodiscard]] constexpr bool SequenceIsNewer(std::uint16_t _candidate, std::uint16_t _reference) noexcept
 {
   return static_cast<std::int16_t>(static_cast<std::uint16_t>(_candidate - _reference)) > 0;

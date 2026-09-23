@@ -30,47 +30,39 @@ namespace
   return std::to_integer<std::uint8_t>(_value);
 }
 
-/// A well-formed snapshot header, written out by hand rather than by PacketHeader::Write, so that
+/// A well-formed update header, written out by hand rather than by PacketHeader::Write, so that
 /// a test of the reader is a test of the reader.
-constexpr std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> WELL_FORMED{
-  static_cast<std::byte>(Neuron::PROTOCOL_VERSION), std::byte{1}, std::byte{0x02}, std::byte{0x01}, std::byte{0}, std::byte{1}};
+constexpr std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> WELL_FORMED{static_cast<std::byte>(Neuron::PROTOCOL_VERSION),
+                                                                              std::byte{1}, std::byte{0x02}, std::byte{0x01}};
 } // namespace
 
 TEST_CLASS(PacketHeaderWire)
 {
 public:
-  /// The two sides must agree on these six bytes exactly, and one of them is Winsock while the
+  /// The two sides must agree on these four bytes exactly, and one of them is Winsock while the
   /// other is a WinRT DatagramSocket -- so the layout is pinned against literals rather than
-  /// against the writer that produced it.
-  TEST_METHOD(TheHeaderIsSixBytesInAFixedOrder)
+  /// against the writer that produced it. **Four since ADR-024**, which took the fragment fields out.
+  TEST_METHOD(TheHeaderIsFourBytesInAFixedOrder)
   {
     std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> buffer{};
     Neuron::ByteWriter writer{buffer};
-    const Neuron::PacketHeader header{.type = Neuron::PacketType::Snapshot,
-                                      .sequence = std::uint16_t{0x0102},
-                                      .fragmentIndex = std::uint8_t{2},
-                                      .fragmentCount = std::uint8_t{5}};
+    const Neuron::PacketHeader header{.type = Neuron::PacketType::Update, .sequence = std::uint16_t{0x0102}};
 
     Assert::IsTrue(header.Write(writer));
 
-    Assert::AreEqual(static_cast<std::size_t>(6), Neuron::PacketHeader::SIZE_BYTES);
-    Assert::AreEqual(static_cast<std::size_t>(6), writer.WrittenBytes());
+    Assert::AreEqual(static_cast<std::size_t>(4), Neuron::PacketHeader::SIZE_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(4), writer.WrittenBytes());
     Assert::AreEqual(Neuron::PROTOCOL_VERSION, Octet(buffer[0]));
     Assert::AreEqual(std::uint8_t{1}, Octet(buffer[1]));
     Assert::AreEqual(std::uint8_t{0x02}, Octet(buffer[2])); // sequence, least significant first
     Assert::AreEqual(std::uint8_t{0x01}, Octet(buffer[3]));
-    Assert::AreEqual(std::uint8_t{2}, Octet(buffer[4]));
-    Assert::AreEqual(std::uint8_t{5}, Octet(buffer[5]));
   }
 
   TEST_METHOD(EveryFieldRoundTrips)
   {
     std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> buffer{};
     Neuron::ByteWriter writer{buffer};
-    const Neuron::PacketHeader sent{.type = Neuron::PacketType::Command,
-                                    .sequence = std::uint16_t{40000},
-                                    .fragmentIndex = std::uint8_t{3},
-                                    .fragmentCount = std::uint8_t{4}};
+    const Neuron::PacketHeader sent{.type = Neuron::PacketType::Command, .sequence = std::uint16_t{40000}};
     Assert::IsTrue(sent.Write(writer));
 
     Neuron::ByteReader reader{buffer};
@@ -80,8 +72,6 @@ public:
     Assert::AreEqual(Neuron::PROTOCOL_VERSION, received.protocolVersion);
     Assert::AreEqual(Code(Neuron::PacketType::Command), Code(received.type));
     Assert::AreEqual(std::uint16_t{40000}, received.sequence);
-    Assert::AreEqual(std::uint8_t{3}, received.fragmentIndex);
-    Assert::AreEqual(std::uint8_t{4}, received.fragmentCount);
   }
 
   /// The header is a prefix, not a packet: the reader must be left exactly on the payload so the
@@ -107,7 +97,7 @@ public:
     Neuron::PacketHeader received{};
 
     Assert::AreEqual(Code(Neuron::PacketFault::None), Code(Neuron::PacketHeader::Read(reader, received)));
-    Assert::AreEqual(Code(Neuron::PacketType::Snapshot), Code(received.type));
+    Assert::AreEqual(Code(Neuron::PacketType::Update), Code(received.type));
     Assert::AreEqual(std::uint16_t{0x0102}, received.sequence);
   }
 };
@@ -121,7 +111,7 @@ TEST_CLASS(PacketTypes)
 public:
   TEST_METHOD(EveryTypeThisBuildSpeaksIsKnown)
   {
-    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Snapshot));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Update));
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Command));
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Heartbeat));
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Join));
@@ -147,12 +137,18 @@ public:
     Assert::AreEqual(5, static_cast<int>(Neuron::PacketType::JoinReply));
   }
 
-  /// **THE VERSION MOVES WITH EVERY TYPE ADDED TO EITHER ENUMERATION.** It is asserted because the
-  /// version going up is the whole of what stops an older client hanging against a newer host -- 1
-  /// before the join, 2 with it, 3 since M1.6's build orders.
-  TEST_METHOD(TheProtocolVersionIsThreeSinceTheBuildOrders)
+  /// **THE VERSION MOVES WITH EVERY CHANGE TO ANY RECORD.** It is asserted because the version going
+  /// up is the whole of what stops an older client hanging against a newer host -- 1 before the join,
+  /// 2 with it, 3 since M1.6's build orders, 4 since ADR-024 changed every record at once.
+  TEST_METHOD(TheProtocolVersionIsFourSinceTheUpdate)
   {
-    Assert::AreEqual(std::uint8_t{3}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{4}, Neuron::PROTOCOL_VERSION);
+  }
+
+  /// `Update` took `Snapshot`'s value rather than a new one: the unit changed, the number did not need to.
+  TEST_METHOD(TheUpdateIsTypeOne)
+  {
+    Assert::AreEqual(1, static_cast<int>(Neuron::PacketType::Update));
   }
 };
 
@@ -161,7 +157,7 @@ TEST_CLASS(PacketHeaderRejection)
 public:
   /// The requirement is not that a foreign build is refused -- it is that the refusal SAYS SO.
   /// A version mismatch is somebody running an old binary and is worth reporting once; the other
-  /// three faults are a corrupt or hostile datagram and are worth nothing but a counter.
+  /// two faults are a corrupt or hostile datagram and are worth nothing but a counter.
   TEST_METHOD(AMismatchedVersionIsItsOwnFault)
   {
     auto wire = WELL_FORMED;
@@ -173,12 +169,12 @@ public:
   }
 
   /// Everything after byte zero belongs to a layout this build does not know, so naming it a bad
-  /// type or an incoherent fragment count would be a fault that is not there. This packet is
-  /// wrong in three ways and only the first one may be reported.
+  /// type would be a fault that is not there. This packet is wrong in two ways and only the first
+  /// one may be reported.
   TEST_METHOD(TheVersionIsCheckedBeforeAnyOtherFieldIsInterpreted)
   {
-    constexpr std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> FOREIGN{
-      static_cast<std::byte>(Neuron::PROTOCOL_VERSION + 1), std::byte{0xFF}, std::byte{0}, std::byte{0}, std::byte{9}, std::byte{0}};
+    constexpr std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> FOREIGN{static_cast<std::byte>(Neuron::PROTOCOL_VERSION + 1),
+                                                                              std::byte{0xFF}, std::byte{0}, std::byte{0}};
 
     Neuron::ByteReader reader{FOREIGN};
     Neuron::PacketHeader received{};
@@ -205,27 +201,6 @@ public:
     Neuron::ByteReader reader{wire};
     Neuron::PacketHeader received{};
     Assert::AreEqual(Code(Neuron::PacketFault::UnknownType), Code(Neuron::PacketHeader::Read(reader, received)));
-  }
-
-  TEST_METHOD(AZeroFragmentCountIsIncoherent)
-  {
-    auto wire = WELL_FORMED;
-    wire[5] = std::byte{0};
-
-    Neuron::ByteReader reader{wire};
-    Neuron::PacketHeader received{};
-    Assert::AreEqual(Code(Neuron::PacketFault::BadFragmentation), Code(Neuron::PacketHeader::Read(reader, received)));
-  }
-
-  TEST_METHOD(AFragmentIndexAtOrPastTheCountIsIncoherent)
-  {
-    auto wire = WELL_FORMED;
-    wire[4] = std::byte{4};
-    wire[5] = std::byte{4};
-
-    Neuron::ByteReader reader{wire};
-    Neuron::PacketHeader received{};
-    Assert::AreEqual(Code(Neuron::PacketFault::BadFragmentation), Code(Neuron::PacketHeader::Read(reader, received)));
   }
 
   TEST_METHOD(AShortDatagramIsTruncatedRatherThanMalformed)
@@ -260,7 +235,7 @@ public:
     Assert::AreEqual(Code(Neuron::PacketFault::Truncated), Code(Neuron::PacketHeader::Read(reader, received)));
   }
 
-  /// Six zero bytes reach the version check first and fail there, which is the right answer for
+  /// Four zero bytes reach the version check first and fail there, which is the right answer for
   /// the wrong-sounding reason: version 0 is not this build's. It is asserted because a zeroed
   /// buffer is what a bug delivers, and "rejected" is the property that matters.
   TEST_METHOD(AnAllZeroDatagramIsRejected)
@@ -304,81 +279,14 @@ public:
     Assert::IsFalse(writer.Faulted());
   }
 
-  TEST_METHOD(IncoherentFragmentFieldsAreRefusedBeforeAByteIsWritten)
-  {
-    std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES> buffer{};
-    Neuron::ByteWriter writer{buffer};
-    const Neuron::PacketHeader header{.type = Neuron::PacketType::Snapshot,
-                                      .sequence = std::uint16_t{1},
-                                      .fragmentIndex = std::uint8_t{2},
-                                      .fragmentCount = std::uint8_t{2}};
-
-    Assert::IsFalse(header.Write(writer));
-    Assert::AreEqual(static_cast<std::size_t>(0), writer.WrittenBytes());
-  }
-
   TEST_METHOD(ABufferWithNoRoomFails)
   {
     std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES - 1> buffer{};
     Neuron::ByteWriter writer{buffer};
-    const Neuron::PacketHeader header{.type = Neuron::PacketType::Snapshot, .sequence = std::uint16_t{1}};
+    const Neuron::PacketHeader header{.type = Neuron::PacketType::Update, .sequence = std::uint16_t{1}};
 
     Assert::IsFalse(header.Write(writer));
     Assert::IsTrue(writer.Faulted());
-  }
-};
-
-TEST_CLASS(PacketHeaderFragmentation)
-{
-public:
-  /// The MVP never fragments, so the single-fragment answer has to be reachable without a
-  /// reassembler -- there is not one until M4.3, and ADR-003 does not want one before then.
-  TEST_METHOD(ASingleFragmentPacketIsCompleteOnItsOwn)
-  {
-    const Neuron::PacketHeader header{.type = Neuron::PacketType::Snapshot, .sequence = std::uint16_t{1}};
-
-    Assert::AreEqual(std::uint8_t{0}, header.fragmentIndex);
-    Assert::AreEqual(std::uint8_t{1}, header.fragmentCount);
-    Assert::IsTrue(header.IsSingleFragment());
-  }
-
-  TEST_METHOD(AMultiFragmentPacketIsNot)
-  {
-    const Neuron::PacketHeader first{.type = Neuron::PacketType::Snapshot,
-                                     .sequence = std::uint16_t{1},
-                                     .fragmentIndex = std::uint8_t{0},
-                                     .fragmentCount = std::uint8_t{2}};
-    const Neuron::PacketHeader second{.type = Neuron::PacketType::Snapshot,
-                                      .sequence = std::uint16_t{1},
-                                      .fragmentIndex = std::uint8_t{1},
-                                      .fragmentCount = std::uint8_t{2}};
-
-    Assert::IsFalse(first.IsSingleFragment());
-    Assert::IsFalse(second.IsSingleFragment());
-  }
-
-  /// Both fragments of one packet carry the same sequence -- ADR-003 reassembles all-or-nothing
-  /// under one sequence number -- so a decoder can group them before M4.3 exists to do it.
-  TEST_METHOD(FragmentsOfOnePacketShareASequenceAndRoundTrip)
-  {
-    std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES * 2> buffer{};
-    Neuron::ByteWriter writer{buffer};
-    for (std::uint8_t index = 0; index < 2; ++index)
-    {
-      const Neuron::PacketHeader header{
-        .type = Neuron::PacketType::Snapshot, .sequence = std::uint16_t{513}, .fragmentIndex = index, .fragmentCount = std::uint8_t{2}};
-      Assert::IsTrue(header.Write(writer));
-    }
-
-    Neuron::ByteReader reader{buffer};
-    for (std::uint8_t index = 0; index < 2; ++index)
-    {
-      Neuron::PacketHeader received{};
-      Assert::AreEqual(Code(Neuron::PacketFault::None), Code(Neuron::PacketHeader::Read(reader, received)));
-      Assert::AreEqual(std::uint16_t{513}, received.sequence);
-      Assert::AreEqual(index, received.fragmentIndex);
-      Assert::AreEqual(std::uint8_t{2}, received.fragmentCount);
-    }
   }
 };
 

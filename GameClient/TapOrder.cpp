@@ -88,7 +88,7 @@ TapOutcome ResolveTap(const CameraPose& _pose, float _aspectRatio, float _author
   return outcome;
 }
 
-Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY, std::span<const std::uint16_t> _selection) noexcept
+Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY, std::span<const WireIdentity> _selection) noexcept
 {
   Command command;
   command.sequence = _sequence;

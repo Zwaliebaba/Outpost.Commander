@@ -42,7 +42,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)GameCore.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="$(MSBuildThisFileDirectory)Snapshot.cpp">
+    <ClCompile Include="$(MSBuildThisFileDirectory)Update.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
@@ -58,6 +58,6 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Layout.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Generator.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SizeClass.h" />
-    <ClInclude Include="$(MSBuildThisFileDirectory)Snapshot.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)Update.h" />
   </ItemGroup>
 </Project>

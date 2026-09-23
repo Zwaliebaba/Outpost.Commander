@@ -9,22 +9,12 @@
 namespace Neuron
 {
 
-namespace
-{
-/// The two ways the fragment fields can contradict each other. A packet is at least one fragment,
-/// and an index names one of them.
-[[nodiscard]] bool FragmentationIsCoherent(std::uint8_t _index, std::uint8_t _count) noexcept
-{
-  return _count != 0 && _index < _count;
-}
-} // namespace
-
 bool PacketHeader::Write(ByteWriter& _writer) const noexcept
 {
   // Refused before a byte is written, so that a header nobody finished composing cannot leave the
   // machine. The default-constructed type is 0, which IsKnown rejects, so "forgot to set it" is
   // caught at the send site rather than by the peer.
-  if (!IsKnown(type) || !FragmentationIsCoherent(fragmentIndex, fragmentCount))
+  if (!IsKnown(type))
   {
     return false;
   }
@@ -32,8 +22,6 @@ bool PacketHeader::Write(ByteWriter& _writer) const noexcept
   _writer.WriteUInt8(protocolVersion);
   _writer.WriteUInt8(static_cast<std::uint8_t>(type));
   _writer.WriteUInt16(sequence);
-  _writer.WriteUInt8(fragmentIndex);
-  _writer.WriteUInt8(fragmentCount);
   return !_writer.Faulted();
 }
 
@@ -50,9 +38,9 @@ PacketFault PacketHeader::Read(ByteReader& _reader, PacketHeader& _outHeader) no
   const std::uint8_t version = _reader.ReadUInt8();
 
   // The version is checked before any other field is INTERPRETED, which is not the same as being
-  // read. Another version is another layout: the five bytes after this one may not be a type, a
-  // sequence and two fragment fields at all, so calling them a bad type or an incoherent fragment
-  // count would name a fault that is not there and send somebody hunting corruption.
+  // read. Another version is another layout: the bytes after this one may not be a type and a
+  // sequence at all -- version 3 had two fragment fields behind them -- so calling them a bad type
+  // would name a fault that is not there and send somebody hunting corruption.
   if (version != PROTOCOL_VERSION)
   {
     return PacketFault::VersionMismatch;
@@ -60,23 +48,15 @@ PacketFault PacketHeader::Read(ByteReader& _reader, PacketHeader& _outHeader) no
 
   const auto type = static_cast<PacketType>(_reader.ReadUInt8());
   const std::uint16_t sequence = _reader.ReadUInt16();
-  const std::uint8_t fragmentIndex = _reader.ReadUInt8();
-  const std::uint8_t fragmentCount = _reader.ReadUInt8();
 
   if (!IsKnown(type))
   {
     return PacketFault::UnknownType;
   }
-  if (!FragmentationIsCoherent(fragmentIndex, fragmentCount))
-  {
-    return PacketFault::BadFragmentation;
-  }
 
   _outHeader.protocolVersion = version;
   _outHeader.type = type;
   _outHeader.sequence = sequence;
-  _outHeader.fragmentIndex = fragmentIndex;
-  _outHeader.fragmentCount = fragmentCount;
   return PacketFault::None;
 }
 

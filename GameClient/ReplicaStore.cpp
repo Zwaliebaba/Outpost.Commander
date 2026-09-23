@@ -5,38 +5,123 @@
 namespace Outpost
 {
 
-bool ReplicaStore::Accept(const Snapshot& _snapshot, std::uint64_t _arrivalMilliseconds) noexcept
+ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint64_t _arrivalMilliseconds)
 {
-  if (m_heldCount > 0)
+  AcceptResult result;
+
+  // LOSS, COUNTED FROM THE SEQUENCE AND NOTHING ELSE. A gap forward is updates that never came; a step
+  // backwards or a repeat is reordering, which the per-entity tick comparison below already handles.
+  if (m_hasUpdate && SequenceIsNewer(_update.sequence, m_lastSequence))
   {
-    const Snapshot* newest = Newest();
-    // Out of order, or the same snapshot twice. Both are refusals: an arrival that is not newer
-    // than what is held has nothing to add, and admitting it would put the ring out of order,
-    // which every read below assumes it is not.
-    if (!SequenceIsNewer(_snapshot.sequence, newest->sequence))
+    m_lostCount += static_cast<std::uint16_t>(_update.sequence - m_lastSequence - 1);
+  }
+  if (!m_hasUpdate || SequenceIsNewer(_update.sequence, m_lastSequence))
+  {
+    m_lastSequence = _update.sequence;
+  }
+
+  // THE OWN BLOCK AND THE LIVE COUNT FOLLOW THE NEWEST TICK, so a late update cannot wind the credits
+  // back. Equal ticks are the two updates of one tick and carry the same block.
+  if (!m_hasUpdate || (_update.tick >= m_newestTick))
+  {
+    m_own = _update.own;
+    m_newestTick = _update.tick;
+    m_liveEntityCount = _update.liveEntityCount;
+  }
+  m_hasUpdate = true;
+
+  for (const EntityRecord& record : _update.records)
+  {
+    const std::size_t index = IndexOf(record.identity);
+    if (index >= m_held.size())
     {
-      ++m_refusedCount;
-      return false;
+      m_held.resize(index + 1);
+    }
+    Held& held = m_held[index];
+
+    if (held.count > 0)
+    {
+      const Sample& newest = held.Newest();
+
+      // **A DIFFERENT GENERATION IS A DIFFERENT ENTITY**, and it starts from nothing -- interpolating
+      // from the slot's previous occupant would draw one ship sliding into another's place.
+      if (newest.record.identity != record.identity)
+      {
+        held = Held{};
+      }
+      else if (_update.tick <= newest.tick)
+      {
+        ++result.refused;
+        continue;
+      }
+    }
+
+    held.samples[held.writeIndex] = Sample{.record = record, .tick = _update.tick, .arrivalMilliseconds = _arrivalMilliseconds};
+    held.writeIndex = (held.writeIndex + 1) % RETAINED_COUNT;
+    if (held.count < RETAINED_COUNT)
+    {
+      ++held.count;
+    }
+    ++result.applied;
+  }
+
+  // REMOVALS ARE MATCHED ON THE WHOLE IDENTITY. A removal repeated after the slot was refilled names
+  // the old occupant, and must not take the new one with it.
+  for (const WireIdentity removed : _update.removals)
+  {
+    const std::size_t index = IndexOf(removed);
+    if ((index < m_held.size()) && (m_held[index].count > 0) && (m_held[index].Newest().record.identity == removed))
+    {
+      m_held[index] = Held{};
+      ++result.removed;
     }
   }
 
-  Slot& slot = m_slots[m_writeIndex];
-  // Assigned rather than constructed, so the vectors inside keep the capacity they already had.
-  slot.snapshot = _snapshot;
-  slot.arrivalMilliseconds = _arrivalMilliseconds;
-
-  m_writeIndex = (m_writeIndex + 1) % RETAINED_COUNT;
-  if (m_heldCount < RETAINED_COUNT)
+  // **FORGETTING IS THE SWEEP** (ADR-024). The host sends every live entity within one sweep, so one that
+  // has gone three without a record is not alive: it died while this client was away, or its removals
+  // were all lost, and either way it is never going to be refreshed again.
+  const std::uint32_t forgetTicks = FORGET_AFTER_SWEEPS * SweepTicks(m_liveEntityCount);
+  for (Held& held : m_held)
   {
-    ++m_heldCount;
+    if ((held.count > 0) && ((m_newestTick - held.Newest().tick) > forgetTicks) && (held.Newest().tick < m_newestTick))
+    {
+      held = Held{};
+      ++result.forgotten;
+    }
   }
-  return true;
+
+  m_refusedCount += result.refused;
+  RebuildNewest();
+  return result;
+}
+
+void ReplicaStore::RebuildNewest()
+{
+  // Assigned over rather than reconstructed, so the vector keeps the capacity it already had.
+  m_newest.clear();
+  for (const Held& held : m_held)
+  {
+    if (held.count > 0)
+    {
+      m_newest.push_back(held.Newest().record);
+    }
+  }
+}
+
+void ReplicaStore::Clear() noexcept
+{
+  m_held.clear();
+  m_newest.clear();
+  m_own = PlayerBlock{};
+  m_hasUpdate = false;
+  m_newestTick = 0;
+  m_liveEntityCount = 0;
 }
 
 std::uint64_t ReplicaStore::RenderMilliseconds(std::uint64_t _nowMilliseconds) noexcept
 {
-  // Saturating rather than wrapping. The first frames of a match are inside the delay, and an
-  // unsigned subtraction there would produce a render time enormously in the future.
+  // Saturating rather than wrapping. The first frames of a match are inside the delay, and an unsigned
+  // subtraction there would produce a render time enormously in the future.
   if (_nowMilliseconds <= INTERPOLATION_DELAY_MILLISECONDS)
   {
     return 0;
@@ -44,75 +129,55 @@ std::uint64_t ReplicaStore::RenderMilliseconds(std::uint64_t _nowMilliseconds) n
   return _nowMilliseconds - INTERPOLATION_DELAY_MILLISECONDS;
 }
 
-const Snapshot* ReplicaStore::Newest() const noexcept
+DrawnSummary ReplicaStore::Drawn(std::uint64_t _renderMilliseconds, std::vector<EntityRecord>& _outRecords) const
 {
-  if (m_heldCount == 0)
+  DrawnSummary summary;
+  _outRecords.clear();
+
+  for (const Held& held : m_held)
   {
-    return nullptr;
-  }
-  const std::size_t newestIndex = (m_writeIndex + RETAINED_COUNT - 1) % RETAINED_COUNT;
-  return &m_slots[newestIndex].snapshot;
-}
-
-ReplicaStore::Frame ReplicaStore::FrameAt(std::uint64_t _renderMilliseconds) const noexcept
-{
-  Frame frame;
-
-  if (m_heldCount == 0)
-  {
-    return frame;
-  }
-
-  // Oldest first. The ring is in arrival order and Accept refuses anything that is not newer, so
-  // walking it forward walks time forward -- there is no sort here and there must never be one.
-  const std::size_t oldestIndex = (m_writeIndex + RETAINED_COUNT - m_heldCount) % RETAINED_COUNT;
-
-  const Slot* older = nullptr;
-  const Slot* newer = nullptr;
-  for (std::size_t step = 0; step + 1 < m_heldCount; ++step)
-  {
-    const Slot& candidateOlder = m_slots[(oldestIndex + step) % RETAINED_COUNT];
-    const Slot& candidateNewer = m_slots[(oldestIndex + step + 1) % RETAINED_COUNT];
-    if ((_renderMilliseconds >= candidateOlder.arrivalMilliseconds) && (_renderMilliseconds <= candidateNewer.arrivalMilliseconds))
+    if (held.count == 0)
     {
-      older = &candidateOlder;
-      newer = &candidateNewer;
-      break;
+      continue;
     }
+
+    if (held.count == 1)
+    {
+      _outRecords.push_back(held.Newest().record);
+      ++summary.starved;
+      continue;
+    }
+
+    const Sample& newest = held.Newest();
+    if (_renderMilliseconds >= newest.arrivalMilliseconds)
+    {
+      // PAST THE NEWEST SAMPLE: HOLD. No extrapolation -- the host has not said where this entity went.
+      _outRecords.push_back(newest.record);
+      ++summary.holding;
+      continue;
+    }
+
+    // Oldest first. Samples were admitted in tick order, so walking the ring forward walks time forward.
+    const Sample* older = &held.FromOldest(0);
+    const Sample* newer = &held.FromOldest(1);
+    for (std::size_t step = 1; step < held.count; ++step)
+    {
+      older = &held.FromOldest(step - 1);
+      newer = &held.FromOldest(step);
+      if (_renderMilliseconds <= newer->arrivalMilliseconds)
+      {
+        break;
+      }
+    }
+
+    const Playout playout = ComputePlayout(older->arrivalMilliseconds, newer->arrivalMilliseconds, _renderMilliseconds);
+    EntityRecord shown = newer->record;
+    static_cast<void>(InterpolateRecord(older->record, newer->record, playout.fraction, shown));
+    _outRecords.push_back(shown);
+    ++summary.interpolating;
   }
 
-  if (older != nullptr)
-  {
-    frame.older = &older->snapshot;
-    frame.newer = &newer->snapshot;
-    frame.playout = ComputePlayout(older->arrivalMilliseconds, newer->arrivalMilliseconds, _renderMilliseconds);
-    return frame;
-  }
-
-  // Nothing straddles the render time. Two ways to get here and they want different answers.
-  const std::size_t newestIndex = (m_writeIndex + RETAINED_COUNT - 1) % RETAINED_COUNT;
-  const Slot& newestSlot = m_slots[newestIndex];
-
-  if ((m_heldCount >= 2) && (_renderMilliseconds > newestSlot.arrivalMilliseconds))
-  {
-    // PAST EVERYTHING HELD: the next snapshot has not arrived. Extrapolate along the last pair
-    // for the bounded window and then hold, which ComputePlayout decides -- this function only
-    // has to hand it the last pair rather than inventing a second set of rules for the gap.
-    const std::size_t previousIndex = (newestIndex + RETAINED_COUNT - 1) % RETAINED_COUNT;
-    const Slot& previousSlot = m_slots[previousIndex];
-    frame.older = &previousSlot.snapshot;
-    frame.newer = &newestSlot.snapshot;
-    frame.playout = ComputePlayout(previousSlot.arrivalMilliseconds, newestSlot.arrivalMilliseconds, _renderMilliseconds);
-    return frame;
-  }
-
-  // BEFORE EVERYTHING HELD, or only one snapshot held at all. The first is the opening of a match,
-  // where the delay is still filling; the second is the first snapshot of one. Neither is an
-  // error and both draw the newest as it stands.
-  frame.older = &newestSlot.snapshot;
-  frame.newer = &newestSlot.snapshot;
-  frame.playout = Playout{0, PlayoutState::Starved};
-  return frame;
+  return summary;
 }
 
 } // namespace Outpost

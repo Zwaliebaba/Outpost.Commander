@@ -7,53 +7,41 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace GameLogicTests
 {
 
-TEST_CLASS(SnapshotBuilding)
+TEST_CLASS(RecordBuilding)
 {
 public:
-  TEST_METHOD(EveryLiveEntityReachesTheSnapshotInIndexOrder)
+  /// `RecordOf` is the one place the host quantizes (ADR-024): every field of the twelve-byte record,
+  /// from one entity.
+  TEST_METHOD(AnEntityBecomesItsRecord)
   {
     Outpost::World world;
-    Outpost::CommandIntake intake;
-    Outpost::BuildSystem build;
-    const Outpost::EntityId first = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, Outpost::DesignId::Station, 1);
-    const Outpost::EntityId doomed = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, 1);
-    const Outpost::EntityId third = world.Create(Neuron::Vec2{.x = 128, .y = 0}, 0, Outpost::DesignId::Miner, 2);
-    Assert::IsTrue(world.Destroy(doomed));
+    const Outpost::EntityId station = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, Outpost::DesignId::Station, 3);
+    const Outpost::EntityRecord record = Outpost::RecordOf(*world.Find(station));
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 42, 7, 2);
-
-    Assert::AreEqual(std::size_t{2}, snapshot.entities.size(), L"a dead slot reached the snapshot");
-    Assert::AreEqual(std::uint32_t{42}, snapshot.tick);
-    Assert::AreEqual(std::uint16_t{7}, snapshot.sequence);
-    Assert::AreEqual(std::size_t{2}, snapshot.players.size());
-
-    Assert::AreEqual(Outpost::PackIdentity(first.index, first.generation), snapshot.entities[0].identity);
-    Assert::AreEqual(Outpost::PackIdentity(third.index, third.generation), snapshot.entities[1].identity);
-    // **THE DESIGN REACHES THE WIRE, and this pins which byte.** The field has had three tenants:
-    // a loose 7 until M1.1, the catalog's hull identity until M1.3, and now the design. ADR-003
-    // gives it a byte of its own precisely because a design is what a client draws and what
-    // research and a designer extend, and the two bits it had in the flags were four designs
-    // forever.
-    Assert::AreEqual(static_cast<std::uint8_t>(Outpost::DesignId::Station), snapshot.entities[0].designIdentity);
-    Assert::AreEqual(std::uint8_t{0x12}, snapshot.entities[0].heading, L"the wire heading is the top eight bits");
+    Assert::AreEqual(Outpost::PackIdentity(station.index, station.generation), record.identity);
+    // **THE OWNER IS ITS OWN BYTE** since ADR-024, where it was two team bits in the flags.
+    Assert::AreEqual(Outpost::PlayerId{3}, record.owner);
+    Assert::AreEqual(std::uint8_t{0}, record.flags, L"nothing is in the flags at M1");
+    // **THE DESIGN REACHES THE WIRE, and this pins which byte.** ADR-003 gives it a byte of its own
+    // because a design is what a client draws and what research and a designer extend.
+    Assert::AreEqual(static_cast<std::uint8_t>(Outpost::DesignId::Station), record.designIdentity);
+    Assert::AreEqual(std::uint8_t{0x12}, record.heading, L"the wire heading is the top eight bits");
+    Assert::AreEqual(std::uint8_t{100}, record.hullPercentRemaining, L"an undamaged entity reads a hundred");
   }
 
   TEST_METHOD(APositionSurvivesToTheWireAndBack)
   {
     Outpost::World world;
-    Outpost::CommandIntake intake;
-    Outpost::BuildSystem build;
-    static_cast<void>(world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, Outpost::DesignId::Miner, 1));
-
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
-    Assert::AreEqual(Neuron::Fixed{4096}, Outpost::DequantizePosition(snapshot.entities[0].positionX));
-    Assert::AreEqual(Neuron::Fixed{-8192}, Outpost::DequantizePosition(snapshot.entities[0].positionY));
+    const Outpost::EntityId id = world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, Outpost::DesignId::Miner, 1);
+    const Outpost::EntityRecord record = Outpost::RecordOf(*world.Find(id));
+    Assert::AreEqual(Neuron::Fixed{4096}, Outpost::DequantizePosition(record.positionX));
+    Assert::AreEqual(Neuron::Fixed{-8192}, Outpost::DequantizePosition(record.positionY));
   }
 
-  TEST_METHOD(ThePlayerBlockCarriesTheAcknowledgment)
+  /// The whole reliability channel ADR-003 has: a command is repeated until this field reaches its
+  /// sequence. **Each player's own block carries its own** -- an update carries nobody else's.
+  TEST_METHOD(EachPlayersBlockCarriesItsOwnAcknowledgment)
   {
-    // The whole reliability channel ADR-003 has: a command is repeated until this field reaches
-    // its sequence.
     Outpost::World world;
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
@@ -64,43 +52,8 @@ public:
                                                                       .type = Outpost::CommandType::MoveTo,
                                                                       .selection = {Outpost::PackIdentity(mine.index, mine.generation)}})));
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
-    Assert::AreEqual(std::uint16_t{31}, snapshot.players[0].lastCommandSequenceApplied);
-    Assert::AreEqual(std::uint16_t{0}, snapshot.players[1].lastCommandSequenceApplied);
-  }
-
-  TEST_METHOD(TheMvpWorldStillFitsOneDatagram)
-  {
-    // ADR-003's property, asserted against a world the host actually built rather than against
-    // synthetic records: 110 entities is the MVP's count.
-    Outpost::World world;
-    Outpost::CommandIntake intake;
-    Outpost::BuildSystem build;
-    for (int entity = 0; entity < 110; ++entity)
-    {
-      static_cast<void>(world.Create(Neuron::Vec2{.x = entity * 64, .y = -entity * 64}, 0, Outpost::DesignId::Miner,
-                                     static_cast<Outpost::PlayerId>((entity % 2) + 1)));
-    }
-
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 1, 1, 2);
-    Assert::AreEqual(std::size_t{110}, snapshot.entities.size());
-
-    // 1,136 of records and header, plus the fire count byte: the figure M0.9 measured, reached
-    // from the other direction.
-    // 1,137 is the budget's case, which carries three removals at two bytes each. M0 removes
-    // nothing, so the same 110 entities are six bytes lighter.
-    Assert::AreEqual(std::size_t{1131}, Outpost::EncodedSize(snapshot));
-    Assert::IsTrue(Outpost::EncodedSize(snapshot) <= 1232);
-  }
-
-  TEST_METHOD(AnEmptyWorldStillProducesAValidSnapshot)
-  {
-    Outpost::World world;
-    Outpost::CommandIntake intake;
-    Outpost::BuildSystem build;
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
-    Assert::AreEqual(std::size_t{0}, snapshot.entities.size());
-    Assert::AreEqual(std::size_t{2}, snapshot.players.size());
+    Assert::AreEqual(std::uint16_t{31}, Outpost::PlayerBlockFor(intake, build, 1).lastCommandSequenceApplied);
+    Assert::AreEqual(std::uint16_t{0}, Outpost::PlayerBlockFor(intake, build, 2).lastCommandSequenceApplied);
   }
 };
 
@@ -118,17 +71,17 @@ public:
     Assert::IsFalse(host.CurrentWorld().Find(mover)->position == before, L"a tick did not move anything");
   }
 
-  TEST_METHOD(TheSequenceDoesNotAdvanceWithNobodyListening)
+  /// **TO SESSIONS, NOT TO THE AIR** (ADR-013). With nobody seated the host sends nothing and the
+  /// accumulator has no client to track, so the first update after a join is its sequence zero.
+  TEST_METHOD(NothingIsSentWithNobodySeated)
   {
-    // A client watches the sequence advance by exactly one per snapshot it receives, so a
-    // sequence that moved while nobody was connected would make the first snapshot after a join
-    // look like a gap.
     Outpost::Host host;
     for (int tick = 0; tick < 20; ++tick)
     {
       host.RunOneTick();
     }
-    Assert::AreEqual(std::uint16_t{0}, host.SnapshotSequence());
+    Assert::AreEqual(std::uint64_t{0}, host.UpdatesSent());
+    Assert::AreEqual(std::size_t{0}, host.CurrentAccumulator().ClientCount());
     Assert::AreEqual(std::size_t{0}, host.ClientCount());
   }
 

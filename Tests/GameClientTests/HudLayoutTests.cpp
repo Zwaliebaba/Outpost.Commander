@@ -75,7 +75,7 @@ constexpr Outpost::PlayerId OURS = 1;
   record.identity = Outpost::PackIdentity(_index, 1);
   record.designIdentity = static_cast<std::uint8_t>(_design);
   record.hullPercentRemaining = _hullPercent;
-  record.flags = static_cast<std::uint8_t>((OURS & Outpost::FLAGS_TEAM_MASK) << Outpost::FLAGS_TEAM_SHIFT);
+  record.owner = OURS;
   return record;
 }
 } // namespace
@@ -401,8 +401,8 @@ public:
     entities.push_back(Record(2, Outpost::DesignId::Miner, 100));
     entities.push_back(Record(3, Outpost::DesignId::Fighter, 100));
 
-    const std::vector<std::uint16_t> selection{Outpost::PackIdentity(1, 1), Outpost::PackIdentity(2, 1), Outpost::PackIdentity(3, 1),
-                                               Outpost::PackIdentity(9, 1)};
+    const std::vector<Outpost::WireIdentity> selection{Outpost::PackIdentity(1, 1), Outpost::PackIdentity(2, 1),
+                                                       Outpost::PackIdentity(3, 1), Outpost::PackIdentity(9, 1)};
     const auto groups = Outpost::SummarizeSelection(selection, entities);
 
     Assert::AreEqual(std::size_t{2}, groups.size());

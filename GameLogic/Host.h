@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Accumulator.h"
 #include "BuildSystem.h"
 #include "CommandIntake.h"
 #include "Sessions.h"
@@ -20,16 +21,9 @@ namespace Outpost
 /// M1.5's `GameCore/Layout.h` is the first thing to consume it, and may be where it ends up.
 inline constexpr std::uint64_t DEFAULT_MATCH_SEED = 20260922;
 
-/// The world as one player is to be told about it. ADR-003: the host serializes a per-player
-/// entity set rather than the world, and in the MVP that set is everything -- but it is a list the
-/// host builds, so visibility later changes this function and not the wire format.
-///
-/// Positions are quantized here and nowhere else, so the one lossy step in replication has one
-/// home. Entities are emitted IN INDEX ORDER, which costs nothing and makes two hosts running the
-/// same match produce byte-identical snapshots -- a property worth having even though nothing
-/// requires it yet.
-[[nodiscard]] Snapshot BuildSnapshot(const World& _world, const CommandIntake& _intake, const BuildSystem& _build, std::uint32_t _tick,
-                                     std::uint16_t _sequence, std::size_t _playerCount);
+/// One player's own block, which is the only player block an update carries (ADR-024). M1.6: all four
+/// fields carry meaning -- the two build bytes are Q21's whole answer to the queue that had no wire record.
+[[nodiscard]] PlayerBlock PlayerBlockFor(const CommandIntake& _intake, const BuildSystem& _build, PlayerId _player) noexcept;
 
 /// The match, and the loop over it. `Server.cpp` holds the shell; this holds everything a suite
 /// could want to reach (R20, which names `Server` explicitly).
@@ -85,8 +79,8 @@ public:
     return m_transport.BoundEndpoint();
   }
 
-  /// One pass: drain the socket and apply what arrived, advance the simulation by one tick, then
-  /// encode a snapshot and send it to every client that has spoken. The order is fixed and it is
+  /// One pass: drain the socket and apply what arrived, advance the simulation by one tick, then fill
+  /// each seated client's updates from the accumulator and send them (ADR-024). The order is fixed and it is
   /// `TechnicalDesign.md` section 2's: commands in, then the tick, then what the tick produced.
   void RunOneTick();
 
@@ -110,10 +104,22 @@ public:
     return m_world;
   }
 
-  /// The snapshot sequence, which a client watches advance by exactly one per snapshot.
-  [[nodiscard]] std::uint16_t SnapshotSequence() const noexcept
+  /// Updates sent, across every client, since the host was constructed. A counter for a suite and for
+  /// the harness; the transport sequence each client sees is per client and lives in the accumulator.
+  [[nodiscard]] std::uint64_t UpdatesSent() const noexcept
   {
-    return m_snapshotSequence;
+    return m_updatesSent;
+  }
+
+  [[nodiscard]] const Accumulator& CurrentAccumulator() const noexcept
+  {
+    return m_accumulator;
+  }
+
+  /// The tick the simulation has reached, which is the tick every update sent after it describes.
+  [[nodiscard]] std::uint32_t CurrentTick() const noexcept
+  {
+    return m_tick;
   }
 
   /// Clients that have joined. **Not endpoints that have spoken** -- that is what it counted
@@ -156,7 +162,7 @@ public:
 
 private:
   void DrainAndApply();
-  void SendSnapshots();
+  void SendUpdates();
 
   /// One join, answered. Split out because it is the one arm of the drain that WRITES to the
   /// socket, and a drain loop that sends inside itself is worth being able to see on its own.
@@ -166,10 +172,11 @@ private:
   CommandIntake m_intake;
   BuildSystem m_build;
   Sessions m_sessions;
+  Accumulator m_accumulator;
   Neuron::WinsockTransport m_transport;
 
   std::uint32_t m_tick = 0;
-  std::uint16_t m_snapshotSequence = 0;
+  std::uint64_t m_updatesSent = 0;
   std::uint64_t m_rejectedDatagrams = 0;
   std::uint64_t m_unjoinedCommands = 0;
   std::uint64_t m_misaddressedCommands = 0;

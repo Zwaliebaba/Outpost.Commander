@@ -104,7 +104,7 @@ struct HudFrame
 
 /// The selection grouped by design, as the panel shows it, **in `DesignId` order and at most four**.
 /// Identities the snapshot no longer carries are skipped, as `Selection::RetainLiving` would.
-[[nodiscard]] std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const std::uint16_t> _selection,
+[[nodiscard]] std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdentity> _selection,
                                                                     std::span<const EntityRecord> _entities);
 
 /// A tap on a group: **the selection narrows to that design**. Returns how many remain.

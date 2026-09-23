@@ -39,23 +39,49 @@ inline constexpr std::size_t SCRATCH_BYTES = 4096;
 TEST_CLASS(CommandCodec)
 {
 public:
-  TEST_METHOD(ACommandIsEightBytesPlusTwoPerIdentity)
+  /// Three bytes an identity since ADR-024, as a record's is.
+  TEST_METHOD(ACommandIsEightBytesPlusThreePerIdentity)
   {
     Assert::AreEqual(std::size_t{8}, Outpost::Command::FIXED_BYTES);
+    Assert::AreEqual(std::size_t{3}, Outpost::Command::IDENTITY_BYTES);
     Assert::AreEqual(std::size_t{8}, Outpost::EncodedSize(MakeCommand(1, 0)));
-    Assert::AreEqual(std::size_t{28}, Outpost::EncodedSize(MakeCommand(1, 10)));
+    Assert::AreEqual(std::size_t{38}, Outpost::EncodedSize(MakeCommand(1, 10)));
 
     // ADR-003's peak selection, which is the figure its amplification argument rests on.
-    Assert::AreEqual(std::size_t{228}, Outpost::EncodedSize(MakeCommand(1, 110)));
+    Assert::AreEqual(std::size_t{338}, Outpost::EncodedSize(MakeCommand(1, 110)));
   }
 
-  TEST_METHOD(ThePacketHeaderIsEightBytes)
+  /// The transport's four, the player identity and the command count, and the view ADR-024 added: center
+  /// four, radius two.
+  TEST_METHOD(ThePacketHeaderIsTwelveBytes)
   {
-    // The transport's six, plus the player identity and the command count.
-    Assert::AreEqual(std::size_t{8}, Outpost::CommandPacket::HEADER_BYTES);
+    Assert::AreEqual(std::size_t{12}, Outpost::CommandPacket::HEADER_BYTES);
     Outpost::CommandPacket empty{};
     empty.player = 1;
-    Assert::AreEqual(std::size_t{8}, Outpost::EncodedSize(empty));
+    Assert::AreEqual(std::size_t{12}, Outpost::EncodedSize(empty));
+  }
+
+  /// **A PACKET WITH NO COMMANDS IS A VIEW REPORT** (ADR-024), and the view has to survive it.
+  TEST_METHOD(AViewReportRoundTripsWithNoCommands)
+  {
+    Outpost::CommandPacket sent{};
+    sent.player = 3;
+    sent.viewX = -1234;
+    sent.viewY = 4321;
+    sent.viewRadiusUnits = 22500;
+
+    std::array<std::byte, 64> buffer{};
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(sent, writer));
+    Assert::AreEqual(std::size_t{12}, writer.WrittenBytes());
+
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::None), Code(Outpost::Decode(reader, received)));
+    Assert::AreEqual(std::int16_t{-1234}, received.viewX);
+    Assert::AreEqual(std::int16_t{4321}, received.viewY);
+    Assert::AreEqual(std::uint16_t{22500}, received.viewRadiusUnits);
+    Assert::AreEqual(std::size_t{0}, received.commands.size());
   }
 
   TEST_METHOD(EveryFieldRoundTrips)
@@ -63,9 +89,15 @@ public:
     Outpost::CommandPacket sent{};
     sent.sequence = 777;
     sent.player = 2;
+    sent.viewX = 17;
+    sent.viewY = -19;
+    sent.viewRadiusUnits = 2400;
     sent.commands.push_back(MakeCommand(11, 4));
-    sent.commands.push_back(
-      Outpost::Command{.sequence = 12, .type = Outpost::CommandType::Attack, .targetX = 99, .targetY = 0, .selection = {5, 6}});
+
+    // An entity target with a generation, so both halves of the packed identity are exercised.
+    Outpost::Command attack{.sequence = 12, .type = Outpost::CommandType::Attack, .selection = {5, 6}};
+    attack.AimAt(Outpost::PackIdentity(40000, 201));
+    sent.commands.push_back(attack);
 
     std::vector<std::byte> buffer(SCRATCH_BYTES);
     Neuron::ByteWriter writer{buffer};
@@ -81,7 +113,10 @@ public:
     Assert::AreEqual(sent.commands.size(), received.commands.size());
     Assert::IsTrue(sent.commands[0] == received.commands[0]);
     Assert::IsTrue(sent.commands[1] == received.commands[1]);
-    Assert::AreEqual(std::uint16_t{99}, received.commands[1].TargetEntity());
+    Assert::AreEqual(Outpost::PackIdentity(40000, 201), received.commands[1].TargetEntity());
+    Assert::AreEqual(sent.viewX, received.viewX);
+    Assert::AreEqual(sent.viewY, received.viewY);
+    Assert::AreEqual(sent.viewRadiusUnits, received.viewRadiusUnits);
   }
 
   TEST_METHOD(AnEmptySelectionRoundTrips)
@@ -123,11 +158,11 @@ public:
     }
   }
 
-  TEST_METHOD(ASnapshotIsNotACommandPacket)
+  TEST_METHOD(AnUpdateIsNotACommandPacket)
   {
     std::array<std::byte, 64> buffer{};
     Neuron::ByteWriter writer{buffer};
-    Assert::IsTrue((Neuron::PacketHeader{.type = Neuron::PacketType::Snapshot, .sequence = 1}).Write(writer));
+    Assert::IsTrue((Neuron::PacketHeader{.type = Neuron::PacketType::Update, .sequence = 1}).Write(writer));
     Neuron::ByteReader reader{buffer};
     Outpost::CommandPacket received;
     Assert::AreEqual(Code(Outpost::CommandFault::WrongType), Code(Outpost::Decode(reader, received)));
@@ -140,6 +175,9 @@ public:
     Assert::IsTrue((Neuron::PacketHeader{.type = Neuron::PacketType::Command, .sequence = 1}).Write(writer));
     Assert::IsTrue(writer.WriteUInt8(1));
     Assert::IsTrue(writer.WriteUInt8(1));
+    Assert::IsTrue(writer.WriteInt16(0)); // the view: center and radius
+    Assert::IsTrue(writer.WriteInt16(0));
+    Assert::IsTrue(writer.WriteUInt16(0));
     Assert::IsTrue(writer.WriteUInt16(5));
     Assert::IsTrue(writer.WriteUInt8(200));
     Assert::IsTrue(writer.WriteInt16(0));
@@ -160,11 +198,32 @@ public:
     Assert::IsTrue((Neuron::PacketHeader{.type = Neuron::PacketType::Command, .sequence = 1}).Write(writer));
     Assert::IsTrue(writer.WriteUInt8(1));
     Assert::IsTrue(writer.WriteUInt8(1));
+    Assert::IsTrue(writer.WriteInt16(0)); // the view: center and radius
+    Assert::IsTrue(writer.WriteInt16(0));
+    Assert::IsTrue(writer.WriteUInt16(0));
     Assert::IsTrue(writer.WriteUInt16(5));
     Assert::IsTrue(writer.WriteUInt8(static_cast<std::uint8_t>(Outpost::CommandType::MoveTo)));
     Assert::IsTrue(writer.WriteInt16(0));
     Assert::IsTrue(writer.WriteInt16(0));
     Assert::IsTrue(writer.WriteUInt8(255));
+
+    Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
+    Outpost::CommandPacket received;
+    Assert::AreEqual(Code(Outpost::CommandFault::Malformed), Code(Outpost::Decode(reader, received)));
+  }
+
+  /// The command count is checked against what is left before anything is reserved for it, as the
+  /// selection count is: every command is at least eight bytes.
+  TEST_METHOD(ACommandCountLongerThanTheDatagramIsRefusedBeforeItIsReserved)
+  {
+    std::array<std::byte, 32> buffer{};
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue((Neuron::PacketHeader{.type = Neuron::PacketType::Command, .sequence = 1}).Write(writer));
+    Assert::IsTrue(writer.WriteUInt8(1));
+    Assert::IsTrue(writer.WriteUInt8(255));
+    Assert::IsTrue(writer.WriteInt16(0));
+    Assert::IsTrue(writer.WriteInt16(0));
+    Assert::IsTrue(writer.WriteUInt16(0));
 
     Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
     Outpost::CommandPacket received;
@@ -185,7 +244,9 @@ public:
 TEST_CLASS(TheRetransmitWindow)
 {
 public:
-  TEST_METHOD(AtAFullSelectionFiveFitAndASixthWouldFragment)
+  /// **THREE SINCE ADR-024**, where it was five: a selected identity is three bytes and a 110-ship command
+  /// is 338 of them.
+  TEST_METHOD(AtAFullSelectionThreeFitAndAFourthWouldFragment)
   {
     // `TechnicalDesign.md` section 4's figure, measured rather than restated. This is the number
     // the oldest-first rule exists to bound.
@@ -202,10 +263,10 @@ public:
                           std::to_wstring(Outpost::EncodedSize(packet)) + L" bytes of " + std::to_wstring(PAYLOAD_BYTES) + L"\n")
                            .c_str());
 
-    Assert::AreEqual(std::size_t{5}, packed);
+    Assert::AreEqual(std::size_t{3}, packed);
     Assert::IsTrue(Outpost::EncodedSize(packet) <= PAYLOAD_BYTES);
-    Assert::IsTrue((Outpost::EncodedSize(packet) + Outpost::EncodedSize(outstanding[5])) > PAYLOAD_BYTES,
-                   L"a sixth should not have fitted");
+    Assert::IsTrue((Outpost::EncodedSize(packet) + Outpost::EncodedSize(outstanding[3])) > PAYLOAD_BYTES,
+                   L"a fourth should not have fitted");
   }
 
   TEST_METHOD(ItStopsRatherThanSkipping)
@@ -219,7 +280,8 @@ public:
     outstanding.push_back(MakeCommand(3, 0));
 
     Outpost::CommandPacket packet{};
-    const std::size_t packed = Outpost::FillOldestFirst(outstanding, 300, packet);
+    // Room for the header and one full command, and not for a second.
+    const std::size_t packed = Outpost::FillOldestFirst(outstanding, 400, packet);
     Assert::AreEqual(std::size_t{1}, packed);
     Assert::AreEqual(std::uint16_t{1}, packet.commands[0].sequence, L"the oldest must go first");
   }

@@ -9,6 +9,7 @@
 #include "NeuronClient.h"
 
 #include <cstdint>
+#include <vector>
 
 namespace Outpost
 {
@@ -22,7 +23,7 @@ namespace Outpost
 /// dispatcher, call `DrainPackets`, call `Advance`, render, present. The middle two are this class
 /// and they are the two a test can drive.
 ///
-/// **NOTHING HERE SIMULATES** (R19). It folds arriving snapshots into the replica store, moves the
+/// **NOTHING HERE SIMULATES** (R19). It folds arriving updates into the replica store, moves the
 /// interpolation clock, and clears the markers the host has acknowledged. No entity's position is
 /// written by anything in this file.
 class ClientFrame
@@ -35,15 +36,16 @@ public:
   {
     /// Datagrams taken off the queue, whatever became of them.
     std::uint32_t datagrams = 0;
-    /// Snapshots folded into the store.
+    /// Updates folded into the store (ADR-024). Up to two a tick.
     std::uint32_t accepted = 0;
-    /// Well-formed snapshots the store refused -- out of order, or already held.
+    /// Records in those updates that the store refused because they were no newer than what the entity
+    /// already held -- reordered, or repeated.
     std::uint32_t refused = 0;
     /// Datagrams that did not decode. A counter and not a log: one is ordinary on a wireless link
     /// and a rising rate is the thing worth seeing, which is the same argument `PacketQueue` makes
     /// about its own drops.
     std::uint32_t faulted = 0;
-    /// Markers cleared because a snapshot acknowledged the command that made them.
+    /// Markers cleared because an update acknowledged the command that made them.
     std::uint32_t markersCleared = 0;
 
     /// Join replies folded in (ADR-013). **More than one per drain is ordinary**: the host answers
@@ -57,13 +59,13 @@ public:
     /// This drain found the link silent and started a rejoin. Once per loss, for the log.
     bool linkLost = false;
 
-    /// This drain landed the first snapshot after a rejoin, which is what takes the overlay down.
+    /// This drain landed the first update after a rejoin, which is what takes the overlay down.
     bool linkRestored = false;
   };
 
   /// **HOW LONG A SEATED CLIENT HEARS NOTHING BEFORE IT CALLS THE LINK LOST: ONE SECOND.**
   ///
-  /// Twenty snapshots at 20 Hz, against ADR-003's 75-millisecond buffer that already covers a lost one or
+  /// Twenty ticks at 20 Hz, against ADR-003's 75-millisecond buffer that already covers a lost one or
   /// two without the player seeing anything. A burst that long is not jitter, and it is far shorter than
   /// any suspension -- a packaged client loses the foreground for seconds at least, and `Interface.md`
   /// section 7's resume is detected by exactly this: the frame clock jumps and the last arrival is old.
@@ -75,17 +77,38 @@ public:
   /// Takes everything waiting on the queue and folds it in, stamping each with the arrival time.
   ///
   /// ONE DRAIN PER FRAME AND IT TAKES EVERYTHING. A queue left with a datagram on it is a frame of
-  /// latency added for nothing, and ADR-003 makes the older of two snapshots worthless the moment
-  /// the newer one is in hand -- so there is no reason to pace this.
+  /// latency added for nothing, and every update is self-contained -- so there is no reason to pace
+  /// this.
   ///
   /// _nowMilliseconds is the frame's own clock, not a per-datagram one. Everything drained in one
   /// frame arrived before that frame, and splitting hairs finer than a frame would be inventing
   /// precision the queue does not carry.
   DrainResult DrainPackets(Neuron::PacketQueue& _queue, std::uint64_t _nowMilliseconds) noexcept;
 
-  /// Where the frame is drawn from: the pair straddling the render clock, and the fraction between
-  /// them (`TechnicalDesign.md` section 6, ADR-003).
-  [[nodiscard]] ReplicaStore::Frame Advance(std::uint64_t _nowMilliseconds) const noexcept;
+  /// Every held entity at the render clock, each interpolated between its own two samples or held at its
+  /// newest (`TechnicalDesign.md` section 6, ADR-024). _outRecords is cleared and refilled.
+  DrawnSummary Advance(std::uint64_t _nowMilliseconds, std::vector<EntityRecord>& _outRecords) const;
+
+  /// **HOW OFTEN A SEATED CLIENT TELLS THE HOST WHAT IT IS LOOKING AT, WHEN IT HAS NOTHING TO ORDER.**
+  ///
+  /// ADR-024's accumulator scores relevance against the view, and the view rides the command packet's
+  /// header -- but commands go out only when the player taps, so without this a host would score a client
+  /// that pans without ordering against where it looked when it last gave an order. An empty command
+  /// packet is the report. **Four a second**, which is not tuned: it is a quarter of a second of lag
+  /// between a pan and the accumulator favoring what the pan revealed, at twelve bytes a report, and the sweep
+  /// covers the gap in any case.
+  static constexpr std::uint64_t VIEW_REPORT_INTERVAL_MILLISECONDS = 250;
+
+  /// True when a view report should go out now, and it takes the send as having happened -- **so a caller
+  /// that ignores the answer has stopped reporting.** Never before the join is answered, since the host
+  /// refuses a packet from an endpoint it has not seated.
+  [[nodiscard]] bool ShouldReportView(std::uint64_t _nowMilliseconds) noexcept;
+
+  /// Fills a command packet's view from the camera: the focus on the wire's grid, and the camera distance
+  /// as the radius in whole world units. **The distance is a deliberately generous radius** -- the frame
+  /// spans about 1.1 times the distance across, and pitch shows more beyond the focus than before it -- so
+  /// what is on screen is in view, and a little of what is about to be.
+  void StampView(CommandPacket& _packet) const noexcept;
 
   /// The sequence the next command should carry. Post-incremented and allowed to wrap, which is
   /// what the host's serial-number comparison at intake expects (`GameCore/Command.h`, Q24).
@@ -171,7 +194,7 @@ private:
   /// checked either. Now it is answered, and until it is answered this client sends nothing.
   JoinState m_join;
 
-  /// **ONE PAST WHAT THE HOST HAS ALREADY APPLIED, ADOPTED FROM THE FIRST SNAPSHOT THAT CARRIES
+  /// **ONE PAST WHAT THE HOST HAS ALREADY APPLIED, ADOPTED FROM THE FIRST UPDATE THAT CARRIES
   /// THIS PLAYER'S BLOCK.** It starts at one and is corrected the moment the host says otherwise.
   ///
   /// A COUNTER THAT ALWAYS STARTS AT ONE MAKES A RECONNECTING CLIENT MUTE. `CommandIntake` refuses
@@ -186,24 +209,29 @@ private:
   /// this, and until now nothing read it.
   std::uint16_t m_nextCommandSequence = 1;
 
-  /// Adopted once. After that the client owns its own counter, and a snapshot that has not yet
+  /// Adopted once. After that the client owns its own counter, and an update that has not yet
   /// caught up with the orders in flight must not wind it backwards.
   bool m_adoptedSequence = false;
 
-  /// **WHEN THE LAST SNAPSHOT WAS FOLDED IN, OR WHEN THE LAST REJOIN BEGAN**, whichever is later. The
-  /// second is what stops a rejoin that is answered but never followed by a snapshot from starting
+  /// **WHEN THE LAST UPDATE WAS FOLDED IN, OR WHEN THE LAST REJOIN BEGAN**, whichever is later. The
+  /// second is what stops a rejoin that is answered but never followed by an update from starting
   /// another one every frame: the silence is measured again from the rejoin, so it asks once a second.
   std::uint64_t m_lastHeardMilliseconds = 0;
 
-  /// A client that has never had a snapshot has no link to lose. Without this the first second of a
+  /// A client that has never had an update has no link to lose. Without this the first second of a
   /// join to a host that seats but has not yet sent would read as a loss.
-  bool m_heardSnapshot = false;
+  bool m_heardUpdate = false;
 
-  /// Set when a silence starts a rejoin, cleared by the first snapshot after the host seats this client
+  /// When the last view report went out, and whether one has. Zero is a legal clock reading, so the flag
+  /// is what says whether the time means anything -- `JoinState` makes the same choice.
+  std::uint64_t m_lastViewReportMilliseconds = 0;
+  bool m_reportedView = false;
+
+  /// Set when a silence starts a rejoin, cleared by the first update after the host seats this client
   /// again.
   bool m_reconnecting = false;
 
-  /// Sized by what one datagram can be. ADR-003's MVP snapshot is 1,137 bytes and the MTU is what
+  /// Sized by what one datagram can be. An update is at most 1,232 bytes (ADR-024) and the MTU is what
   /// bounds the rest, so this is the buffer a drain hands the queue.
   static constexpr std::size_t DATAGRAM_BUFFER_BYTES = 1500;
 };

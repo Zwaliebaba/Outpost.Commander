@@ -54,7 +54,7 @@ enum class PickTier : std::uint8_t
 struct PickCandidate
 {
   /// Packed as an `EntityRecord`'s identity is.
-  std::uint16_t identity = 0;
+  WireIdentity identity = NO_WIRE_IDENTITY;
   PickTier tier = PickTier::OwnShip;
   /// From the tap, in authored pixels -- the units the radius is stated in.
   float screenDistanceAuthoredPixels = 0.0f;
@@ -112,6 +112,6 @@ struct TapOutcome
 /// The selection is copied rather than referenced: a command outlives the tap that made it, because
 /// ADR-003 has it repeated in every outgoing packet until the host acknowledges the sequence.
 [[nodiscard]] Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY,
-                                       std::span<const std::uint16_t> _selection) noexcept;
+                                       std::span<const WireIdentity> _selection) noexcept;
 
 } // namespace Outpost

@@ -29,7 +29,7 @@ constexpr float ASPECT = AUTHORED_WIDTH / AUTHORED_HEIGHT;
   record.positionX = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(_worldX * Neuron::FIXED_ONE));
   record.positionY = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(_worldY * Neuron::FIXED_ONE));
   record.designIdentity = static_cast<std::uint8_t>(_design);
-  record.flags = static_cast<std::uint8_t>((_owner & Outpost::FLAGS_TEAM_MASK) << Outpost::FLAGS_TEAM_SHIFT);
+  record.owner = _owner;
   record.hullPercentRemaining = 100;
   return record;
 }
@@ -298,7 +298,7 @@ public:
 
   /// **A SELECTED SHIP THAT DIED IS DROPPED**, and a slot reused since is dropped too -- the whole
   /// packed identity is compared, so the selection cannot silently become somebody else's ship.
-  TEST_METHOD(TheSelectionDropsWhatTheSnapshotNoLongerCarries)
+  TEST_METHOD(TheSelectionDropsWhatTheStoreNoLongerCarries)
   {
     Outpost::Selection selection;
     selection.Add(Outpost::PackIdentity(1, 1));

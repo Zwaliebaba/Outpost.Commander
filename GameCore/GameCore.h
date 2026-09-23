@@ -21,7 +21,7 @@
 #include "Generator.h"
 
 #include "SizeClass.h"
-#include "Snapshot.h"
+#include "Update.h"
 
 namespace Outpost
 {

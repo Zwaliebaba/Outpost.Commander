@@ -24,7 +24,7 @@ PacketFault ProbePacket::Read(ByteReader& _reader, ProbePacket& _outPacket) noex
     return fault;
   }
 
-  // A Snapshot or a Command reaching the probe is a real build talking to it, and that is worth
+  // An Update or a Command reaching the probe is a real build talking to it, and that is worth
   // refusing by name rather than decoding eight bytes of something else as a timestamp.
   if (header.type != PacketType::Heartbeat)
   {

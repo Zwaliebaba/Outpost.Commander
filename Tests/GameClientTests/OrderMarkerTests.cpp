@@ -49,7 +49,7 @@ public:
     Outpost::OrderMarkerSet markers;
     markers.Add(MarkerAt(7, 400));
 
-    // Snapshots keep arriving, and none of them has applied this command yet.
+    // Updates keep arriving, and none of them has applied this command yet.
     for (std::uint16_t applied = 0; applied < 7; ++applied)
     {
       Assert::AreEqual(static_cast<std::size_t>(0), markers.ClearAcknowledged(applied));
@@ -210,7 +210,7 @@ public:
 
   TEST_METHOD(AMoveCommandCarriesTheQuantizedPointAndTheSelection)
   {
-    const std::uint16_t selection[] = {Outpost::PackIdentity(3, 1), Outpost::PackIdentity(4, 0)};
+    const Outpost::WireIdentity selection[] = {Outpost::PackIdentity(3, 1), Outpost::PackIdentity(4, 0)};
     const Outpost::Command command = Outpost::BuildMoveCommand(12, 1024.0f, -2048.0f, selection);
 
     Assert::AreEqual(12, static_cast<int>(command.sequence));
@@ -223,22 +223,24 @@ public:
   }
 
   /// R19, asserted rather than asserted-about. The whole tap path runs -- pick, order, marker --
-  /// and the replica the client holds is byte-for-byte what the snapshot put there.
+  /// and the replica the client holds is byte-for-byte what the update put there.
   TEST_METHOD(NothingInGameClientMovesAnEntity)
   {
-    Outpost::Snapshot snapshot;
-    snapshot.sequence = 1;
+    Outpost::Update update;
+    update.sequence = 1;
+    update.tick = 1;
+    update.liveEntityCount = 1;
     Outpost::EntityRecord record;
-    record.identity = Outpost::PackIdentity(3, 0);
+    record.identity = Outpost::PackIdentity(3, 1);
     record.positionX = 100;
     record.positionY = 200;
     record.heading = 64;
-    snapshot.entities.push_back(record);
+    update.records.push_back(record);
 
     Outpost::ReplicaStore store;
-    Assert::IsTrue(store.Accept(snapshot, 1000));
+    Assert::AreEqual(1u, store.Accept(update, 1000).applied);
 
-    const Outpost::EntityRecord before = store.Newest()->entities[0];
+    const Outpost::EntityRecord before = store.Entities()[0];
 
     // The player taps empty space with that ship selected, and the client does everything it is
     // allowed to do about it.
@@ -247,7 +249,7 @@ public:
     const Outpost::TapOutcome outcome = Outpost::ResolveTap(pose, TARGET_ASPECT, 200.0f, 300.0f, 1440.0f, 960.0f, {}, true);
     Assert::IsTrue(outcome.action == Outpost::TapAction::MoveTo);
 
-    const std::uint16_t selection[] = {record.identity};
+    const Outpost::WireIdentity selection[] = {record.identity};
     const Outpost::Command command = Outpost::BuildMoveCommand(1, outcome.worldX, outcome.worldY, selection);
 
     Outpost::OrderMarker marker;
@@ -261,7 +263,7 @@ public:
 
     // The order was sent, the marker is drawn -- and the ship has not moved a step.
     Assert::AreEqual(static_cast<std::size_t>(1), markers.Count());
-    const Outpost::EntityRecord after = store.Newest()->entities[0];
+    const Outpost::EntityRecord after = store.Entities()[0];
     Assert::IsTrue(before == after);
   }
 };

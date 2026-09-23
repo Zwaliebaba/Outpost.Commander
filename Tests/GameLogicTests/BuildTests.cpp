@@ -454,8 +454,8 @@ public:
     Assert::AreEqual(std::uint8_t{0}, build.WireBuildingDesign(MINE));
   }
 
-  /// The block a snapshot carries, end to end.
-  TEST_METHOD(TheSnapshotCarriesTheCreditsAndTheItem)
+  /// The block an update carries, end to end -- each player's own, since ADR-024 sends nobody else's.
+  TEST_METHOD(EachPlayersOwnBlockCarriesTheCreditsAndTheItem)
   {
     Outpost::World world;
     Seat(world, 2);
@@ -465,13 +465,12 @@ public:
     static_cast<void>(build.Start(world, THEIRS, Outpost::DesignId::Fighter));
     build.Advance(world);
 
-    const Outpost::Snapshot snapshot = Outpost::BuildSnapshot(world, intake, build, 0, 0, 2);
-    Assert::AreEqual(static_cast<std::size_t>(2), snapshot.players.size());
-    Assert::AreEqual(1000u, snapshot.players[0].credits);
-    Assert::AreEqual(700u, snapshot.players[1].credits);
-    Assert::AreEqual(std::uint8_t{0}, snapshot.players[0].buildingDesign);
-    Assert::AreEqual(static_cast<std::uint8_t>(static_cast<std::uint8_t>(Outpost::DesignId::Fighter) + 1),
-                     snapshot.players[1].buildingDesign);
+    const Outpost::PlayerBlock mine = Outpost::PlayerBlockFor(intake, build, MINE);
+    const Outpost::PlayerBlock theirs = Outpost::PlayerBlockFor(intake, build, THEIRS);
+    Assert::AreEqual(1000u, mine.credits);
+    Assert::AreEqual(700u, theirs.credits);
+    Assert::AreEqual(std::uint8_t{0}, mine.buildingDesign);
+    Assert::AreEqual(static_cast<std::uint8_t>(static_cast<std::uint8_t>(Outpost::DesignId::Fighter) + 1), theirs.buildingDesign);
   }
 };
 

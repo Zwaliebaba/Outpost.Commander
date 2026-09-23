@@ -141,7 +141,7 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   std::fflush(stdout);
 
   // One entity that goes somewhere, which is the whole of the simulation at M0 and is what makes
-  // a client's snapshot show something moving rather than an empty world.
+  // a client's updates show something moving rather than an empty world.
   const Outpost::EntityId first = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, 1);
   static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288}, 7 * 256));
 
@@ -171,10 +171,10 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
     if (second != reportedAtSecond)
     {
       reportedAtSecond = second;
-      std::printf("host: t=%llus ticks=%llu abandoned=%llu snapshot=%u clients=%zu rejected=%llu\n",
+      std::printf("host: t=%llus ticks=%llu abandoned=%llu updates=%llu clients=%zu rejected=%llu\n",
                   static_cast<unsigned long long>(second), static_cast<unsigned long long>(schedule.TicksIssued()),
-                  static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence(), host.ClientCount(),
-                  static_cast<unsigned long long>(host.RejectedDatagramCount()));
+                  static_cast<unsigned long long>(schedule.TicksAbandoned()), static_cast<unsigned long long>(host.UpdatesSent()),
+                  host.ClientCount(), static_cast<unsigned long long>(host.RejectedDatagramCount()));
       std::fflush(stdout);
     }
 
@@ -183,8 +183,8 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
     std::this_thread::sleep_until(schedule.NextDeadline());
   }
 
-  std::printf("host: %llu ticks, %llu abandoned, %u snapshots\n", static_cast<unsigned long long>(schedule.TicksIssued()),
-              static_cast<unsigned long long>(schedule.TicksAbandoned()), host.SnapshotSequence());
+  std::printf("host: %llu ticks, %llu abandoned, %llu updates\n", static_cast<unsigned long long>(schedule.TicksIssued()),
+              static_cast<unsigned long long>(schedule.TicksAbandoned()), static_cast<unsigned long long>(host.UpdatesSent()));
   std::printf("host: %llu joins, %llu commands from nobody seated, %llu misaddressed\n", static_cast<unsigned long long>(host.JoinCount()),
               static_cast<unsigned long long>(host.UnjoinedCommandCount()),
               static_cast<unsigned long long>(host.MisaddressedCommandCount()));
