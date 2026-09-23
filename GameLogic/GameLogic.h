@@ -19,6 +19,7 @@
 #include "Host.h"
 #include "Sessions.h"
 #include "RingAssignment.h"
+#include "UniformGrid.h"
 #include "StateHash.h"
 #include "Tick.h"
 

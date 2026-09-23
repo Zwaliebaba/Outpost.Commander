@@ -233,6 +233,24 @@ second index would be a second thing to keep correct for no measured gain.
 boundaries and at the edges of the square; **the returned order is by identity and is asserted to be**; and
 two entities at exactly equal distance resolve to the same one on every run.
 
+**BUILT, 2026-09-23**, as `GameLogic/UniformGrid.h` `.cpp`. `Rebuild` takes the world whole, in index
+order, as a two-pass counting sort into one flat array: each cell's entries sit in index order, and a
+rebuild allocates nothing once the array has grown. It is rebuilt, not maintained, because at 110 entities
+an incremental index would be a second copy of every position to keep in step. **An entity outside the
+square is clamped into the edge cell rather than dropped**, and a query's box is clamped the same way, so
+the grid finds it. `Query` returns every live entity within the radius, inclusive, **sorted by
+`EntityId`**. `Nearest` takes a filter, which is how M2.6 will ask for "owned and accepts ore" without
+the grid knowing about ore. It walks the sorted candidates and keeps a later one only when strictly
+nearer, so an exact tie goes to the lower identity. **Nothing calls it yet**: the host rebuilds no grid
+until M2.6 has a query to make, so this step leaves the tick and its hash untouched.
+
+`UniformGridTests` checks every query against a brute-force scan: 600 entities scattered over and past
+the square, nine centers including the edges and corners, and radii from 0 to wider than the map. It also
+covers cell-edge ownership and clamping, both sides of a cell boundary, a point exactly on the circle,
+identity order after slots are freed and reused, and a stale identity. For `Nearest`, a four-way exact
+tie placed so that cell order would pick a different entity, and 200 brute-force probes. **Compiled and
+passed under g++ with a stand-in for the test framework**, not under MSVC.
+
 ### M2.6 — The mining loop · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §4 and §6; `TechnicalDesign.md` §2's tick order.
