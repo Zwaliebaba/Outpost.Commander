@@ -378,7 +378,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 | 3 | The tick's cost at 110 entities | **M2.10** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
 | 4 | ~~Packet loss and jitter on a real wireless link~~ **WITHDRAWN by the owner (Q50)** | **M0.5** gate, closed | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
-| 6 | The interface pass against the world pass | **M1.16** gate | Needs the glyph atlas and a populated interface, so it cannot be earlier. |
+| 6 | ~~The interface pass against the world pass~~ **TAKEN 2026-09-23: interface 50 µs, world 852** | **M1.16** gate | Timed in the frame by two marks; the figures are in `TechnicalDesign.md` §9.6. |
 | 7 | ~~**That the present step really takes the filter the scale calls for, and which world scale ships**~~ **TAKEN** | **M0.16** gate, closed | Looked at on the device at both scales, plus frame time at each on x64 and ARM64. The filter is right at both and **1:1 ships** ([`ADR-016`](../ADR/ADR-016-the-world-resolution-is-a-scale.md)). |
 | 8 | Which loopback exemption form a UDP client needs | **M0.5** gate | Remove the exemption and try again, exactly as `AGENTS.md` §3 instructs. |
 

@@ -572,8 +572,9 @@ rather than by arguing about it:
    selects the wrong ships, since a circle on screen is a wedge in the world
    ([`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md)). §5's pitch floor now bounds how bad
    that can get; what it cannot say is whether the bound is comfortable.
-2. **Whether the interface pass costs more GPU time than the world pass**, which is likely: five instanced
-   draws of simple geometry against an unbatched quad per glyph.
+2. ~~**Whether the interface pass costs more GPU time than the world pass**, which is likely: five instanced
+   draws of simple geometry against an unbatched quad per glyph.~~ — **It does not**: 50 µs against the
+   world's 852 on the device, 2026-09-23. `TechnicalDesign.md` §9.6 has the setup.
 3. **Whether §1's gesture constants are right** — the 16-pixel tap slop above all, because it is the one
    that decides how often an intended order becomes a pan. The 24-pixel pick radius and the 300-millisecond
    double-tap window are the other two, and all three are single constants behind a tested pure function.

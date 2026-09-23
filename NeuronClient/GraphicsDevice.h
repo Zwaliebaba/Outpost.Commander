@@ -2,6 +2,8 @@
 
 #include "NeuronCore.h"
 
+#include "FrameStatistics.h"
+
 #include <cstdint>
 #include <memory>
 
@@ -93,6 +95,17 @@ public:
   /// `TechnicalDesign.md` section 9.5 are owed.
   [[nodiscard]] std::uint64_t LastFrameGpuMicroseconds() const noexcept;
 
+  /// The same frame in the three spans `TechnicalDesign.md` section 9.6 compares: world, the scaled
+  /// present, and the interface. False when that frame did not write both marks below, or the device
+  /// serves no timestamps -- a missing figure rather than a wrong one.
+  [[nodiscard]] bool LastFrameGpuSplit(GpuFrameSplit& _outSplit) const noexcept;
+
+  /// Two timestamps inside the frame, written by the caller because only the caller knows where its
+  /// passes end: after the last draw into the scene target, and after the present blit and before the
+  /// interface pass (ADR-011's order). Nothing while no frame is recording.
+  void MarkWorldDrawn() noexcept;
+  void MarkPresentScaled() noexcept;
+
   /// Signals the current frame's fence, moves to the next slot, and waits for THAT slot's earlier
   /// work only. That is the whole of what "two frames in flight" means: the CPU is one frame ahead
   /// and never more.
@@ -116,6 +129,8 @@ public:
   [[nodiscard]] ::IUnknown* CommandListUnknown() const noexcept;
 
 private:
+  void WriteMark(std::uint32_t _mark) noexcept;
+
   std::shared_ptr<DeviceBinding> m_binding;
 };
 

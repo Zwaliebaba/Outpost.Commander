@@ -38,8 +38,9 @@ struct DeviceBinding
 
   winrt::handle fenceEvent;
 
-  /// TWO TIMESTAMPS PER FRAME IN FLIGHT -- one either side of the frame's command list. A slot's
-  /// pair is only safe to read once the GPU has passed that slot's fence, which is exactly the wait
+  /// FOUR TIMESTAMPS PER FRAME IN FLIGHT -- one either side of the frame's command list, and the two
+  /// marks between them that split it into world, present and interface. A slot's
+  /// set is only safe to read once the GPU has passed that slot's fence, which is exactly the wait
   /// PresentedFrame already performs, so reading them costs no extra synchronization.
   winrt::com_ptr<ID3D12QueryHeap> timestampHeap;
 
@@ -52,6 +53,8 @@ struct DeviceBinding
   /// where the measurement is simply unavailable rather than wrong.
   std::uint64_t timestampFrequency = 0;
   std::uint64_t lastFrameGpuMicroseconds = 0;
+  GpuFrameSplit lastFrameSplit{};
+  bool lastFrameSplitValid = false;
 
   std::uint32_t frameIndex = 0;
   std::uint32_t highestShaderModel = 0;
@@ -66,8 +69,15 @@ namespace
 /// renderer asks for more.
 inline constexpr D3D_FEATURE_LEVEL FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
 
-/// One either side of the frame's command list, so the difference is the whole frame's GPU time.
-inline constexpr std::uint32_t TIMESTAMPS_PER_FRAME = 2;
+/// One either side of the frame's command list, so the difference of the outer two is the whole
+/// frame's GPU time, and two marks between them (`MarkWorldDrawn`, `MarkPresentScaled`).
+inline constexpr std::uint32_t TIMESTAMPS_PER_FRAME = static_cast<std::uint32_t>(GPU_FRAME_MARKS);
+
+/// Where each timestamp sits in a slot's set, in the order the frame writes them.
+inline constexpr std::uint32_t MARK_BEGUN = 0;
+inline constexpr std::uint32_t MARK_WORLD_DRAWN = 1;
+inline constexpr std::uint32_t MARK_PRESENT_SCALED = 2;
+inline constexpr std::uint32_t MARK_ENDED = 3;
 
 [[nodiscard]] bool IsDeviceLost(HRESULT _result) noexcept
 {
@@ -270,6 +280,7 @@ void GraphicsDevice::Destroy() noexcept
   binding.timestampHeap = nullptr;
   binding.timestampFrequency = 0;
   binding.lastFrameGpuMicroseconds = 0;
+  binding.lastFrameSplitValid = false;
   binding.fence = nullptr;
   binding.fenceEvent.close();
   binding.queue = nullptr;
@@ -357,13 +368,22 @@ void GraphicsDevice::PresentedFrame() noexcept
   if ((binding.timestampSamples != nullptr) && (binding.timestampFrequency != 0))
   {
     const std::uint32_t first = binding.frameIndex * TIMESTAMPS_PER_FRAME;
-    const std::uint64_t begun = binding.timestampSamples[first];
-    const std::uint64_t ended = binding.timestampSamples[first + 1];
+    const std::uint64_t begun = binding.timestampSamples[first + MARK_BEGUN];
+    const std::uint64_t ended = binding.timestampSamples[first + MARK_ENDED];
     if (ended > begun)
     {
       constexpr std::uint64_t MICROSECONDS_PER_SECOND = 1000000;
       binding.lastFrameGpuMicroseconds = ((ended - begun) * MICROSECONDS_PER_SECOND) / binding.timestampFrequency;
     }
+
+    // A FRAME THAT SKIPPED A MARK leaves that slot holding an older frame's value, which is earlier
+    // than this frame's begin -- so SplitGpuFrame refuses it on order, and no stale split is reported.
+    std::uint64_t ticks[GPU_FRAME_MARKS]{};
+    for (std::uint32_t mark = 0; mark < TIMESTAMPS_PER_FRAME; ++mark)
+    {
+      ticks[mark] = binding.timestampSamples[first + mark];
+    }
+    binding.lastFrameSplitValid = SplitGpuFrame(ticks, binding.timestampFrequency, binding.lastFrameSplit);
   }
 
   binding.fenceValues[binding.frameIndex] = signaled + 1;
@@ -372,6 +392,36 @@ void GraphicsDevice::PresentedFrame() noexcept
 std::uint64_t GraphicsDevice::LastFrameGpuMicroseconds() const noexcept
 {
   return m_binding->lastFrameGpuMicroseconds;
+}
+
+bool GraphicsDevice::LastFrameGpuSplit(GpuFrameSplit& _outSplit) const noexcept
+{
+  if (!m_binding->lastFrameSplitValid)
+  {
+    return false;
+  }
+  _outSplit = m_binding->lastFrameSplit;
+  return true;
+}
+
+void GraphicsDevice::MarkWorldDrawn() noexcept
+{
+  WriteMark(MARK_WORLD_DRAWN);
+}
+
+void GraphicsDevice::MarkPresentScaled() noexcept
+{
+  WriteMark(MARK_PRESENT_SCALED);
+}
+
+void GraphicsDevice::WriteMark(std::uint32_t _mark) noexcept
+{
+  DeviceBinding& binding = *m_binding;
+  if (binding.recording && binding.timestampHeap)
+  {
+    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP,
+                                  (binding.frameIndex * TIMESTAMPS_PER_FRAME) + _mark);
+  }
 }
 
 ::IUnknown* GraphicsDevice::CommandQueueUnknown() const noexcept
@@ -414,7 +464,8 @@ bool GraphicsDevice::BeginFrame() noexcept
 
   if (binding.timestampHeap)
   {
-    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, binding.frameIndex * TIMESTAMPS_PER_FRAME);
+    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP,
+                                  (binding.frameIndex * TIMESTAMPS_PER_FRAME) + MARK_BEGUN);
   }
 
   binding.recording = true;
@@ -433,7 +484,7 @@ bool GraphicsDevice::EndFrameAndSubmit() noexcept
   if (binding.timestampHeap)
   {
     const std::uint32_t first = binding.frameIndex * TIMESTAMPS_PER_FRAME;
-    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first + 1);
+    binding.commandList->EndQuery(binding.timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first + MARK_ENDED);
 
     // Resolved on the GPU into the readback buffer, in the same command list. Doing it here rather
     // than in a later frame is what makes the pair readable the moment this slot's fence passes.

@@ -98,4 +98,50 @@ public:
   }
 };
 
+TEST_CLASS(TheGpuFrameSplit)
+{
+public:
+  TEST_METHOD(ItSplitsTheFrameAtItsTwoMarks)
+  {
+    // A 10 MHz clock, so a tick is a tenth of a microsecond: 800 us of world, 50 of present and 300
+    // of interface.
+    const std::uint64_t ticks[Neuron::GPU_FRAME_MARKS]{1000, 9000, 9500, 12500};
+    Neuron::GpuFrameSplit split{};
+
+    Assert::IsTrue(Neuron::SplitGpuFrame(ticks, 10000000, split));
+    Assert::AreEqual(800ULL, split.worldMicroseconds);
+    Assert::AreEqual(50ULL, split.presentMicroseconds);
+    Assert::AreEqual(300ULL, split.interfaceMicroseconds);
+  }
+
+  TEST_METHOD(AStaleMarkIsRefusedRatherThanReported)
+  {
+    // A frame that skipped a mark leaves an older frame's value in its slot, which is before this
+    // frame began. Reporting it would be a negative span wrapped to an enormous one.
+    const std::uint64_t ticks[Neuron::GPU_FRAME_MARKS]{5000, 400, 5600, 7000};
+    Neuron::GpuFrameSplit split{.worldMicroseconds = 1, .presentMicroseconds = 2, .interfaceMicroseconds = 3};
+
+    Assert::IsFalse(Neuron::SplitGpuFrame(ticks, 10000000, split));
+    Assert::AreEqual(1ULL, split.worldMicroseconds, L"a refused split leaves the output untouched");
+  }
+
+  TEST_METHOD(NoFrequencyIsNoFigure)
+  {
+    const std::uint64_t ticks[Neuron::GPU_FRAME_MARKS]{0, 1, 2, 3};
+    Neuron::GpuFrameSplit split{};
+
+    Assert::IsFalse(Neuron::SplitGpuFrame(ticks, 0, split));
+  }
+
+  TEST_METHOD(AnEmptySpanIsZeroNotRefused)
+  {
+    // Two marks written back to back with nothing between them is a real, empty pass.
+    const std::uint64_t ticks[Neuron::GPU_FRAME_MARKS]{100, 200, 200, 300};
+    Neuron::GpuFrameSplit split{};
+
+    Assert::IsTrue(Neuron::SplitGpuFrame(ticks, 1000000, split));
+    Assert::AreEqual(0ULL, split.presentMicroseconds);
+  }
+};
+
 } // namespace NeuronClientTests

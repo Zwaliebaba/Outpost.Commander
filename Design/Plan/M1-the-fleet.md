@@ -886,8 +886,11 @@ Three things the design says are checked by a hand rather than an argument, all 
    confirm is simply legibility. *(This step originally recorded that `Design/README.md` still called the
    confirmation "pixel-doubled"; that sentence was corrected on 2026-09-20, along with three others from
    the same source. See `README.md` F4.)*
-3. **Whether the interface pass costs more GPU time than the world pass** — §9.6, which the design predicts
-   it will: five instanced draws of simple geometry against an unbatched quad per glyph.
+3. ~~**Whether the interface pass costs more GPU time than the world pass** — §9.6, which the design predicts
+   it will: five instanced draws of simple geometry against an unbatched quad per glyph.~~ — **ANSWERED
+   2026-09-23: no, 50 µs against 852.** The split is timed in the frame now, and the figures and
+   setup are in `TechnicalDesign.md` §9.6, which is struck through. The panels were at rest, so a busy
+   selection readout is the case still worth a glance in the probe log during the hand session.
 
 **The list has grown past three and this step carries all of it.** `Interface.md` §7 now closes with
 seven, and two ADRs added their own since this step was written:

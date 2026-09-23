@@ -635,8 +635,19 @@ not a definition is arithmetic on the design's own starting values. These are ow
    four copies of a frame time is how the other figures in this section went wrong. The four-sample half
    waits on the resolve step. **And the figures are of a frame with nothing in it**, so they bound the
    present path rather than the budget; ADR-016 says which is which.
-6. **The interface pass against the world pass**, which the review predicts will be the larger of the two:
-   five instanced draws of simple geometry against an unbatched quad per glyph.
+6. ~~**The interface pass against the world pass**, which the review predicts will be the larger of the two:
+   five instanced draws of simple geometry against an unbatched quad per glyph.~~ — **MEASURED 2026-09-23,
+   and the prediction was wrong: the interface is about a seventeenth of the world.** The mean GPU time
+   over 3,600 frames was **world 852 µs** (max 1,922), **present 636 µs** (max 2,160) and **interface
+   50 µs** (max 700), out of a whole frame of 1,539 µs. Setup: the Surface Pro 11, `Release|ARM64`, a
+   fullscreen 2880 × 1920 swap chain at the 1:1 world scale, the sky and three hulls in the world, and
+   the four panels at rest with nothing selected. The host ran on the same machine. The spans come from two timestamps
+   `GraphicsDevice` writes inside the frame (`MarkWorldDrawn`, `MarkPresentScaled`), split by
+   `Neuron::SplitGpuFrame`, which `NeuronClientTests` pins. **The prediction assumed an unbatched quad
+   per glyph**, and M1.13 made text one instanced call, which is most of why it is wrong. **The finding
+   is the present**: a 1:1 blit that needs no filtering costs three-quarters as much as the whole world.
+   It includes the back buffer's clear and its barriers, and it is where a frame-time saving would
+   come from first.
 7. ~~**That the present step really takes the path the scale calls for on the device**~~ — **DISCHARGED
    at M0.16.** Confirmed by looking at it on the device at both scales: unfiltered and pixel-exact at the
    1:1 default, point-sampled at an exact 2× at 0.5, no soft edge at either. R13's whole arrangement was

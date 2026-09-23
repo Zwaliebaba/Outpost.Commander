@@ -445,6 +445,11 @@ void RunProbe(const CoreWindow& _window)
   // (R20); this shell only feeds it what the device reports.
   Neuron::FrameStatistics gpuTime;
 
+  // `TechnicalDesign.md` section 9.6: the same window of frames, split at the two marks.
+  Neuron::FrameStatistics worldGpuTime;
+  Neuron::FrameStatistics presentGpuTime;
+  Neuron::FrameStatistics interfaceGpuTime;
+
   const CoreDispatcher dispatcher = _window.Dispatcher();
   const auto start = std::chrono::steady_clock::now();
   // The token from `LocalState`, or zero on a first run. It is read once: the file is only
@@ -1178,9 +1183,11 @@ void RunProbe(const CoreWindow& _window)
 
         static_cast<void>(pointSprites.Draw(device, sceneTarget, rotationProjection));
       }
+      device.MarkWorldDrawn();
 
       static_cast<void>(swapChain.RecordBindAndClear(device, 0.0f, 0.0f, 0.0f));
       static_cast<void>(presentStep.Record(device, sceneTarget, worldFit));
+      device.MarkPresentScaled();
 
       // **M0.17'S PROBE RECTANGLE IS GONE, AND THAT GATE IS CLOSED TOO.** It drew the 48 x 48 touch
       // floor inset by its 16 pixels of clear space, in the bottom left, so that a pair of eyes
@@ -1247,6 +1254,15 @@ void RunProbe(const CoreWindow& _window)
         if ((presentedFrames > WARMUP_FRAMES) && (presentedFrames <= (WARMUP_FRAMES + MEASURE_FRAMES)))
         {
           gpuTime.Add(device.LastFrameGpuMicroseconds());
+
+          // A frame with no honest split adds nothing to any of the three, so their counts say how
+          // many frames the comparison is over.
+          if (Neuron::GpuFrameSplit split{}; device.LastFrameGpuSplit(split))
+          {
+            worldGpuTime.Add(split.worldMicroseconds);
+            presentGpuTime.Add(split.presentMicroseconds);
+            interfaceGpuTime.Add(split.interfaceMicroseconds);
+          }
         }
         if (presentedFrames == (WARMUP_FRAMES + MEASURE_FRAMES))
         {
@@ -1257,6 +1273,12 @@ void RunProbe(const CoreWindow& _window)
                         std::to_string(gpuTime.MinimumMicroseconds()) + " max " + std::to_string(gpuTime.MaximumMicroseconds()) + " over " +
                         std::to_string(gpuTime.Count()) + " frames, " + std::to_string(gpuTime.DiscardedCount()) +
                         " discarded -- the client keeps running so the hulls can be looked at");
+          Report(log,
+                 "probe: gpu split us mean world " + std::to_string(worldGpuTime.MeanMicroseconds()) + " (max " +
+                   std::to_string(worldGpuTime.MaximumMicroseconds()) + ") present " + std::to_string(presentGpuTime.MeanMicroseconds()) +
+                   " (max " + std::to_string(presentGpuTime.MaximumMicroseconds()) + ") interface " +
+                   std::to_string(interfaceGpuTime.MeanMicroseconds()) + " (max " + std::to_string(interfaceGpuTime.MaximumMicroseconds()) +
+                   ") over " + std::to_string(worldGpuTime.Count()) + " split frames");
         }
         if (presentedFrames == 1)
         {
