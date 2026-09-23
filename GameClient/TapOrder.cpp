@@ -105,4 +105,33 @@ Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY, 
   return command;
 }
 
+Command BuildMineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::span<const WireIdentity> _miners) noexcept
+{
+  Command command;
+  command.sequence = _sequence;
+  command.type = CommandType::Mine;
+  command.AimAtRock(_rock);
+  command.selection.assign(_miners.begin(), _miners.end());
+  return command;
+}
+
+MineSplit SplitForMine(std::span<const WireIdentity> _selection, std::span<const EntityRecord> _entities)
+{
+  MineSplit split;
+  for (const WireIdentity identity : _selection)
+  {
+    bool canMine = false;
+    for (const EntityRecord& record : _entities)
+    {
+      if (record.identity == identity)
+      {
+        canMine = (record.designIdentity < Designs().size()) && (Derive(static_cast<DesignId>(record.designIdentity)).oreCapacity > 0);
+        break;
+      }
+    }
+    (canMine ? split.miners : split.others).push_back(identity);
+  }
+  return split;
+}
+
 } // namespace Outpost

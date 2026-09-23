@@ -3,6 +3,7 @@
 #include "World.h"
 
 #include <limits>
+#include <utility>
 
 namespace Outpost
 {
@@ -58,6 +59,7 @@ EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, De
                        .hullRemaining = static_cast<std::uint16_t>(stats.hullPoints),
                        .owner = _owner};
   slot.order = MoveOrder{};
+  slot.mine = MineOrder{};
   slot.alive = true;
   ++m_aliveCount;
 
@@ -75,6 +77,7 @@ bool World::Destroy(EntityId _id) noexcept
   Slot& slot = m_slots[_id.index];
   slot.alive = false;
   slot.order = MoveOrder{};
+  slot.mine = MineOrder{};
 
   // Advance now, so every copy of this identity anywhere in the match goes stale at the instant
   // the entity dies rather than at the instant the slot is reused. Zero is skipped because it is
@@ -134,6 +137,46 @@ const MoveOrder* World::FindOrder(EntityId _id) const noexcept
   return (found == nullptr) ? nullptr : &found->order;
 }
 
+bool World::OrderMine(EntityId _id, std::uint16_t _rock) noexcept
+{
+  if (ResolveSlot(_id) == nullptr)
+  {
+    return false;
+  }
+
+  MineOrder& mine = m_slots[_id.index].mine;
+  mine.phase = MiningPhase::ToOre;
+  mine.rock = _rock;
+  mine.unloadTarget = NO_ENTITY;
+  return true;
+}
+
+bool World::StopMining(EntityId _id) noexcept
+{
+  if (ResolveSlot(_id) == nullptr)
+  {
+    return false;
+  }
+
+  // THE CARGO STAYS. A miner pulled off the loop is carrying what it was carrying, and the next mine order
+  // picks the cycle up with it aboard.
+  MineOrder& mine = m_slots[_id.index].mine;
+  mine.phase = MiningPhase::None;
+  mine.unloadTarget = NO_ENTITY;
+  return true;
+}
+
+const MineOrder* World::FindMine(EntityId _id) const noexcept
+{
+  const Slot* found = ResolveSlot(_id);
+  return (found == nullptr) ? nullptr : &found->mine;
+}
+
+void World::SetField(std::vector<Placement> _field)
+{
+  m_field = std::move(_field);
+}
+
 std::size_t World::OwnedCount(PlayerId _owner) const noexcept
 {
   std::size_t owned = 0;
@@ -170,6 +213,16 @@ MoveOrder& World::OrderInSlot(std::size_t _slot) noexcept
 const MoveOrder& World::OrderInSlot(std::size_t _slot) const noexcept
 {
   return m_slots[_slot].order;
+}
+
+MineOrder& World::MineInSlot(std::size_t _slot) noexcept
+{
+  return m_slots[_slot].mine;
+}
+
+const MineOrder& World::MineInSlot(std::size_t _slot) const noexcept
+{
+  return m_slots[_slot].mine;
 }
 
 const World::Slot* World::ResolveSlot(EntityId _id) const noexcept

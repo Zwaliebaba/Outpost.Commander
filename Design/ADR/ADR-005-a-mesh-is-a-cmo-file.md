@@ -18,6 +18,16 @@ stated luminance ceiling; amended by [`ADR-015`](ADR-015-the-base-is-built-from-
 sixth thing to draw; and updated 2026-09-22 alongside
 [`ADR-021`](ADR-021-content-ships-with-the-package.md), which ruled that content files ship.
 
+**Amended 2026-09-23 at M2.4** for the asteroid alone: the one mesh that *is* scaled, turned on three
+axes and lifted off the plane, **baked on the processor rather than instanced**, and the draw count and
+package bytes this record owed. See *The asteroid at M2.4* under Consequences.
+
+**Amended 2026-09-23 at M2.10b** for the modules: **each module level draws with its own mesh**, the four the
+handoff delivered, so a shipyard reads apart from an ore processor. The bare `ModuleFrame` mesh ships and no
+design draws it. Seven meshes are drawn instanced (three hulls and four module levels) beside the five baked
+asteroid variants. And **a hull's size is bounded by every mesh that draws it**, which moved the frame's
+catalog figure from 84 to 90 (`OpenQuestions.md` Q37's note).
+
 **Date:** 2026-09-22 (this decision); 2026-09-20 (the record it replaces)
 **Owner:** Stefan Zwaal
 
@@ -34,7 +44,8 @@ What it inferred from it was that geometry therefore had to be *emitted by code*
 libraries, not a list of files.** ADR-021 removed the prohibition and deliberately stopped there — "this
 record removes a prohibition; it does not order a pipeline". **This record orders one.**
 
-**The MVP needs five shapes**: `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid. `Cruiser`
+**The MVP needs five shapes**: `Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid — as this was
+ruled; the module is four meshes since M2.10b, one per level, and the asteroid five variants. `Cruiser`
 is a sixth hull the catalog carries and the MVP never draws (`GameDesign.md` §10).
 
 **Two costs the old decision named against itself are what spend it.** It foreclosed art as a parallel
@@ -81,7 +92,8 @@ take.
 **The axis convention is pinned here rather than discovered by the first loader**: left-handed, +Y up out
 of the plane, +Z forward along the entity's heading, one CMO unit to one world unit. The plane is Y = 0 and
 a hull straddles it. **A mesh is not scaled at draw time**, so its authored extent is its size, which is
-what makes the size a thing a script can check against the catalog.
+what makes the size a thing a script can check against the catalog. **The asteroid is the one exception**,
+since M2.4, and *The asteroid at M2.4* below says why it does not touch the reason.
 
 **Nothing loads on the frame thread.** `Package.Current.InstalledLocation` is asynchronous and the frame
 thread is an ASTA, where blocking on an asynchronous operation is a deadlock rather than a delay
@@ -124,6 +136,32 @@ yaw, pitch and scale jitter — which is weaker, because a variant set repeats a
 Two figures move with it: **the field becomes one instanced draw per variant** where `TechnicalDesign.md`
 §6 states one for the whole field, and each variant is package bytes. The visual jitter stays in the
 client and never reaches a `GameCore` record, which is R22 and is unchanged.
+
+### The asteroid at M2.4
+
+**A rock is the one mesh that is scaled, and the rule above is about hulls.** "A mesh is not scaled at
+draw time" exists so that an authored extent *is* a hull's size and a script can check it against the
+catalog (Q37). No catalog row states an asteroid's size and nothing is spaced by one, so the handoff's
+section 8 jitter applies as authored: **uniform scale 0.75 to 1.35, a turn on all three axes, and up to
+240 units above or below the plane.** It is uniform because the baked per-face normals are not
+renormalized anywhere, so a non-uniform scale would light them wrong.
+
+**The scale is clamped so that no two rocks touch.** The generator keeps centers 150 apart and
+`AsteroidE` at 1.35 is 225 across, so the seed alone would put rocks through each other. Each rock is held
+to half the distance to its nearest neighbor, over the exact sphere of its loaded mesh. Over 200 seeds at
+two and four players that clamps **3.5% of rocks, and none below 0.75**, so every rock stays inside the
+handoff's range.
+
+**The field is baked, not instanced.** The ship pass turns an instance about Z and nothing else, so
+drawing a rock that turns on three axes, scales and lifts from an instance would need a second vertex
+stage and a second instance layout. The field never moves once it is derived. So `GameClient/AsteroidMesh`
+places each variant's rocks into one static mesh when the join names the field, and the ship pass draws
+it with one identity instance. **Five draws for the field, as this record predicted, and no new shader.**
+What it costs is memory: a placed copy of the geometry per rock rather than one per variant.
+
+**None of this reaches `GameCore`** (R22). The look is drawn from the match seed on PCG32 stream 4, a
+client stream nothing on the host touches, and it is separate from the generator's stream 3 so that how
+a rock looks can never move where one is.
 
 **`Cruiser` costs a file.** [`ADR-006`](ADR-006-a-ship-is-a-composition.md) claims that reinstating the
 heavy design at M4 is "a table row and nothing else". Under this record it is a table row and a mesh. The
@@ -174,10 +212,29 @@ package size lives — a single baked texture is two orders of magnitude more.
 a 32-byte vertex. See Q44: the decision not to repack was not overturned, the cost it was weighing
 disappeared into the handedness conversion.
 
-Two are still owed:
-1. **The asteroid field's draw count** once the variant count is settled (M2.4), against the one draw
-   `TechnicalDesign.md` §6 currently states.
-2. **Whether the hulls read at the tactical zoom** (M2.13), which is looked at on the device rather than
+### The asteroid field — 2026-09-23, M2.4
+
+**Five variants, five draws**, against the one draw `TechnicalDesign.md` §6 stated before this record.
+
+**102 KiB on disk and 16 KiB deflated** for the five files: 20,985 bytes each, 104,925 together, and
+16,724 deflated. **The deflated figure is not comparable to the 52 KiB above to the byte.** It was taken
+with zlib at level 9 in raw deflate, which puts all thirteen files at 51,854 bytes against the 53,469 the
+M1.9 measurement's tool produced. Measured on the files in `Assets/Meshes/`; no appx was built.
+
+**In VRAM the field is 552 KiB at two players and 1,104 KiB at four.** That is 378 vertices a rock at a
+32-byte vertex and a 2-byte index, over 44 or 88 rocks. It is arithmetic on the layout, not a reading
+from the device. Instanced, the five variants would have been about 63 KiB, and the difference is the
+price of drawing a three-axis turn without a second shader. It sits in the upload heap, which `MeshBuffer`
+says is read across the bus each frame. At two players it more than doubles the 266 KiB the thirteen
+meshes cost. **Whether that shows in frame time is owed**, against the 1,482 microseconds M1.9 measured,
+on the device.
+
+**The exact radii are 32.6, 46.7, 60.1, 70.9 and 94.4 units** for `AsteroidA` to `E`. They were read
+through `NeuronClient/CmoReader` from the shipped files. The catalog's box corners, which the client falls
+back to for a variant that did not load, are 48.8 to 135.3.
+
+One is still owed:
+1. **Whether the hulls read at the tactical zoom** (M2.13), which is looked at on the device rather than
    computed, and which this decision exists to make answerable. **They have been looked at close up**, on
    the device at M1.9, and what that found was a bug rather than an answer: the light rig was never
    converted out of the authored frame, so the key pointed nearly along the plane and every hull read as

@@ -1,0 +1,126 @@
+#include "pch.h"
+#include <chrono>
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+
+using namespace Outpost;
+namespace {
+double Units(Neuron::Fixed f) { return double(f) / 256.0; }
+double Dist(const Neuron::Vec2& a, const Neuron::Vec2& b) {
+  const double dx = Units(a.x) - Units(b.x), dy = Units(a.y) - Units(b.y);
+  return std::sqrt(dx*dx + dy*dy);
+}
+struct Run { double creditsPerSecond; std::uint32_t firstDeliveryTick; std::uint32_t cycleTicks; };
+
+// One or more miners on one rock for `ticks`, from the station's spawn point. Returns steady-state income.
+Run MineRock(std::uint64_t seed, std::uint16_t rock, int miners, std::uint32_t ticks, DesignId processor, bool withProcessor) {
+  World world; BuildSystem build; MiningSystem mining; Economy economy;
+  world.SetField(GenerateField(seed, 2));
+  for (const Placement& p : GenerateLayout(seed, 2)) world.Create(p.position, p.heading, p.design, p.owner);
+  build.Begin(2); economy.Begin();
+  const Neuron::Vec2 station = StartAnchor(2, 1);
+  const Neuron::Vec2 spawn{ station.x + 140 * 256, station.y };
+  if (withProcessor) world.Create(Neuron::Vec2{station.x + 300*256, station.y + 200*256}, 0, processor, 1);
+  std::vector<EntityId> ids;
+  for (int i = 0; i < miners; ++i) { EntityId id = world.Create(spawn, 0, DesignId::Miner, 1); world.OrderMine(id, rock); ids.push_back(id); }
+  const std::uint32_t start = build.Credits(1);
+  std::uint32_t firstDelivery = 0, secondDelivery = 0; bool inUnload = false; int unloadEnds = 0;
+  std::uint32_t creditsAtHalf = 0;
+  for (std::uint32_t t = 1; t <= ticks; ++t) {
+    Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world);
+    const bool delivering = !mining.Deliveries().empty();
+    if (miners == 1) {
+      if (delivering && firstDelivery == 0) firstDelivery = t;
+      if (delivering) inUnload = true; else if (inUnload) { inUnload = false; ++unloadEnds; if (unloadEnds == 2 && secondDelivery == 0) secondDelivery = t; }
+    }
+    if (t == ticks / 2) creditsAtHalf = build.Credits(1);
+  }
+  const double perSecond = double(build.Credits(1) - creditsAtHalf) / (double(ticks / 2) / 20.0);
+  Run r{perSecond / miners, firstDelivery, 0};
+  (void)start; (void)secondDelivery;
+  return r;
+}
+}
+
+int main() {
+  const std::uint64_t seed = 20260922ull;
+  const auto field = GenerateField(seed, 2);
+  const Neuron::Vec2 anchor = StartAnchor(2, 1);
+  const std::size_t regionRocks = field.size() / FieldCopyCount(2);
+  std::printf("FIELD seed %llu, 2 players: %zu rocks, %zu per region\n", (unsigned long long)seed, field.size(), regionRocks);
+  std::printf("idx kind      x       y   dAnchor dOrigin\n");
+  for (std::size_t i = 0; i < regionRocks; ++i) {
+    const Placement& p = field[i];
+    std::printf("%2zu  %-9s %6.0f %6.0f %8.0f %8.0f\n", i, p.field == FieldKind::Home ? "home" : "contested", Units(p.position.x), Units(p.position.y), Dist(p.position, anchor), Dist(p.position, Neuron::Vec2{}));
+  }
+  // Income per miner per rock, one miner, 6000 ticks (5 min), no processor.
+  std::printf("\nINCOME per miner (credits/s at steady state, one miner, 5 min), one-slot Miner at 100 u/s, laser 20 ore/s, unload 50/s\n");
+  std::printf("idx dAnchor  cr/s  first-delivery-tick  (cycle from delivery spacing)\n");
+  double best = 0; std::uint16_t bestRock = 0;
+  for (std::size_t i = 0; i < regionRocks; ++i) {
+    Run r = MineRock(seed, (std::uint16_t)i, 1, 6000, DesignId::ModuleOreProcessorL1, false);
+    if (r.creditsPerSecond > best) { best = r.creditsPerSecond; bestRock = (std::uint16_t)i; }
+    std::printf("%2zu %7.0f %6.2f %8u\n", i, Dist(field[i].position, anchor), r.creditsPerSecond, r.firstDeliveryTick);
+  }
+  std::printf("\nBEST home rock %u at %.2f cr/s per miner. With OreProcessorL1: %.2f, L2: %.2f\n", bestRock, best,
+              MineRock(seed, bestRock, 1, 6000, DesignId::ModuleOreProcessorL1, true).creditsPerSecond,
+              MineRock(seed, bestRock, 1, 6000, DesignId::ModuleOreProcessorL2, true).creditsPerSecond);
+  std::printf("Six miners on the best rock: %.2f cr/s total (no per-rock throughput limit before M3)\n", 6 * MineRock(seed, bestRock, 6, 6000, DesignId::ModuleOreProcessorL1, false).creditsPerSecond);
+  // Realistic opening: 1000 credits, build miners back to back, each sent to the nearest rock; then fighters.
+  {
+    World world; BuildSystem build; MiningSystem mining; Economy economy;
+    world.SetField(GenerateField(seed, 2));
+    for (const Placement& p : GenerateLayout(seed, 2)) world.Create(p.position, p.heading, p.design, p.owner);
+    build.Begin(2); economy.Begin();
+    std::printf("\nOPENING: player 1 builds miners back to back, each ordered to the nearest home rock (%u); build rate 20 cr/s, no shipyard\n", bestRock);
+    std::printf("time  credits  miners  income(cr/s over last 30 s)\n");
+    std::uint32_t lastCredits = 1000; std::uint32_t spent = 0; int miners = 0;
+    for (std::uint32_t t = 1; t <= 6000; ++t) {
+      if (!build.Item(1).active && build.Start(world, 1, DesignId::Miner) == BuildRejection::None) spent += 150;
+      Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world);
+      for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+        if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+        if (e.owner == 1 && e.design == DesignId::Miner && world.MineInSlot(s).phase == MiningPhase::None && !world.OrderInSlot(s).active) { world.OrderMine(e.id, bestRock); ++miners; }
+      }
+      if (t % 600 == 0) {
+        const std::uint32_t credits = build.Credits(1);
+        const double income = (double(credits) + double(spent) - double(lastCredits)) / 30.0;
+        std::printf("%3us  %7u  %6d  %6.1f\n", t / 20, credits, miners, income);
+        lastCredits = credits; spent = 0;
+      }
+    }
+  }
+  // Accumulator and tick cost at scale.
+  std::printf("\nHOST COST (this machine, g++ -O2, single thread; order of magnitude only)\n");
+  for (std::size_t players : {std::size_t{2}, std::size_t{4}, std::size_t{100}}) {
+    World world; BuildSystem build; MiningSystem mining; Economy economy; Accumulator acc; CommandIntake intake;
+    world.SetField(GenerateField(seed, players)); build.Begin(players); economy.Begin(); acc.Begin();
+    for (const Placement& p : GenerateLayout(seed, players)) world.Create(p.position, p.heading, p.design, p.owner);
+    Neuron::Pcg32 rng{7, 9};
+    for (std::size_t pl = 1; pl <= players; ++pl) {
+      const Neuron::Vec2 a = StartAnchor(players, (PlayerId)pl);
+      for (int m = 0; m < 4; ++m) world.Create(Neuron::Vec2{a.x + (m*120-180)*256, a.y + 300*256}, 0, m % 2 ? DesignId::ModuleShipyardL1 : DesignId::ModuleOreProcessorL1, (PlayerId)pl);
+      for (int s = 0; s < 50; ++s) {
+        const Neuron::Vec2 pos{ a.x + rng.NextInRange(-1500, 1500) * 256, a.y + rng.NextInRange(-1500, 1500) * 256 };
+        EntityId id = world.Create(pos, 0, s < 25 ? DesignId::Miner : DesignId::Fighter, (PlayerId)pl);
+        if (s < 25) world.OrderMine(id, (std::uint16_t)((pl - 1) * 22 % world.Field().size()));
+        else world.OrderMoveTo(id, Neuron::Vec2{rng.NextInRange(-8000, 8000) * 256, rng.NextInRange(-8000, 8000) * 256}, SpeedPerTick(DesignId::Fighter));
+      }
+      acc.SetView((PlayerId)pl, QuantizePosition(a.x), QuantizePosition(a.y), 2400);
+    }
+    const int ticks = 40; double simUs = 0, accUs = 0; std::size_t updates = 0;
+    for (int t = 1; t <= ticks; ++t) {
+      auto t0 = std::chrono::steady_clock::now();
+      Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world);
+      auto t1 = std::chrono::steady_clock::now();
+      for (std::size_t pl = 1; pl <= players; ++pl) { PlayerBlock own{}; updates += acc.Fill(world, (PlayerId)pl, own, (std::uint32_t)t).size(); }
+      auto t2 = std::chrono::steady_clock::now();
+      simUs += std::chrono::duration<double, std::micro>(t1 - t0).count(); accUs += std::chrono::duration<double, std::micro>(t2 - t1).count();
+    }
+    std::printf("players %3zu, entities %5zu: simulation %8.1f us/tick, accumulator %9.1f us/tick (%.1f us per client), updates/tick %.1f\n",
+                players, world.AliveCount(), simUs / ticks, accUs / ticks, accUs / ticks / players, double(updates) / ticks);
+  }
+  return 0;
+}

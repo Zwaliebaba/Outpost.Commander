@@ -212,4 +212,41 @@ std::vector<Placement> GenerateRegion(std::uint64_t _seed, std::size_t _playerCo
   return placed;
 }
 
+std::size_t FieldCopyCount(std::size_t _playerCount) noexcept
+{
+  if (_playerCount == 0)
+  {
+    return 0;
+  }
+  return (_playerCount <= 2) ? 2 : ANCHOR_COUNT;
+}
+
+std::vector<Placement> GenerateField(std::uint64_t _seed, std::size_t _playerCount)
+{
+  const std::vector<Placement> region = GenerateRegion(_seed, _playerCount);
+  const std::size_t copies = FieldCopyCount(_playerCount);
+
+  std::vector<Placement> field;
+  field.reserve(region.size() * copies);
+  field.insert(field.end(), region.begin(), region.end());
+
+  // ANCHOR_COUNT / copies quarter turns per copy: two at two players, one at four. Each copy turns the one
+  // before it rather than the region by a multiple, which is the same exact arithmetic StartAnchor does.
+  const std::size_t turnsPerCopy = (copies == 0) ? 0 : (ANCHOR_COUNT / copies);
+  for (std::size_t copy = 1; copy < copies; ++copy)
+  {
+    const std::size_t previous = (copy - 1) * region.size();
+    for (std::size_t index = 0; index < region.size(); ++index)
+    {
+      Placement turned = field[previous + index];
+      for (std::size_t turn = 0; turn < turnsPerCopy; ++turn)
+      {
+        turned.position = QuarterTurn(turned.position);
+      }
+      field.push_back(turned);
+    }
+  }
+  return field;
+}
+
 } // namespace Outpost

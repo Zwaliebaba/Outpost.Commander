@@ -1,6 +1,7 @@
 # ADR-015 — The base is built from modules, and a module is an entity
 
-**Status:** Accepted
+**Status:** Accepted — **built at M2.9 to M2.12, and amended by four rulings taken on the way**
+(`OpenQuestions.md` Q54 to Q57), recorded under *As built* below.
 **Date:** 2026-09-21
 **Owner:** Stefan Zwaal
 
@@ -32,7 +33,9 @@ needs no new axis, and research gating a level later is the same gate it already
 **Placement is a tap, and it costs no new gesture.** With the station selected and a module chosen in the
 build panel, a tap on empty space within **400 world units** of the station places it. That interaction was
 dead: a tap on empty space is a move order, and the station cannot move. The radius is drawn while a module
-is chosen, and a tap outside it, or on another module, does nothing.
+is chosen, and a tap outside it, or on another module, does nothing — except that since M2.11 an armed L2
+upgrade tapped on an L1 of its kind upgrades it, and a tap on one of your own ships is still a selection
+(*As built*).
 
 **The radius is 400 because that is the point-defense range** (`GameDesign.md` §5), so the safe zone means
 exactly "your base". The consequence is positional and is the point: a `MassDriver` reaches 600, so a
@@ -50,7 +53,8 @@ already made once (§6).
 station builds both, so a module gating *what* can be built would gate nothing. It gates *how fast*:
 `ShipyardL1` and `L2` raise the station's build rate. From M4 the same levels also gate heavier hulls and
 the designer, which is the effect the owner described. **The rate is applied as an integer percentage, and
-where it rounds is the question ADR-014 is reserved for** (`Design/Plan/README.md`), not a new one.
+where it rounds was to be the question ADR-014 is reserved for** (`Design/Plan/README.md`). The owner ruled
+it on the register instead (Q56): build ticks round up. ADR-014 stays reserved for M3's damage.
 
 **The ore processor raises what a delivered cargo is worth**, by an integer percentage per level.
 
@@ -71,7 +75,9 @@ is eighty bytes against ninety-five of headroom, and `TechnicalDesign.md` §4 ha
 correctly all along. The correction does not move the cap. It moves the *reason*: four is not the number
 the datagram forces, it is the last number that leaves any headroom worth the name -- so raising it is
 still a replication decision rather than a design one, and still one that has to be costed with
-`Scripts/DatagramBudget.py` rather than argued.
+`Scripts/DatagramBudget.py` rather than argued. **[`ADR-024`](ADR-024-replication-is-prioritized-records.md)
+has since removed the full snapshot**, so the cap is a design decision now (`TechnicalDesign.md` §4): more
+modules cost refresh rate rather than a datagram, and this paragraph is its history.
 
 **It adds a placement validity rule to the simulation** — inside the radius, clear of the station and of
 other modules — which is simulation state and therefore obeys R16: integers, and candidates ordered by
@@ -88,9 +94,28 @@ additive later and neither is in the MVP.
 which point modules are the cheapest thing to fold back into the station's record — and the cripple play
 goes with them.
 
+## As built
+
+M2.9 to M2.12 built this, and four questions it did not settle were ruled before their code:
+- **Four designs, one per level**: `ModuleShipyardL1/L2` and `ModuleOreProcessorL1/L2`, each a frame, no drive
+  and one component. The frame costs nothing, so a module costs its component's §5 figure.
+- **One rule for where a module may go**, `CheckModuleSite` in `GameCore`, called by both sides. It checks,
+  in a fixed order, the cap, the radius, clearance of the station (155 units) and of other modules (90). The
+  frame's size is 90 since M2.10b, when each level got its own mesh.
+- **An L2 is an in-place upgrade of an L1 of its kind, at the difference in cost** (Q54): the same entity with
+  a new design. An L2 is never placed, and its button is unavailable without an L1.
+- **Two command types** (Q55): a placement carries a point and a design byte, and an upgrade a module identity
+  and a level.
+- **Build ticks round up** under a shipyard (Q56). An ore processor's percentage is exact, because credits
+  carry their remainder.
+- **A tap on your own module has no verb** unless an upgrade is armed (Q57).
+- **Which effect a module has is its component's catalog row** (`ModuleEffect`), and the best module of a kind
+  counts. Two do not stack: that is M2.12's reading of a question §5 did not ask, and it goes on the register
+  before stacking goes in.
+
 ## Measurements
 
-None yet. Two are owed:
+One is still owed:
 
 1. **The snapshot's encoded size at 110 entities** — **measured at M0.9 and no longer owed: 1,137 bytes**
    from the encoder, against the 1,232-byte payload, leaving **95 bytes**. One byte more than this ADR

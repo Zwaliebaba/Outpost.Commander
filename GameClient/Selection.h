@@ -49,8 +49,12 @@ struct SelectionOutcome
   float worldX = 0.0f;
   float worldY = 0.0f;
 
-  /// Meaningful for `Attack`, `Mine`, `OpenBuildPanel` and `Select`: the packed wire identity.
+  /// Meaningful for `Attack`, `OpenBuildPanel` and `Select`: the packed wire identity.
   WireIdentity target = NO_WIRE_IDENTITY;
+
+  /// Meaningful for `Mine` (M2.8): the rock's field index, and `worldX`/`worldY` are its place on the plane
+  /// -- where the part of the selection that cannot mine is sent.
+  std::uint16_t rock = 0;
 
   /// True when the selection changed, so a caller knows whether to redraw the panel.
   bool selectionChanged = false;
@@ -106,7 +110,10 @@ public:
   /// **IT DOES NOT SEND ANYTHING.** The verb and the target come back and the caller builds the
   /// command, because R19 makes the host authoritative over what an order does and this class is
   /// presentation.
-  [[nodiscard]] SelectionOutcome Tap(const CameraPose& _pose, const HitTestRequest& _request, std::span<const EntityRecord> _entities);
+  ///
+  /// _rocks is the field as drawn (M2.8), so a tap can land on an asteroid.
+  [[nodiscard]] SelectionOutcome Tap(const CameraPose& _pose, const HitTestRequest& _request, std::span<const EntityRecord> _entities,
+                                     std::span<const RockPickPoint> _rocks = {});
 
 private:
   std::vector<WireIdentity> m_identities;

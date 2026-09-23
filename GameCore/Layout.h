@@ -80,6 +80,15 @@ struct Placement
   [[nodiscard]] friend constexpr bool operator==(const Placement&, const Placement&) noexcept = default;
 };
 
+/// A quarter turn counter-clockwise about the map's center: `(x, y) -> (-y, x)`. **A SWAP AND A NEGATION,
+/// WHICH IS EXACT** -- `TechnicalDesign.md` section 3 makes the whole symmetry argument rest on that. The
+/// one rotation in the tree: the anchors turn by it here and the asteroid field by it in `Generator.cpp`,
+/// so the two cannot disagree about which way is a quarter turn.
+[[nodiscard]] constexpr Neuron::Vec2 QuarterTurn(const Neuron::Vec2& _point) noexcept
+{
+  return Neuron::Vec2{.x = -_point.y, .y = _point.x};
+}
+
 /// Where a player starts.
 ///
 /// **THE FOUR ANCHORS ARE FIXED AND A SHORTER MATCH TAKES A SUBSET OF THEM.** `GameDesign.md` section 3

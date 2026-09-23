@@ -110,6 +110,14 @@ private:
 
   [[nodiscard]] PlayerId LowestFreeSlot() const noexcept;
 
+  /// The count as the join reply carries it. **A NARROWING THAT CANNOT LOSE ANYTHING**: `Begin` clamps to
+  /// `MAX_PLAYERS`, which is 254, so every count this table can hold fits the byte.
+  [[nodiscard]] std::uint8_t WirePlayerCount() const noexcept
+  {
+    static_assert(MAX_PLAYERS <= 255, "the join reply carries the player count in one byte");
+    return static_cast<std::uint8_t>(m_playerCount);
+  }
+
   /// A vector rather than a map, walked in insertion order: four sessions never justifies a hash,
   /// and a hashed container's order is exactly what R16 forbids reaching an outcome.
   std::vector<Session> m_sessions;

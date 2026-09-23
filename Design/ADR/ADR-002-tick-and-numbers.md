@@ -97,17 +97,23 @@ table, the derived-stat function, ring slot assignment, the build system and the
 step. Until it ran, every claim in this ADR about bit-identical behavior was an argument; it is now a
 fact about four builds on one machine, which is what this measurement was ever able to be.
 
+**MOVED DELIBERATELY AT M2.6, TO `0xc8f7f00e056d4d46`, AND AGAIN AT M2.7, TO `0x18e094912655348f`.** At
+M2.7 the script's income stopped being a hand-written grant and became what the miners deliver. CI's
+`Debug|x64` confirmed the M2.6 value. The script now mines: idle miners are sent to a home rock every fifty
+ticks, fighters alone take the fleet moves, and at tick 1,500 everything is moved, miners included. The
+M2.7 value was computed off Windows, under g++ and clang at two optimization levels, which agreed. The old
+value still reproduces with the M2.6 code and the old script, which says the loop moved nothing that does
+not mine.
+
+**AND MOVED AGAIN, ON A BRANCH BESIDE THOSE, BY M1.17.** Ships began to turn as they fly and to route
+around structures and each other (Q59, Q60, Q61). Without the mining, that gave `0xc8b1069f59fa3f85`.
+**When the branch merged, the two together gave `0x073f1184808b252a`**, the same on Debug and Release, x64 and ARM64
+before the literal was changed. That run is also the four-MSVC-pair measurement M2.7's value was still
+owed. A change that moves the hash is deliberate, and it is re-pinned from four agreeing builds, never
+from one.
+
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
 it on 2026-09-23 (`OpenQuestions.md` Q58). ARM64 here is compiled on, and runs natively on, the Surface Pro.
-
-**THE HASH MOVED DELIBERATELY ON 2026-09-23 AND IS NOW `0xc8b1069f59fa3f85`.** M1.17 made ships turn
-as they fly and route around structures (Q59, Q60), which gave that value. Q61 then made them route
-around each other, which moved it to `0x3a759511ba284377`, and Q61's order groups moved it back: the
-script orders each player's whole fleet at once, so its ships are one group and never avoid each
-other. The same script, now with steering in the tick,
-hashed to that value on Debug and Release, x64 and ARM64, before the literal was changed. That is the
-test doing its job: a change that moves the hash is deliberate, and it is re-pinned from four
-agreeing builds, never from one.
 
 One is still owed:
 

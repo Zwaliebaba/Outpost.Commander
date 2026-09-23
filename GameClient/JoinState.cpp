@@ -9,6 +9,7 @@ void JoinState::Begin(SessionToken _token) noexcept
 {
   m_token = _token;
   m_matchSeed = 0;
+  m_playerCount = 0;
   m_player = NO_PLAYER;
   m_phase = JoinPhase::Joining;
   m_resumed = false;
@@ -69,6 +70,7 @@ bool JoinState::Accept(const JoinReply& _reply) noexcept
     m_phase = JoinPhase::Refused;
     m_player = NO_PLAYER;
     m_matchSeed = 0;
+    m_playerCount = 0;
 
     // The token is cleared and the caller persists that, so "I was refused" and "I have never
     // joined" are one state on the next run rather than two.
@@ -81,6 +83,7 @@ bool JoinState::Accept(const JoinReply& _reply) noexcept
 
   m_token = _reply.token;
   m_matchSeed = _reply.matchSeed;
+  m_playerCount = _reply.playerCount;
   m_player = _reply.player;
   m_phase = JoinPhase::Joined;
   m_resumed = (_reply.result == JoinResult::Rejoined);

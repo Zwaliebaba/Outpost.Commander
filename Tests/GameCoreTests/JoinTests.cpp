@@ -19,12 +19,12 @@ constexpr std::size_t REPLY_BYTES = Neuron::PacketHeader::SIZE_BYTES + Outpost::
 TEST_CLASS(TheJoinRecords)
 {
 public:
-  /// **TWELVE AND TWENTY-TWO SINCE ADR-024**, which took the two fragment fields out of the transport header
-  /// in front of them. The records themselves did not change.
-  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsTwentyTwo)
+  /// **TWELVE AND TWENTY-THREE.** ADR-024 took the two fragment fields out of the transport header in front
+  /// of both, and M2.3 added the player count's byte to the reply.
+  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsTwentyThree)
   {
     Assert::AreEqual(static_cast<std::size_t>(12), JOIN_BYTES);
-    Assert::AreEqual(static_cast<std::size_t>(22), REPLY_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(23), REPLY_BYTES);
   }
 
   TEST_METHOD(AJoinRoundTrips)
@@ -62,7 +62,8 @@ public:
   {
     for (const Outpost::JoinResult result : {Outpost::JoinResult::Accepted, Outpost::JoinResult::Rejoined, Outpost::JoinResult::MatchFull})
     {
-      const Outpost::JoinReply written{.result = result, .player = 3, .token = 0xFEDCBA9876543210ull, .matchSeed = 0x00FF00FF00FF00FFull};
+      const Outpost::JoinReply written{
+        .result = result, .player = 3, .playerCount = 4, .token = 0xFEDCBA9876543210ull, .matchSeed = 0x00FF00FF00FF00FFull};
 
       std::array<std::byte, REPLY_BYTES> bytes{};
       Neuron::ByteWriter writer{bytes};
@@ -93,6 +94,27 @@ public:
     Outpost::JoinReply read{};
     Assert::IsTrue(Outpost::Decode(reader, read) == Outpost::JoinFault::None);
     Assert::AreEqual(seed, read.matchSeed);
+  }
+
+  /// **THE COUNT IS THE FIELD'S OTHER INPUT** (M2.3), so every count a host can seat has to arrive as
+  /// sent -- `MAX_PLAYERS` at the top, since a stress host seats that many (ADR-023), and one at the bottom.
+  TEST_METHOD(ThePlayerCountSurvivesTheWire)
+  {
+    for (const std::size_t count : {std::size_t{1}, std::size_t{2}, std::size_t{4}, Outpost::MAX_PLAYERS})
+    {
+      const Outpost::JoinReply written{
+        .result = Outpost::JoinResult::Accepted, .player = 1, .playerCount = static_cast<std::uint8_t>(count), .token = 1, .matchSeed = 7};
+
+      std::array<std::byte, REPLY_BYTES> bytes{};
+      Neuron::ByteWriter writer{bytes};
+      Assert::IsTrue(Outpost::Encode(written, writer));
+
+      Neuron::ByteReader reader{bytes};
+      Outpost::JoinReply read{};
+      Assert::IsTrue(Outpost::Decode(reader, read) == Outpost::JoinFault::None);
+      Assert::AreEqual(count, static_cast<std::size_t>(read.playerCount));
+      Assert::AreEqual(std::uint64_t{7}, read.matchSeed, L"the count's byte shifted the seed");
+    }
   }
 
   /// ZERO IS NOT A RESULT, for the reason `Neuron::PacketType` gives: a zero-filled buffer must not

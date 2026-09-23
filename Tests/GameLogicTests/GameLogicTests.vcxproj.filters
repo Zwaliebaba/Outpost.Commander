@@ -7,6 +7,10 @@
     <ClCompile Include="BuildTests.cpp" />
     <ClCompile Include="DeterminismTests.cpp" />
     <ClCompile Include="RingAssignmentTests.cpp" />
+    <ClCompile Include="UniformGridTests.cpp" />
+    <ClCompile Include="MiningTests.cpp" />
+    <ClCompile Include="ModuleEffectTests.cpp" />
+    <ClCompile Include="EconomyTests.cpp" />
     <ClCompile Include="SessionsTests.cpp" />
     <ClCompile Include="TickTests.cpp" />
     <ClCompile Include="pch.cpp" />

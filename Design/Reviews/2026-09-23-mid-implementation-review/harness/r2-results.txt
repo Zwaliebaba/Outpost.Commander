@@ -1,0 +1,359 @@
+R2 HARNESS. Miner 150cr/100u/s/100 cargo/20 ore/s, Fighter 300cr, build 20cr/s (x1.5/x2 shipyard), unload 50/s, start 1000.
+Module sites at (+-250,+-250) from the station (354 units out). Miner policy: spread = fewest-assigned rock, then nearest, own region only.
+
+==== OPENINGS, INFINITE ORE (M2 as shipped), miners spread over home rocks ====
+A  6M then F (design's six)  miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   8250 last-60s  30.0/s | banked  3250 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+B  4M then F                 miners  4 fighters 18 (@120s  6, @180s 10, @240s 14) shipyard L0 proc L0 | income total   6050 last-60s  21.7/s | banked  1050 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 28 (@120s  5, @180s 13, @240s 21) shipyard L2 proc L0 | income total   9950 last-60s  40.0/s | banked   350 | slot idle   101 ticks (first idle 92s) | home dry 0s all dry 0s
+D  4M S s then F             miners  4 fighters 19 (@120s  5, @180s  9, @240s 14) shipyard L2 proc L0 | income total   6050 last-60s  21.7/s | banked    50 | slot idle  1950 ticks (first idle 75s) | home dry 0s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 23 (@120s  4, @180s 10, @240s 17) shipyard L2 proc L0 | income total   7907 last-60s  30.1/s | banked   107 | slot idle  1314 ticks (first idle 40s) | home dry 0s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   9968 last-60s  39.3/s | banked  4918 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+G  4M P p S s then F         miners  4 fighters 25 (@120s  4, @180s 12, @240s 19) shipyard L2 proc L2 | income total   8778 last-60s  32.5/s | banked    78 | slot idle   332 ticks (first idle 195s) | home dry 0s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters 12 (@120s  4, @180s  7, @240s  9) shipyard L0 proc L0 | income total   3100 last-60s  11.7/s | banked   200 | slot idle  2100 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 16 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   6717 last-60s  25.9/s | banked  1867 | slot idle   193 ticks (first idle 37s) | home dry 0s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 18 (@120s  6, @180s 10, @240s 14) shipyard L0 proc L0 | income total   5800 last-60s  22.5/s | banked   800 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   7917 last-60s  31.8/s | banked  2917 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+J  8M S s then F             miners  8 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L0 | income total  10250 last-60s  40.0/s | banked   950 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L0 | income total  11485 last-60s  45.6/s | banked  1885 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L1 | income total  12037 last-60s  50.0/s | banked  2087 | slot idle    46 ticks (first idle 77s) | home dry 0s all dry 0s
+
+==== OPENINGS, INFINITE ORE (M2 as shipped), miners stacked on the nearest rock ====
+A  6M then F (design's six)  miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total  10200 last-60s  40.0/s | banked  5200 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+B  4M then F                 miners  4 fighters 18 (@120s  6, @180s 10, @240s 14) shipyard L0 proc L0 | income total   7000 last-60s  26.7/s | banked  2000 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 29 (@120s  5, @180s 13, @240s 21) shipyard L2 proc L0 | income total  12800 last-60s  53.3/s | banked  2900 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+D  4M S s then F             miners  4 fighters 21 (@120s  6, @180s 11, @240s 16) shipyard L2 proc L0 | income total   7000 last-60s  26.7/s | banked   100 | slot idle  1622 ticks (first idle 82s) | home dry 0s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 28 (@120s  6, @180s 13, @240s 21) shipyard L2 proc L0 | income total   9600 last-60s  38.0/s | banked   300 | slot idle   451 ticks (first idle 40s) | home dry 0s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total  12212 last-60s  49.0/s | banked  7162 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+G  4M P p S s then F         miners  4 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L2 | income total  10150 last-60s  40.0/s | banked   850 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters 12 (@120s  4, @180s  7, @240s  9) shipyard L0 proc L0 | income total   3200 last-60s  13.3/s | banked     0 | slot idle  2068 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   7900 last-60s  33.3/s | banked  2750 | slot idle    42 ticks (first idle 37s) | home dry 0s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 18 (@120s  6, @180s 10, @240s 14) shipyard L0 proc L0 | income total   6600 last-60s  26.7/s | banked  1600 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   9600 last-60s  39.9/s | banked  4600 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+J  8M S s then F             miners  8 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L0 | income total  13200 last-60s  53.3/s | banked  3900 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L0 | income total  15495 last-60s  66.5/s | banked  5895 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 28 (@120s  4, @180s 12, @240s 20) shipyard L2 proc L1 | income total  15548 last-60s  66.7/s | banked  5598 | slot idle     0 ticks (first idle 0s) | home dry 0s all dry 0s
+
+-- Line C in full, infinite ore, spread --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     517      4        0        3.9          0 10000000000000000000 12000000000000000000 free
+   60s     400      6        0       19.4          0 10000000000000000000 12000000000000000000 free
+   90s     100      8        1       30.0          0 10000000000000000000 12000000000000000000 busy
+  120s     200      8        5       43.3         71 10000000000000000000 12000000000000000000 busy
+  150s      85      8        9       36.2         71 10000000000000000000 12000000000000000000 busy
+  180s      35      8       13       38.3         92 10000000000000000000 12000000000000000000 busy
+  210s     200      8       17       45.5         92 10000000000000000000 12000000000000000000 busy
+  240s      50      8       21       35.0         92 10000000000000000000 12000000000000000000 busy
+  270s      20      8       25       39.0         92 10000000000000000000 12000000000000000000 busy
+  300s     350      8       28       41.0        101 10000000000000000000 12000000000000000000 busy
+
+==== OPENINGS, FINITE ORE: 200 per home rock (Q26), 200 per contested rock, spread ====
+A  6M then F (design's six)  miners  6 fighters 10 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   3000 last-60s   6.7/s | banked   100 | slot idle  2100 ticks (first idle 150s) | home dry 112s all dry 0s
+B  4M then F                 miners  4 fighters  9 (@120s  6, @180s  8, @240s  8) shipyard L0 proc L0 | income total   2500 last-60s   3.3/s | banked   200 | slot idle  2700 ticks (first idle 120s) | home dry 141s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters  7 (@120s  2, @180s  4, @240s  6) shipyard L2 proc L0 | income total   3200 last-60s   6.7/s | banked   200 | slot idle  3400 ticks (first idle 77s) | home dry 112s all dry 0s
+D  4M S s then F             miners  4 fighters  7 (@120s  4, @180s  5, @240s  6) shipyard L2 proc L0 | income total   2500 last-60s   3.3/s | banked   100 | slot idle  3750 ticks (first idle 67s) | home dry 141s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters  7 (@120s  3, @180s  4, @240s  6) shipyard L2 proc L0 | income total   2900 last-60s   5.0/s | banked   200 | slot idle  3750 ticks (first idle 40s) | home dry 122s all dry 0s
+F  3M P 3M then F            miners  6 fighters 10 (@120s  3, @180s  7, @240s  9) shipyard L0 proc L1 | income total   3550 last-60s   6.2/s | banked     0 | slot idle  1704 ticks (first idle 167s) | home dry 121s all dry 0s
+G  4M P p S s then F         miners  4 fighters  8 (@120s  4, @180s  6, @240s  7) shipyard L2 proc L2 | income total   3466 last-60s   5.0/s | banked   166 | slot idle  3000 ticks (first idle 120s) | home dry 141s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters  9 (@120s  4, @180s  6, @240s  7) shipyard L0 proc L0 | income total   2000 last-60s   5.0/s | banked     0 | slot idle  3000 ticks (first idle 45s) | home dry 262s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters  9 (@120s  4, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2600 last-60s   5.0/s | banked   150 | slot idle  2550 ticks (first idle 37s) | home dry 151s all dry 0s
+H4 MM FF MM then F           miners  4 fighters  9 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2400 last-60s   3.3/s | banked   100 | slot idle  2700 ticks (first idle 60s) | home dry 155s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters  9 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2800 last-60s   3.7/s | banked   200 | slot idle  2400 ticks (first idle 135s) | home dry 124s all dry 0s
+J  8M S s then F             miners  8 fighters  7 (@120s  3, @180s  4, @240s  6) shipyard L2 proc L0 | income total   3300 last-60s   8.3/s | banked     0 | slot idle  3028 ticks (first idle 112s) | home dry 106s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters  8 (@120s  1, @180s  3, @240s  6) shipyard L2 proc L0 | income total   3600 last-60s  10.0/s | banked     0 | slot idle  3000 ticks (first idle 90s) | home dry 109s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters  7 (@120s  1, @180s  3, @240s  6) shipyard L2 proc L1 | income total   3625 last-60s   8.3/s | banked   275 | slot idle  3225 ticks (first idle 77s) | home dry 112s all dry 0s
+
+==== OPENINGS, FINITE ORE: 200 per home rock (Q26), 600 per contested rock, spread ====
+A  6M then F (design's six)  miners  6 fighters 10 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   3000 last-60s   6.7/s | banked   100 | slot idle  2100 ticks (first idle 150s) | home dry 112s all dry 0s
+B  4M then F                 miners  4 fighters  9 (@120s  6, @180s  8, @240s  8) shipyard L0 proc L0 | income total   2500 last-60s   3.3/s | banked   200 | slot idle  2700 ticks (first idle 120s) | home dry 141s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters  7 (@120s  2, @180s  4, @240s  6) shipyard L2 proc L0 | income total   3200 last-60s   6.7/s | banked   200 | slot idle  3400 ticks (first idle 77s) | home dry 112s all dry 0s
+D  4M S s then F             miners  4 fighters  7 (@120s  4, @180s  5, @240s  6) shipyard L2 proc L0 | income total   2500 last-60s   3.3/s | banked   100 | slot idle  3750 ticks (first idle 67s) | home dry 141s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters  7 (@120s  3, @180s  4, @240s  6) shipyard L2 proc L0 | income total   2900 last-60s   5.0/s | banked   200 | slot idle  3750 ticks (first idle 40s) | home dry 122s all dry 0s
+F  3M P 3M then F            miners  6 fighters 10 (@120s  3, @180s  7, @240s  9) shipyard L0 proc L1 | income total   3550 last-60s   6.2/s | banked     0 | slot idle  1704 ticks (first idle 167s) | home dry 121s all dry 0s
+G  4M P p S s then F         miners  4 fighters  8 (@120s  4, @180s  6, @240s  7) shipyard L2 proc L2 | income total   3466 last-60s   5.0/s | banked   166 | slot idle  3000 ticks (first idle 120s) | home dry 141s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters  9 (@120s  4, @180s  6, @240s  7) shipyard L0 proc L0 | income total   2000 last-60s   5.0/s | banked     0 | slot idle  3000 ticks (first idle 45s) | home dry 262s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters  9 (@120s  4, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2600 last-60s   5.0/s | banked   150 | slot idle  2550 ticks (first idle 37s) | home dry 151s all dry 0s
+H4 MM FF MM then F           miners  4 fighters  9 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2400 last-60s   3.3/s | banked   100 | slot idle  2700 ticks (first idle 60s) | home dry 155s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters  9 (@120s  5, @180s  7, @240s  8) shipyard L0 proc L0 | income total   2800 last-60s   3.7/s | banked   200 | slot idle  2400 ticks (first idle 135s) | home dry 124s all dry 0s
+J  8M S s then F             miners  8 fighters  7 (@120s  3, @180s  4, @240s  6) shipyard L2 proc L0 | income total   3300 last-60s   8.3/s | banked     0 | slot idle  3028 ticks (first idle 112s) | home dry 106s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters  8 (@120s  1, @180s  3, @240s  6) shipyard L2 proc L0 | income total   3600 last-60s  10.0/s | banked     0 | slot idle  3000 ticks (first idle 90s) | home dry 109s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters  7 (@120s  1, @180s  3, @240s  6) shipyard L2 proc L1 | income total   3625 last-60s   8.3/s | banked   275 | slot idle  3225 ticks (first idle 77s) | home dry 112s all dry 0s
+
+-- Line B (4M then F) in full, finite 200/200 --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     517      4        0        3.9          0    1754    2400 free
+   60s     447      4        2       17.7          0    1107    2400 free
+   90s     400      4        4       18.4          0     600    2400 free
+  120s     200      4        6       13.3          0     112    2400 free
+  150s     200      4        7       10.0        300       0    2400 free
+  180s       0      4        8        3.3        600       0    2173 free
+  210s     100      4        8        3.3       1200       0    2000 free
+  240s       0      4        8        6.7       1614       0    2000 busy
+  270s     100      4        9        3.3       2100       0    1824 free
+  300s     200      4        9        3.3       2700       0    1700 free
+
+-- Line A (6M then F) in full, finite 200/200 --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     517      4        0        3.9          0    1754    2400 free
+   60s     500      6        1       19.4          0     919    2400 free
+   90s     652      6        3       25.1          0     200    2400 free
+  120s     400      6        5       11.6          0       0    2400 free
+  150s       0      6        7        6.7          0       0    2036 free
+  180s     100      6        7        3.3        600       0    1800 free
+  210s     100      6        8       10.0        900       0    1800 free
+  240s       0      6        8        6.7       1255       0    1500 busy
+  270s     100      6        9        3.3       1800       0    1400 free
+  300s     100      6       10       10.0       2100       0    1200 free
+
+==== HOME FIELD EXHAUSTION vs ORE PER ROCK (spread; contested 200) ====
+  ore/rock  4M: dry@  income total   6M: dry@  income total   8M: dry@  income total
+      100      74s        1800          61s        2200          61s        2600     
+      200     141s        2500         112s        3000         106s        3300     
+      300     209s        3300         159s        3700         139s        4100     
+      400     276s        4100         209s        4400         185s        4800     
+      500       0s        4700         259s        5200         231s        5600     
+      600       0s        5010           0s        6000         277s        6500     
+      800       0s        5327           0s        6900           0s        7700     
+
+==== CONTESTED TRICKLE: home already dry, N miners on own-region contested rocks (200 each), income over 300 s ====
+  2 miners: income total   500 over 300s, last-60s  1.7 cr/s, contested dry at 0s
+  4 miners: income total   900 over 300s, last-60s  1.7 cr/s, contested dry at 0s
+  6 miners: income total  1300 over 300s, last-60s  3.3 cr/s, contested dry at 0s
+  8 miners: income total  1500 over 300s, last-60s  3.3 cr/s, contested dry at 0s
+
+==== CANDIDATE SETS (line K: 5M S 3M s 2M then F; spread) ====
+  home 200 x10 =  2000, contested  200 x12 =  2400 |                              miners 10 fighters  8 (@120s  1, @180s  3, @240s  6) shipyard L2 proc L0 | income total   3600 last-60s  10.0/s | banked     0 | slot idle  3000 ticks (first idle 90s) | home dry 109s all dry 0s
+  home 300 x10 =  3000, contested  600 x12 =  7200 |                              miners 10 fighters 10 (@120s  3, @180s  6, @240s  8) shipyard L2 proc L0 | income total   4400 last-60s  11.7/s | banked   200 | slot idle  2700 ticks (first idle 112s) | home dry 148s all dry 0s
+  home 400 x10 =  4000, contested  800 x12 =  9600 |                              miners 10 fighters 13 (@120s  4, @180s  8, @240s 11) shipyard L2 proc L0 | income total   5200 last-60s  11.7/s | banked   100 | slot idle  2250 ticks (first idle 120s) | home dry 185s all dry 0s
+  home 400 x10 =  4000, contested 1000 x12 = 12000 |                              miners 10 fighters 13 (@120s  4, @180s  8, @240s 11) shipyard L2 proc L0 | income total   5200 last-60s  11.7/s | banked   100 | slot idle  2250 ticks (first idle 120s) | home dry 185s all dry 0s
+  home 500 x10 =  5000, contested 1000 x12 = 12000 |                              miners 10 fighters 15 (@120s  4, @180s  9, @240s 13) shipyard L2 proc L0 | income total   5900 last-60s   8.3/s | banked   200 | slot idle  1950 ticks (first idle 142s) | home dry 222s all dry 0s
+  home 600 x10 =  6000, contested 1200 x12 = 14400 |                              miners 10 fighters 18 (@120s  4, @180s 11, @240s 15) shipyard L2 proc L0 | income total   6600 last-60s   8.3/s | banked     0 | slot idle  1500 ticks (first idle 172s) | home dry 255s all dry 0s
+
+==== HOME FIELD REMAPPED TO 1,200-2,000 FROM THE ANCHOR ====
+  per-rock income, one miner, infinite ore (rock: new distance -> cr/s): 0:1375->3.70 1:1600->3.33 2:1638->3.33 3:1601->3.33 4:1851->2.67 5:1754->2.67 6:1733->2.67 7:1392->3.33 8:1996->2.67 9:1582->3.33  | mean 3.10 cr/s per miner; six miners 18.6 cr/s
+  -- infinite ore --
+A  6M then F (design's six)  miners  6 fighters 16 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   5100 last-60s  20.0/s | banked   100 | slot idle   239 ticks (first idle 60s) | home dry 0s all dry 0s
+B  4M then F                 miners  4 fighters 12 (@120s  4, @180s  7, @240s 10) shipyard L0 proc L0 | income total   3600 last-60s  13.3/s | banked   100 | slot idle  1502 ticks (first idle 60s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 16 (@120s  1, @180s  6, @240s 11) shipyard L2 proc L0 | income total   6000 last-60s  23.3/s | banked     0 | slot idle  1901 ticks (first idle 60s) | home dry 0s all dry 0s
+D  4M S s then F             miners  4 fighters 11 (@120s  2, @180s  5, @240s  8) shipyard L2 proc L0 | income total   3600 last-60s  13.3/s | banked     0 | slot idle  3150 ticks (first idle 50s) | home dry 0s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 13 (@120s  1, @180s  5, @240s  9) shipyard L2 proc L0 | income total   4800 last-60s  21.7/s | banked     0 | slot idle  2822 ticks (first idle 40s) | home dry 0s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   5975 last-60s  20.8/s | banked   925 | slot idle   161 ticks (first idle 62s) | home dry 0s all dry 0s
+G  4M P p S s then F         miners  4 fighters 14 (@120s  1, @180s  6, @240s 10) shipyard L2 proc L2 | income total   5275 last-60s  20.0/s | banked   175 | slot idle  2100 ticks (first idle 60s) | home dry 0s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters  8 (@120s  3, @180s  5, @240s  6) shipyard L0 proc L0 | income total   1800 last-60s   6.7/s | banked   100 | slot idle  3300 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 13 (@120s  3, @180s  6, @240s  9) shipyard L0 proc L0 | income total   4000 last-60s  17.9/s | banked    50 | slot idle  1253 ticks (first idle 37s) | home dry 0s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 12 (@120s  4, @180s  6, @240s  9) shipyard L0 proc L0 | income total   3400 last-60s  12.6/s | banked   200 | slot idle  1800 ticks (first idle 60s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L0 | income total   4895 last-60s  19.9/s | banked   195 | slot idle   576 ticks (first idle 60s) | home dry 0s all dry 0s
+J  8M S s then F             miners  8 fighters 17 (@120s  2, @180s  7, @240s 12) shipyard L2 proc L0 | income total   6400 last-60s  25.0/s | banked   100 | slot idle  1502 ticks (first idle 60s) | home dry 0s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 19 (@120s  1, @180s  6, @240s 13) shipyard L2 proc L0 | income total   7100 last-60s  30.3/s | banked   200 | slot idle  1350 ticks (first idle 37s) | home dry 0s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 19 (@120s  0, @180s  6, @240s 12) shipyard L2 proc L1 | income total   7119 last-60s  29.2/s | banked   169 | slot idle  1425 ticks (first idle 60s) | home dry 0s all dry 0s
+  -- finite 400 home / 800 contested --
+A  6M then F (design's six)  miners  6 fighters 13 (@120s  4, @180s  8, @240s 10) shipyard L0 proc L0 | income total   4100 last-60s  11.7/s | banked     0 | slot idle  1194 ticks (first idle 60s) | home dry 288s all dry 0s
+B  4M then F                 miners  4 fighters 11 (@120s  4, @180s  7, @240s  9) shipyard L0 proc L0 | income total   3270 last-60s  11.2/s | banked    70 | slot idle  1830 ticks (first idle 60s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 11 (@120s  1, @180s  6, @240s  9) shipyard L2 proc L0 | income total   4400 last-60s  10.0/s | banked   200 | slot idle  2800 ticks (first idle 60s) | home dry 266s all dry 0s
+D  4M S s then F             miners  4 fighters  9 (@120s  2, @180s  5, @240s  7) shipyard L2 proc L0 | income total   3270 last-60s  11.2/s | banked   270 | slot idle  3450 ticks (first idle 50s) | home dry 0s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 11 (@120s  1, @180s  5, @240s  8) shipyard L2 proc L0 | income total   3900 last-60s  10.8/s | banked     0 | slot idle  3150 ticks (first idle 40s) | home dry 0s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   4975 last-60s  14.6/s | banked   225 | slot idle   250 ticks (first idle 62s) | home dry 0s all dry 0s
+G  4M P p S s then F         miners  4 fighters 12 (@120s  1, @180s  5, @240s  9) shipyard L2 proc L2 | income total   4780 last-60s  16.8/s | banked   280 | slot idle  2400 ticks (first idle 60s) | home dry 0s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters  7 (@120s  3, @180s  5, @240s  6) shipyard L0 proc L0 | income total   1600 last-60s   6.7/s | banked   200 | slot idle  3600 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 12 (@120s  3, @180s  6, @240s  9) shipyard L0 proc L0 | income total   3500 last-60s  10.6/s | banked   150 | slot idle  1650 ticks (first idle 37s) | home dry 0s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 11 (@120s  4, @180s  6, @240s  9) shipyard L0 proc L0 | income total   3170 last-60s  12.8/s | banked   270 | slot idle  2100 ticks (first idle 60s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 13 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L0 | income total   3900 last-60s  11.7/s | banked   100 | slot idle  1200 ticks (first idle 60s) | home dry 0s all dry 0s
+J  8M S s then F             miners  8 fighters 11 (@120s  2, @180s  7, @240s  9) shipyard L2 proc L0 | income total   4500 last-60s  11.7/s | banked     0 | slot idle  2454 ticks (first idle 60s) | home dry 266s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 11 (@120s  1, @180s  5, @240s  9) shipyard L2 proc L0 | income total   4600 last-60s  10.0/s | banked   100 | slot idle  2550 ticks (first idle 37s) | home dry 244s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 12 (@120s  0, @180s  6, @240s  9) shipyard L2 proc L1 | income total   5119 last-60s  12.5/s | banked   269 | slot idle  2475 ticks (first idle 60s) | home dry 266s all dry 0s
+  -- 6M then F, remapped, infinite, in full --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     400      4        0        0.0          0 10000000000000000000 12000000000000000000 free
+   60s     100      6        1       10.0          0 10000000000000000000 12000000000000000000 free
+   90s     200      6        2       23.3        104 10000000000000000000 12000000000000000000 busy
+  120s     200      6        4       20.0        194 10000000000000000000 12000000000000000000 busy
+  150s     200      6        6       20.0        194 10000000000000000000 12000000000000000000 busy
+  180s     117      6        8       17.2        194 10000000000000000000 12000000000000000000 busy
+  210s     142      6       10       20.8        194 10000000000000000000 12000000000000000000 busy
+  240s     100      6       12       18.6        194 10000000000000000000 12000000000000000000 busy
+  270s     100      6       14       20.0        239 10000000000000000000 12000000000000000000 busy
+  300s     100      6       16       20.0        239 10000000000000000000 12000000000000000000 busy
+
+==== CONTESTED FIELD WITH A FORWARD UNLOAD POINT at the cluster centroid (home dry, contested 800/rock) ====
+  2 miners: income total  4600 over 300s, last-60s  13.3 cr/s (6.67 per miner)
+  4 miners: income total  5100 over 300s, last-60s   5.0 cr/s (1.25 per miner)
+  6 miners: income total  5500 over 300s, last-60s   6.7 cr/s (1.11 per miner)
+
+==== OPENINGS, FINITE ORE 400 home / 800 contested, spread ====
+A  6M then F (design's six)  miners  6 fighters 15 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   4400 last-60s   3.3/s | banked     0 | slot idle   600 ticks (first idle 255s) | home dry 209s all dry 0s
+B  4M then F                 miners  4 fighters 14 (@120s  6, @180s 10, @240s 13) shipyard L0 proc L0 | income total   4100 last-60s   6.7/s | banked     0 | slot idle  1021 ticks (first idle 195s) | home dry 276s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 13 (@120s  4, @180s  9, @240s 11) shipyard L2 proc L0 | income total   4800 last-60s   8.3/s | banked     0 | slot idle  2500 ticks (first idle 92s) | home dry 185s all dry 0s
+D  4M S s then F             miners  4 fighters 12 (@120s  4, @180s  8, @240s 11) shipyard L2 proc L0 | income total   4100 last-60s   6.7/s | banked   200 | slot idle  3000 ticks (first idle 75s) | home dry 276s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 12 (@120s  4, @180s  8, @240s 11) shipyard L2 proc L0 | income total   4400 last-60s   5.0/s | banked   200 | slot idle  3000 ticks (first idle 40s) | home dry 221s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   5425 last-60s   6.2/s | banked   375 | slot idle     0 ticks (first idle 0s) | home dry 220s all dry 0s
+G  4M P p S s then F         miners  4 fighters 16 (@120s  4, @180s 10, @240s 14) shipyard L2 proc L2 | income total   5853 last-60s  10.0/s | banked   153 | slot idle  1800 ticks (first idle 142s) | home dry 276s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters 10 (@120s  4, @180s  6, @240s  8) shipyard L0 proc L0 | income total   2500 last-60s   8.4/s | banked   200 | slot idle  2700 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 14 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   4200 last-60s   8.3/s | banked   250 | slot idle  1050 ticks (first idle 37s) | home dry 259s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 14 (@120s  5, @180s  9, @240s 12) shipyard L0 proc L0 | income total   4000 last-60s   6.7/s | banked   200 | slot idle  1200 ticks (first idle 90s) | home dry 276s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 15 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   4400 last-60s   6.7/s | banked     0 | slot idle   600 ticks (first idle 240s) | home dry 224s all dry 0s
+J  8M S s then F             miners  8 fighters 13 (@120s  4, @180s 10, @240s 11) shipyard L2 proc L0 | income total   4800 last-60s   7.6/s | banked     0 | slot idle  2250 ticks (first idle 157s) | home dry 185s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 13 (@120s  4, @180s  8, @240s 11) shipyard L2 proc L0 | income total   5200 last-60s  11.7/s | banked   100 | slot idle  2250 ticks (first idle 120s) | home dry 185s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 14 (@120s  3, @180s 10, @240s 12) shipyard L2 proc L1 | income total   5625 last-60s  10.4/s | banked   175 | slot idle  2175 ticks (first idle 77s) | home dry 185s all dry 0s
+
+==== OPENINGS, FINITE ORE 500 home / 1000 contested, spread ====
+A  6M then F (design's six)  miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   5200 last-60s   6.7/s | banked   200 | slot idle     0 ticks (first idle 0s) | home dry 259s all dry 0s
+B  4M then F                 miners  4 fighters 16 (@120s  6, @180s 10, @240s 14) shipyard L0 proc L0 | income total   4700 last-60s  11.5/s | banked     0 | slot idle   565 ticks (first idle 240s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 15 (@120s  4, @180s 10, @240s 14) shipyard L2 proc L0 | income total   5500 last-60s   6.7/s | banked   100 | slot idle  2200 ticks (first idle 92s) | home dry 231s all dry 0s
+D  4M S s then F             miners  4 fighters 14 (@120s  5, @180s  9, @240s 11) shipyard L2 proc L0 | income total   4700 last-60s  11.5/s | banked   200 | slot idle  2700 ticks (first idle 75s) | home dry 0s all dry 0s
+E  S first, 6M, s, F         miners  6 fighters 15 (@120s  4, @180s  9, @240s 13) shipyard L2 proc L0 | income total   5200 last-60s  10.0/s | banked   100 | slot idle  2550 ticks (first idle 40s) | home dry 271s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   6425 last-60s  12.5/s | banked  1375 | slot idle     0 ticks (first idle 0s) | home dry 265s all dry 0s
+G  4M P p S s then F         miners  4 fighters 19 (@120s  4, @180s 11, @240s 15) shipyard L2 proc L2 | income total   6753 last-60s  17.2/s | banked   153 | slot idle  1350 ticks (first idle 157s) | home dry 0s all dry 0s
+H  FFF rush then 4M, F       miners  0 fighters  3 (@120s  3, @180s  3, @240s  3) shipyard L0 proc L0 | income total      0 last-60s   0.0/s | banked   100 | slot idle  5100 ticks (first idle 45s) | home dry 0s all dry 0s
+H2 FF MM then F              miners  2 fighters 10 (@120s  4, @180s  6, @240s  8) shipyard L0 proc L0 | income total   2582 last-60s   9.7/s | banked   282 | slot idle  2700 ticks (first idle 45s) | home dry 0s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 16 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   4900 last-60s  10.1/s | banked    50 | slot idle   311 ticks (first idle 37s) | home dry 0s all dry 0s
+H4 MM FF MM then F           miners  4 fighters 16 (@120s  6, @180s  9, @240s 13) shipyard L0 proc L0 | income total   4700 last-60s  15.8/s | banked     0 | slot idle   565 ticks (first idle 150s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 17 (@120s  5, @180s  9, @240s 13) shipyard L0 proc L0 | income total   5200 last-60s  10.0/s | banked   200 | slot idle     0 ticks (first idle 0s) | home dry 274s all dry 0s
+J  8M S s then F             miners  8 fighters 15 (@120s  4, @180s 11, @240s 14) shipyard L2 proc L0 | income total   5600 last-60s   8.0/s | banked   200 | slot idle  1950 ticks (first idle 172s) | home dry 231s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 15 (@120s  4, @180s  9, @240s 13) shipyard L2 proc L0 | income total   5900 last-60s   8.3/s | banked   200 | slot idle  1950 ticks (first idle 142s) | home dry 222s all dry 0s
+L  4M S 2M s 2M p? no: P     miners  8 fighters 17 (@120s  4, @180s 11, @240s 15) shipyard L2 proc L1 | income total   6475 last-60s   8.3/s | banked   125 | slot idle  1725 ticks (first idle 77s) | home dry 231s all dry 0s
+
+==== REMAPPED 1,200-2,000, FINITE 200 home / 600 contested, spread ====
+A  6M then F                 miners  6 fighters  9 (@120s  4, @180s  6, @240s  7) shipyard L0 proc L0 | income total   2700 last-60s   5.0/s | banked   100 | slot idle  2400 ticks (first idle 60s) | home dry 150s all dry 0s
+B  4M then F                 miners  4 fighters  8 (@120s  4, @180s  6, @240s  8) shipyard L0 proc L0 | income total   2300 last-60s   5.0/s | banked     0 | slot idle  2941 ticks (first idle 60s) | home dry 201s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters  7 (@120s  1, @180s  3, @240s  5) shipyard L2 proc L0 | income total   3000 last-60s   8.3/s | banked     0 | slot idle  3400 ticks (first idle 60s) | home dry 147s all dry 0s
+F  3M P 3M then F            miners  6 fighters  9 (@120s  3, @180s  7, @240s  7) shipyard L0 proc L1 | income total   3225 last-60s   4.2/s | banked   275 | slot idle  2050 ticks (first idle 62s) | home dry 167s all dry 0s
+G  4M P p S s then F         miners  4 fighters  7 (@120s  1, @180s  5, @240s  6) shipyard L2 proc L2 | income total   3325 last-60s   7.5/s | banked    25 | slot idle  3085 ticks (first idle 60s) | home dry 201s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters  8 (@120s  3, @180s  6, @240s  7) shipyard L0 proc L0 | income total   2600 last-60s   6.7/s | banked     0 | slot idle  2421 ticks (first idle 60s) | home dry 165s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters  6 (@120s  0, @180s  2, @240s  4) shipyard L2 proc L0 | income total   3300 last-60s  11.7/s | banked     0 | slot idle  3241 ticks (first idle 37s) | home dry 133s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters  7 (@120s  0, @180s  2, @240s  4) shipyard L2 proc L1 | income total   3383 last-60s  10.4/s | banked    33 | slot idle  3225 ticks (first idle 60s) | home dry 147s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters  8 (@120s  3, @180s  5, @240s  7) shipyard L0 proc L0 | income total   2300 last-60s   5.0/s | banked   150 | slot idle  2850 ticks (first idle 37s) | home dry 204s all dry 0s
+N  3M P 3M S then F          miners  6 fighters  8 (@120s  2, @180s  5, @240s  6) shipyard L1 proc L1 | income total   3225 last-60s   4.2/s | banked   175 | slot idle  2750 ticks (first idle 62s) | home dry 167s all dry 0s
+O  8M then F                 miners  8 fighters  9 (@120s  3, @180s  6, @240s  7) shipyard L0 proc L0 | income total   3100 last-60s   7.1/s | banked   200 | slot idle  2100 ticks (first idle 60s) | home dry 132s all dry 0s
+
+==== REMAPPED 1,200-2,000, FINITE 250 home / 600 contested, spread ====
+A  6M then F                 miners  6 fighters  9 (@120s  4, @180s  6, @240s  9) shipyard L0 proc L0 | income total   2800 last-60s   3.3/s | banked   200 | slot idle  2400 ticks (first idle 60s) | home dry 205s all dry 0s
+B  4M then F                 miners  4 fighters  9 (@120s  4, @180s  6, @240s  8) shipyard L0 proc L0 | income total   2545 last-60s   4.1/s | banked   245 | slot idle  2700 ticks (first idle 60s) | home dry 267s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters  7 (@120s  0, @180s  3, @240s  5) shipyard L2 proc L0 | income total   3180 last-60s   9.7/s | banked   180 | slot idle  3400 ticks (first idle 60s) | home dry 186s all dry 0s
+F  3M P 3M then F            miners  6 fighters 10 (@120s  2, @180s  6, @240s  9) shipyard L0 proc L1 | income total   3475 last-60s   4.2/s | banked   225 | slot idle  1750 ticks (first idle 62s) | home dry 222s all dry 0s
+G  4M P p S s then F         miners  4 fighters  8 (@120s  1, @180s  5, @240s  7) shipyard L2 proc L2 | income total   3692 last-60s   6.1/s | banked    92 | slot idle  2852 ticks (first idle 60s) | home dry 267s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters  9 (@120s  3, @180s  6, @240s  8) shipyard L0 proc L0 | income total   2800 last-60s   6.7/s | banked   200 | slot idle  2400 ticks (first idle 60s) | home dry 220s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters  6 (@120s  0, @180s  2, @240s  5) shipyard L2 proc L0 | income total   3377 last-60s   9.7/s | banked    77 | slot idle  3183 ticks (first idle 37s) | home dry 183s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters  7 (@120s  0, @180s  2, @240s  5) shipyard L2 proc L1 | income total   3621 last-60s  12.1/s | banked   271 | slot idle  3225 ticks (first idle 60s) | home dry 186s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters  9 (@120s  3, @180s  5, @240s  7) shipyard L0 proc L0 | income total   2700 last-60s   7.6/s | banked   250 | slot idle  2550 ticks (first idle 37s) | home dry 258s all dry 0s
+N  3M P 3M S then F          miners  6 fighters  9 (@120s  1, @180s  5, @240s  7) shipyard L1 proc L1 | income total   3475 last-60s   4.2/s | banked   125 | slot idle  2550 ticks (first idle 62s) | home dry 222s all dry 0s
+O  8M then F                 miners  8 fighters  9 (@120s  3, @180s  6, @240s  8) shipyard L0 proc L0 | income total   3100 last-60s   5.7/s | banked   200 | slot idle  2100 ticks (first idle 60s) | home dry 183s all dry 0s
+
+==== REMAPPED 1,200-2,000, FINITE 300 home / 600 contested, spread ====
+A  6M then F                 miners  6 fighters 11 (@120s  4, @180s  8, @240s  9) shipyard L0 proc L0 | income total   3400 last-60s   5.0/s | banked   200 | slot idle  1800 ticks (first idle 60s) | home dry 217s all dry 0s
+B  4M then F                 miners  4 fighters 10 (@120s  4, @180s  7, @240s  9) shipyard L0 proc L0 | income total   2900 last-60s   5.3/s | banked     0 | slot idle  2230 ticks (first idle 60s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters  8 (@120s  1, @180s  5, @240s  7) shipyard L2 proc L0 | income total   3600 last-60s   6.7/s | banked     0 | slot idle  3194 ticks (first idle 60s) | home dry 195s all dry 0s
+F  3M P 3M then F            miners  6 fighters 12 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L1 | income total   4225 last-60s  10.4/s | banked    75 | slot idle  1124 ticks (first idle 62s) | home dry 234s all dry 0s
+G  4M P p S s then F         miners  4 fighters 11 (@120s  1, @180s  5, @240s  8) shipyard L2 proc L2 | income total   4225 last-60s   8.0/s | banked    25 | slot idle  2550 ticks (first idle 60s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 11 (@120s  3, @180s  6, @240s  9) shipyard L0 proc L0 | income total   3400 last-60s  10.0/s | banked   200 | slot idle  1800 ticks (first idle 60s) | home dry 232s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters  9 (@120s  1, @180s  4, @240s  7) shipyard L2 proc L0 | income total   4000 last-60s   8.3/s | banked   100 | slot idle  2850 ticks (first idle 37s) | home dry 199s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters  8 (@120s  0, @180s  5, @240s  7) shipyard L2 proc L1 | income total   4137 last-60s   8.3/s | banked   187 | slot idle  2932 ticks (first idle 60s) | home dry 195s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 10 (@120s  3, @180s  5, @240s  9) shipyard L0 proc L0 | income total   3002 last-60s   6.7/s | banked   252 | slot idle  2250 ticks (first idle 37s) | home dry 283s all dry 0s
+N  3M P 3M S then F          miners  6 fighters 11 (@120s  2, @180s  7, @240s  9) shipyard L1 proc L1 | income total   4225 last-60s  10.4/s | banked   275 | slot idle  2150 ticks (first idle 62s) | home dry 234s all dry 0s
+O  8M then F                 miners  8 fighters 11 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L0 | income total   3700 last-60s   6.7/s | banked   200 | slot idle  1500 ticks (first idle 60s) | home dry 199s all dry 0s
+
+==== REMAPPED 1,200-2,000, FINITE 400 home / 600 contested, spread ====
+A  6M then F                 miners  6 fighters 13 (@120s  4, @180s  8, @240s 10) shipyard L0 proc L0 | income total   4100 last-60s  11.7/s | banked     0 | slot idle  1194 ticks (first idle 60s) | home dry 288s all dry 0s
+B  4M then F                 miners  4 fighters 11 (@120s  4, @180s  7, @240s  9) shipyard L0 proc L0 | income total   3270 last-60s  11.2/s | banked    70 | slot idle  1830 ticks (first idle 60s) | home dry 0s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 11 (@120s  1, @180s  6, @240s  9) shipyard L2 proc L0 | income total   4400 last-60s  10.0/s | banked   200 | slot idle  2800 ticks (first idle 60s) | home dry 266s all dry 0s
+F  3M P 3M then F            miners  6 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L1 | income total   4975 last-60s  14.6/s | banked   225 | slot idle   250 ticks (first idle 62s) | home dry 0s all dry 0s
+G  4M P p S s then F         miners  4 fighters 12 (@120s  1, @180s  5, @240s  9) shipyard L2 proc L2 | income total   4780 last-60s  16.8/s | banked   280 | slot idle  2400 ticks (first idle 60s) | home dry 0s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 13 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L0 | income total   3900 last-60s  11.7/s | banked   100 | slot idle  1200 ticks (first idle 60s) | home dry 0s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 11 (@120s  1, @180s  5, @240s  9) shipyard L2 proc L0 | income total   4600 last-60s  10.0/s | banked   100 | slot idle  2550 ticks (first idle 37s) | home dry 244s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters 12 (@120s  0, @180s  6, @240s  9) shipyard L2 proc L1 | income total   5119 last-60s  12.5/s | banked   269 | slot idle  2475 ticks (first idle 60s) | home dry 266s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 12 (@120s  3, @180s  6, @240s  9) shipyard L0 proc L0 | income total   3500 last-60s  10.6/s | banked   150 | slot idle  1650 ticks (first idle 37s) | home dry 0s all dry 0s
+N  3M P 3M S then F          miners  6 fighters 14 (@120s  2, @180s  7, @240s 11) shipyard L1 proc L1 | income total   4975 last-60s  14.6/s | banked   125 | slot idle  1550 ticks (first idle 62s) | home dry 0s all dry 0s
+O  8M then F                 miners  8 fighters 13 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L0 | income total   4500 last-60s  11.7/s | banked   100 | slot idle   606 ticks (first idle 60s) | home dry 266s all dry 0s
+
+==== REMAPPED, INFINITE, STACKED ON NEAREST vs SPREAD (per-rock cap question) ====
+  MMMMMM         spread                               miners  6 fighters 16 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   5100 last-60s  20.0/s | banked   100 | slot idle   239 ticks (first idle 60s) | home dry 0s all dry 0s
+  MMMMMM         stacked                              miners  6 fighters 16 (@120s  4, @180s  8, @240s 12) shipyard L0 proc L0 | income total   5700 last-60s  21.2/s | banked   700 | slot idle    54 ticks (first idle 60s) | home dry 0s all dry 0s
+  MMMMMSMMMsMM   spread                               miners 10 fighters 19 (@120s  1, @180s  6, @240s 13) shipyard L2 proc L0 | income total   7100 last-60s  30.3/s | banked   200 | slot idle  1350 ticks (first idle 37s) | home dry 0s all dry 0s
+  MMMMMSMMMsMM   stacked                              miners 10 fighters 23 (@120s  1, @180s  8, @240s 16) shipyard L2 proc L0 | income total   8600 last-60s  35.7/s | banked   200 | slot idle   672 ticks (first idle 37s) | home dry 0s all dry 0s
+
+-- Line A (6M then F), remapped, finite 300/600, in full --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     400      4        0        0.0          0    2816    7200 free
+   60s     100      6        1       10.0          0    2289    7200 free
+   90s     200      6        2       23.3        104    1700    7200 busy
+  120s     100      6        4       16.7        194    1102    7200 busy
+  150s       0      6        6       16.7        284     616    7200 busy
+  180s     100      6        8       13.3        300     391    7168 free
+  210s     200      6        8       13.3        642     200    7000 busy
+  240s     200      6        9       10.0        938       0    7000 busy
+  270s       0      6       11        3.3       1200       0    6768 free
+  300s     200      6       11        6.7       1800       0    6400 free
+
+==== REMAPPED 1,200-2,000, FINITE 200 home / 600 contested, FORWARD UNLOAD POINT appears at 90 s ====
+A  6M then F                 miners  6 fighters 15 (@120s  4, @180s  7, @240s 11) shipyard L0 proc L0 | income total   6000 last-60s  21.7/s | banked  1000 | slot idle   597 ticks (first idle 60s) | home dry 150s all dry 0s
+B  4M then F                 miners  4 fighters 13 (@120s  4, @180s  6, @240s  9) shipyard L0 proc L0 | income total   4700 last-60s  30.0/s | banked   600 | slot idle  1495 ticks (first idle 60s) | home dry 201s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 17 (@120s  1, @180s  5, @240s 12) shipyard L2 proc L0 | income total   6300 last-60s  13.5/s | banked     0 | slot idle  1900 ticks (first idle 60s) | home dry 147s all dry 0s
+F  3M P 3M then F            miners  6 fighters 14 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L1 | income total   7400 last-60s  31.7/s | banked  2350 | slot idle   330 ticks (first idle 62s) | home dry 167s all dry 0s
+G  4M P p S s then F         miners  4 fighters 15 (@120s  1, @180s  5, @240s  8) shipyard L2 proc L2 | income total   6775 last-60s  45.0/s | banked   775 | slot idle  1807 ticks (first idle 60s) | home dry 201s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 13 (@120s  3, @180s  6, @240s  9) shipyard L0 proc L0 | income total   6000 last-60s  34.8/s | banked  1600 | slot idle   920 ticks (first idle 60s) | home dry 165s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 16 (@120s  0, @180s  5, @240s 13) shipyard L2 proc L0 | income total   6400 last-60s  10.0/s | banked   100 | slot idle  1800 ticks (first idle 37s) | home dry 133s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters 19 (@120s  0, @180s  5, @240s 12) shipyard L2 proc L1 | income total   7433 last-60s  16.8/s | banked   183 | slot idle  1425 ticks (first idle 60s) | home dry 147s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 12 (@120s  3, @180s  5, @240s  8) shipyard L0 proc L0 | income total   4900 last-60s  33.3/s | banked   950 | slot idle  1587 ticks (first idle 37s) | home dry 204s all dry 0s
+N  3M P 3M S then F          miners  6 fighters 16 (@120s  2, @180s  5, @240s 10) shipyard L1 proc L1 | income total   7400 last-60s  31.7/s | banked  1350 | slot idle   969 ticks (first idle 62s) | home dry 167s all dry 0s
+O  8M then F                 miners  8 fighters 15 (@120s  3, @180s  7, @240s 11) shipyard L0 proc L0 | income total   6300 last-60s   9.6/s | banked  1000 | slot idle   150 ticks (first idle 60s) | home dry 132s all dry 0s
+
+==== REMAPPED 1,200-2,000, FINITE 250 home / 600 contested, FORWARD UNLOAD POINT appears at 90 s ====
+A  6M then F                 miners  6 fighters 12 (@120s  4, @180s  6, @240s  9) shipyard L0 proc L0 | income total   4900 last-60s  31.7/s | banked   800 | slot idle  1388 ticks (first idle 60s) | home dry 205s all dry 0s
+B  4M then F                 miners  4 fighters 11 (@120s  4, @180s  6, @240s  8) shipyard L0 proc L0 | income total   3705 last-60s  18.4/s | banked   205 | slot idle  1912 ticks (first idle 60s) | home dry 267s all dry 0s
+C  4M S 2M s 2M then F       miners  8 fighters 16 (@120s  0, @180s  5, @240s  9) shipyard L2 proc L0 | income total   6470 last-60s  37.2/s | banked   170 | slot idle  1989 ticks (first idle 60s) | home dry 186s all dry 0s
+F  3M P 3M then F            miners  6 fighters 13 (@120s  2, @180s  6, @240s  9) shipyard L0 proc L1 | income total   5900 last-60s  37.5/s | banked  1150 | slot idle   838 ticks (first idle 62s) | home dry 222s all dry 0s
+G  4M P p S s then F         miners  4 fighters 13 (@120s  1, @180s  5, @240s  7) shipyard L2 proc L2 | income total   5282 last-60s  27.6/s | banked   182 | slot idle  2250 ticks (first idle 60s) | home dry 267s all dry 0s
+I  2M F 2M F 2M then F       miners  6 fighters 12 (@120s  3, @180s  6, @240s  8) shipyard L0 proc L0 | income total   5355 last-60s  34.2/s | banked  1255 | slot idle  1300 ticks (first idle 60s) | home dry 220s all dry 0s
+K  5M S 3M s 2M then F       miners 10 fighters 17 (@120s  0, @180s  4, @240s 12) shipyard L2 proc L0 | income total   6700 last-60s  13.4/s | banked   100 | slot idle  1650 ticks (first idle 37s) | home dry 183s all dry 0s
+L  4M S 2M s 2M P then F     miners  8 fighters 17 (@120s  0, @180s  4, @240s  9) shipyard L2 proc L1 | income total   7659 last-60s  46.5/s | banked   709 | slot idle  1648 ticks (first idle 60s) | home dry 186s all dry 0s
+H3 F MMM F MM then F         miners  5 fighters 11 (@120s  3, @180s  5, @240s  7) shipyard L0 proc L0 | income total   4127 last-60s  24.8/s | banked   477 | slot idle  1786 ticks (first idle 37s) | home dry 258s all dry 0s
+N  3M P 3M S then F          miners  6 fighters 13 (@120s  1, @180s  5, @240s  7) shipyard L1 proc L1 | income total   5900 last-60s  37.5/s | banked   750 | slot idle  1622 ticks (first idle 62s) | home dry 222s all dry 0s
+O  8M then F                 miners  8 fighters 14 (@120s  3, @180s  7, @240s 10) shipyard L0 proc L0 | income total   6490 last-60s  24.8/s | banked  1490 | slot idle   410 ticks (first idle 60s) | home dry 183s all dry 0s
+
+-- Line K (5M S 3M s 2M then F), remapped 250/600, depot at 90 s, in full --
+  time credits miners fighters income/30s idle-ticks homeOre contOre slot
+   30s     400      4        0        0.0          0    2316    7200 free
+   60s     150      5        0       10.0         93    1800    7200 busy
+   90s     200      8        0       26.7        350    1196    7200 free
+  120s     200     10        0       20.0        600     772    7200 free
+  150s     242     10        1       21.4        938     350    7000 busy
+  180s     182     10        4       28.0       1069      71    6140 busy
+  210s     267     10        8       42.8       1121       0    5065 busy
+  240s     495     10       12       47.6       1121       0    3911 busy
+  270s     200     10       16       20.2       1200       0    2983 free
+  300s     100     10       17        6.7       1650       0    2850 free
+
+RAID ARITHMETIC (GameDesign section 7) under three cadence readings of '25 dps per mount' (F3 / M3.0 unresolved)
+  continuous (hundredths accumulated)   : fighter kills miner  12.9s | fighter v fighter  20.0s | 3 fighters v 6 miners  25.7s | PD kills fighter   5.6s | fighter v module  120.0s, 3 v module  40.0s | 10 fighters v station  64.0s
+  1 Hz, integer per shot                : fighter kills miner  13.2s | fighter v fighter  20.0s | 3 fighters v 6 miners  26.5s | PD kills fighter   5.6s | fighter v module  125.0s, 3 v module  41.7s | 10 fighters v station  66.7s
+  20 Hz, integer per tick x20           : fighter kills miner   infs | fighter v fighter   infs | 3 fighters v 6 miners   infs | PD kills fighter   7.5s | fighter v module    infs, 3 v module   infs | 10 fighters v station   infs
+
+FOUR-PLAYER FIELD seed 20260922: 88 rocks, 22 per region. Anchors: p1 (-6000,0) p2 (0,-6000) p3 (6000,0) p4 (0,6000); adjacent 8485 apart (60.6s at 140), opposed 12000 (85.7s)
+  idx kind      dOwn  dAdj(p2) dAdj(p4) dOpp(p3)  dOrigin
+   0  home         797     8470     7690    11412     5425
+   1  home        1049     9209     7725    11974     6020
+   2  home        1093     8448     9573    12721     6746
+   3  home        1051     8461     7439    11216     5240
+   4  home        1333     7461     7761    10683     4685
+   5  home        1223     9681     8841    13053     7067
+   6  home        1199     8630     7288    11231     5272
+   7  home         816     7690     8349    11322     5331
+   8  home        1496     7449     7559    10506     4507
+   9  home        1029     7813     7770    10971     4971
+  10  contested   3941     6423     6264     8060     2062
+  11  contested   4686     6587     5709     7350     1410
+  12  contested   4630     6114     6194     7370     1371
+  13  contested   4494     6026     6348     7511     1518
+  14  contested   4237     5921     6596     7786     1813
+  15  contested   4489     6784     5615     7576     1665
+  16  contested   3793     7270     5607     8361     2479
+  17  contested   3773     7543     5415     8484     2666
+  18  contested   4028     8303     4759     8681     3129
+  19  contested   3581     8095     5215     8939     3219
+  20  contested   3652     7730     5375     8678     2885
+  21  contested   3416     7997     5399     9024     3249

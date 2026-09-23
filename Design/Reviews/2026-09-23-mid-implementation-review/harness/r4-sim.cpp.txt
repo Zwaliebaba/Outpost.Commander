@@ -1,0 +1,124 @@
+// Reviewer 4 harness: rush timelines under four openings, the command (tap) count each needs, and the
+// ring-formation geometry of a standoff. Simulation code unmodified; player 1 only; seed 20260922.
+#include "pch.h"
+#include <cstdio>
+#include <cmath>
+#include <vector>
+#include <string>
+
+using namespace Outpost;
+namespace {
+double Units(Neuron::Fixed f) { return double(f) / 256.0; }
+double Dist(const Neuron::Vec2& a, const Neuron::Vec2& b) {
+  const double dx = Units(a.x) - Units(b.x), dy = Units(a.y) - Units(b.y);
+  return std::sqrt(dx * dx + dy * dy);
+}
+
+struct Policy { const char* name; int minersFirst; bool shipyard; bool shipyardL2; bool oreProc; bool oreProcL2; };
+
+struct Result {
+  int builds = 0, mines = 0, places = 0, upgrades = 0;
+  std::vector<std::uint32_t> fighterDoneTick; // tick at which the n-th fighter completed
+};
+
+Result Run(const Policy& p, std::uint32_t ticks, std::uint16_t rock) {
+  World world; BuildSystem build; MiningSystem mining; Economy economy;
+  world.SetField(GenerateField(20260922ull, 2));
+  for (const Placement& pl : GenerateLayout(20260922ull, 2)) world.Create(pl.position, pl.heading, pl.design, pl.owner);
+  build.Begin(2); economy.Begin();
+  const Neuron::Vec2 station = StartAnchor(2, 1);
+  const Neuron::Vec2 siteA{station.x, station.y + 250 * 256};
+  const Neuron::Vec2 siteB{station.x, station.y - 250 * 256};
+  Result r;
+  int miners = 0, fighters = 0;
+  bool yardPlaced = false, yardUp = false, orePlaced = false, oreUp = false;
+  EntityId yardId{}, oreId{};
+  std::printf("\n%s\n time credits miners fighters slot\n", p.name);
+  for (std::uint32_t t = 1; t <= ticks; ++t) {
+    if (!build.Item(1).active) {
+      const std::uint32_t rate = BuildRateMultiplierPercent(world, 1);
+      const std::uint32_t credits = build.Credits(1);
+      BuildRejection rej = BuildRejection::Unaffordable;
+      if (miners < p.minersFirst) { rej = build.Start(world, 1, DesignId::Miner, rate); if (rej == BuildRejection::None) { ++r.builds; ++miners; } }
+      else if (p.shipyard && !yardPlaced && credits >= 400) { rej = build.StartModule(world, 1, DesignId::ModuleShipyardL1, siteA, rate); if (rej == BuildRejection::None) { ++r.places; yardPlaced = true; } }
+      else if (p.shipyardL2 && yardPlaced && !yardUp && yardId.IsValid() && credits >= 300) { rej = build.StartUpgrade(world, 1, yardId, DesignId::ModuleShipyardL2, rate); if (rej == BuildRejection::None) { ++r.upgrades; yardUp = true; } }
+      else if (p.oreProc && !orePlaced && credits >= 350) { rej = build.StartModule(world, 1, DesignId::ModuleOreProcessorL1, siteB, rate); if (rej == BuildRejection::None) { ++r.places; orePlaced = true; } }
+      else if (p.oreProcL2 && orePlaced && !oreUp && oreId.IsValid() && credits >= 250) { rej = build.StartUpgrade(world, 1, oreId, DesignId::ModuleOreProcessorL2, rate); if (rej == BuildRejection::None) { ++r.upgrades; oreUp = true; } }
+      else { rej = build.Start(world, 1, DesignId::Fighter, rate); if (rej == BuildRejection::None) { ++r.builds; ++fighters; } }
+      (void)rej;
+    }
+    Tick(world); mining.Advance(world); economy.Credit(mining.Deliveries(), world, build); build.Advance(world);
+    // Every new miner gets a mine order the tick it appears (the player's chore); find module ids.
+    int fightersAlive = 0;
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue;
+      const Entity& e = world.EntityInSlot(s);
+      if (e.owner != 1) continue;
+      if (e.design == DesignId::Miner && world.MineInSlot(s).phase == MiningPhase::None && !world.OrderInSlot(s).active) { world.OrderMine(e.id, rock); ++r.mines; }
+      if (e.design == DesignId::ModuleShipyardL1 || e.design == DesignId::ModuleShipyardL2) yardId = e.id;
+      if (e.design == DesignId::ModuleOreProcessorL1 || e.design == DesignId::ModuleOreProcessorL2) oreId = e.id;
+      if (e.design == DesignId::Fighter) ++fightersAlive;
+    }
+    while ((int)r.fighterDoneTick.size() < fightersAlive) r.fighterDoneTick.push_back(t);
+    if (t % 600 == 0) {
+      std::printf("%4us %7u %6d %8d  %s\n", t / 20, build.Credits(1), miners, fightersAlive, build.Item(1).active ? "busy" : "idle");
+    }
+  }
+  std::printf(" commands: builds %d, mine orders %d, placements %d, upgrades %d  => %d host commands in %u s\n", r.builds, r.mines, r.places, r.upgrades,
+              r.builds + r.mines + r.places + r.upgrades, ticks / 20);
+  for (int n : {3, 7, 10, 15, 20}) {
+    if ((int)r.fighterDoneTick.size() >= n) {
+      const double ready = r.fighterDoneTick[n - 1] / 20.0;
+      const double arrive = ready + 12000.0 / 140.0;
+      const double dead = arrive + 640.0 / n;
+      std::printf("  %2d fighters ready at %5.1f s -> at the enemy station at %5.1f s -> station (8,000 HP, quarter damage) dead at %5.1f s (%.1f min) if unanswered\n",
+                  n, ready, arrive, dead, dead / 60.0);
+    } else {
+      std::printf("  %2d fighters: never reached in %u s\n", n, ticks / 20);
+    }
+  }
+  return r;
+}
+} // namespace
+
+int main() {
+  const std::uint16_t nearest = 0; // 797 units from the anchor (Lead's table)
+  Run({"A. pure rush: fighters only, no miners", 0, false, false, false, false}, 6000, nearest);
+  Run({"B. 4 miners then fighters, no modules", 4, false, false, false, false}, 6000, nearest);
+  Run({"C. 4 miners, shipyard L1 then L2, then fighters", 4, true, true, false, false}, 6000, nearest);
+  Run({"D. 4 miners, shipyard L1+L2, ore processor L1+L2, then fighters", 4, true, true, true, true}, 6000, nearest);
+  Run({"E. 6 miners on the typical rock (idx 1, 1,049 units), shipyard L1+L2, fighters", 6, true, true, false, false}, 6000, 1);
+
+  // Standoff geometry: n fighters ordered to a point 500 units from a station at the origin, hex ring spacing 90.
+  std::printf("\nSTANDOFF GEOMETRY: move order to a point 500 from the station, Fighter spacing 90 (RingSlotOffset)\n");
+  std::printf(" n  insidePD(<400)  inRange(400..600)  outOfRange(>600)  ringRadiusMax\n");
+  for (int n : {1, 7, 8, 10, 19, 20, 37, 50}) {
+    int inside = 0, band = 0, out = 0; double rmax = 0;
+    for (int i = 0; i < n; ++i) {
+      const Neuron::Vec2 off = RingSlotOffset((std::size_t)i, 90 * 256);
+      const double x = 500.0 + Units(off.x), y = Units(off.y);
+      const double d = std::sqrt(x * x + y * y);
+      rmax = std::max(rmax, std::sqrt(Units(off.x) * Units(off.x) + Units(off.y) * Units(off.y)));
+      if (d < 400.0) ++inside; else if (d <= 600.0) ++band; else ++out;
+    }
+    std::printf("%2d  %14d  %17d  %16d  %13.0f\n", n, inside, band, out, rmax);
+  }
+  // Best point along the approach axis for n fighters: maximize the count in the band.
+  std::printf("\n best standoff point per n (scan 400..700 from the station), hex spacing 90:\n");
+  for (int n : {7, 8, 10, 19, 20, 50}) {
+    int best = -1; double bestAt = 0; int bestInside = 0;
+    for (double c = 400; c <= 700; c += 5) {
+      int band = 0, inside = 0;
+      for (int i = 0; i < n; ++i) {
+        const Neuron::Vec2 off = RingSlotOffset((std::size_t)i, 90 * 256);
+        const double x = c + Units(off.x), y = Units(off.y);
+        const double d = std::sqrt(x * x + y * y);
+        if (d < 400.0) ++inside; else if (d <= 600.0) ++band;
+      }
+      if (band > best) { best = band; bestAt = c; bestInside = inside; }
+    }
+    std::printf("  n=%2d: at most %2d of %2d in the band (point at %.0f), %d inside PD there\n", n, best, n, bestAt, bestInside);
+  }
+  std::printf("\n arc layout capacity at r=500 with 90-unit spacing along the circle: %.0f slots\n", std::floor(2 * 3.14159265 * 500 / 90));
+  return 0;
+}

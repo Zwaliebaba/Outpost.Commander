@@ -165,9 +165,9 @@ LAYOUT_LINE = re.compile(r"inline constexpr HudRect (\w+)\{(-?\d+), (-?\d+), (-?
 
 # Rows this client cannot claim yet, because their position is solved at runtime (the alert's
 # along-edge coordinate, the world-anchored hull bar) or because only a later milestone draws them
-# (the armed and unavailable module states are M2's, and so is cargo). Listed so the exemption is
-# visible rather than silent.
-UNCLAIMABLE = ("alert.", "world.", "build.btn.armed.", "build.btn.hatch", "sel.group.cargo.")
+# (the armed and unavailable module states are M2's). Listed so the exemption is visible rather than
+# silent. Cargo left this list at M2.7, which draws it.
+UNCLAIMABLE = ("alert.", "world.", "build.btn.armed.", "build.btn.hatch")
 
 
 def as_number(value):

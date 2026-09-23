@@ -1,6 +1,8 @@
 # ADR-013 — A client is told which player it is, by a join the host answers
 
-**Status:** Accepted
+**Status:** Accepted — **amended 2026-09-23 at M2.3**: the reply also carries the match's player count,
+because the field is derived from the seed *and* the count and a client told only the seed would draw the
+wrong one. `OpenQuestions.md` Q50, ruled by the owner.
 **Date:** 2026-09-22
 **Owner:** Stefan Zwaal
 
@@ -42,14 +44,39 @@ the version field is for.
 |---|---|---|
 | result | 1 | `Accepted` 1, `Rejoined` 2, `MatchFull` 3. **Zero is not a result**, for the reason `PacketType` gives |
 | player | 1 | the slot, numbered from one; `NO_PLAYER` on a refusal |
+| player count | 1 | **since M2.3**: the match's configured count, which the field is derived from alongside the seed; zero on a refusal |
 | session token | 8 | the client stores it and presents it next time |
-| match seed | 8 | R23's, and it is the only thing on the wire that a client cannot get from a snapshot |
+| match seed | 8 | R23's, and with the count one of the two things on the wire that a client cannot get from a snapshot |
 
-Eighteen bytes of payload against six of header. Neither record is retransmitted and neither is
-acknowledged: **the client repeats the `Join` until a reply arrives**, every 250 milliseconds, and the
+Nineteen bytes of payload since M2.3, eighteen before it, behind the header. Neither record is
+retransmitted and neither is acknowledged: **the client repeats the `Join` until a reply arrives**, every 250 milliseconds, and the
 host answers every one of them. A `Join` from a client that already holds a session is answered with the
 **same** reply rather than claiming a second slot, which is what makes a lost reply cost one retry instead
 of a slot.
+
+### Amended at M2.3: the reply carries the player count
+
+**R23's inputs are two numbers, and this record sent one.** M2.1's generator places one player's region
+and M2.2 copies it — a half at two players, a quarter at four — so one seed is two different maps, and
+`GenerateField` takes the count for that reason. Nothing on the wire carried it: the reply had the seed,
+and since [`ADR-024`](ADR-024-replication-is-prioritized-records.md) an update carries only its recipient's
+per-player block. The client's camera had been calling `StartAnchor(2, player)` with the count
+compiled in, which put a four-player match's second player on the wrong side of the map.
+
+**A byte on this reply, ruled by the owner on 2026-09-23** (`OpenQuestions.md` Q50), over two alternatives:
+
+- **A field that does not depend on the count** — always a quarter copied four ways. Nothing on the wire
+  moves, but `GameDesign.md` §3's "a half at two players" goes, M2.1's pinned table is repinned, and a
+  two-player map carries two home fields nobody owns.
+- **A count inferred from the replica store**, from the distinct station owners it has heard of. Nothing on
+  the wire moves, but ADR-024 sends records in priority order over several ticks, so the count can be low
+  for the first second and the field drawn wrong and then redrawn — and at M3 a destroyed station changes
+  the answer.
+
+**The count is the host's configured one, not how many have joined**, because the field is fixed when the
+match begins: the first client of a four-player match derives the four-player field. One byte holds it
+because `MAX_PLAYERS` is 254. The protocol version goes to **5**, because a version-4 client would read the
+count's byte as the first of its token.
 
 ### The host assigns the slot and a client does not choose
 
@@ -155,7 +182,8 @@ what this decision costs on the wire:
 
 - A `Join` is **12 bytes** — four of `Neuron::PacketHeader` and eight of token. It was 14 until ADR-024 took the
   header's two fragment fields out.
-- A `JoinReply` is **22 bytes** — four of header, then 1 + 1 + 8 + 8. It was 24 for the same reason.
+- A `JoinReply` is **23 bytes** — four of header, then 1 + 1 + 1 + 8 + 8. It was 24 until ADR-024 for the same
+  reason, then 22 until M2.3 added the player count.
 
 Neither is in ADR-003's datagram budget and neither can affect it: both are sent outside the snapshot
 path, once per join rather than twenty times a second, and `Scripts/DatagramBudget.py` models the snapshot

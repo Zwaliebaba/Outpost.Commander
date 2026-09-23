@@ -74,7 +74,11 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
       if (session.token == _join.token)
       {
         session.endpoint = _endpoint;
-        return JoinReply{.result = JoinResult::Rejoined, .player = session.player, .token = session.token, .matchSeed = m_matchSeed};
+        return JoinReply{.result = JoinResult::Rejoined,
+                         .player = session.player,
+                         .playerCount = WirePlayerCount(),
+                         .token = session.token,
+                         .matchSeed = m_matchSeed};
       }
     }
   }
@@ -91,7 +95,11 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
   {
     if (session.endpoint == _endpoint)
     {
-      return JoinReply{.result = JoinResult::Accepted, .player = session.player, .token = session.token, .matchSeed = m_matchSeed};
+      return JoinReply{.result = JoinResult::Accepted,
+                       .player = session.player,
+                       .playerCount = WirePlayerCount(),
+                       .token = session.token,
+                       .matchSeed = m_matchSeed};
     }
   }
 
@@ -100,13 +108,14 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
   {
     // A REPLY AND NOT A SILENCE. `GameDesign.md` section 2 holds a slot indefinitely, so this does
     // not become false by waiting and the client stops retrying -- which it can only do if it was
-    // told. The seed is not sent to a client that is not in the match.
+    // told. The seed and the count are not sent to a client that is not in the match.
     return JoinReply{.result = JoinResult::MatchFull, .player = NO_PLAYER, .token = NO_SESSION_TOKEN, .matchSeed = 0};
   }
 
   const SessionToken token = IssueToken();
   m_sessions.push_back(Session{.endpoint = _endpoint, .player = slot, .token = token});
-  return JoinReply{.result = JoinResult::Accepted, .player = slot, .token = token, .matchSeed = m_matchSeed};
+  return JoinReply{
+    .result = JoinResult::Accepted, .player = slot, .playerCount = WirePlayerCount(), .token = token, .matchSeed = m_matchSeed};
 }
 
 PlayerId Sessions::PlayerAt(const Neuron::Endpoint& _endpoint) const noexcept

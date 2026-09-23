@@ -27,10 +27,17 @@ constexpr std::array<HullEntry, 5> HULLS{{
   // is this zero, and it means the hull is damaged through section 7's size-class table instead.
   //
   // MASS AND COST ARE ZERO AND THAT IS THE DESIGN'S DASH, not a gap: neither carries a drive, so
-  // nothing divides by the mass, and neither is a row in a build menu this sums for -- a station is
-  // placed by the generator and a module frame's cost is M2's (ADR-015).
-  {.id = HullId::Station, .slotCount = 2, .hullPoints = 8000, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 220},
-  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 84},
+  // nothing divides by the mass. A station is placed by the generator, and **a module frame costs
+  // nothing on its own** (M2.9): `GameDesign.md` section 5 prices a module by its level -- 400, 700, 350,
+  // 600 -- and that is the component's cost, so the frame adds none and the sum is the design's figure.
+  {.id = HullId::Station,
+   .slotCount = 2,
+   .hullPoints = 8000,
+   .sizeClass = SizeClass::Heavy,
+   .hitValue = 300,
+   .sizeUnits = 220,
+   .acceptsOre = true},
+  {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 90},
 }};
 
 /// **`None` IS A ROW.** A hull with no drive does not move, and making absence an identity rather
@@ -70,10 +77,10 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build
   // rate; +25% and +50% on a delivered cargo.
-  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150},
-  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200},
-  {.id = ComponentId::OreProcessorL1, .cost = 350, .multiplierPercent = 125},
-  {.id = ComponentId::OreProcessorL2, .cost = 600, .multiplierPercent = 150},
+  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150, .effect = ModuleEffect::BuildRate},
+  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200, .effect = ModuleEffect::BuildRate},
+  {.id = ComponentId::OreProcessorL1, .cost = 350, .multiplierPercent = 125, .effect = ModuleEffect::CargoValue},
+  {.id = ComponentId::OreProcessorL2, .cost = 600, .multiplierPercent = 150, .effect = ModuleEffect::CargoValue},
 }};
 
 // AN IDENTITY IS AN INDEX, and these are what make that true rather than hoped for. A table that

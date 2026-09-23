@@ -10,9 +10,11 @@ the source and `AGENTS.md` is the rule, in that order.
 2026-09-22. Written against the brief and against `AGENTS.md`, starting from an empty `Design/` and a
 build shell with no game in it.
 
-**Forty-one questions answered, one half-answered, four open. All twenty ADRs Accepted** — the twentieth
-is [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), which settles how a client learns
-which player it is and was the one number this plan reserved before it knew the answer.
+**Fifty-four questions answered, three open. All twenty-three ADRs Accepted**, with `ADR-014` reserved for the
+firing interval and damage rounding M3 owes. The twentieth was
+[`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), which settles how a client learns which
+player it is and was the one number this plan reserved before it knew the answer. ADR-022 to ADR-024 came
+from building M1's stress harness and its replication.
 
 **A second designer was then asked to defeat it**, and the result is applied throughout. That review found
 a solved game in the combat numbers, a factual error in `AGENTS.md` itself, and several features specified
@@ -39,8 +41,9 @@ machine that built the package — which is the one arrangement in which it cann
 | [`TechnicalDesign.md`](TechnicalDesign.md) | How it is built inside `AGENTS.md`: what lives in which of the six libraries, the tick and the numbers, the world and its generator, replication and the transport, the client's frame, where the line around content actually is, what each test suite owns, and what must be measured |
 | [`Interface.md`](Interface.md) | What the commander sees and touches: the frame and the derived touch target, the gesture seam, the vocabulary, selection and orders, the camera, the five panels, and the six things it does not settle |
 | [`design_handoff_hud/`](design_handoff_hud/README.md) | **The HUD as drawn**: every rectangle in integer authored coordinates, the palette, the type scale and the motion table, with a `geometry.json` M1.14's test asserts against and four reference frames at 1440 × 960. It settles *where and what color*; `Interface.md` §6 *Where the geometry lives* settles which of the two wins where they overlap |
-| [`OpenQuestions.md`](OpenQuestions.md) | The register: forty-one answered across eight rounds, four open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong. **The eighth round came out of writing code**, which is the kind this design expected fewest of |
-| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-021`, with `ADR-014` reserved for the firing interval M3 owes |
+| [`OpenQuestions.md`](OpenQuestions.md) | The register: fifty-four answered, three open — and, in the fourth round, what an adversarial review reversed and what it found simply wrong. **The eighth round came out of writing code**, which is the kind this design expected fewest of, and so did Q46 and Q50 to Q57 while M1 and M2 were built |
+| [`ADR/`](ADR/README.md) | Engineering decisions, one file per decision, `ADR-001` to `ADR-024`, with `ADR-014` reserved for the firing interval M3 owes |
+| [`Reviews/2026-09-23-mid-implementation-review.md`](Reviews/2026-09-23-mid-implementation-review.md) | **The mid-implementation review**, taken at M2.12 by a Lead and six specialists against the code rather than the status prose: the verdict, the deviations between the design and the implementation, forty findings with the arithmetic behind them, the sequenced recommendations, five validation experiments and twelve decisions for the owner |
 
 Read them in that order. `GameDesign.md` stands alone for a reader who knows real-time strategy games;
 `TechnicalDesign.md` assumes `AGENTS.md` has been read, because it cites its rules by number rather than
@@ -86,7 +89,7 @@ gesture budget has been.
 
 ## What is checked by a hand rather than an argument
 
-The register has one entry open, but several answers are **confirmations owed against hardware** rather
+The register has three entries open, but several answers are **confirmations owed against hardware** rather
 than choices already validated: whether 192 pixels is the right selection circle and whether the interface
 pass outweighs the world pass, both at M1 and **both settled on 2026-09-23** — the circle confirmed by the
 owner, and the interface measured at 50 µs against the world's 852; and whether the repaired raid arithmetic and the station's safe

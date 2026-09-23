@@ -12,13 +12,6 @@ namespace
 /// cases.
 constexpr Neuron::Vec2 BASE_ANCHOR{.x = -ANCHOR_RADIUS, .y = 0};
 
-/// A quarter turn counter-clockwise: `(x, y) -> (-y, x)`. **A SWAP AND A NEGATION, WHICH IS EXACT** --
-/// `TechnicalDesign.md` section 3 makes the whole symmetry argument rest on that.
-[[nodiscard]] constexpr Neuron::Vec2 QuarterTurn(const Neuron::Vec2& _point) noexcept
-{
-  return Neuron::Vec2{.x = -_point.y, .y = _point.x};
-}
-
 /// How many quarter turns from the base anchor this player's is, or `ANCHOR_COUNT` for a player who has
 /// no anchor at all.
 [[nodiscard]] constexpr std::size_t QuarterTurnsFor(std::size_t _playerCount, PlayerId _player) noexcept

@@ -454,4 +454,38 @@ public:
   }
 };
 
+/// M2.7, Q53. **Four chips, five states**, which is why cargo took a third bit.
+TEST_CLASS(TheCargoChips)
+{
+public:
+  /// None when empty, all four when full, and quarters **rounded up** between -- any ore lights a chip.
+  TEST_METHOD(AHoldLightsQuartersRoundedUp)
+  {
+    constexpr std::uint32_t FULL = 100000;
+    Assert::AreEqual(std::uint8_t{0}, Outpost::CargoChips(0, FULL));
+    Assert::AreEqual(std::uint8_t{1}, Outpost::CargoChips(1, FULL), L"a thousandth of ore still reads as carrying");
+    Assert::AreEqual(std::uint8_t{1}, Outpost::CargoChips(25000, FULL));
+    Assert::AreEqual(std::uint8_t{2}, Outpost::CargoChips(25001, FULL));
+    Assert::AreEqual(std::uint8_t{3}, Outpost::CargoChips(75000, FULL));
+    Assert::AreEqual(std::uint8_t{4}, Outpost::CargoChips(75001, FULL));
+    Assert::AreEqual(std::uint8_t{4}, Outpost::CargoChips(FULL, FULL));
+    Assert::AreEqual(std::uint8_t{0}, Outpost::CargoChips(500, 0), L"a design with no hold lights nothing");
+  }
+
+  /// Three bits at bit three, leaving the state below and two spare above untouched -- and a value past four
+  /// is clamped rather than written.
+  TEST_METHOD(TheChipsSitInTheirThreeBits)
+  {
+    Assert::AreEqual(std::uint8_t{0x07}, Outpost::FLAGS_CARGO_MASK);
+    Assert::AreEqual(std::uint8_t{6}, Outpost::FLAGS_SPARE_SHIFT);
+    for (std::uint8_t chips = 0; chips <= Outpost::CARGO_CHIP_COUNT; ++chips)
+    {
+      const std::uint8_t flags = Outpost::WithCargoChips(0xC5, chips);
+      Assert::AreEqual(chips, Outpost::CargoChipsOf(flags));
+      Assert::AreEqual(std::uint8_t{0xC5 & 0xC7}, static_cast<std::uint8_t>(flags & 0xC7), L"the state or the spare bits moved");
+    }
+    Assert::AreEqual(std::uint8_t{4}, Outpost::CargoChipsOf(Outpost::WithCargoChips(0, 7)));
+  }
+};
+
 } // namespace GameCoreTests

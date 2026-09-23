@@ -1,0 +1,51 @@
+=== E1 TOKEN COLLISION ACROSS A HOST RESTART (same seed) ===
+evening 1: A=Accepted player 1 token b11fa2dcd9134829 | B=Accepted player 2 token ba4ef9dcf6f26c24
+evening 2: B presents its old token -> Accepted as player 1, issued token b11fa2dcd9134829 (== A's old token? YES)
+evening 2: A presents its old token -> Rejoined as player 1; seats=1; host now sends player 1's updates to A only: PlayerAt(B)=0 PlayerAt(A)=1
+evening 2: B silent 1 s, rejoins with token it holds -> Rejoined as player 1; PlayerAt(A)=0 PlayerAt(B')=1  (A now goes silent -> ping-pong)
+evening 2: A rejoins -> Rejoined as player 1; slot 2 free the whole time: LowestFree taken by nobody, seats=1
+control (same join order): A=Accepted p1, B=Accepted p2
+control (other seed, reversed order): B=Accepted p1, A=Accepted p2
+
+=== E2 STANDOFF GEOMETRY, seed 20260922, player 1, nearest home rock ===
+station (-6000,0) spawn (-5860,0) rock0 (-5400,525) at 797 from station
+miner extracts at (-5530,376): 198 from rock, 602 from station; unloads at (-5878,98): 157 from station
+raider at 500 from station, 0 off the radial: to station 500 (PD 400: OUT OF PD RANGE), to unload point 343, to spawn 405, to extraction point 104, to station-far-side(+400) 900, to module at +400 on this radial 100
+   steady state: 16.2 s per cycle, miner inside the raider's 600 for 16.2 s per cycle (100%); one fighter kills a Scout in 12.9 s
+raider at 500 from station, 300 off the radial: to station 583 (PD 400: OUT OF PD RANGE), to unload point 460, to spawn 556, to extraction point 341, to station-far-side(+400) 949, to module at +400 on this radial 316
+   steady state: 16.2 s per cycle, miner inside the raider's 600 for 16.2 s per cycle (100%); one fighter kills a Scout in 12.9 s
+raider at 500 from station, 500 off the radial: to station 707 (PD 400: OUT OF PD RANGE), to unload point 612, to spawn 712, to extraction point 536, to station-far-side(+400) 1030, to module at +400 on this radial 510
+   steady state: 16.2 s per cycle, miner inside the raider's 600 for 14.1 s per cycle (86%); one fighter kills a Scout in 12.9 s
+flight to the station centre: closest approach to the raider 22, arrives 500 from it (in range 600: YES); PD never fires (raider at 500 > 400)
+
+=== E3 OPENING LINES (5 min, one build slot at 20 cr/s; ShipyardL1 400cr x1.5, L2 +300cr x2.0) ===
+rock 0 (nearest, 6.4 cr/s per miner):
+   3 miners: no shipyard -> 18 fighters,    150 banked | shipyard L1+L2 -> 16 fighters,     50 banked | +OreProcL1 -> 19 fighters,    246 banked
+   4 miners: no shipyard -> 18 fighters,   2000 banked | shipyard L1+L2 -> 21 fighters,    100 banked | +OreProcL1 -> 25 fighters,     46 banked
+   5 miners: no shipyard -> 17 fighters,   3450 banked | shipyard L1+L2 -> 26 fighters,     50 banked | +OreProcL1 -> 29 fighters,    596 banked
+   6 miners: no shipyard -> 17 fighters,   5200 banked | shipyard L1+L2 -> 30 fighters,    600 banked | +OreProcL1 -> 28 fighters,   2646 banked
+   7 miners: no shipyard -> 16 fighters,   6550 banked | shipyard L1+L2 -> 29 fighters,   2250 banked | +OreProcL1 -> 27 fighters,   4546 banked
+   8 miners: no shipyard -> 16 fighters,   8200 banked | shipyard L1+L2 -> 28 fighters,   3900 banked | +OreProcL1 -> 26 fighters,   6446 banked
+  12 miners: no shipyard -> 14 fighters,  13600 banked | shipyard L1+L2 -> 24 fighters,   9900 banked | +OreProcL1 -> 22 fighters,  13146 banked
+rock 1 (typical, 4.67 cr/s per miner):
+   3 miners: no shipyard -> 14 fighters,     35 banked | shipyard L1+L2 -> 12 fighters,    235 banked | +OreProcL1 -> 13 fighters,    131 banked
+   4 miners: no shipyard -> 17 fighters,    185 banked | shipyard L1+L2 -> 15 fighters,     85 banked | +OreProcL1 -> 17 fighters,    206 banked
+   5 miners: no shipyard -> 17 fighters,   1235 banked | shipyard L1+L2 -> 19 fighters,    235 banked | +OreProcL1 -> 22 fighters,     31 banked
+   6 miners: no shipyard -> 17 fighters,   2585 banked | shipyard L1+L2 -> 22 fighters,     85 banked | +OreProcL1 -> 26 fighters,    106 banked
+   7 miners: no shipyard -> 16 fighters,   3535 banked | shipyard L1+L2 -> 25 fighters,    135 banked | +OreProcL1 -> 27 fighters,    944 banked
+   8 miners: no shipyard -> 16 fighters,   4785 banked | shipyard L1+L2 -> 28 fighters,    485 banked | +OreProcL1 -> 26 fighters,   2369 banked
+  12 miners: no shipyard -> 14 fighters,   8885 banked | shipyard L1+L2 -> 24 fighters,   5185 banked | +OreProcL1 -> 22 fighters,   7619 banked
+slot arithmetic: 300 s x 20 cr/s = 6,000 cr of build time without a shipyard (+1,000 start); x2.0 = 12,000. Anything earned past that is unspendable.
+
+=== E4 RING CLAMP AT THE EDGE ===
+50 fighters ordered to (8192,8192): 32 distinct destinations (ring radius 4 x 90 = 360)
+50 fighters ordered to (8192,0): 46 distinct destinations (ring radius 4 x 90 = 360)
+50 fighters ordered to (8000,0): 49 distinct destinations (ring radius 4 x 90 = 360)
+50 fighters ordered to (7800,0): 50 distinct destinations (ring radius 4 x 90 = 360)
+50 fighters ordered to (0,0): 50 distinct destinations (ring radius 4 x 90 = 360)
+
+=== E5 D1 FREE FIGHTER (Server.cpp:148) vs player 2's opening ===
+player 2 station (6000,0); nearest p2 home rock idx 30 at (4506,69), 4507 from the origin -> 32.2 s at 140 u/s from the fighter's spawn; p2's own nearest rock (idx 22) is 797 from its station
+scripted destination (4096,2048): 4579 from the origin (32.7 s), then 2796 to p2's station (20.0 s)
+player 2's first miner finishes at 7.5 s and first delivers at ~14.5 s (harness); a redirected free fighter arrives ~32 s, kills a miner every 12.9 s (ordered miners do not flee under M3.6); p2's first fighter needs 150 cr more and 15 s of the slot.
+

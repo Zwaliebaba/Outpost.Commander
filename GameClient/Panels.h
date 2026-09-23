@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CreditFlash.h"
 #include "HudLayout.h"
 #include "JoinState.h"
 #include "PanelHitTest.h"
@@ -27,6 +28,14 @@ struct SelectionGroupSummary
   /// entity, which is a percentage already (ADR-003).
   std::uint8_t hullPercent = 100;
 
+  /// **WHETHER THE DESIGN CARRIES ORE AT ALL**, from its derived capacity -- a design that does not draws no
+  /// cargo row, rather than an empty one (`design_handoff_hud` section 2).
+  bool carriesOre = false;
+
+  /// **HOW MANY OF THE FOUR CHIPS LIGHT: THE GROUP'S MEAN, ROUNDED TO NEAREST** (M2.7, `OpenQuestions.md` Q53),
+  /// over what each record's flags carry.
+  std::uint8_t cargoChips = 0;
+
   [[nodiscard]] friend constexpr bool operator==(const SelectionGroupSummary&, const SelectionGroupSummary&) noexcept = default;
 };
 
@@ -42,6 +51,11 @@ struct HudState
 
   std::uint32_t credits = 0;
 
+  /// **THE CHANGE FLASH UNDER THE BALANCE** (M2.7, Q36): which way it moved, and how far the flash has faded.
+  /// `CreditFlash` computes both; `None` draws nothing.
+  CreditChange creditFlash = CreditChange::None;
+  float creditFlashAlpha = 0.0f;
+
   /// At most four, in `DesignId` order. Empty means nothing is selected and the panel is not drawn.
   std::vector<SelectionGroupSummary> groups;
 
@@ -53,6 +67,19 @@ struct HudState
   std::uint8_t buildingWire = 0;
   std::uint8_t buildProgressPercent = 0;
 
+  /// **THE ARMED MODULE, IF ONE IS** (M2.11). Client-local: the button draws armed, and a tap on the plane is
+  /// the placement's.
+  bool moduleArmed = false;
+  DesignId armedModule = DesignId::ModuleShipyardL1;
+
+  /// **THE PLACEMENT RADIUS, ALREADY PROJECTED** (`ModulePlacement.h`'s `PlacementRingSquares`), in authored
+  /// pixels. Empty when nothing is armed. Drawn under the panels and never in the hit table.
+  std::vector<HudRect> placementRing;
+
+  /// **THE DESIGNS OF THIS PLAYER'S MODULES** (M2.11b), from the snapshot's module entities: what decides whether
+  /// a module button is available -- an L2 needs an L1 of its kind, and a placement needs room under the cap.
+  std::vector<DesignId> ownModules;
+
   LinkState link = LinkState::Joining;
   bool quitArmed = false;
 
@@ -63,6 +90,26 @@ struct HudState
 
 /// The wire's building byte, decoded. False when nothing is building.
 [[nodiscard]] bool BuildingDesign(std::uint8_t _wire, DesignId& _outDesign) noexcept;
+
+/// **THE FOUR LOOKS A BUILD BUTTON HAS** (`design_handoff_hud`, M2.11b). *Unaffordable* means save up: the plate
+/// stays lit and the cost reddens. *Unavailable* means build something else first: the whole button dims and
+/// hatches, and it is not a target. They must not look alike, because one fixes itself second by second and
+/// the other never does.
+enum class BuildButtonState : std::uint8_t
+{
+  Live,
+  Unaffordable,
+  Unavailable,
+  Armed
+};
+
+/// **WHETHER A MODULE CAN BE CHOSEN AT ALL** (M2.11b): an L2 needs one of your modules it upgrades (Q54), and a
+/// placed level needs room under the cap of four. Credits have nothing to do with it.
+[[nodiscard]] bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) noexcept;
+
+/// A module button's state. **Unavailable wins over unaffordable** -- the state credits cannot fix is the one to
+/// show -- and armed over both, since only an available button can have been armed.
+[[nodiscard]] BuildButtonState ModuleButtonState(DesignId _design, const HudState& _state) noexcept;
 
 /// The designs a station's build panel offers, in the order the buttons are drawn. **Rows, not types**
 /// (ADR-006): the panel draws whatever the design table marks buildable, and nothing here names one.

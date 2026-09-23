@@ -85,14 +85,17 @@ void ToWorldDirection(float _authoredX, float _authoredY, float _authoredZ, floa
 /// stated size rather than the other way round.
 [[nodiscard]] std::string_view MeshNameForHull(HullId _hull) noexcept;
 
-/// And for a design, through its hull -- which is the call the renderer actually makes, because a
-/// snapshot carries a design identity and not a hull (ADR-003).
+/// And for a design -- which is the call the renderer actually makes, because a snapshot carries a design
+/// identity and not a hull (ADR-003). **Through its hull, except a module**, which is drawn by its level
+/// (M2.10b).
 [[nodiscard]] std::string_view MeshNameForDesign(DesignId _design) noexcept;
 
-/// **THE THREE THAT SHIP AT M1.9**: `Scout`, `Frigate` and the station. The other ten delivered
-/// meshes are M2's modules and asteroids, and they are in the catalog already -- this is the set the
-/// client uploads today, so that a buffer is not allocated for geometry nothing draws.
-[[nodiscard]] std::span<const std::string_view> MeshesShippedAtM1() noexcept;
+/// How many meshes a design can draw with: M1.9's three hulls and M2.10b's four module levels.
+inline constexpr std::size_t SHIPPED_MESH_COUNT = 7;
+
+/// **EVERY MESH A DESIGN DRAWS WITH**, which is the set the client uploads and instances: `Scout`, `Frigate`,
+/// the station and one mesh per module level. The bare `ModuleFrame` and the asteroids are not in it.
+[[nodiscard]] std::span<const std::string_view> ShippedMeshes() noexcept;
 
 /// Turns a read file into what the world pass uploads. Returns false on an empty mesh or one whose
 /// index count is not a multiple of three -- a triangle list that is not whole is a file this build

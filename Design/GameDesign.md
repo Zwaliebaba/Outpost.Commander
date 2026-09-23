@@ -121,9 +121,9 @@ fairness guarantee: every player's start is the same start, so no balance analys
 can be unlucky. It is also visibly artificial, and that is the trade — a procedural generator that is
 *fair* without being symmetric is a research project, and this is an MVP.
 
-**M0 and M1 run one fixed seed with a hand-checked layout.** The generator is still `GameCore` code that
-both sides run (R23); it simply has one input until M2, which keeps a whole class of "is the map wrong or
-is the game wrong" question out of the first two milestones.
+**M0 and M1 ran one fixed seed with a hand-checked layout**, which kept a whole class of "is the map wrong
+or is the game wrong" question out of the first two milestones. **From M2 the generator runs on the match's
+seed and player count**, on both sides (R23).
 
 What a seed produces:
 
@@ -179,7 +179,8 @@ a management burden the MVP accepts rather than solves.
 
 Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
 extracts at 20 per second, so the one-slot miner fills in five seconds; a round trip to the home field is
-roughly thirty seconds, which puts one miner at about 2.5 credits per second. **From M3, when asteroids
+roughly thirty seconds, which puts one miner at about 2.5 credits per second. **It unloads at 50 ore a second once its hull touches
+the station's**, two seconds a hold, which is a dwell inside the point defense's reach (Q51, provisional). **From M3, when asteroids
 become finite, a home field holds enough for a long opening and not for a match** — before M3 it holds
 everything, because there is nothing to exhaust.
 
@@ -262,8 +263,15 @@ positional and intended: a `MassDriver` reaches 600, so **a fighter standing off
 modules on the near side while staying outside point-defense cover**. Which side of your station you build
 on is a decision.
 
-**Four modules to a station.** That cap is as much a replication budget as a design one
-(`TechnicalDesign.md` §4), and raising it is a protocol decision rather than a game one.
+**Four modules to a station.** That cap was a replication budget under the full snapshot and is a design
+one since [`ADR-024`](ADR/ADR-024-replication-is-prioritized-records.md) (`TechnicalDesign.md` §4).
+
+**A level-2 module is an upgrade, not a second module** (`OpenQuestions.md` Q54): arm it and tap an L1 of its
+kind, and it becomes an L2 in place for the difference in cost — 300 for a shipyard, 250 for an ore
+processor, so an L2 costs the table's figure in all. **A shipyard never builds faster than its stated
+rate**: build time rounds up (Q56). An ore processor's percentage is exact. **Two modules of one kind do not
+stack; the better one counts** — M2.12's reading, since nothing here said, and stacking would go on the
+register before it went in the code.
 
 Beyond modules there are no other structures in the MVP. No turrets, no outposts — the station's own
 defense is a component in its slots, not a building you place.
@@ -521,13 +529,13 @@ almost no game and all of the things that can turn out to be impossible.
 | | | |
 |---|---|---|
 | **M0** | **The wire** | The host opens a UDP socket and simulates one moving entity. The client connects over `DatagramSocket`, receives snapshots at 20 Hz, interpolates, and draws one shape in Direct3D 12 — **fullscreen**, world at 1440 × 960 scaled 2×, interface pass at physical resolution. A tap sends a move order, a local marker appears at once, and the shape goes there. No game at all — this proves the tick, the packet format, the two socket APIs talking to each other, the D3D12 frame, the two-pass renderer, the gesture seam, and — on an actual Surface Pro — whether the loopback exemption makes a single-machine loop usable. **It also measures tap-to-visible latency, which is the number that decides how the game feels.** Everything after this is content. |
-| **M1** | **The fleet** | Two stations, the two designs, the current build item, move orders with ring assignment, selection by tap and by double tap. **A generated sky — a star field and a galaxy band from the match seed** ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)). Two clients on one host. Host-side command validation. |
+| **M1** | **The fleet** | Two stations, the two designs, the current build item, move orders with ring assignment, selection by tap and by double tap. **A generated sky — a star field from the match seed**, whose galaxy band was withdrawn after it was looked at ([`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md)). Two clients on one host. Host-side command validation. |
 | **M2** | **The field** | The procedural generator on a real seed, asteroid fields, miners, the credit loop. Asteroids are inexhaustible. **Modules**: the `ModuleFrame` entity, placement by tap inside the build radius, the shipyard's build rate and the ore processor's cargo multiplier, both at two levels ([`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md)). |
 | **M3** | **The fight** | Weapons, the damage table, the station's point defense, miner flight, **modules as targets and the near-side standoff they create**, **the off-screen damage alert and hull bars in the world** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)), destruction, elimination and victory — **and a match that restarts on a new seed**, so twenty can be played in an evening. Finite asteroids arrive here. A stub AI that builds and attacks, so a match can be played by one person. |
 | **M4** | **The opponent, and the other two slots** | The AI of §8; three and four players; the `Cruiser` reinstated as a design with its weapon and its damage row — the milestone that can finally answer whether speed counters mass. **Research, and the research station module with it**; the shipyard's levels start gating hulls and the designer rather than only build rate. |
 
 **What M0 to M3 deliberately omit, and what each omission buys:** two players rather than four (a
-five-minute match, and a snapshot that fits one datagram); one fixed seed until M2 (no "is the map wrong
+five-minute match, and a snapshot that fits one datagram); one fixed seed through M1 (no "is the map wrong
 or is the game wrong"); inexhaustible asteroids until M3 (no husk state, no retargeting, and no asteroid
 replication at all); the current build item rather than a queue (a two-byte field instead of a queue
 format); no `Cruiser` design; no minimap; **two working modules rather than three**, the research station

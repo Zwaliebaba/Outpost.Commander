@@ -1,0 +1,213 @@
+// Reviewer 3 (exploit hunter) harness. Drives the unmodified GameCore/GameLogic code.
+#include "pch.h"
+#include "Sessions.h"
+#include <chrono>
+#include <cstdio>
+#include <cmath>
+#include <set>
+#include <utility>
+#include <vector>
+#include <algorithm>
+
+using namespace Outpost;
+namespace {
+constexpr std::uint64_t SEED = 20260922ull;
+double Units(Neuron::Fixed f) { return double(f) / 256.0; }
+double Dist(const Neuron::Vec2& a, const Neuron::Vec2& b) {
+  const double dx = Units(a.x) - Units(b.x), dy = Units(a.y) - Units(b.y);
+  return std::sqrt(dx*dx + dy*dy);
+}
+Neuron::Vec2 At(double xUnits, double yUnits) { return Neuron::Vec2{Neuron::Fixed(std::lround(xUnits * 256.0)), Neuron::Fixed(std::lround(yUnits * 256.0))}; }
+Neuron::Endpoint Ep(std::uint32_t a, std::uint16_t p) { return Neuron::Endpoint{.addressV4 = a, .port = p}; }
+const char* Res(JoinResult r) { return r == JoinResult::Accepted ? "Accepted" : r == JoinResult::Rejoined ? "Rejoined" : "MatchFull"; }
+
+void StepAll(World& w, MiningSystem& m, Economy& e, BuildSystem& b) {
+  Tick(w); m.Advance(w); e.Credit(m.Deliveries(), w, b); b.Advance(w);
+}
+
+// ------------------------------------------------------------------------------------------------
+// E1: session tokens repeat across host restarts on one seed -> two ordinary clients fight over slot 1.
+// ------------------------------------------------------------------------------------------------
+void TokenCollision() {
+  std::printf("=== E1 TOKEN COLLISION ACROSS A HOST RESTART (same seed) ===\n");
+  Sessions s; s.Begin(2, SEED);
+  const JoinReply a = s.Admit(Join{}, Ep(1, 100));   // client A, evening 1, joins first
+  const JoinReply b = s.Admit(Join{}, Ep(2, 100));   // client B, evening 1, joins second
+  std::printf("evening 1: A=%s player %u token %016llx | B=%s player %u token %016llx\n", Res(a.result), a.player, (unsigned long long)a.token, Res(b.result), b.player, (unsigned long long)b.token);
+
+  s.Begin(2, SEED);  // host restarted (Server default --seed), both clients kept LocalState\session.txt
+  const JoinReply b2 = s.Admit(Join{.token = b.token}, Ep(2, 200));   // B launches first this time
+  std::printf("evening 2: B presents its old token -> %s as player %u, issued token %016llx (== A's old token? %s)\n",
+              Res(b2.result), b2.player, (unsigned long long)b2.token, b2.token == a.token ? "YES" : "no");
+  const JoinReply a2 = s.Admit(Join{.token = a.token}, Ep(1, 200));   // A launches with its old token
+  std::printf("evening 2: A presents its old token -> %s as player %u; seats=%zu; host now sends player %u's updates to A only: PlayerAt(B)=%u PlayerAt(A)=%u\n",
+              Res(a2.result), a2.player, s.Count(), a2.player, s.PlayerAt(Ep(2, 200)), s.PlayerAt(Ep(1, 200)));
+  // B hears 1 s of silence, ClientFrame::DrainPackets rejoins with the token it now holds (b2.token) from a fresh socket
+  const JoinReply b3 = s.Admit(Join{.token = b2.token}, Ep(2, 300));
+  std::printf("evening 2: B silent 1 s, rejoins with token it holds -> %s as player %u; PlayerAt(A)=%u PlayerAt(B')=%u  (A now goes silent -> ping-pong)\n",
+              Res(b3.result), b3.player, s.PlayerAt(Ep(1, 200)), s.PlayerAt(Ep(2, 300)));
+  const JoinReply a3 = s.Admit(Join{.token = a.token}, Ep(1, 300));
+  std::printf("evening 2: A rejoins -> %s as player %u; slot 2 free the whole time: LowestFree taken by nobody, seats=%zu\n", Res(a3.result), a3.player, s.Count());
+
+  // Control: same order as evening 1 -> fine. Different seed -> fine.
+  Sessions c; c.Begin(2, SEED);
+  const JoinReply ca = c.Admit(Join{.token = a.token}, Ep(1, 400));
+  const JoinReply cb = c.Admit(Join{.token = b.token}, Ep(2, 400));
+  std::printf("control (same join order): A=%s p%u, B=%s p%u\n", Res(ca.result), ca.player, Res(cb.result), cb.player);
+  Sessions d; d.Begin(2, SEED + 1);
+  const JoinReply db = d.Admit(Join{.token = b.token}, Ep(2, 500));
+  const JoinReply da = d.Admit(Join{.token = a.token}, Ep(1, 500));
+  std::printf("control (other seed, reversed order): B=%s p%u, A=%s p%u\n\n", Res(db.result), db.player, Res(da.result), da.player);
+}
+
+// ------------------------------------------------------------------------------------------------
+// E2: the 400/600 standoff against the real field: a raider at 500 from the station on the radial of the
+// nearest home rock, and how long a cycling miner spends inside its 600 reach.
+// ------------------------------------------------------------------------------------------------
+void Standoff() {
+  std::printf("=== E2 STANDOFF GEOMETRY, seed %llu, player 1, nearest home rock ===\n", (unsigned long long)SEED);
+  World world; BuildSystem build; MiningSystem mining; Economy economy;
+  world.SetField(GenerateField(SEED, 2));
+  for (const Placement& p : GenerateLayout(SEED, 2)) world.Create(p.position, p.heading, p.design, p.owner);
+  build.Begin(2); economy.Begin();
+  const Neuron::Vec2 station = StartAnchor(2, 1);
+  const Neuron::Vec2 spawn = At(Units(station.x) + 140, Units(station.y)); // BuildSystem::SpawnPoint: 110+30 along heading 0
+  const Placement& rock = world.Field()[0];
+  const double rd = Dist(rock.position, station);
+  const double ux = (Units(rock.position.x) - Units(station.x)) / rd, uy = (Units(rock.position.y) - Units(station.y)) / rd;
+  std::printf("station (%.0f,%.0f) spawn (%.0f,%.0f) rock0 (%.0f,%.0f) at %.0f from station\n", Units(station.x), Units(station.y), Units(spawn.x), Units(spawn.y), Units(rock.position.x), Units(rock.position.y), rd);
+
+  const EntityId miner = world.Create(spawn, 0, DesignId::Miner, 1);
+  world.OrderMine(miner, 0);
+  std::vector<Neuron::Vec2> track; std::vector<bool> unloading; std::vector<MiningPhase> phases;
+  Neuron::Vec2 stopPoint{}; Neuron::Vec2 unloadPoint{}; bool gotStop = false, gotUnload = false;
+  for (int t = 0; t < 3000; ++t) {
+    StepAll(world, mining, economy, build);
+    const Entity* e = world.Find(miner); const MineOrder* m = world.FindMine(miner);
+    track.push_back(e->position); phases.push_back(m->phase);
+    if (!gotStop && m->phase == MiningPhase::Extracting) { stopPoint = e->position; gotStop = true; }
+    if (!gotUnload && m->phase == MiningPhase::Unloading) { unloadPoint = e->position; gotUnload = true; }
+  }
+  std::printf("miner extracts at (%.0f,%.0f): %.0f from rock, %.0f from station; unloads at (%.0f,%.0f): %.0f from station\n",
+              Units(stopPoint.x), Units(stopPoint.y), Dist(stopPoint, rock.position), Dist(stopPoint, station), Units(unloadPoint.x), Units(unloadPoint.y), Dist(unloadPoint, station));
+
+  for (const double perp : {0.0, 300.0, 500.0}) {
+    // raider at 500 from the station along the rock radial, offset `perp` sideways
+    const Neuron::Vec2 raider = At(Units(station.x) + 500 * ux - perp * uy, Units(station.y) + 500 * uy + perp * ux);
+    std::printf("raider at 500 from station, %.0f off the radial: to station %.0f (PD 400: %s), to unload point %.0f, to spawn %.0f, to extraction point %.0f, to station-far-side(+400) %.0f, to module at +400 on this radial %.0f\n",
+                perp, Dist(raider, station), Dist(raider, station) > 400 ? "OUT OF PD RANGE" : "in PD range", Dist(raider, unloadPoint), Dist(raider, spawn), Dist(raider, stopPoint),
+                Dist(raider, At(Units(station.x) - 400 * ux, Units(station.y) - 400 * uy)), Dist(raider, At(Units(station.x) + 400 * ux, Units(station.y) + 400 * uy)));
+    // ticks in range 600 over the steady-state cycles (skip the first 400 ticks)
+    int inRange = 0, total = 0, cycles = 0; MiningPhase prev = MiningPhase::None;
+    for (std::size_t t = 400; t < track.size(); ++t) {
+      ++total; if (Dist(track[t], raider) <= 600.0) ++inRange;
+      if (phases[t] == MiningPhase::Unloading && prev != MiningPhase::Unloading) ++cycles;
+      prev = phases[t];
+    }
+    const double cycleTicks = double(total) / std::max(cycles, 1);
+    std::printf("   steady state: %.1f s per cycle, miner inside the raider's 600 for %.1f s per cycle (%.0f%%); one fighter kills a Scout in 12.9 s\n",
+                cycleTicks / 20.0, (double(inRange) / std::max(cycles, 1)) / 20.0, 100.0 * inRange / total);
+  }
+  // flight: from the extraction point straight to the station centre, closest approach to the on-radial raider
+  const Neuron::Vec2 raider = At(Units(station.x) + 500 * ux, Units(station.y) + 500 * uy);
+  double closest = 1e9; double atStation = Dist(station, raider);
+  for (int i = 0; i <= 100; ++i) { const double f = i / 100.0; const Neuron::Vec2 p = At(Units(stopPoint.x) + f * (Units(station.x) - Units(stopPoint.x)), Units(stopPoint.y) + f * (Units(station.y) - Units(stopPoint.y))); closest = std::min(closest, Dist(p, raider)); }
+  std::printf("flight to the station centre: closest approach to the raider %.0f, arrives %.0f from it (in range 600: %s); PD never fires (raider at %.0f > 400)\n\n", closest, atStation, atStation <= 600 ? "YES" : "no", Dist(raider, station));
+}
+
+// ------------------------------------------------------------------------------------------------
+// E3: the build slot binds, not income. Opening lines for player 1 on rock 0 vs the typical rock 1.
+// ------------------------------------------------------------------------------------------------
+struct Line { int fighters; std::uint32_t banked; double income; int miners; };
+Line RunLine(std::uint16_t rock, int minerTarget, bool shipyard, bool processor) {
+  World world; BuildSystem build; MiningSystem mining; Economy economy;
+  world.SetField(GenerateField(SEED, 2));
+  for (const Placement& p : GenerateLayout(SEED, 2)) world.Create(p.position, p.heading, p.design, p.owner);
+  build.Begin(2); economy.Begin();
+  const Neuron::Vec2 station = StartAnchor(2, 1);
+  int miners = 0, fighters = 0; bool yardL1 = false, yardL2 = false, proc = false;
+  EntityId yard{};
+  std::uint32_t creditsAt270 = 0, creditsAt300 = 0; std::uint32_t spentLast30 = 0;
+  for (std::uint32_t t = 1; t <= 6000; ++t) {
+    if (!build.Item(1).active) {
+      const std::uint32_t rate = BuildRateMultiplierPercent(world, 1);
+      if (miners < minerTarget) { if (build.Start(world, 1, DesignId::Miner, rate) == BuildRejection::None) ++miners; }
+      else if (shipyard && !yardL1) { if (build.StartModule(world, 1, DesignId::ModuleShipyardL1, At(Units(station.x) + 250, Units(station.y) + 250), rate) == BuildRejection::None) yardL1 = true; }
+      else if (shipyard && yardL1 && !yardL2 && yard.IsValid()) { if (build.StartUpgrade(world, 1, yard, DesignId::ModuleShipyardL2, rate) == BuildRejection::None) yardL2 = true; }
+      else if (processor && !proc) { if (build.StartModule(world, 1, DesignId::ModuleOreProcessorL1, At(Units(station.x) + 250, Units(station.y) - 250), rate) == BuildRejection::None) proc = true; }
+      else if (build.Start(world, 1, DesignId::Fighter, rate) == BuildRejection::None) { ++fighters; }
+    }
+    StepAll(world, mining, economy, build);
+    for (std::size_t s = 0; s < world.SlotCount(); ++s) {
+      if (!world.IsSlotAlive(s)) continue; const Entity& e = world.EntityInSlot(s);
+      if (e.owner == 1 && e.design == DesignId::Miner && world.MineInSlot(s).phase == MiningPhase::None && !world.OrderInSlot(s).active) world.OrderMine(e.id, rock);
+      if (e.owner == 1 && e.design == DesignId::ModuleShipyardL1 && !yard.IsValid()) yard = e.id;
+    }
+    if (t == 5400) creditsAt270 = build.Credits(1);
+    if (t == 6000) creditsAt300 = build.Credits(1);
+    (void)spentLast30;
+  }
+  // count fighters actually alive (the last one may still be building)
+  int alive = 0; for (std::size_t s = 0; s < world.SlotCount(); ++s) if (world.IsSlotAlive(s) && world.EntityInSlot(s).owner == 1 && world.EntityInSlot(s).design == DesignId::Fighter) ++alive;
+  // income over the last 30 s: credits delta + fighters started in that window * 300 (approx: use spend rate = fighters/30s*300)
+  return Line{alive, creditsAt300, 0.0, miners};
+}
+void OpeningLines() {
+  std::printf("=== E3 OPENING LINES (5 min, one build slot at 20 cr/s; ShipyardL1 400cr x1.5, L2 +300cr x2.0) ===\n");
+  for (const std::uint16_t rock : {std::uint16_t{0}, std::uint16_t{1}}) {
+    std::printf("rock %u (%s):\n", rock, rock == 0 ? "nearest, 6.4 cr/s per miner" : "typical, 4.67 cr/s per miner");
+    for (int n : {3, 4, 5, 6, 7, 8, 12}) {
+      const Line plain = RunLine(rock, n, false, false);
+      const Line yard = RunLine(rock, n, true, false);
+      const Line both = RunLine(rock, n, true, true);
+      std::printf("  %2d miners: no shipyard -> %2d fighters, %6u banked | shipyard L1+L2 -> %2d fighters, %6u banked | +OreProcL1 -> %2d fighters, %6u banked\n",
+                  n, plain.fighters, plain.banked, yard.fighters, yard.banked, both.fighters, both.banked);
+    }
+  }
+  std::printf("slot arithmetic: 300 s x 20 cr/s = 6,000 cr of build time without a shipyard (+1,000 start); x2.0 = 12,000. Anything earned past that is unspendable.\n\n");
+}
+
+// ------------------------------------------------------------------------------------------------
+// E4: ring slots clamped at the play-area edge collapse onto one point.
+// ------------------------------------------------------------------------------------------------
+void RingClamp() {
+  std::printf("=== E4 RING CLAMP AT THE EDGE ===\n");
+  for (const auto& [tx, ty] : {std::pair{8192.0, 8192.0}, std::pair{8192.0, 0.0}, std::pair{8000.0, 0.0}, std::pair{7800.0, 0.0}, std::pair{0.0, 0.0}}) {
+    World world; std::vector<EntityId> fleet;
+    for (int i = 0; i < 50; ++i) fleet.push_back(world.Create(At(1000 + i * 37, 2000), 0, DesignId::Fighter, 1));
+    OrderFleetTo(world, fleet, At(tx, ty));
+    std::set<std::pair<Neuron::Fixed, Neuron::Fixed>> distinct;
+    for (const EntityId id : fleet) { const MoveOrder* o = world.FindOrder(id); distinct.insert({o->destination.x, o->destination.y}); }
+    std::printf("50 fighters ordered to (%.0f,%.0f): %zu distinct destinations (ring radius 4 x 90 = 360)\n", tx, ty, distinct.size());
+  }
+  std::printf("\n");
+}
+
+// ------------------------------------------------------------------------------------------------
+// E5: D1's free Fighter, under M3's rules: how soon it reaches player 2's home field.
+// ------------------------------------------------------------------------------------------------
+void FreeFighter() {
+  std::printf("=== E5 D1 FREE FIGHTER (Server.cpp:148) vs player 2's opening ===\n");
+  const auto field = GenerateField(SEED, 2);
+  const std::size_t region = field.size() / FieldCopyCount(2);
+  const Neuron::Vec2 p2 = StartAnchor(2, 2);
+  const Neuron::Vec2 origin{};
+  const Neuron::Vec2 scripted = At(4096, 2048);
+  double nearest = 1e9; std::size_t nearestIdx = 0;
+  for (std::size_t i = region; i < region + HOME_FIELD_ASTEROID_COUNT; ++i) { const double d = Dist(origin, field[i].position); if (d < nearest) { nearest = d; nearestIdx = i; } }
+  std::printf("player 2 station (%.0f,%.0f); nearest p2 home rock idx %zu at (%.0f,%.0f), %.0f from the origin -> %.1f s at 140 u/s from the fighter's spawn; p2's own nearest rock (idx %zu) is %.0f from its station\n",
+              Units(p2.x), Units(p2.y), nearestIdx, Units(field[nearestIdx].position.x), Units(field[nearestIdx].position.y), nearest, nearest / 140.0, region, Dist(field[region].position, p2));
+  std::printf("scripted destination (4096,2048): %.0f from the origin (%.1f s), then %.0f to p2's station (%.1f s)\n",
+              Dist(origin, scripted), Dist(origin, scripted) / 140.0, Dist(scripted, p2), Dist(scripted, p2) / 140.0);
+  std::printf("player 2's first miner finishes at 7.5 s and first delivers at ~14.5 s (harness); a redirected free fighter arrives ~%.0f s, kills a miner every 12.9 s (ordered miners do not flee under M3.6); p2's first fighter needs 150 cr more and 15 s of the slot.\n\n", nearest / 140.0);
+}
+} // namespace
+
+int main() {
+  TokenCollision();
+  Standoff();
+  OpeningLines();
+  RingClamp();
+  FreeFighter();
+  return 0;
+}

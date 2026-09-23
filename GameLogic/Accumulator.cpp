@@ -61,16 +61,19 @@ struct Candidate
 }
 } // namespace
 
-EntityRecord RecordOf(const Entity& _entity) noexcept
+EntityRecord RecordOf(const World& _world, std::size_t _slot) noexcept
 {
-  return EntityRecord{.identity = PackIdentity(_entity.id.index, _entity.id.generation),
-                      .owner = _entity.owner,
-                      .positionX = QuantizePosition(_entity.position.x),
-                      .positionY = QuantizePosition(_entity.position.y),
-                      .heading = QuantizeWireHeading(_entity.heading),
-                      .hullPercentRemaining = QuantizeHullPercent(_entity.hullRemaining, Derive(_entity.design).hullPoints),
-                      .designIdentity = static_cast<std::uint8_t>(_entity.design),
-                      .flags = 0};
+  const Entity& entity = _world.EntityInSlot(_slot);
+  const DerivedStats stats = Derive(entity.design);
+  const std::uint8_t chips = CargoChips(_world.MineInSlot(_slot).cargoMilliOre, stats.oreCapacity * MILLI_ORE_PER_ORE);
+  return EntityRecord{.identity = PackIdentity(entity.id.index, entity.id.generation),
+                      .owner = entity.owner,
+                      .positionX = QuantizePosition(entity.position.x),
+                      .positionY = QuantizePosition(entity.position.y),
+                      .heading = QuantizeWireHeading(entity.heading),
+                      .hullPercentRemaining = QuantizeHullPercent(entity.hullRemaining, stats.hullPoints),
+                      .designIdentity = static_cast<std::uint8_t>(entity.design),
+                      .flags = WithCargoChips(0, chips)};
 }
 
 void Accumulator::Begin() noexcept
@@ -146,7 +149,7 @@ std::vector<Update> Accumulator::Fill(const World& _world, PlayerId _player, con
       continue;
     }
     const bool stillThere =
-      (slot < slotCount) && _world.IsSlotAlive(slot) && (RecordOf(_world.EntityInSlot(slot)).identity == tracked.lastSent.identity);
+      (slot < slotCount) && _world.IsSlotAlive(slot) && (RecordOf(_world, slot).identity == tracked.lastSent.identity);
     if (!stillThere)
     {
       client.removals.push_back(PendingRemoval{.identity = tracked.lastSent.identity, .remaining = REMOVAL_REPEAT_TICKS});
@@ -167,7 +170,7 @@ std::vector<Update> Accumulator::Fill(const World& _world, PlayerId _player, con
     }
     const Entity& entity = _world.EntityInSlot(slot);
     Tracked& tracked = client.tracked[slot];
-    const EntityRecord record = RecordOf(entity);
+    const EntityRecord record = RecordOf(_world, slot);
 
     std::uint64_t relevance = WEIGHT_BASE;
     if (InView(entity.position, client.viewCenter, client.viewRadiusUnits))

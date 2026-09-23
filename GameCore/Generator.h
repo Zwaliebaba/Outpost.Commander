@@ -20,9 +20,9 @@ namespace Outpost
 /// `int32`, squared distances in `int64`, one `Pcg32` on its own stream, no container whose order is not
 /// the order things were placed in, and no float anywhere.
 ///
-/// **WHAT THIS STEP GENERATES IS ONE PLAYER'S REGION**, and nothing yet copies it. `GameDesign.md` section
-/// 3 generates a half at two players and a quadrant at four and copies it by rotation, which is M2.2's; the
-/// region is what gets copied, and it is player one's, around `StartAnchor(_, 1)` on the negative x axis.
+/// **ONE PLAYER'S REGION IS GENERATED AND EVERY OTHER IS A COPY OF IT** (M2.2). `GameDesign.md` section 3
+/// generates a half at two players and a quadrant at four and copies it by rotation; the region is player
+/// one's, around `StartAnchor(_, 1)` on the negative x axis, and `GenerateField` makes the copies.
 
 /// **PCG32's STREAM FOR THE GENERATOR.** `GameLogic/Sessions.h` took 1 and `NeuronClient/StarField.h` took
 /// 2, and each said this one owns the rest. It takes 3. A generator sharing a stream with anything the
@@ -46,8 +46,8 @@ inline constexpr std::int32_t HOME_FIELD_OUTER_RADIUS_UNITS = 1500;
 /// point defense's 400 -- miners at the rocks are raidable, which section 5 says is the point.
 inline constexpr std::int32_t HOME_FIELD_INNER_RADIUS_UNITS = 600;
 
-/// **TWO CONTESTED CLUSTERS IN EACH REGION**, so two at two players become four on the map once M2.2 copies
-/// them, and eight at four players. "Richer clusters toward the center, reachable by everyone" is the map's
+/// **TWO CONTESTED CLUSTERS IN EACH REGION**, so two at two players become four on the map once `GenerateField`
+/// copies them, and eight at four players. "Richer clusters toward the center, reachable by everyone" is the map's
 /// only real proposition (`GameDesign.md` section 3).
 inline constexpr std::size_t CONTESTED_FIELD_COUNT = 2;
 
@@ -76,6 +76,24 @@ inline constexpr std::int32_t ASTEROID_SPACING_UNITS = 150;
 /// A player count of zero places nothing. One is treated as two -- a practice match on half a map -- and
 /// three as four, which `Layout.h` already says is not symmetric.
 [[nodiscard]] std::vector<Placement> GenerateRegion(std::uint64_t _seed, std::size_t _playerCount);
+
+/// How many copies of the region make the map: **two at two players and four at four.** One is treated as
+/// two and three as four, as `GenerateRegion` treats them, and so is every stress count above four
+/// (ADR-023) -- the field is the four-player field and does not claim to be fair to a ninth player, which
+/// its stations already do not. Zero players is zero copies.
+[[nodiscard]] std::size_t FieldCopyCount(std::size_t _playerCount) noexcept;
+
+/// **THE WHOLE FIELD** (M2.2): the region, then each copy of it turned about the center by
+/// `4 / FieldCopyCount` quarter turns more than the last -- 180 degrees at two players; 90, 180 and 270 at
+/// four. **Copy k is the region of the player whose anchor is k steps round** (`StartAnchor`), so at two and
+/// four players the home field in copy k sits around player k + 1's station. Each copy keeps the region's
+/// order, so a row's index modulo the region's size says which rock of the region it is a copy of.
+///
+/// **EVERY ROTATION IS `QuarterTurn`, A SWAP AND A NEGATION ON INTEGERS**, so every player's field is the
+/// same field to the unit and no seed can be unlucky (`TechnicalDesign.md` section 3). Nothing is drawn from
+/// the PRNG here: the copies cost no draws and the region's draws are unchanged, so the pinned region is
+/// still the first rows of this.
+[[nodiscard]] std::vector<Placement> GenerateField(std::uint64_t _seed, std::size_t _playerCount);
 
 /// Whether a point, in whole units, lies inside player one's region with at least _marginUnits to spare
 /// from every edge the rotation copies across. **At two players the region is the half-plane `x < 0`; at

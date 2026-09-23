@@ -583,7 +583,7 @@ constants the client actually draws from.
 `CheckHudGeometry.py` now compares 63 of them against `geometry.json` field by field. The rows it
 exempts are the alert, the world-anchored elements, and the module row's armed and unavailable states and
 cargo, which are M2's and M3's. **What is not built:** the module row (no module exists until ADR-015 at
-M2, and *unavailable* means "build something else first", which nobody at M1 can do); **motion**, which
+M2, and *unavailable* means "build something else first", which nobody at M1 can do; since built at M2.11 and M2.11b); **motion**, which
 the handoff's own build order puts last. ~~A **reconnecting** state, because nothing yet detects a
 resume~~ — **BUILT AFTERWARDS, 2026-09-22**: `ClientFrame` calls the link lost after a second with no
 snapshot, which is how a resume shows up (the frame clock jumps and the last arrival is old). It rejoins

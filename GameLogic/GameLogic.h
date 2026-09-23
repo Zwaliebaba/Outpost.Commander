@@ -19,6 +19,11 @@
 #include "Host.h"
 #include "Sessions.h"
 #include "RingAssignment.h"
+#include "UniformGrid.h"
+#include "UnloadTarget.h"
+#include "ModuleEffects.h"
+#include "MiningSystem.h"
+#include "Economy.h"
 #include "StateHash.h"
 #include "Tick.h"
 

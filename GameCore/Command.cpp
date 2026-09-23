@@ -9,7 +9,8 @@ namespace Outpost
 
 std::size_t EncodedSize(const Command& _command) noexcept
 {
-  return Command::FIXED_BYTES + (_command.selection.size() * Command::IDENTITY_BYTES);
+  const std::size_t designByte = CarriesDesignByte(_command.type) ? 1 : 0;
+  return Command::FIXED_BYTES + designByte + (_command.selection.size() * Command::IDENTITY_BYTES);
 }
 
 std::size_t EncodedSize(const CommandPacket& _packet) noexcept
@@ -56,6 +57,10 @@ bool Encode(const CommandPacket& _packet, Neuron::ByteWriter& _writer) noexcept
     static_cast<void>(_writer.WriteUInt8(static_cast<std::uint8_t>(command.type)));
     static_cast<void>(_writer.WriteInt16(command.targetX));
     static_cast<void>(_writer.WriteInt16(command.targetY));
+    if (CarriesDesignByte(command.type))
+    {
+      static_cast<void>(_writer.WriteUInt8(command.placedDesign));
+    }
     static_cast<void>(_writer.WriteUInt8(static_cast<std::uint8_t>(command.selection.size())));
     for (const WireIdentity selected : command.selection)
     {
@@ -118,16 +123,25 @@ CommandFault Decode(Neuron::ByteReader& _reader, CommandPacket& _outPacket) noex
     const std::uint8_t type = _reader.ReadUInt8();
     command.targetX = _reader.ReadInt16();
     command.targetY = _reader.ReadInt16();
-    const std::uint8_t selectionCount = _reader.ReadUInt8();
     if (_reader.Faulted())
     {
       return CommandFault::Truncated;
     }
 
+    // THE TYPE BEFORE THE REST, because it decides whether a design byte comes next (Q55).
     command.type = static_cast<CommandType>(type);
     if (!IsKnown(command.type))
     {
       return CommandFault::Malformed;
+    }
+    if (CarriesDesignByte(command.type))
+    {
+      command.placedDesign = _reader.ReadUInt8();
+    }
+    const std::uint8_t selectionCount = _reader.ReadUInt8();
+    if (_reader.Faulted())
+    {
+      return CommandFault::Truncated;
     }
 
     // THE COUNT IS CHECKED AGAINST WHAT IS LEFT BEFORE ANYTHING IS RESERVED FOR IT -- a selection

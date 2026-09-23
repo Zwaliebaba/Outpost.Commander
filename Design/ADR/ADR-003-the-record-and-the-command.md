@@ -32,7 +32,7 @@ aged out must be recovered. The design's entity count — four players at fifty 
 
 | Still decided here | Replaced by ADR-024 |
 |---|---|
-| The entity record's **fields and their semantics**: position as two `std::int16_t` over the play area, heading in 256 steps, hull as a percent with the one-percent floor, the design identity as its own byte, cargo in two flag bits | The record's **width and identity**: it is twelve bytes with a three-byte identity and an owner byte, not ten with team bits |
+| The entity record's **fields and their semantics**: position as two `std::int16_t` over the play area, heading in 256 steps, hull as a percent with the one-percent floor, the design identity as its own byte, cargo in flag bits — two when this was written, **three since M2.7**, for zero to four chips (`OpenQuestions.md` Q53) | The record's **width and identity**: it is twelve bytes with a three-byte identity and an owner byte, not ten with team bits |
 | **The payload pinned at 1,232 bytes**, and why it is not 1,200 | **The snapshot as a unit**: there is no self-contained world-at-a-tick; the datagram is an update filled by a priority accumulator |
 | **20 Hz and the 75-millisecond interpolation delay**, and the latency table that chose them | **The header**: it carries the recipient's own block and no per-player list |
 | **Commands made reliable by `lastCommandSeqApplied`**, applied in order, oldest-first fill | **The removal list sent once**: removals and fire events are repeated facts |

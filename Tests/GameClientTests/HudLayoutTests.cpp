@@ -429,6 +429,57 @@ public:
     Assert::IsFalse(selection.Contains(Outpost::PackIdentity(2, 1)));
   }
 
+  /// **A GROUP'S CARGO IS ITS MEAN CHIPS, ROUNDED TO NEAREST** (M2.7, Q53), and only a design that carries ore
+  /// has any: two miners at one and four chips light three -- (1 + 4) / 2 rounds up -- and a fighter carries
+  /// nothing whatever its flags say.
+  TEST_METHOD(AGroupsCargoIsItsMeanChipsAndOnlyMinersCarry)
+  {
+    std::vector<Outpost::EntityRecord> entities;
+    entities.push_back(Record(1, Outpost::DesignId::Miner, 100));
+    entities.push_back(Record(2, Outpost::DesignId::Miner, 100));
+    entities.push_back(Record(3, Outpost::DesignId::Fighter, 100));
+    entities[0].flags = Outpost::WithCargoChips(0, 1);
+    entities[1].flags = Outpost::WithCargoChips(0, 4);
+
+    const std::vector<Outpost::WireIdentity> selection{Outpost::PackIdentity(1, 1), Outpost::PackIdentity(2, 1),
+                                                       Outpost::PackIdentity(3, 1)};
+    const auto groups = Outpost::SummarizeSelection(selection, entities);
+    Assert::AreEqual(std::size_t{2}, groups.size());
+    Assert::IsTrue(groups[0].carriesOre);
+    Assert::AreEqual(3, static_cast<int>(groups[0].cargoChips));
+    Assert::IsFalse(groups[1].carriesOre, L"a fighter carries no ore");
+  }
+
+  /// **FOUR CHIPS FOR A DESIGN THAT CARRIES ORE, AND NO ROW FOR ONE THAT DOES NOT** -- `ORE` for the lit ones and
+  /// `TRACK` for the rest, at the handoff's geometry.
+  TEST_METHOD(TheCargoRowIsFourChipsOnlyWhereOreIsCarried)
+  {
+    Outpost::HudState state;
+    state.groups = {{.design = Outpost::DesignId::Miner, .count = 2, .hullPercent = 100, .carriesOre = true, .cargoChips = 3},
+                    {.design = Outpost::DesignId::Fighter, .count = 1, .hullPercent = 100}};
+    const Outpost::HudFrame frame = Outpost::BuildHud(state);
+
+    const auto chipsIn = [&frame](std::size_t _group, bool _lit)
+    {
+      const Outpost::HudRect cell = Outpost::SelectionGroupRect(_group);
+      int found = 0;
+      for (const Outpost::HudItem& item : frame.items)
+      {
+        const bool isChip = (item.rect.y == cell.y + Outpost::GROUP_CARGO_CHIP.y) && (item.rect.w == Outpost::GROUP_CARGO_CHIP.w) &&
+                            (item.rect.h == Outpost::GROUP_CARGO_CHIP.h) && (item.rect.x >= cell.x) && (item.rect.x < cell.x + cell.w);
+        const bool ore = std::fabs(item.color.red - Neuron::HexColor(0xD8A23C).red) < 0.001f;
+        if (isChip && (ore == _lit))
+        {
+          ++found;
+        }
+      }
+      return found;
+    };
+    Assert::AreEqual(3, chipsIn(0, true), L"three lit chips");
+    Assert::AreEqual(1, chipsIn(0, false), L"one empty chip");
+    Assert::AreEqual(0, chipsIn(1, true) + chipsIn(1, false), L"a fighter drew a cargo row");
+  }
+
   /// The panel draws **one to four groups** and is sized by the handoff's formula for each.
   TEST_METHOD(ThePanelWidthFollowsTheGroupCount)
   {
@@ -447,6 +498,37 @@ public:
 TEST_CLASS(TheReadouts)
 {
 public:
+  /// **THE FLASH IS DRAWN AT ITS RECT, IN ITS COLOR, AT ITS ALPHA** -- cyan on a gain, amber on a spend -- and
+  /// not at all when nothing changed (M2.7, Q36).
+  TEST_METHOD(TheChangeFlashIsDrawnUnderTheBalance)
+  {
+    const auto flashIn = [](const Outpost::HudFrame& _frame) -> const Outpost::HudItem*
+    {
+      for (const Outpost::HudItem& item : _frame.items)
+      {
+        if ((item.kind == Outpost::HudItem::Kind::Solid) && (item.rect == Outpost::CREDITS_FLASH))
+        {
+          return &item;
+        }
+      }
+      return nullptr;
+    };
+
+    Outpost::HudState state;
+    Assert::IsNull(flashIn(Outpost::BuildHud(state)), L"a flash with nothing to show");
+
+    state.creditFlash = Outpost::CreditChange::Gain;
+    state.creditFlashAlpha = 0.5f;
+    const Outpost::HudFrame gain = Outpost::BuildHud(state);
+    Assert::IsNotNull(flashIn(gain));
+    Assert::AreEqual(0.5f, flashIn(gain)->color.alpha, 0.0001f);
+    Assert::AreEqual(Neuron::HexColor(0x38D1F5).blue, flashIn(gain)->color.blue, 0.0001f, L"a gain is cyan");
+
+    state.creditFlash = Outpost::CreditChange::Spend;
+    const Outpost::HudFrame spend = Outpost::BuildHud(state);
+    Assert::AreEqual(Neuron::HexColor(0xFFB020).blue, flashIn(spend)->color.blue, 0.0001f, L"a spend is amber");
+  }
+
   TEST_METHOD(CreditsCarryAThousandsSeparator)
   {
     Assert::AreEqual(std::wstring{L"0"}, Outpost::FormatCredits(0));

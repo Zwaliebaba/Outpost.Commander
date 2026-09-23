@@ -2,6 +2,7 @@
 
 #include "GameCore.h"
 
+#include <cstddef>
 #include <cstdint>
 
 namespace Outpost
@@ -111,11 +112,19 @@ public:
     return m_token;
   }
 
-  /// R23's seed, which is the only thing on the wire the client cannot get from a snapshot. Zero
+  /// R23's seed, one of the two things on the wire the client cannot get from a snapshot. Zero
   /// until seated.
   [[nodiscard]] std::uint64_t MatchSeed() const noexcept
   {
     return m_matchSeed;
+  }
+
+  /// **THE OTHER OF THE TWO** (M2.3): how many players the match seats, which the field is derived from
+  /// alongside the seed (`GenerateField`) and which says where every station is (`StartAnchor`). Zero
+  /// until seated.
+  [[nodiscard]] std::size_t PlayerCount() const noexcept
+  {
+    return m_playerCount;
   }
 
   /// **`Rejoined` RATHER THAN `Accepted`**, kept because it is the difference between resuming a
@@ -133,6 +142,7 @@ public:
 private:
   SessionToken m_token = NO_SESSION_TOKEN;
   std::uint64_t m_matchSeed = 0;
+  std::size_t m_playerCount = 0;
   PlayerId m_player = NO_PLAYER;
   JoinPhase m_phase = JoinPhase::Joining;
   bool m_resumed = false;

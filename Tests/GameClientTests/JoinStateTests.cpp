@@ -9,9 +9,18 @@ namespace
 {
 constexpr std::uint64_t INTERVAL = Outpost::JoinState::RETRY_INTERVAL_MILLISECONDS;
 
+/// A four-player match, so every slot these tests seat is one the count allows.
+constexpr std::uint8_t PLAYERS = 4;
+
+/// What the host sends: the seed and the count on a seat, and neither on a refusal (`Sessions::Admit`).
 [[nodiscard]] Outpost::JoinReply Seated(Outpost::JoinResult _result, Outpost::PlayerId _player, Outpost::SessionToken _token)
 {
-  return Outpost::JoinReply{.result = _result, .player = _player, .token = _token, .matchSeed = 0xFEEDFACEull};
+  const bool refused = (_result == Outpost::JoinResult::MatchFull);
+  return Outpost::JoinReply{.result = _result,
+                            .player = _player,
+                            .playerCount = refused ? std::uint8_t{0} : PLAYERS,
+                            .token = _token,
+                            .matchSeed = refused ? 0 : 0xFEEDFACEull};
 }
 } // namespace
 
@@ -98,16 +107,19 @@ public:
 TEST_CLASS(TheJoinReply)
 {
 public:
-  TEST_METHOD(AnAcceptanceSeatsTheClientAndCarriesTheSeed)
+  /// The seed AND the count (M2.3): the field is derived from the pair, and the seed alone is two maps.
+  TEST_METHOD(AnAcceptanceSeatsTheClientAndCarriesTheSeedAndTheCount)
   {
     Outpost::JoinState join;
     join.Begin(Outpost::NO_SESSION_TOKEN);
+    Assert::AreEqual(std::size_t{0}, join.PlayerCount(), L"no count before the host has said");
 
     Assert::IsTrue(join.Accept(Seated(Outpost::JoinResult::Accepted, 2, 0xAAAAull)), L"a new token has to be persisted");
     Assert::IsTrue(join.IsJoined());
     Assert::AreEqual(2, static_cast<int>(join.Player()));
     Assert::AreEqual(0xAAAAull, join.Token());
     Assert::AreEqual(0xFEEDFACEull, join.MatchSeed());
+    Assert::AreEqual(std::size_t{PLAYERS}, join.PlayerCount());
     Assert::IsFalse(join.Resumed());
   }
 
@@ -164,6 +176,7 @@ public:
     Assert::IsTrue(join.Accept(Seated(Outpost::JoinResult::MatchFull, Outpost::NO_PLAYER, 0)), L"the cleared token has to be persisted");
     Assert::AreEqual(Outpost::NO_SESSION_TOKEN, join.Token());
     Assert::AreEqual(static_cast<int>(Outpost::NO_PLAYER), static_cast<int>(join.Player()));
+    Assert::AreEqual(std::size_t{0}, join.PlayerCount(), L"a refused client is in no match and has no field");
 
     // And a client that had none to begin with has nothing to write.
     Outpost::JoinState fresh;
@@ -182,6 +195,7 @@ public:
     Assert::IsFalse(join.IsJoined());
     Assert::AreEqual(static_cast<int>(Outpost::NO_PLAYER), static_cast<int>(join.Player()));
     Assert::AreEqual(static_cast<std::uint64_t>(0), join.MatchSeed());
+    Assert::AreEqual(std::size_t{0}, join.PlayerCount());
     Assert::IsTrue(join.ShouldSend(0));
   }
 };

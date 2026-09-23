@@ -10,7 +10,8 @@
 namespace Outpost
 {
 
-/// ADR-013's handshake, and it is the only thing on the wire that tells a client who it is.
+/// ADR-013's handshake, and it is the only thing on the wire that tells a client who it is -- and, since
+/// M2.3, which field to draw: the seed and the player count are the generator's two inputs.
 ///
 /// **IT LIVES IN `GameCore` BECAUSE BOTH SIDES SPEAK IT** (R9): the host answers it and the client
 /// sends it, and neither of the two libraries that own a socket knows anything about players or
@@ -72,20 +73,28 @@ struct Join
 /// R8: a wire record.
 struct JoinReply
 {
-  /// result 1, player 1, token 8, seed 8.
-  static constexpr std::size_t SIZE_BYTES = 18;
+  /// result 1, player 1, player count 1, token 8, seed 8.
+  static constexpr std::size_t SIZE_BYTES = 19;
 
   JoinResult result = JoinResult::MatchFull;
 
   /// The slot, numbered from one. `NO_PLAYER` on a refusal (`GameCore/Entity.h`).
   PlayerId player = NO_PLAYER;
 
+  /// **HOW MANY PLAYERS THE MATCH SEATS -- R23's SECOND INPUT, WHICH THE SEED ALONE IS NOT** (M2.3,
+  /// ADR-013 amended). `GenerateField` copies a half at two players and a quarter at four, so the same
+  /// seed is two different maps and a client that knew only the seed would draw one of them wrong. The
+  /// host's configured count and not how many have joined: the field is fixed when the match begins.
+  /// A count and not a `PlayerId`, though it has the same width -- `MAX_PLAYERS` is 254, so one byte
+  /// holds every count a host can seat. Zero on a refusal.
+  std::uint8_t playerCount = 0;
+
   /// The client keeps it and presents it next time. Zero on a refusal.
   SessionToken token = NO_SESSION_TOKEN;
 
-  /// **R23's, AND THE ONE THING A CLIENT CANNOT GET FROM A SNAPSHOT.** The client runs the
-  /// asteroid generator itself and no map is ever transmitted, so without this there is no field
-  /// to draw. Zero on a refusal, which is a legal seed and is never reached because a refused
+  /// **R23's, AND WITH `playerCount` THE TWO THINGS A CLIENT CANNOT GET FROM A SNAPSHOT.** The client
+  /// runs the asteroid generator itself and no map is ever transmitted, so without this there is no
+  /// field to draw. Zero on a refusal, which is a legal seed and is never reached because a refused
   /// client draws nothing.
   std::uint64_t matchSeed = 0;
 

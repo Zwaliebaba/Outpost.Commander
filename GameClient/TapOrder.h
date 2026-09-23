@@ -58,6 +58,11 @@ struct PickCandidate
   PickTier tier = PickTier::OwnShip;
   /// From the tap, in authored pixels -- the units the radius is stated in.
   float screenDistanceAuthoredPixels = 0.0f;
+
+  /// **MEANINGFUL FOR THE ASTEROID TIER ONLY** (M2.8): the rock's index in the generated field, which is
+  /// how a mine order names it (`OpenQuestions.md` Q52). A rock is not an entity before M3, so it has no
+  /// identity to put in the field above.
+  std::uint16_t rock = 0;
 };
 
 /// The candidate a tap resolves to, by `Interface.md` section 1's rule.
@@ -113,5 +118,24 @@ struct TapOutcome
 /// ADR-003 has it repeated in every outgoing packet until the host acknowledges the sequence.
 [[nodiscard]] Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY,
                                        std::span<const WireIdentity> _selection) noexcept;
+
+/// **A MINE ORDER FOR THE ROCK AT FIELD INDEX _rock** (M2.8, Q52), for _miners.
+[[nodiscard]] Command BuildMineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::span<const WireIdentity> _miners) noexcept;
+
+/// A selection split for a tap on an asteroid. R8: a public aggregate.
+struct MineSplit
+{
+  /// What can mine: the designs whose derived capacity is not zero. They take the mine order.
+  std::vector<WireIdentity> miners;
+  /// **The rest move to the rock** (`Interface.md` section 4) -- including any identity the newest update no
+  /// longer carries, which the host refuses or skips rather than this guessing at it.
+  std::vector<WireIdentity> others;
+};
+
+/// **THE ONE ROW OF THE TAP TABLE THAT SPLITS A SELECTION** (`Interface.md` section 4): "miners in the
+/// selection take it, the rest move to it". Which is which is the design's derived capacity -- the catalog
+/// read the build panel already makes, and the same test the host applies (R19), so a ship the client puts
+/// in `miners` is one the host will order to mine. Order within each half is the selection's.
+[[nodiscard]] MineSplit SplitForMine(std::span<const WireIdentity> _selection, std::span<const EntityRecord> _entities);
 
 } // namespace Outpost

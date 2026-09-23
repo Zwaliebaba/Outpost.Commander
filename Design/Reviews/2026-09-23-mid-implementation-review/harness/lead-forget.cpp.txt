@@ -1,0 +1,43 @@
+#include "pch.h"
+#include "ReplicaStore.h"
+#include <cstdio>
+#include <vector>
+using namespace Outpost;
+int main() {
+  const std::uint64_t seed = 20260922ull; const std::size_t players = 2;
+  World world; Accumulator acc; acc.Begin();
+  world.SetField(GenerateField(seed, players));
+  for (const Placement& p : GenerateLayout(seed, players)) world.Create(p.position, p.heading, p.design, p.owner);
+  Neuron::Pcg32 rng{3, 5};
+  for (std::size_t pl = 1; pl <= players; ++pl) {
+    const Neuron::Vec2 a = StartAnchor(players, (PlayerId)pl);
+    for (int m = 0; m < 4; ++m) world.Create(Neuron::Vec2{a.x + (m*120-180)*256, a.y + 300*256}, 0, DesignId::ModuleShipyardL1, (PlayerId)pl);
+    for (int s = 0; s < 50; ++s) {
+      EntityId id = world.Create(Neuron::Vec2{ a.x + rng.NextInRange(-1500, 1500) * 256, a.y + rng.NextInRange(-1500, 1500) * 256 }, 0, DesignId::Fighter, (PlayerId)pl);
+      world.OrderMoveTo(id, Neuron::Vec2{rng.NextInRange(-8000, 8000) * 256, rng.NextInRange(-8000, 8000) * 256}, SpeedPerTick(DesignId::Fighter));
+    }
+    acc.SetView((PlayerId)pl, QuantizePosition(a.x), QuantizePosition(a.y), 2400);
+  }
+  std::printf("entities %zu, sweep %u ticks, forget after %u ticks\n", world.AliveCount(), SweepTicks(world.AliveCount()), FORGET_AFTER_SWEEPS * SweepTicks(world.AliveCount()));
+  for (int scenario = 0; scenario < 3; ++scenario) {
+    ReplicaStore store; std::uint32_t tick = 0; std::uint64_t ms = 0;
+    // scenario 0: drop ticks 20..22 (3 ticks silence), both datagrams arrive at 23
+    // scenario 1: drop ticks 20..23 (4 ticks = 200 ms), both arrive at 24 in one drain
+    // scenario 2: drop ticks 20..23, then at tick 24 only the FIRST datagram arrives
+    const std::uint32_t dropFrom = 20, dropTo = (scenario == 0) ? 22 : 23;
+    std::printf("\nscenario %d: silence ticks %u..%u%s\n", scenario, dropFrom, dropTo, scenario == 2 ? ", then the second datagram of the next tick lost" : "");
+    for (tick = 1; tick <= 30; ++tick) {
+      Tick(world);
+      std::vector<Update> ups = acc.Fill(world, 1, PlayerBlock{}, tick);
+      ms += 50;
+      if (tick >= dropFrom && tick <= dropTo) continue;
+      for (std::size_t i = 0; i < ups.size(); ++i) {
+        if (scenario == 2 && tick == dropTo + 1 && i == 1) continue;
+        auto r = store.Accept(ups[i], ms);
+        if (tick >= dropTo && tick <= dropTo + 2)
+          std::printf("  tick %u datagram %zu: records %zu applied %u refused %u forgotten %u held-after %zu\n", tick, i, ups[i].records.size(), r.applied, r.refused, r.forgotten, store.HeldCount());
+      }
+    }
+  }
+  return 0;
+}

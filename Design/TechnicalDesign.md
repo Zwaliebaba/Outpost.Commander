@@ -5,8 +5,8 @@ read first and is cited by rule number here rather than restated.
 
 **Status: DRAFT.** The figures marked *arithmetic* are exactly that — quantities derived from the design's
 numbers, so the shape can be argued about before anything is written. `AGENTS.md` §6 requires a figure to
-be measured before it is quoted as fact; §9 lists the ones that must be, and none of them can be until
-there is code.
+be measured before it is quoted as fact; §9 lists the ones that must be, and says which have been measured
+since there was code to measure.
 
 ---
 
@@ -30,6 +30,9 @@ design onto them:
 | Module placement validity — radius, clearance of the station and of other modules | `GameCore` | A rule both sides evaluate: the client previews it under the finger, the host validates it (R19). |
 | Derived cargo capacity and extraction rate, summed over a hull's slots | `GameCore` | The same pure function as every other derived stat (R24). |
 | The nearest thing that accepts ore | `GameLogic` | It reaches an outcome, so it is simulation: candidates ordered by entity identity (R16). |
+| The uniform grid, the mining loop and the economy | `GameLogic` | Simulation (M2.5 to M2.7): 512-unit cells rebuilt each tick in index order, a standing mine order, and credits from what is unloaded, remainders carried per player. |
+| Which effect a module has, and the player's multipliers | `GameCore`, `GameLogic` | The effect is a catalog field (`ModuleEffect`, R24); applying it is simulation (M2.12). The best module of a kind counts. |
+| The derived field, the baked asteroid meshes, module placement and its radius | `GameClient` | The client's half of R23 and of the placement rule: it derives, draws and previews, and sends an order the host validates. |
 | Command validation — ownership, bounds, generation, sequence | `GameLogic` | The host is the only thing that may decide an order is legal (R19). |
 | Replica state, interpolation, the camera, selection, the HUD | `GameClient` | Client only. |
 | `IFrameworkView` and application lifecycle | `OutpostCommander` | Windows Runtime glue and nothing else (R20). |
@@ -118,9 +121,9 @@ positions are integers** — a 90° rotation is a swap and a negation, a 180° r
 where a floating-point rotation would make the starts subtly unequal, which is the kind of unfairness
 nobody would find for a year.
 
-**M0 and M1 pass one fixed seed.** The generator is unchanged and still runs on both sides; it simply has
-one input until M2, which keeps "is the map wrong or is the game wrong" out of the two milestones that can
-least afford the question.
+**M0 and M1 passed one fixed seed**, which kept "is the map wrong or is the game wrong" out of the two
+milestones that could least afford the question. **Since M2 the host takes the match's seed and player
+count**, and the join reply carries both, so the client derives the same field (ADR-013 as amended, R23).
 
 ---
 
@@ -151,7 +154,7 @@ An entity record is **twelve bytes**:
 | Heading | 1 | 256 steps, 1.4°. A rendering quantity; the simulation's heading is 16-bit. |
 | Hull remaining | 1 | Percent, rounded to nearest with **both ends exact** — and floored at 1 for anything still alive, because 0 is what a client draws as destroyed ([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)). |
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
-| Flags | 1 | **State 3 bits, cargo 2 bits, three spare.** The team bits left with ADR-024. |
+| Flags | 1 | **State 3 bits, cargo 3 bits, two spare.** The team bits left with ADR-024; cargo took a spare bit at M2.7 (`OpenQuestions.md` Q53). |
 
 **The datagram is an update, and its header is twenty-one bytes at any player count**: the transport's
 four — version, type, and a sequence the receiver uses only to count loss (`NeuronCore/PacketHeader.h`;
@@ -194,8 +197,9 @@ accumulator makes ambiguous from the first tick. A fire event
 ([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md): shooter 3, target 3, weapon 1) rides for
 **three**. Losing a death needs ten consecutive losses, once in 10¹³ updates at 5% packet loss.
 
-**Cargo rides in the flags byte**, two bits and four buckets, which is all a fill bar needs
-([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)).
+**Cargo rides in the flags byte**, three bits since M2.7: zero to four lit chips, quarters rounded up, which
+is what the selection panel's four chips draw ([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md),
+`OpenQuestions.md` Q53). Two bits could say four states and four chips need five.
 
 **Updates go out at 20 Hz** and the client renders **75 milliseconds** behind — one update interval
 plus a jitter margin. This was 10 Hz and 150 ms, and the change is about **latency**, which ADR-003
@@ -261,6 +265,19 @@ carry a per-player sequence number and are **repeated in every outgoing packet u
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
 
+**A mine order names its rock by index** (M2.6, `OpenQuestions.md` Q52): `Mine` is command type 5, carrying
+the rock's position in `GenerateField`'s order in `targetX`. Asteroids are not entities before M3 (Q22), and
+both sides derive the same rows from the join's seed and count (R23). The host refuses an index past the
+field. Ships in the selection that cannot mine are skipped, not refused. **The command's layout does not
+change**: eight bytes and three per identity, like every other.
+
+**A module is placed and upgraded by two more types** (M2.11, `OpenQuestions.md` Q55). `PlaceModule` (6) carries
+its point in the target at full wire precision, **plus a ninth fixed byte for the design**, which no other type
+writes. `UpgradeModule` (7) is eight bytes: the module's identity in the target, as an attack's is, and the level
+in `targetY`'s spare high byte. Neither carries a selection, so neither moves the worst case:
+`Scripts/DatagramBudget.py --upstream` measures a placement at 9 bytes and an upgrade at 8. The host judges the
+site with `CheckModuleSite` before anything is spent.
+
 **The widths are measured, and M0.10's encoder is where they became facts; ADR-024 moved two of them.**
 The packet header is **twelve bytes** -- the transport's four (`NeuronCore/PacketHeader.h`), the player
 identity, the command count, and **the client's view center (4) and view radius (2)**, which is what the
@@ -298,7 +315,7 @@ losing a tracer takes three losses in a row.
 
 **A client learns which player it is from a join, and nothing else on the wire tells it.** The client
 sends a `Join` carrying the session token it was issued last time, or zero; the host answers with the slot
-it assigned, a session token to keep, and **the match seed**, which R23 makes the one thing a client cannot
+it assigned, a session token to keep, and **the match seed and player count**, which R23 makes the two things a client cannot
 derive for itself. The host assigns the slot -- there is no lobby to choose in (`GameDesign.md` §2) -- and a
 join with no slot free is refused with a reason rather than dropped. This is [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), and until it
 existed a client was told which player it was by a compiled-in constant.
@@ -451,10 +468,15 @@ it takes no time input, so it is generated once and never updated. Being floats 
 is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it into `GameCore`.
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
-color. Three hulls — `Scout`, `Frigate` and, from M2, `ModuleFrame` — the station, and **one draw per
-asteroid variant** rather than one for the whole field, which is what
-[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) cost when it made a rock a file instead of a function;
-the variant count is settled at M2.4 and the figure is owed there. The `Cruiser` is a sixth hull the
+color. Seven meshes are drawn this way: `Scout`, `Frigate`, the station and, since M2.10b, **one per module
+level**, so a shipyard reads apart from an ore processor. `ModuleFrame.cmo` ships but no design draws it.
+Then there is **one draw per asteroid variant, five for the field**, rather than one, which is what
+[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) cost when it made a rock a file instead of a function.
+**The field is baked, not instanced** (M2.4): a rock turns on three axes, scales and leaves the plane,
+which the ship pass's instance cannot say, and a field never moves. So each variant's rocks are placed on
+the processor into one static mesh when the join names the field. The ship pass draws each with one
+identity instance, at 552 KiB of upload heap at two players and 1,104 KiB at four, where instancing would
+have cost a second shader. The `Cruiser` is a sixth hull the
 catalog carries and the MVP never draws (`GameDesign.md` §10), and under ADR-005 it costs a file rather
 than a parameter. Two frames in
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimized
@@ -512,9 +534,9 @@ takes the path from the property and reads the file with an `ifstream`.
 launch is not a frame's worth of work to hide; the moment something has to load DURING a match it needs a
 worker and a handoff.
 
-**A mesh is a CMO file** ([`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)). The five MVP shapes —
-`Scout`, `Frigate`, `ModuleFrame`, the station and the asteroid — are modeled and shipped as package
-content rather than emitted by code, and `Design/design_handoff_meshes/` specifies them. **That record
+**A mesh is a CMO file** ([`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md)). The MVP's thirteen files —
+`Scout`, `Frigate`, the station, the bare `ModuleFrame`, one per module level and five asteroid variants —
+are modeled and shipped as package content rather than emitted by code, and `Design/design_handoff_meshes/` specifies them. **That record
 used to rule the opposite**, and it was replaced rather than superseded because nothing has shipped.
 
 **The reader is written here, which is the whole of how CMO stays inside R14.** It exists:
@@ -576,7 +598,9 @@ the whole of what the per-frame path allocates.
 script asserting each mesh's bounds against the size the catalog states, which is a gate rather than a
 compile error — the arrangement `Scripts/CheckHudGeometry.py` already has for the interface pass. And the
 asteroid loses its generator: a file is one rock, so variation is a set of authored variants with the
-match seed choosing among them and jittering yaw, pitch and scale in the client.
+match seed choosing among them and jittering yaw, pitch, roll, scale and height off the plane in the
+client. **Five variants, 102 KiB on disk and 16 KiB deflated** (M2.4, measured in ADR-005). The scale is
+clamped so no two rocks touch.
 
 **Presentation may be data; rules stay code.** The component catalog, the designs and the damage table are
 `constexpr` tables in `GameCore` and do not become files. A table the host and the client can disagree
@@ -676,6 +700,9 @@ shaped:
 | [`ADR-022`](ADR/ADR-022-a-bot-is-a-headless-client.md) | A bot is a headless client, and one unpackaged process runs many of them as players, churners and flooders to load the host. |
 | [`ADR-023`](ADR/ADR-023-the-player-count-is-configurable.md) | The host's player count is a run-time argument, past four only in a stress configuration. |
 | [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) | No projectile entities; damage lands on the firing tick and the client draws an event. |
+| [`ADR-012`](ADR/ADR-012-a-shader-is-compiled-into-a-header.md) | A shader is compiled by `dxc` at Shader Model 6.7 into a checked-in header, which raises the minimum Windows to 10.0.22621.0. |
+| [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md) | A client learns its player, a session token, the seed and, since M2.3, the player count from a join the host answers. |
+| [`ADR-015`](ADR/ADR-015-the-base-is-built-from-modules.md) | The base is built from modules, each a separate destroyable entity placed by tap inside the point-defense radius. An L2 is an in-place upgrade of an L1, at the difference in cost. |
 | [`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) | A mesh is a CMO file, authored as content, with the reader written here because CMO's only reader in the wild is the DirectXTK12 R14 closes. Replaced the opposite decision, that meshes are functions. |
 | [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md) | Content files ship with the package. The line is against dependencies and against simulation data becoming files, not against files as such. |
 | [`ADR-006`](ADR/ADR-006-a-ship-is-a-composition.md) | A ship is a hull, a drive and its slots from the first line, with every stat derived by one tested pure function. |
@@ -687,7 +714,7 @@ shaped:
 | [`ADR-016`](ADR/ADR-016-the-world-resolution-is-a-scale.md) | The world's resolution is a scale of the panel defaulting to 1:1, and the interface gets a fit transform of its own rather than borrowing the world's. |
 | [`ADR-017`](ADR/ADR-017-group-selection-is-a-double-tap.md) | Group selection is a double tap rather than a hold; the first tap acts at once and the second upgrades it, and `Holding` is freed. |
 | [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) | The camera is ray-anchored to the plane; one solve drives pan, zoom and orbit, there is no inertia, and a hold on empty space recenters. |
-| [`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is a baked galaxy cubemap plus instanced stars, generated from the match seed, capped at 12% large-area luminance. |
+| [`ADR-019`](ADR/ADR-019-the-sky-is-generated-from-the-seed.md) | The sky is instanced stars generated from the match seed, and nothing else: the galaxy band was withdrawn on 2026-09-22 after it was looked at on the device. |
 | [`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md) | Off-screen damage shows as a clustered directional indicator at the screen edge, derived from data already sent and tappable to recenter. |
 
 The decisions that are *not* taken yet, and which the work will meet, are on the register in

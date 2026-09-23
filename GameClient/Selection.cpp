@@ -92,9 +92,10 @@ OrderVerb VerbForPick(const TapOutcome& _outcome, bool _hasSelection) noexcept
   return OrderVerb::None;
 }
 
-SelectionOutcome Selection::Tap(const CameraPose& _pose, const HitTestRequest& _request, std::span<const EntityRecord> _entities)
+SelectionOutcome Selection::Tap(const CameraPose& _pose, const HitTestRequest& _request, std::span<const EntityRecord> _entities,
+                                std::span<const RockPickPoint> _rocks)
 {
-  const std::vector<PickCandidate> candidates = CandidatesUnderTap(_pose, _request, _entities);
+  const std::vector<PickCandidate> candidates = CandidatesUnderTap(_pose, _request, _entities, _rocks);
 
   const TapOutcome resolved = ResolveTap(_pose, _request.aspectRatio, _request.authoredX, _request.authoredY, _request.authoredWidth,
                                          _request.authoredHeight, candidates, !m_identities.empty());
@@ -104,6 +105,38 @@ SelectionOutcome Selection::Tap(const CameraPose& _pose, const HitTestRequest& _
   outcome.worldX = resolved.worldX;
   outcome.worldY = resolved.worldY;
   outcome.target = (resolved.action == TapAction::Occupied) ? resolved.hit.identity : NO_WIRE_IDENTITY;
+
+  // **A TAP ON YOUR OWN MODULE HAS NO VERB** (M2.11, `OpenQuestions.md` Q57). It is picked at the structure tier,
+  // so it wins over whatever is underneath, and then it does nothing: the station is the one structure that
+  // opens the build panel, and an armed upgrade -- the one thing a module is the target of -- is resolved
+  // before this is reached (`ResolvePlacementTap`).
+  if (outcome.verb == OrderVerb::OpenBuildPanel)
+  {
+    for (const EntityRecord& record : _entities)
+    {
+      if ((record.identity == outcome.target) && IsModule(static_cast<DesignId>(record.designIdentity)))
+      {
+        outcome.verb = OrderVerb::None;
+        break;
+      }
+    }
+  }
+
+  if (outcome.verb == OrderVerb::Mine)
+  {
+    // THE ROCK AND WHERE IT IS ON THE PLANE -- its field position, not the tap's, and not its drawn height:
+    // the ships that cannot mine are sent to the rock, and the simulation has no height (R22).
+    outcome.rock = resolved.hit.rock;
+    for (const RockPickPoint& rock : _rocks)
+    {
+      if (rock.rock == outcome.rock)
+      {
+        outcome.worldX = rock.worldX;
+        outcome.worldY = rock.worldY;
+        break;
+      }
+    }
+  }
 
   if (outcome.verb == OrderVerb::Select)
   {

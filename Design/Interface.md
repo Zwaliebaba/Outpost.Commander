@@ -202,9 +202,15 @@ hit empty space, and the fleet you had selected flies there. With something sele
 | A hostile ship or station | Attack it. |
 | An asteroid with ore | Mine it — miners in the selection take it, the rest move to it. **This is a standing order**: the miner shuttles until told otherwise. |
 | Your own station | Opens the build panel; the selection is unchanged. |
+| One of your own modules | **Nothing**, and the selection is unchanged, **unless an L2 upgrade is armed**, when it upgrades that module if it is the level the upgrade takes (`OpenQuestions.md` Q54, Q57). |
 | One of your own ships | Replaces the selection with that ship. |
 
 A tap on empty space with **nothing** selected does nothing.
+
+**A rock is picked where it is drawn** (M2.8): at its center, including the height the client drew it at,
+up to 240 units off the plane (ADR-005). A tap aims at what is on screen. The order still names the rock by
+its field index, and the ships that cannot mine are sent to its place on the plane, since the simulation has
+no height (R22).
 
 ### Selecting more than one
 
@@ -415,9 +421,9 @@ pass at physical resolution (§1).
 
 | | Where | What |
 |---|---|---|
-| **Credits** | Top left | The number, and the income rate once there is one — **whether that readout ships at all is `OpenQuestions.md` Q36**, because the handoff below draws no room for it. |
-| **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four buckets, which is what the wire carries (`TechnicalDesign.md` §4). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
-| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it — and **all six buttons stay live while it builds, so a tap replaces what is in progress**, which is the common path into `OpenQuestions.md` Q35 rather than the cancel target. |
+| **Credits** | Top left | The number, and **a change flash under it**, cyan on a gain and amber on a spend — **and no income rate**, which `OpenQuestions.md` Q36 ruled out of the MVP on 2026-09-23 for a reason that holds. |
+| **Selection** | Bottom, away from the reaching hand | What is selected, grouped by design with a count, a hull bar, and **a cargo bar on anything that carries ore** — four chips, zero to four lit, which is what the wire carries (`TechnicalDesign.md` §4, `OpenQuestions.md` Q53). Tapping a group narrows the selection to it; a **clear** target deselects everything, which is the only way to do it (§4). **It updates live during a double tap**, because it is the count the player can read while their hand covers the circle (§4). |
+| **Build** | Bottom, on the reaching hand's side (Q33) | Visible when your station is selected. **Two rows**: ships on top — Miner and Fighter — and modules below. **Unaffordable and unavailable are two different states and look different**: an item you cannot yet pay for keeps its button lit and reddens its cost, and an item you have no module for is dimmed entirely — in the MVP an L2 with no L1 of its kind, and a module past the cap of four. From M2 a module gates what can be built, so a single gray would leave a player unable to tell "save up" from "build something else first". Below both, **the item currently building and its progress**, tappable to cancel. One queue slot serves both, so a module and a miner compete for it — and **every available button stays live while it builds, so a tap replaces what is in progress**, which is the common path into `OpenQuestions.md` Q35 rather than the cancel target. |
 | **Alert** | The screen edge, in the direction of the event | **You are being attacked somewhere you cannot see** ([`ADR-020`](ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md)). Derived from the fire events and the removal list the client already has, so it costs no wire bytes; **nothing shows if the event is already on screen**; one indicator per cluster with a count, **at most three at once** — two that would collide merge and sum, a fourth replaces the oldest; fades over a few seconds. **No scrim and no plate behind it**: the moment an alert looks like chrome it becomes chrome. **Tapping it recenters the camera there** — a hit-test rectangle rather than a gesture, so R21's budget is untouched. 64 × 64, the combat tier. |
 | **System** | Top center, small | Connection state, the **reconnecting** overlay after a resume (§7), the **result overlay** when a match ends — **which names the winner**, since from M4 there are three and four players and "you lost" does not say to whom — and the button that quits via `CoreApplication::Exit`, **which arms on the first tap and quits on the second, and disarms itself after four seconds** — there is no pause, no save and no rejoin, so a single stray contact would otherwise end a five-minute match with no recovery path anywhere in the system. There is no Alt+F4 and no title bar. |
 
@@ -446,7 +452,11 @@ empty space is a move order, and the station cannot move. So with the station se
 
 **The radius is drawn while a module is armed** — 400 world units around the station, the same distance as
 its point defense — and a tap outside it, on the station, or on another module does nothing. A second tap
-on the armed module in the panel disarms it.
+on the armed module in the panel disarms it. **A tap on one of your own ships is still a selection**, which
+closes the panel and the arming with it. One order is sent per arming.
+
+**An L2 is an upgrade, not a placement** (`OpenQuestions.md` Q54): arming it and tapping one of your L1
+modules of that kind upgrades it in place, for the difference in cost. Its button shows that difference.
 
 The preview is client-side and the host validates: the same rule evaluated on both sides, from `GameCore`,
 which is what R19 permits and what R23 already does for the map.
@@ -502,8 +512,8 @@ design that carries no ore draws **no cargo row at all** rather than an empty on
 path* — and that reason is false: the per-player block, plus the build item the client already watches,
 give two derivations, which is what `OpenQuestions.md` Q36 exists to choose between. The conclusion may
 still be the right one, but it has to be reached rather than inherited, and **the error came from the
-brief the handoff was generated from** rather than from the design. Q36 therefore settles *whether* the
-readout ships before M2.7 can say how it is computed.
+brief the handoff was generated from** rather than from the design. Q36 settled *whether* before M2.7: **no
+rate, the change flash only**, reached for its own reason rather than the handoff's.
 
 ## 7. Suspend, resume, and what is still open
 

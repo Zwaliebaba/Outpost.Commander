@@ -30,6 +30,14 @@ constexpr Neuron::QuadColor RULE_LIT = Neuron::HexColor(0x5A6A72);
 constexpr Neuron::QuadColor TICK = Neuron::HexColor(0x8A9AA2);
 constexpr Neuron::QuadColor TICK_BAR = Neuron::HexColor(0x3A454B);
 constexpr Neuron::QuadColor TRACK = Neuron::HexColor(0x1A2024);
+constexpr Neuron::QuadColor ORE = Neuron::HexColor(0xD8A23C);
+constexpr Neuron::QuadColor SIG_ARMED = Neuron::HexColor(0xFFB020);
+constexpr Neuron::QuadColor PLATE_ARMED = Neuron::HexColor(0x17120A, 0.94f);
+constexpr Neuron::QuadColor TEXT_ARMED = Neuron::HexColor(0xFFE1A8);
+constexpr Neuron::QuadColor PLATE_DIM = Neuron::HexColor(0x090C0E, 0.92f);
+constexpr Neuron::QuadColor RULE_DIM = Neuron::HexColor(0x232C31);
+constexpr Neuron::QuadColor TEXT_DIM = Neuron::HexColor(0x6B7A80);
+constexpr Neuron::QuadColor HATCH = Neuron::HexColor(0x5A6A72, 0.22f);
 
 constexpr Neuron::QuadColor TEXT = Neuron::HexColor(0xE8ECEC);
 constexpr Neuron::QuadColor TEXT_2 = Neuron::HexColor(0x93A0A5);
@@ -119,6 +127,15 @@ private:
     return L"FIGHTER";
   case DesignId::Station:
     return L"STATION";
+  // `design_handoff_hud`'s build panel names, which M2.11's two-line buttons split at the space.
+  case DesignId::ModuleShipyardL1:
+    return L"SHIPYARD L1";
+  case DesignId::ModuleShipyardL2:
+    return L"SHIPYARD L2";
+  case DesignId::ModuleOreProcessorL1:
+    return L"ORE PROC L1";
+  case DesignId::ModuleOreProcessorL2:
+    return L"ORE PROC L2";
   }
   return L"";
 }
@@ -164,8 +181,12 @@ void EmitCredits(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   _emit.Text(CREDITS_LABEL, L"CREDITS", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_LABEL, TEXT_2);
   _emit.Text(CREDITS_VALUE, FormatCredits(_state.credits), Neuron::TextSize::Display, Neuron::TextAlign::Left, 0.0f, TEXT);
 
-  // **NO INCOME RATE.** Whether one ships at all is `OpenQuestions.md` Q36, and the handoff draws no
-  // room for it. The change flash under the balance is motion, which is the last thing built.
+  // **NO INCOME RATE, AND THE FLASH IS WHY NONE IS MISSED** (`OpenQuestions.md` Q36, ruled 2026-09-23). Cyan
+  // on a gain and amber on a spend, as `CreditFlash` fades it.
+  if ((_state.creditFlash != CreditChange::None) && (_state.creditFlashAlpha > 0.0f))
+  {
+    _emit.Solid(CREDITS_FLASH, WithAlpha((_state.creditFlash == CreditChange::Gain) ? TEAM_OWN : SIG_ARMED, _state.creditFlashAlpha));
+  }
 
   _hits.AddBlocker(CREDITS_PANEL);
 }
@@ -290,8 +311,29 @@ void EmitSelection(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     _emit.Solid(GROUP_HULL_TICK_1.Within(cell), TICK_BAR);
     _emit.Solid(GROUP_HULL_TICK_2.Within(cell), TICK_BAR);
 
-    // **NO CARGO ROW AT M1.** The wire's cargo bucket arrives with mining at M2.7, and until then no
-    // design carries ore -- which is exactly the case the handoff says draws no row at all.
+    // **THE CARGO ROW, ONLY FOR A DESIGN THAT CARRIES ORE** (M2.7). Four discrete chips and no trough behind
+    // them: filled is `ORE`, empty is `TRACK` under a one-pixel keyline -- continuity, keyline, hue and a
+    // fixed row are what keep it apart from the hull bar above.
+    if (group.carriesOre)
+    {
+      for (std::int32_t chip = 0; chip < static_cast<std::int32_t>(CARGO_CHIP_COUNT); ++chip)
+      {
+        const HudRect rect = HudRect{.x = GROUP_CARGO_CHIP.x + (chip * GROUP_CARGO_CHIP_STEP),
+                                     .y = GROUP_CARGO_CHIP.y,
+                                     .w = GROUP_CARGO_CHIP.w,
+                                     .h = GROUP_CARGO_CHIP.h}
+                               .Within(cell);
+        if (chip < static_cast<std::int32_t>(group.cargoChips))
+        {
+          _emit.Solid(rect, ORE);
+        }
+        else
+        {
+          _emit.Solid(rect, TRACK);
+          _emit.Outline(rect, 1, RULE);
+        }
+      }
+    }
 
     _hits.AddTarget({.hit = cell,
                      .tier = TouchTier::Combat,
@@ -304,6 +346,68 @@ void EmitSelection(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   EmitButton(_emit, clear, PLATE, RULE_LIT, RULE_LIT, left);
   _emit.Text(CLEAR_LABEL.Within(clear), L"CLEAR", Neuron::TextSize::Body, Neuron::TextAlign::Center, TRACK_NAME, TEXT_2);
   _hits.AddTarget({.hit = clear, .tier = TouchTier::Combat, .action = HudAction::ClearSelection, .argument = 0, .surface = 'l'});
+}
+
+/// The module row's four places, and the design in each (`design_handoff_hud`: yard L1, yard L2, ore L1, ore L2).
+struct ModuleButton
+{
+  HudRect rect;
+  DesignId design;
+};
+
+constexpr std::array<ModuleButton, 4> MODULE_ROW{ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
+                                                 ModuleButton{.rect = BUILD_BUTTON_YARD_L2, .design = DesignId::ModuleShipyardL2},
+                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L1, .design = DesignId::ModuleOreProcessorL1},
+                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2}};
+
+/// **WHAT A MODULE BUTTON CHARGES**: a placed level its design's cost, and an upgrade the difference from the
+/// level it upgrades (Q54) -- `GameCore`'s figure, so the panel and the host cannot disagree about it.
+[[nodiscard]] std::uint32_t ModuleCostCredits(DesignId _design) noexcept
+{
+  if (IsPlacedLevel(_design))
+  {
+    return Derive(_design).cost;
+  }
+  for (const DesignEntry& from : Designs())
+  {
+    if (UpgradesTo(from.id, _design))
+    {
+      return UpgradeCostCredits(from.id, _design);
+    }
+  }
+  return Derive(_design).cost;
+}
+
+/// **THE UNAVAILABLE HATCH** (`design_handoff_hud`): 45-degree lines 12 pixels apart, inset a pixel. The interface
+/// draws rectangles and nothing else, so each line is dotted a pixel every three -- the geometric cue that keeps
+/// the state readable in peripheral vision and without its hue.
+void EmitHatch(Emitter& _emit, const HudRect& _button)
+{
+  constexpr std::int32_t SPACING = 12;
+  constexpr std::int32_t DOT_STEP = 3;
+  const HudRect inner{_button.x + 1, _button.y + 1, _button.w - 2, _button.h - 2};
+  // Each line is x - y = offset, taken from the bottom-left corner to the top-right.
+  for (std::int32_t offset = -inner.h + (SPACING / 2); offset < inner.w; offset += SPACING)
+  {
+    for (std::int32_t y = 0; y < inner.h; y += DOT_STEP)
+    {
+      const std::int32_t x = offset + y;
+      if ((x >= 0) && (x < inner.w))
+      {
+        _emit.Solid({inner.x + x, inner.y + (inner.h - 1 - y), 1, 1}, HATCH);
+      }
+    }
+  }
+}
+
+/// **THE PLACEMENT RADIUS** (M2.11), in `SIG.ARMED` at the handoff's 0.70 -- under the panels, so a panel over
+/// the ring still reads as a panel, and never in the hit table.
+void EmitPlacementRing(const HudState& _state, Emitter& _emit)
+{
+  for (const HudRect& square : _state.placementRing)
+  {
+    _emit.Solid(square, WithAlpha(SIG_ARMED, 0.70f));
+  }
 }
 
 void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
@@ -351,6 +455,67 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     _hits.AddTarget({.hit = button,
                      .tier = TouchTier::UnderFire,
                      .action = HudAction::Build,
+                     .argument = static_cast<std::uint8_t>(design),
+                     .surface = 'b'});
+  }
+
+  // === THE MODULE ROW (M2.11) ======================================================================
+  //
+  // **ARMED OR NOT, AND ARMED IS ITS OWN LOOK** (`design_handoff_hud`'s four states): the button that arms a
+  // placement takes the armed plate, a 2-pixel `SIG.ARMED` outline and a 4-pixel rule along its top edge. The
+  // handoff's pulse on that outline is not drawn -- the interface has no clock of its own, and the geometric cue
+  // carries the state without it. **An L2 shows what it will charge**, which is the difference (Q54).
+  //
+  // **AND UNAVAILABLE, WHICH WINS** (M2.11b): an L2 with nothing to upgrade, or a placement past the cap, dims
+  // and hatches the whole button and leaves the hit table -- the panel still swallows the tap, and nothing arms.
+  for (const ModuleButton& place : MODULE_ROW)
+  {
+    const DesignId design = place.design;
+    const std::uint32_t cost = ModuleCostCredits(design);
+    const BuildButtonState look = ModuleButtonState(design, _state);
+    const bool armed = look == BuildButtonState::Armed;
+    const bool affordable = look != BuildButtonState::Unaffordable;
+    const HudRect button = ForHand(place.rect, left);
+    const std::wstring name = DesignDisplayName(design);
+    const std::size_t space = name.rfind(L' ');
+
+    if (look == BuildButtonState::Unavailable)
+    {
+      EmitButton(_emit, button, PLATE_DIM, RULE_DIM, RULE, left);
+      EmitHatch(_emit, button);
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), name.substr(0, space), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,
+                 TEXT_DIM);
+      _emit.Text(BUTTON_NAME_LINE2.Within(button), (space == std::wstring::npos) ? std::wstring{} : name.substr(space + 1),
+                 Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT_DIM);
+      _emit.Text(BUTTON_COST.Within(button), std::to_wstring(cost), Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f, TEXT_DIM);
+      continue;
+    }
+
+    if (armed)
+    {
+      EmitButton(_emit, button, PLATE_ARMED, SIG_ARMED, SIG_ARMED, left);
+      _emit.Outline(button, 2, SIG_ARMED);
+      _emit.Solid({button.x, button.y, button.w, 4}, SIG_ARMED);
+    }
+    else
+    {
+      EmitButton(_emit, button, PLATE, RULE_LIT, affordable ? RULE_LIT : SIG_SHORT, left);
+    }
+    const Neuron::QuadColor nameColor = armed ? TEXT_ARMED : TEXT;
+    _emit.Text(BUTTON_NAME_LINE1.Within(button), name.substr(0, space), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,
+               nameColor);
+    _emit.Text(BUTTON_NAME_LINE2.Within(button), (space == std::wstring::npos) ? std::wstring{} : name.substr(space + 1),
+               Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, nameColor);
+    _emit.Text(BUTTON_COST.Within(button), std::to_wstring(cost), Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f,
+               armed ? TEXT_ARMED : (affordable ? TEXT : SIG_SHORT));
+    if (!armed && !affordable)
+    {
+      _emit.Solid(BUTTON_SHORT_RULE.Within(button), SIG_SHORT);
+    }
+
+    _hits.AddTarget({.hit = button,
+                     .tier = TouchTier::UnderFire,
+                     .action = HudAction::ArmModule,
                      .argument = static_cast<std::uint8_t>(design),
                      .surface = 'b'});
   }
@@ -443,6 +608,35 @@ void EmitResultOverlay(const HudState& _state, Emitter& _emit)
 }
 } // namespace
 
+bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) noexcept
+{
+  if (IsPlacedLevel(_design))
+  {
+    return _ownModules.size() < MAXIMUM_MODULES_PER_STATION;
+  }
+  for (const DesignId owned : _ownModules)
+  {
+    if (UpgradesTo(owned, _design))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+BuildButtonState ModuleButtonState(DesignId _design, const HudState& _state) noexcept
+{
+  if (!ModuleAvailable(_design, _state.ownModules))
+  {
+    return BuildButtonState::Unavailable;
+  }
+  if (_state.moduleArmed && (_state.armedModule == _design))
+  {
+    return BuildButtonState::Armed;
+  }
+  return (_state.credits >= ModuleCostCredits(_design)) ? BuildButtonState::Live : BuildButtonState::Unaffordable;
+}
+
 bool BuildingDesign(std::uint8_t _wire, DesignId& _outDesign) noexcept
 {
   if (_wire == 0)
@@ -481,6 +675,7 @@ HudFrame BuildHud(const HudState& _state)
   // of it: an overlay's scrim dims the panels without hiding them, and suppresses nothing (the handoff's
   // *Overlays*) -- the hit table is untouched by it, so QUIT still answers under the result.
   EmitFrameTicks(emit);
+  EmitPlacementRing(_state, emit);
   EmitCredits(_state, emit, frame.hits);
   EmitSystem(_state, emit, frame.hits);
   EmitSelection(_state, emit, frame.hits);
@@ -511,6 +706,7 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
   {
     std::uint32_t count = 0;
     std::uint32_t hullSum = 0;
+    std::uint32_t chipSum = 0;
   };
   std::array<Tally, 256> tallies{};
 
@@ -523,6 +719,7 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
         Tally& tally = tallies[record.designIdentity];
         ++tally.count;
         tally.hullSum += record.hullPercentRemaining;
+        tally.chipSum += CargoChipsOf(record.flags);
         break;
       }
     }
@@ -536,9 +733,14 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
     {
       continue;
     }
+    // A design the table does not have carries nothing; one it has carries ore when its derived capacity
+    // says so -- the catalog read the build panel already makes, and no rule the host evaluates.
+    const bool known = design < Designs().size();
     groups.push_back(SelectionGroupSummary{.design = static_cast<DesignId>(design),
                                            .count = tally.count,
-                                           .hullPercent = static_cast<std::uint8_t>((tally.hullSum + (tally.count / 2)) / tally.count)});
+                                           .hullPercent = static_cast<std::uint8_t>((tally.hullSum + (tally.count / 2)) / tally.count),
+                                           .carriesOre = known && (Derive(static_cast<DesignId>(design)).oreCapacity > 0),
+                                           .cargoChips = static_cast<std::uint8_t>((tally.chipSum + (tally.count / 2)) / tally.count)});
   }
   return groups;
 }

@@ -4,6 +4,8 @@
 #include "BuildSystem.h"
 #include "CommandIntake.h"
 #include "Sessions.h"
+#include "Economy.h"
+#include "MiningSystem.h"
 #include "World.h"
 
 #include <cstddef>
@@ -116,6 +118,12 @@ public:
     return m_build;
   }
 
+  /// M2.6's loop, and this tick's deliveries from it.
+  [[nodiscard]] const MiningSystem& CurrentMining() const noexcept
+  {
+    return m_mining;
+  }
+
   [[nodiscard]] World& MutableWorld() noexcept
   {
     return m_world;
@@ -193,6 +201,8 @@ private:
   World m_world;
   CommandIntake m_intake;
   BuildSystem m_build;
+  MiningSystem m_mining;
+  Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;
   Neuron::WinsockTransport m_transport;
