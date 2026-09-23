@@ -321,7 +321,7 @@ are. **Speed is thrust
 divided by mass**, and mass is the hull plus everything in it — so a `Frigate` carrying two mass drivers
 is slower than an empty one, and that falls out of the arithmetic rather than being written down anywhere.
 Turn rate derives the same way, and a ship turns while it flies. Because speed and turn rate both fall
-with mass, every ship turns on the same radius, and none ever orbits its target (`OpenQuestions.md` Q51).
+with mass, every ship turns on the same radius, and none ever orbits its target (`OpenQuestions.md` Q59).
 
 ### The two designs the MVP ships
 
@@ -362,7 +362,7 @@ the selection. A formation system later is this same assignment with a different
 
 **A ship does not fly through anything solid.** A station, a module or another ship whose keep-out
 circle lies across a ship's line gets steered around, on the side the ship is already on, and the route
-is recomputed every tick rather than stored (`OpenQuestions.md` Q52, Q53). Three exceptions keep a
+is recomputed every tick rather than stored (`OpenQuestions.md` Q60, Q61). Three exceptions keep a
 fleet from jamming. Ships sent by one order ignore each other. A ship flying the same way is part of the
 same stream. And only what is within 400 units counts.
 

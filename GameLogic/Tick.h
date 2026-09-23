@@ -32,7 +32,7 @@ inline constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(100
   return static_cast<Neuron::Fixed>((unitsPerSecond * static_cast<std::uint32_t>(Neuron::FIXED_ONE)) / TICKS_PER_SECOND);
 }
 
-/// Q51's turn rate per tick: the derived rate a second over the tick rate. A Fighter swings 1,638
+/// Q59's turn rate per tick: the derived rate a second over the tick rate. A Fighter swings 1,638
 /// binary-angle units a tick and a Miner 1,170. Zero for a design with no drive, like its speed.
 [[nodiscard]] constexpr std::uint16_t TurnAnglePerTick(DesignId _design) noexcept
 {

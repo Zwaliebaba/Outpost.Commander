@@ -98,11 +98,11 @@ step. Until it ran, every claim in this ADR about bit-identical behavior was an 
 fact about four builds on one machine, which is what this measurement was ever able to be.
 
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
-it on 2026-09-23 (`OpenQuestions.md` Q50). ARM64 here is compiled on, and runs natively on, the Surface Pro.
+it on 2026-09-23 (`OpenQuestions.md` Q58). ARM64 here is compiled on, and runs natively on, the Surface Pro.
 
 **THE HASH MOVED DELIBERATELY ON 2026-09-23 AND IS NOW `0xc8b1069f59fa3f85`.** M1.17 made ships turn
-as they fly and route around structures (Q51, Q52), which gave that value. Q53 then made them route
-around each other, which moved it to `0x3a759511ba284377`, and Q53's order groups moved it back: the
+as they fly and route around structures (Q59, Q60), which gave that value. Q61 then made them route
+around each other, which moved it to `0x3a759511ba284377`, and Q61's order groups moved it back: the
 script orders each player's whole fleet at once, so its ships are one group and never avoid each
 other. The same script, now with steering in the tick,
 hashed to that value on Debug and Release, x64 and ARM64, before the literal was changed. That is the

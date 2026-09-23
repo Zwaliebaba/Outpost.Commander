@@ -26,7 +26,7 @@ microseconds over an empty frame and **1,482 with M1.9's hulls**; the loopback e
 and the meshes cost **52 KiB** in the package.
 
 **Nothing will be measured on two machines.** On 2026-09-23 the owner ruled that this game is tested on
-one machine, the Surface Pro (`OpenQuestions.md` Q50). So tap-to-visible latency stays a loopback figure,
+one machine, the Surface Pro (`OpenQuestions.md` Q58). So tap-to-visible latency stays a loopback figure,
 loss and jitter on a real wireless link were withdrawn rather than left owed, and
 [`ADR-021`](ADR/ADR-021-content-ships-with-the-package.md)'s clean-install check has only been run on the
 machine that built the package — which is the one arrangement in which it cannot fail.

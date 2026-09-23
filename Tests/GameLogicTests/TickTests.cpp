@@ -17,10 +17,10 @@ namespace
 }
 
 /// A ship. **M1.17 MADE THE TICK READ IT**: a design with no drive is a structure the others route
-/// around (Q52), so a mover built as a Station, as this was until then, would be in its own way.
+/// around (Q60), so a mover built as a Station, as this was until then, would be in its own way.
 inline constexpr Outpost::DesignId SOME_DESIGN = Outpost::DesignId::Miner;
 
-/// Half a turn a tick reaches any bearing at once, which keeps the tests written before Q51 about
+/// Half a turn a tick reaches any bearing at once, which keeps the tests written before Q59 about
 /// straight lines rather than about turning.
 inline constexpr std::uint16_t INSTANT_TURN = 32768;
 } // namespace
@@ -275,14 +275,14 @@ bool OrderAsMiner(Outpost::World& _world, Outpost::EntityId _id, const Neuron::V
                             Outpost::TurnAnglePerTick(Outpost::DesignId::Miner));
 }
 
-/// Q52's keep-out, from the catalog: half the station's size plus half the Miner's.
+/// Q60's keep-out, from the catalog: half the station's size plus half the Miner's.
 [[nodiscard]] std::int64_t KeepOutUnits() noexcept
 {
   return (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Station).hull).sizeUnits) / 2) +
          (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Miner).hull).sizeUnits) / 2);
 }
 
-/// Q53's keep-out between two Miners: half one plus half the other.
+/// Q61's keep-out between two Miners: half one plus half the other.
 [[nodiscard]] std::int64_t ShipKeepOutUnits() noexcept
 {
   return static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Miner).hull).sizeUnits);
@@ -296,8 +296,8 @@ bool OrderAsMiner(Outpost::World& _world, Outpost::EntityId _id, const Neuron::V
 }
 } // namespace
 
-/// M1.17: `OpenQuestions.md` Q51, a ship turns while it flies; Q52, it routes around structures; and
-/// Q53, it routes around other ships too.
+/// M1.17: `OpenQuestions.md` Q59, a ship turns while it flies; Q60, it routes around structures; and
+/// Q61, it routes around other ships too.
 TEST_CLASS(Steering)
 {
 public:
@@ -420,7 +420,7 @@ public:
 
   TEST_METHOD(TwoShipsMeetingHeadOnPassEachOther)
   {
-    // Q53: what the M1.16 device check saw, two ships flying through each other. Both keep right, and
+    // Q61: what the M1.16 device check saw, two ships flying through each other. Both keep right, and
     // neither enters the other's keep-out on the way past.
     Outpost::World world;
     const Outpost::EntityId east = world.Create(InUnits(-1000, 0), 0, Outpost::DesignId::Miner);
@@ -461,7 +461,7 @@ public:
   {
     // THE CASE THE DEVICE FOUND, from the log of 2026-09-23 and relative to the parked Miner: a Fighter
     // sent from in front of its station to a point 98 units past the Miner, on a line straight through
-    // it. A "final approach" exception let it fly through, and Q53's order groups replaced it.
+    // it. A "final approach" exception let it fly through, and Q61's order groups replaced it.
     Outpost::World world;
     const Outpost::EntityId parked = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
     const Outpost::EntityId fighter = world.Create(InUnits(716, 175), 32768, Outpost::DesignId::Fighter);
@@ -481,7 +481,7 @@ public:
 
   TEST_METHOD(ShipsFlyingTheSameWayDoNotSwerve)
   {
-    // Q53's first exception: two abreast, one hull apart as the ring places them, flying the same way.
+    // Q61's first exception: two abreast, one hull apart as the ring places them, flying the same way.
     // Without it each would swerve around the other all the way there.
     Outpost::World world;
     const Outpost::EntityId left = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
@@ -500,7 +500,7 @@ public:
 
   TEST_METHOD(AFleetOrderedToOnePointFillsItsRingWithoutJamming)
   {
-    // Q53's order group is what lets this hold: the ships of one order do not avoid each other, so the
+    // Q61's order group is what lets this hold: the ships of one order do not avoid each other, so the
     // inner slots are reached through the ones already parked around them. Twelve Miners, the first
     // two rings and five of the third.
     Outpost::World world;

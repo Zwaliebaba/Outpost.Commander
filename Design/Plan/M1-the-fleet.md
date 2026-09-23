@@ -135,7 +135,7 @@ cannot reach is the one thing that made the token necessary: **a client's endpoi
 relaunch.** **Observed 2026-09-23 on one machine instead**: ADR-022's churner closed its socket and
 rejoined on a new one nineteen times against a real `Server`, and it was resumed into the same seat each
 time. A new socket is a new endpoint, which is exactly what a relaunch presents. The two-machine
-version of this was withdrawn with the rest (`OpenQuestions.md` Q50).
+version of this was withdrawn with the rest (`OpenQuestions.md` Q58).
 
 ---
 
@@ -798,16 +798,16 @@ measurement, and M1.16 is the session that takes them.
 
 ### M1.17 — Ships turn, and route around structures · `NeuronCore`, `GameCore`, `GameLogic` · three suites · agent
 
-**Read first:** `OpenQuestions.md` Q51, Q52 and Q53 in full, all answered by the owner on 2026-09-23;
+**Read first:** `OpenQuestions.md` Q59, Q60 and Q61 in full, all answered by the owner on 2026-09-23;
 `GameDesign.md` §6 and §7; ADR-002; `.claude/skills/determinism-audit/`, because this rewrites the tick's
 only system. **It was found by M1.16's hand session**, which is why it is numbered after the steps it
 follows and sits outside the gates it was found by.
 
 **Adds:** an integer bearing in `NeuronCore` (`BearingOf`, a vector to a binary angle), pinned at the
-cardinals, the diagonals and against the sine table. `DerivedStats::turnAnglePerSecond` at Q51's gain,
+cardinals, the diagonals and against the sine table. `DerivedStats::turnAnglePerSecond` at Q59's gain,
 zero without a drive. A move order that carries a turn per tick beside its speed, and a tick that steers
 the heading toward the destination, throttles by the cosine of the error, flies along the heading, and
-steers for a tangent past the nearest structure its line crosses (Q52).
+steers for a tangent past the nearest structure its line crosses (Q60).
 
 **Files:** `NeuronCore/SineTable.h` `.cpp`; `GameCore/DerivedStats.h` `.cpp`; `GameLogic/World.h`
 `.cpp`, `GameLogic/Tick.h` `.cpp`, `GameLogic/RingAssignment.cpp`; `Tests/NeuronCoreTests/SineTableTests.cpp`,
@@ -825,14 +825,14 @@ steers for a tangent past the nearest structure its line crosses (Q52).
 - **What needs the device:** a ship visibly turns as it goes, and goes around its station.
 
 **THE DEVICE LOOKED, 2026-09-23: turning and the station detour both work, and two ships still flew
-through each other.** That was Q19 as built, and the owner reversed it: Q53, every ship avoids every
-other, with the three exceptions that keep a fleet from jamming. Q53 was built in this same step, on a
+through each other.** That was Q19 as built, and the owner reversed it: Q61, every ship avoids every
+other, with the three exceptions that keep a fleet from jamming. Q61 was built in this same step, on a
 grid, and it moved the hash a second time, to `0x3a759511ba284377`, again the same on all four pairs
 before it was pinned. The suite adds a head-on meeting, a parked ship in the way, a stream that must not
 swerve, and a fleet of twelve that fills its ring without jamming.
 
 **THE DEVICE LOOKED AGAIN AND A SHIP STILL FLEW THROUGH ANOTHER.** The log showed why. A Fighter was
-sent 98 units past a parked Miner, and Q53's final-approach rule ignored every ship within three of its
+sent 98 units past a parked Miner, and Q61's final-approach rule ignored every ship within three of its
 own sizes of its destination. That is 270 units for a Fighter, which covers any short order near
 another ship. **Order groups replaced the rule**: the ships of one fleet order ignore each other, and
 every other ship is always avoided. The device's exact case is now a test. The hash went back to
@@ -896,12 +896,12 @@ to leave fullscreen first.
 
 **THE OWNER CHOSE THE ROUTE, 2026-09-23: two snapped, visible windows on the unlocked Surface Pro.** The
 fallback of a second machine is gone. **The register's answer is
-[`OpenQuestions.md`](../OpenQuestions.md) Q50, the same day: one machine, and no second one.** So if two
+[`OpenQuestions.md`](../OpenQuestions.md) Q58, the same day: one machine, and no second one.** So if two
 snapped windows both keep running, this gate closes on them. If they don't, it closes on what the lock-screen
 run already showed: two seats from one host, played one foreground window at a time. **Which of those two
 it is still needs a hand on the unlocked device.**
 
-**Done when:** the question is answered on the register — **it is, Q50** — and two clients on one host
+**Done when:** the question is answered on the register — **it is, Q58** — and two clients on one host
 are playing on one machine.
 
 **CLOSED 2026-09-23, ON THE FALLBACK: two seats on one host, played one foreground window at a time.**
@@ -922,7 +922,7 @@ loopback exemption. What the run showed:
 **What it means for testing:** two people cannot share this one panel at the same moment. A two-player
 match on one machine is played by switching windows, and the match goes on without whichever client is
 behind. That is enough to test the protocol, the seats and the rejoin. It is not a test of two people
-playing at once, and with no second machine (Q50) nothing in this tree will be.
+playing at once, and with no second machine (Q58) nothing in this tree will be.
 
 ### M1.16 — GATE: the confirmations · — · hand · **human**
 
@@ -1011,7 +1011,7 @@ through.
 ### M1 IS FINISHED, 2026-09-23
 
 **Closed on the owner's word, on the Surface Pro, and with every step and both gates behind it.** The
-criterion above is met, on one machine (`OpenQuestions.md` Q50):
+criterion above is met, on one machine (`OpenQuestions.md` Q58):
 
 - **Two commanders on one host.** M1.15 held two seats from one host, played one foreground window at a
   time, because only the window in front runs.
@@ -1022,7 +1022,7 @@ criterion above is met, on one machine (`OpenQuestions.md` Q50):
 - **`GameCoreTests` covers every catalog combination**, the `Cruiser` included, now with a turn rate
   beside every speed.
 
-**What M1 produced besides code:** ADR-013, ADR-022, ADR-023 and ADR-024; Q50 to Q53 on the register;
+**What M1 produced besides code:** ADR-013, ADR-022, ADR-023 and ADR-024; Q58 to Q61 on the register;
 M1.16's confirmations; tap-to-visible re-run by finger at 79 ms; the frame time at both world scales
 with the sky in it; §9.6 struck through; and the determinism test run on all four pairs three times,
 with the hash moved twice on purpose and now `0xc8b1069f59fa3f85`.

@@ -7,7 +7,7 @@
 namespace Outpost
 {
 
-/// `OpenQuestions.md` Q51: **turn rate is thrust over mass, times this**, in binary-angle units a
+/// `OpenQuestions.md` Q59: **turn rate is thrust over mass, times this**, in binary-angle units a
 /// second. 234 is what turns a Fighter half a circle in a second. Because speed is the same thrust
 /// over the same mass, every ship turns on one radius, about 45 world units, whatever it weighs.
 inline constexpr std::uint32_t TURN_GAIN = 234;
@@ -25,7 +25,7 @@ struct DerivedStats
   std::uint32_t speedUnitsPerSecond = 0;
 
   /// **Binary-angle units a second, and ZERO for a hull with no drive**, for the same reason as speed.
-  /// `TURN_GAIN` times thrust, over mass, in one division so it truncates once (Q51).
+  /// `TURN_GAIN` times thrust, over mass, in one division so it truncates once (Q59).
   std::uint32_t turnAnglePerSecond = 0;
 
   /// Credits. The hull plus the drive plus the components, which is why the Miner's 150 and the

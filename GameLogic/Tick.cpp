@@ -20,7 +20,7 @@ namespace
   return (_numerator >= 0) ? ((_numerator + half) / _divisor) : ((_numerator - half) / _divisor);
 }
 
-/// Q53: only what is this close is considered, in world units. Well past Q51's 45-unit turning radius
+/// Q61: only what is this close is considered, in world units. Well past Q59's 45-unit turning radius
 /// and the widest steering circle, so a swerve still starts in time, and inside one grid cell, so the
 /// cells around the mover's own hold everything it has to look at.
 inline constexpr std::int64_t LOOK_AHEAD_UNITS = 400;
@@ -32,7 +32,7 @@ inline constexpr std::int64_t GRID_CELL_UNITS = 512;
 inline constexpr std::int64_t GRID_CELLS_ACROSS = 32;
 inline constexpr std::int64_t GRID_ORIGIN_UNITS = (GRID_CELL_UNITS * GRID_CELLS_ACROSS) / 2;
 
-/// Q53: a moving ship within an eighth of a turn of the mover's heading is flying the same way, and is
+/// Q61: a moving ship within an eighth of a turn of the mover's heading is flying the same way, and is
 /// part of its stream rather than in its way.
 inline constexpr std::int32_t SAME_STREAM_ANGLE = 8192;
 
@@ -48,18 +48,18 @@ struct Occupant
   std::int64_t halfSizeUnits;
   Neuron::Angle heading;
 
-  /// No drive: a station or a module (Q52). Always avoided, final approach or not.
+  /// No drive: a station or a module (Q60). Always avoided, final approach or not.
   bool structure;
 
   /// Has an order it is carrying out, at a speed above zero.
   bool moving;
 
-  /// The group of its latest order (Q53). A ship does not avoid another in its own group.
+  /// The group of its latest order (Q61). A ship does not avoid another in its own group.
   std::uint32_t group;
 };
 
 /// **THE WORLD AS IT STOOD WHEN THE TICK BEGAN**, so which ship moves first in index order never changes
-/// what the others see (Q53). Occupants are in index order, and so is each cell's list.
+/// what the others see (Q61). Occupants are in index order, and so is each cell's list.
 struct Snapshot
 {
   std::vector<Occupant> occupants;
@@ -114,15 +114,15 @@ struct Snapshot
 
 /// The bearing to fly at: straight at the destination, or past the nearest thing in the way.
 ///
-/// **Q52 AND Q53, RECOMPUTED EVERY TICK AND STORED NOWHERE.** Something blocks when the straight line
+/// **Q60 AND Q61, RECOMPUTED EVERY TICK AND STORED NOWHERE.** Something blocks when the straight line
 /// from the ship to its destination passes inside its steering circle, and neither the ship nor the
-/// destination is inside its keep-out circle. Q53's exceptions apply to ships and never to
+/// destination is inside its keep-out circle. Q61's exceptions apply to ships and never to
 /// structures: a ship given the same order, a moving ship flying the same way, and anything past the
 /// look-ahead. The nearest along the line wins, and the lower entity index breaks a tie. The ship then
 /// steers for the tangent on the side of the line the obstacle is not on.
 ///
 /// **THE STEERING CIRCLE IS WIDER THAN THE KEEP-OUT** by half the mover again. A ship chasing a tangent
-/// turns at a finite rate (Q51), so it cuts slightly inside the circle it steers by, and the margin is
+/// turns at a finite rate (Q59), so it cuts slightly inside the circle it steers by, and the margin is
 /// what keeps that cut outside the circle it must not enter.
 [[nodiscard]] Neuron::Angle DesiredBearing(const Occupant& _mover, const Entity& _entity, const Neuron::Vec2& _destination,
                                            const Snapshot& _snapshot) noexcept
@@ -246,7 +246,7 @@ struct Snapshot
 
 /// Every entity with somewhere to be, in index order.
 ///
-/// **Q51: A SHIP FLIES ALONG ITS HEADING AND STEERS.** Each tick the heading swings toward the bearing
+/// **Q59: A SHIP FLIES ALONG ITS HEADING AND STEERS.** Each tick the heading swings toward the bearing
 /// it wants by at most the ship's turn rate, and the ship then moves along the new heading at its speed
 /// times the cosine of what error is left. Past a quarter turn off, it does not move forward at all and
 /// only turns. That throttle is what makes it impossible to orbit a point: any forward step has a

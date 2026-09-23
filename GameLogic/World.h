@@ -9,7 +9,7 @@
 namespace Outpost
 {
 
-/// Q53: the group of a move order that was given to no fleet -- a test's, or the host's M0 demo ship's.
+/// Q61: the group of a move order that was given to no fleet -- a test's, or the host's M0 demo ship's.
 /// Two ships in no group are strangers, and avoid each other.
 inline constexpr std::uint32_t NO_ORDER_GROUP = 0;
 
@@ -27,11 +27,11 @@ struct MoveOrder
   /// makes unit ambiguity a real defect class.
   Neuron::Fixed speedPerTick = 0;
 
-  /// Binary-angle units a tick the heading may swing toward where it is going (Q51). Half a turn or
+  /// Binary-angle units a tick the heading may swing toward where it is going (Q59). Half a turn or
   /// more turns at once.
   std::uint16_t turnAnglePerTick = 0;
 
-  /// Q53: **ships given the same order do not avoid each other**, which is what lets a fleet fill its
+  /// Q61: **ships given the same order do not avoid each other**, which is what lets a fleet fill its
   /// ring. It outlives the order, so a straggler still slots in among the ones that arrived first.
   std::uint32_t group = NO_ORDER_GROUP;
 
@@ -81,7 +81,7 @@ public:
   bool OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick, std::uint16_t _turnAnglePerTick,
                    std::uint32_t _group = NO_ORDER_GROUP) noexcept;
 
-  /// A group no order has had yet, for one fleet order's ships (Q53). Counted, never zero, and a pure
+  /// A group no order has had yet, for one fleet order's ships (Q61). Counted, never zero, and a pure
   /// function of how many groups came before it -- so two hosts given the same commands number them
   /// the same.
   [[nodiscard]] std::uint32_t NewOrderGroup() noexcept;

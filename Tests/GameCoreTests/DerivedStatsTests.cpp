@@ -34,7 +34,7 @@ public:
     Assert::AreEqual(150u, miner.cost);
     Assert::AreEqual(100u, miner.speedUnitsPerSecond);
     Assert::AreEqual(450u, miner.hullPoints);
-    // Q51: half a circle in 1.4 seconds.
+    // Q59: half a circle in 1.4 seconds.
     Assert::AreEqual(23400u, miner.turnAnglePerSecond);
   }
 
@@ -44,7 +44,7 @@ public:
     Assert::AreEqual(300u, fighter.cost);
     Assert::AreEqual(140u, fighter.speedUnitsPerSecond);
     Assert::AreEqual(600u, fighter.hullPoints);
-    // Q51: half a circle in a second, to within eight units of 32,768.
+    // Q59: half a circle in a second, to within eight units of 32,768.
     Assert::AreEqual(32760u, fighter.turnAnglePerSecond);
   }
 

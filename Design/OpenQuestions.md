@@ -15,7 +15,7 @@ first time a body of authored content met this design and asked it questions. Th
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **THE *OPEN* SECTION HOLDS FOURTEEN ENTRIES AND TEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
-Q50, Q51, Q52 and Q53, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+Q58, Q59, Q60 and Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -86,7 +86,7 @@ because they were simply wrong.**
 
 | | Question | Answer | Recorded in |
 |---|---|---|---|
-| **Q19** | How do fifty ships occupy one point? | **A ring slot per ship, assigned at order time, ordered by entity identity.** No separation force and no flocking — those are floating-point-shaped problems in an integer simulation, and a formation system later is this same assignment with a different slot layout. **The ring stands; "no separation" was reversed on 2026-09-23 by Q53**, which has every ship steer around every other. The cost is *induced by* [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md): in a volume ships miss each other in the third dimension, on a plane they stack. It was named once and owned by nobody. | `GameDesign.md` §7, `TechnicalDesign.md` §1, §8 |
+| **Q19** | How do fifty ships occupy one point? | **A ring slot per ship, assigned at order time, ordered by entity identity.** No separation force and no flocking — those are floating-point-shaped problems in an integer simulation, and a formation system later is this same assignment with a different slot layout. **The ring stands; "no separation" was reversed on 2026-09-23 by Q61**, which has every ship steer around every other. The cost is *induced by* [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md): in a volume ships miss each other in the third dimension, on a plane they stack. It was named once and owned by nobody. | `GameDesign.md` §7, `TechnicalDesign.md` §1, §8 |
 | **Q20** | What does the client draw between a tap and confirmation? | **A destination marker and a line, drawn the instant the gesture resolves and cleared when the host acknowledges that sequence.** Pure presentation: R19 forbids the client simulating, not the client drawing what it asked for. Without it there are 152 ms of nothing on a device that has no cursor. | `Interface.md` §4, `TechnicalDesign.md` §6 |
 | **Q21** | Does the build queue have a wire record? | **There is no queue — the snapshot carries the item currently building and its progress, two bytes per player.** `Interface.md` had specified a cancellable queue that no wire record could feed; the MVP cuts the queue rather than inventing a format for it. | `Interface.md` §6, `TechnicalDesign.md` §4 |
 | **Q22** | Is asteroid ore replicated, and at what cost? | **Not at all before M3**, since inexhaustible asteroids have no simulation state and the client derives their positions from the seed. From M3, sparsely: only asteroids whose quantized ore bucket changed, at most one per active miner. The budget had excluded a thing R23 said must be replicated. | `GameDesign.md` §4, `TechnicalDesign.md` §4 |
@@ -593,7 +593,7 @@ at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a ful
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
 
-### Q51 — How does a ship turn? — **ANSWERED**
+### Q59 — How does a ship turn? — **ANSWERED**
 
 **IN AN ARC, AT A TURN RATE DERIVED LIKE SPEED. The owner's answer, 2026-09-23**, asked after the M1.16
 hand session found ships flying sideways: `GameDesign.md` §6 said "turn rate derives the same way" and
@@ -615,10 +615,10 @@ target can be orbited. All of it is integer, through ADR-002's sine table and a 
 **What would reopen it** is M3's combat wanting a weapon's arc to depend on heading, which is when
 the 234 stops being a matter of looks.
 
-### Q52 — Do ships avoid stations? — **ANSWERED**
+### Q60 — Do ships avoid stations? — **ANSWERED**
 
 **YES: A SHIP ROUTES AROUND ANY STRUCTURE ITS STRAIGHT LINE CROSSES. The owner's answer, 2026-09-23**,
-asked for the same reason as Q51: the M1.16 session watched a Miner fly through its own station.
+asked for the same reason as Q59: the M1.16 session watched a Miner fly through its own station.
 `GameDesign.md` §7 ruled out separation *between ships* and said nothing about anything solid.
 
 - **Route around** — the owner's choice. When a ship's line to its destination crosses a structure, it
@@ -626,8 +626,8 @@ asked for the same reason as Q51: the M1.16 session watched a Miner fly through 
 - **Keep passing through**, recorded as deliberate.
 - **Decide at M2**, when asteroids are a second kind of obstacle.
 
-**Q53 widened this the same day to other ships**, with the rules it needed; what follows is the structure
-half, and it is unchanged apart from Q53's 400-unit look-ahead.
+**Q61 widened this the same day to other ships**, with the rules it needed; what follows is the structure
+half, and it is unchanged apart from Q61's 400-unit look-ahead.
 
 **Built to this, which is the recommendation under the answer.** A **structure** is anything with no drive:
 a station or a module, anyone's. Its keep-out circle is **half its size plus half the ship's**, both
@@ -638,10 +638,10 @@ built in front of its station can leave it, and an order onto a station arrives.
 the route is recomputed every tick from the world, so there is nothing new to keep in step. **Asteroids
 are not in it yet**. When M2 draws them, whether they are obstacles is the question to ask.
 
-### Q53 — Do ships avoid each other? — **ANSWERED**
+### Q61 — Do ships avoid each other? — **ANSWERED**
 
 **YES, EVERY SHIP AVOIDS EVERY OTHER SHIP. The owner's answer, 2026-09-23, and it reverses half of Q19.**
-Q19 ruled out separation between ships, and M1.17 built Q52 to that. On the device the owner then
+Q19 ruled out separation between ships, and M1.17 built Q60 to that. On the device the owner then
 watched two ships fly through each other and chose full avoidance over two cheaper options:
 
 - **Avoid parked ships only.** Moving ships would still overlap briefly mid-flight.
@@ -649,14 +649,14 @@ watched two ships fly through each other and chose full avoidance over two cheap
 - **Keep passing through**, and record it as deliberate.
 
 **What stays from Q19 is the ring.** Ships ordered to one point still get distinct slots, ordered by
-identity. What goes is "no separation": a ship now steers around another ship the way Q52 steers it
+identity. What goes is "no separation": a ship now steers around another ship the way Q60 steers it
 around a structure, by the tangent past it, recomputed every tick and stored nowhere.
 
 **Built to these rules, which are the recommendation under the answer.** Each one exists because the
 plain version jams or weaves:
 
 1. **Every other ship is an obstacle**, anyone's, parked or moving. Its keep-out is half its size plus
-   half the mover's, from Q37's `sizeUnits`, the same as Q52.
+   half the mover's, from Q37's `sizeUnits`, the same as Q60.
 2. **Except a ship flying the same way.** A moving ship whose heading is within an eighth of a turn of
    the mover's is in the same stream, and is not avoided. Without this, a fleet flying in formation
    swerves around itself, because the ring puts neighbors exactly one hull apart.
@@ -667,9 +667,9 @@ plain version jams or weaves:
    past its destination, which is how the device found it.
 4. **Only what is within 400 world units is considered**, structures included, found through
    `TechnicalDesign.md` §2's uniform grid of 512-unit cells. Four hundred is well past the 45-unit
-   turning radius (Q51) and the widest steering circle, so a ship still starts its swerve in time. The
+   turning radius (Q59) and the widest steering circle, so a ship still starts its swerve in time. The
    grid is what keeps a 128-player stress run from checking every pair.
-5. **Head on, both pass on the right**, which is Q52's fixed rule for an obstacle dead on the line.
+5. **Head on, both pass on the right**, which is Q60's fixed rule for an obstacle dead on the line.
 
 **Positions are read as they were at the start of the tick**, so which ship moves first in index order
 never changes what the other one sees. The nearest obstacle along the line wins, and the lower entity
@@ -677,7 +677,7 @@ index breaks a tie.
 
 **What it costs, measured 2026-09-23** with ADR-022's harness on the Surface Pro, `Release|ARM64`, as the
 host's whole CPU over 60 seconds. **At 128 seats it was 17.8 ms a tick with the first rule and 15.6
-with the order groups, against 11.2 before Q53**, and no tick was abandoned. At two seats it is 0.36 ms,
+with the order groups, against 11.2 before Q61**, and no tick was abandoned. At two seats it is 0.36 ms,
 lost in the noise. **Read these as a check and not a benchmark.** One run with the groups measured
 5.3 ms, and it delivered about a third fewer updates than the others, for a reason nobody has found. So
 it is not quoted as the figure. The grid is why avoidance costs a fraction of the tick and not most of it.
@@ -685,7 +685,7 @@ it is not quoted as the figure. The grid is why avoidance costs a fraction of th
 **What would reopen it** is a formation or a battle that jams anyway. That is M3's to find, when fleets
 first meet on purpose.
 
-### Q50 — Is a second machine part of how this game is tested? — **ANSWERED**
+### Q58 — Is a second machine part of how this game is tested? — **ANSWERED**
 
 **NO. The owner's answer, 2026-09-23: everything is tested on one machine, the Surface Pro, and a second
 machine will not be used.** This is the answer `Plan/README.md` F5 and M1.15 asked the register for.

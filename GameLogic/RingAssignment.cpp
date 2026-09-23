@@ -123,7 +123,7 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
 
   const Neuron::Fixed spacing = RingSpacingFor(_world, _selection);
 
-  // One group for everything this order moves (Q53): they share a ring and do not avoid each other.
+  // One group for everything this order moves (Q61): they share a ring and do not avoid each other.
   const std::uint32_t group = _world.NewOrderGroup();
 
   std::size_t ordered = 0;

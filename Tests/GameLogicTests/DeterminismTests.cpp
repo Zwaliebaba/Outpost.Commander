@@ -167,8 +167,8 @@ public:
   ///
   /// Verified identical on Debug and Release, x64 and ARM64, on 2026-09-22. **MOVED DELIBERATELY ON
   /// 2026-09-23** from `0x37f846ed90b74ca1`, by M1.17: ships now turn as they fly and route around
-  /// structures and each other (`OpenQuestions.md` Q51, Q52, Q53). Each value was the same on all four
-  /// pairs before it was pinned. Q53 moved it to `0x3a759511ba284377` and back: once its order groups
+  /// structures and each other (`OpenQuestions.md` Q59, Q60, Q61). Each value was the same on all four
+  /// pairs before it was pinned. Q61 moved it to `0x3a759511ba284377` and back: once its order groups
   /// replaced a final-approach rule, this script's ships -- every one ordered as its owner's whole fleet
   /// -- no longer avoid each other, and the two fleets never meet.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
