@@ -2,6 +2,8 @@
 
 #include "ReplicaStore.h"
 
+#include <algorithm>
+
 namespace Outpost
 {
 
@@ -53,6 +55,14 @@ ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint
       {
         ++result.refused;
         continue;
+      }
+      else
+      {
+        // THE REFRESH INTERVAL, which is ADR-024's figure: how long this entity went between records.
+        const std::uint32_t intervalTicks = _update.tick - newest.tick;
+        ++result.refreshed;
+        result.refreshTicksTotal += intervalTicks;
+        result.refreshTicksMax = std::max(result.refreshTicksMax, intervalTicks);
       }
     }
 

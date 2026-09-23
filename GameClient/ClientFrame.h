@@ -41,6 +41,11 @@ public:
     /// Records in those updates that the store refused because they were no newer than what the entity
     /// already held -- reordered, or repeated.
     std::uint32_t refused = 0;
+    /// The refresh interval per entity across those updates, as `ReplicaStore::AcceptResult` counts it:
+    /// what the stress harness reports (ADR-022) and nothing in the frame reads.
+    std::uint32_t refreshed = 0;
+    std::uint64_t refreshTicksTotal = 0;
+    std::uint32_t refreshTicksMax = 0;
     /// Datagrams that did not decode. A counter and not a log: one is ordinary on a wireless link
     /// and a rising rate is the thing worth seeing, which is the same argument `PacketQueue` makes
     /// about its own drops.

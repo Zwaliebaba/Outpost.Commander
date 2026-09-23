@@ -17,6 +17,10 @@
     <ClCompile Include="Selection.cpp" />
     <ClCompile Include="SkyLook.cpp" />
     <ClCompile Include="TapOrder.cpp" />
+    <ClCompile Include="BotPolicy.cpp" />
+    <ClCompile Include="ChurnSchedule.cpp" />
+    <ClCompile Include="FloodSchedule.cpp" />
+    <ClCompile Include="StressReport.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,6 +42,10 @@
     <ClInclude Include="Selection.h" />
     <ClInclude Include="SkyLook.h" />
     <ClInclude Include="TapOrder.h" />
+    <ClInclude Include="BotPolicy.h" />
+    <ClInclude Include="ChurnSchedule.h" />
+    <ClInclude Include="FloodSchedule.h" />
+    <ClInclude Include="StressReport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
 </Project>

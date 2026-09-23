@@ -23,19 +23,16 @@
     <CppWinRTOptimized>true</CppWinRTOptimized>
     <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
     <VCProjectVersion>18.0</VCProjectVersion>
-    <ProjectGuid>{e984c62f-3a5e-4b4c-b86f-471e8ced9419}</ProjectGuid>
-    <ProjectName>GameClient</ProjectName>
-    <RootNamespace>GameClient</RootNamespace>
+    <ProjectGuid>{daabb847-a12c-4daf-9bff-74c215a013ab}</ProjectGuid>
+    <ProjectName>Bot</ProjectName>
+    <RootNamespace>Bot</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <AppContainerApplication>true</AppContainerApplication>
-    <ApplicationType>Windows Store</ApplicationType>
-    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+    <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.22621.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -48,9 +45,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
-  <ImportGroup Label="Shared">
-    <Import Project="..\GameCore\GameCore.vcxitems" Label="Shared" />
-  </ImportGroup>
+  <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
@@ -70,7 +65,6 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level4</WarningLevel>
-      <CompileAsWinRT>false</CompileAsWinRT>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -79,11 +73,12 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <SDLCheck>true</SDLCheck>
       <UseFullPaths>true</UseFullPaths>
-      <AdditionalIncludeDirectories>$(SolutionDir)NeuronClient;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)GameClient;$(SolutionDir)GameCore;$(SolutionDir)NeuronClient;$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
@@ -109,58 +104,24 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="ClientFrame.cpp" />
-    <ClCompile Include="GameClient.cpp" />
-    <ClCompile Include="CameraGesture.cpp" />
-    <ClCompile Include="HullMesh.cpp" />
-    <ClCompile Include="GroupSelection.cpp" />
-    <ClCompile Include="HitTest.cpp" />
-    <ClCompile Include="Interpolation.cpp" />
-    <ClCompile Include="JoinState.cpp" />
-    <ClCompile Include="PanelHitTest.cpp" />
-    <ClCompile Include="Panels.cpp" />
-    <ClCompile Include="OrderMarker.cpp" />
-    <ClCompile Include="ReplicaStore.cpp" />
-    <ClCompile Include="Selection.cpp" />
-    <ClCompile Include="SkyLook.cpp" />
-    <ClCompile Include="TapOrder.cpp" />
-    <ClCompile Include="BotPolicy.cpp" />
-    <ClCompile Include="ChurnSchedule.cpp" />
-    <ClCompile Include="FloodSchedule.cpp" />
-    <ClCompile Include="StressReport.cpp" />
+    <ClCompile Include="Bot.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="ClientFrame.h" />
-    <ClInclude Include="GameClient.h" />
-    <ClInclude Include="CameraGesture.h" />
-    <ClInclude Include="HullMesh.h" />
-    <ClInclude Include="GroupSelection.h" />
-    <ClInclude Include="HitTest.h" />
-    <ClInclude Include="Interpolation.h" />
-    <ClInclude Include="MeshCatalog.g.h" />
-    <ClInclude Include="JoinState.h" />
-    <ClInclude Include="HudLayout.h" />
-    <ClInclude Include="PanelHitTest.h" />
-    <ClInclude Include="Panels.h" />
-    <ClInclude Include="OrderMarker.h" />
-    <ClInclude Include="ReplicaStore.h" />
-    <ClInclude Include="Selection.h" />
-    <ClInclude Include="SkyLook.h" />
-    <ClInclude Include="TapOrder.h" />
-    <ClInclude Include="BotPolicy.h" />
-    <ClInclude Include="ChurnSchedule.h" />
-    <ClInclude Include="FloodSchedule.h" />
-    <ClInclude Include="StressReport.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\GameClient\GameClient.vcxproj">
+      <Project>{e984c62f-3a5e-4b4c-b86f-471e8ced9419}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\NeuronClient\NeuronClient.vcxproj">
       <Project>{99c13ad7-48ed-419d-97c9-778e5cf2226a}</Project>
     </ProjectReference>

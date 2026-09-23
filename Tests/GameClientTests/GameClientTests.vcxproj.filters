@@ -13,6 +13,10 @@
     <ClCompile Include="InterpolationTests.cpp" />
     <ClCompile Include="JoinStateTests.cpp" />
     <ClCompile Include="HudLayoutTests.cpp" />
+    <ClCompile Include="BotPolicyTests.cpp" />
+    <ClCompile Include="ChurnScheduleTests.cpp" />
+    <ClCompile Include="FloodScheduleTests.cpp" />
+    <ClCompile Include="StressReportTests.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -606,15 +606,15 @@ command reliability; `GameDesign.md` §2 and §8; `AGENTS.md` §2, R19 and R20.
 headless clients from one process** against one host, in three roles: **players**, **churners** and
 **flooders** (ADR-022's table). The run is the command line: host address, a count per role, a seed, and
 a length in ticks after which the process prints its report and exits. **Nothing on the host and nothing
-on the wire changes in this step.** At two seats, a run is two players or churners plus any number of
-flooders. Past that it needs M1.14c.
+on the wire changes in this step.** A host started plainly seats two, so a run is two players or churners
+plus any number of flooders; past that the host is started with `--players N --stress` (M1.14c).
 
 **The executable holds only glue.** It parses the command line, initializes the apartment, owns one
 `DatagramTransport` and `PacketQueue` per bot, runs the one loop, and prints. Everything that decides
 lives in `GameClient`, where `GameClientTests` reaches it (R20):
 
 - **`BotPolicy`**, the player's decisions. It takes the bot's replica store, its player and its
-  `Neuron::Pcg32`, and returns zero or more `Command`s, acting only when the snapshot tick has advanced by
+  `Neuron::Pcg32`, and returns zero or more `Command`s, acting only when the update tick has advanced by
   its decision interval. It queues a `Build` its credits cover, occasionally sends a `CancelBuild`, and
   sends a `MoveTo` for a random subset of its own ships to a point inside the playfield (`BuildMoveCommand`
   already builds that). It never names an entity it doesn't own.
@@ -644,10 +644,32 @@ Also **`AGENTS.md`**: in §2 the executables paragraph, the import table row
 Add `Bot/` to `.clang-tidy`'s `HeaderFilterRegex` if it names directories. `Scripts/CheckProjectFiles.py`
 finds the project by itself, so check it passes and don't edit it to make it pass.
 
-**Not this step:** ADR-024's replication and a player count past two, both M1.14c's; until it lands
-the harness runs at two seats against the snapshot as it stands. A CI job running `Server` against the
-harness, which ADR-022 names as enabled and which changes the workflow. And anything that makes a bot a
+**Not this step:** A CI job running `Server` against the harness, which ADR-022 names as enabled and which changes the workflow. And anything that makes a bot a
 better player, which is Q48.
+
+**WRITTEN 2026-09-23 AND NOT YET BUILT.** Like M1.14c, it was written on a machine without MSVC: the format
+check and the gates are the whole of what was verified, and nothing here has been compiled, linked or run.
+Six things the step did not anticipate were decided while writing, and each is stated where it lives:
+
+- **`BotPolicy` owns its orders until the host applies them.** ADR-003 repeats a command in every packet
+  until the block acknowledges it, and the packaged client does not, so the policy numbers its own commands
+  -- adopting from the host's `lastCommandSequenceApplied` as `ClientFrame` does -- keeps the outstanding
+  ones and retires them on acknowledgment. That is also where the command-to-acknowledge time is measured.
+- **The refresh interval is counted by the store.** `ReplicaStore::AcceptResult` and
+  `ClientFrame::DrainResult` gained three counters, and `ReplicaStoreBehavior` a test, because the store is
+  the only thing that knows an entity's previous tick. Nothing in the frame reads them.
+- **A flooder's join waits for a full match.** A join into a free slot is not refused, it takes the slot
+  for good (ADR-013). So `FloodSchedule` sends none until the harness has seen every player and churner
+  seated, and stops both unseated kinds the first time the host seats it anyway; `Bot` prints that it was.
+- **Two of the five flood kinds are not refused by a decoder.** The join past a full match and the command
+  from an unseated endpoint are well-formed on purpose, and the host refuses them by `MatchFull` and by the
+  session table. The suite pins that they decode cleanly and carry what gets them refused; the other three
+  are pinned to their decoder faults by name. Only the run against `Server` sees the refusal itself.
+- **The harness tick is the host's 50 ms**, counted by the loop, which polls every 2 ms between ticks. The
+  churner and flooder act once a harness tick; the policy is paced by the update's tick.
+- **The ceiling is provisional.** `HARNESS_BOT_CEILING` is 128, a hundred players and a few more, until the
+  first run measures the real one. The transport refuses a send while the previous one is in flight, so a
+  flooder's real rate is bounded below its schedule's; the report counts those skips.
 
 **Done when:**
 

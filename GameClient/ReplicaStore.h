@@ -63,6 +63,13 @@ public:
     std::uint32_t removed = 0;
     /// Entities forgotten because they had gone three sweeps without a record.
     std::uint32_t forgotten = 0;
+
+    /// **THE REFRESH INTERVAL PER ENTITY** (ADR-024, ADR-022): records applied to an entity that already
+    /// held a sample, the ticks between that sample and this one summed over them, and the longest. The
+    /// first record of an entity has no interval and is not counted.
+    std::uint32_t refreshed = 0;
+    std::uint64_t refreshTicksTotal = 0;
+    std::uint32_t refreshTicksMax = 0;
   };
 
   /// Folds in an update that has arrived, stamped with the local time it arrived at.

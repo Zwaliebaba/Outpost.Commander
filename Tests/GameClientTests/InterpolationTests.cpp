@@ -200,6 +200,23 @@ public:
     Assert::AreEqual(std::int16_t{100}, store.Entities()[0].positionX, L"a refused record moved the entity");
   }
 
+  /// **THE REFRESH INTERVAL IS ADR-024's FIGURE**, and the stress harness reads it from here: the ticks
+  /// between an entity's records, and nothing for the first one, which has no predecessor.
+  TEST_METHOD(ARefreshIsTheTicksSinceTheEntitysLastRecord)
+  {
+    Outpost::ReplicaStore store;
+    const Outpost::ReplicaStore::AcceptResult first = store.Accept(MakeUpdate(10, 0, 0), 1000);
+    Assert::AreEqual(0u, first.refreshed);
+
+    const Outpost::ReplicaStore::AcceptResult second = store.Accept(MakeUpdate(13, 0, 0), 1150);
+    Assert::AreEqual(1u, second.refreshed);
+    Assert::AreEqual(static_cast<std::uint64_t>(3), second.refreshTicksTotal);
+    Assert::AreEqual(3u, second.refreshTicksMax);
+
+    const Outpost::ReplicaStore::AcceptResult refused = store.Accept(MakeUpdate(12, 0, 0), 1160);
+    Assert::AreEqual(0u, refused.refreshed, L"a refused record counted as a refresh");
+  }
+
   TEST_METHOD(TheSequenceComparisonSurvivesTheWrap)
   {
     Assert::IsTrue(Outpost::SequenceIsNewer(1, 65535));

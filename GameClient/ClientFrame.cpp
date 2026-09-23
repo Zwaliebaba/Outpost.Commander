@@ -2,6 +2,7 @@
 
 #include "ClientFrame.h"
 
+#include <algorithm>
 #include <array>
 
 namespace Outpost
@@ -82,6 +83,9 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     const ReplicaStore::AcceptResult accepted = m_replicas.Accept(update, _nowMilliseconds);
     ++result.accepted;
     result.refused += accepted.refused;
+    result.refreshed += accepted.refreshed;
+    result.refreshTicksTotal += accepted.refreshTicksTotal;
+    result.refreshTicksMax = std::max(result.refreshTicksMax, accepted.refreshTicksMax);
     m_lastHeardMilliseconds = _nowMilliseconds;
     m_heardUpdate = true;
   }

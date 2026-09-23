@@ -134,7 +134,9 @@ builds it:
 - **That players are seated, that a churner keeps its seat across a rejoin on a new endpoint, that a
   command is acknowledged by a later update, and that the host keeps ticking under the flooder.** All
   against the real `Server`.
-- **How many bots one harness process sustains** before its own snapshot-gap figure degrades with the
-  host idle. That is the harness's ceiling, and it is stated here once measured.
+- **How many bots one harness process sustains** before its own update tick gap degrades with the
+  host idle. That is the harness's ceiling, and it is stated here once measured. **Until then the harness
+  refuses more than 128** (`HARNESS_BOT_CEILING`, `GameClient/StressReport.h`), a provisional bound and not
+  a measured one.
 - **The refresh interval per entity at every seated count the host allows**, against ADR-024's sweep,
   which is the measurement that record cannot take without this harness.

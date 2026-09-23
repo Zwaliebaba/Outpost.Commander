@@ -100,14 +100,14 @@ WarningsAsErrors: '*'
 # quietest way to lose a gate, and nothing in this tree compares the list against the solution --
 # so it is somebody remembering. Add a project here in the commit that creates it.
 #
-# The eight projects of AGENTS.md section 2, and the `<Library>Tests` convention.
+# The nine projects of AGENTS.md section 2, and the `<Library>Tests` convention.
 #
 # [/\\], not '/'. On a Windows Clang build the paths arrive with backslashes, so a filter anchored
 # on a forward slash matches no header at all and silently suppresses every in-build diagnostic.
 # The pattern matches headers sitting DIRECTLY in a project folder, which is every hand-written
 # one (AGENTS.md §2's flat-directory rule). A bare `.*` would also match build output and the
 # Windows SDK, and most of what it reported would be from headers nobody here wrote.
-HeaderFilterRegex: '(NeuronCore|NeuronClient|NeuronServer|GameCore|GameClient|GameLogic|OutpostCommander|Server|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
+HeaderFilterRegex: '(NeuronCore|NeuronClient|NeuronServer|GameCore|GameClient|GameLogic|OutpostCommander|Server|Bot|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
 
 # A `Resource.h` is written by the Visual Studio resource editor, not by hand. Its
 # `#define IDC_STATIC -1` trips bugprone-macro-parentheses, and the fix would be undone the next
