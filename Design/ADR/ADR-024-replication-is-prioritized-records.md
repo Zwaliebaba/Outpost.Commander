@@ -2,7 +2,7 @@
 
 **Status:** Accepted — ruled 2026-09-23 by the owner on the architecture as proposed, with no backward
 compatibility owed to the format it replaces. **The figures are the budget script's arithmetic**; the
-measurements this record owes are listed at the end and none is taken yet.
+measurements this record owes are listed at the end: on 2026-09-23 four were taken and the fifth bounded.
 **Date:** 2026-09-23
 **Owner:** Stefan Zwaal
 
@@ -195,5 +195,12 @@ are `--players`, `--ships`, `--in-view`, `--datagrams` and `--upstream`. **Owed 
    run by then. **At 128 seats the whole host spends about a fifth of its 50 ms tick**, and it never
    abandoned a tick. The accumulator's own share of that is still owed. It is M2.10's tick-cost
    instrument to take, at 110 entities.
-5. **Tap-to-visible on loopback**, re-run against ADR-003's measured 76 ms, because the path from a
-   command to the update that shows it has changed shape and the figure must not have.
+5. ~~**Tap-to-visible on loopback**, re-run against ADR-003's measured 76 ms, because the path from a
+   command to the update that shows it has changed shape and the figure must not have.~~ — **RE-RUN
+   2026-09-23, AND IT HAS NOT MOVED: 79 ms mean, 65 to 98, median 82, over five taps.** Setup: the
+   Surface Pro 11, `Release|ARM64` host and client on loopback, fullscreen at 1:1. The owner built a
+   Miner and a Fighter and ordered each by tapping the ground. **A finger on the digitizer this time**,
+   where ADR-003's run used injected touch in a Debug build, so the panel's own input latency is now in
+   the figure. Two further taps were refused by the instrument because the ship was still moving. The
+   instrument had to be fixed first: it watched the first drawn record, which in an M1 match is a
+   station, so it now watches the first selected ship.
