@@ -19,6 +19,7 @@
 #include "Join.h"
 #include "Layout.h"
 #include "Generator.h"
+#include "ModuleSite.h"
 
 #include "SizeClass.h"
 #include "Update.h"

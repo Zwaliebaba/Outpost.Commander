@@ -484,6 +484,39 @@ throughout, candidates ordered by entity identity.
 **Done when:** the five refusal cases and the accept case are each a test, and the client and the host call
 the same function — which a reader can check by grep, because there is only one.
 
+**BUILT, 2026-09-23**, as `GameCore/ModuleSite.h` `.cpp`: `CheckModuleSite(station, stationDesign,
+existing, site, moduleDesign)` returns a fault and, for an overlap, which module blocked it.
+
+**The five refusals**, checked in a fixed order so both sides report the same fault whatever order they list
+modules in:
+1. a design that is not a module;
+2. the fifth against the cap of four;
+3. a center past 400, where 400 itself is inside;
+4. overlapping the station;
+5. overlapping another module.
+
+**"Clear of" is Q37's sizes**, which that ruling made the bound "used for spacing things so they do not
+overlap": centers at least half of each size apart. That is 152 from the station and 84 between frames, and
+touching is clear. **The blocker is the lowest identity among the overlaps**, found in one pass rather than
+by sorting, so it cannot depend on list order (R16). `MODULE_BUILD_RADIUS_UNITS` and
+`MAXIMUM_MODULES_PER_STATION` are named, and a test holds the radius equal to point defense's range,
+ADR-015's reason for it.
+
+**The one inexactness is the inputs'.** The host passes exact positions and the client the quarter-unit
+ones it was sent, so a preview can differ from the host by that much at an edge. The host decides.
+**Nothing calls it yet.** M2.11 has the host validate a placement with it and the client preview one, and
+the grep for `CheckModuleSite` is then that step's to show.
+
+`ModuleSiteTests` covers:
+- the accept, which is the handoff's own four-frame plate at 354;
+- each refusal, including a step past the radius, and a step inside each clearance with its exact edge
+  accepted;
+- the blocker being the lowest identity in either order;
+- the fixed fault order;
+- the radius equaling the point-defense range.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC.**
+
 ---
 
 ### M2.10b — The module mesh, and telling four modules apart · `GameClient` · hand · agent
