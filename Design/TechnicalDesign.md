@@ -452,9 +452,13 @@ is also what `Scripts/CheckDeterminism.py` would catch the day somebody moved it
 
 Drawing 204 ships is **one instanced draw per hull**, with a per-instance buffer of a transform and a team
 color. Three hulls — `Scout`, `Frigate` and, from M2, `ModuleFrame` — the station, and **one draw per
-asteroid variant** rather than one for the whole field, which is what
-[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) cost when it made a rock a file instead of a function;
-the variant count is settled at M2.4 and the figure is owed there. The `Cruiser` is a sixth hull the
+asteroid variant, five for the field**, rather than one, which is what
+[`ADR-005`](ADR/ADR-005-a-mesh-is-a-cmo-file.md) cost when it made a rock a file instead of a function.
+**The field is baked, not instanced** (M2.4): a rock turns on three axes, scales and leaves the plane,
+which the ship pass's instance cannot say, and a field never moves. So each variant's rocks are placed on
+the processor into one static mesh when the join names the field. The ship pass draws each with one
+identity instance, at 552 KiB of upload heap at two players and 1,104 KiB at four, where instancing would
+have cost a second shader. The `Cruiser` is a sixth hull the
 catalog carries and the MVP never draws (`GameDesign.md` §10), and under ADR-005 it costs a file rather
 than a parameter. Two frames in
 flight with a fence per frame. None of this is near any limit, and the renderer should not be optimized
@@ -576,7 +580,9 @@ the whole of what the per-frame path allocates.
 script asserting each mesh's bounds against the size the catalog states, which is a gate rather than a
 compile error — the arrangement `Scripts/CheckHudGeometry.py` already has for the interface pass. And the
 asteroid loses its generator: a file is one rock, so variation is a set of authored variants with the
-match seed choosing among them and jittering yaw, pitch and scale in the client.
+match seed choosing among them and jittering yaw, pitch, roll, scale and height off the plane in the
+client. **Five variants, 102 KiB on disk and 16 KiB deflated** (M2.4, measured in ADR-005). The scale is
+clamped so no two rocks touch.
 
 **Presentation may be data; rules stay code.** The component catalog, the designs and the damage table are
 `constexpr` tables in `GameCore` and do not become files. A table the host and the client can disagree

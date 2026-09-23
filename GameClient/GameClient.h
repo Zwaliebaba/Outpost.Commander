@@ -16,6 +16,7 @@
 #include "ClientFrame.h"
 #include "CameraGesture.h"
 #include "HullMesh.h"
+#include "AsteroidMesh.h"
 #include "GroupSelection.h"
 #include "HitTest.h"
 #include "HudLayout.h"

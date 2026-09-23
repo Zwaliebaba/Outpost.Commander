@@ -187,6 +187,29 @@ tactical zoom, the variant count and the package bytes are written into the two 
 and the visual vertical offset and the scale jitter exist only in client code — check your own diff for a
 `z` that crossed into `GameCore`.
 
+**BUILT, 2026-09-23, WITH ONE DEPARTURE FROM THE STEP AS WRITTEN: THE FIELD IS BAKED, NOT INSTANCED.** The
+five variants were already delivered and packaged (`AsteroidA` to `E`). The step said "one instanced call
+per variant". The ship pass's instance holds a position and a turn about Z. A rock turns on three axes,
+scales and lifts, which the handoff's section 8 specifies, and a field never moves. So
+`GameClient/AsteroidMesh` places each variant's rocks into one static mesh on the processor when the join
+names the field. `App.cpp` draws each through the ship pass with one identity instance. That is five
+draws, no second shader, and 552 KiB of upload heap at two players where instancing would have cost about
+63 KiB. The trade and its figures are in [`ADR-005`](../ADR/ADR-005-a-mesh-is-a-cmo-file.md)'s amendment.
+**Whether that memory shows in frame time is owed on the device.**
+
+**The look is drawn from the match seed on PCG32 stream 4**, a client stream, with six draws per rock:
+variant, yaw, pitch, roll, scale percent and lift. **The scale is clamped so no two rocks touch.** The
+generator's 150-unit spacing is smaller than `AsteroidE` at 1.35, so each rock is held to half its nearest
+neighbor's distance over its mesh's exact sphere. That clamps 3.5% of rocks over 200 seeds, none below
+0.75. The lift and the jitter never leave `GameClient`. `git diff -- GameCore` holds no `z` and no look.
+`AsteroidMeshTests` pins determinism, the handoff's ranges, every variant appearing on the match seed,
+no two rocks touching over 200 seeds at two and four players, normals staying unit and triangles staying
+outward, and the bake's index offsets and its 16-bit limit.
+
+**Figures written:** five variants, five draws, 102 KiB on disk and 16 KiB deflated, in ADR-005's
+*Measurements* and `TechnicalDesign.md` §6 and §7. **Not established here:** that rocks differ at the
+tactical zoom, which is looked at on the device. Nothing here was built with MSVC or run.
+
 ### M2.5 — The uniform grid · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `TechnicalDesign.md` §2, the ordering section; ADR-002.

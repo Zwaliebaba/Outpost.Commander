@@ -11,6 +11,7 @@
     <ClCompile Include="Interpolation.cpp" />
     <ClCompile Include="JoinState.cpp" />
     <ClCompile Include="FieldView.cpp" />
+    <ClCompile Include="AsteroidMesh.cpp" />
     <ClCompile Include="PanelHitTest.cpp" />
     <ClCompile Include="Panels.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
@@ -36,6 +37,7 @@
     <ClInclude Include="MeshCatalog.g.h" />
     <ClInclude Include="JoinState.h" />
     <ClInclude Include="FieldView.h" />
+    <ClInclude Include="AsteroidMesh.h" />
     <ClInclude Include="HudLayout.h" />
     <ClInclude Include="PanelHitTest.h" />
     <ClInclude Include="Panels.h" />

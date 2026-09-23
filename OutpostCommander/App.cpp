@@ -11,6 +11,7 @@
 // projection in this file is what tips it over C3859.
 #include "ViewMode.h"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -64,6 +65,10 @@ inline constexpr std::size_t QUEUE_SLOT_BYTES = 2048;
 /// M1.9's per-frame instance capacity. ADR-003's peak is **110 entities** in the reduced MVP and 220
 /// at four players; this is the second, so the third and fourth slots cost no allocation change.
 inline constexpr std::uint32_t MAXIMUM_INSTANCES = 220;
+
+/// M2.4: the one identity instance every asteroid variant's draw shares. The rocks are already placed in
+/// their vertices (`GameClient/AsteroidMesh.h`), so the instance puts them at the origin, unturned.
+inline constexpr std::uint32_t FIELD_INSTANCES = 1;
 
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
@@ -120,6 +125,53 @@ void Report(std::ofstream& _log, const std::string& _line)
   OutputDebugStringA(terminated.c_str());
   _log << terminated;
   _log.flush();
+}
+
+/// **ONE MESH OUT OF THE PACKAGE, BY ITS CATALOG NAME, OR A REPORT SAYING WHY NOT.** The hulls and the
+/// asteroid variants take the same route, so the route is written once: every way this can fail names the
+/// mesh, because the failure ADR-021 expects is a clean install whose package did not carry the file.
+[[nodiscard]] bool ReadShippedMesh(std::string_view _name, std::ofstream& _log, Outpost::HullMesh& _outMesh)
+{
+  const Outpost::MeshEntry* entry = Outpost::FindMesh(_name);
+  if (entry == nullptr)
+  {
+    Report(_log, "MESH " + std::string{_name} + " is not in the catalog");
+    return false;
+  }
+
+  // The catalog states the `ms-appx:///` form, because that is what the manifest says and what a
+  // `StorageFile` route would take. An `ifstream` wants what is after the scheme, with backslashes.
+  constexpr std::wstring_view SCHEME = L"ms-appx:///";
+  std::wstring relative{entry->packageUri.substr(SCHEME.size())};
+  for (wchar_t& character : relative)
+  {
+    if (character == L'/')
+    {
+      character = L'\\';
+    }
+  }
+
+  std::vector<std::byte> bytes;
+  if (!Neuron::ReadPackageFile(relative, bytes))
+  {
+    Report(_log, "MESH " + std::string{_name} + " did not load -- the package may not carry it");
+    return false;
+  }
+
+  Neuron::CmoMesh read;
+  const Neuron::CmoFault fault = Neuron::ReadCmo(bytes, read);
+  if (fault != Neuron::CmoFault::None)
+  {
+    Report(_log, "MESH " + std::string{_name} + " did not decode, fault " + std::to_string(static_cast<int>(fault)));
+    return false;
+  }
+
+  if (!Outpost::LoadHullMesh(read, entry->longestUnits, _outMesh))
+  {
+    Report(_log, "MESH " + std::string{_name} + " decoded but would not load");
+    return false;
+  }
+  return true;
 }
 
 /// ADR-008: a one-line text file in LocalState, falling back to the compiled-in default when it is
@@ -295,6 +347,17 @@ void RunProbe(const CoreWindow& _window)
   std::array<bool, 3> meshReady{};
   std::uint32_t instanceFrame = 0;
 
+  // M2.4: THE ASTEROID FIELD. The five variants as read, kept on the processor, and one static buffer
+  // per variant holding that variant's rocks already placed -- baked when the join names a field and
+  // drawn through `meshPass` with one identity instance. The pair it was baked for is what says when
+  // to bake again; a seed of zero with a count of zero is "never".
+  std::array<Outpost::HullMesh, Outpost::ASTEROID_VARIANT_COUNT> asteroidVariants;
+  std::array<bool, Outpost::ASTEROID_VARIANT_COUNT> asteroidLoaded{};
+  std::array<Neuron::MeshBuffer, Outpost::ASTEROID_VARIANT_COUNT> fieldBuffers;
+  std::array<bool, Outpost::ASTEROID_VARIANT_COUNT> fieldReady{};
+  std::uint64_t bakedFieldSeed = 0;
+  std::size_t bakedFieldPlayers = 0;
+
   // M1.9b: THE SKY (ADR-019). Stars and nothing else: they upload once and are then drawn LAST with
   // the depth test on so they shade no pixel the fleet already covers.
   //
@@ -377,7 +440,7 @@ void RunProbe(const CoreWindow& _window)
   {
     Report(log, "probe: no mesh pass, hresult " + std::to_string(meshPass.LastHresult()));
   }
-  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES))
+  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES + FIELD_INSTANCES))
   {
     Report(log, "probe: no instance ring, hresult " + std::to_string(instanceRing.LastHresult()));
   }
@@ -909,44 +972,9 @@ void RunProbe(const CoreWindow& _window)
       for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
       {
         const std::string_view name = Outpost::MeshesShippedAtM1()[slot];
-        const Outpost::MeshEntry* entry = Outpost::FindMesh(name);
-        if (entry == nullptr)
-        {
-          continue;
-        }
-
-        // The catalog states the `ms-appx:///` form, because that is what the manifest says and
-        // what a `StorageFile` route would take. An `ifstream` wants what is after the scheme, with
-        // backslashes.
-        constexpr std::wstring_view SCHEME = L"ms-appx:///";
-        std::wstring relative{entry->packageUri.substr(SCHEME.size())};
-        for (wchar_t& character : relative)
-        {
-          if (character == L'/')
-          {
-            character = L'\\';
-          }
-        }
-
-        std::vector<std::byte> bytes;
-        if (!Neuron::ReadPackageFile(relative, bytes))
-        {
-          Report(log, "MESH " + std::string{name} + " did not load -- the package may not carry it");
-          continue;
-        }
-
-        Neuron::CmoMesh read;
-        const Neuron::CmoFault fault = Neuron::ReadCmo(bytes, read);
-        if (fault != Neuron::CmoFault::None)
-        {
-          Report(log, "MESH " + std::string{name} + " did not decode, fault " + std::to_string(static_cast<int>(fault)));
-          continue;
-        }
-
         Outpost::HullMesh hull;
-        if (!Outpost::LoadHullMesh(read, entry->longestUnits, hull))
+        if (!ReadShippedMesh(name, log, hull))
         {
-          Report(log, "MESH " + std::string{name} + " decoded but would not load");
           continue;
         }
 
@@ -956,6 +984,66 @@ void RunProbe(const CoreWindow& _window)
         Report(log, "MESH " + std::string{name} + (meshReady[slot] ? " uploaded " : " FAILED to upload ") +
                       std::to_string(hull.vertices.size()) + " vertices, " + std::to_string(hull.indices.size() / 3) + " triangles");
       }
+
+      // M2.4: THE FIVE ASTEROID VARIANTS, READ AND KEPT ON THE PROCESSOR. Nothing is uploaded until a
+      // join says which field to draw, because what goes to the device is each variant's rocks already
+      // placed (`GameClient/AsteroidMesh.h`), not the variant alone.
+      for (std::size_t variant = 0; variant < asteroidVariants.size(); ++variant)
+      {
+        asteroidLoaded[variant] = ReadShippedMesh(Outpost::AsteroidVariantNames()[variant], log, asteroidVariants[variant]);
+      }
+    }
+
+    // === M2.4: THE FIELD, BAKED ONCE A MATCH AND BEFORE THE FRAME RECORDS. ==================
+    //
+    // The field never moves, so each variant's rocks are placed on the processor into one static
+    // mesh and drawn with one identity instance -- five draws for every rock on the map. It is redone
+    // only when the join names a different pair, and then after `WaitForGpu`: the old buffers may
+    // still be read by a frame in flight, and a destroyed buffer under a recorded draw is a removed
+    // device rather than a wrong picture.
+    const Outpost::FieldView& field = clientFrame.Field();
+    if (meshesLoaded && field.IsDerived() && ((field.MatchSeed() != bakedFieldSeed) || (field.PlayerCount() != bakedFieldPlayers)))
+    {
+      device.WaitForGpu();
+      bakedFieldSeed = field.MatchSeed();
+      bakedFieldPlayers = field.PlayerCount();
+
+      // The exact sphere of each loaded variant, and the catalog's looser one for a variant that did not
+      // load -- which draws nothing, but still has to be kept clear of by its neighbors' clamp.
+      std::array<float, Outpost::ASTEROID_VARIANT_COUNT> radii{};
+      for (std::size_t variant = 0; variant < radii.size(); ++variant)
+      {
+        const Outpost::MeshEntry* entry = Outpost::FindMesh(Outpost::AsteroidVariantNames()[variant]);
+        radii[variant] = asteroidLoaded[variant] ? Outpost::BoundingRadiusUnits(asteroidVariants[variant])
+                         : (entry != nullptr)    ? Outpost::BoundingRadiusUnits(*entry)
+                                                 : 0.0f;
+      }
+      const std::vector<Outpost::RockLook> looks = Outpost::RockLooks(field.MatchSeed(), field.Rocks(), radii);
+
+      std::size_t rocksDrawn = 0;
+      for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)
+      {
+        fieldBuffers[variant].Destroy();
+        fieldReady[variant] = false;
+
+        Outpost::HullMesh placed;
+        if (!asteroidLoaded[variant] ||
+            !Outpost::BuildVariantField(asteroidVariants[variant], static_cast<std::uint8_t>(variant), field.Rocks(), looks, placed) ||
+            placed.vertices.empty())
+        {
+          continue;
+        }
+
+        const std::span<const std::byte> vertexBytes{reinterpret_cast<const std::byte*>(placed.vertices.data()),
+                                                     placed.vertices.size() * sizeof(Outpost::HullVertex)};
+        fieldReady[variant] = fieldBuffers[variant].Create(device, vertexBytes, sizeof(Outpost::HullVertex), placed.indices);
+        if (fieldReady[variant])
+        {
+          rocksDrawn += placed.vertices.size() / asteroidVariants[variant].vertices.size();
+        }
+      }
+      Report(log, "FIELD " + std::to_string(rocksDrawn) + " of " + std::to_string(field.Rocks().size()) + " rocks baked for seed " +
+                    std::to_string(bakedFieldSeed) + " at " + std::to_string(bakedFieldPlayers) + " players");
     }
 
     // M0.15's frame and M0.17's, and R13's arrangement in six lines: the world clears the SCENE
@@ -1004,7 +1092,10 @@ void RunProbe(const CoreWindow& _window)
       if (worldPass.IsReady())
       {
         const Outpost::DrawnSummary drawn = clientFrame.Advance(nowMs, drawnRecords);
-        if (!drawnRecords.empty())
+        // THE FIELD DRAWS WITH NO SHIPS IN VIEW, so an empty store no longer skips the pass -- it skips
+        // only the loop over entities, which has nothing to do.
+        const bool fieldBaked = std::any_of(fieldReady.begin(), fieldReady.end(), [](bool _ready) { return _ready; });
+        if (!drawnRecords.empty() || fieldBaked)
         {
           const float aspect = (sceneTarget.HeightPixels() > 0)
                                  ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
@@ -1116,6 +1207,11 @@ void RunProbe(const CoreWindow& _window)
               instanceCount[slot] = static_cast<std::uint32_t>(packed.size()) - firstInstance[slot];
             }
 
+            // M2.4's identity instance, last, in the same write -- a second write would start at zero and
+            // overwrite the ships'. White, and unread: every rock vertex takes the hull palette.
+            const std::uint32_t fieldInstance = static_cast<std::uint32_t>(packed.size());
+            packed.push_back(Neuron::MeshInstance{});
+
             const std::uint32_t accepted = instanceRing.Write(instanceFrame, packed);
             for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
             {
@@ -1131,6 +1227,21 @@ void RunProbe(const CoreWindow& _window)
               static_cast<void>(meshPass.Draw(device, meshBuffers[slot], address,
                                               instanceCount[slot] * static_cast<std::uint32_t>(sizeof(Neuron::MeshInstance)),
                                               instanceCount[slot]));
+            }
+
+            // === M2.4: ONE DRAW PER ASTEROID VARIANT, FIVE FOR THE WHOLE FIELD. ============
+            if (fieldInstance < accepted)
+            {
+              const std::uint64_t address =
+                instanceRing.BufferAddress(instanceFrame) + (static_cast<std::uint64_t>(fieldInstance) * sizeof(Neuron::MeshInstance));
+              for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)
+              {
+                if (fieldReady[variant])
+                {
+                  static_cast<void>(
+                    meshPass.Draw(device, fieldBuffers[variant], address, static_cast<std::uint32_t>(sizeof(Neuron::MeshInstance)), 1));
+                }
+              }
             }
 
             instanceFrame = (instanceFrame + 1) % Neuron::InstanceRing::FRAME_COUNT;
