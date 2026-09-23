@@ -165,10 +165,13 @@ public:
   /// **A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION.** If this literal starts
   /// disagreeing without anybody editing the script above it, the tick has stopped being deterministic.
   ///
-  /// Verified identical on Debug and Release, x64 and ARM64, on 2026-09-22.
+  /// Verified identical on Debug and Release, x64 and ARM64, on 2026-09-22. **MOVED DELIBERATELY ON
+  /// 2026-09-23** from `0x37f846ed90b74ca1`, by M1.17: ships now turn as they fly and route around
+  /// structures (`OpenQuestions.md` Q51, Q52). The new value was the same on all four pairs before it
+  /// was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x37f846ed90b74ca1ull, RunScriptedMatch().hash);
+    Assert::AreEqual(0xc8b1069f59fa3f85ull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

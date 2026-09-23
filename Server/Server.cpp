@@ -146,7 +146,9 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   // One entity that goes somewhere, which is the whole of the simulation at M0 and is what makes
   // a client's updates show something moving rather than an empty world.
   const Outpost::EntityId first = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, 1);
-  static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288}, 7 * 256));
+  static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288},
+                                                    Outpost::SpeedPerTick(Outpost::DesignId::Fighter),
+                                                    Outpost::TurnAnglePerTick(Outpost::DesignId::Fighter)));
 
   // THE SEAM, AND IT LIVES IN THE SHELL. R16 keeps wall time out of the simulation's library, so
   // the schedule is the engine's and the host below it counts only ticks. The three lines that

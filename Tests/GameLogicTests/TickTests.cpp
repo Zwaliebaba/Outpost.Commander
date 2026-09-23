@@ -15,11 +15,13 @@ namespace
   return Neuron::Vec2{.x = _x, .y = _y};
 }
 
-/// A hull number with no meaning -- R24's catalog does not exist yet and the state hash only needs
-/// the field to be there and to be covered.
-// Any design; the tick does not read it. M1.1 made this an identity rather than a loose 3 and
-// M1.3 made it a DESIGN, because a hull is derived from one rather than chosen beside it.
-inline constexpr Outpost::DesignId SOME_DESIGN = Outpost::DesignId::Station;
+/// A ship. **M1.17 MADE THE TICK READ IT**: a design with no drive is a structure the others route
+/// around (Q52), so a mover built as a Station, as this was until then, would be in its own way.
+inline constexpr Outpost::DesignId SOME_DESIGN = Outpost::DesignId::Miner;
+
+/// Half a turn a tick reaches any bearing at once, which keeps the tests written before Q51 about
+/// straight lines rather than about turning.
+inline constexpr std::uint16_t INSTANT_TURN = 32768;
 } // namespace
 
 TEST_CLASS(EntityIdentity)
@@ -135,7 +137,7 @@ public:
   {
     Outpost::World world;
     const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
-    Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7));
+    Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7, INSTANT_TURN));
 
     for (int tick = 0; tick < 500; ++tick)
     {
@@ -157,7 +159,7 @@ public:
     // arrangement that would oscillate.
     Outpost::World world;
     const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
-    Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7));
+    Assert::IsTrue(world.OrderMoveTo(mover, At(1000, 0), 7, INSTANT_TURN));
 
     for (int tick = 0; tick < 200; ++tick)
     {
@@ -179,7 +181,7 @@ public:
     // and the entity never moves again. Rounding is what makes this arrive.
     Outpost::World world;
     const Outpost::EntityId mover = world.Create(At(0, 0), 0, SOME_DESIGN);
-    Assert::IsTrue(world.OrderMoveTo(mover, At(3, 3), 1));
+    Assert::IsTrue(world.OrderMoveTo(mover, At(3, 3), 1, INSTANT_TURN));
 
     for (int tick = 0; tick < 32; ++tick)
     {
@@ -201,7 +203,7 @@ public:
       {
         Outpost::World world;
         const Outpost::EntityId mover = world.Create(At(x, y), 0, SOME_DESIGN);
-        Assert::IsTrue(world.OrderMoveTo(mover, At(0, 0), 7));
+        Assert::IsTrue(world.OrderMoveTo(mover, At(0, 0), 7, INSTANT_TURN));
 
         for (int tick = 0; tick < 1000; ++tick)
         {
@@ -219,7 +221,7 @@ public:
     // Legal, and the honest outcome: somewhere to be and no way to get there beats a teleport.
     Outpost::World world;
     const Outpost::EntityId stuck = world.Create(At(0, 0), 0, SOME_DESIGN);
-    Assert::IsTrue(world.OrderMoveTo(stuck, At(1000, 0), 0));
+    Assert::IsTrue(world.OrderMoveTo(stuck, At(1000, 0), 0, INSTANT_TURN));
 
     for (int tick = 0; tick < 100; ++tick)
     {
@@ -245,8 +247,8 @@ public:
     Outpost::World world;
     const Outpost::EntityId first = world.Create(At(0, 0), 0, SOME_DESIGN);
     const Outpost::EntityId second = world.Create(At(0, 0), 0, SOME_DESIGN);
-    Assert::IsTrue(world.OrderMoveTo(first, At(1000, 0), 7));
-    Assert::IsTrue(world.OrderMoveTo(second, At(0, 1000), 7));
+    Assert::IsTrue(world.OrderMoveTo(first, At(1000, 0), 7, INSTANT_TURN));
+    Assert::IsTrue(world.OrderMoveTo(second, At(0, 1000), 7, INSTANT_TURN));
     Assert::IsTrue(world.Destroy(first));
 
     for (int tick = 0; tick < 500; ++tick)
@@ -255,6 +257,175 @@ public:
     }
     Assert::IsTrue(world.Find(second)->position == At(0, 1000));
     Assert::AreEqual(std::size_t{1}, world.AliveCount());
+  }
+};
+
+namespace
+{
+[[nodiscard]] Neuron::Vec2 InUnits(std::int32_t _x, std::int32_t _y) noexcept
+{
+  return Neuron::Vec2{.x = Neuron::FixedFromWholeUnits(_x), .y = Neuron::FixedFromWholeUnits(_y)};
+}
+
+/// A Miner ordered somewhere at its own derived speed and turn rate, which is what the host does.
+bool OrderAsMiner(Outpost::World& _world, Outpost::EntityId _id, const Neuron::Vec2& _destination)
+{
+  return _world.OrderMoveTo(_id, _destination, Outpost::SpeedPerTick(Outpost::DesignId::Miner),
+                            Outpost::TurnAnglePerTick(Outpost::DesignId::Miner));
+}
+
+/// Q52's keep-out, from the catalog: half the station's size plus half the Miner's.
+[[nodiscard]] std::int64_t KeepOutUnits() noexcept
+{
+  return (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Station).hull).sizeUnits) / 2) +
+         (static_cast<std::int64_t>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Miner).hull).sizeUnits) / 2);
+}
+
+[[nodiscard]] std::int64_t DistanceSquaredUnits(const Neuron::Vec2& _a, const Neuron::Vec2& _b) noexcept
+{
+  const std::int64_t x = Neuron::FixedToWholeUnitsFloor(_a.x - _b.x);
+  const std::int64_t y = Neuron::FixedToWholeUnitsFloor(_a.y - _b.y);
+  return (x * x) + (y * y);
+}
+} // namespace
+
+/// M1.17: `OpenQuestions.md` Q51, a ship turns while it flies, and Q52, it routes around structures.
+TEST_CLASS(Steering)
+{
+public:
+  TEST_METHOD(ATurnIsBoundedByTheRate)
+  {
+    // Ordered straight behind itself: the first tick swings the heading by exactly the rate and, a
+    // quarter turn or more still off, does not move forward at all.
+    Outpost::World world;
+    const Outpost::EntityId ship = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, ship, InUnits(-1000, 0)));
+
+    Outpost::Tick(world);
+
+    const Outpost::Entity* entity = world.Find(ship);
+    const std::int16_t swung = Neuron::AngleDifference(0, entity->heading);
+    Assert::AreEqual(static_cast<std::int32_t>(Outpost::TurnAnglePerTick(Outpost::DesignId::Miner)),
+                     static_cast<std::int32_t>((swung < 0) ? -swung : swung), L"the heading did not swing by exactly the turn rate");
+    Assert::IsTrue(entity->position == InUnits(0, 0), L"a ship facing away from its target moved forward");
+  }
+
+  TEST_METHOD(ItFliesAlongItsHeadingOnceItHasTurned)
+  {
+    Outpost::World world;
+    const Outpost::EntityId ship = world.Create(InUnits(0, 0), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, ship, InUnits(0, 2000)));
+
+    for (int tick = 0; tick < 60; ++tick)
+    {
+      Outpost::Tick(world);
+    }
+
+    // Three seconds in, the turn is done and it faces the point it is flying to. Not the y axis:
+    // the arc has carried it about one turning radius to the side of the line it started on.
+    const Outpost::Entity* entity = world.Find(ship);
+    const Neuron::Vec2 toGo = InUnits(0, 2000) - entity->position;
+    const std::int16_t error = Neuron::AngleDifference(entity->heading, Neuron::BearingOf(toGo.x, toGo.y));
+    Assert::IsTrue((error >= -64) && (error <= 64), L"the heading is not the direction of travel");
+    Assert::IsTrue(entity->position.y > Neuron::FixedFromWholeUnits(100));
+  }
+
+  TEST_METHOD(ItArrivesExactlyFromEveryDirectionAndHeading)
+  {
+    // The throttle is what makes this hold: a point inside the turning circle cannot be orbited,
+    // because any forward step has a component toward it.
+    const std::int32_t offsets[] = {-900, -40, -3, 3, 40, 900};
+    const Neuron::Angle headings[] = {0, 16384, 32768, 49152, 12345};
+    for (const std::int32_t x : offsets)
+    {
+      for (const std::int32_t y : offsets)
+      {
+        for (const Neuron::Angle heading : headings)
+        {
+          Outpost::World world;
+          const Outpost::EntityId ship = world.Create(InUnits(x, y), heading, Outpost::DesignId::Miner);
+          Assert::IsTrue(OrderAsMiner(world, ship, InUnits(0, 0)));
+
+          for (int tick = 0; tick < 600; ++tick)
+          {
+            Outpost::Tick(world);
+          }
+
+          Assert::IsTrue(world.Find(ship)->position == InUnits(0, 0), L"a ship failed to arrive");
+          Assert::IsFalse(world.FindOrder(ship)->active);
+        }
+      }
+    }
+  }
+
+  TEST_METHOD(AShipRoutesAroundAStationItsLineCrosses)
+  {
+    // Straight through the middle, the case the M1.16 session saw. Every tick it stays outside the
+    // keep-out, and it still lands exactly.
+    for (const std::int32_t offset : {0, 60, -60, 150})
+    {
+      Outpost::World world;
+      static_cast<void>(world.Create(InUnits(0, 0), 0, Outpost::DesignId::Station));
+      const Outpost::EntityId ship = world.Create(InUnits(-1000, offset), 0, Outpost::DesignId::Miner);
+      Assert::IsTrue(OrderAsMiner(world, ship, InUnits(1000, -offset)));
+
+      const std::int64_t keepOut = KeepOutUnits();
+      for (int tick = 0; tick < 1200; ++tick)
+      {
+        Outpost::Tick(world);
+        Assert::IsTrue(DistanceSquaredUnits(world.Find(ship)->position, InUnits(0, 0)) >= (keepOut * keepOut),
+                       L"the ship entered the station's keep-out circle");
+      }
+
+      Assert::IsTrue(world.Find(ship)->position == InUnits(1000, -offset), L"a routed ship did not arrive");
+    }
+  }
+
+  TEST_METHOD(AShipAlreadyInsideTheKeepOutLeavesIt)
+  {
+    // Where a new ship appears, in front of its station: the station is not in its way.
+    Outpost::World world;
+    static_cast<void>(world.Create(InUnits(0, 0), 0, Outpost::DesignId::Station));
+    const Outpost::EntityId ship = world.Create(InUnits(60, 0), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, ship, InUnits(-1000, 0)));
+
+    for (int tick = 0; tick < 1200; ++tick)
+    {
+      Outpost::Tick(world);
+    }
+    Assert::IsTrue(world.Find(ship)->position == InUnits(-1000, 0));
+  }
+
+  TEST_METHOD(AnOrderOntoAStationArrives)
+  {
+    Outpost::World world;
+    static_cast<void>(world.Create(InUnits(0, 0), 0, Outpost::DesignId::Station));
+    const Outpost::EntityId ship = world.Create(InUnits(-1000, 0), 0, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, ship, InUnits(40, 10)));
+
+    for (int tick = 0; tick < 1200; ++tick)
+    {
+      Outpost::Tick(world);
+    }
+    Assert::IsTrue(world.Find(ship)->position == InUnits(40, 10));
+  }
+
+  TEST_METHOD(ShipsStillPassThroughEachOther)
+  {
+    // Q52 routes around structures and nothing else: GameDesign.md section 7 keeps ships free of
+    // separation, so two Miners crossing head on each fly straight.
+    Outpost::World world;
+    const Outpost::EntityId east = world.Create(InUnits(-500, 0), 0, Outpost::DesignId::Miner);
+    const Outpost::EntityId west = world.Create(InUnits(500, 0), 32768, Outpost::DesignId::Miner);
+    Assert::IsTrue(OrderAsMiner(world, east, InUnits(500, 0)));
+    Assert::IsTrue(OrderAsMiner(world, west, InUnits(-500, 0)));
+
+    for (int tick = 0; tick < 400; ++tick)
+    {
+      Outpost::Tick(world);
+      Assert::AreEqual(Neuron::Fixed{0}, world.Find(east)->position.y, L"a ship swerved around another ship");
+    }
+    Assert::IsTrue(world.Find(east)->position == InUnits(500, 0));
   }
 };
 
@@ -270,8 +441,8 @@ public:
     {
       const Outpost::EntityId a = _world.Create(At(100, 200), 1000, Outpost::DesignId::Fighter);
       const Outpost::EntityId b = _world.Create(At(-50, 75), 40000, Outpost::DesignId::Miner);
-      static_cast<void>(_world.OrderMoveTo(a, At(900, 200), 7));
-      static_cast<void>(_world.OrderMoveTo(b, At(-50, -900), 13));
+      static_cast<void>(_world.OrderMoveTo(a, At(900, 200), 7, INSTANT_TURN));
+      static_cast<void>(_world.OrderMoveTo(b, At(-50, -900), 13, INSTANT_TURN));
       for (int tick = 0; tick < 60; ++tick)
       {
         Outpost::Tick(_world);
@@ -374,9 +545,9 @@ public:
     const Outpost::EntityId second = world.Create(At(900, -900), 54321, Outpost::DesignId::Fighter);
     const Outpost::EntityId doomed = world.Create(At(0, 0), 7, Outpost::DesignId::Station);
 
-    static_cast<void>(world.OrderMoveTo(first, At(1000, -250), 7));
-    static_cast<void>(world.OrderMoveTo(second, At(-33, 33), 13));
-    static_cast<void>(world.OrderMoveTo(doomed, At(500, 500), 3));
+    static_cast<void>(world.OrderMoveTo(first, At(1000, -250), 7, INSTANT_TURN));
+    static_cast<void>(world.OrderMoveTo(second, At(-33, 33), 13, INSTANT_TURN));
+    static_cast<void>(world.OrderMoveTo(doomed, At(500, 500), 3, INSTANT_TURN));
 
     for (int tick = 0; tick < 40; ++tick)
     {
@@ -391,7 +562,11 @@ public:
     // A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION. If this literal starts
     // disagreeing without anybody editing the run above it, the tick has stopped being
     // deterministic and that is what this test exists to say (R16, ADR-002).
-    Assert::AreEqual(0xc6340483e2d0eb26ull, Outpost::StateHash(world));
+    //
+    // **IT MOVED A THIRD TIME AT M1.17, AND THAT WAS FORCED TOO**: the tick now steers a heading and
+    // routes around the Station in the run, and the value was the same on all four pairs before it
+    // was pinned.
+    Assert::AreEqual(0xa0141c81045fc0bcull, Outpost::StateHash(world));
   }
 };
 

@@ -32,6 +32,13 @@ inline constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(100
   return static_cast<Neuron::Fixed>((unitsPerSecond * static_cast<std::uint32_t>(Neuron::FIXED_ONE)) / TICKS_PER_SECOND);
 }
 
+/// Q51's turn rate per tick: the derived rate a second over the tick rate. A Fighter swings 1,638
+/// binary-angle units a tick and a Miner 1,170. Zero for a design with no drive, like its speed.
+[[nodiscard]] constexpr std::uint16_t TurnAnglePerTick(DesignId _design) noexcept
+{
+  return static_cast<std::uint16_t>(Derive(_design).turnAnglePerSecond / TICKS_PER_SECOND);
+}
+
 /// One pass over the world, in the fixed order `TechnicalDesign.md` section 2 names: drain
 /// incoming commands, then orders, AI, movement, weapons, mining, build queues, deaths, victory.
 /// No system reads another's half-updated output, and the order is not negotiable -- it is what

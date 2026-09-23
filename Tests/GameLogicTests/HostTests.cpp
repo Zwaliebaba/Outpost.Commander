@@ -64,7 +64,8 @@ public:
   {
     Outpost::Host host;
     const Outpost::EntityId mover = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, 1);
-    Assert::IsTrue(host.MutableWorld().OrderMoveTo(mover, Neuron::Vec2{.x = 10000, .y = 0}, 7 * 256));
+    Assert::IsTrue(host.MutableWorld().OrderMoveTo(mover, Neuron::Vec2{.x = 10000, .y = 0}, 7 * 256,
+                                                   Outpost::TurnAnglePerTick(Outpost::DesignId::Miner)));
 
     const Neuron::Vec2 before = host.CurrentWorld().Find(mover)->position;
     host.RunOneTick();

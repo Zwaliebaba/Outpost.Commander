@@ -275,4 +275,58 @@ std::int16_t Cosine(Angle _angle) noexcept
   return Sine(static_cast<Angle>(_angle + ANGLE_QUARTER_TURN));
 }
 
+Angle BearingOf(std::int64_t _x, std::int64_t _y) noexcept
+{
+  const std::int64_t along = (_x < 0) ? -_x : _x;
+  const std::int64_t across = (_y < 0) ? -_y : _y;
+  if ((along == 0) && (across == 0))
+  {
+    return 0;
+  }
+
+  // FOLDED INTO THE FIRST OCTANT, where the tangent runs from zero to one: `major` is the larger
+  // component and `minor` the smaller, so the search below never meets a vertical line.
+  const bool steep = across > along;
+  const std::int64_t major = steep ? across : along;
+  const std::int64_t minor = steep ? along : across;
+
+  // THE LARGEST INDEX WHOSE TANGENT DOES NOT EXCEED minor / major, compared cross-multiplied so there
+  // is no division: tan(i) <= minor / major exactly when sin(i) * major <= cos(i) * minor, because
+  // both the major component and the cosine are positive through the octant. Monotonic, so a binary
+  // search finds it, and the diagonal lands on 512 exactly because sine and cosine are equal there.
+  constexpr std::int32_t OCTANT_ENTRIES = static_cast<std::int32_t>(SINE_TABLE_SIZE / 8);
+  std::int32_t low = 0;
+  std::int32_t high = OCTANT_ENTRIES;
+  while (low < high)
+  {
+    const std::int32_t middle = (low + high + 1) / 2;
+    const Angle probe = static_cast<Angle>(middle << 4);
+    if ((static_cast<std::int64_t>(Sine(probe)) * major) <= (static_cast<std::int64_t>(Cosine(probe)) * minor))
+    {
+      low = middle;
+    }
+    else
+    {
+      high = middle - 1;
+    }
+  }
+
+  // UNFOLDED: the octant, then the quadrant. Each is a reflection the binary angle makes a
+  // subtraction, and the subtraction wraps by construction.
+  Angle bearing = static_cast<Angle>(low << 4);
+  if (steep)
+  {
+    bearing = static_cast<Angle>(ANGLE_QUARTER_TURN - bearing);
+  }
+  if (_x < 0)
+  {
+    bearing = static_cast<Angle>((2 * ANGLE_QUARTER_TURN) - bearing);
+  }
+  if (_y < 0)
+  {
+    bearing = static_cast<Angle>(0 - bearing);
+  }
+  return bearing;
+}
+
 } // namespace Neuron

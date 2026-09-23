@@ -132,4 +132,48 @@ public:
   }
 };
 
+TEST_CLASS(TheBearing)
+{
+public:
+  TEST_METHOD(TheCardinalsAndDiagonalsAreExact)
+  {
+    Assert::AreEqual(Neuron::Angle{0}, Neuron::BearingOf(1000, 0));
+    Assert::AreEqual(Neuron::Angle{8192}, Neuron::BearingOf(1000, 1000));
+    Assert::AreEqual(Neuron::Angle{16384}, Neuron::BearingOf(0, 1000));
+    Assert::AreEqual(Neuron::Angle{24576}, Neuron::BearingOf(-1000, 1000));
+    Assert::AreEqual(Neuron::Angle{32768}, Neuron::BearingOf(-1000, 0));
+    Assert::AreEqual(Neuron::Angle{40960}, Neuron::BearingOf(-1000, -1000));
+    Assert::AreEqual(Neuron::Angle{49152}, Neuron::BearingOf(0, -1000));
+    Assert::AreEqual(Neuron::Angle{57344}, Neuron::BearingOf(1000, -1000));
+  }
+
+  TEST_METHOD(TheZeroVectorIsZero)
+  {
+    Assert::AreEqual(Neuron::Angle{0}, Neuron::BearingOf(0, 0));
+  }
+
+  TEST_METHOD(ItInvertsTheTableToWithinOneStepAllTheWayRound)
+  {
+    // THE PROPERTY THE SIMULATION RELIES ON: steer at a bearing, fly along its sine and cosine, and
+    // the bearing of that flight is the one steered at. Scaled up, so the table's own rounding is not
+    // the thing being measured.
+    for (std::uint32_t index = 0; index < Neuron::SINE_TABLE_SIZE; ++index)
+    {
+      const Neuron::Angle heading = static_cast<Neuron::Angle>(index << 4);
+      const std::int64_t x = static_cast<std::int64_t>(Neuron::Cosine(heading)) * 256;
+      const std::int64_t y = static_cast<std::int64_t>(Neuron::Sine(heading)) * 256;
+      const std::int16_t error = Neuron::AngleDifference(heading, Neuron::BearingOf(x, y));
+      Assert::IsTrue((error >= -16) && (error <= 16), L"a bearing strayed more than one table step");
+    }
+  }
+
+  TEST_METHOD(ItIsTheSameForAScaledVector)
+  {
+    // A direction has one bearing however long it is, which is what lets the tick pass a raw
+    // position difference in.
+    Assert::AreEqual(Neuron::BearingOf(3, 7), Neuron::BearingOf(3 * 65536, 7 * 65536));
+    Assert::AreEqual(Neuron::BearingOf(-5, 2), Neuron::BearingOf(-5 * 4096, 2 * 4096));
+  }
+};
+
 } // namespace NeuronCoreTests

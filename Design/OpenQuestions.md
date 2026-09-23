@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-five answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-seven answered, four open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS ELEVEN ENTRIES AND SEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47
-and Q50, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+**THE *OPEN* SECTION HOLDS THIRTEEN ENTRIES AND NINE OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
+Q50, Q51 and Q52, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
 was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
 open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
@@ -592,6 +592,48 @@ which is roughly the sweep-to-refresh ratio at which 1,000 entities in view stil
 at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
+
+### Q51 — How does a ship turn? — **ANSWERED**
+
+**IN AN ARC, AT A TURN RATE DERIVED LIKE SPEED. The owner's answer, 2026-09-23**, asked after the M1.16
+hand session found ships flying sideways: `GameDesign.md` §6 said "turn rate derives the same way" and
+nothing else, so the tick moved a ship straight at its target and never changed its heading.
+
+- **Turn in place, then fly.** Exact arrivals and a visible turn, but it doesn't look like flying.
+- **Turn while flying** — the owner's choice. A ship always flies along its heading and steers toward
+  the target at its turn rate. It looks most natural, and it needs a rule that stops a ship circling a
+  point inside its turning circle.
+- **Face the direction of travel instantly.** The cheapest, and it drops the sentence the design already has.
+
+**Built to these, which are the recommendation under the answer.** The turn rate is **234 × thrust ÷ mass
+binary-angle units a second** (65,536 is a full turn): a Fighter turns half a circle in a second and a
+Miner in 1.4. Because speed and turn rate are both thrust over mass, **every ship turns on the same
+radius, about 45 world units**, which is below every hull's size and well inside a ring slot's spacing. A
+ship steering toward a point **throttles by the cosine of how far off its heading the point is**, and
+stops moving forward beyond a quarter turn. So a target behind it is a turn nearly in place, and no
+target can be orbited. All of it is integer, through ADR-002's sine table and a pinned integer bearing.
+**What would reopen it** is M3's combat wanting a weapon's arc to depend on heading, which is when
+the 234 stops being a matter of looks.
+
+### Q52 — Do ships avoid stations? — **ANSWERED**
+
+**YES: A SHIP ROUTES AROUND ANY STRUCTURE ITS STRAIGHT LINE CROSSES. The owner's answer, 2026-09-23**,
+asked for the same reason as Q51: the M1.16 session watched a Miner fly through its own station.
+`GameDesign.md` §7 ruled out separation *between ships* and said nothing about anything solid.
+
+- **Route around** — the owner's choice. When a ship's line to its destination crosses a structure, it
+  steers for the tangent past it instead.
+- **Keep passing through**, recorded as deliberate.
+- **Decide at M2**, when asteroids are a second kind of obstacle.
+
+**Built to this, which is the recommendation under the answer.** A **structure** is anything with no drive:
+a station or a module, anyone's. Its keep-out circle is **half its size plus half the ship's**, both
+from Q37's `sizeUnits`, so no figure is new. Each tick a moving ship takes the nearest structure its
+straight line crosses, ties broken on identity, and steers for the tangent on the side it is already on.
+**A structure is ignored if the ship is already inside its circle, or its destination is**, so a ship
+built in front of its station can leave it, and an order onto a station arrives. No waypoint is stored:
+the route is recomputed every tick from the world, so there is nothing new to keep in step. **Asteroids
+are not in it yet**. When M2 draws them, whether they are obstacles is the question to ask.
 
 ### Q50 — Is a second machine part of how this game is tested? — **ANSWERED**
 

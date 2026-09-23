@@ -31,4 +31,15 @@ inline constexpr std::int16_t SINE_ONE = 32767;
 /// for free, so there is no second table and no special case at the seam.
 [[nodiscard]] std::int16_t Cosine(Angle _angle) noexcept;
 
+/// The binary angle a vector points along: zero along +x, a quarter turn along +y, the convention
+/// `Sine` and `Cosine` already use. **The inverse of the table, through the table** -- a binary search
+/// over its first octant, so a bearing and the sine of that bearing can never disagree by more than the
+/// table's own step, and no CRT `atan2` comes near the simulation (R16).
+///
+/// Resolved to one table step, 16 binary-angle units: exact at the cardinals and the diagonals, and
+/// within 0.088 degrees of the true bearing everywhere else. The zero vector has no
+/// bearing and returns zero. Each component must be below 2^47 in magnitude, which a position
+/// difference always is.
+[[nodiscard]] Angle BearingOf(std::int64_t _x, std::int64_t _y) noexcept;
+
 } // namespace Neuron

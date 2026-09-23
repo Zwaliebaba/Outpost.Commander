@@ -320,7 +320,8 @@ size-class table instead. The two mitigation models are the cost §7 names.
 are. **Speed is thrust
 divided by mass**, and mass is the hull plus everything in it — so a `Frigate` carrying two mass drivers
 is slower than an empty one, and that falls out of the arithmetic rather than being written down anywhere.
-Turn rate derives the same way.
+Turn rate derives the same way, and a ship turns while it flies. Because speed and turn rate both fall
+with mass, every ship turns on the same radius, and none ever orbits its target (`OpenQuestions.md` Q51).
 
 ### The two designs the MVP ships
 
@@ -359,6 +360,11 @@ previously named once and owned by nobody. The order assigns each selected ship 
 the destination**, ordered by entity identity so the assignment is deterministic, with the ring sized to
 the selection. No continuous separation force and no flocking: those are floating-point-shaped problems in
 an integer simulation, and a formation system later is this same assignment with a different slot layout.
+
+**A ship does not fly through a structure.** Ships still pass through each other, as above. But a
+station or a module whose keep-out circle lies across a ship's line gets steered around, on the side
+the ship is already on, and the route is recomputed every tick rather than stored
+(`OpenQuestions.md` Q52).
 
 **A module is a target like anything else.** Its hit value quarters what reaches it, so one fighter needs
 about two minutes to kill a module and three need forty seconds. That is deliberate — a module is a raid

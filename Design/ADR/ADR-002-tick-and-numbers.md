@@ -97,8 +97,14 @@ table, the derived-stat function, ring slot assignment, the build system and the
 step. Until it ran, every claim in this ADR about bit-identical behavior was an argument; it is now a
 fact about four builds on one machine, which is what this measurement was ever able to be.
 
-**What it still does not prove** is two different machines, which is M0.23's outstanding run and not
-this one's. ARM64 here is cross-compiled and executed under the same operating system.
+**What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
+it on 2026-09-23 (`OpenQuestions.md` Q50). ARM64 here is compiled on, and runs natively on, the Surface Pro.
+
+**THE HASH MOVED ONCE, DELIBERATELY, 2026-09-23, to `0xc8b1069f59fa3f85`**, when M1.17 made ships turn
+as they fly and route around structures (Q51, Q52). The same script, now with steering in the tick,
+hashed to that value on Debug and Release, x64 and ARM64, before the literal was changed. That is the
+test doing its job: a change that moves the hash is deliberate, and it is re-pinned from four
+agreeing builds, never from one.
 
 One is still owed:
 

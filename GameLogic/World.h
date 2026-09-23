@@ -23,6 +23,10 @@ struct MoveOrder
   /// makes unit ambiguity a real defect class.
   Neuron::Fixed speedPerTick = 0;
 
+  /// Binary-angle units a tick the heading may swing toward where it is going (Q51). Half a turn or
+  /// more turns at once.
+  std::uint16_t turnAnglePerTick = 0;
+
   bool active = false;
 };
 
@@ -66,7 +70,7 @@ public:
   /// False on a stale identity. A speed of zero is legal and means an entity that has somewhere to
   /// be and no way to get there; it never arrives, and that is the honest outcome rather than a
   /// teleport.
-  bool OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick) noexcept;
+  bool OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick, std::uint16_t _turnAnglePerTick) noexcept;
 
   [[nodiscard]] const MoveOrder* FindOrder(EntityId _id) const noexcept;
 

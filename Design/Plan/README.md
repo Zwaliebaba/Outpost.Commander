@@ -29,7 +29,7 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 | | | What it proves | Steps | Gates |
 |---|---|---|---|---|
 | [`M0`](M0-the-wire.md) | **The wire** | The tick, the packet, two socket stacks talking, the D3D12 frame, the two-pass renderer, the gesture seam — and whether a single-machine loop is usable at all | 23 | 3 |
-| [`M1`](M1-the-fleet.md) | **The fleet** | The component model under two designs, selection, orders, the interface, two clients on one host | 16 | 2 |
+| [`M1`](M1-the-fleet.md) | **The fleet** | The component model under two designs, selection, orders, the interface, two clients on one host | 17 | 2 |
 | [`M2`](M2-the-field.md) | **The field** | The generator both sides run, the economy as a loop rather than a number, and a base built out of modules | 15 | 3 |
 | [`M3`](M3-the-fight.md) | **The fight** | Combat, death, victory — and a match you can restart twenty times in an evening | 12 | 2 |
 | [`M4`](M4-the-opponent.md) | **The opponent** | An AI worth the name, four slots, and the one question the MVP could not answer | 8 | 2 |
@@ -92,7 +92,9 @@ seated is refused instead of believed.
 
 **ADR-002's second owed measurement is closed.** M1.7's determinism test runs a two-minute scripted match
 from one seed and hashes to `0x37f846ed90b74ca1` identically on Debug and Release, x64 and ARM64. Until it
-ran, every claim in that record about bit-identical behavior was an argument.
+ran, every claim in that record about bit-identical behavior was an argument. **M1.17 moved it
+deliberately on 2026-09-23 to `0xc8b1069f59fa3f85`**, the same on all four pairs, when ships began to
+turn and route around structures.
 
 **What is open is the geometry, and two measurements**:
 
@@ -435,8 +437,9 @@ reported and not what is analyzed, so each run walks the Windows SDK headers, wh
 slow and why its findings are hard to see. Quiet it and it can run with `-Gate`, which is the point.
 
 **The determinism test on all four pairs, at every milestone boundary. THE TEST EXISTS AND HAS RUN
-ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — **and running it
-again is the standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
+ONCE** — M1.7, `0x37f846ed90b74ca1`, identical on Debug and Release, x64 and ARM64 — and again at M1.17,
+when it moved on purpose to `0xc8b1069f59fa3f85` and agreed on all four pairs. **Running it again is the
+standing part.** ADR-002's second owed measurement is discharged; the obligation it leaves
 behind is not. This is the one thing `AGENTS.md` §6's CI scope guarantees nobody will notice: the
 property R16 exists to protect is precisely the one the pipeline does not watch. Four `msbuild`
 invocations and four `vstest` runs comparing one state hash.

@@ -47,6 +47,7 @@ DerivedStats Derive(HullId _hull, DriveId _drive, const std::array<ComponentId, 
   // figures make both shipped designs divide exactly, and the suite pins that -- a later catalog
   // change could quietly make it false.
   stats.speedUnitsPerSecond = static_cast<std::uint32_t>(drive.thrust) / stats.mass;
+  stats.turnAnglePerSecond = (TURN_GAIN * static_cast<std::uint32_t>(drive.thrust)) / stats.mass;
   return stats;
 }
 

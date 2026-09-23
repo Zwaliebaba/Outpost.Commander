@@ -105,14 +105,16 @@ const Entity* World::Find(EntityId _id) const noexcept
   return (found == nullptr) ? nullptr : &found->entity;
 }
 
-bool World::OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick) noexcept
+bool World::OrderMoveTo(EntityId _id, const Neuron::Vec2& _destination, Neuron::Fixed _speedPerTick,
+                        std::uint16_t _turnAnglePerTick) noexcept
 {
   if (ResolveSlot(_id) == nullptr)
   {
     return false;
   }
 
-  m_slots[_id.index].order = MoveOrder{.destination = _destination, .speedPerTick = _speedPerTick, .active = true};
+  m_slots[_id.index].order =
+    MoveOrder{.destination = _destination, .speedPerTick = _speedPerTick, .turnAnglePerTick = _turnAnglePerTick, .active = true};
   return true;
 }
 

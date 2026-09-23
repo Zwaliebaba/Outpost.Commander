@@ -34,6 +34,8 @@ public:
     Assert::AreEqual(150u, miner.cost);
     Assert::AreEqual(100u, miner.speedUnitsPerSecond);
     Assert::AreEqual(450u, miner.hullPoints);
+    // Q51: half a circle in 1.4 seconds.
+    Assert::AreEqual(23400u, miner.turnAnglePerSecond);
   }
 
   TEST_METHOD(TheFighterIs300CreditsAt140UnitsASecond)
@@ -42,6 +44,8 @@ public:
     Assert::AreEqual(300u, fighter.cost);
     Assert::AreEqual(140u, fighter.speedUnitsPerSecond);
     Assert::AreEqual(600u, fighter.hullPoints);
+    // Q51: half a circle in a second, to within eight units of 32,768.
+    Assert::AreEqual(32760u, fighter.turnAnglePerSecond);
   }
 
   /// `GameDesign.md` section 6 cut the battleship at **2,400 credits against an income of about 15
@@ -60,6 +64,7 @@ public:
   {
     const Outpost::DerivedStats station = Outpost::Derive(Outpost::DesignId::Station);
     Assert::AreEqual(0u, station.speedUnitsPerSecond);
+    Assert::AreEqual(0u, station.turnAnglePerSecond);
     Assert::AreEqual(8000u, station.hullPoints);
     // Two point-defense mounts at 60 a second each.
     Assert::AreEqual(120u, station.damagePerSecond);
@@ -112,6 +117,7 @@ public:
         {
           const Outpost::DerivedStats loaded = Outpost::Derive(hull.id, drive, Fitted(Outpost::ComponentId::MassDriver, fitted));
           Assert::IsTrue(loaded.speedUnitsPerSecond < empty.speedUnitsPerSecond, L"a loaded hull must be slower than an empty one");
+          Assert::IsTrue(loaded.turnAnglePerSecond < empty.turnAnglePerSecond, L"a loaded hull must turn slower than an empty one");
           Assert::IsTrue(loaded.mass > empty.mass);
         }
       }

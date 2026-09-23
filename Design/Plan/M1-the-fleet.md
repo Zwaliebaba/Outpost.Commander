@@ -8,7 +8,7 @@ with ring assignment, selection by tap and by double tap, a generated sky behind
 merely existing beside it. Two ships and a station come out of one catalog with no special case anywhere,
 and if that is going to be false it is false here, while it costs a few hundred lines to fix.
 
-**Read [`README.md`](README.md) first.** Sixteen steps and two gates — **plus M1.4, which was neither: it
+**Read [`README.md`](README.md) first.** Seventeen steps and two gates — **plus M1.4, which was neither: it
 was a decision the design had not taken** (F2). Nothing told an arriving client which player it was, and
 everything after M1.3 needs to know, so it blocked the milestone exactly as a gate would. It is taken:
 [`ADR-013`](../ADR/ADR-013-a-client-is-told-which-player-it-is.md), Accepted 2026-09-22.
@@ -796,6 +796,44 @@ owed, and both need the packaged client with a finger on it**: that a two-player
 draws as it did, and the loopback tap-to-visible re-run against the 76 ms. Both are ADR-024's fifth
 measurement, and M1.16 is the session that takes them.
 
+### M1.17 — Ships turn, and route around structures · `NeuronCore`, `GameCore`, `GameLogic` · three suites · agent
+
+**Read first:** `OpenQuestions.md` Q51 and Q52 in full, both answered by the owner on 2026-09-23;
+`GameDesign.md` §6 and §7; ADR-002; `.claude/skills/determinism-audit/`, because this rewrites the tick's
+only system. **It was found by M1.16's hand session**, which is why it is numbered after the steps it
+follows and sits outside the gates it was found by.
+
+**Adds:** an integer bearing in `NeuronCore` (`BearingOf`, a vector to a binary angle), pinned at the
+cardinals, the diagonals and against the sine table. `DerivedStats::turnAnglePerSecond` at Q51's gain,
+zero without a drive. A move order that carries a turn per tick beside its speed, and a tick that steers
+the heading toward the destination, throttles by the cosine of the error, flies along the heading, and
+steers for a tangent past the nearest structure its line crosses (Q52).
+
+**Files:** `NeuronCore/SineTable.h` `.cpp`; `GameCore/DerivedStats.h` `.cpp`; `GameLogic/World.h`
+`.cpp`, `GameLogic/Tick.h` `.cpp`, `GameLogic/RingAssignment.cpp`; `Tests/NeuronCoreTests/SineTableTests.cpp`,
+`Tests/GameCoreTests/DerivedStatsTests.cpp`, `Tests/GameLogicTests/TickTests.cpp`,
+`Tests/GameLogicTests/HostTests.cpp`, `Tests/GameLogicTests/DeterminismTests.cpp`.
+
+**Done when:**
+
+- **What an agent can establish:** the bearing is exact at the cardinals and within one table step
+  everywhere. Every design's turn rate is derived, and adding a component lowers it. A ship ordered
+  behind itself turns before it moves, and still lands exactly on its destination. A ship whose line
+  crosses a station arrives without ever entering its keep-out circle. A ship already inside one leaves
+  it. **The determinism hash moves, deliberately**, and is re-pinned from all four pairs agreeing.
+  `CheckDeterminism.py`, including `--review`, is clean.
+- **What needs the device:** a ship visibly turns as it goes, and goes around its station.
+
+**BUILT 2026-09-23, ALL FOUR PAIRS, NOT YET LOOKED AT.** `BearingOf` in `NeuronCore` is a binary
+search of the sine table's first octant, pinned exact at the cardinals and diagonals and within one
+step all the way round. Turn rate is `TURN_GAIN` × thrust ÷ mass: 23,400 for a Miner and 32,760 for a
+Fighter. `GameLogic/Tick.cpp` steers, throttles, flies along the heading, and routes around the nearest
+structure in the way. It steers by a circle half a mover wider than the keep-out, so the turn lag cannot
+carry a ship inside. The suite pins all of it, including a Miner that crosses a station at four offsets
+without ever entering its keep-out, and two Miners that still pass through each other. **The hash moved on
+purpose to `0xc8b1069f59fa3f85`**, and the M0.8 scripted run moved to `0xa0141c81045fc0bc`. Both agreed
+on Debug and Release, x64 and ARM64 before either literal was changed.
+
 ---
 
 ## The gates
@@ -927,8 +965,9 @@ Surface Pro:
 - **M1.14c's half.** A two-player match draws as it did.
 
 Each is written where it was asked. **3 is measured**, above, and **6's frame time is measured at both
-scales**: 1,539 µs at 1:1 and 1,096 at 0.5, in ADR-016. **What is still open is one number, and it
-cannot be judged by eye:**
+scales**: 1,539 µs at 1:1 and 1,096 at 0.5, in ADR-016. **Tap-to-visible was then re-run by
+finger: 79 ms mean over five taps against the 76**, in ADR-024. What follows is what stood open before
+that run:
 
 - **Tap-to-visible re-run against the 76 ms** (ADR-024's fifth). The session logged no `TAPVISIBLE`
   line. The instrument watches the *first drawn entity* and arms only on a tap that orders it while it

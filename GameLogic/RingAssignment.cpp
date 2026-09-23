@@ -138,7 +138,7 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
     // **R24, AT LAST.** The intake carried a constant with a comment saying this would be derived from
     // thrust over mass; M1.2 made the derivation and M1.3 put the design on the entity, so the number
     // is now the ship's own. A Miner moves 5 units a tick and a Fighter 7.
-    if (_world.OrderMoveTo(candidates[slot].id, destination, SpeedPerTick(entity->design)))
+    if (_world.OrderMoveTo(candidates[slot].id, destination, SpeedPerTick(entity->design), TurnAnglePerTick(entity->design)))
     {
       ++ordered;
     }
