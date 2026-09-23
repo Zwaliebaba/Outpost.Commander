@@ -1016,6 +1016,12 @@ void RunProbe(const CoreWindow& _window)
           // already carries what is worth carrying across frames, and this is only the drawing of it.
           std::array<std::vector<Neuron::MeshInstance>, 3> instances;
 
+          // THE ENTITY M0.23'S INSTRUMENT WATCHES: the first selected, which is the first ship a tap on
+          // the ground orders. The first drawn record was right while M0 had one ship; in M1 it is a
+          // station, which never moves, so no tap could ever be timed against it.
+          const Outpost::WireIdentity watched =
+            selection.Identities().empty() ? drawnRecords.front().identity : selection.Identities().front();
+
           for (const Outpost::EntityRecord& shown : drawnRecords)
           {
             const float entityX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
@@ -1068,9 +1074,7 @@ void RunProbe(const CoreWindow& _window)
               static_cast<void>(worldPass.Record(device, sceneTarget, combined.m, 0.80f, 0.86f, 0.95f, 1.0f));
             }
 
-            // The first entity's drawn position is what M0.23 watches. One entity is all M0 has,
-            // and taking the first is honest for exactly as long as that is true.
-            if (&shown == &drawnRecords.front())
+            if (shown.identity == watched)
             {
               previousDrawnX = drawnX;
               previousDrawnY = drawnY;
