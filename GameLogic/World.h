@@ -39,6 +39,9 @@ enum class MiningPhase : std::uint8_t
   Unloading
 };
 
+/// Thousandths of ore to ore. `MineOrder::cargoMilliOre` says why the unit is thousandths.
+inline constexpr std::uint32_t MILLI_ORE_PER_ORE = 1000;
+
 /// **THE ONE STANDING ORDER** (`GameDesign.md` section 4), and host-only for the reason `MoveOrder` is: the
 /// client is sent where a miner is, never what it has been told (R19). `GameLogic/MiningSystem.h` runs it.
 ///

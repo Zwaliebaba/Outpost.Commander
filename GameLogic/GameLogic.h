@@ -22,6 +22,7 @@
 #include "UniformGrid.h"
 #include "UnloadTarget.h"
 #include "MiningSystem.h"
+#include "Economy.h"
 #include "StateHash.h"
 #include "Tick.h"
 

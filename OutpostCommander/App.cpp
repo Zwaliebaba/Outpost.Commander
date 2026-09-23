@@ -392,6 +392,9 @@ void RunProbe(const CoreWindow& _window)
   Outpost::HudFrame hud;
   std::vector<Neuron::GlyphQuad> hudQuads;
   Outpost::QuitConfirm quitConfirm;
+
+  // M2.7: the credits panel's change flash (Q36), fed the balance each frame the own block is held.
+  Outpost::CreditFlash creditFlash;
   bool quitConfirmed = false;
 
   // `Interface.md` section 4: a tap on your own station opens the build panel and leaves the selection
@@ -1333,7 +1336,17 @@ void RunProbe(const CoreWindow& _window)
           hudState.credits = own->credits;
           hudState.buildingWire = own->buildingDesign;
           hudState.buildProgressPercent = own->buildProgressPercent;
+          creditFlash.Observe(own->credits, nowMs);
         }
+
+        // A LINK THAT IS NOT UP FORGETS THE BALANCE, so the first update after a rejoin records it rather than
+        // flashing whatever it moved by while this client was away.
+        if (hudState.link != Outpost::LinkState::Linked)
+        {
+          creditFlash.Reset();
+        }
+        hudState.creditFlash = creditFlash.Showing(nowMs);
+        hudState.creditFlashAlpha = creditFlash.Alpha(nowMs);
 
         // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
         // hand covers the double tap's circle.

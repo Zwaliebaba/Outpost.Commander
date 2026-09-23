@@ -355,6 +355,39 @@ still open, and **Q36 settles whether before this step can say how**.
 client has, and the constraint on both is that **a client that derives income from the catalog is a client
 doing simulation** (R19); and building deducts at start as M1.6 established.
 
+**BUILT, 2026-09-23, AFTER TWO RULINGS.** **Q36**: no income rate, the change flash only. **Q53**: the
+handoff's four cargo chips needed five states and the wire's two bits gave four, so cargo took one of the
+flags byte's three spare bits. The record is still twelve bytes. The field audit in `DatagramBudget.py`
+goes from nine recoverable bits to eight, and the skill quoting it moved with it.
+
+**The host.** `GameLogic/Economy` turns each tick's `MiningSystem::Deliveries()` into credits through
+`BuildSystem::Grant`, the balance's one owner. One ore is one credit, from GameDesign §4's "100 credits of
+capacity". **A per-player remainder of thousandths is kept**, so unloading's 2.5 credits a tick lands a
+hold as exactly 100. `RecordOf` takes the world and slot rather than the entity, because the cargo lives
+on the slot's `MineOrder`, and it writes `CargoChips` into the flags. Quarters are rounded up, so any ore
+lights a chip. **Credits reach the client only through the per-player block**, as before.
+
+**The client.** `GameClient/CreditFlash` is a clock in and an alpha out: cyan on a gain with τ 120 over 400
+ms, amber on a spend with τ 180 over 600 ms. The first reading only records, and a link that is not up
+resets it, so a rejoin does not flash. `Panels` draws it at `CREDITS_FLASH`. The selection panel draws the
+four chips, `ORE` lit and `TRACK` under a keyline empty, **only for a design whose derived capacity is not
+zero**. A group lights its members' mean, rounded to nearest. `CheckHudGeometry.py` now claims the cargo
+rows, which were on its not-yet-drawn list.
+
+**The determinism script's income is mined**, replacing the flat 15 a second. It still builds a fleet of
+eleven and spends for it. The pin moved again, from `0xc8f7f00e056d4d46` to `0x18e094912655348f`,
+computed under g++ and clang at -O0 and -O2, which agreed. **The four-pair run is owed.**
+
+**Pinned:**
+- `EconomyTests`: exact holds, separate remainders, and a full cycle through the loop paying its owner.
+- `HostTests`: cargo chips on the record.
+- `UpdateTests`: the chip mapping and the three bits.
+- `HudLayoutTests`: the aggregation, the chip row present or absent, and the flash's rect, color and alpha.
+- `CreditFlashTests`: the curve.
+
+**Compiled and run under g++ with a stand-in for the test framework, not under MSVC; the flash has not been
+looked at on the device.**
+
 ### M2.8 — The tap on an asteroid · `GameClient` · `GameClientTests` · agent
 
 **Read first:** `Interface.md` §4's table.

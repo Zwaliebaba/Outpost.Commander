@@ -132,9 +132,8 @@ public:
 
   [[nodiscard]] std::uint32_t Credits(PlayerId _player) const noexcept;
 
-  /// **M2's INCOME HAS SOMEWHERE TO GO.** Nothing calls it yet -- a delivered cargo is M2's
-  /// (`GameDesign.md` section 4) -- and it is here so that the credit balance has exactly one owner
-  /// rather than two places that both add to it.
+  /// **M2's INCOME, AND ITS ONE WAY IN.** `Economy::Credit` calls it with what a tick's unloads earned
+  /// (M2.7), so the credit balance has exactly one owner rather than two places that both add to it.
   void Grant(PlayerId _player, std::uint32_t _credits) noexcept;
 
   [[nodiscard]] const BuildItem& Item(PlayerId _player) const noexcept;

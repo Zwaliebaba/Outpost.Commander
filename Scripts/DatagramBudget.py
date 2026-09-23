@@ -74,8 +74,8 @@ FIELD_AUDIT = [("identity",           24, 24, False, "correctness, not display: 
                ("hull",                8,  4, False, "a bar resolves 16 levels; 0 and 100 are the two that must be exact"),
                ("design identity",     8,  8, True,  "R24 widened it on purpose: research and a designer extend it"),
                ("flags: state",        3,  3, False, "idle, moving, mining, returning, fighting -- five states, three bits"),
-               ("flags: cargo",        2,  2, False, "four buckets is all a fill bar needs (ADR-003)"),
-               ("flags: spare",        3,  0, False, "three bits nothing has claimed; the team bits left with ADR-024")]
+               ("flags: cargo",        3,  3, False, "0-4 lit chips, five states; took a spare bit at M2.7 (Q53)"),
+               ("flags: spare",        2,  0, False, "two bits nothing has claimed; the team bits left with ADR-024")]
 
 # Upstream. Section 4 states the command packet: the transport header, the player identity, the
 # command count, and -- since ADR-024 -- the client's view center and radius, which is what the

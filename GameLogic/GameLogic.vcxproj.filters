@@ -10,6 +10,7 @@
     <ClCompile Include="UniformGrid.cpp" />
     <ClCompile Include="MiningSystem.cpp" />
     <ClCompile Include="UnloadTarget.cpp" />
+    <ClCompile Include="Economy.cpp" />
     <ClCompile Include="Sessions.cpp" />
     <ClCompile Include="StateHash.cpp" />
     <ClCompile Include="Tick.cpp" />
@@ -26,6 +27,7 @@
     <ClInclude Include="UniformGrid.h" />
     <ClInclude Include="MiningSystem.h" />
     <ClInclude Include="UnloadTarget.h" />
+    <ClInclude Include="Economy.h" />
     <ClInclude Include="Sessions.h" />
     <ClInclude Include="StateHash.h" />
     <ClInclude Include="Tick.h" />

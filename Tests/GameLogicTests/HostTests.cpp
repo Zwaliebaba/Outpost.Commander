@@ -17,12 +17,12 @@ public:
   {
     Outpost::World world;
     const Outpost::EntityId station = world.Create(Neuron::Vec2{.x = 640, .y = -640}, 0x1234, Outpost::DesignId::Station, 3);
-    const Outpost::EntityRecord record = Outpost::RecordOf(*world.Find(station));
+    const Outpost::EntityRecord record = Outpost::RecordOf(world, station.index);
 
     Assert::AreEqual(Outpost::PackIdentity(station.index, station.generation), record.identity);
     // **THE OWNER IS ITS OWN BYTE** since ADR-024, where it was two team bits in the flags.
     Assert::AreEqual(Outpost::PlayerId{3}, record.owner);
-    Assert::AreEqual(std::uint8_t{0}, record.flags, L"nothing is in the flags at M1");
+    Assert::AreEqual(std::uint8_t{0}, record.flags, L"an empty hold, and no state yet");
     // **THE DESIGN REACHES THE WIRE, and this pins which byte.** ADR-003 gives it a byte of its own
     // because a design is what a client draws and what research and a designer extend.
     Assert::AreEqual(static_cast<std::uint8_t>(Outpost::DesignId::Station), record.designIdentity);
@@ -30,11 +30,27 @@ public:
     Assert::AreEqual(std::uint8_t{100}, record.hullPercentRemaining, L"an undamaged entity reads a hundred");
   }
 
+  /// **THE HOLD REACHES THE WIRE AS CHIPS** (M2.7, Q53): a miner a quarter and a bit full lights two of the
+  /// panel's four, and a design that carries no ore lights none whatever its slot says.
+  TEST_METHOD(AHoldBecomesItsCargoChips)
+  {
+    Outpost::World world;
+    const Outpost::EntityId miner = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, 1);
+    world.MineInSlot(miner.index).cargoMilliOre = 26 * Outpost::MILLI_ORE_PER_ORE;
+    Assert::AreEqual(std::uint8_t{2}, Outpost::CargoChipsOf(Outpost::RecordOf(world, miner.index).flags));
+
+    world.MineInSlot(miner.index).cargoMilliOre = 100 * Outpost::MILLI_ORE_PER_ORE;
+    Assert::AreEqual(std::uint8_t{4}, Outpost::CargoChipsOf(Outpost::RecordOf(world, miner.index).flags));
+
+    const Outpost::EntityId fighter = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, 1);
+    Assert::AreEqual(std::uint8_t{0}, Outpost::CargoChipsOf(Outpost::RecordOf(world, fighter.index).flags));
+  }
+
   TEST_METHOD(APositionSurvivesToTheWireAndBack)
   {
     Outpost::World world;
     const Outpost::EntityId id = world.Create(Neuron::Vec2{.x = 4096, .y = -8192}, 0, Outpost::DesignId::Miner, 1);
-    const Outpost::EntityRecord record = Outpost::RecordOf(*world.Find(id));
+    const Outpost::EntityRecord record = Outpost::RecordOf(world, id.index);
     Assert::AreEqual(Neuron::Fixed{4096}, Outpost::DequantizePosition(record.positionX));
     Assert::AreEqual(Neuron::Fixed{-8192}, Outpost::DequantizePosition(record.positionY));
   }

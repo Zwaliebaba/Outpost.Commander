@@ -151,7 +151,7 @@ An entity record is **twelve bytes**:
 | Heading | 1 | 256 steps, 1.4°. A rendering quantity; the simulation's heading is 16-bit. |
 | Hull remaining | 1 | Percent, rounded to nearest with **both ends exact** — and floored at 1 for anything still alive, because 0 is what a client draws as destroyed ([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)). |
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
-| Flags | 1 | **State 3 bits, cargo 2 bits, three spare.** The team bits left with ADR-024. |
+| Flags | 1 | **State 3 bits, cargo 3 bits, two spare.** The team bits left with ADR-024; cargo took a spare bit at M2.7 (`OpenQuestions.md` Q53). |
 
 **The datagram is an update, and its header is twenty-one bytes at any player count**: the transport's
 four — version, type, and a sequence the receiver uses only to count loss (`NeuronCore/PacketHeader.h`;
@@ -194,8 +194,9 @@ accumulator makes ambiguous from the first tick. A fire event
 ([`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md): shooter 3, target 3, weapon 1) rides for
 **three**. Losing a death needs ten consecutive losses, once in 10¹³ updates at 5% packet loss.
 
-**Cargo rides in the flags byte**, two bits and four buckets, which is all a fill bar needs
-([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)).
+**Cargo rides in the flags byte**, three bits since M2.7: zero to four lit chips, quarters rounded up, which
+is what the selection panel's four chips draw ([`ADR-003`](ADR/ADR-003-the-record-and-the-command.md),
+`OpenQuestions.md` Q53). Two bits could say four states and four chips need five.
 
 **Updates go out at 20 Hz** and the client renders **75 milliseconds** behind — one update interval
 plus a jitter margin. This was 10 Hz and 150 ms, and the change is about **latency**, which ADR-003

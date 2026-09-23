@@ -4,6 +4,7 @@
 #include "BuildSystem.h"
 #include "CommandIntake.h"
 #include "Sessions.h"
+#include "Economy.h"
 #include "MiningSystem.h"
 #include "World.h"
 
@@ -201,6 +202,7 @@ private:
   CommandIntake m_intake;
   BuildSystem m_build;
   MiningSystem m_mining;
+  Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;
   Neuron::WinsockTransport m_transport;

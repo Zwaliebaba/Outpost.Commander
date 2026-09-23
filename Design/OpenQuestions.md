@@ -8,23 +8,24 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Forty-seven answered, four open.** Eight came from an adversarial review that also reversed two earlier
+**Forty-nine answered, three open.** Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**THE *OPEN* SECTION HOLDS THIRTEEN ENTRIES AND NINE OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q37, Q46, Q47,
-Q50, Q51 and Q52, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
-was weighing is worth more than the row would be. Their headings say so. **The four that are genuinely
-open are Q34, Q36, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
+**THE *OPEN* SECTION HOLDS FOURTEEN ENTRIES AND ELEVEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
+Q46, Q47, Q50, Q51, Q52 and Q53, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+was weighing is worth more than the row would be. Their headings say so. **The three that are genuinely
+open are Q34, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
 because it is not the pattern: it was registered with its recommendation, the owner ruled "proceed", and
 M1.2 was built to it in the same change. The register keeps the question and the reasoning either way, so
 that the figures have somewhere to be argued with later. **Q50 is the second**, found while writing M2.3
-and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2.6 the same way.
+and ruled before its code was, **and Q51 and Q52 the third and fourth**, from M2.6 the same way, **and Q53
+the fifth**, from M2.7.
 
 **Q37 is answerable now and is left open deliberately.** It asks how big each hull is; the handoff
 delivers thirteen meshes whose extents match its recommendation almost exactly — `Scout` 60, `Frigate` 90,
@@ -134,7 +135,7 @@ module arrives with fog, post-MVP.
 
 **The wire could not afford a cargo byte.** A fill level per entity is 110 bytes against 96 of headroom,
 which would have split the MVP's single datagram. Cargo is **two bits in the flags byte** — four buckets,
-which is what a bar needs — in the space the design identity vacated when Q28's review moved it to a byte
+which is what a bar needs, **and three bits since M2.7** (Q53), because four chips need five states — in the space the design identity vacated when Q28's review moved it to a byte
 of its own. It is a small illustration of the thing ADR-015 warned about: the datagram now has nine
 entities of headroom, and the next feature that wants a per-entity byte still cannot have one.
 
@@ -323,7 +324,12 @@ correctly — it is a `GameCore` rule, not an interface one.
 is *I picked the wrong one* — which is the mis-tap case, not a strategic one. A proportional refund buys a
 decision the MVP gives the player no other way to make interesting, and pays a rounding rule for it.
 
-### Q36 — Does the income rate ship at all, and if so how and over what window? — **needed by M2**
+### Q36 — Does the income rate ship at all, and if so how and over what window? — **ANSWERED**
+
+**NO RATE IN THE MVP; THE CHANGE FLASH ONLY. The owner's answer, 2026-09-23**, on the recommendation below,
+before M2.7's code. `GameClient/CreditFlash` draws the handoff's flash under the balance, cyan on a gain and
+amber on a spend, and nothing derives income. **Revisit after M3's twenty matches**, by the route the last
+paragraphs give. The reason is the one below, not the handoff's "no data path", which is false.
 
 **This question grew a first half.** `design_handoff_hud/` draws the credits panel — 272 × 88, a label, the
 balance and a change flash — with **no room for a rate**, and states flatly that there is none because it
@@ -656,6 +662,27 @@ entity identity to put in the command.
   a tolerance to validation.
 
 **Recommendation: the index.** It is exact, it is one bounds check, and it is what M3 needs anyway.
+
+### Q53 — How does a two-bit cargo bucket fill four chips? — **ANSWERED**
+
+**THREE BITS, ZERO TO FOUR CHIPS. The owner's answer, 2026-09-23**, on the recommendation below, before M2.7's
+code.
+
+**The gap.** `design_handoff_hud` draws **four** cargo chips per selection group. The wire carried a **two-bit**
+bucket, which has four states, so "empty" and "all four lit" could not both be drawn. The handoff also never
+said how a group of several miners aggregates.
+
+- **Three bits, 0 to 4 chips**: cargo takes one of the flags byte's three spare bits, for five states. Quarters
+  are rounded up, so any ore lights a chip and a full hold lights all four. The record stays twelve bytes and
+  every refresh figure in `Scripts/DatagramBudget.py` is unchanged. The field audit's recoverable bits go from
+  nine to eight.
+- **Two bits, drawn as 0, 2, 3 and 4 chips**: no format change, but one chip is never lit alone and the
+  discrete buckets read unevenly.
+- **Two bits, three chips**: exact, but it contradicts the handoff's four-chip geometry and the gate that pins
+  it.
+
+**Recommendation: three bits.** A group lights **its members' mean, rounded to nearest**, which is how the
+hull bar already aggregates. `GameCore/EntityRecord.h`'s `CargoChips` is the mapping, and `UpdateTests` pins it.
 
 ---
 

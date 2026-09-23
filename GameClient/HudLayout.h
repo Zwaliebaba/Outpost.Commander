@@ -119,9 +119,8 @@ inline constexpr HudRect CREDITS_TICK_RIGHT{256, 86, 16, 2}; // geometry: credit
 inline constexpr HudRect CREDITS_LABEL{16, 14, 240, 20};     // geometry: credits.label
 inline constexpr HudRect CREDITS_VALUE{16, 40, 240, 32};     // geometry: credits.value
 
-/// **THE CHANGE FLASH, WHICH IS MOTION AND IS NOT DRAWN YET.** Cyan on a gain, amber on a spend, decaying
-/// exponentially (the handoff's motion table); motion is the last thing the handoff's build order puts
-/// in, after everything is correct static. The rect is here so the gate holds it to the design meanwhile.
+/// **THE CHANGE FLASH** (M2.7): cyan on a gain, amber on a spend, decaying exponentially (the handoff's
+/// motion table, `GameClient/CreditFlash.h`). It is the whole of how income is shown (`OpenQuestions.md` Q36).
 inline constexpr HudRect CREDITS_FLASH{16, 76, 120, 3}; // geometry: credits.flash
 
 // ===================================================================================================
@@ -227,6 +226,12 @@ inline constexpr HudRect GROUP_HULL_INNER{17, 53, 126, 8};   // geometry: sel.gr
 inline constexpr HudRect GROUP_HULL_TICK_0{32, 53, 1, 8};    // geometry: sel.group.hull.tick[0]
 inline constexpr HudRect GROUP_HULL_TICK_1{64, 53, 1, 8};    // geometry: sel.group.hull.tick[1]
 inline constexpr HudRect GROUP_HULL_TICK_2{95, 53, 1, 8};    // geometry: sel.group.hull.tick[2]
+
+/// **THE FOUR CARGO CHIPS** (M2.7): the first, and each after it `GROUP_CARGO_CHIP_STEP` further right. Drawn
+/// only for a design that carries ore -- a design that does not draws no row at all, and the hull row does not
+/// move (`design_handoff_hud` section 2). How many light is the record's flags (`OpenQuestions.md` Q53).
+inline constexpr HudRect GROUP_CARGO_CHIP{16, 72, 29, 10}; // geometry: sel.group.cargo.chip[i]
+inline constexpr std::int32_t GROUP_CARGO_CHIP_STEP = 33;
 
 /// The clear target's label, centered in the button as the handoff draws it.
 inline constexpr HudRect CLEAR_LABEL{0, 22, 96, 20};

@@ -22,9 +22,6 @@ struct OreDelivery
   std::uint32_t milliOre = 0;
 };
 
-/// Thousandths of ore to ore. `MineOrder::cargoMilliOre` says why the unit is thousandths.
-inline constexpr std::uint32_t MILLI_ORE_PER_ORE = 1000;
-
 /// Q51, answered by the owner on 2026-09-23 and provisional: **a miner unloads at 50 ore a second**, so a
 /// one-laser hold takes two seconds at the station -- a real dwell in the area point defense covers
 /// (`GameDesign.md` section 7), and small beside the round trip.

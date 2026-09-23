@@ -39,6 +39,7 @@ void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
   m_world = World{};
   m_intake = CommandIntake{};
   m_build.Begin(players);
+  m_economy.Begin();
   m_sessions.Begin(players, _matchSeed);
   m_accumulator.Begin();
 
@@ -228,9 +229,10 @@ void Host::RunOneTick()
   DrainAndApply();
   Tick(m_world);
 
-  // M2.6: MINING, AFTER MOVEMENT AND BEFORE BUILD QUEUES (`TechnicalDesign.md` section 2). Its deliveries are
-  // M2.7's to turn into credits.
+  // M2.6: MINING, AFTER MOVEMENT AND BEFORE BUILD QUEUES (`TechnicalDesign.md` section 2) -- and M2.7's
+  // credits from what it delivered, before the build queue spends them.
   m_mining.Advance(m_world);
+  m_economy.Credit(m_mining.Deliveries(), m_build);
 
   // AFTER THE MOVEMENT, so a ship that appears this tick does not also move on it -- which would
   // put it somewhere no update ever said it started from.

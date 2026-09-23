@@ -132,6 +132,7 @@ struct MatchResult
   Outpost::CommandIntake intake;
   Outpost::BuildSystem build;
   Outpost::MiningSystem mining;
+  Outpost::Economy economy;
   std::uint64_t deliveredMilliOre = 0;
 
   world.SetField(Outpost::GenerateField(MATCH_SEED, PLAYERS));
@@ -146,18 +147,6 @@ struct MatchResult
   std::uint16_t sequence = 0;
   for (std::uint32_t tick = 1; tick <= TICKS; ++tick)
   {
-    // **INCOME, AT THE DESIGN'S OWN RATE.** `GameDesign.md` section 4 puts a running economy at about
-    // fifteen credits a second, which is fifteen every twenty ticks. Mining is M2's and this is not it
-    // -- it is the only way to give this script a fleet worth assigning ring slots to, and it drives
-    // `BuildSystem::Grant`, which nothing else calls yet.
-    if ((tick % Outpost::TICKS_PER_SECOND) == 0)
-    {
-      for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
-      {
-        build.Grant(player, 15);
-      }
-    }
-
     for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
     {
       // A STATION THAT IS IDLE STARTS SOMETHING. Ordering unconditionally would replace the item every
@@ -211,6 +200,11 @@ struct MatchResult
     {
       deliveredMilliOre += delivery.milliOre;
     }
+
+    // **INCOME IS MINED SINCE M2.7.** Until then the script granted fifteen credits a second by hand, the
+    // design's running rate, because nothing delivered ore; now the miners' unloads are the only income
+    // there is, as in a match.
+    economy.Credit(mining.Deliveries(), build);
     build.Advance(world);
   }
 
@@ -238,14 +232,15 @@ public:
   /// **A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION.** If this literal starts
   /// disagreeing without anybody editing the script above it, the tick has stopped being deterministic.
   ///
-  /// **MOVED DELIBERATELY AT M2.6**, from `0x37f846ed90b74ca1` -- verified identical on Debug and Release, x64
-  /// and ARM64, on 2026-09-22 -- because the script now mines. The new value was computed off Windows, under
-  /// g++ and clang at two optimization levels, which agreed; **it is owed on the four MSVC pairs**, and until
-  /// that run it is a pin and not yet ADR-002's measurement. The old value still reproduces with the M2.6 code
-  /// in place and the old script, which says the loop moved nothing that does not mine.
+  /// **MOVED DELIBERATELY TWICE IN M2.** At M2.6, from `0x37f846ed90b74ca1` -- verified identical on Debug and
+  /// Release, x64 and ARM64, on 2026-09-22 -- to `0xc8f7f00e056d4d46`, because the script began to mine; CI's
+  /// `Debug|x64` confirmed that one. At M2.7, to this, because the script's income stopped being a hand-written
+  /// grant and became what the miners deliver. Computed off Windows, under g++ and clang at -O0 and -O2, which
+  /// agreed; **it is owed on the four MSVC pairs**, and until that run it is a pin and not yet ADR-002's
+  /// measurement.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xc8f7f00e056d4d46ull, RunScriptedMatch().hash);
+    Assert::AreEqual(0x18e094912655348full, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

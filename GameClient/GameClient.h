@@ -21,6 +21,7 @@
 #include "HitTest.h"
 #include "HudLayout.h"
 #include "PanelHitTest.h"
+#include "CreditFlash.h"
 #include "Panels.h"
 #include "Interpolation.h"
 #include "Selection.h"

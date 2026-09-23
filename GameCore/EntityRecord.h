@@ -34,7 +34,7 @@ inline constexpr WireIdentity NO_WIRE_IDENTITY = 0;
 /// | hull remaining  |     1 | percent
 /// | design identity |     1 | its own byte, because R24 has a design being an identity that
 /// |                 |       | research and a designer extend -- two bits was four designs forever
-/// | flags           |     1 | state 3, cargo 2, three spare
+/// | flags           |     1 | state 3, cargo 3, two spare -- cargo took a spare bit at M2.7 (Q53)
 ///
 /// R8: a wire record, so plain fields and brace initialization.
 struct EntityRecord
@@ -91,15 +91,54 @@ inline constexpr std::uint32_t WIRE_GENERATION_MASK = (std::uint32_t{1} << WIRE_
   return static_cast<std::uint16_t>((_identity >> WIRE_INDEX_BITS) & WIRE_GENERATION_MASK);
 }
 
-/// The flags byte's layout. THE SEMANTICS ARE NOT SETTLED HERE: there are no entity states and no
-/// cargo buckets yet, and inventing enumerators for them would be this file deciding things the game
-/// design owns. The bit positions are the format; what goes in them arrives with the systems that have
-/// something to say. **The team bits are gone** -- the owner has its own byte (ADR-024).
+/// The flags byte's layout. **The state's semantics are not settled here**: there are no entity states
+/// yet, and inventing enumerators for them would be this file deciding things the game design owns. The
+/// bit positions are the format. **The team bits are gone** -- the owner has its own byte (ADR-024).
+///
+/// **CARGO IS THREE BITS SINCE M2.7** (`OpenQuestions.md` Q53): the selection panel draws four chips, and
+/// empty through full is five states, which two bits could not say. It took one of three spare bits, so
+/// the byte -- and the record -- did not grow.
 inline constexpr std::uint8_t FLAGS_STATE_SHIFT = 0;
 inline constexpr std::uint8_t FLAGS_STATE_MASK = 0x07;
 inline constexpr std::uint8_t FLAGS_CARGO_SHIFT = 3;
-inline constexpr std::uint8_t FLAGS_CARGO_MASK = 0x03;
-inline constexpr std::uint8_t FLAGS_SPARE_SHIFT = 5;
+inline constexpr std::uint8_t FLAGS_CARGO_MASK = 0x07;
+inline constexpr std::uint8_t FLAGS_SPARE_SHIFT = 6;
+
+/// The most chips a hold lights: the selection panel's four (`design_handoff_hud`).
+inline constexpr std::uint8_t CARGO_CHIP_COUNT = 4;
+
+/// **HOW MANY OF THE FOUR CHIPS A HOLD LIGHTS** (Q53): none when empty, all four when full, and quarters
+/// **rounded up** between -- so any ore at all lights one chip, and "carrying something" never reads as
+/// empty. A capacity of zero is a design that carries no ore, and lights nothing.
+///
+/// Integer throughout: in thousandths of ore a hold is at most a few hundred thousand, and four times that
+/// is nowhere near 32 bits.
+[[nodiscard]] constexpr std::uint8_t CargoChips(std::uint32_t _cargoMilliOre, std::uint32_t _capacityMilliOre) noexcept
+{
+  if ((_capacityMilliOre == 0) || (_cargoMilliOre == 0))
+  {
+    return 0;
+  }
+  if (_cargoMilliOre >= _capacityMilliOre)
+  {
+    return CARGO_CHIP_COUNT;
+  }
+  return static_cast<std::uint8_t>(((CARGO_CHIP_COUNT * _cargoMilliOre) + _capacityMilliOre - 1) / _capacityMilliOre);
+}
+
+/// The chips a record's flags carry, 0 to 4.
+[[nodiscard]] constexpr std::uint8_t CargoChipsOf(std::uint8_t _flags) noexcept
+{
+  return static_cast<std::uint8_t>((_flags >> FLAGS_CARGO_SHIFT) & FLAGS_CARGO_MASK);
+}
+
+/// _flags with its cargo field replaced by _chips, clamped to four so a caller cannot write the three
+/// states the field has room for and nothing means.
+[[nodiscard]] constexpr std::uint8_t WithCargoChips(std::uint8_t _flags, std::uint8_t _chips) noexcept
+{
+  const std::uint8_t clamped = (_chips > CARGO_CHIP_COUNT) ? CARGO_CHIP_COUNT : _chips;
+  return static_cast<std::uint8_t>((_flags & ~(FLAGS_CARGO_MASK << FLAGS_CARGO_SHIFT)) | (clamped << FLAGS_CARGO_SHIFT));
+}
 
 /// ONE WIRE STEP IS A QUARTER OF A WORLD UNIT, and this is that quarter expressed in the
 /// simulation's own units: `Fixed` carries 256 steps to a world unit and the wire carries four, so

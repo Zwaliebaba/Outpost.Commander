@@ -30,6 +30,8 @@ constexpr Neuron::QuadColor RULE_LIT = Neuron::HexColor(0x5A6A72);
 constexpr Neuron::QuadColor TICK = Neuron::HexColor(0x8A9AA2);
 constexpr Neuron::QuadColor TICK_BAR = Neuron::HexColor(0x3A454B);
 constexpr Neuron::QuadColor TRACK = Neuron::HexColor(0x1A2024);
+constexpr Neuron::QuadColor ORE = Neuron::HexColor(0xD8A23C);
+constexpr Neuron::QuadColor SIG_ARMED = Neuron::HexColor(0xFFB020);
 
 constexpr Neuron::QuadColor TEXT = Neuron::HexColor(0xE8ECEC);
 constexpr Neuron::QuadColor TEXT_2 = Neuron::HexColor(0x93A0A5);
@@ -164,8 +166,12 @@ void EmitCredits(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   _emit.Text(CREDITS_LABEL, L"CREDITS", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_LABEL, TEXT_2);
   _emit.Text(CREDITS_VALUE, FormatCredits(_state.credits), Neuron::TextSize::Display, Neuron::TextAlign::Left, 0.0f, TEXT);
 
-  // **NO INCOME RATE.** Whether one ships at all is `OpenQuestions.md` Q36, and the handoff draws no
-  // room for it. The change flash under the balance is motion, which is the last thing built.
+  // **NO INCOME RATE, AND THE FLASH IS WHY NONE IS MISSED** (`OpenQuestions.md` Q36, ruled 2026-09-23). Cyan
+  // on a gain and amber on a spend, as `CreditFlash` fades it.
+  if ((_state.creditFlash != CreditChange::None) && (_state.creditFlashAlpha > 0.0f))
+  {
+    _emit.Solid(CREDITS_FLASH, WithAlpha((_state.creditFlash == CreditChange::Gain) ? TEAM_OWN : SIG_ARMED, _state.creditFlashAlpha));
+  }
 
   _hits.AddBlocker(CREDITS_PANEL);
 }
@@ -290,8 +296,29 @@ void EmitSelection(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     _emit.Solid(GROUP_HULL_TICK_1.Within(cell), TICK_BAR);
     _emit.Solid(GROUP_HULL_TICK_2.Within(cell), TICK_BAR);
 
-    // **NO CARGO ROW AT M1.** The wire's cargo bucket arrives with mining at M2.7, and until then no
-    // design carries ore -- which is exactly the case the handoff says draws no row at all.
+    // **THE CARGO ROW, ONLY FOR A DESIGN THAT CARRIES ORE** (M2.7). Four discrete chips and no trough behind
+    // them: filled is `ORE`, empty is `TRACK` under a one-pixel keyline -- continuity, keyline, hue and a
+    // fixed row are what keep it apart from the hull bar above.
+    if (group.carriesOre)
+    {
+      for (std::int32_t chip = 0; chip < static_cast<std::int32_t>(CARGO_CHIP_COUNT); ++chip)
+      {
+        const HudRect rect = HudRect{.x = GROUP_CARGO_CHIP.x + (chip * GROUP_CARGO_CHIP_STEP),
+                                     .y = GROUP_CARGO_CHIP.y,
+                                     .w = GROUP_CARGO_CHIP.w,
+                                     .h = GROUP_CARGO_CHIP.h}
+                               .Within(cell);
+        if (chip < static_cast<std::int32_t>(group.cargoChips))
+        {
+          _emit.Solid(rect, ORE);
+        }
+        else
+        {
+          _emit.Solid(rect, TRACK);
+          _emit.Outline(rect, 1, RULE);
+        }
+      }
+    }
 
     _hits.AddTarget({.hit = cell,
                      .tier = TouchTier::Combat,
@@ -511,6 +538,7 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
   {
     std::uint32_t count = 0;
     std::uint32_t hullSum = 0;
+    std::uint32_t chipSum = 0;
   };
   std::array<Tally, 256> tallies{};
 
@@ -523,6 +551,7 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
         Tally& tally = tallies[record.designIdentity];
         ++tally.count;
         tally.hullSum += record.hullPercentRemaining;
+        tally.chipSum += CargoChipsOf(record.flags);
         break;
       }
     }
@@ -536,9 +565,14 @@ std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdenti
     {
       continue;
     }
+    // A design the table does not have carries nothing; one it has carries ore when its derived capacity
+    // says so -- the catalog read the build panel already makes, and no rule the host evaluates.
+    const bool known = design < Designs().size();
     groups.push_back(SelectionGroupSummary{.design = static_cast<DesignId>(design),
                                            .count = tally.count,
-                                           .hullPercent = static_cast<std::uint8_t>((tally.hullSum + (tally.count / 2)) / tally.count)});
+                                           .hullPercent = static_cast<std::uint8_t>((tally.hullSum + (tally.count / 2)) / tally.count),
+                                           .carriesOre = known && (Derive(static_cast<DesignId>(design)).oreCapacity > 0),
+                                           .cargoChips = static_cast<std::uint8_t>((tally.chipSum + (tally.count / 2)) / tally.count)});
   }
   return groups;
 }

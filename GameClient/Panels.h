@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CreditFlash.h"
 #include "HudLayout.h"
 #include "JoinState.h"
 #include "PanelHitTest.h"
@@ -27,6 +28,14 @@ struct SelectionGroupSummary
   /// entity, which is a percentage already (ADR-003).
   std::uint8_t hullPercent = 100;
 
+  /// **WHETHER THE DESIGN CARRIES ORE AT ALL**, from its derived capacity -- a design that does not draws no
+  /// cargo row, rather than an empty one (`design_handoff_hud` section 2).
+  bool carriesOre = false;
+
+  /// **HOW MANY OF THE FOUR CHIPS LIGHT: THE GROUP'S MEAN, ROUNDED TO NEAREST** (M2.7, `OpenQuestions.md` Q53),
+  /// over what each record's flags carry.
+  std::uint8_t cargoChips = 0;
+
   [[nodiscard]] friend constexpr bool operator==(const SelectionGroupSummary&, const SelectionGroupSummary&) noexcept = default;
 };
 
@@ -41,6 +50,11 @@ struct HudState
   PlayerId player = NO_PLAYER;
 
   std::uint32_t credits = 0;
+
+  /// **THE CHANGE FLASH UNDER THE BALANCE** (M2.7, Q36): which way it moved, and how far the flash has faded.
+  /// `CreditFlash` computes both; `None` draws nothing.
+  CreditChange creditFlash = CreditChange::None;
+  float creditFlashAlpha = 0.0f;
 
   /// At most four, in `DesignId` order. Empty means nothing is selected and the panel is not drawn.
   std::vector<SelectionGroupSummary> groups;

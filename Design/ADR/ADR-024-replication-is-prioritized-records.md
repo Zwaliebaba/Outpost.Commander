@@ -40,7 +40,7 @@ this record keeps the record and drops the snapshot around it.
 
 **The record is twelve bytes:** identity 3 (a 16-bit index and an 8-bit generation), owner 1, position 4
 as two `std::int16_t` over the play area, heading 1, hull 1, design identity 1, flags 1 (state 3, cargo 2,
-three spare). The identity grew because a match can hold thousands of entities and the generation has to
+three spare; cargo became three bits at M2.7, `OpenQuestions.md` Q53). The identity grew because a match can hold thousands of entities and the generation has to
 survive index reuse under loss; the owner is a byte because a record must say whose it is without the
 datagram being grouped or complete. Everything else is ADR-003's, including the hull's one-percent floor.
 

@@ -97,8 +97,9 @@ a path that works only where IPv4 over Ethernet runs end to end — no VPN, no P
 a LAN; a decision rather than a default, and at that size it wants an ADR.
 
 **4. Audit the field widths.** `--audit-fields` prints what each field spends against what the client
-draws. Today: heading 8 → 7, hull 8 → 4, owner 8 → 7, and three spare flag bits: **9 recoverable bits per
-record**, a 12-byte record to 87 bits, **109 records per datagram against 99**. *Costs:* the record stops
+draws. Today: heading 8 → 7, hull 8 → 4, owner 8 → 7, and two spare flag bits: **8 recoverable bits per
+record**, a 12-byte record to 88 bits, **108 records per datagram against 99**. Cargo took the third spare bit
+at M2.7 (Q53). *Costs:* the record stops
 being byte-aligned — a bit writer on both sides and a record no debugger or capture shows — and every
 subsequent wire change is harder to reason about. Take it when a measured refresh is too slow and the cap
 is too expensive, not before. **Read the reserved column before claiming slack**: design identity is a
