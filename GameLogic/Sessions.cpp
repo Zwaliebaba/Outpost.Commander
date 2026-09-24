@@ -12,6 +12,11 @@ void Sessions::Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcep
   m_matchSeed = _matchSeed;
 }
 
+void Sessions::Reseed(std::uint64_t _matchSeed) noexcept
+{
+  m_matchSeed = _matchSeed;
+}
+
 void Sessions::SaltTokens(std::uint64_t _salt) noexcept
 {
   m_tokens = Neuron::Pcg32{_salt, TOKEN_STREAM};

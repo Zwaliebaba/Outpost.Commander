@@ -75,6 +75,10 @@ public:
 
     /// This drain landed the first update after a rejoin, which is what takes the overlay down.
     bool linkRestored = false;
+
+    /// **THIS DRAIN HEARD A MATCH END** (M3.8, Q70), the first of its repeats: the frame has already cleared what it
+    /// derived from the old match and asked to join the next, and the caller clears what it holds itself.
+    bool matchEnded = false;
   };
 
   /// **HOW LONG A SEATED CLIENT HEARS NOTHING BEFORE IT CALLS THE LINK LOST: ONE SECOND.**
@@ -195,6 +199,16 @@ public:
     return m_tracers;
   }
 
+  /// **HOW LONG THE RESULT STAYS UP: FIVE SECONDS** (`Interface.md` section 7). The next match is already running
+  /// behind it, so it is a result to read and not a pause. Not tuned.
+  static constexpr std::uint64_t RESULT_SHOWN_MILLISECONDS = 5000;
+
+  /// The match that last ended, while its result is still shown at _nowMilliseconds, or nullptr.
+  [[nodiscard]] const MatchEnded* ShownResult(std::uint64_t _nowMilliseconds) const noexcept
+  {
+    return (m_hasResult && ((_nowMilliseconds - m_resultHeardMilliseconds) < RESULT_SHOWN_MILLISECONDS)) ? &m_lastResult : nullptr;
+  }
+
   /// The wrecks (M3.4), spawned by every removal the drain applies -- and never by the store forgetting.
   [[nodiscard]] WreckSet& Wrecks() noexcept
   {
@@ -307,6 +321,15 @@ private:
   /// Set when a silence starts a rejoin, cleared by the first update after the host seats this client
   /// again.
   bool m_reconnecting = false;
+
+  /// **THE NEXT MATCH, FROM THIS SIDE** (M3.8, Q70): the result kept for the overlay, everything derived from the old
+  /// match cleared, and a join with the token this client holds -- whose reply brings the new seed.
+  void BeginNextMatch(const MatchEnded& _ended, std::uint64_t _nowMilliseconds);
+
+  /// The match that last ended and when this client heard, for the result overlay and to take each end once.
+  MatchEnded m_lastResult{};
+  std::uint64_t m_resultHeardMilliseconds = 0;
+  bool m_hasResult = false;
 
   /// Commands the host has not yet acknowledged, oldest first, and when each was issued (`IssueCommand`).
   std::vector<Command> m_outstanding;

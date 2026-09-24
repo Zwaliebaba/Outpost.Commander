@@ -84,9 +84,13 @@ struct HudState
   LinkState link = LinkState::Joining;
   bool quitArmed = false;
 
-  /// Set when the match ends, to the winner. **Nothing sets it before M3**, which is where a match first
-  /// can end; the result overlay is drawn from it rather than written then.
+  /// **THE RESULT OVERLAY IS UP** (M3.8): a match ended moments ago. The winner is `NO_PLAYER` for a draw, which is
+  /// why the overlay has a flag of its own rather than reading "a winner is set".
+  bool matchEnded = false;
   PlayerId winner = NO_PLAYER;
+
+  /// It ended on the six-minute clock rather than on the last station standing (Q65).
+  bool endedOnClock = false;
 };
 
 /// The wire's building byte, decoded. False when nothing is building.

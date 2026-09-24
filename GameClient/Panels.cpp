@@ -595,14 +595,22 @@ void EmitResultOverlay(const HudState& _state, Emitter& _emit)
   _emit.Solid({block.x, block.y + block.h - 2, 16, 2}, TICK);
   _emit.Solid({block.x + block.w - 16, block.y + block.h - 2, 16, 2}, TICK);
 
-  _emit.Text({block.x + 32, block.y + 40, 496, 20}, L"ENGAGEMENT ENDED", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_RESULT,
-             TEXT_2);
+  _emit.Text({block.x + 32, block.y + 40, 496, 20}, _state.endedOnClock ? L"ENGAGEMENT ENDED ON THE CLOCK" : L"ENGAGEMENT ENDED",
+             Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_RESULT, TEXT_2);
 
   // **IT NAMES THE WINNER** (`Interface.md` §6): from M4 there are three and four players, and "you lost"
-  // does not say to whom.
-  _emit.Solid({block.x + 32, block.y + 88, 32, 32}, TeamColor(_state.winner, _state.player));
-  _emit.Text({block.x + 80, block.y + 88, 448, 32}, L"TEAM " + std::to_wstring(_state.winner) + L" HOLDS THE FIELD",
-             Neuron::TextSize::Display, Neuron::TextAlign::Left, 0.0f, TEXT);
+  // does not say to whom. A draw names nobody (Q65).
+  if (_state.winner == NO_PLAYER)
+  {
+    _emit.Text({block.x + 32, block.y + 88, 496, 32}, L"NO ONE HOLDS THE FIELD", Neuron::TextSize::Display, Neuron::TextAlign::Left, 0.0f,
+               TEXT);
+  }
+  else
+  {
+    _emit.Solid({block.x + 32, block.y + 88, 32, 32}, TeamColor(_state.winner, _state.player));
+    _emit.Text({block.x + 80, block.y + 88, 448, 32}, L"TEAM " + std::to_wstring(_state.winner) + L" HOLDS THE FIELD",
+               Neuron::TextSize::Display, Neuron::TextAlign::Left, 0.0f, TEXT);
+  }
 
   // **TWO LINES, BECAUSE THE RENDERER CANNOT WRAP** -- never one long string.
   _emit.Text({block.x + 32, block.y + 152, 496, 20}, L"NEXT MATCH IS SEEDING", Neuron::TextSize::Body, Neuron::TextAlign::Left,
@@ -698,7 +706,7 @@ HudFrame BuildHud(const HudState& _state)
     EmitNoticeOverlay(emit, L"MATCH FULL", L"NO SLOT IS FREE");
   }
 
-  if (_state.winner != NO_PLAYER)
+  if (_state.matchEnded)
   {
     EmitResultOverlay(_state, emit);
   }

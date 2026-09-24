@@ -171,4 +171,57 @@ public:
   }
 };
 
+/// M3.8. **The match restarts on the tick it ends**, without the host being restarted.
+TEST_CLASS(TheRestart)
+{
+public:
+  /// A station lost ends the match, and the same tick begins the next on the next seed, with fresh stations.
+  TEST_METHOD(AMatchThatEndsIsReplacedOnTheSameTick)
+  {
+    Outpost::Host host;
+    host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, 2);
+    host.RunOneTick();
+    Assert::AreEqual(std::uint16_t{0}, host.LastEnded().matchNumber);
+
+    Outpost::World& world = host.MutableWorld();
+    for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+    {
+      if (world.IsSlotAlive(slot) && (world.EntityInSlot(slot).owner == 2) &&
+          (world.EntityInSlot(slot).design == Outpost::DesignId::Station))
+      {
+        world.EntityInSlot(slot).hullRemaining = 0;
+      }
+    }
+    host.RunOneTick();
+
+    Assert::AreEqual(std::uint16_t{1}, host.LastEnded().matchNumber);
+    Assert::AreEqual(Outpost::PlayerId{1}, host.LastEnded().winner);
+    Assert::IsFalse(host.LastEnded().onClock);
+    Assert::AreEqual(Outpost::Host::NextMatchSeed(Outpost::DEFAULT_MATCH_SEED), host.MatchSeed(),
+                     L"the next match is not on the next seed");
+    Assert::IsFalse(host.CurrentVictory().Outcome().over, L"the next match began already over");
+
+    std::size_t stations = 0;
+    for (std::size_t slot = 0; slot < host.CurrentWorld().SlotCount(); ++slot)
+    {
+      if (host.CurrentWorld().IsSlotAlive(slot) && (host.CurrentWorld().EntityInSlot(slot).design == Outpost::DesignId::Station))
+      {
+        ++stations;
+        Assert::AreEqual(static_cast<std::uint16_t>(Outpost::Derive(Outpost::DesignId::Station).hullPoints),
+                         host.CurrentWorld().EntityInSlot(slot).hullRemaining);
+      }
+    }
+    Assert::AreEqual(std::size_t{2}, stations, L"the next match does not have both stations");
+  }
+
+  /// The run of seeds is the same on every host, and never the same map twice in a row.
+  TEST_METHOD(TheNextSeedIsAFunctionOfThisOne)
+  {
+    const std::uint64_t next = Outpost::Host::NextMatchSeed(Outpost::DEFAULT_MATCH_SEED);
+    Assert::AreEqual(next, Outpost::Host::NextMatchSeed(Outpost::DEFAULT_MATCH_SEED));
+    Assert::AreNotEqual(Outpost::DEFAULT_MATCH_SEED, next);
+    Assert::AreNotEqual(next, Outpost::Host::NextMatchSeed(next));
+  }
+};
+
 } // namespace GameLogicTests

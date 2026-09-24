@@ -116,15 +116,16 @@ public:
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Heartbeat));
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::Join));
     Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::JoinReply));
+    Assert::IsTrue(Neuron::IsKnown(Neuron::PacketType::MatchEnded));
   }
 
-  /// **ZERO IS NOT A TYPE**, and the five that are occupy exactly one to five -- so everything else
+  /// **ZERO IS NOT A TYPE**, and the six that are occupy exactly one to six -- so everything else
   /// a zero-filled or corrupt datagram can decode to is refused.
   TEST_METHOD(NothingElseIsKnown)
   {
     for (unsigned value = 0; value <= 255; ++value)
     {
-      const bool expected = (value >= 1) && (value <= 5);
+      const bool expected = (value >= 1) && (value <= 6);
       Assert::AreEqual(expected, Neuron::IsKnown(static_cast<Neuron::PacketType>(value)));
     }
   }
@@ -140,10 +141,11 @@ public:
   /// **THE VERSION MOVES WITH EVERY CHANGE TO ANY RECORD.** It is asserted because the version going
   /// up is the whole of what stops an older client hanging against a newer host -- 1 before the join,
   /// 2 with it, 3 since M1.6's build orders, 4 since ADR-024 changed every record at once, 5 since M2.3's
-  /// join reply carried the player count, 6 since Q80 put the build queue's length in the building byte.
-  TEST_METHOD(TheProtocolVersionIsSixSinceTheBuildQueue)
+  /// join reply carried the player count, 6 since Q80 put the build queue's length in the building byte, 7 since
+  /// M3.8's `MatchEnded`.
+  TEST_METHOD(TheProtocolVersionIsSevenSinceTheMatchEnds)
   {
-    Assert::AreEqual(std::uint8_t{6}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{7}, Neuron::PROTOCOL_VERSION);
   }
 
   /// `Update` took `Snapshot`'s value rather than a new one: the unit changed, the number did not need to.

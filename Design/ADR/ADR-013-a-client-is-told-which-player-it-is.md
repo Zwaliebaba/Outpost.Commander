@@ -165,6 +165,9 @@ snapshot's own tick going backwards, which is already on the wire and costs noth
 rather than solved here** because there is no way to reach it before M3. **That detector cannot fire as
 built** (the mid-implementation review, M8 and m15): `BeginMatch` never resets the host's tick, and the
 replica store refuses anything not newer. The restart's wire is the review's D8 (`OpenQuestions.md` Q70).
+**Answered at M3.8 (2026-09-24)**: the host sends a `MatchEnded` record, protocol 7, for ten ticks and keeps every
+seat, and a client that hears it joins again with its token. That join's reply is what carries the new seed, so
+this ADR's rule that the seed arrives on the join reply holds across a restart.
 
 **A lost `JoinReply` after the host has issued a token is the one hazard the token model carries.** The
 retry closes it while the client's socket is alive, because a repeated `Join` from the same endpoint is

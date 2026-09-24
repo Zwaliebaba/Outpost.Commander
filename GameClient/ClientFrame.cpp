@@ -79,6 +79,26 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
       continue;
     }
 
+    if (header.type == Neuron::PacketType::MatchEnded)
+    {
+      Neuron::ByteReader endedReader{datagram};
+      MatchEnded ended{};
+      if (Decode(endedReader, ended) != JoinFault::None)
+      {
+        ++result.faulted;
+        continue;
+      }
+
+      // **EACH END ONCE**: the host repeats it for ten ticks, and only the first of a match number starts the next.
+      // A client that is not seated has no match to leave.
+      if (m_join.IsJoined() && (!m_hasResult || (ended.matchNumber != m_lastResult.matchNumber)))
+      {
+        BeginNextMatch(ended, _nowMilliseconds);
+        result.matchEnded = true;
+      }
+      continue;
+    }
+
     Neuron::ByteReader reader{datagram};
     Update update;
     if (Decode(reader, update) != UpdateFault::None)
@@ -242,6 +262,26 @@ void ClientFrame::StampView(CommandPacket& _packet) const noexcept
   // and anything past 65,535 means "all of it" either way.
   const float radius = (m_camera.distance < 0.0f) ? 0.0f : m_camera.distance;
   _packet.viewRadiusUnits = (radius >= 65535.0f) ? std::uint16_t{65535} : static_cast<std::uint16_t>(radius);
+}
+
+void ClientFrame::BeginNextMatch(const MatchEnded& _ended, std::uint64_t _nowMilliseconds)
+{
+  m_lastResult = _ended;
+  m_hasResult = true;
+  m_resultHeardMilliseconds = _nowMilliseconds;
+
+  // **EVERYTHING DERIVED FROM THE OLD MATCH GOES** (M3.8's done-when), and only that. The host has reset this seat's
+  // accumulator, so the new match arrives whole within one sweep; the old one's identities are reused by the new
+  // world and must not be interpolated into it.
+  m_replicas.Clear();
+  m_tracers.Clear();
+  m_wrecks.Clear();
+  m_markers.Clear();
+  m_outstanding.clear();
+  m_issuedMilliseconds.clear();
+
+  // THE SEED IS THE JOIN REPLY'S AND NOTHING ELSE'S (R23): join again with the token, into the same seat.
+  m_join.Rejoin();
 }
 
 } // namespace Outpost

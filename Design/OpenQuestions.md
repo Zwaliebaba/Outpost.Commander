@@ -8,19 +8,19 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Seventy-one answered, ten open** — Q34, Q48 and Q49, and seven of Q62 to Q77 from the mid-implementation review (Q62 to Q68, Q70 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Seventy-four answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults, in their own section below the answered ones. **Q62 to Q68, Q70 and Q72 are ruled; the other seven are open.**
+recommended defaults, in their own section below the answered ones. **Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item; Q71, Q73, Q74, Q75 and the rest of Q77 are open.**
 
-**THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
-Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
-was weighing is worth more than the row would be. Their headings say so. **The three that are genuinely
-open are Q34, Q48 and Q49**, each with the milestone that settles it, and **every one carries a
+**THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND TWENTY OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
+Q46, Q47, Q48 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
+was weighing is worth more than the row would be. Their headings say so. **The two that are genuinely
+open are Q34 and Q49**, each with the milestone that settles it, and **every one carries a
 recommendation**, which none of Q26, Q33 and Q34 did before.
 
 **Q46 was asked and answered in one motion, on the owner's instruction**, which is worth marking
@@ -564,7 +564,7 @@ there is no stated base build rate for the shipyard's ×1.5 to multiply. Inventi
 choosing a balance number nobody can check yet. **M1.6 is the step that first observes it** and is where
 it should be asked; M1.2's own exit criteria name cost and speed and not build time.
 
-### Q48 — Is the AI of §8 written so that a bot client can run it too? — **needed by M3.10, and decided before it is written**
+### Q48 — Is the AI of §8 written so that a bot client can run it too? — **ANSWERED**
 
 **The question.** `GameDesign.md` §8 puts the AI on the host, inside `GameLogic`, on the tick. Written the
 obvious way, it reads the host's `World`: exact positions, every entity's full state, everything the host
@@ -605,6 +605,10 @@ after the stub is written, the recommendation above is a rewrite of the stub's i
 is this recommendation, taken at M3.10: the stub decides over `RecordOf`'s records for its player plus its
 block, once per twenty ticks, through `CommandIntake::Apply`, in the file M4.5 extends, with one defend
 reflex and AI seats reserved (Q70).
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** The AI sees what a player is sent and nothing else: the
+wire records of every live entity and its own player block, at wire precision. It decides once a second and orders
+through the same command path a client uses. M3.10's stub is written that way, and M4.5 extends it.
 
 ### Q49 — What are the accumulator's weights, and is a cap of two updates a tick enough? — **needed by M4.8, built to the recommendation at M1.14c**
 
@@ -1114,7 +1118,7 @@ approach geometry that no order controls.
 
 **Recommendation: 360° for the MVP**, and strike "arc" from M3.2's done-when and from ADR-004 until M4.4.
 
-### Q69 — Finite ore: which specification, what numbers, and is there a forward unload point? — **needed by M3.9**
+### Q69 — Finite ore: which specification, what numbers, and is there a forward unload point? — **ANSWERED**
 
 **The finding (M10).** M3.9 is specified two incompatible ways: TechnicalDesign §4 has an ordinary record
 owned by nobody, and the plan has a sparse list in a `Snapshot.cpp` that no longer exists. Neither states
@@ -1135,6 +1139,11 @@ unloading at home earns 0.67 to 1.33 a second from one, because the flight binds
 **Recommendation: host-side finite ore and the depot.** The depot is the one addition the review makes
 against the scope cut list, which is why it is the owner's decision and not an agent's.
 
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** Finite ore is host-side, with 200 a home rock and 600 a
+contested one. An empty rock stays a husk, and a miner retargets the nearest rock with ore left. There is a fifth
+placed design, the depot: a forward unload point with 1,500 hull and a 300-credit cost, at least 2,000 from every
+station, within 800 of a rock, and at most two a player. M3.9 builds it.
+
 ### Q70 — What does a restart keep, and how does a client learn one happened? — **ANSWERED**
 
 **The finding (M8).** `BeginMatch` drops every seat, so a match ends in a one-second blackout, and clients
@@ -1150,12 +1159,15 @@ proposed detector, the tick going backwards, cannot fire, because `BeginMatch` n
 **Recommendation: the header bytes, with seats kept.** B4's salt (ADR-013 as amended) already keeps "same
 token, same side" within a host run. `Scripts/DatagramBudget.py` is run before either lands.
 
-**RULED 2026-09-24 BY THE OWNER: THE `MatchEnded` PACKET, AGAINST THE RECOMMENDATION, WITH SEATS KEPT.** The
+**RULED 2026-09-24 BY THE OWNER: THE `MatchEnded` PACKET, AGAINST THE RECOMMENDATION, WITH SEATS KEPT. BUILT (M3.8).** The
 update header stays at 21 bytes. When a match ends, the host sends each seated client a `MatchEnded` record
 carrying the winner (or a draw) for ten consecutive ticks, keeps every seat, and begins the next match on a new
 seed. A client that hears it shows the result, clears its derived state, and joins again with its token. That
 join's reply carries the new seed, so R23's "the seed arrives on the join reply and nowhere else" still holds.
-M3.8 builds it.
+**Two details were decided in building.** The protocol went to 7, since a version-6 client would count the new
+record as a fault and never rejoin. And the command intake is kept across a restart, like the seats, because its
+sequences belong to the seat. The next seed is SplitMix64's finalizer over the last, so a run of restarts is the
+same run of maps on every host.
 
 ### Q71 — What answers M3.11's balance questions: twenty matches against a stub, or the harness? — **needed by M3.11**
 
@@ -1251,7 +1263,7 @@ the damage table.
 
 **Recommendation: the HeavyDriver row**, with the cost kept at 2,400 for the four-player format.
 
-### Q76 — Does the join check that both sides derived the same field, and does CI compile ARM64? — **needed before M3.9**
+### Q76 — Does the join check that both sides derived the same field, and does CI compile ARM64? — **ANSWERED**
 
 **The finding (M12).** Nothing automated checks the one property that fails silently: the host and an
 ARM64 client deriving the same field. A defect there presents as a miner mining a rock the player cannot
@@ -1266,6 +1278,10 @@ see. CI builds `Debug|x64` only.
 
 **Recommendation: both halves of the first.** The CI half is a change to what `AGENTS.md` §6 says CI gates,
 which is the owner's.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION: BOTH.** The join reply carries a 64-bit hash of the field
+and the layout, and a client whose own derivation hashes differently refuses the seat. CI also compiles
+`GameCoreTests` and `GameLogicTests` for `Debug|ARM64`, compile only. Built before M3.9.
 
 ### Q79 — Does any gate need more than one person? — **ANSWERED**
 
@@ -1348,7 +1364,9 @@ The review's minors that are decisions rather than defects. Each has the review'
 
 1. **Does a shipyard lost mid-build slow the item already building?** (m6, M3.8b.) The build system fixes
    the rate at the start, so M3.8b's exit criterion cannot be met. *Default: make progress rate-based, in
-   hundredths a tick. The alternative is rewriting M3.8b and §5 to "fixed at the start".*
+   hundredths a tick. The alternative is rewriting M3.8b and §5 to "fixed at the start".* **RULED 2026-09-24 BY THE OWNER,
+   TO THE DEFAULT**: progress is rate-based, so a shipyard lost mid-build slows the item on the tick it dies. M3.8b
+   builds it.
 2. **Two module kinds, four slots, best-of-kind** (m10, §5). Two of the four slots can never do anything.
    *Default: say so in §5 ("a second module of a kind adds hull and nothing else") and keep the cap.*
 3. **Is 50 ships a player a rule?** (m12, M3.9.) Nothing refuses a 51st. *Default: `BuildSystem::Start`

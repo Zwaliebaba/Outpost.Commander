@@ -586,6 +586,13 @@ solo-against-AI testing loop **restart is the single most-used operation in the 
 §10 makes twenty matches in an evening the point of the reduced MVP; that is not possible if playing again
 means relaunching a packaged application.
 
+**As built at M3.8** (`OpenQuestions.md` Q65, Q70): the match ends on the tick the last station stands, on a draw,
+or on the six-minute clock, and the host begins the next on the next seed that same tick, keeping every seat. It
+tells each client with `MatchEnded`, repeated for ten ticks. The client shows the result for five seconds, naming
+the winner or "no one" for a draw and saying when it was the clock. It clears its selection, markers, wrecks and
+store, joins again with its token into the same seat, and opens its camera on its new station. The next match is
+already running under the overlay.
+
 ### What is left to a hand and a screen
 
 None of these is a question. All are **confirmations owed at M1**, and all are settled by using the thing

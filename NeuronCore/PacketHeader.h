@@ -35,7 +35,10 @@ namespace Neuron
 /// **6 SINCE Q80** (2026-09-24), when the per-player block's building-design byte gained the build queue's
 /// length in its high four bits. No size moved; a version-5 client would read a queued Miner as an unknown
 /// design, which is why a change in meaning is a version like a change in size.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 6;
+///
+/// **7 SINCE M3.8** (2026-09-24, Q70), when the host began ending matches: a third record type on the client's
+/// socket, `MatchEnded`, which a version-6 client would count as a fault and never rejoin from.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 7;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///
@@ -55,7 +58,11 @@ enum class PacketType : std::uint8_t
   /// and the host answers every one of them -- including a repeat from a client that has already
   /// joined, which is what makes a lost reply cost a retry rather than a slot.
   Join = 4,
-  JoinReply = 5
+  JoinReply = 5,
+
+  /// The host telling a seated client that the match is over and another has begun (`OpenQuestions.md` Q70).
+  /// Repeated for ten ticks, because nothing acknowledges it.
+  MatchEnded = 6
 };
 
 /// True for a type this build knows. A further type means a line here; there is no switch to
@@ -63,7 +70,7 @@ enum class PacketType : std::uint8_t
 [[nodiscard]] constexpr bool IsKnown(PacketType _type) noexcept
 {
   return (_type == PacketType::Update) || (_type == PacketType::Command) || (_type == PacketType::Heartbeat) ||
-         (_type == PacketType::Join) || (_type == PacketType::JoinReply);
+         (_type == PacketType::Join) || (_type == PacketType::JoinReply) || (_type == PacketType::MatchEnded);
 }
 
 /// Why a header would not decode. Distinct values because the caller's response differs: a

@@ -636,6 +636,23 @@ void RunProbe(const CoreWindow& _window)
     static_cast<void>(selection.RetainLiving(clientFrame.Replicas().Entities()));
     clientFrame.Wrecks().Expire(nowMs);
 
+    // M3.8: A MATCH ENDED. The frame has cleared what it derived and is joining the next; what the app holds goes
+    // too, and the seat is reported again so the camera opens on the new station and the sky is the new seed's.
+    if (drained.matchEnded)
+    {
+      selection.Clear();
+      moduleArming.Disarm();
+      buildPanelOpen = false;
+      reportedSeat = false;
+      if (const Outpost::MatchEnded* ended = clientFrame.ShownResult(nowMs); ended != nullptr)
+      {
+        Report(log, "MATCH " + std::to_string(ended->matchNumber) + " ended, " +
+                      ((ended->winner == Outpost::NO_PLAYER) ? std::string{"a draw"}
+                                                             : "won by player " + std::to_string(static_cast<unsigned>(ended->winner))) +
+                      (ended->onClock ? " on the clock" : "") + "; joining the next");
+      }
+    }
+
     // `Interface.md` section 7's reconnect, decided in `ClientFrame` and only reported here. The rejoin it
     // started goes out through the same `ShouldSend` above on the next frame.
     if (drained.linkLost)
@@ -1565,6 +1582,12 @@ void RunProbe(const CoreWindow& _window)
         hudState.quitArmed = quitConfirm.IsArmed(nowMs);
 
         hudState.link = clientFrame.Link();
+
+        // M3.8: THE RESULT, for as long as the frame says it is shown. The next match is already running under it.
+        const Outpost::MatchEnded* result = clientFrame.ShownResult(nowMs);
+        hudState.matchEnded = (result != nullptr);
+        hudState.winner = (result != nullptr) ? result->winner : Outpost::NO_PLAYER;
+        hudState.endedOnClock = (result != nullptr) && result->onClock;
 
         // **THIS CLIENT'S OWN BLOCK**, which is the only one an update carries (ADR-024).
         if (const Outpost::PlayerBlock* own = clientFrame.Replicas().Own(); own != nullptr)

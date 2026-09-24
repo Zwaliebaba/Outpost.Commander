@@ -117,4 +117,42 @@ JoinFault Decode(Neuron::ByteReader& _reader, JoinReply& _outReply) noexcept
   return JoinFault::None;
 }
 
+bool Encode(const MatchEnded& _ended, Neuron::ByteWriter& _writer) noexcept
+{
+  const Neuron::PacketHeader header{.type = Neuron::PacketType::MatchEnded, .sequence = NO_SEQUENCE};
+  if (!header.Write(_writer))
+  {
+    return false;
+  }
+
+  static_cast<void>(_writer.WriteUInt16(_ended.matchNumber));
+  static_cast<void>(_writer.WriteUInt8(_ended.winner));
+  static_cast<void>(_writer.WriteUInt8(_ended.onClock ? 1 : 0));
+  return !_writer.Faulted();
+}
+
+JoinFault Decode(Neuron::ByteReader& _reader, MatchEnded& _outEnded) noexcept
+{
+  const JoinFault fault = ReadHeader(_reader, Neuron::PacketType::MatchEnded);
+  if (fault != JoinFault::None)
+  {
+    return fault;
+  }
+
+  const std::uint16_t matchNumber = _reader.ReadUInt16();
+  const PlayerId winner = _reader.ReadUInt8();
+  const std::uint8_t onClock = _reader.ReadUInt8();
+  if (_reader.Faulted())
+  {
+    return JoinFault::Truncated;
+  }
+  if (onClock > 1)
+  {
+    return JoinFault::Malformed;
+  }
+
+  _outEnded = MatchEnded{.matchNumber = matchNumber, .winner = winner, .onClock = onClock != 0};
+  return JoinFault::None;
+}
+
 } // namespace Outpost

@@ -73,6 +73,11 @@ public:
   /// before any caller gets here, and there is no useful thing to return.
   void Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcept;
 
+  /// **THE NEXT MATCH, WITH EVERY SEAT KEPT** (M3.8, `OpenQuestions.md` Q70): the seed every join is told changes and
+  /// nothing else does, so a client that joins again with its token takes the seat it had -- sides never swap
+  /// across a restart, and a human never takes an AI's base.
+  void Reseed(std::uint64_t _matchSeed) noexcept;
+
   /// ADR-013's handshake, and the only thing that hands out a slot.
   ///
   /// **MATCHED BY TOKEN, THEN BY ENDPOINT, THEN GIVEN A FREE SLOT.** The endpoint step is not

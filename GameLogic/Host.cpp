@@ -35,13 +35,45 @@ void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
   // nothing on the wire is sized by it (ADR-024), and every table is sized to the capacity. Raising it is
   // configuration and not a format change.
   const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
-
-  m_world = World{};
+  m_sessions.Begin(players, _matchSeed);
   m_intake = CommandIntake{};
+  m_matchEndedRepeats = 0;
+  ResetMatch(_matchSeed, players);
+}
+
+void Host::Restart()
+{
+  // THE RESULT FIRST, from the match that just ended, before the reset forgets it.
+  const MatchOutcome& outcome = m_victory.Outcome();
+  m_lastEnded = MatchEnded{
+    .matchNumber = static_cast<std::uint16_t>(m_lastEnded.matchNumber + 1), .winner = outcome.winner, .onClock = outcome.onClock};
+  m_matchEndedRepeats = MATCH_ENDED_REPEAT_TICKS;
+
+  const std::uint64_t seed = NextMatchSeed(m_sessions.MatchSeed());
+  m_sessions.Reseed(seed);
+  ResetMatch(seed, m_sessions.PlayerCount());
+}
+
+std::uint64_t Host::NextMatchSeed(std::uint64_t _matchSeed) noexcept
+{
+  std::uint64_t mixed = _matchSeed + 0x9E3779B97F4A7C15ull;
+  mixed = (mixed ^ (mixed >> 30)) * 0xBF58476D1CE4E5B9ull;
+  mixed = (mixed ^ (mixed >> 27)) * 0x94D049BB133111EBull;
+  return mixed ^ (mixed >> 31);
+}
+
+void Host::ResetMatch(std::uint64_t _matchSeed, std::size_t _players)
+{
+  // **THE COMMAND INTAKE IS NOT RESET HERE.** Its sequences are the seat's, and a restart keeps the seats: a client
+  // carries on numbering its commands across the end of a match, and the host goes on acknowledging them.
+  const std::size_t players = _players;
+  m_world = World{};
   m_build.Begin(players);
   m_economy.Begin();
   m_victory.Begin(players, m_tick);
-  m_sessions.Begin(players, _matchSeed);
+
+  // EVERY CLIENT STARTS FROM NOTHING: the new match's entities are all due, and a client clears its store when it
+  // hears the match ended (ADR-024).
   m_accumulator.Begin();
 
   // M2.6: THE FIELD, FROM THE SAME FUNCTION THE CLIENT CALLS (R23) -- the host's half, which until mining
@@ -202,6 +234,20 @@ void Host::SendUpdates()
 {
   std::array<std::byte, SCRATCH_BYTES> scratch{};
 
+  // **THE END OF A MATCH, AHEAD OF THE NEXT MATCH'S UPDATES**, to every seat, for ten ticks (Q70).
+  if (m_matchEndedRepeats > 0)
+  {
+    --m_matchEndedRepeats;
+    for (const Sessions::Session& session : m_sessions.All())
+    {
+      Neuron::ByteWriter writer{scratch};
+      if (Encode(m_lastEnded, writer))
+      {
+        static_cast<void>(m_transport.Send(session.endpoint, std::span<const std::byte>{scratch.data(), writer.WrittenBytes()}));
+      }
+    }
+  }
+
   // **TO SESSIONS, NOT TO ENDPOINTS THAT HAVE SPOKEN** (ADR-013). A client that has not joined sees
   // nothing at all. Each seated client gets its own updates: its own block, its own sequence, and the
   // records its own accumulator says are due (ADR-024).
@@ -256,6 +302,13 @@ void Host::RunOneTick()
   m_victory.Advance(m_world, m_build, m_tick);
 
   ++m_tick;
+
+  // M3.8: A MATCH THAT ENDED THIS TICK IS REPLACED BEFORE ANYTHING IS SENT, so the first updates after the end are
+  // already the next match's, and the `MatchEnded` goes out ahead of them.
+  if (m_victory.Outcome().over)
+  {
+    Restart();
+  }
   SendUpdates();
 }
 

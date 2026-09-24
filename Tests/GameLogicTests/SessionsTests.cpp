@@ -351,4 +351,29 @@ public:
   }
 };
 
+/// M3.8, `OpenQuestions.md` Q70. **A restart keeps every seat.**
+TEST_CLASS(TheNextMatch)
+{
+public:
+  /// A client that joins again with its token after a reseed takes the seat it had, told the new seed.
+  TEST_METHOD(AReseedKeepsTheSeatAndTellsTheNewSeed)
+  {
+    Outpost::Sessions sessions;
+    sessions.Begin(2, SEED);
+    const Outpost::JoinReply first = sessions.Admit(Outpost::Join{}, At(1, 100));
+    const Outpost::JoinReply second = sessions.Admit(Outpost::Join{}, At(1, 101));
+
+    sessions.Reseed(SEED + 1);
+    Assert::AreEqual(std::size_t{2}, sessions.Count(), L"a restart dropped a seat");
+
+    // The other way round, so arrival order cannot be what gives each its seat back.
+    const Outpost::JoinReply secondBack = sessions.Admit(Outpost::Join{.token = second.token}, At(1, 101));
+    const Outpost::JoinReply firstBack = sessions.Admit(Outpost::Join{.token = first.token}, At(1, 100));
+    Assert::AreEqual(first.player, firstBack.player);
+    Assert::AreEqual(second.player, secondBack.player);
+    Assert::AreEqual(SEED + 1, firstBack.matchSeed);
+    Assert::IsTrue(firstBack.result == Outpost::JoinResult::Rejoined);
+  }
+};
+
 } // namespace GameLogicTests

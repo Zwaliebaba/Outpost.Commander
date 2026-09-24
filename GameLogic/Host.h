@@ -75,6 +75,21 @@ public:
   /// stress switch; this seats whatever it is given, clamped only to what a table can hold.
   void BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount = DEFAULT_PLAYER_COUNT);
 
+  /// **THE MATCH RESTARTS** (M3.8, `Interface.md` section 7, Q70): what the tick does on the tick a match ends. The
+  /// same reset as `BeginMatch`, on the next seed, **with every seat kept**, and a `MatchEnded` to every seated
+  /// client for the next `MATCH_ENDED_REPEAT_TICKS` ticks. Public so a suite can end a match without playing one.
+  void Restart();
+
+  /// The seed the match after one on _matchSeed plays: SplitMix64's finalizer over it, so a run of restarts from
+  /// one starting seed is the same run of maps on every host (R16), and never the same map twice in a row.
+  [[nodiscard]] static std::uint64_t NextMatchSeed(std::uint64_t _matchSeed) noexcept;
+
+  /// How the last match ended, and how many have. Zero before the first ends.
+  [[nodiscard]] const MatchEnded& LastEnded() const noexcept
+  {
+    return m_lastEnded;
+  }
+
   /// **ONCE PER HOST RUN, BEFORE THE FIRST JOIN** (the 2026-09-23 review, B4): seeds the session-token stream,
   /// which no `BeginMatch` reseeds. `Server` passes a value its shell read from the wall clock, so a host
   /// restarted on the same seed does not hand last run's tokens out again in a new order; a suite that never
@@ -221,6 +236,9 @@ public:
   }
 
 private:
+  /// The reset both `BeginMatch` and `Restart` do: everything but the seats.
+  void ResetMatch(std::uint64_t _matchSeed, std::size_t _players);
+
   void DrainAndApply();
   void SendUpdates();
 
@@ -246,6 +264,11 @@ private:
   std::uint64_t m_unjoinedCommands = 0;
   std::uint64_t m_misaddressedCommands = 0;
   std::uint64_t m_joins = 0;
+
+  MatchEnded m_lastEnded{};
+
+  /// Ticks the last `MatchEnded` still has to be sent for.
+  std::uint32_t m_matchEndedRepeats = 0;
 };
 
 } // namespace Outpost

@@ -417,6 +417,23 @@ selection, markers, wrecks — is what must be cleared, and it is the only thing
 **all** derived state, and is playing the next match without a relaunch; and a reconnecting client lands in
 the current match rather than the finished one.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q70 AS RULED THAT DAY**, with the files placed where
+the code already was rather than in the new files named above:
+
+- **The host** (`Host::Restart`): on the tick M3.7 ends a match, the same reset as `BeginMatch` runs on the next
+  seed, with the seats and the command intake kept. `MatchEnded` goes to every seat for ten ticks, ahead of the new
+  match's updates. `Server` prints each end and the next seed.
+- **The wire** (`GameCore/Join`, `NeuronCore/PacketHeader`): `MatchEnded` is match number, winner and clock, 4
+  bytes behind the header, and packet type 6. The protocol is now 7. No update's size moved.
+- **The client** (`ClientFrame::BeginNextMatch`, `Panels`, `App.cpp`): each end is taken once. It clears the store,
+  tracers, wrecks, markers, outstanding commands, the selection, the armed module and the build panel, joins again
+  with its token, and re-centers on the new station when the reply lands. The result overlay shows for five
+  seconds and can say "no one" and "on the clock".
+- **A reconnecting client lands in the current match** because the seat was never dropped: its token rejoins it,
+  and the reply carries the current seed.
+
+`HostTests`, `SessionsTests`, `JoinTests`, `ClientFrameTests` and `PacketHeaderTests` pin it.
+
 ### M3.8b — Modules under fire · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** [`ADR-015`](../ADR/ADR-015-the-base-is-built-from-modules.md)'s *Consequences*;

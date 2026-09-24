@@ -115,10 +115,40 @@ enum class JoinFault : std::uint8_t
   Malformed
 };
 
+/// **A MATCH HAS ENDED, AND ANOTHER HAS BEGUN** (M3.8, `OpenQuestions.md` Q70 as ruled): who won, sent to every
+/// seated client for `MATCH_ENDED_REPEAT_TICKS` ticks. The seats are kept; a client that hears it shows the result,
+/// clears what it derived from the old match, and joins again with its token -- and that join's reply is what
+/// carries the new seed, so R23's "the seed arrives on the join reply and nowhere else" still holds.
+///
+/// R8: a wire record.
+struct MatchEnded
+{
+  /// match number 2, winner 1, on the clock 1.
+  static constexpr std::size_t SIZE_BYTES = 4;
+
+  /// **WHICH MATCH ENDED**, counted from one in a host run. What lets a client tell the ten repeats of one end
+  /// from the next match's, and take each once.
+  std::uint16_t matchNumber = 0;
+
+  /// `NO_PLAYER` for a draw.
+  PlayerId winner = NO_PLAYER;
+
+  /// Ended by the six-minute clock rather than by the last station standing (Q65).
+  bool onClock = false;
+
+  [[nodiscard]] friend constexpr bool operator==(const MatchEnded&, const MatchEnded&) noexcept = default;
+};
+
+/// Ten ticks, half a second, as a removal is repeated (ADR-003): a client misses it only if all ten are lost.
+inline constexpr std::uint32_t MATCH_ENDED_REPEAT_TICKS = 10;
+
 [[nodiscard]] bool Encode(const Join& _join, Neuron::ByteWriter& _writer) noexcept;
 [[nodiscard]] JoinFault Decode(Neuron::ByteReader& _reader, Join& _outJoin) noexcept;
 
 [[nodiscard]] bool Encode(const JoinReply& _reply, Neuron::ByteWriter& _writer) noexcept;
 [[nodiscard]] JoinFault Decode(Neuron::ByteReader& _reader, JoinReply& _outReply) noexcept;
+
+[[nodiscard]] bool Encode(const MatchEnded& _ended, Neuron::ByteWriter& _writer) noexcept;
+[[nodiscard]] JoinFault Decode(Neuron::ByteReader& _reader, MatchEnded& _outEnded) noexcept;
 
 } // namespace Outpost

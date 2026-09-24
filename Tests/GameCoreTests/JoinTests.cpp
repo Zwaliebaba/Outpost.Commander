@@ -212,4 +212,44 @@ public:
   }
 };
 
+/// M3.8, `OpenQuestions.md` Q70. **A match that ended, on the wire.**
+TEST_CLASS(TheMatchEnded)
+{
+public:
+  TEST_METHOD(ItRoundTrips)
+  {
+    for (const Outpost::MatchEnded sent : {Outpost::MatchEnded{.matchNumber = 1, .winner = 2, .onClock = false},
+                                           Outpost::MatchEnded{.matchNumber = 65535, .winner = Outpost::NO_PLAYER, .onClock = true}})
+    {
+      std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES + Outpost::MatchEnded::SIZE_BYTES> buffer{};
+      Neuron::ByteWriter writer{buffer};
+      Assert::IsTrue(Outpost::Encode(sent, writer));
+      Assert::AreEqual(buffer.size(), writer.WrittenBytes(), L"the record is not the size it says");
+
+      Neuron::ByteReader reader{buffer};
+      Outpost::MatchEnded received{};
+      Assert::IsTrue(Outpost::Decode(reader, received) == Outpost::JoinFault::None);
+      Assert::IsTrue(sent == received);
+    }
+  }
+
+  /// A clock byte that is neither is refused, and a join reply is not a match end.
+  TEST_METHOD(AMalformedOrWrongRecordIsRefused)
+  {
+    std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES + Outpost::MatchEnded::SIZE_BYTES> buffer{};
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsTrue(Outpost::Encode(Outpost::MatchEnded{.matchNumber = 3, .winner = 1, .onClock = true}, writer));
+    buffer.back() = std::byte{2};
+    Neuron::ByteReader reader{buffer};
+    Outpost::MatchEnded received{};
+    Assert::IsTrue(Outpost::Decode(reader, received) == Outpost::JoinFault::Malformed);
+
+    std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES + Outpost::JoinReply::SIZE_BYTES> reply{};
+    Neuron::ByteWriter replyWriter{reply};
+    Assert::IsTrue(Outpost::Encode(Outpost::JoinReply{.result = Outpost::JoinResult::Accepted, .player = 1}, replyWriter));
+    Neuron::ByteReader replyReader{reply};
+    Assert::IsTrue(Outpost::Decode(replyReader, received) == Outpost::JoinFault::WrongType);
+  }
+};
+
 } // namespace GameCoreTests

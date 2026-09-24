@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <array>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -580,6 +581,39 @@ public:
     Outpost::CommandPacket report{};
     Assert::AreEqual(std::size_t{0}, frame.FillOutstanding(report));
     Assert::IsTrue(report.commands.empty());
+  }
+};
+
+/// M3.8, `OpenQuestions.md` Q70. **A match end, heard by a client.**
+TEST_CLASS(TheMatchEnd)
+{
+public:
+  /// The first copy clears what the frame derived, joins again and shows the result; the other nine do nothing.
+  TEST_METHOD(TheFirstCopyStartsTheNextMatchAndTheRepeatsDoNot)
+  {
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    queue.Push(EncodedUpdate(1, 0, 10));
+    static_cast<void>(frame.DrainPackets(queue, 1000));
+    Assert::IsFalse(frame.Replicas().Entities().empty());
+
+    std::array<std::byte, Neuron::PacketHeader::SIZE_BYTES + Outpost::MatchEnded::SIZE_BYTES> ended{};
+    Neuron::ByteWriter writer{ended};
+    Assert::IsTrue(Outpost::Encode(Outpost::MatchEnded{.matchNumber = 1, .winner = 2, .onClock = false}, writer));
+    queue.Push(ended);
+    const Outpost::ClientFrame::DrainResult first = frame.DrainPackets(queue, 1050);
+    Assert::IsTrue(first.matchEnded);
+    Assert::IsTrue(frame.Replicas().Entities().empty(), L"the old match's entities were kept");
+    Assert::IsTrue(frame.CurrentJoin().Phase() == Outpost::JoinPhase::Joining, L"it did not ask to join the next");
+    Assert::IsNotNull(frame.ShownResult(1050));
+    Assert::AreEqual(Outpost::PlayerId{2}, frame.ShownResult(1050)->winner);
+
+    queue.Push(ended);
+    Assert::IsFalse(frame.DrainPackets(queue, 1100).matchEnded, L"a repeat started another match");
+
+    Assert::IsNotNull(frame.ShownResult(1050 + Outpost::ClientFrame::RESULT_SHOWN_MILLISECONDS - 1));
+    Assert::IsNull(frame.ShownResult(1050 + Outpost::ClientFrame::RESULT_SHOWN_MILLISECONDS), L"the result stayed up");
   }
 };
 

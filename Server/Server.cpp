@@ -156,6 +156,7 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   const auto start = std::chrono::steady_clock::now();
   Neuron::TickSchedule schedule{start, Outpost::TICK_PERIOD_MILLISECONDS};
   std::uint64_t reportedAtSecond = 0;
+  std::uint16_t reportedMatches = 0;
 
   for (;;)
   {
@@ -169,6 +170,25 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
     for (std::uint32_t tick = 0; tick < due; ++tick)
     {
       host.RunOneTick();
+
+      // M3.8: A MATCH THAT ENDED IS SAID, with the seed the next one plays, since that is the number a log is read for.
+      if (host.LastEnded().matchNumber != reportedMatches)
+      {
+        reportedMatches = host.LastEnded().matchNumber;
+        const Outpost::MatchEnded& ended = host.LastEnded();
+        if (ended.winner == Outpost::NO_PLAYER)
+        {
+          std::printf("host: match %u ended in a draw%s; next seed %llu\n", static_cast<unsigned>(ended.matchNumber),
+                      ended.onClock ? " on the clock" : "", static_cast<unsigned long long>(host.MatchSeed()));
+        }
+        else
+        {
+          std::printf("host: match %u won by player %u%s; next seed %llu\n", static_cast<unsigned>(ended.matchNumber),
+                      static_cast<unsigned>(ended.winner), ended.onClock ? " on the clock" : "",
+                      static_cast<unsigned long long>(host.MatchSeed()));
+        }
+        std::fflush(stdout);
+      }
     }
 
     // A line a second, so a run of some minutes can be read afterwards rather than watched.
