@@ -370,7 +370,9 @@ public:
   /// dry, and the hash folds what each rock has left. The same on all four MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xa8185fe26f2e6eccull, RunScriptedMatch().hash);
+    // **A FOURTEENTH TIME, THE SAME DAY (Q82)**: a mine order spreads its miners one to a rock, and a spent rock's miner
+    // retargets a rock nobody has. The same on all four MSVC pairs before it was pinned.
+    Assert::AreEqual(0xa2af448ca99b5759ull, RunScriptedMatch().hash);
   }
 
   /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI
@@ -380,7 +382,8 @@ public:
   TEST_METHOD(TheStubAiMatchHashesToItsPinnedValue)
   {
     // Moved by M3.9's finite ore, the same on all four pairs.
-    Assert::AreEqual(0xe44679c473f0b04bull, RunStubAiMatch());
+    // And by Q82's one miner to a rock, the same on all four pairs.
+    Assert::AreEqual(0x1cbb249031f15057ull, RunStubAiMatch());
     Assert::AreEqual(RunStubAiMatch(), RunStubAiMatch());
   }
 

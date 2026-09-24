@@ -2,6 +2,9 @@
 
 #include "CommandIntake.h"
 
+#include "MiningSystem.h"
+
+#include <algorithm>
 #include <vector>
 
 namespace Outpost
@@ -200,13 +203,38 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     // zero is skipped and keeps whatever it was doing. The command is still accepted -- M2.8's mixed
     // selection sends the rest a separate move -- and the mining system does the travelling, so nothing
     // moves here.
+    //
+    // **ONE MINER TO A ROCK** (the owner, 2026-09-24, `OpenQuestions.md` Q82): the miner nearest the tapped rock takes it,
+    // and each of the others the rock `BestRock` gives from there -- the nearest nobody has, so a group ordered to a
+    // field spreads across it rather than queueing at one rock. Nearest first, ties to the lower index (R16).
+    std::vector<EntityId> miners;
     for (const EntityId id : live)
     {
       const Entity* entity = _world.Find(id);
       if ((entity != nullptr) && (Derive(entity->design).oreCapacity > 0))
       {
-        static_cast<void>(_world.OrderMine(id, _command.TargetRock()));
+        miners.push_back(id);
       }
+    }
+    const Neuron::Vec2 tapped = _world.Field()[_command.TargetRock()].position;
+    std::sort(miners.begin(), miners.end(),
+              [&](EntityId _a, EntityId _b)
+              {
+                const std::int64_t da = UniformGrid::DistanceSquared(_world.Find(_a)->position, tapped);
+                const std::int64_t db = UniformGrid::DistanceSquared(_world.Find(_b)->position, tapped);
+                return (da != db) ? (da < db) : (_a.index < _b.index);
+              });
+
+    std::vector<std::uint32_t> claims = RockClaims(_world, miners);
+    for (std::size_t order = 0; order < miners.size(); ++order)
+    {
+      std::uint16_t rock = _command.TargetRock();
+      if ((order > 0) && !BestRock(_world, claims, tapped, rock))
+      {
+        rock = _command.TargetRock();
+      }
+      ++claims[rock];
+      static_cast<void>(_world.OrderMine(miners[order], rock));
     }
   }
   else if (_command.type == CommandType::Attack)

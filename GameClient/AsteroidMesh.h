@@ -120,4 +120,10 @@ struct RockLook
 [[nodiscard]] bool BuildVariantField(const HullMesh& _variantMesh, std::uint8_t _variant, std::span<const Placement> _rocks,
                                      std::span<const RockLook> _looks, HullMesh& _outMesh);
 
+/// **A SPENT ROCK IS GONE** (the owner, 2026-09-24, `OpenQuestions.md` Q83): _rocks and _looks, in step, without every
+/// rock _spent marks, into _outRocks and _outLooks -- what the bake draws. The looks are computed over the whole field
+/// first and only then filtered, so no surviving rock changes shape when its neighbor runs dry.
+void OmitSpentRocks(std::span<const Placement> _rocks, std::span<const RockLook> _looks, std::span<const std::uint8_t> _spent,
+                    std::vector<Placement>& _outRocks, std::vector<RockLook>& _outLooks);
+
 } // namespace Outpost

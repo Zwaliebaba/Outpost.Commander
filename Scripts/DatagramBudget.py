@@ -38,12 +38,13 @@ RECORD = [("identity", 3), ("owner", 1), ("position", 4), ("heading", 1),
 # fragment fields M0.2 reserved, because nothing fragments any more. Then the tick every record
 # in the datagram describes, the live entity count (which is what lets the client bound how long
 # an entity may go unrefreshed), the RECIPIENT'S OWN player block and nothing about anyone
-# else's, and three counts. Nothing here scales with the player count, which is the point.
+# else's, and four counts -- the fourth since the owner's ruling of 2026-09-24 (OpenQuestions.md Q83), for the
+# spent-rock mask. Nothing here scales with the player count, which is the point.
 HEADER = [("version", 1), ("type", 1), ("sequence", 2),
           ("tick", 4), ("entity count", 2),
           ("own credits", 4), ("own last command applied", 2),
           ("own building design", 1), ("own build progress", 1),
-          ("record count", 1), ("removal count", 1), ("fire count", 1)]
+          ("record count", 1), ("removal count", 1), ("fire count", 1), ("spent-rock count", 1)]
 
 # After the records. A removal is an identity, repeated in REMOVAL_REPEAT_TICKS consecutive
 # updates so a lost datagram cannot leave a ghost; a fire event (ADR-004) is repeated for
@@ -59,6 +60,11 @@ FIRE_REPEAT_TICKS = 3
 # decide when an entity it has heard nothing about is gone, so this must match the code exactly.
 MAX_REMOVALS_PER_UPDATE = 48
 MAX_FIRES_PER_UPDATE = 40
+
+# Q83: which rocks are spent, one bit a rock over the largest field GenerateField makes (22 a region, four
+# copies), on EVERY update so each is self-contained. Eleven bytes at most, and counted at its most in both the
+# floor and the typical fill, because once a rock is spent every update carries it.
+MAX_SPENT_ROCK_BYTES = 11
 FORGET_AFTER_SWEEPS = 3
 
 # Field-width audit. "wire" is what the record spends; "draws" is the number of bits the client
@@ -112,10 +118,11 @@ def budget(players, ships, modules, removals, fires, extra_per_record, extra_hea
     entities = players * (ships + 1 + modules)
     record = sum(b for _, b in RECORD) + extra_per_record
     header = sum(b for _, b in HEADER) + extra_header
-    tail = removals * REMOVAL_BYTES + fires * FIRE_BYTES
+    tail = removals * REMOVAL_BYTES + fires * FIRE_BYTES + MAX_SPENT_ROCK_BYTES
     per_datagram = (payload - header - tail) // record
     per_tick = per_datagram * datagrams
-    floor = (payload - header - MAX_REMOVALS_PER_UPDATE * REMOVAL_BYTES - MAX_FIRES_PER_UPDATE * FIRE_BYTES) // record
+    floor = (payload - header - MAX_REMOVALS_PER_UPDATE * REMOVAL_BYTES - MAX_FIRES_PER_UPDATE * FIRE_BYTES -
+             MAX_SPENT_ROCK_BYTES) // record
     return {
         "entities": entities,
         "record": record,

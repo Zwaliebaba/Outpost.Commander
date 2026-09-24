@@ -105,15 +105,36 @@ public:
     }
   }
 
-  /// **TWENTY-ONE BYTES AT ANY PLAYER COUNT.** The full snapshot carried a block per player; an update
-  /// carries the recipient's alone (ADR-024), which is what lets a hundred players fit.
-  TEST_METHOD(TheHeaderIsTwentyOneBytes)
+  /// **TWENTY-TWO BYTES AT ANY PLAYER COUNT.** The full snapshot carried a block per player; an update
+  /// carries the recipient's alone (ADR-024), which is what lets a hundred players fit. Twenty-one until Q83's
+  /// spent-rock count byte.
+  TEST_METHOD(TheHeaderIsTwentyTwoBytes)
   {
-    Assert::AreEqual(std::size_t{21}, Outpost::UPDATE_HEADER_BYTES);
-    Assert::AreEqual(std::size_t{21}, Outpost::EncodedSize(MakeUpdate(0, 0, 0)));
+    Assert::AreEqual(std::size_t{22}, Outpost::UPDATE_HEADER_BYTES);
+    Assert::AreEqual(std::size_t{22}, Outpost::EncodedSize(MakeUpdate(0, 0, 0)));
 
     Outpost::Update received;
-    Assert::AreEqual(std::size_t{21}, RoundTrip(MakeUpdate(0, 0, 0), received));
+    Assert::AreEqual(std::size_t{22}, RoundTrip(MakeUpdate(0, 0, 0), received));
+  }
+
+  /// **Q83: THE SPENT-ROCK MASK ROUND TRIPS**, one byte a byte, and a mask past eleven bytes is refused.
+  TEST_METHOD(TheSpentRockMaskRoundTrips)
+  {
+    Outpost::Update sent = MakeUpdate(2, 0, 0);
+    sent.spentRocks = {0x05, 0x00, 0x80};
+    Outpost::Update received;
+    Assert::AreEqual(Outpost::EncodedSize(MakeUpdate(2, 0, 0)) + 3, RoundTrip(sent, received));
+    Assert::IsTrue(received.spentRocks == sent.spentRocks);
+    Assert::IsTrue(Outpost::IsRockSpent(received.spentRocks, 0));
+    Assert::IsFalse(Outpost::IsRockSpent(received.spentRocks, 1));
+    Assert::IsTrue(Outpost::IsRockSpent(received.spentRocks, 2));
+    Assert::IsTrue(Outpost::IsRockSpent(received.spentRocks, 23));
+    Assert::IsFalse(Outpost::IsRockSpent(received.spentRocks, 24), L"past the mask is not spent");
+
+    sent.spentRocks.assign(Outpost::MAX_SPENT_ROCK_BYTES + 1, 0xFF);
+    std::vector<std::byte> buffer(SCRATCH_BYTES);
+    Neuron::ByteWriter writer{buffer};
+    Assert::IsFalse(Outpost::Encode(sent, writer), L"a mask past the largest field was encoded");
   }
 
   TEST_METHOD(AFireEventIsSevenBytesAndARemovalThree)
@@ -292,6 +313,7 @@ public:
     Assert::IsTrue(writer.WriteUInt8(255));
     Assert::IsTrue(writer.WriteUInt8(0));
     Assert::IsTrue(writer.WriteUInt8(0));
+    Assert::IsTrue(writer.WriteUInt8(0));
 
     Neuron::ByteReader reader{std::span<const std::byte>{buffer.data(), writer.WrittenBytes()}};
     Outpost::Update received;
@@ -332,40 +354,44 @@ public:
   /// is the encoder agreeing, written through the logger so it lands in every CI log.
   TEST_METHOD(AFullUpdateIsOneDatagramAndItsFigureIsRecorded)
   {
-    const Outpost::Update full = MakeUpdate(99, 3, 2);
+    // 98 SINCE Q83: the spent-rock mask at its largest, eleven bytes, and its count byte ride beside them.
+    Outpost::Update full = MakeUpdate(98, 3, 2);
+    full.spentRocks.assign(Outpost::MAX_SPENT_ROCK_BYTES, 0xFF);
     std::vector<std::byte> buffer(SCRATCH_BYTES);
     Neuron::ByteWriter writer{buffer};
     Assert::IsTrue(Outpost::Encode(full, writer));
     const std::size_t size = writer.WrittenBytes();
 
-    Logger::WriteMessage((std::wstring{L"UPDATE 99 records, 3 removals, 2 fires: "} + std::to_wstring(size) + L" bytes of " +
-                          std::to_wstring(Outpost::UPDATE_PAYLOAD_BYTES) + L"\n")
+    Logger::WriteMessage((std::wstring{L"UPDATE 98 records, 3 removals, 2 fires, a full spent-rock mask: "} + std::to_wstring(size) +
+                          L" bytes of " + std::to_wstring(Outpost::UPDATE_PAYLOAD_BYTES) + L"\n")
                            .c_str());
 
-    Assert::AreEqual(std::size_t{1232}, size, L"99 records and the repeated facts fill the payload exactly");
+    Assert::AreEqual(std::size_t{1232}, size, L"98 records, the repeated facts and the mask fill the payload exactly");
     Assert::IsTrue(size <= Outpost::UPDATE_PAYLOAD_BYTES);
 
-    // And a hundredth record does not fit beside them, which is what makes 99 the figure.
-    Assert::IsTrue(Outpost::EncodedSize(MakeUpdate(100, 3, 2)) > Outpost::UPDATE_PAYLOAD_BYTES);
+    // And a ninety-ninth record does not fit beside them, which is what makes 98 the figure.
+    Outpost::Update over = MakeUpdate(99, 3, 2);
+    over.spentRocks.assign(Outpost::MAX_SPENT_ROCK_BYTES, 0xFF);
+    Assert::IsTrue(Outpost::EncodedSize(over) > Outpost::UPDATE_PAYLOAD_BYTES);
   }
 
   /// The floors both sides compute the sweep from.
-  TEST_METHOD(TheRecordFloorsAreSixtyFiveAndAHundred)
+  TEST_METHOD(TheRecordFloorsAreSixtyFourAndAHundred)
   {
-    Assert::AreEqual(std::size_t{65}, Outpost::MIN_RECORDS_PER_UPDATE);
+    Assert::AreEqual(std::size_t{64}, Outpost::MIN_RECORDS_PER_UPDATE, L"65 until Q83's mask");
     Assert::AreEqual(std::size_t{100}, Outpost::MAX_RECORDS_PER_UPDATE);
     Assert::IsTrue(Outpost::EncodedSize(MakeUpdate(Outpost::MIN_RECORDS_PER_UPDATE, Outpost::MAX_REMOVALS_PER_UPDATE,
                                                    Outpost::MAX_FIRES_PER_UPDATE)) <= Outpost::UPDATE_PAYLOAD_BYTES);
   }
 
   /// **THE SWEEP, AT THE COUNTS THE DESIGN NAMES.** One tick at the MVP's 110 and two at 220, because two
-  /// updates a tick of at least 65 records each cover 130; 43 at a hundred players of fifty-five.
+  /// updates a tick of at least 64 records each cover 128 (130 until Q83's mask); 43 at a hundred players of fifty-five.
   TEST_METHOD(TheSweepIsComputedFromTheFloor)
   {
     Assert::AreEqual(std::uint32_t{1}, Outpost::SweepTicks(0));
     Assert::AreEqual(std::uint32_t{1}, Outpost::SweepTicks(110));
-    Assert::AreEqual(std::uint32_t{1}, Outpost::SweepTicks(130));
-    Assert::AreEqual(std::uint32_t{2}, Outpost::SweepTicks(131));
+    Assert::AreEqual(std::uint32_t{1}, Outpost::SweepTicks(128));
+    Assert::AreEqual(std::uint32_t{2}, Outpost::SweepTicks(129));
     Assert::AreEqual(std::uint32_t{2}, Outpost::SweepTicks(220));
     Assert::AreEqual(std::uint32_t{43}, Outpost::SweepTicks(5500));
   }

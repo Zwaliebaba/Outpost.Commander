@@ -188,4 +188,77 @@ public:
   }
 };
 
+/// The owner, 2026-09-24 (`OpenQuestions.md` Q82). **One miner to a rock**: a miner keeps its rock until it is spent,
+/// and a group spreads out rather than queueing.
+TEST_CLASS(OneMinerToARock)
+{
+public:
+  /// A mine order for three: the nearest takes the tapped rock, and the other two the nearest rocks nobody has.
+  TEST_METHOD(AGroupOrderSpreadsAcrossTheField)
+  {
+    Outpost::World world;
+    world.SetField({RockAt(2000, 0), RockAt(2200, 0), RockAt(2000, 300), RockAt(5000, 0)});
+    static_cast<void>(world.Create(At(0, 0), 0, Outpost::DesignId::Station, MINE));
+    std::vector<Outpost::EntityId> miners;
+    for (std::int32_t index = 0; index < 3; ++index)
+    {
+      miners.push_back(world.Create(At(1000 + (index * 100), 0), 0, Outpost::DesignId::Miner, MINE));
+    }
+    Outpost::Command order{.sequence = 1, .type = Outpost::CommandType::Mine};
+    for (const Outpost::EntityId id : miners)
+    {
+      order.selection.push_back(Outpost::PackIdentity(id.index, id.generation));
+    }
+    order.AimAtRock(0);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    Outpost::CommandIntake intake;
+    Assert::IsTrue(intake.Apply(world, build, MINE, order) == Outpost::CommandRejection::None);
+
+    std::vector<std::uint16_t> rocks;
+    for (const Outpost::EntityId id : miners)
+    {
+      rocks.push_back(world.FindMine(id)->rock);
+    }
+    Assert::AreEqual(std::uint16_t{0}, rocks[2], L"the miner nearest the tapped rock did not take it");
+    Assert::IsTrue((rocks[0] != rocks[1]) && (rocks[1] != rocks[2]) && (rocks[0] != rocks[2]), L"two miners share a rock");
+    for (const std::uint16_t rock : rocks)
+    {
+      Assert::AreNotEqual(std::uint16_t{3}, rock, L"a far rock was taken while near ones were free");
+    }
+  }
+
+  /// **A SPENT ROCK'S MINER GOES TO A ROCK NOBODY HAS**, even past a nearer one another miner is working.
+  TEST_METHOD(ARetargetSkipsARockAnotherMinerHas)
+  {
+    Outpost::World world;
+    world.SetField({RockAt(2000, 0), RockAt(2200, 0), RockAt(2600, 0)});
+    static_cast<void>(world.Create(At(0, 0), 0, Outpost::DesignId::Station, MINE));
+    static_cast<void>(world.TakeOre(0, 200u * Outpost::MILLI_ORE_PER_ORE));
+    const Outpost::EntityId other = world.Create(At(2100, 300), 0, Outpost::DesignId::Miner, MINE);
+    Assert::IsTrue(world.OrderMine(other, 1));
+    const Outpost::EntityId miner = world.Create(At(1900, 0), 0, Outpost::DesignId::Miner, MINE);
+    Assert::IsTrue(world.OrderMine(miner, 0));
+
+    Outpost::MiningSystem mining;
+    mining.Advance(world);
+    Assert::AreEqual(std::uint16_t{2}, world.FindMine(miner)->rock, L"it joined the miner at the nearer rock");
+    Assert::AreEqual(std::uint16_t{1}, world.FindMine(other)->rock, L"the other miner was moved");
+  }
+
+  /// With every rock with ore taken, two share, at the least-worked and then the nearest.
+  TEST_METHOD(OnlyAFullFieldIsShared)
+  {
+    Outpost::World world;
+    world.SetField({RockAt(2000, 0), RockAt(2600, 0)});
+    const std::vector<std::uint32_t> claims{1, 1};
+    std::uint16_t rock = 99;
+    Assert::IsTrue(Outpost::BestRock(world, claims, At(1900, 0), rock));
+    Assert::AreEqual(std::uint16_t{0}, rock);
+    const std::vector<std::uint32_t> lopsided{2, 1};
+    Assert::IsTrue(Outpost::BestRock(world, lopsided, At(1900, 0), rock));
+    Assert::AreEqual(std::uint16_t{1}, rock, L"the more crowded rock was chosen for being nearer");
+  }
+};
+
 } // namespace GameLogicTests

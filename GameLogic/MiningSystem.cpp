@@ -6,6 +6,7 @@
 #include "UnloadTarget.h"
 
 #include <algorithm>
+#include <array>
 
 namespace Outpost
 {
@@ -23,28 +24,13 @@ constexpr int MAXIMUM_TRANSITIONS_PER_TICK = 4;
   return UniformGrid::DistanceSquared(_a, _b) <= (static_cast<std::int64_t>(_reach) * _reach);
 }
 
-/// **AN EXHAUSTED ROCK'S MINERS MOVE ON** (M3.9, `OpenQuestions.md` Q69): to the nearest rock with ore left, from where
-/// the miner is, ties to the lower index (R16). False, and the order unchanged, when the whole field is spent.
-[[nodiscard]] bool RetargetRock(const World& _world, MineOrder& _mine, const Neuron::Vec2& _from) noexcept
+/// **AN EXHAUSTED ROCK'S MINER MOVES ON** (M3.9, Q69), **to a rock no other miner has** (Q82): `BestRock` from where it
+/// is, with this miner's own claim on the spent rock left out. False, and the order unchanged, when the field is spent.
+[[nodiscard]] bool RetargetRock(const World& _world, EntityId _miner, MineOrder& _mine, const Neuron::Vec2& _from)
 {
-  const std::span<const Placement> field = _world.Field();
-  bool found = false;
-  std::int64_t bestSquared = 0;
-  for (std::size_t index = 0; index < field.size(); ++index)
-  {
-    if (_world.OreLeftMilliOre(index) == 0)
-    {
-      continue;
-    }
-    const std::int64_t squared = UniformGrid::DistanceSquared(field[index].position, _from);
-    if (!found || (squared < bestSquared))
-    {
-      found = true;
-      bestSquared = squared;
-      _mine.rock = static_cast<std::uint16_t>(index);
-    }
-  }
-  return found;
+  const std::array<EntityId, 1> self{_miner};
+  const std::vector<std::uint32_t> claims = RockClaims(_world, self);
+  return BestRock(_world, claims, _from, _mine.rock);
 }
 
 /// Heads for _destination unless it already is. **Re-ordering an order that is already right would reset
@@ -67,6 +53,55 @@ void Halt(World& _world, std::size_t _slot) noexcept
   _world.OrderInSlot(_slot).active = false;
 }
 } // namespace
+
+std::vector<std::uint32_t> RockClaims(const World& _world, std::span<const EntityId> _excluded)
+{
+  std::vector<std::uint32_t> claims(_world.Field().size(), 0);
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (!_world.IsSlotAlive(slot))
+    {
+      continue;
+    }
+    const MineOrder& mine = _world.MineInSlot(slot);
+    if ((mine.phase == MiningPhase::None) || (mine.rock >= claims.size()))
+    {
+      continue;
+    }
+    const EntityId id = _world.EntityInSlot(slot).id;
+    if (std::find(_excluded.begin(), _excluded.end(), id) != _excluded.end())
+    {
+      continue;
+    }
+    ++claims[mine.rock];
+  }
+  return claims;
+}
+
+bool BestRock(const World& _world, std::span<const std::uint32_t> _claims, const Neuron::Vec2& _from, std::uint16_t& _outRock)
+{
+  const std::span<const Placement> field = _world.Field();
+  bool found = false;
+  std::uint32_t bestClaims = 0;
+  std::int64_t bestSquared = 0;
+  for (std::size_t index = 0; index < field.size(); ++index)
+  {
+    if (_world.OreLeftMilliOre(index) == 0)
+    {
+      continue;
+    }
+    const std::uint32_t claims = (index < _claims.size()) ? _claims[index] : 0;
+    const std::int64_t squared = UniformGrid::DistanceSquared(field[index].position, _from);
+    if (!found || (claims < bestClaims) || ((claims == bestClaims) && (squared < bestSquared)))
+    {
+      found = true;
+      bestClaims = claims;
+      bestSquared = squared;
+      _outRock = static_cast<std::uint16_t>(index);
+    }
+  }
+  return found;
+}
 
 const MiningSystem::UnloadPoint& MiningSystem::UnloadPointFor(const World& _world, const Entity& _acceptor, DesignId _miner)
 {
@@ -163,7 +198,7 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
 
         // M3.9: A SPENT ROCK IS A HUSK, and the miner goes to the nearest one with ore left -- or, with the whole field
         // spent, home with what it carries and then stops.
-        if ((_world.OreLeftMilliOre(mine.rock) == 0) && !RetargetRock(_world, mine, miner.position))
+        if ((_world.OreLeftMilliOre(mine.rock) == 0) && !RetargetRock(_world, miner.id, mine, miner.position))
         {
           mine.phase = (mine.cargoMilliOre > 0) ? MiningPhase::ToUnload : MiningPhase::None;
           mine.unloadTarget = NO_ENTITY;

@@ -47,13 +47,15 @@ datagram being grouped or complete. Everything else is ADR-003's, including the 
 **The datagram is an update, and its header does not scale with the player count.** Transport 4 (version,
 type, a sequence the receiver uses only to count loss); tick 4; live entity count 2; **the recipient's own
 player block** — credits 4, last command applied 2, building design 1, progress 1 — and nothing about
-anyone else's; record count 1; removal count 1; fire count 1. **Twenty-one bytes** at any player count.
+anyone else's; record count 1; removal count 1; fire count 1; and, **since `OpenQuestions.md` Q83 (2026-09-24)**, a
+spent-rock count 1. **Twenty-two bytes** at any player count, twenty-one before Q83. The mask behind the fire events
+is at most eleven bytes and counts against the floor below, which is 64 records since Q83 and was 65.
 What the client draws about other players is on their entities: a rival's station has a hull on its record.
 
 **The host fills one update per client per tick from a priority accumulator.** Each client has a score
 per live entity. Every tick the score grows by that entity's relevance to this client, and sending the
-entity resets it to zero. The host takes the highest scores that fit — **99 records** at the pinned payload
-with three removals and two fire events riding along — and sends them. Relevance is an integer sum of:
+entity resets it to zero. The host takes the highest scores that fit — **98 records** at the pinned payload
+with three removals, two fire events and a full spent-rock mask riding along — and sends them (99 before Q83). Relevance is an integer sum of:
 a base of one, so every entity accumulates; a term for being inside the client's view; a term for having
 moved or changed since it was last sent to this client; and a term for being the client's own. The
 weights are constants in `GameLogic` beside the accumulator, with the reason written beside each, and

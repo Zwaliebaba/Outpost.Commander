@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Seventy-four answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Seventy-six answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79 to Q83 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -1167,7 +1167,7 @@ proposed detector, the tick going backwards, cannot fire, because `BeginMatch` n
 token, same side" within a host run. `Scripts/DatagramBudget.py` is run before either lands.
 
 **RULED 2026-09-24 BY THE OWNER: THE `MatchEnded` PACKET, AGAINST THE RECOMMENDATION, WITH SEATS KEPT. BUILT (M3.8).** The
-update header stays at 21 bytes. When a match ends, the host sends each seated client a `MatchEnded` record
+update header stayed at 21 bytes (22 since Q83, for another reason). When a match ends, the host sends each seated client a `MatchEnded` record
 carrying the winner (or a draw) for ten consecutive ticks, keeps every seat, and begins the next match on a new
 seed. A client that hears it shows the result, clears its derived state, and joins again with its token. That
 join's reply carries the new seed, so R23's "the seed arrives on the join reply and nowhere else" still holds.
@@ -1360,6 +1360,39 @@ looked like a miner parked beside one. This is M3.3's tracer and a mining beam, 
    camera distance and does not become a hair beside a hull seen close.
 
 **Not tuned.** Colors, widths and the lifetime are first guesses, and the owner's eye is the gate.
+
+### Q82 — Which rock does a miner mine? — **ANSWERED**
+
+**ONE MINER TO A ROCK, AND IT KEEPS IT. The owner's report and ruling, 2026-09-24**, playing the first match against
+the stub AI: *"every mining ship seems to pick the same random asteroid to mine... The idea would be that every ship
+will pick one asteroid and return to that asteroid. Other miners can be assigned to another asteroid which they will
+use until depleted."* As built, a mine order gave every selected miner the tapped rock, and a spent rock's miners all
+retargeted to the same nearest one, where Q62's one extractor per rock made them queue.
+
+1. **A group mine order spreads.** The miner nearest the tapped rock takes it; each of the others takes the nearest
+   rock nobody has, measured from the tapped rock, so a group ordered to a field covers it.
+2. **A miner keeps its rock** through every cycle until the rock is spent.
+3. **A spent rock's miner takes the nearest rock nobody has**, from where it is. **Only when every rock with ore is
+   taken do two share**, at the one the fewest have, then the nearest, ties to the lower index (R16).
+
+"Has" counts every miner with a mine order on that rock, of any owner, because Q62 lets one extract at a time
+whoever owns it. Built in `MiningSystem`'s `RockClaims` and `BestRock`, used by the intake and by retargeting.
+
+### Q83 — What happens to a spent rock? — **ANSWERED**
+
+**IT IS REMOVED FROM THE MAP. The owner's ruling, 2026-09-24**, asked when the owner saw a spent rock still drawn:
+*"either restock it or remove it"*, and removal was chosen over restocking, which would have made ore finite in name
+only. Q69 had kept ore on the host, so the client could not know a rock was spent.
+
+**The wire**: every update carries a spent-rock mask, one bit a rock in `GenerateField`'s order, behind a new count
+byte. It is at most eleven bytes, the largest field's 88 rocks, and empty until a rock is spent. **On every update
+rather than repeated for a while**, so each stays self-contained (ADR-024): a client that joins late, or lost a
+hundred updates, knows every spent rock from the next one. The header went from 21 to 22 bytes, the guaranteed
+floor from 65 records to 64 and the typical fill from 99 to 98, and the sweep is still one tick at the MVP's 110.
+`Scripts/DatagramBudget.py` computes all of it. The protocol went to 8, because 7 had been pushed.
+
+**The client** keeps the newest mask and bakes the field again without the spent rocks, looks computed over the
+whole field first so no survivor changes shape. A spent rock can no longer be tapped, and no mining beam points at it.
 
 ### Q78 — Does a ship under a move order fire? — **ANSWERED**
 

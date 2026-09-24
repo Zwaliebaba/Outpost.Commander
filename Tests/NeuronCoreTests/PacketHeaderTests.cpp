@@ -143,9 +143,9 @@ public:
   /// 2 with it, 3 since M1.6's build orders, 4 since ADR-024 changed every record at once, 5 since M2.3's
   /// join reply carried the player count, 6 since Q80 put the build queue's length in the building byte, 7 since
   /// M3.8's `MatchEnded`.
-  TEST_METHOD(TheProtocolVersionIsSevenSinceTheMatchEnds)
+  TEST_METHOD(TheProtocolVersionIsEightSinceTheSpentRocks)
   {
-    Assert::AreEqual(std::uint8_t{7}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{8}, Neuron::PROTOCOL_VERSION);
   }
 
   /// `Update` took `Snapshot`'s value rather than a new one: the unit changed, the number did not need to.

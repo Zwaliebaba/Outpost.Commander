@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace Outpost
@@ -73,9 +74,14 @@ struct FireEvent
 inline constexpr std::size_t UPDATE_PAYLOAD_BYTES = 1232;
 
 /// The transport's four, tick 4, live entity count 2, the recipient's block 8, and a count byte each
-/// for records, removals and fire events. **Twenty-one at any player count**, which is the point.
-inline constexpr std::size_t UPDATE_HEADER_BYTES = Neuron::PacketHeader::SIZE_BYTES + 4 + 2 + PlayerBlock::SIZE_BYTES + 3;
-static_assert(UPDATE_HEADER_BYTES == 21, "ADR-024 states the update header as twenty-one bytes.");
+/// for records, removals, fire events and -- since the owner's ruling of 2026-09-24 (`OpenQuestions.md` Q83) -- the
+/// spent-rock mask. **Twenty-two at any player count**, which is the point.
+inline constexpr std::size_t UPDATE_HEADER_BYTES = Neuron::PacketHeader::SIZE_BYTES + 4 + 2 + PlayerBlock::SIZE_BYTES + 4;
+static_assert(UPDATE_HEADER_BYTES == 22, "ADR-024 as amended by Q83 states the update header as twenty-two bytes.");
+
+/// **THE SPENT-ROCK MASK'S LARGEST SIZE** (Q83): one bit a rock, over the largest field `GenerateField` makes -- 22 a
+/// region, four copies at four players -- so eleven bytes. `Update.cpp` asserts it against the generator.
+inline constexpr std::size_t MAX_SPENT_ROCK_BYTES = 11;
 
 /// A removal is a packed identity, generation included.
 inline constexpr std::size_t REMOVAL_BYTES = 3;
@@ -89,12 +95,12 @@ inline constexpr std::size_t MAX_REMOVALS_PER_UPDATE = 48;
 inline constexpr std::size_t MAX_FIRES_PER_UPDATE = 40;
 
 /// The records an update holds with the removal and fire sections full, which is the floor the sweep
-/// guarantee is computed against: 65 at the pinned payload.
+/// guarantee is computed against: 64 at the pinned payload, since Q83's mask took eleven bytes and a count byte.
 inline constexpr std::size_t MIN_RECORDS_PER_UPDATE =
-  (UPDATE_PAYLOAD_BYTES - UPDATE_HEADER_BYTES - (MAX_REMOVALS_PER_UPDATE * REMOVAL_BYTES) -
-   (MAX_FIRES_PER_UPDATE * FireEvent::SIZE_BYTES)) /
+  (UPDATE_PAYLOAD_BYTES - UPDATE_HEADER_BYTES - (MAX_REMOVALS_PER_UPDATE * REMOVAL_BYTES) - (MAX_FIRES_PER_UPDATE * FireEvent::SIZE_BYTES) -
+   MAX_SPENT_ROCK_BYTES) /
   EntityRecord::SIZE_BYTES;
-static_assert(MIN_RECORDS_PER_UPDATE == 65);
+static_assert(MIN_RECORDS_PER_UPDATE == 64, "65 until Q83's mask; the sweep stays one tick at the MVP's 110 entities");
 
 /// The records an update holds with nothing else in it: 100.
 inline constexpr std::size_t MAX_RECORDS_PER_UPDATE = (UPDATE_PAYLOAD_BYTES - UPDATE_HEADER_BYTES) / EntityRecord::SIZE_BYTES;
@@ -168,7 +174,20 @@ struct Update
   std::vector<EntityRecord> records;
   std::vector<WireIdentity> removals;
   std::vector<FireEvent> fires;
+
+  /// **WHICH ROCKS ARE SPENT** (M3.9, Q83): bit n of byte n / 8 is rock n in `GenerateField`'s order, set when it has no
+  /// ore left. **Every update carries the whole mask**, so it is self-contained like everything else here (ADR-024): a
+  /// client that joins late or loses a hundred updates knows every spent rock from the next one. Empty while no
+  /// rock is spent, which costs nothing but the count byte.
+  std::vector<std::uint8_t> spentRocks;
 };
+
+/// Whether rock _rock is marked spent in _mask. False past the mask's end.
+[[nodiscard]] constexpr bool IsRockSpent(std::span<const std::uint8_t> _mask, std::size_t _rock) noexcept
+{
+  const std::size_t byte = _rock / 8;
+  return (byte < _mask.size()) && (((_mask[byte] >> (_rock % 8)) & 1u) != 0);
+}
 
 /// What this update will occupy, exactly, without encoding it. The budget's own arithmetic in code,
 /// so a test can assert the figure rather than recompute it.

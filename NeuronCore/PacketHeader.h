@@ -39,7 +39,10 @@ namespace Neuron
 /// **7 SINCE M3.8** (2026-09-24, Q70), when the host began ending matches: a third record type on the client's
 /// socket, `MatchEnded`, which a version-6 client would count as a fault and never rejoin from. **Q76's field hash on
 /// the join reply rides the same version**: neither has left this branch.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 7;
+///
+/// **8 SINCE Q83** (2026-09-24), when every update gained a count byte and the spent-rock mask. Version 7 had been
+/// pushed, so this is a step and not a ride.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 8;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///

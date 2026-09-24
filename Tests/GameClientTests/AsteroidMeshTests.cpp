@@ -296,4 +296,25 @@ public:
   }
 };
 
+/// Q83. **A spent rock is left out of the bake**, and the others keep their looks.
+TEST_CLASS(TheSpentRocksAreGone)
+{
+public:
+  TEST_METHOD(OmittingKeepsTheSurvivorsInStep)
+  {
+    const std::vector<Outpost::Placement> field = Outpost::GenerateField(MATCH_SEED, 2);
+    const std::vector<Outpost::RockLook> looks = Outpost::RockLooks(MATCH_SEED, field, CatalogRadii());
+    const std::vector<std::uint8_t> spent{0x02, 0x00, 0x01};
+
+    std::vector<Outpost::Placement> liveRocks;
+    std::vector<Outpost::RockLook> liveLooks;
+    Outpost::OmitSpentRocks(field, looks, spent, liveRocks, liveLooks);
+    Assert::AreEqual(field.size() - 2, liveRocks.size());
+    Assert::AreEqual(liveRocks.size(), liveLooks.size());
+    Assert::IsTrue(liveRocks[1].position == field[2].position, L"rock 1 was not the one left out");
+    Assert::AreEqual(looks[2].scale, liveLooks[1].scale, L"a survivor's look moved");
+    Assert::IsTrue(liveRocks[15].position == field[17].position, L"rock 16 was not the one left out");
+  }
+};
+
 } // namespace GameClientTests

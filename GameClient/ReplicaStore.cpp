@@ -28,6 +28,7 @@ ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint
   if (!m_hasUpdate || (_update.tick >= m_newestTick))
   {
     m_own = _update.own;
+    m_spentRocks = _update.spentRocks;
     m_newestTick = _update.tick;
     m_liveEntityCount = _update.liveEntityCount;
   }
@@ -126,6 +127,7 @@ void ReplicaStore::Clear() noexcept
   m_held.clear();
   m_newest.clear();
   m_removed.clear();
+  m_spentRocks.clear();
   m_own = PlayerBlock{};
   m_hasUpdate = false;
   m_newestTick = 0;

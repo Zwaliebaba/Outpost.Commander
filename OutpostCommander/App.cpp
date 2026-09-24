@@ -362,6 +362,9 @@ void RunProbe(const CoreWindow& _window)
   std::array<Neuron::MeshBuffer, Outpost::ASTEROID_VARIANT_COUNT> fieldBuffers;
   std::array<bool, Outpost::ASTEROID_VARIANT_COUNT> fieldReady{};
   std::uint64_t bakedFieldSeed = 0;
+
+  // Q83: the spent rocks the field was last baked without. A change re-bakes it.
+  std::vector<std::uint8_t> bakedSpentRocks;
   std::size_t bakedFieldPlayers = 0;
 
   // M2.8: where each rock is drawn, for the tap to aim at -- set with the bake, from the same looks.
@@ -1211,11 +1214,18 @@ void RunProbe(const CoreWindow& _window)
     // still be read by a frame in flight, and a destroyed buffer under a recorded draw is a removed
     // device rather than a wrong picture.
     const Outpost::FieldView& field = clientFrame.Field();
-    if (meshesLoaded && field.IsDerived() && ((field.MatchSeed() != bakedFieldSeed) || (field.PlayerCount() != bakedFieldPlayers)))
+    //
+    // **AND AGAIN WHEN A ROCK RUNS DRY** (Q83): a spent rock is removed from the map, so the bake leaves it out. That is
+    // one re-bake a depletion -- a few a minute at most -- behind the same wait.
+    const std::span<const std::uint8_t> spentRocks = clientFrame.Replicas().SpentRocks();
+    const bool spentChanged = !std::equal(spentRocks.begin(), spentRocks.end(), bakedSpentRocks.begin(), bakedSpentRocks.end());
+    if (meshesLoaded && field.IsDerived() &&
+        ((field.MatchSeed() != bakedFieldSeed) || (field.PlayerCount() != bakedFieldPlayers) || spentChanged))
     {
       device.WaitForGpu();
       bakedFieldSeed = field.MatchSeed();
       bakedFieldPlayers = field.PlayerCount();
+      bakedSpentRocks.assign(spentRocks.begin(), spentRocks.end());
 
       // The exact sphere of each loaded variant, and the catalog's looser one for a variant that did not
       // load -- which draws nothing, but still has to be kept clear of by its neighbors' clamp.
@@ -1229,6 +1239,10 @@ void RunProbe(const CoreWindow& _window)
       }
       const std::vector<Outpost::RockLook> looks = Outpost::RockLooks(field.MatchSeed(), field.Rocks(), radii);
       rockPicks = Outpost::RockPickPoints(field.Rocks(), looks);
+      std::erase_if(rockPicks, [&](const Outpost::RockPickPoint& _pick) { return Outpost::IsRockSpent(spentRocks, _pick.rock); });
+      std::vector<Outpost::Placement> liveRocks;
+      std::vector<Outpost::RockLook> liveLooks;
+      Outpost::OmitSpentRocks(field.Rocks(), looks, spentRocks, liveRocks, liveLooks);
 
       std::size_t rocksDrawn = 0;
       for (std::size_t variant = 0; variant < fieldBuffers.size(); ++variant)
@@ -1238,7 +1252,7 @@ void RunProbe(const CoreWindow& _window)
 
         Outpost::HullMesh placed;
         if (!asteroidLoaded[variant] ||
-            !Outpost::BuildVariantField(asteroidVariants[variant], static_cast<std::uint8_t>(variant), field.Rocks(), looks, placed) ||
+            !Outpost::BuildVariantField(asteroidVariants[variant], static_cast<std::uint8_t>(variant), liveRocks, liveLooks, placed) ||
             placed.vertices.empty())
         {
           continue;

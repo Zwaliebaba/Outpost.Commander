@@ -275,4 +275,33 @@ public:
   }
 };
 
+/// Q83. **Every update says which rocks are spent**, and says nothing while none is.
+TEST_CLASS(TheSpentRocks)
+{
+public:
+  TEST_METHOD(EveryUpdateCarriesTheMask)
+  {
+    Outpost::World world = LineOf(3);
+    std::vector<Outpost::Placement> field;
+    for (std::int32_t rock = 0; rock < 12; ++rock)
+    {
+      field.push_back(Outpost::Placement{.kind = Outpost::PlacedKind::Asteroid, .field = Outpost::FieldKind::Home});
+    }
+    world.SetField(std::move(field));
+    Outpost::Accumulator accumulator;
+    Assert::IsTrue(accumulator.Fill(world, MINE, Outpost::PlayerBlock{}, 1).front().spentRocks.empty(), L"a mask with nothing spent");
+
+    static_cast<void>(world.TakeOre(9, 200u * Outpost::MILLI_ORE_PER_ORE));
+    for (std::uint32_t tick = 2; tick < 5; ++tick)
+    {
+      for (const Outpost::Update& update : accumulator.Fill(world, MINE, Outpost::PlayerBlock{}, tick))
+      {
+        Assert::IsTrue(Outpost::IsRockSpent(update.spentRocks, 9), L"an update left the spent rock out");
+        Assert::IsFalse(Outpost::IsRockSpent(update.spentRocks, 8));
+        Assert::AreEqual(std::size_t{2}, update.spentRocks.size(), L"rock 9 is in the second byte and no further");
+      }
+    }
+  }
+};
+
 } // namespace GameLogicTests

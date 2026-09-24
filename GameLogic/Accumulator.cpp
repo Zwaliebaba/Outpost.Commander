@@ -169,6 +169,17 @@ std::vector<Update> Accumulator::Fill(const World& _world, PlayerId _player, con
     }
   }
 
+  // === THE SPENT ROCKS (Q83), the same for every client and every update of this tick. ================
+  std::vector<std::uint8_t> spentRocks;
+  for (std::size_t rock = 0; (rock < _world.Field().size()) && (rock < (MAX_SPENT_ROCK_BYTES * 8)); ++rock)
+  {
+    if (_world.OreLeftMilliOre(rock) == 0)
+    {
+      spentRocks.resize(std::max(spentRocks.size(), (rock / 8) + 1), 0);
+      spentRocks[rock / 8] = static_cast<std::uint8_t>(spentRocks[rock / 8] | (1u << (rock % 8)));
+    }
+  }
+
   // === SCORES, AND WHO IS DUE. ======================================================================
   const std::uint32_t sweep = SweepTicks(_world.AliveCount());
   std::vector<Candidate> candidates;
@@ -227,6 +238,7 @@ std::vector<Update> Accumulator::Fill(const World& _world, PlayerId _player, con
     update.liveEntityCount =
       static_cast<std::uint16_t>(std::min<std::size_t>(_world.AliveCount(), std::numeric_limits<std::uint16_t>::max()));
     update.own = _own;
+    update.spentRocks = spentRocks;
 
     // THE REPEATED FACTS RIDE THE FIRST UPDATE OF A TICK, so a tick counts once toward a repeat
     // however many updates it sent. Past the cap they wait; they are repeated anyway.

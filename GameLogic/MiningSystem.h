@@ -10,6 +10,17 @@
 namespace Outpost
 {
 
+/// **HOW MANY MINERS HAVE EACH ROCK**, indexed as the field is: every live entity with a mine order, of any owner,
+/// counted against the rock it names -- except _excluded, whose order is about to be replaced (the owner, 2026-09-24,
+/// `OpenQuestions.md` Q82).
+[[nodiscard]] std::vector<std::uint32_t> RockClaims(const World& _world, std::span<const EntityId> _excluded = {});
+
+/// **ONE MINER TO A ROCK** (Q82): the rock with ore left that the fewest miners have, and of those the nearest to
+/// _from, ties to the lower index (R16). An unclaimed rock always beats a claimed one however near; only when every
+/// rock with ore is taken do two miners share. False when no rock has ore.
+[[nodiscard]] bool BestRock(const World& _world, std::span<const std::uint32_t> _claims, const Neuron::Vec2& _from,
+                            std::uint16_t& _outRock);
+
 /// One unload, as it happened: who delivered how much to what. **M2.7 turns these into credits**; this step
 /// only produces them, so the loop can be pinned before the economy reads it.
 ///

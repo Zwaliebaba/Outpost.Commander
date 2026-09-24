@@ -114,6 +114,12 @@ public:
     return m_removed;
   }
 
+  /// **THE SPENT ROCKS AS THE NEWEST UPDATE SAID** (Q83): `IsRockSpent` reads it. A late update never winds it back.
+  [[nodiscard]] std::span<const std::uint8_t> SpentRocks() const noexcept
+  {
+    return m_spentRocks;
+  }
+
   /// This client's own block from the newest update, or nullptr before one has arrived.
   [[nodiscard]] const PlayerBlock* Own() const noexcept
   {
@@ -180,6 +186,7 @@ private:
   std::vector<Held> m_held;
   std::vector<EntityRecord> m_newest;
   std::vector<EntityRecord> m_removed;
+  std::vector<std::uint8_t> m_spentRocks;
 
   PlayerBlock m_own{};
   bool m_hasUpdate = false;

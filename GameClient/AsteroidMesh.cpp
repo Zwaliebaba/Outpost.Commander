@@ -180,4 +180,19 @@ bool BuildVariantField(const HullMesh& _variantMesh, std::uint8_t _variant, std:
   return true;
 }
 
+void OmitSpentRocks(std::span<const Placement> _rocks, std::span<const RockLook> _looks, std::span<const std::uint8_t> _spent,
+                    std::vector<Placement>& _outRocks, std::vector<RockLook>& _outLooks)
+{
+  _outRocks.clear();
+  _outLooks.clear();
+  for (std::size_t rock = 0; (rock < _rocks.size()) && (rock < _looks.size()); ++rock)
+  {
+    if (!IsRockSpent(_spent, rock))
+    {
+      _outRocks.push_back(_rocks[rock]);
+      _outLooks.push_back(_looks[rock]);
+    }
+  }
+}
+
 } // namespace Outpost

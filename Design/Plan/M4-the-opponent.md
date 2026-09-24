@@ -30,8 +30,8 @@ worth reporting as one rather than absorbing.
 **M1.14c has already done most of this step** ([`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)).
 The count is a host argument and the arrays are sized at `Begin`. What is left is running a real match at
 three and four. **The 46-byte header below is history**: since
-[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) the header is twenty-one bytes at any
-player count, and the criterion becomes that the four-player update measures the same as the two-player one.
+[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) the header is twenty-two bytes at any
+player count (twenty-one until Q83), and the criterion becomes that the four-player update measures the same as the two-player one.
 
 **Files:** `GameLogic/Match.cpp`, `GameCore/Snapshot.cpp`; tests in both suites extended.
 
