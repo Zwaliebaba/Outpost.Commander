@@ -159,6 +159,7 @@ struct MatchResult
   Outpost::MiningSystem mining;
   Outpost::WeaponSystem weapons;
   Outpost::DeathSystem deaths;
+  Outpost::Victory victory;
   Outpost::Economy economy;
   std::uint64_t deliveredMilliOre = 0;
   std::uint64_t died = 0;
@@ -171,6 +172,7 @@ struct MatchResult
     static_cast<void>(world.Create(placed.position, placed.heading, placed.design, placed.owner));
   }
   build.Begin(PLAYERS);
+  victory.Begin(PLAYERS, 1);
 
   std::uint16_t sequence = 0;
   for (std::uint32_t tick = 1; tick <= TICKS; ++tick)
@@ -259,6 +261,7 @@ struct MatchResult
     build.Advance(world);
     deaths.Advance(world);
     died += deaths.Died().size();
+    victory.Advance(world, build, tick);
   }
 
   std::uint64_t hullLost = 0;

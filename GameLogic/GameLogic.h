@@ -26,6 +26,7 @@
 #include "Targeting.h"
 #include "WeaponSystem.h"
 #include "DeathSystem.h"
+#include "Victory.h"
 #include "Economy.h"
 #include "StateHash.h"
 #include "Tick.h"

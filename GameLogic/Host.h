@@ -8,6 +8,7 @@
 #include "MiningSystem.h"
 #include "WeaponSystem.h"
 #include "DeathSystem.h"
+#include "Victory.h"
 #include "World.h"
 
 #include <cstddef>
@@ -147,6 +148,12 @@ public:
     return m_deaths;
   }
 
+  /// M3.7's elimination and victory, and how this match ended if it has.
+  [[nodiscard]] const Victory& CurrentVictory() const noexcept
+  {
+    return m_victory;
+  }
+
   [[nodiscard]] World& MutableWorld() noexcept
   {
     return m_world;
@@ -227,6 +234,7 @@ private:
   MiningSystem m_mining;
   WeaponSystem m_weapons;
   DeathSystem m_deaths;
+  Victory m_victory;
   Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;

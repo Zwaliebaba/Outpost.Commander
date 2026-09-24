@@ -1035,12 +1035,13 @@ produce.
 **Recommendation: the clock and the draw**, and an acceptance test in the harness the day M3.2 lands: a
 three-fighter rush ends by 5:30, and a mirror ends by 8:00 or on the clock.
 
-**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** The last station standing wins. A player whose station
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION, AND BUILT (M3.7).** The last station standing wins. A player whose station
 dies is eliminated, and their ships and modules are removed on the same tick. **At tick 7,200, six minutes, the
 match ends on the clock**: the surviving station with the most hull wins. A tie on hull goes to credits plus the
 catalog cost of the player's live ships and modules, and a tie on that is a draw. **If every remaining station
-dies on one tick, the match is a draw.** A draw restarts like a victory. M3.7 builds it; the harness acceptance
-test is M3.11's.
+dies on one tick, the match is a draw.** A draw restarts like a victory. The harness acceptance test is M3.11's.
+**A match of one seat has nobody to outlast and ends only on the clock**, which is what a solo test match against
+nothing does; with the stub AI (M3.10) it has an opponent.
 
 ### Q66 — Where does damage round, and how often is a fire event sent? — **ANSWERED**
 

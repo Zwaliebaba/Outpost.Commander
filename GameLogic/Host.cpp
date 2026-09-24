@@ -40,6 +40,7 @@ void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
   m_intake = CommandIntake{};
   m_build.Begin(players);
   m_economy.Begin();
+  m_victory.Begin(players, m_tick);
   m_sessions.Begin(players, _matchSeed);
   m_accumulator.Begin();
 
@@ -249,6 +250,10 @@ void Host::RunOneTick()
   // M3.4: DEATHS, LAST BEFORE VICTORY (`TechnicalDesign.md` section 2). Everything at zero hull goes at once, so
   // what died this tick is one list M3.7 reads, whatever the systems above did with it on the way.
   m_deaths.Advance(m_world);
+
+  // M3.7: ELIMINATION AND VICTORY, LAST (`TechnicalDesign.md` section 2). A player whose station died above loses
+  // everything else on this same tick, and the accumulator sends those removals like any death.
+  m_victory.Advance(m_world, m_build, m_tick);
 
   ++m_tick;
   SendUpdates();

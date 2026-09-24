@@ -84,6 +84,11 @@ that.
 remaining ships from the field. The alternative — leaving a beaten player's ships alive to be hunted —
 turns the last ten minutes of every match into a search problem, and no amount of tuning fixes that.
 
+**A match that has not ended by six minutes ends on the clock** (`OpenQuestions.md` Q65): the surviving station
+with the most hull wins, a tie on that goes to credits plus the catalog cost of live ships and modules, and a tie
+on that is a draw. **If every remaining station dies on one tick, the match is a draw.** A draw restarts like a
+victory.
+
 **A player who disconnects keeps their slot.** Their ships hold position and keep whatever autonomous
 behavior they have, the slot is held indefinitely, and they may reconnect -- recognized by a session token
 the host issued when they first joined ([`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md)) — which is mechanically free

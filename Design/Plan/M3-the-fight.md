@@ -388,6 +388,14 @@ and no amount of tuning fixes that.
 removal list; the last player standing wins; and simultaneous destruction on one tick resolves the same
 way every run rather than by iteration order.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, WITH `OpenQuestions.md` Q65 AS RULED THAT DAY.** `GameLogic/Victory` runs last in
+the tick, after deaths. Elimination is read from the world: a player with no station has everything else they own
+destroyed on the same tick, modules included, and the accumulator sends those removals like any death. So it is
+state the hash already covers, and nothing new is hashed. Two or more stations dying together with none left is a
+draw, whatever the slot order. At `MATCH_CLOCK_TICKS` (7,200) the clock decides: station hull, then credits plus
+catalog cost, then a draw. A one-seat match ends only on the clock. **What the host does once a match is over is
+M3.8's**; until then it ticks on. `VictoryTests.cpp` pins every clause.
+
 ### M3.8 — The match restarts · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** `Interface.md` §7's *When a match ends*; `OpenQuestions.md` Q25; ADR-003.
