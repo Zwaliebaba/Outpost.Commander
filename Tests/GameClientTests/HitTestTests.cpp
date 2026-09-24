@@ -1,5 +1,7 @@
 #include "pch.h"
 
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -112,8 +114,17 @@ public:
 
       Assert::AreEqual(static_cast<std::size_t>(1), Outpost::CandidatesUnderTap(pose, At(x + 20.0f, y), entities).size(),
                        L"a ship inside the radius was missed at some pitch");
-      Assert::AreEqual(static_cast<std::size_t>(0), Outpost::CandidatesUnderTap(pose, At(x + 30.0f, y), entities).size(),
-                       L"a ship outside the radius was taken at some pitch");
+
+      // OUTSIDE BOTH THE RADIUS AND THE HULL. Since 2026-09-24 a tap on the hull also takes the ship, and at
+      // the near end a Fighter is wider than 30 pixels, so "outside" is whichever is further: 30 pixels, or
+      // ten units past the hull's edge across the view (heading zero puts world y across the screen).
+      const float half = static_cast<float>(Outpost::Hull(Outpost::Design(Outpost::DesignId::Fighter).hull).sizeUnits) * 0.5f;
+      float edgeX = 0.0f;
+      float edgeY = 0.0f;
+      Assert::IsTrue(AuthoredOf(pose, 0.0f, half + 10.0f, edgeX, edgeY));
+      const float outside = std::max(30.0f, std::fabs(edgeX - x));
+      Assert::AreEqual(static_cast<std::size_t>(0), Outpost::CandidatesUnderTap(pose, At(x + outside, y), entities).size(),
+                       L"a ship outside the radius and its hull was taken at some pitch");
     }
   }
 
@@ -201,6 +212,83 @@ public:
 
 private:
   static constexpr Outpost::PlayerId NO_OWNER = Outpost::NO_PLAYER;
+};
+
+/// **A TAP ON A HULL IS A TAP ON IT**, however far from the center, since 2026-09-24. The M2 session on the
+/// device tapped a station's body at the new 1,200-unit opening view, more than 24 pixels from its center,
+/// and the tap became an order to fly a Miner into the station.
+TEST_CLASS(TheHullFootprint)
+{
+public:
+  TEST_METHOD(ATapOnAStationsHullFindsItPastThePickRadius)
+  {
+    const Outpost::CameraPose pose = TopDown(1200.0f);
+    const std::vector<Outpost::EntityRecord> entities{Record(2, 0.0f, 0.0f, MINE, Outpost::DesignId::Station)};
+
+    // Ninety units off center: inside the station's 110-unit half size, and well past 24 pixels at 1,200.
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 0.0f, 90.0f, x, y));
+
+    const std::vector<Outpost::PickCandidate> found = Outpost::CandidatesUnderTap(pose, At(x, y), entities);
+    Assert::AreEqual(static_cast<std::size_t>(1), found.size(), L"a tap on the station's hull missed it");
+    Assert::IsTrue(found[0].tier == Outpost::PickTier::OwnStructure);
+    Assert::IsTrue(found[0].screenDistanceAuthoredPixels > Neuron::PICK_RADIUS_AUTHORED_PIXELS, L"this tap was inside the old radius");
+  }
+
+  TEST_METHOD(TheGroundJustPastTheHullIsEmptyAcrossTheView)
+  {
+    const Outpost::CameraPose pose = TopDown(1200.0f);
+    const std::vector<Outpost::EntityRecord> entities{Record(2, 0.0f, 0.0f, MINE, Outpost::DesignId::Station)};
+
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 0.0f, 140.0f, x, y));
+    Assert::IsTrue(Outpost::CandidatesUnderTap(pose, At(x, y), entities).empty());
+  }
+
+  TEST_METHOD(TheGroundJustPastTheHullIsEmptyAlongTheView)
+  {
+    // THE AXIS THE PITCH FORESHORTENS. A footprint measured on the glass would be a circle as wide as the
+    // hull's unforeshortened width, and would reach this point, which is on the ground behind the station.
+    const Outpost::CameraPose pose = TopDown(1200.0f);
+    const std::vector<Outpost::EntityRecord> entities{Record(2, 0.0f, 0.0f, MINE, Outpost::DesignId::Station)};
+
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 140.0f, 0.0f, x, y));
+    Assert::IsTrue(Outpost::CandidatesUnderTap(pose, At(x, y), entities).empty());
+  }
+
+  TEST_METHOD(AShipOverTheStationStillWins)
+  {
+    // The tier order still decides: a Miner parked on the station's hull is what a tap on it selects.
+    const Outpost::CameraPose pose = TopDown(1200.0f);
+    const std::vector<Outpost::EntityRecord> entities{Record(2, 0.0f, 0.0f, MINE, Outpost::DesignId::Station),
+                                                      Record(5, 60.0f, 20.0f, MINE, Outpost::DesignId::Miner)};
+
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 60.0f, 20.0f, x, y));
+
+    Outpost::PickCandidate hit;
+    Assert::IsTrue(Outpost::ResolvePick(Outpost::CandidatesUnderTap(pose, At(x, y), entities), hit));
+    Assert::IsTrue(hit.tier == Outpost::PickTier::OwnShip);
+    Assert::AreEqual(static_cast<int>(Outpost::PackIdentity(5, 1)), static_cast<int>(hit.identity));
+  }
+
+  TEST_METHOD(ASmallShipFarAwayStillHasThePickRadius)
+  {
+    // The floor is untouched: at the far end a Scout is a few pixels, and the 24 around its center are
+    // what make it tappable.
+    const Outpost::CameraPose pose = TopDown(Outpost::MAXIMUM_CAMERA_DISTANCE);
+    const std::vector<Outpost::EntityRecord> entities{Record(7, 400.0f, 300.0f, MINE, Outpost::DesignId::Miner)};
+
+    float x = 0.0f;
+    float y = 0.0f;
+    Assert::IsTrue(AuthoredOf(pose, 400.0f, 300.0f, x, y));
+    Assert::AreEqual(static_cast<std::size_t>(1), Outpost::CandidatesUnderTap(pose, At(x + 20.0f, y), entities).size());
+  }
 };
 
 /// `Interface.md` section 4's table, walked row by row.

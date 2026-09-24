@@ -194,7 +194,15 @@ hands the verb back.
 **A tap's meaning comes from what is under it** — within §1's **24-pixel pick radius**, nearest first,
 in the stated tier order — which is the only way to have a verb without a modifier key. A point hit test
 against a four-pixel silhouette is a coin flip, and the failure is the expensive one: you miss the ship,
-hit empty space, and the fleet you had selected flies there. With something selected:
+hit empty space, and the fleet you had selected flies there.
+
+**The radius is a floor, and a hull reaches further when it is drawn larger.** A tap whose point on the
+plane lies inside a hull's footprint, half its `sizeUnits` around its center, is on that hull however far
+from the center it lands. The two failures are mirror images: a small ship far away needs the 24 pixels,
+and a station close up needs its body. **This was added on 2026-09-24**, when the camera opened at half its
+old distance and the device found the failure. A station was 240 pixels across. A tap on its body, more
+than 24 from its center, became an order to fly a Miner into it. Measuring on the plane rather than the
+glass keeps the ground just behind a raked hull empty. With something selected:
 
 | Tapped | Order |
 |---|---|
