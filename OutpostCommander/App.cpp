@@ -407,6 +407,9 @@ void RunProbe(const CoreWindow& _window)
   Neuron::TextRenderer textRenderer;
   bool atlasAttempted = false;
   Outpost::HudFrame hud;
+
+  // M3.3b: the alerts as last drawn, which is what a tap on one is resolved against.
+  std::vector<Outpost::AlertPlacement> shownAlerts;
   std::vector<Neuron::GlyphQuad> hudQuads;
   Outpost::QuitConfirm quitConfirm;
 
@@ -635,6 +638,7 @@ void RunProbe(const CoreWindow& _window)
     // panel never shows the dead.
     static_cast<void>(selection.RetainLiving(clientFrame.Replicas().Entities()));
     clientFrame.Wrecks().Expire(nowMs);
+    clientFrame.Alerts().Expire(nowMs);
 
     // M3.8: A MATCH ENDED. The frame has cleared what it derived and is joining the next; what the app holds goes
     // too, and the seat is reported again so the camera opens on the new station and the sky is the new seed's.
@@ -882,6 +886,17 @@ void RunProbe(const CoreWindow& _window)
             Report(log, "HUD quit confirmed");
             quitConfirmed = true;
             running = false;
+          }
+          break;
+
+        case Outpost::HudAction::RecenterOnAlert:
+          // THE HANDOFF'S RULE 7: THE CAMERA GOES WHERE THE ALERT POINTS, through the same recenter a hold performs.
+          if (hudHit.argument < shownAlerts.size())
+          {
+            const Outpost::AlertPlacement& alert = shownAlerts[hudHit.argument];
+            clientFrame.Camera() =
+              Outpost::Recenter(clientFrame.Camera(), Outpost::RecenterRequest{.stationX = alert.worldX, .stationY = alert.worldY});
+            Report(log, "ALERT tapped, recentering on " + std::to_string(alert.worldX) + "," + std::to_string(alert.worldY));
           }
           break;
 
@@ -1613,6 +1628,14 @@ void RunProbe(const CoreWindow& _window)
         // **LIVE, EVERY FRAME, AND NOT ANIMATED** -- the count is what the player reads while their
         // hand covers the double tap's circle.
         hudState.groups = Outpost::SummarizeSelection(selection.Identities(), clientFrame.Replicas().Entities());
+
+        // M3.3b: THE HULL BARS AND THE ALERTS, placed last, because an alert keeps clear of every panel above.
+        const float hudAspect = (sceneTarget.HeightPixels() > 0)
+                                  ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))
+                                  : 1.0f;
+        hudState.hullBars = Outpost::PlaceHullBars(drawnRecords, clientFrame.Camera(), hudAspect);
+        hudState.alerts = Outpost::PlaceAlerts(clientFrame.Alerts(), clientFrame.Camera(), hudAspect, Outpost::PanelBands(hudState), nowMs);
+        shownAlerts = hudState.alerts;
 
         hud = Outpost::BuildHud(hudState);
         hudQuads.clear();

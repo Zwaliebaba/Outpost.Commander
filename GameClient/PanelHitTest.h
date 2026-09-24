@@ -42,7 +42,11 @@ enum class HudAction : std::uint8_t
   StayInMatch,
 
   /// The second of the quit's two taps, and the only thing in the interface that ends the match.
-  ConfirmQuit
+  ConfirmQuit,
+
+  /// **A DAMAGE ALERT, TAPPED** (M3.3b, the handoff's rule 7): the camera recenters where it points. The argument is the
+  /// alert's index in `HudState::alerts`. A hit rectangle and not a gesture, so R21's budget is untouched.
+  RecenterOnAlert
 };
 
 /// One rectangle the hit test knows about. R8: a public aggregate.

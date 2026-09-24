@@ -112,6 +112,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Beams.cpp" />
+    <ClCompile Include="DamageAlert.cpp" />
+    <ClCompile Include="HullBar.cpp" />
     <ClCompile Include="Wrecks.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ClientFrame.cpp" />
@@ -144,6 +146,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Beams.h" />
+    <ClInclude Include="DamageAlert.h" />
+    <ClInclude Include="HullBar.h" />
     <ClInclude Include="Wrecks.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ClientFrame.h" />

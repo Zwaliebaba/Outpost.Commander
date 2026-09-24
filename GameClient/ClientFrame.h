@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Beams.h"
+#include "DamageAlert.h"
 #include "Wrecks.h"
 #include "Camera.h"
 #include "FieldView.h"
@@ -209,6 +210,18 @@ public:
     return (m_hasResult && ((_nowMilliseconds - m_resultHeardMilliseconds) < RESULT_SHOWN_MILLISECONDS)) ? &m_lastResult : nullptr;
   }
 
+  /// **THE ATTACKS ON THIS PLAYER** (M3.3b, ADR-020): every fire event naming one of its entities, and every removal of
+  /// one, folded in as the drain applies them. Mutable so the frame can expire what has gone quiet.
+  [[nodiscard]] DamageAlerts& Alerts() noexcept
+  {
+    return m_alerts;
+  }
+
+  [[nodiscard]] const DamageAlerts& Alerts() const noexcept
+  {
+    return m_alerts;
+  }
+
   /// The wrecks (M3.4), spawned by every removal the drain applies -- and never by the store forgetting.
   [[nodiscard]] WreckSet& Wrecks() noexcept
   {
@@ -255,6 +268,7 @@ public:
 private:
   ReplicaStore m_replicas;
   TracerSet m_tracers;
+  DamageAlerts m_alerts;
   WreckSet m_wrecks;
   OrderMarkerSet m_markers;
 
@@ -325,6 +339,9 @@ private:
   /// **THE NEXT MATCH, FROM THIS SIDE** (M3.8, Q70): the result kept for the overlay, everything derived from the old
   /// match cleared, and a join with the token this client holds -- whose reply brings the new seed.
   void BeginNextMatch(const MatchEnded& _ended, std::uint64_t _nowMilliseconds);
+
+  /// Folds one update's fire events and removals into `m_alerts`, for whatever of this player's they name (M3.3b).
+  void NoteAttacks(const Update& _update, std::uint64_t _nowMilliseconds);
 
   /// The match that last ended and when this client heard, for the result overlay and to take each end once.
   MatchEnded m_lastResult{};

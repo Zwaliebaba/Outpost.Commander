@@ -29,6 +29,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     m_replicas.Clear();
     m_tracers.Clear();
     m_wrecks.Clear();
+    m_alerts.Clear();
     m_reconnecting = true;
     m_lastHeardMilliseconds = _nowMilliseconds;
     result.linkLost = true;
@@ -112,6 +113,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     const ReplicaStore::AcceptResult accepted = m_replicas.Accept(update, _nowMilliseconds);
     m_tracers.Note(update.fires, _nowMilliseconds);
     m_wrecks.Spawn(m_replicas.Removed(), _nowMilliseconds);
+    NoteAttacks(update, _nowMilliseconds);
     ++result.accepted;
     result.refused += accepted.refused;
     result.refreshed += accepted.refreshed;
@@ -276,12 +278,55 @@ void ClientFrame::BeginNextMatch(const MatchEnded& _ended, std::uint64_t _nowMil
   m_replicas.Clear();
   m_tracers.Clear();
   m_wrecks.Clear();
+  m_alerts.Clear();
   m_markers.Clear();
   m_outstanding.clear();
   m_issuedMilliseconds.clear();
 
   // THE SEED IS THE JOIN REPLY'S AND NOTHING ELSE'S (R23): join again with the token, into the same seat.
   m_join.Rejoin();
+}
+
+void ClientFrame::NoteAttacks(const Update& _update, std::uint64_t _nowMilliseconds)
+{
+  const PlayerId player = m_join.Player();
+  if (player == NO_PLAYER)
+  {
+    return;
+  }
+  const auto worldOf = [](const EntityRecord& _record, float& _outX, float& _outY) noexcept
+  {
+    _outX = static_cast<float>(DequantizePosition(_record.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
+    _outY = static_cast<float>(DequantizePosition(_record.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
+  };
+
+  // A SHOT AT ONE OF YOURS, found in the store by its whole identity.
+  for (const FireEvent& fire : _update.fires)
+  {
+    for (const EntityRecord& record : m_replicas.Entities())
+    {
+      if ((record.identity == fire.target) && (record.owner == player))
+      {
+        float x = 0.0f;
+        float y = 0.0f;
+        worldOf(record, x, y);
+        m_alerts.Note(record.identity, x, y, _nowMilliseconds);
+        break;
+      }
+    }
+  }
+
+  // ONE OF YOURS DIED, which the removal list is what says (M3.4).
+  for (const EntityRecord& removed : m_replicas.Removed())
+  {
+    if (removed.owner == player)
+    {
+      float x = 0.0f;
+      float y = 0.0f;
+      worldOf(removed, x, y);
+      m_alerts.Note(removed.identity, x, y, _nowMilliseconds);
+    }
+  }
 }
 
 } // namespace Outpost

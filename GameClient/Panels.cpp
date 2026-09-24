@@ -45,6 +45,12 @@ constexpr Neuron::QuadColor TEXT_2 = Neuron::HexColor(0x93A0A5);
 constexpr Neuron::QuadColor HULL = Neuron::HexColor(0xCFDDE0);
 constexpr Neuron::QuadColor HULL_LOST = Neuron::HexColor(0xFF3B2F, 0.85f);
 
+/// M3.3b's world hull bars and damage alerts, from the handoff's palette: `SIG.ALERT` for the lost portion and the
+/// alert, `HULL.REST` for what is left -- deliberately near-invisible -- and the bar's dark keyline.
+constexpr std::uint32_t SIG_ALERT_HEX = 0xFF3B2F;
+constexpr Neuron::QuadColor HULL_REST = Neuron::HexColor(0x2E3942);
+constexpr Neuron::QuadColor HULL_KEYLINE = Neuron::HexColor(0x0A0E12);
+
 /// The world's clear color, used by the interface only as the overlays' full-frame scrim.
 constexpr std::uint32_t SPACE_HEX = 0x04060A;
 
@@ -402,6 +408,109 @@ void EmitHatch(Emitter& _emit, const HudRect& _button)
 
 /// **THE PLACEMENT RADIUS** (M2.11), in `SIG.ARMED` at the handoff's 0.70 -- under the panels, so a panel over
 /// the ring still reads as a panel, and never in the hit table.
+/// **THE WORLD'S HULL BARS** (M3.3b), under every panel: a keyline, the hull left in `HULL.REST`, the hull lost in
+/// `SIG.ALERT`. A fixed size at every depth.
+void EmitHullBars(const HudState& _state, Emitter& _emit)
+{
+  const Neuron::QuadColor lost = Neuron::HexColor(SIG_ALERT_HEX);
+  for (const HullBarPlacement& bar : _state.hullBars)
+  {
+    const std::int32_t rest = (HULL_BAR_INNER_WIDTH_PIXELS * bar.percentRemaining) / 100;
+    _emit.Solid({bar.x, bar.y, HULL_BAR_WIDTH_PIXELS, HULL_BAR_HEIGHT_PIXELS}, HULL_KEYLINE);
+    if (rest > 0)
+    {
+      _emit.Solid({bar.x + 1, bar.y + 1, rest, HULL_BAR_HEIGHT_PIXELS - 2}, HULL_REST);
+    }
+    _emit.Solid({bar.x + 1 + rest, bar.y + 1, HULL_BAR_INNER_WIDTH_PIXELS - rest, HULL_BAR_HEIGHT_PIXELS - 2}, lost);
+  }
+}
+
+/// **THE DAMAGE ALERTS** (M3.3b, the handoff's *Damage alert*): a stripe on the edge, a triangle pointing out of the
+/// frame and a count, in `SIG.ALERT`, fading with the alert. **No scrim and no plate behind it**, because the moment
+/// it looks like chrome it becomes chrome. The renderer draws rectangles, so the triangle is stepped in two-pixel
+/// slices: its apex at 10 from the edge, its base at 44, 52 across.
+void EmitAlerts(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
+{
+  constexpr std::int32_t APEX = 10;
+  constexpr std::int32_t BASE = 44;
+  constexpr std::int32_t BASE_SPAN = 52;
+  constexpr std::int32_t SLICE = 2;
+
+  for (std::size_t index = 0; index < _state.alerts.size(); ++index)
+  {
+    const AlertPlacement& alert = _state.alerts[index];
+    const Neuron::QuadColor color = Neuron::HexColor(SIG_ALERT_HEX, alert.alpha);
+    const HudRect& body = alert.body;
+    const bool side = (alert.edge == AlertEdge::Left) || (alert.edge == AlertEdge::Right);
+
+    // The stripe on the edge, eight deep.
+    switch (alert.edge)
+    {
+    case AlertEdge::Left:
+      _emit.Solid({body.x, body.y, 8, body.h}, color);
+      break;
+    case AlertEdge::Right:
+      _emit.Solid({body.x + body.w - 8, body.y, 8, body.h}, color);
+      break;
+    case AlertEdge::Top:
+      _emit.Solid({body.x, body.y, body.w, 8}, color);
+      break;
+    case AlertEdge::Bottom:
+      _emit.Solid({body.x, body.y + body.h - 8, body.w, 8}, color);
+      break;
+    }
+
+    // The triangle, one slice at a time from the apex to the base, each as long as the triangle is wide there.
+    for (std::int32_t depth = APEX; depth < BASE; depth += SLICE)
+    {
+      const std::int32_t span = (BASE_SPAN * (depth + SLICE - APEX)) / (BASE - APEX);
+      const std::int32_t start = (ALERT_ALONG_PIXELS - span) / 2;
+      switch (alert.edge)
+      {
+      case AlertEdge::Left:
+        _emit.Solid({body.x + depth, body.y + start, SLICE, span}, color);
+        break;
+      case AlertEdge::Right:
+        _emit.Solid({body.x + body.w - depth - SLICE, body.y + start, SLICE, span}, color);
+        break;
+      case AlertEdge::Top:
+        _emit.Solid({body.x + start, body.y + depth, span, SLICE}, color);
+        break;
+      case AlertEdge::Bottom:
+        _emit.Solid({body.x + start, body.y + body.h - depth - SLICE, span, SLICE}, color);
+        break;
+      }
+    }
+
+    // The count: beside the triangle on a side edge, below it on the top, above it on the bottom.
+    HudRect count{};
+    switch (alert.edge)
+    {
+    case AlertEdge::Left:
+      count = {body.x + 52, body.y + 32, 52, 32};
+      break;
+    case AlertEdge::Right:
+      count = {body.x + body.w - 52 - 52, body.y + 32, 52, 32};
+      break;
+    case AlertEdge::Top:
+      count = {body.x, body.y + 56, body.w, 32};
+      break;
+    case AlertEdge::Bottom:
+      count = {body.x, body.y + body.h - 56 - 32, body.w, 32};
+      break;
+    }
+    _emit.Text(count, std::to_wstring(alert.count), Neuron::TextSize::Display,
+               side ? ((alert.edge == AlertEdge::Left) ? Neuron::TextAlign::Right : Neuron::TextAlign::Left) : Neuron::TextAlign::Center,
+               0.0f, Neuron::HexColor(0xFFFFFF, alert.alpha));
+
+    _hits.AddTarget(HudTarget{.hit = body,
+                              .tier = TouchTier::Combat,
+                              .action = HudAction::RecenterOnAlert,
+                              .argument = static_cast<std::uint8_t>(index),
+                              .surface = 'a'});
+  }
+}
+
 void EmitPlacementRing(const HudState& _state, Emitter& _emit)
 {
   for (const HudRect& square : _state.placementRing)
@@ -689,11 +798,13 @@ HudFrame BuildHud(const HudState& _state)
   // of it: an overlay's scrim dims the panels without hiding them, and suppresses nothing (the handoff's
   // *Overlays*) -- the hit table is untouched by it, so QUIT still answers under the result.
   EmitFrameTicks(emit);
+  EmitHullBars(_state, emit);
   EmitPlacementRing(_state, emit);
   EmitCredits(_state, emit, frame.hits);
   EmitSystem(_state, emit, frame.hits);
   EmitSelection(_state, emit, frame.hits);
   EmitBuild(_state, emit, frame.hits);
+  EmitAlerts(_state, emit, frame.hits);
 
   if (_state.link == LinkState::Reconnecting)
   {
@@ -720,6 +831,20 @@ HudFrame BuildHud(const HudState& _state)
   }
 
   return frame;
+}
+
+std::vector<HudRect> PanelBands(const HudState& _state)
+{
+  std::vector<HudRect> bands{CREDITS_PANEL, _state.quitArmed ? CONFIRM_PANEL : SYSTEM_PANEL};
+  if (!_state.groups.empty())
+  {
+    bands.push_back(ForHand(SelectionPanelRect(std::min(_state.groups.size(), MAXIMUM_SELECTION_GROUPS)), _state.leftHanded));
+  }
+  if (_state.buildPanelOpen)
+  {
+    bands.push_back(ForHand(BUILD_PANEL, _state.leftHanded));
+  }
+  return bands;
 }
 
 std::vector<SelectionGroupSummary> SummarizeSelection(std::span<const WireIdentity> _selection, std::span<const EntityRecord> _entities)

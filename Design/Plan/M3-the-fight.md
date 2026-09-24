@@ -258,6 +258,24 @@ undamaged ship draws no bar; the alert's target is at least 64 × 64; **a fourth
 replaces the oldest rather than drawing a fourth indicator**; and the geometry matches `geometry.json`
 through M1.14's gate, which now covers the alert's rects.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, NOT YET LOOKED AT ON THE DEVICE.** In the files named above, with two departures
+stated rather than hidden:
+
+- **`GameClient/DamageAlert`**: `DamageAlerts` folds every fire event naming one of yours, and every removal of one,
+  into clusters 1,500 units wide that last four seconds from their last hit and count the ships hit, not the shots.
+  A fourth cluster replaces the oldest. `PlaceAlerts` applies the handoff's rules: nothing on screen, the edge
+  where the center's ray along the bearing leaves the frame, the clamp clear of every panel, merging within 112, and
+  at most three. **The bearing comes from the plane, not the projection**, so an attack behind the camera points
+  down. A tap recenters there through `HudAction::RecenterOnAlert`, a combat-tier target.
+- **`GameClient/HullBar`**: an 18 x 6 bar over everything drawn under full hull, at a fixed size, 14 pixels above
+  its projected top. **Departure: stations and modules draw one too**, which "a damaged ship" does not name,
+  because the station is what a siege shells.
+- **Departure: the triangle is stepped**, in two-pixel slices, because the interface pass draws rectangles.
+- The fade on death is the wreck's (M3.4) rather than the bar's 200 ms.
+
+`DamageAlertTests.cpp` pins it, including the edge at four camera headings and a check that "right on the plane" is
+right on the screen.
+
 ### M3.4 — Death, the removal list, and wrecks · `GameLogic`, `GameClient` · both · agent
 
 **Read first:** ADR-003's removal-list paragraph; ADR-004; `TechnicalDesign.md` §4.

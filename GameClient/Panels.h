@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CreditFlash.h"
+#include "DamageAlert.h"
 #include "HudLayout.h"
+#include "HullBar.h"
 #include "JoinState.h"
 #include "PanelHitTest.h"
 #include "Selection.h"
@@ -81,6 +83,10 @@ struct HudState
   /// a module button is available -- an L2 needs an L1 of its kind, and a placement needs room under the cap.
   std::vector<DesignId> ownModules;
 
+  /// M3.3b: the damage alerts, placed (`PlaceAlerts`), and the hull bars over damaged things (`PlaceHullBars`).
+  std::vector<AlertPlacement> alerts;
+  std::vector<HullBarPlacement> hullBars;
+
   LinkState link = LinkState::Joining;
   bool quitArmed = false;
 
@@ -156,6 +162,9 @@ struct HudFrame
 /// what lets the suite assert every target's tier and clear space in both handedness states rather than
 /// measuring the screen by eye.
 [[nodiscard]] HudFrame BuildHud(const HudState& _state);
+
+/// **EVERY PANEL ON SCREEN FOR _state**, as `BuildHud` places it: what a damage alert's body stays clear of (M3.3b).
+[[nodiscard]] std::vector<HudRect> PanelBands(const HudState& _state);
 
 /// The selection grouped by design, as the panel shows it, **in `DesignId` order and at most four**.
 /// Identities the snapshot no longer carries are skipped, as `Selection::RetainLiving` would.

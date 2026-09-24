@@ -130,6 +130,7 @@
     <ClCompile Include="FieldViewTests.cpp" />
     <ClCompile Include="AsteroidMeshTests.cpp" />
     <ClCompile Include="CreditFlashTests.cpp" />
+    <ClCompile Include="DamageAlertTests.cpp" />
     <ClCompile Include="TapLatencyProbeTests.cpp" />
     <ClCompile Include="HudLayoutTests.cpp" />
     <ClCompile Include="BeamTests.cpp" />
