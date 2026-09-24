@@ -1193,6 +1193,13 @@ player can tell three fighters from thirty.
 
 **Recommendation: the three small builds.**
 
+**The spawn half was ruled on 2026-09-24, and not as recommended.** The owner watched two ships built back to
+back appear on one point, and asked for the spawn point to move out past the module circle. A new ship now
+appears at 400 plus half a module, half itself and 20: 495 for a Miner and 510 for a Fighter. If something is
+already there, it takes the first free slot of a ring around that point. That is ring slots, as recommended,
+but **outside** point defense rather than inside it, so a new ship is not covered by the station's 400. Q80's
+queue answers the mis-tap. The repeat build and the order at spawn stay open.
+
 ### Q75 — What weapon does the Cruiser carry, and what does it cost? — **needed by M4.4**
 
 **The finding (M18).** At 2,400 credits with four MassDrivers, the Cruiser loses to an equal cost of fighters

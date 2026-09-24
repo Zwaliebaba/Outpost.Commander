@@ -189,7 +189,7 @@ public:
     Assert::IsFalse(build.Item(MINE).active, L"it did not finish on the tick it was due");
   }
 
-  /// The ship arrives, owned, at full hull, in front of the station and clear of it.
+  /// The ship arrives, owned, at full hull, in front of the station and clear of its module circle (2026-09-24).
   TEST_METHOD(AFinishedShipAppearsInFrontOfTheStation)
   {
     Outpost::World world;
@@ -216,13 +216,61 @@ public:
     Assert::AreEqual(static_cast<int>(MINE), static_cast<int>(ship->owner));
     Assert::AreEqual(450, static_cast<int>(ship->hullRemaining), L"a new ship is undamaged");
 
-    // Clear of the station: half of each hull's size, which is 110 plus 30.
+    // Clear of the module circle: its 400, half a module frame's 90, half the Miner's 60, and 20 -- 495. It was
+    // 140, touching the station, until the owner moved it out past the modules on 2026-09-24.
     const Neuron::Vec2 anchor = Outpost::StartAnchor(2, MINE);
     const std::int64_t offset = Neuron::Sqrt(Neuron::LengthSquared(ship->position - anchor)) / Neuron::FIXED_ONE;
-    Assert::AreEqual(static_cast<std::int64_t>(140), offset);
+    Assert::AreEqual(static_cast<std::int64_t>(495), offset);
 
     // Toward the center, because that is where the station faces.
     Assert::IsTrue(Neuron::LengthSquared(ship->position) < Neuron::LengthSquared(anchor), L"it appeared behind the station");
+  }
+
+  /// **TWO SHIPS BUILT BACK TO BACK DO NOT APPEAR ON TOP OF EACH OTHER** (2026-09-24): the second takes the first free
+  /// slot of a ring around the spawn point, and neither lands inside the module circle.
+  TEST_METHOD(ShipsBuiltBackToBackDoNotOverlap)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    build.Grant(MINE, 2000);
+
+    for (int order = 0; order < 5; ++order)
+    {
+      static_cast<void>(build.Start(world, MINE, (order % 2 == 0) ? Outpost::DesignId::Fighter : Outpost::DesignId::Miner));
+    }
+    for (int tick = 0; tick < 2000; ++tick)
+    {
+      build.Advance(world);
+    }
+
+    const Neuron::Vec2 anchor = Outpost::StartAnchor(2, MINE);
+    std::vector<const Outpost::Entity*> ships;
+    for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+    {
+      const Outpost::Entity& entity = world.EntityInSlot(slot);
+      if (world.IsSlotAlive(slot) && (entity.owner == MINE) && (entity.design != Outpost::DesignId::Station))
+      {
+        ships.push_back(&entity);
+      }
+    }
+    Assert::AreEqual(std::size_t{5}, ships.size());
+
+    for (std::size_t first = 0; first < ships.size(); ++first)
+    {
+      const std::int64_t fromStation = Neuron::Sqrt(Neuron::LengthSquared(ships[first]->position - anchor)) / Neuron::FIXED_ONE;
+      Assert::IsTrue(fromStation >= 445, L"a ship appeared inside the module circle");
+      for (std::size_t second = first + 1; second < ships.size(); ++second)
+      {
+        const std::int64_t keepOut = (static_cast<std::int64_t>(Outpost::Hull(ships[first]->hull).sizeUnits) +
+                                      static_cast<std::int64_t>(Outpost::Hull(ships[second]->hull).sizeUnits)) /
+                                     2;
+        const std::int64_t apart =
+          Neuron::Sqrt(Neuron::LengthSquared(ships[first]->position - ships[second]->position)) / Neuron::FIXED_ONE;
+        Assert::IsTrue(apart >= keepOut, L"two new ships overlap");
+      }
+    }
   }
 
   /// **NO RALLY POINT** (`GameDesign.md` section 5): a new ship sits where it appears.

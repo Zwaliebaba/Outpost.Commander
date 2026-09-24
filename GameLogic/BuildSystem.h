@@ -208,11 +208,36 @@ private:
   /// been checked.
   [[nodiscard]] BuildRejection Commit(PlayerId _player, const BuildItem& _item) noexcept;
 
-  /// Where a finished ship appears: **in front of the station, clear of both hulls.** The offset is
-  /// half the station's size plus half the ship's (Q37's catalog figures), so the two never overlap
-  /// and nothing invents a distance. The station faces the center of the map
-  /// (`GameCore/Layout.h`), so ships appear on the side a player is looking toward.
+  /// Where a finished ship appears: **in front of the station, outside the circle its modules go in** (the owner,
+  /// 2026-09-24). The distance is `SpawnDistanceUnits`. The station faces the center of the map
+  /// (`GameCore/Layout.h`), so ships appear on the side a player is looking toward. **The cost**: a new ship
+  /// appears outside point defense's 400, which reaches exactly as far as the module circle (ADR-015).
   [[nodiscard]] static Neuron::Vec2 SpawnPoint(const Entity& _station, DesignId _design) noexcept;
+
+  /// **THE FIRST FREE PLACE AT THE SPAWN POINT** (2026-09-24): the spawn point itself if nothing is on it, else the
+  /// first slot of a ring around it, a hull's width apart, that no live entity's keep-out covers (Q61's
+  /// keep-out: half of each hull). Two ships built back to back no longer appear on top of each other, and a
+  /// ship left parked at the spawn point does not have the next one built inside it. The slots are tried in a
+  /// fixed order against the store in index order, so the answer is the same on every machine (R16). With every
+  /// slot taken it falls back to the spawn point.
+  [[nodiscard]] static Neuron::Vec2 FreeSpawnPoint(const World& _world, const Entity& _station, DesignId _design) noexcept;
+
+  /// **HOW FAR FROM THE STATION A SHIP'S CENTER MUST BE TO CLEAR THE MODULE CIRCLE**, in whole units: the circle's
+  /// 400, half a module frame, so it clears a module on the edge, and half the ship. Every figure is the catalog's or
+  /// `ModuleSite.h`'s.
+  [[nodiscard]] static std::int64_t ClearOfModulesUnits(DesignId _design) noexcept
+  {
+    return static_cast<std::int64_t>(MODULE_BUILD_RADIUS_UNITS) + (static_cast<std::int64_t>(Hull(HullId::ModuleFrame).sizeUnits) / 2) +
+           (static_cast<std::int64_t>(Hull(Design(_design).hull).sizeUnits) / 2);
+  }
+
+  /// **HOW FAR OUT A SHIP APPEARS**: clear of the module circle, and 20 more, the one figure here that is new. 510
+  /// for a Fighter and 495 for a Miner.
+  [[nodiscard]] static std::int64_t SpawnDistanceUnits(DesignId _design) noexcept
+  {
+    constexpr std::int64_t CLEARANCE_UNITS = 20;
+    return ClearOfModulesUnits(_design) + CLEARANCE_UNITS;
+  }
 
   /// Index 0 is `NO_PLAYER` and is never used; players are numbered from one, as `CommandIntake` does.
   std::array<std::uint32_t, MAX_PLAYERS + 1> m_credits{};

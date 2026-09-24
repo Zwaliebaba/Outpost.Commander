@@ -327,9 +327,12 @@ public:
   /// **AN EIGHTH TIME, BY Q80 (2026-09-24)**: the script's deliberate replacement at `QUEUE_TICK` now queues, a
   /// second order is queued and cancelled five ticks later, and `MatchHash` folds the queue. The same on all four
   /// MSVC pairs before it was pinned.
+  ///
+  /// **A NINTH TIME THE SAME DAY**: a new ship appears outside the module circle, at the first free slot of a ring
+  /// around the spawn point, so two built back to back no longer land on one point. The same on all four pairs.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x4aa4deb27a5cdf5full, RunScriptedMatch().hash);
+    Assert::AreEqual(0x206f21dcee417d2bull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

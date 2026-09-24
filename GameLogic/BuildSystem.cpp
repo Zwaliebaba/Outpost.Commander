@@ -2,6 +2,8 @@
 
 #include "BuildSystem.h"
 
+#include "RingAssignment.h"
+
 #include <vector>
 
 namespace Outpost
@@ -104,12 +106,7 @@ bool BuildSystem::Holds(PlayerId _player) const noexcept
 
 Neuron::Vec2 BuildSystem::SpawnPoint(const Entity& _station, DesignId _design) noexcept
 {
-  const std::uint32_t stationSize = Hull(Design(_station.design).hull).sizeUnits;
-  const std::uint32_t shipSize = Hull(Design(_design).hull).sizeUnits;
-
-  // Half of each, so the two hulls touch rather than overlap. Rounded up, because these are bounds.
-  const std::int64_t offsetUnits = static_cast<std::int64_t>((stationSize + shipSize + 1) / 2);
-  const std::int64_t offset = offsetUnits * Neuron::FIXED_ONE;
+  const std::int64_t offset = SpawnDistanceUnits(_design) * Neuron::FIXED_ONE;
 
   // The station's heading, through ADR-002's pinned table -- the only trigonometry the simulation is
   // allowed (R16). The station faces the center of the map, so a new ship appears on the side the
@@ -119,6 +116,43 @@ Neuron::Vec2 BuildSystem::SpawnPoint(const Entity& _station, DesignId _design) n
 
   return ClampToPlayArea(Neuron::Vec2{.x = static_cast<Neuron::Fixed>(static_cast<std::int64_t>(_station.position.x) + alongX),
                                       .y = static_cast<Neuron::Fixed>(static_cast<std::int64_t>(_station.position.y) + alongY)});
+}
+
+Neuron::Vec2 BuildSystem::FreeSpawnPoint(const World& _world, const Entity& _station, DesignId _design) noexcept
+{
+  // THE FIRST THREE RINGS AROUND THE SPAWN POINT: 1 + 6 + 12 + 18 slots.
+  constexpr std::size_t SPAWN_SLOTS = 37;
+
+  const Neuron::Vec2 base = SpawnPoint(_station, _design);
+  const std::int64_t outside = ClearOfModulesUnits(_design) * Neuron::FIXED_ONE;
+  const std::int64_t shipHalf = static_cast<std::int64_t>(Hull(Design(_design).hull).sizeUnits) / 2;
+  const auto spacing = static_cast<Neuron::Fixed>(static_cast<std::int64_t>(Hull(Design(_design).hull).sizeUnits) * Neuron::FIXED_ONE);
+
+  for (std::size_t index = 0; index < SPAWN_SLOTS; ++index)
+  {
+    const Neuron::Vec2 offset = RingSlotOffset(index, spacing);
+    const Neuron::Vec2 candidate = ClampToPlayArea(Neuron::Vec2{.x = base.x + offset.x, .y = base.y + offset.y});
+
+    // OUTSIDE THE MODULE CIRCLE, like the spawn point itself: a ring slot on the station's side of it would put
+    // the ship back among the modules.
+    bool free = Neuron::LengthSquared(candidate - _station.position) >= (outside * outside);
+    for (std::size_t slot = 0; (slot < _world.SlotCount()) && free; ++slot)
+    {
+      if (!_world.IsSlotAlive(slot))
+      {
+        continue;
+      }
+      const Entity& other = _world.EntityInSlot(slot);
+      const std::int64_t keepOut =
+        (shipHalf + (static_cast<std::int64_t>(Hull(Design(other.design).hull).sizeUnits) / 2)) * Neuron::FIXED_ONE;
+      free = Neuron::LengthSquared(other.position - candidate) >= (keepOut * keepOut);
+    }
+    if (free)
+    {
+      return candidate;
+    }
+  }
+  return base;
 }
 
 BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _design, std::uint32_t _buildRateMultiplierPercent) noexcept
@@ -369,7 +403,7 @@ void BuildSystem::Advance(World& _world) noexcept
     // Copied before `Create`, which may reallocate the store out from under the pointer above. **A module
     // appears where it was placed** (M2.11) and faces the way the station does; a ship at the spawn point.
     const bool isModule = IsModule(item.design);
-    const Neuron::Vec2 spawn = isModule ? item.site : SpawnPoint(*station, item.design);
+    const Neuron::Vec2 spawn = isModule ? item.site : FreeSpawnPoint(_world, *station, item.design);
     const Neuron::Angle heading = station->heading;
 
     static_cast<void>(_world.Create(spawn, heading, item.design, static_cast<PlayerId>(player)));

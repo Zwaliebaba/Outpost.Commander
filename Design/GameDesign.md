@@ -199,7 +199,10 @@ the first line — the station simply never asks to move.
 The station does four things: it builds, it receives ore, it shoots at whatever comes too close, and it
 dies. **Building is a single queue.**
 A design is selected, it is added to the queue, credits are deducted when it is queued, and the ship
-appears at the station's spawn point when the item finishes. An order the credits cannot cover is refused,
+appears at the station's spawn point when the item finishes. **The spawn point is outside the circle the
+modules go in**, on the side the station faces, and a ship built while another sits there takes the first
+free place on a ring around it, so two never appear on top of each other (the owner, 2026-09-24; `OpenQuestions.md`
+Q74). That puts a new ship just outside point defense's 400. An order the credits cannot cover is refused,
 so money is the only limit on the queue; the next item starts the tick the one before it finishes, and a
 cancel takes the newest first, refunded in full (`OpenQuestions.md` Q80). There is no rally point in the MVP; new
 ships sit where they appear.
