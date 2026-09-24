@@ -195,8 +195,9 @@ may treat the tracer's travel as a thing with duration.
 missing tracer and nothing else — asserted by feeding the client a gap; and the tracer's lifetime is
 client-side, with the host never told it exists.
 
-**BUILT 2026-09-24, ALL FOUR PAIRS, NOT YET LOOKED AT ON THE DEVICE**, together with a mining beam, because the
-owner could see neither (`OpenQuestions.md` Q81). The wire half was M3.2's. The client half differs from the
+**BUILT 2026-09-24, ALL FOUR PAIRS, AND LOOKED AT ON THE DEVICE BY THE OWNER THE SAME DAY** ("it looks ok for
+now"; a fancier look can come later), together with a mining beam, because the owner could see neither
+(`OpenQuestions.md` Q81). The wire half was M3.2's. The client half differs from the
 files named above:
 
 - **`NeuronClient/BeamPass`** and its two shaders: one instanced draw of soft-edged quads on the plane, additive,
