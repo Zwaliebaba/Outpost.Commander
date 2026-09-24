@@ -772,7 +772,9 @@ is not available under pressure.
 
 **The milestone is finished when** two commanders on a generated, symmetric field send miners to rocks, the
 credits climb because ships did work, and both clients draw the same asteroids from the same seed with
-nothing about the map on the wire.
+nothing about the map on the wire. **Since 2026-09-24 (`OpenQuestions.md` Q79) the second commander is a seat,
+not a person**: a harness bot, or a second instance of the client played one window at a time as M1.15 was.
+The two-clients check is two instances on one machine, looked at in turn by the owner.
 
 **What M2 produces besides code:** Q26 answered and written into `GameDesign.md` §3; §9.3 struck through;
 and either a confirmation that the hulls read or an ADR for the overlay that fixes them.

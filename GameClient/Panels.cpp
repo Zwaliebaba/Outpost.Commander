@@ -537,7 +537,11 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   DesignId building = DesignId::Miner;
   if (BuildingDesign(_state.buildingWire, building))
   {
-    _emit.Text(nameRow, DesignDisplayName(building), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_NAME, TEXT);
+    // **"+N" FOR WHAT WAITS BEHIND IT** (Q80), on the name, so the row's geometry does not move.
+    const std::uint32_t queued = QueuedOf(_state.buildingWire);
+    const std::wstring name = (queued == 0) ? std::wstring{DesignDisplayName(building)}
+                                            : (std::wstring{DesignDisplayName(building)} + L"  +" + std::to_wstring(queued));
+    _emit.Text(nameRow, name, Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_NAME, TEXT);
     _emit.Text(nameRow, std::to_wstring(_state.buildProgressPercent) + L"%", Neuron::TextSize::Body, Neuron::TextAlign::Right, 0.0f,
                TEXT_2);
 
@@ -639,11 +643,13 @@ BuildButtonState ModuleButtonState(DesignId _design, const HudState& _state) noe
 
 bool BuildingDesign(std::uint8_t _wire, DesignId& _outDesign) noexcept
 {
-  if (_wire == 0)
+  // The low four bits are the design plus one; the high four the queue behind it (Q80, `GameCore/Update.h`).
+  const std::uint8_t designPlusOne = BuildingDesignOf(_wire);
+  if (designPlusOne == 0)
   {
     return false;
   }
-  _outDesign = static_cast<DesignId>(_wire - 1);
+  _outDesign = static_cast<DesignId>(designPlusOne - 1);
   return true;
 }
 

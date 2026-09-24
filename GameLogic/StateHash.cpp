@@ -126,6 +126,19 @@ std::uint64_t MatchHash(const World& _world, const BuildSystem& _build, const Ec
     FoldFixed(hash, item.site.x);
     FoldFixed(hash, item.site.y);
     FoldIdentity(hash, item.upgrade);
+
+    // Q80: THE QUEUE, which is paid for and therefore state. Its length first, so two queues that differ only in
+    // where one ends cannot hash alike.
+    FoldUInt32(hash, static_cast<std::uint32_t>(_build.Queued(player).size()));
+    for (const BuildItem& waiting : _build.Queued(player))
+    {
+      FoldByte(hash, static_cast<std::uint8_t>(waiting.design));
+      FoldUInt32(hash, waiting.ticksRequired);
+      FoldUInt32(hash, waiting.creditsSpent);
+      FoldFixed(hash, waiting.site.x);
+      FoldFixed(hash, waiting.site.y);
+      FoldIdentity(hash, waiting.upgrade);
+    }
   }
 
   return hash;

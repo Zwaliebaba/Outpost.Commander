@@ -31,7 +31,11 @@ namespace Neuron
 /// derived from the seed AND the count, and a version-4 client reading a version-5 reply would take the
 /// count's byte as the first of its token. **M2.6's `Mine` command type and M2.7's third cargo bit ride the
 /// same version**: none of the three has left this branch, so one step covers them all.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 5;
+///
+/// **6 SINCE Q80** (2026-09-24), when the per-player block's building-design byte gained the build queue's
+/// length in its high four bits. No size moved; a version-5 client would read a queued Miner as an unknown
+/// design, which is why a change in meaning is a version like a change in size.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 6;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///

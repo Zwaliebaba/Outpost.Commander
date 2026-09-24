@@ -85,6 +85,10 @@ void BuildSystem::Begin(std::size_t _playerCount) noexcept
   m_playerCount = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
   m_credits.fill(0);
   m_items.fill(BuildItem{});
+  for (std::vector<BuildItem>& queued : m_queued)
+  {
+    queued.clear();
+  }
   m_stranded = 0;
 
   for (std::size_t player = 1; player <= m_playerCount; ++player)
@@ -169,8 +173,22 @@ BuildRejection BuildSystem::StartModule(World& _world, PlayerId _player, DesignI
     return BuildRejection::NoStation;
   }
 
-  // **THE SITE BEFORE THE QUEUE** (M2.11): refused here, nothing has been refunded, charged or cancelled.
-  const std::vector<PlacedModule> placed = ModulesOf(_world, _player);
+  // **THE SITE BEFORE THE QUEUE** (M2.11): refused here, nothing has been refunded, charged or cancelled. **A
+  // placement already in the queue, or building, counts as if it were built** (Q80), so two queued modules can
+  // never overlap and the cap of four counts what is on its way.
+  std::vector<PlacedModule> placed = ModulesOf(_world, _player);
+  const BuildItem& current = m_items[static_cast<std::size_t>(_player)];
+  if (current.active && IsModule(current.design) && !current.upgrade.IsValid())
+  {
+    placed.push_back(PlacedModule{.position = current.site, .design = current.design});
+  }
+  for (const BuildItem& waiting : m_queued[static_cast<std::size_t>(_player)])
+  {
+    if (IsModule(waiting.design) && !waiting.upgrade.IsValid())
+    {
+      placed.push_back(PlacedModule{.position = waiting.site, .design = waiting.design});
+    }
+  }
   if (!CheckModuleSite(station->position, station->design, placed, _site, _design).Legal())
   {
     return BuildRejection::IllegalSite;
@@ -208,6 +226,19 @@ BuildRejection BuildSystem::StartUpgrade(World& _world, PlayerId _player, Entity
     return BuildRejection::NotUpgradeable;
   }
 
+  // **ONE UPGRADE A MODULE AT A TIME** (Q80): a second, queued behind the first, would upgrade a level the
+  // module no longer has.
+  const BuildItem& current = m_items[static_cast<std::size_t>(_player)];
+  bool pending = current.active && (current.upgrade == _module);
+  for (const BuildItem& waiting : m_queued[static_cast<std::size_t>(_player)])
+  {
+    pending = pending || (waiting.upgrade == _module);
+  }
+  if (pending)
+  {
+    return BuildRejection::NotUpgradeable;
+  }
+
   const std::uint32_t cost = UpgradeCostCredits(module->design, _level);
   return Commit(_player, BuildItem{.active = true,
                                    .design = _level,
@@ -220,23 +251,27 @@ BuildRejection BuildSystem::StartUpgrade(World& _world, PlayerId _player, Entity
 
 BuildRejection BuildSystem::Commit(PlayerId _player, const BuildItem& _item) noexcept
 {
-  // THE REFUND COUNTS TOWARD THE NEW COST (Q35). Replacing a Fighter with a Fighter has to work, and it would
-  // not if the new cost were checked against a balance the old item was still holding.
   BuildItem& item = m_items[static_cast<std::size_t>(_player)];
-  const std::uint32_t refund = item.active ? item.creditsSpent : 0;
   std::uint32_t& credits = m_credits[static_cast<std::size_t>(_player)];
 
-  // **AND AN ORDER THE PLAYER CANNOT PAY FOR TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md`
-  // section 6 keeps an unaffordable button lit with its cost reddened -- "save up" -- and a tap on it used to
-  // cancel the item in progress and build nothing, throwing away up to twenty seconds of the slot. Checked
-  // before anything moves, so the item keeps building and the balance is exactly what it was.
-  if (static_cast<std::uint64_t>(credits) + refund < _item.creditsSpent)
+  // **AN ORDER THE PLAYER CANNOT PAY FOR TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md` section 6
+  // keeps an unaffordable button lit with its cost reddened -- "save up" -- and money is the queue's only limit
+  // (Q80), so this is the one check between a tap and the queue.
+  if (credits < _item.creditsSpent)
   {
     return BuildRejection::Unaffordable;
   }
+  credits -= _item.creditsSpent;
 
-  credits = credits + refund - _item.creditsSpent;
-  item = _item;
+  // **BEHIND WHAT IS BUILDING, NOT IN PLACE OF IT** (Q80; until 2026-09-24 this replaced it, Q35).
+  if (item.active)
+  {
+    m_queued[static_cast<std::size_t>(_player)].push_back(_item);
+  }
+  else
+  {
+    item = _item;
+  }
   return BuildRejection::None;
 }
 
@@ -247,13 +282,21 @@ bool BuildSystem::Cancel(PlayerId _player) noexcept
     return false;
   }
 
+  // **THE NEWEST FIRST** (Q80): the last item queued, and only with nothing queued the one in progress. Full, and
+  // from what was taken rather than from the catalog (Q35).
+  std::vector<BuildItem>& queued = m_queued[static_cast<std::size_t>(_player)];
+  if (!queued.empty())
+  {
+    m_credits[static_cast<std::size_t>(_player)] += queued.back().creditsSpent;
+    queued.pop_back();
+    return true;
+  }
+
   BuildItem& item = m_items[static_cast<std::size_t>(_player)];
   if (!item.active)
   {
     return false;
   }
-
-  // FULL, AND FROM WHAT WAS TAKEN RATHER THAN FROM THE CATALOG (Q35).
   m_credits[static_cast<std::size_t>(_player)] += item.creditsSpent;
   item = BuildItem{};
   return true;
@@ -266,6 +309,15 @@ void BuildSystem::Advance(World& _world) noexcept
   for (std::size_t player = 1; player <= m_playerCount; ++player)
   {
     BuildItem& item = m_items[player];
+
+    // **THE NEXT IN LINE MOVES UP** (Q80) on the tick after the one before it finished, and builds on that same
+    // tick -- so the station never stands idle between two queued items.
+    std::vector<BuildItem>& queued = m_queued[player];
+    if (!item.active && !queued.empty())
+    {
+      item = queued.front();
+      queued.erase(queued.begin());
+    }
     if (!item.active)
     {
       continue;
@@ -344,10 +396,20 @@ const BuildItem& BuildSystem::Item(PlayerId _player) const noexcept
   return Holds(_player) ? m_items[static_cast<std::size_t>(_player)] : NOTHING;
 }
 
+std::span<const BuildItem> BuildSystem::Queued(PlayerId _player) const noexcept
+{
+  if (!Holds(_player))
+  {
+    return {};
+  }
+  return m_queued[static_cast<std::size_t>(_player)];
+}
+
 std::uint8_t BuildSystem::WireBuildingDesign(PlayerId _player) const noexcept
 {
   const BuildItem& item = Item(_player);
-  return item.active ? static_cast<std::uint8_t>(static_cast<std::uint8_t>(item.design) + 1) : 0;
+  const std::uint8_t designPlusOne = item.active ? static_cast<std::uint8_t>(static_cast<std::uint8_t>(item.design) + 1) : 0;
+  return PackBuilding(designPlusOne, static_cast<std::uint32_t>(Queued(_player).size()));
 }
 
 std::uint8_t BuildSystem::WireProgressPercent(PlayerId _player) const noexcept

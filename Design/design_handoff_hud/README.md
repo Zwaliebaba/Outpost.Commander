@@ -213,7 +213,9 @@ outside it, on the station, or on another module does nothing. Cap of four modul
 at start, and all six buttons stay live while something is building — so tapping one replaces the
 in-progress item and the spent credits are gone. Dimming the six would overload *unavailable* with a
 second meaning. The fix is a refund-on-replace rule in `GameCore`, which is a simulation decision, not
-an interface one. Raise it before shipping M2.
+an interface one. Raise it before shipping M2. *(Resolved 2026-09-24 by `OpenQuestions.md` Q80: a tap while
+something builds now adds to a queue, paid for when queued, and the build progress row shows "+N" for what
+waits.)*
 
 ### 4. Damage alert — at the frame edge, in the direction of the event
 

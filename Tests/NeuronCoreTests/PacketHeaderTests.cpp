@@ -140,10 +140,10 @@ public:
   /// **THE VERSION MOVES WITH EVERY CHANGE TO ANY RECORD.** It is asserted because the version going
   /// up is the whole of what stops an older client hanging against a newer host -- 1 before the join,
   /// 2 with it, 3 since M1.6's build orders, 4 since ADR-024 changed every record at once, 5 since M2.3's
-  /// join reply carried the player count.
-  TEST_METHOD(TheProtocolVersionIsFiveSinceTheFieldsPlayerCount)
+  /// join reply carried the player count, 6 since Q80 put the build queue's length in the building byte.
+  TEST_METHOD(TheProtocolVersionIsSixSinceTheBuildQueue)
   {
-    Assert::AreEqual(std::uint8_t{5}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{6}, Neuron::PROTOCOL_VERSION);
   }
 
   /// `Update` took `Snapshot`'s value rather than a new one: the unit changed, the number did not need to.

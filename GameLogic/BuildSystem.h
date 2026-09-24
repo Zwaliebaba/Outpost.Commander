@@ -6,6 +6,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <vector>
 
 namespace Outpost
 {
@@ -128,17 +130,11 @@ public:
   /// Starts a match: every player on `STARTING_CREDITS` and building nothing.
   void Begin(std::size_t _playerCount) noexcept;
 
-  /// Orders a design. Deducts its cost **now** (`GameDesign.md` section 5).
+  /// Orders a design. Deducts its cost **now**, when it is queued (`GameDesign.md` section 5, Q80).
   ///
-  /// **AN ORDER WHILE SOMETHING IS BUILDING REPLACES IT, AT A FULL REFUND** (Q35, answered
-  /// 2026-09-22). The design handoff keeps all six build buttons live while something builds, so a
-  /// replacement is one tap on a button the player is already using -- it is the common path, not the
-  /// rare one, and silently burning the displaced item's credits would be the sharpest edge in the
-  /// interface.
-  ///
-  /// **THE REFUND COUNTS TOWARD THE NEW COST**, so replacing a Fighter with a Fighter always works.
-  /// Checking the bare balance would refuse a replacement a player can obviously afford. **An order the
-  /// balance and the refund together cannot cover changes nothing** and the item in progress keeps building.
+  /// **AN ORDER WHILE SOMETHING IS BUILDING JOINS THE QUEUE BEHIND IT** (`OpenQuestions.md` Q80, the owner's
+  /// ruling of 2026-09-24). Until then it replaced the item in progress at a full refund (Q35). **Money is the
+  /// only limit**: an order the balance cannot cover changes nothing, and the queue has no other cap.
   [[nodiscard]] BuildRejection Start(World& _world, PlayerId _player, DesignId _design,
                                      std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
 
@@ -157,8 +153,9 @@ public:
   [[nodiscard]] BuildRejection StartUpgrade(World& _world, PlayerId _player, EntityId _module, DesignId _level,
                                             std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
 
-  /// Cancels what is building, refunding **in full** (Q35). False when nothing was building, which is
-  /// not an error -- a tap on a cancel target that has already completed is ordinary.
+  /// Cancels **the newest item first** (Q80): the last one queued, or with nothing queued the item in progress,
+  /// refunding **in full** (Q35). False when nothing was building, which is not an error -- a tap on a cancel
+  /// target that has already completed is ordinary.
   bool Cancel(PlayerId _player) noexcept;
 
   /// One tick of every player's item, and the ship that finishes. **Called after movement**, so a ship
@@ -173,7 +170,11 @@ public:
 
   [[nodiscard]] const BuildItem& Item(PlayerId _player) const noexcept;
 
-  /// ADR-003's per-player block, both bytes.
+  /// What waits behind the item in progress, oldest first (Q80). Empty when the item is the last.
+  [[nodiscard]] std::span<const BuildItem> Queued(PlayerId _player) const noexcept;
+
+  /// ADR-003's per-player block, both bytes. **The design byte carries the queue's length in its high four bits
+  /// since Q80** (`GameCore/Update.h`, `PackBuilding`).
   ///
   /// **ZERO MEANS NOTHING IS BUILDING, SO A DESIGN IS ITS IDENTITY PLUS ONE** -- and that is the one
   /// place the wire's design byte is not `EntityRecord::designIdentity`'s raw value. The asymmetry is
@@ -201,10 +202,10 @@ public:
 private:
   [[nodiscard]] bool Holds(PlayerId _player) const noexcept;
 
-  /// The half of every start that is the same: if the balance plus the refund of what is building covers
-  /// _item's cost, refund, charge and hold _item; **otherwise touch nothing**, so an unaffordable tap leaves
-  /// the item in progress building (the 2026-09-23 review, m1). Only called once everything about the order
-  /// has been checked.
+  /// The half of every start that is the same: if the balance covers _item's cost, charge it and hold _item --
+  /// as the item in progress when nothing is building, and at the back of the queue otherwise (Q80).
+  /// **Otherwise touch nothing** (the 2026-09-23 review, m1). Only called once everything about the order has
+  /// been checked.
   [[nodiscard]] BuildRejection Commit(PlayerId _player, const BuildItem& _item) noexcept;
 
   /// Where a finished ship appears: **in front of the station, clear of both hulls.** The offset is
@@ -216,6 +217,9 @@ private:
   /// Index 0 is `NO_PLAYER` and is never used; players are numbered from one, as `CommandIntake` does.
   std::array<std::uint32_t, MAX_PLAYERS + 1> m_credits{};
   std::array<BuildItem, MAX_PLAYERS + 1> m_items{};
+
+  /// Q80: what waits behind each player's item, oldest first. Paid for already.
+  std::array<std::vector<BuildItem>, MAX_PLAYERS + 1> m_queued{};
 
   std::size_t m_playerCount = 0;
   std::uint64_t m_stranded = 0;

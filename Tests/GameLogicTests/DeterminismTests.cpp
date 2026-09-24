@@ -16,9 +16,10 @@ constexpr std::size_t PLAYERS = 2;
 /// three ships in a row -- and short enough that running it three times costs a fraction of a second.
 constexpr std::uint32_t TICKS = 2400;
 
-/// The tick a deliberate replacement lands on, so the run covers Q35's refund path rather than only the
-/// completion path.
-constexpr std::uint32_t REPLACEMENT_TICK = 910;
+/// **THE QUEUE, DELIBERATELY** (Q80): an order that joins the queue behind the item in progress, and five ticks
+/// later a second that is cancelled at once, so the newest-first cancel and its refund are inside the hash. It
+/// was one deliberate replacement until 2026-09-24, when Q80 took the replacing away.
+constexpr std::uint32_t QUEUE_TICK = 910;
 
 /// **THE TICK THE MINERS ARE ORDERED ELSEWHERE** (M2.6), so abandoning the loop mid-cycle, cargo aboard, is
 /// inside the hash -- and the mine orders after it pick the cycle back up.
@@ -42,6 +43,11 @@ constexpr std::uint32_t FIGHT_TICK = 1600;
                           .targetX = WirePoint(_x),
                           .targetY = WirePoint(_y),
                           .selection = std::move(_selection)};
+}
+
+[[nodiscard]] Outpost::Command CancelOrder(std::uint16_t _sequence)
+{
+  return Outpost::Command{.sequence = _sequence, .type = Outpost::CommandType::CancelBuild, .selection = {}};
 }
 
 [[nodiscard]] Outpost::Command BuildOrder(std::uint16_t _sequence, Outpost::DesignId _design)
@@ -175,10 +181,15 @@ struct MatchResult
       }
     }
 
-    // One deliberate replacement, so Q35's refund is inside the hash rather than beside it.
-    if (tick == REPLACEMENT_TICK)
+    // Q80's QUEUE AND ITS CANCEL, inside the hash rather than beside it.
+    if (tick == QUEUE_TICK)
     {
       static_cast<void>(intake.Apply(world, build, 1, BuildOrder(++sequence, Outpost::DesignId::Fighter)));
+    }
+    if (tick == QUEUE_TICK + 5)
+    {
+      static_cast<void>(intake.Apply(world, build, 1, BuildOrder(++sequence, Outpost::DesignId::Miner)));
+      static_cast<void>(intake.Apply(world, build, 1, CancelOrder(++sequence)));
     }
 
     if ((tick % 50) == 25)
@@ -312,9 +323,13 @@ public:
   /// Q67, Q68, Q78), the hash folds each ship's weapon remainders and attack order, and the script now fights
   /// from `FIGHT_TICK`, where it stops the fleet moves that would call the fight off. The same on all four MSVC
   /// pairs before it was pinned.
+  ///
+  /// **AN EIGHTH TIME, BY Q80 (2026-09-24)**: the script's deliberate replacement at `QUEUE_TICK` now queues, a
+  /// second order is queued and cancelled five ticks later, and `MatchHash` folds the queue. The same on all four
+  /// MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x2664e2cf4dcbaf7full, RunScriptedMatch().hash);
+    Assert::AreEqual(0x4aa4deb27a5cdf5full, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

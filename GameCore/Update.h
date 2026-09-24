@@ -29,6 +29,30 @@ struct PlayerBlock
   [[nodiscard]] friend constexpr bool operator==(const PlayerBlock&, const PlayerBlock&) noexcept = default;
 };
 
+/// **THE BUILDING-DESIGN BYTE, SINCE Q80** (2026-09-24): its low four bits are the design building plus one, or
+/// zero for nothing, and its high four bits how many items wait in the queue behind it, saturating at 15. The
+/// design never needed more than three bits, so the queue took the spare ones and the block did not grow.
+inline constexpr std::uint8_t BUILDING_DESIGN_BITS = 0x0F;
+inline constexpr std::uint32_t QUEUED_ON_WIRE_MAX = 15;
+
+[[nodiscard]] constexpr std::uint8_t PackBuilding(std::uint8_t _designPlusOne, std::uint32_t _queued) noexcept
+{
+  const std::uint32_t queued = (_queued > QUEUED_ON_WIRE_MAX) ? QUEUED_ON_WIRE_MAX : _queued;
+  return static_cast<std::uint8_t>((_designPlusOne & BUILDING_DESIGN_BITS) | (queued << 4));
+}
+
+/// The design plus one, or zero for nothing building.
+[[nodiscard]] constexpr std::uint8_t BuildingDesignOf(std::uint8_t _byte) noexcept
+{
+  return static_cast<std::uint8_t>(_byte & BUILDING_DESIGN_BITS);
+}
+
+/// How many wait behind it, up to 15.
+[[nodiscard]] constexpr std::uint32_t QueuedOf(std::uint8_t _byte) noexcept
+{
+  return static_cast<std::uint32_t>(_byte) >> 4;
+}
+
 /// ADR-004: shooter, target, weapon. **Seven bytes since ADR-024**, because both identities are three,
 /// and **repeated for `FIRE_REPEAT_TICKS` consecutive updates** so a lost datagram costs a tracer only
 /// when three in a row are lost.

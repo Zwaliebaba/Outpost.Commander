@@ -70,8 +70,8 @@ fourth slots are a configuration value rather than a change. What two slots buy 
 minutes instead of twenty, which is the only mechanism this project has for answering the balance
 questions — twenty matches in an evening, rather than one match and a set of opinions.
 
-**A solo match against three AI players is a first-class configuration**, and it is the only way the game
-is testable before there are four people to test it with. It is not a single-player *mode*: the
+**A solo match against three AI players is a first-class configuration**, and it is how the game is tested:
+by the owner alone, against AI, with no gate waiting for a second person (`OpenQuestions.md` Q79). It is not a single-player *mode*: the
 architecture is unchanged, the host is still a separate process, and the client still links no
 simulation (`AGENTS.md` R19). What it costs is stated plainly in [`TechnicalDesign.md`](TechnicalDesign.md)
 §5 — a packaged client cannot reach a host on the same machine without a developer-mode loopback
@@ -198,8 +198,10 @@ the first line — the station simply never asks to move.
 
 The station does four things: it builds, it receives ore, it shoots at whatever comes too close, and it
 dies. **Building is a single queue.**
-A design is selected, it is added to the queue, credits are deducted when the item starts, and the ship
-appears at the station's spawn point when the item finishes. There is no rally point in the MVP; new
+A design is selected, it is added to the queue, credits are deducted when it is queued, and the ship
+appears at the station's spawn point when the item finishes. An order the credits cannot cover is refused,
+so money is the only limit on the queue; the next item starts the tick the one before it finishes, and a
+cancel takes the newest first, refunded in full (`OpenQuestions.md` Q80). There is no rally point in the MVP; new
 ships sit where they appear.
 
 **Building goes at a rate of 20 credits of cost a second** (`OpenQuestions.md` Q47), so build time is a

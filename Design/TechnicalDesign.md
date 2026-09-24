@@ -163,7 +163,8 @@ An entity record is **twelve bytes**:
 four — version, type, and a sequence the receiver uses only to count loss (`NeuronCore/PacketHeader.h`;
 the two fragment fields M0.2 reserved are gone, because nothing fragments) — then the tick every record
 describes, the **live entity count**, **the recipient's own player block** (credits 4, last applied
-command sequence 2, the currently building design 1 and its progress 1) and nothing about anyone else's,
+command sequence 2, the currently building design 1 and its progress 1; since `OpenQuestions.md` Q80 the design
+byte's high four bits carry how many items wait behind it, saturating at 15, and protocol 6 says so) and nothing about anyone else's,
 and a count each of records, removals and fire events. What a client draws about a rival is on the
 rival's entities: a station's hull is on the station's record.
 

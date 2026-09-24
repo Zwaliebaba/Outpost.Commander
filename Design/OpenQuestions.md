@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Sixty-four answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2. Eight came from an adversarial review that also reversed two earlier
+**Sixty-six answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79 and Q80 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -96,7 +96,7 @@ because they were simply wrong.**
 |---|---|---|---|
 | **Q19** | How do fifty ships occupy one point? | **A ring slot per ship, assigned at order time, ordered by entity identity.** No separation force and no flocking — those are floating-point-shaped problems in an integer simulation, and a formation system later is this same assignment with a different slot layout. **The ring stands; "no separation" was reversed on 2026-09-23 by Q61**, which has every ship steer around every other. The cost is *induced by* [`ADR-001`](ADR/ADR-001-the-playfield-is-a-plane.md): in a volume ships miss each other in the third dimension, on a plane they stack. It was named once and owned by nobody. | `GameDesign.md` §7, `TechnicalDesign.md` §1, §8 |
 | **Q20** | What does the client draw between a tap and confirmation? | **A destination marker and a line, drawn the instant the gesture resolves and cleared when the host acknowledges that sequence.** Pure presentation: R19 forbids the client simulating, not the client drawing what it asked for. Without it there are 152 ms of nothing on a device that has no cursor. | `Interface.md` §4, `TechnicalDesign.md` §6 |
-| **Q21** | Does the build queue have a wire record? | **There is no queue — the snapshot carries the item currently building and its progress, two bytes per player.** `Interface.md` had specified a cancellable queue that no wire record could feed; the MVP cuts the queue rather than inventing a format for it. | `Interface.md` §6, `TechnicalDesign.md` §4 |
+| **Q21** | Does the build queue have a wire record? | **Reversed by Q80 on 2026-09-24: there is a queue, and its count rides the building-design byte's spare bits.** As first answered: **There is no queue — the snapshot carries the item currently building and its progress, two bytes per player.** `Interface.md` had specified a cancellable queue that no wire record could feed; the MVP cuts the queue rather than inventing a format for it. | `Interface.md` §6, `TechnicalDesign.md` §4 |
 | **Q22** | Is asteroid ore replicated, and at what cost? | **Not at all before M3**, since inexhaustible asteroids have no simulation state and the client derives their positions from the seed. From M3, sparsely: only asteroids whose quantized ore bucket changed, at most one per active miner. The budget had excluded a thing R23 said must be replicated. | `GameDesign.md` §4, `TechnicalDesign.md` §4 |
 | **Q23** | Is the client forced fullscreen? | **Yes, at launch.** Nothing previously forced it, which made [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)'s exact 2× an accident of however the window happened to be sized. | `Interface.md` §1, `TechnicalDesign.md` §5 |
 | **Q24** | What does the host validate on a command? | **Ownership, selection length, generation, target bounds and sequence wraparound** — labeled correctness rather than security, so it is not filed under the anti-cheat exclusion again. A 1,232-byte packet holds 608 identities against a peak of 110, reachable from an ordinary bug with no attacker anywhere. **Amended 2026-09-24 by the owner, after the mid-implementation review (M4):** a dead or reused identity is *skipped* rather than refusing the order, since a retreat tapped during a raid names ships that died a moment earlier; a foreign identity still refuses the whole order; the length bound counts live identities; and **every refusal past the sequence check is acknowledged**, so the client stops resending it. | `TechnicalDesign.md` §4, §8 |
@@ -298,6 +298,9 @@ pan — because the first says 60 is plenty and only the second can argue for 12
 apart, so this stays cheap to reverse.
 
 ### Q35 — Does canceling *or replacing* a build refund, and how much? — **ANSWERED**
+
+**The replacing half is gone since 2026-09-24 (Q80)**: a build order while an item builds joins a queue instead
+of replacing it. The cancel's full refund stands, and applies to the newest queued item first.
 
 **FULL REFUND, ON BOTH PATHS. The owner's answer, 2026-09-22**, and M1.6 is built to it: a cancel and a
 replacement both give back exactly what was taken, from the amount recorded on the item rather than
@@ -618,7 +621,7 @@ refresh everything within two.
 **Recommendation, and M1.14c builds to it:** base 1, in view 4, moved or changed 2, own 2, so an entity
 in view that moved scores 7 a tick against a stationary one out of view at 1 — a seven-to-one ratio,
 which is roughly the sweep-to-refresh ratio at which 1,000 entities in view still refresh within six ticks
-at the cap. Cap 2. **Revisit at M4.8**, the first time four people look at a full field, and again the
+at the cap. Cap 2. **Revisit at M4.8**, the first time a full four-slot field is played, by the owner against three AI (Q79), and again the
 first time a stress run of ADR-022's harness reports a refresh interval a player would notice. Both
 numbers are constants beside the accumulator, so the answer costs an edit and a test.
 
@@ -1128,7 +1131,7 @@ answers in milliseconds.
   whenever a constant moves, ported into `GameLogicTests`. Then **five human matches** for what arithmetic
   cannot answer: alert habituation, tap precision, orbit and panel legibility. The stub gets one defend
   reflex.
-- **Twenty human matches on two devices**, accepting that one person on both sides answers nothing about
+- **Twenty matches by the owner against the stub** (Q79 rules out a second person), accepting that the stub's absences answer nothing about
   balance.
 
 **Recommendation: the split.** It challenges `GameDesign.md` §10's "the only mechanism", so it is the
@@ -1218,6 +1221,51 @@ see. CI builds `Debug|x64` only.
 
 **Recommendation: both halves of the first.** The CI half is a change to what `AGENTS.md` §6 says CI gates,
 which is the owner's.
+
+### Q79 — Does any gate need more than one person? — **ANSWERED**
+
+**NO. Every gate and every approval can be passed by the owner alone. The owner's answer, 2026-09-24**, in the
+owner's words: *"I have no friends."* It is Q58's rule, one machine, extended from the hardware to the people.
+Where a gate asked for a second human, it now asks for **the owner and an AI or a harness bot in the other
+seats**:
+
+| Where | It asked for | It asks for now |
+|---|---|---|
+| `Plan/M2-the-field.md` *Leaving M2* | Two commanders, and both clients drawing the field | The owner and a second seat, a harness bot or a second instance played one window at a time as M1.15 was |
+| `Plan/M4-the-opponent.md` M4.8 | Four slots, humans and AI mixed, over a real network | The owner and three AI, on one machine (Q58) |
+| `Plan/M4-the-opponent.md` *Leaving M4* | Four commanders, any mix of people and AI | The owner and three AI |
+| Q49's revisit | Four people looking at a full field | The owner, in M4.8's four-slot match |
+| Q71's second option | Twenty human matches on two devices | Twenty matches by the owner against the stub |
+| `GameDesign.md` §2 | Solo play as the only test "before there are four people" | Solo play against AI as how the game is tested |
+
+**What it costs, stated once.** No gate measures two people's play against each other: not how a raid feels to
+the side receiving it, and not whether a human rival does what the AI does not. Balance questions are answered
+by the owner against AI, and by ADR-022's harness where arithmetic can answer them (Q71). **What would reopen it**
+is a second person arriving, and then M4.8 is the first gate worth running again.
+
+### Q80 — Is there a build queue? — **ANSWERED**
+
+**YES: AN ORDER WHILE SOMETHING BUILDS JOINS A QUEUE, PAID FOR WHEN IT IS QUEUED. The owner's answer, 2026-09-24**,
+in the owner's words: *"I rather add the additional ship to the queue to be built. As long as there is money, I
+can add ships to the build queue."* It reverses two earlier answers:
+
+- **Q35's replacement.** A build order while an item builds used to replace it, at a full refund. It now waits
+  behind it. Q35's full refund on cancel stands.
+- **Q21's "there is no queue".** Q21 cut the queue because no wire record could feed it. The count now rides the
+  spare high bits of the per-player block's building-design byte, so the update's size does not move. The
+  contents are not on the wire, and nothing draws them.
+
+**Built to these rules**, which the owner's words decided or which follow from them:
+
+1. **Paid when queued**, so money is the only limit: an order the balance cannot cover is refused and nothing
+   else moves, as before. There is no cap on the queue's length beyond the credits.
+2. **First in, first out.** The next item starts on the tick the one before it finishes, at the build rate the
+   player had when it was queued, which is M2.12's rule that an item keeps the rate it began with.
+3. **Cancel takes the newest first**, at a full refund of what it cost. With nothing queued it cancels the item
+   in progress, as Q35 said.
+4. **Modules queue too**, one queue for both rows as before. A queued placement counts against the site rules
+   and the cap of four, as if it were built. An upgrade already queued or building for a module refuses a second.
+5. **The panel shows how many wait**, as "+N" beside the item in progress. The count saturates at 15 on the wire.
 
 ### Q78 — Does a ship under a move order fire? — **ANSWERED**
 

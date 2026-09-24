@@ -179,7 +179,8 @@ instant resolution and the speed counter — need one of them reopened.
 
 **Adds:** nothing. Four slots, humans and AI mixed, on real hardware over a real network — the
 configuration every figure in `TechnicalDesign.md` §4's second row was computed against and which **the
-MVP itself had no way to generate.**
+MVP itself had no way to generate.** **Since 2026-09-24 that is the owner and three AI, on one machine**
+(`OpenQuestions.md` Q58, Q79): no gate waits for a second person, and none waits for a second device.
 
 **Done when:** a four-player match has been played to a victory; host egress, snapshot loss and frame time
 are measured at that load against §4's arithmetic; and `GameDesign.md` §2's five-minute-match claim is
@@ -189,7 +190,7 @@ re-checked, since it was sized for two.
 
 ## Leaving M4
 
-**The milestone is finished when** four commanders — any mix of people and AI — play a match on a
+**The milestone is finished when** four commanders — the owner and three AI (Q79) — play a match on a
 symmetric generated field with heavy ships in it, and the design's three standing claims about scale have
 each been executed rather than asserted.
 

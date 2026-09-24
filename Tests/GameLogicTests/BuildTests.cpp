@@ -262,8 +262,9 @@ public:
   }
 };
 
-/// Q35, answered 2026-09-22: **full refund, on both paths.**
-TEST_CLASS(CancellingAndReplacing)
+/// Q35, answered 2026-09-22: **a full refund on cancel.** Its other path, replacing the item in progress, is gone
+/// since Q80 (2026-09-24): an order while something builds joins the queue, which `TheBuildQueue` pins.
+TEST_CLASS(Cancelling)
 {
 public:
   TEST_METHOD(ACancelRefundsInFull)
@@ -288,53 +289,10 @@ public:
     Assert::IsFalse(build.Item(MINE).active);
   }
 
-  /// **THE SHARPER CASE, AND IT IS NOT THE CANCEL.** The design handoff keeps all six build buttons
-  /// live while something is building, so a tap on any of them replaces the item -- one tap on a
-  /// 96-pixel button a player is already using, where the cancel target has to be aimed at.
-  TEST_METHOD(AReplacementRefundsTheDisplacedItem)
-  {
-    Outpost::World world;
-    Seat(world, 2);
-    Outpost::BuildSystem build;
-    build.Begin(2);
-
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-    for (int tick = 0; tick < 30; ++tick)
-    {
-      build.Advance(world);
-    }
-
-    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
-    Assert::AreEqual(1000u - 150u, build.Credits(MINE), L"the displaced fighter's credits are gone");
-    Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::Miner);
-    Assert::AreEqual(0u, build.Item(MINE).ticksElapsed, L"the new item started over");
-  }
-
-  /// **THE REFUND HAPPENS BEFORE THE NEW COST IS CHECKED**, so replacing a design with itself always
-  /// works. Checked the other way round it would refuse a replacement the player can obviously afford.
-  TEST_METHOD(ReplacingADesignWithItselfAlwaysWorks)
-  {
-    Outpost::World world;
-    Seat(world, 2);
-    Outpost::BuildSystem build;
-    build.Begin(2);
-
-    // Spend down to exactly one fighter's worth.
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-    Assert::AreEqual(100u, build.Credits(MINE));
-
-    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
-    Assert::AreEqual(100u, build.Credits(MINE));
-  }
-
-  /// **A REPLACEMENT THE PLAYER CANNOT AFFORD TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md`
-  /// section 6 keeps the button lit with its cost reddened, which says "save up" -- so a tap on it leaves the
-  /// item in progress building and the balance where it was, where it used to cancel the item and build nothing.
-  TEST_METHOD(AnUnaffordableReplacementLeavesTheItemBuilding)
+  /// **AN ORDER THE PLAYER CANNOT AFFORD TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md` section 6
+  /// keeps the button lit with its cost reddened, which says "save up" -- so a tap on it leaves the item in
+  /// progress building, the queue as it was and the balance where it was.
+  TEST_METHOD(AnUnaffordableOrderLeavesTheItemBuilding)
   {
     Outpost::World world;
     Seat(world, 2);
@@ -356,26 +314,6 @@ public:
     Assert::AreEqual(Code(Outpost::BuildRejection::Unaffordable), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
     Assert::IsTrue(build.Item(MINE) == building, L"an unaffordable tap cancelled the item in progress");
     Assert::AreEqual(100u, build.Credits(MINE));
-  }
-
-  /// And the refund still counts: a replacement the balance covers only with the refund goes through.
-  TEST_METHOD(AReplacementTheRefundPaysForIsTaken)
-  {
-    Outpost::World world;
-    Seat(world, 2);
-    Outpost::BuildSystem build;
-    build.Begin(2);
-
-    // 1,000 - 300 - 300 - 300 = 100, and a fighter in progress refunds 300: 400 covers a fourth fighter.
-    for (int order = 0; order < 2; ++order)
-    {
-      static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-      static_cast<void>(RunToCompletion(build, world, MINE));
-    }
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
-    Assert::AreEqual(100u, build.Credits(MINE));
-    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
-    Assert::AreEqual(250u, build.Credits(MINE));
   }
 
   /// A cancel with nothing building is not an error: a tap on a cancel target that has already
@@ -636,6 +574,127 @@ public:
       Assert::AreEqual(static_cast<std::size_t>(1), read.commands.size());
       Assert::IsTrue(read.commands[0].type == type);
     }
+  }
+};
+
+/// **Q80: THE BUILD QUEUE** (the owner's ruling, 2026-09-24). An order while something builds waits behind it, paid
+/// for when it is queued, and money is the only limit.
+TEST_CLASS(TheBuildQueue)
+{
+public:
+  TEST_METHOD(AnOrderWhileBuildingJoinsTheQueue)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
+    for (int tick = 0; tick < 30; ++tick)
+    {
+      build.Advance(world);
+    }
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
+    Assert::AreEqual(1000u - 300u - 150u, build.Credits(MINE), L"a queued item is paid for when it is queued");
+    Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::Fighter, L"the item in progress was replaced");
+    Assert::AreEqual(30u, build.Item(MINE).ticksElapsed, L"the item in progress started over");
+    Assert::AreEqual(std::size_t{1}, build.Queued(MINE).size());
+    Assert::IsTrue(build.Queued(MINE)[0].design == Outpost::DesignId::Miner);
+  }
+
+  TEST_METHOD(TheQueueBuildsInOrderWithNoIdleTick)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    const std::size_t before = world.AliveCount();
+
+    // 150 ticks a Miner and 300 a Fighter at 20 credits a second, back to back: 600 ticks for all three.
+    for (int tick = 0; tick < 599; ++tick)
+    {
+      build.Advance(world);
+    }
+    Assert::AreEqual(before + 2, world.AliveCount(), L"the first two should be out and the third one tick short");
+    build.Advance(world);
+    Assert::AreEqual(before + 3, world.AliveCount(), L"a queued item waited a tick between two others");
+    Assert::IsFalse(build.Item(MINE).active);
+    Assert::IsTrue(build.Queued(MINE).empty());
+  }
+
+  TEST_METHOD(MoneyIsTheOnlyLimit)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    for (int order = 0; order < 3; ++order)
+    {
+      Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
+    }
+    Assert::AreEqual(100u, build.Credits(MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::Unaffordable), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
+    Assert::AreEqual(std::size_t{2}, build.Queued(MINE).size(), L"an unaffordable order joined the queue");
+    Assert::AreEqual(100u, build.Credits(MINE));
+  }
+
+  TEST_METHOD(ACancelTakesTheNewestFirstAtAFullRefund)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    Assert::AreEqual(550u, build.Credits(MINE));
+
+    Assert::IsTrue(build.Cancel(MINE));
+    Assert::AreEqual(700u, build.Credits(MINE), L"the queued miner's 150 came back");
+    Assert::IsTrue(build.Item(MINE).active, L"the item in progress was cancelled before the newest");
+    Assert::IsTrue(build.Queued(MINE).empty());
+
+    Assert::IsTrue(build.Cancel(MINE));
+    Assert::AreEqual(1000u, build.Credits(MINE));
+    Assert::IsFalse(build.Item(MINE).active);
+  }
+
+  TEST_METHOD(TheWireCarriesHowManyWait)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+    const std::uint8_t wire = build.WireBuildingDesign(MINE);
+    Assert::AreEqual(static_cast<std::uint8_t>(static_cast<std::uint8_t>(Outpost::DesignId::Miner) + 1), Outpost::BuildingDesignOf(wire));
+    Assert::AreEqual(2u, Outpost::QueuedOf(wire));
+    Assert::AreEqual(15u, Outpost::QueuedOf(Outpost::PackBuilding(1, 40)), L"the count saturates at 15");
+  }
+
+  TEST_METHOD(AQueuedModuleCountsAgainstTheSite)
+  {
+    // Two placements on one site would both have passed the site rules, which read only built modules, and
+    // the second would have appeared inside the first.
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    build.Grant(MINE, 1000);
+
+    const Neuron::Vec2 site = NearStation(world, MINE, 250, 250);
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site)));
+    Assert::AreEqual(Code(Outpost::BuildRejection::IllegalSite),
+                     Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleOreProcessorL1, site)));
   }
 };
 

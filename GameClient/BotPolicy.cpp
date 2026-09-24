@@ -59,7 +59,7 @@ std::vector<Command> BotPolicy::Decide(const ReplicaStore& _replicas, PlayerId _
   // THE STATION. Zero in the block is nothing building (`GameLogic/BuildSystem.h`), so a bot builds into an
   // empty slot and never replaces an item -- replacing is a refund and a charge, and the cancel below
   // already exercises the refund.
-  if (own->buildingDesign == 0)
+  if (BuildingDesignOf(own->buildingDesign) == 0)
   {
     std::vector<DesignId> affordable;
     for (const DesignEntry& design : Designs())

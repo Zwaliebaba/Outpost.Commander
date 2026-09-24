@@ -62,8 +62,9 @@ struct HudState
   /// Your own station is selected, so the build panel is drawn.
   bool buildPanelOpen = false;
 
-  /// **THE WIRE'S ENCODING, NOT A `DesignId`**: zero is nothing building, and anything else is the design
-  /// plus one (`GameLogic/BuildSystem.cpp`, `WireBuildingDesign`). Decoded by `BuildingDesign`.
+  /// **THE WIRE'S ENCODING, NOT A `DesignId`**: the low four bits are zero for nothing building and the design
+  /// plus one otherwise, and the high four how many wait behind it (Q80, `GameCore/Update.h`). Decoded by
+  /// `BuildingDesign` and `QueuedOf`.
   std::uint8_t buildingWire = 0;
   std::uint8_t buildProgressPercent = 0;
 
