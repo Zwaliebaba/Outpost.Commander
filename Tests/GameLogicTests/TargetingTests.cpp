@@ -39,7 +39,7 @@ public:
     Assert::AreEqual(std::uint16_t{8192}, fighter.arcHalfAngle, L"Q68: 45 degrees either side");
 
     const Outpost::Reach station = Outpost::ReachOf(Outpost::DesignId::Station);
-    Assert::AreEqual(400u, station.rangeUnits);
+    Assert::AreEqual(480u, station.rangeUnits);
     Assert::AreEqual(std::uint16_t{32768}, station.arcHalfAngle, L"Q68: point defense is all around");
 
     Assert::IsFalse(Outpost::ReachOf(Outpost::DesignId::Miner).armed, L"a mining laser does no damage");

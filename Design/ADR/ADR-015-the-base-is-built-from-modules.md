@@ -37,10 +37,11 @@ is chosen, and a tap outside it, or on another module, does nothing — except t
 upgrade tapped on an L1 of its kind upgrades it, and a tap on one of your own ships is still a selection
 (*As built*).
 
-**The radius is 400 because that is the point-defense range** (`GameDesign.md` §5), so the safe zone means
-exactly "your base". The consequence is positional and is the point: a `MassDriver` reaches 600, so a
-fighter standing off at 500 **can shell the modules on the near side while staying outside point-defense
-cover**, and which side of your station you build on is therefore a decision.
+**The radius was 400 because that was the point-defense range** (`GameDesign.md` §5), so the safe zone meant
+exactly "your base". **Since `OpenQuestions.md` Q63 (2026-09-24) the point defense reaches 480**, so a module on
+the edge of the circle, frame and all, is still covered. The consequence is positional and is the point: a
+`MassDriver` reaches 600, so a fighter standing off just past 480 **can shell the modules on the near side while
+staying outside point-defense cover**, and which side of your station you build on is therefore a decision.
 
 **A station carries at most four modules.** That cap is as much a wire budget as a design one — see below.
 

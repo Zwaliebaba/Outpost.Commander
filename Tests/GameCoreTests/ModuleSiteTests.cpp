@@ -135,11 +135,12 @@ public:
     Assert::AreEqual(std::uint32_t{0}, Outpost::UpgradeCostCredits(Outpost::DesignId::Miner, Outpost::DesignId::Fighter));
   }
 
-  /// **THE RADIUS IS THE POINT-DEFENSE RANGE, BY DESIGN** (ADR-015): moving one without the other fails here.
-  TEST_METHOD(TheBuildRadiusIsThePointDefenseRange)
+  /// **EVERY MODULE IS INSIDE THE POINT DEFENSE** (ADR-015, Q63): the circle plus half a module frame is within its
+  /// reach, so moving either figure past the other fails here.
+  TEST_METHOD(TheBuildRadiusIsInsideThePointDefense)
   {
-    Assert::AreEqual(static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits),
-                     Outpost::MODULE_BUILD_RADIUS_UNITS);
+    Assert::IsTrue((Outpost::MODULE_BUILD_RADIUS_UNITS + (Outpost::Hull(Outpost::HullId::ModuleFrame).sizeUnits / 2)) <=
+                   static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits));
   }
 };
 

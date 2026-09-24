@@ -77,13 +77,14 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
    .arcHalfAngle = 8192,
    .cost = 60},
 
-  // Reaches 400 against a mass driver's 600, which is Q10's answer expressed as two numbers: the
-  // station kills a loiterer and not a besieger.
+  // Reaches 480 against a mass driver's 600, which is Q10's answer expressed as two numbers: the
+  // station kills a loiterer and not a besieger. 480 and not 400 since Q63 (2026-09-24): far enough to cover the
+  // far-side unload point from a raider, and still short of a fighter standing off.
   // NO COST: it is not in a design anybody builds. A station arrives with its two mounts.
   // And point defense is the mass driver taken further: it shreds anything small and is irrelevant to anything large.
   {.id = ComponentId::PointDefense,
    .mass = 5,
-   .rangeUnits = 400,
+   .rangeUnits = 480,
    .damagePerSecond = 60,
    .modifierPercent = {120, 90, 30},
    .arcHalfAngle = 32768,

@@ -77,8 +77,8 @@ inline constexpr std::int64_t OVERFLOW_ARC_STEP_UNITS = 90;
 ///
 /// **THE RADIUS** is the target's longest weapon range plus 100, so the fleet stands just outside what can hit it.
 /// **Unless that is past the fleet's own reach**: then it is the fleet's shortest range less 50, so every ship can
-/// fire. It is never closer than the two hulls' keep-out plus 20. Against a station that is 500, which is
-/// `GameDesign.md` section 5's standoff; against a Fighter, 550.
+/// fire. It is never closer than the two hulls' keep-out plus 20. Against a station that is 580, just outside its
+/// point defense's 480 (Q63); against a Fighter, 550.
 ///
 /// **THE ARC** is a half circle facing the fleet, centred on the bearing from the target to the fleet's middle.
 /// Slots sit a hull's width apart along it, the middle one first and then alternately either side. Ships are

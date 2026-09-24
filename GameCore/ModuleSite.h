@@ -23,8 +23,9 @@ namespace Outpost
 /// positions and the client the quarter-unit ones the wire carries, so a preview can disagree with the host by
 /// that much at an edge -- and the host is the one that decides.
 
-/// **400 WORLD UNITS, BECAUSE THAT IS THE POINT-DEFENSE RANGE** (ADR-015): the safe zone means exactly "your
-/// base". `ModuleSiteTests` asserts the two are equal, so moving one without the other fails.
+/// **400 WORLD UNITS, INSIDE THE POINT DEFENSE** (ADR-015, Q63): a module on the edge of the circle, with half its
+/// frame, is still inside point defense's 480, so the base is covered. The two were equal until Q63 raised the
+/// point defense; `ModuleSiteTests` asserts the module circle stays inside it.
 inline constexpr std::int32_t MODULE_BUILD_RADIUS_UNITS = 400;
 
 /// **FOUR TO A STATION** (ADR-015): as much a replication budget as a design one, and raising it is a protocol

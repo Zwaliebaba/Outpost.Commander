@@ -59,8 +59,26 @@ public:
   }
 
 private:
+  /// One acceptor's unload point this tick, for one miner design (Q63). R8: a public aggregate.
+  struct UnloadPoint
+  {
+    EntityId acceptor{};
+    DesignId miner = DesignId::Miner;
+
+    /// A hostile is near enough that the point is the far side; false means the near side, as before Q63.
+    bool farSide = false;
+    Neuron::Vec2 point{};
+  };
+
+  /// Where a miner of _miner's design unloads at _acceptor this tick. **Asked once an acceptor a tick**, since
+  /// the threat query covers the home field and every miner going home asks the same question.
+  [[nodiscard]] const UnloadPoint& UnloadPointFor(const World& _world, const Entity& _acceptor, DesignId _miner);
+
   UniformGrid m_grid;
   std::vector<EntityId> m_scratch;
+
+  /// This tick's answers to `UnloadPointFor`, cleared at the top of every `Advance`.
+  std::vector<UnloadPoint> m_unloadPoints;
 
   /// **ONE EXTRACTOR PER ROCK PER TICK** (`OpenQuestions.md` Q62): which rocks have yielded ore this tick,
   /// indexed as the field is. Sized to the field and cleared at the top of every `Advance`.

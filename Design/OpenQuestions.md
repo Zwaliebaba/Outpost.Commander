@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Sixty-seven answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Seventy-one answered, ten open** — Q34, Q48 and Q49, and seven of Q62 to Q77 from the mid-implementation review (Q62 to Q68, Q70 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults, in their own section below the answered ones. **Q62, Q66, Q67, Q68 and Q72 are ruled; the other eleven are open.**
+recommended defaults, in their own section below the answered ones. **Q62 to Q68, Q70 and Q72 are ruled; the other seven are open.**
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -64,7 +64,7 @@ does not yet recompute these.
 |---|---|---|---|
 | **Q8** | How does a player select more than one ship? | **A hold on a ship takes every ship of the same design within a circle centered on it.** Screen-space, 192 authored pixels, drawn while the finger is down, so the camera's zoom is the group-size control. **No band select**, which leaves one-finger drag unconditionally panning. The owner's answer; it beat all four options on the ballot, including the draft's hold-then-drag. | [`ADR-010`](ADR/ADR-010-selection-is-proximity-and-design.md), `Interface.md` §3–§4 |
 | **Q9** | What happens when a human disconnects mid-match? | **The slot persists, ships hold position, and they may reconnect.** Self-contained snapshots make reconnection free. An AI taking the slot is the better answer and waits for M4. | `GameDesign.md` §2 |
-| **Q10** | Does the station have a weapon? | **Yes — two short-range `PointDefense` mounts.** It kills a loiterer, not a besieger and not a fleet: `PointDefense` reaches 400 and a `MassDriver` reaches 600, so a fighter can stand off and shell the station untouched. Deliberate — with the heavy design cut, a station whose defense outranged the fighter would be unkillable. | `GameDesign.md` §5, §6, §7 |
+| **Q10** | Does the station have a weapon? | **Yes — two short-range `PointDefense` mounts.** It kills a loiterer, not a besieger and not a fleet: `PointDefense` reaches 480 (400 until Q63) and a `MassDriver` reaches 600, so a fighter can stand off and shell the station untouched. Deliberate — with the heavy design cut, a station whose defense outranged the fighter would be unkillable. | `GameDesign.md` §5, §6, §7 |
 | **Q11** | How is text rendered? | **DirectWrite rasterised into a Direct3D 12 atlas we own.** No Direct2D and no `ID3D11On12Device`, which R12 bans by name — that closes the route every D3D12 text sample takes. Coverage is ClearType averaged to one channel, because subpixel output would fringe after the 2× scale. | [`ADR-009`](ADR/ADR-009-text-is-directwrite-into-an-atlas.md), `Interface.md` §6 |
 | **Q12** | What happens on suspend and resume? | **Reconnect with an overlay**, then straight back in. The fleet was at risk the whole time, which is the honest consequence of a match that does not pause. | `Interface.md` §7 |
 | **Q13** | Can two players say anything to each other? | **Nothing in the MVP.** Solo against AI is the only configuration the MVP can test. The gesture a ping would use is sitting unassigned (Q18). | `Interface.md` §7 |
@@ -432,7 +432,7 @@ observation:
 - At the close end the camera is about **1,500 units** out, showing roughly 1,638 units of width — so that
   same hull is about **60 authored pixels** across, which is the size it is actually looked at.
 - For scale against what is fixed: a move-order marker draws a **120-unit** square on the plane, modules
-  are placed within **400 units** of the station, and point defense reaches 400 against a mass driver's 600.
+  are placed within **400 units** of the station, and point defense reaches 480 (Q63) against a mass driver's 600.
 
 **Recommendation, to be moved by looking at it on the device at M2.13:**
 
@@ -660,7 +660,7 @@ part of the raid arithmetic rather than a detail.
 
 - **50 ore a second, touching**: two seconds for a one-laser hold, once the hulls touch. Touching is a
   center distance of at most the two sizes' halves (Q37) plus 20 units of slack, 160 for a `Scout` at the
-  station. It is a real dwell inside point defense's 400, and small next to a round trip.
+  station. It is a real dwell inside point defense's reach, and small next to a round trip.
 - **Instant**: one tick on arrival. Simplest, but the unloading state is one tick long and §7's protected
   unloading area has nothing in it to protect.
 - **At the extraction rate**, 20 a second: symmetric, but it doubles the time at the station and cuts §4's
@@ -961,7 +961,7 @@ finding a stacked opening dominant, which is then a question of rock placement r
 §4 carries the figures; Q26, Q47, `Generator.h` and `BuildSystem.h` point at this table. The determinism pin
 moved to `0x4c8b850e5dec326e` (ADR-002) and the generator's pinned region was regenerated.
 
-### Q63 — What does the station's point defense protect? — **needed by M3.5**
+### Q63 — What does the station's point defense protect? — **ANSWERED**
 
 **The finding (B2).** Point defense reaches 400 units and a MassDriver 600, and a miner unloads within 160
 of the station. From 401, a fighter is outside point defense and inside MassDriver range of every point of
@@ -979,7 +979,20 @@ M3.11's "is the safe zone too safe?" has nothing inside it to measure.
 
 **Recommendation: the first**, with "crosses 400 and dies" restated as "crosses 440".
 
-### Q64 — Does a miner under a mine order flee? — **needed by M3.6**
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION, AND BUILT (M3.5).** Point defense reaches 480. A miner
+unloads at a point its unload reach (160 for a `Scout`) beyond the station's center, on the ray away from the
+nearest hostile, found through the grid with ties to the lower identity. The ray comes from the pinned bearing and
+sine table, so it is integers throughout (R16).
+
+**One detail the ruling left open was decided in building: "nearest hostile" means within a threat radius**, the
+home field's outer 2,000 plus a mass driver's 600. An enemy station is always on the map, so an unbounded search
+would have moved every unload to the side away from the enemy base, raid or no raid, and changed Q62's measured
+economy. **With no hostile inside 2,600 the unload point is the near side, as before.** An unloading miner
+re-checks every tick and goes round when a raider arrives on its side. Measured by `CombatTests`: a Fighter at 440
+dies in 112 ticks, 5.6 seconds. A Miner at exactly 480 is hit and one at 481 is not. A fleet ordered to attack a
+station now stands off at 580, which is the target's reach plus 100.
+
+### Q64 — Does a miner under a mine order flee? — **ANSWERED**
 
 **The finding (M1).** §4, §7 and M3.6 all put flight on "a miner with no order", and every productive miner
 carries the standing mine order. So flight never fires on a miner that is working, and §7's "about 3½ of
@@ -995,7 +1008,14 @@ in 25.7 s and none flees.
 **Recommendation: the first**, with §7's flight row re-derived on Q62's field. The 60-tick resume is the
 figure to argue with.
 
-### Q65 — How does a contested match end in about five minutes, and what is a tie? — **needed by M3.7**
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** A miner going to its rock or extracting that takes
+damage enters a fifth phase, fleeing: it keeps its rock and cargo, heads for Q63's unload point, and goes back to
+its rock after 60 ticks without taking damage. "Takes damage" is the weapon system's list of what it hit this
+tick, not the fire events, which are thinned to one in ten ticks and would miss most hits. A miner on its way
+home or unloading is already heading for the same point, so it does not flee. **A move order is the player's
+override and never flees**, since it ends the mine order. M3.6 builds it.
+
+### Q65 — How does a contested match end in about five minutes, and what is a tie? — **ANSWERED**
 
 **The finding (B3, M7).** One fighter lands 12.5 dps on an 8,000-point station, which is 640 s. The earliest
 ten-fighter siege against an idle defender ends at 300 to 330 s. A defender builds 5.7 fighters while a raid
@@ -1011,6 +1031,13 @@ produce.
 
 **Recommendation: the clock and the draw**, and an acceptance test in the harness the day M3.2 lands: a
 three-fighter rush ends by 5:30, and a mirror ends by 8:00 or on the clock.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** The last station standing wins. A player whose station
+dies is eliminated, and their ships and modules are removed on the same tick. **At tick 7,200, six minutes, the
+match ends on the clock**: the surviving station with the most hull wins. A tie on hull goes to credits plus the
+catalog cost of the player's live ships and modules, and a tie on that is a draw. **If every remaining station
+dies on one tick, the match is a draw.** A draw restarts like a victory. M3.7 builds it; the harness acceptance
+test is M3.11's.
 
 ### Q66 — Where does damage round, and how often is a fire event sent? — **ANSWERED**
 
@@ -1104,7 +1131,7 @@ unloading at home earns 0.67 to 1.33 a second from one, because the flight binds
 **Recommendation: host-side finite ore and the depot.** The depot is the one addition the review makes
 against the scope cut list, which is why it is the owner's decision and not an agent's.
 
-### Q70 — What does a restart keep, and how does a client learn one happened? — **needed by M3.8**
+### Q70 — What does a restart keep, and how does a client learn one happened? — **ANSWERED**
 
 **The finding (M8).** `BeginMatch` drops every seat, so a match ends in a one-second blackout, and clients
 re-seat in arrival order: sides can swap, and a human can take an AI's base. No result is shown. ADR-013's
@@ -1118,6 +1145,13 @@ proposed detector, the tick going backwards, cannot fire, because `BeginMatch` n
 
 **Recommendation: the header bytes, with seats kept.** B4's salt (ADR-013 as amended) already keeps "same
 token, same side" within a host run. `Scripts/DatagramBudget.py` is run before either lands.
+
+**RULED 2026-09-24 BY THE OWNER: THE `MatchEnded` PACKET, AGAINST THE RECOMMENDATION, WITH SEATS KEPT.** The
+update header stays at 21 bytes. When a match ends, the host sends each seated client a `MatchEnded` record
+carrying the winner (or a draw) for ten consecutive ticks, keeps every seat, and begins the next match on a new
+seed. A client that hears it shows the result, clears its derived state, and joins again with its token. That
+join's reply carries the new seed, so R23's "the seed arrives on the join reply and nowhere else" still holds.
+M3.8 builds it.
 
 ### Q71 — What answers M3.11's balance questions: twenty matches against a stub, or the harness? — **needed by M3.11**
 
@@ -1197,7 +1231,7 @@ player can tell three fighters from thirty.
 back appear on one point, and asked for the spawn point to move out past the module circle. A new ship now
 appears at 400 plus half a module, half itself and 20: 495 for a Miner and 510 for a Fighter. If something is
 already there, it takes the first free slot of a ring around that point. That is ring slots, as recommended,
-but **outside** point defense rather than inside it, so a new ship is not covered by the station's 400. Q80's
+but **outside** point defense rather than inside it, so a new ship is not covered by the station's 480 (Q63). Q80's
 queue answers the mis-tap. The repeat build and the order at spawn stay open.
 
 ### Q75 — What weapon does the Cruiser carry, and what does it cost? — **needed by M4.4**

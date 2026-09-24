@@ -126,7 +126,7 @@ public:
   {
     Assert::AreEqual(200, static_cast<int>(Outpost::Component(Outpost::ComponentId::MiningLaser).rangeUnits));
     Assert::AreEqual(600, static_cast<int>(Outpost::Component(Outpost::ComponentId::MassDriver).rangeUnits));
-    Assert::AreEqual(400, static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits));
+    Assert::AreEqual(480, static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits));
   }
 
   /// Q10, as two numbers: point defense reaches 400 and a mass driver reaches 600, so a fighter can

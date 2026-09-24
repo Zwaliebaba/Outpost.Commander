@@ -10,7 +10,7 @@ namespace Outpost
 {
 
 /// What a design can shoot with, over all its mounts: the longest range and the widest arc any of them has.
-/// **Derived from the catalog** (R24), so a station reaches 400 all around because its point defense rows
+/// **Derived from the catalog** (R24), so a station reaches 480 all around because its point defense rows
 /// say so, and nothing here names it.
 ///
 /// R8: a public aggregate.

@@ -326,6 +326,20 @@ would simply be unkillable now that the siege unit is cut.
 **Done when:** a fighter at 500 units takes no return fire and a raider at 300 dies inside the design's
 figure; and the safe zone's boundary is a test rather than an observation.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q63 AS RULED THAT DAY**, which changed this step from
+tests only to a range and a rule. The paragraphs above predate it and are kept as the problem Q63 answered.
+
+- **Point defense reaches 480** (`GameCore/Catalog.cpp`). The module circle stays at 400 and is asserted to lie
+  inside it, frame and all.
+- **The far side** (`GameLogic/UnloadTarget`, `MiningSystem`): with a hostile within 2,600 of the station, a miner
+  unloads its reach beyond the center on the side away from it. It re-checks every tick. With nothing that close
+  it unloads on the near side, as before, so Q62's measured economy holds in a match nobody is raiding.
+- **Measured, not asserted**: a Fighter at 440 dies in **112 ticks, 5.6 seconds**. A Miner at exactly 480 is hit
+  and one at 481 never is. A Fighter at 500 shells the station for twenty seconds and loses nothing. An attack
+  order on a station now stands off at 580, the target's reach plus 100.
+
+`CombatTests.cpp`'s `ThePointDefense` and `MiningTests.cpp`'s `TheFarSideUnloadPoint` pin it.
+
 ### M3.6 — Miner flight · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §7's flight paragraph.

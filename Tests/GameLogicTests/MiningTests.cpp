@@ -415,4 +415,79 @@ public:
   }
 };
 
+/// **Q63: THE FAR SIDE WHEN SOMETHING HOSTILE IS NEAR.** The miner unloads its reach from the station's center on
+/// the side away from the nearest hostile inside the threat radius, and on the near side when nothing is.
+TEST_CLASS(TheFarSideUnloadPoint)
+{
+public:
+  /// A raider 1,000 east of the station sends a full miner round to the west side to unload.
+  TEST_METHOD(ARaiderSendsTheMinerRoundToTheFarSide)
+  {
+    Scene scene;
+    static_cast<void>(scene.world.Create(At(1000, 0), 0, Outpost::DesignId::Fighter, THEIRS));
+    Assert::IsTrue(scene.world.OrderMine(scene.miner, 0));
+    for (std::size_t slot = 0; slot < scene.world.SlotCount(); ++slot)
+    {
+      if (scene.world.EntityInSlot(slot).id == scene.miner)
+      {
+        scene.world.MineInSlot(slot).cargoMilliOre = FULL_HOLD_MILLI_ORE;
+      }
+    }
+
+    scene.Step();
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::ToUnload, L"it unloaded on the raider's side");
+
+    int ticks = 0;
+    while ((scene.Mine().phase == Outpost::MiningPhase::ToUnload) && (ticks < 400))
+    {
+      scene.Step();
+      ++ticks;
+    }
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::Unloading, L"it never reached the far side");
+    const Neuron::Vec2 where = scene.world.Find(scene.miner)->position;
+    Assert::IsTrue(where.x < 0, L"it unloaded east of the station, toward the raider");
+    const std::int64_t fromPoint = Neuron::Sqrt(Outpost::UniformGrid::DistanceSquared(where, At(-160, 0))) / Neuron::FIXED_ONE;
+    Assert::IsTrue(fromPoint <= Outpost::FAR_SIDE_SLACK_UNITS, L"it unloaded away from the far-side point");
+  }
+
+  /// A hostile outside the threat radius -- an enemy base across the map -- changes nothing.
+  TEST_METHOD(AnEnemyFarAwayLeavesTheNearSide)
+  {
+    Scene scene;
+    static_cast<void>(scene.world.Create(At(Outpost::ThreatRadiusUnits() + 100, 0), 0, Outpost::DesignId::Station, THEIRS));
+    Assert::IsTrue(scene.world.OrderMine(scene.miner, 0));
+    for (std::size_t slot = 0; slot < scene.world.SlotCount(); ++slot)
+    {
+      if (scene.world.EntityInSlot(slot).id == scene.miner)
+      {
+        scene.world.MineInSlot(slot).cargoMilliOre = FULL_HOLD_MILLI_ORE;
+      }
+    }
+    scene.Step();
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::Unloading, L"a distant enemy moved the unload point");
+  }
+
+  /// An unloading miner that a raider comes up behind leaves off and goes round, with what is left aboard.
+  TEST_METHOD(ARaiderArrivingMovesAnUnloadingMiner)
+  {
+    Scene scene;
+    Assert::IsTrue(scene.world.OrderMine(scene.miner, 0));
+    for (std::size_t slot = 0; slot < scene.world.SlotCount(); ++slot)
+    {
+      if (scene.world.EntityInSlot(slot).id == scene.miner)
+      {
+        scene.world.MineInSlot(slot).cargoMilliOre = FULL_HOLD_MILLI_ORE;
+      }
+    }
+    scene.Step();
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::Unloading);
+    const std::uint32_t cargo = scene.Mine().cargoMilliOre;
+
+    static_cast<void>(scene.world.Create(At(900, 0), 0, Outpost::DesignId::Fighter, THEIRS));
+    scene.Step();
+    Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::ToUnload, L"it kept unloading beside the raider");
+    Assert::AreEqual(cargo, scene.Mine().cargoMilliOre, L"it unloaded on the wrong side");
+  }
+};
+
 } // namespace GameLogicTests

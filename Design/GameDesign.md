@@ -202,7 +202,7 @@ A design is selected, it is added to the queue, credits are deducted when it is 
 appears at the station's spawn point when the item finishes. **The spawn point is outside the circle the
 modules go in**, on the side the station faces, and a ship built while another sits there takes the first
 free place on a ring around it, so two never appear on top of each other (the owner, 2026-09-24; `OpenQuestions.md`
-Q74). That puts a new ship just outside point defense's 400. An order the credits cannot cover is refused,
+Q74). That puts a new ship just outside point defense's 480. An order the credits cannot cover is refused,
 so money is the only limit on the queue; the next item starts the tick the one before it finishes, and a
 cancel takes the newest first, refunded in full (`OpenQuestions.md` Q80). There is no rally point in the MVP; new
 ships sit where they appear.
@@ -217,13 +217,15 @@ has no drive, which is the only thing that distinguishes it from a ship — §6'
 one, and giving the station hull a drive later is how a mothership arrives.
 
 **Its hull is 8,000, down from 12,000, because the siege unit was cut** (§10). The battleship was what a
-station was priced against; without it, ten fighters standing off at 500 units take about a minute to
+station was priced against; without it, ten fighters standing off at 580 units take about a minute to
 bring one down, which is a siege a player can mount and lose.
 
 **The point defense outranges nothing, and that is deliberate — say it out loud or it reads as a bug.**
-`PointDefense` reaches 400 units; a `MassDriver` reaches 600. **A fighter can therefore stand off at 500
+`PointDefense` reaches 480 units; a `MassDriver` reaches 600. **A fighter can therefore stand off at 580
 and shell the station untouched.** What the point defense protects is the *unloading area* — a raider that
-chases a fleeing miner home crosses 400 and dies in under six seconds — not the station itself. If it
+chases a fleeing miner home to 440 dies in under six seconds — not the station itself. **The unloading area
+is the far side** (`OpenQuestions.md` Q63): with a hostile inside the home field, a miner unloads 160 units
+beyond the station on the side away from it, which a fighter can only reach from inside 480. If it
 outranged the fighter instead, a station with no siege unit left in the MVP would simply be unkillable.
 
 **So it kills a loiterer, not a besieger and not a fleet.** It is weighted against small and medium hulls
@@ -233,8 +235,8 @@ somewhere to retreat to and turns an early raid into a tactical exchange rather 
 undefended station makes a raid a threat, which reads well on paper; in practice it means finding out your
 economy is dead rather than seeing it happen.
 
-**The safe zone stops well short of the home field, and that is the point.** At 400 units against a field
-about 1,500 out, **miners at the rocks are raidable** — so an early fighter has a job, and a defender has
+**The safe zone stops well short of the home field, and that is the point.** At 480 units against a field
+1,200 to 2,000 out, **miners at the rocks are raidable** — so an early fighter has a job, and a defender has
 a real choice between escorting and expanding. Retreating to the station is not free: it costs the cargo
 run. Extending the range to cover the field would make the opening simply safe and the early game pure
 build-up, with nothing happening until someone reaches the middle.
@@ -266,9 +268,10 @@ A module that costs credits and does nothing is the mistake §6 already made onc
 empty space within **400 units** places it — an interaction that was dead, because a tap on empty space is
 a move order and the station cannot move (`Interface.md` §4).
 
-**400 is the point-defense range, so the safe zone means exactly "your base".** The consequence is
-positional and intended: a `MassDriver` reaches 600, so **a fighter standing off at 500 can shell the
-modules on the near side while staying outside point-defense cover**. Which side of your station you build
+**400 is inside the point-defense range, so the safe zone covers the whole base** (480 since Q63). The
+consequence is positional and intended: a `MassDriver` reaches 600, so **a fighter standing off just past 480
+can shell the modules on the near side while staying outside point-defense cover**, and cannot reach the far
+side's. Which side of your station you build
 on is a decision.
 
 **Four modules to a station.** That cap was a replication budget under the full snapshot and is a design
@@ -443,7 +446,7 @@ defensive upgrades can make a base immune**, which a flat percentage cannot prom
 one game and a reader has to know which one they are in: ships use the table, base structures use the
 curve. It also collapses the per-weapon distinction against the base, where `PointDefense` did 30% against
 Large and a `MassDriver` did 25%; both now do whatever the structure's hit value says. That column was
-close to dead content — point defense is station-slot-only at range 400 and two bases are never that close
+close to dead content — point defense is station-slot-only at range 480 and two bases are never that close
 — but it is **gone rather than deferred**, and a weapon meant to be better against structures now needs a
 penetration term rather than a table row.
 

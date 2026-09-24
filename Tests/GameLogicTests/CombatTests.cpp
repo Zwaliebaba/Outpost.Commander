@@ -179,7 +179,7 @@ public:
     Assert::AreEqual(Neuron::Angle{0}, world.Find(station)->heading, L"a station turned");
     Assert::IsTrue(HullOf(world, behind) < Outpost::Derive(Outpost::DesignId::Fighter).hullPoints, L"point defense missed behind it");
     Assert::AreEqual(Outpost::Derive(Outpost::DesignId::Miner).hullPoints, static_cast<std::uint32_t>(HullOf(world, standingOff)),
-                     L"point defense reached past its 400 units");
+                     L"point defense reached past its 480 units");
   }
 };
 
@@ -207,7 +207,7 @@ public:
     for (const Outpost::EntityId id : fleet)
     {
       const std::int64_t distance = DistanceUnits(world.Find(id)->position, world.Find(station)->position);
-      Assert::IsTrue((distance > 400) && (distance <= 510), L"a fighter is not on the 500-unit standoff");
+      Assert::IsTrue((distance > 480) && (distance <= 590), L"a fighter is not on the 580-unit standoff (Q63)");
       Assert::AreEqual(Outpost::Derive(Outpost::DesignId::Fighter).hullPoints, static_cast<std::uint32_t>(HullOf(world, id)),
                        L"point defense reached a fighter on the standoff");
       Assert::IsTrue(world.FindAttack(id)->active);
@@ -294,6 +294,69 @@ public:
       .sequence = 4, .type = Outpost::CommandType::MoveTo, .targetX = 100, .targetY = 100, .selection = {Wire(fighter)}};
     Assert::IsTrue(intake.Apply(world, build, MINE, move) == Outpost::CommandRejection::None);
     Assert::IsFalse(world.FindAttack(fighter)->active, L"a move did not end the attack");
+  }
+};
+
+/// M3.5. **THE POINT DEFENSE OUTRANGES NOTHING, AND THAT IS DELIBERATE** (`GameDesign.md` section 5). It reaches
+/// 480 since Q63; a mass driver reaches 600. It guards the unloading area, not the station: a Fighter standing off
+/// past 480 shells the station untouched, and one that comes inside dies. **Do not "fix" either of these tests.**
+TEST_CLASS(ThePointDefense)
+{
+public:
+  /// A Fighter at 500, facing the station, fires on it and is never fired on.
+  TEST_METHOD(AFighterAt500TakesNoReturnFire)
+  {
+    Outpost::World world;
+    Outpost::WeaponSystem weapons;
+    const Outpost::EntityId station = world.Create(Units(0, 0), 0, Outpost::DesignId::Station, THEIRS);
+    const Outpost::EntityId fighter = world.Create(Units(500, 0), Neuron::Angle{32768}, Outpost::DesignId::Fighter, MINE);
+
+    for (std::uint32_t tick = 0; tick < 400; ++tick)
+    {
+      Step(world, weapons, tick);
+    }
+    Assert::AreEqual(static_cast<std::uint16_t>(Outpost::Derive(Outpost::DesignId::Fighter).hullPoints), HullOf(world, fighter),
+                     L"the point defense reached 500");
+    Assert::IsTrue(HullOf(world, station) < Outpost::Derive(Outpost::DesignId::Station).hullPoints, L"the Fighter did not shell it");
+  }
+
+  /// **A RAIDER AT 440 DIES IN UNDER SIX SECONDS** -- 120 ticks -- which is the figure section 5 gives since Q63.
+  TEST_METHOD(ARaiderAt440DiesInsideSixSeconds)
+  {
+    Outpost::World world;
+    Outpost::WeaponSystem weapons;
+    Outpost::DeathSystem deaths;
+    static_cast<void>(world.Create(Units(0, 0), 0, Outpost::DesignId::Station, THEIRS));
+    const Outpost::EntityId raider = world.Create(Units(440, 0), Neuron::Angle{32768}, Outpost::DesignId::Fighter, MINE);
+
+    std::uint32_t tick = 0;
+    for (; (tick < 200) && world.IsAlive(raider); ++tick)
+    {
+      Step(world, weapons, tick);
+      deaths.Advance(world);
+    }
+    Logger::WriteMessage((L"POINT DEFENSE kills a Fighter at 440 in " + std::to_wstring(tick) + L" ticks\n").c_str());
+    Assert::IsFalse(world.IsAlive(raider), L"the raider survived");
+    Assert::IsTrue(tick < 120, L"the raider outlived section 5's six seconds");
+  }
+
+  /// **THE SAFE ZONE'S BOUNDARY IS A TEST, NOT AN OBSERVATION.** Range is center to center and inclusive: a Miner
+  /// at exactly 480 is hit, and one at 481 never is.
+  TEST_METHOD(TheBoundaryIsExactly480)
+  {
+    Outpost::World world;
+    Outpost::WeaponSystem weapons;
+    static_cast<void>(world.Create(Units(0, 0), 0, Outpost::DesignId::Station, THEIRS));
+    const Outpost::EntityId inside = world.Create(Units(480, 0), 0, Outpost::DesignId::Miner, MINE);
+    const Outpost::EntityId outside = world.Create(Units(0, 481), 0, Outpost::DesignId::Miner, MINE);
+
+    for (std::uint32_t tick = 0; tick < 100; ++tick)
+    {
+      Step(world, weapons, tick);
+    }
+    const auto full = static_cast<std::uint16_t>(Outpost::Derive(Outpost::DesignId::Miner).hullPoints);
+    Assert::IsTrue(HullOf(world, inside) < full, L"a Miner at exactly 480 was not fired on");
+    Assert::AreEqual(full, HullOf(world, outside), L"a Miner at 481 was fired on");
   }
 };
 

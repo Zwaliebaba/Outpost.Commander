@@ -44,9 +44,25 @@ void Halt(World& _world, std::size_t _slot) noexcept
 }
 } // namespace
 
+const MiningSystem::UnloadPoint& MiningSystem::UnloadPointFor(const World& _world, const Entity& _acceptor, DesignId _miner)
+{
+  for (const UnloadPoint& known : m_unloadPoints)
+  {
+    if ((known.acceptor == _acceptor.id) && (known.miner == _miner))
+    {
+      return known;
+    }
+  }
+  UnloadPoint answer{.acceptor = _acceptor.id, .miner = _miner};
+  answer.farSide = FarSideUnloadPoint(_world, m_grid, _acceptor, _miner, m_scratch, answer.point);
+  m_unloadPoints.push_back(answer);
+  return m_unloadPoints.back();
+}
+
 void MiningSystem::Advance(World& _world)
 {
   m_deliveries.clear();
+  m_unloadPoints.clear();
   m_grid.Rebuild(_world);
 
   const std::span<const Placement> field = _world.Field();
@@ -153,14 +169,19 @@ void MiningSystem::Advance(World& _world)
           Halt(_world, slot);
           break;
         }
-        if (Within(miner.position, target->position, UnloadReach(miner.design, target->design)))
+        // **Q63: THE FAR SIDE WHEN SOMETHING HOSTILE IS NEAR**, inside point defense and out of a raider's reach;
+        // the near side, as before, when nothing is.
+        const UnloadPoint& unload = UnloadPointFor(_world, *target, miner.design);
+        const bool arrived = unload.farSide ? Within(miner.position, unload.point, FAR_SIDE_SLACK_UNITS * Neuron::FIXED_ONE)
+                                            : Within(miner.position, target->position, UnloadReach(miner.design, target->design));
+        if (arrived)
         {
           Halt(_world, slot);
           mine.phase = MiningPhase::Unloading;
         }
         else
         {
-          HeadFor(_world, slot, target->position);
+          HeadFor(_world, slot, unload.farSide ? unload.point : target->position);
         }
         break;
       }
@@ -173,6 +194,15 @@ void MiningSystem::Advance(World& _world)
           // The acceptor died mid-unload. Back to looking for one, with what is left aboard.
           mine.phase = MiningPhase::ToUnload;
           mine.unloadTarget = NO_ENTITY;
+          continue;
+        }
+
+        // **RE-CHECKED EVERY TICK** (Q64): a hostile arriving on this side moves the unload point, and the miner
+        // goes round to it with what is left aboard.
+        const UnloadPoint& unload = UnloadPointFor(_world, *target, miner.design);
+        if (unload.farSide && !Within(miner.position, unload.point, FAR_SIDE_SLACK_UNITS * Neuron::FIXED_ONE))
+        {
+          mine.phase = MiningPhase::ToUnload;
           continue;
         }
 

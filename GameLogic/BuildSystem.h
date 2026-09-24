@@ -211,7 +211,7 @@ private:
   /// Where a finished ship appears: **in front of the station, outside the circle its modules go in** (the owner,
   /// 2026-09-24). The distance is `SpawnDistanceUnits`. The station faces the center of the map
   /// (`GameCore/Layout.h`), so ships appear on the side a player is looking toward. **The cost**: a new ship
-  /// appears outside point defense's 400, which reaches exactly as far as the module circle (ADR-015).
+  /// appears just outside point defense's 480 (Q63): 495 for a Miner and 510 for a Fighter.
   [[nodiscard]] static Neuron::Vec2 SpawnPoint(const Entity& _station, DesignId _design) noexcept;
 
   /// **THE FIRST FREE PLACE AT THE SPAWN POINT** (2026-09-24): the spawn point itself if nothing is on it, else the

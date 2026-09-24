@@ -271,7 +271,7 @@ public:
   /// here where the station is first placed on a map.
   TEST_METHOD(ThePointDefenseOutrangesNothing)
   {
-    Assert::AreEqual(400, static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits));
+    Assert::AreEqual(480, static_cast<int>(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits), L"Q63");
     Assert::AreEqual(600, static_cast<int>(Outpost::Component(Outpost::ComponentId::MassDriver).rangeUnits));
     Assert::IsTrue(Outpost::Component(Outpost::ComponentId::PointDefense).rangeUnits <
                      Outpost::Component(Outpost::ComponentId::MassDriver).rangeUnits,

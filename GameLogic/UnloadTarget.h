@@ -33,4 +33,22 @@ namespace Outpost
 /// station.
 inline constexpr std::int32_t UNLOAD_SLACK_UNITS = 20;
 
+/// **HOW FAR FROM AN ACCEPTOR A HOSTILE COUNTS AS A THREAT TO ITS UNLOADING** (Q63 as built): the home field's
+/// outer radius plus the longest weapon's reach, so a raider anywhere it could be shooting at a miner in the home
+/// field is seen, and an enemy base across the map is not. Past it the unload point is the near side, as before
+/// Q63, which is what keeps Q62's measured economy true in a match nobody is raiding.
+[[nodiscard]] std::int32_t ThreatRadiusUnits() noexcept;
+
+/// **HOW NEAR THE FAR-SIDE POINT A MINER MUST BE TO UNLOAD THERE**: well inside the distance between the two sides,
+/// and wide enough that the router's arrival, which stops a little short, counts.
+inline constexpr std::int32_t FAR_SIDE_SLACK_UNITS = 60;
+
+/// **Q63: THE FAR SIDE.** When a hostile is within `ThreatRadiusUnits` of _acceptor, the point a _miner unloads at
+/// is its unload reach from the acceptor's center, on the ray away from the nearest such hostile -- which at a
+/// station is inside point defense's 480 and out of a raider's 600 from anywhere the point defense does not cover.
+/// The nearest is the grid's, ties to the lower identity, and the ray comes from the pinned bearing and sine table
+/// (R16). False, and _outPoint untouched, when nothing hostile is that close.
+[[nodiscard]] bool FarSideUnloadPoint(const World& _world, const UniformGrid& _grid, const Entity& _acceptor, DesignId _miner,
+                                      std::vector<EntityId>& _scratch, Neuron::Vec2& _outPoint);
+
 } // namespace Outpost
