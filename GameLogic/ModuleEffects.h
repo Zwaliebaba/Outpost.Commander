@@ -22,4 +22,8 @@ namespace Outpost
 /// What a delivered cargo is worth, in hundredths: 100 with no ore processor, 125 at L1, 150 at L2.
 [[nodiscard]] std::uint32_t CargoValuePercent(const World& _world, PlayerId _player) noexcept;
 
+/// **WHETHER THE PLAYER OWNS A SHIPYARD** of either level (Q84): what a ship order needs. Read from the modules' effect
+/// row, so nothing names a shipyard (R24).
+[[nodiscard]] bool HasShipyard(const World& _world, PlayerId _player) noexcept;
+
 } // namespace Outpost

@@ -7,6 +7,25 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace GameCoreTests
 {
 
+namespace
+{
+
+/// The stations alone, which lead the layout in player order; the starting ships (Q84) follow them.
+std::vector<Outpost::Placement> Stations(std::uint64_t _seed, std::size_t _players)
+{
+  std::vector<Outpost::Placement> stations;
+  for (const Outpost::Placement& placed : Outpost::GenerateLayout(_seed, _players))
+  {
+    if (placed.kind == Outpost::PlacedKind::Station)
+    {
+      stations.push_back(placed);
+    }
+  }
+  return stations;
+}
+
+} // namespace
+
 /// M1.5. **The one property that matters is that both sides get the same answer** (R23), and it is
 /// asserted by running the function twice rather than by trusting that it is pure.
 TEST_CLASS(TheStartingLayout)
@@ -37,7 +56,7 @@ public:
 
   TEST_METHOD(EveryPlayerGetsOneStation)
   {
-    const std::vector<Outpost::Placement> layout = Outpost::GenerateLayout(0, 2);
+    const std::vector<Outpost::Placement> layout = Stations(0, 2);
     Assert::AreEqual(static_cast<std::size_t>(2), layout.size());
     for (const Outpost::Placement& placed : layout)
     {
@@ -56,6 +75,44 @@ public:
     const std::vector<Outpost::Placement> layout = Outpost::GenerateLayout(0, 2);
     Assert::AreEqual(layout[0].position.x, -layout[1].position.x);
     Assert::AreEqual(layout[0].position.y, -layout[1].position.y);
+  }
+
+  /// **TWO MINERS AND A FIGHTER EACH, AFTER THE STATIONS** (Q84): owned, facing the way their station faces, and
+  /// parked toward the center at `STARTING_SHIPS_DISTANCE_UNITS` -- past the point a built ship appears, so the first
+  /// ship out of the yard does not land on one of them.
+  TEST_METHOD(EveryPlayerStartsWithTwoMinersAndAFighter)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{4}})
+    {
+      const std::vector<Outpost::Placement> layout = Outpost::GenerateLayout(0, players);
+      Assert::AreEqual(players * 4, layout.size());
+
+      for (std::size_t index = 0; index < players; ++index)
+      {
+        const Outpost::PlayerId player = static_cast<Outpost::PlayerId>(index + 1);
+        const Outpost::Placement& station = layout[index];
+        Assert::IsTrue(station.kind == Outpost::PlacedKind::Station, L"the stations no longer lead the layout");
+
+        std::size_t miners = 0;
+        std::size_t fighters = 0;
+        for (std::size_t ship = 0; ship < 3; ++ship)
+        {
+          const Outpost::Placement& placed = layout[players + (index * 3) + ship];
+          Assert::IsTrue(placed.kind == Outpost::PlacedKind::Ship);
+          Assert::AreEqual(static_cast<int>(player), static_cast<int>(placed.owner));
+          Assert::AreEqual(static_cast<int>(station.heading), static_cast<int>(placed.heading));
+          miners += (placed.design == Outpost::DesignId::Miner) ? 1 : 0;
+          fighters += (placed.design == Outpost::DesignId::Fighter) ? 1 : 0;
+
+          // Closer to the center than the station, and at least the parking distance from it.
+          const std::int64_t fromStation = Neuron::Sqrt(Neuron::LengthSquared(placed.position - station.position)) / Neuron::FIXED_ONE;
+          Assert::IsTrue(fromStation >= Outpost::STARTING_SHIPS_DISTANCE_UNITS - 1, L"a starting ship is too near its station");
+          Assert::IsTrue(Neuron::LengthSquared(placed.position) < Neuron::LengthSquared(station.position));
+        }
+        Assert::AreEqual(std::size_t{2}, miners);
+        Assert::AreEqual(std::size_t{1}, fighters);
+      }
+    }
   }
 
   /// Q26's answer, and the arithmetic behind it. The radius is exact on both axes because the anchors
@@ -100,7 +157,7 @@ public:
   /// nobody would look at again otherwise.
   TEST_METHOD(FourPlayersPutAdjacentStationsInsideTheRaidWindow)
   {
-    const std::vector<Outpost::Placement> layout = Outpost::GenerateLayout(0, 4);
+    const std::vector<Outpost::Placement> layout = Stations(0, 4);
     Assert::AreEqual(static_cast<std::size_t>(4), layout.size());
 
     const std::int64_t adjacent = Neuron::Sqrt(Neuron::LengthSquared(layout[1].position - layout[0].position)) / Neuron::FIXED_ONE;
@@ -182,9 +239,9 @@ public:
   /// is -- and a count past that is clamped rather than refused, the way `Sessions` clamps it.
   TEST_METHOD(AStressCountSeatsEveryPlayerUpToTheCapacity)
   {
-    Assert::AreEqual(std::size_t{8}, Outpost::GenerateLayout(0, 8).size());
-    Assert::AreEqual(std::size_t{100}, Outpost::GenerateLayout(0, 100).size());
-    Assert::AreEqual(Outpost::MAX_PLAYERS, Outpost::GenerateLayout(0, 300).size());
+    Assert::AreEqual(std::size_t{8}, Stations(0, 8).size());
+    Assert::AreEqual(std::size_t{100}, Stations(0, 100).size());
+    Assert::AreEqual(Outpost::MAX_PLAYERS, Stations(0, 300).size());
   }
 
   /// Integer arithmetic on a pinned table, so the same count gives the same starts twice (R16, R23) -- and
@@ -193,8 +250,8 @@ public:
   {
     for (const std::size_t players : {std::size_t{5}, std::size_t{8}, std::size_t{16}, std::size_t{100}})
     {
-      const std::vector<Outpost::Placement> first = Outpost::GenerateLayout(0, players);
-      Assert::IsTrue(first == Outpost::GenerateLayout(0, players), L"the stress layout moved between two calls");
+      const std::vector<Outpost::Placement> first = Stations(0, players);
+      Assert::IsTrue(first == Stations(0, players), L"the stress layout moved between two calls");
 
       for (std::size_t index = 0; index < first.size(); ++index)
       {

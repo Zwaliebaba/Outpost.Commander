@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Seventy-six answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79 to Q83 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Seventy-seven answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79 to Q84 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -484,7 +484,7 @@ in the code and on this row until the owner rules, which is what keeps the desig
 - **A rate that varies by hull size class**, which is a third mechanic for the MVP to tune.
 
 **Recommendation: a rate, at 20 credits of cost a second.** The derivation is the opening. A station
-starts with **1,000 credits** (§4) and a running economy is about **six miners** at 150 each; at twenty a
+starts with **1,000 credits** (§4; 500 and a starting fleet since Q84) and a running economy is about **six miners** at 150 each; at twenty a
 second that bank takes **45 seconds** to spend against a match of five minutes, so the first minute is
 spending what you started with and after that income paces you — which is the shape §4 describes. At ten
 it would be 90 seconds with credits piling up unspent, a third of the match spent waiting.
@@ -1393,6 +1393,28 @@ floor from 65 records to 64 and the typical fill from 99 to 98, and the sweep is
 
 **The client** keeps the newest mask and bakes the field again without the spent rocks, looks computed over the
 whole field first so no survivor changes shape. A spent rock can no longer be tapped, and no mining beam points at it.
+
+### Q84 — How does a match open? — **ANSWERED**
+
+**WITH TWO MINERS AND A FIGHTER, 500 CREDITS, AND NO SHIP UNTIL THERE IS A SHIPYARD. The owner's ruling,
+2026-09-24**, asked when the owner saw ships being built with no shipyard: *"start with 2 mining ships and 1 fighter
+in space, close to the station and that you can only build a new ship when you have an yard"*. Until then a player
+opened with 1,000 credits and nothing else, and the station built ships at its own rate from the first tick.
+
+- **The fleet** comes from `GenerateLayout`, after every station so each station keeps its index: Miner, Fighter,
+  Miner, 650 units toward the center and 110 apart across that line. Both sides run it (R23), and the host creates
+  them as ordinary entities. 650 and not nearer, because a built ship appears 495 to 510 out on the same line and
+  the first one out of the yard must not land on them.
+- **The shipyard** is checked at the intake, where every order, a client's, the AI's and the scripted match's,
+  comes in. A refused ship order is acknowledged like any other refusal. An item already building or queued when
+  the last yard dies goes on at the station's own rate (M3.8b): it was paid for when there was a yard. The client
+  dims the ship row with no yard, as it dims an unavailable module, so there is no button the host always refuses.
+- **500 credits** buys the 400-credit yard with 100 over, and the two miners pay for what comes next.
+- **The ore processor is unchanged.** The owner asked whether it was needed and chose to keep it as it is.
+- **The stub AI** places a shipyard on the first legal of eight sites 250 units out before it orders a ship.
+
+The map hash, the scripted match's and the stub AI match's all moved, because the layout, the opening bank and
+the script's first order moved.
 
 ### Q78 — Does a ship under a move order fire? — **ANSWERED**
 

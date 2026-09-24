@@ -187,7 +187,10 @@ placed unload point with 1,500 hull, at 300 credits, at least 2,000 from every s
 and two a player at most. Miners unload at the nearest acceptor, so one near a contested field turns that
 field's flight into a short one.
 
-Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
+Starting values: a station begins with 500 credits, and **every player starts with two Miners and a Fighter**,
+parked 650 units from the station toward the center, past where a built ship appears (the owner, 2026-09-24;
+`OpenQuestions.md` Q84). **The opening is a shipyard**: 500 buys one with 100 over while the two miners bring
+in the rest. It was 1,000 and no fleet until Q84. A `MiningLaser` carries 100 credits of capacity and
 extracts at 20 per second, so the one-slot miner fills in five seconds; a cycle at the home field is 27 to
 43 seconds, which puts one miner at **2.3 to 3.7 credits per second, about 3 on average**, and six miners on
 the six nearest rocks at **19.8 — just under the station's build rate of 20**, which is the intent: income,
@@ -216,6 +219,11 @@ Q74). That puts a new ship just outside point defense's 480. An order the credit
 so money is the only limit on the queue; the next item starts the tick the one before it finishes, and a
 cancel takes the newest first, refunded in full (`OpenQuestions.md` Q80). There is no rally point in the MVP; new
 ships sit where they appear.
+
+**A ship needs a shipyard** (the owner, 2026-09-24; `OpenQuestions.md` Q84). With no shipyard among a player's
+modules the host refuses a ship order, and the panel's ship row is dead the way an unavailable module is. A module
+needs none, so the first shipyard can always be placed. An item already building or queued when the last yard is
+lost goes on at the station's own rate, because it was paid for when there was a yard.
 
 **Building goes at a rate of 20 credits of cost a second** (`OpenQuestions.md` Q47), so build time is a
 design's cost over the rate and falls out of the composition the way mass and speed do: a Miner in 7.5
@@ -268,7 +276,7 @@ carrying one module component. **Each upgrade level is its own component**, so u
 
 | Module | What it does | L1 | L2 |
 |---|---|---|---|
-| **Shipyard** | Raises the station's build rate. From M4 its levels also gate heavier hulls and the designer. | 400 cr, ×1.5 | 700 cr, ×2.0 |
+| **Shipyard** | Needed to build any ship (Q84), and raises the station's build rate. From M4 its levels also gate heavier hulls and the designer. | 400 cr, ×1.5 | 700 cr, ×2.0 |
 | **Ore processor** | Raises what a delivered cargo is worth. | 350 cr, +25% | 600 cr, +50% |
 
 **The research station is designed and not built until M4**, when there is research for it to do (§9).

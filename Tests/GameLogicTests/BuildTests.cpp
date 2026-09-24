@@ -13,6 +13,19 @@ namespace
 constexpr Outpost::PlayerId MINE = 1;
 constexpr Outpost::PlayerId THEIRS = 2;
 
+/// **A ROUND THOUSAND FOR EVERY PLAYER.** These tests pin the build system's arithmetic -- charges, refunds, the queue
+/// -- on the thousand a player started with until the owner lowered the opening balance to 500 on 2026-09-24
+/// (`OpenQuestions.md` Q84). Each player is topped up to it, so the figures below stay the mechanism's own and do not
+/// move with the opening. `TheOpeningBalance` pins the opening itself.
+void BeginWithABank(Outpost::BuildSystem& _build, std::size_t _players)
+{
+  _build.Begin(_players);
+  for (std::size_t player = 1; player <= _players; ++player)
+  {
+    _build.Grant(static_cast<Outpost::PlayerId>(player), 1000 - Outpost::STARTING_CREDITS);
+  }
+}
+
 [[nodiscard]] int Code(Outpost::BuildRejection _rejection)
 {
   return static_cast<int>(_rejection);
@@ -22,9 +35,14 @@ constexpr Outpost::PlayerId THEIRS = 2;
 /// system needs to have somewhere to put a ship.
 void Seat(Outpost::World& _world, std::size_t _players)
 {
+  // THE STATIONS ONLY, as this suite has always seated a world: the starting ships Q84 added to the layout would stand
+  // in the way of every spawn and count this suite measures.
   for (const Outpost::Placement& placed : Outpost::GenerateLayout(0, _players))
   {
-    static_cast<void>(_world.Create(placed.position, placed.heading, placed.design, placed.owner));
+    if (placed.kind == Outpost::PlacedKind::Station)
+    {
+      static_cast<void>(_world.Create(placed.position, placed.heading, placed.design, placed.owner));
+    }
   }
 }
 
@@ -83,12 +101,13 @@ void Seat(Outpost::World& _world, std::size_t _players)
 TEST_CLASS(TheBuild)
 {
 public:
-  TEST_METHOD(APlayerStartsWithAThousandCredits)
+  /// 500 since Q84, with two Miners and a Fighter already in space.
+  TEST_METHOD(APlayerStartsWithFiveHundredCredits)
   {
     Outpost::BuildSystem build;
     build.Begin(2);
-    Assert::AreEqual(1000u, build.Credits(MINE));
-    Assert::AreEqual(1000u, build.Credits(THEIRS));
+    Assert::AreEqual(500u, build.Credits(MINE));
+    Assert::AreEqual(500u, build.Credits(THEIRS));
     Assert::AreEqual(0u, build.Credits(Outpost::NO_PLAYER));
     Assert::AreEqual(0u, build.Credits(3), L"a player this match does not have holds nothing");
   }
@@ -100,7 +119,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
     Assert::AreEqual(1000u - 150u, build.Credits(MINE));
@@ -115,7 +134,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     // Three fighters is 900, which leaves 100 against a fourth at 300.
     for (int order = 0; order < 3; ++order)
@@ -136,7 +155,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     Assert::AreEqual(Code(Outpost::BuildRejection::NotBuildable), Code(build.Start(world, MINE, Outpost::DesignId::Station)));
     Assert::AreEqual(1000u, build.Credits(MINE));
@@ -147,7 +166,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     Assert::AreEqual(Code(Outpost::BuildRejection::UnknownDesign), Code(build.Start(world, MINE, static_cast<Outpost::DesignId>(77))));
   }
@@ -156,7 +175,7 @@ public:
   {
     Outpost::World world;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     Assert::AreEqual(Code(Outpost::BuildRejection::NoStation), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
     Assert::AreEqual(Code(Outpost::BuildRejection::NoPlayer), Code(build.Start(world, Outpost::NO_PLAYER, Outpost::DesignId::Miner)));
@@ -169,7 +188,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
 
     const std::uint32_t required = build.Item(MINE).ticksRequired;
@@ -195,7 +214,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     const std::size_t before = world.AliveCount();
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
@@ -233,7 +252,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     build.Grant(MINE, 2000);
 
     for (int order = 0; order < 5; ++order)
@@ -279,7 +298,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
     static_cast<void>(RunToCompletion(build, world, MINE));
 
@@ -299,7 +318,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, THEIRS, Outpost::DesignId::Fighter));
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
@@ -320,7 +339,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
     Assert::AreEqual(700u, build.Credits(MINE));
@@ -345,7 +364,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     // Six miners at 150 is 900, which leaves 100 -- and 100 plus the building miner's 150 is 250 against a
     // fighter's 300.
@@ -369,7 +388,7 @@ public:
   TEST_METHOD(ACancelWithNothingBuildingIsNotAnError)
   {
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     Assert::IsFalse(build.Cancel(MINE));
     Assert::IsFalse(build.Cancel(Outpost::NO_PLAYER));
     Assert::AreEqual(1000u, build.Credits(MINE));
@@ -391,19 +410,14 @@ public:
     Assert::AreEqual(20u, Outpost::BuildSystem::BUILD_RATE_CREDITS_PER_SECOND);
   }
 
-  /// **THE OPENING IS WHAT THE RATE WAS CHOSEN BY.** A station starts with 1,000 credits and a
-  /// running economy is about six miners; spending that bank on six of them takes 45 seconds against
-  /// a match of five minutes, so the first minute is spending what you started with. That is the
-  /// derivation, and it is asserted rather than left in a comment.
-  TEST_METHOD(TheOpeningBankBuysSixMinersInUnderAMinute)
+  /// **THE OPENING IS A SHIPYARD** (the owner, 2026-09-24, `OpenQuestions.md` Q84). A player starts with two Miners and a
+  /// Fighter in space and 500 credits: enough for a level-one yard, which a ship order now needs, with a hundred over.
+  /// It replaced an opening of 1,000 spent on six Miners in 45 seconds.
+  TEST_METHOD(TheOpeningBankBuysAShipyard)
   {
-    const std::uint32_t miners = STARTING_CREDITS_FOR_TEST / Outpost::Derive(Outpost::DesignId::Miner).cost;
-    Assert::AreEqual(6u, miners);
-
-    const std::uint32_t ticks = miners * Outpost::BuildSystem::TicksToBuild(Outpost::DesignId::Miner);
-    const std::uint32_t seconds = ticks / Outpost::BuildSystem::TICKS_PER_SECOND;
-    Assert::AreEqual(45u, seconds);
-    Assert::IsTrue(seconds < 60);
+    const std::uint32_t yard = Outpost::Derive(Outpost::DesignId::ModuleShipyardL1).cost;
+    Assert::IsTrue(Outpost::STARTING_CREDITS >= yard, L"the opening cannot buy the yard every ship needs");
+    Assert::AreEqual(100u, Outpost::STARTING_CREDITS - yard);
   }
 
   /// `GameDesign.md` section 5's shipyard levels, through the parameter the intake passes since M2.12
@@ -439,9 +453,6 @@ public:
     Assert::AreEqual(Outpost::BuildSystem::TicksToBuild(Outpost::DesignId::Miner, 100),
                      Outpost::BuildSystem::TicksToBuild(Outpost::DesignId::Miner, 0));
   }
-
-private:
-  static constexpr std::uint32_t STARTING_CREDITS_FOR_TEST = Outpost::STARTING_CREDITS;
 };
 
 /// ADR-003's two per-player build bytes -- Q21's whole answer to the queue that had no wire record.
@@ -456,7 +467,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     Assert::AreEqual(std::uint8_t{0}, build.WireBuildingDesign(MINE));
     Assert::AreEqual(std::uint8_t{0}, build.WireProgressPercent(MINE));
@@ -473,7 +484,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
 
     std::uint8_t highest = 0;
@@ -502,7 +513,7 @@ public:
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     static_cast<void>(build.Start(world, THEIRS, Outpost::DesignId::Fighter));
     build.Advance(world);
 
@@ -525,7 +536,8 @@ public:
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
+    static_cast<void>(world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, MINE));
 
     const Outpost::Command order{.sequence = 1,
                                  .type = Outpost::CommandType::Build,
@@ -537,13 +549,35 @@ public:
     Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::Fighter);
   }
 
+  /// **NO SHIPYARD, NO SHIP** (the owner, 2026-09-24, Q84): refused at the intake, nothing spent, and acknowledged like
+  /// any other refusal. Another player's yard is not yours.
+  TEST_METHOD(ABuildOrderWithNoShipyardIsRefused)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+    static_cast<void>(world.Create(NearStation(world, THEIRS, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, THEIRS));
+
+    const Outpost::Command order{.sequence = 4,
+                                 .type = Outpost::CommandType::Build,
+                                 .targetX = static_cast<std::int16_t>(Outpost::DesignId::Miner),
+                                 .targetY = 0,
+                                 .selection = {}};
+    Assert::IsTrue(intake.Apply(world, build, MINE, order) == Outpost::CommandRejection::BuildRefused);
+    Assert::IsFalse(build.Item(MINE).active);
+    Assert::AreEqual(1000u, build.Credits(MINE), L"a refused order was charged");
+    Assert::AreEqual(std::uint16_t{4}, intake.LastAppliedSequence(MINE));
+  }
+
   TEST_METHOD(ACancelOrderRefunds)
   {
     Outpost::World world;
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
 
     const Outpost::Command order{.sequence = 1, .type = Outpost::CommandType::CancelBuild, .targetX = 0, .targetY = 0, .selection = {}};
@@ -560,7 +594,7 @@ public:
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     const Outpost::Command order{.sequence = 9,
                                  .type = Outpost::CommandType::Build,
@@ -579,7 +613,7 @@ public:
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     const Outpost::Command order{.sequence = 1,
                                  .type = Outpost::CommandType::Build,
@@ -635,7 +669,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
     for (int tick = 0; tick < 30; ++tick)
@@ -656,7 +690,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
@@ -680,7 +714,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     for (int order = 0; order < 3; ++order)
     {
@@ -697,7 +731,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
@@ -718,7 +752,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
     static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
@@ -736,7 +770,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     build.Grant(MINE, 1000);
 
     const Neuron::Vec2 site = NearStation(world, MINE, 250, 250);
@@ -756,7 +790,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     const Neuron::Vec2 site = NearStation(world, MINE, 250, 250);
     Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site)));
@@ -778,7 +812,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
     const Outpost::BuildItem before = build.Item(MINE);
 
@@ -796,7 +830,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Neuron::Vec2 site = NearStation(world, MINE, 300, 0);
 
     Assert::AreEqual(Code(Outpost::BuildRejection::NotUpgradeable),
@@ -814,7 +848,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Neuron::Angle heading = StationOf(world, MINE).heading;
     for (const auto& [dx, dy] : {std::pair{250, 250}, std::pair{-250, 250}, std::pair{-250, -250}, std::pair{250, -250}})
     {
@@ -832,7 +866,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Neuron::Vec2 site = NearStation(world, MINE, 300, 0);
     static_cast<void>(world.Create(site, 0, Outpost::DesignId::ModuleShipyardL1, THEIRS));
 
@@ -846,7 +880,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Neuron::Vec2 site = NearStation(world, MINE, -300, 0);
     static_cast<void>(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site));
     static_cast<void>(RunToCompletion(build, world, MINE));
@@ -872,7 +906,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Outpost::EntityId mine = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, MINE);
     const Outpost::EntityId theirs = world.Create(NearStation(world, THEIRS, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, THEIRS);
 
@@ -894,7 +928,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Outpost::EntityId module = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleOreProcessorL1, MINE);
     static_cast<void>(build.StartUpgrade(world, MINE, module, Outpost::DesignId::ModuleOreProcessorL2));
     Assert::AreEqual(750u, build.Credits(MINE));
@@ -913,7 +947,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Outpost::EntityId module = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleOreProcessorL1, MINE);
     static_cast<void>(build.StartUpgrade(world, MINE, module, Outpost::DesignId::ModuleOreProcessorL2));
     for (int tick = 0; tick < 10; ++tick)
@@ -934,7 +968,7 @@ public:
     Seat(world, 2);
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
 
     const Neuron::Vec2 site = NearStation(world, MINE, 0, -300);
     const Outpost::Command place{.sequence = 1,
@@ -972,7 +1006,7 @@ public:
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
-    build.Begin(2);
+    BeginWithABank(build, 2);
     const Neuron::Vec2 site = NearStation(world, MINE, 200, -300);
     static_cast<void>(build.StartModule(world, MINE, Outpost::DesignId::ModuleShipyardL1, site));
     static_cast<void>(RunToCompletion(build, world, MINE));

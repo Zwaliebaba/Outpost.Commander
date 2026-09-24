@@ -160,6 +160,30 @@ public:
     Assert::IsTrue(Same(ItemAt(frame, Outpost::BUTTON_COST.Within(button), Outpost::HudItem::Kind::Text)->color, TEXT));
     Assert::IsTrue(IsTarget(frame, Outpost::DesignId::ModuleOreProcessorL1));
   }
+
+  /// **NO SHIPYARD, NO SHIP ROW** (Q84): both ship buttons dim entirely and are no target, as an unavailable module
+  /// is -- and a yard of either level brings them back.
+  TEST_METHOD(TheShipRowIsDeadWithoutAShipyard)
+  {
+    const auto shipTargets = [](const Outpost::HudFrame& _frame)
+    {
+      std::size_t count = 0;
+      for (const Outpost::HudTarget& target : _frame.hits.Targets())
+      {
+        count += (target.action == Outpost::HudAction::Build) ? 1 : 0;
+      }
+      return count;
+    };
+
+    const Outpost::HudFrame without = Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleOreProcessorL1}));
+    Assert::AreEqual(std::size_t{0}, shipTargets(without), L"a ship button with no yard is a button the host always refuses");
+    Assert::IsTrue(Same(ItemAt(without, Outpost::BUILD_BUTTON_SHIP_0, Outpost::HudItem::Kind::Solid)->color, PLATE_DIM));
+    Assert::IsTrue(
+      Same(ItemAt(without, Outpost::BUTTON_COST.Within(Outpost::BUILD_BUTTON_SHIP_0), Outpost::HudItem::Kind::Text)->color, TEXT_DIM));
+
+    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL1}))));
+    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL2}))));
+  }
 };
 
 /// M3.9, `OpenQuestions.md` Q69. **The depot's button**, in the ship row's third place.

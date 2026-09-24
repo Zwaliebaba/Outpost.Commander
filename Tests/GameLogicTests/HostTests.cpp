@@ -119,13 +119,13 @@ public:
     Assert::IsFalse(Outpost::PlayerCountAllowed(255, true), L"past what a PlayerId can name");
   }
 
-  /// A stress match seats as many as it was given: a station each, and a slot each.
+  /// A stress match seats as many as it was given: a station and three starting ships each (Q84), and a slot each.
   TEST_METHOD(AStressMatchSeatsEveryPlayer)
   {
     Outpost::Host host;
     host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, 8);
     Assert::AreEqual(std::size_t{8}, host.PlayerCount());
-    Assert::AreEqual(std::size_t{8}, host.CurrentWorld().AliveCount());
+    Assert::AreEqual(std::size_t{8 * 4}, host.CurrentWorld().AliveCount());
     Assert::AreEqual(std::size_t{8}, host.CurrentSessions().PlayerCount());
   }
 
@@ -134,12 +134,12 @@ public:
   {
     const Outpost::Host host;
     Assert::AreEqual(std::size_t{2}, host.PlayerCount());
-    Assert::AreEqual(std::size_t{2}, host.CurrentWorld().AliveCount());
+    Assert::AreEqual(std::size_t{2 * 4}, host.CurrentWorld().AliveCount());
   }
 
   /// **NO ASTEROID IS IN THE WORLD, SO NONE CAN REACH THE WIRE** (M2.3, R23, Q22). An update carries
-  /// records of world entities and nothing else (ADR-024), so a match that begins with a station per
-  /// player and not one entity more sends no map -- and nothing in the world sits where a rock does. M3's
+  /// records of world entities and nothing else (ADR-024), so a match that begins with a station and three
+  /// starting ships per player (Q84) and not one entity more sends no map -- and nothing in the world sits where a rock does. M3's
   /// finite ore is where this is expected to change, and it fails here when it does.
   TEST_METHOD(AMatchBeginsWithNoAsteroidInTheWorld)
   {
@@ -147,7 +147,7 @@ public:
     {
       Outpost::Host host;
       host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, players);
-      Assert::AreEqual(players, host.CurrentWorld().AliveCount(), L"something besides the stations was created");
+      Assert::AreEqual(players * 4, host.CurrentWorld().AliveCount(), L"something besides the stations and starting ships was created");
 
       const std::vector<Outpost::Placement> field = Outpost::GenerateField(Outpost::DEFAULT_MATCH_SEED, players);
       for (std::size_t slot = 0; slot < host.CurrentWorld().SlotCount(); ++slot)

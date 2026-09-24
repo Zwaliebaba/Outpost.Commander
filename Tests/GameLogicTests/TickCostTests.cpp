@@ -92,23 +92,45 @@ constexpr bool ASSERT_BUDGET = false;
 }
 
 /// One player's fleet at full stretch: four modules around the station, twenty-five miners on the nearest
-/// home rock, and twenty-five fighters whose fleet order is re-issued by `Reorder`.
+/// home rock, and twenty-five fighters whose fleet order is re-issued by `Reorder`. **The match already gave the
+/// player two of those miners and one of those fighters** (Q84), so they are enlisted and the rest are made.
 void Populate(Outpost::World& _world, Outpost::PlayerId _player, std::vector<Outpost::EntityId>& _outFighters)
 {
   const Neuron::Vec2 station = StationOf(_world, _player);
+  const std::uint16_t rock = NearestHomeRock(_world, station);
+  std::int32_t startingMiners = 0;
+  std::int32_t startingFighters = 0;
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (!_world.IsSlotAlive(slot) || (_world.EntityInSlot(slot).owner != _player))
+    {
+      continue;
+    }
+    const Outpost::Entity& entity = _world.EntityInSlot(slot);
+    if (entity.design == Outpost::DesignId::Miner)
+    {
+      static_cast<void>(_world.OrderMine(entity.id, rock));
+      ++startingMiners;
+    }
+    else if (entity.design == Outpost::DesignId::Fighter)
+    {
+      _outFighters.push_back(entity.id);
+      ++startingFighters;
+    }
+  }
+
   static_cast<void>(_world.Create(Offset(station, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, _player));
   static_cast<void>(_world.Create(Offset(station, -300, 0), 0, Outpost::DesignId::ModuleOreProcessorL1, _player));
   static_cast<void>(_world.Create(Offset(station, 0, 300), 0, Outpost::DesignId::ModuleShipyardL2, _player));
   static_cast<void>(_world.Create(Offset(station, 0, -300), 0, Outpost::DesignId::ModuleOreProcessorL2, _player));
 
-  const std::uint16_t rock = NearestHomeRock(_world, station);
-  for (std::int32_t index = 0; index < MINERS_PER_PLAYER; ++index)
+  for (std::int32_t index = startingMiners; index < MINERS_PER_PLAYER; ++index)
   {
     const Outpost::EntityId miner =
       _world.Create(Offset(station, 450 + ((index % 5) * 70), -350 + ((index / 5) * 70)), 0, Outpost::DesignId::Miner, _player);
     static_cast<void>(_world.OrderMine(miner, rock));
   }
-  for (std::int32_t index = 0; index < FIGHTERS_PER_PLAYER; ++index)
+  for (std::int32_t index = startingFighters; index < FIGHTERS_PER_PLAYER; ++index)
   {
     _outFighters.push_back(
       _world.Create(Offset(station, -450 - ((index % 5) * 70), -350 + ((index / 5) * 70)), 0, Outpost::DesignId::Fighter, _player));

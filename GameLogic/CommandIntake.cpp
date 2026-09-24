@@ -79,7 +79,12 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     switch (_command.type)
     {
     case CommandType::Build:
-      ordered = _build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign()), buildRate) == BuildRejection::None;
+      // **A SHIP NEEDS A SHIPYARD** (the owner, 2026-09-24, `OpenQuestions.md` Q84), refused here with every other rule
+      // of what a player may order -- every order, a client's, the AI's and the scripted match's, comes through this.
+      // A module is placed and needs none, so the first shipyard can always be built. One already building or queued
+      // when the last yard dies goes on at the station's own rate (M3.8b): it was paid for when there was a yard.
+      ordered = HasShipyard(_world, _player) &&
+                (_build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign()), buildRate) == BuildRejection::None);
       break;
     case CommandType::PlaceModule:
     {

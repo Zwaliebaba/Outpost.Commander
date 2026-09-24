@@ -435,7 +435,8 @@ public:
   /// must agree on at the join.
   TEST_METHOD(TheShippedMapHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x30b092bc22619b42ull, Outpost::FieldHash(MATCH_SEED, 2));
+    // Moved by Q84's starting ships, which the layout places and the hash folds; the same on all four pairs.
+    Assert::AreEqual(0x908ad9b3849ed8dfull, Outpost::FieldHash(MATCH_SEED, 2));
   }
 
   /// Another seed or another count is another map, and another number.

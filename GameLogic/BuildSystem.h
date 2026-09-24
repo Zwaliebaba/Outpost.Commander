@@ -23,8 +23,9 @@ namespace Outpost
 /// R16 reaches this file. Integers throughout, no clock, and the tick is the only thing that advances
 /// anything.
 
-/// `GameDesign.md` section 4: "a station begins with 1,000 credits".
-inline constexpr std::uint32_t STARTING_CREDITS = 1000;
+/// `GameDesign.md` section 4's starting balance: **500 since the owner's ruling of 2026-09-24** (`OpenQuestions.md` Q84),
+/// with two Miners and a Fighter already in space -- a shipyard's 400 and a little over, where it was 1,000.
+inline constexpr std::uint32_t STARTING_CREDITS = 500;
 
 /// Why a build order was refused. Distinct values for the reason `CommandRejection` has them: a counter
 /// that says "refused" tells an operator nothing, and a test names the case it is pinning.
@@ -45,6 +46,7 @@ enum class BuildRejection : std::uint8_t
   /// The player has no station to build at. **M3's elimination supersedes this**; until then it is
   /// only reachable by a test that kills one.
   NoStation,
+
   /// **A PLACEMENT `CheckModuleSite` REFUSES** (M2.11): past the cap, outside the radius, or overlapping the
   /// station or a module. Refused before the current item is touched, so **a refused placement spends
   /// nothing and cancels nothing** -- which is the step's exit criterion.

@@ -546,6 +546,12 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   // lit and only the cost, the index bar and a rule along the bottom redden. The button stays a target,
   // because the host is what refuses an unaffordable order (M1.6) and a client that also refused would be
   // a second copy of the rule.
+  //
+  // **A SHIP NEEDS A SHIPYARD** (`OpenQuestions.md` Q84): with none among the player's modules the row is dead, hatched
+  // and dim like an unavailable module, and not a target -- the host refuses the order anyway, but a lit button it
+  // always refuses would be a button that lies.
+  const bool ownsShipyard = std::any_of(_state.ownModules.begin(), _state.ownModules.end(), [](DesignId _module)
+                                        { return (_module == DesignId::ModuleShipyardL1) || (_module == DesignId::ModuleShipyardL2); });
   const std::array<HudRect, 2> places{BUILD_BUTTON_SHIP_0, BUILD_BUTTON_SHIP_1};
   const std::span<const DesignId> designs = BuildableDesigns();
   for (std::size_t index = 0; (index < designs.size()) && (index < places.size()); ++index)
@@ -554,6 +560,16 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     const std::uint32_t cost = Derive(design).cost;
     const bool affordable = _state.credits >= cost;
     const HudRect button = ForHand(places[index], left);
+
+    if (!ownsShipyard)
+    {
+      EmitButton(_emit, button, PLATE_DIM, RULE_DIM, RULE, left);
+      EmitHatch(_emit, button);
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), DesignDisplayName(design), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,
+                 TEXT_DIM);
+      _emit.Text(BUTTON_COST.Within(button), std::to_wstring(cost), Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f, TEXT_DIM);
+      continue;
+    }
 
     EmitButton(_emit, button, PLATE, RULE_LIT, affordable ? RULE_LIT : SIG_SHORT, left);
     _emit.Text(BUTTON_NAME_LINE1.Within(button), DesignDisplayName(design), Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON,

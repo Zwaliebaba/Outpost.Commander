@@ -45,8 +45,18 @@ inline constexpr std::size_t ANCHOR_COUNT = 4;
 enum class PlacedKind : std::uint8_t
 {
   Station,
-  Asteroid
+  Asteroid,
+
+  /// A ship a player starts the match with (`OpenQuestions.md` Q84).
+  Ship
 };
+
+/// **EVERY PLAYER STARTS WITH TWO MINERS AND A FIGHTER** (the owner, 2026-09-24, `OpenQuestions.md` Q84), parked this far
+/// from the station toward the map's center and this far apart across that line, Miner, Fighter, Miner. **650 and not
+/// nearer**: a built ship appears 495 to 510 out on the same line (`BuildSystem::SpawnPoint`), and the starting ships
+/// must leave that point clear, or the first ship built lands on a ring slot beside them.
+inline constexpr std::int32_t STARTING_SHIPS_DISTANCE_UNITS = 650;
+inline constexpr std::int32_t STARTING_SHIPS_SPACING_UNITS = 110;
 
 /// Which field an asteroid belongs to (`GameDesign.md` section 3). **Nothing reads it before M3**, where
 /// contested fields are the richer ones and ore is first finite; it is here so that the generator, which
@@ -121,7 +131,8 @@ struct Placement
 /// this is the only heading it will ever have.
 [[nodiscard]] Neuron::Angle StartHeading(std::size_t _playerCount, PlayerId _player) noexcept;
 
-/// The whole layout, in player order. One `Station` on each anchor, owned.
+/// The whole layout: one `Station` on each anchor, owned, in player order -- **and then**, in player order, each
+/// player's starting ships (Q84), so every station keeps the index it always had.
 ///
 /// **A STATION NEEDS NO CODE OF ITS OWN** (M1.2): it is a `Station` hull with two `PointDefense` mounts
 /// and no drive, which is a row in the design table, so this function places an ordinary entity and the

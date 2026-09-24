@@ -52,10 +52,28 @@ constexpr Outpost::PlayerId ENEMY = 1;
 TEST_CLASS(TheStubAi)
 {
 public:
-  /// With nothing building and the credits for it, it builds a Miner first.
-  TEST_METHOD(ItBuildsAMinerFirst)
+  /// **WITH NO SHIPYARD IT PLACES ONE BEFORE IT ORDERS ANY SHIP** (Q84), on a site the rules allow, and builds nothing.
+  TEST_METHOD(ItPlacesAShipyardFirst)
   {
     const std::vector<Outpost::EntityRecord> entities{RecordAt(0, 0, 0, AI, Outpost::DesignId::Station)};
+    Outpost::StubAi ai;
+    std::vector<Outpost::Command> commands;
+    ai.Decide(Outpost::AiView{.player = AI, .entities = entities, .own = Outpost::PlayerBlock{.credits = 500}}, commands);
+    Assert::IsNull(FirstOf(commands, Outpost::CommandType::Build), L"it ordered a ship with no yard");
+    const Outpost::Command* place = FirstOf(commands, Outpost::CommandType::PlaceModule);
+    Assert::IsNotNull(place);
+    Assert::AreEqual(static_cast<int>(Outpost::DesignId::ModuleShipyardL1), static_cast<int>(place->placedDesign));
+
+    const Neuron::Vec2 site{.x = Outpost::DequantizePosition(place->targetX), .y = Outpost::DequantizePosition(place->targetY)};
+    Assert::IsTrue(
+      Outpost::CheckModuleSite(Neuron::Vec2{}, Outpost::DesignId::Station, {}, site, Outpost::DesignId::ModuleShipyardL1).Legal());
+  }
+
+  /// With a shipyard, nothing building and the credits for it, it builds a Miner first.
+  TEST_METHOD(ItBuildsAMinerFirst)
+  {
+    const std::vector<Outpost::EntityRecord> entities{RecordAt(0, 0, 0, AI, Outpost::DesignId::Station),
+                                                      RecordAt(1, 250, 0, AI, Outpost::DesignId::ModuleShipyardL1)};
     Outpost::StubAi ai;
     std::vector<Outpost::Command> commands;
     ai.Decide(Outpost::AiView{.player = AI, .entities = entities, .own = Outpost::PlayerBlock{.credits = 1000}}, commands);

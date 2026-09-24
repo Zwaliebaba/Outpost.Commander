@@ -48,4 +48,10 @@ std::uint32_t CargoValuePercent(const World& _world, PlayerId _player) noexcept
   return BestMultiplier(_world, _player, ModuleEffect::CargoValue);
 }
 
+bool HasShipyard(const World& _world, PlayerId _player) noexcept
+{
+  // A shipyard multiplies the build rate above the station's own hundred, which is what having one means.
+  return BestMultiplier(_world, _player, ModuleEffect::BuildRate) > 100;
+}
+
 } // namespace Outpost

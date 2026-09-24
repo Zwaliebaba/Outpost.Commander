@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include <utility>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -50,6 +51,36 @@ constexpr std::uint32_t FIGHT_TICK = 1600;
   return Outpost::Command{.sequence = _sequence, .type = Outpost::CommandType::CancelBuild, .selection = {}};
 }
 
+/// **A SHIPYARD BESIDE THE STATION, THROUGH THE INTAKE** (Q84): a ship needs one, so the script's first order is
+/// this. The first of four sites 250 units out that the rules allow, in a fixed order.
+[[nodiscard]] Outpost::Command PlaceYard(const Outpost::World& _world, Outpost::PlayerId _player, std::uint16_t _sequence)
+{
+  Neuron::Vec2 station{};
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (_world.IsSlotAlive(slot) && (_world.EntityInSlot(slot).owner == _player) &&
+        (_world.EntityInSlot(slot).design == Outpost::DesignId::Station))
+    {
+      station = _world.EntityInSlot(slot).position;
+    }
+  }
+
+  Outpost::Command place{.sequence = _sequence, .type = Outpost::CommandType::PlaceModule};
+  place.placedDesign = static_cast<std::uint8_t>(Outpost::DesignId::ModuleShipyardL1);
+  for (const auto& [dx, dy] : {std::pair{0, 250}, std::pair{0, -250}, std::pair{250, 0}, std::pair{-250, 0}})
+  {
+    const Neuron::Vec2 site{.x = Outpost::DequantizePosition(Outpost::QuantizePosition(station.x + (dx * Neuron::FIXED_ONE))),
+                            .y = Outpost::DequantizePosition(Outpost::QuantizePosition(station.y + (dy * Neuron::FIXED_ONE)))};
+    if (Outpost::CheckModuleSite(station, Outpost::DesignId::Station, {}, site, Outpost::DesignId::ModuleShipyardL1).Legal())
+    {
+      place.targetX = Outpost::QuantizePosition(site.x);
+      place.targetY = Outpost::QuantizePosition(site.y);
+      break;
+    }
+  }
+  return place;
+}
+
 [[nodiscard]] Outpost::Command BuildOrder(std::uint16_t _sequence, Outpost::DesignId _design)
 {
   return Outpost::Command{.sequence = _sequence,
@@ -60,8 +91,8 @@ constexpr std::uint32_t FIGHT_TICK = 1600;
 }
 
 /// Every wire identity a player's SHIPS carry, in slot order -- which is what a client's hit test would
-/// produce and is therefore the order the host actually receives. The station is left out because it
-/// cannot move and an order naming it would prove nothing.
+/// produce and is therefore the order the host actually receives. The station and the shipyard are left out
+/// because they cannot move and an order naming them would prove nothing.
 [[nodiscard]] std::vector<Outpost::WireIdentity> OwnedShips(const Outpost::World& _world, Outpost::PlayerId _player)
 {
   std::vector<Outpost::WireIdentity> out;
@@ -72,7 +103,7 @@ constexpr std::uint32_t FIGHT_TICK = 1600;
       continue;
     }
     const Outpost::Entity& entity = _world.EntityInSlot(slot);
-    if ((entity.owner == _player) && (entity.design != Outpost::DesignId::Station))
+    if ((entity.owner == _player) && (entity.design != Outpost::DesignId::Station) && !Outpost::IsModule(entity.design))
     {
       out.push_back(Outpost::PackIdentity(entity.id.index, entity.id.generation));
     }
@@ -187,7 +218,14 @@ struct MatchResult
   build.Begin(PLAYERS);
   victory.Begin(PLAYERS, 1);
 
+  // A SHIP NEEDS A SHIPYARD (Q84), so each player's first order places one. The builds below are refused until it
+  // stands, and acknowledged all the same -- which puts the refusal inside the hash too.
   std::uint16_t sequence = 0;
+  for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
+  {
+    static_cast<void>(intake.Apply(world, build, player, PlaceYard(world, player, ++sequence)));
+  }
+
   for (std::uint32_t tick = 1; tick <= TICKS; ++tick)
   {
     for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
@@ -372,7 +410,9 @@ public:
   {
     // **A FOURTEENTH TIME, THE SAME DAY (Q82)**: a mine order spreads its miners one to a rock, and a spent rock's miner
     // retargets a rock nobody has. The same on all four MSVC pairs before it was pinned.
-    Assert::AreEqual(0xa2af448ca99b5759ull, RunScriptedMatch().hash);
+    // **A FIFTEENTH TIME, THE SAME DAY (Q84)**: each player starts with two miners and a fighter and 500 credits, and a
+    // ship needs a shipyard, so the script places one first. The same on all four MSVC pairs before it was pinned.
+    Assert::AreEqual(0xf8edb93764daa3e6ull, RunScriptedMatch().hash);
   }
 
   /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI
@@ -383,7 +423,8 @@ public:
   {
     // Moved by M3.9's finite ore, the same on all four pairs.
     // And by Q82's one miner to a rock, the same on all four pairs.
-    Assert::AreEqual(0x1cbb249031f15057ull, RunStubAiMatch());
+    // And by Q84's opening, a starting fleet and a shipyard before any ship, the same on all four pairs.
+    Assert::AreEqual(0xbc08a3530ce14061ull, RunStubAiMatch());
     Assert::AreEqual(RunStubAiMatch(), RunStubAiMatch());
   }
 

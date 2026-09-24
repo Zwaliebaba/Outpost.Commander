@@ -115,9 +115,43 @@ void StubAi::Decide(const AiView& _view, std::vector<Command>& _outCommands)
   }
   const Neuron::Vec2 home = PositionOf(*station);
 
-  // === BUILD: miners to six, then fighters, one at a time and only what it can pay for. ===================
+  // === BUILD: a shipyard first (Q84), then miners to six, then fighters, one at a time and only what it can pay for.
   const bool idle = (BuildingDesignOf(_view.own.buildingDesign) == 0) && (QueuedOf(_view.own.buildingDesign) == 0);
-  if (idle)
+  std::vector<PlacedModule> modules;
+  bool ownsShipyard = false;
+  for (const EntityRecord& record : _view.entities)
+  {
+    if ((record.owner == _view.player) && IsKnownDesign(record) && IsModule(DesignOf(record)))
+    {
+      modules.push_back(PlacedModule{.identity = record.identity, .position = PositionOf(record), .design = DesignOf(record)});
+      const DesignId design = DesignOf(record);
+      ownsShipyard = ownsShipyard || (design == DesignId::ModuleShipyardL1) || (design == DesignId::ModuleShipyardL2);
+    }
+  }
+  if (idle && !ownsShipyard)
+  {
+    // THE FIRST LEGAL SITE OF EIGHT around the station, 250 out, in a fixed order (R16) -- the host judges it again.
+    constexpr std::array<std::array<std::int32_t, 2>, 8> SITES{
+      {{250, 0}, {0, 250}, {-250, 0}, {0, -250}, {177, 177}, {-177, 177}, {-177, -177}, {177, -177}}};
+    if (_view.own.credits >= Derive(DesignId::ModuleShipyardL1).cost)
+    {
+      for (const std::array<std::int32_t, 2>& offset : SITES)
+      {
+        const Neuron::Vec2 site{.x = DequantizePosition(QuantizePosition(home.x + (offset[0] * Neuron::FIXED_ONE))),
+                                .y = DequantizePosition(QuantizePosition(home.y + (offset[1] * Neuron::FIXED_ONE)))};
+        if (CheckModuleSite(home, DesignId::Station, modules, site, DesignId::ModuleShipyardL1).Legal())
+        {
+          Command place{.sequence = NextSequence(), .type = CommandType::PlaceModule};
+          place.targetX = QuantizePosition(site.x);
+          place.targetY = QuantizePosition(site.y);
+          place.placedDesign = static_cast<std::uint8_t>(DesignId::ModuleShipyardL1);
+          _outCommands.push_back(std::move(place));
+          break;
+        }
+      }
+    }
+  }
+  else if (idle)
   {
     const DesignId next = (miners.size() < AI_MINERS) ? DesignId::Miner : DesignId::Fighter;
     if (_view.own.credits >= Derive(next).cost)

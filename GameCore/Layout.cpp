@@ -2,6 +2,8 @@
 
 #include "Layout.h"
 
+#include <array>
+
 namespace Outpost
 {
 
@@ -112,12 +114,38 @@ std::vector<Placement> GenerateLayout(std::uint64_t _seed, std::size_t _playerCo
   const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
 
   std::vector<Placement> placed;
-  placed.reserve(players);
+  placed.reserve(players * 4);
   for (std::size_t index = 0; index < players; ++index)
   {
     const PlayerId player = static_cast<PlayerId>(index + 1);
     placed.push_back(Placement{
       .design = DesignId::Station, .owner = player, .position = StartAnchor(players, player), .heading = StartHeading(players, player)});
+  }
+
+  // **THE STARTING SHIPS** (Q84): toward the center along the station's heading, through the pinned sine table, so
+  // both sides compute them to the unit (R16). Across that line a quarter turn on, Miner, Fighter, Miner.
+  constexpr std::array<DesignId, 3> STARTING{DesignId::Miner, DesignId::Fighter, DesignId::Miner};
+  for (std::size_t index = 0; index < players; ++index)
+  {
+    const PlayerId player = static_cast<PlayerId>(index + 1);
+    const Neuron::Vec2 anchor = StartAnchor(players, player);
+    const Neuron::Angle heading = StartHeading(players, player);
+    const std::int64_t forwardX = Neuron::Cosine(heading);
+    const std::int64_t forwardY = Neuron::Sine(heading);
+    for (std::size_t ship = 0; ship < STARTING.size(); ++ship)
+    {
+      const std::int64_t across = (static_cast<std::int64_t>(ship) - 1) * STARTING_SHIPS_SPACING_UNITS;
+      const std::int64_t along = STARTING_SHIPS_DISTANCE_UNITS;
+      // Along the heading, and across it a quarter turn anticlockwise: (-sin, cos).
+      const std::int64_t offsetX = ((forwardX * along) - (forwardY * across)) * Neuron::FIXED_ONE / Neuron::SINE_ONE;
+      const std::int64_t offsetY = ((forwardY * along) + (forwardX * across)) * Neuron::FIXED_ONE / Neuron::SINE_ONE;
+      placed.push_back(Placement{
+        .kind = PlacedKind::Ship,
+        .design = STARTING[ship],
+        .owner = player,
+        .position = Neuron::Vec2{.x = static_cast<Neuron::Fixed>(anchor.x + offsetX), .y = static_cast<Neuron::Fixed>(anchor.y + offsetY)},
+        .heading = heading});
+    }
   }
   return placed;
 }

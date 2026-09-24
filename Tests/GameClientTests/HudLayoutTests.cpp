@@ -28,6 +28,7 @@ constexpr Outpost::PlayerId OURS = 1;
                   {.design = Outpost::DesignId::Station, .count = 1, .hullPercent = 83},
                   {.design = Outpost::DesignId::Miner, .count = 3, .hullPercent = 40}};
   state.buildPanelOpen = true;
+  state.ownModules = {Outpost::DesignId::ModuleShipyardL1}; // the ship row is live only with a yard (Q84)
   state.buildingWire = static_cast<std::uint8_t>(static_cast<std::uint8_t>(Outpost::DesignId::Miner) + 1);
   state.buildProgressPercent = 40;
   state.link = Outpost::LinkState::Linked;
