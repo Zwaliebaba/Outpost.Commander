@@ -129,6 +129,11 @@ unchanged. The new values are
 the pin is not moved again until it has been made: M3 will move it at every step that adds a rule, and a
 value nobody has run on ARM64 should not be the base those moves are measured from.
 
+**AND A SIXTH TIME, THE SAME DAY, BY A RULE** (`OpenQuestions.md` Q62): the home field moved from 600-1,500
+units of the anchor to 1,200-2,000, and a rock now yields ore to one miner a tick. The scripted match's value
+is **`0x4c8b850e5dec326e`**, identical under g++ and clang from `-O0` to `-O3`; M0.8's short run has no
+field and did not move. The four-pair run owed at M3's entry is owed against this value.
+
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
 it on 2026-09-23 (`OpenQuestions.md` Q58). ARM64 here is compiled on, and runs natively on, the Surface Pro.
 

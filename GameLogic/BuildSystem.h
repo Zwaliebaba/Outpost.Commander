@@ -101,8 +101,8 @@ public:
   /// shape the economy section describes. At ten it would be a hundred seconds with credits piling up
   /// unspent, which is a third of the match spent waiting.
   ///
-  /// **IT SITS JUST ABOVE THE INCOME RATE ON PURPOSE.** Income is about 15 credits a second, so
-  /// building is very slightly faster than earning -- which is what leaves the shipyard multiplier
+  /// **IT SITS JUST ABOVE THE INCOME RATE ON PURPOSE.** Six miners on the six nearest home rocks earn
+  /// 19.8 credits a second (measured, `OpenQuestions.md` Q62), so building is very slightly faster than earning -- which is what leaves the shipyard multiplier
   /// something to do (`GameDesign.md` section 5). Set it far above and credits always bind and the
   /// multiplier is dead; far below and the station is the bottleneck and mining stops mattering.
   static constexpr std::uint32_t BUILD_RATE_CREDITS_PER_SECOND = 20;

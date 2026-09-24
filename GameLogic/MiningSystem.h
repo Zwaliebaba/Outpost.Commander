@@ -61,6 +61,10 @@ public:
 private:
   UniformGrid m_grid;
   std::vector<EntityId> m_scratch;
+
+  /// **ONE EXTRACTOR PER ROCK PER TICK** (`OpenQuestions.md` Q62): which rocks have yielded ore this tick,
+  /// indexed as the field is. Sized to the field and cleared at the top of every `Advance`.
+  std::vector<std::uint8_t> m_rockWorked;
   std::vector<OreDelivery> m_deliveries;
 };
 

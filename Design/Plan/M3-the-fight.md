@@ -60,6 +60,11 @@ unchanged.
 **Done when:** the register has the answer, `GameDesign.md` §7 says what a weapon does per tick rather than
 only per second, and **ADR-014 records the decision** with whatever §7 figures moved.
 
+**ANSWERED BY THE OWNER, 2026-09-24** (`OpenQuestions.md` Q66, to its recommendation): the shape above, in
+ten-thousandths of a point rather than hundredths, which is what makes it exact. `GameDesign.md` §7 *What a
+weapon does per tick* and [`ADR-014`](../ADR/ADR-014-damage-accumulates-every-tick.md) record it; no §7 figure
+moved, since the rule reproduces all of them. M3.1 pins the rows as tests.
+
 ### M3.1 — The damage table · `GameCore` · `GameCoreTests` · agent
 
 **Read first:** `GameDesign.md` §7; ADR-014; M1.1's size-class naming note.

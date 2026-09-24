@@ -247,9 +247,13 @@ public:
   /// see M3's damage arithmetic diverge. The script is unchanged; `0x073f1184808b252a` was its value under the
   /// old hash. **Computed off Windows only**, identically under g++ -O1 and -O3 and clang -O0 and -O2; the
   /// four MSVC pairs are owed, once, at M3's entry (ADR-002).
+  ///
+  /// **AND A SIXTH TIME THE SAME DAY, BY A RULE** (`OpenQuestions.md` Q62): the home field moved to 1,200-2,000
+  /// units of the anchor and a rock yields to one miner a tick. `0xfc22fd27ca6ad39e` was confirmed on `Debug|x64`
+  /// in CI before this; this value is g++ and clang's, and the four pairs are owed with it at M3's entry.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xfc22fd27ca6ad39eull, RunScriptedMatch().hash);
+    Assert::AreEqual(0x4c8b850e5dec326eull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

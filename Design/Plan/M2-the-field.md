@@ -70,7 +70,7 @@ seed** against a checked-in table; Q26's two figures are named constants and app
 and running the generator twice on one seed produces byte-identical output, asserted rather than assumed.
 
 **BUILT, 2026-09-23**, as `GameCore/Generator.h` `.cpp`. `GenerateRegion(seed, players)` places player
-one's region: ten rocks between 600 and 1,500 units from the anchor, then two contested clusters of six
+one's region: ten rocks between 600 and 1,500 units from the anchor (1,200 and 2,000 since Q62), then two contested clusters of six
 whose centers sit 1,500 to 3,500 from the middle. It draws from its own PCG32 stream, 3. **It generates the
 region and nothing copies it yet**: at two players that is the half `x < 0`, and at four the quarter
 between the diagonals. M2.2 does the copy. Every rock keeps half the 150-unit spacing from the region's

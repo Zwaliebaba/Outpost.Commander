@@ -177,8 +177,8 @@ tap-to-visible re-run had closed several the review counted.
 
 **Class A — blocks M3.11**, and each blocks the step named before it:
 
-- **M3.0**, the firing cadence, with `OpenQuestions.md` Q66 — before M3.1.
-- **Q62**, the economy re-derived from the code — before M3.1 pins §7.
+- **M3.0**, the firing cadence, with `OpenQuestions.md` Q66 — before M3.1. **Answered 2026-09-24** (ADR-014).
+- **Q62**, the economy re-derived from the code — before M3.1 pins §7. **Ruled and built 2026-09-24.**
 - **The questions each M3 step names** as needed by it (Q63 to Q70, Q48 before M3.10).
 - **The four-pair determinism run at M3's entry**, which is also the one this change's pin moves owe
   (ADR-002), **and one at M3's exit.**
@@ -486,7 +486,7 @@ never gets written — a gap in the sequence is cheaper than an ADR nobody meant
 | **ADR-012** | How a shader is built and how it reaches the binary — `dxc` at Shader Model 6.7 to a checked-in header, not a `.cso` (F1) | **Taken 2026-09-21** |
 | **ADR-013** | The join record: how a client is told which player it is, and what a host does with an unexpected one (F2) | M1.4 |
 | **ADR-015** | The base is built from modules, and a module is a separate destroyable entity (`GameDesign.md` §5) | **Taken 2026-09-21** |
-| **ADR-014** | The firing interval in ticks and where integer damage rounds (F3), once the register has said what it should be | M3.1 |
+| **ADR-014** | The firing interval in ticks and where integer damage rounds (F3): ten-thousandths of a point accumulated every tick, deaths after every weapon, events thinned (Q66) | M3.1, **Taken 2026-09-24** |
 | **ADR-022** | A bot is a headless client, and one process runs many of them to load the host | M1.14b, **Taken 2026-09-23** |
 | **ADR-023** | The host's player count is configurable past four, for stress runs | M1.14c, **Taken 2026-09-23** |
 | **ADR-024** | Replication is prioritized absolute-state records, one whole datagram at a time, at any player count; cuts ADR-003 down and removes M4.2 | M1.14c, **Taken 2026-09-23** |

@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Fifty-nine answered, eighteen open** — Q34, Q48 and Q49, and fifteen of Q62 to Q77 from the mid-implementation review (Q72 is ruled). Eight came from an adversarial review that also reversed two earlier
+**Sixty-one answered, sixteen open** — Q34, Q48 and Q49, and thirteen of Q62 to Q77 from the mid-implementation review (Q62, Q66 and Q72 are ruled). Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults, in their own section below the answered ones. **Q72 is ruled; the other fifteen are open.**
+recommended defaults, in their own section below the answered ones. **Q62, Q66 and Q72 are ruled; the other thirteen are open.**
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -209,7 +209,8 @@ recommendation and was chosen over two alternatives, 10 home with contested fiel
 cluster of eight, because it builds both kinds of field the design names and lets M2.2's symmetry test
 cover both. Every figure the generator needs is a named constant in `GameCore/Generator.h` and
 `GameCoreTests` checks each one by name. That includes the four the register never asked about: the
-600-unit inner edge of a home field, which keeps rocks off the 400-unit module ring, the 1,500-to-3,500
+600-unit inner edge of a home field, which keeps rocks off the 400-unit module ring (**1,200 to 2,000 since
+Q62**, 2026-09-24, with the measured income table there), the 1,500-to-3,500
 band where a contested cluster may sit, its 600-unit spread, and 150 units between rocks. **All of it
 is provisional**, and M3's twenty matches are where it is expected to move. The reasoning below is why
 these were the starting values.
@@ -485,7 +486,8 @@ second that bank takes **45 seconds** to spend against a match of five minutes, 
 spending what you started with and after that income paces you — which is the shape §4 describes. At ten
 it would be 90 seconds with credits piling up unspent, a third of the match spent waiting.
 
-**It sits just above the income rate on purpose.** Income is about 15 credits a second, so building is
+**It sits just above the income rate on purpose.** Income is about 15 credits a second (**measured at 19.8 for
+six miners since Q62 moved the home field**, 2026-09-24; it had been far above the slot before that), so building is
 very slightly faster than earning — which is what leaves §5's shipyard multiplier something to do. Set it
 far above and credits always bind and the multiplier is dead; far below and the station is the bottleneck
 and mining stops mattering.
@@ -896,7 +898,7 @@ first meet on purpose.
 review reached its figures by driving the unmodified `GameCore` and `GameLogic` under g++ on Linux, not by
 estimating them; its §6 lists twelve decisions it says no agent may take, and the rest of its findings name
 a rule the design has not stated. Each is registered here with **the review's recommended default as the
-recommendation**, the finding it came from, and what it is needed by. **Q72 was ruled the same day, to its recommendation; the rest are open.** The review's
+recommendation**, the finding it came from, and what it is needed by. **Q62, Q66 and Q72 were ruled the same day, to their recommendations; the rest are open.** The review's
 defects against rules that were already written down were fixed in the same change, not registered: the
 free Fighter at the map center (B5), the token stream (B4, ADR-013 amended), the dead-identity refusal (M4,
 Q24 amended), send-once in the packaged client (M5), the unaffordable tap (m1), the hash's blind fields (M6,
@@ -908,7 +910,7 @@ before M1.17 merged: ships now turn as they fly (Q59) and route around structure
 Q61), so M11's "fifty identical arrows" and M16's "ships stack on one point" no longer describe the code.
 Q68 keeps what is left of M11.
 
-### Q62 — What binds the economy: income, or the build slot? — **needed before M3.1 pins §7, and by M3.11**
+### Q62 — What binds the economy: income, or the build slot? — **ANSWERED**
 
 **The finding (B1, m11).** On the shipped field one Miner earns 6.40 credits a second at the nearest home
 rock and 3.33 at the farthest, against the 2.5 that `GameDesign.md` §4 assumes. Income passes the 20-a-second
@@ -930,6 +932,29 @@ many miners take ore from one rock, so stacking on the nearest two beats spreadi
 **Recommendation: move the field, keep the slot at 20, and write one extractor per rock.** Restate §4, §5,
 Q26, Q47 and the three code comments that cite 2.5 and thirty seconds, from the measured table, in the same
 change. Q63 depends on the radii.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION, AND BUILT.** `HOME_FIELD_INNER_RADIUS_UNITS` is 1,200
+and the outer 2,000 (`GameCore/Generator.h`); `MiningSystem` lets one miner extract from a rock a tick, in slot
+order, and a second in range holds with its cargo unchanged. **Re-measured on the shipped loop after the
+change, not taken from the review**, which predates M1.17's turning and routing (seed 20260922, two players,
+g++ on Linux, steady state over the second half of ten minutes):
+
+| | Credits a second |
+|---|---|
+| One miner, per home rock, nearest to farthest (1,254 to 1,948 from the anchor) | 3.67, 3.67, 3.47, 3.00, 3.00, 3.00, 2.67, 2.67, 2.33, 2.33 — **mean 2.98** |
+| Six miners, one on each of the six nearest rocks | **19.82**, under the 20-a-second slot |
+| Ten miners, one per rock | 30.02 |
+| Ten miners, five on each of the two nearest rocks | 35.68 with one extractor per rock; 36.67 without |
+| One miner at a contested rock, unloading at home | 0.94 to 1.00 |
+
+**Two things differ from what the review predicted, and both are stated rather than smoothed.** Six miners
+earn 19.8, not 18.6: under the slot, but by 1%, so a seventh passes it. And **stacking still beats spreading
+by 19%**, because on this field the two nearest rocks are simply the shortest flights; one extractor per rock
+removed only 3 points of it, since five miners at a rock rarely arrive together. So the rule makes Q26's
+"ten rocks serve thirty miners" true and does not make spreading optimal. **What would reopen it** is M3.11
+finding a stacked opening dominant, which is then a question of rock placement rather than of throughput.
+§4 carries the figures; Q26, Q47, `Generator.h` and `BuildSystem.h` point at this table. The determinism pin
+moved to `0x4c8b850e5dec326e` (ADR-002) and the generator's pinned region was regenerated.
 
 ### Q63 — What does the station's point defense protect? — **needed by M3.5**
 
@@ -982,7 +1007,7 @@ produce.
 **Recommendation: the clock and the draw**, and an acceptance test in the harness the day M3.2 lands: a
 three-fighter rush ends by 5:30, and a mirror ends by 8:00 or on the clock.
 
-### Q66 — Where does damage round, and how often is a fire event sent? — **needed by M3.0**
+### Q66 — Where does damage round, and how often is a fire event sent? — **ANSWERED**
 
 **The finding (M2)**, which narrows M3.0's gate. Any per-tick integer rule makes stations and modules immune
 to every ship weapon: a MassDriver against Heavy is 0.3125 a tick, which truncates and rounds to zero. The
@@ -998,6 +1023,13 @@ unpinned: deaths applied in slot order give player 1 the first shot in every sym
   deferred, and §7's rows restated at +4% to +9%.
 
 **Recommendation: the first.** It is the only option that reproduces §7 exactly, and ADR-014 records it.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION**, and recorded in
+[`ADR-014`](ADR/ADR-014-damage-accumulates-every-tick.md) and `GameDesign.md` §7 *What a weapon does per tick*,
+which answers M3.0. **One correction in the writing down:** "hundredths of a point" leaves a fraction a tick
+(25 dps at 70% is 87.5 hundredths), and the formula the recommendation gives, dps × modifier × 100 ÷ 20, is in
+ten-thousandths, where every §7 figure is a whole number. ADR-014 states that unit. Nothing is built yet:
+M3.1 and M3.2 build to it.
 
 ### Q67 — How does an attack order bring a fleet to its target? — **needed by M3.2**
 

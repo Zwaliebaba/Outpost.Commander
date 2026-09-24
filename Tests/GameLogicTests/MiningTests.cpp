@@ -297,6 +297,38 @@ public:
   }
 };
 
+/// **ONE EXTRACTOR PER ROCK PER TICK** (`OpenQuestions.md` Q62, ruled 2026-09-24).
+TEST_CLASS(OneRockOneExtractor)
+{
+public:
+  /// Two miners in range of one rock: the lower slot extracts, the other holds with its cargo unchanged, and
+  /// takes its turn once the first has filled and left.
+  TEST_METHOD(ASecondMinerAtARockWaitsItsTurn)
+  {
+    Scene scene;
+    const Outpost::EntityId second = scene.world.Create(At(1990, 0), 0, Outpost::DesignId::Miner, MINE);
+    scene.world.Find(scene.miner)->position = At(1995, 0);
+    Assert::IsTrue(scene.world.OrderMine(scene.miner, 0));
+    Assert::IsTrue(scene.world.OrderMine(second, 0));
+
+    Outpost::MiningSystem mining;
+    mining.Advance(scene.world);
+    const std::uint32_t firstCargo = scene.Mine().cargoMilliOre;
+    Assert::IsTrue(firstCargo > 0, L"the lower slot did not extract");
+    Assert::IsTrue(scene.world.FindMine(second)->phase == Outpost::MiningPhase::Extracting);
+    Assert::AreEqual(0u, scene.world.FindMine(second)->cargoMilliOre, L"two miners took ore from one rock in one tick");
+
+    // Until the first is full, the second waits; the tick after it fills, the second extracts.
+    for (int tick = 0; (tick < 200) && (scene.Mine().phase == Outpost::MiningPhase::Extracting); ++tick)
+    {
+      mining.Advance(scene.world);
+      Assert::IsTrue((scene.Mine().phase != Outpost::MiningPhase::Extracting) || (scene.world.FindMine(second)->cargoMilliOre == 0));
+    }
+    mining.Advance(scene.world);
+    Assert::IsTrue(scene.world.FindMine(second)->cargoMilliOre > 0, L"the waiting miner never got its turn");
+  }
+};
+
 /// What the host accepts as a mine order.
 TEST_CLASS(TheMineCommand)
 {
