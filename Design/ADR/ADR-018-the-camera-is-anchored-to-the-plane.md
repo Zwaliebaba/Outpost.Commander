@@ -117,4 +117,6 @@ were owed at **M1.16**, the first two looked at rather than asserted:
    view of roughly 1,500 world units it would be about 1,400 units, making the range **16×**, which is
    about two pinch gestures at unity gain since a comfortable pinch spans about 4× of scale. M1.8 pins
    the near end; if the range grows much past that, the lever is a gain on the scale rather than a
-   different gesture.
+   different gesture. **The near end is 700 since 2026-09-24**, when the owner halved the opening
+   distance and the near end followed it. That makes the range 32×, about two and a half pinches, and
+   the gain is the lever if it feels long (`Interface.md` §5).

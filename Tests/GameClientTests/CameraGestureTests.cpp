@@ -64,7 +64,7 @@ public:
   TEST_METHOD(TheFloorSaturatesAndDoesNotTerminateTheRange)
   {
     // Below the near end is a legal distance, and it simply stops lowering the pitch.
-    for (const float distance : {1400.0f, 1000.0f, 400.0f, 1.0f})
+    for (const float distance : {700.0f, 500.0f, 200.0f, 1.0f})
     {
       Assert::AreEqual(30.0f, Degrees(Outpost::PitchForDistance(distance)), 0.01f, L"the floor stopped being a floor");
     }
@@ -90,17 +90,19 @@ public:
 TEST_CLASS(TheZoomRangeAndTheStretch)
 {
 public:
-  /// **16.07x**, which is the near end of 1,400 against the far end of 22,500. Section 5 says a
-  /// comfortable pinch spans about 4x, so the whole range is two gestures and no gain constant is
-  /// needed -- and that is the claim this number supports.
-  TEST_METHOD(TheZoomRangeIsAboutSixteenTimes)
+  /// **32.14x**, which is the near end of 700 against the far end of 22,500. It was 16.07x at a near
+  /// end of 1,400, until the owner halved the opening distance on 2026-09-24 and the near end with it.
+  /// Section 5 says a comfortable pinch spans about 4x, so the range is about two and a half gestures,
+  /// which is still short of needing a gain constant.
+  TEST_METHOD(TheZoomRangeIsAboutThirtyTwoTimes)
   {
     Assert::AreEqual(22500.0f, Outpost::MAXIMUM_CAMERA_DISTANCE);
-    Assert::AreEqual(1400.0f, Outpost::MINIMUM_CAMERA_DISTANCE);
-    Assert::AreEqual(16.07f, Outpost::ZoomRange(), 0.01f);
+    Assert::AreEqual(700.0f, Outpost::MINIMUM_CAMERA_DISTANCE);
+    Assert::AreEqual(32.14f, Outpost::ZoomRange(), 0.01f);
 
-    // Two pinches of 4x each covers it, which is what "no gain constant is needed" means.
-    Assert::IsTrue(Outpost::ZoomRange() <= (4.0f * 4.0f) + 0.1f);
+    // Three pinches of 4x each cover it. It was two before the near end halved; a gain on the scale is
+    // `Interface.md` section 5's lever if two and a half turns out to feel long.
+    Assert::IsTrue(Outpost::ZoomRange() <= (4.0f * 4.0f * 4.0f));
   }
 
   /// **3.3x, TOP TO MIDDLE, AT THE FLOOR.** Section 5 states the figure and says M1.8 measures it.

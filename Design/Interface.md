@@ -362,33 +362,38 @@ feature loss.
 
 **The zoom range is about two gestures, which is why no gain constant is needed.** At the 40° field of
 view above, showing the whole 16,384-unit square puts the camera at **22,500 units**, and the 3:2 aspect
-gives roughly 24,600 units of visible width so the square fits on its height. **The near end is 1,400**
-(Q40), making the range **16.07×**, pinned by `GameClientTests` at M1.8 — and a comfortable pinch spans
-about 4× of scale, so two of them cover it. If the range ever grows much past this the lever is a gain on
-the scale rather than a different gesture.
+gives roughly 24,600 units of visible width so the square fits on its height. **The near end is 700**,
+making the range **32.14×**, pinned by `GameClientTests`. A comfortable pinch spans about 4× of scale, so
+two and a half of them cover it. **It was 1,400 and 16.07× (Q40) until 2026-09-24**, when the owner halved
+the opening distance and the near end went with it. If the range feels long on the device, the lever
+is a gain on the scale rather than a different gesture.
 
 **The near plane is 50 units and the far plane is 50,000** (Q39). Neither was stated, and the range they
 span is wide: the tactical camera sits at 22,500 units over hulls 18 to 54 units tall. **Depth precision
 is set by the near plane, not the far one** — at a 24-bit buffer, near 1 resolves about 30 units at
 tactical range and the station's 12-unit plate step disappears into z-fighting; near 50 resolves about
-**0.6 units**, a factor of twenty in hand, and is still far closer than the 1,400-unit camera ever gets to
+**0.6 units**, a factor of twenty in hand, and is still far closer than the 700-unit camera ever gets to
 a hull. **The case to look at on the device is the station at maximum zoom-out**, where every term is at
 its worst at once; a reversed-Z buffer is the lever if it is ever not enough.
 
-**The close end of the zoom is 1,400 units and the plates were rendered at 1,500** (Q40). The difference
-is not visible — a 60-unit hull is 57 authored pixels at 1,400 and 53 at 1,500, both inside the 53–79 the
+**The close end of the zoom was 1,400 units and the plates were rendered at 1,500** (Q40). **At the 700 it
+is now, a 60-unit hull is about 113 authored pixels**, past the 53–79 the handoff's combat plate was
+accepted against, so whether the meshes hold up that close is for the device to say. At 1,400 the
+difference was not visible — a 60-unit hull is 57 authored pixels at 1,400 and 53 at 1,500, both inside the 53–79 the
 mesh handoff's combat plate was accepted against — and what it changes is the zoom range, 16.07× against
 15.0×. **1,400 stands** because this document and
 [`ADR-018`](ADR/ADR-018-the-camera-is-anchored-to-the-plane.md) both already said it and
 `GameClient/Camera.h` was built to it; the handoff's README records the discrepancy and is corrected
 rather than this.
 
-**The camera opens on your own station at 2,400 units**, which shows about 2,620 units across — a
-220-unit station at roughly 120 authored pixels, with its 400-unit module radius on screen around it. It
+**The camera opens on your own station at 1,200 units**, which shows about 1,310 units across — a
+220-unit station at roughly 240 authored pixels, with most of its 400-unit module radius on screen around
+it. **It opened at 2,400 until 2026-09-24**, when the owner found everything too far away on the device
+and halved it. It
 could not do this before [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), because nothing
 told the client which player it was; the opening pose was an arbitrary point near the middle. **A
 recenter moves the focus and leaves the zoom alone**, so the opening distance is what decides how large
-your base is, and it is deliberately not the near end: 1,400 would be pinned against the limit with
+your base is, and it is deliberately not the near end: 700 would be pinned against the limit with
 nowhere to go but in, and — because pitch is coupled to zoom — would also be the most raking view the
 camera has.
 

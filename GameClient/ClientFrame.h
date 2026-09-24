@@ -224,16 +224,16 @@ private:
   /// this was. What this constant actually decides is the DISTANCE, because a recenter moves the
   /// focus and leaves the zoom alone (ADR-018).
   ///
-  /// **2,400 UNITS, AND IT IS THE STATION THAT SETS IT.** At a 40-degree field of view the frame
-  /// spans `1.092 x distance` across, so 2,400 shows about 2,620 units and a 220-unit station is
-  /// roughly **120 authored pixels** -- readable, with its 400-unit module radius on screen around
-  /// it. M0 opened at 4,000, where the same station is 72 pixels and reads as a smudge; the far end
-  /// of the range, 22,500, puts it at 13.
+  /// **1,200 UNITS, THE OWNER'S CALL ON 2026-09-24**, half the 2,400 it opened at before, which read
+  /// as too far from everything on the device. At a 40-degree field of view the frame spans
+  /// `1.092 x distance` across, so 1,200 shows about 1,310 units and a 220-unit station is roughly
+  /// **240 authored pixels**, with most of its 400-unit module radius on screen. M0 opened at 4,000,
+  /// and the far end of the range, 22,500, puts the same station at 13 pixels.
   ///
-  /// **IT IS DELIBERATELY NOT THE NEAR END.** 1,400 would be larger still and pinned against the
-  /// zoom limit, with nowhere to go but out -- and because pitch is coupled to zoom
-  /// (`Interface.md` section 5), it would also be the most raking view the camera has.
-  CameraPose m_camera{.focusX = 0.0f, .focusY = 0.0f, .headingRadians = 0.0f, .distance = 2400.0f};
+  /// **IT IS DELIBERATELY NOT THE NEAR END**, which was halved with it to 700. Opening at the near
+  /// end would leave nowhere to go but out, and because pitch is coupled to zoom (`Interface.md`
+  /// section 5) it would also be the most raking view the camera has.
+  CameraPose m_camera{.focusX = 0.0f, .focusY = 0.0f, .headingRadians = 0.0f, .distance = 1200.0f};
 
   /// **M1.4 REPLACED A COMPILED-IN PLAYER ONE WITH THIS.** Until ADR-013 the protocol had no way
   /// to tell a client which player it was, so the client assumed -- and `CommandIntake` refuses a

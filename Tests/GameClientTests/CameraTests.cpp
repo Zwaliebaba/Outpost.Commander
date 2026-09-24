@@ -117,10 +117,11 @@ public:
     }
   }
 
-  TEST_METHOD(TheZoomRangeIsTheSixteenTimesTheDesignQuotes)
+  /// Sixteen until 2026-09-24, when the owner halved the opening distance and the near end with it.
+  TEST_METHOD(TheZoomRangeIsTheThirtyTwoTimesTheDesignQuotes)
   {
     const float range = Outpost::MAXIMUM_CAMERA_DISTANCE / Outpost::MINIMUM_CAMERA_DISTANCE;
-    Assert::AreEqual(16.0f, range, 0.1f);
+    Assert::AreEqual(32.14f, range, 0.1f);
   }
 };
 

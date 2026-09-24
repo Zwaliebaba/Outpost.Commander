@@ -50,11 +50,11 @@ inline constexpr float MAXIMUM_PITCH_DEGREES = 85.0f;
 /// whole 16,384-unit square at a 40-degree vertical field of view.
 inline constexpr float MAXIMUM_CAMERA_DISTANCE = 22500.0f;
 
-/// The near end, which **ADR-018 explicitly does not pin** -- it says "at a close view of roughly
-/// 1,500 world units it would be about 1,400", and leaves M1.8 to settle it. 1,400 is that
-/// sentence taken at its word, and it makes the range 16x, which is the figure both documents
-/// quote for "about two pinch gestures".
-inline constexpr float MINIMUM_CAMERA_DISTANCE = 1400.0f;
+/// The near end, which **ADR-018 explicitly does not pin**. M1.8 took its "about 1,400" at its word.
+/// **Halved to 700 on 2026-09-24**, when the owner halved the opening distance (`ClientFrame.h`): an
+/// opening view nearer than the near end would snap back out on the first pinch, and halving both keeps
+/// the opening where it was in the range. The range is now 32x, about two and a half pinches.
+inline constexpr float MINIMUM_CAMERA_DISTANCE = 700.0f;
 
 /// The play area's half extent in the renderer's units, **derived from `GameCore`'s figure rather
 /// than restated**. `GameCore/Command.h` already owns it as a `Neuron::Fixed` -- it is what the
