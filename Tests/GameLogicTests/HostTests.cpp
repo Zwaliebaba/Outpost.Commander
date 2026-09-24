@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -221,6 +222,71 @@ public:
     Assert::AreEqual(next, Outpost::Host::NextMatchSeed(Outpost::DEFAULT_MATCH_SEED));
     Assert::AreNotEqual(Outpost::DEFAULT_MATCH_SEED, next);
     Assert::AreNotEqual(next, Outpost::Host::NextMatchSeed(next));
+  }
+};
+
+/// **M4.1: THE THIRD AND FOURTH SLOTS ARE A RUNTIME VALUE** (`OpenQuestions.md` Q27, ADR-023). A whole match at two,
+/// three and four players, every seat the stub AI's, through the host's own loop -- and nothing about it is a
+/// different code path: the same layout, the same field, the same AI, the same update.
+TEST_CLASS(TheFourSlots)
+{
+public:
+  /// **EVERY SEAT PLAYS.** Two minutes in, each player has a shipyard and more ships than it started with, at every
+  /// count -- so the third and fourth starts are places a player can actually build from.
+  TEST_METHOD(EveryAiSeatBuildsAtTwoThreeAndFourPlayers)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{3}, std::size_t{4}})
+    {
+      Outpost::Host host;
+      host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, players);
+      host.SetAiSeats(players);
+      for (int tick = 0; tick < 2400; ++tick)
+      {
+        host.RunOneTick();
+      }
+      Assert::AreEqual(std::uint16_t{0}, host.LastEnded().matchNumber, L"the match ended inside two minutes");
+
+      const Outpost::World& world = host.CurrentWorld();
+      for (std::size_t index = 1; index <= players; ++index)
+      {
+        const Outpost::PlayerId player = static_cast<Outpost::PlayerId>(index);
+        bool yard = false;
+        std::size_t ships = 0;
+        for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+        {
+          if (!world.IsSlotAlive(slot) || (world.EntityInSlot(slot).owner != player))
+          {
+            continue;
+          }
+          const Outpost::DesignId design = world.EntityInSlot(slot).design;
+          yard = yard || (design == Outpost::DesignId::ModuleShipyardL1) || (design == Outpost::DesignId::ModuleShipyardL2);
+          ships += ((design == Outpost::DesignId::Miner) || (design == Outpost::DesignId::Fighter)) ? 1 : 0;
+        }
+        Assert::IsTrue(yard, (L"a seat never placed a shipyard, at " + std::to_wstring(players) + L" players").c_str());
+        Assert::IsTrue(ships > 3, (L"a seat never built a ship, at " + std::to_wstring(players) + L" players").c_str());
+      }
+    }
+  }
+
+  /// **THE UPDATE HEADER IS TWENTY-TWO BYTES AT ANY COUNT** (ADR-024; ADR-003's 46-byte four-player header is history).
+  /// Each client is sent its own block and nobody else's, so what a four-player update adds is records, never header.
+  TEST_METHOD(TheUpdateHeaderDoesNotGrowWithThePlayerCount)
+  {
+    for (const std::size_t players : {std::size_t{2}, std::size_t{3}, std::size_t{4}})
+    {
+      Outpost::Host host;
+      host.BeginMatch(Outpost::DEFAULT_MATCH_SEED, players);
+      host.RunOneTick();
+
+      Outpost::Accumulator accumulator;
+      for (const Outpost::Update& update : accumulator.Fill(host.CurrentWorld(), 1, Outpost::PlayerBlock{}, 1))
+      {
+        const std::size_t body = (update.records.size() * Outpost::EntityRecord::SIZE_BYTES) +
+                                 (update.removals.size() * Outpost::REMOVAL_BYTES) +
+                                 (update.fires.size() * Outpost::FireEvent::SIZE_BYTES) + update.spentRocks.size();
+        Assert::AreEqual(Outpost::UPDATE_HEADER_BYTES, Outpost::EncodedSize(update) - body);
+      }
+    }
   }
 };
 

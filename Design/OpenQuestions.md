@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Seventy-seven answered, seven open** — Q34 and Q49, and five of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79 to Q84 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Seventy-nine answered, six open** — Q34 and Q49, and four of Q62 to Q77 from the mid-implementation review (Q62 to Q70, Q72, Q75 and Q76 are ruled, and Q77's first item). Q78 was asked and answered at M3.2, and Q79 to Q85 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults, in their own section below the answered ones. **Q62 to Q70, Q72 and Q76 are ruled, and Q77's first item; Q71, Q73, Q74, Q75 and the rest of Q77 are open.**
+recommended defaults, in their own section below the answered ones. **Q62 to Q70, Q72, Q75 and Q76 are ruled, and Q77's first item; Q71, Q73, Q74 and the rest of Q77 are open.**
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND TWENTY OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47, Q48 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -1257,7 +1257,7 @@ already there, it takes the first free slot of a ring around that point. That is
 but **outside** point defense rather than inside it, so a new ship is not covered by the station's 480 (Q63). Q80's
 queue answers the mis-tap. The repeat build and the order at spawn stay open.
 
-### Q75 — What weapon does the Cruiser carry, and what does it cost? — **needed by M4.4**
+### Q75 — What weapon does the Cruiser carry, and what does it cost? — **ANSWERED**
 
 **The finding (M18).** At 2,400 credits with four MassDrivers, the Cruiser loses to an equal cost of fighters
 before speed is considered. It moves at 62 units a second, not §7's 50. It cannot reach the enemy inside a
@@ -1269,6 +1269,10 @@ the damage table.
 - **Keep the row and price it at 1,200.** It then beats four fighters and loses to eight.
 
 **Recommendation: the HeavyDriver row**, with the cost kept at 2,400 for the four-player format.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** The Cruiser carries HeavyDrivers, 50 damage a second a
+mount, at 40, 100 and 60 percent against Small, Medium and Large. It costs 2,400, and §7's 50 units a second is
+corrected to the 62 its mass gives. M4.4 builds it, and Q85 puts the weapon behind research.
 
 ### Q76 — Does the join check that both sides derived the same field, and does CI compile ARM64? — **ANSWERED**
 
@@ -1393,6 +1397,23 @@ floor from 65 records to 64 and the typical fill from 99 to 98, and the sweep is
 
 **The client** keeps the newest mask and bakes the field again without the spent rocks, looks computed over the
 whole field first so no survivor changes shape. A spent rock can no longer be tapped, and no mining beam points at it.
+
+### Q85 — What is research in the MVP? — **ANSWERED**
+
+**ONE UNLOCK, THE CRUISER'S WEAPON. The owner's ruling, 2026-09-24**, asked at the start of M4 because M4.4b needs
+it and `GameDesign.md` §9 leaves research unsettled on purpose. It keeps §9's one structural rule: research
+unlocks components, components make designs, and designs are what a station builds.
+
+- **A research station** is a third module, `ResearchStationL1`, at 500 credits, placed like the other two.
+- **Research** is one project, the `HeavyDriver`, at 600 credits and 60 seconds. It is started by an order and runs
+  while the player owns a research station. **Losing the station stops research in progress**; a finished unlock is
+  kept.
+- **The Cruiser also needs a level-two shipyard**, the first time a shipyard's level gates a hull, as §5 said it
+  would.
+- **The wire** gains one unlock byte a player, in the player's own block.
+
+The figures are a starting point, for M4.7's matches to move. **The alternative was no research in M4**: the Cruiser
+behind a level-two shipyard alone, and M4.4b moved past the MVP with the designer.
 
 ### Q84 — How does a match open? — **ANSWERED**
 

@@ -39,6 +39,15 @@ player count (twenty-one until Q83), and the criterion becomes that the four-pla
 count; ADR-003's 46-byte four-player header is reproduced by the encoder; and the generator's 90° symmetry
 (already pinned by M2.2) is what places the extra starts.
 
+**BUILT 2026-09-24, AND IT WAS SMALL: NO PRODUCTION CODE CHANGED.** Q27's claim held. `Tests/GameLogicTests/HostTests.cpp`
+gained `TheFourSlots`: `EveryAiSeatBuildsAtTwoThreeAndFourPlayers` runs two minutes through the host's own loop with every
+seat the stub AI's, and every seat places a shipyard and builds ships at each count. `TheUpdateHeaderDoesNotGrowWithThePlayerCount`
+takes the update's body off its encoded size and finds 22 bytes at two, three and four. The files named above no longer
+exist; ADR-024 replaced the snapshot. `Server --players 3 --ai 3` and `--players 4 --ai 4` each ran 2,399 ticks with none
+abandoned, on the Surface Pro in `Release|ARM64`. **At three players the fourth quarter's field is copied and nobody's**,
+because the field is copied four ways above two players; nothing refuses a miner going there. Nobody has watched a
+three- or four-player match on the client yet, which is M4.8's.
+
 ### M4.2 — Fragmentation and reassembly · `NeuronCore` · `NeuronCoreTests` · agent
 
 **Read first:** ADR-003's fragment paragraph; `TechnicalDesign.md` §4 and §8; M0.2.
