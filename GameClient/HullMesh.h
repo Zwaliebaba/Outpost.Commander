@@ -65,9 +65,10 @@ struct HullMesh
 ///     world y = -authored x      **negated, and this is the handedness**
 ///     world z =  authored y      the top
 ///
-/// **A REFLECTION REVERSES TRIANGLE WINDING**, so `LoadHullMesh` reverses each triangle's indices as
-/// it copies them. The alternative -- flipping the rasterizer's cull mode -- would make every other
-/// thing drawn in the world pass wrong instead, which is a worse trade for the same arithmetic.
+/// **A REFLECTION REVERSES TRIANGLE WINDING, AND THE VIEW REFLECTS IT BACK.** `ViewProjection` maps
+/// this right-handed world into Direct3D's left-handed view space, which is a second reflection, so
+/// the two cancel and `LoadHullMesh` copies the indices as authored. Reversing them here draws every
+/// hull inside out under back-face culling.
 [[nodiscard]] HullVertex ToWorldVertex(const Neuron::CmoVertex& _vertex) noexcept;
 
 /// **THE SAME MAPPING, FOR A BARE DIRECTION.** The light rig in `manifest.json` is stated in the

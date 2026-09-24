@@ -119,17 +119,13 @@ bool LoadHullMesh(const Neuron::CmoMesh& _read, float _longestUnits, HullMesh& _
     lifted.vertices.push_back(ToWorldVertex(vertex));
   }
 
-  // **REVERSED, BECAUSE THE CONVERSION ABOVE IS A REFLECTION.** Left-handed to right-handed flips
-  // the sense of every triangle, so a mesh copied straight through would face inward and vanish
-  // under back-face culling -- which looks like the mesh failing to load rather than like a
-  // handedness bug, and is why this is one line with a paragraph on it.
-  lifted.indices.reserve(_read.indices.size());
-  for (std::size_t triangle = 0; triangle < _read.indices.size(); triangle += 3)
-  {
-    lifted.indices.push_back(_read.indices[triangle + 2]);
-    lifted.indices.push_back(_read.indices[triangle + 1]);
-    lifted.indices.push_back(_read.indices[triangle + 0]);
-  }
+  // **COPIED AS AUTHORED, AND THAT IS NOT AN OVERSIGHT.** The conversion above is a reflection, and so
+  // is `ViewProjection`: its rows are right, up and forward, which takes this right-handed world into
+  // Direct3D's left-handed view space. Two reflections are a rotation, so a triangle the handoff wound
+  // clockwise reaches the screen clockwise -- the front face `MeshPass` keeps. Reversing it here once
+  // undid the first reflection and not the second, and every hull drew inside out: the near faces
+  // culled, the far ones showing their insides through the gap.
+  lifted.indices = _read.indices;
 
   _outMesh = std::move(lifted);
   return true;
