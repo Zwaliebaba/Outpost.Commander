@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Fifty-eight answered, nineteen open** — Q34, Q48 and Q49, and Q62 to Q77 from the mid-implementation review. Eight came from an adversarial review that also reversed two earlier
+**Fifty-nine answered, eighteen open** — Q34, Q48 and Q49, and fifteen of Q62 to Q77 from the mid-implementation review (Q72 is ruled). Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
-**SIXTEEN MORE ARE OPEN, Q62 TO Q77**, registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults and not yet ruled; they are in their own section below the answered ones.
+**SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
+recommended defaults, in their own section below the answered ones. **Q72 is ruled; the other fifteen are open.**
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -896,7 +896,7 @@ first meet on purpose.
 review reached its figures by driving the unmodified `GameCore` and `GameLogic` under g++ on Linux, not by
 estimating them; its §6 lists twelve decisions it says no agent may take, and the rest of its findings name
 a rule the design has not stated. Each is registered here with **the review's recommended default as the
-recommendation**, the finding it came from, and what it is needed by. **None is ruled.** The review's
+recommendation**, the finding it came from, and what it is needed by. **Q72 was ruled the same day, to its recommendation; the rest are open.** The review's
 defects against rules that were already written down were fixed in the same change, not registered: the
 free Fighter at the map center (B5), the token stream (B4, ADR-013 amended), the dead-identity refusal (M4,
 Q24 amended), send-once in the packaged client (M5), the unaffordable tap (m1), the hash's blind fields (M6,
@@ -1083,7 +1083,7 @@ answers in milliseconds.
 **Recommendation: the split.** It challenges `GameDesign.md` §10's "the only mechanism", so it is the
 owner's call.
 
-### Q72 — Which confirmations block M3.11, and in what order is M3 built? — **needed now, before M3 starts**
+### Q72 — Which confirmations block M3.11, and in what order is M3 built? — **ANSWERED**
 
 **The finding (B6, M16, M17, m16).** About thirty hardware confirmations are owed. The steps open them about
 three times as fast as the evenings close them: in the review's window, about twenty opened against seven
@@ -1102,6 +1102,13 @@ run, and M3 moves the pin at least five times. One WIP commit reached `main` thr
 
 **Recommendation: the classes, the order and the single status paragraph.** The four-pair run this
 change's pin move owes (ADR-002) is class A under this rule, and is made once at M3's entry.
+
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** Written where each part lives: the classes and the
+milestone-boundary rule for the four-pair run in [`Plan/README.md`](Plan/README.md) *The gate classes*, with
+the lists re-taken against the plan as it stood that day rather than the review's, since M1.16's session had
+closed several; the order in [`Plan/M3-the-fight.md`](Plan/M3-the-fight.md) *The order of work*, the steps
+keeping their numbers; the single status paragraph as `Plan/README.md` *Where it stands*, with `README.md`,
+`AGENTS.md` and `Design/README.md` pointing at it; and the squash rule in `AGENTS.md` §6.
 
 ### Q73 — What is the stress target for the MVP? — **needed by M1.14b's owed runs**
 

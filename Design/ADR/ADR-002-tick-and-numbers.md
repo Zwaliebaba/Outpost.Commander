@@ -125,7 +125,7 @@ unchanged. The new values are
 > **`0xfc22fd27ca6ad39e`** for the scripted match, and **`0x2a69961bb32bc5f5`** for M0.8's short run
 
 **computed off Windows only**, identical under g++ at `-O1` and `-O3` and clang at `-O0` and `-O2`; CI's
-`Debug|x64` checks the first MSVC pair on push. **The four-pair MSVC run is owed once, at M3's entry**, and
+`Debug|x64` confirmed both on the first MSVC pair, on pull request 17. **The four-pair MSVC run is owed once, at M3's entry**, and
 the pin is not moved again until it has been made: M3 will move it at every step that adds a rule, and a
 value nobody has run on ARM64 should not be the base those moves are measured from.
 

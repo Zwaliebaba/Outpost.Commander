@@ -326,7 +326,7 @@ mining range and `acceptsOre`, and `CommandTests` the rock index round trip.
 take the fleet moves, and at tick 1,500 everything is moved, miners included. It delivers 37 holds. **The
 pin moved, deliberately, from `0x37f846ed90b74ca1` to `0xc8f7f00e056d4d46`.** The new value was computed off
 Windows, under g++ and clang at two optimization levels, which agreed. The old value still reproduces with
-this code and the old script. **The four-pair MSVC run is owed.** M1.14c's own check of the old hash was run at
+this code and the old script. **The four-pair MSVC run is owed** — at the milestone boundary, under `README.md`'s gate classes (Q72). M1.14c's own check of the old hash was run at
 M1.14c's commit, `5aff739`, and held on all four pairs (ADR-024).
 
 **Not here, and whose it is.** Credits from deliveries: `MiningSystem::Deliveries()` produces them and M2.7
@@ -377,7 +377,7 @@ rows, which were on its not-yet-drawn list.
 
 **The determinism script's income is mined**, replacing the flat 15 a second. It still builds a fleet of
 eleven and spends for it. The pin moved again, from `0xc8f7f00e056d4d46` to `0x18e094912655348f`,
-computed under g++ and clang at -O0 and -O2, which agreed. **The four-pair run is owed.**
+computed under g++ and clang at -O0 and -O2, which agreed. **The four-pair run is owed** — at the milestone boundary, under `README.md`'s gate classes (Q72).
 
 **Pinned:**
 - `EconomyTests`: exact holds, separate remainders, and a full cycle through the loop paying its owner.

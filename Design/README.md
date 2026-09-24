@@ -10,7 +10,9 @@ the source and `AGENTS.md` is the rule, in that order.
 2026-09-22. Written against the brief and against `AGENTS.md`, starting from an empty `Design/` and a
 build shell with no game in it.
 
-**Fifty-four questions answered, three open. All twenty-three ADRs Accepted**, with `ADR-014` reserved for the
+**How many questions are open, and where each milestone stands, is stated in one place**:
+[`OpenQuestions.md`](OpenQuestions.md)'s opening and [`Plan/README.md`](Plan/README.md) *Where it stands*
+(Q72). **All twenty-three ADRs Accepted**, with `ADR-014` reserved for the
 firing interval and damage rounding M3 owes. The twentieth was
 [`ADR-013`](ADR/ADR-013-a-client-is-told-which-player-it-is.md), which settles how a client learns which
 player it is and was the one number this plan reserved before it knew the answer. ADR-022 to ADR-024 came

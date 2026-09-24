@@ -18,6 +18,20 @@ damage.
 
 ---
 
+## The order of work
+
+**Ruled 2026-09-24 (`OpenQuestions.md` Q72), from the mid-implementation review's M16.** The steps keep
+their numbers, which are names cited across `Design/`, and are built in this order:
+
+**M3.0 → M3.1 → M3.2 → M3.4 → M3.7 → M3.8 → M3.10**, which is a playable, restartable match against a stub
+after seven steps. **Then the raid content**: M3.3, M3.3b, M3.5, M3.6, M3.8b and M3.9, while the first matches
+are played and the economy's and the match length's questions (Q62, Q65) are answered by playing rather
+than after the last step. **M3.3's wire half already exists** (`GameCore/Update.h`'s fire event and the
+accumulator's `NoteFire`), so it is a client step. M3.11 comes last, gated by `README.md`'s class A.
+
+What reordering does not change: each step's *Read first* and *Done when* still hold, and a step whose
+question is not ruled when its turn comes waits for the ruling rather than assuming it.
+
 ### M3.0 — GATE: the firing cadence, and where the rounding lands · — · hand · **human**, then ADR-014
 
 **Read first:** `README.md` F3; `GameDesign.md` §7 in full;

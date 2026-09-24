@@ -22,7 +22,7 @@ in §1; where a finding depends on the missing budget it says so.
 fixed: B5, B4 (ADR-013 amended), M4 (Q24 amended by the owner), M5, M6 (ADR-002, the pin moved and its
 four-pair run owed at M3's entry), m1, m2, m3, m4, m7 and m9; m15's glyph premise had already been struck
 by a measurement. Every other finding, including the twelve decisions of §6, is an open question on the
-register with this review's default as its recommendation: Q62 to Q77 in
+register with this review's default as its recommendation, and Q72 was ruled to it the same day: Q62 to Q77 in
 [`OpenQuestions.md`](../OpenQuestions.md), and Q48 moved to M3.10. M11 and M16 were partly overtaken
 before that, by M1.17's turning and avoidance (Q59 to Q61). **Nothing below has been edited**; it is the
 review as it was delivered.

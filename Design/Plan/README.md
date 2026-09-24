@@ -36,6 +36,11 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 
 ## Where it stands
 
+**THIS IS THE ONE STATUS PARAGRAPH** (`OpenQuestions.md` Q72, ruled 2026-09-24). `README.md`, `AGENTS.md`,
+`Design/README.md` and the milestone files link here rather than restating it; five copies of one status
+drifted apart within a day. A milestone file's step annotation is the six-line report *What a step's report
+says* defines, and no longer an essay.
+
 **THE MID-IMPLEMENTATION REVIEW, 2026-09-23, AND WHAT CAME OF IT, 2026-09-24.**
 [`Reviews/2026-09-23-mid-implementation-review.md`](../Reviews/2026-09-23-mid-implementation-review.md)
 found eleven defects against rules already written down and fixed them in one change: the free Fighter
@@ -43,11 +48,13 @@ every hosted match gave player 1, session tokens that live-locked two returning 
 restart, an order refused whole for one dead ship, commands the packaged client sent only once, an
 unaffordable tap that cancelled the item in progress, a state hash blind to hull points and cargo, and
 five smaller ones. Its design findings are **sixteen open questions, Q62 to Q77**, each carrying the review's
-default. **M3 does not start until Q72 is ruled**, because Q72 decides M3's step order and which
-confirmations block M3.11. **What the change owes**: the four-pair MSVC run for the determinism pin it
-moved (ADR-002), made once at M3's entry, and a look on the device at the two things it changed on screen,
-the hold recentering on a selection and a lost order's marker clearing after two seconds. It was compiled
-and its suites run under g++ on Linux, and `Debug|x64` in CI is the first MSVC build of it.
+default. **Q72 is ruled** (2026-09-24): the gate classes below decide what blocks M3.11, and
+[`M3-the-fight.md`](M3-the-fight.md) *The order of work* decides the order M3 is built in. **What the change
+owes**: the four-pair MSVC run for the determinism pin it moved (ADR-002), which is class A and made once at
+M3's entry, and a look on the device at the two things it changed on screen, the hold recentering on a
+selection and a lost order's marker clearing after two seconds, which are class B. It was compiled
+and its suites run under g++ on Linux, and **it passed `Debug|x64` in CI** on pull request 17, every suite and
+both new pins included: one of the four pairs, the other three owed at M3's entry.
 
 **M0 IS FINISHED, 2026-09-23.** All three gates are closed: M0.16 on the device, and M0.5 and M0.23
 when the owner ruled that this game is tested on one machine and withdrew their two-machine runs
@@ -159,6 +166,47 @@ says why that is the expected shape rather than a failure of review.
 orders the milestones by. Concretely: the transport goes in before the numbers it will carry and the
 renderer goes in after both, because a wrong answer about the loopback exemption invalidates a fortnight of
 renderer work and a wrong answer about the renderer invalidates nothing.
+
+## The gate classes
+
+**Ruled 2026-09-24 (`OpenQuestions.md` Q72), from the mid-implementation review's B6.** About thirty hardware
+confirmations were owed and the steps opened them about three times as fast as the evenings closed them, with
+every one treated as blocking. So each confirmation now belongs to one class, and **a new one is classed in
+the commit that opens it**. The lists are as they stood on 2026-09-24, after M1.16's session and the
+tap-to-visible re-run had closed several the review counted.
+
+**Class A — blocks M3.11**, and each blocks the step named before it:
+
+- **M3.0**, the firing cadence, with `OpenQuestions.md` Q66 — before M3.1.
+- **Q62**, the economy re-derived from the code — before M3.1 pins §7.
+- **The questions each M3 step names** as needed by it (Q63 to Q70, Q48 before M3.10).
+- **The four-pair determinism run at M3's entry**, which is also the one this change's pin moves owe
+  (ADR-002), **and one at M3's exit.**
+- **M2.14, the tick's cost**, as one five-minute number on the device. The Linux harness already puts the
+  simulation at 13 µs at 110 entities, so this confirms a margin rather than looks for one.
+
+**Class B — folded into the first three M3.11 matches** and recorded in one commit after them:
+
+- **M2.13**, both halves: fighters against miners, and a shipyard against an ore processor, at the tactical zoom.
+- **The M2 screens nobody has looked at**: the field, mining and its cargo chips, the credit flash, module
+  placement and the build panel's two states.
+- **M1's carried items**: whether occlusion binds, the near end of the zoom range, and tap-to-visible re-run
+  once the instrument fires on the heading as well as the position.
+- **ADR-020's habituation question**, which M3.11's question 0 already asks.
+- **The review fixes' two screens**: a hold recentering on a selection, and a lost order's marker clearing.
+
+**Class C — deferred past M3.11, with the reason written:**
+
+- **ADR-021's clean install.** The loose-file registration cannot show a missing payload, and no balance
+  answer depends on it.
+- **Q34, 60 Hz or 120**, and **Q49, the accumulator's weights.** Neither moves a balance answer at two players.
+- **Q73's stress scope** and whatever M1.14b's harness would measure next, for the same reason.
+- **M2's "whether the field's memory shows in frame time"**, until a frame time is measured that says it might.
+
+**The four-pair run is made at milestone boundaries only**, as *Standing work* already said. A pin that
+moves inside a milestone is computed off Windows and checked by CI's `Debug|x64`, and the four pairs are
+run once at the boundary against whatever the pin is then. The M2 annotations that say "owed again" per pin
+move are read under this rule.
 
 ## How to read a step
 
