@@ -137,12 +137,33 @@ field and did not move. The four-pair run owed at M3's entry is owed against thi
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
 it on 2026-09-23 (`OpenQuestions.md` Q58). ARM64 here is compiled on, and runs natively on, the Surface Pro.
 
-One is still owed:
+None is owed now:
 
-1. **The cost of an empty tick and of a full one** at the MVP's 110 entities and at 220, against the 50 ms
-   budget. Ring slot assignment and target selection were the two candidates for consuming it; the first
-   of those now exists and is a sort over the selection plus one sine lookup a ship, which is nothing —
-   but "is nothing" is an argument and this list is for figures.
+1. ~~**The cost of an empty tick and of a full one** at the MVP's 110 entities and at 220, against the 50 ms
+   budget.~~ — **MEASURED 2026-09-24, at M2.14. The whole tick at 220 entities averages under a
+   thousandth of the budget.** `GameLogicTests`' `TheTickCost` times the real `Host::RunOneTick` from
+   outside, on the Surface Pro 11. Each player has twenty-five Miners mining their nearest home rock,
+   twenty-five Fighters whose fleet order to the middle of the map and back is re-issued every 50 ticks
+   inside the timed tick, a station and four modules. That is 1,200 timed ticks after 400 of warm-up:
+
+   | | Entities | Mean | 99th percentile | Max | x64 mean |
+   |---|---|---|---|---|---|
+   | Empty, 2 players | 2 | 2.2 µs | 2.2 µs | 89 µs | 2.5 µs |
+   | Empty, 4 players | 4 | 2.8 µs | 7.5 µs | 87 µs | 3.0 µs |
+   | **Full, 2 players** | **110** | **27 µs** | **80 µs** | **1.1 ms** | 34 µs |
+   | **Full, 4 players** | **220** | **49 µs** | **168 µs** | **0.81 ms** | 69 µs |
+
+   The columns before the last are `Release|ARM64`, native. The last is `Release|x64`, emulated on the
+   same device. **The world was working, and the suite asserts it**: at 110 an average of 57 ships were
+   under a move order each tick, and ore was delivered on 581 of the 1,200 ticks. At 220 it was 114
+   ships and 805 ticks. **The worst tick is 1.1 ms against 50**, and it is the operating system's, not the
+   tick's: it lands on no particular tick and moves between runs. **Ring slot assignment and target
+   selection were the two candidates for consuming the budget**, and the first is inside the timed tick
+   every 50 ticks for every player. Target selection is M3's, and this table is the baseline it will be
+   measured against. **The host had no clients in this measurement**, so the accumulator and the sends
+   are not in it. They are ADR-024's, bounded from outside by ADR-022's harness at 15.6 ms a tick at 128
+   stress seats, which is the networked figure. **What would reopen this ADR, a tick that does not fit,
+   is now three orders of magnitude away.**
 
 **Nothing in CI runs that test on more than one pair, and closing it once did not change that.** CI builds
 `Debug|x64` and no more (`AGENTS.md` §6), so three of the four pairs — including every ARM64 one, which is

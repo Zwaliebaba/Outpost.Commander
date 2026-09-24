@@ -733,7 +733,12 @@ above. A modeler can draw two different ships and still hand over two identical 
 **Done when:** a field of miners and fighters is looked at from the tactical zoom on the device and the two
 are distinguishable at a glance; **and a base of four modules is looked at the same way and a shipyard is
 distinguishable from an ore processor** (M2.10b), because ADR-015's raid depends on picking the right
-target and this gate is the only thing that checks it. **If either fails, the answer is a shape-coded
+target and this gate is the only thing that checks it.
+
+**CLOSED 2026-09-24, ON THE OWNER'S WORD, WITH ONE HALF UNSTATED.** The owner can tell a Miner from a Fighter
+on the device. **Whether a shipyard and an ore processor can be told apart was not stated**, and it is carried
+forward rather than assumed. It is the half ADR-015's raid depends on, so it is the first thing to look at
+when M3 makes modules a target. No overlay ADR is owed. **If either fails, the answer is a shape-coded
 overlay drawn by the interface, not more triangles** — which ADR-005 named while it still ruled meshes
 were functions and which survives it, because the overlay was never about how the geometry was made. That
 is an ADR rather than a quiet addition to the world pass.
@@ -747,7 +752,17 @@ budget. ADR-002 names the two candidates for consuming it — **ring slot assign
 and M2.5's sort is now in the second of them.
 
 **Done when:** the figure is measured, written into ADR-002's Measurements and `TechnicalDesign.md` §9, and
-compared against 50 ms with the headroom stated. **What reopens ADR-002 is a tick that does not fit, and
+compared against 50 ms with the headroom stated.
+
+**CLOSED 2026-09-24. A full tick at 110 entities is 27 µs on average and 1.1 ms at worst, against 50 ms.**
+It is 49 µs and 0.81 ms at 220. The headroom is three orders of magnitude, so the lower tick rate this step
+kept in reserve is not needed. It was measured by a new suite, `Tests/GameLogicTests/TickCostTests.cpp`,
+which times the real `Host::RunOneTick` from outside, on `Release|ARM64` on the Surface Pro. Every player
+has twenty-five Miners mining, twenty-five Fighters under a fleet order re-issued every 50 ticks inside the
+timed tick, a station and four modules. The suite also asserts the world was working, so a small figure
+cannot be an idle one. It fails only if a tick overruns 50 ms in an optimized build: a Debug tick peaked at
+19 ms under emulation, which is a fact about unoptimized code, so Debug only logs. ADR-002's Measurements has the table,
+including x64, and says what it leaves out: the host had no clients, so the sends are not in it. **What reopens ADR-002 is a tick that does not fit, and
 the answer then is a lower tick rate rather than floats** — the ADR says so, so that the wrong conclusion
 is not available under pressure.
 

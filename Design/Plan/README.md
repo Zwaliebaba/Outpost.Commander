@@ -116,8 +116,10 @@ figure, and **M2.10 the one rule for where a module may go**, which both sides w
 each module level with its own mesh**, and found that the frame's size had to be the longest of them: 90,
 not 84. **M2.11 builds and places them**: a tap in the drawn radius, judged by that rule on both sides, and an
 L2 by upgrading an L1 in place (Q54 to Q57). **M2.11b** tells unaffordable from unavailable, and **M2.12** makes
-them work. The build rounds up and cargo is exact. That leaves the two closing gates, M2.13's silhouettes and
-M2.14's tick cost, which are a hand's and a pair of eyes'.
+them work. The build rounds up and cargo is exact. That left the two closing gates, M2.13's silhouettes and
+M2.14's tick cost, and **both closed on 2026-09-24**. M2.13 closed on the owner's word that a Miner and a
+Fighter can be told apart; the modules' half was not stated. M2.14 closed on a measured tick of 27 µs
+against 50 ms. `M2-the-field.md` has both.
 
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
@@ -456,7 +458,7 @@ assigns all eight to a step, which is the whole of its contribution to them:
 |---|---|---|---|
 | 1 | The snapshot's real size at 110 entities and at 220 | **M0.9** | A `GameCoreTests` test encodes synthetic entities and writes the byte count. It needs no game. |
 | 2 | **Tap-to-visible latency on real hardware** — **TAKEN on loopback, 76 ms; the two-machine run withdrawn (Q58)** | **M0.23** gate, closed | Timestamp the `Tapped` event and the first frame whose drawn position differs, against §4's predicted 152 ms. |
-| 3 | The tick's cost at 110 entities | **M2.14** gate | The first milestone with enough entities and enough per-tick work for the number to mean anything. |
+| 3 | ~~The tick's cost at 110 entities~~ **TAKEN 2026-09-24: 27 µs mean, 1.1 ms worst, against 50 ms** | **M2.14** gate, closed | `GameLogicTests`' `TheTickCost`, on the device; the table is in ADR-002. |
 | 4 | ~~Packet loss and jitter on a real wireless link~~ **WITHDRAWN by the owner (Q58)** | **M0.5** gate, closed | A fixed-rate dummy stream with sequence numbers, before there is anything to put in it. |
 | 5 | Frame time on a Surface Pro, one sample and four, **x64 and ARM64** | **M0.23**, then standing | A standing obligation rather than a measurement: ARM64 is the target platform and CI compiles none of it. **Taken twice so far** — 777 microseconds over an empty frame at M0.16 and **1,482 with M1.9's hulls** — and the four-sample half still waits on a resolve step that does not exist. |
 | 6 | ~~The interface pass against the world pass~~ **TAKEN 2026-09-23: interface 50 µs, world 852** | **M1.16** gate | Timed in the frame by two marks; the figures are in `TechnicalDesign.md` §9.6. |

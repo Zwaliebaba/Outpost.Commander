@@ -655,8 +655,10 @@ not a definition is arithmetic on the design's own starting values. These are ow
    ways it differs from §4's question are in
    [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md)'s Measurements. The network term is not in it
    and will not be.
-3. **The tick's cost** at 110 entities on the host, and how far from 50 milliseconds it is. Ring slot
-   assignment and target selection are the two candidates for consuming it.
+3. ~~**The tick's cost** at 110 entities on the host, and how far from 50 milliseconds it is.~~ —
+   **DISCHARGED at M2.14, 2026-09-24: 27 µs mean and 1.1 ms worst at 110 entities, 49 µs and 0.81 ms at
+   220**, `Release|ARM64` on the Surface Pro, with every fleet ordered inside the timed tick. The table,
+   the method and what it leaves out are in [`ADR-002`](ADR/ADR-002-tick-and-numbers.md)'s Measurements.
 4. ~~**Packet loss and jitter on a real wireless link between two machines**~~ — **WITHDRAWN by the
    owner, 2026-09-23**: this game is tested on one machine and no second machine will be used. Loopback
    is the only link measured, at zero loss.
