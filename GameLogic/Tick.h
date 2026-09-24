@@ -7,14 +7,8 @@
 namespace Outpost
 {
 
-/// ADR-002's tick, in milliseconds, for the shell to hand to a schedule. IT IS A PLAIN INTEGER
-/// AND NOT A `std::chrono` TYPE, because this library is the simulation's and R16 keeps wall time
-/// out of it -- the seam is `Neuron::TickSchedule`, in the engine, driven by `Server.cpp`.
-inline constexpr std::int64_t TICK_PERIOD_MILLISECONDS = 50;
-
-/// Twenty. Derived rather than restated, because two statements of it that must agree is a defect
-/// waiting for somebody to move one.
-inline constexpr std::uint32_t TICKS_PER_SECOND = static_cast<std::uint32_t>(1000 / TICK_PERIOD_MILLISECONDS);
+// `TICK_PERIOD_MILLISECONDS` and `TICKS_PER_SECOND` are `GameCore/TickRate.h`'s since M3.1, which moved them
+// there so the damage table could state what a weapon does in one tick. They reach here through `World.h`.
 
 /// **R24's SPEED, IN `Fixed` PER TICK** -- thrust over mass over the tick rate, which is what
 /// `GameCore/DerivedStats.h` computes and what M0 could not use because an entity had no design.

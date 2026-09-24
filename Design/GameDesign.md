@@ -458,7 +458,7 @@ damage from the cheapest weapon — three independently reasonable choices whose
 | One fighter kills one miner | **4.0 s** | 12.9 s |
 | One fighter kills one fighter | 20.0 s | 20.0 s |
 | Defense slower than offense by | **5.0×** | 1.6× |
-| Three fighters kill six miners in | **8.0 s** | 25.7 s |
+| Three fighters kill six miners in | **8.0 s** | 25.7 s, or 25.8 s one at a time (M3.1) |
 | Miners lost fleeing 1,500 units to the station | **all six** | about 3½ |
 
 *The flight row predates the home field's move to 1,200–2,000 units (Q62), and whether it can fire at all

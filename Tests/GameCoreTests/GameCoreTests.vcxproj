@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CatalogTests.cpp" />
+    <ClCompile Include="DamageTableTests.cpp" />
     <ClCompile Include="DerivedStatsTests.cpp" />
     <ClCompile Include="CommandTests.cpp" />
     <ClCompile Include="JoinTests.cpp" />

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)Catalog.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)DerivedStats.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)DamageTable.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Design.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Command.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)EntityRecord.cpp" />
@@ -17,6 +18,8 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Catalog.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Command.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)DerivedStats.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DamageTable.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)TickRate.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Design.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Entity.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)EntityRecord.h" />

@@ -51,6 +51,11 @@ struct DerivedStats
   /// Summed over the slots, per mount. A `Frigate` with two mass drivers does 50 a second.
   std::uint32_t damagePerSecond = 0;
 
+  /// **`GameDesign.md` section 7's hit value**, the structure mitigation model (M3.1). The hull carries it,
+  /// and a component would add to it, though none does yet: this sum is where an armor module goes. Zero
+  /// for a ship, which is what sends its damage through the size-class table instead.
+  std::uint32_t hitValue = 0;
+
   [[nodiscard]] friend constexpr bool operator==(const DerivedStats&, const DerivedStats&) noexcept = default;
 };
 

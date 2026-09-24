@@ -21,6 +21,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)DerivedStats.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)DamageTable.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)Design.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -53,6 +56,8 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Catalog.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Command.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)DerivedStats.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DamageTable.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)TickRate.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Design.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Entity.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)EntityRecord.h" />

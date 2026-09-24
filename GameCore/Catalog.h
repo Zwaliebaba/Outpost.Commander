@@ -4,6 +4,7 @@
 
 #include "NeuronCore.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -181,6 +182,13 @@ struct ComponentEntry
   /// Damage a second, per mount. Zero for anything that does not shoot; `GameDesign.md` section 6
   /// says a `MiningLaser` does no damage in as many words.
   std::uint16_t damagePerSecond = 0;
+
+  /// **`GameDesign.md` section 7's row for this weapon**, in percent, against a ship of each size class,
+  /// indexed by `SizeClass`: Light, Medium, Heavy, which section 7 calls Small, Medium and Large (M3.1).
+  /// A row in the catalog rather than a switch on the weapon's name (R24), so a new weapon is a row.
+  /// All zero for anything that does not shoot. Structures do not read it: they take section 7's hit
+  /// value curve instead (`DamageTable.h`).
+  std::array<std::uint8_t, 3> modifierPercent{};
 
   /// A `MiningLaser` extracts this much ore a second and carries this much of it. **Both sum over
   /// a hull's slots** (Q32), so a two-slot miner is a table row rather than a mechanic.

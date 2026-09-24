@@ -68,12 +68,19 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
 
   // Does no damage, in as many words. Both figures sum over a hull's slots (Q32).
   {.id = ComponentId::MiningLaser, .mass = 5, .rangeUnits = 200, .damagePerSecond = 0, .orePerSecond = 20, .oreCapacity = 100, .cost = 50},
-  {.id = ComponentId::MassDriver, .mass = 5, .rangeUnits = 600, .damagePerSecond = 25, .cost = 60},
+  // Section 7's table, row by row: mass drivers hurt small things and scratch heavy hulls.
+  {.id = ComponentId::MassDriver, .mass = 5, .rangeUnits = 600, .damagePerSecond = 25, .modifierPercent = {70, 60, 25}, .cost = 60},
 
   // Reaches 400 against a mass driver's 600, which is Q10's answer expressed as two numbers: the
   // station kills a loiterer and not a besieger.
   // NO COST: it is not in a design anybody builds. A station arrives with its two mounts.
-  {.id = ComponentId::PointDefense, .mass = 5, .rangeUnits = 400, .damagePerSecond = 60, .stationSlotsOnly = true},
+  // And point defense is the mass driver taken further: it shreds anything small and is irrelevant to anything large.
+  {.id = ComponentId::PointDefense,
+   .mass = 5,
+   .rangeUnits = 400,
+   .damagePerSecond = 60,
+   .modifierPercent = {120, 90, 30},
+   .stationSlotsOnly = true},
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build
   // rate; +25% and +50% on a delivered cargo.

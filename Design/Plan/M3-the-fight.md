@@ -90,6 +90,33 @@ one fighter against one fighter, three fighters against six miners, and `GameDes
 against a station — because those are the numbers the design's balance argument rests on, and **a rounding
 change must break a test rather than a match**; and ADR-014's cadence is one named constant.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS.** `GameCore/DamageTable.h` `.cpp` hold the two models, the settlement and
+`DAMAGE_INTERVAL_TICKS`. **§7's modifiers are catalog rows, not code**: `ComponentEntry` gained
+`modifierPercent`, so `ModifierPercent` is a lookup and a new weapon is a row (R24). `DerivedStats` gained
+`hitValue`, which is what picks the model, so nothing names a station. **The tick rate moved to `GameCore`**
+(`GameCore/TickRate.h`) from `GameLogic/Tick.h`, since the rules both sides share now state what happens in
+one tick. It moved, so there is still one statement of it. `GameClient/Interpolation.h` keeps its own copy
+of the interval, as it did before this step.
+
+`DamageTableTests` pins all of it, 15 tests: the six modifiers; every cell per tick, from 8,750 to 36,000
+ten-thousandths; the agreement at a hit value of 300; the curve at 0, 100, 300 and 10,000; the settlement;
+the cadence; and every raid row, exactly:
+
+| §7 | Ticks | Seconds |
+|---|---|---|
+| One fighter kills one miner | 258 | 12.9 |
+| One fighter kills one fighter | 400 | 20.0 |
+| Ten fighters bring down a station | 1,280 | 64 |
+| One fighter against a station | 12,800 | 640, ten and two-thirds minutes |
+| One fighter kills a module | 2,400 | 120 |
+| Three fighters kill a module | 800 | 40 |
+
+**One row holds only as §7 computed it.** Three fighters against six miners is 25.7 seconds at the rule's
+pooled rate, 515 ticks. **Killed one at a time it is 516 ticks, 25.8 seconds**, because every kill ends
+partway through a tick and the rest of that tick's damage lands on a dead hull. ADR-014 allows that
+overkill. The suite pins both. Which one a match sees is M3.2's targeting, and nothing in the balance
+argument moves on a tenth of a second.
+
 ### M3.2 — Weapons in the tick · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** ADR-004; `GameDesign.md` §7; `TechnicalDesign.md` §2's tick order; M2.5's ordering rule.

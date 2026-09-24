@@ -22,6 +22,8 @@
 #include "ModuleSite.h"
 
 #include "SizeClass.h"
+#include "TickRate.h"
+#include "DamageTable.h"
 #include "Update.h"
 
 namespace Outpost

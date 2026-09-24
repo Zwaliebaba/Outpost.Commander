@@ -71,6 +71,13 @@ volleys. A weapon that should hit in volleys is a different row with its own rul
 
 ## Measurements
 
-**None yet, and these are owed at M3.1 and M3.2:** each §7 row reproduced by a test within one tick; the fire
-events a tick in the scripted fight at 110 entities, under 40; and the four-pair determinism run with the
-remainder in the hash.
+**Owed at M3.1 and M3.2, and M3.1's is taken:**
+
+1. ~~**Each §7 row reproduced by a test within one tick.**~~ — **DISCHARGED at M3.1, 2026-09-24**, by
+   `Tests/GameCoreTests/DamageTableTests.cpp` on all four pairs. Every row is exact rather than within a
+   tick: 258, 400, 1,280, 12,800, 2,400 and 800 ticks. The three-against-six row is exact at the pooled
+   rate, 515 ticks, which is §7's 25.7 seconds. It is 516 ticks, 25.8 seconds, when the miners are killed
+   one at a time, because this record allows overkill and every kill ends partway through a tick.
+   `Plan/M3-the-fight.md` M3.1 has the table.
+2. **The fire events a tick in the scripted fight at 110 entities, under 40.** Owed at M3.2.
+3. **The four-pair determinism run with the remainder in the hash.** Owed at M3.2.
