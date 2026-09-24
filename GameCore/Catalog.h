@@ -190,6 +190,11 @@ struct ComponentEntry
   /// value curve instead (`DamageTable.h`).
   std::array<std::uint8_t, 3> modifierPercent{};
 
+  /// **HOW FAR EITHER SIDE OF THE HEADING IT CAN FIRE**, as a binary angle (`OpenQuestions.md` Q68, M3.2).
+  /// 8,192 is 45 degrees; 32,768 is half a turn either side, which is all around. Zero for anything that
+  /// does not shoot.
+  std::uint16_t arcHalfAngle = 0;
+
   /// A `MiningLaser` extracts this much ore a second and carries this much of it. **Both sum over
   /// a hull's slots** (Q32), so a two-slot miner is a table row rather than a mechanic.
   std::uint16_t orePerSecond = 0;

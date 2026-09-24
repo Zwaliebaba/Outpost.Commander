@@ -119,6 +119,10 @@ struct TapOutcome
 [[nodiscard]] Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY,
                                        std::span<const WireIdentity> _selection) noexcept;
 
+/// **AN ATTACK ON _target** (M3.2), for the whole selection. The host decides what in it can fight and sends
+/// that to a standoff arc (Q67); what cannot is left as it was, so the client does not split the selection.
+[[nodiscard]] Command BuildAttackCommand(std::uint16_t _sequence, WireIdentity _target, std::span<const WireIdentity> _selection) noexcept;
+
 /// **A MINE ORDER FOR THE ROCK AT FIELD INDEX _rock** (M2.8, Q52), for _miners.
 [[nodiscard]] Command BuildMineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::span<const WireIdentity> _miners) noexcept;
 

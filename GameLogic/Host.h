@@ -6,6 +6,7 @@
 #include "Sessions.h"
 #include "Economy.h"
 #include "MiningSystem.h"
+#include "WeaponSystem.h"
 #include "World.h"
 
 #include <cstddef>
@@ -133,6 +134,12 @@ public:
     return m_mining;
   }
 
+  /// M3.2's weapons, and this tick's fire events from them.
+  [[nodiscard]] const WeaponSystem& CurrentWeapons() const noexcept
+  {
+    return m_weapons;
+  }
+
   [[nodiscard]] World& MutableWorld() noexcept
   {
     return m_world;
@@ -211,6 +218,7 @@ private:
   CommandIntake m_intake;
   BuildSystem m_build;
   MiningSystem m_mining;
+  WeaponSystem m_weapons;
   Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;

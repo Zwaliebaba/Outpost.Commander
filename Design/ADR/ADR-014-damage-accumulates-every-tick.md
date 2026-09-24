@@ -79,5 +79,10 @@ volleys. A weapon that should hit in volleys is a different row with its own rul
    rate, 515 ticks, which is §7's 25.7 seconds. It is 516 ticks, 25.8 seconds, when the miners are killed
    one at a time, because this record allows overkill and every kill ends partway through a tick.
    `Plan/M3-the-fight.md` M3.1 has the table.
-2. **The fire events a tick in the scripted fight at 110 entities, under 40.** Owed at M3.2.
-3. **The four-pair determinism run with the remainder in the hash.** Owed at M3.2.
+2. ~~**The fire events a tick in the scripted fight at 110 entities, under 40.**~~ — **DISCHARGED at M3.2,
+   2026-09-24: at most 15 in any tick**, measured by `TickCostTests` over 1,200 ticks. At 110 entities both
+   players' twenty-five fighters converge on the middle of the map and fight there. At 220 it is 30. The test
+   asserts under 40.
+3. ~~**The four-pair determinism run with the remainder in the hash.**~~ — **DISCHARGED at M3.2.** Each ship's
+   remainders and attack order are folded into `StateHash`. The scripted match fights from tick 1,600 and hashes to
+   `0x2664e2cf4dcbaf7f` on Debug and Release, x64 and ARM64.

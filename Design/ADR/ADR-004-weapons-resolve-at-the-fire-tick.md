@@ -23,7 +23,8 @@ The question is whether the MVP's combat needs projectiles to be *entities*.
 
 **A weapon applies its damage on the tick it fires.** There is no projectile in the simulation, none in
 the entity store and none on the wire. Range and firing arc are checked at the fire tick; if the target is
-in range, the damage lands.
+in range, the damage lands. **The arc was named here and defined nowhere until M3.2**: it is ±45° of the
+heading for a ship's weapon and all around for point defense, a catalog row (`OpenQuestions.md` Q68).
 
 **The host emits a fire event** — shooter 2, target 2, weapon 1 — appended to the snapshot after the
 removal list, behind a count byte. It is unreliable in the sense that it is not retransmitted: a lost

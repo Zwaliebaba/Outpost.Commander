@@ -105,6 +105,16 @@ Command BuildMoveCommand(std::uint16_t _sequence, float _worldX, float _worldY, 
   return command;
 }
 
+Command BuildAttackCommand(std::uint16_t _sequence, WireIdentity _target, std::span<const WireIdentity> _selection) noexcept
+{
+  Command command;
+  command.sequence = _sequence;
+  command.type = CommandType::Attack;
+  command.AimAt(_target);
+  command.selection.assign(_selection.begin(), _selection.end());
+  return command;
+}
+
 Command BuildMineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::span<const WireIdentity> _miners) noexcept
 {
   Command command;

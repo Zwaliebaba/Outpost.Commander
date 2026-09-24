@@ -151,6 +151,18 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     refusal = CommandRejection::NoSuchRock;
   }
 
+  // AN ENEMY TO ATTACK, before anything is acted on (M3.2, Q67): alive, somebody's, and not the sender's.
+  EntityId attackTarget = NO_ENTITY;
+  if ((refusal == CommandRejection::None) && (_command.type == CommandType::Attack))
+  {
+    attackTarget = ResolveWireIdentity(_world, _command.TargetEntity());
+    const Entity* victim = _world.Find(attackTarget);
+    if ((victim == nullptr) || (victim->owner == NO_PLAYER) || (victim->owner == _player))
+    {
+      refusal = CommandRejection::NoSuchTarget;
+    }
+  }
+
   // **EVERY REFUSAL PAST THE SEQUENCE CHECK IS ACKNOWLEDGED** (Q24 as amended, M4), as a station order's
   // already was: the host understood the order and will never apply it, so a sequence that did not advance
   // would have the client repeat it until its resend gave up -- and hold every later order behind it.
@@ -175,10 +187,11 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     static_cast<void>(OrderFleetTo(_world, live, target));
 
     // **A MOVE ENDS A MINE ORDER AND KEEPS THE CARGO** (M2.6). The standing order is the one that does not
-    // complete, so it is the one another order has to end explicitly.
+    // complete, so it is the one another order has to end explicitly. **And it ends an attack order** (M3.2).
     for (const EntityId id : live)
     {
       static_cast<void>(_world.StopMining(id));
+      static_cast<void>(_world.StopAttack(id));
     }
   }
   else if (_command.type == CommandType::Mine)
@@ -196,11 +209,11 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
       }
     }
   }
-  else
+  else if (_command.type == CommandType::Attack)
   {
-    // M0 has no weapons. ADR-004's fire resolution is M3's, and an Attack that reaches here moves
-    // nothing rather than pretending -- the command is still ACCEPTED, because the host understood
-    // it and the acknowledgment must advance or the client repeats it forever.
+    // **A STANDOFF ARC AROUND THE TARGET** (M3.2, Q67), as one order and one group. What cannot fight -- a miner
+    // in the selection -- is left doing what it was doing.
+    static_cast<void>(OrderAttack(_world, live, attackTarget, _world.NewOrderGroup()));
   }
 
   m_lastApplied[_player] = _command.sequence;

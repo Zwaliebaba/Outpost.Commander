@@ -710,7 +710,12 @@ public:
     // **A FOURTH TIME AFTER THE 2026-09-23 REVIEW (M6)**, because the hash itself widened to hull points,
     // owner and the mine order; the run is unchanged and was `0xa0141c81045fc0bc` under the old fields.
     // Computed under g++ and clang only; the four MSVC pairs are owed with the scripted match's (ADR-002).
-    Assert::AreEqual(0x2a69961bb32bc5f5ull, Outpost::StateHash(world));
+    // They passed at M3.1.
+    //
+    // **A FIFTH TIME AT M3.2, BECAUSE THE HASH WIDENED AGAIN** to each ship's weapon remainders and attack
+    // order. Nothing in this run is armed against anything, so the run is unchanged; the same on all four MSVC
+    // pairs before it was pinned.
+    Assert::AreEqual(0x3d86d61f11912b8dull, Outpost::StateHash(world));
   }
 };
 

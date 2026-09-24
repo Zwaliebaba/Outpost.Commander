@@ -115,15 +115,15 @@ void Populate(Outpost::World& _world, Outpost::PlayerId _player, std::vector<Out
   }
 }
 
-/// Every player's fighters to the middle of the map and back, alternately, so fleets from every side
-/// converge and cross -- the most avoidance there is.
-void Reorder(Outpost::World& _world, const std::vector<std::vector<Outpost::EntityId>>& _fighters, int _tick)
+/// **EVERY PLAYER'S FIGHTERS TO THE MIDDLE OF THE MAP**, re-ordered every fifty ticks so ring assignment stays inside
+/// the timed tick. Fleets from every side converge, cross and, since M3.2, fight there: the stations are about
+/// 6,000 units out, so the fleets meet partway through the timed ticks and fight for the rest of them. Until M3.2
+/// this alternated with a point near home every fifty ticks, which is 350 units of flying, so nobody ever met.
+void Reorder(Outpost::World& _world, const std::vector<std::vector<Outpost::EntityId>>& _fighters)
 {
-  for (std::size_t player = 0; player < _fighters.size(); ++player)
+  for (const std::vector<Outpost::EntityId>& fleet : _fighters)
   {
-    const Neuron::Vec2 station = StationOf(_world, static_cast<Outpost::PlayerId>(player + 1));
-    const bool outbound = ((_tick / REORDER_EVERY_TICKS) % 2) == 0;
-    static_cast<void>(Outpost::OrderFleetTo(_world, _fighters[player], outbound ? Units(0, 0) : Offset(station, 0, 600)));
+    static_cast<void>(Outpost::OrderFleetTo(_world, fleet, Units(0, 0)));
   }
 }
 
@@ -138,6 +138,10 @@ struct TickCost
   /// averaged over the timed ticks, and the timed ticks on which ore was delivered.
   double movingShipsPerTick;
   std::size_t deliveringTicks;
+
+  /// **ADR-014's OWED FIGURE**: the most fire events any one tick sent, which must stay under the accumulator's
+  /// cap of 40. The fighters converge on the middle of the map, so the two sides fight there.
+  std::size_t mostFireEventsInATick;
 };
 
 [[nodiscard]] std::size_t MovingShips(const Outpost::World& _world)
@@ -168,12 +172,13 @@ struct TickCost
   milliseconds.reserve(MEASURED_TICKS);
   std::size_t movingTotal = 0;
   std::size_t deliveringTicks = 0;
+  std::size_t mostFireEvents = 0;
   for (int tick = 0; tick < WARMUP_TICKS + MEASURED_TICKS; ++tick)
   {
     const auto begun = std::chrono::steady_clock::now();
     if ((tick % REORDER_EVERY_TICKS) == 0)
     {
-      Reorder(host.MutableWorld(), fighters, tick);
+      Reorder(host.MutableWorld(), fighters);
     }
     host.RunOneTick();
     const auto ended = std::chrono::steady_clock::now();
@@ -183,6 +188,7 @@ struct TickCost
       milliseconds.push_back(std::chrono::duration<double, std::milli>(ended - begun).count());
       movingTotal += MovingShips(host.CurrentWorld());
       deliveringTicks += host.CurrentMining().Deliveries().empty() ? 0 : 1;
+      mostFireEvents = std::max(mostFireEvents, host.CurrentWeapons().Fired().size());
     }
   }
 
@@ -198,7 +204,8 @@ struct TickCost
                   .percentile99Milliseconds = milliseconds[(milliseconds.size() * 99) / 100],
                   .maximumMilliseconds = milliseconds.back(),
                   .movingShipsPerTick = static_cast<double>(movingTotal) / static_cast<double>(MEASURED_TICKS),
-                  .deliveringTicks = deliveringTicks};
+                  .deliveringTicks = deliveringTicks,
+                  .mostFireEventsInATick = mostFireEvents};
 }
 
 void Report(const wchar_t* _label, const TickCost& _cost)
@@ -207,7 +214,8 @@ void Report(const wchar_t* _label, const TickCost& _cost)
                         std::to_wstring(_cost.meanMilliseconds) + L" ms, p99 " + std::to_wstring(_cost.percentile99Milliseconds) +
                         L" ms, max " + std::to_wstring(_cost.maximumMilliseconds) + L" ms over " + std::to_wstring(MEASURED_TICKS) +
                         L" ticks; " + std::to_wstring(_cost.movingShipsPerTick) + L" ships moving a tick, ore delivered on " +
-                        std::to_wstring(_cost.deliveringTicks) + L" ticks\n")
+                        std::to_wstring(_cost.deliveringTicks) + L" ticks; at most " + std::to_wstring(_cost.mostFireEventsInATick) +
+                        L" fire events in a tick\n")
                          .c_str());
 }
 } // namespace
@@ -241,6 +249,8 @@ public:
     Assert::IsTrue(full.movingShipsPerTick > (2 * 20.0), L"the fleets were not moving, so the figure is an idle world's");
     Assert::IsTrue(full.deliveringTicks > 0, L"no miner delivered, so the mining loop was not in the figure");
     Assert::AreEqual(2 * ENTITIES_PER_PLAYER, full.entities, L"the MVP's 110");
+    Assert::IsTrue(full.mostFireEventsInATick > 0, L"the fleets never fought, so combat was not in the figure");
+    Assert::IsTrue(full.mostFireEventsInATick < 40, L"ADR-014: fire events a tick at 110 entities must stay under the cap of 40");
     Assert::IsTrue(WithinBudget(full.maximumMilliseconds), L"a tick overran ADR-002's 50 ms");
   }
 

@@ -136,6 +136,44 @@ the code it was talking about.
 exactly the range boundary resolves the same way every run**; two candidates at equal distance select the
 lower identity, asserted; and the determinism test's scripted orders now include a fight.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, NOT YET LOOKED AT ON THE DEVICE.** Three rulings came first and the step
+grew by them. **Q67**: an attack order takes a standoff arc. **Q68**: arcs now, against the recommendation, at
+±45° for a ship's weapon and all around for point defense; an idle ship, or one at its attack slot, turns to
+bear. **Q78**, asked here: a ship under a move order fires at will inside its arc and never changes course.
+
+- **`GameLogic/Targeting`**: reach from the catalog. Range is inclusive and squared in `Fixed`, and the arc goes
+  through the pinned integer bearing. The nearest hostile comes through the grid, with ties to the lower identity.
+- **`GameLogic/WeaponSystem`**: after movement and before mining. It re-solves an attack arc once the target has
+  moved a spacing, turns to bear, fires every mount that reaches, and settles each mount's remainder, resetting on
+  a new target. It applies damage after every weapon has fired, stopping at zero, and sends at most one fire event
+  a shooter per ten ticks, to the accumulator.
+- **`OrderAttack`** in `RingAssignment`: Q67's arc, with the radius rule stated there.
+- **`World`**: gains a weapon state and an attack order per entity, and both are hashed.
+- **The intake** resolves an Attack's target and refuses a missing or own one, acknowledged, as `NoSuchTarget`.
+  A move now ends an attack.
+- **`ComponentEntry::arcHalfAngle`** is the catalog's arc.
+
+**Beyond the files named above**, because the device could not otherwise try it: `GameClient/TapOrder` builds an
+Attack, and `App.cpp` sends one on a tap on a hostile with a selection, which it used to log and drop.
+
+`TargetingTests` (7) and `CombatTests` (13) pin:
+- the boundary and the tie;
+- the arc, for a mover and for an idle ship that turns first;
+- the remainder reset, overkill, and the fire-event spacing;
+- point defense firing all around and never turning;
+- the standoff at 500 against a station with no fighter hit, and at 550 against a Fighter;
+- only armed ships taking the order, the re-solve, a gone target, and the intake's refusals.
+
+**The scripted match fights from tick 1,600**, and `TheScriptedMatchHasAFight` asserts that it did: 1,200 hull
+points lost. **The pin moved deliberately to `0x2664e2cf4dcbaf7f`**, the same on all four pairs, as did M0.8's
+run, to `0x3d86d61f11912b8d`, because the hash widened. **The tick-cost suite's fleets now meet and fight**. Its
+fleets had turned back every fifty ticks, 350 units out, so nobody met. With the fight in it, a full tick on
+`Release|ARM64` is 77 µs mean and 0.44 ms worst at 110 entities, and 373 µs and 1.54 ms at 220. The worst tick at
+110 sent **15 fire events**, under ADR-014's 40.
+
+**What needs the device:** a tap on a hostile sends the selection to its arc, the ships turn and fire, and the
+hull drops. Nothing dies yet, which is M3.4.
+
 ### M3.3 — The fire event, and the tracer · `GameCore`, `GameClient` · both · agent
 
 **Read first:** ADR-004; ADR-003's snapshot layout; `TechnicalDesign.md` §4.

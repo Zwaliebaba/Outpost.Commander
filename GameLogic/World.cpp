@@ -60,6 +60,8 @@ EntityId World::Create(const Neuron::Vec2& _position, Neuron::Angle _heading, De
                        .owner = _owner};
   slot.order = MoveOrder{};
   slot.mine = MineOrder{};
+  slot.attack = AttackOrder{};
+  slot.weapons = WeaponState{};
   slot.alive = true;
   ++m_aliveCount;
 
@@ -218,6 +220,58 @@ const MoveOrder& World::OrderInSlot(std::size_t _slot) const noexcept
 MineOrder& World::MineInSlot(std::size_t _slot) noexcept
 {
   return m_slots[_slot].mine;
+}
+
+bool World::OrderAttack(EntityId _id, EntityId _target, const Neuron::Vec2& _targetPosition) noexcept
+{
+  if (ResolveSlot(_id) == nullptr)
+  {
+    return false;
+  }
+  m_slots[_id.index].attack = AttackOrder{.target = _target, .solvedAt = _targetPosition, .active = true};
+  return true;
+}
+
+bool World::StopAttack(EntityId _id) noexcept
+{
+  if (ResolveSlot(_id) == nullptr)
+  {
+    return false;
+  }
+  m_slots[_id.index].attack.active = false;
+  return true;
+}
+
+const AttackOrder* World::FindAttack(EntityId _id) const noexcept
+{
+  const Slot* found = ResolveSlot(_id);
+  return (found == nullptr) ? nullptr : &found->attack;
+}
+
+const WeaponState* World::FindWeapons(EntityId _id) const noexcept
+{
+  const Slot* found = ResolveSlot(_id);
+  return (found == nullptr) ? nullptr : &found->weapons;
+}
+
+AttackOrder& World::AttackInSlot(std::size_t _slot) noexcept
+{
+  return m_slots[_slot].attack;
+}
+
+const AttackOrder& World::AttackInSlot(std::size_t _slot) const noexcept
+{
+  return m_slots[_slot].attack;
+}
+
+WeaponState& World::WeaponsInSlot(std::size_t _slot) noexcept
+{
+  return m_slots[_slot].weapons;
+}
+
+const WeaponState& World::WeaponsInSlot(std::size_t _slot) const noexcept
+{
+  return m_slots[_slot].weapons;
 }
 
 const MineOrder& World::MineInSlot(std::size_t _slot) const noexcept

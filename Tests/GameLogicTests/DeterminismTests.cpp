@@ -24,6 +24,11 @@ constexpr std::uint32_t REPLACEMENT_TICK = 910;
 /// inside the hash -- and the mine orders after it pick the cycle back up.
 constexpr std::uint32_t ABANDON_TICK = 1500;
 
+/// **M3.2: THE FIGHT.** Each player's fighters are ordered to attack the other's first fighter, which puts
+/// targeting, arcs, turning to bear, remainders and the standoff arc inside the hash. The two fleets are about
+/// 3,500 units apart at this tick, so they close, stand off and fire for most of the last forty seconds.
+constexpr std::uint32_t FIGHT_TICK = 1600;
+
 [[nodiscard]] std::int16_t WirePoint(std::int32_t _units) noexcept
 {
   return Outpost::QuantizePosition(_units * Neuron::FIXED_ONE);
@@ -96,6 +101,14 @@ constexpr std::uint32_t ABANDON_TICK = 1500;
   return out;
 }
 
+[[nodiscard]] Outpost::Command AttackCommand(std::uint16_t _sequence, Outpost::WireIdentity _target,
+                                             std::vector<Outpost::WireIdentity> _selection)
+{
+  Outpost::Command command{.sequence = _sequence, .type = Outpost::CommandType::Attack, .selection = std::move(_selection)};
+  command.AimAt(_target);
+  return command;
+}
+
 [[nodiscard]] Outpost::Command MineCommand(std::uint16_t _sequence, std::uint16_t _rock, std::vector<Outpost::WireIdentity> _selection)
 {
   Outpost::Command command{.sequence = _sequence, .type = Outpost::CommandType::Mine, .selection = std::move(_selection)};
@@ -111,6 +124,9 @@ struct MatchResult
   std::uint32_t creditsOfPlayerOne = 0;
   std::size_t shipsOfPlayerOne = 0;
   std::uint64_t deliveredMilliOre = 0;
+
+  /// Hull points missing across every entity at the end: proof the fight was in the hash rather than beside it.
+  std::uint64_t hullLost = 0;
 };
 
 /// **THE WHOLE MATCH, AS A FUNCTION.** A seed in, a state hash out. Everything the tick touches is
@@ -132,6 +148,7 @@ struct MatchResult
   Outpost::CommandIntake intake;
   Outpost::BuildSystem build;
   Outpost::MiningSystem mining;
+  Outpost::WeaponSystem weapons;
   Outpost::Economy economy;
   std::uint64_t deliveredMilliOre = 0;
 
@@ -180,7 +197,9 @@ struct MatchResult
       }
     }
 
-    if ((tick % 50) == 0)
+    // THE FLEET MOVES STOP AT THE FIGHT: a move order ends an attack order (M3.2), so moving the fighters every
+    // fifty ticks would call the fight off fifty ticks after it was ordered.
+    if (((tick % 50) == 0) && (tick < FIGHT_TICK))
     {
       for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
       {
@@ -194,7 +213,23 @@ struct MatchResult
       }
     }
 
+    // M3.2's FIGHT: each side's fighters on the other's first fighter.
+    if (tick == FIGHT_TICK)
+    {
+      for (Outpost::PlayerId player = 1; player <= static_cast<Outpost::PlayerId>(PLAYERS); ++player)
+      {
+        const Outpost::PlayerId enemy = (player == 1) ? 2 : 1;
+        std::vector<Outpost::WireIdentity> fighters = OwnedOf(world, player, Outpost::DesignId::Fighter, false);
+        const std::vector<Outpost::WireIdentity> targets = OwnedOf(world, enemy, Outpost::DesignId::Fighter, false);
+        if (!fighters.empty() && !targets.empty())
+        {
+          static_cast<void>(intake.Apply(world, build, player, AttackCommand(++sequence, targets.front(), std::move(fighters))));
+        }
+      }
+    }
+
     Outpost::Tick(world);
+    weapons.Advance(world, tick);
     mining.Advance(world);
     for (const Outpost::OreDelivery& delivery : mining.Deliveries())
     {
@@ -208,11 +243,22 @@ struct MatchResult
     build.Advance(world);
   }
 
+  std::uint64_t hullLost = 0;
+  for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+  {
+    if (world.IsSlotAlive(slot))
+    {
+      const Outpost::Entity& entity = world.EntityInSlot(slot);
+      hullLost += Outpost::Derive(entity.design).hullPoints - entity.hullRemaining;
+    }
+  }
+
   return MatchResult{.hash = Outpost::MatchHash(world, build, economy),
                      .alive = world.AliveCount(),
                      .creditsOfPlayerOne = build.Credits(1),
                      .shipsOfPlayerOne = OwnedShips(world, 1).size(),
-                     .deliveredMilliOre = deliveredMilliOre};
+                     .deliveredMilliOre = deliveredMilliOre,
+                     .hullLost = hullLost};
 }
 } // namespace
 
@@ -229,6 +275,15 @@ struct MatchResult
 TEST_CLASS(TheDeterminismTest)
 {
 public:
+  /// **M3.2: THE SCRIPT FIGHTS**, so the pin below covers targeting, arcs and the remainders. A hash that stopped
+  /// seeing damage would still be a hash, and this is what says it is not.
+  TEST_METHOD(TheScriptedMatchHasAFight)
+  {
+    const MatchResult result = RunScriptedMatch();
+    Logger::WriteMessage((std::wstring{L"SCRIPTED MATCH hull lost: "} + std::to_wstring(result.hullLost) + L"\n").c_str());
+    Assert::IsTrue(result.hullLost > 0, L"nothing in the scripted match took damage");
+  }
+
   /// **A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION.** If this literal starts
   /// disagreeing without anybody editing the script above it, the tick has stopped being deterministic.
   ///
@@ -251,9 +306,15 @@ public:
   /// **AND A SIXTH TIME THE SAME DAY, BY A RULE** (`OpenQuestions.md` Q62): the home field moved to 1,200-2,000
   /// units of the anchor and a rock yields to one miner a tick. `0xfc22fd27ca6ad39e` was confirmed on `Debug|x64`
   /// in CI before this; this value is g++ and clang's, and the four pairs are owed with it at M3's entry.
+  /// **They were run at M3.1, 2026-09-24**: `0x4c8b850e5dec326e` passed on Debug and Release, x64 and ARM64.
+  ///
+  /// **A SEVENTH TIME AT M3.2, BY A RULE AND A WIDER HASH TOGETHER**: the tick fires weapons (ADR-004, ADR-014,
+  /// Q67, Q68, Q78), the hash folds each ship's weapon remainders and attack order, and the script now fights
+  /// from `FIGHT_TICK`, where it stops the fleet moves that would call the fight off. The same on all four MSVC
+  /// pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x4c8b850e5dec326eull, RunScriptedMatch().hash);
+    Assert::AreEqual(0x2664e2cf4dcbaf7full, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

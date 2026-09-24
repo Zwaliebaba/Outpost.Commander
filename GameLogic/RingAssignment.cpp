@@ -2,6 +2,8 @@
 
 #include "RingAssignment.h"
 
+#include "Targeting.h"
+
 #include "Tick.h"
 
 #include <algorithm>
@@ -153,6 +155,96 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
     // is now the ship's own. A Miner moves 5 units a tick and a Fighter 7.
     if (_world.OrderMoveTo(candidates[slot].id, destination, SpeedPerTick(entity->design), TurnAnglePerTick(entity->design), group))
     {
+      ++ordered;
+    }
+  }
+  return ordered;
+}
+
+std::size_t OrderAttack(World& _world, std::span<const EntityId> _selection, EntityId _target, std::uint32_t _group)
+{
+  const Entity* target = _world.Find(_target);
+  if (target == nullptr)
+  {
+    return 0;
+  }
+  const Neuron::Vec2 targetPosition = target->position;
+  const std::int64_t targetHalf = static_cast<std::int64_t>(Hull(Design(target->design).hull).sizeUnits) / 2;
+
+  // WHAT CAN FIGHT, nearest the target first and ties on identity -- the order `OrderFleetTo` uses.
+  std::vector<Candidate> fighters;
+  std::int64_t shortestRange = 0;
+  std::int64_t widestHalf = 0;
+  std::int64_t sumX = 0;
+  std::int64_t sumY = 0;
+  for (const EntityId id : _selection)
+  {
+    const Entity* entity = _world.Find(id);
+    if ((entity == nullptr) || !ReachOf(entity->design).armed || (Derive(entity->design).speedUnitsPerSecond == 0))
+    {
+      continue;
+    }
+    const std::int64_t range = ReachOf(entity->design).rangeUnits;
+    shortestRange = fighters.empty() ? range : std::min(shortestRange, range);
+    widestHalf = std::max<std::int64_t>(widestHalf, Hull(Design(entity->design).hull).sizeUnits / 2);
+    sumX += entity->position.x;
+    sumY += entity->position.y;
+    fighters.push_back(Candidate{.id = id, .distanceSquared = Neuron::LengthSquared(entity->position - targetPosition)});
+  }
+  if (fighters.empty())
+  {
+    return 0;
+  }
+  std::sort(fighters.begin(), fighters.end(),
+            [](const Candidate& _a, const Candidate& _b) noexcept
+            {
+              if (_a.distanceSquared != _b.distanceSquared)
+              {
+                return _a.distanceSquared < _b.distanceSquared;
+              }
+              if (_a.id.index != _b.id.index)
+              {
+                return _a.id.index < _b.id.index;
+              }
+              return _a.id.generation < _b.id.generation;
+            });
+
+  // THE RADIUS, in whole units (the header says which of three it is).
+  const std::int64_t outsideTheirs = static_cast<std::int64_t>(ReachOf(target->design).rangeUnits) + STANDOFF_MARGIN_UNITS;
+  const std::int64_t insideOurs = shortestRange - OWN_RANGE_MARGIN_UNITS;
+  const std::int64_t floor = targetHalf + widestHalf + KEEP_OUT_CLEARANCE_UNITS;
+  const std::int64_t radius = std::max(std::min(outsideTheirs, insideOurs), floor);
+
+  // THE ARC: centred on the bearing from the target to the fleet's middle, slots a hull's width apart. 10,430 is
+  // binary-angle units a radian, rounded down, so the step is a touch under a hull's width and never over it.
+  constexpr std::int64_t BINARY_ANGLE_PER_RADIAN = 10430;
+  const std::int64_t count = static_cast<std::int64_t>(fighters.size());
+  const Neuron::Vec2 middle{.x = static_cast<Neuron::Fixed>(sumX / count), .y = static_cast<Neuron::Fixed>(sumY / count)};
+  const Neuron::Vec2 facing = middle - targetPosition;
+  const Neuron::Angle centre = Neuron::BearingOf(facing.x, facing.y);
+  const std::int64_t spacing = std::max<std::int64_t>(2 * widestHalf, 1);
+  const std::int64_t step = std::max<std::int64_t>((spacing * BINARY_ANGLE_PER_RADIAN) / radius, 1);
+  const std::int64_t perArc = 1 + (2 * (static_cast<std::int64_t>(Neuron::ANGLE_QUARTER_TURN) / step));
+
+  std::size_t ordered = 0;
+  for (std::size_t index = 0; index < fighters.size(); ++index)
+  {
+    const Entity* entity = _world.Find(fighters[index].id);
+    const std::int64_t arc = static_cast<std::int64_t>(index) / perArc;
+    const std::int64_t within = static_cast<std::int64_t>(index) % perArc;
+    const std::int64_t side = ((within % 2) == 1) ? 1 : -1;
+    const std::int64_t offset = ((within + 1) / 2) * side * step;
+    const auto angle = static_cast<Neuron::Angle>(static_cast<std::int64_t>(centre) + offset);
+    const std::int64_t distance = (radius + (arc * OVERFLOW_ARC_STEP_UNITS)) * Neuron::FIXED_ONE;
+
+    const Neuron::Vec2 slot = ClampToPlayArea(Neuron::Vec2{
+      .x = targetPosition.x + static_cast<Neuron::Fixed>((static_cast<std::int64_t>(Neuron::Cosine(angle)) * distance) / Neuron::SINE_ONE),
+      .y = targetPosition.y + static_cast<Neuron::Fixed>((static_cast<std::int64_t>(Neuron::Sine(angle)) * distance) / Neuron::SINE_ONE)});
+
+    if (_world.OrderMoveTo(fighters[index].id, slot, SpeedPerTick(entity->design), TurnAnglePerTick(entity->design), _group) &&
+        _world.OrderAttack(fighters[index].id, _target, targetPosition))
+    {
+      static_cast<void>(_world.StopMining(fighters[index].id));
       ++ordered;
     }
   }

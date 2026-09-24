@@ -9,6 +9,8 @@
     <ClCompile Include="RingAssignment.cpp" />
     <ClCompile Include="UniformGrid.cpp" />
     <ClCompile Include="MiningSystem.cpp" />
+    <ClCompile Include="Targeting.cpp" />
+    <ClCompile Include="WeaponSystem.cpp" />
     <ClCompile Include="ModuleEffects.cpp" />
     <ClCompile Include="UnloadTarget.cpp" />
     <ClCompile Include="Economy.cpp" />
@@ -27,6 +29,8 @@
     <ClInclude Include="RingAssignment.h" />
     <ClInclude Include="UniformGrid.h" />
     <ClInclude Include="MiningSystem.h" />
+    <ClInclude Include="Targeting.h" />
+    <ClInclude Include="WeaponSystem.h" />
     <ClInclude Include="ModuleEffects.h" />
     <ClInclude Include="UnloadTarget.h" />
     <ClInclude Include="Economy.h" />

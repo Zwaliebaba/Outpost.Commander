@@ -165,6 +165,14 @@ None is owed now:
    stress seats, which is the networked figure. **What would reopen this ADR, a tick that does not fit,
    is now three orders of magnitude away.**
 
+   **RE-MEASURED AT M3.2 WITH A FIGHT IN IT, 2026-09-24.** The table above is a tick with no weapons, and its
+   fleets never met: they turned back every fifty ticks, 350 units out. With weapons in the tick and the fleets
+   converging on the middle of the map to fight, `Release|ARM64` gives **77 µs mean, 264 µs at the 99th
+   percentile and 0.44 ms worst at 110 entities**. At 220 it gives 373 µs, 1.10 ms and 1.54 ms. The world still
+   works as before: 46 ships moving a tick at 110, and ore delivered on 549 ticks. The worst tick is still
+   thirty times inside the budget. Nothing dies before M3.4, so these fights never end, and a zero-hull ship is
+   still a target: this is heavier than a real brawl.
+
 **Nothing in CI runs that test on more than one pair, and closing it once did not change that.** CI builds
 `Debug|x64` and no more (`AGENTS.md` §6), so three of the four pairs — including every ARM64 one, which is
 the target device — are checked only by whoever remembers to build them. That is the standing cost of this

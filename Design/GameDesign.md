@@ -361,8 +361,14 @@ anywhere, is the evidence that the model is worth building before its interface 
 
 ## 7. Combat
 
-A ship with a weapon and no order engages the nearest hostile in range on its own. A ship with an attack
-order pursues its target.
+A ship with a weapon and no order engages the nearest hostile in range on its own, turning to bear. A ship
+with an attack order flies to a slot on an arc just outside its target's reach, and turns to bear from there
+(`OpenQuestions.md` Q67). A ship under a move order fires at will as it flies, at whatever falls inside its
+arc, and never changes course for it (Q78).
+
+**A ship's weapons fire within 45° of its heading; the station's point defense fires all around** (Q68). So
+heading matters in a fight: a Fighter swings about a quarter of a second to bring a target 45° off to bear, and
+one that flies past a target loses it.
 
 **Ships ordered to a point are given distinct destinations, not the same one.** On a plane, fifty ships
 sent to one coordinate stack; in a volume they would have missed each other in the third dimension, so

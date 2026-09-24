@@ -121,6 +121,8 @@
     <ClCompile Include="ModuleEffectTests.cpp" />
     <ClCompile Include="EconomyTests.cpp" />
     <ClCompile Include="SessionsTests.cpp" />
+    <ClCompile Include="CombatTests.cpp" />
+    <ClCompile Include="TargetingTests.cpp" />
     <ClCompile Include="TickCostTests.cpp" />
     <ClCompile Include="TickTests.cpp" />
     <ClCompile Include="pch.cpp">

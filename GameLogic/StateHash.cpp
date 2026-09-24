@@ -88,6 +88,19 @@ std::uint64_t StateHash(const World& _world) noexcept
     FoldByte(hash, static_cast<std::uint8_t>(mine.phase));
     FoldUInt16(hash, mine.rock);
     FoldUInt32(hash, mine.cargoMilliOre);
+
+    // **M3.2: WHAT THE WEAPONS ARE OWED AND WHAT THE SHIP IS ATTACKING** (ADR-014). The remainders are the
+    // fractions of damage not yet taken off a hull, so a build that rounds them differently diverges here on the
+    // tick it does rather than a kill later.
+    const WeaponState& weapons = _world.WeaponsInSlot(slot);
+    FoldIdentity(hash, weapons.target);
+    for (const std::uint32_t remainder : weapons.remainders)
+    {
+      FoldUInt32(hash, remainder);
+    }
+    const AttackOrder& attack = _world.AttackInSlot(slot);
+    FoldByte(hash, attack.active ? 1 : 0);
+    FoldIdentity(hash, attack.target);
     FoldIdentity(hash, mine.unloadTarget);
   }
 

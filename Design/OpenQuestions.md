@@ -8,14 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Sixty-one answered, sixteen open** — Q34, Q48 and Q49, and thirteen of Q62 to Q77 from the mid-implementation review (Q62, Q66 and Q72 are ruled). Eight came from an adversarial review that also reversed two earlier
+**Sixty-four answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
 
 **SIXTEEN MORE, Q62 TO Q77**, were registered on 2026-09-24 from the mid-implementation review with its
-recommended defaults, in their own section below the answered ones. **Q62, Q66 and Q72 are ruled; the other thirteen are open.**
+recommended defaults, in their own section below the answered ones. **Q62, Q66, Q67, Q68 and Q72 are ruled; the other eleven are open.**
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -1033,7 +1033,14 @@ which answers M3.0. **One correction in the writing down:** "hundredths of a poi
 ten-thousandths, where every §7 figure is a whole number. ADR-014 states that unit. Nothing is built yet:
 M3.1 and M3.2 build to it.
 
-### Q67 — How does an attack order bring a fleet to its target? — **needed by M3.2**
+### Q67 — How does an attack order bring a fleet to its target? — **ANSWERED**
+
+**THE STANDOFF ARC. The owner's answer, 2026-09-24**, to the recommendation below, taken at M3.2. **Built to one
+refinement the recommendation did not state**: the radius is the target's longest range plus 100 *only while
+that is inside the attackers' own range*. A Fighter attacking a Fighter would otherwise stand at 700 with a
+600-unit weapon and never fire. So the radius is the smaller of that and the fleet's shortest weapon range less
+50, and never less than the two hulls' keep-out plus 20. Against a station it is 500, which is §5's standoff.
+The arc spans a half circle facing the fleet, centred on the bearing from the target to the fleet's middle.
 
 **The finding (M3, m5).** Ring slots at a 90-unit spacing put three of ten fighters inside point defense at a
 500-unit standoff. Pursuing to contact feeds every attacker to point defense, and pursuing to range stacks
@@ -1049,7 +1056,17 @@ target, so an Attack on your own ship would become a free follow verb if pursuit
 **Recommendation: the arc**, and M3.2 resolves the target with `ResolveWireIdentity`. It refuses and
 acknowledges an unresolved target or an own one, like every other refusal past the sequence check.
 
-### Q68 — Do weapons have arcs? — **needed by M3.2**
+### Q68 — Do weapons have arcs? — **ANSWERED**
+
+**YES, NOW: ±45° FOR A SHIP'S WEAPON, 360° FOR THE STATION'S POINT DEFENSE. The owner's answer, 2026-09-24**,
+against the recommendation below, taken at M3.2 with two further rulings the same day. **The arc is a catalog
+row** (`ComponentEntry::arcHalfAngle`, a binary angle), so a weapon's arc is data like its range. **What turns a
+ship to bear**: a ship with no order, or one standing at its attack slot, turns in place toward its target at its
+own turn rate (Q59). A ship under a move order keeps its course and fires only at what falls inside its arc.
+Point defense needs no turning, and a station has no drive to turn with. **What it costs**, which the
+recommendation named: an engagement now depends on approach geometry, and a Fighter needs about a quarter of a
+second to swing onto a target 45° off. §7's rows hold for ships already bearing, which is how
+`DamageTableTests` measures them.
 
 **The finding (M11), half overtaken.** The review found no turning at all and recommended 360° weapons, with
 facing derived on the client. Q59 has since given ships a host-side heading that turns at a derived rate, so
@@ -1201,6 +1218,14 @@ see. CI builds `Debug|x64` only.
 
 **Recommendation: both halves of the first.** The CI half is a change to what `AGENTS.md` §6 says CI gates,
 which is the owner's.
+
+### Q78 — Does a ship under a move order fire? — **ANSWERED**
+
+**YES, AT WILL, WITHOUT CHANGING COURSE. The owner's answer, 2026-09-24**, asked at M3.2. `GameDesign.md` §7 says
+a ship with a weapon and *no order* engages the nearest hostile in range, and said nothing of a ship that has
+one. A ship flying under a move order, or on its way to an attack slot, shoots the nearest hostile inside both
+its range and its arc (Q68) and keeps flying. It never turns or stops for it. **The alternative was holding
+fire**, so that a player moving through enemies would have to stop to fight.
 
 ### Q77 — Six small rules the code took or the design left open — **each needed by the step named**
 

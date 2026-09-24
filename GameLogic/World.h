@@ -2,6 +2,7 @@
 
 #include "GameCore.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -74,6 +75,32 @@ struct MineOrder
   EntityId unloadTarget{};
 };
 
+/// **WHAT A SHIP'S WEAPONS ARE OWED** (M3.2, ADR-014): the target their remainders were accumulated against,
+/// and one remainder a mount slot, in ten-thousandths of a point. Changing target resets the remainders, so a
+/// fraction built up on one ship never lands on another. Host-only and hashed: two builds that round
+/// differently diverge on the tick they do.
+///
+/// R8: a public aggregate.
+struct WeaponState
+{
+  EntityId target{};
+  std::array<std::uint32_t, MAX_COMPONENT_SLOTS> remainders{};
+};
+
+/// **AN ATTACK ORDER** (M3.2, `OpenQuestions.md` Q67): the ship holds a slot on a standoff arc around its target,
+/// which the move order carries it to. Host-only, like every order (R19).
+///
+/// R8: a public aggregate.
+struct AttackOrder
+{
+  EntityId target{};
+
+  /// Where the target stood when the arc was solved. When it has moved more than the arc's spacing from
+  /// here, the arc is solved again.
+  Neuron::Vec2 solvedAt{};
+  bool active = false;
+};
+
 /// The entity store: ADR-002's `std::vector` with a free list, identified by index and generation,
 /// iterated in index order by the tick.
 ///
@@ -135,6 +162,16 @@ public:
 
   [[nodiscard]] const MineOrder* FindMine(EntityId _id) const noexcept;
 
+  /// **AN ATTACK ORDER ON _target** (M3.2, Q67), solved at _targetPosition. False on a stale identity. The slot
+  /// the ship goes to is `OrderAttack`'s, in `RingAssignment.h`, and this only records what it is attacking.
+  bool OrderAttack(EntityId _id, EntityId _target, const Neuron::Vec2& _targetPosition) noexcept;
+
+  /// Ends an attack order: what a move order does to one. False on a stale identity.
+  bool StopAttack(EntityId _id) noexcept;
+
+  [[nodiscard]] const AttackOrder* FindAttack(EntityId _id) const noexcept;
+  [[nodiscard]] const WeaponState* FindWeapons(EntityId _id) const noexcept;
+
   /// **THE ASTEROID FIELD** (M2.6): `GenerateField`'s rows for this match, which the host sets once when the
   /// match begins -- R23's host half. The rocks are not entities before M3 (Q22), so they live beside the
   /// store rather than in it, and a mine order names one by its index here (Q52). Empty until set, which is
@@ -174,6 +211,10 @@ public:
   [[nodiscard]] const MoveOrder& OrderInSlot(std::size_t _slot) const noexcept;
   [[nodiscard]] MineOrder& MineInSlot(std::size_t _slot) noexcept;
   [[nodiscard]] const MineOrder& MineInSlot(std::size_t _slot) const noexcept;
+  [[nodiscard]] AttackOrder& AttackInSlot(std::size_t _slot) noexcept;
+  [[nodiscard]] const AttackOrder& AttackInSlot(std::size_t _slot) const noexcept;
+  [[nodiscard]] WeaponState& WeaponsInSlot(std::size_t _slot) noexcept;
+  [[nodiscard]] const WeaponState& WeaponsInSlot(std::size_t _slot) const noexcept;
 
 private:
   struct Slot
@@ -181,6 +222,8 @@ private:
     Entity entity{};
     MoveOrder order{};
     MineOrder mine{};
+    AttackOrder attack{};
+    WeaponState weapons{};
     bool alive = false;
   };
 

@@ -229,6 +229,14 @@ void Host::RunOneTick()
   DrainAndApply();
   Tick(m_world);
 
+  // M3.2: WEAPONS, AFTER MOVEMENT AND BEFORE MINING (`TechnicalDesign.md` section 2), so a ship fires from where it
+  // moved to this tick. Every fire event rides every client's next updates (ADR-024).
+  m_weapons.Advance(m_world, m_tick);
+  for (const FireEvent& fire : m_weapons.Fired())
+  {
+    m_accumulator.NoteFire(fire);
+  }
+
   // M2.6: MINING, AFTER MOVEMENT AND BEFORE BUILD QUEUES (`TechnicalDesign.md` section 2) -- and M2.7's
   // credits from what it delivered, before the build queue spends them.
   m_mining.Advance(m_world);

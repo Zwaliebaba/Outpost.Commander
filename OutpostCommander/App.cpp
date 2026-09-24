@@ -1014,11 +1014,35 @@ void RunProbe(const CoreWindow& _window)
         continue;
       }
 
+      if (picked.verb == Outpost::OrderVerb::Attack)
+      {
+        // **A TAP ON A HOSTILE WITH SHIPS SELECTED** (M3.2, `Interface.md` section 4): the host sends what can
+        // fight to a standoff arc around it (Q67). One command, the whole selection.
+        if (!clientFrame.CurrentJoin().IsJoined())
+        {
+          Report(log, "TAP ignored -- not seated yet");
+          continue;
+        }
+        const Outpost::Command attack =
+          Outpost::BuildAttackCommand(clientFrame.TakeCommandSequence(), picked.target, selection.Identities());
+        clientFrame.IssueCommand(attack, nowMs);
+        Outpost::CommandPacket packet{.sequence = attack.sequence, .player = clientFrame.Player(), .commands = {}};
+        clientFrame.StampView(packet);
+        static_cast<void>(clientFrame.FillOutstanding(packet));
+
+        std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+        Neuron::ByteWriter commandWriter{outgoing};
+        const bool sent = Outpost::Encode(packet, commandWriter) &&
+                          transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+        Report(log, "ATTACK " + std::to_string(picked.target) + " with " + std::to_string(attack.selection.size()) + " selected" +
+                      (sent ? "" : " NOT SENT"));
+        continue;
+      }
+
       if (picked.verb != Outpost::OrderVerb::MoveTo)
       {
-        // Attack, Mine and the build panel all need systems M1 has not finished. The verb is
-        // resolved and named rather than silently dropped, so the log says which row of
-        // `Interface.md` section 4's table a tap landed on.
+        // The build panel and anything else this tap table grows. The verb is resolved and named rather than
+        // silently dropped, so the log says which row of `Interface.md` section 4's table a tap landed on.
         Report(log, "TAP resolved to verb " + std::to_string(static_cast<int>(picked.verb)) + ", which M1.10 does not act on yet");
         continue;
       }

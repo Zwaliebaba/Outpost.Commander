@@ -69,7 +69,13 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
   // Does no damage, in as many words. Both figures sum over a hull's slots (Q32).
   {.id = ComponentId::MiningLaser, .mass = 5, .rangeUnits = 200, .damagePerSecond = 0, .orePerSecond = 20, .oreCapacity = 100, .cost = 50},
   // Section 7's table, row by row: mass drivers hurt small things and scratch heavy hulls.
-  {.id = ComponentId::MassDriver, .mass = 5, .rangeUnits = 600, .damagePerSecond = 25, .modifierPercent = {70, 60, 25}, .cost = 60},
+  {.id = ComponentId::MassDriver,
+   .mass = 5,
+   .rangeUnits = 600,
+   .damagePerSecond = 25,
+   .modifierPercent = {70, 60, 25},
+   .arcHalfAngle = 8192,
+   .cost = 60},
 
   // Reaches 400 against a mass driver's 600, which is Q10's answer expressed as two numbers: the
   // station kills a loiterer and not a besieger.
@@ -80,6 +86,7 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
    .rangeUnits = 400,
    .damagePerSecond = 60,
    .modifierPercent = {120, 90, 30},
+   .arcHalfAngle = 32768,
    .stationSlotsOnly = true},
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build

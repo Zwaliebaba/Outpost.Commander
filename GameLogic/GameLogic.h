@@ -23,6 +23,8 @@
 #include "UnloadTarget.h"
 #include "ModuleEffects.h"
 #include "MiningSystem.h"
+#include "Targeting.h"
+#include "WeaponSystem.h"
 #include "Economy.h"
 #include "StateHash.h"
 #include "Tick.h"

@@ -60,4 +60,33 @@ namespace Outpost
 /// ordinary.
 std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, const Neuron::Vec2& _target) noexcept;
 
+/// Q67: how far past the target's own reach an attacking fleet stands.
+inline constexpr std::int64_t STANDOFF_MARGIN_UNITS = 100;
+
+/// Q67 as built: how far inside its own reach a fleet stands when it cannot stand outside the target's.
+inline constexpr std::int64_t OWN_RANGE_MARGIN_UNITS = 50;
+
+/// Q67 as built: the closest a slot comes, past the two hulls' keep-out.
+inline constexpr std::int64_t KEEP_OUT_CLEARANCE_UNITS = 20;
+
+/// Q67: how much further out each arc past the first sits.
+inline constexpr std::int64_t OVERFLOW_ARC_STEP_UNITS = 90;
+
+/// **AN ATTACK ORDER ON _target: A SLOT EACH ON A STANDOFF ARC** (M3.2, `OpenQuestions.md` Q67), the "different slot
+/// layout" Q19 promised.
+///
+/// **THE RADIUS** is the target's longest weapon range plus 100, so the fleet stands just outside what can hit it.
+/// **Unless that is past the fleet's own reach**: then it is the fleet's shortest range less 50, so every ship can
+/// fire. It is never closer than the two hulls' keep-out plus 20. Against a station that is 500, which is
+/// `GameDesign.md` section 5's standoff; against a Fighter, 550.
+///
+/// **THE ARC** is a half circle facing the fleet, centred on the bearing from the target to the fleet's middle.
+/// Slots sit a hull's width apart along it, the middle one first and then alternately either side. Ships are
+/// assigned **nearest the target first, ties on identity**, as `OrderFleetTo` assigns them. What does not fit
+/// on one arc goes to the next, 90 units further out.
+///
+/// **ONLY WHAT CAN FIGHT TAKES IT**: a design with a weapon and a drive. The rest of the selection is left as it
+/// was. Each ship takes a move order in _group, an attack order, and leaves any mine order. Returns how many.
+std::size_t OrderAttack(World& _world, std::span<const EntityId> _selection, EntityId _target, std::uint32_t _group);
+
 } // namespace Outpost
