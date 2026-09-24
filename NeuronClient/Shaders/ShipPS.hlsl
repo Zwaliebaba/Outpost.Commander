@@ -28,6 +28,7 @@ struct Input
   float3 normal : NORMAL;
   float2 shade : TEXCOORD0;
   float3 team : TEXCOORD1;
+  float brightness : TEXCOORD2;
 };
 
 float4 main(Input _input) : SV_Target
@@ -53,5 +54,5 @@ float4 main(Input _input) : SV_Target
   const float fill = saturate(dot(normal, normalize(g_fillLight.xyz))) * g_fillLight.w;
 
   const float3 lit = albedo * (key + fill + (g_ambient.rgb * g_ambient.w));
-  return float4(saturate(lit), 1.0f);
+  return float4(saturate(lit * _input.brightness), 1.0f);
 }

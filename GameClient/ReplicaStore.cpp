@@ -10,6 +10,7 @@ namespace Outpost
 ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint64_t _arrivalMilliseconds)
 {
   AcceptResult result;
+  m_removed.clear();
 
   // LOSS, COUNTED FROM THE SEQUENCE AND NOTHING ELSE. A gap forward is updates that never came; a step
   // backwards or a repeat is reordering, which the per-entity tick comparison below already handles.
@@ -82,6 +83,7 @@ ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint
     const std::size_t index = IndexOf(removed);
     if ((index < m_held.size()) && (m_held[index].count > 0) && (m_held[index].Newest().record.identity == removed))
     {
+      m_removed.push_back(m_held[index].Newest().record);
       m_held[index] = Held{};
       ++result.removed;
     }
@@ -123,6 +125,7 @@ void ReplicaStore::Clear() noexcept
 {
   m_held.clear();
   m_newest.clear();
+  m_removed.clear();
   m_own = PlayerBlock{};
   m_hasUpdate = false;
   m_newestTick = 0;

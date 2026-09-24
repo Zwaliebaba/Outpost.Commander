@@ -157,6 +157,22 @@ struct TickCost
   return moving;
 }
 
+/// **EVERY HULL BACK TO FULL**, before each tick. Since M3.4 the fleets that meet in the middle kill each other,
+/// and a cost measured on a world that is dying is a smaller world's: the figure is the design's 110 and 220, so
+/// the count is held there. The weapons still fire and still settle their damage every tick; only the deaths
+/// they would cause are kept out of the measurement.
+void Mend(Outpost::World& _world)
+{
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (_world.IsSlotAlive(slot))
+    {
+      Outpost::Entity& entity = _world.EntityInSlot(slot);
+      entity.hullRemaining = static_cast<std::uint16_t>(Outpost::Derive(entity.design).hullPoints);
+    }
+  }
+}
+
 [[nodiscard]] TickCost Measure(std::size_t _players, bool _populated)
 {
   Outpost::Host host;
@@ -175,6 +191,7 @@ struct TickCost
   std::size_t mostFireEvents = 0;
   for (int tick = 0; tick < WARMUP_TICKS + MEASURED_TICKS; ++tick)
   {
+    Mend(host.MutableWorld());
     const auto begun = std::chrono::steady_clock::now();
     if ((tick % REORDER_EVERY_TICKS) == 0)
     {

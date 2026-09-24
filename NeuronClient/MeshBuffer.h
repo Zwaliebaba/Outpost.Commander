@@ -66,7 +66,7 @@ private:
 };
 
 /// One instance's worth of what the ship shader needs, and **the layout is the shader's input
-/// element for slot one** -- seven floats, twenty-eight bytes.
+/// element for slot one** -- eight floats, thirty-two bytes.
 ///
 /// R8: a public aggregate.
 struct MeshInstance
@@ -83,7 +83,14 @@ struct MeshInstance
   float teamRed = 1.0f;
   float teamGreen = 1.0f;
   float teamBlue = 1.0f;
+
+  /// **A MULTIPLIER ON THE LIT COLOR**, one for everything drawn as authored. Below one darkens the whole hull,
+  /// palette and team faces alike, which the team color alone cannot: it reaches only the faces the handoff
+  /// marked. A wreck is what uses it (M3.4); the pass does not know that.
+  float brightness = 1.0f;
 };
+
+static_assert(sizeof(MeshInstance) == 32, "the instance layout is the ship shader's input for slot one");
 
 /// A ring of per-instance buffers, one for every frame the swap chain can have in flight.
 ///

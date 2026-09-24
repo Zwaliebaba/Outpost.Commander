@@ -133,6 +133,9 @@ struct MatchResult
 
   /// Hull points missing across every entity at the end: proof the fight was in the hash rather than beside it.
   std::uint64_t hullLost = 0;
+
+  /// M3.4: everything that died in the match. A ship that was killed leaves no missing hull behind.
+  std::uint64_t deaths = 0;
 };
 
 /// **THE WHOLE MATCH, AS A FUNCTION.** A seed in, a state hash out. Everything the tick touches is
@@ -155,8 +158,10 @@ struct MatchResult
   Outpost::BuildSystem build;
   Outpost::MiningSystem mining;
   Outpost::WeaponSystem weapons;
+  Outpost::DeathSystem deaths;
   Outpost::Economy economy;
   std::uint64_t deliveredMilliOre = 0;
+  std::uint64_t died = 0;
 
   world.SetField(Outpost::GenerateField(MATCH_SEED, PLAYERS));
   const std::size_t regionRocks = world.Field().size() / Outpost::FieldCopyCount(PLAYERS);
@@ -252,6 +257,8 @@ struct MatchResult
     // there is, as in a match.
     economy.Credit(mining.Deliveries(), world, build);
     build.Advance(world);
+    deaths.Advance(world);
+    died += deaths.Died().size();
   }
 
   std::uint64_t hullLost = 0;
@@ -269,7 +276,8 @@ struct MatchResult
                      .creditsOfPlayerOne = build.Credits(1),
                      .shipsOfPlayerOne = OwnedShips(world, 1).size(),
                      .deliveredMilliOre = deliveredMilliOre,
-                     .hullLost = hullLost};
+                     .hullLost = hullLost,
+                     .deaths = died};
 }
 } // namespace
 
@@ -291,8 +299,10 @@ public:
   TEST_METHOD(TheScriptedMatchHasAFight)
   {
     const MatchResult result = RunScriptedMatch();
-    Logger::WriteMessage((std::wstring{L"SCRIPTED MATCH hull lost: "} + std::to_wstring(result.hullLost) + L"\n").c_str());
-    Assert::IsTrue(result.hullLost > 0, L"nothing in the scripted match took damage");
+    Logger::WriteMessage((std::wstring{L"SCRIPTED MATCH hull lost: "} + std::to_wstring(result.hullLost) + L", deaths: " +
+                          std::to_wstring(result.deaths) + L"\n")
+                           .c_str());
+    Assert::IsTrue((result.hullLost > 0) || (result.deaths > 0), L"nothing in the scripted match took damage");
   }
 
   /// **A CHANGE HERE IS EITHER DELIBERATE OR IT IS A DESYNCHRONISATION.** If this literal starts
@@ -330,9 +340,12 @@ public:
   ///
   /// **A NINTH TIME THE SAME DAY**: a new ship appears outside the module circle, at the first free slot of a ring
   /// around the spawn point, so two built back to back no longer land on one point. The same on all four pairs.
+  ///
+  /// **A TENTH TIME, BY M3.4 (2026-09-24)**: zero hull is death, after build queues, and the script's fight kills
+  /// two ships. The same on all four MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x206f21dcee417d2bull, RunScriptedMatch().hash);
+    Assert::AreEqual(0xd1f9102dc448fb8full, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

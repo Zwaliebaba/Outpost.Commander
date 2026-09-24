@@ -117,6 +117,7 @@
     <ClCompile Include="ClientFrameTests.cpp" />
     <ClCompile Include="SkyLookTests.cpp" />
     <ClCompile Include="OrderMarkerTests.cpp" />
+    <ClCompile Include="RemovalTests.cpp" />
     <ClCompile Include="WorldTransformTests.cpp" />
     <ClCompile Include="CameraGestureTests.cpp" />
     <ClCompile Include="HullMeshTests.cpp" />

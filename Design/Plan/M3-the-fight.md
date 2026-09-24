@@ -285,6 +285,24 @@ the horizon the store does forget, deliberately — it is how a death whose ten 
 cleaned up — so "never from absence" would have pinned a test against the store as built. A forgotten
 entity spawns no wreck.)*
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, NOT YET LOOKED AT ON THE DEVICE.** The files differ from those named above
+only where the existing code already had the piece.
+
+- **`GameLogic/DeathSystem`**: runs after build queues and before victory, as `TechnicalDesign.md` §2 orders the
+  tick. It destroys everything at zero hull in slot order, a station included (R24), and keeps the list M3.7
+  reads. The accumulator already found dead slots by looking (M1.14c), so nothing tells it.
+- **`ReplicaStore::Removed`**: what each accept's removals took out, as last held. A wreck is spawned from that
+  and never from forgetting.
+- **`GameClient/Wrecks`**: the hull it was, dark and tumbling slowly, fading to nothing over ten seconds, with a
+  half-second burst of light at the death. `MeshInstance` gained a brightness for it, which defaults to one so
+  nothing living changed. **The ten seconds and the look are not tuned.**
+- **A dead ship leaves the selection on the frame its removal arrives**, not at the next tap.
+- **The tick-cost measurement mends every hull before each timed tick**, because the fleets that meet in the
+  middle now kill each other, and a cost measured on a dying world is a smaller world's.
+
+`DeathTests.cpp` and `RemovalTests.cpp` pin it: the absence clause, the selection, one wreck per death however
+many times the removal repeats, no wreck from forgetting, the decay and the cap.
+
 ### M3.5 — The station's point defense · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §5 in full; `OpenQuestions.md` Q10 and Q16.

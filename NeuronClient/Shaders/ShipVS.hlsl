@@ -26,8 +26,9 @@ struct Vertex
   float4 instanceTransform : TEXCOORD1;
 
   // PER INSTANCE. The owning player's colour, which is what lets ONE instanced draw cover every
-  // ship of a shape regardless of owner.
-  float3 instanceTeam : TEXCOORD2;
+  // ship of a shape regardless of owner -- and in w, a brightness on the whole hull, one unless it is a
+  // wreck (M3.4).
+  float4 instanceTeam : TEXCOORD2;
 };
 
 struct Output
@@ -36,6 +37,7 @@ struct Output
   float3 normal : NORMAL;
   float2 shade : TEXCOORD0;
   float3 team : TEXCOORD1;
+  float brightness : TEXCOORD2;
 };
 
 Output main(Vertex _input)
@@ -65,6 +67,7 @@ Output main(Vertex _input)
   output.position = mul(float4(world, 1.0f), g_viewProjection);
   output.normal = normal;
   output.shade = _input.shade;
-  output.team = _input.instanceTeam;
+  output.team = _input.instanceTeam.rgb;
+  output.brightness = _input.instanceTeam.w;
   return output;
 }

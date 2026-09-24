@@ -139,7 +139,7 @@ bool MeshPass::Create(const GraphicsDevice& _device, const SceneTarget& _sceneTa
                              .InstanceDataStepRate = 1},
     D3D12_INPUT_ELEMENT_DESC{.SemanticName = "TEXCOORD",
                              .SemanticIndex = 2,
-                             .Format = DXGI_FORMAT_R32G32B32_FLOAT,
+                             .Format = DXGI_FORMAT_R32G32B32A32_FLOAT,
                              .InputSlot = INSTANCE_SLOT,
                              .AlignedByteOffset = 16,
                              .InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA,

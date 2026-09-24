@@ -106,6 +106,14 @@ public:
     return m_newest;
   }
 
+  /// **WHAT THE LAST `Accept`'S REMOVALS TOOK OUT**, each as its newest record: where a death happened, for a
+  /// wreck (M3.4). **Removals only, never the forgotten**: an entity the store forgot past the horizon may have
+  /// died, or its records may simply have stopped, and a wreck from that would be a guess.
+  [[nodiscard]] std::span<const EntityRecord> Removed() const noexcept
+  {
+    return m_removed;
+  }
+
   /// This client's own block from the newest update, or nullptr before one has arrived.
   [[nodiscard]] const PlayerBlock* Own() const noexcept
   {
@@ -171,6 +179,7 @@ private:
 
   std::vector<Held> m_held;
   std::vector<EntityRecord> m_newest;
+  std::vector<EntityRecord> m_removed;
 
   PlayerBlock m_own{};
   bool m_hasUpdate = false;

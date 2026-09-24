@@ -73,7 +73,8 @@ inline constexpr std::uint32_t MAXIMUM_INSTANCES = 220;
 inline constexpr std::uint32_t FIELD_INSTANCES = 1;
 
 /// Q81: the most beams a frame draws -- every held tracer, and one mining or unloading beam an entity.
-inline constexpr std::uint32_t BEAM_CAPACITY = static_cast<std::uint32_t>(Outpost::MAX_TRACERS) + MAXIMUM_INSTANCES;
+inline constexpr std::uint32_t BEAM_CAPACITY =
+  static_cast<std::uint32_t>(Outpost::MAX_TRACERS) + MAXIMUM_INSTANCES + (8 * Outpost::MAX_WRECKS);
 
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
@@ -463,7 +464,7 @@ void RunProbe(const CoreWindow& _window)
   {
     Report(log, "probe: no mesh pass, hresult " + std::to_string(meshPass.LastHresult()));
   }
-  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES + FIELD_INSTANCES))
+  else if (!instanceRing.Create(device, MAXIMUM_INSTANCES + FIELD_INSTANCES + static_cast<std::uint32_t>(Outpost::MAX_WRECKS)))
   {
     Report(log, "probe: no instance ring, hresult " + std::to_string(instanceRing.LastHresult()));
   }
@@ -629,6 +630,11 @@ void RunProbe(const CoreWindow& _window)
     // here -- read a datagram, decode it, decide what to do with it -- is behind that class with a
     // suite over it, and this is the call plus a line in the log.
     const Outpost::ClientFrame::DrainResult drained = clientFrame.DrainPackets(queue, nowMs);
+
+    // M3.4: A SHIP THAT DIED LEAVES THE SELECTION ON THE FRAME ITS REMOVAL ARRIVES, not on the next tap, so the
+    // panel never shows the dead.
+    static_cast<void>(selection.RetainLiving(clientFrame.Replicas().Entities()));
+    clientFrame.Wrecks().Expire(nowMs);
 
     // `Interface.md` section 7's reconnect, decided in `ClientFrame` and only reported here. The rejoin it
     // started goes out through the same `ShouldSend` above on the next frame.
@@ -1351,6 +1357,27 @@ void RunProbe(const CoreWindow& _window)
             }
           }
 
+          // === M3.4: THE WRECKS, IN THEIR HULL'S BUCKET. =======================================
+          //
+          // Drawn with the living, one call per shape, dark. A wreck whose hull has no mesh on this install is
+          // not drawn at all rather than as an arrow: the arrow is a diagnostic for the living.
+          for (const Outpost::Wreck& wreck : clientFrame.Wrecks().Wrecks())
+          {
+            if (wreck.last.designIdentity >= Outpost::Designs().size())
+            {
+              continue;
+            }
+            const std::string_view meshName = Outpost::MeshNameForDesign(static_cast<Outpost::DesignId>(wreck.last.designIdentity));
+            for (std::size_t slot = 0; slot < meshBuffers.size(); ++slot)
+            {
+              if ((Outpost::ShippedMeshes()[slot] == meshName) && meshReady[slot])
+              {
+                instances[slot].push_back(Outpost::WreckInstance(wreck, nowMs));
+                break;
+              }
+            }
+          }
+
           // === ONE INSTANCED CALL PER SHAPE. =================================================
           //
           // Team colour is per instance, which is what lets a single call cover every ship of a
@@ -1422,8 +1449,9 @@ void RunProbe(const CoreWindow& _window)
           clientFrame.Tracers().Expire(nowMs);
           if (beamPass.IsReady())
           {
-            Outpost::BuildBeams(clientFrame.Tracers(), drawnRecords, rockPicks, nowMs,
-                                Outpost::UnitsPerPixelAtFocus(clientFrame.Camera(), sceneTarget.HeightPixels()), beams);
+            const float unitsPerPixel = Outpost::UnitsPerPixelAtFocus(clientFrame.Camera(), sceneTarget.HeightPixels());
+            Outpost::BuildBeams(clientFrame.Tracers(), drawnRecords, rockPicks, nowMs, unitsPerPixel, beams);
+            Outpost::AppendBlasts(clientFrame.Wrecks(), nowMs, unitsPerPixel, beams);
             if (beamPass.Draw(device, sceneTarget, beamFrame, viewProjection.m, beams))
             {
               beamFrame = (beamFrame + 1) % Neuron::BeamPass::FRAME_COUNT;

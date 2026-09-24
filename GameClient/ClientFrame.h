@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Beams.h"
+#include "Wrecks.h"
 #include "Camera.h"
 #include "FieldView.h"
 #include "JoinState.h"
@@ -194,6 +195,17 @@ public:
     return m_tracers;
   }
 
+  /// The wrecks (M3.4), spawned by every removal the drain applies -- and never by the store forgetting.
+  [[nodiscard]] WreckSet& Wrecks() noexcept
+  {
+    return m_wrecks;
+  }
+
+  [[nodiscard]] const WreckSet& Wrecks() const noexcept
+  {
+    return m_wrecks;
+  }
+
   /// Which player this client is, **as the host said** (ADR-013). `NO_PLAYER` until the join is
   /// answered, which is what the marker clearing and the command path both check.
   [[nodiscard]] PlayerId Player() const noexcept
@@ -229,6 +241,7 @@ public:
 private:
   ReplicaStore m_replicas;
   TracerSet m_tracers;
+  WreckSet m_wrecks;
   OrderMarkerSet m_markers;
 
   /// **THE OPENING VIEW: YOUR OWN BASE, CLOSE ENOUGH TO READ.**

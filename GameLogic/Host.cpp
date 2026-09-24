@@ -246,6 +246,10 @@ void Host::RunOneTick()
   // put it somewhere no update ever said it started from.
   m_build.Advance(m_world);
 
+  // M3.4: DEATHS, LAST BEFORE VICTORY (`TechnicalDesign.md` section 2). Everything at zero hull goes at once, so
+  // what died this tick is one list M3.7 reads, whatever the systems above did with it on the way.
+  m_deaths.Advance(m_world);
+
   ++m_tick;
   SendUpdates();
 }

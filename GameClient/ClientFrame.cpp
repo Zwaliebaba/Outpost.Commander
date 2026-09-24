@@ -28,6 +28,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     // meanwhile have long stopped repeating, so anything kept here could be a ghost.
     m_replicas.Clear();
     m_tracers.Clear();
+    m_wrecks.Clear();
     m_reconnecting = true;
     m_lastHeardMilliseconds = _nowMilliseconds;
     result.linkLost = true;
@@ -90,6 +91,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     // reordered still says the link is alive and still carries the tick and this client's block.
     const ReplicaStore::AcceptResult accepted = m_replicas.Accept(update, _nowMilliseconds);
     m_tracers.Note(update.fires, _nowMilliseconds);
+    m_wrecks.Spawn(m_replicas.Removed(), _nowMilliseconds);
     ++result.accepted;
     result.refused += accepted.refused;
     result.refreshed += accepted.refreshed;

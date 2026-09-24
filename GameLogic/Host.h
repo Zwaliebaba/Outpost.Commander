@@ -7,6 +7,7 @@
 #include "Economy.h"
 #include "MiningSystem.h"
 #include "WeaponSystem.h"
+#include "DeathSystem.h"
 #include "World.h"
 
 #include <cstddef>
@@ -140,6 +141,12 @@ public:
     return m_weapons;
   }
 
+  /// M3.4's deaths, and what died this tick.
+  [[nodiscard]] const DeathSystem& CurrentDeaths() const noexcept
+  {
+    return m_deaths;
+  }
+
   [[nodiscard]] World& MutableWorld() noexcept
   {
     return m_world;
@@ -219,6 +226,7 @@ private:
   BuildSystem m_build;
   MiningSystem m_mining;
   WeaponSystem m_weapons;
+  DeathSystem m_deaths;
   Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;
