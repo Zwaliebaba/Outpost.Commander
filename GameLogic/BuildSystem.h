@@ -68,6 +68,11 @@ struct BuildItem
   std::uint32_t ticksElapsed = 0;
   std::uint32_t ticksRequired = 0;
 
+  /// **THE BUILD RATE THE REMAINING TICKS WERE COUNTED AT**, in hundredths (M3.8b, `OpenQuestions.md` Q77's first
+  /// item, ruled 2026-09-24): when the owner's shipyard multiplier moves -- a shipyard finished or lost mid-build --
+  /// `Advance` rescales what is left to the new rate on that tick. Until the ruling an item kept the rate it began at.
+  std::uint32_t multiplierPercent = 100;
+
   /// What was deducted when it started, kept so a cancel can give back **exactly** what was taken
   /// (Q35). Recomputing the cost at cancel time would be right today and wrong the day a catalog
   /// change lands mid-match.

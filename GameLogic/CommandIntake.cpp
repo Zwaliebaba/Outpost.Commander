@@ -69,8 +69,8 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   // repeat it forever.
   if (!ActsOnSelection(_command.type))
   {
-    // **THE PLAYER'S OWN SHIPYARD SETS THE RATE, AT THE START** (M2.12): an item keeps the rate it began at, so a
-    // shipyard finished or lost mid-build changes the next item and not this one.
+    // **THE PLAYER'S OWN SHIPYARD SETS THE RATE** (M2.12): the item starts at it, and since M3.8b (Q77's first item)
+    // `BuildSystem::Advance` follows it as it moves -- a shipyard finished or lost mid-build changes this item too.
     const std::uint32_t buildRate = BuildRateMultiplierPercent(_world, _player);
     bool ordered = false;
     switch (_command.type)

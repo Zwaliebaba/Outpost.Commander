@@ -468,6 +468,14 @@ its job the tick it dies, and **elimination removes a player's modules with thei
 the queue already running, and eliminating a player removes their modules in the same snapshot as their
 ships.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q77's FIRST ITEM AS RULED THAT DAY.** `BuildItem` carries
+the rate its remaining ticks were counted at. Each tick, `BuildSystem::Advance` reads the owner's multiplier and,
+when it has moved, rescales what is left in integers, rounding up. A Fighter half built at x2.0 whose shipyard dies
+goes from 150 ticks to 50 done and 200 to go, and one at x1.0 when a level-one yard finishes goes to 234. The rate is
+hashed, so the scripted pin moved. The ore processor's effect was already read live, so a dead one drops income
+from the next delivery. Victory (M3.7) already removes every entity an eliminated player owns, modules included.
+`ModuleEffectTests` and `VictoryTests` pin all three.
+
 ---
 
 ### M3.9 — Finite asteroids · `GameCore`, `GameLogic` · both · agent

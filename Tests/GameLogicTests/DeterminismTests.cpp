@@ -138,19 +138,6 @@ struct MatchResult
   std::uint64_t deaths = 0;
 };
 
-/// **THE WHOLE MATCH, AS A FUNCTION.** A seed in, a state hash out. Everything the tick touches is
-/// driven from here and nothing reads a clock, a socket or an address.
-///
-/// The script is written to cover what the milestone added rather than to be long: two players build
-/// whenever their station is idle, move everything they own every fifty ticks, and one of them replaces
-/// an item mid-build. That reaches entity creation, ring assignment over a growing fleet, arrival,
-/// re-ordering a fleet that is already moving, and Q35's refund.
-///
-/// **SINCE M2.6 THE MINERS MINE.** Every fifty ticks, offset from the fleet's moves, each player's idle
-/// miners are sent to one of their ten home rocks -- a different one each time, so the unload query runs
-/// from many places -- and the fighters alone take the fleet moves. At `ABANDON_TICK` everything is moved,
-/// miners included. That reaches the whole five-state loop, the unload query, abandonment with cargo aboard
-/// and a standing order picked back up.
 /// Two AI seats and no client, for `TICKS`: the host's own loop, so the AI decides exactly as it does in a match.
 [[nodiscard]] std::uint64_t RunStubAiMatch()
 {
@@ -164,6 +151,19 @@ struct MatchResult
   return Outpost::StateHash(host.CurrentWorld());
 }
 
+/// **THE WHOLE MATCH, AS A FUNCTION.** A seed in, a state hash out. Everything the tick touches is
+/// driven from here and nothing reads a clock, a socket or an address.
+///
+/// The script is written to cover what the milestone added rather than to be long: two players build
+/// whenever their station is idle, move everything they own every fifty ticks, and one of them replaces
+/// an item mid-build. That reaches entity creation, ring assignment over a growing fleet, arrival,
+/// re-ordering a fleet that is already moving, and Q35's refund.
+///
+/// **SINCE M2.6 THE MINERS MINE.** Every fifty ticks, offset from the fleet's moves, each player's idle
+/// miners are sent to one of their ten home rocks -- a different one each time, so the unload query runs
+/// from many places -- and the fighters alone take the fleet moves. At `ABANDON_TICK` everything is moved,
+/// miners included. That reaches the whole five-state loop, the unload query, abandonment with cargo aboard
+/// and a standing order picked back up.
 [[nodiscard]] MatchResult RunScriptedMatch()
 {
   Outpost::World world;
@@ -362,9 +362,12 @@ public:
   ///
   /// **AN ELEVENTH TIME, BY M3.6 (2026-09-24)**: miners fired on flee (Q64), and the hash folds each mine order's
   /// calm count. The same on all four MSVC pairs before it was pinned.
+  ///
+  /// **A TWELFTH TIME, BY M3.8b (2026-09-24)**: a build item follows its owner's shipyard rate as it moves (Q77's first
+  /// item), and the hash folds the rate. The same on all four MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x30ec4bd6d250002full, RunScriptedMatch().hash);
+    Assert::AreEqual(0x445e58ab35a0422full, RunScriptedMatch().hash);
   }
 
   /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI

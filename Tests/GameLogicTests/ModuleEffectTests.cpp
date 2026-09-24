@@ -91,8 +91,7 @@ public:
     Assert::AreEqual(150u, Outpost::BuildSystem::TicksToBuild(Outpost::DesignId::Fighter, 200));
   }
 
-  /// **THROUGH THE INTAKE**, the order a player gives is built at their shipyard's rate -- and at the rate it
-  /// started at, whatever happens to the shipyard afterwards.
+  /// **THROUGH THE INTAKE**, the order a player gives starts at their shipyard's rate.
   TEST_METHOD(AnOrderIsBuiltAtThePlayersRate)
   {
     for (const auto& [design, ticks] :
@@ -180,6 +179,71 @@ public:
     {
       Assert::IsTrue(Outpost::Component(weapon).effect == Outpost::ModuleEffect::None);
     }
+  }
+};
+
+/// M3.8b. **A module that dies stops doing its job the tick it dies** (`OpenQuestions.md` Q77's first item).
+TEST_CLASS(ModulesUnderFire)
+{
+public:
+  /// A Fighter half built at a level-two shipyard's double rate: the shipyard dies, and what is left takes twice as
+  /// long -- 150 ticks became 50 done and 200 to go.
+  TEST_METHOD(ALostShipyardSlowsTheItemAlreadyBuilding)
+  {
+    Outpost::World world = WithModules({Outpost::DesignId::ModuleShipyardL2});
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    Assert::IsTrue(build.Start(world, MINE, Outpost::DesignId::Fighter, 200) == Outpost::BuildRejection::None);
+    Assert::AreEqual(150u, build.Item(MINE).ticksRequired);
+    for (int tick = 0; tick < 50; ++tick)
+    {
+      build.Advance(world);
+    }
+
+    for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+    {
+      if (world.IsSlotAlive(slot) && (world.EntityInSlot(slot).design == Outpost::DesignId::ModuleShipyardL2))
+      {
+        static_cast<void>(world.Destroy(world.EntityInSlot(slot).id));
+      }
+    }
+    build.Advance(world);
+    Assert::AreEqual(250u, build.Item(MINE).ticksRequired, L"the item kept the rate of a shipyard that is gone");
+    Assert::AreEqual(100u, build.Item(MINE).multiplierPercent);
+  }
+
+  /// And the other way: a shipyard finished mid-build speeds up what is building, rounding the ticks up.
+  TEST_METHOD(ANewShipyardSpeedsUpTheItemAlreadyBuilding)
+  {
+    Outpost::World world = WithModules({});
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    Assert::IsTrue(build.Start(world, MINE, Outpost::DesignId::Fighter, 100) == Outpost::BuildRejection::None);
+    Assert::AreEqual(300u, build.Item(MINE).ticksRequired);
+    for (int tick = 0; tick < 100; ++tick)
+    {
+      build.Advance(world);
+    }
+    static_cast<void>(world.Create(Neuron::Vec2{.y = 200 * Neuron::FIXED_ONE}, 0, Outpost::DesignId::ModuleShipyardL1, MINE));
+    build.Advance(world);
+    Assert::AreEqual(234u, build.Item(MINE).ticksRequired, L"200 ticks at 100% is 133.3 at 150%, rounded up");
+  }
+
+  /// **KILLING AN ORE PROCESSOR DROPS ITS OWNER'S INCOME THE SAME TICK**: the next hold is worth 100 and not 125.
+  TEST_METHOD(ALostOreProcessorDropsIncomeAtOnce)
+  {
+    Outpost::World world = WithModules({Outpost::DesignId::ModuleOreProcessorL1});
+    Assert::AreEqual(125u, CreditsForOneHold(world));
+    Outpost::DeathSystem deaths;
+    for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+    {
+      if (world.IsSlotAlive(slot) && (world.EntityInSlot(slot).design == Outpost::DesignId::ModuleOreProcessorL1))
+      {
+        world.EntityInSlot(slot).hullRemaining = 0;
+      }
+    }
+    deaths.Advance(world);
+    Assert::AreEqual(100u, CreditsForOneHold(world));
   }
 };
 

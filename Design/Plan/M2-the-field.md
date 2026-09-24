@@ -692,7 +692,8 @@ it on the register and kept ADR-014 for M3's damage, which is the question that 
 
 **The build rounds up.** `BuildSystem::TicksForCost` is the one division. 400 credits at ×1.5 is 267 ticks, and a
 shipyard never builds faster than its stated rate. Every ship divides exactly at both levels, so no ship's time
-moved. The intake passes the player's rate when an item starts, and the item keeps that rate.
+moved. The intake passes the player's rate when an item starts, and the item keeps that rate. **Superseded at M3.8b**
+(`OpenQuestions.md` Q77's first item): the item now follows the player's rate as it moves.
 
 **The cargo is exact.** `Economy` carries each player's remainder in hundredths of a thousandth of a credit, and
 applies the percentage before any division. A 100-ore hold is exactly 100, 125 or 150 credits, and an awkward

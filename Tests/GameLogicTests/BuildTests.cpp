@@ -859,7 +859,9 @@ public:
     Assert::AreEqual(300u, build.Item(MINE).ticksRequired);
     Assert::IsTrue(world.Find(module)->design == Outpost::DesignId::ModuleShipyardL1, L"not until it finishes");
 
-    Assert::AreEqual(300u, RunToCompletion(build, world, MINE));
+    // 200 AND NOT 300 SINCE M3.8b (Q77's first item): it was started at 100%, and the player's own level-one yard sets
+    // the rate from the first tick it advances, which is 1.5 times faster.
+    Assert::AreEqual(200u, RunToCompletion(build, world, MINE));
     Assert::IsTrue(world.Find(module)->design == Outpost::DesignId::ModuleShipyardL2);
     Assert::IsTrue(world.Find(module)->position == site);
     Assert::IsTrue(OnlyModuleOf(world, MINE) == module, L"no second entity");

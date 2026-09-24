@@ -123,6 +123,7 @@ std::uint64_t MatchHash(const World& _world, const BuildSystem& _build, const Ec
     FoldByte(hash, static_cast<std::uint8_t>(item.design));
     FoldUInt32(hash, item.ticksElapsed);
     FoldUInt32(hash, item.ticksRequired);
+    FoldUInt32(hash, item.multiplierPercent);
     FoldUInt32(hash, item.creditsSpent);
     FoldFixed(hash, item.site.x);
     FoldFixed(hash, item.site.y);

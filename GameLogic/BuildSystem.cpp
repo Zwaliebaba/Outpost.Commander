@@ -2,6 +2,8 @@
 
 #include "BuildSystem.h"
 
+#include "ModuleEffects.h"
+
 #include "RingAssignment.h"
 
 #include <vector>
@@ -179,6 +181,7 @@ BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _des
                                    .design = _design,
                                    .ticksElapsed = 0,
                                    .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
+                                   .multiplierPercent = (_buildRateMultiplierPercent == 0) ? 100u : _buildRateMultiplierPercent,
                                    .creditsSpent = cost});
 }
 
@@ -233,6 +236,7 @@ BuildRejection BuildSystem::StartModule(World& _world, PlayerId _player, DesignI
                                    .design = _design,
                                    .ticksElapsed = 0,
                                    .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
+                                   .multiplierPercent = (_buildRateMultiplierPercent == 0) ? 100u : _buildRateMultiplierPercent,
                                    .creditsSpent = cost,
                                    .site = _site});
 }
@@ -278,6 +282,7 @@ BuildRejection BuildSystem::StartUpgrade(World& _world, PlayerId _player, Entity
                                    .design = _level,
                                    .ticksElapsed = 0,
                                    .ticksRequired = TicksForCost(cost, _buildRateMultiplierPercent),
+                                   .multiplierPercent = (_buildRateMultiplierPercent == 0) ? 100u : _buildRateMultiplierPercent,
                                    .creditsSpent = cost,
                                    .site = module->position,
                                    .upgrade = _module});
@@ -370,6 +375,18 @@ void BuildSystem::Advance(World& _world) noexcept
         ++m_stranded;
         continue;
       }
+    }
+
+    // **THE RATE IN FORCE NOW, NOT THE ONE IT STARTED AT** (M3.8b, Q77's first item): a shipyard lost mid-build slows
+    // the item on the tick it dies, and one finished speeds it up. What is left is rescaled in integers, rounding up
+    // as `TicksForCost` does, so a shipyard never builds faster than its stated rate (R16).
+    const std::uint32_t rate = BuildRateMultiplierPercent(_world, static_cast<PlayerId>(player));
+    if ((rate != item.multiplierPercent) && (rate != 0) && (item.multiplierPercent != 0))
+    {
+      const std::uint64_t remainingWork =
+        static_cast<std::uint64_t>(item.ticksRequired - std::min(item.ticksElapsed, item.ticksRequired)) * item.multiplierPercent;
+      item.ticksRequired = item.ticksElapsed + static_cast<std::uint32_t>((remainingWork + rate - 1) / rate);
+      item.multiplierPercent = rate;
     }
 
     ++item.ticksElapsed;

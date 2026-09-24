@@ -145,4 +145,20 @@ public:
   }
 };
 
+/// M3.8b. **Elimination takes a player's modules with their ships**, in the same tick and so the same update.
+TEST_CLASS(TheEliminatedModules)
+{
+public:
+  TEST_METHOD(ModulesGoWithTheShips)
+  {
+    Match match(2);
+    static_cast<void>(match.world.Create(At(5000, 400), 0, Outpost::DesignId::ModuleShipyardL1, 1));
+    static_cast<void>(match.world.Create(At(5000, -400), 0, Outpost::DesignId::ModuleOreProcessorL2, 1));
+    match.world.Find(match.stations[0])->hullRemaining = 0;
+    match.End(100);
+    Assert::AreEqual(std::size_t{0}, match.Owned(1), L"a module outlived its station");
+    Assert::AreEqual(std::size_t{4}, match.victory.Removed().size(), L"the Fighter, the Miner and both modules");
+  }
+};
+
 } // namespace GameLogicTests
