@@ -112,6 +112,23 @@ before the literal was changed. That run is also the four-MSVC-pair measurement 
 owed. A change that moves the hash is deliberate, and it is re-pinned from four agreeing builds, never
 from one.
 
+**AND MOVED A FIFTH TIME, 2026-09-24, BECAUSE THE HASH WIDENED — NOT A RULE** (the mid-implementation
+review, M6). The hash folded identity, position, heading and the hull *type*, and nothing that M3's damage or
+the economy's arithmetic writes: setting a miner's hull points from 450 to 1, its cargo to 99,000
+thousandths or its owner to the other player each left it unchanged. So a hull-points divergence of one
+point a shot — F3's own worry — would pass the determinism test and the four-pair run alike until a death
+happened to land a tick apart. **It now also folds, per live entity, hull points, owner and the mine order
+(phase, rock, cargo, unload target), and the determinism test asserts `MatchHash`**, which adds every seated
+player's credits, income owed to the hundredth of a milli-credit and the item building. The script is
+unchanged. The new values are
+
+> **`0xfc22fd27ca6ad39e`** for the scripted match, and **`0x2a69961bb32bc5f5`** for M0.8's short run
+
+**computed off Windows only**, identical under g++ at `-O1` and `-O3` and clang at `-O0` and `-O2`; CI's
+`Debug|x64` checks the first MSVC pair on push. **The four-pair MSVC run is owed once, at M3's entry**, and
+the pin is not moved again until it has been made: M3 will move it at every step that adds a rule, and a
+value nobody has run on ARM64 should not be the base those moves are measured from.
+
 **What it still does not prove** is two different machines. That was M0.23's run, and the owner withdrew
 it on 2026-09-23 (`OpenQuestions.md` Q58). ARM64 here is compiled on, and runs natively on, the Surface Pro.
 

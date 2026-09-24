@@ -107,30 +107,58 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     return ordered ? CommandRejection::None : CommandRejection::BuildRefused;
   }
 
-  // BOUNDED AT THE SENDER'S OWN ENTITY COUNT, which is the check that turns the amplification into
-  // a rejected packet. A selection longer than the player has ships cannot be a real selection
-  // however it was produced.
-  const std::size_t owned = _world.OwnedCount(_player);
-  if (_command.selection.size() > owned)
-  {
-    return CommandRejection::SelectionTooLong;
-  }
-
-  // EVERY IDENTITY IS RESOLVED AND CHECKED BEFORE ANY OF THEM IS ACTED ON. A command that is
-  // half applied and then refused would leave the match in a state no sequence number describes,
-  // and the client would never learn which half took.
+  // **A DEAD SHIP IS SKIPPED, NOT REFUSED** (Q24 as amended after the 2026-09-23 review, M4). The client
+  // learns of a death 50 to 150 ms after the host, so a retreat tapped during a raid names a ship that has
+  // just died -- and refusing the whole order for it would leave the survivors unordered when the order
+  // matters most. A dead ship cannot be ordered, so dropping it half-applies nothing. An identity whose
+  // slot has been reused resolves to nothing too, and is skipped for the same reason: the sender meant
+  // the ship that died, not whatever took its slot.
+  //
+  // **A FOREIGN IDENTITY STILL REFUSES THE WHOLE ORDER**, resolved before anything is acted on: that is not
+  // a race a client can lose, it is a client that is wrong, and applying the rest would leave the match in a
+  // state no sequence number describes.
+  std::vector<EntityId> live;
+  live.reserve(_command.selection.size());
+  CommandRejection refusal = CommandRejection::None;
   for (const WireIdentity wire : _command.selection)
   {
     const EntityId resolved = ResolveWireIdentity(_world, wire);
     if (!resolved.IsValid())
     {
-      return CommandRejection::StaleGeneration;
+      continue;
     }
     const Entity* entity = _world.Find(resolved);
     if ((entity == nullptr) || (entity->owner != _player))
     {
-      return CommandRejection::NotOwned;
+      refusal = CommandRejection::NotOwned;
+      break;
     }
+    live.push_back(resolved);
+  }
+
+  // BOUNDED AT THE SENDER'S OWN ENTITY COUNT, which is the check that turns the amplification into a
+  // refused order -- **counted over the live identities**, so a selection that shrank by the ships that
+  // died since the client saw them is not mistaken for a long one. Resolving costs one lookup an identity;
+  // what the bound protects is the ring assignment below.
+  if ((refusal == CommandRejection::None) && (live.size() > _world.OwnedCount(_player)))
+  {
+    refusal = CommandRejection::SelectionTooLong;
+  }
+
+  // A ROCK THE FIELD HAS, before anything is acted on -- the same all-or-nothing rule as the identities.
+  if ((refusal == CommandRejection::None) && (_command.type == CommandType::Mine) && (_command.TargetRock() >= _world.Field().size()))
+  {
+    refusal = CommandRejection::NoSuchRock;
+  }
+
+  // **EVERY REFUSAL PAST THE SEQUENCE CHECK IS ACKNOWLEDGED** (Q24 as amended, M4), as a station order's
+  // already was: the host understood the order and will never apply it, so a sequence that did not advance
+  // would have the client repeat it until its resend gave up -- and hold every later order behind it.
+  if (refusal != CommandRejection::None)
+  {
+    m_lastApplied[_player] = _command.sequence;
+    m_hasApplied[_player] = true;
+    return refusal;
   }
 
   // Clamped, although a wire target cannot leave the play area -- see ClampToPlayArea for why it
@@ -138,28 +166,17 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
   const Neuron::Vec2 target =
     ClampToPlayArea(Neuron::Vec2{.x = DequantizePosition(_command.targetX), .y = DequantizePosition(_command.targetY)});
 
-  // A ROCK THE FIELD HAS, before anything is acted on -- the same all-or-nothing rule as the identities.
-  if ((_command.type == CommandType::Mine) && (_command.TargetRock() >= _world.Field().size()))
-  {
-    return CommandRejection::NoSuchRock;
-  }
-
   if (_command.type == CommandType::MoveTo)
   {
     // **ONE RING SLOT EACH, RATHER THAN FIFTY SHIPS ON ONE POINT** (Q19, M1.7). The whole selection
     // goes to `RingAssignment` together, because a slot depends on who else is in the order -- which
-    // is why this is one call and not a loop.
-    std::vector<EntityId> resolved;
-    resolved.reserve(_command.selection.size());
-    for (const WireIdentity wire : _command.selection)
-    {
-      resolved.push_back(ResolveWireIdentity(_world, wire));
-    }
-    static_cast<void>(OrderFleetTo(_world, resolved, target));
+    // is why this is one call and not a loop. **Only the live ships**, so a ship that died does not hold
+    // a slot the survivors would otherwise take.
+    static_cast<void>(OrderFleetTo(_world, live, target));
 
     // **A MOVE ENDS A MINE ORDER AND KEEPS THE CARGO** (M2.6). The standing order is the one that does not
     // complete, so it is the one another order has to end explicitly.
-    for (const EntityId id : resolved)
+    for (const EntityId id : live)
     {
       static_cast<void>(_world.StopMining(id));
     }
@@ -170,9 +187,8 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
     // zero is skipped and keeps whatever it was doing. The command is still accepted -- M2.8's mixed
     // selection sends the rest a separate move -- and the mining system does the travelling, so nothing
     // moves here.
-    for (const WireIdentity wire : _command.selection)
+    for (const EntityId id : live)
     {
-      const EntityId id = ResolveWireIdentity(_world, wire);
       const Entity* entity = _world.Find(id);
       if ((entity != nullptr) && (Derive(entity->design).oreCapacity > 0))
       {

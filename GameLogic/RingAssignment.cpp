@@ -123,6 +123,16 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
 
   const Neuron::Fixed spacing = RingSpacingFor(_world, _selection);
 
+  // **THE RING STAYS WHOLE AGAINST THE WALL** (the 2026-09-23 review, m4). Clamping each slot on its own
+  // folded every slot past the edge onto the edge line, so fifty fighters ordered into a corner took 32
+  // distinct points and stacked -- the outcome rings exist to prevent. The target moves in by the outermost
+  // ring's radius first, so every slot lands inside; the per-slot clamp below stays as the backstop.
+  const std::int64_t outermost =
+    candidates.empty() ? 0 : static_cast<std::int64_t>(RingOfSlot(candidates.size() - 1)) * static_cast<std::int64_t>(spacing);
+  const std::int64_t reach = std::max<std::int64_t>(0, static_cast<std::int64_t>(PLAY_AREA_HALF_EXTENT) - outermost);
+  const Neuron::Vec2 center{.x = static_cast<Neuron::Fixed>(std::clamp<std::int64_t>(_target.x, -reach, reach)),
+                            .y = static_cast<Neuron::Fixed>(std::clamp<std::int64_t>(_target.y, -reach, reach))};
+
   // One group for everything this order moves (Q61): they share a ring and do not avoid each other.
   const std::uint32_t group = _world.NewOrderGroup();
 
@@ -136,7 +146,7 @@ std::size_t OrderFleetTo(World& _world, std::span<const EntityId> _selection, co
     }
 
     const Neuron::Vec2 offset = RingSlotOffset(slot, spacing);
-    const Neuron::Vec2 destination = ClampToPlayArea(Neuron::Vec2{.x = _target.x + offset.x, .y = _target.y + offset.y});
+    const Neuron::Vec2 destination = ClampToPlayArea(Neuron::Vec2{.x = center.x + offset.x, .y = center.y + offset.y});
 
     // **R24, AT LAST.** The intake carried a constant with a comment saying this would be derived from
     // thrust over mass; M1.2 made the derivation and M1.3 put the design on the entity, so the number

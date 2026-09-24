@@ -208,7 +208,7 @@ struct MatchResult
     build.Advance(world);
   }
 
-  return MatchResult{.hash = Outpost::StateHash(world),
+  return MatchResult{.hash = Outpost::MatchHash(world, build, economy),
                      .alive = world.AliveCount(),
                      .creditsOfPlayerOne = build.Credits(1),
                      .shipsOfPlayerOne = OwnedShips(world, 1).size(),
@@ -240,9 +240,16 @@ public:
   /// Q59, Q60, Q61), which gave `0xc8b1069f59fa3f85` without the mining. **This value is the two together**,
   /// taken when the branch merged, and it was the same on all four MSVC pairs before it was pinned -- which
   /// is also the four-pair run M2.7's value was still owed.
+  ///
+  /// **MOVED A FIFTH TIME BY THE 2026-09-23 REVIEW (M6), AND NOT BY A RULE**: the hash widened. It now folds
+  /// hull points, owner and the mine order per entity, and the script's result is `MatchHash` -- credits,
+  /// income owed and the item building too -- where it was `StateHash` over the world alone, which could not
+  /// see M3's damage arithmetic diverge. The script is unchanged; `0x073f1184808b252a` was its value under the
+  /// old hash. **Computed off Windows only**, identically under g++ -O1 and -O3 and clang -O0 and -O2; the
+  /// four MSVC pairs are owed, once, at M3's entry (ADR-002).
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x073f1184808b252aull, RunScriptedMatch().hash);
+    Assert::AreEqual(0xfc22fd27ca6ad39eull, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

@@ -36,6 +36,19 @@ The five are [`GameDesign.md`](../GameDesign.md) §10's and they are not renamed
 
 ## Where it stands
 
+**THE MID-IMPLEMENTATION REVIEW, 2026-09-23, AND WHAT CAME OF IT, 2026-09-24.**
+[`Reviews/2026-09-23-mid-implementation-review.md`](../Reviews/2026-09-23-mid-implementation-review.md)
+found eleven defects against rules already written down and fixed them in one change: the free Fighter
+every hosted match gave player 1, session tokens that live-locked two returning clients after a host
+restart, an order refused whole for one dead ship, commands the packaged client sent only once, an
+unaffordable tap that cancelled the item in progress, a state hash blind to hull points and cargo, and
+five smaller ones. Its design findings are **sixteen open questions, Q62 to Q77**, each carrying the review's
+default. **M3 does not start until Q72 is ruled**, because Q72 decides M3's step order and which
+confirmations block M3.11. **What the change owes**: the four-pair MSVC run for the determinism pin it
+moved (ADR-002), made once at M3's entry, and a look on the device at the two things it changed on screen,
+the hold recentering on a selection and a lost order's marker clearing after two seconds. It was compiled
+and its suites run under g++ on Linux, and `Debug|x64` in CI is the first MSVC build of it.
+
 **M0 IS FINISHED, 2026-09-23.** All three gates are closed: M0.16 on the device, and M0.5 and M0.23
 when the owner ruled that this game is tested on one machine and withdrew their two-machine runs
 ([`OpenQuestions.md`](../OpenQuestions.md) Q58). Twenty-three steps, one of which grew an

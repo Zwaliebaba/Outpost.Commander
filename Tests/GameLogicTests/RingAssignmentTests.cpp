@@ -237,6 +237,27 @@ public:
     }
   }
 
+  /// **AND IT STAYS A RING** (the 2026-09-23 review, m4): fifty fighters ordered into a corner or against an
+  /// edge get fifty distinct points, where clamping each slot on its own folded them onto the edge line.
+  TEST_METHOD(ARingAgainstTheWallKeepsEverySlotDistinct)
+  {
+    const Neuron::Fixed edge = Outpost::PLAY_AREA_HALF_EXTENT;
+    for (const Neuron::Vec2 target :
+         {Neuron::Vec2{.x = edge, .y = edge}, Neuron::Vec2{.x = edge, .y = 0}, Neuron::Vec2{.x = -edge, .y = -edge}})
+    {
+      Outpost::World world;
+      const std::vector<Outpost::EntityId> fleet = Fleet(world, 50, Outpost::DesignId::Fighter);
+      static_cast<void>(Outpost::OrderFleetTo(world, fleet, target));
+
+      std::set<std::pair<Neuron::Fixed, Neuron::Fixed>> seen;
+      for (const Neuron::Vec2& destination : DestinationsOf(world, fleet))
+      {
+        Assert::IsTrue(Outpost::ClampToPlayArea(destination) == destination);
+        Assert::IsTrue(seen.insert({destination.x, destination.y}).second, L"the wall stacked two ships on one point");
+      }
+    }
+  }
+
   /// An identity that does not resolve is skipped rather than refusing the order -- a ship that died
   /// between validation and here is ordinary.
   TEST_METHOD(ADeadIdentityIsSkipped)

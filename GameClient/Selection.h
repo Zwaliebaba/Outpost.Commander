@@ -105,6 +105,12 @@ public:
   /// because the identity would resolve to somebody else's ship. Returns how many were dropped.
   std::size_t RetainLiving(std::span<const EntityRecord> _entities);
 
+  /// **WHERE THE SELECTION IS, FOR A HOLD** (ADR-018 decision 7; the 2026-09-23 review, m9): the newest known
+  /// position of every selected entity, in world units, in selection order. An identity _entities does not
+  /// carry is skipped, whole identity compared as `RetainLiving` does. _outX and _outY are cleared first; both
+  /// empty is "nothing selected", which `Recenter` sends to the station.
+  void PositionsOf(std::span<const EntityRecord> _entities, std::vector<float>& _outX, std::vector<float>& _outY) const;
+
   /// One tap, against the camera, the snapshot and this selection.
   ///
   /// **IT DOES NOT SEND ANYTHING.** The verb and the target come back and the caller builds the

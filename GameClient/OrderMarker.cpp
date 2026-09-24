@@ -26,4 +26,13 @@ std::size_t OrderMarkerSet::ClearAcknowledged(std::uint16_t _lastCommandSequence
   return before - m_markers.size();
 }
 
+std::size_t OrderMarkerSet::ClearCommand(std::uint16_t _commandSequence) noexcept
+{
+  const std::size_t before = m_markers.size();
+  m_markers.erase(std::remove_if(m_markers.begin(), m_markers.end(), [_commandSequence](const OrderMarker& _marker) noexcept
+                                 { return _marker.commandSequence == _commandSequence; }),
+                  m_markers.end());
+  return before - m_markers.size();
+}
+
 } // namespace Outpost

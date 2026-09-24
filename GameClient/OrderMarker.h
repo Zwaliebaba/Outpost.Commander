@@ -63,6 +63,11 @@ public:
   /// Returns how many were cleared, which is what a caller counts rather than recomputes.
   std::size_t ClearAcknowledged(std::uint16_t _lastCommandSequenceApplied) noexcept;
 
+  /// Clears the marker of one command, acknowledged or not: what a command the client has stopped resending
+  /// does, so the interface stops asserting an order nobody may have applied (the 2026-09-23 review, M5).
+  /// Returns how many were cleared -- one, or none when that command made no marker.
+  std::size_t ClearCommand(std::uint16_t _commandSequence) noexcept;
+
   [[nodiscard]] std::span<const OrderMarker> Markers() const noexcept
   {
     return m_markers;

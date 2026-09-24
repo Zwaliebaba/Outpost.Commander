@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
+#include <utility>
 
 namespace Outpost
 {
@@ -108,6 +110,27 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     const std::uint16_t applied = own->lastCommandSequenceApplied;
     result.markersCleared = static_cast<std::uint32_t>(m_markers.ClearAcknowledged(applied));
 
+    // THE SAME HIGH-WATER MARK RETIRES WHAT IS BEING RESENT (M5). Every command at or before it has been
+    // decided on by the host -- applied or refused, both acknowledged -- so sending it again would only be
+    // discarded as already applied.
+    std::size_t kept = 0;
+    for (std::size_t index = 0; index < m_outstanding.size(); ++index)
+    {
+      if (!SequenceIsNewer(m_outstanding[index].sequence, applied))
+      {
+        ++result.commandsRetired;
+        continue;
+      }
+      if (kept != index)
+      {
+        m_outstanding[kept] = std::move(m_outstanding[index]);
+        m_issuedMilliseconds[kept] = m_issuedMilliseconds[index];
+      }
+      ++kept;
+    }
+    m_outstanding.resize(kept);
+    m_issuedMilliseconds.resize(kept);
+
     // ONCE, FROM THE FIRST UPDATE THAT CARRIES THIS PLAYER'S BLOCK. See the field's comment: a client that
     // always starts counting at one is refused by the host for as long as it takes to count back past the
     // previous session, which is the difference between reconnecting and resuming.
@@ -119,6 +142,22 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
       m_adoptedSequence = true;
       m_nextCommandSequence = static_cast<std::uint16_t>(applied + 1);
     }
+  }
+
+  // **AND WHAT HAS WAITED TOO LONG IS GIVEN UP, WITH ITS MARKER** (M5), oldest first -- so a command that is
+  // never going to be acknowledged cannot ride every packet forever, and the interface stops drawing an order
+  // that may never have arrived.
+  std::size_t expired = 0;
+  while ((expired < m_outstanding.size()) && ((_nowMilliseconds - m_issuedMilliseconds[expired]) >= COMMAND_RESEND_WINDOW_MILLISECONDS))
+  {
+    static_cast<void>(m_markers.ClearCommand(m_outstanding[expired].sequence));
+    ++expired;
+  }
+  if (expired > 0)
+  {
+    m_outstanding.erase(m_outstanding.begin(), m_outstanding.begin() + static_cast<std::ptrdiff_t>(expired));
+    m_issuedMilliseconds.erase(m_issuedMilliseconds.begin(), m_issuedMilliseconds.begin() + static_cast<std::ptrdiff_t>(expired));
+    result.commandsExpired = static_cast<std::uint32_t>(expired);
   }
 
   // **SEATED AGAIN AND AN UPDATE IN HAND**, in either order within the drain -- the host answers the join
@@ -156,6 +195,19 @@ LinkState ClientFrame::Link() const noexcept
 DrawnSummary ClientFrame::Advance(std::uint64_t _nowMilliseconds, std::vector<EntityRecord>& _outRecords) const
 {
   return m_replicas.Drawn(ReplicaStore::RenderMilliseconds(_nowMilliseconds), _outRecords);
+}
+
+void ClientFrame::IssueCommand(Command _command, std::uint64_t _nowMilliseconds)
+{
+  m_outstanding.push_back(std::move(_command));
+  m_issuedMilliseconds.push_back(_nowMilliseconds);
+}
+
+std::size_t ClientFrame::FillOutstanding(CommandPacket& _packet) const
+{
+  // The update's payload bounds a command packet too, as the Bot has it: one whole datagram, never a
+  // fragment (`TechnicalDesign.md` section 4). What does not fit waits for the next packet, in order.
+  return FillOldestFirst(m_outstanding, UPDATE_PAYLOAD_BYTES, _packet);
 }
 
 bool ClientFrame::ShouldReportView(std::uint64_t _nowMilliseconds) noexcept

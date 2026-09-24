@@ -136,8 +136,9 @@ public:
   /// rare one, and silently burning the displaced item's credits would be the sharpest edge in the
   /// interface.
   ///
-  /// **THE REFUND HAPPENS BEFORE THE NEW COST IS CHECKED**, so replacing a Fighter with a Fighter
-  /// always works. Checking first would refuse a replacement a player can obviously afford.
+  /// **THE REFUND COUNTS TOWARD THE NEW COST**, so replacing a Fighter with a Fighter always works.
+  /// Checking the bare balance would refuse a replacement a player can obviously afford. **An order the
+  /// balance and the refund together cannot cover changes nothing** and the item in progress keeps building.
   [[nodiscard]] BuildRejection Start(World& _world, PlayerId _player, DesignId _design,
                                      std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
 
@@ -185,6 +186,12 @@ public:
   /// still here", which is not a state this system has.
   [[nodiscard]] std::uint8_t WireProgressPercent(PlayerId _player) const noexcept;
 
+  /// How many players this match seats, which is how far `MatchHash` walks.
+  [[nodiscard]] std::size_t PlayerCount() const noexcept
+  {
+    return m_playerCount;
+  }
+
   /// Items that completed and had nowhere to go, refunded. See `BuildRejection::NoStation`.
   [[nodiscard]] std::uint64_t StrandedCount() const noexcept
   {
@@ -194,8 +201,10 @@ public:
 private:
   [[nodiscard]] bool Holds(PlayerId _player) const noexcept;
 
-  /// The half of every start that is the same: refund what is building, charge _item's cost if the
-  /// balance covers it, and hold _item. **Only called once everything about the order has been checked.**
+  /// The half of every start that is the same: if the balance plus the refund of what is building covers
+  /// _item's cost, refund, charge and hold _item; **otherwise touch nothing**, so an unaffordable tap leaves
+  /// the item in progress building (the 2026-09-23 review, m1). Only called once everything about the order
+  /// has been checked.
   [[nodiscard]] BuildRejection Commit(PlayerId _player, const BuildItem& _item) noexcept;
 
   /// Where a finished ship appears: **in front of the station, clear of both hulls.** The offset is

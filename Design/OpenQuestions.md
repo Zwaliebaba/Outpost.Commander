@@ -8,11 +8,14 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Fifty-eight answered, three open.** Eight came from an adversarial review that also reversed two earlier
+**Fifty-eight answered, nineteen open** — Q34, Q48 and Q49, and Q62 to Q77 from the mid-implementation review. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
 with recommendations and answered the same day; the eighth round below is what they became.
+
+**SIXTEEN MORE ARE OPEN, Q62 TO Q77**, registered on 2026-09-24 from the mid-implementation review with its
+recommended defaults and not yet ruled; they are in their own section below the answered ones.
 
 **THE *OPEN* SECTION HOLDS TWENTY-TWO ENTRIES AND NINETEEN OF THEM ARE ANSWERED** — Q26, Q33, Q35, Q36, Q37,
 Q46, Q47 and Q50 to Q61, all in full — kept in place with their reasoning rather than flattened into a table row, because what each
@@ -96,7 +99,7 @@ because they were simply wrong.**
 | **Q21** | Does the build queue have a wire record? | **There is no queue — the snapshot carries the item currently building and its progress, two bytes per player.** `Interface.md` had specified a cancellable queue that no wire record could feed; the MVP cuts the queue rather than inventing a format for it. | `Interface.md` §6, `TechnicalDesign.md` §4 |
 | **Q22** | Is asteroid ore replicated, and at what cost? | **Not at all before M3**, since inexhaustible asteroids have no simulation state and the client derives their positions from the seed. From M3, sparsely: only asteroids whose quantized ore bucket changed, at most one per active miner. The budget had excluded a thing R23 said must be replicated. | `GameDesign.md` §4, `TechnicalDesign.md` §4 |
 | **Q23** | Is the client forced fullscreen? | **Yes, at launch.** Nothing previously forced it, which made [`ADR-007`](ADR/ADR-007-the-authored-frame-is-1440x960.md)'s exact 2× an accident of however the window happened to be sized. | `Interface.md` §1, `TechnicalDesign.md` §5 |
-| **Q24** | What does the host validate on a command? | **Ownership, selection length, generation, target bounds and sequence wraparound** — labeled correctness rather than security, so it is not filed under the anti-cheat exclusion again. A 1,232-byte packet holds 608 identities against a peak of 110, reachable from an ordinary bug with no attacker anywhere. | `TechnicalDesign.md` §4, §8 |
+| **Q24** | What does the host validate on a command? | **Ownership, selection length, generation, target bounds and sequence wraparound** — labeled correctness rather than security, so it is not filed under the anti-cheat exclusion again. A 1,232-byte packet holds 608 identities against a peak of 110, reachable from an ordinary bug with no attacker anywhere. **Amended 2026-09-24 by the owner, after the mid-implementation review (M4):** a dead or reused identity is *skipped* rather than refusing the order, since a retreat tapped during a raid names ships that died a moment earlier; a foreign identity still refuses the whole order; the length bound counts live identities; and **every refusal past the sequence check is acknowledged**, so the client stops resending it. | `TechnicalDesign.md` §4, §8 |
 | **Q25** | How does a match end, and how do you start another? | **The host reseeds and restarts; the client shows a result overlay and reconnects.** Nothing said what happened at victory, and restart is the most-used operation in a solo testing loop — twenty matches an evening is impossible if playing again means relaunching a package. | `Interface.md` §7, `GameDesign.md` §10 |
 | **Q27** | Does the MVP ship two players or four? | **Two, through M3.** The generator's symmetry, the AI count and the snapshot's per-player blocks are all sized by a runtime player count, so the other two slots are configuration rather than a change. Two buys a five-minute match, a single-datagram snapshot, and twenty matches an evening. | `GameDesign.md` §2, §10, [`ADR-003`](ADR/ADR-003-the-record-and-the-command.md) |
 
@@ -556,7 +559,7 @@ there is no stated base build rate for the shipyard's ×1.5 to multiply. Inventi
 choosing a balance number nobody can check yet. **M1.6 is the step that first observes it** and is where
 it should be asked; M1.2's own exit criteria name cost and speed and not build time.
 
-### Q48 — Is the AI of §8 written so that a bot client can run it too? — **needed by M4.5, and decided before it is written**
+### Q48 — Is the AI of §8 written so that a bot client can run it too? — **needed by M3.10, and decided before it is written**
 
 **The question.** `GameDesign.md` §8 puts the AI on the host, inside `GameLogic`, on the tick. Written the
 obvious way, it reads the host's `World`: exact positions, every entity's full state, everything the host
@@ -589,6 +592,14 @@ from arbitrary mid-match state", a property of the input and not a thing to test
 enough for a player to play on, so it is enough for an AI that §8 deliberately keeps modest. **Settle it
 before M4.5 is written**, because retrofitting it means rewriting the AI's inputs. If it is taken,
 `BotPolicy` (ADR-022) is replaced by that function, not grown into it.
+
+**Needed by M3.10, not M4.5** (the mid-implementation review, M9, 2026-09-23). M3.10's stub is the first AI
+this tree will hold, and written the obvious host-side way it reads order state no client is ever sent and
+reacts at tick cadence — so a human's raid outcomes against it would be artifacts of what it can see. Ruled
+after the stub is written, the recommendation above is a rewrite of the stub's inputs. The review's default
+is this recommendation, taken at M3.10: the stub decides over `RecordOf`'s records for its player plus its
+block, once per twenty ticks, through `CommandIntake::Apply`, in the file M4.5 extends, with one defend
+reflex and AI seats reserved (Q70).
 
 ### Q49 — What are the accumulator's weights, and is a cap of two updates a tick enough? — **needed by M4.8, built to the recommendation at M1.14c**
 
@@ -877,6 +888,301 @@ it is not quoted as the figure. The grid is why avoidance costs a fraction of th
 
 **What would reopen it** is a formation or a battle that jams anyway. That is M3's to find, when fleets
 first meet on purpose.
+
+## Registered — 2026-09-24, from the mid-implementation review
+
+**Sixteen questions, all open, all from
+[`Reviews/2026-09-23-mid-implementation-review.md`](Reviews/2026-09-23-mid-implementation-review.md).** The
+review reached its figures by driving the unmodified `GameCore` and `GameLogic` under g++ on Linux, not by
+estimating them; its §6 lists twelve decisions it says no agent may take, and the rest of its findings name
+a rule the design has not stated. Each is registered here with **the review's recommended default as the
+recommendation**, the finding it came from, and what it is needed by. **None is ruled.** The review's
+defects against rules that were already written down were fixed in the same change, not registered: the
+free Fighter at the map center (B5), the token stream (B4, ADR-013 amended), the dead-identity refusal (M4,
+Q24 amended), send-once in the packaged client (M5), the unaffordable tap (m1), the hash's blind fields (M6,
+ADR-002), the forget horizon (m2), the removal backlog (m3), the ring against the wall (m4), the dead
+upgrade (m7) and the hold's selection half (m9).
+
+**Two of the review's findings were overtaken before they were registered.** It was written at `67a4ad8`,
+before M1.17 merged: ships now turn as they fly (Q59) and route around structures and each other (Q60,
+Q61), so M11's "fifty identical arrows" and M16's "ships stack on one point" no longer describe the code.
+Q68 keeps what is left of M11.
+
+### Q62 — What binds the economy: income, or the build slot? — **needed before M3.1 pins §7, and by M3.11**
+
+**The finding (B1, m11).** On the shipped field one Miner earns 6.40 credits a second at the nearest home
+rock and 3.33 at the farthest, against the 2.5 that `GameDesign.md` §4 assumes. Income passes the 20-a-second
+build slot before sixty seconds, and past four miners it cannot be spent: 30,165 credits sat unspent at
+300 s in the harness. Every scripted opening that took ShipyardL1 then L2 fielded 28 to 30 fighters at
+300 s, and every one without it 17 to 18, so the opening is one forced sequence. Q47 meant the slot to sit
+"just above the income a running economy earns", and it sits far below it. Separately, nothing limits how
+many miners take ore from one rock, so stacking on the nearest two beats spreading by 21% to 46%, and Q26's
+"ten rocks keeps six miners from queuing" names a rule nobody wrote.
+
+- **Move the home field out**: `HOME_FIELD_INNER_RADIUS_UNITS` 600 → 1,200, outer 1,500 → 2,000. Measured:
+  one Miner then earns 2.67 to 3.70 a second, six earn 18.6 (under the slot, as Q47 intends), and five
+  openings finish within 25% of each other with different profiles.
+- **Raise the slot to 30.** Six spread miners (27.6 a second) then sit just under it, but flights stay 640 to
+  1,340 units, and §7's 1,500 stays wrong.
+- **Per-rock throughput**, either way: one extractor per rock per tick, the rest holding. Or delete Q26's
+  sentence and accept stacking.
+
+**Recommendation: move the field, keep the slot at 20, and write one extractor per rock.** Restate §4, §5,
+Q26, Q47 and the three code comments that cite 2.5 and thirty seconds, from the measured table, in the same
+change. Q63 depends on the radii.
+
+### Q63 — What does the station's point defense protect? — **needed by M3.5**
+
+**The finding (B2).** Point defense reaches 400 units and a MassDriver 600, and a miner unloads within 160
+of the station. From 401, a fighter is outside point defense and inside MassDriver range of every point of
+the unloading area, the spawn point and every near-side module. So "what the point defense protects is the
+unloading area" and "which side of your station you build on is a decision" are both false as built, and
+M3.11's "is the safe zone too safe?" has nothing inside it to measure.
+
+- **Point defense 480, with flight and unload to the far side**: the unload point is 160 beyond the station
+  on the ray away from the nearest hostile, computed on the host in integers, ties broken on identity. The
+  near side is then shellable from 481 to 600 and the far side is not, which makes §5's side sentence true.
+  It needs Q62's radii.
+- **Point defense 800 at a 30% Medium modifier.** An unescorted siege needs nine fighters, and the near-side
+  standoff disappears.
+- **Delete the side claim** from §5 and ADR-015, and test the zone as a radius only.
+
+**Recommendation: the first**, with "crosses 400 and dies" restated as "crosses 440".
+
+### Q64 — Does a miner under a mine order flee? — **needed by M3.6**
+
+**The finding (M1).** §4, §7 and M3.6 all put flight on "a miner with no order", and every productive miner
+carries the standing mine order. So flight never fires on a miner that is working, and §7's "about 3½ of
+six lost fleeing" describes a rule that cannot run. In the harness three fighters kill six shuttling miners
+in 25.7 s and none flees.
+
+- **Flight as a phase of the mine order.** A miner in ToOre or Extracting that a fire event names enters
+  Fleeing: it keeps its rock and cargo, heads for Q63's far-side point, and returns to ToOre after 60 ticks
+  without being fired on. An explicit MoveTo does not flee, which keeps the player's override. Extracting
+  and Unloading re-check range every tick.
+- **Redefine "no order"** as "no move or attack order", which is the same rule stated once.
+
+**Recommendation: the first**, with §7's flight row re-derived on Q62's field. The 60-tick resume is the
+figure to argue with.
+
+### Q65 — How does a contested match end in about five minutes, and what is a tie? — **needed by M3.7**
+
+**The finding (B3, M7).** One fighter lands 12.5 dps on an 8,000-point station, which is 640 s. The earliest
+ten-fighter siege against an idle defender ends at 300 to 330 s. A defender builds 5.7 fighters while a raid
+crosses 86 s of map. Under Q26's 200 ore a rock, the home field runs dry at 106 to 141 s. And "last station
+standing" has no answer when the last two stations die on one tick, which is what two mirrored stub AIs
+produce.
+
+- **A match clock**: the host ends the match at tick 7,200 (six minutes). The higher station hull wins,
+  ties broken by credits plus the catalog cost of live ships and modules. **Plus a draw**: if every
+  remaining station dies on one tick, the match ends as a draw and restarts like a victory.
+- **A softer station and a shorter map**: 5,000 hull or hit value 100, and anchors at 4,500, with §7's
+  crossing figures restated.
+
+**Recommendation: the clock and the draw**, and an acceptance test in the harness the day M3.2 lands: a
+three-fighter rush ends by 5:30, and a mirror ends by 8:00 or on the clock.
+
+### Q66 — Where does damage round, and how often is a fire event sent? — **needed by M3.0**
+
+**The finding (M2)**, which narrows M3.0's gate. Any per-tick integer rule makes stations and modules immune
+to every ship weapon: a MassDriver against Heavy is 0.3125 a tick, which truncates and rounds to zero. The
+wire carries 40 fire events an update, repeated three times, so M mounts need a cadence of at least ⌈3M/40⌉
+ticks. At one tick, 100 mounts back up 52,000 sends in 200 ticks. Death order and the first shot's phase are
+unpinned: deaths applied in slot order give player 1 the first shot in every symmetric fight.
+
+- **A hundredths accumulator per weapon per tick**: whole points applied, the remainder kept. Deaths are
+  applied after every weapon has fired, and overkill is allowed. A fire event goes out at most once per
+  shooter per ten ticks, whatever the damage cadence, with the repeat dropped to two while a client's queue
+  is past 40. §7's rows are pinned as tests with one tick's tolerance.
+- **1 Hz shots with integer damage per weapon and size class**: the first shot on acquisition, deaths
+  deferred, and §7's rows restated at +4% to +9%.
+
+**Recommendation: the first.** It is the only option that reproduces §7 exactly, and ADR-014 records it.
+
+### Q67 — How does an attack order bring a fleet to its target? — **needed by M3.2**
+
+**The finding (M3, m5).** Ring slots at a 90-unit spacing put three of ten fighters inside point defense at a
+500-unit standoff. Pursuing to contact feeds every attacker to point defense, and pursuing to range stacks
+the fleet on its own approach line. Separately, the intake acknowledges an Attack without resolving its
+target, so an Attack on your own ship would become a free follow verb if pursuit were written literally.
+
+- **Pursue to a standoff, on an arc.** The standoff radius is the target's longest weapon range plus 100.
+  Slots sit a hull's width apart along the circle, assigned nearest first with identity ties as
+  `OrderFleetTo` does. The overflow goes to a second arc 90 further out, and the slots are re-solved when the
+  target has moved a spacing. This is the "different slot layout" Q19 promised.
+- **Keep the hex rings at half spacing** for attacks: 45 units, which fits nineteen fighters in the band.
+
+**Recommendation: the arc**, and M3.2 resolves the target with `ResolveWireIdentity`. It refuses and
+acknowledges an unresolved target or an own one, like every other refusal past the sequence check.
+
+### Q68 — Do weapons have arcs? — **needed by M3.2**
+
+**The finding (M11), half overtaken.** The review found no turning at all and recommended 360° weapons, with
+facing derived on the client. Q59 has since given ships a host-side heading that turns at a derived rate, so
+facing exists and is hashed. What is left is whether ADR-004's "range and arc are checked at the fire tick"
+means an arc. With no formation logic that faces a target, an arc makes an engagement's outcome depend on
+approach geometry that no order controls.
+
+- **360° weapons for the MVP.** One range check; the heading stays presentation for combat. Reopen with
+  the Cruiser at M4.4, which is when mass and turn rate are meant to matter.
+- **Arcs now**, with an attack order that turns a ship to bear, which Q67's arc would have to own.
+
+**Recommendation: 360° for the MVP**, and strike "arc" from M3.2's done-when and from ADR-004 until M4.4.
+
+### Q69 — Finite ore: which specification, what numbers, and is there a forward unload point? — **needed by M3.9**
+
+**The finding (M10).** M3.9 is specified two incompatible ways: TechnicalDesign §4 has an ordinary record
+owned by nobody, and the plan has a sparse list in a `Snapshot.cpp` that no longer exists. Neither states
+its numbers. And a contested rock is an economic null at this map's scale whatever it holds: a miner
+unloading at home earns 0.67 to 1.33 a second from one, because the flight binds, not the quantity.
+
+- **Host-side finite ore, a husk and a retarget, in `GameLogic` only**: no wire change, no ore number in
+  the panel, pinned in the determinism script. 200 ore per home rock on Q62's field and 600 per contested
+  rock. **Plus a fifth placed design as a forward unload point**: a depot with 1,500 hull at 300 credits,
+  placed at least 2,000 from every station and within 800 of a rock, at most two a player. Measured: 12 to
+  19 fighters at 300 s against 6 to 9, and last-minute income of 10 to 45 a second against 4 to 12. No line
+  in `MiningSystem` changes.
+- **No depot**: move the contested clusters to 3,000–3,500 from the origin, and say in §3 that nobody but
+  their owner contests them.
+- **Rocks as entities**, if the panel must show ore: the ore bucket rides the hull byte, at +44 entities.
+  Never the sparse list.
+
+**Recommendation: host-side finite ore and the depot.** The depot is the one addition the review makes
+against the scope cut list, which is why it is the owner's decision and not an agent's.
+
+### Q70 — What does a restart keep, and how does a client learn one happened? — **needed by M3.8**
+
+**The finding (M8).** `BeginMatch` drops every seat, so a match ends in a one-second blackout, and clients
+re-seat in arrival order: sides can swap, and a human can take an AI's base. No result is shown. ADR-013's
+proposed detector, the tick going backwards, cannot fire, because `BeginMatch` never resets the tick.
+
+- **Keep seats across `BeginMatch`**, reserve AI seats, and add two bytes to the update header: a match
+  generation and a winner. That takes the header from 21 to 23 bytes, protocol 6, with 100 records an update
+  unchanged. A client that sees a new generation shows the result, re-joins with its token, clears its
+  selection and markers, and recenters. The tick stays monotonic.
+- **A `MatchEnded` packet repeated for ten ticks**, which costs no header bytes and adds a third record type.
+
+**Recommendation: the header bytes, with seats kept.** B4's salt (ADR-013 as amended) already keeps "same
+token, same side" within a host run. `Scripts/DatagramBudget.py` is run before either lands.
+
+### Q71 — What answers M3.11's balance questions: twenty matches against a stub, or the harness? — **needed by M3.11**
+
+**The finding (M15).** The stub as planned never defends, escorts or raids modules. A human raiding it meets
+no response, and a human it attacks always responds. So M3.11's raid, safe-zone and match-length questions
+would be answered by the stub's absences. Those questions are arithmetic, which the deterministic harness
+answers in milliseconds.
+
+- **Split M3.11.** First a harness gate: twenty scripted matches (a rush against an idle defender, a mirror,
+  a raid against fleeing miners, a module raid at the standoff) whose figures are written into §7 and re-run
+  whenever a constant moves, ported into `GameLogicTests`. Then **five human matches** for what arithmetic
+  cannot answer: alert habituation, tap precision, orbit and panel legibility. The stub gets one defend
+  reflex.
+- **Twenty human matches on two devices**, accepting that one person on both sides answers nothing about
+  balance.
+
+**Recommendation: the split.** It challenges `GameDesign.md` §10's "the only mechanism", so it is the
+owner's call.
+
+### Q72 — Which confirmations block M3.11, and in what order is M3 built? — **needed now, before M3 starts**
+
+**The finding (B6, M16, M17, m16).** About thirty hardware confirmations are owed. The steps open them about
+three times as fast as the evenings close them: in the review's window, about twenty opened against seven
+closed. Every one is treated as blocking. M3 puts the two steps that make a match exist, restart and the
+stub, ninth and twelfth. Five documents carry the same status paragraph. Each pin move asks for a four-pair
+run, and M3 moves the pin at least five times. One WIP commit reached `main` through a pull request.
+
+- **Three gate classes in `Plan/README.md`.** Class A blocks M3.11: M3.0, Q66, Q62, one four-pair run at M3's
+  entry and one at its exit, and M2.14 as a five-minute number. Class B is folded into the first three M3.11
+  matches. Class C is deferred past M3.11 with the reason written. **The four-pair run happens at milestone
+  boundaries only**, as `Plan/README.md` already says. There is **one status paragraph**, in
+  `Plan/README.md`, and a step's annotation is the six-line report. **M3 is reordered** to
+  M3.0 → M3.1 → M3.2 → M3.4 → M3.7 → M3.8 → M3.10, then the raid content. **A WIP commit is squashed before
+  merge.**
+- **One consolidated "confirmations owed" table** in `Plan/README.md`, with every gate otherwise as written.
+
+**Recommendation: the classes, the order and the single status paragraph.** The four-pair run this
+change's pin move owes (ADR-002) is class A under this rule, and is made once at M3's entry.
+
+### Q73 — What is the stress target for the MVP? — **needed by M1.14b's owed runs**
+
+**The finding (M13).** ADR-024 says the accumulator costs "nothing" at 100 clients. It costs 51.5 to 53.4 ms
+a tick on the review's VM, the whole tick. Every record is built twice per client and every candidate is
+fully sorted. At two players it costs 16 µs and at four, 77 µs.
+
+- **Eight seats for the MVP.** M1.14b's owed runs shrink to one seated-and-acknowledged run, which from a
+  laptop over Wi-Fi is also M0.5's wireless measurement. The churner, flooder, ceiling and fix go on a
+  post-MVP list, and the fix is taken whenever the accumulator is next touched: records built once, a lean
+  candidate, and `nth_element` then a sort of the top slice. Measured at 11.1 ms, with byte-identical output.
+- **Keep 100, and take the fix now.**
+
+**Recommendation: eight seats**, with the 51 ms figure recorded in ADR-024 as the reason.
+
+### Q74 — Does the game do the build chores for the player? — **needed by M3.11's human matches**
+
+**The finding (M14).** The best opening is 42 commands in 300 s, 34 of them builds: three to four gestures
+every seven seconds, with the station on screen and the panel open. A mis-tap replaces the item in
+progress. Every spawned miner needs a mine order by hand. New ships stack on one spawn point, so neither
+player can tell three fighters from thirty.
+
+- **Three small builds, none touching the wire.** A double tap on a build button arms repeat, re-sent by
+  the client when its block shows the slot empty and the credits cover the cost. A design that can mine is
+  ordered at spawn to the nearest rock with ore. Ships spawn on ring slots in front of the station, inside
+  point defense.
+- **A host-side queue four deep, plus a rally tap and a count badge**, costed with `DatagramBudget.py`.
+
+**Recommendation: the three small builds.**
+
+### Q75 — What weapon does the Cruiser carry, and what does it cost? — **needed by M4.4**
+
+**The finding (M18).** At 2,400 credits with four MassDrivers, the Cruiser loses to an equal cost of fighters
+before speed is considered. It moves at 62 units a second, not §7's 50. It cannot reach the enemy inside a
+five-minute match even if ordered at 0:00. So M4.7's "does speed counter mass" would answer a question about
+the damage table.
+
+- **A HeavyDriver row**: 50 dps a mount, with modifiers 40/100/60 against Small/Medium/Large. Numbers then
+  count, and kiting at 140 against 62 is the counter M4.7 tests. §7's 50 is corrected to 62.
+- **Keep the row and price it at 1,200.** It then beats four fighters and loses to eight.
+
+**Recommendation: the HeavyDriver row**, with the cost kept at 2,400 for the four-player format.
+
+### Q76 — Does the join check that both sides derived the same field, and does CI compile ARM64? — **needed before M3.9**
+
+**The finding (M12).** Nothing automated checks the one property that fails silently: the host and an
+ARM64 client deriving the same field. A defect there presents as a miner mining a rock the player cannot
+see. CI builds `Debug|x64` only.
+
+- **A 64-bit field hash on the join reply** (FNV-1a over `GenerateField` and `GenerateLayout`, from one
+  `GameCore` function both sides call). That takes the reply from 23 to 31 bytes, protocol 6, and a mismatch
+  is refused at join. **Plus a CI job that compiles** `GameLogicTests` and `GameCoreTests` for `Debug|ARM64`
+  on the x64 runner: compile only, minutes rather than a doubled pipeline.
+- **Run those two suites on a Windows ARM64 runner**, if the account has one, which would execute the pin
+  on ARM64 every push.
+
+**Recommendation: both halves of the first.** The CI half is a change to what `AGENTS.md` §6 says CI gates,
+which is the owner's.
+
+### Q77 — Six small rules the code took or the design left open — **each needed by the step named**
+
+The review's minors that are decisions rather than defects. Each has the review's default.
+
+1. **Does a shipyard lost mid-build slow the item already building?** (m6, M3.8b.) The build system fixes
+   the rate at the start, so M3.8b's exit criterion cannot be met. *Default: make progress rate-based, in
+   hundredths a tick. The alternative is rewriting M3.8b and §5 to "fixed at the start".*
+2. **Two module kinds, four slots, best-of-kind** (m10, §5). Two of the four slots can never do anything.
+   *Default: say so in §5 ("a second module of a kind adds hull and nothing else") and keep the cap.*
+3. **Is 50 ships a player a rule?** (m12, M3.9.) Nothing refuses a 51st. *Default: `BuildSystem::Start`
+   refuses at 50 ships, modules excluded, dimmed in the panel like the module cap.*
+4. **Four quiet decisions** (m13). The host seats three players without `--stress`; the record's three state
+   bits are "not settled" yet audited; research needs a per-player unlock byte no document budgets; the grid
+   is rebuilt inside mining while the tick has its own (Q61's "folding the two into one is owed").
+   *Default: refuse three without `--stress`; define the bits as idle, moving, mining, fleeing and engaged
+   in ADR-024; budget the unlock byte in TechnicalDesign §4 with Q70's header bytes; build one grid in
+   `Host` after movement.*
+5. **Host-only tuning overrides** (m14). Every M3.11 figure costs a rebuild and a redeploy. *Default: a
+   `Server --tuning` override of the host-only rows, hashed and printed beside the seed, and taken by the
+   determinism test too.*
+6. **The hit-value curve at M3.1** (m8). At the MVP it reproduces the size-class table exactly. *Default:
+   M3.1 builds the size-class table only, and the curve arrives with the first armor component.*
 
 ---
 

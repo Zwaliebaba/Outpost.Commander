@@ -89,8 +89,9 @@ ReplicaStore::AcceptResult ReplicaStore::Accept(const Update& _update, std::uint
 
   // **FORGETTING IS THE SWEEP** (ADR-024). The host sends every live entity within one sweep, so one that
   // has gone three without a record is not alive: it died while this client was away, or its removals
-  // were all lost, and either way it is never going to be refreshed again.
-  const std::uint32_t forgetTicks = FORGET_AFTER_SWEEPS * SweepTicks(m_liveEntityCount);
+  // were all lost, and either way it is never going to be refreshed again. **Never sooner than the link-loss
+  // second** (`FORGET_FLOOR_TICKS`), so a burst of loss the link survives does not pop what it did not kill.
+  const std::uint32_t forgetTicks = std::max(FORGET_AFTER_SWEEPS * SweepTicks(m_liveEntityCount), FORGET_FLOOR_TICKS);
   for (Held& held : m_held)
   {
     if ((held.count > 0) && ((m_newestTick - held.Newest().tick) > forgetTicks) && (held.Newest().tick < m_newestTick))

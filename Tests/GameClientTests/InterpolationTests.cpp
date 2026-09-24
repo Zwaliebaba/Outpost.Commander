@@ -323,20 +323,44 @@ public:
     Assert::AreEqual(std::int16_t{500}, drawn[0].positionX);
   }
 
-  /// **FORGETTING IS THE SWEEP.** One live entity is a sweep of one tick, so an entity three ticks
-  /// behind the newest update stays and one further behind is gone.
-  TEST_METHOD(AnEntityThreeSweepsSilentIsForgotten)
+  /// **FORGETTING IS THE SWEEP, AND NEVER INSIDE THE LINK-LOSS SECOND.** One live entity is a sweep of one
+  /// tick, so three sweeps is three ticks -- under the floor of twenty (the 2026-09-23 review, m2). An entity
+  /// twenty ticks behind the newest update stays and one further behind is gone.
+  TEST_METHOD(AnEntitySilentPastTheHorizonIsForgotten)
   {
     Outpost::ReplicaStore store;
     static_cast<void>(store.Accept(MakeUpdate(1, 0, 0, Outpost::PackIdentity(7, 1)), 1000));
 
     Outpost::Update quiet = MakeUpdate(4, 0, 0, Outpost::PackIdentity(8, 1));
     Assert::AreEqual(0u, store.Accept(quiet, 1150).forgotten, L"forgotten inside three sweeps");
+
+    quiet.tick = 1 + Outpost::ReplicaStore::FORGET_FLOOR_TICKS;
+    Assert::AreEqual(0u, store.Accept(quiet, 2000).forgotten, L"forgotten inside the link-loss second");
     Assert::AreEqual(std::size_t{2}, store.HeldCount());
 
-    quiet.tick = 5;
-    Assert::AreEqual(1u, store.Accept(quiet, 1200).forgotten);
+    quiet.tick = 2 + Outpost::ReplicaStore::FORGET_FLOOR_TICKS;
+    Assert::AreEqual(1u, store.Accept(quiet, 2050).forgotten);
     Assert::AreEqual(std::size_t{1}, store.HeldCount());
+  }
+
+  /// **PAST THE FLOOR THE SWEEP DECIDES**: at five thousand live entities a sweep is many ticks, and three of
+  /// them is longer than the floor, so the rule is still ADR-024's where the sweep is long.
+  TEST_METHOD(ALongSweepStillSetsTheHorizon)
+  {
+    const std::uint32_t sweep = Outpost::SweepTicks(5000);
+    Assert::IsTrue((Outpost::FORGET_AFTER_SWEEPS * sweep) > Outpost::ReplicaStore::FORGET_FLOOR_TICKS,
+                   L"the fixture does not reach past the floor");
+
+    Outpost::ReplicaStore store;
+    Outpost::Update first = MakeUpdate(1, 0, 0, Outpost::PackIdentity(7, 1));
+    first.liveEntityCount = 5000;
+    static_cast<void>(store.Accept(first, 1000));
+
+    Outpost::Update quiet = MakeUpdate(1 + (Outpost::FORGET_AFTER_SWEEPS * sweep), 0, 0, Outpost::PackIdentity(8, 1));
+    quiet.liveEntityCount = 5000;
+    Assert::AreEqual(0u, store.Accept(quiet, 2000).forgotten);
+    quiet.tick += 1;
+    Assert::AreEqual(1u, store.Accept(quiet, 2050).forgotten);
   }
 
   /// The own block follows the newest tick, so a late update cannot wind the credits back.

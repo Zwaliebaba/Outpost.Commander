@@ -21,10 +21,10 @@ namespace Outpost
 /// `GameLogicTests` can drive a full join, a full match and a reconnect with nothing bound.
 ///
 /// **R16 REACHES IT** -- `Scripts/CheckDeterminism.py` sweeps `GameLogic` -- and that is not a
-/// formality here. The token generator is `Neuron::Pcg32` seeded from the match, the table is a
-/// vector walked in insertion order, and there is no clock. A session's assignment is not part of
-/// the simulation, but a host that issues different tokens on two runs of the same match is a host
-/// whose suite cannot pin a reconnect.
+/// formality here. The token generator is `Neuron::Pcg32` seeded from a salt the caller supplies, the
+/// table is a vector walked in insertion order, and there is no clock. A session's assignment is not part
+/// of the simulation; what a suite needs is that one salt issues the same tokens, and what a host needs is
+/// that two runs do not (`SaltTokens`).
 class Sessions
 {
 public:
@@ -55,8 +55,19 @@ public:
     SessionToken token = NO_SESSION_TOKEN;
   };
 
+  /// **THE TOKEN STREAM BELONGS TO THE HOST RUN, NOT TO THE MATCH** (the 2026-09-23 review, B4). Seeds the
+  /// stream every token is drawn from; `Begin` does not reseed it, so a later match on this table continues
+  /// the stream rather than repeating it. The host calls this once, before the first join, with a salt its
+  /// shell read from the wall clock -- the seam where R16 allows wall time -- and a suite passes a constant.
+  ///
+  /// Tokens used to be a pure function of the match seed and the join order. A host restarted on the same
+  /// seed then issued last evening's tokens again, in the new join order, and two returning clients that
+  /// arrived the other way round evicted each other from seat 1 every second with seat 2 never taken.
+  void SaltTokens(std::uint64_t _salt) noexcept;
+
   /// Seats a match: how many slots it has and what seed every joining client is told. Clears
-  /// whatever was held before, which is what starting another match means.
+  /// whatever was held before, which is what starting another match means. **It does not reseed the
+  /// token stream** (`SaltTokens`), so no token a previous match issued names a seat of this one.
   ///
   /// _playerCount above MAX_PLAYERS is clamped rather than refused -- `PlayerCountAllowed` refuses it
   /// before any caller gets here, and there is no useful thing to return.
@@ -125,7 +136,8 @@ private:
   std::size_t m_playerCount = 0;
   std::uint64_t m_matchSeed = 0;
 
-  /// Reseeded by `Begin`, so two runs of one match issue the same tokens and a suite can pin them.
+  /// Seeded by `SaltTokens` and never by `Begin`: one stream for the life of the table, so a suite that
+  /// passes one salt can still pin a reconnect, and a host restart with a new salt issues new names.
   Neuron::Pcg32 m_tokens{0, TOKEN_STREAM};
 };
 

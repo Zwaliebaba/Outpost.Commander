@@ -99,8 +99,11 @@ Drain incoming commands, then: orders, AI, movement, weapons, mining, build queu
 **Mining is a standing order and therefore the one system that re-issues work to itself** — a miner that
 unloads is given its next destination inside the same pass, which keeps the cycle on the tick and out of
 the command path. One pass, fixed order, no system reading another's half-updated output. At the end of
-the tick the host computes a **state hash** over every entity's identity, position, heading and hull,
-which is what the determinism test asserts and what a desynchronisation report would carry.
+the tick the host computes a **state hash** over every entity's identity, position, heading, hull, hull
+points, owner and mine order, and a **match hash** that adds each player's credits, income owed and item
+building — widened on 2026-09-24 after the mid-implementation review (M6) found the hash blind to everything
+M3's damage and the economy write (ADR-002). The match hash is what the determinism test asserts and what a
+desynchronisation report would carry.
 
 ---
 
@@ -264,6 +267,14 @@ carry a per-player sequence number and are **repeated in every outgoing packet u
 `lastCommandSeqApplied` field the update's own player block carries. The host applies in sequence order and ignores
 anything at or below what it has applied. Reliable ordered delivery for the one channel that needs it, in
 about thirty lines, with no general reliability layer.
+
+**Both clients do it since 2026-09-24.** Until then only the Bot resent; the packaged client sent each
+command once, so a lost datagram was a lost order and its marker stayed on screen (the mid-implementation
+review, M5). `ClientFrame` now holds every command until its sequence is acknowledged and packs the
+outstanding ones, oldest first, into every packet it sends, the quarter-second view report included. **A
+command still unacknowledged after two seconds is given up, with its marker**, since the host acknowledges
+every command it has decided on — **a refusal past the sequence check is acknowledged too** (Q24 as
+amended), and a dead ship in a selection is skipped rather than refusing the order.
 
 **A mine order names its rock by index** (M2.6, `OpenQuestions.md` Q52): `Mine` is command type 5, carrying
 the rock's position in `GenerateField`'s order in `targetX`. Asteroids are not entities before M3 (Q22), and
