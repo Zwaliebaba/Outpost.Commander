@@ -14,7 +14,8 @@ namespace
 /// `ModuleFrame` and the five asteroids are not here -- no design draws the first, and the second are
 /// `AsteroidMesh`'s, baked per match rather than instanced per entity.
 constexpr std::array<std::string_view, SHIPPED_MESH_COUNT> SHIPPED_MESHES{
-  "Scout", "Frigate", "Station", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2", "Cruiser"};
+  "Scout",   "Frigate",    "Station", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2",
+  "Cruiser", "ModuleFrame"};
 
 /// **A CHANNEL, AS A FRACTION.** The file stores the colour as a 32-bit DWORD the converter wrote
 /// little-endian, so the low byte is red: `0x00BBGGRR` with alpha on top.
@@ -83,6 +84,10 @@ std::string_view MeshNameForDesign(DesignId _design) noexcept
     return "ModuleOreProcessorL1";
   case DesignId::ModuleOreProcessorL2:
     return "ModuleOreProcessorL2";
+  case DesignId::ModuleResearchStationL1:
+    // **NOTHING AUTHORED A RESEARCH STATION** (M4.4b, Q85): it draws the bare module frame, which no other design draws,
+    // so it is at least a shape of its own, until the mesh handoff has one.
+    return "ModuleFrame";
   case DesignId::Miner:
   case DesignId::Fighter:
   case DesignId::Station:

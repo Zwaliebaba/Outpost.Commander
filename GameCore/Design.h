@@ -41,7 +41,11 @@ enum class DesignId : std::uint8_t
 
   /// **THE HEAVY DESIGN, REINSTATED** (M4.4, `OpenQuestions.md` Q75): a `Cruiser` hull, a `BurnDrive` and four
   /// `HeavyDriver`s. Appended, because an identity is on the wire.
-  Cruiser
+  Cruiser,
+
+  /// **THE RESEARCH STATION** (M4.4b, `OpenQuestions.md` Q85): a module frame carrying `ResearchStationL1`, placed by a
+  /// tap like the other modules. There is no level two.
+  ModuleResearchStationL1
 };
 
 /// The largest slot count any hull in the catalog has -- the `Cruiser`'s four.
@@ -86,5 +90,21 @@ struct DesignEntry
 
 /// The row an identity names. Total, for the reason `Hull` is.
 [[nodiscard]] const DesignEntry& Design(DesignId _id) noexcept;
+
+/// **THE UNLOCK BITS A DESIGN NEEDS** (M4.4b, Q85): every component it carries that has one. Zero for a design any
+/// player may build from the start. **One predicate over component identity**, as R24 wants: nothing here knows that
+/// the Cruiser is the design research gates.
+[[nodiscard]] std::uint8_t RequiredUnlocks(DesignId _design) noexcept;
+
+/// Whether a player whose unlock byte is `_unlocked` may build `_design`. The host refuses on it and the client dims
+/// on it -- the same rule on both sides (R19).
+[[nodiscard]] bool DesignUnlocked(DesignId _design, std::uint8_t _unlocked) noexcept;
+
+/// The shipyard level `_design` needs, which is its hull's (Q84, Q85). Zero for what no station builds.
+[[nodiscard]] std::uint8_t RequiredShipyardLevel(DesignId _design) noexcept;
+
+/// **A PLAYER'S SHIPYARD LEVEL**: the highest level among the modules they own, or zero with none. The host passes
+/// the designs of its modules in the world and the client the ones it was sent.
+[[nodiscard]] std::uint8_t ShipyardLevelOf(std::span<const DesignId> _modules) noexcept;
 
 } // namespace Outpost

@@ -181,8 +181,79 @@ public:
     Assert::IsTrue(
       Same(ItemAt(without, Outpost::BUTTON_COST.Within(Outpost::BUILD_BUTTON_SHIP_0), Outpost::HudItem::Kind::Text)->color, TEXT_DIM));
 
-    Assert::AreEqual(std::size_t{3}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL1}))));
-    Assert::AreEqual(std::size_t{3}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL2}))));
+    // Q85: A LEVEL-ONE YARD BUILDS THE TWO OLD SHIPS, and the Cruiser wants a level-two yard AND the HeavyDriver.
+    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL1}))));
+    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL2}))));
+    Outpost::HudState researched = Open(5000, {Outpost::DesignId::ModuleShipyardL2});
+    researched.unlocked = 0x01;
+    Assert::AreEqual(std::size_t{3}, shipTargets(Outpost::BuildHud(researched)));
+    Outpost::HudState smallYard = Open(5000, {Outpost::DesignId::ModuleShipyardL1});
+    smallYard.unlocked = 0x01;
+    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(smallYard)), L"a Cruiser on a level-one yard");
+  }
+};
+
+/// M4.4b, `OpenQuestions.md` Q85. **The research row**: the research station's button, and the research button's four looks.
+TEST_CLASS(TheResearchRow)
+{
+public:
+  [[nodiscard]] static const Outpost::HudTarget* ResearchTarget(const Outpost::HudFrame& _frame)
+  {
+    for (const Outpost::HudTarget& target : _frame.hits.Targets())
+    {
+      if (target.action == Outpost::HudAction::Research)
+      {
+        return &target;
+      }
+    }
+    return nullptr;
+  }
+
+  /// The research station arms a placement like any placed module, from its own place in the new row.
+  TEST_METHOD(TheResearchStationArmsAPlacement)
+  {
+    const Outpost::HudFrame frame = Outpost::BuildHud(Open(5000, {}));
+    Assert::IsTrue(IsTarget(frame, Outpost::DesignId::ModuleResearchStationL1));
+    Assert::IsTrue(Same(ItemAt(frame, Outpost::BUILD_BUTTON_RESEARCH_STATION, Outpost::HudItem::Kind::Solid)->color, PLATE));
+  }
+
+  /// **NO RESEARCH STATION: HATCHED AND NO TARGET.** With one: a target naming the HeavyDriver. Running: no target.
+  /// Researched: no target.
+  TEST_METHOD(TheResearchButtonNeedsAStationAndGoesQuietWhileRunningAndWhenDone)
+  {
+    Assert::IsNull(ResearchTarget(Outpost::BuildHud(Open(5000, {}))), L"research with no research station");
+    Assert::IsTrue(
+      Same(ItemAt(Outpost::BuildHud(Open(5000, {})), Outpost::BUILD_BUTTON_RESEARCH, Outpost::HudItem::Kind::Solid)->color, PLATE_DIM));
+
+    const Outpost::HudState ready = Open(5000, {Outpost::DesignId::ModuleResearchStationL1});
+    const Outpost::HudFrame readyFrame = Outpost::BuildHud(ready);
+    const Outpost::HudTarget* target = ResearchTarget(readyFrame);
+    Assert::IsNotNull(target);
+    Assert::AreEqual(static_cast<int>(Outpost::ComponentId::HeavyDriver), static_cast<int>(target->argument));
+
+    Outpost::HudState running = ready;
+    running.researchProgress = 41;
+    Assert::IsNull(ResearchTarget(Outpost::BuildHud(running)), L"a second order while one runs would be refused");
+
+    Outpost::HudState done = ready;
+    done.unlocked = 0x01;
+    Assert::IsNull(ResearchTarget(Outpost::BuildHud(done)));
+  }
+
+  /// Unaffordable stays a target, as a ship button does: the host refuses it.
+  TEST_METHOD(AnUnaffordableResearchIsStillATarget)
+  {
+    Assert::IsNotNull(ResearchTarget(Outpost::BuildHud(Open(100, {Outpost::DesignId::ModuleResearchStationL1}))));
+  }
+
+  /// The order it sends names the component, and nothing else.
+  TEST_METHOD(TheResearchOrderNamesTheComponent)
+  {
+    const Outpost::Command order = Outpost::ResearchCommand(7, Outpost::ComponentId::HeavyDriver);
+    Assert::IsTrue(order.type == Outpost::CommandType::Research);
+    Assert::AreEqual(static_cast<int>(Outpost::ComponentId::HeavyDriver), static_cast<int>(order.TargetDesign()));
+    Assert::IsTrue(order.selection.empty());
+    Assert::IsTrue(Outpost::ResearchableComponent() == Outpost::ComponentId::HeavyDriver);
   }
 };
 

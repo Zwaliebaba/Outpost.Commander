@@ -136,6 +136,14 @@ std::uint64_t MatchHash(const World& _world, const BuildSystem& _build, const Ec
     FoldFixed(hash, item.site.y);
     FoldIdentity(hash, item.upgrade);
 
+    // Q85: WHAT IS RESEARCHED AND WHAT IS RUNNING, which are paid for and therefore state.
+    FoldByte(hash, _build.Unlocked(player));
+    const ResearchItem& research = _build.Research(player);
+    FoldByte(hash, static_cast<std::uint8_t>(research.active ? 1 : 0));
+    FoldByte(hash, static_cast<std::uint8_t>(research.component));
+    FoldUInt32(hash, research.ticksElapsed);
+    FoldUInt32(hash, research.ticksRequired);
+
     // Q80: THE QUEUE, which is paid for and therefore state. Its length first, so two queues that differ only in
     // where one ends cannot hash alike.
     FoldUInt32(hash, static_cast<std::uint32_t>(_build.Queued(player).size()));

@@ -412,7 +412,9 @@ public:
     // retargets a rock nobody has. The same on all four MSVC pairs before it was pinned.
     // **A FIFTEENTH TIME, THE SAME DAY (Q84)**: each player starts with two miners and a fighter and 500 credits, and a
     // ship needs a shipyard, so the script places one first. The same on all four MSVC pairs before it was pinned.
-    Assert::AreEqual(0xf8edb93764daa3e6ull, RunScriptedMatch().hash);
+    // **A SIXTEENTH (M4.4b, Q85)**: the hash folds each player's unlocks and research in progress. The same on all four
+    // MSVC pairs before it was pinned.
+    Assert::AreEqual(0x177f46af39d2737eull, RunScriptedMatch().hash);
   }
 
   /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI

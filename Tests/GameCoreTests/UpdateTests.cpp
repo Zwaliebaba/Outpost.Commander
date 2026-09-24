@@ -41,7 +41,12 @@ inline constexpr std::size_t SCRATCH_BYTES = 4096;
   update.sequence = 4242;
   update.tick = 123456;
   update.liveEntityCount = 5500;
-  update.own = Outpost::PlayerBlock{.credits = 1234, .lastCommandSequenceApplied = 77, .buildingDesign = 2, .buildProgressPercent = 41};
+  update.own = Outpost::PlayerBlock{.credits = 1234,
+                                    .lastCommandSequenceApplied = 77,
+                                    .buildingDesign = 2,
+                                    .buildProgressPercent = 41,
+                                    .unlocked = 0x01,
+                                    .researchProgress = 58};
 
   for (std::size_t record = 0; record < _records; ++record)
   {
@@ -105,16 +110,18 @@ public:
     }
   }
 
-  /// **TWENTY-TWO BYTES AT ANY PLAYER COUNT.** The full snapshot carried a block per player; an update
+  /// **TWENTY-FOUR BYTES AT ANY PLAYER COUNT.** The full snapshot carried a block per player; an update
   /// carries the recipient's alone (ADR-024), which is what lets a hundred players fit. Twenty-one until Q83's
-  /// spent-rock count byte.
-  TEST_METHOD(TheHeaderIsTwentyTwoBytes)
+  /// spent-rock count byte, twenty-two until Q85's two research bytes.
+  TEST_METHOD(TheHeaderIsTwentyFourBytes)
   {
-    Assert::AreEqual(std::size_t{22}, Outpost::UPDATE_HEADER_BYTES);
-    Assert::AreEqual(std::size_t{22}, Outpost::EncodedSize(MakeUpdate(0, 0, 0)));
+    Assert::AreEqual(std::size_t{24}, Outpost::UPDATE_HEADER_BYTES);
+    Assert::AreEqual(std::size_t{24}, Outpost::EncodedSize(MakeUpdate(0, 0, 0)));
 
     Outpost::Update received;
-    Assert::AreEqual(std::size_t{22}, RoundTrip(MakeUpdate(0, 0, 0), received));
+    Assert::AreEqual(std::size_t{24}, RoundTrip(MakeUpdate(0, 0, 0), received));
+    Assert::AreEqual(std::uint8_t{0x01}, received.own.unlocked, L"Q85's unlock byte");
+    Assert::AreEqual(std::uint8_t{58}, received.own.researchProgress, L"Q85's research byte");
   }
 
   /// **Q83: THE SPENT-ROCK MASK ROUND TRIPS**, one byte a byte, and a mask past eleven bytes is refused.
@@ -354,23 +361,24 @@ public:
   /// is the encoder agreeing, written through the logger so it lands in every CI log.
   TEST_METHOD(AFullUpdateIsOneDatagramAndItsFigureIsRecorded)
   {
-    // 98 SINCE Q83: the spent-rock mask at its largest, eleven bytes, and its count byte ride beside them.
-    Outpost::Update full = MakeUpdate(98, 3, 2);
+    // 98 SINCE Q83: the spent-rock mask at its largest, eleven bytes, and its count byte ride beside them. 97 SINCE Q85's
+    // two research bytes, with ten to spare -- a ninety-eighth record is twelve.
+    Outpost::Update full = MakeUpdate(97, 3, 2);
     full.spentRocks.assign(Outpost::MAX_SPENT_ROCK_BYTES, 0xFF);
     std::vector<std::byte> buffer(SCRATCH_BYTES);
     Neuron::ByteWriter writer{buffer};
     Assert::IsTrue(Outpost::Encode(full, writer));
     const std::size_t size = writer.WrittenBytes();
 
-    Logger::WriteMessage((std::wstring{L"UPDATE 98 records, 3 removals, 2 fires, a full spent-rock mask: "} + std::to_wstring(size) +
+    Logger::WriteMessage((std::wstring{L"UPDATE 97 records, 3 removals, 2 fires, a full spent-rock mask: "} + std::to_wstring(size) +
                           L" bytes of " + std::to_wstring(Outpost::UPDATE_PAYLOAD_BYTES) + L"\n")
                            .c_str());
 
-    Assert::AreEqual(std::size_t{1232}, size, L"98 records, the repeated facts and the mask fill the payload exactly");
+    Assert::AreEqual(std::size_t{1222}, size, L"97 records, the repeated facts and the mask, ten bytes short of the payload");
     Assert::IsTrue(size <= Outpost::UPDATE_PAYLOAD_BYTES);
 
-    // And a ninety-ninth record does not fit beside them, which is what makes 98 the figure.
-    Outpost::Update over = MakeUpdate(99, 3, 2);
+    // And a ninety-eighth record does not fit beside them, which is what makes 97 the figure.
+    Outpost::Update over = MakeUpdate(98, 3, 2);
     over.spentRocks.assign(Outpost::MAX_SPENT_ROCK_BYTES, 0xFF);
     Assert::IsTrue(Outpost::EncodedSize(over) > Outpost::UPDATE_PAYLOAD_BYTES);
   }

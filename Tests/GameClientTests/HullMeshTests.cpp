@@ -218,11 +218,11 @@ public:
     Assert::IsTrue(Outpost::MeshNameForDesign(static_cast<Outpost::DesignId>(99)).empty());
   }
 
-  /// **EIGHT MESHES SHIP**: M1.9's three, M2.10b's four module levels and M4.4's Cruiser, and every one of them is a
-  /// mesh the manifest has.
-  TEST_METHOD(TheEightShippedMeshesAreInTheCatalog)
+  /// **NINE MESHES SHIP**: M1.9's three, M2.10b's four module levels, M4.4's Cruiser and the bare frame M4.4b's research
+  /// station borrows -- and every one of them is a mesh the manifest has.
+  TEST_METHOD(TheNineShippedMeshesAreInTheCatalog)
   {
-    Assert::AreEqual(static_cast<std::size_t>(8), Outpost::ShippedMeshes().size());
+    Assert::AreEqual(static_cast<std::size_t>(9), Outpost::ShippedMeshes().size());
     for (const std::string_view name : Outpost::ShippedMeshes())
     {
       Assert::IsNotNull(Outpost::FindMesh(name));

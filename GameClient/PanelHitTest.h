@@ -46,7 +46,10 @@ enum class HudAction : std::uint8_t
 
   /// **A DAMAGE ALERT, TAPPED** (M3.3b, the handoff's rule 7): the camera recenters where it points. The argument is the
   /// alert's index in `HudState::alerts`. A hit rectangle and not a gesture, so R21's budget is untouched.
-  RecenterOnAlert
+  RecenterOnAlert,
+
+  /// **STARTS RESEARCH** (M4.4b, `OpenQuestions.md` Q85). The argument is the `ComponentId`.
+  Research
 };
 
 /// One rectangle the hit test knows about. R8: a public aggregate.

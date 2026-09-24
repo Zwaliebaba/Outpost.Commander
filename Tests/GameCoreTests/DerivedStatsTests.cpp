@@ -70,6 +70,35 @@ public:
     Assert::IsTrue(Outpost::Design(Outpost::DesignId::Cruiser).buildable);
   }
 
+  /// **M4.4b: RESEARCH AND THE YARD ARE ROWS TOO** (Q85). The Cruiser needs the HeavyDriver's bit and a level-two
+  /// shipyard; the two old ships need neither bit and a level-one yard; and a player's level is the best yard they own.
+  TEST_METHOD(ResearchAndTheYardLevelAreReadFromTheRows)
+  {
+    Assert::AreEqual(std::uint8_t{0x01}, Outpost::RequiredUnlocks(Outpost::DesignId::Cruiser));
+    Assert::AreEqual(std::uint8_t{0}, Outpost::RequiredUnlocks(Outpost::DesignId::Fighter));
+    Assert::IsFalse(Outpost::DesignUnlocked(Outpost::DesignId::Cruiser, 0));
+    Assert::IsTrue(Outpost::DesignUnlocked(Outpost::DesignId::Cruiser, 0x01));
+    Assert::IsTrue(Outpost::DesignUnlocked(Outpost::DesignId::Miner, 0));
+
+    Assert::AreEqual(std::uint8_t{1}, Outpost::RequiredShipyardLevel(Outpost::DesignId::Miner));
+    Assert::AreEqual(std::uint8_t{1}, Outpost::RequiredShipyardLevel(Outpost::DesignId::Fighter));
+    Assert::AreEqual(std::uint8_t{2}, Outpost::RequiredShipyardLevel(Outpost::DesignId::Cruiser));
+    Assert::AreEqual(std::uint8_t{0}, Outpost::RequiredShipyardLevel(Outpost::DesignId::Station));
+
+    const std::vector<Outpost::DesignId> none{};
+    const std::vector<Outpost::DesignId> one{Outpost::DesignId::ModuleOreProcessorL1, Outpost::DesignId::ModuleShipyardL1};
+    const std::vector<Outpost::DesignId> two{Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleShipyardL2};
+    Assert::AreEqual(std::uint8_t{0}, Outpost::ShipyardLevelOf(none));
+    Assert::AreEqual(std::uint8_t{1}, Outpost::ShipyardLevelOf(one));
+    Assert::AreEqual(std::uint8_t{2}, Outpost::ShipyardLevelOf(two));
+
+    // The research station is a module, 500 credits, and does nothing but let research run.
+    Assert::AreEqual(500u, Outpost::Derive(Outpost::DesignId::ModuleResearchStationL1).cost);
+    Assert::IsTrue(Outpost::Component(Outpost::ComponentId::ResearchStationL1).effect == Outpost::ModuleEffect::Research);
+    Assert::AreEqual(600, static_cast<int>(Outpost::Component(Outpost::ComponentId::HeavyDriver).researchCostCredits));
+    Assert::AreEqual(60, static_cast<int>(Outpost::Component(Outpost::ComponentId::HeavyDriver).researchSeconds));
+  }
+
   /// A station is a row in the same table, with no drive and two mounts.
   TEST_METHOD(TheStationIsADesignWithNoDrive)
   {
@@ -159,12 +188,12 @@ public:
         }
       }
     }
-    // Three drives x nine components x the sum over hulls of (slotCount + 1), which is
+    // Three drives x ten components x the sum over hulls of (slotCount + 1), which is
     // 2 + 3 + 5 + 3 + 2 + 1 = 16 for a Scout, Frigate, Cruiser, Station, ModuleFrame and M3.9's slotless DepotFrame.
-    // 3 x 9 x 16, nine since M4.4's HeavyDriver.
+    // 3 x 10 x 16: nine since M4.4's HeavyDriver, ten since M4.4b's research station.
     // The count is asserted so that a catalog row added without a thought cannot quietly shrink
     // this sweep -- which is the only thing making "every combination" mean anything.
-    Assert::AreEqual(static_cast<std::size_t>(432), combinations);
+    Assert::AreEqual(static_cast<std::size_t>(480), combinations);
   }
 
   /// A component past the hull's slot count is not the hull's business. A malformed design must not

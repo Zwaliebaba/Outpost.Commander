@@ -865,6 +865,25 @@ void RunProbe(const CoreWindow& _window)
           }
           break;
 
+        case Outpost::HudAction::Research:
+          // M4.4b (Q85): a station order, sent at once like a build.
+          if (clientFrame.CurrentJoin().IsJoined() && (state == Neuron::TransportState::Ready))
+          {
+            const std::uint16_t sequence = clientFrame.TakeCommandSequence();
+            Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
+            clientFrame.StampView(packet);
+            clientFrame.IssueCommand(Outpost::ResearchCommand(sequence, static_cast<Outpost::ComponentId>(hudHit.argument)), nowMs);
+            static_cast<void>(clientFrame.FillOutstanding(packet));
+
+            std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
+            Neuron::ByteWriter commandWriter{outgoing};
+            const bool sent = Outpost::Encode(packet, commandWriter) &&
+                              transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
+            Report(log, "HUD research component " + std::to_string(hudHit.argument) + " seq=" + std::to_string(sequence) +
+                          (sent ? " sent" : " NOT SENT"));
+          }
+          break;
+
         case Outpost::HudAction::ArmModule:
           // **ARMING SENDS NOTHING.** The tap on the plane that follows is the order (M2.11).
           moduleArming.Toggle(design);
@@ -1630,6 +1649,8 @@ void RunProbe(const CoreWindow& _window)
           hudState.credits = own->credits;
           hudState.buildingWire = own->buildingDesign;
           hudState.buildProgressPercent = own->buildProgressPercent;
+          hudState.unlocked = own->unlocked;
+          hudState.researchProgress = own->researchProgress;
           creditFlash.Observe(own->credits, nowMs);
         }
 

@@ -240,11 +240,13 @@ inline constexpr HudRect CLEAR_LABEL{0, 22, 96, 20};
 // Build -- bottom, on the reaching hand's side.
 // ===================================================================================================
 
-inline constexpr HudRect BUILD_PANEL{880, 640, 560, 320};    // geometry: build.panel
-inline constexpr HudRect BUILD_RULE_TOP{880, 640, 560, 1};   // geometry: build.rule.top
-inline constexpr HudRect BUILD_RULE_INNER{880, 640, 1, 320}; // geometry: build.rule.inner
-inline constexpr HudRect BUILD_TICK_TOP_INNER{880, 640, 16, 2};
-inline constexpr HudRect BUILD_TICK_TOP_OUTER{1424, 640, 16, 2};
+// **112 TALLER SINCE M4.4b** (the owner, 2026-09-24, Q85): a third row on top, for research. It grows upward, so every
+// row below it stays where the handoff put it.
+inline constexpr HudRect BUILD_PANEL{880, 528, 560, 432};    // geometry: build.panel
+inline constexpr HudRect BUILD_RULE_TOP{880, 528, 560, 1};   // geometry: build.rule.top
+inline constexpr HudRect BUILD_RULE_INNER{880, 528, 1, 432}; // geometry: build.rule.inner
+inline constexpr HudRect BUILD_TICK_TOP_INNER{880, 528, 16, 2};
+inline constexpr HudRect BUILD_TICK_TOP_OUTER{1424, 528, 16, 2};
 inline constexpr HudRect BUILD_TICK_BOTTOM_INNER{880, 944, 2, 16};
 
 /// **THE SHIP ROW, BY PLACE AND NOT BY NAME.** The handoff labels them with the two MVP designs; the
@@ -268,6 +270,11 @@ inline constexpr HudRect BUILD_BUTTON_DEPOT{1168, 656, 120, 96};
 /// **THE SHIP ROW'S THIRD SHIP** (M4.4): the Cruiser, the third buildable design in table order, in the row's last free
 /// place. Not in `geometry.json` for the depot's reason -- the handoff predates it -- and at the ship buttons' size.
 inline constexpr HudRect BUILD_BUTTON_SHIP_2{1304, 656, 120, 96};
+
+/// **THE RESEARCH ROW** (M4.4b, the owner's layout, Q85): the research station, placed as a module is, and the button
+/// that starts research. Untagged for the depot's reason, at the ship buttons' size and 16 clear of the row below.
+inline constexpr HudRect BUILD_BUTTON_RESEARCH_STATION{896, 544, 120, 96};
+inline constexpr HudRect BUILD_BUTTON_RESEARCH{1032, 544, 120, 96};
 
 /// Inside a build button, as offsets from the button.
 inline constexpr HudRect BUTTON_INDEX{0, 0, 4, 96};          // geometry: build.btn.index

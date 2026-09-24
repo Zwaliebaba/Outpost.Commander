@@ -70,6 +70,11 @@ struct HudState
   std::uint8_t buildingWire = 0;
   std::uint8_t buildProgressPercent = 0;
 
+  /// **RESEARCH** (M4.4b, `OpenQuestions.md` Q85), as the player's own block carries it: the unlock byte, and zero for
+  /// no research running or its percent plus one.
+  std::uint8_t unlocked = 0;
+  std::uint8_t researchProgress = 0;
+
   /// **THE ARMED MODULE, IF ONE IS** (M2.11). Client-local: the button draws armed, and a tap on the plane is
   /// the placement's.
   bool moduleArmed = false;
@@ -184,6 +189,13 @@ std::size_t NarrowToDesign(Selection& _selection, std::span<const EntityRecord> 
 /// the host refuses a station order that carries one (M1.6), because the order is the player's rather
 /// than any ship's.
 [[nodiscard]] Command BuildStationCommand(std::uint16_t _sequence, CommandType _type, DesignId _design) noexcept;
+
+/// **RESEARCH A COMPONENT** (M4.4b, Q85): a station order like a build, naming a component rather than a design.
+[[nodiscard]] Command ResearchCommand(std::uint16_t _sequence, ComponentId _component) noexcept;
+
+/// **THE COMPONENT THE RESEARCH BUTTON RESEARCHES**: the first in the catalog with an unlock bit -- the `HeavyDriver`,
+/// the only one (Q85). `None` if there were none.
+[[nodiscard]] ComponentId ResearchableComponent() noexcept;
 
 /// What `EmitQuads` needs from the glyph atlas, lifted out so a suite can supply it by hand.
 ///

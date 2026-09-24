@@ -27,6 +27,8 @@ void WritePlayerBlock(const PlayerBlock& _block, Neuron::ByteWriter& _writer) no
   static_cast<void>(_writer.WriteUInt16(_block.lastCommandSequenceApplied));
   static_cast<void>(_writer.WriteUInt8(_block.buildingDesign));
   static_cast<void>(_writer.WriteUInt8(_block.buildProgressPercent));
+  static_cast<void>(_writer.WriteUInt8(_block.unlocked));
+  static_cast<void>(_writer.WriteUInt8(_block.researchProgress));
 }
 
 [[nodiscard]] PlayerBlock ReadPlayerBlock(Neuron::ByteReader& _reader) noexcept
@@ -36,6 +38,8 @@ void WritePlayerBlock(const PlayerBlock& _block, Neuron::ByteWriter& _writer) no
   block.lastCommandSequenceApplied = _reader.ReadUInt16();
   block.buildingDesign = _reader.ReadUInt8();
   block.buildProgressPercent = _reader.ReadUInt8();
+  block.unlocked = _reader.ReadUInt8();
+  block.researchProgress = _reader.ReadUInt8();
   return block;
 }
 } // namespace

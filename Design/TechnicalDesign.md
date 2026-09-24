@@ -159,12 +159,13 @@ An entity record is **twelve bytes**:
 | **Design identity** | 1 | **Its own byte.** Packed into the flags it had two bits — four designs, permanently — which contradicted R24 outright. |
 | Flags | 1 | **State 3 bits, cargo 3 bits, two spare.** The team bits left with ADR-024; cargo took a spare bit at M2.7 (`OpenQuestions.md` Q53). |
 
-**The datagram is an update, and its header is twenty-two bytes at any player count**: the transport's
+**The datagram is an update, and its header is twenty-four bytes at any player count**: the transport's
 four — version, type, and a sequence the receiver uses only to count loss (`NeuronCore/PacketHeader.h`;
 the two fragment fields M0.2 reserved are gone, because nothing fragments) — then the tick every record
 describes, the **live entity count**, **the recipient's own player block** (credits 4, last applied
 command sequence 2, the currently building design 1 and its progress 1; since `OpenQuestions.md` Q80 the design
-byte's high four bits carry how many items wait behind it, saturating at 15, and protocol 6 says so) and nothing about anyone else's,
+byte's high four bits carry how many items wait behind it, saturating at 15, and protocol 6 says so; since `OpenQuestions.md`
+Q85 the unlock byte 1 and the research in progress 1, and protocol 9 says so) and nothing about anyone else's,
 and a count each of records, removals, fire events and — since `OpenQuestions.md` Q83 — the spent-rock mask. The
 mask is one bit a rock in `GenerateField`'s order, eleven bytes at most, and rides **every** update once any rock
 is spent, so each stays self-contained; protocol 8 says so. What a client draws about a rival is on the rival's
@@ -172,7 +173,7 @@ entities: a station's hull is on the station's record.
 
 **The host fills one update per client per tick from a priority accumulator.** Each client has an integer
 score per live entity; every tick it grows by the entity's relevance to that client, and sending the
-entity resets it. The host takes the highest scores that fit — **98 records** at the pinned payload with
+entity resets it. The host takes the highest scores that fit — **97 records** at the pinned payload with
 three removals, two fire events and a full spent-rock mask riding along — and sends them. Relevance is a sum of a base of one, a
 term for being inside the client's view, a term for having moved or changed since last sent to this
 client, and a term for being the client's own; the weights are constants beside the accumulator in

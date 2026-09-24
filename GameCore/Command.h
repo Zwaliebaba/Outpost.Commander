@@ -49,14 +49,18 @@ enum class CommandType : std::uint8_t
   /// **Upgrade one of this player's modules in place** (M2.11, Q54, Q55). The target is the module's
   /// packed identity, as an `Attack`'s is, and **the level it becomes is `targetY`'s high byte**, which an
   /// identity leaves spare. Eight bytes, an empty selection, and the host pays the difference.
-  UpgradeModule = 7
+  UpgradeModule = 7,
+
+  /// **Research a component** (M4.4b, `OpenQuestions.md` Q85). The component identity is the low byte of `targetX`, as
+  /// a `Build`'s design is, the selection is empty, and the host charges the research cost when it starts.
+  Research = 8
 };
 
 [[nodiscard]] constexpr bool IsKnown(CommandType _type) noexcept
 {
   return (_type == CommandType::MoveTo) || (_type == CommandType::Attack) || (_type == CommandType::Build) ||
          (_type == CommandType::CancelBuild) || (_type == CommandType::Mine) || (_type == CommandType::PlaceModule) ||
-         (_type == CommandType::UpgradeModule);
+         (_type == CommandType::UpgradeModule) || (_type == CommandType::Research);
 }
 
 /// **THE ONE TYPE WHOSE FIXED PART IS NINE BYTES** (Q55): a `PlaceModule` carries a design byte after the

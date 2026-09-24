@@ -276,10 +276,11 @@ carrying one module component. **Each upgrade level is its own component**, so u
 
 | Module | What it does | L1 | L2 |
 |---|---|---|---|
-| **Shipyard** | Needed to build any ship (Q84), and raises the station's build rate. From M4 its levels also gate heavier hulls and the designer. | 400 cr, ×1.5 | 700 cr, ×2.0 |
+| **Shipyard** | Needed to build any ship (Q84), and raises the station's build rate. A Cruiser needs level two (Q85). | 400 cr, ×1.5 | 700 cr, ×2.0 |
 | **Ore processor** | Raises what a delivered cargo is worth. | 350 cr, +25% | 600 cr, +50% |
+| **Research station**, from M4.4b | Lets research run (§9). | 500 cr | — |
 
-**The research station is designed and not built until M4**, when there is research for it to do (§9).
+**The research station waited until M4.4b**, when there was research for it to do (§9, `OpenQuestions.md` Q85).
 A module that costs credits and does nothing is the mistake §6 already made once with the heavy design.
 
 **Placement is a tap and costs no new gesture.** With your station selected and a module chosen, a tap on
@@ -352,7 +353,7 @@ size-class table instead. The two mitigation models are the cost §7 names.
 |---|---|---|
 | `ShipyardL1` / `L2` | Station build rate ×1.5 / ×2.0. From M4 its levels also gate heavier hulls and the designer. | 400 / 700 |
 | `OreProcessorL1` / `L2` | A delivered cargo is worth +25% / +50%. | 350 / 600 |
-| `ResearchStationL1` | Designed at M4, when there is research for it to do (§9). | — |
+| `ResearchStationL1` | Lets research run, from M4.4b (§9, Q85). | 500 |
 
 **A drive is optional.** A hull with none does not move, which is what a station and a module frame both
 are. **Speed is thrust
@@ -565,6 +566,12 @@ be settled before M4.5 is written.
 **There is no research in the MVP**, and there is no designer screen. When both arrive at M4 they arrive
 **in a module** — the research station of §5, which is designed now and built then, so that research has a
 place on the map that an enemy can take away rather than being a menu.
+
+**Research arrived at M4.4b as one project** (`OpenQuestions.md` Q85): the `HeavyDriver`, the Cruiser's gun, at 600
+credits and 60 seconds, started by an order and run while the player owns a research station. Losing the station
+holds research where it is until another stands; a finished unlock is kept. It is an availability gate over
+component identity, as the next paragraph said it would be, and a player's unlocks ride their own update block. The
+designer screen is still to come.
 
 The rest of this section is unchanged: Both are the next thing after it,
 and the design is arranged so that neither needs the simulation changed to arrive:

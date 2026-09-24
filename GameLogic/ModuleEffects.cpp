@@ -2,6 +2,8 @@
 
 #include "ModuleEffects.h"
 
+#include <vector>
+
 namespace Outpost
 {
 
@@ -52,6 +54,38 @@ bool HasShipyard(const World& _world, PlayerId _player) noexcept
 {
   // A shipyard multiplies the build rate above the station's own hundred, which is what having one means.
   return BestMultiplier(_world, _player, ModuleEffect::BuildRate) > 100;
+}
+
+std::uint8_t ShipyardLevel(const World& _world, PlayerId _player)
+{
+  std::vector<DesignId> modules;
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (_world.IsSlotAlive(slot) && (_world.EntityInSlot(slot).owner == _player) && IsModule(_world.EntityInSlot(slot).design))
+    {
+      modules.push_back(_world.EntityInSlot(slot).design);
+    }
+  }
+  return ShipyardLevelOf(modules);
+}
+
+bool HasResearchStation(const World& _world, PlayerId _player) noexcept
+{
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (!_world.IsSlotAlive(slot) || (_world.EntityInSlot(slot).owner != _player) || !IsModule(_world.EntityInSlot(slot).design))
+    {
+      continue;
+    }
+    for (const ComponentId component : Design(_world.EntityInSlot(slot).design).slots)
+    {
+      if (Component(component).effect == ModuleEffect::Research)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 } // namespace Outpost

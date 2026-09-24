@@ -217,7 +217,16 @@ public:
     Seat(world, 2);
     Outpost::BuildSystem build;
     BeginWithABank(build, 2);
-    build.Grant(MINE, 2000);
+    build.Grant(MINE, 3000);
+
+    // Q85: locked until the HeavyDriver is researched, which needs a research station.
+    Assert::AreEqual(Code(Outpost::BuildRejection::Locked), Code(build.Start(world, MINE, Outpost::DesignId::Cruiser)));
+    static_cast<void>(world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleResearchStationL1, MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    for (int tick = 0; tick < 1200; ++tick)
+    {
+      build.Advance(world);
+    }
 
     Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Cruiser)));
     Assert::AreEqual(2400u, RunToCompletion(build, world, MINE));
@@ -232,6 +241,74 @@ public:
       }
     }
     Assert::IsTrue(found, L"no Cruiser appeared");
+  }
+
+  /// **M4.4b: RESEARCH** (Q85). Refused, in order and touching nothing, for a component nobody researches, without a
+  /// research station, and without the credits; charged 600 when it starts; a minute at 20 ticks a second; and the bit
+  /// is set on the tick it finishes.
+  TEST_METHOD(ResearchNeedsAStationAndTakesAMinute)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::NotResearchable),
+                     Code(build.StartResearch(world, MINE, Outpost::ComponentId::MassDriver)));
+    Assert::AreEqual(Code(Outpost::BuildRejection::NoResearchStation),
+                     Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    Assert::AreEqual(1000u, build.Credits(MINE), L"a refusal spent something");
+
+    static_cast<void>(world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleResearchStationL1, MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    Assert::AreEqual(400u, build.Credits(MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::ResearchBusy),
+                     Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    Assert::AreEqual(std::uint8_t{1}, build.WireResearchProgress(MINE), L"just started is one, not zero");
+
+    for (int tick = 0; tick < 1199; ++tick)
+    {
+      build.Advance(world);
+    }
+    Assert::AreEqual(std::uint8_t{0}, build.Unlocked(MINE), L"finished a tick early");
+    Assert::AreEqual(std::uint8_t{100}, build.WireResearchProgress(MINE));
+    build.Advance(world);
+    Assert::AreEqual(std::uint8_t{0x01}, build.Unlocked(MINE));
+    Assert::AreEqual(std::uint8_t{0}, build.WireResearchProgress(MINE));
+    Assert::AreEqual(std::uint8_t{0}, build.Unlocked(THEIRS), L"one player's research is not another's");
+    Assert::AreEqual(Code(Outpost::BuildRejection::AlreadyResearched),
+                     Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+  }
+
+  /// **LOSING THE STATION STOPS RESEARCH IN PROGRESS** (Q85, M4.4b's exit criterion): it holds where it is, and
+  /// another research station lets it go on.
+  TEST_METHOD(DestroyingTheResearchStationStopsResearch)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+
+    const Outpost::EntityId station = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleResearchStationL1, MINE);
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    for (int tick = 0; tick < 600; ++tick)
+    {
+      build.Advance(world);
+    }
+    static_cast<void>(world.Destroy(station));
+    for (int tick = 0; tick < 2000; ++tick)
+    {
+      build.Advance(world);
+    }
+    Assert::AreEqual(600u, build.Research(MINE).ticksElapsed, L"research ran with no research station");
+    Assert::AreEqual(std::uint8_t{0}, build.Unlocked(MINE));
+
+    static_cast<void>(world.Create(NearStation(world, MINE, 0, 300), 0, Outpost::DesignId::ModuleResearchStationL1, MINE));
+    for (int tick = 0; tick < 600; ++tick)
+    {
+      build.Advance(world);
+    }
+    Assert::AreEqual(std::uint8_t{0x01}, build.Unlocked(MINE), L"a second research station did not let it finish");
   }
 
   TEST_METHOD(AFinishedShipAppearsInFrontOfTheStation)
@@ -572,6 +649,59 @@ public:
     Assert::IsTrue(intake.Apply(world, build, MINE, order) == Outpost::CommandRejection::None);
     Assert::IsTrue(build.Item(MINE).active);
     Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::Fighter);
+  }
+
+  /// **A CRUISER NEEDS A LEVEL-TWO SHIPYARD** (Q85), refused at the intake with a level-one yard even once researched,
+  /// and ordered with a level-two one.
+  TEST_METHOD(ACruiserOrderNeedsALevelTwoShipyard)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+    build.Grant(MINE, 5000);
+    static_cast<void>(world.Create(NearStation(world, MINE, 0, 300), 0, Outpost::DesignId::ModuleResearchStationL1, MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.StartResearch(world, MINE, Outpost::ComponentId::HeavyDriver)));
+    for (int tick = 0; tick < 1200; ++tick)
+    {
+      build.Advance(world);
+    }
+
+    const Outpost::EntityId yard = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleShipyardL1, MINE);
+    const Outpost::Command order{.sequence = 1,
+                                 .type = Outpost::CommandType::Build,
+                                 .targetX = static_cast<std::int16_t>(Outpost::DesignId::Cruiser),
+                                 .targetY = 0,
+                                 .selection = {}};
+    Assert::IsTrue(intake.Apply(world, build, MINE, order) == Outpost::CommandRejection::BuildRefused, L"a Cruiser on a level-one yard");
+
+    static_cast<void>(world.Destroy(yard));
+    static_cast<void>(world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleShipyardL2, MINE));
+    Outpost::Command again = order;
+    again.sequence = 2;
+    Assert::IsTrue(intake.Apply(world, build, MINE, again) == Outpost::CommandRejection::None);
+    Assert::IsTrue(build.Item(MINE).design == Outpost::DesignId::Cruiser);
+  }
+
+  /// A research order arrives through the intake like a build: no selection, the component in the target's low byte.
+  TEST_METHOD(AResearchOrderArrivesThroughTheIntake)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+    static_cast<void>(world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleResearchStationL1, MINE));
+
+    const Outpost::Command order{.sequence = 3,
+                                 .type = Outpost::CommandType::Research,
+                                 .targetX = static_cast<std::int16_t>(Outpost::ComponentId::HeavyDriver),
+                                 .targetY = 0,
+                                 .selection = {}};
+    Assert::IsTrue(intake.Apply(world, build, MINE, order) == Outpost::CommandRejection::None);
+    Assert::IsTrue(build.Research(MINE).active);
+    Assert::AreEqual(std::uint16_t{3}, intake.LastAppliedSequence(MINE));
   }
 
   /// **NO SHIPYARD, NO SHIP** (the owner, 2026-09-24, Q84): refused at the intake, nothing spent, and acknowledged like

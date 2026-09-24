@@ -20,12 +20,20 @@ namespace Outpost
 /// progress 1. The command acknowledgment is here, so upstream reliability did not move.
 struct PlayerBlock
 {
-  static constexpr std::size_t SIZE_BYTES = 8;
+  static constexpr std::size_t SIZE_BYTES = 10;
 
   std::uint32_t credits = 0;
   std::uint16_t lastCommandSequenceApplied = 0;
   std::uint8_t buildingDesign = 0;
   std::uint8_t buildProgressPercent = 0;
+
+  /// **WHAT THIS PLAYER HAS RESEARCHED** (M4.4b, `OpenQuestions.md` Q85): one bit a component, at the component's
+  /// `unlockBit`. The client dims a design whose unlocks are not all here, by the rule the host refuses with.
+  std::uint8_t unlocked = 0;
+
+  /// **RESEARCH IN PROGRESS**: zero for none, else its progress in percent plus one -- so 1 is a project just
+  /// started and 101 one finishing. Held still while the player has no research station.
+  std::uint8_t researchProgress = 0;
 
   [[nodiscard]] friend constexpr bool operator==(const PlayerBlock&, const PlayerBlock&) noexcept = default;
 };
@@ -73,11 +81,11 @@ struct FireEvent
 /// one the encoder refuses, not one the transport splits.
 inline constexpr std::size_t UPDATE_PAYLOAD_BYTES = 1232;
 
-/// The transport's four, tick 4, live entity count 2, the recipient's block 8, and a count byte each
+/// The transport's four, tick 4, live entity count 2, the recipient's block 10, and a count byte each
 /// for records, removals, fire events and -- since the owner's ruling of 2026-09-24 (`OpenQuestions.md` Q83) -- the
-/// spent-rock mask. **Twenty-two at any player count**, which is the point.
+/// spent-rock mask. **Twenty-four at any player count**, which is the point: twenty-two until M4.4b's research bytes.
 inline constexpr std::size_t UPDATE_HEADER_BYTES = Neuron::PacketHeader::SIZE_BYTES + 4 + 2 + PlayerBlock::SIZE_BYTES + 4;
-static_assert(UPDATE_HEADER_BYTES == 22, "ADR-024 as amended by Q83 states the update header as twenty-two bytes.");
+static_assert(UPDATE_HEADER_BYTES == 24, "ADR-024 as amended by Q83 and Q85 states the update header as twenty-four bytes.");
 
 /// **THE SPENT-ROCK MASK'S LARGEST SIZE** (Q83): one bit a rock, over the largest field `GenerateField` makes -- 22 a
 /// region, four copies at four players -- so eleven bytes. `Update.cpp` asserts it against the generator.

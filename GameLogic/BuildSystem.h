@@ -53,7 +53,31 @@ enum class BuildRejection : std::uint8_t
   IllegalSite,
   /// A placement naming a level that only comes about by upgrade (Q54), or an upgrade naming a module this
   /// player does not own, one that is gone, or a level it does not upgrade to.
-  NotUpgradeable
+  NotUpgradeable,
+
+  /// **A DESIGN CARRYING A COMPONENT THIS PLAYER HAS NOT RESEARCHED** (M4.4b, `OpenQuestions.md` Q85).
+  Locked,
+  /// Research naming a component nobody researches -- one with no unlock bit, or no component at all.
+  NotResearchable,
+  /// Research naming a component this player already has.
+  AlreadyResearched,
+  /// Research while research is already running. There is one project at a time.
+  ResearchBusy,
+  /// Research with no research station standing: it cannot start without one.
+  NoResearchStation
+};
+
+/// **ONE PLAYER'S RESEARCH IN PROGRESS** (M4.4b, Q85): which component, and how far. Paid for when it started.
+///
+/// R8: a public aggregate.
+struct ResearchItem
+{
+  bool active = false;
+  ComponentId component = ComponentId::None;
+  std::uint32_t ticksElapsed = 0;
+  std::uint32_t ticksRequired = 0;
+
+  [[nodiscard]] friend constexpr bool operator==(const ResearchItem&, const ResearchItem&) noexcept = default;
 };
 
 /// What one player is building. Two bytes on the wire (ADR-003's per-player block) and four fields here,
@@ -200,6 +224,19 @@ public:
   /// still here", which is not a state this system has.
   [[nodiscard]] std::uint8_t WireProgressPercent(PlayerId _player) const noexcept;
 
+  /// **RESEARCH** (M4.4b, `OpenQuestions.md` Q85). Starts researching _component: refused unless it has an unlock bit
+  /// this player lacks, nothing else is being researched, the player owns a research station and the balance covers
+  /// the research cost -- **checked in that order, and nothing is touched on a refusal.** The cost is charged now.
+  [[nodiscard]] BuildRejection StartResearch(const World& _world, PlayerId _player, ComponentId _component) noexcept;
+
+  /// **THE UNLOCK BYTE**: one bit a component this player has researched, at the component's `unlockBit`.
+  [[nodiscard]] std::uint8_t Unlocked(PlayerId _player) const noexcept;
+
+  [[nodiscard]] const ResearchItem& Research(PlayerId _player) const noexcept;
+
+  /// Zero for no research, else its progress in percent plus one (`PlayerBlock::researchProgress`).
+  [[nodiscard]] std::uint8_t WireResearchProgress(PlayerId _player) const noexcept;
+
   /// How many players this match seats, which is how far `MatchHash` walks.
   [[nodiscard]] std::size_t PlayerCount() const noexcept
   {
@@ -258,6 +295,10 @@ private:
 
   /// Q80: what waits behind each player's item, oldest first. Paid for already.
   std::array<std::vector<BuildItem>, MAX_PLAYERS + 1> m_queued{};
+
+  /// Q85: each player's unlock byte and the research they have running.
+  std::array<std::uint8_t, MAX_PLAYERS + 1> m_unlocked{};
+  std::array<ResearchItem, MAX_PLAYERS + 1> m_research{};
 
   std::size_t m_playerCount = 0;
   std::uint64_t m_stranded = 0;

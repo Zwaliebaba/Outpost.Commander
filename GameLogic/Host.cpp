@@ -21,7 +21,9 @@ PlayerBlock PlayerBlockFor(const CommandIntake& _intake, const BuildSystem& _bui
   return PlayerBlock{.credits = _build.Credits(_player),
                      .lastCommandSequenceApplied = _intake.LastAppliedSequence(_player),
                      .buildingDesign = _build.WireBuildingDesign(_player),
-                     .buildProgressPercent = _build.WireProgressPercent(_player)};
+                     .buildProgressPercent = _build.WireProgressPercent(_player),
+                     .unlocked = _build.Unlocked(_player),
+                     .researchProgress = _build.WireResearchProgress(_player)};
 }
 
 Host::Host()

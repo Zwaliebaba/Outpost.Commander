@@ -1415,6 +1415,16 @@ unlocks components, components make designs, and designs are what a station buil
 The figures are a starting point, for M4.7's matches to move. **The alternative was no research in M4**: the Cruiser
 behind a level-two shipyard alone, and M4.4b moved past the MVP with the designer.
 
+**As built at M4.4b**, three readings the ruling left open:
+- **"Stops" is taken as holds.** Research without a research station keeps its progress and goes on when another is
+  built; nothing is refunded. Cancelling it and losing the 600 was the other reading, and harsher than the ruling
+  needed.
+- **The wire took two bytes, not one**: the unlock byte, and the research in progress as a percent plus one, so the
+  button can show progress. The update header went from 22 to 24 bytes and a full update from 98 records to 97; the
+  guaranteed floor stayed at 64. Protocol 9.
+- **The research station has no mesh of its own.** It draws the bare module frame, which no other design draws,
+  until the mesh handoff has one. Its place is the new top row of the build panel, which grew 112 pixels upward.
+
 ### Q84 — How does a match open? — **ANSWERED**
 
 **WITH TWO MINERS AND A FIGHTER, 500 CREDITS, AND NO SHIP UNTIL THERE IS A SHIPYARD. The owner's ruling,

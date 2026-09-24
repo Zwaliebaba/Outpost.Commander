@@ -7,8 +7,8 @@ namespace Outpost
 
 namespace
 {
-/// ADR-006's design table, and the whole of what the game builds. **Nine rows and no types.**
-constexpr std::array<DesignEntry, 9> DESIGNS{{
+/// ADR-006's design table, and the whole of what the game builds. **Ten rows and no types.**
+constexpr std::array<DesignEntry, 10> DESIGNS{{
   {.id = DesignId::Miner,
    .hull = HullId::Scout,
    .drive = DriveId::IonDrive,
@@ -71,10 +71,16 @@ constexpr std::array<DesignEntry, 9> DESIGNS{{
    .drive = DriveId::BurnDrive,
    .slots = {ComponentId::HeavyDriver, ComponentId::HeavyDriver, ComponentId::HeavyDriver, ComponentId::HeavyDriver},
    .buildable = true},
+
+  // === THE RESEARCH STATION (M4.4b, Q85). ========================================================
+  {.id = DesignId::ModuleResearchStationL1,
+   .hull = HullId::ModuleFrame,
+   .drive = DriveId::None,
+   .slots = {ComponentId::ResearchStationL1, ComponentId::None, ComponentId::None, ComponentId::None}},
 }};
 
 // AN IDENTITY IS AN INDEX: a row added without its enumerator, or the reverse, refuses to compile.
-static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::Cruiser) + 1);
+static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::ModuleResearchStationL1) + 1);
 } // namespace
 
 std::span<const DesignEntry> Designs() noexcept
@@ -85,6 +91,52 @@ std::span<const DesignEntry> Designs() noexcept
 const DesignEntry& Design(DesignId _id) noexcept
 {
   return DESIGNS[static_cast<std::size_t>(_id)];
+}
+
+std::uint8_t RequiredUnlocks(DesignId _design) noexcept
+{
+  if (static_cast<std::size_t>(_design) >= DESIGNS.size())
+  {
+    return 0;
+  }
+  std::uint8_t required = 0;
+  for (const ComponentId slot : Design(_design).slots)
+  {
+    required = static_cast<std::uint8_t>(required | Component(slot).unlockBit);
+  }
+  return required;
+}
+
+bool DesignUnlocked(DesignId _design, std::uint8_t _unlocked) noexcept
+{
+  const std::uint8_t required = RequiredUnlocks(_design);
+  return (required & _unlocked) == required;
+}
+
+std::uint8_t RequiredShipyardLevel(DesignId _design) noexcept
+{
+  if (static_cast<std::size_t>(_design) >= DESIGNS.size())
+  {
+    return 0;
+  }
+  return Hull(Design(_design).hull).shipyardLevelRequired;
+}
+
+std::uint8_t ShipyardLevelOf(std::span<const DesignId> _modules) noexcept
+{
+  std::uint8_t level = 0;
+  for (const DesignId module : _modules)
+  {
+    if (static_cast<std::size_t>(module) >= DESIGNS.size())
+    {
+      continue;
+    }
+    for (const ComponentId slot : Design(module).slots)
+    {
+      level = (Component(slot).shipyardLevel > level) ? Component(slot).shipyardLevel : level;
+    }
+  }
+  return level;
 }
 
 } // namespace Outpost

@@ -142,10 +142,10 @@ public:
   /// up is the whole of what stops an older client hanging against a newer host -- 1 before the join,
   /// 2 with it, 3 since M1.6's build orders, 4 since ADR-024 changed every record at once, 5 since M2.3's
   /// join reply carried the player count, 6 since Q80 put the build queue's length in the building byte, 7 since
-  /// M3.8's `MatchEnded`.
-  TEST_METHOD(TheProtocolVersionIsEightSinceTheSpentRocks)
+  /// M3.8's `MatchEnded`, 8 since Q83's spent rocks, and 9 since M4.4b's research bytes and order.
+  TEST_METHOD(TheProtocolVersionIsNineSinceResearch)
   {
-    Assert::AreEqual(std::uint8_t{8}, Neuron::PROTOCOL_VERSION);
+    Assert::AreEqual(std::uint8_t{9}, Neuron::PROTOCOL_VERSION);
   }
 
   /// `Update` took `Snapshot`'s value rather than a new one: the unit changed, the number did not need to.

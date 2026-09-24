@@ -94,6 +94,8 @@ void BuildSystem::Begin(std::size_t _playerCount) noexcept
     queued.clear();
   }
   m_stranded = 0;
+  m_unlocked.fill(0);
+  m_research.fill(ResearchItem{});
 
   for (std::size_t player = 1; player <= m_playerCount; ++player)
   {
@@ -170,6 +172,12 @@ BuildRejection BuildSystem::Start(World& _world, PlayerId _player, DesignId _des
   if (!Design(_design).buildable)
   {
     return BuildRejection::NotBuildable;
+  }
+  // **RESEARCH GATES A DESIGN BY WHAT IT CARRIES** (Q85): one predicate over component identity, from `GameCore`, so the
+  // client dims a button by the rule this refuses by.
+  if (!DesignUnlocked(_design, m_unlocked[_player]))
+  {
+    return BuildRejection::Locked;
   }
   if (StationOf(_world, _player) == nullptr)
   {
@@ -401,6 +409,24 @@ bool BuildSystem::Cancel(PlayerId _player) noexcept
 
 void BuildSystem::Advance(World& _world) noexcept
 {
+  // **RESEARCH RUNS WHILE A RESEARCH STATION STANDS** (Q85), in player order. Without one it holds where it is -- losing
+  // the station stops research in progress, and building another lets it go on, paid for already. A finished project
+  // sets its bit and is kept for the rest of the match.
+  for (std::size_t player = 1; player <= m_playerCount; ++player)
+  {
+    ResearchItem& research = m_research[player];
+    if (!research.active || !HasResearchStation(_world, static_cast<PlayerId>(player)))
+    {
+      continue;
+    }
+    ++research.ticksElapsed;
+    if (research.ticksElapsed >= research.ticksRequired)
+    {
+      m_unlocked[player] = static_cast<std::uint8_t>(m_unlocked[player] | Component(research.component).unlockBit);
+      research = ResearchItem{};
+    }
+  }
+
   // In player order, which is the order everything else in this tree walks players in -- and the
   // order two completions on one tick reach the store in (R16).
   for (std::size_t player = 1; player <= m_playerCount; ++player)
@@ -532,6 +558,63 @@ std::uint8_t BuildSystem::WireProgressPercent(PlayerId _player) const noexcept
 
   const std::uint64_t percent = (static_cast<std::uint64_t>(item.ticksElapsed) * 100) / item.ticksRequired;
   return (percent > 99) ? 99 : static_cast<std::uint8_t>(percent);
+}
+
+BuildRejection BuildSystem::StartResearch(const World& _world, PlayerId _player, ComponentId _component) noexcept
+{
+  if (!Holds(_player))
+  {
+    return BuildRejection::NoPlayer;
+  }
+  if ((static_cast<std::size_t>(_component) >= Components().size()) || (Component(_component).unlockBit == 0))
+  {
+    return BuildRejection::NotResearchable;
+  }
+  const ComponentEntry& entry = Component(_component);
+  if ((m_unlocked[_player] & entry.unlockBit) != 0)
+  {
+    return BuildRejection::AlreadyResearched;
+  }
+  if (m_research[_player].active)
+  {
+    return BuildRejection::ResearchBusy;
+  }
+  if (!HasResearchStation(_world, _player))
+  {
+    return BuildRejection::NoResearchStation;
+  }
+  if (m_credits[_player] < entry.researchCostCredits)
+  {
+    return BuildRejection::Unaffordable;
+  }
+
+  m_credits[_player] -= entry.researchCostCredits;
+  const std::uint32_t ticks = static_cast<std::uint32_t>(entry.researchSeconds) * TICKS_PER_SECOND;
+  m_research[_player] =
+    ResearchItem{.active = true, .component = _component, .ticksElapsed = 0, .ticksRequired = (ticks == 0) ? 1u : ticks};
+  return BuildRejection::None;
+}
+
+std::uint8_t BuildSystem::Unlocked(PlayerId _player) const noexcept
+{
+  return Holds(_player) ? m_unlocked[_player] : std::uint8_t{0};
+}
+
+const ResearchItem& BuildSystem::Research(PlayerId _player) const noexcept
+{
+  static constexpr ResearchItem NONE{};
+  return Holds(_player) ? m_research[_player] : NONE;
+}
+
+std::uint8_t BuildSystem::WireResearchProgress(PlayerId _player) const noexcept
+{
+  const ResearchItem& research = Research(_player);
+  if (!research.active || (research.ticksRequired == 0))
+  {
+    return 0;
+  }
+  const std::uint64_t percent = (static_cast<std::uint64_t>(research.ticksElapsed) * 100) / research.ticksRequired;
+  return static_cast<std::uint8_t>(((percent > 99) ? 99 : percent) + 1);
 }
 
 } // namespace Outpost

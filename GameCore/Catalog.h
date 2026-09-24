@@ -90,7 +90,10 @@ enum class ComponentId : std::uint8_t
 
   /// **THE CRUISER'S WEAPON** (M4.4, `OpenQuestions.md` Q75). Appended rather than placed beside the other weapons,
   /// because an identity is an index and is on the wire.
-  HeavyDriver
+  HeavyDriver,
+
+  /// **THE THIRD MODULE** (M4.4b, `OpenQuestions.md` Q85): what research needs standing. Appended for the same reason.
+  ResearchStationL1
 };
 
 /// One row of `GameDesign.md` section 6's hull table.
@@ -143,6 +146,11 @@ struct HullEntry
   /// the mining loop. Only the `Station` sets it today.
   bool acceptsOre = false;
 
+  /// **THE SHIPYARD LEVEL THIS HULL NEEDS TO BE BUILT** (Q84, Q85): one for the Scout and the Frigate, two for the
+  /// Cruiser -- "a shipyard's levels gate hulls" (`GameDesign.md` section 5) as a row rather than a rule about names.
+  /// Zero for what is not built at a station: a station, a module frame, a depot.
+  std::uint8_t shipyardLevelRequired = 0;
+
   [[nodiscard]] friend constexpr bool operator==(const HullEntry&, const HullEntry&) noexcept = default;
 };
 
@@ -171,7 +179,9 @@ enum class ModuleEffect : std::uint8_t
   /// The owning station's build rate (`GameDesign.md` section 5's shipyard).
   BuildRate,
   /// What a delivered cargo is worth (section 5's ore processor).
-  CargoValue
+  CargoValue,
+  /// Research may run while one stands (M4.4b, the research station). It multiplies nothing.
+  Research
 };
 
 /// One row of the slot-component tables, weapons and modules alike.
@@ -219,6 +229,18 @@ struct ComponentEntry
 
   /// Which of the two `multiplierPercent` applies to, or `None` for anything that is not a module.
   ModuleEffect effect = ModuleEffect::None;
+
+  /// **THE LEVEL OF SHIPYARD THIS IS** (Q85): one for `ShipyardL1`, two for `ShipyardL2`, zero for everything else.
+  /// A player's shipyard level is the highest among the modules they own, and a hull says the level it needs.
+  std::uint8_t shipyardLevel = 0;
+
+  /// **RESEARCH** (M4.4b, `OpenQuestions.md` Q85): a component with an unlock bit may not be built into anything until
+  /// its owner has researched it, which costs this much and takes this long at a research station. Zero is a component
+  /// every player has from the start -- all but the `HeavyDriver`. **The bit is the component's place in a player's
+  /// unlock byte**, so eight researchable components fit the wire before it has to grow.
+  std::uint8_t unlockBit = 0;
+  std::uint16_t researchCostCredits = 0;
+  std::uint16_t researchSeconds = 0;
 
   /// `PointDefense` is station slots only (`GameDesign.md` section 6). The rule is stated here so
   /// that build validation reads it from the catalog rather than naming the component.

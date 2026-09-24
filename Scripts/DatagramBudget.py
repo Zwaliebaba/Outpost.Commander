@@ -44,6 +44,7 @@ HEADER = [("version", 1), ("type", 1), ("sequence", 2),
           ("tick", 4), ("entity count", 2),
           ("own credits", 4), ("own last command applied", 2),
           ("own building design", 1), ("own build progress", 1),
+          ("own unlocks", 1), ("own research progress", 1),     # M4.4b, OpenQuestions.md Q85
           ("record count", 1), ("removal count", 1), ("fire count", 1), ("spent-rock count", 1)]
 
 # After the records. A removal is an identity, repeated in REMOVAL_REPEAT_TICKS consecutive

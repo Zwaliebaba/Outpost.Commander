@@ -30,8 +30,8 @@ worth reporting as one rather than absorbing.
 **M1.14c has already done most of this step** ([`ADR-023`](../ADR/ADR-023-the-player-count-is-configurable.md)).
 The count is a host argument and the arrays are sized at `Begin`. What is left is running a real match at
 three and four. **The 46-byte header below is history**: since
-[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) the header is twenty-two bytes at any
-player count (twenty-one until Q83), and the criterion becomes that the four-player update measures the same as the two-player one.
+[`ADR-024`](../ADR/ADR-024-replication-is-prioritized-records.md) the header is twenty-four bytes at any
+player count (twenty-two until Q85, twenty-one until Q83), and the criterion becomes that the four-player update measures the same as the two-player one.
 
 **Files:** `GameLogic/Match.cpp`, `GameCore/Snapshot.cpp`; tests in both suites extended.
 
@@ -42,7 +42,7 @@ count; ADR-003's 46-byte four-player header is reproduced by the encoder; and th
 **BUILT 2026-09-24, AND IT WAS SMALL: NO PRODUCTION CODE CHANGED.** Q27's claim held. `Tests/GameLogicTests/HostTests.cpp`
 gained `TheFourSlots`: `EveryAiSeatBuildsAtTwoThreeAndFourPlayers` runs two minutes through the host's own loop with every
 seat the stub AI's, and every seat places a shipyard and builds ships at each count. `TheUpdateHeaderDoesNotGrowWithThePlayerCount`
-takes the update's body off its encoded size and finds 22 bytes at two, three and four. The files named above no longer
+takes the update's body off its encoded size and finds the header's bytes at two, three and four, 22 then and 24 since M4.4b. The files named above no longer
 exist; ADR-024 replaced the snapshot. `Server --players 3 --ai 3` and `--players 4 --ai 4` each ran 2,399 ticks with none
 abandoned, on the Surface Pro in `Release|ARM64`. **At three players the fourth quarter's field is copied and nobody's**,
 because the field is copied four ways above two players; nothing refuses a miner going there. Nobody has watched a
@@ -130,6 +130,20 @@ MVP could not exercise with two designs.
 **Done when:** a component is unavailable until its research completes, that gate is one predicate over a
 component identity as R24 says it should be, and destroying the research station stops research in
 progress.
+
+**BUILT 2026-09-24, `Debug|x64`, NOT YET LOOKED AT ON THE DEVICE**, to Q85 with the three readings the register
+records. The files differ from those named above: research lives in `BuildSystem`, which already holds the credits
+it spends and is already hashed and replicated, rather than in a `Research.cpp` of its own. **GameCore**: the
+`ResearchStationL1` component and design, each component's `unlockBit`, research cost and seconds, each shipyard
+component's level and each hull's required level (`Catalog`), and the one predicate, `DesignUnlocked`, with
+`RequiredShipyardLevel` and `ShipyardLevelOf` beside it (`Design`); `CommandType::Research`; two bytes in the player
+block; protocol 9. **GameLogic**: `BuildSystem::StartResearch`, research advancing only while a research station
+stands, `Start` refusing a locked design, the intake checking the hull's shipyard level, and `MatchHash` folding the
+research state. **Client**: the build panel's third row, the research button's four looks, the Cruiser button gated
+by the same two rules, and the research station drawn with the bare frame. Pinned by
+`ResearchNeedsAStationAndTakesAMinute`, `DestroyingTheResearchStationStopsResearch`, `ACruiserOrderNeedsALevelTwoShipyard`,
+`AResearchOrderArrivesThroughTheIntake`, `ResearchAndTheYardLevelAreReadFromTheRows`, `TheResearchRow` and
+`TheHeaderIsTwentyFourBytes`. The scripted match's pin moved, because the hash now folds research.
 
 ---
 

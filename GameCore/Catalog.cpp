@@ -12,15 +12,38 @@ namespace
 /// `GameDesign.md` section 6's hull table, in identity order. Hull points and hit values are the
 /// design's own figures; mass is not here (Q46) and neither is size in world units (Q37).
 constexpr std::array<HullEntry, 6> HULLS{{
-  {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .mass = 10, .cost = 60, .sizeUnits = 60},
-  {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .mass = 20, .cost = 100, .sizeUnits = 90},
+  // Both need a shipyard to be built (Q84), a level-one yard or better.
+  {.id = HullId::Scout,
+   .slotCount = 1,
+   .hullPoints = 450,
+   .sizeClass = SizeClass::Light,
+   .mass = 10,
+   .cost = 60,
+   .sizeUnits = 60,
+   .shipyardLevelRequired = 1},
+  {.id = HullId::Frigate,
+   .slotCount = 2,
+   .hullPoints = 600,
+   .sizeClass = SizeClass::Medium,
+   .mass = 20,
+   .cost = 100,
+   .sizeUnits = 90,
+   .shipyardLevelRequired = 1},
 
   // 2,080 is Q46's, and it is not a free choice: `GameDesign.md` section 6 cut the battleship at
   // **2,400 credits**, so a Cruiser with a BurnDrive and four MassDrivers has to sum to exactly
   // that. The hull is what is left over -- 2,400 less 80 less four sixties.
   //
   // 180 UNITS SINCE M4.4, the v4 mesh handoff's hammerhead. It said 150 when no mesh backed it (Q37).
-  {.id = HullId::Cruiser, .slotCount = 4, .hullPoints = 3000, .sizeClass = SizeClass::Heavy, .mass = 60, .cost = 2080, .sizeUnits = 180},
+  // And it needs a level-two shipyard (Q85), the first hull a shipyard's level gates.
+  {.id = HullId::Cruiser,
+   .slotCount = 4,
+   .hullPoints = 3000,
+   .sizeClass = SizeClass::Heavy,
+   .mass = 60,
+   .cost = 2080,
+   .sizeUnits = 180,
+   .shipyardLevelRequired = 2},
 
   // The two base structures, and the only two rows with a hit value. A dash in the design's table
   // is this zero, and it means the hull is damaged through section 7's size-class table instead.
@@ -68,13 +91,11 @@ constexpr std::array<DriveEntry, 3> DRIVES{{
   {.id = DriveId::BurnDrive, .mass = 10, .thrust = 5600, .cost = 80},
 }};
 
-/// The four weapon components and the four module ones, and `None` for an empty slot.
+/// The four weapon components and the five module ones, and `None` for an empty slot.
 ///
-/// `ResearchStationL1` IS NOT HERE. `GameDesign.md` section 6 lists it with a dash for its cost and
-/// says it is "designed at M4, when there is research for it to do" -- Q30's answer is that a
-/// module which costs credits and does nothing is the mistake the heavy design already made. The
-/// section's own count agrees: "four module components", against five rows in its table.
-constexpr std::array<ComponentEntry, 9> COMPONENTS{{
+/// **`ResearchStationL1` ARRIVED AT M4.4b**, when there was research for it to do (Q30, Q85). It was designed and
+/// left out until then, because a module which costs credits and does nothing is the mistake the heavy design made.
+constexpr std::array<ComponentEntry, 10> COMPONENTS{{
   {.id = ComponentId::None},
 
   // Does no damage, in as many words. Both figures sum over a hull's slots (Q32).
@@ -103,8 +124,8 @@ constexpr std::array<ComponentEntry, 9> COMPONENTS{{
 
   // Hundredths, because the simulation is integers (R16). x1.5 and x2.0 on the station's build
   // rate; +25% and +50% on a delivered cargo.
-  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150, .effect = ModuleEffect::BuildRate},
-  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200, .effect = ModuleEffect::BuildRate},
+  {.id = ComponentId::ShipyardL1, .cost = 400, .multiplierPercent = 150, .effect = ModuleEffect::BuildRate, .shipyardLevel = 1},
+  {.id = ComponentId::ShipyardL2, .cost = 700, .multiplierPercent = 200, .effect = ModuleEffect::BuildRate, .shipyardLevel = 2},
   {.id = ComponentId::OreProcessorL1, .cost = 350, .multiplierPercent = 125, .effect = ModuleEffect::CargoValue},
   {.id = ComponentId::OreProcessorL2, .cost = 600, .multiplierPercent = 150, .effect = ModuleEffect::CargoValue},
 
@@ -117,7 +138,14 @@ constexpr std::array<ComponentEntry, 9> COMPONENTS{{
    .damagePerSecond = 50,
    .modifierPercent = {40, 100, 60},
    .arcHalfAngle = 8192,
-   .cost = 60},
+   .cost = 60,
+   // Q85: the one research project, 600 credits and a minute at a research station.
+   .unlockBit = 0x01,
+   .researchCostCredits = 600,
+   .researchSeconds = 60},
+
+  // Q85: 500 credits, placed like the other modules. It does nothing but let research run, and losing it stops that.
+  {.id = ComponentId::ResearchStationL1, .cost = 500, .effect = ModuleEffect::Research},
 }};
 
 // AN IDENTITY IS AN INDEX, and these are what make that true rather than hoped for. A table that
@@ -125,7 +153,7 @@ constexpr std::array<ComponentEntry, 9> COMPONENTS{{
 // past the new one to the wrong entry; this refuses to compile instead.
 static_assert(HULLS.size() == static_cast<std::size_t>(HullId::DepotFrame) + 1);
 static_assert(DRIVES.size() == static_cast<std::size_t>(DriveId::BurnDrive) + 1);
-static_assert(COMPONENTS.size() == static_cast<std::size_t>(ComponentId::HeavyDriver) + 1);
+static_assert(COMPONENTS.size() == static_cast<std::size_t>(ComponentId::ResearchStationL1) + 1);
 } // namespace
 
 std::span<const HullEntry> Hulls() noexcept

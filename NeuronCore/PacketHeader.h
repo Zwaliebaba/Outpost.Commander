@@ -42,7 +42,10 @@ namespace Neuron
 ///
 /// **8 SINCE Q83** (2026-09-24), when every update gained a count byte and the spent-rock mask. Version 7 had been
 /// pushed, so this is a step and not a ride.
-inline constexpr std::uint8_t PROTOCOL_VERSION = 8;
+///
+/// **9 SINCE M4.4b** (2026-09-24, Q85), when a player's own block gained its unlock and research bytes and a client
+/// could order research.
+inline constexpr std::uint8_t PROTOCOL_VERSION = 9;
 
 /// What a datagram carries. The three the design names, and the pair ADR-013 added.
 ///

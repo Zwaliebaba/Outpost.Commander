@@ -83,8 +83,15 @@ CommandRejection CommandIntake::Apply(World& _world, BuildSystem& _build, Player
       // of what a player may order -- every order, a client's, the AI's and the scripted match's, comes through this.
       // A module is placed and needs none, so the first shipyard can always be built. One already building or queued
       // when the last yard dies goes on at the station's own rate (M3.8b): it was paid for when there was a yard.
-      ordered = HasShipyard(_world, _player) &&
+      //
+      // **AND SINCE Q85 THE HULL SAYS WHICH LEVEL OF SHIPYARD**: one for a Miner or a Fighter, two for a Cruiser, read
+      // from the catalog by the rule the client dims its buttons with.
+      ordered = (ShipyardLevel(_world, _player) >= RequiredShipyardLevel(static_cast<DesignId>(_command.TargetDesign()))) &&
                 (_build.Start(_world, _player, static_cast<DesignId>(_command.TargetDesign()), buildRate) == BuildRejection::None);
+      break;
+    case CommandType::Research:
+      // Q85: the component is the target's low byte, as a build's design is.
+      ordered = _build.StartResearch(_world, _player, static_cast<ComponentId>(_command.TargetDesign())) == BuildRejection::None;
       break;
     case CommandType::PlaceModule:
     {

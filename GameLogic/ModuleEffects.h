@@ -26,4 +26,11 @@ namespace Outpost
 /// row, so nothing names a shipyard (R24).
 [[nodiscard]] bool HasShipyard(const World& _world, PlayerId _player) noexcept;
 
+/// **THE PLAYER'S SHIPYARD LEVEL** (Q85): the highest among the modules they own, by `GameCore`'s `ShipyardLevelOf` --
+/// the rule the client dims its ship row with. Zero with no shipyard.
+[[nodiscard]] std::uint8_t ShipyardLevel(const World& _world, PlayerId _player);
+
+/// **WHETHER RESEARCH CAN RUN** (M4.4b, Q85): the player owns a module whose component's effect is `Research`.
+[[nodiscard]] bool HasResearchStation(const World& _world, PlayerId _player) noexcept;
+
 } // namespace Outpost

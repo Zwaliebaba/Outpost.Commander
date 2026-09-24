@@ -146,8 +146,22 @@ private:
     return L"ORE PROC L2";
   case DesignId::Depot:
     return L"FWD DEPOT";
+  case DesignId::ModuleResearchStationL1:
+    return L"RESEARCH L1";
   }
   return L"";
+}
+
+/// The research button's second line: what it researches. A display string, like a design's name.
+[[nodiscard]] std::wstring ComponentDisplayName(ComponentId _component)
+{
+  switch (_component)
+  {
+  case ComponentId::HeavyDriver:
+    return L"HVY DRV";
+  default:
+    return L"";
+  }
 }
 
 /// A team's color **relative to this client**: `TEAM.OWN` is always the local player, whichever slot
@@ -365,12 +379,15 @@ struct ModuleButton
   DesignId design;
 };
 
-// M3.9: THE DEPOT ARMS AND PLACES AS A MODULE DOES, from the ship row's free third place (Q69).
-constexpr std::array<ModuleButton, 5> MODULE_ROW{ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
-                                                 ModuleButton{.rect = BUILD_BUTTON_YARD_L2, .design = DesignId::ModuleShipyardL2},
-                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L1, .design = DesignId::ModuleOreProcessorL1},
-                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2},
-                                                 ModuleButton{.rect = BUILD_BUTTON_DEPOT, .design = DesignId::Depot}};
+// M3.9: THE DEPOT ARMS AND PLACES AS A MODULE DOES, from the ship row's free third place (Q69). M4.4b: SO DOES THE RESEARCH
+// STATION, from the research row (Q85).
+constexpr std::array<ModuleButton, 6> MODULE_ROW{
+  ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
+  ModuleButton{.rect = BUILD_BUTTON_YARD_L2, .design = DesignId::ModuleShipyardL2},
+  ModuleButton{.rect = BUILD_BUTTON_ORE_L1, .design = DesignId::ModuleOreProcessorL1},
+  ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2},
+  ModuleButton{.rect = BUILD_BUTTON_DEPOT, .design = DesignId::Depot},
+  ModuleButton{.rect = BUILD_BUTTON_RESEARCH_STATION, .design = DesignId::ModuleResearchStationL1}};
 
 /// **WHAT A MODULE BUTTON CHARGES**: a placed level its design's cost, and an upgrade the difference from the
 /// level it upgrades (Q54) -- `GameCore`'s figure, so the panel and the host cannot disagree about it.
@@ -551,9 +568,9 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   //
   // **A SHIP NEEDS A SHIPYARD** (`OpenQuestions.md` Q84): with none among the player's modules the row is dead, hatched
   // and dim like an unavailable module, and not a target -- the host refuses the order anyway, but a lit button it
-  // always refuses would be a button that lies.
-  const bool ownsShipyard = std::any_of(_state.ownModules.begin(), _state.ownModules.end(), [](DesignId _module)
-                                        { return (_module == DesignId::ModuleShipyardL1) || (_module == DesignId::ModuleShipyardL2); });
+  // always refuses would be a button that lies. **Since Q85 each button asks for its own hull's level and its own
+  // unlocks**, by the `GameCore` rules the host refuses with: a Cruiser needs a level-two yard and the HeavyDriver.
+  const std::uint8_t yardLevel = ShipyardLevelOf(_state.ownModules);
   const std::array<HudRect, 3> places{BUILD_BUTTON_SHIP_0, BUILD_BUTTON_SHIP_1, BUILD_BUTTON_SHIP_2};
   const std::span<const DesignId> designs = BuildableDesigns();
   for (std::size_t index = 0; (index < designs.size()) && (index < places.size()); ++index)
@@ -563,7 +580,7 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
     const bool affordable = _state.credits >= cost;
     const HudRect button = ForHand(places[index], left);
 
-    if (!ownsShipyard)
+    if ((yardLevel < RequiredShipyardLevel(design)) || !DesignUnlocked(design, _state.unlocked))
     {
       EmitButton(_emit, button, PLATE_DIM, RULE_DIM, RULE, left);
       EmitHatch(_emit, button);
@@ -649,6 +666,61 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
                      .action = HudAction::ArmModule,
                      .argument = static_cast<std::uint8_t>(design),
                      .surface = 'b'});
+  }
+
+  // === THE RESEARCH BUTTON (M4.4b, Q85) ============================================================
+  //
+  // **FOUR LOOKS.** Researched: dim, reading DONE. Running: lit, reading its percent, and no target -- a second order
+  // would be refused. No research station: dim and hatched like an unavailable module. Otherwise live or unaffordable,
+  // as a ship button is, and a target.
+  {
+    const ComponentId component = ResearchableComponent();
+    const ComponentEntry& entry = Component(component);
+    const HudRect button = ForHand(BUILD_BUTTON_RESEARCH, left);
+    const bool done = (entry.unlockBit != 0) && ((_state.unlocked & entry.unlockBit) != 0);
+    const bool running = _state.researchProgress != 0;
+    const bool station =
+      std::find(_state.ownModules.begin(), _state.ownModules.end(), DesignId::ModuleResearchStationL1) != _state.ownModules.end();
+    const bool affordable = _state.credits >= entry.researchCostCredits;
+    const std::wstring what = ComponentDisplayName(component);
+
+    if (done || !station || (component == ComponentId::None))
+    {
+      EmitButton(_emit, button, PLATE_DIM, RULE_DIM, RULE, left);
+      if (!done)
+      {
+        EmitHatch(_emit, button);
+      }
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), L"RESEARCH", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT_DIM);
+      _emit.Text(BUTTON_NAME_LINE2.Within(button), what, Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT_DIM);
+      _emit.Text(BUTTON_COST.Within(button), done ? std::wstring{L"DONE"} : std::to_wstring(entry.researchCostCredits),
+                 Neuron::TextSize::Display, Neuron::TextAlign::Right, 0.0f, TEXT_DIM);
+    }
+    else if (running)
+    {
+      EmitButton(_emit, button, PLATE, RULE_LIT, RULE_LIT, left);
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), L"RESEARCH", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT);
+      _emit.Text(BUTTON_NAME_LINE2.Within(button), what, Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT);
+      _emit.Text(BUTTON_COST.Within(button), std::to_wstring(_state.researchProgress - 1) + L"%", Neuron::TextSize::Display,
+                 Neuron::TextAlign::Right, 0.0f, TEAM_OWN);
+    }
+    else
+    {
+      EmitButton(_emit, button, PLATE, RULE_LIT, affordable ? RULE_LIT : SIG_SHORT, left);
+      _emit.Text(BUTTON_NAME_LINE1.Within(button), L"RESEARCH", Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT);
+      _emit.Text(BUTTON_NAME_LINE2.Within(button), what, Neuron::TextSize::Body, Neuron::TextAlign::Left, TRACK_BUTTON, TEXT);
+      _emit.Text(BUTTON_COST.Within(button), std::to_wstring(entry.researchCostCredits), Neuron::TextSize::Display,
+                 Neuron::TextAlign::Right, 0.0f, affordable ? TEXT : SIG_SHORT);
+      if (!affordable)
+      {
+        _emit.Solid(BUTTON_SHORT_RULE.Within(button), SIG_SHORT);
+      }
+      _hits.AddTarget({.hit = button,
+                       .tier = TouchTier::UnderFire,
+                       .action = HudAction::Research,
+                       .argument = static_cast<std::uint8_t>(component),
+                       .surface = 'b'});
+    }
   }
 
   // === THE PROGRESS STRIP ==========================================================================
@@ -967,6 +1039,29 @@ Command BuildStationCommand(std::uint16_t _sequence, CommandType _type, DesignId
   command.targetX = (_type == CommandType::Build) ? static_cast<std::int16_t>(_design) : 0;
   command.targetY = 0;
   return command;
+}
+
+Command ResearchCommand(std::uint16_t _sequence, ComponentId _component) noexcept
+{
+  Command command;
+  command.sequence = _sequence;
+  command.type = CommandType::Research;
+  // `Command::TargetDesign`'s low byte, which the host reads as a component for this type.
+  command.targetX = static_cast<std::int16_t>(_component);
+  command.targetY = 0;
+  return command;
+}
+
+ComponentId ResearchableComponent() noexcept
+{
+  for (const ComponentEntry& entry : Components())
+  {
+    if (entry.unlockBit != 0)
+    {
+      return entry.id;
+    }
+  }
+  return ComponentId::None;
 }
 
 HudTypeface TypefaceOf(const Neuron::GlyphAtlas& _atlas) noexcept
