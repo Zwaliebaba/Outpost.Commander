@@ -589,6 +589,11 @@ Play them, and answer:
 arithmetic, and Q16 is confirmed or reopened. **A figure moved here is moved in `GameDesign.md`** — the
 design is the record and the plan cites it.
 
+**CLOSED 2026-09-24, on the owner's word** ("yes, it is done"), after play against the stub AI on the
+Surface Pro. What that play changed is on the register as Q82, Q83 and Q84. **Not recorded:** answers to
+questions 0 to 3, any move to §7's figures (none was made), and Q16 confirmed or reopened in words. Closing
+the gate is read as the owner accepting all four as they stand.
+
 ---
 
 ## Leaving M3

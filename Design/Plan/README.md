@@ -121,6 +121,12 @@ M2.14's tick cost, and **both closed on 2026-09-24**. M2.13 closed on the owner'
 Fighter can be told apart; the modules' half was not stated. M2.14 closed on a measured tick of 27 µs
 against 50 ms. `M2-the-field.md` has both.
 
+**M3 IS FINISHED, 2026-09-24**, on the owner's word that M3.11 is done. Every step is built, and the four pairs
+build and pass at its exit (c79e0f3). The owner's play also changed the game: one miner to a rock (Q82), spent
+rocks removed from the map (Q83), and a match that opens with two Miners, a Fighter and 500 credits, with ships
+only from a shipyard (Q84). **What the gate did not record** is written at M3.11 in `M3-the-fight.md`: no §7
+figure was moved, and Q16 was not confirmed or reopened in words.
+
 **Two closed gates stopped drawing over it.** M0.16's calibration cross and M0.17's probe rectangle were
 still on the glass every frame; a closed gate's instrumentation is debris, and M1.9 is the first
 milestone with something behind it worth seeing.
