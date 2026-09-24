@@ -246,6 +246,44 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
+  # **OpenQuestions.md Q76, ruled by the owner 2026-09-24**: the two simulation suites compiled for Debug|ARM64 --
+  # compile only, because the runner is x64 and cannot run an ARM64 binary. It is the cheap half of the ARM64 gap
+  # AGENTS.md section 6 names: an x86-only intrinsic or an ARM64-only compile error in GameCore or GameLogic, where
+  # the determinism pins live, fails here rather than on the device. It proves nothing about what the code DOES on
+  # ARM64; the pins are still run on all four pairs by hand.
+  arm64-compile:
+    name: Debug|ARM64 (simulation suites, compile only)
+    if: github.event_name != 'schedule'
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      # Named, as the build job's is: without the ARM64 desktop toolset MSBuild fails deep in a target.
+      - name: Verify the ARM64 toolset
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $install = & $vswhere -latest -products * -property installationPath
+          $found = @(Get-ChildItem -Path "$install\MSBuild\Microsoft\VC" -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { Join-Path $_.FullName "Platforms\ARM64\PlatformToolsets\v145" } | Where-Object { Test-Path $_ })
+          if ($found.Count -eq 0) {
+            throw "This runner has no v145 platform toolset for ARM64 (Visual Studio 2026, 'MSVC ARM64 build tools'). " +
+                  "Install it in this job or drop the job deliberately; do not lower the pin (AGENTS.md section 3)."
+          }
+          Write-Output "v145 arm64 : $($found[0])"
+
+      # Through the solution, as AGENTS.md section 3 requires, with the two suites as folder-qualified targets.
+      - name: Compile GameCoreTests and GameLogicTests for Debug|ARM64
+        shell: pwsh
+        run: |
+          $solution = @(Get-ChildItem -Path . -File | Where-Object { $_.Extension -in '.slnx', '.sln' })[0].Name
+          msbuild $solution "/t:Tests\GameCoreTests;Tests\GameLogicTests" /p:Configuration=Debug /p:Platform=ARM64 /m /nologo /v:minimal /warnaserror
+
   checks:
     name: static checks
     runs-on: ubuntu-latest

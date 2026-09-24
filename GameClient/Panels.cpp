@@ -703,7 +703,15 @@ HudFrame BuildHud(const HudState& _state)
   {
     // **M1.4's REFUSAL, SHOWN.** ADR-013 answers a client that finds no free slot with a reason, and this
     // is where the player reads it.
-    EmitNoticeOverlay(emit, L"MATCH FULL", L"NO SLOT IS FREE");
+    if (_state.fieldMismatch)
+    {
+      // Q76: the host's map and this client's disagree, and playing on would be playing on a map nobody can see.
+      EmitNoticeOverlay(emit, L"MAP MISMATCH", L"HOST AND CLIENT DISAGREE");
+    }
+    else
+    {
+      EmitNoticeOverlay(emit, L"MATCH FULL", L"NO SLOT IS FREE");
+    }
   }
 
   if (_state.matchEnded)

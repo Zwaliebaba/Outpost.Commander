@@ -146,6 +146,9 @@ private:
   std::size_t m_reservedSeats = 0;
   std::uint64_t m_matchSeed = 0;
 
+  /// `FieldHash` of the seed and the count, for every reply (Q76). Computed when either changes, not per join.
+  std::uint64_t m_fieldHash = 0;
+
   /// Seeded by `SaltTokens` and never by `Begin`: one stream for the life of the table, so a suite that
   /// passes one salt can still pin a reconnect, and a host restart with a new salt issues new names.
   Neuron::Pcg32 m_tokens{0, TOKEN_STREAM};

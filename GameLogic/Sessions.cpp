@@ -11,6 +11,7 @@ void Sessions::Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcep
   m_playerCount = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
   m_reservedSeats = (m_reservedSeats > m_playerCount) ? m_playerCount : m_reservedSeats;
   m_matchSeed = _matchSeed;
+  m_fieldHash = FieldHash(m_matchSeed, m_playerCount);
 }
 
 void Sessions::ReserveSeats(std::size_t _count) noexcept
@@ -21,6 +22,7 @@ void Sessions::ReserveSeats(std::size_t _count) noexcept
 void Sessions::Reseed(std::uint64_t _matchSeed) noexcept
 {
   m_matchSeed = _matchSeed;
+  m_fieldHash = FieldHash(m_matchSeed, m_playerCount);
 }
 
 void Sessions::SaltTokens(std::uint64_t _salt) noexcept
@@ -93,7 +95,8 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
                          .player = session.player,
                          .playerCount = WirePlayerCount(),
                          .token = session.token,
-                         .matchSeed = m_matchSeed};
+                         .matchSeed = m_matchSeed,
+                         .fieldHash = m_fieldHash};
       }
     }
   }
@@ -114,7 +117,8 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
                        .player = session.player,
                        .playerCount = WirePlayerCount(),
                        .token = session.token,
-                       .matchSeed = m_matchSeed};
+                       .matchSeed = m_matchSeed,
+                       .fieldHash = m_fieldHash};
     }
   }
 
@@ -129,8 +133,12 @@ JoinReply Sessions::Admit(const Join& _join, const Neuron::Endpoint& _endpoint) 
 
   const SessionToken token = IssueToken();
   m_sessions.push_back(Session{.endpoint = _endpoint, .player = slot, .token = token});
-  return JoinReply{
-    .result = JoinResult::Accepted, .player = slot, .playerCount = WirePlayerCount(), .token = token, .matchSeed = m_matchSeed};
+  return JoinReply{.result = JoinResult::Accepted,
+                   .player = slot,
+                   .playerCount = WirePlayerCount(),
+                   .token = token,
+                   .matchSeed = m_matchSeed,
+                   .fieldHash = m_fieldHash};
 }
 
 PlayerId Sessions::PlayerAt(const Neuron::Endpoint& _endpoint) const noexcept

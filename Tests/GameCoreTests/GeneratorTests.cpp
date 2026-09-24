@@ -427,4 +427,26 @@ public:
   }
 };
 
+/// `OpenQuestions.md` Q76. **The map as one number**, the same on every build that derives the same map.
+TEST_CLASS(TheFieldHash)
+{
+public:
+  /// **PINNED, AND THE SAME ON ALL FOUR PAIRS** before it was: this is the number an ARM64 client and an x64 host
+  /// must agree on at the join.
+  TEST_METHOD(TheShippedMapHashesToItsPinnedValue)
+  {
+    Assert::AreEqual(0x30b092bc22619b42ull, Outpost::FieldHash(MATCH_SEED, 2));
+  }
+
+  /// Another seed or another count is another map, and another number.
+  TEST_METHOD(ItFollowsTheSeedAndTheCount)
+  {
+    const std::uint64_t shipped = Outpost::FieldHash(MATCH_SEED, 2);
+    Assert::AreEqual(shipped, Outpost::FieldHash(MATCH_SEED, 2));
+    Assert::AreNotEqual(shipped, Outpost::FieldHash(MATCH_SEED + 1, 2));
+    Assert::AreNotEqual(shipped, Outpost::FieldHash(MATCH_SEED, 4));
+    Assert::AreNotEqual(0x0ull, shipped, L"zero means no hash on the wire");
+  }
+};
+
 } // namespace GameCoreTests

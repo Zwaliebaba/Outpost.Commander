@@ -19,12 +19,12 @@ constexpr std::size_t REPLY_BYTES = Neuron::PacketHeader::SIZE_BYTES + Outpost::
 TEST_CLASS(TheJoinRecords)
 {
 public:
-  /// **TWELVE AND TWENTY-THREE.** ADR-024 took the two fragment fields out of the transport header in front
-  /// of both, and M2.3 added the player count's byte to the reply.
-  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsTwentyThree)
+  /// **TWELVE AND THIRTY-ONE.** ADR-024 took the two fragment fields out of the transport header in front
+  /// of both, M2.3 added the player count's byte to the reply, and Q76 its eight bytes of field hash.
+  TEST_METHOD(AJoinIsTwelveBytesAndAReplyIsThirtyOne)
   {
     Assert::AreEqual(static_cast<std::size_t>(12), JOIN_BYTES);
-    Assert::AreEqual(static_cast<std::size_t>(23), REPLY_BYTES);
+    Assert::AreEqual(static_cast<std::size_t>(31), REPLY_BYTES);
   }
 
   TEST_METHOD(AJoinRoundTrips)

@@ -73,8 +73,8 @@ struct Join
 /// R8: a wire record.
 struct JoinReply
 {
-  /// result 1, player 1, player count 1, token 8, seed 8.
-  static constexpr std::size_t SIZE_BYTES = 19;
+  /// result 1, player 1, player count 1, token 8, seed 8, field hash 8.
+  static constexpr std::size_t SIZE_BYTES = 27;
 
   JoinResult result = JoinResult::MatchFull;
 
@@ -97,6 +97,10 @@ struct JoinReply
   /// field to draw. Zero on a refusal, which is a legal seed and is never reached because a refused
   /// client draws nothing.
   std::uint64_t matchSeed = 0;
+
+  /// **THE HOST'S `FieldHash` OF THE SEED AND THE COUNT** (`OpenQuestions.md` Q76): the client derives its own and
+  /// refuses the seat on a difference. Zero on a refusal.
+  std::uint64_t fieldHash = 0;
 
   [[nodiscard]] friend constexpr bool operator==(const JoinReply&, const JoinReply&) noexcept = default;
 };

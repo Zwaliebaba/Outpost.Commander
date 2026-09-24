@@ -1283,7 +1283,11 @@ which is the owner's.
 
 **RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION: BOTH.** The join reply carries a 64-bit hash of the field
 and the layout, and a client whose own derivation hashes differently refuses the seat. CI also compiles
-`GameCoreTests` and `GameLogicTests` for `Debug|ARM64`, compile only. Built before M3.9.
+`GameCoreTests` and `GameLogicTests` for `Debug|ARM64`, compile only. **Built** before M3.9: the reply is 31 bytes,
+riding protocol 7, which had not left this branch. A reply with a zero hash is not checked, which only a refusal and a
+suite's hand-built reply carry. The shipped map's hash is pinned in `GeneratorTests`, the same on all four pairs.
+`AGENTS.md` §6 says what the new CI job covers and what it still leaves open. **It has not run on GitHub's runner
+yet**: its first run is the next push.
 
 ### Q79 — Does any gate need more than one person? — **ANSWERED**
 

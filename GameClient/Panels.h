@@ -91,6 +91,9 @@ struct HudState
 
   /// It ended on the six-minute clock rather than on the last station standing (Q65).
   bool endedOnClock = false;
+
+  /// The join was refused because this client derived a different map from the host's (Q76).
+  bool fieldMismatch = false;
 };
 
 /// The wire's building byte, decoded. False when nothing is building.

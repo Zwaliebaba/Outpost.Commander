@@ -86,6 +86,7 @@ bool Encode(const JoinReply& _reply, Neuron::ByteWriter& _writer) noexcept
   static_cast<void>(_writer.WriteUInt8(_reply.playerCount));
   static_cast<void>(_writer.WriteUInt64(_reply.token));
   static_cast<void>(_writer.WriteUInt64(_reply.matchSeed));
+  static_cast<void>(_writer.WriteUInt64(_reply.fieldHash));
   return !_writer.Faulted();
 }
 
@@ -102,6 +103,7 @@ JoinFault Decode(Neuron::ByteReader& _reader, JoinReply& _outReply) noexcept
   const std::uint8_t playerCount = _reader.ReadUInt8();
   const SessionToken token = _reader.ReadUInt64();
   const std::uint64_t seed = _reader.ReadUInt64();
+  const std::uint64_t fieldHash = _reader.ReadUInt64();
   if (_reader.Faulted())
   {
     return JoinFault::Truncated;
@@ -113,7 +115,8 @@ JoinFault Decode(Neuron::ByteReader& _reader, JoinReply& _outReply) noexcept
     return JoinFault::Malformed;
   }
 
-  _outReply = JoinReply{.result = lifted, .player = player, .playerCount = playerCount, .token = token, .matchSeed = seed};
+  _outReply =
+    JoinReply{.result = lifted, .player = player, .playerCount = playerCount, .token = token, .matchSeed = seed, .fieldHash = fieldHash};
   return JoinFault::None;
 }
 

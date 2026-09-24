@@ -249,4 +249,36 @@ std::vector<Placement> GenerateField(std::uint64_t _seed, std::size_t _playerCou
   return field;
 }
 
+std::uint64_t FieldHash(std::uint64_t _seed, std::size_t _playerCount)
+{
+  constexpr std::uint64_t FNV_OFFSET = 0xCBF29CE484222325ull;
+  constexpr std::uint64_t FNV_PRIME = 0x100000001B3ull;
+  std::uint64_t hash = FNV_OFFSET;
+  const auto fold = [&hash](std::uint64_t _value, int _bytes) noexcept
+  {
+    for (int index = 0; index < _bytes; ++index)
+    {
+      hash ^= (_value >> (8 * index)) & 0xFFu;
+      hash *= FNV_PRIME;
+    }
+  };
+  const auto foldAll = [&fold](const std::vector<Placement>& _rows) noexcept
+  {
+    fold(_rows.size(), 4);
+    for (const Placement& row : _rows)
+    {
+      fold(static_cast<std::uint64_t>(row.kind), 1);
+      fold(static_cast<std::uint64_t>(row.field), 1);
+      fold(static_cast<std::uint64_t>(row.design), 1);
+      fold(row.owner, 1);
+      fold(static_cast<std::uint32_t>(row.position.x), 4);
+      fold(static_cast<std::uint32_t>(row.position.y), 4);
+      fold(row.heading, 2);
+    }
+  };
+  foldAll(GenerateField(_seed, _playerCount));
+  foldAll(GenerateLayout(_seed, _playerCount));
+  return hash;
+}
+
 } // namespace Outpost

@@ -99,6 +99,13 @@ inline constexpr std::int32_t ASTEROID_SPACING_UNITS = 150;
 /// still the first rows of this.
 [[nodiscard]] std::vector<Placement> GenerateField(std::uint64_t _seed, std::size_t _playerCount);
 
+/// **THE MAP, AS ONE NUMBER** (`OpenQuestions.md` Q76): FNV-1a over every row `GenerateField` and `GenerateLayout`
+/// produce for _seed and _playerCount -- kind, field, design, owner, position and heading, each little-endian. The
+/// host sends it on the join reply and the client compares it with its own, so a generator that reaches a different
+/// answer on the two sides -- an ARM64 client against an x64 host, say -- is refused at the join rather than found as
+/// a miner mining a rock nobody can see (R23).
+[[nodiscard]] std::uint64_t FieldHash(std::uint64_t _seed, std::size_t _playerCount);
+
 /// Whether a point, in whole units, lies inside player one's region with at least _marginUnits to spare
 /// from every edge the rotation copies across. **At two players the region is the half-plane `x < 0`; at
 /// four it is the quarter between the two diagonals around the negative x axis.** The play area's own edge

@@ -245,4 +245,29 @@ public:
   }
 };
 
+/// `OpenQuestions.md` Q76. **A client refuses a seat on a map it did not derive.**
+TEST_CLASS(TheMapCheck)
+{
+public:
+  TEST_METHOD(AMatchingMapIsSeatedAndAMismatchIsRefused)
+  {
+    Outpost::JoinReply reply = Seated(Outpost::JoinResult::Accepted, 1, 0x1234ull);
+    reply.fieldHash = Outpost::FieldHash(reply.matchSeed, reply.playerCount);
+    Outpost::JoinState matching;
+    matching.Begin(0);
+    static_cast<void>(matching.Accept(reply));
+    Assert::IsTrue(matching.IsJoined());
+    Assert::IsFalse(matching.FieldMismatch());
+
+    reply.fieldHash ^= 1;
+    Outpost::JoinState mismatched;
+    mismatched.Begin(0);
+    static_cast<void>(mismatched.Accept(reply));
+    Assert::IsFalse(mismatched.IsJoined(), L"it sat down on a map it cannot see");
+    Assert::IsTrue(mismatched.Phase() == Outpost::JoinPhase::Refused);
+    Assert::IsTrue(mismatched.FieldMismatch());
+    Assert::AreEqual(0x1234ull, mismatched.Token(), L"the seat's token was thrown away");
+  }
+};
+
 } // namespace GameClientTests

@@ -376,4 +376,21 @@ public:
   }
 };
 
+/// Q76. **Every seat is told the map's hash**, for the seed it is told.
+TEST_CLASS(TheFieldHashOnTheReply)
+{
+public:
+  TEST_METHOD(EveryReplyCarriesTheHashOfItsSeed)
+  {
+    Outpost::Sessions sessions;
+    sessions.Begin(2, SEED);
+    const Outpost::JoinReply first = sessions.Admit(Outpost::Join{}, At(1, 100));
+    Assert::AreEqual(Outpost::FieldHash(SEED, 2), first.fieldHash);
+
+    sessions.Reseed(SEED + 7);
+    const Outpost::JoinReply back = sessions.Admit(Outpost::Join{.token = first.token}, At(1, 100));
+    Assert::AreEqual(Outpost::FieldHash(SEED + 7, 2), back.fieldHash, L"a restart kept the old map's hash");
+  }
+};
+
 } // namespace GameLogicTests

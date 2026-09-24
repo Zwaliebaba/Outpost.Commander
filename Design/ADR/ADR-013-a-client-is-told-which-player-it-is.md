@@ -47,8 +47,9 @@ the version field is for.
 | player count | 1 | **since M2.3**: the match's configured count, which the field is derived from alongside the seed; zero on a refusal |
 | session token | 8 | the client stores it and presents it next time |
 | match seed | 8 | R23's, and with the count one of the two things on the wire that a client cannot get from a snapshot |
+| field hash | 8 | **since `OpenQuestions.md` Q76**: `FieldHash` of the seed and the count; the client derives its own and refuses the seat on a difference. Zero on a refusal |
 
-Nineteen bytes of payload since M2.3, eighteen before it, behind the header. Neither record is
+Twenty-seven bytes of payload since Q76, nineteen from M2.3, eighteen before it, behind the header. Neither record is
 retransmitted and neither is acknowledged: **the client repeats the `Join` until a reply arrives**, every 250 milliseconds, and the
 host answers every one of them. A `Join` from a client that already holds a session is answered with the
 **same** reply rather than claiming a second slot, which is what makes a lost reply cost one retry instead
@@ -199,8 +200,8 @@ what this decision costs on the wire:
 
 - A `Join` is **12 bytes** — four of `Neuron::PacketHeader` and eight of token. It was 14 until ADR-024 took the
   header's two fragment fields out.
-- A `JoinReply` is **23 bytes** — four of header, then 1 + 1 + 1 + 8 + 8. It was 24 until ADR-024 for the same
-  reason, then 22 until M2.3 added the player count.
+- A `JoinReply` is **31 bytes** — four of header, then 1 + 1 + 1 + 8 + 8 + 8. It was 24 until ADR-024 for the same
+  reason, then 22 until M2.3 added the player count, then 23 until Q76 added the field hash.
 
 Neither is in ADR-003's datagram budget and neither can affect it: both are sent outside the snapshot
 path, once per join rather than twenty times a second, and `Scripts/DatagramBudget.py` models the snapshot

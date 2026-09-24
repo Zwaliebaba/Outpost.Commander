@@ -81,6 +81,22 @@ bool JoinState::Accept(const JoinReply& _reply) noexcept
 
   const bool tokenChanged = (_reply.token != m_token);
 
+  // **Q76: THE MAP IS CHECKED BEFORE THE SEAT IS TAKEN.** The host's hash of the field it derived against this
+  // client's own derivation of the same seed and count: a difference is a generator that disagrees across the two
+  // builds, and playing on would mean mining rocks the player cannot see. The token is kept -- the seat is real and
+  // the host holds it -- but this client does not sit in it. **Zero is a reply that carries no hash**, which only a
+  // refusal and a suite's hand-built reply are.
+  if ((_reply.fieldHash != 0) && (_reply.fieldHash != FieldHash(_reply.matchSeed, _reply.playerCount)))
+  {
+    m_token = _reply.token;
+    m_phase = JoinPhase::Refused;
+    m_fieldMismatch = true;
+    m_player = NO_PLAYER;
+    m_matchSeed = 0;
+    m_playerCount = 0;
+    return tokenChanged;
+  }
+
   m_token = _reply.token;
   m_matchSeed = _reply.matchSeed;
   m_playerCount = _reply.playerCount;

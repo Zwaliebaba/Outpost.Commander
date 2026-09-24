@@ -134,6 +134,12 @@ public:
     return m_resumed;
   }
 
+  /// **REFUSED BECAUSE THE MAP DID NOT MATCH** (Q76), rather than because the match was full.
+  [[nodiscard]] bool FieldMismatch() const noexcept
+  {
+    return m_fieldMismatch;
+  }
+
   [[nodiscard]] std::uint32_t SentCount() const noexcept
   {
     return m_sent;
@@ -146,6 +152,7 @@ private:
   PlayerId m_player = NO_PLAYER;
   JoinPhase m_phase = JoinPhase::Joining;
   bool m_resumed = false;
+  bool m_fieldMismatch = false;
 
   /// When the last one went out. **`m_sent` is what says whether it means anything** -- zero is a
   /// legal clock reading on the first frame, so a sentinel timestamp would have been a second

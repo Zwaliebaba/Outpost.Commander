@@ -266,8 +266,8 @@ Each of those lives in a `Condition="'$(Configuration)'=='Debug'"` or `'Release'
 # From the repository root. /t:<Project> builds one project, still through the solution.
 msbuild OutpostCommander.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
 
-# The other three pairs, which NOBODY ELSE BUILDS — CI builds Debug|x64 and no more, so a break
-# in any of these reaches main green and is found by whoever ships. Run all three before you do.
+# The other three pairs, which NOBODY ELSE BUILDS — CI builds Debug|x64 and compiles two suites for
+# Debug|ARM64 (§6), so most breaks in these reach main green and are found by whoever ships. Run all three before you do.
 foreach ($c in 'Release|x64','Debug|ARM64','Release|ARM64') { $p = $c -split '\|'
   msbuild OutpostCommander.slnx /p:Configuration=$($p[0]) /p:Platform=$($p[1]) /m /v:minimal /nologo }
 ```
@@ -383,10 +383,10 @@ That is not the client simulating (R19). **A generator is a rule, and `GameCore`
 
 **Record decisions where the next person will read them.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — belongs in writing, in the same commit as the change that implements it, and this file is where the standing ones live. Figures are measured, not estimated: if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**What CI gates: `Debug|x64` and the format check, and nothing else.** [`.github/workflows/build.yml`](.github/workflows/build.yml) is the definition and is not restated here — a prose copy of a workflow drifts, and this one already did. What matters is not the steps but **what they leave open**, which no file states for you:
+**What CI gates: `Debug|x64`, the format check, and a compile-only `Debug|ARM64` of the two simulation suites, and nothing else.** [`.github/workflows/build.yml`](.github/workflows/build.yml) is the definition and is not restated here — a prose copy of a workflow drifts, and this one already did. What matters is not the steps but **what they leave open**, which no file states for you:
 
 - **Release.** Nothing compiles it, so a Release that quietly lost an include directory, sat on an older language standard, or breaks only under optimization reaches `main` green. §3's table is the rule it is still expected to obey; the only thing that checks it is you, before you ship.
-- **ARM64.** Nothing builds it, so an ARM64-only break reaches `main` green too — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform. **The target device is an ARM64 part** (`Design/ADR/ADR-007`), so this is the platform the game is for and the platform nothing automated compiles.
+- **ARM64.** Since `Design/OpenQuestions.md` Q76 (ruled by the owner 2026-09-24), CI **compiles** `GameCoreTests` and `GameLogicTests` for `Debug|ARM64`, which is where the determinism pins live — compile only, because the runner is x64. Nothing compiles the client, the host or `Release|ARM64`, and nothing **runs** anything on ARM64, so an ARM64-only break outside those two suites, or one that only shows when the code runs, still reaches `main` green — most plausibly something assuming x86-family intrinsics, since `EnableEnhancedInstructionSet` is the one setting that differs by platform. **The target device is an ARM64 part** (`Design/ADR/ADR-007`), so this is the platform the game is for, and the four-pair run by hand is still what checks it.
 
 The owner decided this scope: the Windows build is the slow half of the pipeline and each extra pair roughly doubles it. **The cheap half of both gaps is now closed by a static check rather than a second build.** [`Scripts/CheckProjectFiles.py`](Scripts/CheckProjectFiles.py) reads every `.vcxproj` and asserts §3's table in about a second, gated in CI, so configuration drift — a setting that wandered into a conditioned group, a lowered language standard, a platform inheriting `EnableEnhancedInstructionSet`, an SDK pin past the runner's — is caught here.
 
@@ -407,7 +407,7 @@ The owner decided this scope: the Windows build is the slow half of the pipeline
 - [ ] No new third-party dependency and no second NuGet package (R14); every `packages.config` still pins one version.
 - [ ] The format check passes, and so do the gates: `python3 Scripts/CheckProjectFiles.py`, `Scripts/CheckDeterminism.py`, `Scripts/CheckDesign.py`, `Scripts/CheckHudGeometry.py`. They are seconds and they are what CI runs. **There is no spelling check to run** (§1, §2); spell what you write correctly, US spelling in prose and identifiers alike.
 - [ ] It builds `Debug|x64`, and every test suite runs and passes.
-- [ ] **CI builds nothing else** (§6), so `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built locally — or your report says plainly that they were not.
+- [ ] **CI builds nothing else and runs nothing on ARM64** (§6), so `Release|x64`, `Debug|ARM64` and `Release|ARM64` were built and their suites run locally — or your report says plainly that they were not.
 - [ ] Your report states what you verified, what you assumed, and any rule here you had to bend.
 
 **If you touched `Design/` or this file:**

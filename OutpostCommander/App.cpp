@@ -702,7 +702,9 @@ void RunProbe(const CoreWindow& _window)
           clientFrame.Camera(), Outpost::RecenterRequest{.stationX = static_cast<float>(home.x) / static_cast<float>(Neuron::FIXED_ONE),
                                                          .stationY = static_cast<float>(home.y) / static_cast<float>(Neuron::FIXED_ONE)});
       }
-      Report(log, "JOIN " + std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted") : "REFUSED: match full"} +
+      Report(log, "JOIN " +
+                    std::string{join.IsJoined() ? (join.Resumed() ? "rejoined" : "accepted")
+                                                : (join.FieldMismatch() ? "REFUSED: the host's map differs" : "REFUSED: match full")} +
                     " player=" + std::to_string(static_cast<unsigned>(join.Player())) + " of " + std::to_string(join.PlayerCount()) +
                     " seed=" + std::to_string(join.MatchSeed()) + " field=" + std::to_string(clientFrame.Field().Rocks().size()) +
                     " rocks");
@@ -1582,6 +1584,7 @@ void RunProbe(const CoreWindow& _window)
         hudState.quitArmed = quitConfirm.IsArmed(nowMs);
 
         hudState.link = clientFrame.Link();
+        hudState.fieldMismatch = clientFrame.CurrentJoin().FieldMismatch();
 
         // M3.8: THE RESULT, for as long as the frame says it is shown. The next match is already running under it.
         const Outpost::MatchEnded* result = clientFrame.ShownResult(nowMs);
