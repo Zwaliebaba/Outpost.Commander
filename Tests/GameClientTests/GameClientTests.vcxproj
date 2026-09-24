@@ -131,6 +131,7 @@
     <ClCompile Include="CreditFlashTests.cpp" />
     <ClCompile Include="TapLatencyProbeTests.cpp" />
     <ClCompile Include="HudLayoutTests.cpp" />
+    <ClCompile Include="BeamTests.cpp" />
     <ClCompile Include="BotPolicyTests.cpp" />
     <ClCompile Include="ChurnScheduleTests.cpp" />
     <ClCompile Include="FloodScheduleTests.cpp" />

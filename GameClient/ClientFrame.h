@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Beams.h"
 #include "Camera.h"
 #include "FieldView.h"
 #include "JoinState.h"
@@ -181,6 +182,18 @@ public:
     return m_replicas;
   }
 
+  /// The shots being drawn (Q81), fed by every update's fire events as it is drained. Mutable so the frame can
+  /// expire what has finished drawing.
+  [[nodiscard]] TracerSet& Tracers() noexcept
+  {
+    return m_tracers;
+  }
+
+  [[nodiscard]] const TracerSet& Tracers() const noexcept
+  {
+    return m_tracers;
+  }
+
   /// Which player this client is, **as the host said** (ADR-013). `NO_PLAYER` until the join is
   /// answered, which is what the marker clearing and the command path both check.
   [[nodiscard]] PlayerId Player() const noexcept
@@ -215,6 +228,7 @@ public:
 
 private:
   ReplicaStore m_replicas;
+  TracerSet m_tracers;
   OrderMarkerSet m_markers;
 
   /// **THE OPENING VIEW: YOUR OWN BASE, CLOSE ENOUGH TO READ.**

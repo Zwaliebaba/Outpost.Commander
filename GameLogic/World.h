@@ -73,6 +73,11 @@ struct MineOrder
 
   /// Where it is unloading, once a query has said. `NO_ENTITY` until then, and again if that dies.
   EntityId unloadTarget{};
+
+  /// **WHETHER THE LAST `Extracting` TICK TOOK ORE**, which is what the record's activity says (Q81): false for a
+  /// miner holding at a rock another is working (Q62). Read only when the phase is `Extracting`, so it is never
+  /// cleared on the way out. Not hashed: it is a copy of what the tick just did, and nothing reads it back.
+  bool working = false;
 };
 
 /// **WHAT A SHIP'S WEAPONS ARE OWED** (M3.2, ADR-014): the target their remainders were accumulated against,

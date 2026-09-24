@@ -72,6 +72,9 @@ inline constexpr std::uint32_t MAXIMUM_INSTANCES = 220;
 /// their vertices (`GameClient/AsteroidMesh.h`), so the instance puts them at the origin, unturned.
 inline constexpr std::uint32_t FIELD_INSTANCES = 1;
 
+/// Q81: the most beams a frame draws -- every held tracer, and one mining or unloading beam an entity.
+inline constexpr std::uint32_t BEAM_CAPACITY = static_cast<std::uint32_t>(Outpost::MAX_TRACERS) + MAXIMUM_INSTANCES;
+
 /// The host learns where to reply from the first datagram it hears, so the hello is repeated --
 /// a single one could be the packet that gets lost, and the run would then measure silence.
 /// **THE HELLO IS GONE AND THE JOIN REPLACED IT** (ADR-013). An empty command packet used to be
@@ -368,6 +371,11 @@ void RunProbe(const CoreWindow& _window)
   //
   // **IT CANNOT HAPPEN UNTIL THE JOIN REPLY LANDS**, because the field is seeded from the match (R23).
   Neuron::PointSprites pointSprites;
+
+  // Q81: SHOTS, MINING AND UNLOADING, drawn as beams after the hulls. Its own ring, indexed like the meshes'.
+  Neuron::BeamPass beamPass;
+  std::uint32_t beamFrame = 0;
+  std::vector<Neuron::BeamInstance> beams;
   bool meshesLoaded = false;
   Outpost::ClientFrame clientFrame;
 
@@ -477,6 +485,13 @@ void RunProbe(const CoreWindow& _window)
   {
     worldFit = Neuron::ComputeFit(sceneTarget.WidthPixels(), sceneTarget.HeightPixels(), swapChain.WidthPixels(), swapChain.HeightPixels());
     interfaceFit = Neuron::ComputeInterfaceFit(swapChain.WidthPixels(), swapChain.HeightPixels());
+
+    // NOT IN THE CHAIN ABOVE: a game without beams is still a game, and a failure here must not take the
+    // text renderer and the gesture seam down with it.
+    if (!beamPass.Create(device, sceneTarget, BEAM_CAPACITY))
+    {
+      Report(log, "probe: no beam pass, hresult " + std::to_string(beamPass.LastHresult()));
+    }
 
     // THE INTERFACE FIT AND NOT THE WORLD'S (ADR-016), which is the defect that ADR worries about:
     // at the 1:1 world default the world fit is identity and every tap would land in the top left
@@ -1402,6 +1417,18 @@ void RunProbe(const CoreWindow& _window)
 
             instanceFrame = (instanceFrame + 1) % Neuron::InstanceRing::FRAME_COUNT;
           }
+
+          // === Q81: THE BEAMS, AFTER THE HULLS SO A HULL IN FRONT HIDES ONE. ========================
+          clientFrame.Tracers().Expire(nowMs);
+          if (beamPass.IsReady())
+          {
+            Outpost::BuildBeams(clientFrame.Tracers(), drawnRecords, rockPicks, nowMs,
+                                Outpost::UnitsPerPixelAtFocus(clientFrame.Camera(), sceneTarget.HeightPixels()), beams);
+            if (beamPass.Draw(device, sceneTarget, beamFrame, viewProjection.m, beams))
+            {
+              beamFrame = (beamFrame + 1) % Neuron::BeamPass::FRAME_COUNT;
+            }
+          }
         }
       }
 
@@ -1620,6 +1647,7 @@ void RunProbe(const CoreWindow& _window)
   // has already gone.
   device.WaitForGpu();
 
+  beamPass.Destroy();
   textRenderer.Destroy();
   glyphAtlas.Destroy();
   interfacePass.Destroy();

@@ -91,9 +91,9 @@ inline constexpr std::uint32_t WIRE_GENERATION_MASK = (std::uint32_t{1} << WIRE_
   return static_cast<std::uint16_t>((_identity >> WIRE_INDEX_BITS) & WIRE_GENERATION_MASK);
 }
 
-/// The flags byte's layout. **The state's semantics are not settled here**: there are no entity states
-/// yet, and inventing enumerators for them would be this file deciding things the game design owns. The
-/// bit positions are the format. **The team bits are gone** -- the owner has its own byte (ADR-024).
+/// The flags byte's layout. **The state field says what a ship is visibly doing** (`OpenQuestions.md` Q81): two
+/// of its eight values are taken, by the two things a miner does that the owner has to be able to see, and the
+/// rest are unassigned. **The team bits are gone** -- the owner has its own byte (ADR-024).
 ///
 /// **CARGO IS THREE BITS SINCE M2.7** (`OpenQuestions.md` Q53): the selection panel draws four chips, and
 /// empty through full is five states, which two bits could not say. It took one of three spare bits, so
@@ -103,6 +103,34 @@ inline constexpr std::uint8_t FLAGS_STATE_MASK = 0x07;
 inline constexpr std::uint8_t FLAGS_CARGO_SHIFT = 3;
 inline constexpr std::uint8_t FLAGS_CARGO_MASK = 0x07;
 inline constexpr std::uint8_t FLAGS_SPARE_SHIFT = 6;
+
+/// **WHAT A SHIP IS VISIBLY DOING** (Q81), in the flags' state field: enough for a client to draw a mining beam
+/// without being told the order behind it (R19). Firing is not here -- a shot is a `FireEvent` (ADR-004).
+enum class Activity : std::uint8_t
+{
+  None = 0,
+
+  /// Holding the rock and taking ore from it this tick. A miner waiting its turn at a worked rock (Q62) is not.
+  Extracting = 1,
+
+  /// Alongside a station or refinery and emptying the hold into it.
+  Unloading = 2
+};
+
+/// The activity a record's flags carry. A value nothing assigns reads as `None`, so a newer host's third
+/// activity draws as nothing on an older client rather than as the wrong beam.
+[[nodiscard]] constexpr Activity ActivityOf(std::uint8_t _flags) noexcept
+{
+  const std::uint8_t state = static_cast<std::uint8_t>((_flags >> FLAGS_STATE_SHIFT) & FLAGS_STATE_MASK);
+  return (state <= static_cast<std::uint8_t>(Activity::Unloading)) ? static_cast<Activity>(state) : Activity::None;
+}
+
+/// _flags with its state field replaced by _activity.
+[[nodiscard]] constexpr std::uint8_t WithActivity(std::uint8_t _flags, Activity _activity) noexcept
+{
+  return static_cast<std::uint8_t>((_flags & ~(FLAGS_STATE_MASK << FLAGS_STATE_SHIFT)) |
+                                   ((static_cast<std::uint8_t>(_activity) & FLAGS_STATE_MASK) << FLAGS_STATE_SHIFT));
+}
 
 /// The most chips a hold lights: the selection panel's four (`design_handoff_hud`).
 inline constexpr std::uint8_t CARGO_CHIP_COUNT = 4;

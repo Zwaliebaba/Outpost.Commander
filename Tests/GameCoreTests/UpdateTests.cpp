@@ -488,4 +488,31 @@ public:
   }
 };
 
+/// Q81. **What a ship is visibly doing**, in the state bits the cargo sits above.
+TEST_CLASS(TheActivity)
+{
+public:
+  /// Each activity round-trips through the three state bits and leaves the cargo and spare bits alone.
+  TEST_METHOD(TheActivitySitsInTheStateBits)
+  {
+    for (const Outpost::Activity activity : {Outpost::Activity::None, Outpost::Activity::Extracting, Outpost::Activity::Unloading})
+    {
+      const std::uint8_t flags = Outpost::WithActivity(0xFF, activity);
+      Assert::IsTrue(Outpost::ActivityOf(flags) == activity);
+      Assert::AreEqual(std::uint8_t{0xF8}, static_cast<std::uint8_t>(flags & 0xF8), L"the cargo or the spare bits moved");
+    }
+    Assert::AreEqual(std::uint8_t{3},
+                     Outpost::CargoChipsOf(Outpost::WithActivity(Outpost::WithCargoChips(0, 3), Outpost::Activity::Unloading)));
+  }
+
+  /// A state value nothing assigns reads as no activity, so a newer host's draws as nothing rather than as a beam.
+  TEST_METHOD(AnUnassignedStateIsNoActivity)
+  {
+    for (std::uint8_t state = 3; state <= Outpost::FLAGS_STATE_MASK; ++state)
+    {
+      Assert::IsTrue(Outpost::ActivityOf(state) == Outpost::Activity::None);
+    }
+  }
+};
+
 } // namespace GameCoreTests

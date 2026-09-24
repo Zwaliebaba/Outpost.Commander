@@ -20,6 +20,7 @@
 #include "InterfacePass.h"
 #include "PresentStep.h"
 #include "PointSprites.h"
+#include "BeamPass.h"
 #include "AtlasPacker.h"
 #include "GlyphAtlas.h"
 #include "TextLayout.h"

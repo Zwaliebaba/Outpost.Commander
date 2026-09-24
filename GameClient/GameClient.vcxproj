@@ -111,6 +111,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Beams.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ClientFrame.cpp" />
     <ClCompile Include="GameClient.cpp" />
@@ -141,6 +142,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Beams.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ClientFrame.h" />
     <ClInclude Include="GameClient.h" />

@@ -195,6 +195,21 @@ may treat the tracer's travel as a thing with duration.
 missing tracer and nothing else — asserted by feeding the client a gap; and the tracer's lifetime is
 client-side, with the host never told it exists.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, NOT YET LOOKED AT ON THE DEVICE**, together with a mining beam, because the
+owner could see neither (`OpenQuestions.md` Q81). The wire half was M3.2's. The client half differs from the
+files named above:
+
+- **`NeuronClient/BeamPass`** and its two shaders: one instanced draw of soft-edged quads on the plane, additive,
+  depth tested and not written, from a three-frame upload ring. It knows nothing of weapons (R9).
+- **`GameClient/Beams`**: `TracerSet` folds each drained update's fire events, repeats included, and
+  `BuildBeams` turns the tracers and the records' activity into the frame's beams. `ClientFrame` feeds the set,
+  and `App.cpp` draws the beams after the hulls.
+- **The record's state bits** carry the miner's activity, set by the accumulator from the mine order.
+
+**The dropped-snapshot clause is stronger than written.** An event is repeated in three updates (ADR-004 as
+amended), so one lost update costs no tracer at all; it takes three in a row. `BeamTests.cpp` pins the fold,
+the delay, the fade, the expiry and the cap.
+
 ### M3.3b — The alert, and hull bars in the world · `GameClient` · `GameClientTests` · agent
 
 **Read first:** [`ADR-020`](../ADR/ADR-020-damage-offscreen-is-announced-at-the-edge.md); `Interface.md`

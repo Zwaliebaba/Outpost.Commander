@@ -65,6 +65,19 @@ struct Scene
   return Outpost::PackIdentity(_id.index, _id.generation);
 }
 
+/// What the record sent for _id says it is doing (Q81).
+[[nodiscard]] Outpost::Activity SentActivity(const Outpost::World& _world, Outpost::EntityId _id) noexcept
+{
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (_world.IsSlotAlive(slot) && (_world.EntityInSlot(slot).id == _id))
+    {
+      return Outpost::ActivityOf(Outpost::RecordOf(_world, slot).flags);
+    }
+  }
+  return Outpost::Activity::None;
+}
+
 /// 1,000 thousandths of ore a tick from one laser, and 2,500 unloading: the design's figures at 20 Hz.
 constexpr std::uint32_t FULL_HOLD_MILLI_ORE = 100 * Outpost::MILLI_ORE_PER_ORE;
 } // namespace
@@ -243,6 +256,7 @@ public:
     scene.Step();
     Assert::IsTrue(scene.Mine().phase == Outpost::MiningPhase::Unloading, L"at reach and full: it unloads at once");
     Assert::AreEqual(FULL_HOLD_MILLI_ORE - 2500, scene.Mine().cargoMilliOre);
+    Assert::IsTrue(SentActivity(scene.world, scene.miner) == Outpost::Activity::Unloading, L"the record does not say it is unloading");
   }
 };
 
@@ -317,6 +331,10 @@ public:
     Assert::IsTrue(firstCargo > 0, L"the lower slot did not extract");
     Assert::IsTrue(scene.world.FindMine(second)->phase == Outpost::MiningPhase::Extracting);
     Assert::AreEqual(0u, scene.world.FindMine(second)->cargoMilliOre, L"two miners took ore from one rock in one tick");
+
+    // Q81: only the one taking ore is sent as extracting, so only it draws a beam.
+    Assert::IsTrue(SentActivity(scene.world, scene.miner) == Outpost::Activity::Extracting);
+    Assert::IsTrue(SentActivity(scene.world, second) == Outpost::Activity::None, L"a waiting miner was sent as extracting");
 
     // Until the first is full, the second waits; the tick after it fills, the second extracts.
     for (int tick = 0; (tick < 200) && (scene.Mine().phase == Outpost::MiningPhase::Extracting); ++tick)

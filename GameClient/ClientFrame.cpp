@@ -27,6 +27,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     // it answers the rejoin, so everything is sent within one sweep -- and the removals of whatever died
     // meanwhile have long stopped repeating, so anything kept here could be a ghost.
     m_replicas.Clear();
+    m_tracers.Clear();
     m_reconnecting = true;
     m_lastHeardMilliseconds = _nowMilliseconds;
     result.linkLost = true;
@@ -88,6 +89,7 @@ ClientFrame::DrainResult ClientFrame::DrainPackets(Neuron::PacketQueue& _queue, 
     // EVERY UPDATE IS HEARD, WHATEVER BECAME OF ITS RECORDS. An update whose records were all refused as
     // reordered still says the link is alive and still carries the tick and this client's block.
     const ReplicaStore::AcceptResult accepted = m_replicas.Accept(update, _nowMilliseconds);
+    m_tracers.Note(update.fires, _nowMilliseconds);
     ++result.accepted;
     result.refused += accepted.refused;
     result.refreshed += accepted.refreshed;

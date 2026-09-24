@@ -119,9 +119,11 @@ void MiningSystem::Advance(World& _world)
         // everything in this pass, so which miner waits is the store's order and never a race (R16).
         if (m_rockWorked[mine.rock] != 0)
         {
+          mine.working = false;
           break;
         }
         m_rockWorked[mine.rock] = 1;
+        mine.working = true;
 
         // EXACTLY TO A FULL HOLD, NEVER PAST IT: the last tick's worth is whatever is left of the capacity,
         // so the cargo equals the capacity on the tick it fills rather than overshooting by a rate.

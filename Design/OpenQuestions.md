@@ -8,7 +8,7 @@ is**, rather than assuming.
 **Needed by** is the milestone (`GameDesign.md` §10) that cannot be finished without the answer. A question
 with no milestone can wait indefinitely.
 
-**Sixty-six answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79 and Q80 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
+**Sixty-seven answered, fourteen open** — Q34, Q48 and Q49, and eleven of Q62 to Q77 from the mid-implementation review (Q62, Q66, Q67, Q68 and Q72 are ruled). Q78 was asked and answered at M3.2, and Q79, Q80 and Q81 on 2026-09-24. Eight came from an adversarial review that also reversed two earlier
 answers and corrected three statements that were wrong, one — Q38 — came from writing the code rather than
 from reading the design, and **seven — Q39 to Q45 — came from integrating the mesh handoff**, which is the
 first time a body of authored content met this design and asked it questions. Those seven were registered
@@ -1274,6 +1274,28 @@ can add ships to the build queue."* It reverses two earlier answers:
    and the cap of four, as if it were built. An upgrade already queued or building for a module refuses a second.
 5. **The panel shows how many wait**, as "+N" beside the item in progress. The count saturates at 15 on the wire.
 
+### Q81 — What does a shot, and a miner at work, look like? — **ANSWERED**
+
+**A BEAM FOR EACH, DRAWN BY THE CLIENT. The owner's report, 2026-09-24**: *"I do not see when a ship is shooting
+or mining, that animation does not exist."* M3.2 sent fire events and nothing drew them, and a miner at its rock
+looked like a miner parked beside one. This is M3.3's tracer and a mining beam, built together:
+
+1. **A shot is a tracer**: a soft-edged line from the shooter's drawn position to the target's, lying on the
+   plane, drawn a quarter of a second and fading. It starts after the interpolation delay, so it joins the hulls
+   where they are drawn rather than where they will be. Colored by weapon: orange for a mass driver, pale blue
+   for point defense. The three repeats of one event are folded into one tracer by shooter, target and weapon.
+2. **Mining is a green beam** from an extracting miner to the nearest rock in its reach, and **unloading is an
+   amber beam** into the owner's nearest ore acceptor. The client does not know which rock or station the host
+   chose (R19). It takes the nearest one, which is the one the host chose in every case the rules allow.
+3. **Two of the record's eight state values are taken** for it: 1 is extracting, 2 is unloading, and 0 is
+   neither. **Extracting means taking ore this tick**, so a miner waiting its turn at a worked rock (Q62)
+   draws no beam. Nothing else is assigned, and an unassigned value draws as nothing. The protocol stays at 6,
+   since the bits were already on the wire as zero.
+4. **A beam's width is the larger of a pixel count and a world-unit floor**, so it stays visible at the default
+   camera distance and does not become a hair beside a hull seen close.
+
+**Not tuned.** Colors, widths and the lifetime are first guesses, and the owner's eye is the gate.
+
 ### Q78 — Does a ship under a move order fire? — **ANSWERED**
 
 **YES, AT WILL, WITHOUT CHANGING COURSE. The owner's answer, 2026-09-24**, asked at M3.2. `GameDesign.md` §7 says
@@ -1298,7 +1320,8 @@ The review's minors that are decisions rather than defects. Each has the review'
    is rebuilt inside mining while the tick has its own (Q61's "folding the two into one is owed").
    *Default: refuse three without `--stress`; define the bits as idle, moving, mining, fleeing and engaged
    in ADR-024; budget the unlock byte in TechnicalDesign §4 with Q70's header bytes; build one grid in
-   `Host` after movement.*
+   `Host` after movement.* **Q81 gave the state bits a narrower meaning on 2026-09-24**: what a miner is
+   visibly doing, in two of the eight values. The rest are free for this default if it is still wanted.
 5. **Host-only tuning overrides** (m14). Every M3.11 figure costs a rebuild and a redeploy. *Default: a
    `Server --tuning` override of the host-only rows, hashed and printed beside the seed, and taken by the
    determinism test too.*

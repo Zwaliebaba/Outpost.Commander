@@ -65,7 +65,19 @@ EntityRecord RecordOf(const World& _world, std::size_t _slot) noexcept
 {
   const Entity& entity = _world.EntityInSlot(_slot);
   const DerivedStats stats = Derive(entity.design);
-  const std::uint8_t chips = CargoChips(_world.MineInSlot(_slot).cargoMilliOre, stats.oreCapacity * MILLI_ORE_PER_ORE);
+  const MineOrder& mine = _world.MineInSlot(_slot);
+  const std::uint8_t chips = CargoChips(mine.cargoMilliOre, stats.oreCapacity * MILLI_ORE_PER_ORE);
+
+  // WHAT THE OWNER CAN SEE IT DOING (Q81): a beam at a rock or into a station, and nothing for the rest.
+  Activity activity = Activity::None;
+  if ((mine.phase == MiningPhase::Extracting) && mine.working)
+  {
+    activity = Activity::Extracting;
+  }
+  else if (mine.phase == MiningPhase::Unloading)
+  {
+    activity = Activity::Unloading;
+  }
   return EntityRecord{.identity = PackIdentity(entity.id.index, entity.id.generation),
                       .owner = entity.owner,
                       .positionX = QuantizePosition(entity.position.x),
@@ -73,7 +85,7 @@ EntityRecord RecordOf(const World& _world, std::size_t _slot) noexcept
                       .heading = QuantizeWireHeading(entity.heading),
                       .hullPercentRemaining = QuantizeHullPercent(entity.hullRemaining, stats.hullPoints),
                       .designIdentity = static_cast<std::uint8_t>(entity.design),
-                      .flags = WithCargoChips(0, chips)};
+                      .flags = WithActivity(WithCargoChips(0, chips), activity)};
 }
 
 void Accumulator::Begin() noexcept
