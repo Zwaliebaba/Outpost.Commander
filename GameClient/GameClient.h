@@ -22,6 +22,7 @@
 #include "HudLayout.h"
 #include "PanelHitTest.h"
 #include "CreditFlash.h"
+#include "TapLatencyProbe.h"
 #include "Panels.h"
 #include "Interpolation.h"
 #include "Selection.h"

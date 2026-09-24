@@ -1038,7 +1038,10 @@ decision:
    the drawn *position* changes. A ship that now turns before it flies logged 414 to 665 ms in the last
    session, and that is the turn, not the latency. `TechnicalDesign.md` §9.2 defines the onset as the
    drawn *heading* changing. So the instrument should fire on either, and be re-run against the 79 ms,
-   which was taken before ships turned and stays M1's figure.
+   which was taken before ships turned and stays M1's figure. **FIXED 2026-09-24, RE-RUN STILL OWED.** The rule
+   left `App.cpp` for `GameClient/TapLatencyProbe`, with a suite over it (R20). It fires on whichever
+   changes first, and logs which one it was. It arms only on a ship that is neither moving nor turning,
+   because a ship turning in place from an earlier order would otherwise time the old turn.
 
 **The thing that was watched** was M1.2, and it held. No stat and no rule special-cases a station.
 The one comparison with `DesignId::Station` in the simulation is `BuildSystem::StationOf`, which finds

@@ -124,6 +124,7 @@
     <ClCompile Include="FieldView.cpp" />
     <ClCompile Include="AsteroidMesh.cpp" />
     <ClCompile Include="CreditFlash.cpp" />
+    <ClCompile Include="TapLatencyProbe.cpp" />
     <ClCompile Include="PanelHitTest.cpp" />
     <ClCompile Include="Panels.cpp" />
     <ClCompile Include="OrderMarker.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="FieldView.h" />
     <ClInclude Include="AsteroidMesh.h" />
     <ClInclude Include="CreditFlash.h" />
+    <ClInclude Include="TapLatencyProbe.h" />
     <ClInclude Include="HudLayout.h" />
     <ClInclude Include="PanelHitTest.h" />
     <ClInclude Include="Panels.h" />

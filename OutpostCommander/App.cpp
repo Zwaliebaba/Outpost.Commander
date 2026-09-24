@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -536,26 +537,15 @@ void RunProbe(const CoreWindow& _window)
   bool reportedSeat = false;
   std::uint64_t receivedCount = 0;
 
-  // M0.23'S MEASUREMENT, AND IT IS AN OBSERVATION RATHER THAN AN ARITHMETIC (R20). The client
-  // records when the tap resolved, where the entity was drawn at that instant, and the first frame
-  // in which the drawn position differs from it. `Scripts/ProbeReport.py` turns a run of those into
-  // a distribution; nothing here averages anything.
+  // M0.23'S MEASUREMENT, AND IT IS AN OBSERVATION RATHER THAN AN ARITHMETIC. The rule -- what arms
+  // it, what counts as visible -- is `GameClient/TapLatencyProbe.h`'s, with a suite over it (R20);
+  // this file feeds it the drawn pose each frame and the tap when it lands, and logs what comes back.
+  // `Scripts/ProbeReport.py` turns a run of those into a distribution; nothing here averages anything.
   //
-  // WHY IT IS THE DRAWN POSITION AND NOT THE SNAPSHOT'S. The gate's question is what the PLAYER
-  // sees, and the client renders 75 ms behind the newest update -- so an update that already
-  // carries the move is still not the moment the ship appears to move.
-  std::uint64_t tapAtMs = 0;
-  float tapFromX = 0.0f;
-  float tapFromY = 0.0f;
-  bool awaitingVisible = false;
-  float drawnX = 0.0f;
-  float drawnY = 0.0f;
-
-  /// The frame before's, which is the only way to know whether the ship is moving RIGHT NOW. At
-  /// 140 units a second a travelling ship moves about 2.3 units between frames and a parked one
-  /// moves zero, so the two are not close.
-  float previousDrawnX = 0.0f;
-  float previousDrawnY = 0.0f;
+  // WHY IT IS THE DRAWN POSE AND NOT THE SNAPSHOT'S. The gate's question is what the PLAYER sees, and
+  // the client renders 75 ms behind the newest update -- so an update that already carries the move
+  // is still not the moment the ship appears to move.
+  Outpost::TapLatencyProbe tapProbe;
 
   // THE FRAME'S ENTITIES, INTERPOLATED, kept across frames so steady state allocates nothing. Filled by
   // `ClientFrame::Advance` (ADR-024: per entity, between its own two samples).
@@ -710,8 +700,8 @@ void RunProbe(const CoreWindow& _window)
                     // the log alone. Working that out took reading the host's uptime against the
                     // entity's journey time, to find that the ship had already arrived before the
                     // client started and that nothing moving was correct rather than a defect.
-                    " drawn=" + std::to_string(drawnX) + "," + std::to_string(drawnY) +
-                    " awaiting=" + std::to_string(awaitingVisible ? 1 : 0) +
+                    " drawn=" + std::to_string(tapProbe.Current().xUnits) + "," + std::to_string(tapProbe.Current().yUnits) +
+                    " awaiting=" + std::to_string(tapProbe.Armed() ? 1 : 0) +
                     // WHAT THE PLAYOUT CLOCK IS ACTUALLY DOING, per entity. At the MVP every entity is
                     // refreshed every tick, so anything but interpolating in a steady run is the buffer
                     // not covering the delay, and every latency figure taken from it would be optimistic.
@@ -1079,18 +1069,14 @@ void RunProbe(const CoreWindow& _window)
       // A latency test taps a ship that is standing still. When it is not, the tap is recorded as
       // unmeasurable rather than measured badly -- a missing sample costs nothing and a wrong one
       // is worse than none, because it goes into an average.
-      const float movedLastFrame = std::fabs(drawnX - previousDrawnX) + std::fabs(drawnY - previousDrawnY);
-      const bool parked = movedLastFrame < 0.1f;
-      if (parked)
+      //
+      // **SINCE M1.17 "STANDING STILL" ALSO MEANS NOT TURNING**, because a ship can now turn in place.
+      if (!tapProbe.Arm(nowMs))
       {
-        tapAtMs = nowMs;
-        tapFromX = drawnX;
-        tapFromY = drawnY;
-        awaitingVisible = true;
-      }
-      else
-      {
-        Report(log, "TAPUNMEASURED the ship was already moving, " + std::to_string(movedLastFrame) + " units last frame");
+        Report(log, "TAPUNMEASURED the ship was already " +
+                      std::string{tapProbe.TurnedLastFrame() ? "turning"
+                                                             : "moving, " + std::to_string(tapProbe.MovedLastFrameUnits()) + " units"} +
+                      " last frame");
       }
 
       Report(log, "TAP seq=" + std::to_string(sequence) + " authored=" + std::to_string(event.xAuthoredPixels) + "," +
@@ -1311,20 +1297,17 @@ void RunProbe(const CoreWindow& _window)
 
             if (shown.identity == watched)
             {
-              previousDrawnX = drawnX;
-              previousDrawnY = drawnY;
-              drawnX = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE);
-              drawnY = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE);
-
-              // A QUARTER OF A WORLD UNIT IS THE WIRE'S OWN STEP (ADR-003), so anything at or below
-              // it is the quantizer rather than movement. Half a unit is comfortably above that and
-              // far below anything a player would call a move.
-              if (awaitingVisible && ((std::fabs(drawnX - tapFromX) > 0.5f) || (std::fabs(drawnY - tapFromY) > 0.5f)))
+              const Outpost::DrawnPose pose{
+                .xUnits = static_cast<float>(Outpost::DequantizePosition(shown.positionX)) / static_cast<float>(Neuron::FIXED_ONE),
+                .yUnits = static_cast<float>(Outpost::DequantizePosition(shown.positionY)) / static_cast<float>(Neuron::FIXED_ONE),
+                .wireHeading = shown.heading};
+              if (const std::optional<Outpost::TapVisible> seen = tapProbe.Observe(pose, nowMs); seen.has_value())
               {
-                Report(log, "TAPVISIBLE ms=" + std::to_string(nowMs - tapAtMs) + " from=" + std::to_string(tapFromX) + "," +
-                              std::to_string(tapFromY) + " to=" + std::to_string(drawnX) + "," + std::to_string(drawnY) + " " +
-                              DrawnText(drawn));
-                awaitingVisible = false;
+                Report(log, "TAPVISIBLE ms=" + std::to_string(seen->milliseconds) +
+                              " by=" + ((seen->change == Outpost::VisibleChange::Heading) ? "heading" : "position") +
+                              " from=" + std::to_string(tapProbe.From().xUnits) + "," + std::to_string(tapProbe.From().yUnits) + "," +
+                              std::to_string(tapProbe.From().wireHeading) + " to=" + std::to_string(pose.xUnits) + "," +
+                              std::to_string(pose.yUnits) + "," + std::to_string(pose.wireHeading) + " " + DrawnText(drawn));
               }
             }
           }
