@@ -615,6 +615,45 @@ public:
     Assert::IsTrue(world.IsAlive(survivor));
   }
 
+  /// **THE 2026-09-23 REVIEW'S M6**: each of these left the hash unchanged before it widened -- hull 450 to 1,
+  /// cargo 0 to 99,000, a mine phase and an owner -- so two builds that disagreed about damage or cargo agreed
+  /// here until a death or a delivery happened to land a tick apart.
+  TEST_METHOD(HullPointsOwnerAndTheMineOrderReachTheHash)
+  {
+    Outpost::World world;
+    const Outpost::EntityId miner = world.Create(At(7, 7), 7, Outpost::DesignId::Miner, 1);
+    const std::uint64_t before = Outpost::StateHash(world);
+
+    world.Find(miner)->hullRemaining = 1;
+    const std::uint64_t damaged = Outpost::StateHash(world);
+    Assert::AreNotEqual(before, damaged, L"hull points do not reach the hash");
+
+    world.Find(miner)->owner = 2;
+    const std::uint64_t reowned = Outpost::StateHash(world);
+    Assert::AreNotEqual(damaged, reowned, L"the owner does not reach the hash");
+
+    world.MineInSlot(miner.index).cargoMilliOre = 99000;
+    const std::uint64_t laden = Outpost::StateHash(world);
+    Assert::AreNotEqual(reowned, laden, L"cargo does not reach the hash");
+
+    world.MineInSlot(miner.index).phase = Outpost::MiningPhase::Unloading;
+    Assert::AreNotEqual(laden, Outpost::StateHash(world), L"the mine phase does not reach the hash");
+  }
+
+  /// And the match hash sees what a player can spend, which the world does not hold.
+  TEST_METHOD(TheMatchHashSeesCreditsAndTheBuildItem)
+  {
+    Outpost::World world;
+    Outpost::BuildSystem build;
+    Outpost::Economy economy;
+    build.Begin(2);
+    const std::uint64_t before = Outpost::MatchHash(world, build, economy);
+    Assert::AreNotEqual(Outpost::StateHash(world), before, L"the match hash is the world hash alone");
+
+    build.Grant(2, 1);
+    Assert::AreNotEqual(before, Outpost::MatchHash(world, build, economy), L"credits do not reach the match hash");
+  }
+
   TEST_METHOD(AnEmptyWorldIsStable)
   {
     Outpost::World first;
@@ -667,7 +706,11 @@ public:
     // **IT MOVED A THIRD TIME AT M1.17, AND THAT WAS FORCED TOO**: the tick now steers a heading and
     // routes around the Station in the run, and the value was the same on all four pairs before it
     // was pinned.
-    Assert::AreEqual(0xa0141c81045fc0bcull, Outpost::StateHash(world));
+    //
+    // **A FOURTH TIME AFTER THE 2026-09-23 REVIEW (M6)**, because the hash itself widened to hull points,
+    // owner and the mine order; the run is unchanged and was `0xa0141c81045fc0bc` under the old fields.
+    // Computed under g++ and clang only; the four MSVC pairs are owed with the scripted match's (ADR-002).
+    Assert::AreEqual(0x2a69961bb32bc5f5ull, Outpost::StateHash(world));
   }
 };
 

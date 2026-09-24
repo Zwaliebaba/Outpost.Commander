@@ -88,7 +88,8 @@ struct MineOrder
 class World
 {
 public:
-  /// A new entity in the lowest-numbered free slot, or a fresh slot when none is free. NO_ENTITY
+  /// A new entity in the most recently freed slot, or a fresh slot when none is free (the free list is
+  /// last in, first out -- see the class comment; this said "lowest-numbered" until the 2026-09-23 review). NO_ENTITY
   /// when the store is full -- 65,536 slots, which the design's 110 is nowhere near.
   /// _owner defaults to nobody, which is what a neutral thing or a test fixture is. Players are
   /// numbered from one (`GameCore/Entity.h`).

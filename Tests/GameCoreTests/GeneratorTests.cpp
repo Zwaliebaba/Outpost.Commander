@@ -51,12 +51,16 @@ struct PinnedRock
 /// stream, a constant or `Pcg32` moves these, and that is a different map for every match that has
 /// ever been played on this seed -- so it fails here, by row, rather than presenting as rocks that moved.
 /// If the move is deliberate, regenerate the table in the same commit and say why.
+///
+/// **REGENERATED 2026-09-24, DELIBERATELY** (`OpenQuestions.md` Q62): the home field moved from 600-1,500 units
+/// of the anchor to 1,200-2,000, so the ten home rows moved and the twelve contested rows did not. Taken from
+/// the generator under g++ and clang, which agreed.
 constexpr std::array<PinnedRock, REGION_ASTEROIDS> PINNED_REGION{{
-  {Outpost::FieldKind::Home, -5400, 525},        {Outpost::FieldKind::Home, -5928, 1047},
-  {Outpost::FieldKind::Home, -6693, -845},       {Outpost::FieldKind::Home, -5196, 677},
-  {Outpost::FieldKind::Home, -4681, -190},       {Outpost::FieldKind::Home, -7037, 648},
-  {Outpost::FieldKind::Home, -5196, 890},        {Outpost::FieldKind::Home, -5313, -440},
-  {Outpost::FieldKind::Home, -4506, -69},        {Outpost::FieldKind::Home, -4971, 28},
+  {Outpost::FieldKind::Home, -6649, -1073},      {Outpost::FieldKind::Home, -7928, 277},
+  {Outpost::FieldKind::Home, -4927, -692},       {Outpost::FieldKind::Home, -7093, -628},
+  {Outpost::FieldKind::Home, -4889, -1471},      {Outpost::FieldKind::Home, -7370, 578},
+  {Outpost::FieldKind::Home, -7461, -1240},      {Outpost::FieldKind::Home, -7090, -1171},
+  {Outpost::FieldKind::Home, -5217, -1414},      {Outpost::FieldKind::Home, -6259, 1741},
   {Outpost::FieldKind::Contested, -1436, -2123}, {Outpost::FieldKind::Contested, -1500, -2809},
   {Outpost::FieldKind::Contested, -1239, -2411}, {Outpost::FieldKind::Contested, -2096, -3033},
   {Outpost::FieldKind::Contested, -2143, -2336}, {Outpost::FieldKind::Contested, -2144, -2871},

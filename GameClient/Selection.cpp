@@ -49,6 +49,24 @@ std::size_t Selection::RetainLiving(std::span<const EntityRecord> _entities)
   return before - m_identities.size();
 }
 
+void Selection::PositionsOf(std::span<const EntityRecord> _entities, std::vector<float>& _outX, std::vector<float>& _outY) const
+{
+  _outX.clear();
+  _outY.clear();
+  for (const WireIdentity identity : m_identities)
+  {
+    for (const EntityRecord& record : _entities)
+    {
+      if (record.identity == identity)
+      {
+        _outX.push_back(static_cast<float>(DequantizePosition(record.positionX)) / static_cast<float>(Neuron::FIXED_ONE));
+        _outY.push_back(static_cast<float>(DequantizePosition(record.positionY)) / static_cast<float>(Neuron::FIXED_ONE));
+        break;
+      }
+    }
+  }
+}
+
 OrderVerb VerbForPick(const TapOutcome& _outcome, bool _hasSelection) noexcept
 {
   switch (_outcome.action)

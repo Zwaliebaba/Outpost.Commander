@@ -35,6 +35,18 @@ void FoldUInt32(std::uint64_t& _hash, std::uint32_t _value) noexcept
   FoldUInt16(_hash, static_cast<std::uint16_t>((_value >> 16) & 0xFFFFu));
 }
 
+void FoldUInt64(std::uint64_t& _hash, std::uint64_t _value) noexcept
+{
+  FoldUInt32(_hash, static_cast<std::uint32_t>(_value & 0xFFFFFFFFull));
+  FoldUInt32(_hash, static_cast<std::uint32_t>((_value >> 32) & 0xFFFFFFFFull));
+}
+
+void FoldIdentity(std::uint64_t& _hash, EntityId _id) noexcept
+{
+  FoldUInt16(_hash, _id.index);
+  FoldUInt16(_hash, _id.generation);
+}
+
 /// Through the unsigned width, so the representation folded is the bit pattern and not a
 /// conversion the standard leaves room in.
 void FoldFixed(std::uint64_t& _hash, Neuron::Fixed _value) noexcept
@@ -57,16 +69,50 @@ std::uint64_t StateHash(const World& _world) noexcept
 
     const Entity& entity = _world.EntityInSlot(slot);
 
-    // ADR-002's four, and in a fixed order. Adding a field here is a change to what "the same
-    // match" means, so it belongs with the ADR rather than with whoever needed a fifth.
-    FoldUInt16(hash, entity.id.index);
-    FoldUInt16(hash, entity.id.generation);
+    // ADR-002's fields, and in a fixed order. Adding a field here is a change to what "the same
+    // match" means, so it belongs with the ADR rather than with whoever needed another.
+    FoldIdentity(hash, entity.id);
     FoldFixed(hash, entity.position.x);
     FoldFixed(hash, entity.position.y);
     FoldUInt16(hash, entity.heading);
-    // The same byte it has always folded: `HullId` is `std::uint8_t`-backed, so M1.1 turning it from
-    // a typedef into an enumeration changed the type and not the value (R16, ADR-002).
+    // `HullId` is `std::uint8_t`-backed, so M1.1 turning it from a typedef into an enumeration changed
+    // the type and not the value (R16, ADR-002).
     FoldByte(hash, static_cast<std::uint8_t>(entity.hull));
+
+    // **THE 2026-09-23 REVIEW'S M6**: what the arithmetic moves, not only where it puts things. Hull points
+    // are what M3's damage writes; the owner is set once and costs a byte to be sure of; the mine order is
+    // the economy's state, cargo to the thousandth of ore.
+    FoldUInt16(hash, entity.hullRemaining);
+    FoldByte(hash, entity.owner);
+    const MineOrder& mine = _world.MineInSlot(slot);
+    FoldByte(hash, static_cast<std::uint8_t>(mine.phase));
+    FoldUInt16(hash, mine.rock);
+    FoldUInt32(hash, mine.cargoMilliOre);
+    FoldIdentity(hash, mine.unloadTarget);
+  }
+
+  return hash;
+}
+
+std::uint64_t MatchHash(const World& _world, const BuildSystem& _build, const Economy& _economy) noexcept
+{
+  std::uint64_t hash = StateHash(_world);
+
+  for (std::size_t slot = 1; slot <= _build.PlayerCount(); ++slot)
+  {
+    const PlayerId player = static_cast<PlayerId>(slot);
+    FoldUInt32(hash, _build.Credits(player));
+    FoldUInt64(hash, _economy.PendingMilliCreditHundredths(player));
+
+    const BuildItem& item = _build.Item(player);
+    FoldByte(hash, static_cast<std::uint8_t>(item.active ? 1 : 0));
+    FoldByte(hash, static_cast<std::uint8_t>(item.design));
+    FoldUInt32(hash, item.ticksElapsed);
+    FoldUInt32(hash, item.ticksRequired);
+    FoldUInt32(hash, item.creditsSpent);
+    FoldFixed(hash, item.site.x);
+    FoldFixed(hash, item.site.y);
+    FoldIdentity(hash, item.upgrade);
   }
 
   return hash;

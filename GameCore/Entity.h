@@ -82,15 +82,15 @@ inline constexpr std::size_t MAX_PLAYERS = 254;
 /// `GameCore` and not the simulation, and a host-only field on a shared record is an invitation to
 /// read it on the side that never has it. `GameLogic`'s World carries that state alongside.
 ///
-/// The first four fields are exactly what ADR-002's state hash covers: identity, position, heading
-/// and hull.
+/// ADR-002's state hash covers every field but the design, which the hull is derived from: identity,
+/// position, heading, hull, hull points and owner (hull points and owner since the 2026-09-23 review).
 struct Entity
 {
   EntityId id{};
   Neuron::Vec2 position{};
   Neuron::Angle heading = 0;
 
-  /// **HASHED.** ADR-002 names four fields and this is the fourth.
+  /// **HASHED**, as ADR-002 first named it.
   HullId hull = HullId::Scout;
 
   /// What this entity was built as (R24, ADR-006). **The hull above is DERIVED from it and stored
@@ -101,12 +101,13 @@ struct Entity
   DesignId design = DesignId::Miner;
 
   /// Hull points remaining, in the simulation's own units rather than the wire's percentage.
+  /// **HASHED** since the 2026-09-23 review (M6): it is what M3's damage writes.
   /// `GameDesign.md` section 7 does damage in points; the percentage is a rendering quantity and
   /// the encoder is where it becomes one.
   std::uint16_t hullRemaining = 0;
 
-  /// NOT hashed. ADR-002 names four fields and this is not one of them, which is correct: a state
-  /// hash detects two hosts drifting apart, and ownership is set once at creation and never moves.
+  /// **HASHED** since the 2026-09-23 review (M6). It is set once at creation and never moves, so folding it
+  /// costs a byte and catches a creation that went to the wrong player.
   PlayerId owner = NO_PLAYER;
 };
 

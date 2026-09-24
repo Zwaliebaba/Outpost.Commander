@@ -54,6 +54,12 @@ public:
     /// Markers cleared because an update acknowledged the command that made them.
     std::uint32_t markersCleared = 0;
 
+    /// Outstanding commands the host acknowledged in this drain, and ones given up on because they went
+    /// unacknowledged for `COMMAND_RESEND_WINDOW_MILLISECONDS` -- the second a count worth logging, since
+    /// the host acknowledges even a refusal and one that never was means a link that is losing everything.
+    std::uint32_t commandsRetired = 0;
+    std::uint32_t commandsExpired = 0;
+
     /// Join replies folded in (ADR-013). **More than one per drain is ordinary**: the host answers
     /// every retry, so a client that asked three times before the first answer arrived gets three.
     std::uint32_t joinReplies = 0;
@@ -79,6 +85,8 @@ public:
   /// arriving; too long and a player taps into a dead link. M1.16 is where it gets looked at, with the
   /// other constants.
   static constexpr std::uint64_t LINK_SILENCE_MILLISECONDS = 1000;
+  static_assert(LINK_SILENCE_MILLISECONDS == std::uint64_t{ReplicaStore::FORGET_FLOOR_TICKS} * SNAPSHOT_INTERVAL_MILLISECONDS,
+                "the replica store must not forget an entity inside the silence the link survives (the 2026-09-23 review, m2)");
 
   /// Takes everything waiting on the queue and folds it in, stamping each with the arrival time.
   ///
@@ -115,6 +123,31 @@ public:
   /// spans about 1.1 times the distance across, and pitch shows more beyond the focus than before it -- so
   /// what is on screen is in view, and a little of what is about to be.
   void StampView(CommandPacket& _packet) const noexcept;
+
+  /// **HOW LONG AN UNACKNOWLEDGED COMMAND IS RESENT: TWO SECONDS, FORTY TICKS** (the 2026-09-23 review, M5).
+  /// The host acknowledges every command it has decided on, refusals included (Q24 as amended), so one still
+  /// unacknowledged after two seconds is on a link that is losing everything -- and resending it forever would
+  /// carry it into a later rejoin and keep its marker on screen. Twice the link-loss second, so a rejoin that
+  /// succeeds still delivers what was tapped during it. **Not tuned.**
+  static constexpr std::uint64_t COMMAND_RESEND_WINDOW_MILLISECONDS = 2000;
+
+  /// **ADR-003'S RELIABILITY, FOR A PERSON** (the 2026-09-23 review, M5). `TechnicalDesign.md` section 4 has
+  /// every command repeated in every outgoing packet until the host acknowledges it; until this, only the
+  /// Bot did, and the packaged client sent each command once -- so a lost datagram was a lost order and its
+  /// marker stayed until some later order was acknowledged. A command issued here is held until an update's
+  /// own block acknowledges its sequence, or until the resend window passes.
+  void IssueCommand(Command _command, std::uint64_t _nowMilliseconds);
+
+  /// Every outstanding command, oldest first, packed into _packet by `FillOldestFirst` -- **into every
+  /// packet this client sends**, the view report included, so a lost command goes again within a quarter of a
+  /// second whether or not the player taps. Replaces whatever commands _packet held; returns how many it packed.
+  std::size_t FillOutstanding(CommandPacket& _packet) const;
+
+  /// Oldest first.
+  [[nodiscard]] const std::vector<Command>& OutstandingCommands() const noexcept
+  {
+    return m_outstanding;
+  }
 
   /// The sequence the next command should carry. Post-incremented and allowed to wrap, which is
   /// what the host's serial-number comparison at intake expects (`GameCore/Command.h`, Q24).
@@ -247,6 +280,10 @@ private:
   /// Set when a silence starts a rejoin, cleared by the first update after the host seats this client
   /// again.
   bool m_reconnecting = false;
+
+  /// Commands the host has not yet acknowledged, oldest first, and when each was issued (`IssueCommand`).
+  std::vector<Command> m_outstanding;
+  std::vector<std::uint64_t> m_issuedMilliseconds;
 
   /// Sized by what one datagram can be. An update is at most 1,232 bytes (ADR-024) and the MTU is what
   /// bounds the rest, so this is the buffer a drain hands the queue.

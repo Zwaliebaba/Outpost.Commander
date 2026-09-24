@@ -40,4 +40,9 @@ std::uint32_t Economy::PendingMilliCredits(PlayerId _player) const noexcept
                                                              : static_cast<std::uint32_t>(m_pendingMilliCreditHundredths[_player] / 100);
 }
 
+std::uint64_t Economy::PendingMilliCreditHundredths(PlayerId _player) const noexcept
+{
+  return ((_player == NO_PLAYER) || (_player > MAX_PLAYERS)) ? 0 : m_pendingMilliCreditHundredths[_player];
+}
+
 } // namespace Outpost

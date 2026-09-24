@@ -882,7 +882,9 @@ clients launched from the shell. What it showed:
 - **Two seats.** Slot 0 presented its stored token and was seated as player 1. Slot 1 had no token, was
   issued one, and was seated as player 2. The host reported `clients=2`.
 - **The one loopback exemption covers both instances**, since it is keyed on the package family and
-  not on a process. Both received snapshots and both drew three entities.
+  not on a process. Both received snapshots and both drew three entities. *(2026-09-24: the third was not
+  the layout's. `Server.cpp` still created M0's demonstration Fighter for player 1 at the map center on
+  every hosted match, which nobody noticed here; the mid-implementation review found it (B5) and it is gone.)*
 
 **What it could not show is two people playing.** The device was at the lock screen, and Windows
 suspends a packaged application that is not visible: both clients stopped about four seconds after

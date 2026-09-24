@@ -196,10 +196,11 @@ public:
   TEST_METHOD(NoIssuedTokenIsZeroAndNoneRepeats)
   {
     std::set<Outpost::SessionToken> issued;
-    for (std::uint64_t seed = 0; seed < 40; ++seed)
+    for (std::uint64_t salt = 0; salt < 40; ++salt)
     {
       Outpost::Sessions sessions;
-      sessions.Begin(4, seed);
+      sessions.SaltTokens(salt);
+      sessions.Begin(4, SEED);
       for (std::uint16_t client = 0; client < 4; ++client)
       {
         const Outpost::JoinReply reply = sessions.Admit(Outpost::Join{}, At(1, client));
@@ -231,16 +232,18 @@ public:
     Assert::IsTrue(low != 0, L"the bottom half of every token was zero");
   }
 
-  /// **DETERMINISTIC FROM THE SEED**, which is what lets a suite pin a reconnect and is why the
-  /// generator is `Neuron::Pcg32` on its own stream rather than anything that reads a clock (R16).
-  /// ADR-013 names the consequence: a client holding the seed can compute the tokens, and section 5
-  /// declines authentication outright, so a token is a name and not a credential.
-  TEST_METHOD(TwoRunsOfOneMatchIssueTheSameTokens)
+  /// **DETERMINISTIC FROM THE SALT**, which is what lets a suite pin a reconnect and is why the
+  /// generator is `Neuron::Pcg32` on its own stream rather than anything that reads a clock (R16). The
+  /// clock is read once, by `Server`, and handed in (`Sessions::SaltTokens`). ADR-013 names the
+  /// consequence: a token is a name and not a credential.
+  TEST_METHOD(TwoTablesWithOneSaltIssueTheSameTokens)
   {
     Outpost::Sessions first;
     Outpost::Sessions second;
+    first.SaltTokens(77);
+    second.SaltTokens(77);
     first.Begin(4, SEED);
-    second.Begin(4, SEED);
+    second.Begin(4, SEED + 1);
 
     for (std::uint16_t client = 0; client < 4; ++client)
     {
@@ -248,15 +251,62 @@ public:
     }
   }
 
-  /// A different seed is a different match and different names.
-  TEST_METHOD(ADifferentSeedIssuesDifferentTokens)
+  /// A different salt is a different host run and different names, whatever the seed.
+  TEST_METHOD(ADifferentSaltIssuesDifferentTokens)
   {
     Outpost::Sessions first;
     Outpost::Sessions second;
+    first.SaltTokens(1);
+    second.SaltTokens(2);
     first.Begin(4, SEED);
-    second.Begin(4, SEED + 1);
+    second.Begin(4, SEED);
 
     Assert::IsTrue(first.Admit(Outpost::Join{}, At(1, 1)).token != second.Admit(Outpost::Join{}, At(1, 1)).token);
+  }
+
+  /// **THE REVIEW'S B4, AS IT HAPPENED** (2026-09-23). Evening one seats A as player 1 and B as player 2.
+  /// The host is restarted on the same seed and B launches first. When the tokens were a function of the
+  /// seed, B was seated as player 1 and issued A's old token, A then rejoined seat 1 with it, and the two
+  /// evicted each other every second with seat 2 never taken. With a new salt B's seat carries a new name,
+  /// A's old token names nobody, and A takes seat 2.
+  TEST_METHOD(AHostRestartedOnTheSameSeedDoesNotReissueLastRunsTokens)
+  {
+    Outpost::Sessions evening;
+    evening.SaltTokens(1000);
+    evening.Begin(2, SEED);
+    const Outpost::JoinReply a = evening.Admit(Outpost::Join{}, At(1, 100));
+    const Outpost::JoinReply b = evening.Admit(Outpost::Join{}, At(2, 200));
+
+    Outpost::Sessions restarted;
+    restarted.SaltTokens(2000);
+    restarted.Begin(2, SEED);
+    const Outpost::JoinReply bAgain = restarted.Admit(Outpost::Join{.token = b.token}, At(2, 201));
+    Assert::AreEqual(1, static_cast<int>(bAgain.player));
+    Assert::IsTrue(bAgain.token != a.token, L"the restarted host handed out last run's token for seat 1");
+
+    const Outpost::JoinReply aAgain = restarted.Admit(Outpost::Join{.token = a.token}, At(1, 101));
+    Assert::IsTrue(aAgain.result == Outpost::JoinResult::Accepted, L"an old token must name nobody");
+    Assert::AreEqual(2, static_cast<int>(aAgain.player));
+    Assert::AreEqual(1, static_cast<int>(restarted.PlayerAt(At(2, 201))), L"B lost its seat");
+  }
+
+  /// **A LATER MATCH ON ONE TABLE CONTINUES THE STREAM** rather than repeating it, so the same collision
+  /// cannot happen at a restart inside one host run either: no token a previous `Begin` issued names a seat
+  /// of this one.
+  TEST_METHOD(ATokenFromAPreviousMatchNeverNamesASeatOfThisOne)
+  {
+    Outpost::Sessions sessions;
+    sessions.SaltTokens(5);
+    std::set<Outpost::SessionToken> earlier;
+    for (int match = 0; match < 10; ++match)
+    {
+      sessions.Begin(4, SEED);
+      for (std::uint16_t client = 0; client < 4; ++client)
+      {
+        const Outpost::SessionToken token = sessions.Admit(Outpost::Join{}, At(1, client)).token;
+        Assert::IsTrue(earlier.insert(token).second, L"a restart on the same seed reissued a token");
+      }
+    }
   }
 
   /// `Begin` starts a match rather than continuing one: the seats go and the seed changes, which is

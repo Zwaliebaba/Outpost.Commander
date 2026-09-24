@@ -131,7 +131,7 @@ What a seed produces:
 |---|---|
 | **The square** | 16,384 world units on a side, centered on the origin. A world unit is nominally a meter. A fighter crosses it in about two minutes, a miner in under three. |
 | **Four start anchors** | One per quadrant, **6,000 units** from the center, on the axes. A station spawns on each, facing the center. Two opposed stations are then 12,000 apart — **85.7 seconds at the Fighter's 140 u/s**, inside §7's 80-to-100-second crossing, which is the arithmetic the raid balance rests on. |
-| **A home field** | A small asteroid cluster within about 1,500 units of each anchor. Enough to open on, not enough to win on. |
+| **A home field** | A small asteroid cluster between 1,200 and 2,000 units of each anchor (`OpenQuestions.md` Q62). Enough to open on, not enough to win on. |
 | **The asteroid count** | **Ten in each home field, and two contested clusters of six in each player's region**: 22 a region, 44 on a two-player map. It sets the sparse ore budget from M3 and how much a home field is worth holding. Provisional, and named in `GameCore/Generator.h` so it can move (`OpenQuestions.md` Q26). |
 | **Contested fields** | Richer clusters toward the center, reachable by everyone. This is the map's only real proposition. |
 
@@ -178,8 +178,11 @@ one with ore left. The cost is that a player who ignores their miners eventually
 a management burden the MVP accepts rather than solves.
 
 Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
-extracts at 20 per second, so the one-slot miner fills in five seconds; a round trip to the home field is
-roughly thirty seconds, which puts one miner at about 2.5 credits per second. **It unloads at 50 ore a second once its hull touches
+extracts at 20 per second, so the one-slot miner fills in five seconds; a cycle at the home field is 27 to
+43 seconds, which puts one miner at **2.3 to 3.7 credits per second, about 3 on average**, and six miners on
+the six nearest rocks at **19.8 — just under the station's build rate of 20**, which is the intent: income,
+not the build slot, paces the match (Q47, Q62; measured on the shipped loop, seed 20260922). **A rock yields
+ore to one miner at a time**, so a second miner at it waits its turn; ten rocks serve about thirty miners. **It unloads at 50 ore a second once its hull touches
 the station's**, two seconds a hold, which is a dwell inside the point defense's reach (Q51, provisional). **From M3, when asteroids
 become finite, a home field holds enough for a long opening and not for a match** — before M3 it holds
 everything, because there is nothing to exhaust.
@@ -433,6 +436,17 @@ close to dead content — point defense is station-slot-only at range 400 and tw
 — but it is **gone rather than deferred**, and a weapon meant to be better against structures now needs a
 penetration term rather than a table row.
 
+### What a weapon does per tick
+
+**Every figure above is per second, and the simulation applies it every tick, exactly**
+([`ADR-014`](ADR/ADR-014-damage-accumulates-every-tick.md), `OpenQuestions.md` Q66, ruled 2026-09-24). A mount
+in range adds its damage a second, times the modifier, divided by twenty, to a remainder held in
+ten-thousandths of a point, and whole points come off the target's hull as they accumulate. So a `MassDriver`
+takes 0.875 of a point a tick from a `Scout` hull and 0.3125 from a station, and **every row of the table
+below is what the simulation does, not an approximation of it.** Deaths are applied after every weapon has
+fired that tick, so no shot depends on slot order, and a ship firing on a target that another ship kills the
+same tick still lands its damage.
+
 ### The raid arithmetic, which was degenerate and is not any more
 
 **The first version of these numbers solved the game, and the fault was structural rather than a bad
@@ -446,6 +460,9 @@ damage from the cheapest weapon — three independently reasonable choices whose
 | Defense slower than offense by | **5.0×** | 1.6× |
 | Three fighters kill six miners in | **8.0 s** | 25.7 s |
 | Miners lost fleeing 1,500 units to the station | **all six** | about 3½ |
+
+*The flight row predates the home field's move to 1,200–2,000 units (Q62), and whether it can fire at all
+is `OpenQuestions.md` Q64; it is re-derived when that is ruled.*
 
 At 5× a raider destroyed 750 credits of miners in the time a defender destroyed 300 credits of fighter,
 before counting the lost income — so the dominant opening was an all-in strike, the dominant reply was the

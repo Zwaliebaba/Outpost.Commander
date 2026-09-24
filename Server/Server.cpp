@@ -126,6 +126,13 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
                           bool _stress)
 {
   Outpost::Host host;
+  // **THE TOKEN SALT IS WALL TIME, AND THIS IS THE ONE PLACE IT MAY BE** (R16: the shell is the seam). Two
+  // runs of the host on one seed must not issue one set of session tokens, or two returning clients that
+  // join in the other order take each other's seat (the 2026-09-23 review, B4). Both clocks are mixed so
+  // that neither one alone repeating is enough to repeat the salt.
+  const std::uint64_t tokenSalt = static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()) ^
+                                  (static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) << 17);
+  host.SaltTokens(tokenSalt);
   host.BeginMatch(_matchSeed, _playerCount);
   if (!host.Open(_port))
   {
@@ -142,13 +149,6 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   std::printf("host: %zu players%s\n", host.PlayerCount(), _stress ? " -- STRESS CONFIGURATION, not a match" : "");
   std::printf("host: %lld ms a tick; Ctrl+C to stop\n", static_cast<long long>(Outpost::TICK_PERIOD_MILLISECONDS));
   std::fflush(stdout);
-
-  // One entity that goes somewhere, which is the whole of the simulation at M0 and is what makes
-  // a client's updates show something moving rather than an empty world.
-  const Outpost::EntityId first = host.MutableWorld().Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, 1);
-  static_cast<void>(host.MutableWorld().OrderMoveTo(first, Neuron::Vec2{.x = 1048576, .y = 524288},
-                                                    Outpost::SpeedPerTick(Outpost::DesignId::Fighter),
-                                                    Outpost::TurnAnglePerTick(Outpost::DesignId::Fighter)));
 
   // THE SEAM, AND IT LIVES IN THE SHELL. R16 keeps wall time out of the simulation's library, so
   // the schedule is the engine's and the host below it counts only ticks. The three lines that

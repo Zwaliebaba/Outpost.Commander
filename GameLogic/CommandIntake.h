@@ -12,8 +12,10 @@ namespace Outpost
 {
 
 /// Why a command was not applied. Distinct values because a test names the case it is pinning,
-/// and because a counter that says "rejected" tells an operator nothing about which of Q24's five
-/// checks is firing.
+/// and because a counter that says "rejected" tells an operator nothing about which of Q24's
+/// checks is firing. **Every value but `AlreadyApplied`, `UnknownType` and `Empty` is acknowledged**:
+/// the host understood the order and refused it, and a sequence that did not advance would have the
+/// client resend it forever.
 enum class CommandRejection : std::uint8_t
 {
   None,
@@ -25,10 +27,9 @@ enum class CommandRejection : std::uint8_t
   UnknownType,
   /// The selection names more identities than the sender owns entities.
   SelectionTooLong,
-  /// An identity the sender does not own.
+  /// An identity the sender does not own. **Refuses the whole order**, where a dead or reused one is
+  /// skipped (Q24 as amended after the 2026-09-23 review).
   NotOwned,
-  /// An identity whose slot has been reused since the sender saw it.
-  StaleGeneration,
   /// No player, or a selection that is empty when the type needs one -- or carries identities when
   /// the type does not (`GameCore/Command.h`).
   Empty,

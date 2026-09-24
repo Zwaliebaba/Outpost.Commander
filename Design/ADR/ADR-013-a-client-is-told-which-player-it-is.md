@@ -91,11 +91,21 @@ to distinguish it from a host that is not running.
 ### A session token is a name, not a credential
 
 **A client does not choose its own identity; the host issues one.** The token is 64 bits, drawn from a
-`Neuron::Pcg32` the host seeds from the match seed on **stream 1**, and it is the first claim anyone has
-made on that space — `NeuronCore/Pcg32.h` left the derivation to M2's generator, which now owns every
-stream but this one.
+`Neuron::Pcg32` on **stream 1**, and it is the first claim anyone has made on that space —
+`NeuronCore/Pcg32.h` left the derivation to M2's generator, which now owns every stream but this one.
 
-**A client holding the match seed can compute the tokens, and that is accepted rather than overlooked.**
+**The stream is seeded once per host run, from a salt the shell reads off the wall clock, and no match
+reseeds it** (amended 2026-09-24 after the mid-implementation review's B4). It was seeded from the match
+seed at every `BeginMatch`, which made the tokens a pure function of the seed and the join order. A host
+restarted on the same seed then handed out last evening's tokens again, in the new join order: two
+returning clients that launched the other way round were seated as player 1 with each other's old token,
+evicted each other every second and never took seat 2 — a symptom that looks like a network fault, with a
+workaround written nowhere. `Server` passes the salt through `Host::SaltTokens` (R16 allows wall time at the
+shell and nowhere below it); a suite passes a constant, so a reconnect is still pinned. Because `Begin`
+continues the stream rather than restarting it, no token of an earlier match on the same host names a seat
+of a later one either.
+
+**A client that knew the salt could compute the tokens, and that is accepted rather than overlooked.**
 §5 declines authentication and any defense against a hostile client outright; what a token has to separate
 is *a client returning* from *a client arriving*, which is an accident rather than an adversary. What it
 does buy over a counter is that a fresh client cannot take a held slot by asserting a small number.
@@ -152,7 +162,9 @@ empties the world, drops every seat and places the layout — which is what a re
 starting another match at victory. A client that stays connected across that boundary draws the previous
 match's asteroids. Nothing detects it today; the cheapest fix when M3 has a victory to trigger it is the
 snapshot's own tick going backwards, which is already on the wire and costs nothing. **It is named here
-rather than solved here** because there is no way to reach it before M3.
+rather than solved here** because there is no way to reach it before M3. **That detector cannot fire as
+built** (the mid-implementation review, M8 and m15): `BeginMatch` never resets the host's tick, and the
+replica store refuses anything not newer. The restart's wire is the review's D8 (`OpenQuestions.md` Q70).
 
 **A lost `JoinReply` after the host has issued a token is the one hazard the token model carries.** The
 retry closes it while the client's socket is alive, because a repeated `Join` from the same endpoint is
@@ -166,10 +178,12 @@ hang, and the operator restarts a host that was going to be restarted anyway.
 endpoint sees nothing at all — which is correct, and is a change from M0, where any endpoint that sent a
 command started receiving the world.
 
-**Tokens repeat across matches on one host.** The session generator is seeded from the match seed, so
-match two issues the same first token as match one, and a client returning with a stale token is
-recognized — as the same slot, in a different match. That is the outcome anybody would want and it is
-arithmetic rather than a choice; it is written down because it looks like a bug the first time it is seen.
+**Tokens do not repeat, across matches or across host runs** (amended 2026-09-24). This paragraph used to
+say the opposite — "tokens repeat across matches on one host … the outcome anybody would want" — and the
+mid-implementation review (B4) reproduced the live-lock that followed from it twice on the unmodified
+session table. **A returning client keeps its side across a restart only if the seats survive the
+restart**, which is a question about `BeginMatch` rather than about tokens; it is on the register as the
+review's D8 (`OpenQuestions.md` Q70).
 
 **This decision does not settle what a client draws while it is joining.** `Interface.md` §7's
 reconnecting overlay is the specification and M1's interface steps build it; until then the client retries

@@ -320,6 +320,33 @@ public:
     Assert::IsFalse(selection.Contains(Outpost::PackIdentity(2, 1)), L"a reused slot stayed selected");
   }
 
+  /// **A HOLD RECENTERS ON THE SELECTION** (ADR-018 decision 7; the 2026-09-23 review, m9), so the selection
+  /// says where it is: the newest record of each selected entity, in world units, and nothing for one the
+  /// records no longer carry.
+  TEST_METHOD(ASelectionKnowsWhereItIs)
+  {
+    Outpost::Selection selection;
+    const Outpost::EntityRecord first = Record(1, 1000.0f, -2000.0f, MINE, Outpost::DesignId::Fighter);
+    const Outpost::EntityRecord second = Record(2, -512.0f, 256.0f, MINE, Outpost::DesignId::Fighter);
+    selection.Add(first.identity);
+    selection.Add(second.identity);
+    selection.Add(Outpost::PackIdentity(9, 1));
+    const std::vector<Outpost::EntityRecord> entities{first, second};
+
+    std::vector<float> xs{42.0f};
+    std::vector<float> ys;
+    selection.PositionsOf(entities, xs, ys);
+    Assert::AreEqual(std::size_t{2}, xs.size(), L"an identity no record carries was placed");
+    Assert::AreEqual(1000.0f, xs[0], 64.0f);
+    Assert::AreEqual(-2000.0f, ys[0], 64.0f);
+    Assert::AreEqual(-512.0f, xs[1], 64.0f);
+    Assert::AreEqual(256.0f, ys[1], 64.0f);
+
+    selection.Clear();
+    selection.PositionsOf(entities, xs, ys);
+    Assert::IsTrue(xs.empty() && ys.empty(), L"nothing selected must send a hold to the station");
+  }
+
   /// The clear target is the only way to deselect, because a tap on empty space is already an order.
   TEST_METHOD(ClearingEmptiesIt)
   {

@@ -51,6 +51,15 @@ public:
   static constexpr std::size_t RETAINED_COUNT = INTERVALS_SPANNED + 1;
   static_assert(RETAINED_COUNT >= 2, "Interpolation needs a pair to sit between.");
 
+  /// **NOTHING IS FORGOTTEN INSIDE THE LINK-LOSS SECOND** (the 2026-09-23 review, m2). Three sweeps is 150 ms
+  /// at the MVP's 110 entities, so any silence of three to nineteen ticks -- shorter than the second after which
+  /// `ClientFrame` calls the link lost -- forgot the entities that rode a tick's second datagram and re-added them
+  /// from nothing a moment later: a one-frame pop instead of a hold. The horizon is now the longer of three
+  /// sweeps and twenty ticks, which is `ClientFrame::LINK_SILENCE_MILLISECONDS` at the snapshot interval (a
+  /// `static_assert` there keeps the two together). Past twenty ticks a silent client rejoins and clears the
+  /// store anyway.
+  static constexpr std::uint32_t FORGET_FLOOR_TICKS = 20;
+
   /// What one update did to the store. R8: a public aggregate.
   struct AcceptResult
   {

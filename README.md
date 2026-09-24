@@ -10,9 +10,9 @@ on the network has nothing to show.
 
 ## The state of it
 
-**There is a match with an economy in it, and you can build a base.** M0 is complete. M1 is built,
-interface and all, with its two gates owed. **M2 is built through M2.12**, with its two closing gates
-owed: the silhouettes and the tick's cost. The host generates a symmetric asteroid field from the match
+**There is a match with an economy in it, and you can build a base.** Where each milestone stands, and
+what it still owes, is stated in one place only:
+[`Design/Plan/README.md`](Design/Plan/README.md) *Where it stands*. The host generates a symmetric asteroid field from the match
 seed and the player count, and the client derives the same field rather than being sent one. Miners
 shuttle ore on a standing order and a station turns it into credits. A station builds ships and
 places modules: a shipyard that speeds the build and an ore processor that raises what a hold is
@@ -63,7 +63,7 @@ One suite per library, under [`Tests/`](Tests/), each an ordinary desktop test D
 | | |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | How code is written here — naming, layout, build settings, the standing rules. **Read this before generating a line.** §2 is the project layout and why it is shaped this way. |
-| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft, but the decisions are ruled: twenty-three ADRs Accepted, with `ADR-014` reserved for M3.** |
+| [`Design/`](Design/README.md) | What is being built — the game, the technical design, the touch interface, the open questions and the ADRs. **Draft, but the decisions are ruled: twenty-four ADRs Accepted, ADR-014 the firing cadence M3 builds to.** |
 | [`.github/workflows/build.yml`](.github/workflows/build.yml) | What CI gates, and what it deliberately does not |
 
 ## Building it

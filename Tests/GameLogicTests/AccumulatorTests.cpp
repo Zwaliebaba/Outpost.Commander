@@ -168,6 +168,44 @@ public:
     Assert::AreEqual(std::size_t{0}, after.front().removals.size(), L"the removal rode past its ten ticks");
   }
 
+  /// **PAST THE CAP, ROUND ROBIN** (the 2026-09-23 review, m3). Fifty-five deaths on one tick against a cap of
+  /// 48: every one of them is sent within two ticks of dying, where first-in-first-out held the last seven
+  /// back for ten ticks -- and each is still sent its ten times.
+  TEST_METHOD(ABacklogOfRemovalsIsServedRoundRobin)
+  {
+    constexpr int DEATHS = 55;
+    Outpost::World world = LineOf(DEATHS + 1);
+    Outpost::Accumulator accumulator;
+    static_cast<void>(accumulator.Fill(world, MINE, Outpost::PlayerBlock{}, 1));
+
+    for (std::uint16_t index = 1; index <= DEATHS; ++index)
+    {
+      Assert::IsTrue(world.Destroy(Outpost::EntityId{.index = index, .generation = 1}));
+    }
+
+    std::map<Outpost::WireIdentity, int> sends;
+    std::map<Outpost::WireIdentity, std::uint32_t> firstSent;
+    for (std::uint32_t tick = 2; tick < 2 + (3 * Outpost::REMOVAL_REPEAT_TICKS); ++tick)
+    {
+      const std::vector<Outpost::Update> updates = accumulator.Fill(world, MINE, Outpost::PlayerBlock{}, tick);
+      Assert::IsTrue(updates.front().removals.size() <= Outpost::MAX_REMOVALS_PER_UPDATE);
+      for (const Outpost::WireIdentity removed : updates.front().removals)
+      {
+        if (sends[removed]++ == 0)
+        {
+          firstSent[removed] = tick;
+        }
+      }
+    }
+
+    Assert::AreEqual(std::size_t{DEATHS}, sends.size(), L"a removal was never sent");
+    for (const auto& [identity, count] : sends)
+    {
+      Assert::AreEqual(static_cast<int>(Outpost::REMOVAL_REPEAT_TICKS), count, L"a removal was not sent its ten times");
+      Assert::IsTrue(firstSent[identity] <= 3, L"a removal waited behind the backlog");
+    }
+  }
+
   /// A slot freed and refilled in one tick is two facts: the old occupant's removal and the new one's
   /// first record. A reused slot must never read as the same entity.
   TEST_METHOD(AReusedSlotIsARemovalAndANewRecord)
