@@ -256,10 +256,12 @@
     var OWNC = [-5000, 0, 1900], HOSC = [4400, 0, -1900];
     var own = [[-5620, 2430, 'Scout'], [-5180, 2660, 'Scout'], [-4760, 2400, 'Scout'],
                [-5400, 1870, 'Frigate'], [-4880, 1900, 'Frigate'], [-4380, 1780, 'Frigate'],
-               [-5860, 1560, 'Scout'], [-4560, 1340, 'Frigate'], [-5060, 1240, 'Scout']];
+               [-5860, 1560, 'Scout'], [-4560, 1340, 'Frigate'], [-5060, 1240, 'Scout'],
+               [-5100, 2150, 'Cruiser']];
     var hos = [[3860, -1420, 'Frigate'], [4360, -1300, 'Frigate'], [4020, -1960, 'Scout'],
                [4540, -1880, 'Scout'], [4900, -1440, 'Frigate'], [3620, -2000, 'Scout'],
-               [4820, -2420, 'Scout'], [4260, -2540, 'Frigate']];
+               [4820, -2420, 'Scout'], [4260, -2540, 'Frigate'],
+               [4400, -1620, 'Cruiser']];
     own.forEach(function (o, i) { fleet.push({ mesh: o[2], pos: [o[0], 0, o[1]], yaw: 118 + i * 7, team: 'OWN' }); });
     hos.forEach(function (o, i) { fleet.push({ mesh: o[2], pos: [o[0], 0, o[1]], yaw: -58 - i * 9, team: 'B' }); });
     var rocks = [
@@ -277,15 +279,15 @@
     P.push({
       id: '01-tactical-true-scale', width: 1440, height: 960, bg: space,
       title: 'Plate 1 — acceptance. Plan view, tactical zoom, TRUE authored scale (1440 × 960 frame).',
-      caption: 'Scout 3.5 px · Frigate 5.3 px · 17.06 units per authored pixel. Nothing is magnified. This is the gate.',
+      caption: 'Scout 3.5 px · Frigate 5.3 px · Cruiser 10.6 px · 17.06 units per authored pixel. Nothing is magnified. This is the gate.',
       panels: [{
         x: 0, y: 0, w: 1440, h: 960, ss: 3, border: false, bg: space,
         camera: tac([-300, 0, 0], 960, 1),
         instances: rocks.concat(fleet)
       }],
       captions: [
-        { text: 'OWN — 5 miners + 4 fighters', x: 330, y: 268, color: mats.team.OWN.hex, size: 12 },
-        { text: 'HOSTILE — 4 miners + 4 fighters', x: 1000, y: 706, color: mats.team.B.hex, size: 12 },
+        { text: 'OWN — 5 miners + 4 fighters + 1 cruiser', x: 330, y: 268, color: mats.team.OWN.hex, size: 12 },
+        { text: 'HOSTILE — 4 miners + 4 fighters + 1 cruiser', x: 1000, y: 706, color: mats.team.B.hex, size: 12 },
         { text: 'tactical · d 22,500 · pitch 85° above plane · vfov 40° · 17.06 u/px · 1:1', x: 16, y: 16, color: 'rgba(130,142,156,0.75)', size: 11 }
       ]
     });
@@ -300,7 +302,7 @@
           sublabel: 'same camera, re-aimed at the formation centre; NDC window ×8',
           camera: tac(OWNC, 720, 8), instances: fleet },
         { x: 720, y: 0, w: 720, h: 720, ss: 3, bg: space, label: 'HOSTILE  ×8',
-          sublabel: 'Scout = blunt wide wedge · Frigate = long spine with outriggers',
+          sublabel: 'Scout = blunt wedge · Frigate = cruciform spine · Cruiser = hammerhead slab',
           camera: tac(HOSC, 720, 8), instances: fleet }
       ]
     });
@@ -314,16 +316,18 @@
     P.push({
       id: '03-combat-34deg', width: 1440, height: 900, bg: space,
       title: 'Plate 3 — combat view, 34° above the plane, d 1,500 (1.14 u/px).',
-      caption: 'Scout ≈ 53 px, Frigate ≈ 79 px, Station ≈ 193 px. Own team and hostile, same mesh, same draw.',
+      caption: 'Scout ≈ 53 px, Frigate ≈ 79 px, Cruiser ≈ 158 px, Station ≈ 193 px. Own team and hostile, same mesh, same draw.',
       panels: [{
         x: 0, y: 0, w: 1440, h: 900, ss: 2, border: false, bg: space,
         camera: { mode: 'persp', dist: 1500, pitch: 34, yaw: 0, vfov: 40, focus: [0, 0, 120],
                   zoom: 900 / 960 },
         instances: [
-          { mesh: 'Scout', pos: [-560, 0, 60], yaw: 18, team: 'OWN' },
-          { mesh: 'Frigate', pos: [-190, 0, 60], yaw: -12, team: 'OWN' },
-          { mesh: 'Scout', pos: [190, 0, 60], yaw: 196, team: 'B' },
-          { mesh: 'Frigate', pos: [560, 0, 60], yaw: 166, team: 'B' },
+          { mesh: 'Scout', pos: [-640, 0, 60], yaw: 18, team: 'OWN' },
+          { mesh: 'Frigate', pos: [-420, 0, 60], yaw: -12, team: 'OWN' },
+          { mesh: 'Cruiser', pos: [-150, 0, 60], yaw: -8, team: 'OWN' },
+          { mesh: 'Cruiser', pos: [150, 0, 60], yaw: 188, team: 'B' },
+          { mesh: 'Frigate', pos: [420, 0, 60], yaw: 166, team: 'B' },
+          { mesh: 'Scout', pos: [640, 0, 60], yaw: 196, team: 'B' },
           { mesh: 'ModuleFrame', pos: [-640, 0, 780], team: 'OWN' },
           { mesh: 'ModuleShipyardL1', pos: [-320, 0, 780], team: 'OWN' },
           { mesh: 'ModuleShipyardL2', pos: [0, 0, 780], team: 'OWN' },
@@ -401,7 +405,7 @@
 
     /* 6 — orthographic three-views */
     var threeView = [
-      ['Scout', 44], ['Frigate', 58], ['ModuleFrame', 60], ['Station', 140],
+      ['Scout', 44], ['Frigate', 58], ['Cruiser', 110], ['ModuleFrame', 60], ['Station', 140],
       ['ModuleShipyardL1', 62], ['ModuleShipyardL2', 62],
       ['ModuleOreProcessorL1', 56], ['ModuleOreProcessorL2', 60], ['AsteroidC', 70]
     ];

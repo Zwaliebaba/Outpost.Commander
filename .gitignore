@@ -381,8 +381,9 @@ FodyWeavers.xsd
 # AND THE SAME TWO RULES OVER THE HANDOFF'S OWN COPY, which is the set the designer delivered. It is
 # provenance rather than input -- the build reads OutpostCommander/Assets/Meshes/obj/ -- but a
 # vendored bundle with its output silently missing is a bundle nobody can check a reissue against.
-!Design/design_handoff_meshes/integration/obj/
-!Design/design_handoff_meshes/integration/obj/*.obj
+# The v4 package (2026-09-24) moved them to Assets/Meshes/obj/ inside the bundle.
+!Design/design_handoff_meshes/Assets/Meshes/obj/
+!Design/design_handoff_meshes/Assets/Meshes/obj/*.obj
 
 # --- THE .cmo FILES ARE COMMITTED, AND THIS RECORDS WHY THE RULE THAT EXCLUDED THEM IS GONE -----
 # They were ignored here for one commit, on the argument that 460 KB of binary regenerated from

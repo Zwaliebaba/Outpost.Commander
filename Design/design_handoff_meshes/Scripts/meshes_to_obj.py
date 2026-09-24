@@ -5,43 +5,18 @@ meshes_to_obj.py — regenerate the OBJ/MTL/VCOL set from the design handoff's m
 The integration package already ships the generated output in integration/obj/, so you only need
 this when meshes.json changes. It is a pure transform: no welding, no reordering, no reindexing.
 
-    python Scripts/meshes_to_obj.py --input design_handoff_meshes/meshes.json --out Assets/Meshes/obj
+    python Scripts/meshes_to_obj.py            # Design/meshes.json -> Assets/Meshes/obj
 
 Why OBJ and not FBX: meshconvert eats FBX, OBJ, VBO and SDKMESH. meshes.json is none of them, so
 something has to bridge, and the bridge is cheaper and reviewable if it targets OBJ. OBJ has no
 vertex-colour field in the base spec, so the R/G selector bytes travel out-of-band in a .vcol
 sidecar. Do NOT switch to the non-standard 6-float `v x y z r g b` extension: meshconvert ignores
 it silently, which is the worst possible failure for a channel that carries team identity.
-
-
-=== AMENDED IN-TREE, 2026-09-22. TWO FIXES, AND A REISSUE SHOULD CARRY BOTH. ===
-
-This file is the handoff's own copy and is kept for provenance; the working copy is
-Scripts/MeshesToObj.py. Both were amended together so the vendored bundle is not left carrying a
-script that cannot produce convertible output.
-
-1. THE SINGLE `vt 0 0`. The delivered contract was to emit no texture coordinate at all.
-   meshconvert cannot write a CMO from such a file -- the CMO vertex carries a tangent, so the tool
-   always computes a tangent frame, and it refuses without texture coordinates:
-
-       ERROR: Computing tangents/bi-tangents requires texture coordinates
-
-   There is no flag that suppresses it; -t and -tb ADD a frame and their absence does not remove the
-   requirement. Verified against meshconvert 2026.5.8.1. One degenerate coordinate referenced by
-   every face corner satisfies it and changes no geometry: all 13 meshes convert with vertex and
-   face counts unchanged, index buffers still sequential, and extents matching the manifest.
-
-2. ENCODING. Every output file is opened with encoding="utf-8". This said nothing, which takes the
-   locale default -- cp1252 on a Windows machine -- and the per-mesh notes carried out of
-   meshes.json have em-dashes in them. Regenerating on such a machine silently rewrote all thirteen
-   files in a second encoding, and the verifier's own utf-8 read is what caught it, one step later,
-   as a decode error on a file it had just passed.
-
-The verifier's matching assertion moved with the first of these: it required no `vt` and now
-requires exactly one whose value is `0 0`, which still catches a real per-vertex UV layout.
 """
 
 import argparse, json, os, sys
+
+PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 MTL = """# Outpost Commander - one material, identical on every mesh.
 # Diffuse is white on purpose: all albedo arrives through the vertex colour channel.
@@ -112,12 +87,7 @@ def write_mesh(out_dir, name, mesh, doc_format):
         "# Generated from meshes.json (%s) - do not hand-edit." % doc_format,
         "# LEFT-HANDED, Y up, +Z forward. Plane is Y=0. Mesh origin = simulated entity position.",
         "# World units 1:1 - the authored extent IS the object's size; never scaled at draw time.",
-        "# Face-split vertices, baked per-face normals. No welding, no smoothing groups.",
-        "# ONE DEGENERATE TEXTURE COORDINATE, and it is not a UV layout. meshconvert always computes",
-        "# a tangent frame when it writes CMO -- the format's vertex carries one -- and it refuses to",
-        "# do so without texture coordinates. There is no flag to suppress it. So every face corner",
-        "# references this single vt 0 0. The CMO's texcoord field comes back zero, which is what the",
-        "# brief asks for; nothing reads it and nothing should start.",
+        "# Face-split vertices, baked per-face normals. No welding, no smoothing groups, no vt.",
         "# extents  min %s  max %s  size %s" % (
             " ".join(num(x) for x in ext["min"]),
             " ".join(num(x) for x in ext["max"]),
@@ -129,12 +99,11 @@ def write_mesh(out_dir, name, mesh, doc_format):
     ]
     lines += ["v %s %s %s" % (num(p[i * 3]), num(p[i * 3 + 1]), num(p[i * 3 + 2])) for i in range(nv)]
     lines += ["vn %s %s %s" % (num(n[i * 3]), num(n[i * 3 + 1]), num(n[i * 3 + 2])) for i in range(nv)]
-    lines.append("vt 0 0")
     lines += ["usemtl OC_Hull", "s off"]
     for f in range(mesh["triangles"]):
         a = f * 3 + 1
-        lines.append("f %d/1/%d %d/1/%d %d/1/%d" % (a, a, a + 1, a + 1, a + 2, a + 2))
-    with open(os.path.join(out_dir, name + ".obj"), "w", encoding="utf-8", newline="\n") as fh:
+        lines.append("f %d//%d %d//%d %d//%d" % (a, a, a + 1, a + 1, a + 2, a + 2))
+    with open(os.path.join(out_dir, name + ".obj"), "w", newline="\n") as fh:
         fh.write("\n".join(lines) + "\n")
 
     vlines = [
@@ -145,14 +114,14 @@ def write_mesh(out_dir, name, mesh, doc_format):
         "# %d vertices." % nv,
     ]
     vlines += ["%d %d %d %d" % (c[i * 4], c[i * 4 + 1], c[i * 4 + 2], c[i * 4 + 3]) for i in range(nv)]
-    with open(os.path.join(out_dir, name + ".vcol"), "w", encoding="utf-8", newline="\n") as fh:
+    with open(os.path.join(out_dir, name + ".vcol"), "w", newline="\n") as fh:
         fh.write("\n".join(vlines) + "\n")
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", default="design_handoff_meshes/meshes.json")
-    ap.add_argument("--out", default="Assets/Meshes/obj")
+    ap.add_argument("--input", default=os.path.join(PKG_ROOT, "Design", "meshes.json"))
+    ap.add_argument("--out", default=os.path.join(PKG_ROOT, "Assets", "Meshes", "obj"))
     args = ap.parse_args()
 
     with open(args.input, "r", encoding="utf-8") as fh:
@@ -161,7 +130,7 @@ def main():
         fail("%s is not a mesh handoff document (format=%r)" % (args.input, doc.get("format")))
 
     os.makedirs(args.out, exist_ok=True)
-    with open(os.path.join(args.out, "OC_Hull.mtl"), "w", encoding="utf-8", newline="\n") as fh:
+    with open(os.path.join(args.out, "OC_Hull.mtl"), "w", newline="\n") as fh:
         fh.write(MTL)
 
     tris = verts = 0

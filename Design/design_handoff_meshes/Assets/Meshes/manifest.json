@@ -1,7 +1,7 @@
 {
   "format": "outpost-commander-asset-manifest/1",
-  "generated": "2026-09-22",
-  "source": "design_handoff_meshes/meshes.json (outpost-commander-mesh-handoff/2)",
+  "generated": "2026-09-24",
+  "source": "Design/meshes.json (outpost-commander-mesh-handoff/2, revision 4)",
   "target": {
     "platform": "UWP client",
     "assetRoot": "Assets\\Meshes",
@@ -104,17 +104,22 @@
     "note": "diffuse is white because the albedo arrives entirely through the vertex colour channel. A reader that ignores vertex colour will render every hull white, which is the intended loud failure."
   },
   "totals": {
-    "meshes": 13,
-    "triangles": 2674,
-    "vertices": 8022,
-    "cmoBytesEstimate": 436048,
-    "instancedDrawsPerFrame": 13
+    "meshes": 14,
+    "triangles": 3522,
+    "vertices": 10566,
+    "cmoBytesEstimate": 573644,
+    "instancedDrawsPerFrame": 14
   },
   "landmarkTests": [
     {
       "mesh": "Frigate",
       "assert": "the single vertex of maximum Z is the nose, at x ~ 0, z = +45",
       "why": "catches a Z flip and an X skew"
+    },
+    {
+      "mesh": "Cruiser",
+      "assert": "the max-Z slice (4 units) is ~28 units wide in X — the blunt hammerhead prow — while the Frigate's is under 4",
+      "why": "catches a Z flip: flipped, the prow slice becomes the 44-unit-wide aft flare plus nacelles"
     },
     {
       "mesh": "ModuleShipyardL1",
@@ -128,7 +133,7 @@
     },
     {
       "mesh": "Station",
-      "assert": "extents are exactly 220 x 54 x 220 and the maximum-Y feature is central (within 46 units of the axis) - the hub tower",
+      "assert": "extents are exactly 220 x 86 x 220 and the maximum-Y feature is central (within 46 units of the axis) - the antenna mast",
       "why": "catches any scale factor and a Y flip"
     }
   ],
@@ -136,8 +141,8 @@
     {
       "name": "Scout",
       "asset": "Assets\\Meshes\\Scout.cmo",
-      "source": "obj/Scout.obj",
-      "vcol": "obj/Scout.vcol",
+      "source": "Assets/Meshes/obj/Scout.obj",
+      "vcol": "Assets/Meshes/obj/Scout.vcol",
       "triangles": 158,
       "vertices": 474,
       "cmoBytesEstimate": 25816,
@@ -165,8 +170,8 @@
     {
       "name": "Frigate",
       "asset": "Assets\\Meshes\\Frigate.cmo",
-      "source": "obj/Frigate.obj",
-      "vcol": "obj/Frigate.vcol",
+      "source": "Assets/Meshes/obj/Frigate.obj",
+      "vcol": "Assets/Meshes/obj/Frigate.vcol",
       "triangles": 190,
       "vertices": 570,
       "cmoBytesEstimate": 31000,
@@ -192,10 +197,39 @@
       "note": "medium hull — long pointed spine, thirteen-point plan at 2.14:1 with a hard outrigger step. Five-section chined hull, two closed outrigger blisters, aft drive block. The Fighter is a Frigate with two mass drivers."
     },
     {
+      "name": "Cruiser",
+      "asset": "Assets\\Meshes\\Cruiser.cmo",
+      "source": "Assets/Meshes/obj/Cruiser.obj",
+      "vcol": "Assets/Meshes/obj/Cruiser.vcol",
+      "triangles": 316,
+      "vertices": 948,
+      "cmoBytesEstimate": 51412,
+      "extents": {
+        "min": [
+          -32,
+          -14,
+          -90
+        ],
+        "max": [
+          32,
+          21,
+          90
+        ],
+        "size": [
+          64,
+          35,
+          180
+        ],
+        "longest": 180
+      },
+      "drawGroup": "Cruiser",
+      "note": "heavy hull — hammerhead slab: blunt wide prow, long parallel flanks, flared aft, plan aspect 2.8:1. Five-section hull, four dorsal turret blisters (one per slot), two drive nacelles, aft bridge. Added 2026-09-24 on the owner's instruction."
+    },
+    {
       "name": "ModuleFrame",
       "asset": "Assets\\Meshes\\ModuleFrame.cmo",
-      "source": "obj/ModuleFrame.obj",
-      "vcol": "obj/ModuleFrame.vcol",
+      "source": "Assets/Meshes/obj/ModuleFrame.obj",
+      "vcol": "Assets/Meshes/obj/ModuleFrame.vcol",
       "triangles": 248,
       "vertices": 744,
       "cmoBytesEstimate": 40396,
@@ -223,8 +257,8 @@
     {
       "name": "ModuleShipyardL1",
       "asset": "Assets\\Meshes\\ModuleShipyardL1.cmo",
-      "source": "obj/ModuleShipyardL1.obj",
-      "vcol": "obj/ModuleShipyardL1.vcol",
+      "source": "Assets/Meshes/obj/ModuleShipyardL1.obj",
+      "vcol": "Assets/Meshes/obj/ModuleShipyardL1.vcol",
       "triangles": 204,
       "vertices": 612,
       "cmoBytesEstimate": 33268,
@@ -252,8 +286,8 @@
     {
       "name": "ModuleShipyardL2",
       "asset": "Assets\\Meshes\\ModuleShipyardL2.cmo",
-      "source": "obj/ModuleShipyardL2.obj",
-      "vcol": "obj/ModuleShipyardL2.vcol",
+      "source": "Assets/Meshes/obj/ModuleShipyardL2.obj",
+      "vcol": "Assets/Meshes/obj/ModuleShipyardL2.vcol",
       "triangles": 264,
       "vertices": 792,
       "cmoBytesEstimate": 42988,
@@ -281,8 +315,8 @@
     {
       "name": "ModuleOreProcessorL1",
       "asset": "Assets\\Meshes\\ModuleOreProcessorL1.cmo",
-      "source": "obj/ModuleOreProcessorL1.obj",
-      "vcol": "obj/ModuleOreProcessorL1.vcol",
+      "source": "Assets/Meshes/obj/ModuleOreProcessorL1.obj",
+      "vcol": "Assets/Meshes/obj/ModuleOreProcessorL1.vcol",
       "triangles": 212,
       "vertices": 636,
       "cmoBytesEstimate": 34564,
@@ -310,8 +344,8 @@
     {
       "name": "ModuleOreProcessorL2",
       "asset": "Assets\\Meshes\\ModuleOreProcessorL2.cmo",
-      "source": "obj/ModuleOreProcessorL2.obj",
-      "vcol": "obj/ModuleOreProcessorL2.vcol",
+      "source": "Assets/Meshes/obj/ModuleOreProcessorL2.obj",
+      "vcol": "Assets/Meshes/obj/ModuleOreProcessorL2.vcol",
       "triangles": 268,
       "vertices": 804,
       "cmoBytesEstimate": 43636,
@@ -339,37 +373,37 @@
     {
       "name": "Station",
       "asset": "Assets\\Meshes\\Station.cmo",
-      "source": "obj/Station.obj",
-      "vcol": "obj/Station.vcol",
-      "triangles": 500,
-      "vertices": 1500,
-      "cmoBytesEstimate": 81220,
+      "source": "Assets/Meshes/obj/Station.obj",
+      "vcol": "Assets/Meshes/obj/Station.vcol",
+      "triangles": 1032,
+      "vertices": 3096,
+      "cmoBytesEstimate": 167404,
       "extents": {
         "min": [
           -110,
-          -12,
+          -26,
           -110
         ],
         "max": [
           110,
-          42,
+          60,
           110
         ],
         "size": [
           220,
-          54,
+          86,
           220
         ],
         "longest": 220
       },
       "drawGroup": "Station",
-      "note": "one per player, fixed, never moves. Chamfered plus-shaped plate, eight-sided hub tower, two point-defence mounts on the E/W arms, four arm-end docking nodes."
+      "note": "one per player, fixed, never moves. Tiered 12-sided core with command crown, antenna mast and keel spire; four slim chamfered arms, each ending in an open docking cradle and a docking drum; habitat ring floating above the arms on four diagonal spokes; two twin-barrel point-defence turrets on the E/W arms; paired radiator fins on the N/S arms. Revised 2026-09-24."
     },
     {
       "name": "AsteroidA",
       "asset": "Assets\\Meshes\\AsteroidA.cmo",
-      "source": "obj/AsteroidA.obj",
-      "vcol": "obj/AsteroidA.vcol",
+      "source": "Assets/Meshes/obj/AsteroidA.obj",
+      "vcol": "Assets/Meshes/obj/AsteroidA.vcol",
       "triangles": 126,
       "vertices": 378,
       "cmoBytesEstimate": 20632,
@@ -397,8 +431,8 @@
     {
       "name": "AsteroidB",
       "asset": "Assets\\Meshes\\AsteroidB.cmo",
-      "source": "obj/AsteroidB.obj",
-      "vcol": "obj/AsteroidB.vcol",
+      "source": "Assets/Meshes/obj/AsteroidB.obj",
+      "vcol": "Assets/Meshes/obj/AsteroidB.vcol",
       "triangles": 126,
       "vertices": 378,
       "cmoBytesEstimate": 20632,
@@ -426,8 +460,8 @@
     {
       "name": "AsteroidC",
       "asset": "Assets\\Meshes\\AsteroidC.cmo",
-      "source": "obj/AsteroidC.obj",
-      "vcol": "obj/AsteroidC.vcol",
+      "source": "Assets/Meshes/obj/AsteroidC.obj",
+      "vcol": "Assets/Meshes/obj/AsteroidC.vcol",
       "triangles": 126,
       "vertices": 378,
       "cmoBytesEstimate": 20632,
@@ -455,8 +489,8 @@
     {
       "name": "AsteroidD",
       "asset": "Assets\\Meshes\\AsteroidD.cmo",
-      "source": "obj/AsteroidD.obj",
-      "vcol": "obj/AsteroidD.vcol",
+      "source": "Assets/Meshes/obj/AsteroidD.obj",
+      "vcol": "Assets/Meshes/obj/AsteroidD.vcol",
       "triangles": 126,
       "vertices": 378,
       "cmoBytesEstimate": 20632,
@@ -484,8 +518,8 @@
     {
       "name": "AsteroidE",
       "asset": "Assets\\Meshes\\AsteroidE.cmo",
-      "source": "obj/AsteroidE.obj",
-      "vcol": "obj/AsteroidE.vcol",
+      "source": "Assets/Meshes/obj/AsteroidE.obj",
+      "vcol": "Assets/Meshes/obj/AsteroidE.vcol",
       "triangles": 126,
       "vertices": 378,
       "cmoBytesEstimate": 20632,
@@ -510,5 +544,10 @@
       "drawGroup": "AsteroidE",
       "note": "asteroid variant E, seed 55501; nine-sided, seven sections, no preferred axis"
     }
-  ]
+  ],
+  "package": {
+    "name": "OutpostCommander_MeshPackage_v4",
+    "revision": 4,
+    "date": "2026-09-24"
+  }
 }

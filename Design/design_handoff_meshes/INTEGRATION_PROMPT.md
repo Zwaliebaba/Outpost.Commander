@@ -4,9 +4,9 @@ Paste everything below the rule into Claude Code, with this repository open.
 
 ---
 
-You are integrating a completed design handoff into the Outpost Commander client. The handoff is at
-`design_handoff_meshes/` and the integration package is at `design_handoff_meshes/integration/`. Read
-`design_handoff_meshes/README.md` in full first, then `integration/manifest.json`. **Read the plates as
+You are integrating a completed design handoff into the Outpost Commander client. **Package: `OutpostCommander_MeshPackage_v4` (2026-09-24).** Paths below are relative to the package root. `PACKAGE.json` lists a SHA-256 for every file — check them after copying. The handoff is at
+this package and the integration package is at the package root. Read
+`Design/README.md` in full first, then `Assets/Meshes/manifest.json`. **Read the plates as
 evidence, not as specification** — `meshes.json` is the specification and `manifest.json` is the contract
 between it and the client.
 
@@ -19,28 +19,28 @@ still written down.** The one documented defect in the HUD handoff was a claim i
 reasoned onward from; do not add a second.
 
 **Target:** the objects ship in the client UWP executable's `\Assets` directory, as
-`Assets\Meshes\<Name>.cmo` — 13 files. They are reachable at runtime as
+`Assets\Meshes\<Name>.cmo` — 14 files. They are reachable at runtime as
 `ms-appx:///Assets/Meshes/<Name>.cmo`.
 
 ## What the package already contains, so you do not rebuild it
 
 | Path | What it is |
 |---|---|
-| `integration/manifest.json` | the asset contract: per mesh, logical name, target asset path, counts, extents, draw group. Also the palette, the light rig, the vertex-colour convention and the landmark tests. **Everything downstream reads this, not the handoff prose.** |
-| `integration/obj/*.obj` | **13 convert-ready OBJ files, already generated.** Left-handed, Y up, +Z forward, world units 1:1, face-split, baked per-face normals, no `vt`. |
-| `integration/obj/*.vcol` | the vertex-colour selector, one `R G B A` line per `v` record in the same order. OBJ has no vertex-colour field, so it travels out-of-band. |
-| `integration/obj/OC_Hull.mtl` | the one material, identical for every mesh |
-| `integration/scripts/meshes_to_obj.py` | regenerates the OBJ set from `meshes.json`. You only need it if `meshes.json` changes. |
-| `integration/scripts/verify_cmo.py` | **runnable today.** OBJ-stage content check + the landmark tests. CMO-stage decode assertions are stubbed for you to fill in. |
-| `integration/scripts/build_meshes.py` | the OBJ → CMO orchestrator. Two stages are deliberately stubbed — see below. |
-| `integration/uwp/MeshAssets.vcxproj.xml` | the 13 `<None … DeploymentContent>` declarations, C++/WinRT |
-| `integration/uwp/MeshAssets.csproj.xml` | the C# `<Content … CopyToOutputDirectory>` variant |
-| `integration/uwp/MeshCatalog.g.h` | generated catalog: names, package URIs, counts, extents, hull palette as shader constants |
+| `Assets/Meshes/manifest.json` | the asset contract: per mesh, logical name, target asset path, counts, extents, draw group. Also the palette, the light rig, the vertex-colour convention and the landmark tests. **Everything downstream reads this, not the handoff prose.** |
+| `Assets/Meshes/obj/*.obj` | **14 convert-ready OBJ files, already generated.** Left-handed, Y up, +Z forward, world units 1:1, face-split, baked per-face normals, no `vt`. |
+| `Assets/Meshes/obj/*.vcol` | the vertex-colour selector, one `R G B A` line per `v` record in the same order. OBJ has no vertex-colour field, so it travels out-of-band. |
+| `Assets/Meshes/obj/OC_Hull.mtl` | the one material, identical for every mesh |
+| `Scripts/meshes_to_obj.py` | regenerates the OBJ set from `meshes.json`. You only need it if `meshes.json` changes. |
+| `Scripts/verify_cmo.py` | **runnable today.** OBJ-stage content check + the landmark tests. CMO-stage decode assertions are stubbed for you to fill in. |
+| `Scripts/build_meshes.py` | the OBJ → CMO orchestrator. Two stages are deliberately stubbed — see below. |
+| `Client/MeshAssets.vcxproj.xml` | the 14 `<None … DeploymentContent>` declarations, C++/WinRT |
+| `Client/MeshAssets.csproj.xml` | the C# `<Content … CopyToOutputDirectory>` variant |
+| `Client/MeshCatalog.g.h` | generated catalog: names, package URIs, counts, extents, hull palette as shader constants |
 
 **Start by running the check that already works:**
 
 ```
-python design_handoff_meshes/integration/scripts/verify_cmo.py --obj design_handoff_meshes/integration/obj
+python <package>/Scripts/verify_cmo.py
 ```
 
 It asserts the face-split contract, flat-normal contract, the vertex-colour value set, every bounding box
@@ -51,11 +51,11 @@ content is wrong and nothing downstream is worth doing.
 
 ### 1. Wire the asset pipeline
 
-- Copy `integration/obj/` to `Assets/Meshes/obj/` in the repo (source, checked in, diffable).
-- Copy `integration/scripts/*.py` to `Scripts/`.
-- Copy `integration/manifest.json` to `Assets/Meshes/manifest.json` — **and ship it in the appx too.**
+- Copy `Assets/Meshes/obj/` to `Assets/Meshes/obj/` in the repo (source, checked in, diffable).
+- Copy `Scripts/*.py` to `Scripts/`.
+- Copy `Assets/Meshes/manifest.json` to `Assets/Meshes/manifest.json` — **and ship it in the appx too.**
   The runtime catalog asserting against the same file the build validated against is worth the 8 KB.
-- Add the `integration/uwp/MeshAssets.*.xml` item group to the client project. **Every `.cmo` must be
+- Add the `Client/MeshAssets.*.xml` item group to the client project. **Every `.cmo` must be
   declared as deployment content or it will not be in the appx**, and the failure mode is a
   file-not-found at runtime on a path that looks perfectly correct in the source tree.
 
@@ -72,9 +72,10 @@ axis that is wrong rather than just saying the mesh looks odd:
 | Failure | Meaning |
 |---|---|
 | `Frigate` max-Z vertex is not the nose at z = +45, x ≈ 0 | Z is flipped |
+| `Cruiser` max-Z slice is not the ~28-unit prow, narrower than the flared tail | Z is flipped |
 | `ModuleShipyardL1` min-Z slice is flat and max-Z slice is tall | Z is flipped — the tall command block is aft, the flat lattice forward |
 | `ModuleOreProcessorL2` max-Y vertex (the hatch over the main drum) is at +X | X is mirrored |
-| `Station` max-Y feature is off-centre, or size ≠ 220 × 54 × 220 | Y is flipped, or a scale factor crept in |
+| `Station` max-Y feature (the mast) is off-centre, or size ≠ 220 × 86 × 220 | Y is flipped, or a scale factor crept in |
 
 Then set `MESHCONVERT_FLAGS` in `build_meshes.py`, **write the reason in the comment above it**, and never
 revisit it.
@@ -105,7 +106,7 @@ and assert the colour DWORDs are not all white or zero — that is the signature
 ADR-021's first boundary names it again. **Budget a few hundred lines, not forty.**
 
 What the MVP uses: one submesh per file, one material per mesh, the 52-byte vertex above, 16-bit indices.
-No mesh exceeds 65,535 vertices — the largest is `Station` at 1,500 — so the index width is safe with a
+No mesh exceeds 65,535 vertices — the largest is `Station` at 3,096 — so the index width is safe with a
 wide margin.
 
 What a conforming reader has to **skip correctly** even though every one of these is empty here:
@@ -129,14 +130,14 @@ clamp.
 - **The appx install location is read-only.** Nothing writes beside these files. If you ever want to cache
   a repacked vertex buffer (see §7), it goes in `ApplicationData::Current().LocalFolder()`, never next to
   the asset.
-- Load all 13 at startup, not on demand. The whole set is ~426 KiB and the game has 13 meshes; a streaming
+- Load all 14 at startup, not on demand. The whole set is ~560 KiB and the game has 14 meshes; a streaming
   path is complexity with no payer.
 - A missing or malformed asset should fail at startup with the logical name in the message, not at first
   draw.
 
 ### 6. The renderer path
 
-- **One instanced draw per mesh. 13 of them**, listed in `MeshCatalog.g.h` in catalog order. The owner's
+- **One instanced draw per mesh. 14 of them**, listed in `MeshCatalog.g.h` in catalog order. The owner's
   colour arrives as **per-instance constant data** — never a material, never a second submesh. That
   requirement is the entire reason the vertex-colour selector exists.
 - Pixel shader: `albedo = lerp(HULL[G], TEAM[owner], R/255)`, with `kHullPalette` from the catalog as
@@ -157,24 +158,24 @@ clamp.
 
 **Package bytes ≠ VRAM bytes, and appx compression is why.**
 
-- **On disk, pre-packaging: ≈ 426 KiB** across 13 files. Of that, **≈ 188 KiB is tangent and UV zeros** —
+- **On disk, pre-packaging: ≈ 560 KiB** across 14 files. Of that, **≈ 248 KiB is tangent and UV zeros** —
   CMO's vertex is fixed and the handoff writes those fields as zeros, as the brief requires.
-- **In the appx: much less.** Appx content is deflate-compressed, and 188 KiB of literal zeros compresses
+- **In the appx: much less.** Appx content is deflate-compressed, and 248 KiB of literal zeros compresses
   to almost nothing. **Measure the real figure** from the built package's block map and put it in the
-  technical design — do not carry 426 KiB there, because it is the wrong number for package size.
-- **In VRAM: the full ≈ 417 KiB of vertex buffer, uncompressed, zeros included.** The GPU reads the dead
+  technical design — do not carry 560 KiB there, because it is the wrong number for package size.
+- **In VRAM: the full ≈ 537 KiB of vertex buffer, uncompressed, zeros included.** The GPU reads the dead
   24 bytes per vertex on every draw. This is the number that matters for the vertex-fetch cost and it is
   the one nobody writes down.
 
 **Raise, do not decide:** whether to repack CMO into a 28-byte vertex at load time. It halves vertex
 fetch, costs a load-time transform and a second vertex layout, and CMO stays the shipped format either
-way. At 2,674 triangles it is nowhere near a bottleneck. Report the numbers and let the owner rule.
+way. At 3,522 triangles it is nowhere near a bottleneck. Report the numbers and let the owner rule.
 
 ## Things to raise rather than decide
 
 These are open in the handoff. A ruling belongs to the owner, not to you. **Ask; do not pick.**
 
-1. **Near and far clip planes are unspecified.** The tactical camera sits at 22,500 units over hulls 18–54
+1. **Near and far clip planes are unspecified.** The tactical camera sits at 22,500 units over hulls 18–86
    units tall. Work out whether a 24-bit depth buffer z-fights across the Station's 12-unit plate step at
    your candidate planes and **report the number** — do not choose the planes.
 2. **Combat camera distance: the brief says both ~1,400 and (implicitly) 1,500.** README §10 has the
@@ -194,8 +195,10 @@ These are open in the handoff. A ruling belongs to the owner, not to you. **Ask;
 
 ## What not to do
 
-- Do not add a mesh for anything not in `manifest.json`. **`Cruiser` is in the catalog and the MVP never
-  builds it** — do not author it, and do not add a parameterised fallback that generates it.
+- Do not add a mesh for anything not in `manifest.json`. **The `Cruiser` is in it as of 2026-09-24**, on the
+  owner's instruction, overriding the brief. Its 180-unit length is the one size not echoed from the brief —
+  flag it for confirmation against the catalog, do not change it. The overlay (plate 7) has **no Cruiser
+  glyph**, deliberately; do not invent one.
 - Do not add textures, normal maps, UV layouts, skinning, bones or animation clips. CMO carries a slot for
   every one and every one stays empty.
 - Do not weld, merge, reorder or reindex the vertices at any stage. The arrays are face-split and the
@@ -210,12 +213,12 @@ These are open in the handoff. A ruling belongs to the owner, not to you. **Ask;
 1. `verify_cmo.py --obj` passes clean from a fresh checkout.
 2. `Scripts/build_meshes.py --out <ClientProject>/Assets/Meshes` runs clean, with the handedness flag
    resolved and its reason recorded, and `meshconvert` pinned.
-3. 13 `.cmo` files land in the client's `Assets\Meshes\`, all declared as deployment content, and
+3. 14 `.cmo` files land in the client's `Assets\Meshes\`, all declared as deployment content, and
    **present in the built appx** — verify that, do not assume it.
 4. Every file round-trips through `CmoReader` with vertex count, triangle count and bounding box asserted
    against `manifest.json`, the landmark tests passing on decoded positions, and the colour channel proven
    non-white.
-5. The renderer draws a Station, four distinct modules, a Scout and a Frigate in two team colours in **13
+5. The renderer draws a Station, four distinct modules, a Scout and a Frigate in two team colours in **14
    instanced draws**, flat-shaded, against `#04060A`.
 6. The measured appx size delta and the measured VRAM vertex-buffer size are both written down, separately
    (§7).

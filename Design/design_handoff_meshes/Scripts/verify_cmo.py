@@ -6,22 +6,26 @@ Two modes. The OBJ mode is fully implemented and runnable today; run it after an
 before you spend time on conversion, because an OBJ-stage failure is a content bug and a CMO-stage
 failure is a converter bug, and you want to know which one you have.
 
-    python Scripts/verify_cmo.py --obj Assets/Meshes/obj                     # content check
+    python Scripts/verify_cmo.py                                              # content check, shipped set
     python Scripts/verify_cmo.py --cmo <ClientProject>/Assets/Meshes         # converter check
 
 The landmark tests are the point. They are chosen so that a failure names the axis that is wrong
 rather than just saying "the mesh looks odd":
 
     Frigate            nose is the single max-Z vertex at x ~ 0   -> a failure means Z flipped
+    Cruiser            max-Z slice is the ~28-wide prow, narrower -> a failure means Z flipped
+                       than the flared tail
     ModuleShipyardL1   min-Z slice is tall (command block), max-Z  -> a failure means Z flipped
                        slice is flat (lattice booms): 30 vs 5
     ModuleOreProcessorL2  max-Y vertex (hatch over the main drum) -> a failure means X mirrored
                        is at negative X
-    Station            hub tower is the max-Y feature, 220x54x220 -> a failure means Y flipped
+    Station            mast is the max-Y feature, 220x86x220 -> a failure means Y flipped
                                                                      or a scale factor crept in
 """
 
 import argparse, json, os, sys
+
+PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TOL = 0.02
 
@@ -137,6 +141,17 @@ def landmark(name, verts):
         if abs(nose[0]) > 0.5:
             raise Fail("LANDMARK - the nose is at x=%.2f, expected 0. X is skewed or mirrored."
                        % nose[0])
+    elif name == "Cruiser":
+        # The prow is a blunt hammerhead: the forward slice is WIDE. Flipped, the forward slice is
+        # the aft flare plus nacelles, which is wider still - so compare against the aft slice too.
+        lo, hi = bbox(verts)
+        fwd = [v for v in verts if v[2] >= hi[2] - 4]
+        aft = [v for v in verts if v[2] <= lo[2] + 4]
+        fwd_w = max(v[0] for v in fwd) - min(v[0] for v in fwd)
+        aft_w = max(v[0] for v in aft) - min(v[0] for v in aft)
+        if not (20 <= fwd_w < aft_w):
+            raise Fail("LANDMARK - max-Z slice is %.1f wide, min-Z slice %.1f. Expected a ~28-unit "
+                       "prow forward and a wider flared tail aft. Z is flipped." % (fwd_w, aft_w))
     elif name == "ModuleShipyardL1":
         # Compare the Y extent of a slice at each end, NOT the X width. X width inverts: the open
         # lattice's forward transverse frame is wider than the command block. Y separates them
@@ -160,13 +175,13 @@ def landmark(name, verts):
     elif name == "Station":
         lo, hi = bbox(verts)
         size = [hi[i] - lo[i] for i in range(3)]
-        for i, want in ((0, 220.0), (1, 54.0), (2, 220.0)):
+        for i, want in ((0, 220.0), (1, 86.0), (2, 220.0)):
             if not near(size[i], want, 0.5):
                 raise Fail("LANDMARK - %s size is %.2f, expected %g. A scale factor crept in."
                            % ("XYZ"[i], size[i], want))
         top = max(verts, key=lambda v: v[1])
         if (top[0] ** 2 + top[2] ** 2) ** 0.5 > 46:
-            raise Fail("LANDMARK - the max-Y feature is %.1f units off centre; the hub tower is "
+            raise Fail("LANDMARK - the max-Y feature is %.1f units off centre; the mast is "
                        "central, so Y is flipped." % (top[0] ** 2 + top[2] ** 2) ** 0.5)
 
 
@@ -188,10 +203,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--obj")
     ap.add_argument("--cmo")
-    ap.add_argument("--manifest", default="design_handoff_meshes/integration/manifest.json")
+    ap.add_argument("--manifest", default=os.path.join(PKG_ROOT, "Assets", "Meshes", "manifest.json"))
     args = ap.parse_args()
     if not args.obj and not args.cmo:
-        ap.error("pass --obj or --cmo")
+        args.obj = os.path.join(PKG_ROOT, "Assets", "Meshes", "obj")   # default: check the shipped set
 
     with open(args.manifest, "r", encoding="utf-8") as fh:
         manifest = json.load(fh)

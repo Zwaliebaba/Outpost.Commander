@@ -18,6 +18,8 @@ is the step that breaks on somebody else's machine.
 
 import argparse, json, os, struct, subprocess, sys
 
+PKG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # --- PINNED. Record the exact release you tested against; do not float this. -------------------
 MESHCONVERT_RELEASE = "TODO: pin the DirectXMesh release tag or commit sha you tested against"
 MESHCONVERT_EXE = os.environ.get("MESHCONVERT", "meshconvert.exe")
@@ -120,9 +122,9 @@ def verify(out_dir, manifest):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--obj", default="Assets/Meshes/obj")
+    ap.add_argument("--obj", default=os.path.join(PKG_ROOT, "Assets", "Meshes", "obj"))
     ap.add_argument("--out", required=True, help="the UWP client's Assets/Meshes directory")
-    ap.add_argument("--manifest", default="design_handoff_meshes/integration/manifest.json")
+    ap.add_argument("--manifest", default=os.path.join(PKG_ROOT, "Assets", "Meshes", "manifest.json"))
     ap.add_argument("--skip-convert", action="store_true")
     args = ap.parse_args()
 

@@ -1,0 +1,230 @@
+{
+  "package": "OutpostCommander_MeshPackage_v4",
+  "revision": 4,
+  "date": "2026-09-24",
+  "note": "SHA-256 of every text file in the package. Binary files (Design/frames/*.png, Design/viewer/*) are reference only and not hashed.",
+  "totals": {
+    "meshes": 14,
+    "triangles": 3522,
+    "vertices": 10566,
+    "cmoBytesEstimate": 573644,
+    "instancedDrawsPerFrame": 14
+  },
+  "files": [
+    {
+      "path": "Assets/Meshes/manifest.json",
+      "bytes": 15681,
+      "sha256": "2a1705a7bacf4e114d0ad3d2cb00948e6ddb7d393c05786db9e0eaa2db576122"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidA.obj",
+      "bytes": 18248,
+      "sha256": "4aee5782783543774644097abc6de71081c68d6fd4b2e913fde1a61013f957f1"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidA.vcol",
+      "bytes": 4592,
+      "sha256": "78ca15e7be53e0ac2b2d881dd85dbb81095e0d19aac8d73770b143db4a97ec93"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidB.obj",
+      "bytes": 18391,
+      "sha256": "0e2ea2261ce2a7cad65c40d36a14ec7b6cbc8b4da50035f66fbebd2ae185fbb2"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidB.vcol",
+      "bytes": 4592,
+      "sha256": "026e0860a371a76d8ba390943904497e554befac6ca101ed7843866b8968ad43"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidC.obj",
+      "bytes": 18372,
+      "sha256": "e9b9d77fef800b449e42d549bdac53b09016f9e0a6cce4f4d6bd47d9327abc9d"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidC.vcol",
+      "bytes": 4592,
+      "sha256": "f78bb1397287e7c99f047edfa76c329772d5e0d64086ebfa476dd029b95845d8"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidD.obj",
+      "bytes": 18513,
+      "sha256": "64eb00569bee000e844aab9ea42c66d911e2f237a31b9251b7ebfcc8982df218"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidD.vcol",
+      "bytes": 4592,
+      "sha256": "64669cb084a14bbe891be6c2aacded26a25d42b259389c545c2d4858ebbce82b"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidE.obj",
+      "bytes": 18557,
+      "sha256": "439220438c2a9c708156e5e42b8adf064186ea02f676a92054c732c3fc70bf4c"
+    },
+    {
+      "path": "Assets/Meshes/obj/AsteroidE.vcol",
+      "bytes": 4592,
+      "sha256": "0c0b0c8a04b3c2ec5be727801a56fa09b8d0b5a9ef095c3959aa6126014805ca"
+    },
+    {
+      "path": "Assets/Meshes/obj/Cruiser.obj",
+      "bytes": 38211,
+      "sha256": "3255ec018299b7808bbde65fa61bae25326ccb85708c0eca9a473d36099bda22"
+    },
+    {
+      "path": "Assets/Meshes/obj/Cruiser.vcol",
+      "bytes": 11734,
+      "sha256": "2508fd42baa6792ee1fe8eccaf9e1f7d363130ba63f624f2b14015aaad545d27"
+    },
+    {
+      "path": "Assets/Meshes/obj/Frigate.obj",
+      "bytes": 22647,
+      "sha256": "ee709f3e2c88cb37b9824e7245d0961e59e4cbf06251addfa1668540a5cb65ce"
+    },
+    {
+      "path": "Assets/Meshes/obj/Frigate.vcol",
+      "bytes": 7384,
+      "sha256": "15454748f6599b78e2838fb8df8008ca5a42a4f76e5f361c9872fd26a100c376"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleFrame.obj",
+      "bytes": 30352,
+      "sha256": "65587be7006faa8a6a9fc75a1bc667916d64dfa8eca08accd59fbdcc5295cdb6"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleFrame.vcol",
+      "bytes": 9642,
+      "sha256": "b19514fa6f525da5984ff4fc76828f1bfe94bd180066d0f1224a7f49456022cd"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleOreProcessorL1.obj",
+      "bytes": 26870,
+      "sha256": "c1cdfc7035d80d5e657b1743ecaa0631981c1b9d71ac191228272327769f8efc"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleOreProcessorL1.vcol",
+      "bytes": 7890,
+      "sha256": "065619de7d74cce0800129f03d8d13819e31ac084579faaa763b3de0841bb02a"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleOreProcessorL2.obj",
+      "bytes": 33971,
+      "sha256": "5b95e8a8027e40a6672ae6fa8553da4897aae9cce5f81f4978314e32d1f5e456"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleOreProcessorL2.vcol",
+      "bytes": 9948,
+      "sha256": "2dce3d9814aafd797a1be74f8025fc07795ab7a71930343accb9a26cb51da29e"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleShipyardL1.obj",
+      "bytes": 23592,
+      "sha256": "00a53eb84d1e91e085c2d75991ac43b9aa2edd0135b4efe4358a122efbab1431"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleShipyardL1.vcol",
+      "bytes": 7792,
+      "sha256": "01948db59ef6bbb8a787bebe9a222da8c7693e36044bdd5d95a3649d5767731b"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleShipyardL2.obj",
+      "bytes": 29922,
+      "sha256": "0c5efa5289dc31f6aa80433c87cd40840eeb6a04a0e1151249aab7046456ba0b"
+    },
+    {
+      "path": "Assets/Meshes/obj/ModuleShipyardL2.vcol",
+      "bytes": 9976,
+      "sha256": "d3b848dd00b4b8a27e58616dfcce1967d01f325833efec25e209f16f326d41b4"
+    },
+    {
+      "path": "Assets/Meshes/obj/OC_Hull.mtl",
+      "bytes": 389,
+      "sha256": "3e9c5927c26726ca2ec60ce7c41f755606881512f80e06177b675945293d7b63"
+    },
+    {
+      "path": "Assets/Meshes/obj/Scout.obj",
+      "bytes": 19727,
+      "sha256": "59f6927f90c3682599e699f60b28a37d5120c08dec1efb0e5bfd7e6b00ea60f7"
+    },
+    {
+      "path": "Assets/Meshes/obj/Scout.vcol",
+      "bytes": 6066,
+      "sha256": "8ff55126ea7bc8f66bdcb9f1f03657d3cf2c94559f16601e5fdcb56cdd837b9d"
+    },
+    {
+      "path": "Assets/Meshes/obj/Station.obj",
+      "bytes": 122147,
+      "sha256": "cafdb7290e43cee6d968f8d91fd8d4a721e7773044da42a5e0b514fccf15c971"
+    },
+    {
+      "path": "Assets/Meshes/obj/Station.vcol",
+      "bytes": 37715,
+      "sha256": "4d1fd7dd6e7b69e2251896c6c4f769c37e7e69af70209c8e4c6747aaec938a9e"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 1613,
+      "sha256": "8f897f018fdce8e0a78f706d4e9b64f1cbbe7b2caaa0751a4868030ecdefdec8"
+    },
+    {
+      "path": "Client/MeshAssets.csproj.xml",
+      "bytes": 2115,
+      "sha256": "96805574c5fed83221daceef97feef0f38b440550cc7d3457a081cea58715d63"
+    },
+    {
+      "path": "Client/MeshAssets.vcxproj.xml",
+      "bytes": 2246,
+      "sha256": "eaeb5069397bb67ff840bf4b655845d56b91e285c5a8e589c440a1d5f6308ef4"
+    },
+    {
+      "path": "Client/MeshCatalog.g.h",
+      "bytes": 3564,
+      "sha256": "db7dd574469ec2c43dd53c5d73bccd771024f18d24b4b17cbc8d5a0a65570df2"
+    },
+    {
+      "path": "Design/materials.json",
+      "bytes": 4826,
+      "sha256": "523e29f8ba2a73d1c99df7c4935e21d0442e3acdb2022e300a544bbbd258996d"
+    },
+    {
+      "path": "Design/meshes.json",
+      "bytes": 447659,
+      "sha256": "12241850a28ed27453a29f2013ebaf0152e5088347956f3ec83488f8593320a5"
+    },
+    {
+      "path": "Design/README.md",
+      "bytes": 29778,
+      "sha256": "7f76b6ab49efb53af22c7c0846d26a68ef8032d2861ea57b9699848d650dcf82"
+    },
+    {
+      "path": "Design/render.js",
+      "bytes": 24573,
+      "sha256": "bb18dd88dde48afb358a3ef7eac51c7d8980e3792d1811dc2128949009b43970"
+    },
+    {
+      "path": "INTEGRATION_PROMPT.md",
+      "bytes": 15345,
+      "sha256": "afadf8d533fc73ad177cd01b0fe350133256665e3dadcae0bfe9e706ddbe5446"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3753,
+      "sha256": "a54efb419b638bec74af5fe51b4cc92d780f0717c14d34157806d2fc3a3cacb2"
+    },
+    {
+      "path": "Scripts/build_meshes.py",
+      "bytes": 6977,
+      "sha256": "4bb60b63bc12782c4e1d43b9c57f41b467e83d2709ca72a5642047647ff15683"
+    },
+    {
+      "path": "Scripts/meshes_to_obj.py",
+      "bytes": 6747,
+      "sha256": "9127410ee1f06cabd20fd872b17606916a4884e59bd93fffc8c1fffd8bed093c"
+    },
+    {
+      "path": "Scripts/verify_cmo.py",
+      "bytes": 11042,
+      "sha256": "1426b73160a39450a12ef0984ede2932b921f9c219655a92b2a60bc7458c3f71"
+    }
+  ]
+}
