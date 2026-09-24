@@ -47,6 +47,12 @@ void Seat(Outpost::ClientFrame& _frame, Outpost::PlayerId _player)
   return marker;
 }
 
+/// A station order, which carries no selection -- the smallest command there is, for the resend tests.
+[[nodiscard]] Outpost::Command StationOrder(std::uint16_t _sequence, Outpost::CommandType _type)
+{
+  return Outpost::Command{.sequence = _sequence, .type = _type, .targetX = 0, .targetY = 0, .selection = {}};
+}
+
 constexpr std::size_t QUEUE_SLOTS = 8;
 constexpr std::size_t QUEUE_SLOT_BYTES = 1500;
 } // namespace
@@ -498,6 +504,82 @@ public:
     Assert::AreEqual(std::int16_t{4000}, packet.viewX, L"a world unit is four wire steps");
     Assert::AreEqual(std::int16_t{-1000}, packet.viewY);
     Assert::AreEqual(std::uint16_t{2400}, packet.viewRadiusUnits);
+  }
+};
+
+/// **ADR-003's RELIABILITY, FOR A PERSON** (the 2026-09-23 review, M5). Until this only the Bot resent; the
+/// packaged client sent each command once, so a lost datagram was a lost order.
+TEST_CLASS(ClientFrameResend)
+{
+public:
+  /// A command is held until an update's own block acknowledges it, and rides every packet until then --
+  /// the view report included, which is what resends it when the player does not tap again.
+  TEST_METHOD(ACommandRidesEveryPacketUntilAcknowledged)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    frame.IssueCommand(StationOrder(5, Outpost::CommandType::Build), 1000);
+    frame.IssueCommand(StationOrder(6, Outpost::CommandType::CancelBuild), 1010);
+
+    Outpost::CommandPacket report{};
+    Assert::AreEqual(std::size_t{2}, frame.FillOutstanding(report));
+    Assert::AreEqual(std::uint16_t{5}, report.commands[0].sequence, L"oldest first");
+    Assert::AreEqual(std::uint16_t{6}, report.commands[1].sequence);
+
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    const std::vector<std::byte> update = EncodedUpdate(1, 5, 0);
+    queue.Push(update);
+    const Outpost::ClientFrame::DrainResult result = frame.DrainPackets(queue, 1100);
+    Assert::AreEqual(1u, result.commandsRetired);
+
+    Outpost::CommandPacket next{};
+    Assert::AreEqual(std::size_t{1}, frame.FillOutstanding(next));
+    Assert::AreEqual(std::uint16_t{6}, next.commands[0].sequence, L"the acknowledged command was sent again");
+  }
+
+  /// **A HIGH-WATER MARK RETIRES EVERYTHING BELOW IT**, across the sixteen-bit wrap.
+  TEST_METHOD(OneAcknowledgmentRetiresEveryCommandAtOrBeforeIt)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    for (const std::uint16_t sequence : {std::uint16_t{65534}, std::uint16_t{65535}, std::uint16_t{0}, std::uint16_t{1}})
+    {
+      frame.IssueCommand(StationOrder(sequence, Outpost::CommandType::CancelBuild), 1000);
+    }
+
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    const std::vector<std::byte> update = EncodedUpdate(1, 0, 0);
+    queue.Push(update);
+    Assert::AreEqual(3u, frame.DrainPackets(queue, 1050).commandsRetired);
+    Assert::AreEqual(std::size_t{1}, frame.OutstandingCommands().size());
+    Assert::AreEqual(std::uint16_t{1}, frame.OutstandingCommands().front().sequence);
+  }
+
+  /// **GIVEN UP AFTER THE RESEND WINDOW, AND ITS MARKER WITH IT**, so a command that will never be acknowledged
+  /// does not ride every packet forever and the interface stops drawing an order that may never have arrived.
+  TEST_METHOD(ACommandUnacknowledgedPastTheWindowIsDroppedWithItsMarker)
+  {
+    Outpost::ClientFrame frame;
+    Seat(frame, 1);
+    frame.IssueCommand(StationOrder(9, Outpost::CommandType::CancelBuild), 1000);
+    frame.Markers().Add(MarkerFor(9));
+
+    Neuron::PacketQueue queue{QUEUE_SLOTS, QUEUE_SLOT_BYTES};
+    Assert::AreEqual(0u, frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::COMMAND_RESEND_WINDOW_MILLISECONDS - 1).commandsExpired);
+    Assert::AreEqual(std::size_t{1}, frame.Markers().Count());
+
+    Assert::AreEqual(1u, frame.DrainPackets(queue, 1000 + Outpost::ClientFrame::COMMAND_RESEND_WINDOW_MILLISECONDS).commandsExpired);
+    Assert::AreEqual(std::size_t{0}, frame.OutstandingCommands().size());
+    Assert::AreEqual(std::size_t{0}, frame.Markers().Count(), L"the marker of a command given up on is still drawn");
+  }
+
+  /// Nothing outstanding is an empty report, which is what a view report was before commands rode it.
+  TEST_METHOD(NothingOutstandingFillsNothing)
+  {
+    Outpost::ClientFrame frame;
+    Outpost::CommandPacket report{};
+    Assert::AreEqual(std::size_t{0}, frame.FillOutstanding(report));
+    Assert::IsTrue(report.commands.empty());
   }
 };
 

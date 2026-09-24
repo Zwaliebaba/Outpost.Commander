@@ -263,6 +263,12 @@ std::vector<Update> Accumulator::Fill(const World& _world, PlayerId _player, con
   {
     --client.removals[index].remaining;
   }
+  // **ROUND ROBIN PAST THE CAP** (the 2026-09-23 review, m3). Served first-in-first-out, a 55-entity
+  // elimination sent the first 48 removals ten times before the last seven went out once, which left seven
+  // ghosts on screen for half a second. The ones that went out move behind the ones that did not, so every
+  // pending removal's first send is within a tick or two of its death whatever the backlog. Stable in both
+  // halves, and nothing downstream depends on the order within one update.
+  std::rotate(client.removals.begin(), client.removals.begin() + static_cast<std::ptrdiff_t>(removalsSent), client.removals.end());
   client.removals.erase(std::remove_if(client.removals.begin(), client.removals.end(),
                                        [](const PendingRemoval& _removal) noexcept { return _removal.remaining == 0; }),
                         client.removals.end());

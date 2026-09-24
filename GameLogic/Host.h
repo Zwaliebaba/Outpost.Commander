@@ -72,6 +72,15 @@ public:
   /// stress switch; this seats whatever it is given, clamped only to what a table can hold.
   void BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount = DEFAULT_PLAYER_COUNT);
 
+  /// **ONCE PER HOST RUN, BEFORE THE FIRST JOIN** (the 2026-09-23 review, B4): seeds the session-token stream,
+  /// which no `BeginMatch` reseeds. `Server` passes a value its shell read from the wall clock, so a host
+  /// restarted on the same seed does not hand last run's tokens out again in a new order; a suite that never
+  /// calls it gets the fixed stream a suite wants.
+  void SaltTokens(std::uint64_t _salt) noexcept
+  {
+    m_sessions.SaltTokens(_salt);
+  }
+
   /// How many slots this match has.
   [[nodiscard]] std::size_t PlayerCount() const noexcept
   {

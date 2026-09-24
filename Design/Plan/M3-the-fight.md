@@ -18,6 +18,20 @@ damage.
 
 ---
 
+## The order of work
+
+**Ruled 2026-09-24 (`OpenQuestions.md` Q72), from the mid-implementation review's M16.** The steps keep
+their numbers, which are names cited across `Design/`, and are built in this order:
+
+**M3.0 → M3.1 → M3.2 → M3.4 → M3.7 → M3.8 → M3.10**, which is a playable, restartable match against a stub
+after seven steps. **Then the raid content**: M3.3, M3.3b, M3.5, M3.6, M3.8b and M3.9, while the first matches
+are played and the economy's and the match length's questions (Q62, Q65) are answered by playing rather
+than after the last step. **M3.3's wire half already exists** (`GameCore/Update.h`'s fire event and the
+accumulator's `NoteFire`), so it is a client step. M3.11 comes last, gated by `README.md`'s class A.
+
+What reordering does not change: each step's *Read first* and *Done when* still hold, and a step whose
+question is not ruled when its turn comes waits for the ruling rather than assuming it.
+
 ### M3.0 — GATE: the firing cadence, and where the rounding lands · — · hand · **human**, then ADR-014
 
 **Read first:** `README.md` F3; `GameDesign.md` §7 in full;
@@ -45,6 +59,11 @@ unchanged.
 
 **Done when:** the register has the answer, `GameDesign.md` §7 says what a weapon does per tick rather than
 only per second, and **ADR-014 records the decision** with whatever §7 figures moved.
+
+**ANSWERED BY THE OWNER, 2026-09-24** (`OpenQuestions.md` Q66, to its recommendation): the shape above, in
+ten-thousandths of a point rather than hundredths, which is what makes it exact. `GameDesign.md` §7 *What a
+weapon does per tick* and [`ADR-014`](../ADR/ADR-014-damage-accumulates-every-tick.md) record it; no §7 figure
+moved, since the rule reproduces all of them. M3.1 pins the rows as tests.
 
 ### M3.1 — The damage table · `GameCore` · `GameCoreTests` · agent
 
@@ -175,10 +194,15 @@ client-side timer, and the host never knows it exists.
 **Files:** `GameLogic/DeathSystem.h` `.cpp`; `GameClient/Wrecks.h` `.cpp`, `GameClient/ReplicaStore.cpp`;
 `Tests/GameLogicTests/DeathTests.cpp`; `Tests/GameClientTests/RemovalTests.cpp`.
 
-**Done when:** a death produces a removal entry and the client evicts the entity **from the removal list
-and never from absence** — assert this by feeding the client a snapshot in which an entity is missing
-*without* a removal entry and requiring that it is **not** treated as dead; a dead ship leaves the
-selection; and a wreck decays without the host being told.
+**Done when:** a death produces a removal entry and the client evicts the entity **from the removal list,
+and never treats it as dead by absence inside the forget horizon** — assert this by feeding the client
+updates in which an entity is missing *without* a removal entry for up to
+`ReplicaStore::FORGET_FLOOR_TICKS` and requiring that it is **not** treated as dead; a dead ship leaves the
+selection, and a wreck is spawned, **from the removal and not from the store forgetting**; and a wreck
+decays without the host being told. *(Reworded 2026-09-24 after the mid-implementation review, m2: past
+the horizon the store does forget, deliberately — it is how a death whose ten removals were all lost is
+cleaned up — so "never from absence" would have pinned a test against the store as built. A forgotten
+entity spawns no wreck.)*
 
 ### M3.5 — The station's point defense · `GameLogic` · `GameLogicTests` · agent
 

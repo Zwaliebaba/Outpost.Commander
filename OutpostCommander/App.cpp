@@ -23,6 +23,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <vector>
 
 // The packaged client, and the whole of it: an IFrameworkView over a CoreWindow that activates,
 // runs M0.5's temporary probe and exits. There is no XAML anywhere in this tree and no
@@ -384,6 +385,9 @@ void RunProbe(const CoreWindow& _window)
   // needs, because the expansion matches on IDENTITY rather than on screen distance (ADR-017).
   Outpost::Selection selection;
   Outpost::WireIdentity lastTapIdentity = Outpost::NO_WIRE_IDENTITY;
+  // Where the selection is when a hold recenters on it; kept across frames so a hold allocates nothing.
+  std::vector<float> recenterX;
+  std::vector<float> recenterY;
 
   // M1.12 to M1.14: THE INTERFACE. The atlas is rasterized once, on the first frame, because its upload
   // is recorded on the frame's command list; the renderer draws every plate and glyph as one instanced
@@ -605,6 +609,9 @@ void RunProbe(const CoreWindow& _window)
     {
       Outpost::CommandPacket report{.sequence = 0, .player = clientFrame.Player(), .commands = {}};
       clientFrame.StampView(report);
+      // **AND EVERY COMMAND STILL UNACKNOWLEDGED** (ADR-003, the 2026-09-23 review's M5), so an order lost on
+      // the way goes again within a quarter of a second whether or not the player taps.
+      static_cast<void>(clientFrame.FillOutstanding(report));
       std::array<std::byte, QUEUE_SLOT_BYTES> outgoingView{};
       Neuron::ByteWriter viewWriter{outgoingView};
       if (Outpost::Encode(report, viewWriter))
@@ -630,6 +637,11 @@ void RunProbe(const CoreWindow& _window)
       reportedReady = false;
       Report(log, "LINK lost after " + std::to_string(Outpost::ClientFrame::LINK_SILENCE_MILLISECONDS) +
                     " ms of silence, reopening the socket and rejoining");
+    }
+    if (drained.commandsExpired > 0)
+    {
+      Report(log, "TX gave up on " + std::to_string(drained.commandsExpired) + " unacknowledged command(s) after " +
+                    std::to_string(Outpost::ClientFrame::COMMAND_RESEND_WINDOW_MILLISECONDS) + " ms");
     }
     if (drained.linkRestored)
     {
@@ -749,15 +761,20 @@ void RunProbe(const CoreWindow& _window)
         }
         else if (event.kind == Neuron::InputEventKind::Holding)
         {
-          // **A HOLD ON EMPTY SPACE RECENTERS** (ADR-018). Nothing is selectable yet -- M1.10 is
-          // selection -- so it goes to this player's station, which is the half of it
-          // `GameDesign.md` section 7 actually names.
+          // **A HOLD ON EMPTY SPACE RECENTERS** (ADR-018 decision 7): on the selection when there is one, on
+          // this player's station when there is not. It went to the station unconditionally until the
+          // 2026-09-23 review (m9) -- written before selection existed and never revisited -- which left
+          // panning as the only way back to your own fleet in the game's normal state.
           const Neuron::Vec2 station = Outpost::StartAnchor(clientFrame.CurrentJoin().PlayerCount(), clientFrame.Player());
+          selection.PositionsOf(clientFrame.Replicas().Entities(), recenterX, recenterY);
           clientFrame.Camera() =
             Outpost::Recenter(clientFrame.Camera(),
-                              Outpost::RecenterRequest{.stationX = static_cast<float>(station.x) / static_cast<float>(Neuron::FIXED_ONE),
+                              Outpost::RecenterRequest{.selectionX = recenterX,
+                                                       .selectionY = recenterY,
+                                                       .stationX = static_cast<float>(station.x) / static_cast<float>(Neuron::FIXED_ONE),
                                                        .stationY = static_cast<float>(station.y) / static_cast<float>(Neuron::FIXED_ONE)});
-          Report(log, "RECENTER on the station");
+          Report(log, recenterX.empty() ? std::string{"RECENTER on the station"}
+                                        : "RECENTER on " + std::to_string(recenterX.size()) + " selected");
         }
         continue;
       }
@@ -797,7 +814,8 @@ void RunProbe(const CoreWindow& _window)
               (hudHit.action == Outpost::HudAction::Build) ? Outpost::CommandType::Build : Outpost::CommandType::CancelBuild;
             Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
             clientFrame.StampView(packet);
-            packet.commands.push_back(Outpost::BuildStationCommand(sequence, type, design));
+            clientFrame.IssueCommand(Outpost::BuildStationCommand(sequence, type, design), nowMs);
+            static_cast<void>(clientFrame.FillOutstanding(packet));
 
             std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
             Neuron::ByteWriter commandWriter{outgoing};
@@ -896,9 +914,11 @@ void RunProbe(const CoreWindow& _window)
           const std::uint16_t sequence = clientFrame.TakeCommandSequence();
           Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
           clientFrame.StampView(packet);
-          packet.commands.push_back((placement.action == Outpost::PlacementAction::Place)
-                                      ? Outpost::BuildPlaceModuleCommand(sequence, placement.site, moduleArming.Armed())
-                                      : Outpost::BuildUpgradeModuleCommand(sequence, placement.module, moduleArming.Armed()));
+          clientFrame.IssueCommand((placement.action == Outpost::PlacementAction::Place)
+                                     ? Outpost::BuildPlaceModuleCommand(sequence, placement.site, moduleArming.Armed())
+                                     : Outpost::BuildUpgradeModuleCommand(sequence, placement.module, moduleArming.Armed()),
+                                   nowMs);
+          static_cast<void>(clientFrame.FillOutstanding(packet));
 
           std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
           Neuron::ByteWriter commandWriter{outgoing};
@@ -963,22 +983,26 @@ void RunProbe(const CoreWindow& _window)
         }
 
         const Outpost::MineSplit split = Outpost::SplitForMine(selection.Identities(), known);
-        Outpost::CommandPacket packet{.sequence = 0, .player = clientFrame.Player(), .commands = {}};
+        std::vector<Outpost::Command> issued;
         if (!split.miners.empty())
         {
-          packet.commands.push_back(Outpost::BuildMineCommand(clientFrame.TakeCommandSequence(), picked.rock, split.miners));
+          issued.push_back(Outpost::BuildMineCommand(clientFrame.TakeCommandSequence(), picked.rock, split.miners));
         }
         if (!split.others.empty())
         {
-          packet.commands.push_back(
-            Outpost::BuildMoveCommand(clientFrame.TakeCommandSequence(), picked.worldX, picked.worldY, split.others));
+          issued.push_back(Outpost::BuildMoveCommand(clientFrame.TakeCommandSequence(), picked.worldX, picked.worldY, split.others));
         }
-        if (packet.commands.empty())
+        if (issued.empty())
         {
           continue;
         }
-        packet.sequence = packet.commands.front().sequence;
+        for (const Outpost::Command& command : issued)
+        {
+          clientFrame.IssueCommand(command, nowMs);
+        }
+        Outpost::CommandPacket packet{.sequence = issued.front().sequence, .player = clientFrame.Player(), .commands = {}};
         clientFrame.StampView(packet);
+        static_cast<void>(clientFrame.FillOutstanding(packet));
 
         std::array<std::byte, QUEUE_SLOT_BYTES> outgoing{};
         Neuron::ByteWriter commandWriter{outgoing};
@@ -986,7 +1010,7 @@ void RunProbe(const CoreWindow& _window)
                           transport.Send(std::span<const std::byte>{outgoing.data(), commandWriter.WrittenBytes()});
 
         // ONE MARKER PER COMMAND, at the rock's place on the plane, each cleared by its own acknowledgment.
-        for (const Outpost::Command& command : packet.commands)
+        for (const Outpost::Command& command : issued)
         {
           Outpost::OrderMarker marker;
           marker.targetX = Outpost::QuantizePosition(static_cast<Neuron::Fixed>(picked.worldX * static_cast<float>(Neuron::FIXED_ONE)));
@@ -1025,7 +1049,9 @@ void RunProbe(const CoreWindow& _window)
       Neuron::ByteWriter commandWriter{outgoing};
       Outpost::CommandPacket packet{.sequence = sequence, .player = clientFrame.Player(), .commands = {}};
       clientFrame.StampView(packet);
-      packet.commands.push_back(Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, selection.Identities()));
+      const Outpost::Command moveCommand = Outpost::BuildMoveCommand(sequence, outcome.worldX, outcome.worldY, selection.Identities());
+      clientFrame.IssueCommand(moveCommand, nowMs);
+      static_cast<void>(clientFrame.FillOutstanding(packet));
 
       bool sent = false;
       if (Outpost::Encode(packet, commandWriter))
@@ -1034,8 +1060,8 @@ void RunProbe(const CoreWindow& _window)
       }
 
       Outpost::OrderMarker marker;
-      marker.targetX = packet.commands.front().targetX;
-      marker.targetY = packet.commands.front().targetY;
+      marker.targetX = moveCommand.targetX;
+      marker.targetY = moveCommand.targetY;
       marker.commandSequence = sequence;
       // The whole selection, because the marker's job is to say what was ordered (Q20) and M1.10
       // made that more than one ship.

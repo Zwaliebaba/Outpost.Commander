@@ -331,32 +331,51 @@ public:
     Assert::AreEqual(100u, build.Credits(MINE));
   }
 
-  /// A replacement the player cannot afford cancels what was building and takes the refund with it,
-  /// which is what a tap on a grayed button asks for. Nothing is lost either way.
-  TEST_METHOD(AnUnaffordableReplacementStillRefunds)
+  /// **A REPLACEMENT THE PLAYER CANNOT AFFORD TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md`
+  /// section 6 keeps the button lit with its cost reddened, which says "save up" -- so a tap on it leaves the
+  /// item in progress building and the balance where it was, where it used to cancel the item and build nothing.
+  TEST_METHOD(AnUnaffordableReplacementLeavesTheItemBuilding)
   {
     Outpost::World world;
     Seat(world, 2);
     Outpost::BuildSystem build;
     build.Begin(2);
 
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
-    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
-    static_cast<void>(RunToCompletion(build, world, MINE));
+    // Six miners at 150 is 900, which leaves 100 -- and 100 plus the building miner's 150 is 250 against a
+    // fighter's 300.
+    for (int order = 0; order < 5; ++order)
+    {
+      static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Miner));
+      static_cast<void>(RunToCompletion(build, world, MINE));
+    }
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
+    build.Advance(world);
+    const Outpost::BuildItem building = build.Item(MINE);
+    Assert::AreEqual(100u, build.Credits(MINE));
 
-    // Six miners at 150 is 900 spent, 100 left, and one more miner started would be 150.
+    Assert::AreEqual(Code(Outpost::BuildRejection::Unaffordable), Code(build.Start(world, MINE, Outpost::DesignId::Fighter)));
+    Assert::IsTrue(build.Item(MINE) == building, L"an unaffordable tap cancelled the item in progress");
     Assert::AreEqual(100u, build.Credits(MINE));
-    Assert::AreEqual(Code(Outpost::BuildRejection::Unaffordable), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
+  }
+
+  /// And the refund still counts: a replacement the balance covers only with the refund goes through.
+  TEST_METHOD(AReplacementTheRefundPaysForIsTaken)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+
+    // 1,000 - 300 - 300 - 300 = 100, and a fighter in progress refunds 300: 400 covers a fourth fighter.
+    for (int order = 0; order < 2; ++order)
+    {
+      static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
+      static_cast<void>(RunToCompletion(build, world, MINE));
+    }
+    static_cast<void>(build.Start(world, MINE, Outpost::DesignId::Fighter));
     Assert::AreEqual(100u, build.Credits(MINE));
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Miner)));
+    Assert::AreEqual(250u, build.Credits(MINE));
   }
 
   /// A cancel with nothing building is not an error: a tap on a cancel target that has already
@@ -775,6 +794,28 @@ public:
     static_cast<void>(RunToCompletion(build, world, MINE));
     Assert::AreEqual(1000u, build.Credits(MINE));
     Assert::AreEqual(std::uint64_t{1}, build.StrandedCount());
+  }
+
+  /// **ON THE TICK IT DIED, NOT WHEN THE ITEM WOULD HAVE FINISHED** (the 2026-09-23 review, m7): one advance
+  /// after the module is gone, the item is gone and the credits are back, so the panel stops showing a
+  /// destroyed module upgrading.
+  TEST_METHOD(AnUpgradeWhoseModuleDiesIsRefundedOnTheNextTick)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    build.Begin(2);
+    const Outpost::EntityId module = world.Create(NearStation(world, MINE, 300, 0), 0, Outpost::DesignId::ModuleOreProcessorL1, MINE);
+    static_cast<void>(build.StartUpgrade(world, MINE, module, Outpost::DesignId::ModuleOreProcessorL2));
+    for (int tick = 0; tick < 10; ++tick)
+    {
+      build.Advance(world);
+    }
+    static_cast<void>(world.Destroy(module));
+
+    build.Advance(world);
+    Assert::IsFalse(build.Item(MINE).active, L"a destroyed module is still shown upgrading");
+    Assert::AreEqual(1000u, build.Credits(MINE));
   }
 
   /// Through the intake, both orders: the point and design of a placement, the identity and level of an upgrade.

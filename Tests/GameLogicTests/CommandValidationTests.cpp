@@ -57,7 +57,9 @@ public:
 
     Assert::AreEqual(Code(Outpost::CommandRejection::NotOwned), Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(theirs)}))));
     Assert::IsFalse(world.FindOrder(theirs)->active, L"a rejected command must not move anything");
-    Assert::AreEqual(std::uint16_t{0}, intake.LastAppliedSequence(MINE), L"a rejected command must not acknowledge");
+    // **ACKNOWLEDGED, AND STILL REFUSED** (Q24 as amended after the 2026-09-23 review): the host understood the
+    // order and will never apply it, so a sequence that did not advance would have the client resend it forever.
+    Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(MINE), L"a refusal past the sequence check must acknowledge");
   }
 
   TEST_METHOD(AnOverLongSelectionIsRejected)
@@ -79,10 +81,11 @@ public:
     Assert::IsFalse(world.FindOrder(mine)->active);
   }
 
-  TEST_METHOD(AStaleGenerationIsRejected)
+  TEST_METHOD(AStaleGenerationIsSkipped)
   {
-    // Q24's third. The slot is reused, so the index still resolves -- and the generation is what
-    // stops it resolving to the wrong ship.
+    // Q24's third, as amended. The slot is reused, so the index still resolves -- and the generation is what
+    // stops it resolving to the wrong ship. The sender meant the ship that died, so the identity is skipped:
+    // the new occupant is not ordered, and the command is accepted as the no-op it now is.
     Outpost::World world;
     Outpost::CommandIntake intake;
     Outpost::BuildSystem build;
@@ -93,8 +96,76 @@ public:
     const Outpost::EntityId reborn = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE);
     Assert::AreEqual(dead.index, reborn.index, L"the test needs the slot to have been reused");
 
-    Assert::AreEqual(Code(Outpost::CommandRejection::StaleGeneration), Code(intake.Apply(world, build, MINE, MoveTo(1, {staleWire}))));
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(1, {staleWire}))));
     Assert::IsFalse(world.FindOrder(reborn)->active, L"the new occupant must not have taken the dead one's order");
+    Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(MINE));
+  }
+
+  /// **THE REVIEW'S M4** (2026-09-23): a retreat tapped during a raid names a ship that died on the host a
+  /// moment before the client heard. The survivors are ordered and the dead one is skipped -- where the old
+  /// all-or-nothing rule refused the order whole, never acknowledged it, and left the survivors where they were.
+  TEST_METHOD(ADeadShipInASelectionIsSkippedAndTheRestAreOrdered)
+  {
+    Outpost::World world;
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    const Outpost::EntityId a = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, MINE);
+    const Outpost::EntityId b = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, MINE);
+    const Outpost::EntityId c = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, MINE);
+    const Outpost::WireIdentity cWire = Wire(c);
+    Assert::IsTrue(world.Destroy(c));
+
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(3, {Wire(a), Wire(b), cWire}))));
+    Assert::IsTrue(world.FindOrder(a)->active);
+    Assert::IsTrue(world.FindOrder(b)->active);
+    Assert::AreEqual(std::uint16_t{3}, intake.LastAppliedSequence(MINE));
+  }
+
+  /// A selection that has shrunk by its dead is not an over-long one: the bound counts live identities, so
+  /// ten selected with seven dead is three live against three owned, and the three are ordered.
+  TEST_METHOD(TheLengthBoundCountsOnlyLiveShips)
+  {
+    Outpost::World world;
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    std::vector<Outpost::WireIdentity> selection;
+    std::vector<Outpost::EntityId> survivors;
+    for (int ship = 0; ship < 10; ++ship)
+    {
+      const Outpost::EntityId id = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, MINE);
+      selection.push_back(Wire(id));
+      if (ship < 7)
+      {
+        Assert::IsTrue(world.Destroy(id));
+      }
+      else
+      {
+        survivors.push_back(id);
+      }
+    }
+
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(1, selection))));
+    for (const Outpost::EntityId id : survivors)
+    {
+      Assert::IsTrue(world.FindOrder(id)->active);
+    }
+  }
+
+  /// Everything in it died: nothing to order, and the order is accepted as a no-op so the client stops sending it.
+  TEST_METHOD(AnAllDeadSelectionIsAcceptedAsANoOp)
+  {
+    Outpost::World world;
+    Outpost::CommandIntake intake;
+    Outpost::BuildSystem build;
+    static_cast<void>(world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Miner, MINE));
+    const Outpost::EntityId gone = world.Create(Neuron::Vec2{}, 0, Outpost::DesignId::Fighter, MINE);
+    const Outpost::WireIdentity goneWire = Wire(gone);
+    Assert::IsTrue(world.Destroy(gone));
+    const std::uint64_t before = Outpost::StateHash(world);
+
+    Assert::AreEqual(Code(Outpost::CommandRejection::None), Code(intake.Apply(world, build, MINE, MoveTo(4, {goneWire}))));
+    Assert::AreEqual(before, Outpost::StateHash(world));
+    Assert::AreEqual(std::uint16_t{4}, intake.LastAppliedSequence(MINE));
   }
 
   TEST_METHOD(AnOutOfMapTargetIsClampedRatherThanApplied)
@@ -193,7 +264,7 @@ public:
                      Code(intake.Apply(world, build, static_cast<Outpost::PlayerId>(Outpost::MAX_PLAYERS + 1), MoveTo(1, {Wire(mine)}))));
   }
 
-  TEST_METHOD(AHalfValidSelectionAppliesNoneOfIt)
+  TEST_METHOD(AForeignIdentityInASelectionAppliesNoneOfIt)
   {
     // A command that took for some ships and not others would leave the match in a state no
     // sequence number describes, and the client would never learn which half took.
@@ -211,6 +282,7 @@ public:
                      Code(intake.Apply(world, build, MINE, MoveTo(1, {Wire(mine), Wire(alsoMine), Wire(theirs)}))));
     Assert::IsFalse(world.FindOrder(mine)->active, L"the valid part of a refused command was applied");
     Assert::IsFalse(world.FindOrder(alsoMine)->active);
+    Assert::AreEqual(std::uint16_t{1}, intake.LastAppliedSequence(MINE), L"refused, and acknowledged");
   }
 
   TEST_METHOD(EachPlayerHasItsOwnSequence)

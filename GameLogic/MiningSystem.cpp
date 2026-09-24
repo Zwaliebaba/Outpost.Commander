@@ -50,6 +50,7 @@ void MiningSystem::Advance(World& _world)
   m_grid.Rebuild(_world);
 
   const std::span<const Placement> field = _world.Field();
+  m_rockWorked.assign(field.size(), 0);
   const std::size_t slotCount = _world.SlotCount();
   for (std::size_t slot = 0; slot < slotCount; ++slot)
   {
@@ -112,6 +113,16 @@ void MiningSystem::Advance(World& _world)
 
       case MiningPhase::Extracting:
       {
+        // **ONE EXTRACTOR PER ROCK PER TICK** (Q62, ruled 2026-09-24). A second miner in range holds here with
+        // its cargo unchanged and takes its turn when the rock is free, so a rock yields at most one laser's
+        // rate and stacking miners on the nearest rock stops beating spreading them. **In slot order**, like
+        // everything in this pass, so which miner waits is the store's order and never a race (R16).
+        if (m_rockWorked[mine.rock] != 0)
+        {
+          break;
+        }
+        m_rockWorked[mine.rock] = 1;
+
         // EXACTLY TO A FULL HOLD, NEVER PAST IT: the last tick's worth is whatever is left of the capacity,
         // so the cargo equals the capacity on the tick it fills rather than overshooting by a rate.
         const std::uint32_t rateMilliOre = (stats.orePerSecond * MILLI_ORE_PER_ORE) / TICKS_PER_SECOND;

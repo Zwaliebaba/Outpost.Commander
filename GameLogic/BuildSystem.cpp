@@ -220,23 +220,22 @@ BuildRejection BuildSystem::StartUpgrade(World& _world, PlayerId _player, Entity
 
 BuildRejection BuildSystem::Commit(PlayerId _player, const BuildItem& _item) noexcept
 {
-  // THE REFUND FIRST (Q35). Replacing a Fighter with a Fighter has to work, and it would not if the
-  // new cost were checked against a balance the old item was still holding.
+  // THE REFUND COUNTS TOWARD THE NEW COST (Q35). Replacing a Fighter with a Fighter has to work, and it would
+  // not if the new cost were checked against a balance the old item was still holding.
   BuildItem& item = m_items[static_cast<std::size_t>(_player)];
-  const bool replacing = item.active;
-  const std::uint32_t refunded = replacing ? item.creditsSpent : 0;
-  m_credits[static_cast<std::size_t>(_player)] += refunded;
+  const std::uint32_t refund = item.active ? item.creditsSpent : 0;
+  std::uint32_t& credits = m_credits[static_cast<std::size_t>(_player)];
 
-  if (m_credits[static_cast<std::size_t>(_player)] < _item.creditsSpent)
+  // **AND AN ORDER THE PLAYER CANNOT PAY FOR TOUCHES NOTHING** (the 2026-09-23 review, m1). `Interface.md`
+  // section 6 keeps an unaffordable button lit with its cost reddened -- "save up" -- and a tap on it used to
+  // cancel the item in progress and build nothing, throwing away up to twenty seconds of the slot. Checked
+  // before anything moves, so the item keeps building and the balance is exactly what it was.
+  if (static_cast<std::uint64_t>(credits) + refund < _item.creditsSpent)
   {
-    // Nothing was spent, so the refund above stands and the old item is simply cancelled -- which is
-    // what a player who taps something they cannot afford has asked for, and the interface will show
-    // it by the item disappearing rather than by a message.
-    item = BuildItem{};
     return BuildRejection::Unaffordable;
   }
 
-  m_credits[static_cast<std::size_t>(_player)] -= _item.creditsSpent;
+  credits = credits + refund - _item.creditsSpent;
   item = _item;
   return BuildRejection::None;
 }
@@ -272,6 +271,21 @@ void BuildSystem::Advance(World& _world) noexcept
       continue;
     }
 
+    // **AN UPGRADE WHOSE MODULE HAS DIED IS REFUNDED ON THE TICK IT DIED** (the 2026-09-23 review, m7), not
+    // when the item would have finished: the panel would otherwise show a destroyed module upgrading for the
+    // rest of the build, and the credits would sit locked in it.
+    if (item.upgrade.IsValid())
+    {
+      const Entity* module = _world.Find(item.upgrade);
+      if ((module == nullptr) || (module->owner != static_cast<PlayerId>(player)))
+      {
+        m_credits[player] += item.creditsSpent;
+        item = BuildItem{};
+        ++m_stranded;
+        continue;
+      }
+    }
+
     ++item.ticksElapsed;
     if (item.ticksElapsed < item.ticksRequired)
     {
@@ -291,20 +305,11 @@ void BuildSystem::Advance(World& _world) noexcept
     }
 
     // **AN UPGRADE CHANGES THE MODULE IN PLACE** (Q54): the same entity, the same identity and position, a
-    // new level. The hull it has taken stays taken -- both levels carry the frame's hull points -- and a
-    // module that died while the upgrade built is a refund, as a station that died is.
+    // new level. The hull it has taken stays taken -- both levels carry the frame's hull points. The module
+    // is alive and this player's: the check at the top of the loop ran this tick.
     if (item.upgrade.IsValid())
     {
-      Entity* module = _world.Find(item.upgrade);
-      if ((module == nullptr) || (module->owner != static_cast<PlayerId>(player)))
-      {
-        m_credits[player] += item.creditsSpent;
-        ++m_stranded;
-      }
-      else
-      {
-        module->design = item.design;
-      }
+      _world.Find(item.upgrade)->design = item.design;
       item = BuildItem{};
       continue;
     }

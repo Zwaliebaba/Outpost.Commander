@@ -44,6 +44,10 @@ public:
   /// Thousandths of a credit a player has earned and not yet been granted, rounded down. Never a whole credit.
   [[nodiscard]] std::uint32_t PendingMilliCredits(PlayerId _player) const noexcept;
 
+  /// The same remainder at the precision it is held in, which is what `MatchHash` folds: two builds that
+  /// disagreed in the last hundredth would agree on the milli-credits and diverge a delivery later.
+  [[nodiscard]] std::uint64_t PendingMilliCreditHundredths(PlayerId _player) const noexcept;
+
 private:
   /// In hundredths of a thousandth of a credit, which is what makes a percentage exact.
   std::array<std::uint64_t, MAX_PLAYERS + 1> m_pendingMilliCreditHundredths{};

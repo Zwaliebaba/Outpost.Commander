@@ -10,7 +10,11 @@ void Sessions::Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcep
   m_sessions.clear();
   m_playerCount = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
   m_matchSeed = _matchSeed;
-  m_tokens = Neuron::Pcg32{_matchSeed, TOKEN_STREAM};
+}
+
+void Sessions::SaltTokens(std::uint64_t _salt) noexcept
+{
+  m_tokens = Neuron::Pcg32{_salt, TOKEN_STREAM};
 }
 
 void Sessions::Clear() noexcept

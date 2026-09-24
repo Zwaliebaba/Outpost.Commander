@@ -34,17 +34,21 @@ inline constexpr std::uint64_t GENERATOR_STREAM = 3;
 // **ALL PROVISIONAL AND ALL NAMED**, which is the one thing the register required: "the answer may be
 // provisional, but it may not be anonymous". M3's twenty matches are where they are expected to move.
 
-/// **TEN ROCKS IN EACH HOME FIELD**, the register's figure. Income is about 15 credits a second and one
-/// miner makes 2.5, so a running economy is about six miners, and ten rocks keeps them from queuing on one.
+/// **TEN ROCKS IN EACH HOME FIELD**, the register's figure. **Ten rocks serve about thirty miners** since Q62
+/// ruled one extractor per rock per tick: a rock yields one laser's 20 ore a second and a miner spends most
+/// of its cycle flying, so six miners -- a running economy -- never queue.
 inline constexpr std::size_t HOME_FIELD_ASTEROID_COUNT = 10;
 
-/// `GameDesign.md` section 3's "within about 1,500 units of each anchor".
-inline constexpr std::int32_t HOME_FIELD_OUTER_RADIUS_UNITS = 1500;
+/// **2,000 UNITS OUT, AND 1,200 IN** (`OpenQuestions.md` Q62, ruled 2026-09-24). At 600 to 1,500 the nearest rock
+/// paid one miner 6.4 credits a second against the 2.5 `GameDesign.md` section 4 assumed, income passed the
+/// 20-a-second build slot inside a minute, and the slot rather than the miners paced the match. Moved out, a
+/// miner earns 2.7 to 3.7 a second and six earn less than the slot, which is Q47's intent. The measured table
+/// is on Q26.
+inline constexpr std::int32_t HOME_FIELD_OUTER_RADIUS_UNITS = 2000;
 
-/// **NOTHING CLOSER THAN 600.** A module is placed within 400 units of its station (`GameDesign.md` section
-/// 5), so a rock inside that would sit on the base; 600 leaves 200 beyond the ring, which is also outside
-/// point defense's 400 -- miners at the rocks are raidable, which section 5 says is the point.
-inline constexpr std::int32_t HOME_FIELD_INNER_RADIUS_UNITS = 600;
+/// **NOTHING CLOSER THAN 1,200** (Q62). It was 600, which kept rocks off the 400-unit module ring and out of
+/// point defense; 1,200 still does both by a wide margin, and it is what moves income under the build slot.
+inline constexpr std::int32_t HOME_FIELD_INNER_RADIUS_UNITS = 1200;
 
 /// **TWO CONTESTED CLUSTERS IN EACH REGION**, so two at two players become four on the map once `GenerateField`
 /// copies them, and eight at four players. "Richer clusters toward the center, reachable by everyone" is the map's
