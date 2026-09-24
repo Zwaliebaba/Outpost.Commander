@@ -78,6 +78,10 @@ public:
   /// across a restart, and a human never takes an AI's base.
   void Reseed(std::uint64_t _matchSeed) noexcept;
 
+  /// **THE LAST _count SEATS ARE THE AI'S** (M3.10, Q70's reserved AI seats): no client is ever given one, so a human
+  /// never takes an AI's base. A match with every seat reserved refuses every join as full.
+  void ReserveSeats(std::size_t _count) noexcept;
+
   /// ADR-013's handshake, and the only thing that hands out a slot.
   ///
   /// **MATCHED BY TOKEN, THEN BY ENDPOINT, THEN GIVEN A FREE SLOT.** The endpoint step is not
@@ -139,6 +143,7 @@ private:
   std::vector<Session> m_sessions;
 
   std::size_t m_playerCount = 0;
+  std::size_t m_reservedSeats = 0;
   std::uint64_t m_matchSeed = 0;
 
   /// Seeded by `SaltTokens` and never by `Begin`: one stream for the life of the table, so a suite that

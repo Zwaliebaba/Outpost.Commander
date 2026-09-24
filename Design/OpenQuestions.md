@@ -608,7 +608,9 @@ reflex and AI seats reserved (Q70).
 
 **RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** The AI sees what a player is sent and nothing else: the
 wire records of every live entity and its own player block, at wire precision. It decides once a second and orders
-through the same command path a client uses. M3.10's stub is written that way, and M4.5 extends it.
+through the same command path a client uses. M3.10's stub is written that way, and M4.5 extends it. **Built
+(M3.10)**: `GameLogic/StubAi`'s `AiView` holds the records, the block and the seed-derived field, and nothing else.
+AI seats are the last seats, reserved so no client is given one, and `Server --ai N` sets how many.
 
 ### Q49 — What are the accumulator's weights, and is a cap of two updates a tick enough? — **needed by M4.8, built to the recommendation at M1.14c**
 

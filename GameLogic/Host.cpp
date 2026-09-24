@@ -36,9 +36,17 @@ void Host::BeginMatch(std::uint64_t _matchSeed, std::size_t _playerCount)
   // configuration and not a format change.
   const std::size_t players = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
   m_sessions.Begin(players, _matchSeed);
+  m_sessions.ReserveSeats(m_aiSeats);
   m_intake = CommandIntake{};
   m_matchEndedRepeats = 0;
   ResetMatch(_matchSeed, players);
+}
+
+void Host::SetAiSeats(std::size_t _count) noexcept
+{
+  m_aiSeats = _count;
+  m_sessions.ReserveSeats(_count);
+  m_ai.Begin(m_sessions.PlayerCount(), _count);
 }
 
 void Host::Restart()
@@ -71,6 +79,7 @@ void Host::ResetMatch(std::uint64_t _matchSeed, std::size_t _players)
   m_build.Begin(players);
   m_economy.Begin();
   m_victory.Begin(players, m_tick);
+  m_ai.Begin(players, m_aiSeats);
 
   // EVERY CLIENT STARTS FROM NOTHING: the new match's entities are all due, and a client clears its store when it
   // hears the match ended (ADR-024).
@@ -274,6 +283,10 @@ void Host::SendUpdates()
 void Host::RunOneTick()
 {
   DrainAndApply();
+
+  // M3.10: THE AI SEATS' ORDERS, AFTER THE CLIENTS' AND THROUGH THE SAME INTAKE (`TechnicalDesign.md` section 2:
+  // orders, AI, movement), once a second, from what a client of their seat would be sent (Q48).
+  m_ai.Advance(m_world, m_build, m_intake, m_tick);
   Tick(m_world);
 
   // M3.2: WEAPONS, AFTER MOVEMENT AND BEFORE MINING (`TechnicalDesign.md` section 2), so a ship fires from where it

@@ -151,6 +151,19 @@ struct MatchResult
 /// from many places -- and the fighters alone take the fleet moves. At `ABANDON_TICK` everything is moved,
 /// miners included. That reaches the whole five-state loop, the unload query, abandonment with cargo aboard
 /// and a standing order picked back up.
+/// Two AI seats and no client, for `TICKS`: the host's own loop, so the AI decides exactly as it does in a match.
+[[nodiscard]] std::uint64_t RunStubAiMatch()
+{
+  Outpost::Host host;
+  host.BeginMatch(MATCH_SEED, PLAYERS);
+  host.SetAiSeats(PLAYERS);
+  for (std::uint32_t tick = 0; tick < TICKS; ++tick)
+  {
+    host.RunOneTick();
+  }
+  return Outpost::StateHash(host.CurrentWorld());
+}
+
 [[nodiscard]] MatchResult RunScriptedMatch()
 {
   Outpost::World world;
@@ -352,6 +365,16 @@ public:
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
     Assert::AreEqual(0x30ec4bd6d250002full, RunScriptedMatch().hash);
+  }
+
+  /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI
+  /// seats on a host with no client, two minutes of match, and the world's hash at the end: building, mining,
+  /// defending and striking are all inside it, and nothing but the tick drives them. The same on all four MSVC pairs
+  /// before it was pinned.
+  TEST_METHOD(TheStubAiMatchHashesToItsPinnedValue)
+  {
+    Assert::AreEqual(0xf61fbd3a38fae41dull, RunStubAiMatch());
+    Assert::AreEqual(RunStubAiMatch(), RunStubAiMatch());
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

@@ -27,6 +27,7 @@
 #include "WeaponSystem.h"
 #include "DeathSystem.h"
 #include "Victory.h"
+#include "StubAi.h"
 #include "Economy.h"
 #include "StateHash.h"
 #include "Tick.h"

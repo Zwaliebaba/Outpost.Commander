@@ -14,6 +14,7 @@
     <ClCompile Include="ModuleEffectTests.cpp" />
     <ClCompile Include="EconomyTests.cpp" />
     <ClCompile Include="SessionsTests.cpp" />
+    <ClCompile Include="StubAiTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="DeathTests.cpp" />
     <ClCompile Include="TargetingTests.cpp" />

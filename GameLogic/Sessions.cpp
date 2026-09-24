@@ -9,7 +9,13 @@ void Sessions::Begin(std::size_t _playerCount, std::uint64_t _matchSeed) noexcep
 {
   m_sessions.clear();
   m_playerCount = (_playerCount > MAX_PLAYERS) ? MAX_PLAYERS : _playerCount;
+  m_reservedSeats = (m_reservedSeats > m_playerCount) ? m_playerCount : m_reservedSeats;
   m_matchSeed = _matchSeed;
+}
+
+void Sessions::ReserveSeats(std::size_t _count) noexcept
+{
+  m_reservedSeats = (_count > m_playerCount) ? m_playerCount : _count;
 }
 
 void Sessions::Reseed(std::uint64_t _matchSeed) noexcept
@@ -52,7 +58,7 @@ PlayerId Sessions::LowestFreeSlot() const noexcept
 {
   // Players are numbered from one, and the lowest free one is handed out -- so a solo client is
   // always player one and a suite does not have to care what order two clients arrived in.
-  for (std::size_t slot = 1; slot <= m_playerCount; ++slot)
+  for (std::size_t slot = 1; slot <= (m_playerCount - m_reservedSeats); ++slot)
   {
     const PlayerId candidate = static_cast<PlayerId>(slot);
     bool taken = false;

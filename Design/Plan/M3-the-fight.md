@@ -498,6 +498,21 @@ anything random.
 anything a client is not sent; a match against it reaches a victory unattended; and **it appears in the
 determinism test**, because an AI that reads the clock is the easiest possible way to lose R16.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q48 AS RULED THAT DAY.**
+
+- **`GameLogic/StubAi`**: `StubAi::Decide` turns an `AiView` into commands. The view is every live entity's wire
+  record, the seat's own block, and the field a client derives from the seed. It builds Miners to six, sends each
+  new one to one of the six nearest rocks, then builds Fighters. With an enemy ship inside 2,000 of its station it
+  sends every Fighter at the nearest one; otherwise, with eight or more, it attacks the nearest enemy station.
+  `AiSeats` runs each AI seat once a second and applies its orders through `CommandIntake::Apply`, as a client's.
+- **The seats**: the last N are the AI's (`Host::SetAiSeats`, `Server --ai N`), reserved in `Sessions` so no client
+  is given one, and kept across restarts.
+- **Measured by `StubAiTests`**: two stubs on a host with no client build 12 Miners and up to 25 Fighters. **They
+  stalemate**: each defend reflex recalls its fleet when the other's strike arrives, and the match ends on the
+  clock, won on station hull. Q65 anticipated that of a mirror, and against a human it is the human who breaks it.
+  **Not tuned**; §8's state machine is M4's.
+- **In the determinism test**: two AI seats for two minutes, pinned, the same on all four pairs.
+
 ---
 
 ### M3.11 — GATE: twenty matches in an evening · — · hand · **human**

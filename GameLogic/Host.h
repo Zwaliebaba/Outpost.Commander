@@ -9,6 +9,7 @@
 #include "WeaponSystem.h"
 #include "DeathSystem.h"
 #include "Victory.h"
+#include "StubAi.h"
 #include "World.h"
 
 #include <cstddef>
@@ -79,6 +80,15 @@ public:
   /// same reset as `BeginMatch`, on the next seed, **with every seat kept**, and a `MatchEnded` to every seated
   /// client for the next `MATCH_ENDED_REPEAT_TICKS` ticks. Public so a suite can end a match without playing one.
   void Restart();
+
+  /// **THE LAST _count SEATS PLAY THEMSELVES** (M3.10): the stub AI takes them, and no client is ever given one. Kept
+  /// across every restart. `Server --ai` sets it; zero, the default, is a host of humans only.
+  void SetAiSeats(std::size_t _count) noexcept;
+
+  [[nodiscard]] const AiSeats& Ai() const noexcept
+  {
+    return m_ai;
+  }
 
   /// The seed the match after one on _matchSeed plays: SplitMix64's finalizer over it, so a run of restarts from
   /// one starting seed is the same run of maps on every host (R16), and never the same map twice in a row.
@@ -253,6 +263,8 @@ private:
   WeaponSystem m_weapons;
   DeathSystem m_deaths;
   Victory m_victory;
+  AiSeats m_ai;
+  std::size_t m_aiSeats = 0;
   Economy m_economy;
   Sessions m_sessions;
   Accumulator m_accumulator;

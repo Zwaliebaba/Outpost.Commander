@@ -123,7 +123,7 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 // ---------------------------------------------------------------------------------------------
 
 [[nodiscard]] int RunHost(std::uint16_t _port, std::uint32_t _durationSeconds, std::uint64_t _matchSeed, std::size_t _playerCount,
-                          bool _stress)
+                          bool _stress, std::size_t _aiSeats)
 {
   Outpost::Host host;
   // **THE TOKEN SALT IS WALL TIME, AND THIS IS THE ONE PLACE IT MAY BE** (R16: the shell is the seam). Two
@@ -134,6 +134,7 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
                                   (static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count()) << 17);
   host.SaltTokens(tokenSalt);
   host.BeginMatch(_matchSeed, _playerCount);
+  host.SetAiSeats(_aiSeats);
   if (!host.Open(_port))
   {
     std::printf("host: could not open port %u, WSA fault %d\n", _port, host.LastFault());
@@ -147,6 +148,7 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
   std::printf("host: match seed %llu\n", static_cast<unsigned long long>(host.MatchSeed()));
   // **A STRESS RUN SAYS SO**, first thing, because its layout is not fair and its numbers are not a match's.
   std::printf("host: %zu players%s\n", host.PlayerCount(), _stress ? " -- STRESS CONFIGURATION, not a match" : "");
+  std::printf("host: %zu of them the stub AI's\n", host.Ai().Count());
   std::printf("host: %lld ms a tick; Ctrl+C to stop\n", static_cast<long long>(Outpost::TICK_PERIOD_MILLISECONDS));
   std::fflush(stdout);
 
@@ -230,8 +232,9 @@ void PrintEndpoint(std::string_view _label, const Neuron::Endpoint& _endpoint)
 }
 
 /// One string, because four copies of it were four chances to add an option to three of them.
-inline constexpr const char* USAGE = "usage: Server [--port N] [--seconds N] [--seed N] [--players N [--stress]] [--probe]\n"
-                                     "  --players is 1 to 4, or up to 254 with --stress (ADR-023)\n";
+inline constexpr const char* USAGE = "usage: Server [--port N] [--seconds N] [--seed N] [--players N [--stress]] [--ai N] [--probe]\n"
+                                     "  --players is 1 to 4, or up to 254 with --stress (ADR-023)\n"
+                                     "  --ai gives the last N seats to the stub AI (M3.10); at most the player count\n";
 } // namespace
 
 int main(int _argc, char** _argv)
@@ -247,6 +250,7 @@ int main(int _argc, char** _argv)
   std::uint32_t playerCount = static_cast<std::uint32_t>(Outpost::Host::DEFAULT_PLAYER_COUNT);
   bool stress = false;
   bool probe = false;
+  std::uint32_t aiSeats = 0;
 
   for (std::size_t index = 1; index < arguments.size(); ++index)
   {
@@ -265,6 +269,15 @@ int main(int _argc, char** _argv)
     {
       ++index;
       if (!ParseNumber(std::string_view{arguments[index]}, playerCount))
+      {
+        std::fputs(USAGE, stderr);
+        return 2;
+      }
+    }
+    else if ((argument == "--ai") && hasValue)
+    {
+      ++index;
+      if (!ParseNumber(std::string_view{arguments[index]}, aiSeats))
       {
         std::fputs(USAGE, stderr);
         return 2;
@@ -305,12 +318,13 @@ int main(int _argc, char** _argv)
   }
 
   // CHECKED AFTER EVERY ARGUMENT IS READ, so `--stress` may come before or after `--players`.
-  if (!Outpost::PlayerCountAllowed(playerCount, stress))
+  if (!Outpost::PlayerCountAllowed(playerCount, stress) || (aiSeats > playerCount))
   {
     std::fputs(USAGE, stderr);
     return 2;
   }
 
   return probe ? RunProbe(durationSeconds)
-               : RunHost(static_cast<std::uint16_t>(port), durationSeconds, matchSeed, static_cast<std::size_t>(playerCount), stress);
+               : RunHost(static_cast<std::uint16_t>(port), durationSeconds, matchSeed, static_cast<std::size_t>(playerCount), stress,
+                         static_cast<std::size_t>(aiSeats));
 }
