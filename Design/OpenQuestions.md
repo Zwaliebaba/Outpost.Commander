@@ -1008,12 +1008,15 @@ in 25.7 s and none flees.
 **Recommendation: the first**, with §7's flight row re-derived on Q62's field. The 60-tick resume is the
 figure to argue with.
 
-**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** A miner going to its rock or extracting that takes
-damage enters a fifth phase, fleeing: it keeps its rock and cargo, heads for Q63's unload point, and goes back to
+**RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION, AND BUILT (M3.6).** A miner going to its rock or
+extracting that is fired on enters a fifth phase, fleeing: it keeps its rock and cargo, heads for Q63's unload point, and goes back to
 its rock after 60 ticks without taking damage. "Takes damage" is the weapon system's list of what it hit this
 tick, not the fire events, which are thinned to one in ten ticks and would miss most hits. A miner on its way
 home or unloading is already heading for the same point, so it does not flee. **A move order is the player's
-override and never flees**, since it ends the mine order. M3.6 builds it.
+override and never flees**, since it ends the mine order. **A flight is a retreat and not a trip home**: out of
+the raider's 600 and three calm seconds later the miner turns back for its rock. Measured by `MinerFlightTests`:
+three Fighters holding 600 past six miners at a rock 1,500 out kill none in a minute with flight, and two
+without it.
 
 ### Q65 — How does a contested match end in about five minutes, and what is a tie? — **ANSWERED**
 

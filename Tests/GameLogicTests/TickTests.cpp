@@ -715,7 +715,10 @@ public:
     // **A FIFTH TIME AT M3.2, BECAUSE THE HASH WIDENED AGAIN** to each ship's weapon remainders and attack
     // order. Nothing in this run is armed against anything, so the run is unchanged; the same on all four MSVC
     // pairs before it was pinned.
-    Assert::AreEqual(0x3d86d61f11912b8dull, Outpost::StateHash(world));
+    //
+    // **A SIXTH TIME AT M3.6**: the hash folds a mine order's calm count (Q64). The run is unchanged; the same on
+    // all four MSVC pairs before it was pinned.
+    Assert::AreEqual(0xfdbb9e54bd86ec0dull, Outpost::StateHash(world));
   }
 };
 

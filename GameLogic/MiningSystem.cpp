@@ -59,11 +59,20 @@ const MiningSystem::UnloadPoint& MiningSystem::UnloadPointFor(const World& _worl
   return m_unloadPoints.back();
 }
 
-void MiningSystem::Advance(World& _world)
+void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
 {
   m_deliveries.clear();
   m_unloadPoints.clear();
   m_grid.Rebuild(_world);
+
+  m_struck.assign(_world.SlotCount(), 0);
+  for (const EntityId& id : _struck)
+  {
+    if (_world.IsAlive(id))
+    {
+      m_struck[id.index] = 1;
+    }
+  }
 
   const std::span<const Placement> field = _world.Field();
   m_rockWorked.assign(field.size(), 0);
@@ -100,6 +109,17 @@ void MiningSystem::Advance(World& _world)
       continue;
     }
     const Neuron::Vec2 rock = field[mine.rock].position;
+
+    // **Q64: FLIGHT.** Fired on while going to the rock or extracting, the miner runs for home with its rock and
+    // cargo kept. On the way home or unloading it is already going to the same place, and a move order -- the
+    // player's override -- has ended the mine order, so neither flees.
+    const bool struck = m_struck[slot] != 0;
+    if (struck && ((mine.phase == MiningPhase::ToOre) || (mine.phase == MiningPhase::Extracting)))
+    {
+      mine.phase = MiningPhase::Fleeing;
+      mine.calmTicks = 0;
+      mine.unloadTarget = NO_ENTITY;
+    }
 
     for (int transition = 0; transition < MAXIMUM_TRANSITIONS_PER_TICK; ++transition)
     {
@@ -182,6 +202,53 @@ void MiningSystem::Advance(World& _world)
         else
         {
           HeadFor(_world, slot, unload.farSide ? unload.point : target->position);
+        }
+        break;
+      }
+
+      case MiningPhase::Fleeing:
+      {
+        if (struck)
+        {
+          mine.calmTicks = 0;
+        }
+        else if (mine.calmTicks < FLEE_CALM_TICKS)
+        {
+          ++mine.calmTicks;
+        }
+        if (mine.calmTicks >= FLEE_CALM_TICKS)
+        {
+          // BACK TO THE ROCK, with whatever it was carrying: a full hold goes on to unload from there.
+          mine.phase = MiningPhase::ToOre;
+          mine.unloadTarget = NO_ENTITY;
+          continue;
+        }
+
+        const Entity* home = _world.Find(mine.unloadTarget);
+        if (home == nullptr)
+        {
+          mine.unloadTarget = FindUnloadTarget(_world, m_grid, miner.owner, miner.position, m_scratch);
+          home = _world.Find(mine.unloadTarget);
+        }
+        if (home == nullptr)
+        {
+          // NOWHERE TO RUN TO: it stops, which is as much as a miner can do.
+          Halt(_world, slot);
+          break;
+        }
+
+        // THE SAME PLACE IT WOULD UNLOAD (Q63): the far side while a hostile is near, which is where point defense
+        // covers it; touching the near side otherwise.
+        const UnloadPoint& refuge = UnloadPointFor(_world, *home, miner.design);
+        const bool safe = refuge.farSide ? Within(miner.position, refuge.point, FAR_SIDE_SLACK_UNITS * Neuron::FIXED_ONE)
+                                         : Within(miner.position, home->position, UnloadReach(miner.design, home->design));
+        if (safe)
+        {
+          Halt(_world, slot);
+        }
+        else
+        {
+          HeadFor(_world, slot, refuge.farSide ? refuge.point : home->position);
         }
         break;
       }

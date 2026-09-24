@@ -44,7 +44,9 @@ public:
   /// One tick, for every entity with a mine order, **in index order**. Rebuilds the grid first -- from the
   /// world as movement left it -- because the unload query reads it. The tick's deliveries replace the last
   /// tick's.
-  void Advance(World& _world);
+  ///
+  /// _struck is what the weapons fired on this tick (`WeaponSystem::Struck`), which starts a miner's flight (Q64).
+  void Advance(World& _world, std::span<const EntityId> _struck = {});
 
   /// What this tick's unloads delivered, in the order they happened -- which is index order.
   [[nodiscard]] std::span<const OreDelivery> Deliveries() const noexcept
@@ -83,6 +85,9 @@ private:
   /// **ONE EXTRACTOR PER ROCK PER TICK** (`OpenQuestions.md` Q62): which rocks have yielded ore this tick,
   /// indexed as the field is. Sized to the field and cleared at the top of every `Advance`.
   std::vector<std::uint8_t> m_rockWorked;
+
+  /// One a slot: fired on this tick, from _struck.
+  std::vector<std::uint8_t> m_struck;
   std::vector<OreDelivery> m_deliveries;
 };
 

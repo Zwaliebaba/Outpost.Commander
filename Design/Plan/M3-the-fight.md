@@ -359,6 +359,19 @@ than an annoyance.
 path is deterministic; and §7's figure for miners lost fleeing 1,500 units is reproduced within the
 tolerance the design's own table implies.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q64 AS RULED THAT DAY**, which moved the condition from
+"no order" to "going to its rock or extracting" (the done-when above predates it and reads accordingly).
+
+- **`WeaponSystem::Struck`**: what the weapons fired on this tick. That is not what they damaged, since a mass
+  driver settles under one point a tick against a Miner, and not the fire events, which are thinned.
+- **`MiningPhase::Fleeing`** in `MiningSystem`: the miner heads for Q63's unload point with its rock and cargo
+  kept, and after `FLEE_CALM_TICKS` (60) without being fired on it goes back to `ToOre`. The calm count is hashed.
+  The planned `GameLogic/MinerBehavior` file was not needed; flight is a phase of the order it interrupts.
+- **§7's row, re-measured rather than reproduced**: three holding raiders kill none of six miners in a minute with
+  flight, and two without it. The old "about 3½" assumed raiders that chase, which nothing here does yet.
+
+`MinerFlightTests.cpp` pins it. The determinism pins moved for the calm count.
+
 ### M3.7 — Elimination and victory · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §2.

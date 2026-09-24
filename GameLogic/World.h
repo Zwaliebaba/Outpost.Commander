@@ -41,7 +41,8 @@ struct MoveOrder
 };
 
 /// Where a miner is in `GameDesign.md` section 4's loop (M2.6). **Five states in the design and four here**,
-/// because "and back" is `ToOre` again: going to ore, extracting, going to unload, unloading.
+/// because "and back" is `ToOre` again: going to ore, extracting, going to unload, unloading -- and since M3.6 a
+/// fifth that is not in the loop at all, fleeing (`OpenQuestions.md` Q64).
 enum class MiningPhase : std::uint8_t
 {
   /// No mine order. A miner told to move somewhere is here, holding whatever it was carrying.
@@ -49,8 +50,16 @@ enum class MiningPhase : std::uint8_t
   ToOre,
   Extracting,
   ToUnload,
-  Unloading
+  Unloading,
+
+  /// **FIRED ON WHILE GOING TO ITS ROCK OR EXTRACTING** (M3.6, Q64): heading for its station's unload point with
+  /// its rock and cargo kept, and back to `ToOre` after `FLEE_CALM_TICKS` without being fired on.
+  Fleeing
 };
+
+/// **THREE SECONDS WITHOUT BEING FIRED ON** and a fleeing miner goes back to its rock (Q64's 60 ticks, "the figure
+/// to argue with"). Not tuned.
+inline constexpr std::uint16_t FLEE_CALM_TICKS = 60;
 
 /// Thousandths of ore to ore. `MineOrder::cargoMilliOre` says why the unit is thousandths.
 inline constexpr std::uint32_t MILLI_ORE_PER_ORE = 1000;
@@ -73,6 +82,9 @@ struct MineOrder
 
   /// Where it is unloading, once a query has said. `NO_ENTITY` until then, and again if that dies.
   EntityId unloadTarget{};
+
+  /// Ticks since a fleeing miner was last fired on (Q64). Read only while `Fleeing`, and hashed.
+  std::uint16_t calmTicks = 0;
 
   /// **WHETHER THE LAST `Extracting` TICK TOOK ORE**, which is what the record's activity says (Q81): false for a
   /// miner holding at a rock another is working (Q62). Read only when the phase is `Extracting`, so it is never

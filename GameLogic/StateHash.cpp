@@ -88,6 +88,7 @@ std::uint64_t StateHash(const World& _world) noexcept
     FoldByte(hash, static_cast<std::uint8_t>(mine.phase));
     FoldUInt16(hash, mine.rock);
     FoldUInt32(hash, mine.cargoMilliOre);
+    FoldUInt16(hash, mine.calmTicks);
 
     // **M3.2: WHAT THE WEAPONS ARE OWED AND WHAT THE SHIP IS ATTACKING** (ADR-014). The remainders are the
     // fractions of damage not yet taken off a hull, so a build that rounds them differently diverges here on the

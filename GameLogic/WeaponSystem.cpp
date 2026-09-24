@@ -74,6 +74,8 @@ void WeaponSystem::Advance(World& _world, std::uint32_t _tick)
 
   const std::size_t slotCount = _world.SlotCount();
   m_damage.assign(slotCount, 0);
+  m_firedUpon.assign(slotCount, 0);
+  m_struck.clear();
   if (m_lastFireEvent.size() < slotCount)
   {
     m_lastFireEvent.resize(slotCount, 0);
@@ -156,6 +158,7 @@ void WeaponSystem::Advance(World& _world, std::uint32_t _tick)
         state.remainders.fill(0);
       }
       m_damage[target.index] += Accumulate(state.remainders[mount], DamagePerInterval(weapon.id, victim->design));
+      m_firedUpon[target.index] = 1;
       fired = true;
       firedWith = weapon.id;
     }
@@ -172,6 +175,10 @@ void WeaponSystem::Advance(World& _world, std::uint32_t _tick)
   // THE DAMAGE, AFTER EVERY WEAPON HAS FIRED (ADR-014). Stopping at zero: what a hull at zero means is M3.4's.
   for (std::size_t slot = 0; slot < slotCount; ++slot)
   {
+    if ((m_firedUpon[slot] != 0) && _world.IsSlotAlive(slot))
+    {
+      m_struck.push_back(_world.EntityInSlot(slot).id);
+    }
     if ((m_damage[slot] == 0) || !_world.IsSlotAlive(slot))
     {
       continue;

@@ -246,7 +246,7 @@ struct MatchResult
 
     Outpost::Tick(world);
     weapons.Advance(world, tick);
-    mining.Advance(world);
+    mining.Advance(world, weapons.Struck());
     for (const Outpost::OreDelivery& delivery : mining.Deliveries())
     {
       deliveredMilliOre += delivery.milliOre;
@@ -343,9 +343,12 @@ public:
   ///
   /// **A TENTH TIME, BY M3.4 (2026-09-24)**: zero hull is death, after build queues, and the script's fight kills
   /// two ships. The same on all four MSVC pairs before it was pinned.
+  ///
+  /// **AN ELEVENTH TIME, BY M3.6 (2026-09-24)**: miners fired on flee (Q64), and the hash folds each mine order's
+  /// calm count. The same on all four MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xd1f9102dc448fb8full, RunScriptedMatch().hash);
+    Assert::AreEqual(0x30ec4bd6d250002full, RunScriptedMatch().hash);
   }
 
   /// **RUN TWICE IN ONE PROCESS**, which catches the failures a pinned literal cannot: mutable static

@@ -473,19 +473,23 @@ damage from the cheapest weapon — three independently reasonable choices whose
 | One fighter kills one fighter | 20.0 s | 20.0 s |
 | Defense slower than offense by | **5.0×** | 1.6× |
 | Three fighters kill six miners in | **8.0 s** | 25.7 s, or 25.8 s one at a time (M3.1) |
-| Miners lost fleeing 1,500 units to the station | **all six** | about 3½ |
+| Miners lost to three raiders at a rock 1,500 out, in a minute | **all six** | **none**; two without flight (M3.6) |
 
-*The flight row predates the home field's move to 1,200–2,000 units (Q62), and whether it can fire at all
-is `OpenQuestions.md` Q64; it is re-derived when that is ruled.*
+*The flight row was re-measured at M3.6 on the rules as built (`OpenQuestions.md` Q64), by
+`MinerFlightTests`: six miners at a rock 1,500 from their station, three Fighters arriving 600 past them and
+holding there. It replaced a derived "about 3½", which assumed raiders that chase. A raid that pursues is
+M3.10's AI to measure.*
 
 At 5× a raider destroyed 750 credits of miners in the time a defender destroyed 300 credits of fighter,
 before counting the lost income — so the dominant opening was an all-in strike, the dominant reply was the
 same, and the economy was decoration. **`Scout` hull is now 450 and `MassDriver` does 70% against Small**,
 which makes a raid an exchange rather than a slaughter.
 
-**A miner with no order that is fired upon flees to its station.** Thirty lines, and without it the
-defender must be watching the right part of a 16,384-unit map at the right moment to have any counterplay
-at all.
+**A miner at work that is fired upon flees to its station** (`OpenQuestions.md` Q64): one going to its rock or
+extracting runs for its station's unload point with its rock and cargo kept, and goes back to work after three
+seconds without being fired on. A miner the player has ordered to move never flees; the order is the override.
+Without it the defender must be watching the right part of a 16,384-unit map at the right moment to have any
+counterplay at all.
 
 **The counter to mass is still speed, and now nothing in the MVP tests it.** A `Frigate` moves at 140
 units per second and a `Cruiser` at 50 — strike craft pick the fight and leave — and

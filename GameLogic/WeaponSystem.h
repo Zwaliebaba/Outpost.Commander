@@ -44,6 +44,14 @@ public:
     return m_fired;
   }
 
+  /// **EVERYTHING A WEAPON FIRED ON THIS TICK**, in slot order (M3.6, Q64): what a miner's flight reads. Fired on and
+  /// not damaged, because a mass driver settles under one whole point a tick against a Miner, so most ticks of a
+  /// raid move no hull at all. And not the fire events, which are thinned to one a shooter in ten ticks.
+  [[nodiscard]] std::span<const EntityId> Struck() const noexcept
+  {
+    return m_struck;
+  }
+
 private:
   /// Ends attack orders whose target is gone, and solves an order's arc again once its target has moved more
   /// than the arc's spacing (Q67).
@@ -60,6 +68,10 @@ private:
   std::vector<std::uint32_t> m_lastFireEvent;
 
   std::vector<FireEvent> m_fired;
+
+  /// One a slot, set when any weapon fires on it this tick.
+  std::vector<std::uint8_t> m_firedUpon;
+  std::vector<EntityId> m_struck;
 };
 
 } // namespace Outpost

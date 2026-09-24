@@ -118,6 +118,7 @@
     <ClCompile Include="RingAssignmentTests.cpp" />
     <ClCompile Include="UniformGridTests.cpp" />
     <ClCompile Include="MiningTests.cpp" />
+    <ClCompile Include="MinerFlightTests.cpp" />
     <ClCompile Include="ModuleEffectTests.cpp" />
     <ClCompile Include="EconomyTests.cpp" />
     <ClCompile Include="SessionsTests.cpp" />
