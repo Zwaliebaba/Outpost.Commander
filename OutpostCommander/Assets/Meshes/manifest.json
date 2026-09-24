@@ -104,17 +104,22 @@
     "note": "diffuse is white because the albedo arrives entirely through the vertex colour channel. A reader that ignores vertex colour will render every hull white, which is the intended loud failure."
   },
   "totals": {
-    "meshes": 13,
-    "triangles": 2674,
-    "vertices": 8022,
-    "cmoBytesEstimate": 436048,
-    "instancedDrawsPerFrame": 13
+    "meshes": 14,
+    "triangles": 2990,
+    "vertices": 8970,
+    "cmoBytesEstimate": 487460,
+    "instancedDrawsPerFrame": 14
   },
   "landmarkTests": [
     {
       "mesh": "Frigate",
       "assert": "the single vertex of maximum Z is the nose, at x ~ 0, z = +45",
       "why": "catches a Z flip and an X skew"
+    },
+    {
+      "mesh": "Cruiser",
+      "assert": "the max-Z slice (4 units) is ~28 units wide in X — the blunt hammerhead prow — while the Frigate's is under 4",
+      "why": "catches a Z flip: flipped, the prow slice becomes the 44-unit-wide aft flare plus nacelles"
     },
     {
       "mesh": "ModuleShipyardL1",
@@ -190,6 +195,35 @@
       },
       "drawGroup": "Frigate",
       "note": "medium hull — long pointed spine, thirteen-point plan at 2.14:1 with a hard outrigger step. Five-section chined hull, two closed outrigger blisters, aft drive block. The Fighter is a Frigate with two mass drivers."
+    },
+    {
+      "name": "Cruiser",
+      "asset": "Assets\\Meshes\\Cruiser.cmo",
+      "source": "obj/Cruiser.obj",
+      "vcol": "obj/Cruiser.vcol",
+      "triangles": 316,
+      "vertices": 948,
+      "cmoBytesEstimate": 51412,
+      "extents": {
+        "min": [
+          -32,
+          -14,
+          -90
+        ],
+        "max": [
+          32,
+          21,
+          90
+        ],
+        "size": [
+          64,
+          35,
+          180
+        ],
+        "longest": 180
+      },
+      "drawGroup": "Cruiser",
+      "note": "heavy hull — hammerhead slab: blunt wide prow, long parallel flanks, flared aft, plan aspect 2.8:1. Five-section hull, four dorsal turret blisters (one per slot), two drive nacelles, aft bridge. Added 2026-09-24 on the owner's instruction."
     },
     {
       "name": "ModuleFrame",

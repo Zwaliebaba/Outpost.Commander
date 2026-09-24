@@ -131,6 +131,8 @@ private:
     return L"MINER";
   case DesignId::Fighter:
     return L"FIGHTER";
+  case DesignId::Cruiser:
+    return L"CRUISER";
   case DesignId::Station:
     return L"STATION";
   // `design_handoff_hud`'s build panel names, which M2.11's two-line buttons split at the space.
@@ -552,7 +554,7 @@ void EmitBuild(const HudState& _state, Emitter& _emit, HudHitTable& _hits)
   // always refuses would be a button that lies.
   const bool ownsShipyard = std::any_of(_state.ownModules.begin(), _state.ownModules.end(), [](DesignId _module)
                                         { return (_module == DesignId::ModuleShipyardL1) || (_module == DesignId::ModuleShipyardL2); });
-  const std::array<HudRect, 2> places{BUILD_BUTTON_SHIP_0, BUILD_BUTTON_SHIP_1};
+  const std::array<HudRect, 3> places{BUILD_BUTTON_SHIP_0, BUILD_BUTTON_SHIP_1, BUILD_BUTTON_SHIP_2};
   const std::span<const DesignId> designs = BuildableDesigns();
   for (std::size_t index = 0; (index < designs.size()) && (index < places.size()); ++index)
   {

@@ -75,6 +75,19 @@ public:
     Assert::AreEqual(30u, Outpost::ModifierPercent(Outpost::ComponentId::PointDefense, Outpost::SizeClass::Heavy));
   }
 
+  /// **M4.4's ONE ROW IN THE DAMAGE TABLE** (Q75): 40, 100 and 60 against Small, Medium and Large -- the fighter's gun
+  /// turned round, hurting the medium and heavy hulls a mass driver scratches.
+  TEST_METHOD(TheHeavyDriverRowIsQ75s)
+  {
+    Assert::AreEqual(40u, Outpost::ModifierPercent(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Light));
+    Assert::AreEqual(100u, Outpost::ModifierPercent(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Medium));
+    Assert::AreEqual(60u, Outpost::ModifierPercent(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Heavy));
+    // ADR-014's whole ten-thousandths a tick: 50 x modifier x 5.
+    Assert::AreEqual(10000u, Outpost::ShipDamagePerInterval(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Light));
+    Assert::AreEqual(25000u, Outpost::ShipDamagePerInterval(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Medium));
+    Assert::AreEqual(15000u, Outpost::ShipDamagePerInterval(Outpost::ComponentId::HeavyDriver, Outpost::SizeClass::Heavy));
+  }
+
   TEST_METHOD(EveryWeaponAgainstEverySizeClassIsExactEveryTick)
   {
     // ADR-014: `dps x modifier x 5` ten-thousandths a tick, a whole number for every cell. 8,750 is 0.875 of a
@@ -165,6 +178,16 @@ public:
     const std::uint32_t ticks = TicksToKill(Outpost::DesignId::Fighter, 1, Outpost::DesignId::Miner);
     Assert::AreEqual(258u, ticks);
     Assert::AreEqual(12.9, Seconds(ticks), 0.05);
+  }
+
+  /// **M4.4: WHAT M4.7 WILL PUT TO THE TEST.** A Cruiser kills a Fighter in three seconds, and a Fighter needs four
+  /// minutes for a Cruiser -- so eight fighters, its price, take thirty seconds (602 ticks, ADR-014's whole-point
+  /// settlement adding two) and lose one every three. Speed is what is left to them: 140 against 62.
+  TEST_METHOD(ACruiserAndAFighterAreFarApart)
+  {
+    Assert::AreEqual(60u, TicksToKill(Outpost::DesignId::Cruiser, 1, Outpost::DesignId::Fighter));
+    Assert::AreEqual(4800u, TicksToKill(Outpost::DesignId::Fighter, 1, Outpost::DesignId::Cruiser));
+    Assert::AreEqual(602u, TicksToKill(Outpost::DesignId::Fighter, 8, Outpost::DesignId::Cruiser));
   }
 
   TEST_METHOD(OneFighterKillsOneFighterIn20Seconds)

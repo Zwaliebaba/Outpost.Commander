@@ -104,6 +104,16 @@ extended.
 speed down, and takes its damage row; and **the diff is a table row plus tests** — if it is more, say what
 it was.
 
+**BUILT 2026-09-24, `Debug|x64`, NOT YET LOOKED AT ON THE DEVICE.** The simulation's diff **is two table rows**:
+`HeavyDriver` in `GameCore/Catalog.cpp` (Q75: 50 a second, 40/100/60) and `Cruiser` in `GameCore/Design.cpp`, both
+appended so no identity on the wire moved. It derives 2,400 credits and 62 units a second, which nobody wrote down.
+**What it was besides**, all on the client: the owner's v4 mesh handoff, converted by `Scripts/BuildMeshes.py` to
+`OutpostCommander/Assets/Meshes/Cruiser.cmo` with a Cruiser landmark in `CheckMeshes.py`, declared in the package project;
+the catalog's size went from 150 to the mesh's 180 (Q37); and a third ship button, `BUILD_BUTTON_SHIP_2`, in the
+ship row's last place. Pinned by `TheCruiserIs2400CreditsAt62UnitsASecond`, `TheHeavyDriverRowIsQ75s`,
+`ACruiserAndAFighterAreFarApart` (a Fighter in 60 ticks; eight fighters need 602), `ACruiserBuildsInTwoMinutes` and
+`TheCruiserDrawsWithItsOwnMesh`. **Q85's gates are M4.4b's**: until then a Cruiser needs only a shipyard.
+
 ### M4.4b — The research station module · `GameCore`, `GameLogic` · both · agent
 
 **Read first:** `GameDesign.md` §9 and §5's module table;

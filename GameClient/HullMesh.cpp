@@ -14,7 +14,7 @@ namespace
 /// `ModuleFrame` and the five asteroids are not here -- no design draws the first, and the second are
 /// `AsteroidMesh`'s, baked per match rather than instanced per entity.
 constexpr std::array<std::string_view, SHIPPED_MESH_COUNT> SHIPPED_MESHES{
-  "Scout", "Frigate", "Station", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2"};
+  "Scout", "Frigate", "Station", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2", "Cruiser"};
 
 /// **A CHANNEL, AS A FRACTION.** The file stores the colour as a 32-bit DWORD the converter wrote
 /// little-endian, so the low byte is red: `0x00BBGGRR` with alpha on top.
@@ -62,9 +62,8 @@ std::string_view MeshNameForHull(HullId _hull) noexcept
     // thing in the handoff to "ore goes in here", until the mesh handoff has one. Same frame, same size.
     return "ModuleOreProcessorL1";
   case HullId::Cruiser:
-    // NOTHING AUTHORED ONE, because nothing builds one. The catalog states its size at 150 and M4
-    // authors a mesh to that number rather than the other way round.
-    return {};
+    // M4.4: the v4 mesh handoff's hammerhead, 180 units long.
+    return "Cruiser";
   }
   return {};
 }
@@ -87,6 +86,7 @@ std::string_view MeshNameForDesign(DesignId _design) noexcept
   case DesignId::Miner:
   case DesignId::Fighter:
   case DesignId::Station:
+  case DesignId::Cruiser:
     break;
   }
   if (static_cast<std::size_t>(_design) >= Designs().size())

@@ -91,8 +91,8 @@ void ToWorldDirection(float _authoredX, float _authoredY, float _authoredZ, floa
 /// (M2.10b).
 [[nodiscard]] std::string_view MeshNameForDesign(DesignId _design) noexcept;
 
-/// How many meshes a design can draw with: M1.9's three hulls and M2.10b's four module levels.
-inline constexpr std::size_t SHIPPED_MESH_COUNT = 7;
+/// How many meshes a design can draw with: M1.9's three hulls, M2.10b's four module levels and M4.4's Cruiser.
+inline constexpr std::size_t SHIPPED_MESH_COUNT = 8;
 
 /// **EVERY MESH A DESIGN DRAWS WITH**, which is the set the client uploads and instances: `Scout`, `Frigate`,
 /// the station and one mesh per module level. The bare `ModuleFrame` and the asteroids are not in it.

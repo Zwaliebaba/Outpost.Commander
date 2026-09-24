@@ -321,7 +321,7 @@ public:
   TEST_METHOD(TheShipRowIsTheBuildableDesigns)
   {
     const auto designs = Outpost::BuildableDesigns();
-    Assert::AreEqual(std::size_t{2}, designs.size());
+    Assert::AreEqual(std::size_t{3}, designs.size(), L"the Miner, the Fighter and, since M4.4, the Cruiser");
     for (const Outpost::DesignId design : designs)
     {
       Assert::IsTrue(Outpost::Design(design).buildable);

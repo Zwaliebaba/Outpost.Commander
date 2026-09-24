@@ -193,11 +193,12 @@ public:
     }
   }
 
-  /// **THE `Cruiser` IS THE ONE HULL NO FILE BACKS**, because nothing builds one. It names nothing
-  /// rather than naming something wrong.
-  TEST_METHOD(TheCruiserNamesNoMesh)
+  /// **THE `Cruiser` DRAWS WITH ITS OWN MESH SINCE M4.4**, the v4 handoff's hammerhead. It named nothing until then.
+  TEST_METHOD(TheCruiserDrawsWithItsOwnMesh)
   {
-    Assert::IsTrue(Outpost::MeshNameForHull(Outpost::HullId::Cruiser).empty());
+    Assert::AreEqual(std::string_view{"Cruiser"}, Outpost::MeshNameForHull(Outpost::HullId::Cruiser));
+    Assert::AreEqual(std::string_view{"Cruiser"}, Outpost::MeshNameForDesign(Outpost::DesignId::Cruiser));
+    Assert::IsNotNull(Outpost::FindMesh("Cruiser"));
   }
 
   /// A snapshot carries a design identity and not a hull (ADR-003), so this is the call the renderer
@@ -217,11 +218,11 @@ public:
     Assert::IsTrue(Outpost::MeshNameForDesign(static_cast<Outpost::DesignId>(99)).empty());
   }
 
-  /// **SEVEN MESHES SHIP**: M1.9's three and M2.10b's four module levels, and every one of them is a
+  /// **EIGHT MESHES SHIP**: M1.9's three, M2.10b's four module levels and M4.4's Cruiser, and every one of them is a
   /// mesh the manifest has.
-  TEST_METHOD(TheSevenShippedMeshesAreInTheCatalog)
+  TEST_METHOD(TheEightShippedMeshesAreInTheCatalog)
   {
-    Assert::AreEqual(static_cast<std::size_t>(7), Outpost::ShippedMeshes().size());
+    Assert::AreEqual(static_cast<std::size_t>(8), Outpost::ShippedMeshes().size());
     for (const std::string_view name : Outpost::ShippedMeshes())
     {
       Assert::IsNotNull(Outpost::FindMesh(name));

@@ -209,6 +209,31 @@ public:
   }
 
   /// The ship arrives, owned, at full hull, in front of the station and clear of its module circle (2026-09-24).
+  /// **M4.4: A CRUISER BUILDS LIKE ANYTHING ELSE**, in its cost over the rate -- 2,400 at 20 a second is two minutes --
+  /// and appears undamaged. Nothing in the build system knows it is heavy.
+  TEST_METHOD(ACruiserBuildsInTwoMinutes)
+  {
+    Outpost::World world;
+    Seat(world, 2);
+    Outpost::BuildSystem build;
+    BeginWithABank(build, 2);
+    build.Grant(MINE, 2000);
+
+    Assert::AreEqual(Code(Outpost::BuildRejection::None), Code(build.Start(world, MINE, Outpost::DesignId::Cruiser)));
+    Assert::AreEqual(2400u, RunToCompletion(build, world, MINE));
+
+    bool found = false;
+    for (std::size_t slot = 0; slot < world.SlotCount(); ++slot)
+    {
+      if (world.IsSlotAlive(slot) && (world.EntityInSlot(slot).design == Outpost::DesignId::Cruiser))
+      {
+        found = true;
+        Assert::AreEqual(3000, static_cast<int>(world.EntityInSlot(slot).hullRemaining));
+      }
+    }
+    Assert::IsTrue(found, L"no Cruiser appeared");
+  }
+
   TEST_METHOD(AFinishedShipAppearsInFrontOfTheStation)
   {
     Outpost::World world;

@@ -345,6 +345,7 @@ size-class table instead. The two mitigation models are the cost §7 names.
 |---|---|---|
 | `MiningLaser` | Extracts 20 ore a second and carries 100 of it. Does no damage. Capacity and rate both sum over a hull's slots. | 200 |
 | `MassDriver` | 25 damage per second per mount. | 600 |
+| `HeavyDriver` | 50 damage per second per mount; the Cruiser's gun, from M4.4 (`OpenQuestions.md` Q75). | 600 |
 | `PointDefense` | 60 damage per second per mount. Station slots only. | 400 |
 
 | Module component | What it does | Cost |
@@ -368,6 +369,12 @@ The player's two buildable ships are not special cases in the code. They are row
 |---|---|---|---|---|---|
 | **Miner** | `Scout` | `IonDrive` | 1× `MiningLaser` | 150 | 100 u/s |
 | **Fighter** | `Frigate` | `BurnDrive` | 2× `MassDriver` | 300 | 140 u/s |
+| **Cruiser**, from M4.4 | `Cruiser` | `BurnDrive` | 4× `HeavyDriver` | 2,400 | 62 u/s |
+
+**The Cruiser came back at M4.4 as a table row** (`OpenQuestions.md` Q75): the same 2,400 credits, carrying
+`HeavyDriver`s rather than mass drivers, so that it wins a straight fight at its price and fighters answer it with
+speed. Its 62 units a second is its mass's, which this section once rounded to 50. Q85 puts its weapon behind
+research and its hull behind a level-two shipyard.
 
 **The battleship is cut from the MVP and the reason is arithmetic, not taste.** It cost 2,400 credits
 against an income of about 15 a second — **160 seconds of total income, spending nothing on defense** —
@@ -415,11 +422,12 @@ objective a player has to commit to, not something a passing fighter removes. Wh
 owner is eliminated and **their modules go with their ships** (§2).
 
 **Damage to a ship is `base × modifier[weaponClass][targetSizeClass] / 100`**, integer throughout. The
-modifier table is the whole of the rock-paper-scissors between ships, and it is six numbers:
+modifier table is the whole of the rock-paper-scissors between ships, and it is nine numbers since M4.4:
 
 | | Small | Medium | Large |
 |---|---|---|---|
 | `MassDriver` | **70** | 60 | 25 |
+| `HeavyDriver` | 40 | 100 | 60 |
 | `PointDefense` | 120 | 90 | 30 |
 
 Mass drivers hurt small things and scratch heavy hulls; point defense is the mass driver taken further —
@@ -510,10 +518,10 @@ Without it the defender must be watching the right part of a 16,384-unit map at 
 counterplay at all.
 
 **The counter to mass is still speed, and now nothing in the MVP tests it.** A `Frigate` moves at 140
-units per second and a `Cruiser` at 50 — strike craft pick the fight and leave — and
+units per second and a `Cruiser` at 62 — strike craft pick the fight and leave — and
 [`ADR-004`](ADR/ADR-004-weapons-resolve-at-the-fire-tick.md) makes disengaging actually work, because a
-ship out of range takes no further damage from a shot already fired. But the MVP builds no `Cruiser`, so
-**this is deferred rather than answered**, honestly and on the register.
+ship out of range takes no further damage from a shot already fired. The MVP built no `Cruiser`, so
+**this was deferred rather than answered**; M4.4 builds one, and M4.7's matches answer it.
 
 **A weapon resolves its damage on the tick it fires.** There are no projectile entities in the
 simulation and none on the wire; the host emits a *fire event* which the client draws as a tracer or a

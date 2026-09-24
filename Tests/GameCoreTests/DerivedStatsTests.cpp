@@ -59,6 +59,17 @@ public:
     Assert::AreEqual(2400u, battleship.cost);
   }
 
+  /// **M4.4: THE CRUISER IS A TABLE ROW** (ADR-006, Q75). Its cost and speed are the design's own figures -- 2,400 and
+  /// 62 -- and nobody wrote either down: they are the hull, the drive and four HeavyDrivers, summed and divided.
+  TEST_METHOD(TheCruiserIs2400CreditsAt62UnitsASecond)
+  {
+    const Outpost::DerivedStats cruiser = Outpost::Derive(Outpost::DesignId::Cruiser);
+    Assert::AreEqual(2400u, cruiser.cost);
+    Assert::AreEqual(62u, cruiser.speedUnitsPerSecond, L"5,600 over a mass of 90");
+    Assert::AreEqual(3000u, cruiser.hullPoints);
+    Assert::IsTrue(Outpost::Design(Outpost::DesignId::Cruiser).buildable);
+  }
+
   /// A station is a row in the same table, with no drive and two mounts.
   TEST_METHOD(TheStationIsADesignWithNoDrive)
   {
@@ -148,12 +159,12 @@ public:
         }
       }
     }
-    // Three drives x eight components x the sum over hulls of (slotCount + 1), which is
+    // Three drives x nine components x the sum over hulls of (slotCount + 1), which is
     // 2 + 3 + 5 + 3 + 2 + 1 = 16 for a Scout, Frigate, Cruiser, Station, ModuleFrame and M3.9's slotless DepotFrame.
-    // 3 x 8 x 16.
+    // 3 x 9 x 16, nine since M4.4's HeavyDriver.
     // The count is asserted so that a catalog row added without a thought cannot quietly shrink
     // this sweep -- which is the only thing making "every combination" mean anything.
-    Assert::AreEqual(static_cast<std::size_t>(384), combinations);
+    Assert::AreEqual(static_cast<std::size_t>(432), combinations);
   }
 
   /// A component past the hull's slot count is not the hull's business. A malformed design must not

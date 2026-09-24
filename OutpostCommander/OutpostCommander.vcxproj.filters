@@ -60,6 +60,9 @@
     <None Include="Assets\Meshes\AsteroidE.cmo">
       <Filter>Assets\Meshes</Filter>
     </None>
+    <None Include="Assets\Meshes\Cruiser.cmo">
+      <Filter>Assets\Meshes</Filter>
+    </None>
     <None Include="Assets\Meshes\Frigate.cmo">
       <Filter>Assets\Meshes</Filter>
     </None>

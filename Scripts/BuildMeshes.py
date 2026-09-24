@@ -32,7 +32,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OBJ_DIR = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes", "obj")
 DEFAULT_OUT_DIR = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes")
 DEFAULT_MANIFEST = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes", "manifest.json")
-DEFAULT_MESHES_JSON = os.path.join(REPO_ROOT, "Design", "design_handoff_meshes", "meshes.json")
+DEFAULT_MESHES_JSON = os.path.join(REPO_ROOT, "Design", "design_handoff_meshes", "Design", "meshes.json")
 
 # --- PINNED, AND PINNED TWICE. ------------------------------------------------------------------
 # The version is what meshconvert prints in its own banner. The HASH is what makes the pin mean

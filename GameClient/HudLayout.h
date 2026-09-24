@@ -265,6 +265,10 @@ inline constexpr HudRect BUILD_BUTTON_ORE_L2{1304, 768, 120, 96};  // geometry: 
 /// claim it; it takes the ship buttons' size and their 16 of clear space.
 inline constexpr HudRect BUILD_BUTTON_DEPOT{1168, 656, 120, 96};
 
+/// **THE SHIP ROW'S THIRD SHIP** (M4.4): the Cruiser, the third buildable design in table order, in the row's last free
+/// place. Not in `geometry.json` for the depot's reason -- the handoff predates it -- and at the ship buttons' size.
+inline constexpr HudRect BUILD_BUTTON_SHIP_2{1304, 656, 120, 96};
+
 /// Inside a build button, as offsets from the button.
 inline constexpr HudRect BUTTON_INDEX{0, 0, 4, 96};          // geometry: build.btn.index
 inline constexpr HudRect BUTTON_NAME_LINE1{12, 10, 104, 20}; // geometry: build.btn.name.line1

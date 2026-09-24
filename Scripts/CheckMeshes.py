@@ -37,7 +37,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OBJ_DIR = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes", "obj")
 DEFAULT_OUT_DIR = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes")
 DEFAULT_MANIFEST = os.path.join(REPO_ROOT, "OutpostCommander", "Assets", "Meshes", "manifest.json")
-DEFAULT_MESHES_JSON = os.path.join(REPO_ROOT, "Design", "design_handoff_meshes", "meshes.json")
+DEFAULT_MESHES_JSON = os.path.join(REPO_ROOT, "Design", "design_handoff_meshes", "Design", "meshes.json")
 
 
 TOL = 0.02
@@ -172,6 +172,19 @@ def landmark(name, verts):
         if abs(nose[0]) > 0.5:
             raise Fail("LANDMARK - the nose is at x=%.2f, expected 0. X is skewed or mirrored."
                        % nose[0])
+    elif name == "Cruiser":
+        # The hammerhead prow is blunt and wide; the aft flares wider still with the nacelles. So the
+        # max-Z slice must be ~28 units wide (a Frigate's is under 4), and flipped it would read as the
+        # 44-unit aft flare plus nacelles.
+        lo, hi = bbox(verts)
+        prow = [v for v in verts if v[2] >= hi[2] - 4]
+        tail = [v for v in verts if v[2] <= lo[2] + 4]
+        prow_w = max(v[0] for v in prow) - min(v[0] for v in prow)
+        tail_w = max(v[0] for v in tail) - min(v[0] for v in tail)
+        if not (20.0 <= prow_w <= 36.0) or tail_w <= prow_w:
+            raise Fail("LANDMARK - the max-Z slice is %.1f units wide and the min-Z slice %.1f. Z is "
+                       "flipped: the blunt ~28-unit prow must be forward (max Z) and the wider flare aft."
+                       % (prow_w, tail_w))
     elif name == "ModuleShipyardL1":
         # Compare the Y extent of a slice at each end, NOT the X width. X width inverts: the open
         # lattice's forward transverse frame is wider than the command block. Y separates them
@@ -371,15 +384,15 @@ def check_generated_catalog():
 
 CATALOG_PATH = os.path.join(REPO_ROOT, "GameCore", "Catalog.cpp")
 
-# Which meshes draw which hull. The Cruiser is deliberately absent: it is cut from the MVP
-# (GameDesign.md section 6) so nothing authored a mesh for it, and M4 authors to the catalog's 150
-# rather than the other way round.
+# Which meshes draw which hull. The Cruiser joined at M4.4 with the v4 handoff's mesh, 180 units long,
+# and the catalog took the mesh's length rather than the other way round (Q37: size is the drawn mesh's).
 #
 # A HULL IS BOUNDED BY EVERY MESH THAT DRAWS IT, and since M2.10b the ModuleFrame is drawn by five: the
 # bare frame and one mesh per module level. Its size is the longest of them, rounded up.
 HULL_MESHES = {
     "Scout": ["Scout"],
     "Frigate": ["Frigate"],
+    "Cruiser": ["Cruiser"],
     "Station": ["Station"],
     "ModuleFrame": ["ModuleFrame", "ModuleShipyardL1", "ModuleShipyardL2", "ModuleOreProcessorL1", "ModuleOreProcessorL2"],
 }

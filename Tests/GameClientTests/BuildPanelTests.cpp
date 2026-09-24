@@ -181,8 +181,8 @@ public:
     Assert::IsTrue(
       Same(ItemAt(without, Outpost::BUTTON_COST.Within(Outpost::BUILD_BUTTON_SHIP_0), Outpost::HudItem::Kind::Text)->color, TEXT_DIM));
 
-    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL1}))));
-    Assert::AreEqual(std::size_t{2}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL2}))));
+    Assert::AreEqual(std::size_t{3}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL1}))));
+    Assert::AreEqual(std::size_t{3}, shipTargets(Outpost::BuildHud(Open(5000, {Outpost::DesignId::ModuleShipyardL2}))));
   }
 };
 

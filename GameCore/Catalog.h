@@ -86,7 +86,11 @@ enum class ComponentId : std::uint8_t
   ShipyardL1,
   ShipyardL2,
   OreProcessorL1,
-  OreProcessorL2
+  OreProcessorL2,
+
+  /// **THE CRUISER'S WEAPON** (M4.4, `OpenQuestions.md` Q75). Appended rather than placed beside the other weapons,
+  /// because an identity is an index and is on the wire.
+  HeavyDriver
 };
 
 /// One row of `GameDesign.md` section 6's hull table.
@@ -129,9 +133,8 @@ struct HullEntry
   /// frame is 83.52. So this says 90, which is the handoff's own "module envelope" -- where it said 84 until
   /// then, and two shipyards placed exactly clear would have overlapped by six units.
   ///
-  /// **THE `Cruiser` IS THE ONE ROW NO FILE BACKS.** It is cut from the MVP (`GameDesign.md`
-  /// section 6) so no mesh was authored for it; 150 sits between the `Frigate`'s 90 and the
-  /// `Station`'s 220, and M4 authors a mesh to this number rather than the other way round.
+  /// **THE `Cruiser` WAS THE ONE ROW NO FILE BACKED** until M4.4. It stated 150 then, and the v4 mesh handoff's
+  /// hammerhead came in at 180, so the catalog took the mesh's figure: Q37 makes a hull's size the drawn mesh's.
   std::uint16_t sizeUnits = 0;
 
   /// **WHETHER A MINER MAY UNLOAD HERE** (M2.6, `GameDesign.md` section 4): "the nearest thing you own that

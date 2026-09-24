@@ -7,8 +7,8 @@ namespace Outpost
 
 namespace
 {
-/// ADR-006's design table, and the whole of what the MVP builds. **Seven rows and no types.**
-constexpr std::array<DesignEntry, 8> DESIGNS{{
+/// ADR-006's design table, and the whole of what the game builds. **Nine rows and no types.**
+constexpr std::array<DesignEntry, 9> DESIGNS{{
   {.id = DesignId::Miner,
    .hull = HullId::Scout,
    .drive = DriveId::IonDrive,
@@ -61,10 +61,20 @@ constexpr std::array<DesignEntry, 8> DESIGNS{{
    .hull = HullId::DepotFrame,
    .drive = DriveId::None,
    .slots = {ComponentId::None, ComponentId::None, ComponentId::None, ComponentId::None}},
+
+  // === THE CRUISER (M4.4, Q75). ================================================================
+  //
+  // **A TABLE ROW, WHICH IS ADR-006'S CLAIM.** 2,080 for the hull, 80 for the drive and 60 a gun is 2,400; mass 60, 10
+  // and four fives is 90, and 5,600 over 90 is 62 units a second. Nobody wrote either figure down here.
+  {.id = DesignId::Cruiser,
+   .hull = HullId::Cruiser,
+   .drive = DriveId::BurnDrive,
+   .slots = {ComponentId::HeavyDriver, ComponentId::HeavyDriver, ComponentId::HeavyDriver, ComponentId::HeavyDriver},
+   .buildable = true},
 }};
 
 // AN IDENTITY IS AN INDEX: a row added without its enumerator, or the reverse, refuses to compile.
-static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::Depot) + 1);
+static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::Cruiser) + 1);
 } // namespace
 
 std::span<const DesignEntry> Designs() noexcept

@@ -50,7 +50,7 @@ struct MeshEntry
   float longestUnits = 0.0f;
 };
 
-inline constexpr std::size_t MESH_COUNT = 13;
+inline constexpr std::size_t MESH_COUNT = 14;
 
 inline constexpr MeshEntry MESHES[MESH_COUNT] = {
   {.name = "Scout",
@@ -75,6 +75,17 @@ inline constexpr MeshEntry MESHES[MESH_COUNT] = {
    .maxY = 10.0f,
    .maxZ = 45.0f,
    .longestUnits = 90.0f},
+  {.name = "Cruiser",
+   .packageUri = L"ms-appx:///Assets/Meshes/Cruiser.cmo",
+   .vertexCount = 948,
+   .triangleCount = 316,
+   .minX = -32.0f,
+   .minY = -14.0f,
+   .minZ = -90.0f,
+   .maxX = 32.0f,
+   .maxY = 21.0f,
+   .maxZ = 90.0f,
+   .longestUnits = 180.0f},
   {.name = "ModuleFrame",
    .packageUri = L"ms-appx:///Assets/Meshes/ModuleFrame.cmo",
    .vertexCount = 744,
