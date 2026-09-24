@@ -226,8 +226,8 @@ public:
     Assert::AreEqual(-180.0f, placed.z, 0.001f);
   }
 
-  /// **A TURN KEEPS A NORMAL UNIT AND A TRIANGLE FACING OUT.** The mesh's winding was set once, when
-  /// `LoadHullMesh` undid the handedness; a placement that reversed it would draw rocks inside out.
+  /// **A TURN KEEPS A NORMAL UNIT AND A TRIANGLE FACING OUT.** The mesh's winding is the handoff's and
+  /// nothing on the way to the screen may change it; a placement that reversed it would draw rocks inside out.
   TEST_METHOD(PlacementKeepsNormalsUnitAndWindingOutward)
   {
     const Outpost::HullMesh triangle = Triangle();
