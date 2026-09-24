@@ -101,10 +101,9 @@ public:
 TEST_CLASS(LoadingAHull)
 {
 public:
-  /// **THE WINDING IS REVERSED**, because the conversion is a reflection. A mesh copied straight
-  /// through faces inward and vanishes under back-face culling, which looks like the mesh failing to
-  /// load rather than like a handedness bug.
-  TEST_METHOD(EveryTriangleIsReversed)
+  /// **THE WINDING IS KEPT.** The conversion is a reflection and so is the view, and the two cancel;
+  /// reversing the triangles here drew every hull inside out under back-face culling.
+  TEST_METHOD(EveryTriangleKeepsItsWinding)
   {
     Neuron::CmoMesh read;
     read.vertices = {Authored(0.0f, 0.0f, 0.0f), Authored(1.0f, 0.0f, 0.0f), Authored(0.0f, 1.0f, 0.0f), Authored(1.0f, 1.0f, 0.0f)};
@@ -113,10 +112,49 @@ public:
     Outpost::HullMesh mesh;
     Assert::IsTrue(Outpost::LoadHullMesh(read, 60.0f, mesh));
 
-    const std::vector<std::uint16_t> expected{2, 1, 0, 2, 3, 1};
-    Assert::IsTrue(mesh.indices == expected, L"the winding was not reversed");
+    Assert::IsTrue(mesh.indices == read.indices, L"the winding was changed");
     Assert::AreEqual(static_cast<std::size_t>(4), mesh.vertices.size());
     Assert::AreEqual(60.0f, mesh.longestUnits);
+  }
+
+  /// **A FACE TOWARD THE CAMERA REACHES THE SCREEN CLOCKWISE**, which is the front face `MeshPass`
+  /// keeps. The test above pins the mechanism; this one pins what the player sees, through the load
+  /// and the real view projection, so a handedness change on either side fails here rather than on
+  /// the glass.
+  TEST_METHOD(AFaceTowardTheCameraIsClockwiseOnScreen)
+  {
+    // An authored top face: normal +Y, wound clockwise in the handoff's left-handed frame.
+    Neuron::CmoMesh read;
+    read.vertices = {Authored(0.0f, 0.0f, 0.0f), Authored(0.0f, 0.0f, 100.0f), Authored(100.0f, 0.0f, 0.0f)};
+    read.vertices[0].normalX = read.vertices[1].normalX = read.vertices[2].normalX = 0.0f;
+    read.vertices[0].normalY = read.vertices[1].normalY = read.vertices[2].normalY = 1.0f;
+    read.vertices[0].normalZ = read.vertices[1].normalZ = read.vertices[2].normalZ = 0.0f;
+    read.indices = {0, 1, 2};
+
+    Outpost::HullMesh mesh;
+    Assert::IsTrue(Outpost::LoadHullMesh(read, 100.0f, mesh));
+
+    const Outpost::CameraPose pose{.focusX = 0.0f, .focusY = 0.0f, .headingRadians = 0.7f, .distance = Outpost::MINIMUM_CAMERA_DISTANCE};
+    const Outpost::Matrix4 viewProjection = Outpost::ViewProjection(pose, 1.5f);
+
+    // Row vector times row-major matrix, as `ShipVS` does it, then the viewport's flip to y down.
+    float screenX[3]{};
+    float screenY[3]{};
+    for (std::size_t corner = 0; corner < 3; ++corner)
+    {
+      const Outpost::HullVertex& v = mesh.vertices[mesh.indices[corner]];
+      const float* m = viewProjection.m;
+      const float clipX = (v.x * m[0]) + (v.y * m[4]) + (v.z * m[8]) + m[12];
+      const float clipY = (v.x * m[1]) + (v.y * m[5]) + (v.z * m[9]) + m[13];
+      const float clipW = (v.x * m[3]) + (v.y * m[7]) + (v.z * m[11]) + m[15];
+      Assert::IsTrue(clipW > 0.0f, L"the triangle is behind the camera");
+      screenX[corner] = clipX / clipW;
+      screenY[corner] = -clipY / clipW;
+    }
+
+    const float signedArea =
+      ((screenX[1] - screenX[0]) * (screenY[2] - screenY[0])) - ((screenY[1] - screenY[0]) * (screenX[2] - screenX[0]));
+    Assert::IsTrue(signedArea > 0.0f, L"a face toward the camera is counter-clockwise and back-face culling drops it");
   }
 
   /// An index list that is not a whole number of triangles is refused rather than half drawn.

@@ -168,10 +168,11 @@ bool MeshPass::Create(const GraphicsDevice& _device, const SceneTarget& _sceneTa
 
   // **CULLING IS ON HERE, WHERE `WorldPass` HAS IT OFF, AND THE DIFFERENCE IS THE POINT.** That pass
   // generates its shape from a vertex identifier, so its winding is whatever the arithmetic produced
-  // and culling would hide a shape rather than a bug. This one draws authored geometry whose winding
-  // `GameClient/HullMesh` reverses on load -- the handoff is left-handed and this world is
-  // right-handed -- so culling is what PROVES that reversal happened. A hull that vanishes here is
-  // the reflection having been missed, which is exactly the failure worth seeing.
+  // and culling would hide a shape rather than a bug. This one draws authored geometry through two
+  // reflections -- `GameClient/HullMesh`'s left-handed handoff into a right-handed world, and the
+  // view's right-handed world into Direct3D's left-handed view -- which cancel, so the handoff's
+  // clockwise front faces arrive clockwise. Culling is what PROVES the two still agree: a hull drawn
+  // inside out here is one of them having been undone on its own.
   pipelineDescription.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
   pipelineDescription.RasterizerState.FrontCounterClockwise = FALSE;
   pipelineDescription.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
