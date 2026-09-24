@@ -142,6 +142,8 @@ private:
     return L"ORE PROC L1";
   case DesignId::ModuleOreProcessorL2:
     return L"ORE PROC L2";
+  case DesignId::Depot:
+    return L"FWD DEPOT";
   }
   return L"";
 }
@@ -361,16 +363,18 @@ struct ModuleButton
   DesignId design;
 };
 
-constexpr std::array<ModuleButton, 4> MODULE_ROW{ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
+// M3.9: THE DEPOT ARMS AND PLACES AS A MODULE DOES, from the ship row's free third place (Q69).
+constexpr std::array<ModuleButton, 5> MODULE_ROW{ModuleButton{.rect = BUILD_BUTTON_YARD_L1, .design = DesignId::ModuleShipyardL1},
                                                  ModuleButton{.rect = BUILD_BUTTON_YARD_L2, .design = DesignId::ModuleShipyardL2},
                                                  ModuleButton{.rect = BUILD_BUTTON_ORE_L1, .design = DesignId::ModuleOreProcessorL1},
-                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2}};
+                                                 ModuleButton{.rect = BUILD_BUTTON_ORE_L2, .design = DesignId::ModuleOreProcessorL2},
+                                                 ModuleButton{.rect = BUILD_BUTTON_DEPOT, .design = DesignId::Depot}};
 
 /// **WHAT A MODULE BUTTON CHARGES**: a placed level its design's cost, and an upgrade the difference from the
 /// level it upgrades (Q54) -- `GameCore`'s figure, so the panel and the host cannot disagree about it.
 [[nodiscard]] std::uint32_t ModuleCostCredits(DesignId _design) noexcept
 {
-  if (IsPlacedLevel(_design))
+  if (IsPlacedLevel(_design) || IsDepot(_design))
   {
     return Derive(_design).cost;
   }
@@ -729,8 +733,13 @@ void EmitResultOverlay(const HudState& _state, Emitter& _emit)
 }
 } // namespace
 
-bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) noexcept
+bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules, std::size_t _ownDepots) noexcept
 {
+  // M3.9: A DEPOT IS AVAILABLE UNDER ITS OWN CAP (Q69), and the station's four do not count against it.
+  if (IsDepot(_design))
+  {
+    return _ownDepots < MAXIMUM_DEPOTS_PER_PLAYER;
+  }
   if (IsPlacedLevel(_design))
   {
     return _ownModules.size() < MAXIMUM_MODULES_PER_STATION;
@@ -747,7 +756,7 @@ bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) no
 
 BuildButtonState ModuleButtonState(DesignId _design, const HudState& _state) noexcept
 {
-  if (!ModuleAvailable(_design, _state.ownModules))
+  if (!ModuleAvailable(_design, _state.ownModules, _state.ownDepots))
   {
     return BuildButtonState::Unavailable;
   }

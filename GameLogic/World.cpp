@@ -177,6 +177,25 @@ const MineOrder* World::FindMine(EntityId _id) const noexcept
 void World::SetField(std::vector<Placement> _field)
 {
   m_field = std::move(_field);
+
+  // WHAT EACH ROCK STARTS WITH (Q69), by the kind of field it is in.
+  m_oreMilliOre.clear();
+  m_oreMilliOre.reserve(m_field.size());
+  for (const Placement& rock : m_field)
+  {
+    m_oreMilliOre.push_back(((rock.field == FieldKind::Contested) ? CONTESTED_ROCK_ORE : HOME_ROCK_ORE) * MILLI_ORE_PER_ORE);
+  }
+}
+
+std::uint32_t World::TakeOre(std::size_t _rock, std::uint32_t _milliOre) noexcept
+{
+  if (_rock >= m_oreMilliOre.size())
+  {
+    return 0;
+  }
+  const std::uint32_t taken = (_milliOre < m_oreMilliOre[_rock]) ? _milliOre : m_oreMilliOre[_rock];
+  m_oreMilliOre[_rock] -= taken;
+  return taken;
 }
 
 std::size_t World::OwnedCount(PlayerId _owner) const noexcept

@@ -1579,14 +1579,17 @@ void RunProbe(const CoreWindow& _window)
         {
           hudState.ownModules.push_back(owned.design);
         }
-        if (!buildPanelOpen || (moduleArming.IsArmed() && !Outpost::ModuleAvailable(moduleArming.Armed(), hudState.ownModules)))
+        hudState.ownDepots = Outpost::OwnDepotCount(clientFrame.Replicas().Entities(), clientFrame.Player());
+        if (!buildPanelOpen ||
+            (moduleArming.IsArmed() && !Outpost::ModuleAvailable(moduleArming.Armed(), hudState.ownModules, hudState.ownDepots)))
         {
           moduleArming.Disarm();
         }
         hudState.moduleArmed = moduleArming.IsArmed();
         hudState.armedModule = moduleArming.Armed();
-        if (Outpost::EntityRecord station{};
-            moduleArming.IsArmed() && Outpost::OwnStation(clientFrame.Replicas().Entities(), clientFrame.Player(), station))
+        // THE 400 CIRCLE IS A MODULE'S; a depot goes out past 2,000 and draws none (M3.9).
+        if (Outpost::EntityRecord station{}; moduleArming.IsArmed() && !Outpost::IsDepot(moduleArming.Armed()) &&
+                                             Outpost::OwnStation(clientFrame.Replicas().Entities(), clientFrame.Player(), station))
         {
           const float ringAspect = (sceneTarget.HeightPixels() > 0)
                                      ? (static_cast<float>(sceneTarget.WidthPixels()) / static_cast<float>(sceneTarget.HeightPixels()))

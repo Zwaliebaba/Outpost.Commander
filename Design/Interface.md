@@ -562,8 +562,9 @@ a map-wide select-by-design were each considered and each declined; the jump-to-
 with them is what ADR-018 has now put back, which is worth noticing — it was declined for want of a verb
 and returned the moment there was one.
 
-**An asteroid's ore level has no appearance, and that is a decision** (Q42). Q22 replicates a quantized
-ore bucket from M3 and the client draws it **as the number in the selection panel and nowhere else**. The
+**An asteroid's ore level has no appearance, and that is a decision** (Q42). Q22 replicated a quantized
+ore bucket from M3 for **the number in the selection panel and nowhere else**; **Q69 kept ore on the host
+instead** (2026-09-24), so today no rock shows its ore anywhere, and a spent one looks like a full one. The
 question a player is asking — is this field worth holding — is answered by that number, and four buckets
 across five authored variants is twenty combinations to model for one line of text. **The cheap version if
 it is ever wanted** is the vertex-color hull tone: the `G` channel already selects between three palette

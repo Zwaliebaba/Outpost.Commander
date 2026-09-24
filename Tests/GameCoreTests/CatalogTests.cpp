@@ -97,7 +97,8 @@ public:
   {
     for (const Outpost::HullEntry& hull : Outpost::Hulls())
     {
-      const bool isBaseStructure = (hull.id == Outpost::HullId::Station) || (hull.id == Outpost::HullId::ModuleFrame);
+      const bool isBaseStructure =
+        (hull.id == Outpost::HullId::Station) || (hull.id == Outpost::HullId::ModuleFrame) || (hull.id == Outpost::HullId::DepotFrame);
       if (isBaseStructure)
       {
         Assert::AreEqual(300, static_cast<int>(hull.hitValue));

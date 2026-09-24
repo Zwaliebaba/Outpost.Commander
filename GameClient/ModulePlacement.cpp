@@ -18,6 +18,19 @@ void ModuleArming::Toggle(DesignId _design) noexcept
   m_armed = true;
 }
 
+std::size_t OwnDepotCount(std::span<const EntityRecord> _entities, PlayerId _player) noexcept
+{
+  std::size_t count = 0;
+  for (const EntityRecord& record : _entities)
+  {
+    count +=
+      ((record.owner == _player) && (record.designIdentity < Designs().size()) && IsDepot(static_cast<DesignId>(record.designIdentity)))
+        ? 1
+        : 0;
+  }
+  return count;
+}
+
 std::vector<PlacedModule> OwnModules(std::span<const EntityRecord> _entities, PlayerId _player)
 {
   std::vector<PlacedModule> modules;
@@ -83,7 +96,7 @@ PlacementOutcome ResolvePlacementTap(const CameraPose& _pose, const HitTestReque
     return outcome;
   }
 
-  if ((tap.action != TapAction::MoveTo) || !IsPlacedLevel(_armed))
+  if ((tap.action != TapAction::MoveTo) || (!IsPlacedLevel(_armed) && !IsDepot(_armed)))
   {
     return outcome;
   }
@@ -99,6 +112,42 @@ PlacementOutcome ResolvePlacementTap(const CameraPose& _pose, const HitTestReque
   const auto fixedY = static_cast<Neuron::Fixed>(tap.worldY * static_cast<float>(Neuron::FIXED_ONE));
   const Neuron::Vec2 site{.x = DequantizePosition(QuantizePosition(fixedX)), .y = DequantizePosition(QuantizePosition(fixedY))};
   const Neuron::Vec2 stationPosition{.x = DequantizePosition(station.positionX), .y = DequantizePosition(station.positionY)};
+
+  // M3.9: A DEPOT IS JUDGED BY ITS OWN RULE (Q69) -- every station, the field, this player's depots -- with the same
+  // function the host uses. What the client cannot see is what is queued; the host counts that, and decides.
+  if (IsDepot(_armed))
+  {
+    std::vector<Neuron::Vec2> stations;
+    std::vector<Neuron::Vec2> depots;
+    for (const EntityRecord& record : _entities)
+    {
+      const Neuron::Vec2 position{.x = DequantizePosition(record.positionX), .y = DequantizePosition(record.positionY)};
+      if (record.designIdentity == static_cast<std::uint8_t>(DesignId::Station))
+      {
+        stations.push_back(position);
+      }
+      else if ((record.designIdentity < Designs().size()) && IsDepot(static_cast<DesignId>(record.designIdentity)) &&
+               (record.owner == _request.player))
+      {
+        depots.push_back(position);
+      }
+    }
+    std::vector<Placement> field;
+    for (const RockPickPoint& rock : _rocks)
+    {
+      field.push_back(
+        Placement{.kind = PlacedKind::Asteroid,
+                  .position = Neuron::Vec2{.x = static_cast<Neuron::Fixed>(rock.worldX * static_cast<float>(Neuron::FIXED_ONE)),
+                                           .y = static_cast<Neuron::Fixed>(rock.worldY * static_cast<float>(Neuron::FIXED_ONE))}});
+    }
+    outcome.depotFault = CheckDepotSite(stations, field, depots, site, _armed);
+    if (outcome.depotFault == DepotSiteFault::None)
+    {
+      outcome.action = PlacementAction::Place;
+      outcome.site = site;
+    }
+    return outcome;
+  }
 
   const std::vector<PlacedModule> modules = OwnModules(_entities, _request.player);
   const ModuleSiteVerdict verdict = CheckModuleSite(stationPosition, DesignId::Station, modules, site, _armed);

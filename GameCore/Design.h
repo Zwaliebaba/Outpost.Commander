@@ -32,7 +32,12 @@ enum class DesignId : std::uint8_t
   ModuleShipyardL1,
   ModuleShipyardL2,
   ModuleOreProcessorL1,
-  ModuleOreProcessorL2
+  ModuleOreProcessorL2,
+
+  /// **THE FORWARD DEPOT** (M3.9, `OpenQuestions.md` Q69): a placed unload point near a far field, at least 2,000
+  /// from every station and within 800 of a rock, two a player at most. Not buildable -- it is placed by a tap, as a
+  /// module is.
+  Depot
 };
 
 /// The largest slot count any hull in the catalog has -- the `Cruiser`'s four.

@@ -162,4 +162,29 @@ public:
   }
 };
 
+/// M3.9, `OpenQuestions.md` Q69. **The depot's button**, in the ship row's third place.
+TEST_CLASS(TheDepotButton)
+{
+public:
+  /// It arms a depot like a module button, at 300, and the station's four modules do not count against it.
+  TEST_METHOD(ItArmsADepotWhateverTheModules)
+  {
+    const Outpost::HudState state = Open(1000, {Outpost::DesignId::ModuleShipyardL1, Outpost::DesignId::ModuleShipyardL1,
+                                                Outpost::DesignId::ModuleOreProcessorL1, Outpost::DesignId::ModuleOreProcessorL1});
+    const Outpost::HudFrame frame = Outpost::BuildHud(state);
+    Assert::IsTrue(IsTarget(frame, Outpost::DesignId::Depot), L"a full base disabled the depot");
+    Assert::IsTrue(Outpost::ModuleAvailable(Outpost::DesignId::Depot, state.ownModules, 1));
+  }
+
+  /// **TWO A PLAYER**: with two built it is dead, hatched rather than a target.
+  TEST_METHOD(TwoBuiltDisablesIt)
+  {
+    Outpost::HudState state = Open(1000, {});
+    state.ownDepots = Outpost::MAXIMUM_DEPOTS_PER_PLAYER;
+    const Outpost::HudFrame frame = Outpost::BuildHud(state);
+    Assert::IsFalse(IsTarget(frame, Outpost::DesignId::Depot), L"a third depot could be armed");
+    Assert::IsFalse(Outpost::ModuleAvailable(Outpost::DesignId::Depot, state.ownModules, 2));
+  }
+};
+
 } // namespace GameClientTests

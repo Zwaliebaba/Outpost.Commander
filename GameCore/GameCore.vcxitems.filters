@@ -11,6 +11,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)Join.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Layout.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Generator.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)DepotSite.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ModuleSite.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)Update.cpp" />
   </ItemGroup>
@@ -28,6 +29,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Join.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Layout.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Generator.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DepotSite.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ModuleSite.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Update.h" />
   </ItemGroup>

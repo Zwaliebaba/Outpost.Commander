@@ -23,6 +23,30 @@ constexpr int MAXIMUM_TRANSITIONS_PER_TICK = 4;
   return UniformGrid::DistanceSquared(_a, _b) <= (static_cast<std::int64_t>(_reach) * _reach);
 }
 
+/// **AN EXHAUSTED ROCK'S MINERS MOVE ON** (M3.9, `OpenQuestions.md` Q69): to the nearest rock with ore left, from where
+/// the miner is, ties to the lower index (R16). False, and the order unchanged, when the whole field is spent.
+[[nodiscard]] bool RetargetRock(const World& _world, MineOrder& _mine, const Neuron::Vec2& _from) noexcept
+{
+  const std::span<const Placement> field = _world.Field();
+  bool found = false;
+  std::int64_t bestSquared = 0;
+  for (std::size_t index = 0; index < field.size(); ++index)
+  {
+    if (_world.OreLeftMilliOre(index) == 0)
+    {
+      continue;
+    }
+    const std::int64_t squared = UniformGrid::DistanceSquared(field[index].position, _from);
+    if (!found || (squared < bestSquared))
+    {
+      found = true;
+      bestSquared = squared;
+      _mine.rock = static_cast<std::uint16_t>(index);
+    }
+  }
+  return found;
+}
+
 /// Heads for _destination unless it already is. **Re-ordering an order that is already right would reset
 /// nothing today**, but a movement system that one day eases in would restart every tick.
 void HeadFor(World& _world, std::size_t _slot, const Neuron::Vec2& _destination) noexcept
@@ -108,8 +132,6 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
       mine.phase = MiningPhase::None;
       continue;
     }
-    const Neuron::Vec2 rock = field[mine.rock].position;
-
     // **Q64: FLIGHT.** Fired on while going to the rock or extracting, the miner runs for home with its rock and
     // cargo kept. On the way home or unloading it is already going to the same place, and a move order -- the
     // player's override -- has ended the mine order, so neither flees.
@@ -130,13 +152,30 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
         break;
 
       case MiningPhase::ToOre:
+      {
         // A FULL HOLD GOES STRAIGHT TO UNLOAD -- a miner pulled away full and sent back is not made to sit at
         // the rock extracting nothing.
         if (mine.cargoMilliOre >= capacityMilliOre)
         {
           mine.phase = MiningPhase::ToUnload;
+          break;
         }
-        else if (Within(miner.position, rock, static_cast<Neuron::Fixed>(stats.miningRangeUnits * Neuron::FIXED_ONE)))
+
+        // M3.9: A SPENT ROCK IS A HUSK, and the miner goes to the nearest one with ore left -- or, with the whole field
+        // spent, home with what it carries and then stops.
+        if ((_world.OreLeftMilliOre(mine.rock) == 0) && !RetargetRock(_world, mine, miner.position))
+        {
+          mine.phase = (mine.cargoMilliOre > 0) ? MiningPhase::ToUnload : MiningPhase::None;
+          mine.unloadTarget = NO_ENTITY;
+          if (mine.phase == MiningPhase::None)
+          {
+            Halt(_world, slot);
+          }
+          continue;
+        }
+
+        const Neuron::Vec2 rock = field[mine.rock].position;
+        if (Within(miner.position, rock, static_cast<Neuron::Fixed>(stats.miningRangeUnits * Neuron::FIXED_ONE)))
         {
           Halt(_world, slot);
           mine.phase = MiningPhase::Extracting;
@@ -146,6 +185,7 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
           HeadFor(_world, slot, rock);
         }
         break;
+      }
 
       case MiningPhase::Extracting:
       {
@@ -153,6 +193,13 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
         // its cargo unchanged and takes its turn when the rock is free, so a rock yields at most one laser's
         // rate and stacking miners on the nearest rock stops beating spreading them. **In slot order**, like
         // everything in this pass, so which miner waits is the store's order and never a race (R16).
+        if (_world.OreLeftMilliOre(mine.rock) == 0)
+        {
+          // SPENT UNDER IT (M3.9): back to `ToOre`, which finds the next rock.
+          mine.working = false;
+          mine.phase = MiningPhase::ToOre;
+          continue;
+        }
         if (m_rockWorked[mine.rock] != 0)
         {
           mine.working = false;
@@ -163,8 +210,9 @@ void MiningSystem::Advance(World& _world, std::span<const EntityId> _struck)
 
         // EXACTLY TO A FULL HOLD, NEVER PAST IT: the last tick's worth is whatever is left of the capacity,
         // so the cargo equals the capacity on the tick it fills rather than overshooting by a rate.
+        // **AND NEVER MORE THAN THE ROCK HAS** (M3.9, Q69): what the rock gives up is what the hold gains.
         const std::uint32_t rateMilliOre = (stats.orePerSecond * MILLI_ORE_PER_ORE) / TICKS_PER_SECOND;
-        mine.cargoMilliOre = std::min(capacityMilliOre, mine.cargoMilliOre + rateMilliOre);
+        mine.cargoMilliOre += _world.TakeOre(mine.rock, std::min(rateMilliOre, capacityMilliOre - mine.cargoMilliOre));
         if (mine.cargoMilliOre >= capacityMilliOre)
         {
           mine.phase = MiningPhase::ToUnload;

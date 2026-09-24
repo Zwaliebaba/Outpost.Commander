@@ -64,6 +64,12 @@ inline constexpr std::uint16_t FLEE_CALM_TICKS = 60;
 /// Thousandths of ore to ore. `MineOrder::cargoMilliOre` says why the unit is thousandths.
 inline constexpr std::uint32_t MILLI_ORE_PER_ORE = 1000;
 
+/// **WHAT A ROCK HOLDS** (M3.9, `OpenQuestions.md` Q69): 200 ore at home and 600 in a contested field. Two holds of a
+/// Miner at home, six out there. **Host-side only**: no rock's ore is on the wire, and an exhausted rock is still
+/// drawn, as a husk.
+inline constexpr std::uint32_t HOME_ROCK_ORE = 200;
+inline constexpr std::uint32_t CONTESTED_ROCK_ORE = 600;
+
 /// **THE ONE STANDING ORDER** (`GameDesign.md` section 4), and host-only for the reason `MoveOrder` is: the
 /// client is sent where a miner is, never what it has been told (R19). `GameLogic/MiningSystem.h` runs it.
 ///
@@ -200,6 +206,16 @@ public:
     return m_field;
   }
 
+  /// **ORE LEFT IN A ROCK**, in thousandths (M3.9, Q69): set from its field kind when the field is set, and taken
+  /// from by `TakeOre`. Zero for an index the field does not have.
+  [[nodiscard]] std::uint32_t OreLeftMilliOre(std::size_t _rock) const noexcept
+  {
+    return (_rock < m_oreMilliOre.size()) ? m_oreMilliOre[_rock] : 0;
+  }
+
+  /// Takes up to _milliOre from the rock and returns what it took: less than asked when the rock runs out.
+  std::uint32_t TakeOre(std::size_t _rock, std::uint32_t _milliOre) noexcept;
+
   /// How many slots exist, live or not. This is the bound the tick iterates over, and it never
   /// shrinks -- a slot that was allocated once is reused rather than removed, because removing it
   /// would renumber every index above it and invalidate every identity in the match.
@@ -256,6 +272,7 @@ private:
   std::uint32_t m_lastOrderGroup = NO_ORDER_GROUP;
 
   std::vector<Placement> m_field;
+  std::vector<std::uint32_t> m_oreMilliOre;
 };
 
 } // namespace Outpost

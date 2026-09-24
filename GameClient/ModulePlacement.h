@@ -80,7 +80,13 @@ struct PlacementOutcome
 
   /// Why the preview refused an empty-space tap, for the log. `None` for anything else.
   ModuleSiteFault fault = ModuleSiteFault::None;
+
+  /// The same, for an armed depot (M3.9): its own rule's fault.
+  DepotSiteFault depotFault = DepotSiteFault::None;
 };
+
+/// How many depots this player has, built, from the records this client holds (M3.9).
+[[nodiscard]] std::size_t OwnDepotCount(std::span<const EntityRecord> _entities, PlayerId _player) noexcept;
 
 /// This player's modules, as `CheckModuleSite` takes them, from the records this client holds.
 [[nodiscard]] std::vector<PlacedModule> OwnModules(std::span<const EntityRecord> _entities, PlayerId _player);

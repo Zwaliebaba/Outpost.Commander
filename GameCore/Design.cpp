@@ -8,7 +8,7 @@ namespace Outpost
 namespace
 {
 /// ADR-006's design table, and the whole of what the MVP builds. **Seven rows and no types.**
-constexpr std::array<DesignEntry, 7> DESIGNS{{
+constexpr std::array<DesignEntry, 8> DESIGNS{{
   {.id = DesignId::Miner,
    .hull = HullId::Scout,
    .drive = DriveId::IonDrive,
@@ -55,10 +55,16 @@ constexpr std::array<DesignEntry, 7> DESIGNS{{
    .hull = HullId::ModuleFrame,
    .drive = DriveId::None,
    .slots = {ComponentId::OreProcessorL2, ComponentId::None, ComponentId::None, ComponentId::None}},
+
+  // === THE DEPOT (M3.9, Q69). ==================================================================
+  {.id = DesignId::Depot,
+   .hull = HullId::DepotFrame,
+   .drive = DriveId::None,
+   .slots = {ComponentId::None, ComponentId::None, ComponentId::None, ComponentId::None}},
 }};
 
 // AN IDENTITY IS AN INDEX: a row added without its enumerator, or the reverse, refuses to compile.
-static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::ModuleOreProcessorL2) + 1);
+static_assert(DESIGNS.size() == static_cast<std::size_t>(DesignId::Depot) + 1);
 } // namespace
 
 std::span<const DesignEntry> Designs() noexcept

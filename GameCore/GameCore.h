@@ -20,6 +20,7 @@
 #include "Layout.h"
 #include "Generator.h"
 #include "ModuleSite.h"
+#include "DepotSite.h"
 
 #include "SizeClass.h"
 #include "TickRate.h"

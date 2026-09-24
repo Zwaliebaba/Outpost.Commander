@@ -1144,7 +1144,12 @@ against the scope cut list, which is why it is the owner's decision and not an a
 **RULED 2026-09-24 BY THE OWNER, TO THE RECOMMENDATION.** Finite ore is host-side, with 200 a home rock and 600 a
 contested one. An empty rock stays a husk, and a miner retargets the nearest rock with ore left. There is a fifth
 placed design, the depot: a forward unload point with 1,500 hull and a 300-credit cost, at least 2,000 from every
-station, within 800 of a rock, and at most two a player. M3.9 builds it.
+station, within 800 of a rock, and at most two a player. **Built (M3.9)**, with three details decided in
+building. **The depot is its own hull row** (`DepotFrame`), so it is not a module and does not count against the
+station's four. **Its size is 79**, the longest side of the level-one ore processor's mesh, which it borrows
+until the mesh handoff has a depot (Q37 makes size the drawn mesh's). **Its button is the ship row's free third
+place**, which the HUD handoff leaves empty. The button is not in `geometry.json`, and the geometry check does
+not claim it.
 
 ### Q70 — What does a restart keep, and how does a client learn one happened? — **ANSWERED**
 

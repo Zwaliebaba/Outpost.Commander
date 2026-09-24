@@ -365,9 +365,12 @@ public:
   ///
   /// **A TWELFTH TIME, BY M3.8b (2026-09-24)**: a build item follows its owner's shipyard rate as it moves (Q77's first
   /// item), and the hash folds the rate. The same on all four MSVC pairs before it was pinned.
+  ///
+  /// **A THIRTEENTH TIME, BY M3.9 (2026-09-24)**: rocks hold finite ore (Q69), their miners retarget when they run
+  /// dry, and the hash folds what each rock has left. The same on all four MSVC pairs before it was pinned.
   TEST_METHOD(TheScriptedMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0x445e58ab35a0422full, RunScriptedMatch().hash);
+    Assert::AreEqual(0xa8185fe26f2e6eccull, RunScriptedMatch().hash);
   }
 
   /// **M3.10: THE STUB AI, PINNED** -- "an AI that reads the clock is the easiest possible way to lose R16". Two AI
@@ -376,7 +379,8 @@ public:
   /// before it was pinned.
   TEST_METHOD(TheStubAiMatchHashesToItsPinnedValue)
   {
-    Assert::AreEqual(0xf61fbd3a38fae41dull, RunStubAiMatch());
+    // Moved by M3.9's finite ore, the same on all four pairs.
+    Assert::AreEqual(0xe44679c473f0b04bull, RunStubAiMatch());
     Assert::AreEqual(RunStubAiMatch(), RunStubAiMatch());
   }
 
@@ -402,7 +406,12 @@ public:
 
     // M2.6: WHOLE HOLDS, AND MANY OF THEM. A script whose miners never finished a cycle would hash stably
     // and pin nothing about the loop.
-    Assert::IsTrue(result.deliveredMilliOre >= 20u * 100u * Outpost::MILLI_ORE_PER_ORE, L"the miners barely mined");
+    Logger::WriteMessage(
+      (std::wstring{L"SCRIPTED MATCH delivered "} + std::to_wstring(result.deliveredMilliOre / Outpost::MILLI_ORE_PER_ORE) + L" ore\n")
+        .c_str());
+    // TEN HOLDS SINCE M3.9, NOT TWENTY: a home rock holds 200 ore (Q69), so the nearest run dry within the two minutes
+    // and the miners fly further for the rest. 1,590 was measured on the shipped script.
+    Assert::IsTrue(result.deliveredMilliOre >= 10u * 100u * Outpost::MILLI_ORE_PER_ORE, L"the miners barely mined");
   }
 };
 

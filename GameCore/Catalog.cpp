@@ -11,7 +11,7 @@ namespace
 {
 /// `GameDesign.md` section 6's hull table, in identity order. Hull points and hit values are the
 /// design's own figures; mass is not here (Q46) and neither is size in world units (Q37).
-constexpr std::array<HullEntry, 5> HULLS{{
+constexpr std::array<HullEntry, 6> HULLS{{
   {.id = HullId::Scout, .slotCount = 1, .hullPoints = 450, .sizeClass = SizeClass::Light, .mass = 10, .cost = 60, .sizeUnits = 60},
   {.id = HullId::Frigate, .slotCount = 2, .hullPoints = 600, .sizeClass = SizeClass::Medium, .mass = 20, .cost = 100, .sizeUnits = 90},
 
@@ -38,6 +38,18 @@ constexpr std::array<HullEntry, 5> HULLS{{
    .sizeUnits = 220,
    .acceptsOre = true},
   {.id = HullId::ModuleFrame, .slotCount = 1, .hullPoints = 1500, .sizeClass = SizeClass::Heavy, .hitValue = 300, .sizeUnits = 90},
+
+  // Q69's depot: 1,500 hull and 300 credits, as ruled, on a module frame's size class and hit value -- and it accepts
+  // ore, which is the whole of what it is for. The cost is the hull's because it has no component. **79 units** is the
+  // longest side of the mesh it borrows, the level-one ore processor's, because Q37 makes size the drawn mesh's.
+  {.id = HullId::DepotFrame,
+   .slotCount = 0,
+   .hullPoints = 1500,
+   .sizeClass = SizeClass::Heavy,
+   .cost = 300,
+   .hitValue = 300,
+   .sizeUnits = 79,
+   .acceptsOre = true},
 }};
 
 /// **`None` IS A ROW.** A hull with no drive does not move, and making absence an identity rather
@@ -101,7 +113,7 @@ constexpr std::array<ComponentEntry, 8> COMPONENTS{{
 // AN IDENTITY IS AN INDEX, and these are what make that true rather than hoped for. A table that
 // grew a row without the enumerator growing with it would compile and then resolve every identity
 // past the new one to the wrong entry; this refuses to compile instead.
-static_assert(HULLS.size() == static_cast<std::size_t>(HullId::ModuleFrame) + 1);
+static_assert(HULLS.size() == static_cast<std::size_t>(HullId::DepotFrame) + 1);
 static_assert(DRIVES.size() == static_cast<std::size_t>(DriveId::BurnDrive) + 1);
 static_assert(COMPONENTS.size() == static_cast<std::size_t>(ComponentId::OreProcessorL2) + 1);
 } // namespace

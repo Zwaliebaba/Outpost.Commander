@@ -57,6 +57,10 @@ std::string_view MeshNameForHull(HullId _hull) noexcept
     return "Station";
   case HullId::ModuleFrame:
     return "ModuleFrame";
+  case HullId::DepotFrame:
+    // **NOTHING AUTHORED A DEPOT** (M3.9, `OpenQuestions.md` Q69): it borrows the ore processor's mesh, the nearest
+    // thing in the handoff to "ore goes in here", until the mesh handoff has one. Same frame, same size.
+    return "ModuleOreProcessorL1";
   case HullId::Cruiser:
     // NOTHING AUTHORED ONE, because nothing builds one. The catalog states its size at 150 and M4
     // authors a mesh to that number rather than the other way round.

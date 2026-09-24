@@ -196,6 +196,10 @@ BuildRejection BuildSystem::StartModule(World& _world, PlayerId _player, DesignI
   {
     return BuildRejection::UnknownDesign;
   }
+  if (IsDepot(_design))
+  {
+    return StartDepot(_world, _player, _design, _site, _buildRateMultiplierPercent);
+  }
   if (!IsModule(_design))
   {
     return BuildRejection::NotBuildable;
@@ -227,6 +231,60 @@ BuildRejection BuildSystem::StartModule(World& _world, PlayerId _player, DesignI
     }
   }
   if (!CheckModuleSite(station->position, station->design, placed, _site, _design).Legal())
+  {
+    return BuildRejection::IllegalSite;
+  }
+
+  const std::uint32_t cost = Derive(_design).cost;
+  return Commit(_player, BuildItem{.active = true,
+                                   .design = _design,
+                                   .ticksElapsed = 0,
+                                   .ticksRequired = TicksToBuild(_design, _buildRateMultiplierPercent),
+                                   .multiplierPercent = (_buildRateMultiplierPercent == 0) ? 100u : _buildRateMultiplierPercent,
+                                   .creditsSpent = cost,
+                                   .site = _site});
+}
+
+BuildRejection BuildSystem::StartDepot(const World& _world, PlayerId _player, DesignId _design, const Neuron::Vec2& _site,
+                                       std::uint32_t _buildRateMultiplierPercent) noexcept
+{
+  if (StationOf(_world, _player) == nullptr)
+  {
+    return BuildRejection::NoStation;
+  }
+
+  // Every station, anybody's; this player's depots, built, building and queued, which count as if built (Q80).
+  std::vector<Neuron::Vec2> stations;
+  std::vector<Neuron::Vec2> depots;
+  for (std::size_t slot = 0; slot < _world.SlotCount(); ++slot)
+  {
+    if (!_world.IsSlotAlive(slot))
+    {
+      continue;
+    }
+    const Entity& entity = _world.EntityInSlot(slot);
+    if (entity.design == DesignId::Station)
+    {
+      stations.push_back(entity.position);
+    }
+    else if (IsDepot(entity.design) && (entity.owner == _player))
+    {
+      depots.push_back(entity.position);
+    }
+  }
+  const BuildItem& current = m_items[static_cast<std::size_t>(_player)];
+  if (current.active && IsDepot(current.design))
+  {
+    depots.push_back(current.site);
+  }
+  for (const BuildItem& waiting : m_queued[static_cast<std::size_t>(_player)])
+  {
+    if (IsDepot(waiting.design))
+    {
+      depots.push_back(waiting.site);
+    }
+  }
+  if (CheckDepotSite(stations, _world.Field(), depots, _site, _design) != DepotSiteFault::None)
   {
     return BuildRejection::IllegalSite;
   }
@@ -419,8 +477,9 @@ void BuildSystem::Advance(World& _world) noexcept
 
     // Copied before `Create`, which may reallocate the store out from under the pointer above. **A module
     // appears where it was placed** (M2.11) and faces the way the station does; a ship at the spawn point.
-    const bool isModule = IsModule(item.design);
-    const Neuron::Vec2 spawn = isModule ? item.site : FreeSpawnPoint(_world, *station, item.design);
+    // A MODULE OR A DEPOT APPEARS WHERE IT WAS PLACED (M2.11, M3.9); a ship at the spawn point.
+    const bool placed = IsModule(item.design) || IsDepot(item.design);
+    const Neuron::Vec2 spawn = placed ? item.site : FreeSpawnPoint(_world, *station, item.design);
     const Neuron::Angle heading = station->heading;
 
     static_cast<void>(_world.Create(spawn, heading, item.design, static_cast<PlayerId>(player)));

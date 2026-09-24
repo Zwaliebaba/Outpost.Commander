@@ -504,6 +504,24 @@ requires exactly one entry; **the snapshot with a full sparse list is re-measure
 single-datagram figure**, because this is the first thing since M0 to grow the snapshot; retargeting picks
 the nearest asteroid with ore and breaks ties on identity; and a husk is still drawn.
 
+**BUILT 2026-09-24, ALL FOUR PAIRS, TO `OpenQuestions.md` Q69 AS RULED THAT DAY**, which replaced the sparse list above
+with host-side ore and added the depot. No wire byte moved, so the snapshot has nothing to re-measure.
+
+- **Finite ore** (`World`, `MiningSystem`): a rock holds 200 at home and 600 contested, from its field kind.
+  Extraction takes from it, never more than it has. A miner whose rock is spent retargets the nearest rock with ore
+  from where it is, ties to the lower index; with the field spent it takes its cargo home and stops. What each rock
+  has left is hashed.
+- **The depot** (`GameCore/DepotSite`, `BuildSystem::StartDepot`): its own hull and design, placed through
+  `PlaceModule` and judged by `CheckDepotSite`, one rule both sides call. The judgment is at least 2,000 from every
+  station, within 800 of a rock, two a player counting what is queued, and clear of the player's other depots.
+  Miners unload at it because it accepts ore; nothing in the mining loop names it.
+- **The client**: the depot's button in the ship row, and the armed tap judged by the same rule. It borrows the
+  level-one ore processor's mesh. **A husk is drawn** because nothing on the client ever knew a rock's ore.
+- **Measured**: the scripted match now delivers 1,590 ore in two minutes where it delivered over 2,000, because its
+  nearest rocks run dry. Its threshold became ten holds, and both pins moved.
+
+`FiniteOreTests.cpp`, `DepotSiteTests.cpp` and `BuildPanelTests.cpp`'s `TheDepotButton` pin it.
+
 ### M3.10 — The stub AI · `GameLogic` · `GameLogicTests` · agent
 
 **Read first:** `GameDesign.md` §8 and §10; R16.

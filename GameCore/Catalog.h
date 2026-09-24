@@ -56,7 +56,12 @@ enum class HullId : std::uint8_t
   Frigate,
   Cruiser,
   Station,
-  ModuleFrame
+  ModuleFrame,
+
+  /// **THE FORWARD DEPOT'S FRAME** (M3.9, `OpenQuestions.md` Q69): a module frame's hull and size, no slot, and it
+  /// accepts ore. Its own row and not a `ModuleFrame` because a depot is not a module: it is not placed within a
+  /// station's circle and does not count against its four.
+  DepotFrame
 };
 
 /// **A DRIVE IS OPTIONAL AND `None` IS WHAT A STATION HAS.** A hull with no drive does not move,

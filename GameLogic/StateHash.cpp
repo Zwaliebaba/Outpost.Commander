@@ -105,6 +105,13 @@ std::uint64_t StateHash(const World& _world) noexcept
     FoldIdentity(hash, mine.unloadTarget);
   }
 
+  // M3.9: WHAT EACH ROCK HAS LEFT (Q69), in field order. Host-only and never on the wire, and exactly the state two
+  // builds that mine differently would disagree about.
+  for (std::size_t rock = 0; rock < _world.Field().size(); ++rock)
+  {
+    FoldUInt32(hash, _world.OreLeftMilliOre(rock));
+  }
+
   return hash;
 }
 

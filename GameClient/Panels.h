@@ -83,6 +83,9 @@ struct HudState
   /// a module button is available -- an L2 needs an L1 of its kind, and a placement needs room under the cap.
   std::vector<DesignId> ownModules;
 
+  /// M3.9: how many depots this player has built, against their cap of two.
+  std::size_t ownDepots = 0;
+
   /// M3.3b: the damage alerts, placed (`PlaceAlerts`), and the hull bars over damaged things (`PlaceHullBars`).
   std::vector<AlertPlacement> alerts;
   std::vector<HullBarPlacement> hullBars;
@@ -119,7 +122,7 @@ enum class BuildButtonState : std::uint8_t
 
 /// **WHETHER A MODULE CAN BE CHOSEN AT ALL** (M2.11b): an L2 needs one of your modules it upgrades (Q54), and a
 /// placed level needs room under the cap of four. Credits have nothing to do with it.
-[[nodiscard]] bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules) noexcept;
+[[nodiscard]] bool ModuleAvailable(DesignId _design, std::span<const DesignId> _ownModules, std::size_t _ownDepots = 0) noexcept;
 
 /// A module button's state. **Unavailable wins over unaffordable** -- the state credits cannot fix is the one to
 /// show -- and armed over both, since only an available button can have been armed.

@@ -116,7 +116,7 @@ two sides to disagree about where a rock is.
 
 This is not the client simulating (R19). A generator is a rule, it lives in `GameCore`, and `GameCore` is
 precisely the shared rules both sides evaluate. The simulation still owns how much ore is *left* in an
-asteroid, and that is replicated like anything else.
+asteroid, and since Q69 that stays on the host.
 
 The generated region is copied by rotation to the player count (`GameDesign.md` §3): a quadrant at 90°,
 180° and 270° for four players, a half at 180° for the MVP's two. **Both rotations are exact because
@@ -252,9 +252,9 @@ nothing stale survives. The reconnecting overlay (`Interface.md` §7) stays up u
 after the rejoin lands.
 
 **Asteroids are not replicated at all before M3**, because inexhaustible asteroids have no simulation
-state (`GameDesign.md` §4) and the client derives their positions from the seed (R23). From M3, ore
-remaining rides an ordinary record whose owner is `NO_PLAYER`, and the accumulator sends it when its
-bucket changes.
+state (`GameDesign.md` §4) and the client derives their positions from the seed (R23). **From M3 they are
+still not replicated** (`OpenQuestions.md` Q69, ruled 2026-09-24): ore remaining is host-side state, hashed
+and never sent, and a spent rock is drawn as it always was. No wire byte moved.
 
 **The accumulator is per-client host state and not simulation.** A score and a last-sent tick per entity
 per client — a few megabytes at 100 × 5,500 — never hashed, never replayed, never reaching the tick's

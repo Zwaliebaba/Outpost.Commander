@@ -180,7 +180,12 @@ asteroids at all** from M0 to M2 (`TechnicalDesign.md` §4).
 
 From M3: an exhausted asteroid stays on the map as a husk and a miner with no order retargets the nearest
 one with ore left. The cost is that a player who ignores their miners eventually finds them idle, which is
-a management burden the MVP accepts rather than solves.
+a management burden the MVP accepts rather than solves. **As built at M3.9** (`OpenQuestions.md` Q69): a home
+rock holds 200 ore and a contested one 600, on the host only. A miner whose rock runs dry goes to the nearest
+rock with ore left, and with none left it takes home what it carries and stops. **The forward depot** is a
+placed unload point with 1,500 hull, at 300 credits, at least 2,000 from every station, within 800 of a rock,
+and two a player at most. Miners unload at the nearest acceptor, so one near a contested field turns that
+field's flight into a short one.
 
 Starting values: a station begins with 1,000 credits. A `MiningLaser` carries 100 credits of capacity and
 extracts at 20 per second, so the one-slot miner fills in five seconds; a cycle at the home field is 27 to

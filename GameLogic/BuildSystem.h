@@ -152,6 +152,12 @@ public:
   [[nodiscard]] BuildRejection StartModule(World& _world, PlayerId _player, DesignId _design, const Neuron::Vec2& _site,
                                            std::uint32_t _buildRateMultiplierPercent = 100) noexcept;
 
+  /// **A DEPOT, PLACED** (M3.9, `OpenQuestions.md` Q69): `StartModule` hands a depot here. The site is checked with
+  /// `CheckDepotSite` against every station, the field and this player's depots -- built, building and queued, which
+  /// count as if built -- and then it is charged and queued like a module.
+  [[nodiscard]] BuildRejection StartDepot(const World& _world, PlayerId _player, DesignId _design, const Neuron::Vec2& _site,
+                                          std::uint32_t _buildRateMultiplierPercent) noexcept;
+
   /// **AN UPGRADE IN PLACE** (Q54): one of this player's modules becomes _level when the item finishes, at the
   /// difference in cost and the build time of that difference. The module is checked before anything is
   /// touched, as a placement's site is.

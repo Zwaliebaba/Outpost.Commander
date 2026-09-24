@@ -39,6 +39,9 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)Generator.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)DepotSite.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="$(MSBuildThisFileDirectory)ModuleSite.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
@@ -65,6 +68,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)Join.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Layout.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Generator.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)DepotSite.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ModuleSite.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SizeClass.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)Update.h" />

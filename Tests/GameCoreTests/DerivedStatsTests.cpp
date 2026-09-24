@@ -149,10 +149,11 @@ public:
       }
     }
     // Three drives x eight components x the sum over hulls of (slotCount + 1), which is
-    // 2 + 3 + 5 + 3 + 2 = 15 for a Scout, Frigate, Cruiser, Station and ModuleFrame. 3 x 8 x 15.
+    // 2 + 3 + 5 + 3 + 2 + 1 = 16 for a Scout, Frigate, Cruiser, Station, ModuleFrame and M3.9's slotless DepotFrame.
+    // 3 x 8 x 16.
     // The count is asserted so that a catalog row added without a thought cannot quietly shrink
     // this sweep -- which is the only thing making "every combination" mean anything.
-    Assert::AreEqual(static_cast<std::size_t>(360), combinations);
+    Assert::AreEqual(static_cast<std::size_t>(384), combinations);
   }
 
   /// A component past the hull's slot count is not the hull's business. A malformed design must not
@@ -200,12 +201,14 @@ public:
 
   /// **ONLY THE STATION ACCEPTS ORE**, because its hull row says so -- which is what makes a mining factory
   /// later a row and not a branch (`GameDesign.md` section 4).
-  TEST_METHOD(OnlyTheStationAcceptsOre)
+  /// M3.9: and the depot, which is what it is for (Q69).
+  TEST_METHOD(OnlyTheStationAndTheDepotAcceptOre)
   {
     for (const Outpost::HullEntry& hull : Outpost::Hulls())
     {
-      Assert::AreEqual(hull.id == Outpost::HullId::Station, hull.acceptsOre);
+      Assert::AreEqual((hull.id == Outpost::HullId::Station) || (hull.id == Outpost::HullId::DepotFrame), hull.acceptsOre);
     }
+    Assert::IsTrue(Outpost::Derive(Outpost::DesignId::Depot).acceptsOre);
     Assert::IsTrue(Outpost::Derive(Outpost::DesignId::Station).acceptsOre);
     Assert::IsFalse(Outpost::Derive(Outpost::DesignId::Miner).acceptsOre);
   }

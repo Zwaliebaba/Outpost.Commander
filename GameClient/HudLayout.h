@@ -260,6 +260,11 @@ inline constexpr HudRect BUILD_BUTTON_YARD_L2{1032, 768, 120, 96}; // geometry: 
 inline constexpr HudRect BUILD_BUTTON_ORE_L1{1168, 768, 120, 96};  // geometry: build.btn.ore.l1
 inline constexpr HudRect BUILD_BUTTON_ORE_L2{1304, 768, 120, 96};  // geometry: build.btn.ore.l2
 
+/// **THE DEPOT'S BUTTON** (M3.9, `OpenQuestions.md` Q69): the ship row's third place, which the handoff leaves empty.
+/// **Not in `geometry.json`** -- the handoff predates the depot -- so it is not tagged and the geometry check does not
+/// claim it; it takes the ship buttons' size and their 16 of clear space.
+inline constexpr HudRect BUILD_BUTTON_DEPOT{1168, 656, 120, 96};
+
 /// Inside a build button, as offsets from the button.
 inline constexpr HudRect BUTTON_INDEX{0, 0, 4, 96};          // geometry: build.btn.index
 inline constexpr HudRect BUTTON_NAME_LINE1{12, 10, 104, 20}; // geometry: build.btn.name.line1
