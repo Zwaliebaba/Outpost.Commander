@@ -1,0 +1,10 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="OutpostCommander/OutpostCommander.vcxproj" Id="7f8c0835-f104-4767-9fce-16a2a3a42c5c">
+    <Deploy />
+  </Project>
+</Solution>
