@@ -152,7 +152,7 @@ The concrete layout — the solution, the projects and the edges between them �
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager.** The build depends on the Windows SDK and the MSVC standard library, and on nothing else. See R14.
+**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the Windows App SDK / WinUI 3 packages listed in [ADR-001](Design/ADR/ADR-001-winui3-shell.md) through `packages.config`. See R14.
 
 **Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -219,6 +219,8 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 **R12 — Graphics is Direct3D 12.** COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is not settled here; it is a design and engineering decision taken when the renderer is built, and recorded as an ADR (§6).
 
 **R14 — No third-party dependencies and no package manager.** The Windows SDK and the MSVC standard library, and nothing else. If you believe something is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar.
+
+**The one exception is the application shell** ([ADR-001](Design/ADR/ADR-001-winui3-shell.md)). The game executable is a WinUI 3 app and restores the NuGet packages that WinUI 3 needs. ADR-001's table is the complete list. Only the executable project references them. Engine and simulation libraries stay within R14 as written, with no WinRT, XAML or package includes. Any other package is a new ADR.
 
 **It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are allowed, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 
