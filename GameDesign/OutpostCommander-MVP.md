@@ -368,9 +368,8 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - Team colours and faction naming for the AI opponent.
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes".
-- The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand until milestone 4.
-- Auto-targeting (§7): whether ships should prefer ships over structures, as proposed, or the nearest target of either kind.
-- The AI's review interval and attack-group threshold (§10, §12).
+- The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
+- The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only.
 - The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
@@ -395,3 +394,5 @@ Decided on 2026-09-30, second review:
 - The Q2 check adds the starting components, one-sided research (d), and budgets up to 12,000 Ore (§3).
 - The AI counters designs rather than hulls, reviews the player's fleet at an interval, and defends its rigs (§10).
 - The designer lives in the Shipyard panel, and every match starts with the four starting designs saved (§9).
+- Auto-targeting prefers ships over structures (§7).
+- The Defence gun and structure armour in §12 are the baseline for milestone 4, the AI reviews the player's fleet every 60 s, and the research tree lasts about 11½ minutes (§12).
