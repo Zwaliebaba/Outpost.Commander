@@ -77,11 +77,13 @@
   <ItemGroup>
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Tuning.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Tuning.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

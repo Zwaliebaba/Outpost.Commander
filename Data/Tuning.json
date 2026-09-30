@@ -1,0 +1,51 @@
+{
+  "rules": {
+    "tickHz": 20,
+    "startingOre": 1000,
+    "miningRigOrePerSecondHome": 5,
+    "miningRigOrePerSecondContested": 8,
+    "aiReviewIntervalSeconds": 60
+  },
+  "hulls": [
+    { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10 },
+    { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 110, "buildSeconds": 20 },
+    { "id": 3, "name": "Large", "hitPoints": 1200, "armor": 14, "speedMetersPerSecond": 25, "cost": 300, "buildSeconds": 40 }
+  ],
+  "drives": [
+    { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "cost": 20 },
+    { "id": 2, "name": "Fusion", "speedFactor": 0.8, "hitPointsFactor": 1.4, "cost": 80 }
+  ],
+  "weapons": [
+    { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120, "splashRadiusMeters": 0, "cost": 35 },
+    { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 3.0, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
+    { "id": 3, "name": "Missile Rack", "damage": 40, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 110 }
+  ],
+  "structureWeapons": [
+    { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 }
+  ],
+  "structures": [
+    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "structureWeapon": 1 },
+    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "cost": 300, "buildConstructorSeconds": 40 },
+    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "cost": 200, "buildConstructorSeconds": 30 },
+    { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "cost": 50, "buildConstructorSeconds": 10 },
+    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
+  ],
+  "research": [
+    { "id": 1, "name": "Improved Extraction", "cost": 150, "researchSeconds": 60, "requires": [],
+      "effect": { "upgrade": "miningRig", "stat": "income", "percent": 25 } },
+    { "id": 2, "name": "Hull Plating", "cost": 150, "researchSeconds": 60, "requires": [],
+      "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 15 } },
+    { "id": 3, "name": "Mass Driver Calibration", "cost": 150, "researchSeconds": 75, "requires": [],
+      "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 15 } },
+    { "id": 4, "name": "Lance Focusing", "cost": 150, "researchSeconds": 75, "requires": [],
+      "effect": { "upgrade": "weapon", "weapon": 2, "stat": "fireRate", "percent": 15 } },
+    { "id": 5, "name": "Fusion Drive", "cost": 200, "researchSeconds": 90, "requires": [2],
+      "effect": { "unlockDrive": 2 } },
+    { "id": 6, "name": "Large Hull", "cost": 250, "researchSeconds": 120, "requires": [2],
+      "effect": { "unlockHull": 3 } },
+    { "id": 7, "name": "Missile Rack", "cost": 250, "researchSeconds": 120, "requires": [3],
+      "effect": { "unlockWeapon": 3 } },
+    { "id": 8, "name": "Automated Shipyards", "cost": 200, "researchSeconds": 90, "requires": [1],
+      "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } }
+  ]
+}

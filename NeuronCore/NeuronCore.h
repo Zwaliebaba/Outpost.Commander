@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 // The Windows macro family is defined here and nowhere else (AGENTS.md §4).
@@ -50,6 +51,7 @@
 #include "NeuronHelper.h"
 
 #include "FileSys.h"
+#include "Json.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 

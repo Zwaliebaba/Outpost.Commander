@@ -1,10 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Tuning">
+      <UniqueIdentifier>{e91331e2-ffa7-4473-8eb1-69a430dd69f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameLogic.h" />
+    <ClInclude Include="Tuning.h">
+      <Filter>Tuning</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Tuning.cpp">
+      <Filter>Tuning</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
