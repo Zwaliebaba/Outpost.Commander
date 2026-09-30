@@ -57,6 +57,8 @@ Q2 is "yes" when, at every budget of both stages and in both modes:
 - **(c)** none of the counters in (a) against those designs stops winning when any single number in §12 moves by 5%, so no result hangs on a breakpoint;
 - **(d)** at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a design that none of the other side's starting designs beats in at least half the battles. Research is an edge, not a trump card. The research comes free in this test, which favours the side that has it.
 
+A threshold counts as met only when the 95% confidence interval of the win rate clears it. A result whose interval straddles its threshold is run again with more battles, and if it is still in doubt, the check fails.
+
 The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
 
 `Tools/BattleModel.py` runs the check against §8 and §12 as written, and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
@@ -101,7 +103,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **Constructors come only from the Command Station.** It exists for as long as the match does, so a player can always rebuild, and the Shipyard's queue stays free for warships. If Shipyards built them, a player who lost every Shipyard and Constructor could never build again for the rest of the match.
 - **Only the Missile Rack outranges a Defence Platform.** The Defence gun reaches 250 m, beyond the Mass Driver (120 m) and the Lance (220 m). A Lance line can still break a platform, but it takes fire while it does. Only the Missile Rack (280 m) destroys one without being shot at, and that is the Missile Rack's job (§7). No research extends a range (§8), so this ladder holds for the whole match.
 - **The armed structures are armoured.** The Defence Platform and the Command Station have an armour of 10, which cuts a Mass Driver hit from 14 to 4, so light raiders cannot simply swarm them: by hand estimate a lone platform outlasts a raid of five Small+Ion+Mass Driver ships and destroys it. Every other structure has no armour, so raiding a Mining Rig, Shipyard or Research Lab works.
-- **The Command Station is armed** so that a handful of early ships cannot end a match. Unarmed and unarmoured, it would fall to seven Small+Ion+Mass Driver ships — about 630 Ore, ready around 1:30 — in about 20 s. Armed and armoured, it needs about 70 s against them and its gun destroys all seven in under a minute. Both are hand estimates: the model has no structures.
+- **The Command Station is armed** so that a handful of early ships cannot end a match. Unarmed and unarmoured, it would fall to seven Small+Ion+Mass Driver ships — about 610 Ore, ready around 1:30 — in about 20 s. Armed and armoured, it needs about 70 s against them and its gun destroys all seven in under a minute. Both are hand estimates: the model has no structures.
 
 ---
 
@@ -159,12 +161,12 @@ There is no tracking, accuracy or damage type (§13). Every counter comes from f
 **The first minutes are a triangle of three designs.** With the starting components, in every battle the model runs at 2,000–4,500 Ore under both kinds of targeting:
 
 - **The swarm beats the line.** Small+Ion+Mass Driver beats Medium+Ion+Lance every time. The Lance needs three hits for a 198 HP Small hull, so nearly a third of its damage is overkill, and for the same Ore the swarm fields more than twice as many guns.
-- **The line beats the brawler.** Medium+Ion+Lance beats Medium+Ion+Mass Driver in 98–100% of battles. An armour of 8 takes a Mass Driver hit from 14 down to 6, and it takes a Lance hit only from 95 to 87.
+- **The line beats the brawler.** Medium+Ion+Lance beats Medium+Ion+Mass Driver every time. An armour of 8 takes a Mass Driver hit from 14 down to 6, and it takes a Lance hit only from 95 to 87.
 - **The brawler beats the swarm.** Medium+Ion+Mass Driver beats Small+Ion+Mass Driver every time, for the same reason: the swarm's small hits break on the brawler's armour.
 
 All three are worth building, each at about a third of the equilibrium mix. Small+Ion+Lance is not worth building yet, because the swarm beats it.
 
-**Research adds the heavy, and the heavy has its own answer.** Large+Fusion+Lance beats the brawler every time and beats the swarm under spread fire from 4,500 Ore up. Large+Fusion+Mass Driver beats the swarm every time. Both fall to the Small+Ion+Lance **picket**, which beats them in 95–100% of battles: the Lance loses little to armour, and the Ore buys about three Lances for each gun the heavy carries. The picket falls to the swarm. At every budget of the full set, the designs worth building are the three starting designs, the picket and one heavy: Large+Fusion+Lance under spread fire, Large+Fusion+Mass Driver under focus fire. Each takes between 5% and 37% of the mix.
+**Research adds the heavy, and the heavy has its own answer.** Large+Fusion+Lance beats the brawler every time, and beats the swarm under spread fire but not under focus fire. Large+Fusion+Mass Driver beats the swarm every time. Both fall to the Small+Ion+Lance **picket** every time: the Lance loses little to armour, and the Ore buys more than three Lances for each gun the heavy carries. The picket falls to the swarm. At every budget of the full set, the designs worth building are the three starting designs, the picket and one heavy: Large+Fusion+Lance under spread fire, Large+Fusion+Mass Driver under focus fire. Each takes between 11% and 26% of the mix.
 
 **Every hull, drive and weapon has a use, but the Fusion Drive only on the Large hull.** That is the trade the drive is meant to be (§7 Components), and speed, the other half of it, is judged in play.
 
@@ -264,9 +266,9 @@ These started as first guesses, written down so that tuning has a baseline. They
 
 | Hull | HP | Armour | Speed (m/s) | Cost | Build (s) |
 |---|---|---|---|---|---|
-| Small | 220 | 2 | 60 | 35 | 10 |
+| Small | 220 | 2 | 60 | 32 | 10 |
 | Medium | 500 | 8 | 40 | 110 | 20 |
-| Large | 1,200 | 14 | 25 | 280 | 40 |
+| Large | 1,200 | 14 | 25 | 300 | 40 |
 
 | Drive | Speed × | HP × | Cost + |
 |---|---|---|---|
@@ -304,32 +306,31 @@ These started as first guesses, written down so that tuning has a baseline. They
 
 The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15).
 
-**Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers, and every change the search made was then reverted one at a time: those that were not needed went back. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses:
+**Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses:
 
 | Number | First guess | Now | Why |
 |---|---|---|---|
 | Lance range | 280 m | 220 m | The range ladder (§6): the Defence gun has to outrange it and the default view has to fit the fight. |
 | Missile Rack range | 200 m | 280 m | The range ladder: the one weapon that outranges a platform. |
-| Mass Driver Calibration | damage +20% | fire rate +15% | Upgrades change rates, never the size of a hit (§8). At +20% fire rate, one side's upgraded Medium+Ion+Mass Driver had no starting answer that won more than 23–33% of its battles under focus fire. |
+| Mass Driver Calibration | damage +20% | fire rate +15% | Upgrades change rates, never the size of a hit (§8). At +20% fire rate, one side's upgraded Medium+Ion+Mass Driver has no starting answer that wins half its battles under focus fire (10–47%). |
 | Lance Focusing | range +15% | fire rate +15% | A range upgrade would break the range ladder. |
-| Small hull HP | 200 | 220 | With Ion it had 180 HP against two Lance hits of 176. It now has 198 HP against two hits of 186. |
-| Small hull cost | 50 | 35 | At 45, Medium+Ion+Lance has no counter that wins four battles in five at 2,000–3,000 Ore under spread fire: the best wins 38–55%. |
-| Medium hull armour | 6 | 8 | At 6, with the new ranges, Medium+Ion+Mass Driver was the only starting design worth building at every starting budget, in both modes. Armour 8 makes the Lance line its counter. With the other numbers as they are, going back to 6 leaves neither the swarm nor the brawler with a counter that wins four battles in five in the starting stage (42–77%). |
-| Medium hull cost | 120 | 110 | At 120, one-sided Mass Driver Calibration leaves the upgraded Small+Ion+Mass Driver without an answer that wins half the time (23–40% under focus fire). |
-| Mass Driver damage | 12 | 14 | Against armour 8 a hit of 13 does only 5, so the Mass Driver's matchups hang on single points of damage: at 13, (a) and (b) fail at 3,000–4,500 Ore, and in an earlier round of the tuning a 5% cut from 13 took the swarm's win over the line from 100% to 33–43%. At 14 a hit does 6, and (c) passes. |
-| Mass Driver cost | 30 | 35 | At 30, with damage at 14, no Large or Fusion design is worth building at 2,000–3,000 Ore under focus fire. |
-| Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer that wins half the time (25–33% under focus fire). |
-| Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (13–40% under focus fire). |
-| Large hull cost | 300 | 280 | At 300 no Large or Fusion design is worth building at 2,000 Ore in either mode. |
+| Small hull HP | 200 | 220 | With Ion it had 180 HP against two Lance hits of 176. At 200, Medium+Ion+Lance has no counter that wins four battles in five at 2,000–3,000 Ore (25–48%). |
+| Small hull cost | 50 | 32 | At 35, one-sided Lance Focusing leaves the upgraded Medium+Ion+Lance without an answer that wins half its battles (25–32%). At 45, Medium+Ion+Lance has no counter at 2,000–3,000 Ore under spread fire (25–27%). |
+| Medium hull armour | 6 | 8 | At 6, Medium+Ion+Mass Driver was the only starting design worth building. Going back to 6 now leaves the swarm and the brawler without a counter in the starting stage (0–68%). |
+| Medium hull cost | 120 | 110 | At 120, one-sided Hull Plating or Mass Driver Calibration leaves the upgraded Small+Ion+Mass Driver without an answer (0–8% under focus fire). |
+| Mass Driver damage | 12 | 14 | Against armour 8 a hit of 13 does only 5. At 13, one-sided Lance Focusing leaves the upgraded Medium+Ion+Lance without an answer (17–18%). |
+| Mass Driver cost | 30 | 35 | At 30, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (2–15% under focus fire). |
+| Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer (12–42% under focus fire). |
+| Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (8–41% under focus fire). |
 
-**Where §12 stands against the Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, 30 per robustness case, 2,092 robustness checks):
+**Where §12 stands against the Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks):
 
-- **(a) passes** at every budget of both stages, in both modes. The weakest counter anywhere wins 95% of its battles, and in the starting stage 98%.
+- **(a) passes** at every budget of both stages, in both modes. Every design's best counter wins all 60 of its battles.
 - **(b) passes for every modelled component.** It is reported as incomplete because the Missile Rack is not modelled, so Q2 cannot be "yes" until it is.
 - **(c) passes:** no counter flips when any single number moves 5%.
-- **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 53% of battles at 3,000 Ore under focus fire. Lance Focusing leaves an answer that wins at least 63%, and every other topic at least 78%.
+- **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 80% of battles at 3,000 Ore under focus fire. Every other topic leaves an answer that wins at least 92%.
 
-Three margins are thin and are the first place to look if a later change fails the check. A Mass Driver hit against a Medium hull is 6, so the brawler's matchups move sharply with Mass Driver damage or Medium armour. A Small+Ion hull sits 6% above the Lance's two-hit breakpoint. And one-sided Mass Driver Calibration is 3 points from failing (d).
+With the leftover Ore fielded, the model is close to deterministic: nearly every pairing is won by the same side at every budget in the window. Two margins are still thin and are the first place to look if a later change fails the check. A Mass Driver hit against a Medium hull is 6, so the brawler's matchups move sharply with Mass Driver damage or Medium armour. And a Small+Ion hull sits 6% above the Lance's two-hit breakpoint.
 
 **Not set yet** (each is open in §15):
 

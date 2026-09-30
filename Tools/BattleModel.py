@@ -15,8 +15,11 @@ The model is deliberately small, and each simplification is one the design docum
   - Each side is one clump of identical ships bought with the same Ore. Every ship in range of the enemy clump can
     shoot any ship in it. There is no formation, pathing or terrain.
   - Each battle's Ore is drawn from within 15% of the nominal budget, the same for both sides. Armies in a match are
-    never bought at an exact figure, and without the spread a budget that happens to cut one design's ship count
-    would decide the result rather than the designs.
+    never bought at an exact figure. The draws are stratified: battle k of n takes its Ore from the k-th of n equal
+    slices of that window, so n battles cover the window evenly rather than wherever the random draws fall.
+  - Ore that does not buy a whole ship buys a fractional one, with its hit points and damage scaled by the fraction.
+    Without it, the Ore left over after the last whole ship (up to one ship's cost, a fifth of a small budget) would be
+    thrown away, and the result would turn on where the budget cuts each design's ship count.
   - Both sides attack-move. Each closes on the other until its own weapon reaches, then stops and fires. Nobody kites
     or retreats.
   - Each ship's first shot comes at a random point within its fire interval, so volleys are not synchronised.
@@ -25,6 +28,9 @@ The model is deliberately small, and each simplification is one the design docum
   - The Missile Rack is not modelled: its splash needs ship spacing, and ship sizes are not set yet (§15).
   - Structures are not modelled.
   - Research is applied only in check (d), to one side, and comes free: that side spends no Ore on it.
+
+Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose interval straddles its threshold is
+run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
 
 The Q2 check (§3) runs at two stages: every component, at 2,000-12,000 Ore, and the starting components (those no
 research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of both stages and in both fire modes:
@@ -63,6 +69,8 @@ COUNTER_WIN_RATE = 0.8  # (a): a counter wins at least four battles in five
 ROBUST_WIN_RATE = 0.5  # (c): a counter still wins after a 5% change; (d): an answer to a researched design
 PERTURBATION = 0.05
 WORTH_BUILDING = 0.05  # a design is worth building when the equilibrium mix gives it at least 5%
+CONFIDENCE_Z = 1.96  # verdicts are taken on a 95% interval
+FRACTION_MIN = 0.01  # a fractional ship smaller than this is not fielded
 
 
 @dataclasses.dataclass(frozen=True)
@@ -334,62 +342,134 @@ def hit(damage, armour):
 # ---- One battle ------------------------------------------------------------------------------------------------------
 
 
-def fight(a, b, budget, focus, seed, dt):
-  """One battle between clumps of `a` and `b` bought with `budget` Ore each. +1: a wins, -1: b wins, 0: draw."""
+def fight(a, b, budget, focus, seed, seeds, dt):
+  """Battle `seed` of `seeds` between clumps of `a` and `b` bought with `budget` Ore each, give or take the spread.
+
+  +1: a wins, -1: b wins, 0: draw.
+  """
   rng = random.Random(seed)
-  budget *= rng.uniform(1.0 - BUDGET_SPREAD, 1.0 + BUDGET_SPREAD)
+  uniform, rand = rng.uniform, rng.random
+  budget *= 1.0 - BUDGET_SPREAD + 2.0 * BUDGET_SPREAD * (seed % seeds + rand()) / seeds
   side = (a, b)
-  hp = [[d.hp] * int(budget // d.cost) for d in side]
-  if not hp[0] or not hp[1]:
-    raise ValueError(f"{budget:.0f} Ore does not buy one {a.code if not hp[0] else b.code}.")
-  alive = [list(range(len(hp[0]))), list(range(len(hp[1])))]
+  hp, scale = [], []
+  for d in side:
+    whole, fraction = divmod(budget / d.cost, 1.0)
+    if not whole:
+      raise ValueError(f"{budget:.0f} Ore does not buy one {d.code}.")
+    scales = [1.0] * int(whole) + ([fraction] if fraction >= FRACTION_MIN else [])
+    hp.append([d.hp * f for f in scales])
+    scale.append(scales)
+  n = (len(hp[0]), len(hp[1]))
+  alive = [list(range(n[0])), list(range(n[1]))]
   per_hit = (hit(a.damage, b.armour), hit(b.damage, a.armour))
-  when = [[0.0] * len(hp[0]), [0.0] * len(hp[1])]
+  interval = (a.interval, b.interval)
+  reach = (a.range + RANGE_EPSILON_M, b.range + RANGE_EPSILON_M)
+  step = (a.speed * dt, b.speed * dt)
+  when = ([0.0] * n[0], [0.0] * n[1])
   engaged = [False, False]
   queue = {}  # tick -> [(side, ship)]
   gap = START_GAP_M
+  ceil = math.ceil
+  tick, ticks = 0, int(TIME_LIMIT_S / dt)
 
-  def schedule(s, ship, time):
-    when[s][ship] = time
-    queue.setdefault(math.ceil(time / dt - 1e-9), []).append((s, ship))
+  while tick < ticks:
+    if not (engaged[0] and engaged[1]):
+      moving = [s for s in (0, 1) if gap > reach[s]]
+      if moving:
+        closed = sum(min(step[s], gap - side[s].range) for s in moving)
+        gap = max(gap - closed, min(side[s].range for s in moving))
+      for s in (0, 1):
+        if not engaged[s] and gap <= reach[s]:
+          engaged[s] = True
+          for ship in range(n[s]):
+            when[s][ship] = time = tick * dt + uniform(0.0, interval[s])
+            queue.setdefault(ceil(time / dt - 1e-9), []).append((s, ship))
 
-  for tick in range(int(TIME_LIMIT_S / dt)):
-    moving = [s for s in (0, 1) if gap > side[s].range + RANGE_EPSILON_M]
-    if moving:
-      closed = sum(min(side[s].speed * dt, gap - side[s].range) for s in moving)
-      gap = max(gap - closed, min(side[s].range for s in moving))
-    for s in (0, 1):
-      if not engaged[s] and gap <= side[s].range + RANGE_EPSILON_M:
-        engaged[s] = True
-        for ship in range(len(hp[s])):
-          schedule(s, ship, tick * dt + rng.uniform(0.0, side[s].interval))
-
-    shots = queue.pop(tick, ())
-    if not shots:
+    shots = queue.pop(tick, None)
+    if shots is None:
+      # Once both sides stand and fire, nothing happens until the next shot.
+      tick = min(queue) if engaged[0] and engaged[1] and queue else tick + 1
       continue
-    weakest = [min(alive[1], key=hp[1].__getitem__), min(alive[0], key=hp[0].__getitem__)] if focus else None
+    if focus:
+      weakest = (min(alive[1], key=hp[1].__getitem__), min(alive[0], key=hp[0].__getitem__))
     landed = []
     for s, ship in shots:
       if hp[s][ship] <= 0.0:
         continue
       enemy = 1 - s
-      target = weakest[s] if focus else alive[enemy][rng.randrange(len(alive[enemy]))]
-      landed.append((enemy, target, per_hit[s]))
-      schedule(s, ship, when[s][ship] + side[s].interval)
+      if focus:
+        target = weakest[s]
+      else:
+        targets = alive[enemy]
+        target = targets[int(rand() * len(targets))]
+      landed.append((enemy, target, per_hit[s] * scale[s][ship]))
+      when[s][ship] = time = when[s][ship] + interval[s]
+      queue.setdefault(ceil(time / dt - 1e-9), []).append((s, ship))
+    died = False
     for enemy, target, damage in landed:
-      hp[enemy][target] -= damage
-    for s in (0, 1):
-      alive[s] = [ship for ship in alive[s] if hp[s][ship] > 0.0]
-    if not alive[0] or not alive[1]:
-      break
+      before = hp[enemy][target]
+      hp[enemy][target] = before - damage
+      died |= before > 0.0 >= before - damage
+    if died:
+      alive[0] = [ship for ship in alive[0] if hp[0][ship] > 0.0]
+      alive[1] = [ship for ship in alive[1] if hp[1][ship] > 0.0]
+      if not alive[0] or not alive[1]:
+        break
+    tick += 1
   return (1 if alive[0] else 0) - (1 if alive[1] else 0)
 
 
 def pair_record(task):
   """Wins and losses of `a` against `b` over the seeds, for one budget and fire mode."""
   a, b, budget, focus, seeds, dt = task
-  outcomes = [fight(a, b, budget, focus, seed, dt) for seed in range(seeds)]
+  outcomes = [fight(a, b, budget, focus, seed, seeds, dt) for seed in range(seeds)]
   return outcomes.count(1), outcomes.count(-1)
+
+
+def wilson(wins, n):
+  """The 95% confidence interval of a win rate of wins/n."""
+  z = CONFIDENCE_Z
+  p, d = wins / n, 1.0 + z * z / n
+  centre = (p + z * z / (2 * n)) / d
+  half = z * math.sqrt(p * (1.0 - p) / n + z * z / (4.0 * n * n)) / d
+  return centre - half, centre + half
+
+
+def verdict(wins, n, threshold):
+  low, high = wilson(wins, n)
+  return "pass" if low >= threshold else "fail" if high < threshold else "unsure"
+
+
+def settle(pool, contests, threshold, seeds, max_seeds, dt):
+  """The best win rate and its verdict for each contest, re-running the uncertain ones with more battles.
+
+  A contest is a list of (a, b, budget, focus, wins, n) candidates for the same job: a counter to one design, an
+  answer to one researched design, or one counter under a perturbation. It passes if any candidate passes.
+  """
+  results = []
+  rerun = []
+  for c, candidates in enumerate(contests):
+    best = max(candidates, key=lambda x: x[4] / x[5])
+    verdicts = [verdict(x[4], x[5], threshold) for x in candidates]
+    if "pass" in verdicts or "unsure" not in verdicts:
+      results.append((best, "pass" if "pass" in verdicts else "fail"))
+    else:
+      results.append(None)
+      rerun.extend((c, x) for x, v in zip(candidates, verdicts) if v == "unsure")
+  if rerun and max_seeds > seeds:
+    tasks = [(x[0], x[1], x[2], x[3], max_seeds, dt) for _, x in rerun]
+    again = {}
+    for (c, x), (wins, _) in zip(rerun, pool.map(pair_record, tasks, chunksize=1)):
+      again.setdefault(c, []).append((*x[:4], wins, max_seeds))
+    for c, candidates in again.items():
+      best = max(candidates, key=lambda x: x[4] / x[5])
+      verdicts = [verdict(x[4], x[5], threshold) for x in candidates]
+      results[c] = (best, "pass" if "pass" in verdicts else "unsure" if "unsure" in verdicts else "fail")
+  for c, result in enumerate(results):
+    if result is None:  # nothing re-run: max_seeds is not above seeds
+      best = max(contests[c], key=lambda x: x[4] / x[5])
+      results[c] = (best, "unsure")
+  return results
 
 
 # ---- Matrices, the equilibrium mix and the Q2 check ------------------------------------------------------------------
@@ -482,14 +562,16 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
             ", ".join(f"{designs[i].code} {mix[i]:.0%}" for i in sorted(built, key=lambda i: -mix[i])))
       if args.detail:
         print_matrix(designs, matrix)
-      for j, target in enumerate(designs):
-        best = max((i for i in range(len(designs)) if i != j), key=lambda i: matrix[i][j])
-        if matrix[best][j] < COUNTER_WIN_RATE:
-          failures["a"].append(f"{where}: the best counter to {target.code} is {designs[best].code} "
-                               f"at {matrix[best][j]:.0%}")
+      contests = [[(designs[i], target, budget, focus, round(matrix[i][j] * args.seeds), args.seeds)
+                   for i in range(len(designs)) if i != j] for j, target in enumerate(designs)]
+      for j, ((counter, target, _, _, wins, n), status) in enumerate(
+          settle(pool, contests, COUNTER_WIN_RATE, args.seeds, args.max_seeds, dt)):
+        if status != "pass":
+          failures["a" if status == "fail" else "a?"].append(
+            f"{where}: the best counter to {target.code} is {counter.code} at {wins / n:.0%} of {n}")
         if j in built:
-          legs.add((designs[best].code, target.code, budget, focus))
-          print(f"  {target.code:>9} is countered by {designs[best].code} ({matrix[best][j]:.0%})")
+          legs.add((counter.code, target.code, budget, focus))
+          print(f"  {target.code:>9} is countered by {counter.code} ({wins / n:.0%} of {n})")
       used = [{getattr(designs[i], attribute) for i in built} for attribute in ("hull", "drive", "weapon")]
       for names, in_use, kind in zip(component_names(parts), used, ("hull", "drive", "weapon")):
         for name in names:
@@ -511,26 +593,20 @@ def research_check(pool, parts, topics, budgets, args, dt, failures):
     if topic.unlocks and not any(topic.unlocks in (d.hull, d.drive, d.weapon) for d in designs):
       print(f"  {topic.name}: not modelled")
       continue
-    tasks, keys = [], []
-    for budget in budgets:
-      for focus in (False, True):
-        for x in designs:
-          for y in answers:
-            tasks.append((y, x, budget, focus, args.seeds, dt))
-            keys.append((budget, focus, x.code, y.code))
-    best = {}
-    for (budget, focus, x, y), (wins, _) in zip(keys, pool.map(pair_record, tasks, chunksize=4)):
-      rate = wins / args.seeds
-      if rate > best.get((budget, focus, x), ("", -1.0))[1]:
-        best[(budget, focus, x)] = (y, rate)
-    worst = min(best.items(), key=lambda item: item[1][1])
-    (budget, focus, x), (y, rate) = worst
+    keys = [(budget, focus, x) for budget in budgets for focus in (False, True) for x in designs]
+    tasks = [(y, x, budget, focus, args.seeds, dt) for budget, focus, x in keys for y in answers]
+    records = iter(pool.map(pair_record, tasks, chunksize=4))
+    contests = [[(y, x, budget, focus, next(records)[0], args.seeds) for y in answers] for budget, focus, x in keys]
+    settled = settle(pool, contests, ROBUST_WIN_RATE, args.seeds, args.max_seeds, dt)
     chain = " + ".join(t.name for t in researched)
-    print(f"  {chain}: weakest answer is {y} to {x}* at {rate:.0%} ({budget:,} Ore {'focus' if focus else 'spread'})")
-    for (budget, focus, x), (y, rate) in sorted(best.items()):
-      if rate < ROBUST_WIN_RATE:
-        failures["d"].append(f"{chain}, {budget:,} Ore {'focus' if focus else 'spread'}: the best answer to "
-                             f"{x}* is {y} at {rate:.0%}")
+    (y, x, budget, focus, wins, n), _ = min(settled, key=lambda r: r[0][4] / r[0][5])
+    print(f"  {chain}: weakest answer is {y.code} to {x.code}* at {wins / n:.0%} of {n} "
+          f"({budget:,} Ore {'focus' if focus else 'spread'})")
+    for (y, x, budget, focus, wins, n), status in settled:
+      if status != "pass":
+        failures["d" if status == "fail" else "d?"].append(
+          f"{chain}, {budget:,} Ore {'focus' if focus else 'spread'}: the best answer to {x.code}* is {y.code} "
+          f"at {wins / n:.0%} of {n}")
 
 
 def run(args):
@@ -547,7 +623,8 @@ def run(args):
   start = available(parts, topics, [])
 
   print(f"Numbers from {args.doc.name} §12" + (f", with {', '.join(args.set)}" if args.set else "") +
-        f". {len(designs)} designs, {args.seeds} battles per pairing, a {tick_hz:g} Hz tick.")
+        f". {len(designs)} designs, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
+        f"uncertain), a {tick_hz:g} Hz tick.")
   print("Starting components: " + ", ".join(p.name for group in start for p in group) + ".")
   if unmodelled:
     print(f"Not modelled: {', '.join(unmodelled)} (splash needs ship sizes, §15).")
@@ -556,7 +633,7 @@ def run(args):
   if args.detail:
     print_shots_to_kill(designs)
 
-  failures = {"a": [], "b": [], "c": [], "d": []}
+  failures = {key: [] for key in ("a", "a?", "b", "c", "c?", "d", "d?")}
   legs = set()
   with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as pool:
     stage(pool, "Every component", parts, budgets, args, dt, unmodelled, failures, legs)
@@ -565,21 +642,23 @@ def run(args):
 
     if not args.quick:
       by_code = {d.code: d for d in designs}
-      checks = 0
+      keys, tasks = [], []
       for label, new_hulls, new_drives, new_weapons in perturbed_parts(parts):
         changed = {d.code: d for d in designs_from(new_hulls, new_drives, new_weapons)}
-        tasks, keys = [], []
         for counter, target, budget, focus in sorted(legs):
           if changed[counter] == by_code[counter] and changed[target] == by_code[target]:
             continue
           tasks.append((changed[counter], changed[target], budget, focus, args.robust_seeds, dt))
-          keys.append((counter, target, budget, focus))
-        for (counter, target, budget, focus), (wins, _) in zip(keys, pool.map(pair_record, tasks, chunksize=2)):
-          checks += 1
-          if wins / args.robust_seeds < ROBUST_WIN_RATE:
-            failures["c"].append(f"{label}: {counter} no longer beats {target} at {budget:,} Ore "
-                                 f"{'focus' if focus else 'spread'} fire ({wins / args.robust_seeds:.0%})")
-      print(f"\nRobustness: {checks} counter checks under one-number changes of +/-5%.")
+          keys.append(label)
+      records = pool.map(pair_record, tasks, chunksize=2)
+      contests = [[(*task[:4], wins, args.robust_seeds)] for task, (wins, _) in zip(tasks, records)]
+      for label, ((counter, target, budget, focus, wins, n), status) in zip(
+          keys, settle(pool, contests, ROBUST_WIN_RATE, args.robust_seeds, args.max_seeds, dt)):
+        if status != "pass":
+          failures["c" if status == "fail" else "c?"].append(
+            f"{label}: {counter.code} no longer beats {target.code} at {budget:,} Ore "
+            f"{'focus' if focus else 'spread'} fire ({wins / n:.0%} of {n})")
+      print(f"\nRobustness: {len(tasks)} counter checks under one-number changes of +/-5%.")
 
   print("\nQ2 check (§3):")
   verdicts = {
@@ -593,12 +672,20 @@ def run(args):
     if key == "c" and args.quick:
       print(f"  ({key}) {text}: not run (--quick)")
       continue
-    status = "FAIL" if failures[key] else ("INCOMPLETE" if key == "b" and unmodelled else "PASS")
-    failed |= bool(failures[key])
+    unsure = failures.get(key + "?", [])
+    if failures[key]:
+      status = "FAIL"
+    elif unsure:
+      status = "UNSURE"
+    else:
+      status = "INCOMPLETE" if key == "b" and unmodelled else "PASS"
+    failed |= status in ("FAIL", "UNSURE")
     suffix = f" ({', '.join(unmodelled)} not modelled)" if status == "INCOMPLETE" else ""
     print(f"  ({key}) {text}: {status}{suffix}")
     for line in failures[key]:
       print(f"      {line}")
+    for line in unsure:
+      print(f"      unsure: {line}")
   return 1 if failed else 0
 
 
@@ -611,6 +698,8 @@ def main():
                       help="Ore per side for the starting components and the research check (d)")
   parser.add_argument("--seeds", type=int, default=60, help="battles per pairing for the matrices")
   parser.add_argument("--robust-seeds", type=int, default=30, help="battles per pairing for the robustness sweep")
+  parser.add_argument("--max-seeds", type=int, default=480,
+                      help="battles for a verdict whose confidence interval straddles its threshold")
   parser.add_argument("--jobs", type=int, default=None, help="worker processes (default: one per core)")
   parser.add_argument("--set", action="append", default=[], metavar="NAME.FIELD=VALUE",
                       help="override one §12 number, such as Small.hp=220 or Ion.hp_factor=1.0")
