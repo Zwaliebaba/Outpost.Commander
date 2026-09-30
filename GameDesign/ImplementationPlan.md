@@ -29,7 +29,7 @@ Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, Ga
 | 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
-| 1.1 | A Win32 window and message loop | 0.3 | — | todo |
+| 1.1 | A Win32 window and message loop | 0.3 | — | in review, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27): waiting on the owner run |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
