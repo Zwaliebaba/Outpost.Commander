@@ -49,11 +49,6 @@ struct Circle
   std::string path;
 };
 
-double Distance(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
-{
-  return std::hypot(static_cast<double>(_a.xMeters) - _b.xMeters, static_cast<double>(_a.zMeters) - _b.zMeters);
-}
-
 // How far a point is inside the square map's edge.
 double EdgeClearance(const Outpost::Map& _map, Outpost::PlanePosition _position) noexcept
 {

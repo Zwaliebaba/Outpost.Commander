@@ -24,7 +24,7 @@ public:
   virtual void Advance(std::chrono::nanoseconds _elapsedWallTime) = 0;
 };
 
-// Loads the tuning data from the package (ADR-008) and starts a server with it. Throws Neuron::Exception when the data is
+// Loads the tuning data and the map from the package (ADR-008) and starts a server with them. Throws Neuron::Exception when the data is
 // missing or invalid.
 [[nodiscard]] std::unique_ptr<Server> CreateInProcessServer(const ServerDesc& _desc);
 } // namespace Outpost

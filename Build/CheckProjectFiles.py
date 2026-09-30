@@ -6,7 +6,7 @@ fails on anything AGENTS.md says a build or a review would otherwise have to cat
 
   solution         every project the solution names exists and has a .filters; every .vcxproj is in the solution
   registration     every source file in a project folder is in its .vcxproj and its .filters (§2)
-  missing-file     every file a .vcxproj or .filters names exists (package paths are 0.3's, and restored in CI)
+  missing-file     every file a .vcxproj or .filters names exists (package paths are the packages check's)
   filters-match    the .vcxproj and the .filters list the same files
   filter-name      no Visual Studio default filter (Source Files, Header Files, Resource Files) (§2)
   filter-declared  every filter an item is in is declared

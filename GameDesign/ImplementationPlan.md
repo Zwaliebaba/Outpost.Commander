@@ -9,9 +9,9 @@ The MVP design says *what* is built, AGENTS.md says *how* code is written, and `
 ## How an agent uses this plan
 
 1. **Read AGENTS.md first, then the design sections the task names.** Every task assumes both.
-2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done`, and whose gate is clear** (see the table below). Do one task per PR. A task too large for one PR is split in this file first, in its own small PR.
+2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done`, and whose gate is clear** (see the table below). Deliver one milestone per PR, in the order under Gates; a milestone too large for one PR is split in this file first.
 3. **A gate is an owner decision.** If a task's gate is open, do not guess. Write the options with their costs, ask the owner, record the answer where the task says (the design document or an ADR), and only then build. The same applies to any design question this plan does not answer: AGENTS.md says the answer is written down before the code is.
-4. **Branch off `main`, fill in the PR template, and get CI green.** CI builds Debug|x64 only, and it runs the three checkers once phase 0 has written them.
+4. **Branch off `main`, fill in the PR template, and get CI green.** CI builds Debug|x64 only, and it runs the three checkers (phase 0).
 5. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU: CI is its only build. Anything touching rendering, input, audio or presentation must also be **run by the owner** (AGENTS.md §3). Such tasks say *Owner run*. Say plainly in the PR that it was not run, and the task stays `in review` until the owner has run it.
 6. **When the PR merges, update this file in the same PR or the next one:** status `done`, a link to the PR, and anything learned that changes a later task.
 7. **ADRs.** A task marked *ADR* takes an engineering decision. Write the ADR in the same PR, numbered after the highest existing one. Until the MVP is done, ADRs are edited in place (AGENTS.md §6).
@@ -31,14 +31,14 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | done, [#29](https://github.com/Zwaliebaba/Outpost.Commander/pull/29), run by the owner |
-| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
+| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`); provenance before shipping | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
-| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | in review |
-| 2.3 | The map as data | 2.2 | — | in review |
-| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
+| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
+| 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | in review |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
@@ -66,17 +66,19 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 
 Each gate is an owner decision. Most are already listed as open in design §15.
 
+**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7).
+
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
-| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** Provenance is still open. | New ADR in 1.3; design §15 for provenance | 1.3 (provenance before shipping) |
+| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | `Data/` (the camera's data); design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
-| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
+| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `Data/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
-| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | Design §12 | 4.2 |
-| G9 | The AI's attack-group threshold (design §10, §15). | Design §12 | 6.1 |
+| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | `Data/Tuning.json`; the reasons in design §12 | 4.2 |
+| G9 | The AI's attack-group threshold (design §10, §15). | `Data/Tuning.json`; the reasons in design §12 | 6.1 |
 
 Turn rates (design §15) do not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 uses provisional values held as data.
 
@@ -84,7 +86,7 @@ Turn rates (design §15) do not gate anything: weapons are turrets and hits are 
 
 ## Phase 0 — The checkers
 
-AGENTS.md leans on three checkers that do not exist yet, and CI already runs each one the moment its file lands (`.github/workflows/build.yml`). They come first so that every later PR is gated by them. They are Python, and they run on Windows in CI; 0.1 and 0.2 must also run on Linux, so a cloud agent can run them before pushing.
+AGENTS.md leans on three checkers, which phase 0 wrote, and CI already runs each one the moment its file lands (`.github/workflows/build.yml`). They come first so that every later PR is gated by them. They are Python, and they run on Windows in CI; 0.1 and 0.2 must also run on Linux, so a cloud agent can run them before pushing.
 
 ### What phase 0 changed for later tasks
 
@@ -93,7 +95,7 @@ Phase 0 landed as one PR, [#26](https://github.com/Zwaliebaba/Outpost.Commander/
 - **All three checkers gate in CI**, and `CheckProjectFiles.py` and `RunClangTidy.py` run a `--self-test` there too. A task that adds a project adds its row to `INCLUDE_PATHS` in `CheckProjectFiles.py` as well as to ADR-002's table; the checker fails until it does.
 - **R11 is checked on the design's own words.** `CheckProjectFiles.py` rejects `armour`, `defence`, `metre` and the other non-SDK spellings in identifiers, so 4.4's Defence gun and structure armour are `DefenseGun` and `armor` in code, and distances are `...Meters` (R6). The design document keeps its spelling; only identifiers are checked. The owner confirmed this on 2026-09-30.
 - **`ENUM_HELPER` is gone from `NeuronHelper.h`.** It was unused and did not preprocess under clang. The first task with an enum that needs `++`, bit operators or a range adds a lint-clean replacement.
-- **`GameLogicTests` exists** with only `SuiteSmoke`. The first real test deletes the placeholder (AGENTS.md §3), and CI finds the DLL at `x64\Debug\GameLogicTests.dll`.
+- **`GameLogicTests` started** with only `SuiteSmoke`, and 2.1's first real suite deleted it (AGENTS.md §3). CI finds the DLL at `x64\Debug\GameLogicTests.dll`.
 
 ### 0.1 — `Build/CheckFormat.py`
 
@@ -175,7 +177,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   - swap chain, back buffers and resize;
   - present and device-removed handling.
 
-  COM lifetimes are held by `winrt::com_ptr`, and `HRESULT`s are checked with `winrt::check_hresult` (R12), both already available through `NeuronCore.h`. Barriers are written by hand (R14, no `d3dx12.h`). In Debug the D3D12 debug layer is on.
+  COM lifetimes are held by `winrt::com_ptr`, and `HRESULT`s are checked with `winrt::check_hresult` (R12), both already available through `NeuronCore.h`. Barriers and descriptor handles use `d3dx12.h`'s helpers through `DirectXHelper.h` (ADR-007). In Debug the D3D12 debug layer is on.
 
   PIX event markers name the frame's regions on the queue, the command lists and the CPU (ADR-005). They are compiled in for Debug only, and `pix3.h` sits between `#pragma warning(push)` and `pop` in a `NeuronClient` `.cpp`. The runtime's import library, DLL and licence already reach the executable through `NeuronClient`.
 - **Acceptance:** CI green. There are no debug-layer errors in a run. The game covers the primary monitor, Alt+Enter toggles a 1280×720 window and back, dragging the window to a new size works, it follows a change of display resolution, and it survives being minimised and restored (Win+D). A failure shows a message box instead of closing silently. A Release build has no reference to the PIX runtime.
@@ -186,7 +188,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Gate:** G2. **ADR:** how meshes reach the game.
 - **Goal:** load the hull meshes and draw one (design §11).
 - **Scope:**
-  - A loader in `NeuronClient` for what the meshes contain: positions, normals and faces. The `.mtl` references are ignored (design §11).
+  - A `.cmo` loader in `NeuronClient` (G2) that reads positions, normals and indices from the owner's converted meshes and ignores their materials (design §11).
   - A data file giving each model a scale and a forward axis. The hulls point along x and `Colonizer` along z, and up is y everywhere. The scale is measured from the mesh's extents, and the task states how. It is applied at load.
   - The meshes are packaged into the MSIX layout under `Assets`, where `FileSys` looks (`NeuronCore/FileSys.h`).
   - A mesh that fails to load is reported, not silently skipped.
@@ -204,7 +206,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 
 - **Gate:** G3 for the final zoom limits; provisional limits are held as data.
 - **Goal:** design §4's camera. Pan by edge scroll, WASD and middle-drag. Zoom with the wheel, clamped. Rotate around the focus point with Q/E. The pitch comes from the zoom level, and the default view is about 500 m wide.
-- **Scope:** camera state and input in `GameApp`, since camera state is client state (ADR-002), over the view and projection math in `NeuronClient` (`DirectXMath`). A test grid on the y = 0 plane shows scale.
+- **Scope:** camera state and input in `GameApp`, since camera state is client state (ADR-002), over the view and projection math in `NeuronClient` (`DirectXMath`). A test grid on the y = 0 plane shows scale. Decide, and record, whether the cursor is clipped to the window while the game is active and what edge scroll does in a window (ADR-006).
 - **Acceptance:** CI green. The camera math has unit tests where it is pure: the width at default zoom, and the pitch at each zoom limit.
 - **Verify:** **owner run.**
 
@@ -250,7 +252,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - an invalid command is rejected;
   - the same seed and command log reproduce the same state on the same build.
 - **Verify:** CI; **owner run**, because the executable now loads `Assets\Data\Tuning.json` from the package at startup and reports a failure in a message box.
-- **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. 2.3 places the starting entities with `Simulation::SpawnShip` or its structure equivalent.
+- **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. Starting entities are not placed yet: 2.3 placed only the map. **Open:** which task spawns ships at the starts, so that 2.5 and 2.6 have something to draw and select, is the owner's to decide; 4.2 places the Command Station and the Constructors.
 
 ### 2.3 — The map as data
 
@@ -270,6 +272,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - a mixed group arrives together at its slowest member's speed;
   - no two ships' footprints overlap by more than a stated tolerance after settling.
 - **Verify:** CI.
+- **As built:** [ADR-010](../Design/ADR/ADR-010-movement-and-pathing.md). Hulls carry provisional `footprintRadiusMeters` (8, 14 and 24 m) and `turnRateDegreesPerSecond` (180, 120 and 60), and drives a `turnRateFactor` (Ion 1.25, Fusion 0.8), until G5. The tolerance is 0.5 m. A 200-ship order costs about one Q4 tick budget, which 2.7 measures on the development machine.
 
 ### 2.5 — Rendering from interpolated snapshots
 
@@ -302,7 +305,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 ## Milestone 3 — Ships that fight
 
-Design §14: *weapons, damage and destruction, with designs as data from §12. A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in SimulationTests* (`GameLogicTests` here). This answers **Q2** and **Q4**.
+Design §14: *weapons, damage and destruction, with designs as data from §12. A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in `GameLogicTests`*. This answers **Q2** and **Q4**.
 
 ### 3.1 — Tuning data file, loaded by the game and the model
 
@@ -365,7 +368,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Goal:** answer design Q4. With 200 ships and 40 structures in combat at 1920×1080, with the HUD drawn, 99% of frames take ≤ 16.7 ms and a tick takes ≤ 5 ms.
 - **Scope:**
   - A scripted stress scene.
-  - Frame-time capture: per-frame CPU and present intervals written to a file. Release has no PIX markers (ADR-005), so these timings are the measurement. A PIX capture of Debug is where to look for the cause of a miss.
+  - Frame-time capture: per-frame CPU and GPU work time, and the machine's refresh rate, written to a file (ADR-006). Release has no PIX markers (ADR-005), so these timings are the measurement. A PIX capture of Debug is where to look for the cause of a miss.
   - A summary script under `Tools/`.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
 - **Verify:** **owner run**, Release.

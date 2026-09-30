@@ -100,6 +100,8 @@
     <ClCompile Include="SimulationTests.cpp" />
     <ClCompile Include="InProcessServerTests.cpp" />
     <ClCompile Include="MapTests.cpp" />
+    <ClCompile Include="MovementTests.cpp" />
+    <ClCompile Include="PathfinderTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
