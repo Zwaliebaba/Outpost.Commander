@@ -211,7 +211,7 @@ msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /
 
 ```powershell
 python Build\CheckFormat.py           # clang-format, whole tree. --fix rewrites the offenders
-python Build\CheckProjectFiles.py     # build shape, project registration, R2/R7/R11
+python Build\CheckProjectFiles.py     # build shape and settings, project registration, R2/R7/R11
 python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE must be set)
 ```
 

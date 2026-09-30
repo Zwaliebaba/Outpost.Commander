@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The build-shape gate of AGENTS.md §1 and §2.
+"""The build-shape gate of AGENTS.md §1, §2 and §3.
 
 Reads OutpostCommander.slnx, every .vcxproj and every .vcxproj.filters, and the C++ and HLSL source of the tree, and
 fails on anything AGENTS.md says a build or a review would otherwise have to catch:
@@ -21,6 +21,23 @@ fails on anything AGENTS.md says a build or a review would otherwise have to cat
   include-climb    no #include leaves its own project with '..' (ADR-002)
   wrl              no Microsoft::WRL::ComPtr and no WRL header; a COM pointer is a winrt::com_ptr (R12)
   header-filter    .clang-tidy's HeaderFilterRegex covers every project in the solution (§2)
+
+and, for the build settings that stand in for the Release and ARM64 builds CI never runs (§3, ADR-003):
+
+  platforms        the solution and every project have x64 and ARM64, Debug and Release, and nothing else
+  settings         v145, stdcpplatest, ConformanceMode, Level4, TreatWarningAsError and Precise are stated, with
+                   AVX2 on x64 and ARMv8.0 on ARM64 (R16)
+  alignment        Debug and Release differ only in what §3 lists, x64 and ARM64 only in the instruction set, and
+                   each configuration defines its own _DEBUG or NDEBUG
+  macros           no project defines the Windows macro family and no header but NeuronCore.h does (§4); nothing
+                   defines USE_PIX, USE_PIX_RETAIL or PROFILE (ADR-005)
+  include-path     each project's include path is its row of ADR-002's table, spelled $(SolutionDir)<Project>, and
+                   the executable does not inherit the default one (ADR-001)
+  packages         only R14's projects have a packages.config, each lists only its own packages, and every package
+                   folder a project names is in its packages.config at that version
+
+The settings are what the project file states for each configuration, with each element's Condition evaluated for
+$(Configuration) and $(Platform). MSBuild's defaults are not read: a setting the file does not state is absent.
 
 R2 and R11 read declarations and identifiers with regular expressions over the source with comments and string
 literals blanked out. They do not parse C++, so they are written to miss rather than to guess: a type is checked where
@@ -500,9 +517,320 @@ def check_header_filter(_tree):
   return findings
 
 
+# ── Build settings (AGENTS.md §3, R14, R16; ADR-001, ADR-002, ADR-003, ADR-005). ─────────────────────────────────
+
+
+def condition_holds(_condition, _configuration, _platform):
+  """Evaluates an MSBuild condition for one configuration and platform. A comparison that still names another property
+  after $(Configuration) and $(Platform) are substituted, or a function such as Exists(), does not depend on the
+  configuration, so it is taken as true: it cannot make two configurations differ, which is all this script asks."""
+  if not _condition or not _condition.strip():
+    return True
+  text = _condition.replace("$(Configuration)", _configuration).replace("$(Platform)", _platform)
+
+  def term_holds(_term):
+    term = _term.strip()
+    while term.startswith("(") and term.endswith(")"):
+      term = term[1:-1].strip()
+    match = re.fullmatch(r"'([^']*)'\s*(==|!=)\s*'([^']*)'", term)
+    if match is None or "$(" in match.group(1) + match.group(3):
+      return True
+    equal = match.group(1).lower() == match.group(3).lower()
+    return equal if match.group(2) == "==" else not equal
+
+  return any(all(term_holds(term) for term in re.split(r"\s+and\s+", alternative, flags=re.IGNORECASE))
+             for alternative in re.split(r"\s+or\s+", text, flags=re.IGNORECASE))
+
+
+def split_list(_value):
+  return [entry.strip() for entry in _value.split(";") if entry.strip()]
+
+
+def effective_settings(_project, _configuration, _platform):
+  """What the project file itself states for one configuration: properties by name, tool metadata as Tool.Name, and
+  per-item metadata as Kind[path].Name. MSBuild's own defaults are not read; a setting the file does not state is
+  absent, which is what 'stated, not inherited' asks for."""
+  settings = {}
+
+  def holds(_element):
+    return condition_holds(_element.get("Condition"), _configuration, _platform)
+
+  for group in _project.vcxproj:
+    tag = group.tag.removeprefix(MSBUILD_NS)
+    if not holds(group):
+      continue
+    if tag == "PropertyGroup":
+      for element in group:
+        if holds(element):
+          settings[element.tag.removeprefix(MSBUILD_NS)] = (element.text or "").strip()
+    elif tag == "ItemDefinitionGroup":
+      for tool in group:
+        for element in tool:
+          if not holds(element):
+            continue
+          name = element.tag.removeprefix(MSBUILD_NS)
+          key = f"{tool.tag.removeprefix(MSBUILD_NS)}.{name}"
+          value = (element.text or "").strip()
+          self_reference = f"%({name})"
+          if self_reference in value:
+            if key not in settings:
+              settings[key + ":inherits"] = "true"
+            value = value.replace(self_reference, settings.get(key, ""))
+          settings[key] = ";".join(split_list(value)) if ";" in value else value
+    elif tag == "ItemGroup":
+      for element in group:
+        kind = element.tag.removeprefix(MSBUILD_NS)
+        if kind not in FILE_ITEMS or not element.get("Include") or not holds(element):
+          continue
+        for metadata in element:
+          if holds(metadata):
+            settings[f"{kind}[{element.get('Include')}].{metadata.tag.removeprefix(MSBUILD_NS)}"] = \
+              (metadata.text or "").strip()
+  return settings
+
+
+CONFIGURATIONS = ("Debug", "Release")
+PLATFORMS = ("x64", "ARM64")
+REQUIRED_SETTINGS = {
+  "PlatformToolset": "v145",
+  "ClCompile.LanguageStandard": "stdcpplatest",
+  "ClCompile.ConformanceMode": "true",
+  "ClCompile.WarningLevel": "Level4",
+  "ClCompile.TreatWarningAsError": "true",
+  "ClCompile.FloatingPointModel": "Precise",
+}
+INSTRUCTION_SET_KEY = "ClCompile.EnableEnhancedInstructionSet"
+INSTRUCTION_SETS = {"x64": "AdvancedVectorExtensions2", "ARM64": "CPUExtensionRequirementsARMv80"}
+
+# AGENTS.md §3: the whole of what may differ between Debug and Release, by property or metadata name. The preprocessor
+# definitions may differ only in _DEBUG against NDEBUG.
+MAY_DIFFER_BY_CONFIGURATION = {"UseDebugLibraries", "RuntimeLibrary", "LinkIncremental", "WholeProgramOptimization",
+                               "Optimization", "FunctionLevelLinking", "IntrinsicFunctions", "EnableCOMDATFolding",
+                               "OptimizeReferences", "LinkTimeCodeGeneration"}
+CONFIGURATION_DEFINES = {"Debug": "_DEBUG", "Release": "NDEBUG"}
+
+# ADR-002's include-path table, one row per project. A project not in it is a project the ADR has not placed yet.
+INCLUDE_PATHS = {
+  "NeuronCore": (),
+  "NeuronClient": ("NeuronCore",),
+  "NeuronServer": ("NeuronCore",),
+  "GameProtocol": ("NeuronCore",),
+  "Opponent": ("NeuronCore", "GameProtocol"),
+  "GameLogic": ("NeuronCore", "NeuronServer", "GameProtocol"),
+  "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
+  "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
+}
+# ADR-001: the Windows Store project type adds its own folder, Generated Files\ and its intermediate folder to the
+# default include path, so the executable states its include path whole rather than appending to the default.
+NO_INHERITED_INCLUDES = {"OutpostCommander"}
+
+# R14's table: the only projects with a packages.config, and the only packages each may list and import.
+PACKAGES = {
+  "OutpostCommander": {"Microsoft.Windows.SDK.BuildTools", "Microsoft.Windows.SDK.BuildTools.MSIX"},
+  "NeuronCore": {"Microsoft.Native.Quic.MsQuic.Schannel"},
+  "NeuronClient": {"WinPixEventRuntime"},
+}
+
+WINDOWS_MACROS = ("NOMINMAX", "WIN32_LEAN_AND_MEAN", "NOMCX", "NOSERVICE", "NOHELP")
+WINDOWS_MACRO_OWNER = "NeuronCore/NeuronCore.h"
+PIX_MACROS = ("USE_PIX", "USE_PIX_RETAIL", "PROFILE")
+
+
+def configurations():
+  return [(configuration, platform) for configuration in CONFIGURATIONS for platform in PLATFORMS]
+
+
+def all_settings(_project):
+  return {(configuration, platform): effective_settings(_project, configuration, platform)
+          for configuration, platform in configurations()}
+
+
+def grouped(_findings):
+  """Folds the same message across configurations into one finding that names them."""
+  by_message = {}
+  for location, check, message, where in _findings:
+    by_message.setdefault((location, check, message), []).append(where)
+  return [Finding(location, check, f"{message} ({', '.join(f'{c}|{p}' for c, p in wheres)})")
+          for (location, check, message), wheres in by_message.items()]
+
+
+def check_platforms(_tree):
+  findings = []
+  solution = parse_xml(_tree.solution_path)
+  named = {element.get("Name") for element in solution.iter("Platform") if element.get("Name")}
+  if named != set(PLATFORMS):
+    findings.append(Finding(_tree.solution_path.name, "platforms",
+                            f"declares {sorted(named)}; the platforms are {sorted(PLATFORMS)} (ADR-003)"))
+  expected = {f"{configuration}|{platform}" for configuration, platform in configurations()}
+  for project in _tree.projects:
+    declared = {element.get("Include") for element in project.vcxproj.iter(f"{MSBUILD_NS}ProjectConfiguration")}
+    for missing in sorted(expected - declared):
+      findings.append(Finding(project.vcxproj_path, "platforms", f"has no {missing} configuration (ADR-003)"))
+    for extra in sorted(declared - expected):
+      findings.append(Finding(project.vcxproj_path, "platforms", f"has a {extra} configuration; only x64 and ARM64, "
+                                                                 f"Debug and Release, exist (ADR-003)"))
+  return findings
+
+
+def check_required_settings(_tree):
+  raw = []
+  for project in _tree.projects:
+    for (configuration, platform), settings in all_settings(project).items():
+      required = dict(REQUIRED_SETTINGS)
+      required[INSTRUCTION_SET_KEY] = INSTRUCTION_SETS[platform]
+      for key, value in required.items():
+        stated = settings.get(key)
+        if stated != value:
+          text = "is not stated" if stated is None else f"is '{stated}'"
+          raw.append((project.vcxproj_path, "settings", f"{key} {text}; it must be '{value}' (AGENTS.md §3, R16)",
+                      (configuration, platform)))
+  return grouped(raw)
+
+
+def comparable(_key, _value, _configuration):
+  """The value with what may legitimately differ taken out: _DEBUG or NDEBUG from the preprocessor definitions."""
+  if _key.endswith(".PreprocessorDefinitions"):
+    return ";".join(entry for entry in split_list(_value) if entry not in CONFIGURATION_DEFINES.values())
+  return _value
+
+
+def check_alignment(_tree):
+  findings = []
+  for project in _tree.projects:
+    settings = all_settings(project)
+
+    def compare(_left, _right, _exempt, _what):
+      a, b = settings[_left], settings[_right]
+      for key in sorted(set(a) | set(b)):
+        if _exempt(key):
+          continue
+        left = comparable(key, a.get(key, "(not stated)"), _left[0])
+        right = comparable(key, b.get(key, "(not stated)"), _right[0])
+        if left != right:
+          findings.append(Finding(project.vcxproj_path, "alignment",
+                                  f"{key} is '{left}' in {'|'.join(_left)} but '{right}' in {'|'.join(_right)}; "
+                                  f"{_what} (AGENTS.md §3)"))
+
+    for platform in PLATFORMS:
+      compare(("Debug", platform), ("Release", platform),
+              lambda _key: _key.split(".")[-1].removesuffix(":inherits") in MAY_DIFFER_BY_CONFIGURATION,
+              "Debug and Release differ only in optimisation")
+    for configuration in CONFIGURATIONS:
+      compare((configuration, "x64"), (configuration, "ARM64"),
+              lambda _key: _key == INSTRUCTION_SET_KEY,
+              "x64 and ARM64 differ only in the instruction set")
+
+    for (configuration, platform), values in settings.items():
+      defines = split_list(values.get("ClCompile.PreprocessorDefinitions", ""))
+      wanted = CONFIGURATION_DEFINES[configuration]
+      unwanted = [name for name in CONFIGURATION_DEFINES.values() if name != wanted and name in defines]
+      if wanted not in defines or unwanted:
+        findings.append(Finding(project.vcxproj_path, "alignment",
+                                f"{configuration}|{platform} must define {wanted} and not "
+                                f"{CONFIGURATION_DEFINES['Release' if wanted == '_DEBUG' else 'Debug']} (AGENTS.md §3)"))
+  return findings
+
+
+def defined_macros(_settings):
+  names = set()
+  for key, value in _settings.items():
+    if key.endswith(".PreprocessorDefinitions"):
+      names.update(entry.split("=")[0].strip() for entry in split_list(value))
+    elif key.endswith(".AdditionalOptions"):
+      names.update(re.findall(r"(?:^|\s)[/-]D\s*([A-Za-z_]\w*)", value))
+  return names
+
+
+def check_macros(_tree):
+  raw = []
+  for project in _tree.projects:
+    for where, settings in all_settings(project).items():
+      defined = defined_macros(settings)
+      for name in WINDOWS_MACROS:
+        if name in defined:
+          raw.append((project.vcxproj_path, "macros", f"defines {name}; the Windows macro family is defined in "
+                                                      f"{WINDOWS_MACRO_OWNER} and nowhere else (AGENTS.md §4)", where))
+      for name in PIX_MACROS:
+        if name in defined:
+          raw.append((project.vcxproj_path, "macros", f"defines {name}, which turns PIX markers on in Release "
+                                                      f"(ADR-005)", where))
+  findings = grouped(raw)
+  for path in _tree.cpp_files():
+    code = strip_cpp(_tree.text(path))
+    for match in re.finditer(r"^[ \t]*#[ \t]*define[ \t]+(\w+)", code, re.MULTILINE):
+      name = match.group(1)
+      where = f"{path}:{line_of(code, match.start())}"
+      if name in WINDOWS_MACROS and path != WINDOWS_MACRO_OWNER:
+        findings.append(Finding(where, "macros", f"defines {name}; only {WINDOWS_MACRO_OWNER} does (AGENTS.md §4)"))
+      if name in PIX_MACROS:
+        findings.append(Finding(where, "macros", f"defines {name}, which turns PIX markers on in Release (ADR-005)"))
+  return findings
+
+
+def check_include_paths(_tree):
+  raw = []
+  for project in _tree.projects:
+    if project.name not in INCLUDE_PATHS:
+      raw.append((project.vcxproj_path, "include-path",
+                  "is not in ADR-002's include-path table; add its row there and to INCLUDE_PATHS here", None))
+      continue
+    expected = set(INCLUDE_PATHS[project.name])
+    for where, settings in all_settings(project).items():
+      for property_name in ("IncludePath", "ExternalIncludePath"):
+        if property_name in settings:
+          raw.append((project.vcxproj_path, "include-path", f"sets {property_name}; a project's include path is its "
+                                                            f"AdditionalIncludeDirectories (ADR-002)", where))
+      entries = split_list(settings.get("ClCompile.AdditionalIncludeDirectories", ""))
+      if project.name in NO_INHERITED_INCLUDES and settings.get("ClCompile.AdditionalIncludeDirectories:inherits"):
+        raw.append((project.vcxproj_path, "include-path", "inherits %(AdditionalIncludeDirectories), which the Windows "
+                                                          "Store project type fills with its own folders (ADR-001)",
+                    where))
+      named = set()
+      for entry in entries:
+        match = re.fullmatch(r"\$\(SolutionDir\)([A-Za-z0-9]+)[\\/]?", entry)
+        if match is None:
+          raw.append((project.vcxproj_path, "include-path",
+                      f"'{entry}' is not a $(SolutionDir)<Project> entry (AGENTS.md §3, ADR-002)", where))
+        else:
+          named.add(match.group(1))
+      for extra in sorted(named - expected):
+        raw.append((project.vcxproj_path, "include-path",
+                    f"includes {extra}, which ADR-002 does not give {project.name}", where))
+      for missing in sorted(expected - named):
+        raw.append((project.vcxproj_path, "include-path",
+                    f"does not include {missing}, which ADR-002 gives {project.name}", where))
+  return grouped([(location, check, message, where or ("any", "any")) for location, check, message, where in raw])
+
+
+def check_packages(_tree):
+  findings = []
+  for project in _tree.projects:
+    allowed = PACKAGES.get(project.name, set())
+    config_path = f"{project.directory}/packages.config"
+    listed = {}
+    if (_tree.root / config_path).is_file():
+      if not allowed:
+        findings.append(Finding(config_path, "packages", f"{project.name} is not in R14's table, so it has no packages"))
+      for package in parse_xml(_tree.root / config_path).iter("package"):
+        identifier, version = package.get("id", ""), package.get("version", "")
+        listed[f"{identifier}.{version}".lower()] = identifier
+        if identifier not in allowed:
+          findings.append(Finding(config_path, "packages", f"lists {identifier}, which R14 does not give {project.name}"))
+    elif allowed:
+      findings.append(Finding(project.vcxproj_path, "packages", f"has no packages.config, but R14 gives it "
+                                                                f"{', '.join(sorted(allowed))}"))
+    text = (_tree.root / project.vcxproj_path).read_text(encoding="utf-8-sig")
+    for folder in sorted(set(re.findall(r"packages[\\/]([A-Za-z0-9_.\-]+)[\\/]", text))):
+      if folder.lower() not in listed:
+        findings.append(Finding(project.vcxproj_path, "packages", f"references packages\\{folder}, which is not in its "
+                                                                  f"packages.config at that version (R14)"))
+  return findings
+
+
 CHECKS = (check_solution, check_registration, check_missing_files, check_filters_match, check_filter_names,
           check_filter_declared, check_filter_split, check_location, check_extensions, check_file_names,
-          check_shader_names, check_affixes, check_spelling, check_includes, check_com_ptr, check_header_filter)
+          check_shader_names, check_affixes, check_spelling, check_includes, check_com_ptr, check_header_filter,
+          check_platforms, check_required_settings, check_alignment, check_macros, check_include_paths, check_packages)
 
 
 def run_checks(_root):
@@ -521,6 +849,14 @@ def edit(_root, _path, _old, _new):
   file.write_text(text.replace(_old, _new, 1), encoding="utf-8")
 
 
+def append(_root, _path, _xml):
+  """Adds XML just before the document's closing </Project>, which is the last one: a ProjectReference carries a
+  <Project> element of its own."""
+  file = _root / _path
+  head, tail = file.read_text(encoding="utf-8-sig").rsplit("</Project>", 1)
+  file.write_text(f"{head}  {_xml}\n</Project>{tail}", encoding="utf-8")
+
+
 def write(_root, _path, _text):
   (_root / _path).parent.mkdir(parents=True, exist_ok=True)
   (_root / _path).write_text(_text, encoding="utf-8")
@@ -529,15 +865,14 @@ def write(_root, _path, _text):
 def register(_root, _project, _kind, _include, _filter=None):
   """Adds a file item to a project and to its filters, as Visual Studio would."""
   body = f"<{_kind} Include=\"{_include}\" />"
-  edit(_root, f"{_project}/{_project}.vcxproj", "</Project>", f"  <ItemGroup>{body}</ItemGroup>\n</Project>")
+  append(_root, f"{_project}/{_project}.vcxproj", f"<ItemGroup>{body}</ItemGroup>")
   if _filter is not None:
     body = f"<{_kind} Include=\"{_include}\"><Filter>{_filter}</Filter></{_kind}>"
-  edit(_root, f"{_project}/{_project}.vcxproj.filters", "</Project>", f"  <ItemGroup>{body}</ItemGroup>\n</Project>")
+  append(_root, f"{_project}/{_project}.vcxproj.filters", f"<ItemGroup>{body}</ItemGroup>")
 
 
 def declare_filter(_root, _project, _name):
-  edit(_root, f"{_project}/{_project}.vcxproj.filters", "</Project>",
-       f"  <ItemGroup><Filter Include=\"{_name}\" /></ItemGroup>\n</Project>")
+  append(_root, f"{_project}/{_project}.vcxproj.filters", f"<ItemGroup><Filter Include=\"{_name}\" /></ItemGroup>")
 
 
 def add_source(_root, _project, _name, _text="#include \"pch.h\"\n", _filter=None):
@@ -557,8 +892,7 @@ SELF_TEST_CASES = (
   ("missing-file", "a project item whose file does not exist",
    lambda r: register(r, "NeuronCore", "ClCompile", "Ghost.cpp")),
   ("filters-match", "a file in the .filters that the .vcxproj does not list",
-   lambda r: edit(r, "GameApp/GameApp.vcxproj.filters", "</Project>",
-                  "  <ItemGroup><ClInclude Include=\"GameApp.h\" /><None Include=\"pch.cpp\" /></ItemGroup>\n</Project>")),
+   lambda r: append(r, "GameApp/GameApp.vcxproj.filters", "<ItemGroup><None Include=\"pch.cpp\" /></ItemGroup>")),
   ("filter-name", "a Visual Studio default filter",
    lambda r: declare_filter(r, "GameApp", "Source Files")),
   ("filter-declared", "an item in a filter that is not declared",
@@ -602,6 +936,51 @@ SELF_TEST_CASES = (
                   "#pragma once\nMicrosoft::WRL::ComPtr<ID3D12Device> g_device;")),
   ("header-filter", "a project the clang-tidy header filter does not name",
    lambda r: edit(r, ".clang-tidy", "|GameApp|", "|")),
+  ("platforms", "a Win32 configuration in a project",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "<ProjectConfiguration Include=\"Debug|x64\">",
+                  "<ProjectConfiguration Include=\"Debug|Win32\"><Configuration>Debug</Configuration>"
+                  "<Platform>Win32</Platform></ProjectConfiguration>\n"
+                  "    <ProjectConfiguration Include=\"Debug|x64\">")),
+  ("platforms", "a Win32 platform in the solution",
+   lambda r: edit(r, "OutpostCommander.slnx", "<Platform Name=\"x64\" />",
+                  "<Platform Name=\"x64\" />\n    <Platform Name=\"Win32\" />")),
+  ("settings", "warning level 3",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "<WarningLevel>Level4</WarningLevel>",
+                  "<WarningLevel>Level3</WarningLevel>")),
+  ("settings", "AVX rather than AVX2 on x64",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", ">AdvancedVectorExtensions2<", ">AdvancedVectorExtensions<")),
+  ("settings", "a floating-point model left to the default",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "<FloatingPointModel>Precise</FloatingPointModel>", "")),
+  ("alignment", "an include directory removed from Release only",
+   lambda r: append(r, "GameApp/GameApp.vcxproj",
+                    "<ItemDefinitionGroup Condition=\"'$(Configuration)'=='Release'\"><ClCompile>"
+                    "<AdditionalIncludeDirectories>$(SolutionDir)NeuronCore;$(SolutionDir)GameProtocol"
+                    "</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>")),
+  ("alignment", "a setting stated for x64 only",
+   lambda r: append(r, "GameApp/GameApp.vcxproj",
+                    "<ItemDefinitionGroup Condition=\"'$(Platform)'=='x64'\"><ClCompile><SDLCheck>false</SDLCheck>"
+                    "</ClCompile></ItemDefinitionGroup>")),
+  ("alignment", "_DEBUG defined in Release",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "NDEBUG;", "_DEBUG;")),
+  ("macros", "NOMINMAX defined by a project",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "_DEBUG;", "_DEBUG;NOMINMAX;")),
+  ("macros", "NOMINMAX defined by a header other than NeuronCore.h",
+   lambda r: edit(r, "GameApp/GameApp.h", "#pragma once", "#pragma once\n#define NOMINMAX")),
+  ("macros", "USE_PIX defined by a project",
+   lambda r: edit(r, "NeuronClient/NeuronClient.vcxproj", "NDEBUG;", "NDEBUG;USE_PIX;")),
+  ("include-path", "NeuronServer on GameApp's include path",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "$(SolutionDir)GameProtocol;",
+                  "$(SolutionDir)GameProtocol;$(SolutionDir)NeuronServer;")),
+  ("include-path", "the executable inheriting the default include path",
+   lambda r: edit(r, "OutpostCommander/OutpostCommander.vcxproj", "$(SolutionDir)GameApp<",
+                  "$(SolutionDir)GameApp;%(AdditionalIncludeDirectories)<")),
+  ("include-path", "an include directory not spelled $(SolutionDir)<Project>",
+   lambda r: edit(r, "GameApp/GameApp.vcxproj", "$(SolutionDir)NeuronCore;", "..\\NeuronCore;")),
+  ("packages", "a packages.config in a project R14 gives no packages",
+   lambda r: shutil.copy(r / "NeuronCore/packages.config", r / "GameApp/packages.config")),
+  ("packages", "a package folder at a version packages.config does not list",
+   lambda r: edit(r, "NeuronClient/NeuronClient.vcxproj", "WinPixEventRuntime.1.0.240308001\\bin",
+                  "WinPixEventRuntime.1.0.230101001\\bin")),
 )
 
 # Things that look like findings and are not: each must stay silent.
