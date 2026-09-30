@@ -16,6 +16,9 @@
     <Filter Include="Package\Assets\Models\Asteroid">
       <UniqueIdentifier>{1841246e-b16e-4b07-83f1-6764f466d9be}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Package\Assets\Models\Human">
+      <UniqueIdentifier>{03f2b4f0-6d3d-452b-ab63-3f1cd5ef7c52}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Package\Assets\Models\Tarkan">
       <UniqueIdentifier>{016b1ca7-296a-442f-8007-6a48dbbc4c6f}</UniqueIdentifier>
     </Filter>
@@ -43,8 +46,56 @@
     <None Include="packages.config">
       <Filter>Package</Filter>
     </None>
+    <None Include="Assets\Map.json">
+      <Filter>Package\Assets</Filter>
+    </None>
+    <None Include="Assets\Tuning.json">
+      <Filter>Package\Assets</Filter>
+    </None>
     <None Include="Assets\Models\Asteroids\Asteroid.cmo">
       <Filter>Package\Assets\Models\Asteroid</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Carrier.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Colonizer.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Drone.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Fighter.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Freighter.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Huge.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Large.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Medium.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Mine.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Satellite.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Small.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Station.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Tiny.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\VeryLarge.cmo">
+      <Filter>Package\Assets\Models\Human</Filter>
     </None>
     <None Include="Assets\Models\Tarkan\Carrier.cmo">
       <Filter>Package\Assets\Models\Tarkan</Filter>
@@ -111,13 +162,5 @@
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Package\Assets</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <DesignData Include="Assets\Map.json">
-      <Filter>Package\Assets</Filter>
-    </DesignData>
-    <DesignData Include="Assets\Tuning.json">
-      <Filter>Package\Assets</Filter>
-    </DesignData>
   </ItemGroup>
 </Project>

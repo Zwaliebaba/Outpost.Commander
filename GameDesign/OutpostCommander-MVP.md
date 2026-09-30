@@ -18,7 +18,7 @@ The **Kessler Reach** is an asteroid belt thick with ore and the wrecks of that 
 
 The echo of Warzone 2100 is deliberate — rebuilding after a collapse, with research as *recovery* of what was lost rather than invention — and it gives the MVP a reason for its mechanics without needing a campaign.
 
-For the MVP, the opponent is a rival Terrakin outpost in another colour. Other races are post-MVP.
+For the MVP, the opponent is **The Tarkan High Command**, the Tarkan for short: a rival power that plants its own outposts in the Reach. It is the AI player's faction (§10), drawn with the Tarkan mesh set (§11) in its own colour, while the player's Terrakin are drawn with the Human set. The Tarkan fight with the same components, research and rules as the player, so the match stays symmetric and Q2 is not muddied. A faction with rules of its own, and any further race, is post-MVP.
 
 ---
 
@@ -61,7 +61,7 @@ A threshold counts as met only when the 95% confidence interval of the win rate 
 
 The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
 
-`Tools/BattleModel.py` runs the check against the numbers in `Data/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
+`Tools/BattleModel.py` runs the check against the numbers in `OutpostCommander/Assets/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
 
 ---
 
@@ -70,7 +70,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **Flat plane, 3D rendering.** Every ship, structure and asteroid sits on the plane (y = 0). Ships turn and move in 2D. The renderer draws full 3D meshes under a tilted perspective camera. There is no altitude in the simulation.
 - **One map.** About 2,000 × 2,000 m, roughly 4 × 4 screens at the default view. Two start positions in opposite corners. About 12 ore asteroids: 3 **home** asteroids near each base and 6 **contested** ones in the middle, which yield more (§5). Non-mineable asteroid fields act as obstacles and chokepoints.
 - **Obstacles are circles.** Asteroids block movement as circular footprints. There is no terrain, height or line of sight in the MVP.
-- **The layout is data:** [`Data/Map.json`](../Data/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
+- **The layout is data:** [`OutpostCommander/Assets/Map.json`](../OutpostCommander/Assets/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
 - **Camera.** Pan (edge scroll, WASD, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The pitch is fixed and comes from the zoom level.
 - **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. How far the camera zooms in and out from there is open (§15).
 - **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
@@ -181,7 +181,7 @@ The other hull, drive and weapon combinations are legal but not worth building a
 
 A **Research Lab** researches one topic at a time, and a player can have **one** lab. Topics cost Ore and time (§12), and some require another topic first. With one lab the order is the decision: the whole tree takes 11½ minutes of research, so a player who starts at once finishes around minute 12–13, and every topic taken early is another taken late.
 
-The eight topics, what each requires, what it does, and its Ore and time are in the `research` list of [`Data/Tuning.json`](../Data/Tuning.json) (§12, ADR-008). Four upgrade a rate: Mining Rig income, the HP of all hulls, the Mass Driver's and the Lance's fire rates, and Shipyard build speed. Three unlock a component: the Fusion Drive, the Large hull and the Missile Rack. Each unlock, and Automated Shipyards, requires one other topic first.
+The eight topics, what each requires, what it does, and its Ore and time are in the `research` list of [`OutpostCommander/Assets/Tuning.json`](../OutpostCommander/Assets/Tuning.json) (§12, ADR-008). Four upgrade a rate: Mining Rig income, the HP of all hulls, the Mass Driver's and the Lance's fire rates, and Shipyard build speed. Three unlock a component: the Fusion Drive, the Large hull and the Missile Rack. Each unlock, and Automated Shipyards, requires one other topic first.
 
 Upgrades apply at once to every existing ship and structure, as in Warzone 2100.
 
@@ -221,7 +221,7 @@ The game draws its own UI (ADR-001). How it draws text, panels and input focus i
 
 ## 10. The opponent
 
-One scripted AI, deliberately simple. It exists to test the loop, not to be clever:
+The opponent is **The Tarkan High Command** (§1). It is one scripted AI, deliberately simple. It exists to test the loop, not to be clever:
 
 1. Builds a Shipyard, a Research Lab and Mining Rigs on its home asteroids, then expands to the contested middle.
 2. Researches in a fixed order.
@@ -236,20 +236,20 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 11. Art and presentation
 
-- **Meshes:** the Terrakin set in `Art/Models/Race1` plus `Art/Models/Asteroids`. Hull meshes map to hull components, and the other meshes are placeholders (§6, §7).
-- **The meshes do not share a scale or orientation.** Measured extents range from 1.8 units (`Mine`) to 921 units (`Small`). `Medium` is larger than `Large`. `Colonizer` points along z while the hulls point along x. Each model needs a **scale and a forward axis recorded in data**, applied when the mesh is loaded or baked. This is the first art-pipeline task. Up is y on every model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed.
-- **From the RTS camera the hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh, and is set with ship sizes (§15).
-- **Materials are missing.** The `.obj` files name `.mtl` libraries that are not in the tree, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
+- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). Their `.obj` sources are in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`. The owner converts each one to DirectX's `.cmo` format with `Tools/meshconvert.exe`, and the game loads the converted copies from `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\`. Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour.
+- **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Each model of each set needs a **scale and a forward axis recorded in data**, applied when the mesh is loaded or baked. This is the first art-pipeline task. Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
+- **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh, and is set with ship sizes (§15).
+- **Materials are missing.** The converted meshes carry no materials the game uses, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
-- **LODs:** the existing LOD meshes (Carrier, Drone, Fighter, Mine) are not needed for the MVP set. Three of the files are byte-identical copies: `Fighter` and `FighterMk2High`, `Mine` and `MineHigh`, `Drone` and `DroneHigh`.
+- **LODs:** there are none. Each set has one mesh per model.
 - **Provenance and licence are not recorded.** Nothing in `Art/` says where the meshes come from or under what terms. If they are under a licence, AGENTS.md R14 needs its text to travel with them (§15).
 
 ---
 
 ## 12. Starting numbers (to be tuned)
 
-These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and they live in [`Data/Tuning.json`](../Data/Tuning.json): the match rules, the hulls, drives and weapons, the structures and the Defence gun, and the research topics of §8 with their Ore and time. The game loads that file and `Tools/BattleModel.py` reads it, so the two cannot disagree (ADR-008). This section keeps no copy of the numbers. It keeps why they are what they are, and where they stand against the Q2 check.
+These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and they live in [`OutpostCommander/Assets/Tuning.json`](../OutpostCommander/Assets/Tuning.json): the match rules, the hulls, drives and weapons, the structures and the Defence gun, and the research topics of §8 with their Ore and time. The game loads that file and `Tools/BattleModel.py` reads it, so the two cannot disagree (ADR-008). This section keeps no copy of the numbers. It keeps why they are what they are, and where they stand against the Q2 check.
 
 The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15).
 
@@ -313,7 +313,7 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 ## 15. Open questions
 
-- Team colours and faction naming for the AI opponent.
+- Team colours for the player and the Tarkan.
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes". Movement uses provisional radii from the data file meanwhile (ADR-010).
 - The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
@@ -355,8 +355,9 @@ Decided on 2026-09-30, after the second review:
 Decided on 2026-09-30, once implementation began:
 
 - The renderer: borderless full screen with an Alt+Enter window, vsync, a native back buffer, and the UI laid out in 1920×1080 reference units (ADR-006).
-- The numbers are data: `Data/Tuning.json`, read by the game and the model, and §12 keeps no copy (§12, ADR-008).
-- The map layout in `Data/Map.json` (§4).
+- The numbers are data: `OutpostCommander/Assets/Tuning.json`, read by the game and the model, and §12 keeps no copy (§12, ADR-008).
+- The map layout in `OutpostCommander/Assets/Map.json` (§4).
 - There is no cancel, so nothing is refunded (§5); repair is a command, added with milestone 4.
 - A match replays from its seed and command log on the same build, not across machines (ADR-009).
 - Meshes reach the game in DirectX's `.cmo` format, converted by the owner (§11). Their provenance is still open.
+- The AI opponent is The Tarkan High Command, using the Tarkan mesh set, with the same rules as the player. The player's Terrakin use the Human mesh set (§1, §10, §11). The converted meshes and the data files live in `OutpostCommander/Assets/` (§11, ADR-008).

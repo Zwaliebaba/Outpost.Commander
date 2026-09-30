@@ -31,14 +31,14 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | done, [#29](https://github.com/Zwaliebaba/Outpost.Commander/pull/29), run by the owner |
-| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`); provenance before shipping | todo |
+| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`, meshes converted); provenance before shipping | todo, next |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
-| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | in review |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
@@ -71,14 +71,14 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** Provenance is still open. | New ADR in 1.3; design §15 for provenance | 1.3 (provenance before shipping) |
-| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | `Data/` (the camera's data); design §4, §15 for the reasons | 1.5 (final values) |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. Provenance is still open. | New ADR in 1.3; design §15 for provenance | 1.3 (provenance before shipping) |
+| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | `OutpostCommander/Assets/` (the camera's data); design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
-| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `Data/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
+| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
-| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | `Data/Tuning.json`; the reasons in design §12 | 4.2 |
-| G9 | The AI's attack-group threshold (design §10, §15). | `Data/Tuning.json`; the reasons in design §12 | 6.1 |
+| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 4.2 |
+| G9 | The AI's attack-group threshold (design §10, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 6.1 |
 
 Turn rates (design §15) do not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 uses provisional values held as data.
 
@@ -188,12 +188,12 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Gate:** G2. **ADR:** how meshes reach the game.
 - **Goal:** load the hull meshes and draw one (design §11).
 - **Scope:**
-  - A `.cmo` loader in `NeuronClient` (G2) that reads positions, normals and indices from the owner's converted meshes and ignores their materials (design §11).
-  - A data file giving each model a scale and a forward axis. The hulls point along x and `Colonizer` along z, and up is y everywhere. The scale is measured from the mesh's extents, and the task states how. It is applied at load.
-  - The meshes are packaged into the MSIX layout under `Assets`, where `FileSys` looks (`NeuronCore/FileSys.h`).
+  - A `.cmo` loader in `NeuronClient` (G2) that reads positions, normals and indices from the owner's converted meshes and ignores their materials (design §11). The meshes are two sets of the same fourteen models (`Carrier`, `Colonizer`, `Drone`, `Fighter`, `Freighter`, `Huge`, `Large`, `Medium`, `Mine`, `Satellite`, `Small`, `Station`, `Tiny`, `VeryLarge`): the player's Human set in `OutpostCommander/Assets/Models/Human/` and the AI's Tarkan set in `OutpostCommander/Assets/Models/Tarkan/` (design §1, §11). The asteroid is `OutpostCommander/Assets/Models/Asteroids/Asteroid.cmo`. Their sources are in `Art/Models/`.
+  - A data file giving each model of each set a scale and a forward axis, so the file is keyed by set and model. The Tarkan hulls point along x and the Tarkan `Colonizer` along z; every Human model points along z. Up is y on the Tarkan set; check the Human set for roll the same way (design §11). The scale is measured from the mesh's extents, and the task states how. It is applied at load, and it brings a hull of one set to the same size as the same hull of the other.
+  - The meshes are already packaged: the executable lists each `.cmo` as deployment content, so they reach the MSIX layout as `Assets\Models\Human\<Name>.cmo`, `Assets\Models\Tarkan\<Name>.cmo` and `Assets\Models\Asteroids\Asteroid.cmo`, under the `Assets` folder where `FileSys` looks (`NeuronCore/FileSys.h`). The loader reads them by those paths.
   - A mesh that fails to load is reported, not silently skipped.
-- **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes. The design notes that `Medium` is larger than `Large` before scaling.
-- **Verify:** **owner run:** one hull on screen, facing along its forward axis.
+- **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes in both sets, and that each hull is the same size in the Human and Tarkan sets. The design notes that the Tarkan `Medium` is larger than its `Large` before scaling.
+- **Verify:** **owner run:** one Human and one Tarkan hull on screen, each facing along its forward axis.
 
 ### 1.4 — Flat-lit, team-coloured shading
 
@@ -243,7 +243,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
 - **Scope:**
   - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data that 3.1 loads (design §12). Wall time becomes ticks at this one seam.
-  - `Data/Tuning.json` goes into the MSIX package, and the server reads it from there with `Outpost::LoadTuning` (ADR-008). 3.1 left the packaging here because nothing read the file at run time before 2.2.
+  - `OutpostCommander/Assets/Tuning.json` goes into the MSIX package, and the server reads it from there with `Outpost::LoadTuning` (ADR-008). 3.1 left the packaging here because nothing read the file at run time before 2.2.
   - A seeded PRNG owned by the server; never `std::random_device`.
   - In `GameLogic`: world state, applying commands at the start of a tick with validation and rejection, building a snapshot per player, a `LoopbackTransport`, and the factory definition.
   - The executable wires them together through `GameProtocol`.
@@ -251,16 +251,16 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - a command is applied on the next tick;
   - an invalid command is rejected;
   - the same seed and command log reproduce the same state on the same build.
-- **Verify:** CI; **owner run**, because the executable now loads `Assets\Data\Tuning.json` from the package at startup and reports a failure in a message box.
+- **Verify:** CI; **owner run**, because the executable now loads `Assets\Tuning.json` from the package at startup and reports a failure in a message box.
 - **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. Starting entities are not placed yet: 2.3 placed only the map. **Open:** which task spawns ships at the starts, so that 2.5 and 2.6 have something to draw and select, is the owner's to decide; 4.2 places the Command Station and the Constructors.
 
 ### 2.3 — The map as data
 
 - **Goal:** design §4's map. It is about 2,000 × 2,000 m, with two starts in opposite corners. It has 12 ore asteroids: 3 home asteroids by each base and 6 contested ones in the middle. Non-mineable asteroid fields act as circular obstacles and chokepoints.
-- **Scope:** a map data file, `Data/Map.json` (ADR-008), and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `Art/Models/Asteroids`.
+- **Scope:** a map data file, `OutpostCommander/Assets/Map.json` (ADR-008), and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `OutpostCommander/Assets/Models/Asteroids/Asteroid.cmo`.
 - **Acceptance:** tests: the map loads, no obstacles overlap, and every asteroid can be reached from both starts.
 - **Verify:** CI; **owner run** once 2.5 renders it.
-- **As built:** `Data/Map.json` holds a 2,000 m square centered on the origin: two starts, 6 home and 6 contested ore asteroids, and 9 asteroid fields, point-symmetric. `Outpost::LoadMap` rejects any two obstacles, an obstacle and the edge, or a start and an obstacle closer than `minimumGapMeters` (60 m). With every gap at least that wide, a ship narrower than it cannot be walled off, and `MapTests` checks that with a flood fill. The server places ore asteroids and fields as entities (`EntityKind::Asteroid` and `AsteroidField`), and `EntityView` gains `radiusMeters`, so 2.5 can draw them from the snapshot. The JSON reading helpers moved from `Tuning.cpp` to `NeuronCore/JsonReader.h`, shared by both loaders.
+- **As built:** `OutpostCommander/Assets/Map.json` holds a 2,000 m square centered on the origin: two starts, 6 home and 6 contested ore asteroids, and 9 asteroid fields, point-symmetric. `Outpost::LoadMap` rejects any two obstacles, an obstacle and the edge, or a start and an obstacle closer than `minimumGapMeters` (60 m). With every gap at least that wide, a ship narrower than it cannot be walled off, and `MapTests` checks that with a flood fill. The server places ore asteroids and fields as entities (`EntityKind::Asteroid` and `AsteroidField`), and `EntityView` gains `radiusMeters`, so 2.5 can draw them from the snapshot. The JSON reading helpers moved from `Tuning.cpp` to `NeuronCore/JsonReader.h`, shared by both loaders.
 
 ### 2.4 — Movement, pathing and formations
 
@@ -317,7 +317,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - Update design §12 as G6 decides.
 - **Acceptance:** `python Tools/BattleModel.py` gives the same verdicts as before the move. A test shows the game loads the same numbers.
 - **Verify:** CI; run the model locally.
-- **As built:** `Data/Tuning.json` holds §12 and §8's research table, and both sections now point to it. The JSON parser is `Neuron::ParseJson` in `NeuronCore`, since the map (2.3) and other data files need it too; the loader is `Outpost::LoadTuning` in `GameLogic`. Packaging the file moved to 2.2, its first reader at run time.
+- **As built:** `OutpostCommander/Assets/Tuning.json` holds §12 and §8's research table, and both sections now point to it. The JSON parser is `Neuron::ParseJson` in `NeuronCore`, since the map (2.3) and other data files need it too; the loader is `Outpost::LoadTuning` in `GameLogic`. Packaging the file moved to 2.2, its first reader at run time.
 
 ### 3.2 — Components and designs
 
@@ -473,7 +473,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 ### 6.1 — The AI player
 
 - **Gate:** G9.
-- **Goal:** design §10's scripted AI, in `Opponent`, as a client. It reads its snapshot and sends commands, and it includes only `GameProtocol` (ADR-002).
+- **Goal:** design §10's scripted AI, in `Opponent`, as a client. It plays **The Tarkan High Command** (design §1), drawn with the Tarkan meshes in its team colour, while the player's ships use the Human set. It reads its snapshot and sends commands, and it includes only `GameProtocol` (ADR-002).
   1. It builds a Shipyard, a Research Lab and rigs on its home asteroids, then expands to the contested ones.
   2. It researches in a fixed order.
   3. It counters the player's most common design, reviewed every 60 s.
