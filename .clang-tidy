@@ -114,8 +114,9 @@ HeaderFilterRegex: '(OutpostCommander|NeuronCore|NeuronClient|NeuronServer|GameP
 # `#define IDC_STATIC -1` trips bugprone-macro-parentheses, and the fix would be undone the next
 # time someone opens the dialog editor. Excluded here rather than by weakening the check for
 # everything else. (`ExcludeHeaderFilterRegex` needs clang-tidy 19 or newer; on an older one pass
-# `--exclude-header-filter='Resource\.h$'` instead.)
-ExcludeHeaderFilterRegex: 'Resource\.h$'
+# `--exclude-header-filter='Resource\.h$'` instead.) d3dx12.h is Microsoft's, vendored as its upstream
+# wrote it (ADR-007), and excluded for the same reason: a fix to it would be lost at the next update.
+ExcludeHeaderFilterRegex: '(Resource|d3dx12)\.h$'
 
 CheckOptions:
   # ── Types: PascalCase, no prefix of any kind (R2, R5) ──────────────────────────────

@@ -21,6 +21,8 @@ fails on anything AGENTS.md says a build or a review would otherwise have to cat
   include-climb    no #include leaves its own project with '..' (ADR-002)
   wrl              no Microsoft::WRL::ComPtr and no WRL header; a COM pointer is a winrt::com_ptr (R12)
   header-filter    .clang-tidy's HeaderFilterRegex covers every project in the solution (§2)
+  vendored         every file VENDORED_FILES names exists; those files are exempt from the naming and content checks
+                   (ADR-007)
 
 and, for the build settings that stand in for the Release and ARM64 builds CI never runs (§3, ADR-003):
 
@@ -75,6 +77,11 @@ SOURCE_EXTENSIONS = CPP_EXTENSIONS | BANNED_EXTENSIONS | SHADER_EXTENSIONS
 SHADER_DIRECTORY = "Shader"
 COMPILED_SHADER_DIRECTORY = "CompiledShader"
 R7_EXCEPTIONS = {"pch.h", "pch.cpp", "framework.h", "targetver.h", "Resource.h"}
+
+# Third-party source kept in the tree as its upstream wrote it (ADR-007). It is registered in its project like any file,
+# but no naming, spelling or content check applies to it, and CheckFormat.py leaves its layout alone: it is updated by
+# replacing it whole, never by editing it.
+VENDORED_FILES = {"NeuronClient/d3dx12.h"}
 DEFAULT_FILTERS = {"source files", "header files", "resource files"}
 
 # The item types that name a file. Anything else (ProjectConfiguration, ProjectCapability, ...) is not a path.
@@ -216,9 +223,10 @@ class Tree:
     return [path for path in self.files if Path(path).suffix.lower() in SOURCE_EXTENSIONS]
 
   def cpp_files(self):
-    """.h and .cpp that are hand-written: not generated shader headers."""
+    """.h and .cpp that are hand-written here: not generated shader headers, and not vendored third-party source."""
     return [path for path in self.files
-            if Path(path).suffix in CPP_EXTENSIONS and COMPILED_SHADER_DIRECTORY not in Path(path).parts]
+            if Path(path).suffix in CPP_EXTENSIONS and COMPILED_SHADER_DIRECTORY not in Path(path).parts
+            and path not in VENDORED_FILES]
 
 
 def parse_xml(_path):
@@ -311,6 +319,11 @@ def check_solution(_tree):
     if path.endswith(".vcxproj") and path not in in_solution:
       findings.append(Finding(path, "solution", f"is not in {_tree.solution_path.name}"))
   return findings
+
+
+def check_vendored(_tree):
+  return [Finding(path, "vendored", "is listed in VENDORED_FILES but is not in the tree; remove it from the list (ADR-007)")
+          for path in sorted(VENDORED_FILES) if path not in _tree.files]
 
 
 def check_registration(_tree):
@@ -639,7 +652,7 @@ PACKAGES = {
   "NeuronClient": {"WinPixEventRuntime"},
 }
 
-WINDOWS_MACROS = ("NOMINMAX", "WIN32_LEAN_AND_MEAN", "NOMCX", "NOSERVICE", "NOHELP")
+WINDOWS_MACROS = ("NOMINMAX", "WIN32_LEAN_AND_MEAN", "NOMCX", "NOSERVICE", "NOHELP", "NODRAWTEXT", "NOBITMAP")
 WINDOWS_MACRO_OWNER = "NeuronCore/NeuronCore.h"
 PIX_MACROS = ("USE_PIX", "USE_PIX_RETAIL", "PROFILE")
 
@@ -843,7 +856,7 @@ def check_packages(_tree):
   return findings
 
 
-CHECKS = (check_solution, check_registration, check_missing_files, check_filters_match, check_filter_names,
+CHECKS = (check_solution, check_vendored, check_registration, check_missing_files, check_filters_match, check_filter_names,
           check_filter_declared, check_filter_split, check_location, check_extensions, check_file_names,
           check_shader_names, check_affixes, check_spelling, check_includes, check_com_ptr, check_header_filter,
           check_platforms, check_required_settings, check_alignment, check_macros, check_include_paths, check_packages)
@@ -950,6 +963,8 @@ SELF_TEST_CASES = (
   ("wrl", "a Microsoft::WRL::ComPtr",
    lambda r: edit(r, "GameApp/GameApp.h", "#pragma once",
                   "#pragma once\nMicrosoft::WRL::ComPtr<ID3D12Device> g_device;")),
+  ("vendored", "a vendored file that is no longer in the tree",
+   lambda r: (r / "NeuronClient/d3dx12.h").unlink()),
   ("header-filter", "a project the clang-tidy header filter does not name",
    lambda r: edit(r, ".clang-tidy", "|GameApp|", "|")),
   ("platforms", "a Win32 configuration in a project",
