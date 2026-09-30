@@ -1,8 +1,43 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Vocabulary">
+      <UniqueIdentifier>{ff1f1443-a58c-469c-bf53-c519e80c8964}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Commands">
+      <UniqueIdentifier>{c0a2b67f-c8c2-4e6a-83be-2c2c0b170906}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Snapshots">
+      <UniqueIdentifier>{0b238680-fc90-4781-9d34-0a1b57c3cbac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Connection">
+      <UniqueIdentifier>{21836da5-a4a5-4634-bfda-424081217b9e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameProtocol.h" />
+    <ClInclude Include="Id.h">
+      <Filter>Vocabulary</Filter>
+    </ClInclude>
+    <ClInclude Include="PlanePosition.h">
+      <Filter>Vocabulary</Filter>
+    </ClInclude>
+    <ClInclude Include="StructureKind.h">
+      <Filter>Vocabulary</Filter>
+    </ClInclude>
+    <ClInclude Include="Command.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="Snapshot.h">
+      <Filter>Snapshots</Filter>
+    </ClInclude>
+    <ClInclude Include="Transport.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Connection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
