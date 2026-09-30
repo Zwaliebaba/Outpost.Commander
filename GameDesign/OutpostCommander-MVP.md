@@ -43,7 +43,7 @@ For the MVP, the opponent is a rival Terrakin outpost in another colour. Other r
 
 Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answer is still a result.** The MVP is done when all five are answered, not when they are all "yes".
 
-Q4 is measured with the HUD on screen because the game draws its own UI (ADR-004), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded.
+Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded.
 
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
@@ -218,7 +218,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 ### UI (drawn by the game over the D3D12 view)
 
-The game draws its own UI (ADR-004). How it draws text, panels and input focus is decided with the renderer (§15).
+The game draws its own UI (ADR-001). How it draws text, panels and input focus is decided with the renderer (§15).
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
 - **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component.
@@ -383,7 +383,7 @@ Decided on 2026-09-30, first review:
 - Constructors are built at the Command Station only (§6).
 - Counters come from stats alone: instant hits, no tracking, and §12 tuned against the Q2 check (§7, §12).
 - Q2 is answered at milestone 3, and `Tools/BattleModel.py` checks §12 until then (§3, §14).
-- The app stays MSIX-packaged for day-to-day development. ADR-001 recorded this with the milestone 1 scaffold, and ADR-004 keeps it.
+- The app stays MSIX-packaged for day-to-day development (ADR-001).
 
 Decided on 2026-09-30, second review:
 
@@ -398,6 +398,6 @@ Decided on 2026-09-30, second review:
 - The Q2 check adds the starting components, one-sided research (d), and budgets up to 12,000 Ore (§3).
 - The AI counters designs rather than hulls, reviews the player's fleet at an interval, and defends its rigs (§10).
 - The designer lives in the Shipyard panel, and every match starts with the four starting designs saved (§9).
-- The executable is a plain Win32 app, still MSIX-packaged, and the game draws its own UI. WinUI 3, XAML and the Windows App SDK are gone (ADR-004, superseding ADR-001).
+- The executable is a plain Win32 app, still MSIX-packaged, and the game draws its own UI. WinUI 3, XAML and the Windows App SDK are gone (ADR-001).
 - Auto-targeting prefers ships over structures (§7).
 - The Defence gun and structure armour in §12 are the baseline for milestone 4, the AI reviews the player's fleet every 60 s, and the research tree lasts about 11½ minutes (§12).

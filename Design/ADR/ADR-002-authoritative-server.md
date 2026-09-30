@@ -1,6 +1,6 @@
 # ADR-002 — An authoritative server, in-process for the MVP
 
-Status: **accepted** · 2026-09-29 · Layer shape amended 2026-09-30, fixed 2026-09-30
+Status: **accepted** · 2026-09-29
 
 ## Context
 
@@ -32,12 +32,12 @@ The owner chose the second. The decision to record is how the code is shaped so 
 - Snapshots of 200 ships and 40 structures at 20 Hz are small in-process. Delta compression is a problem for the network transport, not the MVP.
 - Testing gets easier: the simulation library can be driven by command scripts in a test project with no window and no GPU.
 
-## Layer shape (fixed 2026-09-30, when the projects were created)
+## Layer shape
 
 The engine is split three ways, into what both sides share, what only the client needs and what only the server needs. The game is split the same way, with one shared library in the middle.
 
 ```
-OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX packaging (ADR-004). Wires the pieces together
+OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX packaging (ADR-001). Wires the pieces together
  ├── GameApp      (static lib)    ── client game: presentation, selection, camera, UI state. → NeuronClient, GameProtocol
  ├── Opponent     (static lib)    ── the AI player. → GameProtocol only
  ├── GameLogic    (static lib)    ── the server: state, rules, LoopbackTransport. → NeuronServer, GameProtocol
@@ -53,7 +53,7 @@ Each library has a master header named after it, and its `pch.h` includes that h
 
 **The `Neuron*` libraries know no game concept (R9).** A command or a snapshot is a game concept, so the types that cross the boundary live in `GameProtocol` and not in `NeuronCore`. They cannot live in `GameLogic` either, because the client would then have to include server headers, and they cannot live in `GameApp`, because the server cannot see it.
 
-**Only the executable references packages, and only the MSIX packaging tools (ADR-004).** No project includes WinRT or XAML, and every library stays within R14 as written, so the server can be linked into a Windows Server container later. `NeuronCore.h` in particular includes no WinRT header, and it is the one header that owns the Windows macro family (AGENTS.md §4).
+**Only the executable references packages, and only the MSIX packaging tools (ADR-001).** No project includes WinRT or XAML, and every library stays within R14 as written, so the server can be linked into a Windows Server container later. `NeuronCore.h` in particular includes no WinRT header, and it is the one header that owns the Windows macro family (AGENTS.md §4).
 
 **The boundary is enforced by include paths, not by review.** A project's include path lists only the projects it may include (AGENTS.md §3):
 
@@ -66,7 +66,7 @@ Each library has a master header named after it, and its `pch.h` includes that h
 | GameApp | NeuronCore, NeuronClient, GameProtocol | — |
 | OutpostCommander | NeuronCore, NeuronClient, GameProtocol, Opponent, GameApp | all seven libraries |
 
-Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created: adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client.
+Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created. Adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client.
 
 `NeuronClient` and `NeuronServer` do not reference each other, and neither do `GameApp` and `GameLogic`. `Opponent` and `GameLogic` share only `GameProtocol`. When the dedicated server is built, it is a second executable that links `GameLogic` and `NeuronServer` and none of the client libraries, and the only change on the client side is a network `Transport` in place of the loopback one.
 

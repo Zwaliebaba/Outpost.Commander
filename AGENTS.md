@@ -4,7 +4,7 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in the design document.
 
-**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with the game executable, a plain Win32 app packaged as MSIX (ADR-004), which starts and exits without a window yet, and the seven static libraries it links (§2), which are mostly empty. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
+**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with the game executable, a plain Win32 app packaged as MSIX (ADR-001), which starts and exits without a window yet, and the seven static libraries it links (§2), which are mostly empty. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
@@ -150,7 +150,7 @@ The solution is `OutpostCommander.slnx` at the repository root. Its projects, an
 | `GameApp` | static lib | game: the client | NeuronClient, GameProtocol |
 | `OutpostCommander` | Win32 exe, MSIX-packaged | shell | all of the above, but may include only NeuronCore, NeuronClient, GameProtocol, Opponent and GameApp |
 
-Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so nothing but the executable may depend on a package, and nothing at all on WinRT or XAML (ADR-004).
+Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so nothing but the executable may depend on a package, and nothing at all on WinRT or XAML (ADR-001).
 
 These are the standing constraints the layout satisfies, and any new project must satisfy them too.
 
@@ -167,7 +167,7 @@ These are the standing constraints the layout satisfies, and any new project mus
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the two MSIX packaging tools listed in [ADR-004](Design/ADR/ADR-004-win32-shell.md) through `packages.config`. See R14.
+**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the two MSIX packaging tools listed in [ADR-001](Design/ADR/ADR-001-win32-shell.md) through `packages.config`. See R14.
 
 **Build and IDE output is never committed** — `x64/`, `ARM64/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -240,7 +240,7 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 **R14 — No third-party dependencies and no package manager.** The Windows SDK and the MSVC standard library, and nothing else. If you believe something is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar.
 
-**The one exception is packaging** ([ADR-004](Design/ADR/ADR-004-win32-shell.md)). The game executable is packaged as MSIX and restores the two packaging tools ADR-004 lists; its table is the complete list. They are build-time tools, and the game compiles and links nothing from them. Only the executable project references them, and no project includes WinRT or XAML. Any other package is a new ADR.
+**The one exception is packaging** ([ADR-001](Design/ADR/ADR-001-win32-shell.md)). The game executable is packaged as MSIX and restores the two packaging tools ADR-001 lists; its table is the complete list. They are build-time tools, and the game compiles and links nothing from them. Only the executable project references them, and no project includes WinRT or XAML. Any other package is a new ADR.
 
 **It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are allowed, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 
@@ -264,7 +264,7 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 **Stay in scope.** Do what the task asks. Adjacent code that offends you is not part of the task — note it in your report and move on. Unrequested "while I was in there" changes are the main way a young tree acquires regressions it cannot bisect.
 
-**Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
+**Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. **Until the MVP is done, an ADR is edited in place:** a decision that changes is rewritten where it stands, so each ADR says what is decided now, not how it got there, and a decision that is dropped is deleted. Git has the history. After the MVP an accepted ADR is no longer edited, and a changed decision is a new ADR that supersedes it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
 **Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and **none of them exists yet.** Until each one lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
 
