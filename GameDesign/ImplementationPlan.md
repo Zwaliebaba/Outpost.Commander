@@ -36,9 +36,9 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
-| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | in review |
-| 2.3 | The map as data | 2.2 | — | in review |
-| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
+| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
+| 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | in review |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
@@ -66,10 +66,12 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 
 Each gate is an owner decision. Most are already listed as open in design §15.
 
+**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7).
+
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** Provenance is still open. | New ADR in 1.3; design §15 for provenance | 1.3 (provenance before shipping) |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
@@ -270,6 +272,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - a mixed group arrives together at its slowest member's speed;
   - no two ships' footprints overlap by more than a stated tolerance after settling.
 - **Verify:** CI.
+- **As built:** [ADR-010](../Design/ADR/ADR-010-movement-and-pathing.md). Hulls carry provisional `footprintRadiusMeters` (8, 14 and 24 m) and `turnRateDegreesPerSecond` (180, 120 and 60), and drives a `turnRateFactor` (Ion 1.25, Fusion 0.8), until G5. The tolerance is 0.5 m. A 200-ship order costs about one Q4 tick budget, which 2.7 measures on the development machine.
 
 ### 2.5 — Rendering from interpolated snapshots
 

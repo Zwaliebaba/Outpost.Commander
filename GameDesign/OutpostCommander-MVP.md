@@ -70,7 +70,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **Flat plane, 3D rendering.** Every ship, structure and asteroid sits on the plane (y = 0). Ships turn and move in 2D. The renderer draws full 3D meshes under a tilted perspective camera. There is no altitude in the simulation.
 - **One map.** About 2,000 × 2,000 m, roughly 4 × 4 screens at the default view. Two start positions in opposite corners. About 12 ore asteroids: 3 **home** asteroids near each base and 6 **contested** ones in the middle, which yield more (§5). Non-mineable asteroid fields act as obstacles and chokepoints.
 - **Obstacles are circles.** Asteroids block movement as circular footprints. There is no terrain, height or line of sight in the MVP.
-- **The layout is data:** [`Data/Map.json`](../Data/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirms the layout in task 2.3's review.
+- **The layout is data:** [`Data/Map.json`](../Data/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
 - **Camera.** Pan (edge scroll, WASD, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The pitch is fixed and comes from the zoom level.
 - **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. How far the camera zooms in and out from there is open (§15).
 - **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
@@ -281,8 +281,8 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 **Not set yet** (each is open in §15):
 
-- ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches;
-- turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant;
+- ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches. Movement uses provisional radii from the data file until then (ADR-010);
+- turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too;
 - the Constructor's HP, speed, cost and build time, and the build and repair rates;
 - the AI's attack-group threshold.
 
