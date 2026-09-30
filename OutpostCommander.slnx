@@ -2,6 +2,7 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
+  <Project Path="NeuronCore/NeuronCore.vcxproj" Id="ea9ed838-5d41-4e78-a994-0d527f7e3980" />
   <Project Path="OutpostCommander/OutpostCommander.vcxproj" Id="7f8c0835-f104-4767-9fce-16a2a3a42c5c">
     <Deploy />
   </Project>

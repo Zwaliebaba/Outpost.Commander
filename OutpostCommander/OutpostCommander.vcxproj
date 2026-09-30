@@ -83,6 +83,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)NeuronCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -103,38 +104,13 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="App.xaml.h">
-      <DependentUpon>App.xaml</DependentUpon>
-    </ClInclude>
-    <ClInclude Include="MainWindow.xaml.h">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ApplicationDefinition Include="App.xaml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="App.xaml.cpp">
-      <DependentUpon>App.xaml</DependentUpon>
-    </ClCompile>
-    <ClCompile Include="MainWindow.xaml.cpp">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-    </ClCompile>
-    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="MainWindow.idl">
-      <SubType>Code</SubType>
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-    </Midl>
+    <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
@@ -160,6 +136,11 @@
   -->
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
+      <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
