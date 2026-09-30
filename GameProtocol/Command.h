@@ -1,0 +1,78 @@
+#pragma once
+
+namespace Outpost
+{
+// The orders of design §9. A client never changes the simulation; it sends one of these, and the server validates it
+// against ownership, cost and legality and applies it at the start of its next tick, or rejects it (ADR-002).
+
+// Ships head for a point, pathing around obstacles, in formation at the slowest ship's pace (design §9).
+struct MoveCommand
+{
+  std::vector<EntityId> ships;
+  PlanePosition destination;
+};
+
+// Ships close on one enemy ship or structure and fire at it until it dies.
+struct AttackCommand
+{
+  std::vector<EntityId> ships;
+  EntityId target;
+};
+
+// Ships head for a point, and a ship that meets an enemy stops at its own weapon range and fires (design §7).
+struct AttackMoveCommand
+{
+  std::vector<EntityId> ships;
+  PlanePosition destination;
+};
+
+// Ships drop their orders and hold where they are.
+struct StopCommand
+{
+  std::vector<EntityId> ships;
+};
+
+// Constructors build a structure at a point. A Mining Rig snaps to the ore asteroid there (design §6).
+struct BuildStructureCommand
+{
+  std::vector<EntityId> constructors;
+  StructureKind structure = StructureKind::CommandStation;
+  PlanePosition position;
+};
+
+// A Shipyard queues a ship of a saved design, or the Command Station queues a Constructor (design §6).
+struct QueueShipCommand
+{
+  EntityId producer;
+  DesignId design;
+};
+
+// The player's Research Lab starts a topic (design §8).
+struct StartResearchCommand
+{
+  EntityId lab;
+  ResearchTopicId topic;
+};
+
+// Saves a design from the Shipyard panel's designer (design §7, §9). An invalid design identifier saves a new design,
+// and the server assigns its identifier; a valid one renames or changes that design.
+struct SaveDesignCommand
+{
+  DesignId design;
+  std::string nameUtf8;
+  HullId hull;
+  DriveId drive;
+  WeaponId weapon;
+};
+
+using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, QueueShipCommand,
+                           StartResearchCommand, SaveDesignCommand>;
+
+// One order from one player. The player is set by the server's end of the transport, from the connection the command
+// arrived on; what a client puts there is never trusted (ADR-002).
+struct Command
+{
+  PlayerId player;
+  Order order;
+};
+} // namespace Outpost

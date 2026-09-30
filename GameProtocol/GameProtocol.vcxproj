@@ -76,6 +76,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="GameProtocol.h" />
+    <ClInclude Include="Id.h" />
+    <ClInclude Include="PlanePosition.h" />
+    <ClInclude Include="StructureKind.h" />
+    <ClInclude Include="Command.h" />
+    <ClInclude Include="Snapshot.h" />
+    <ClInclude Include="Transport.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

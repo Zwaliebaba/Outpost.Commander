@@ -35,7 +35,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
-| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | todo |
+| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | in review |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | todo |
 | 2.3 | The map as data | 2.2 | — | todo |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
