@@ -9,6 +9,9 @@ namespace
 constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::PlayerId RED{2};
 constexpr Outpost::DesignId SWARM{1};
+constexpr std::uint32_t TICKS_PER_SECOND = 20;
+// A Small hull on an Ion drive, as the repository's tuning data makes it.
+constexpr Outpost::ShipMovement SMALL_ION{.speedMetersPerSecond = 78.0f, .turnRateRadiansPerSecond = 3.927f, .radiusMeters = 8.0f};
 
 Outpost::Command Move(Outpost::PlayerId _player, std::vector<Outpost::EntityId> _ships, Outpost::PlanePosition _destination)
 {
@@ -38,8 +41,8 @@ TEST_CLASS(SimulationTests)
 public:
   TEST_METHOD(AppliesACommandAtTheNextTick)
   {
-    Outpost::Simulation simulation(1);
-    const Outpost::EntityId ship = simulation.SpawnShip(BLUE, SWARM, {.xMeters = 10.0f, .zMeters = 20.0f});
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    const Outpost::EntityId ship = simulation.SpawnShip(BLUE, SWARM, SMALL_ION, {.xMeters = 10.0f, .zMeters = 20.0f});
     Assert::IsFalse(simulation.FindEntity(ship)->destination.has_value());
 
     ExpectResults({Outpost::CommandResult::Applied}, simulation.Tick({Move(BLUE, {ship}, {.xMeters = 300.0f, .zMeters = -40.0f})}));
@@ -52,9 +55,9 @@ public:
 
   TEST_METHOD(RejectsAnInvalidCommandAndChangesNothing)
   {
-    Outpost::Simulation simulation(1);
-    const Outpost::EntityId blue = simulation.SpawnShip(BLUE, SWARM, {});
-    const Outpost::EntityId red = simulation.SpawnShip(RED, SWARM, {});
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    const Outpost::EntityId blue = simulation.SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId red = simulation.SpawnShip(RED, SWARM, SMALL_ION, {});
     const Outpost::Simulation before = simulation;
 
     const float nan = std::numeric_limits<float>::quiet_NaN();
@@ -79,9 +82,9 @@ public:
 
   TEST_METHOD(SnapshotsShowEveryEntityAtTheCurrentTick)
   {
-    Outpost::Simulation simulation(1);
-    const Outpost::EntityId blue = simulation.SpawnShip(BLUE, SWARM, {.xMeters = 1.0f, .zMeters = 2.0f});
-    (void)simulation.SpawnShip(RED, SWARM, {});
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    const Outpost::EntityId blue = simulation.SpawnShip(BLUE, SWARM, SMALL_ION, {.xMeters = 1.0f, .zMeters = 2.0f});
+    (void)simulation.SpawnShip(RED, SWARM, SMALL_ION, {.xMeters = 100.0f});
     (void)simulation.Tick({});
 
     const Outpost::Snapshot snapshot = simulation.BuildSnapshot(RED);
@@ -98,10 +101,10 @@ public:
   {
     auto play = [](std::uint64_t _seed)
     {
-      Outpost::Simulation simulation(_seed);
-      const Outpost::EntityId first = simulation.SpawnShip(BLUE, SWARM, {});
-      const Outpost::EntityId second = simulation.SpawnShip(BLUE, SWARM, {});
-      const Outpost::EntityId enemy = simulation.SpawnShip(RED, SWARM, {});
+      Outpost::Simulation simulation(_seed, TICKS_PER_SECOND);
+      const Outpost::EntityId first = simulation.SpawnShip(BLUE, SWARM, SMALL_ION, {});
+      const Outpost::EntityId second = simulation.SpawnShip(BLUE, SWARM, SMALL_ION, {});
+      const Outpost::EntityId enemy = simulation.SpawnShip(RED, SWARM, SMALL_ION, {});
       for (int tick = 0; tick < 100; ++tick)
       {
         std::vector<Outpost::Command> commands;

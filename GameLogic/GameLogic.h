@@ -5,9 +5,12 @@
 #include "NeuronServer.h"
 #include "GameProtocol.h"
 
+#include <map>
 #include <optional>
 
 #include "Tuning.h"
 #include "Map.h"
+#include "PlaneVector.h"
+#include "Pathfinder.h"
 #include "Simulation.h"
 #include "InProcessServer.h"

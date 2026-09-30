@@ -29,11 +29,6 @@ std::vector<Obstacle> Obstacles(const Outpost::Map& _map)
   return obstacles;
 }
 
-double Distance(Outpost::PlanePosition _a, Outpost::PlanePosition _b)
-{
-  return std::hypot(static_cast<double>(_a.xMeters) - _b.xMeters, static_cast<double>(_a.zMeters) - _b.zMeters);
-}
-
 // Where a disc of _clearanceMeters can stand, on a square grid over the map, and which of those places can be reached
 // from a start. Built independently of the loader's own gap check, so it tests that check's promise.
 class ReachabilityGrid
@@ -260,7 +255,7 @@ public:
   TEST_METHOD(ThePlacedMapIsInTheSnapshot)
   {
     const Outpost::Map map = Outpost::LoadMap(MINIMAL_MAP);
-    Outpost::Simulation simulation(1);
+    Outpost::Simulation simulation(1, 20);
     simulation.PlaceMap(map);
     const Outpost::Snapshot snapshot = simulation.BuildSnapshot(Outpost::PlayerId{1});
     Assert::AreEqual(size_t{3}, snapshot.entities.size());
