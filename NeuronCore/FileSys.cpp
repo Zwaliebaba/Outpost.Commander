@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "FileSys.h"
 
-byte_buffer_t BinaryFile::ReadFile(const std::wstring& _fileName)
+Neuron::byte_buffer_t Neuron::BinaryFile::ReadFile(const std::wstring& _fileName)
 {
   byte_buffer_t data;
 
@@ -34,7 +34,7 @@ byte_buffer_t BinaryFile::ReadFile(const std::wstring& _fileName)
   return data;
 }
 
-std::wstring TextFile::ReadFile(const std::wstring& _fileName)
+std::wstring Neuron::TextFile::ReadFile(const std::wstring& _fileName)
 {
   std::wstring data;
 

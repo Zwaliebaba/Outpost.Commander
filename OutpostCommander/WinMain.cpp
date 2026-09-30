@@ -12,7 +12,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   auto path = std::wstring(filename);
   path = path.substr(0, path.find_last_of('\\'));
 
-  FileSys::SetHomeDirectory(path);
+  Neuron::FileSys::SetHomeDirectory(path);
 
   return WM_QUIT;
 }

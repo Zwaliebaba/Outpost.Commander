@@ -54,7 +54,7 @@ namespace Neuron
 #ifdef _DEBUG
 #define DEBUG_ASSERT(expression)             ASSERT(expression)
 #define DEBUG_ASSERT_TEXT(expression, ...)   ASSERT_TEXT(expression, __VA_ARGS__)
-#define DEBUG_WARNING(expression, ...)       (void)((!(expression)) || (DebugTrace(__VA_ARGS__), 0))
+#define DEBUG_WARNING(expression, ...)       (void)((!(expression)) || (Neuron::DebugTrace(__VA_ARGS__), 0))
 
 #else
 #define DEBUG_ASSERT(expression)             (__noop(expression))

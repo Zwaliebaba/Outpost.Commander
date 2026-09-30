@@ -24,5 +24,3 @@
 #include "NeuronHelper.h"
 
 #include "FileSys.h"
-
-using namespace Neuron;
