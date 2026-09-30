@@ -252,11 +252,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install clang-format 18
-        if: hashFiles('Build/CheckFormat.py') != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-format-18
 
       - name: Check formatting
-        if: hashFiles('Build/CheckFormat.py') != ''
         run: python3 Build/CheckFormat.py --clang-format clang-format-18
