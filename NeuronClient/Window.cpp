@@ -184,6 +184,7 @@ bool Neuron::Window::ProcessMessages()
                           .xPixels = static_cast<std::int16_t>(LOWORD(message.lParam)),
                           .yPixels = static_cast<std::int16_t>(HIWORD(message.lParam)),
                           .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now(),
                           .shift = (message.wParam & MK_SHIFT) != 0,
                           .control = (message.wParam & MK_CONTROL) != 0});
     }
@@ -197,6 +198,7 @@ bool Neuron::Window::ProcessMessages()
                           .xPixels = cursor.x,
                           .yPixels = cursor.y,
                           .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now(),
                           .shift = GetKeyState(VK_SHIFT) < 0,
                           .control = GetKeyState(VK_CONTROL) < 0});
     }

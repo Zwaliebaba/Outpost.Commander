@@ -155,7 +155,10 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   }
   const std::optional<PlanePosition> destination = _frame.camera.GroundPointAtPixel(x, y, _frame.viewport);
   if (destination.has_value())
+  {
     Give(MoveCommand{.ships = m_selected, .destination = *destination});
+    m_lastMove = MoveOrder{.ships = m_selected, .inputRead = _event.read};
+  }
 }
 
 void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Frame& _frame)

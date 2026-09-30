@@ -78,6 +78,7 @@
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="InProcessServer.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="MeasurementLoad.h" />
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PlaneVector.h" />
     <ClInclude Include="pch.h" />
@@ -90,6 +91,7 @@
     </ClCompile>
     <ClCompile Include="InProcessServer.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Tuning.cpp" />

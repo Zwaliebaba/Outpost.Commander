@@ -13,3 +13,4 @@
 #include "Pathfinder.h"
 #include "Simulation.h"
 #include "InProcessServer.h"
+#include "MeasurementLoad.h"

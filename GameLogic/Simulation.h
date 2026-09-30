@@ -88,6 +88,10 @@ public:
   EntityId SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position, HullId _hull = {},
                      float _headingRadians = 0.0f);
 
+  // Match setup: places a structure. Task 4.2 builds structures and makes them block movement; until then only task
+  // 2.7's measurement load places them.
+  EntityId SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters);
+
   // Match setup, after PlaceMap: gives every player the map's starting fleet, in a grid centered on its start and facing
   // the map's center (task 2.5). Throws Neuron::Exception when a hull or a drive names nothing in _tuning, or when a
   // ship would overlap an obstacle or cross the map's edge.

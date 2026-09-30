@@ -3,6 +3,7 @@
 // The client game: presentation, selection, camera and UI state, drawn from snapshots.
 // It can include GameProtocol, never GameLogic (ADR-002).
 
+#include <chrono>
 #include <deque>
 #include <functional>
 #include <map>
@@ -17,4 +18,5 @@
 #include "SnapshotInterpolator.h"
 #include "Picking.h"
 #include "PlayerControls.h"
+#include "LoadDriver.h"
 #include "GameClient.h"

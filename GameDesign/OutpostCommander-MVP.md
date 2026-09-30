@@ -45,6 +45,30 @@ Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answ
 
 Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded. When a target is missed, PIX is the tool for finding where the time goes. The client's regions are named in Debug builds only (ADR-005), so the recorded figures come from the game's own timings of a Release build.
 
+**Measured on 2026-09-30 (task 2.7).**
+
+The machine was a laptop with an Intel Core i7-12700H, 16 GB of memory, and an NVIDIA GeForce RTX 3070 Ti Laptop GPU rendering. The display was a 1920×1080 panel at 165 Hz driven by the integrated Intel Iris Xe. It ran Windows 11 Pro, build 26200, and the Release|x64 build. The runs were driven by a script that injected the input; the owner has not yet repeated them by hand.
+
+| Question | What | Figure | Target |
+|---|---|---|---|
+| Q5 | From an injected right-click to the first presented frame in which an ordered ship visibly responds, 30 move orders | mean 43 ms, median 44 ms, 95th percentile 66 ms, worst 67 ms | ≤ 150 ms: **met** |
+| Q5 | The same, from when the game read the click | mean 38 ms, worst 62 ms | — |
+| Q5 | The boundary: `#include "GameLogic.h"` added to `GameApp` and to `Opponent` | both fail with C1083 | fails to compile: **met** |
+| Q4, tick half | 200 ships and 40 structures, both fleets kept moving, 1,181 ticks over 60 s | mean 0.18 ms, 99th percentile 0.37 ms, and under 1 ms on every tick but those below | ≤ 5 ms |
+| Q4, tick half | The ticks where both 100-ship fleets are ordered at once, every 10 s | 3.0, 3.7, 2.7, 5.0, 6.8 and 8.3 ms, rising as the fleets spread | ≤ 5 ms: **missed on 2 of 6** |
+
+How each figure was measured:
+
+- **Q5.** `--measure` stamps each click when the game reads it from the queue, on `std::chrono::steady_clock`, which counts `QueryPerformanceCounter`.
+  - **Visibly responds** means the first frame in which an ordered ship's center or nose has moved at least one pixel on screen, at the default 500 m view.
+  - **The end time** is taken after `Present` returns for that frame.
+  - **The start time** is the script's own `QueryPerformanceCounter` reading just before it injects the click, so the figure includes the time the click waits in the queue.
+  - **Not included:** scanout, and the display's own latency.
+  - **Setup:** each order was given to ships at rest, and a random 150–400 ms pause placed the clicks across the frame and tick cycles.
+- **Q4.** The server times each tick on its own clock: applying its commands, the simulation step and every snapshot (`Server::TakeTickDurations`). `--load` adds the load (`PlaceMeasurementLoad`), and both players' ships are ordered across the map every 200 ticks.
+
+The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. Whether the MVP needs to spread the path planning of a large order over several ticks is for the owner (§15).
+
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
 - **Every component**, at 2,000, 3,000, 4,500, 6,000, 9,000 and 12,000 Ore a side. The largest is about five minutes of income for a player who holds half the middle (§5): a late-game fleet.
@@ -321,6 +345,7 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
+- A tick that orders two fleets of 100 ships each took up to 8.3 ms against Q4's 5 ms (§3). Is that acceptable for the MVP, or should a large order's path planning be spread over several ticks?
 - How the in-game UI draws text, panels and input focus over the D3D12 scene (§9). Decided with the first HUD, in its own ADR; the layout frame is ADR-006's.
 
 Decided on 2026-09-30, first review:

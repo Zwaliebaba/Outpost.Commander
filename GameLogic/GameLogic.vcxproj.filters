@@ -26,6 +26,9 @@
     <ClInclude Include="PlaneVector.h">
       <Filter>Movement</Filter>
     </ClInclude>
+    <ClInclude Include="MeasurementLoad.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="Map.h">
       <Filter>Map</Filter>
     </ClInclude>
@@ -43,6 +46,9 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Pathfinder.cpp">
       <Filter>Movement</Filter>
+    </ClCompile>
+    <ClCompile Include="MeasurementLoad.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="Map.cpp">
       <Filter>Map</Filter>

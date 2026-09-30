@@ -43,6 +43,7 @@ public:
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
   void Advance(std::chrono::nanoseconds _elapsedWallTime) override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
+  [[nodiscard]] std::vector<std::chrono::nanoseconds> TakeTickDurations() override;
 
   // For match setup and for tests: the state the server owns.
   [[nodiscard]] Simulation& World() noexcept
@@ -79,5 +80,6 @@ private:
   Simulation m_simulation;
   std::vector<Connection> m_connections;
   std::vector<LoggedCommand> m_commandLog;
+  std::vector<std::chrono::nanoseconds> m_tickDurations;
 };
 } // namespace Outpost

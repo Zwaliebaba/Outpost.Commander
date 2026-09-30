@@ -78,6 +78,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="GameApp.h" />
     <ClInclude Include="GameClient.h" />
+    <ClInclude Include="LoadDriver.h" />
     <ClInclude Include="ModelCatalog.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Picking.h" />
@@ -90,6 +91,7 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameClient.cpp" />
+    <ClCompile Include="LoadDriver.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
     <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PlayerControls.cpp" />

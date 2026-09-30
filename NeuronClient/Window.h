@@ -21,6 +21,8 @@ struct InputEvent
   std::int32_t yPixels = 0;
   // When it happened, in the system's millisecond clock, for telling a double click from two clicks.
   std::uint32_t timeMilliseconds = 0;
+  // When the game read it from the queue, on std::chrono::steady_clock, for measuring latency (task 2.7).
+  std::chrono::steady_clock::time_point read;
   bool shift = false;
   bool control = false;
 };

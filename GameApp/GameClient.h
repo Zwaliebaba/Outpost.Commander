@@ -28,6 +28,15 @@ public:
   // Draws the world into the frame the renderer has begun.
   void Render(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
 
+  // Task 2.7's order-to-response probe. When the frame just drawn is the first to show a ship of the last move order
+  // visibly respond, its center or nose moved by a pixel or more, this returns when the order's input was read, once. The caller takes the time after presenting
+  // the frame and has the latency. An order given to ships already moving is not measured: their motion would not be
+  // its response.
+  [[nodiscard]] std::optional<std::chrono::steady_clock::time_point> TakeResponseShown()
+  {
+    return std::exchange(m_responseShown, std::nullopt);
+  }
+
 private:
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
@@ -51,5 +60,16 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_strip;
   bool m_cameraPlaced = false;
+
+  // The move order being watched: its ships as the view showed them when it was given.
+  struct ResponseProbe
+  {
+    std::vector<EntityView> ships;
+    std::chrono::steady_clock::time_point inputRead;
+  };
+  void WatchForResponse();
+  std::vector<EntityView> m_previousEntities;
+  std::optional<ResponseProbe> m_probe;
+  std::optional<std::chrono::steady_clock::time_point> m_responseShown;
 };
 } // namespace Outpost

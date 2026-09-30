@@ -219,11 +219,82 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                  std::uint32_t _viewportHeightPixels)
 {
   m_view.Advance(_elapsedSeconds);
+  m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
   if (!m_view.IsEmpty())
     m_controls.Update(_input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+  WatchForResponse();
+}
+
+void Outpost::GameClient::WatchForResponse()
+{
+  const auto findIn = [](const std::vector<EntityView>& _entities, EntityId _id) -> const EntityView*
+  {
+    const auto found = std::ranges::find(_entities, _id, &EntityView::id);
+    return found == _entities.end() ? nullptr : &*found;
+  };
+  // Any motion at all, far below a pixel and far above float noise: a ship doing this is already moving.
+  const auto hasChanged = [](const EntityView& _before, const EntityView& _now)
+  {
+    constexpr float MOVED_METERS = 0.01f;
+    constexpr float TURNED_RADIANS = 0.001f;
+    return std::hypot(_now.position.xMeters - _before.position.xMeters, _now.position.zMeters - _before.position.zMeters) > MOVED_METERS ||
+           std::abs(InterpolateHeading(_before.headingRadians, _now.headingRadians, 1.0f) - _before.headingRadians) > TURNED_RADIANS;
+  };
+  // Q5's "visibly responding": the ship's center or its nose, a footprint's radius ahead of the center, has moved at
+  // least a pixel on screen.
+  const auto hasVisiblyChanged = [this](const EntityView& _before, const EntityView& _now)
+  {
+    constexpr float VISIBLE_PIXELS = 1.0f;
+    const auto nose = [](const EntityView& _ship)
+    {
+      return PlanePosition{.xMeters = _ship.position.xMeters + (_ship.radiusMeters * std::cos(_ship.headingRadians)),
+                           .zMeters = _ship.position.zMeters + (_ship.radiusMeters * std::sin(_ship.headingRadians))};
+    };
+    const auto moved = [this](PlanePosition _from, PlanePosition _to)
+    {
+      const std::optional<DirectX::XMFLOAT2> a = m_camera.PixelOf(_from, m_viewport);
+      const std::optional<DirectX::XMFLOAT2> b = m_camera.PixelOf(_to, m_viewport);
+      return a.has_value() && b.has_value() && std::hypot(b->x - a->x, b->y - a->y) >= VISIBLE_PIXELS;
+    };
+    return moved(_before.position, _now.position) || moved(nose(_before), nose(_now));
+  };
+
+  if (std::optional<PlayerControls::MoveOrder> order = m_controls.TakeLastMove())
+  {
+    // The view has not yet shown this order, which reaches the server only after this frame. A ship already moving
+    // between the last frame and this one would hide the response, so such an order is not watched.
+    ResponseProbe probe{.ships = {}, .inputRead = order->inputRead};
+    bool alreadyMoving = false;
+    for (const EntityId id : order->ships)
+    {
+      const EntityView* now = findIn(m_entities, id);
+      const EntityView* before = findIn(m_previousEntities, id);
+      if (now == nullptr)
+        continue;
+      alreadyMoving = alreadyMoving || (before != nullptr && hasChanged(*before, *now));
+      probe.ships.push_back(*now);
+    }
+    m_probe.reset();
+    if (!alreadyMoving && !probe.ships.empty())
+      m_probe = std::move(probe);
+    return;
+  }
+
+  if (!m_probe.has_value())
+    return;
+  for (const EntityView& before : m_probe->ships)
+  {
+    const EntityView* now = findIn(m_entities, before.id);
+    if (now != nullptr && hasVisiblyChanged(before, *now))
+    {
+      m_responseShown = m_probe->inputRead;
+      m_probe.reset();
+      return;
+    }
+  }
 }
 
 void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)

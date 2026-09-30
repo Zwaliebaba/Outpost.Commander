@@ -138,6 +138,14 @@ Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _desi
   return id;
 }
 
+Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters)
+{
+  const EntityId id{++m_lastEntityId};
+  m_entities.push_back(
+    {.id = id, .kind = EntityKind::Structure, .owner = _owner, .structure = _kind, .position = _position, .radiusMeters = _radiusMeters});
+  return id;
+}
+
 void Outpost::Simulation::PlaceStartingFleets(const Map& _map, const Tuning& _tuning)
 {
   struct Ship

@@ -13,6 +13,9 @@
     <Filter Include="Controls">
       <UniqueIdentifier>{9d3b7f52-2a61-4c8e-b94d-6e05a1c3f718}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Measurement">
+      <UniqueIdentifier>{0f6c2b93-5e1a-4d87-b3c4-8a29e7d15f60}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Models">
       <UniqueIdentifier>{c5a73e18-9f42-4b6d-8e01-3d27b6f9a4c5}</UniqueIdentifier>
     </Filter>
@@ -25,6 +28,9 @@
     </ClInclude>
     <ClInclude Include="GameClient.h">
       <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadDriver.h">
+      <Filter>Measurement</Filter>
     </ClInclude>
     <ClInclude Include="ModelCatalog.h">
       <Filter>Models</Filter>
@@ -46,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="GameClient.cpp">
       <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadDriver.cpp">
+      <Filter>Measurement</Filter>
     </ClCompile>
     <ClCompile Include="ModelCatalog.cpp">
       <Filter>Models</Filter>

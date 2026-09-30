@@ -38,6 +38,17 @@ public:
   // The box being dragged, while the left button is held past DRAG_PIXELS.
   [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
 
+  // The last move order given since the last call, and when the input that gave it was read (task 2.7).
+  struct MoveOrder
+  {
+    std::vector<EntityId> ships;
+    std::chrono::steady_clock::time_point inputRead;
+  };
+  [[nodiscard]] std::optional<MoveOrder> TakeLastMove()
+  {
+    return std::exchange(m_lastMove, std::nullopt);
+  }
+
 private:
   struct Frame
   {
@@ -59,6 +70,7 @@ private:
   std::vector<EntityId> m_selected;
   std::array<std::vector<EntityId>, GROUP_COUNT> m_groups;
   std::vector<Command> m_commands;
+  std::optional<MoveOrder> m_lastMove;
   bool m_attackMoveArmed = false;
 
   // The left press being held, where it went down and whether it has become a drag.

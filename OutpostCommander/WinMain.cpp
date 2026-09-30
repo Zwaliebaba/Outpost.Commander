@@ -1,6 +1,8 @@
 #include "pch.h"
 
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 
 namespace
 {
@@ -11,9 +13,24 @@ constexpr const wchar_t* GAME_TITLE = L"Outpost Commander";
 constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 // The human player. The AI connects as another (task 6.1).
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
+// The other player, which only a measurement run drives until the AI does (task 6.1).
+constexpr Outpost::PlayerId RIVAL_PLAYER{2};
+
+// Task 2.7's switches. --measure logs every tick's duration and every move order's time to its first visible response
+// to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
+// moving. Times are on std::chrono::steady_clock, which counts QueryPerformanceCounter, so a script injecting input
+// can line its own timestamps up with the game's.
+constexpr std::wstring_view MEASURE_SWITCH = L"--measure";
+constexpr std::wstring_view LOAD_SWITCH = L"--load";
+constexpr const wchar_t* MEASUREMENT_LOG = L"OutpostCommander-measure.log";
+
+std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
+{
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(_time.time_since_epoch()).count();
+}
 } // namespace
 
-int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINSTANCE _hPrevInstance, [[maybe_unused]] LPWSTR _cmdLine,
+int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINSTANCE _hPrevInstance, LPWSTR _cmdLine,
                     [[maybe_unused]] int _cmdShow)
 {
 #if defined(_DEBUG)
@@ -35,8 +52,22 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // starts before the window, so bad tuning data is reported before the screen goes full screen.
     const auto seed = static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
     OutputDebugStringA(std::format("Match seed {}\n", seed).c_str());
-    const std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer({.seed = seed});
+    const std::wstring_view commandLine = _cmdLine != nullptr ? std::wstring_view(_cmdLine) : std::wstring_view();
+    const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
+    const bool load = commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;
+    std::ofstream measurements;
+    if (measure)
+    {
+      measurements.open(std::filesystem::temp_directory_path() / MEASUREMENT_LOG, std::ios::trunc);
+      measurements << std::format("seed {} load {}\n", seed, load ? 1 : 0);
+    }
+
+    const std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load});
     const std::unique_ptr<Outpost::Transport> player = server->Connect(HUMAN_PLAYER);
+    // Under load both players' ships are kept moving, the rival's through its own connection, as the AI's will be.
+    const std::unique_ptr<Outpost::Transport> rival = load ? server->Connect(RIVAL_PLAYER) : nullptr;
+    Outpost::LoadDriver playerLoad;
+    Outpost::LoadDriver rivalLoad;
 
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
@@ -62,8 +93,25 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       const auto elapsed = now - lastAdvance;
       server->Advance(elapsed);
       lastAdvance = now;
+      // Taken every frame, logged or not, so that they do not pile up.
+      for (const std::chrono::nanoseconds tick : server->TakeTickDurations())
+      {
+        if (measure)
+          measurements << std::format("tick_ns {}\n", tick.count());
+      }
+
+      std::vector<Outpost::Snapshot> snapshots = player->Receive();
+      if (rival)
+      {
+        for (const Outpost::Snapshot& snapshot : snapshots)
+          for (Outpost::Command& command : playerLoad.Update(snapshot))
+            player->Send(std::move(command));
+        for (const Outpost::Snapshot& snapshot : rival->Receive())
+          for (Outpost::Command& command : rivalLoad.Update(snapshot))
+            rival->Send(std::move(command));
+      }
       // The client draws only what the snapshots say, interpolated (ADR-002 decision 5, ADR-013).
-      client.Receive(player->Receive());
+      client.Receive(std::move(snapshots));
 
       // Read every loop, minimized too, so that the cursor is let go as soon as the game loses the foreground (ADR-012).
       const Neuron::InputState input = window.ReadInput();
@@ -78,6 +126,15 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       ID3D12GraphicsCommandList* commandList = renderer.BeginFrame(CLEAR_COLOR);
       client.Render(renderer, commandList);
       renderer.EndFrame();
+
+      // Q5: from reading the order's input to presenting the first frame that shows a ship of it respond (task 2.7).
+      if (const std::optional<std::chrono::steady_clock::time_point> inputRead = client.TakeResponseShown(); measure && inputRead)
+      {
+        const auto presented = std::chrono::steady_clock::now();
+        measurements << std::format("response_ns {} input_read_ns {} presented_ns {}\n", (presented - *inputRead).count(),
+                                    Nanoseconds(*inputRead), Nanoseconds(presented));
+        measurements.flush();
+      }
     }
     return window.ExitCode();
   }

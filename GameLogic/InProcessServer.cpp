@@ -82,8 +82,14 @@ std::uint32_t Outpost::InProcessServer::TicksPerSecond() const noexcept
   return static_cast<std::uint32_t>(m_tuning.rules.tickHz);
 }
 
+std::vector<std::chrono::nanoseconds> Outpost::InProcessServer::TakeTickDurations()
+{
+  return std::exchange(m_tickDurations, {});
+}
+
 void Outpost::InProcessServer::RunTick()
 {
+  const auto started = std::chrono::steady_clock::now();
   std::vector<Command> commands;
   for (const Connection& connection : m_connections)
   {
@@ -103,6 +109,7 @@ void Outpost::InProcessServer::RunTick()
 
   for (const Connection& connection : m_connections)
     connection.channel->snapshots.push_back(m_simulation.BuildSnapshot(connection.player));
+  m_tickDurations.push_back(std::chrono::steady_clock::now() - started);
 }
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
@@ -110,5 +117,7 @@ std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc
   auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
   // Match setup: the map is placed, and now every player's starting fleet (task 2.5).
   server->World().PlaceStartingFleets(server->MapData(), server->TuningData());
+  if (_desc.measurementLoad)
+    PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
   return server;
 }

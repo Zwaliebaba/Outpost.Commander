@@ -41,7 +41,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | in review, owner run |
 | 2.6 | Selection, orders and control groups | 2.5 | — | in review, owner run |
-| 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
+| 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | in review, owner run |
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
@@ -305,6 +305,11 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - Add a scripted load of 200 ships and 40 static structures for the tick measurement.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. The Q5 boundary is confirmed by the C1083 check.
 - **Verify:** **owner run** on the development machine.
+- **As built:** the figures, the method and the machine are in design §3.
+  - **Q5 is met:** 43 ms mean and 67 ms worst, from an injected click to the frame that shows the ship respond. The boundary fails to compile, as it should.
+  - **The tick half of Q4 is met in steady play:** 0.18 ms mean and 0.37 ms at the 99th percentile. It is **missed on the ticks that order both 100-ship fleets at once**: up to 8.3 ms. Whether that needs fixing is open in design §15.
+  - **How it was built:** `--measure` logs tick durations and order-to-response times to `OutpostCommander-measure.log` in the temporary folder. `--load` places `PlaceMeasurementLoad`'s 200 ships and 40 structures, and `LoadDriver` keeps both fleets moving. `Server::TakeTickDurations` reports the server's own timing. `Simulation::SpawnStructure` places the load's structures, which do not block movement until 4.2.
+  - **Owner run still to do:** the runs were driven by a script on the owner's machine. The owner repeats them by hand with `OutpostCommander.exe --measure` and `--measure --load`.
 
 ---
 
