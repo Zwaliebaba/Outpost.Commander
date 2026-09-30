@@ -2,10 +2,10 @@
 
 namespace Outpost
 {
-// Data/Tuning.json as the game holds it (ADR-008). Every number of design §12 and the research table of §8 is here, in
-// the units the file states. Converting them into simulation units, such as seconds into ticks, is the simulation's job.
-// A quantity the design counts in whole numbers, such as hit points, armor, damage, Ore and percentages, is an integer
-// and the loader rejects a fraction; a rate, a time, a distance or a factor is a double.
+// OutpostCommander/Assets/Tuning.json as the game holds it (ADR-008). Every number of design §12 and the research table
+// of §8 is here, in the units the file states. Converting them into simulation units, such as seconds into ticks, is the
+// simulation's job. A quantity the design counts in whole numbers, such as hit points, armor, damage, Ore and
+// percentages, is an integer and the loader rejects a fraction; a rate, a time, a distance or a factor is a double.
 
 // Numbers a Defence gun by, so that a structure can name the one it carries. It never crosses the transport.
 using StructureWeaponId = Id<struct StructureWeaponTag>;
@@ -130,9 +130,10 @@ struct Tuning
   std::vector<ResearchTopicTuning> research;
 };
 
-// Reads the text of Data/Tuning.json. Throws Neuron::Exception on the first problem, naming where it is, such as
-// "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference names something
-// that exists, that each structure kind appears exactly once, and that no research topic requires itself, even through
-// others. A member the loader does not know is an error too, so that a misspelled optional member is not ignored.
+// Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
+// is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
+// names something that exists, that each structure kind appears exactly once, and that no research topic requires
+// itself, even through others. A member the loader does not know is an error too, so that a misspelled optional member
+// is not ignored.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

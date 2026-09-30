@@ -24,7 +24,7 @@ struct AsteroidFieldPlacement
   float radiusMeters = 0.0f;
 };
 
-// Data/Map.json as the game holds it (design §4, ADR-008). The map is a square centered on the origin.
+// OutpostCommander/Assets/Map.json as the game holds it (design §4, ADR-008). The map is a square centered on the origin.
 struct Map
 {
   float sizeMeters = 0.0f;
@@ -37,8 +37,8 @@ struct Map
   std::vector<AsteroidFieldPlacement> asteroidFields;
 };
 
-// Reads the text of Data/Map.json. Throws Neuron::Exception on the first problem, naming where it is, such as
-// "oreAsteroids[3].radiusMeters". Besides types and ranges it checks that there are two starts, and that every obstacle,
-// the edge and every start keep the minimum gap from each other.
+// Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
+// such as "oreAsteroids[3].radiusMeters". Besides types and ranges it checks that there are two starts, and that every
+// obstacle, the edge and every start keep the minimum gap from each other.
 [[nodiscard]] Map LoadMap(std::string_view _json);
 } // namespace Outpost

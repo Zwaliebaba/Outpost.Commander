@@ -10,8 +10,8 @@ namespace
 // and resumes at its own pace (ADR-009).
 constexpr std::uint32_t MAX_TICKS_PER_ADVANCE = 5;
 // Where the server finds its data, under the package's Assets folder (ADR-008).
-constexpr std::string_view TUNING_FILE = "Data\\Tuning.json";
-constexpr std::string_view MAP_FILE = "Data\\Map.json";
+constexpr std::string_view TUNING_FILE = "Tuning.json";
+constexpr std::string_view MAP_FILE = "Map.json";
 
 std::string ReadDataFile(std::string_view _fileName)
 {

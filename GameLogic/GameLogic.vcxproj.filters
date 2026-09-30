@@ -57,12 +57,4 @@
       <Filter>Tuning</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\Data\Map.json">
-      <Filter>Map</Filter>
-    </Content>
-    <Content Include="..\Data\Tuning.json">
-      <Filter>Tuning</Filter>
-    </Content>
-  </ItemGroup>
 </Project>

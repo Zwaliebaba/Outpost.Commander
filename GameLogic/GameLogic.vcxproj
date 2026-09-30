@@ -95,16 +95,6 @@
     <ClCompile Include="Tuning.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\Data\Map.json">
-      <Link>Assets\Data\Map.json</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Data\Tuning.json">
-      <Link>Assets\Data\Tuning.json</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
       <Project>{ea9ed838-5d41-4e78-a994-0d527f7e3980}</Project>
     </ProjectReference>

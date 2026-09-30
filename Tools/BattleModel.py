@@ -5,8 +5,8 @@ Q2 asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3). Th
 version of that question until the simulation has combat. The tuning numbers are tuned against it until the scripted
 headless battles in GameLogicTests take over at milestone 3 (§14).
 
-It reads the hulls, drives, weapons and research topics from Data/Tuning.json, the same file the game loads (ADR-008),
-so the model and the game cannot disagree: change a number or an effect there and run this again.
+It reads the hulls, drives, weapons and research topics from OutpostCommander/Assets/Tuning.json, the same file the game
+loads (ADR-008), so the model and the game cannot disagree: change a number or an effect there and run this again.
 
 The model is deliberately small, and each simplification is one the design document also makes or leaves open:
 
@@ -41,7 +41,7 @@ research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of 
       design that none of the other side's starting designs beats at least half the time.
 
 Usage:
-  python Tools/BattleModel.py                        the Q2 check against Data/Tuning.json
+  python Tools/BattleModel.py                        the Q2 check against OutpostCommander/Assets/Tuning.json
   python Tools/BattleModel.py --detail               also print every win-rate matrix and the shots-to-kill table
   python Tools/BattleModel.py --quick                skip the robustness sweep in (c)
   python Tools/BattleModel.py --set Small.hp=220     try a number without editing the data (repeatable)
@@ -58,7 +58,7 @@ import re
 import sys
 from pathlib import Path
 
-TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "Data" / "Tuning.json"
+TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "OutpostCommander" / "Assets" / "Tuning.json"
 
 ARMOUR_FLOOR = 0.25  # §7: damage taken = max(damage x 0.25, damage - armour)
 START_GAP_M = 400.0  # both clumps start out of range of every weapon
