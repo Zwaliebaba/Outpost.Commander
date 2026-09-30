@@ -131,8 +131,6 @@ private:
 | R2 affixes, R7 file names and project registration, R11 spellings, §2 flat directories, shader names and functional filters | `Build/CheckProjectFiles.py`, gated in CI |
 | R4, R6, R9, R10 | Review. Check your own diff against the table before handing it back. |
 
-**`.clang-tidy` does not gate yet** (§6). It is configured, and it gates the moment `Build/RunClangTidy.py` runs it over the tree; until then, the rules in its row are review's problem and nothing else. A rule nobody can run is a rule that rots, so writing that runner is early work rather than housekeeping.
-
 ---
 
 ## 2. Repository shape
@@ -274,7 +272,7 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 **Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. **Until the MVP is done, an ADR is edited in place:** a decision that changes is rewritten where it stands, so each ADR says what is decided now, not how it got there, and a decision that is dropped is deleted. Git has the history. After the MVP an accepted ADR is no longer edited, and a changed decision is a new ADR that supersedes it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on. **`Build/RunClangTidy.py` does not exist yet.** Until it lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
+**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and all three gate in CI. `CheckProjectFiles.py` and `RunClangTidy.py` also have a `--self-test`, which CI runs, that shows each check still fires on a deliberately broken input.
 
 **What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs: a Windows job that checks the build shape, builds **Debug|x64**, runs the test suites and then clang-tidy; and a Linux job that checks formatting on a pinned clang-format. **Every step that has something to run blocks; a step whose input does not exist yet is skipped, not faked.** Each gate is guarded on the file it needs — the checker script, the solution, the built test DLLs — so the workflow is honest about today's empty tree and starts gating the moment that file lands. The guards are the only concession: nothing is `continue-on-error`, and a script that exists and fails still fails the build. Remove a guard once its input is permanently there, not before, and never add one to get past a red build.
 

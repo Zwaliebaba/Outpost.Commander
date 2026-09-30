@@ -7,13 +7,11 @@ name: Build
 # Every step that has something to run BLOCKS. Nothing here is `continue-on-error`, and a script
 # that exists and fails fails the build.
 #
-# But this repository is young, and some gates have nothing to run over yet: a checker script
-# that is not written, or a test project that does not exist. A gate that cannot run must not be
-# dressed up as a gate that passed, so each such step is guarded on the file it needs -- the
-# checker script, the solution, the built test binaries -- and a step whose input is absent is
-# SKIPPED and says so in the log. The moment the file lands, the step starts gating with no edit
-# here. Remove a guard once its input is permanently there, as the format job's came off when
-# Build/CheckFormat.py landed; never add one to get past a red build.
+# But a gate that cannot run must not be dressed up as a gate that passed, so a step whose input
+# can be absent is guarded on it -- the solution, the test projects -- and a step whose input is
+# absent is SKIPPED and says so in the log. The checker scripts are permanently in the tree, and
+# their steps carry no guard. Remove a guard once its input is permanently there; never add one to
+# get past a red build.
 #
 # Nothing is discovered by name. The solution is whatever single .slnx/.sln sits at the root, and
 # the test suites are whatever *Tests.vcxproj the tree contains -- so adding a project does not
@@ -222,10 +220,14 @@ jobs:
 
       # After the build, so that a compile error is reported as a compile error rather than as
       # forty linter findings about a file that does not parse.
+      # The self-test runs too: it shows a misnamed member fails the gate, in a .cpp and through a
+      # header, so a runner that has quietly stopped finding anything is caught here.
       - name: Run clang-tidy
-        if: hashFiles('Build/RunClangTidy.py') != ''
         shell: pwsh
-        run: python Build\RunClangTidy.py
+        run: |
+          python Build\RunClangTidy.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Build\RunClangTidy.py --self-test
 
       - name: Upload the build log
         if: always()
