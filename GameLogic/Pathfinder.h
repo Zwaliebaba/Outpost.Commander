@@ -59,8 +59,9 @@ private:
 
   std::vector<Obstacle> m_obstacles;
   float m_halfSizeMeters = 0.0f;
-  // Built on first use for each clearance; a function of the obstacles alone, so it holds no state of its own. An ordered
-  // map, so that nothing depends on hashing.
-  mutable std::map<float, Graph> m_graphs;
+  // Built on first use for each clearance; a function of the obstacles alone, so it holds no state of its own. A vector
+  // searched in order rather than a map: there are only as many clearances as hulls, and moving a vector cannot throw,
+  // where moving MSVC's std::map can.
+  mutable std::vector<std::pair<float, Graph>> m_graphs;
 };
 } // namespace Outpost

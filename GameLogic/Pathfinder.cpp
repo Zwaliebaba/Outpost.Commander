@@ -78,7 +78,7 @@ Outpost::PlanePosition Outpost::Pathfinder::Clear(PlanePosition _position, float
 
 const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearanceMeters) const
 {
-  if (const auto found = m_graphs.find(_clearanceMeters); found != m_graphs.end())
+  if (const auto found = std::ranges::find(m_graphs, _clearanceMeters, &std::pair<float, Graph>::first); found != m_graphs.end())
     return found->second;
 
   Graph graph;
@@ -114,7 +114,7 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
       graph.edges[b].emplace_back(a, length);
     }
   }
-  return m_graphs.emplace(_clearanceMeters, std::move(graph)).first->second;
+  return m_graphs.emplace_back(_clearanceMeters, std::move(graph)).second;
 }
 
 std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition _start, PlanePosition _goal, float _clearanceMeters) const

@@ -5,7 +5,6 @@
 #include "NeuronServer.h"
 #include "GameProtocol.h"
 
-#include <map>
 #include <optional>
 
 #include "Tuning.h"
