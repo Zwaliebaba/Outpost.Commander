@@ -20,6 +20,8 @@
     <ClInclude Include="Window.h">
       <Filter>Window</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXHelper.h" />
+    <ClInclude Include="d3dx12.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
