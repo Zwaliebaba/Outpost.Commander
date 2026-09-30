@@ -2,28 +2,34 @@
 
 namespace Neuron
 {
-  using ByteBuffer = std::vector<uint8_t>;
+using ByteBuffer = std::vector<uint8_t>;
 
-  class FileSys
+class FileSys
+{
+public:
+  static void SetHomeDirectory(const std::wstring& _path)
   {
-    public:
-      static void SetHomeDirectory(const std::wstring& _path) { sm_homeDir = _path + L"\\Assets\\"; }
-      [[nodiscard]] static std::wstring GetHomeDirectory() { return sm_homeDir; }
-
-    protected:
-      // Set once by WinMain before any other thread starts, then only read. Not synchronized.
-      inline static std::wstring sm_homeDir;
-  };
-
-  class BinaryFile : public FileSys
+    sm_homeDir = _path + L"\\Assets\\";
+  }
+  [[nodiscard]] static std::wstring GetHomeDirectory()
   {
-    public:
-      [[nodiscard]] static ByteBuffer ReadFile(const std::wstring& _fileName);
-  };
+    return sm_homeDir;
+  }
 
-  class TextFile : public FileSys
-  {
-    public:
-      [[nodiscard]] static std::wstring ReadFile(const std::wstring& _fileName);
-  };
-}
+protected:
+  // Set once by WinMain before any other thread starts, then only read. Not synchronized.
+  inline static std::wstring sm_homeDir;
+};
+
+class BinaryFile : public FileSys
+{
+public:
+  [[nodiscard]] static ByteBuffer ReadFile(const std::wstring& _fileName);
+};
+
+class TextFile : public FileSys
+{
+public:
+  [[nodiscard]] static std::wstring ReadFile(const std::wstring& _fileName);
+};
+} // namespace Neuron

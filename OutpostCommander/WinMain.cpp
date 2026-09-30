@@ -1,7 +1,7 @@
 #include "pch.h"
 
 int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINSTANCE _hPrevInstance, [[maybe_unused]] LPWSTR _cmdLine,
-                    [[maybe_unused]] int _iCmdShow)
+                    [[maybe_unused]] int _cmdShow)
 {
 #if defined(_DEBUG)
 //  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -14,5 +14,5 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
   Neuron::FileSys::SetHomeDirectory(path);
 
-  return WM_QUIT;
+  return 0;
 }
