@@ -38,7 +38,7 @@ The alternative was a plain Win32 window that owns an `HWND` and a DXGI swap cha
 
 When this ADR was accepted, the template project still broke other rules in AGENTS.md. The milestone 1 scaffold is the first real source in the project, and it fixed them:
 
-- **x64 only.** The `Win32` and `ARM64` configurations are gone from the project, and the `ARM64` and `x86` platforms from `OutpostCommander.slnx` (§3).
+- **x64 only.** The `Win32` and `ARM64` configurations are gone from the project, and the `ARM64` and `x86` platforms from `OutpostCommander.slnx` (§3). *ARM64 was added back by ADR-003.*
 - **Toolset and standard.** The toolset is `v145` with no `v143` fallback, and `/std:c++latest` replaces `stdcpp20`/`stdcpp17` (§3).
 - **Compiler settings.** `TreatWarningAsError`, `ConformanceMode` (`/permissive-`), `/fp:precise` and `/arch:AVX2` are stated once in the project, for both configurations (§3, R16).
 - **Windows macros.** `pch.h` includes `framework.h`, the one header that owns the Windows macro family, instead of `<windows.h>` (§4).

@@ -1,5 +1,6 @@
 <Solution>
   <Configurations>
+    <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="NeuronCore/NeuronCore.vcxproj" Id="ea9ed838-5d41-4e78-a994-0d527f7e3980" />

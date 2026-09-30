@@ -29,7 +29,8 @@ name: Build
 # directory or sit on an older language standard. Before a release, somebody builds Release for
 # real -- see AGENTS.md §3.
 #
-# X64 ONLY. There is no second platform to fall back on and nothing left to excuse a red x64.
+# X64 ONLY HERE. The tree also builds ARM64 (ADR-003), but CI does not; whoever changes something
+# platform-specific builds ARM64 locally. Nothing excuses a red x64.
 #
 # ── Why the toolchain is not pinned to an image ────────────────────────────────────────────
 #
