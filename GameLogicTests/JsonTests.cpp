@@ -13,16 +13,17 @@ void ExpectParseError(std::string_view _text)
 
 std::string ParseErrorMessage(std::string_view _text)
 {
+  std::string message;
   try
   {
     (void)Neuron::ParseJson(_text);
   }
   catch (const Neuron::Exception& error)
   {
-    return error.what();
+    message = error.what();
   }
-  Assert::Fail(L"the text parsed");
-  return {};
+  Assert::IsFalse(message.empty(), L"the text parsed");
+  return message;
 }
 } // namespace
 
