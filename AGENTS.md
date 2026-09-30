@@ -14,7 +14,7 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6), numbered from `ADR-001` in this repository and not continuing another's.
 3. **The surrounding code** — for anything neither of the above covers, match the file you are editing.
 
-The design document, [`GameDesign/OutpostCommander-MVP.md`](GameDesign/OutpostCommander-MVP.md), sits alongside rather than above: it says what is built and this file says how. It is a draft under review. A task that needs a design answer it does not give asks the owner, and gets the answer written down before the code is.
+The design document, [`GameDesign/OutpostCommander-MVP.md`](GameDesign/OutpostCommander-MVP.md), sits alongside rather than above: it says what is built and this file says how. It is a draft under review. A task that needs a design answer it does not give asks the owner, and gets the answer written down before the code is. The order the work is done in is [`GameDesign/ImplementationPlan.md`](GameDesign/ImplementationPlan.md): a queue of one-PR tasks, with the owner decisions that gate them. It is a work queue, not an authority.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
