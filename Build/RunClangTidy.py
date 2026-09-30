@@ -92,14 +92,23 @@ def compiler_arguments(_project, _root):
     defines += ["UNICODE", "_UNICODE"]
   arguments += [f"/D{define}" for define in defines]
 
+  # The solution's own folders are ordinary include directories. Anything else, such as the unit-test framework in the
+  # Visual Studio install, is someone else's code and is included as a system directory, so its findings are not ours.
   solution_dir = str(_root) + os.sep
   for directory in split_list(settings.get("ClCompile.AdditionalIncludeDirectories", "")):
     if directory.startswith("%("):
       continue
-    resolved = directory.replace("$(SolutionDir)", solution_dir).replace("$(ProjectDir)", str(_root / _project.directory) + os.sep)
+    if directory.startswith("$(SolutionDir)"):
+      arguments.append(f"/I{directory.replace('$(SolutionDir)', solution_dir)}")
+      continue
+    resolved = directory
+    for variable in ("VCInstallDir", "VSInstallDir"):
+      value = os.environ.get(variable.upper())
+      if value:
+        resolved = resolved.replace(f"$({variable})", value.rstrip("\\/") + os.sep)
     if "$(" in resolved:
-      fail(f"{_project.vcxproj_path}: cannot resolve include directory '{directory}'.")
-    arguments.append(f"/I{resolved}")
+      fail(f"{_project.vcxproj_path}: cannot resolve include directory '{directory}' outside a Developer environment.")
+    arguments += ["/imsvc", resolved]
 
   for forced in split_list(settings.get("ClCompile.ForcedIncludeFiles", "")):
     arguments.append(f"/FI{forced}")
@@ -133,8 +142,25 @@ def run_one(_exe, _root, _path, _arguments):
   return result.returncode, output, errors
 
 
+DIAGNOSTIC = re.compile(r"^(.+?):(\d+):(\d+): (error|warning): ")
+
+
+def split_diagnostics(_output):
+  """One block per diagnostic: its header line, then the notes and source excerpt under it."""
+  blocks = []
+  for line in _output.splitlines():
+    if DIAGNOSTIC.match(line) or not blocks:
+      blocks.append([line])
+    else:
+      blocks[-1].append(line)
+  return blocks
+
+
 def check(_exe, _root, _units):
+  """Runs every unit, then prints each distinct finding once: a header included by every .cpp would otherwise be
+  reported once per translation unit."""
   failures = 0
+  distinct = {}
   with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
     futures = {pool.submit(run_one, _exe, _root, path, arguments): path for path, arguments in _units}
     for future in concurrent.futures.as_completed(futures):
@@ -145,25 +171,30 @@ def check(_exe, _root, _units):
         continue
       failures += 1
       print(f"FINDINGS  {path}")
-      for block in (output, errors):
-        if block:
-          print("\n".join(f"    {line}" for line in block.splitlines()))
+      for block in split_diagnostics(output):
+        distinct.setdefault(block[0].lower(), block)
+      if errors:
+        print("\n".join(f"    {line}" for line in errors.splitlines()))
+  if distinct:
+    print(f"\n{len(distinct)} distinct findings:\n")
+    for key in sorted(distinct):
+      print("\n".join(distinct[key]))
   return failures
 
 
 # ── Self-test: the gate fires on a misnamed member, in a .cpp and through a header, and stays quiet otherwise. ────
 
 
-PROBE_BAD_CLASS = "class Probe\n{\npublic:\n  int Value() const { return foo; }\n\nprivate:\n  int foo = 0;\n};\n"
-PROBE_GOOD_CLASS = "class Probe\n{\npublic:\n  int Value() const { return m_value; }\n\nprivate:\n  int m_value = 0;\n};\n"
+PROBE_CLASS = "class Probe\n{{\npublic:\n  int Value() const {{ return {0}; }}\n\nprivate:\n  int {0} = 0;\n}};\n"
+PROBE_BAD_CLASS = PROBE_CLASS.format("foo")
+PROBE_GOOD_CLASS = PROBE_CLASS.format("m_value")
+PROBE_USE = "#include \"Probe.h\"\n\nint UseProbe()\n{\n  return Probe{}.Value();\n}\n"
 SELF_TEST_CASES = (
-  ("a misnamed member in a .cpp", True, {"Probe.cpp": PROBE_BAD_CLASS + "int UseProbe() { return Probe{}.Value(); }\n"}),
+  ("a misnamed member in a .cpp", True,
+   {"Probe.cpp": PROBE_BAD_CLASS + "\nint UseProbe()\n{\n  return Probe{}.Value();\n}\n"}),
   ("a misnamed member in a header the .cpp includes", True,
-   {"Probe.h": "#pragma once\n\n" + PROBE_BAD_CLASS, "Probe.cpp": "#include \"Probe.h\"\n\nint UseProbe()\n{\n  return "
-                                                                  "Probe{}.Value();\n}\n"}),
-  ("a well-named class", False,
-   {"Probe.h": "#pragma once\n\n" + PROBE_GOOD_CLASS, "Probe.cpp": "#include \"Probe.h\"\n\nint UseProbe()\n{\n  return "
-                                                                   "Probe{}.Value();\n}\n"}),
+   {"Probe.h": "#pragma once\n\n" + PROBE_BAD_CLASS, "Probe.cpp": PROBE_USE}),
+  ("a well-named class", False, {"Probe.h": "#pragma once\n\n" + PROBE_GOOD_CLASS, "Probe.cpp": PROBE_USE}),
 )
 
 

@@ -4,41 +4,6 @@
 
 namespace Neuron
 {
-// clang-format off
-#define ENUM_HELPER(T, S, E)                                                                                                                         \
-   T inline operator ++(T& _value) noexcept { return _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) + 1); }                  \
-   T inline operator ++(T& _value, int) noexcept { T old = _value; _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) + 1); return old; }             \
-   T inline operator --(T& _value) noexcept { return _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) - 1); }                  \
-   T inline operator --(T& _value, int) noexcept { T old = _value; _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) - 1); return old; }             \
-   inline T operator*(T _type) noexcept { return _type; }                                                                                            \
-   constexpr size_t SizeOf##T() noexcept { return static_cast<size_t>(T::E) + 1; }                                                                   \
-   class It##T                                                                                                                                 \
-   {                                                                                                                                                 \
-    int m_value;                                                                                                                                       \
-    public:                                                                                                                                          \
-      explicit It##T(int _value) : m_value(_value) {}                                                                                                      \
-      ##T operator*() const { return static_cast<##T>(m_value); }                                                                                      \
-      bool operator!=(const It##T& _other) const { return m_value != _other.m_value; }                                                               \
-      It##T& operator++() { ++m_value; return *this; }                                                                                           \
-   };                                                                                                                                                \
-   class Range##T {                                                                                                                                 \
-     public:                                                                                                                                         \
-      It##T begin() const { return It##T(static_cast<std::underlying_type_t<T>>(T::S)); }                                                 \
-      It##T end() const { return It##T(static_cast<std::underlying_type_t<T>>(T::E) + 1); }                                                \
-   };                                                                                                                                                \
-   constexpr T operator | (T _a, T _b) noexcept { return T(((_ENUM_FLAG_SIZED_INTEGER<T>::type)_a) | ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }         \
-   inline T &operator |= (T &_a, T _b) noexcept { return (T &)(((_ENUM_FLAG_SIZED_INTEGER<T>::type &)_a) |= ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }  \
-   constexpr T operator & (T _a, T _b) noexcept { return T(((_ENUM_FLAG_SIZED_INTEGER<T>::type)_a) & ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }         \
-   inline T &operator &= (T &_a, T _b) noexcept { return (T &)(((_ENUM_FLAG_SIZED_INTEGER<T>::type &)_a) &= ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }  \
-   constexpr T operator ~ (T _a) noexcept { return T(~((_ENUM_FLAG_SIZED_INTEGER<T>::type)_a)); }                                                      \
-   constexpr T operator ^ (T _a, T _b) noexcept { return T(((_ENUM_FLAG_SIZED_INTEGER<T>::type)_a) ^ ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }         \
-   inline T &operator ^= (T &_a, T _b) noexcept { return (T &)(((_ENUM_FLAG_SIZED_INTEGER<T>::type &)_a) ^= ((_ENUM_FLAG_SIZED_INTEGER<T>::type)_b)); }  \
-   constexpr bool operator ! (T _a) noexcept { return !((_ENUM_FLAG_SIZED_INTEGER<T>::type)_a); }
-  //template <> struct std::formatter<T> : std::formatter<int> {                                                                                     \
-  //  auto format(const T& id, std::format_context& ctx) const {return std::formatter<int>::format(static_cast<int>(id), ctx); }                     \
-  //}
-// clang-format on
-
 template <typename T> constexpr bool IsValidEnum(T _value) noexcept
 {
   return (_value >= begin(_value) && _value < end(_value));
