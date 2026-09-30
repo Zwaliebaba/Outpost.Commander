@@ -44,6 +44,7 @@ When this ADR was accepted, the template project still broke other rules in AGEN
 - **Windows macros.** `pch.h` includes `framework.h`, the one header that owns the Windows macro family, instead of `<windows.h>` (§4).
 - **Filters.** They are functional: `Shell`, `Platform` and `Package`. The `Project Files` filter is gone, and so are the `wil` natvis entries that pointed outside the repository (§2).
 - **Entry point.** `App.xaml` and a `MainWindow` holding the `SwapChainPanel` give the executable the entry point the XAML compiler generates. Before this, it did not link (`LNK2019: WinMain`).
+- **Capabilities.** `Package.appxmanifest` no longer requests `systemAIModels`, which the template asked for on behalf of the Windows AI components removed in Decision 3. The package requests only `runFullTrust`, which a packaged desktop app needs to run.
 
 ## What the shell brings into the tree
 
