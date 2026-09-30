@@ -43,7 +43,7 @@ OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX pac
  ├── GameLogic    (static lib)    ── the server: state, rules, LoopbackTransport. → NeuronServer, GameProtocol
  ├── GameProtocol (static lib)    ── commands, snapshots, entity IDs, the in-process server's factory. → NeuronCore
  ├── NeuronClient (static lib)    ── client engine: D3D12, input, audio, PIX markers (ADR-005). → NeuronCore
- ├── NeuronServer (static lib)    ── server engine: tick host, transports. → NeuronCore
+ ├── NeuronServer (static lib)    ── server engine: the tick host and the pinned PRNG (ADR-009). → NeuronCore
  └── NeuronCore   (static lib)    ── engine code shared by client and server, including QUIC (ADR-004)
 OutpostServer (exe, later)        ── dedicated server for a Windows Server container. → GameLogic, NeuronServer
 GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. The Q2 battles run here from milestone 3

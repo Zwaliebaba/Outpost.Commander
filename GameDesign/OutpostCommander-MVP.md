@@ -61,7 +61,7 @@ A threshold counts as met only when the 95% confidence interval of the win rate 
 
 The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
 
-`Tools/BattleModel.py` runs the check against the numbers in `Data/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
+`Tools/BattleModel.py` runs the check against the numbers in `Data/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
 
 ---
 
@@ -195,7 +195,7 @@ Upgrades apply at once to every existing ship and structure, as in Warzone 2100.
 
 The server is **authoritative**. In the MVP the server runs **inside the client process**. The code is shaped for a dedicated server from the first line. The engineering decision is in `Design/ADR/ADR-002-authoritative-server.md`. The consequences for design are:
 
-- **Players issue commands, not changes.** Move, attack, attack-move, stop, build structure, queue ship, start research, save design. The server validates each one (ownership, cost, legality) and may reject it.
+- **Players issue commands, not changes.** Move, attack, attack-move, stop, build structure, queue ship, start research, save design, and repair (added with milestone 4's structures). There is no cancel (§5). The server validates each one (ownership, cost, legality) and may reject it.
 - **The AI is a client.** It sees the snapshot its player is allowed to see and sends the same commands a human does. It cannot cheat by reading server state, and the build enforces that: it can include only the protocol headers (ADR-002).
 - **What a player sees is a per-player snapshot.** There is no fog in the MVP, but snapshots are addressed per player so that fog of war can be added on the server alone.
 - **The simulation ticks at a fixed rate**, independent of the frame rate. The client interpolates between snapshots for smooth rendering.
@@ -211,7 +211,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 ### UI (drawn by the game over the D3D12 view)
 
-The game draws its own UI (ADR-001). How it draws text, panels and input focus is decided with the renderer (§15).
+The game draws its own UI (ADR-001). How it draws text, panels and input focus is gate G7, decided in its own ADR when the HUD is built; the renderer (ADR-006) already fixes the layout: 1920×1080 reference units scaled to the screen.
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
 - **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component.
@@ -302,7 +302,7 @@ Each milestone is playable or visible on screen, and each is **run**, not just b
 
 1. **A ship on screen.** A Win32 window with a D3D12 flip-model swap chain, a mesh loaded with its scale fixed, and the camera working.
 2. **Ships that obey.** The in-process server ticking, selection, move commands, pathing around asteroids, and interpolated rendering. **This answers Q5, including the order-to-response delay, and the tick-time half of Q4.**
-3. **Ships that fight.** Weapons, damage and destruction, with designs as data from §12 (the designer UI waits for milestone 5). A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in SimulationTests. **This answers Q2 and Q4.**
+3. **Ships that fight.** Weapons, damage and destruction, with designs as data from §12 (the designer UI waits for milestone 5). A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in `GameLogicTests`. **This answers Q2 and Q4.**
 4. **A base.** Constructors built at the Command Station, structures with the Defence gun, Ore, and the Shipyard queue.
 5. **Designs and research.** The designer in the Shipyard panel, components and the research tree.
 6. **An opponent.** The AI player and the win/lose condition. **This answers Q1 and Q3.**
@@ -315,13 +315,13 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 - Team colours and faction naming for the AI opponent.
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
-- Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes".
+- Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes". Movement uses provisional radii from the data file meanwhile (ADR-010).
 - The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
 - The AI's attack-group threshold (§10).
-- Turn rates for hulls and drives (§7, §12). They affect movement only.
+- Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
-- How the in-game UI draws text, panels and input focus over the D3D12 scene (§9). Decided with the renderer.
+- How the in-game UI draws text, panels and input focus over the D3D12 scene (§9). Decided with the first HUD, in its own ADR; the layout frame is ADR-006's.
 
 Decided on 2026-09-30, first review:
 
@@ -351,3 +351,12 @@ Decided on 2026-09-30, after the second review:
 
 - QUIC, through MsQuic, is the network transport once the server moves out of process. The MVP keeps the in-process loopback and has no QUIC code (§9, ADR-004).
 - PIX event markers name the client's regions in Debug builds only (§3, ADR-005).
+
+Decided on 2026-09-30, once implementation began:
+
+- The renderer: borderless full screen with an Alt+Enter window, vsync, a native back buffer, and the UI laid out in 1920×1080 reference units (ADR-006).
+- The numbers are data: `Data/Tuning.json`, read by the game and the model, and §12 keeps no copy (§12, ADR-008).
+- The map layout in `Data/Map.json` (§4).
+- There is no cancel, so nothing is refunded (§5); repair is a command, added with milestone 4.
+- A match replays from its seed and command log on the same build, not across machines (ADR-009).
+- Meshes reach the game in DirectX's `.cmo` format, converted by the owner (§11). Their provenance is still open.

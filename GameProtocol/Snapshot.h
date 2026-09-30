@@ -27,7 +27,7 @@ struct EntityView
   PlanePosition position;
   // Where the entity faces, counterclockwise from +x when seen from above.
   float headingRadians = 0.0f;
-  // The circle it blocks: an asteroid's or a field's now, a ship's once its size is set (task 2.4).
+  // The circle it blocks: an asteroid's or a field's, or a ship's footprint (ADR-010).
   float radiusMeters = 0.0f;
 };
 
