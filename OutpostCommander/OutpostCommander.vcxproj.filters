@@ -4,33 +4,21 @@
     <Filter Include="Package">
       <UniqueIdentifier>{52e329fe-15c9-4a76-8a0e-c3b3c59a9c0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shell">
+      <UniqueIdentifier>{0b6a1f27-4c1e-4d5e-9a57-2f0e3c8d71a4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Package\Assets">
       <UniqueIdentifier>{7f8c0835-f104-4767-9fce-16a2a3a42c5c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="MainWindow.idl">
-      <Filter>Shell</Filter>
-    </Midl>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="App.xaml.h">
-      <Filter>Shell</Filter>
-    </ClInclude>
-    <ClInclude Include="MainWindow.xaml.h">
-      <Filter>Shell</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.xaml.cpp">
-      <Filter>Shell</Filter>
-    </ClCompile>
-    <ClCompile Include="MainWindow.xaml.cpp">
-      <Filter>Shell</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="WinMain.cpp" />
+    <ClCompile Include="WinMain.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
