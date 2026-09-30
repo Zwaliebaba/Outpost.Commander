@@ -16,7 +16,7 @@ The MVP design says *what* is built, AGENTS.md says *how* code is written, and `
 6. **When the PR merges, update this file in the same PR or the next one:** status `done`, a link to the PR, and anything learned that changes a later task.
 7. **ADRs.** A task marked *ADR* takes an engineering decision. Write the ADR in the same PR, numbered after the highest existing one. Until the MVP is done, ADRs are edited in place (AGENTS.md §6).
 
-Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, GameApp, Opponent) need one namespace of their own (R9). Task 2.1 proposes it, and the owner confirms it before the first game type lands.
+Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic, GameApp, Opponent) share `Outpost` (R9, gate G4, decided by the owner on 2026-09-30).
 
 ---
 
@@ -29,13 +29,13 @@ Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, Ga
 | 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
-| 1.1 | A Win32 window and message loop | 0.3 | — | in review, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27): waiting on the owner run |
+| 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
-| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | G4 game namespace | todo |
+| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | todo |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | todo |
 | 2.3 | The map as data | 2.2 | — | todo |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
@@ -71,7 +71,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. | New ADR | 1.2 |
 | G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
-| G4 | The namespace for the game layers. | AGENTS.md §1, R9 | 2.1 |
+| G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy (design §12 says the numbers "will be loaded from a data file"). It covers the map (2.3) and the provisional radii and turn rates (2.4) too, so that milestone 2 reads one format from its first task. The owner decided on 2026-09-30 that G6 comes before 2.2. | New ADR; design §12 | 3.1, and through it 2.2–2.4 |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
@@ -222,7 +222,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 ### 2.1 — Protocol types: IDs, commands, snapshots, `Transport`
 
-- **Gate:** G4.
+- **Namespace:** `Outpost` (G4).
 - **Goal:** the types that cross the client/server boundary (ADR-002 decisions 2, 4, 6). The MVP's transport is the loopback. QUIC comes after the MVP (ADR-004), and no QUIC code is written here.
 - **Scope:** in `GameProtocol`:
   - `EntityId` and `PlayerId`;
