@@ -42,7 +42,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
-| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | G6 data format | todo |
+| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | in review |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
 | 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
@@ -73,7 +73,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
-| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy (design §12 says the numbers "will be loaded from a data file"). It covers the map (2.3) and the provisional radii and turn rates (2.4) too, so that milestone 2 reads one format from its first task. The owner decided on 2026-09-30 that G6 comes before 2.2. | New ADR; design §12 | 3.1, and through it 2.2–2.4 |
+| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | Design §12 | 4.2 |
 | G9 | The AI's attack-group threshold (design §10, §15). | Design §12 | 6.1 |
@@ -241,6 +241,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
 - **Scope:**
   - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data that 3.1 loads (design §12). Wall time becomes ticks at this one seam.
+  - `Data/Tuning.json` goes into the MSIX package, and the server reads it from there with `Outpost::LoadTuning` (ADR-008). 3.1 left the packaging here because nothing read the file at run time before 2.2.
   - A seeded PRNG owned by the server; never `std::random_device`.
   - In `GameLogic`: world state, applying commands at the start of a tick with validation and rejection, building a snapshot per player, a `LoopbackTransport`, and the factory definition.
   - The executable wires them together through `GameProtocol`.
@@ -253,7 +254,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 ### 2.3 — The map as data
 
 - **Goal:** design §4's map. It is about 2,000 × 2,000 m, with two starts in opposite corners. It has 12 ore asteroids: 3 home asteroids by each base and 6 contested ones in the middle. Non-mineable asteroid fields act as circular obstacles and chokepoints.
-- **Scope:** a map data file and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `Art/Models/Asteroids`.
+- **Scope:** a map data file, `Data/Map.json` (ADR-008), and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `Art/Models/Asteroids`.
 - **Acceptance:** tests: the map loads, no obstacles overlap, and every asteroid can be reached from both starts.
 - **Verify:** CI; **owner run** once 2.5 renders it.
 
@@ -303,7 +304,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 
 ### 3.1 — Tuning data file, loaded by the game and the model
 
-- **Gate:** G6. **ADR:** the tuning data format. It runs before 2.2, which takes its tick rate from this file; the number stays 3.1 so that links to it hold.
+- **Gate:** G6, decided. **ADR:** [ADR-008](../Design/ADR/ADR-008-tuning-data.md). It runs before 2.2, which takes its tick rate from this file; the number stays 3.1 so that links to it hold.
 - **Goal:** design §12's numbers become data that the game loads and `Tools/BattleModel.py` reads, so that neither can disagree with the other.
 - **Scope:**
   - The data file, and its loader in `GameLogic`.
@@ -311,6 +312,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - Update design §12 as G6 decides.
 - **Acceptance:** `python Tools/BattleModel.py` gives the same verdicts as before the move. A test shows the game loads the same numbers.
 - **Verify:** CI; run the model locally.
+- **As built:** `Data/Tuning.json` holds §12 and §8's research table, and both sections now point to it. The JSON parser is `Neuron::ParseJson` in `NeuronCore`, since the map (2.3) and other data files need it too; the loader is `Outpost::LoadTuning` in `GameLogic`. Packaging the file moved to 2.2, its first reader at run time.
 
 ### 3.2 — Components and designs
 
@@ -388,7 +390,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 - **Goal:** design §6.
   - Structures have circular footprints that must not overlap, and a Mining Rig snaps to an asteroid.
   - Constructors build structures, and several on one site build faster.
-  - A right-click on a damaged friendly repairs it.
+  - A right-click on a damaged friendly repairs it. Repair is a new order: this task adds a repair command to `GameProtocol`, which 2.1 left out (owner, 2026-09-30).
   - The client shows a ghost of the structure being placed.
   - Players start with two Constructors, and the Command Station is placed before the match starts.
 - **Acceptance:** tests of placement legality, snapping, build progress with one and with two Constructors, and repair.
@@ -447,7 +449,7 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
   - Every match starts with the four starting designs saved.
   - It pauses nothing.
 
-  "Save design" is a command.
+  "Save design" is a command. The live stats need the component numbers on the client, which cannot include `GameLogic`'s loader (ADR-008): this task decides whether the tuning types move to `GameProtocol` or the server sends the numbers.
 - **Verify:** CI for the stats math, which should match `BattleModel.py`; **owner run** for the panel.
 
 ### 5.3 — The Missile Rack, in the game and in the model

@@ -61,7 +61,7 @@ A threshold counts as met only when the 95% confidence interval of the win rate 
 
 The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
 
-`Tools/BattleModel.py` runs the check against §8 and §12 as written, and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
+`Tools/BattleModel.py` runs the check against the numbers in `Data/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
 
 ---
 
@@ -82,7 +82,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **The middle pays more.** A home asteroid yields 5 Ore/s and a contested one 8 Ore/s (§12). A player who holds only their home asteroids earns 15 Ore/s; one who also holds half the middle earns 39. The middle is the prize, and fighting for it is when the fleets meet. What keeps one lost fight from deciding the match is home defence: a Defence Platform holds off light raiders, and an attacker has to bring a Lance line or a Missile Rack to break it (§6).
 - Each ore asteroid holds one rig. A rig can be destroyed, and the asteroid is then free to rebuild on.
 - **A rig is cheap on purpose.** At 50 Ore it pays for itself in 10 s at home. What an expansion costs is exposure — a rig far from home needs the fleet or a platform to keep it — not its price.
-- Everything costs Ore: structures, ships and research. Costs are paid when the job **starts**, as in Warzone 2100. This keeps the rules simple, and there is no refund on cancel in the MVP.
+- Everything costs Ore: structures, ships and research. Costs are paid when the job **starts**, as in Warzone 2100. This keeps the rules simple. The MVP has no way to cancel a job once it has started, so nothing is ever refunded.
 - Starting stockpile and income rates are tuning values (§12).
 
 ---
@@ -180,22 +180,13 @@ The other hull, drive and weapon combinations are legal but not worth building a
 
 A **Research Lab** researches one topic at a time, and a player can have **one** lab. Topics cost Ore and time (§12), and some require another topic first. With one lab the order is the decision: the whole tree takes 11½ minutes of research, so a player who starts at once finishes around minute 12–13, and every topic taken early is another taken late.
 
-| # | Topic | Requires | Effect |
-|---|---|---|---|
-| 1 | Improved Extraction | — | Mining Rig income +25% |
-| 2 | Hull Plating | — | All hulls: HP +15% |
-| 3 | Mass Driver Calibration | — | Mass Driver fire rate +15% |
-| 4 | Lance Focusing | — | Lance fire rate +15% |
-| 5 | Fusion Drive | 2 | Unlocks the Fusion Drive |
-| 6 | Large Hull | 2 | Unlocks the Large hull |
-| 7 | Missile Rack | 3 | Unlocks the Missile Rack |
-| 8 | Automated Shipyards | 1 | Shipyard build speed +25% |
+The eight topics, what each requires, what it does, and its Ore and time are in the `research` list of [`Data/Tuning.json`](../Data/Tuning.json) (§12, ADR-008). Four upgrade a rate: Mining Rig income, the HP of all hulls, the Mass Driver's and the Lance's fire rates, and Shipyard build speed. Three unlock a component: the Fusion Drive, the Large hull and the Missile Rack. Each unlock, and Automated Shipyards, requires one other topic first.
 
 Upgrades apply at once to every existing ship and structure, as in Warzone 2100.
 
 **Upgrades change rates, never the size of a hit.** A weapon upgrade raises its fire rate, not its damage per hit, and no upgrade extends a range. Damage per hit is where armour and the shots-to-kill breakpoints act. At the numbers in §12, +15% Mass Driver damage would be +35% against a Medium hull's armour of 8, and +15% Lance damage would kill a Small hull in two hits instead of three. A fire-rate upgrade adds the same share against every target. Range stays fixed so that the range ladder (§6) holds all match.
 
-`Tools/BattleModel.py` reads this table for the one-sided research test (§3), so an effect is written as `<target> <stat> +N%` or `Unlocks the <component>`.
+`Tools/BattleModel.py` reads the topics from the same file for the one-sided research test (§3).
 
 ---
 
@@ -257,59 +248,11 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 12. Starting numbers (to be tuned)
 
-These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and will be loaded from a data file (engineering detail to follow). Until then this section is the data: `Tools/BattleModel.py` reads the Hull, Drive and Weapon tables here and the research table in §8 by their column headings, so a heading changes together with the tool.
-
-| Item | Value |
-|---|---|
-| Simulation tick | 20 Hz |
-| Starting Ore | 1,000 |
-| Mining Rig income, home asteroid | 5 Ore/s |
-| Mining Rig income, contested asteroid | 8 Ore/s |
-| AI review interval | 60 s |
-
-| Hull | HP | Armour | Speed (m/s) | Cost | Build (s) |
-|---|---|---|---|---|---|
-| Small | 220 | 2 | 60 | 32 | 10 |
-| Medium | 500 | 8 | 40 | 110 | 20 |
-| Large | 1,200 | 14 | 25 | 300 | 40 |
-
-| Drive | Speed × | HP × | Cost + |
-|---|---|---|---|
-| Ion | 1.3 | 0.9 | 20 |
-| Fusion | 0.8 | 1.4 | 80 |
-
-| Weapon | Damage | Fire interval (s) | Range (m) | Cost + |
-|---|---|---|---|---|
-| Mass Driver | 14 | 0.4 | 120 | 35 |
-| Lance | 95 | 3.0 | 220 | 85 |
-| Missile Rack | 40 (splash 30 m) | 2.0 | 280 | 110 |
-
-| Structure | HP | Armour | Cost | Build (constructor-seconds) |
-|---|---|---|---|---|
-| Command Station | 5,000 | 10 | — | — |
-| Shipyard | 2,500 | 0 | 300 | 40 |
-| Research Lab | 1,500 | 0 | 200 | 30 |
-| Mining Rig | 800 | 0 | 50 | 10 |
-| Defence Platform | 1,500 | 10 | 150 | 20 |
-
-| Structure weapon | Damage | Fire interval (s) | Range (m) |
-|---|---|---|---|
-| Defence gun | 30 | 1.0 | 250 |
-
-| Topic | Ore | Time (s) |
-|---|---|---|
-| Improved Extraction | 150 | 60 |
-| Hull Plating | 150 | 60 |
-| Mass Driver Calibration | 150 | 75 |
-| Lance Focusing | 150 | 75 |
-| Fusion Drive | 200 | 90 |
-| Large Hull | 250 | 120 |
-| Missile Rack | 250 | 120 |
-| Automated Shipyards | 200 | 90 |
+These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and they live in [`Data/Tuning.json`](../Data/Tuning.json): the match rules, the hulls, drives and weapons, the structures and the Defence gun, and the research topics of §8 with their Ore and time. The game loads that file and `Tools/BattleModel.py` reads it, so the two cannot disagree (ADR-008). This section keeps no copy of the numbers. It keeps why they are what they are, and where they stand against the Q2 check.
 
 The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15).
 
-**Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses:
+**Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses, with the value that pass chose (the file is what the game plays, if the two ever differ):
 
 | Number | First guess | Now | Why |
 |---|---|---|---|
