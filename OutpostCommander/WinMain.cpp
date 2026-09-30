@@ -25,7 +25,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
     Neuron::FileSys::SetHomeDirectory(path);
 
-    Neuron::Window window({.title = GAME_TITLE});
+    Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
 
     for (;;)
