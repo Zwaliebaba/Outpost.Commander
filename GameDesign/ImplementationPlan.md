@@ -35,14 +35,14 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
-| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | in review |
+| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | in review |
 | 2.3 | The map as data | 2.2 | — | in review |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
-| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | in review |
+| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
 | 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
