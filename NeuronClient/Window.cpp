@@ -1,6 +1,12 @@
 #include "pch.h"
 #include "Window.h"
 
+// The executable's Windows Store project type does not link the windowing and GDI import libraries by default. They are
+// named here, by the one file that uses them, so every binary that links NeuronClient gets them, as NeuronCore.h does
+// for COM.
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+
 namespace
 {
 constexpr const wchar_t* WINDOW_CLASS_NAME = L"NeuronWindow";
