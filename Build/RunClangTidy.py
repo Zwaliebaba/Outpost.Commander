@@ -36,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -110,9 +111,36 @@ def compiler_arguments(_project, _root):
       fail(f"{_project.vcxproj_path}: cannot resolve include directory '{directory}' outside a Developer environment.")
     arguments += ["/imsvc", resolved]
 
+  for directory in package_include_directories(_project, _root):
+    arguments += ["/imsvc", directory]
+
   for forced in split_list(settings.get("ClCompile.ForcedIncludeFiles", "")):
     arguments.append(f"/FI{forced}")
   return arguments
+
+
+def package_include_directories(_project, _root):
+  """The include directories a restored package's .targets adds to the project, such as pix3.h's for NeuronClient
+  (ADR-005). MSBuild reads them from the import; this reads the same file. A package that is not restored yet adds
+  nothing, and clang then reports the header it cannot find."""
+  directories = []
+  for element in _project.vcxproj.iter(f"{MSBUILD_NS}Import"):
+    target = element.get("Project", "").replace("\\", "/")
+    if not target.startswith("../packages/") or not target.endswith(".targets"):
+      continue
+    path = (_root / _project.directory / target).resolve()
+    if not path.is_file():
+      continue
+    this_directory = str(path.parent) + os.sep
+    for group in ET.parse(path).getroot().iter(f"{MSBUILD_NS}ItemDefinitionGroup"):
+      for include in group.iter(f"{MSBUILD_NS}AdditionalIncludeDirectories"):
+        for directory in split_list(include.text or ""):
+          if directory.startswith("%("):
+            continue
+          resolved = directory.replace("$(MSBuildThisFileDirectory)", this_directory).replace("\\", "/")
+          if "$(" not in resolved:
+            directories.append(os.path.normpath(resolved))
+  return directories
 
 
 def translation_units(_tree):

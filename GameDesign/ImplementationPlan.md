@@ -30,7 +30,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
-| 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
+| 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | in review: waiting on CI and the owner run |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
@@ -68,7 +68,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
-| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. | New ADR | 1.2 |
+| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen only, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
 | G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
@@ -167,7 +167,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 
 ### 1.2 — D3D12 device and flip-model swap chain
 
-- **Gate:** G1. **ADR:** the renderer's shape.
+- **Gate:** G1, decided. **ADR:** [ADR-006](../Design/ADR/ADR-006-renderer-shape.md), the renderer's shape.
 - **Goal:** clear the window to a colour every frame, through `CreateSwapChainForHwnd` and `DXGI_SWAP_EFFECT_FLIP_DISCARD`.
 - **Scope:** in `NeuronClient`:
   - device and adapter selection;
@@ -178,7 +178,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   COM lifetimes are held by `winrt::com_ptr`, and `HRESULT`s are checked with `winrt::check_hresult` (R12), both already available through `NeuronCore.h`. Barriers are written by hand (R14, no `d3dx12.h`). In Debug the D3D12 debug layer is on.
 
   PIX event markers name the frame's regions on the queue, the command lists and the CPU (ADR-005). They are compiled in for Debug only, and `pix3.h` sits between `#pragma warning(push)` and `pop` in a `NeuronClient` `.cpp`. The runtime's import library, DLL and licence already reach the executable through `NeuronClient`.
-- **Acceptance:** CI green. There are no debug-layer errors in a run, and resizing and minimising work. A Release build has no reference to the PIX runtime.
+- **Acceptance:** CI green. There are no debug-layer errors in a run. The game covers the primary monitor, follows a change of display resolution, and survives being minimised and restored (Win+D). A failure shows a message box instead of closing silently. A Release build has no reference to the PIX runtime.
 - **Verify:** **owner run**, x64 and ARM64: the development machine is ARM64 (ADR-003). A PIX capture of the Debug build shows the named regions.
 
 ### 1.3 — Mesh loading, with scale and forward axis as data

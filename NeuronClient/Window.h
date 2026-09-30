@@ -2,20 +2,18 @@
 
 namespace Neuron
 {
-// The top-level window the game presents into. It knows no game concept: its title and size come from the caller.
-// Style, resizing and full-screen behavior are the renderer's decision (implementation plan, gate G1), so this is a
-// plain overlapped window until that decision is taken.
+// The top-level window the game presents into: borderless and full screen on the primary monitor, always (ADR-006). It
+// knows no game concept: its title comes from the caller.
 class Window : NonCopyable
 {
 public:
   struct Desc
   {
     const wchar_t* title;
-    std::uint32_t clientWidthPixels;
-    std::uint32_t clientHeightPixels;
   };
 
-  // Registers the window class, creates the window and shows it. Throws winrt::hresult_error on failure.
+  // Registers the window class, creates the window over the primary monitor and shows it. Throws winrt::hresult_error
+  // on failure.
   explicit Window(const Desc& _desc);
   ~Window();
 
@@ -31,6 +29,14 @@ public:
   {
     return m_hwnd;
   }
+  [[nodiscard]] bool IsMinimized() const noexcept
+  {
+    return IsIconic(m_hwnd) != FALSE;
+  }
+
+  // The client area in physical pixels: the monitor's resolution, or zero while minimized.
+  [[nodiscard]] std::uint32_t ClientWidthPixels() const noexcept;
+  [[nodiscard]] std::uint32_t ClientHeightPixels() const noexcept;
 
 private:
   static LRESULT CALLBACK WindowProc(HWND _hwnd, UINT _message, WPARAM _wParam, LPARAM _lParam) noexcept;

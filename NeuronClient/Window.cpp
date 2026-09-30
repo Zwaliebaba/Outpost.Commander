@@ -10,23 +10,34 @@
 namespace
 {
 constexpr const wchar_t* WINDOW_CLASS_NAME = L"NeuronWindow";
-constexpr DWORD WINDOW_STYLE = WS_OVERLAPPEDWINDOW;
+constexpr DWORD WINDOW_STYLE = WS_POPUP;
 constexpr DWORD WINDOW_EX_STYLE = 0;
+
+// The monitor's full area in physical pixels, since the process is per-monitor DPI aware (app.manifest).
+bool MonitorArea(HMONITOR _monitor, RECT& _outArea) noexcept
+{
+  MONITORINFO info{.cbSize = sizeof(MONITORINFO)};
+  if (GetMonitorInfoW(_monitor, &info) == FALSE)
+    return false;
+  _outArea = info.rcMonitor;
+  return true;
+}
+
+RECT ClientArea(HWND _hwnd) noexcept
+{
+  RECT area{};
+  GetClientRect(_hwnd, &area);
+  return area;
+}
 } // namespace
 
 Neuron::Window::Window(const Desc& _desc)
   : m_instance(GetModuleHandleW(nullptr))
 {
-  // The size asked for is the client area in physical pixels. The process is per-monitor DPI aware (app.manifest), so
-  // the frame around it is measured at the DPI the window opens at. This comes before the class is registered, so that
-  // nothing is left to undo if it throws.
-  RECT frame{
-    .left = 0,
-    .top = 0,
-    .right = static_cast<LONG>(_desc.clientWidthPixels),
-    .bottom = static_cast<LONG>(_desc.clientHeightPixels),
-  };
-  winrt::check_bool(AdjustWindowRectExForDpi(&frame, WINDOW_STYLE, FALSE, WINDOW_EX_STYLE, GetDpiForSystem()));
+  // Borderless full screen (ADR-006): a popup exactly covering the primary monitor. Measured before the class is
+  // registered, so that nothing is left to undo if it throws.
+  RECT monitor{};
+  winrt::check_bool(MonitorArea(MonitorFromPoint(POINT{.x = 0, .y = 0}, MONITOR_DEFAULTTOPRIMARY), monitor));
 
   const WNDCLASSEXW windowClass{
     .cbSize = sizeof(WNDCLASSEXW),
@@ -44,8 +55,8 @@ Neuron::Window::Window(const Desc& _desc)
   };
   winrt::check_bool(RegisterClassExW(&windowClass));
 
-  m_hwnd = CreateWindowExW(WINDOW_EX_STYLE, WINDOW_CLASS_NAME, _desc.title, WINDOW_STYLE, CW_USEDEFAULT, CW_USEDEFAULT,
-                           frame.right - frame.left, frame.bottom - frame.top, nullptr, nullptr, m_instance, nullptr);
+  m_hwnd = CreateWindowExW(WINDOW_EX_STYLE, WINDOW_CLASS_NAME, _desc.title, WINDOW_STYLE, monitor.left, monitor.top,
+                           monitor.right - monitor.left, monitor.bottom - monitor.top, nullptr, nullptr, m_instance, nullptr);
   if (m_hwnd == nullptr)
   {
     const DWORD error = GetLastError();
@@ -53,7 +64,7 @@ Neuron::Window::Window(const Desc& _desc)
     winrt::throw_hresult(HRESULT_FROM_WIN32(error));
   }
 
-  ShowWindow(m_hwnd, SW_SHOWDEFAULT);
+  ShowWindow(m_hwnd, SW_SHOW);
 }
 
 Neuron::Window::~Window()
@@ -80,12 +91,36 @@ bool Neuron::Window::ProcessMessages() noexcept
   return true;
 }
 
+std::uint32_t Neuron::Window::ClientWidthPixels() const noexcept
+{
+  const RECT area = ClientArea(m_hwnd);
+  return static_cast<std::uint32_t>(area.right - area.left);
+}
+
+std::uint32_t Neuron::Window::ClientHeightPixels() const noexcept
+{
+  const RECT area = ClientArea(m_hwnd);
+  return static_cast<std::uint32_t>(area.bottom - area.top);
+}
+
 LRESULT CALLBACK Neuron::Window::WindowProc(HWND _hwnd, UINT _message, WPARAM _wParam, LPARAM _lParam) noexcept
 {
-  if (_message == WM_DESTROY)
+  switch (_message)
   {
-    PostQuitMessage(0);
+  case WM_DISPLAYCHANGE:
+  {
+    // The resolution changed or the monitors were rearranged: cover the window's monitor again. The renderer sees the
+    // new client size on its next frame and resizes the back buffers (ADR-006).
+    RECT monitor{};
+    if (MonitorArea(MonitorFromWindow(_hwnd, MONITOR_DEFAULTTOPRIMARY), monitor))
+      SetWindowPos(_hwnd, nullptr, monitor.left, monitor.top, monitor.right - monitor.left, monitor.bottom - monitor.top,
+                   SWP_NOZORDER | SWP_NOACTIVATE);
     return 0;
   }
-  return DefWindowProcW(_hwnd, _message, _wParam, _lParam);
+  case WM_DESTROY:
+    PostQuitMessage(0);
+    return 0;
+  default:
+    return DefWindowProcW(_hwnd, _message, _wParam, _lParam);
+  }
 }

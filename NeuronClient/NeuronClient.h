@@ -5,4 +5,10 @@
 
 #include "NeuronCore.h"
 
+#include <d3d12.h>
+#include <dxgi1_6.h>
+
+#include <array>
+
 #include "Window.h"
+#include "Renderer.h"

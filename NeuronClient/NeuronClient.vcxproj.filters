@@ -4,6 +4,9 @@
     <Filter Include="Profiling">
       <UniqueIdentifier>{ceb4ec25-96bd-4f4a-933f-8e665cabc6aa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rendering">
+      <UniqueIdentifier>{9f1c0e57-2d6b-4c1e-8a0d-5b7e3c2a41d9}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Window">
       <UniqueIdentifier>{3b3f9e06-bb42-405b-8a69-db79d7910f2d}</UniqueIdentifier>
     </Filter>
@@ -11,12 +14,18 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="Renderer.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="Window.h">
       <Filter>Window</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="Window.cpp">
       <Filter>Window</Filter>
     </ClCompile>
