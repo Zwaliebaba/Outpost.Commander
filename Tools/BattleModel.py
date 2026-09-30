@@ -2,11 +2,11 @@
 """Equal-Ore battle model for Q2 of the MVP design.
 
 Q2 asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3). This model answers the first-order
-version of that question before any C++ exists. §12's numbers are tuned against it until the scripted headless
+version of that question before any C++ exists. The tuning numbers are tuned against it until the scripted headless
 battles in SimulationTests take over at milestone 3 (§14).
 
-It reads the hull, drive and weapon tables from §12 and the research table from §8 of the design document itself, so
-the model and the document cannot disagree: change a number in §12 or an effect in §8 and run this again.
+It reads the hulls, drives, weapons and research topics from Data/Tuning.json, the same file the game loads (ADR-008),
+so the model and the game cannot disagree: change a number or an effect there and run this again.
 
 The model is deliberately small, and each simplification is one the design document also makes or leaves open:
 
@@ -36,28 +36,29 @@ The Q2 check (§3) runs at two stages: every component, at 2,000-12,000 Ore, and
 research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of both stages and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
   (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage,
-  (c) none of the counters in (a) against those designs stops winning when any single §12 number moves by 5%, and
+  (c) none of the counters in (a) against those designs stops winning when any single tuning number moves by 5%, and
   (d) at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a
       design that none of the other side's starting designs beats at least half the time.
 
 Usage:
-  python Tools/BattleModel.py                        the Q2 check against §12
+  python Tools/BattleModel.py                        the Q2 check against Data/Tuning.json
   python Tools/BattleModel.py --detail               also print every win-rate matrix and the shots-to-kill table
   python Tools/BattleModel.py --quick                skip the robustness sweep in (c)
-  python Tools/BattleModel.py --set Small.hp=220     try a number without editing §12 (repeatable)
+  python Tools/BattleModel.py --set Small.hp=220     try a number without editing the data (repeatable)
 """
 
 import argparse
 import concurrent.futures
 import dataclasses
 import itertools
+import json
 import math
 import random
 import re
 import sys
 from pathlib import Path
 
-DOC_DEFAULT = Path(__file__).resolve().parents[1] / "GameDesign" / "OutpostCommander-MVP.md"
+TUNING_DEFAULT = Path(__file__).resolve().parents[1] / "Data" / "Tuning.json"
 
 ARMOUR_FLOOR = 0.25  # §7: damage taken = max(damage x 0.25, damage - armour)
 START_GAP_M = 400.0  # both clumps start out of range of every weapon
@@ -122,7 +123,7 @@ class Topic:
   requires: tuple
   unlocks: str  # the component the topic unlocks, or ""
   target: str  # what an upgrade changes: "All hulls", a weapon, or an economy target such as "Mining Rig"
-  stat: str  # the §8 stat an upgrade changes, or ""
+  stat: str  # the stat an upgrade changes, or ""
   factor: float  # 1 + the upgrade's percentage
 
 
@@ -131,124 +132,94 @@ UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("we
 ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed")}  # upgrades with no effect on a battle
 
 
-# ---- Reading §12 -----------------------------------------------------------------------------------------------------
+# ---- Reading the tuning data -----------------------------------------------------------------------------------------
+
+# How the tuning data names an upgrade's target and stat, and how the model names them.
+UPGRADE_TARGETS = {"allHulls": "All hulls", "miningRig": "Mining Rig", "shipyards": "Shipyard"}
+UPGRADE_STATS = {"hitPoints": "HP", "fireRate": "fire rate", "damage": "damage", "range": "range", "income": "income",
+                 "buildSpeed": "build speed"}
 
 
-def section_lines(text, number):
-  lines = text.splitlines()
-  start = next((i for i, line in enumerate(lines) if line.startswith(f"## {number}.")), None)
-  if start is None:
-    sys.exit(f"The design document has no '## {number}.' section.")
-  end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
-  return lines[start + 1:end]
+def field(entry, name, where):
+  if not isinstance(entry, dict) or name not in entry:
+    sys.exit(f"{where} has no '{name}'.")
+  return entry[name]
 
 
-def cells(line):
-  return [cell.strip() for cell in line.strip().strip("|").split("|")]
+def number(entry, name, where):
+  value = field(entry, name, where)
+  if isinstance(value, bool) or not isinstance(value, (int, float)):
+    sys.exit(f"{where}: '{name}' is not a number.")
+  return float(value)
 
 
-def tables_in(lines):
-  """Every Markdown table in `lines`, keyed by its first header cell, as a list of rows keyed by header."""
-  tables = {}
-  i = 0
-  while i < len(lines):
-    is_header = lines[i].startswith("|") and i + 1 < len(lines) and "-" in lines[i + 1]
-    if is_header and set(lines[i + 1].replace("|", "").strip()) <= set("-: "):
-      header = cells(lines[i])
-      rows = []
-      i += 2
-      while i < len(lines) and lines[i].startswith("|"):
-        rows.append(dict(zip(header, cells(lines[i]))))
-        i += 1
-      tables[header[0]] = rows
-    else:
-      i += 1
-  return tables
+def entries(data, name, path):
+  value = field(data, name, path.name)
+  if not isinstance(value, list):
+    sys.exit(f"{path.name}: '{name}' is not a list.")
+  return value
 
 
-def number(text, where):
-  match = re.match(r"\s*([0-9][0-9,]*(?:\.[0-9]+)?)", text)
-  if not match:
-    sys.exit(f"§12 {where}: '{text}' is not a number.")
-  return float(match.group(1).replace(",", ""))
+def read_tuning(path):
+  """The tick rate, the hulls, drives and weapons, and the raw research entries from the tuning data."""
+  try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+  except (OSError, json.JSONDecodeError) as error:
+    sys.exit(f"{path}: {error}")
+
+  tick_hz = number(field(data, "rules", path.name), "tickHz", "rules")
+  hulls = [Hull(field(h, "name", "a hull"), *(number(h, n, f"hull {h['name']}") for n in
+                                               ("hitPoints", "armor", "speedMetersPerSecond", "cost")))
+           for h in entries(data, "hulls", path)]
+  drives = [Drive(field(d, "name", "a drive"), *(number(d, n, f"drive {d['name']}") for n in
+                                                 ("speedFactor", "hitPointsFactor", "cost")))
+            for d in entries(data, "drives", path)]
+  weapons = [Weapon(field(w, "name", "a weapon"), *(number(w, n, f"weapon {w['name']}") for n in
+                                                    ("damage", "fireIntervalSeconds", "rangeMeters", "cost",
+                                                     "splashRadiusMeters")))
+             for w in entries(data, "weapons", path)]
+  ids = {kind: {int(number(e, "id", f"a {kind[:-1]}")): e["name"] for e in entries(data, kind, path)}
+         for kind in ("hulls", "drives", "weapons")}
+  return tick_hz, (hulls, drives, weapons), entries(data, "research", path), ids
 
 
-def column(row, name, table):
-  if name not in row:
-    sys.exit(f"The {table} table has no '{name}' column. It has: {', '.join(row)}.")
-  return row[name]
-
-
-def read_section_12(text):
-  tables = tables_in(section_lines(text, 12))
-  for name in ("Item", "Hull", "Drive", "Weapon"):
-    if name not in tables:
-      sys.exit(f"§12 has no table whose first column is '{name}'.")
-
-  items = {row["Item"]: row["Value"] for row in tables["Item"]}
-  if "Simulation tick" not in items:
-    sys.exit("§12 has no 'Simulation tick' row.")
-  tick_hz = number(items["Simulation tick"], "Simulation tick")
-
-  hulls = []
-  for row in tables["Hull"]:
-    name = row["Hull"]
-    hulls.append(Hull(name, *(number(column(row, c, "§12 Hull"), f"{name} {c}")
-                              for c in ("HP", "Armour", "Speed (m/s)", "Cost"))))
-  drives = []
-  for row in tables["Drive"]:
-    name = row["Drive"]
-    drives.append(Drive(name, *(number(column(row, c, "§12 Drive"), f"{name} {c}") for c in ("Speed ×", "HP ×", "Cost +"))))
-  weapons = []
-  for row in tables["Weapon"]:
-    name = row["Weapon"]
-    damage_cell = column(row, "Damage", "§12 Weapon")
-    splash = re.search(r"splash\s+([0-9.]+)\s*m", damage_cell)
-    weapons.append(Weapon(name, number(damage_cell, f"{name} Damage"),
-                          number(column(row, "Fire interval (s)", "§12 Weapon"), f"{name} Fire interval"),
-                          number(column(row, "Range (m)", "§12 Weapon"), f"{name} Range"),
-                          number(column(row, "Cost +", "§12 Weapon"), f"{name} Cost"),
-                          float(splash.group(1)) if splash else 0.0))
-  return tick_hz, hulls, drives, weapons
-
-
-def read_section_8(text, parts):
-  """The research topics in §8's table, with each effect read as an unlock or an upgrade."""
-  tables = tables_in(section_lines(text, 8))
-  if "#" not in tables:
-    sys.exit("§8 has no table whose first column is '#'.")
-  hulls, drives, weapons = parts
-  components = [p.name for group in parts for p in group]
-  weapon_names = {w.name for w in weapons}
+def read_research(research, ids):
+  """The research topics, with each effect read as an unlock or an upgrade."""
   topics = []
-  for row in tables["#"]:
-    where = f"§8 topic {row.get('#', '?')}"
-    cells_ = [row.get("#", "")] + [r for r in re.split(r"\s*,\s*", column(row, "Requires", "§8 research").strip())
-                                   if r not in ("—", "-", "")]
-    if not all(c.isdigit() for c in cells_):
-      sys.exit(f"{where}: the topic number and its requirements must be topic numbers.")
-    number_, requires = int(cells_[0]), tuple(int(c) for c in cells_[1:])
-    effect = column(row, "Effect", "§8 research")
-    unlock = re.fullmatch(r"Unlocks the (.+)", effect)
-    upgrade = re.fullmatch(r"(.+?):?\s+(HP|fire rate|damage|range|income|build speed)\s+\+([0-9.]+)%", effect)
-    if unlock:
-      named = [c for c in components if re.search(rf"\b{re.escape(c)}\b", unlock.group(1))]
-      if len(named) != 1:
-        sys.exit(f"{where}: '{effect}' should name exactly one hull, drive or weapon from §12.")
-      topics.append(Topic(number_, row["Topic"], requires, named[0], "", "", 1.0))
-    elif upgrade:
-      target, stat, percent = upgrade.group(1), upgrade.group(2), float(upgrade.group(3))
-      kind = "weapon" if target in weapon_names else target
-      if (kind, stat) not in UPGRADES and (target, stat) not in ECONOMY:
-        sys.exit(f"{where}: the model cannot apply '{effect}'. It knows All hulls HP, a weapon's fire rate, damage "
-                 f"or range, Mining Rig income and Shipyard build speed.")
-      topics.append(Topic(number_, row["Topic"], requires, "", target, stat, 1.0 + percent / 100.0))
+  for entry in research:
+    number_ = int(number(entry, "id", "a research topic"))
+    where = f"research topic {number_}"
+    requires = field(entry, "requires", where)
+    if not isinstance(requires, list) or not all(isinstance(r, int) for r in requires):
+      sys.exit(f"{where}: 'requires' must be a list of topic ids.")
+    effect = field(entry, "effect", where)
+    unlocks = [(kind, effect[f"unlock{kind[:-1].capitalize()}"]) for kind in ("hulls", "drives", "weapons")
+               if f"unlock{kind[:-1].capitalize()}" in effect]
+    if unlocks:
+      kind, component = unlocks[0]
+      if len(unlocks) != 1 or component not in ids[kind]:
+        sys.exit(f"{where}: an unlock names exactly one hull, drive or weapon by its id.")
+      topics.append(Topic(number_, field(entry, "name", where), tuple(requires), ids[kind][component], "", "", 1.0))
+      continue
+    target = field(effect, "upgrade", where)
+    stat = UPGRADE_STATS.get(field(effect, "stat", where))
+    percent = number(effect, "percent", where)
+    if target == "weapon":
+      weapon = int(number(effect, "weapon", where))
+      if weapon not in ids["weapons"]:
+        sys.exit(f"{where}: upgrades weapon {weapon}, which does not exist.")
+      target, kind = ids["weapons"][weapon], "weapon"
     else:
-      sys.exit(f"{where}: '{effect}' is neither 'Unlocks the <component>' nor '<target> <stat> +N%'.")
+      target = UPGRADE_TARGETS.get(target)
+      kind = target
+    if stat is None or target is None or ((kind, stat) not in UPGRADES and (target, stat) not in ECONOMY):
+      sys.exit(f"{where}: the model cannot apply this upgrade. It knows all hulls' HP, a weapon's fire rate, damage "
+               f"or range, Mining Rig income and Shipyard build speed.")
+    topics.append(Topic(number_, field(entry, "name", where), tuple(requires), "", target, stat, 1.0 + percent / 100.0))
   numbers = {t.number for t in topics}
   for t in topics:
     if set(t.requires) - numbers:
-      sys.exit(f"§8 topic {t.number} requires a topic that does not exist.")
+      sys.exit(f"research topic {t.number} requires a topic that does not exist.")
   return topics
 
 
@@ -288,7 +259,7 @@ def upgraded(parts, researched):
 
 
 def apply_overrides(parts, overrides):
-  """Applies --set NAME.FIELD=VALUE to the hulls, drives and weapons read from §12."""
+  """Applies --set NAME.FIELD=VALUE to the hulls, drives and weapons read from the tuning data."""
   hulls, drives, weapons = (list(p) for p in parts)
   for override in overrides:
     match = re.fullmatch(r"(.+)\.(\w+)=([0-9.]+)", override)
@@ -610,10 +581,9 @@ def research_check(pool, parts, topics, budgets, args, dt, failures):
 
 
 def run(args):
-  text = args.doc.read_text(encoding="utf-8")
-  tick_hz, hulls, drives, weapons = read_section_12(text)
-  parts = apply_overrides((hulls, drives, weapons), args.set)
-  topics = read_section_8(text, parts)
+  tick_hz, parts, research, ids = read_tuning(args.tuning)
+  parts = apply_overrides(parts, args.set)
+  topics = read_research(research, ids)
   hulls, drives, weapons = parts
   dt = 1.0 / tick_hz
   designs = designs_from(hulls, drives, weapons)
@@ -622,7 +592,7 @@ def run(args):
   unmodelled = [w.name for w in weapons if w.splash]
   start = available(parts, topics, [])
 
-  print(f"Numbers from {args.doc.name} §12" + (f", with {', '.join(args.set)}" if args.set else "") +
+  print(f"Numbers from {args.tuning.name}" + (f", with {', '.join(args.set)}" if args.set else "") +
         f". {len(designs)} designs, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
         f"uncertain), a {tick_hz:g} Hz tick.")
   print("Starting components: " + ", ".join(p.name for group in start for p in group) + ".")
@@ -691,7 +661,7 @@ def run(args):
 
 def main():
   parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-  parser.add_argument("--doc", type=Path, default=DOC_DEFAULT, help="the design document to read §12 from")
+  parser.add_argument("--tuning", type=Path, default=TUNING_DEFAULT, help="the tuning data to read (ADR-008)")
   parser.add_argument("--budgets", default="2000,3000,4500,6000,9000,12000",
                       help="Ore per side for every component, comma-separated")
   parser.add_argument("--early-budgets", default="2000,3000,4500",
@@ -702,7 +672,7 @@ def main():
                       help="battles for a verdict whose confidence interval straddles its threshold")
   parser.add_argument("--jobs", type=int, default=None, help="worker processes (default: one per core)")
   parser.add_argument("--set", action="append", default=[], metavar="NAME.FIELD=VALUE",
-                      help="override one §12 number, such as Small.hp=220 or Ion.hp_factor=1.0")
+                      help="override one tuning number, such as Small.hp=220 or Ion.hp_factor=1.0")
   parser.add_argument("--detail", action="store_true", help="print every matrix and the shots-to-kill table")
   parser.add_argument("--quick", action="store_true", help="skip the robustness sweep")
   return run(parser.parse_args())
