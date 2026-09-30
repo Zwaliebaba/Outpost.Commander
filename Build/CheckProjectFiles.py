@@ -95,7 +95,8 @@ BRITISH_STEMS = {
   "quantis": "quantiz", "synchronis": "synchroniz", "optimis": "optimiz", "finalis": "finaliz",
   "materialis": "materializ", "visualis": "visualiz", "randomis": "randomiz", "customis": "customiz",
   "minimis": "minimiz", "maximis": "maximiz", "prioritis": "prioritiz", "recognis": "recogniz", "organis": "organiz",
-  "authoris": "authoriz", "utilis": "utiliz", "summaris": "summariz", "capitalis": "capitaliz", "specialis": "specializ",
+  "authoris": "authoriz", "utilis": "utiliz", "summaris": "summariz", "capitalis": "capitaliz",
+  "specialis": "specializ",
 }
 SPELLING_SUFFIXES = ("", "s", "e", "es", "ed", "er", "ers", "ing", "ings", "ation", "ations", "ful", "less", "scale")
 
@@ -347,7 +348,8 @@ def check_filters_match(_tree):
     in_project = {(item.kind, item.path) for item in project.items()}
     in_filters = {(item.kind, item.path) for item in project.filter_items()}
     for kind, path in sorted(in_filters - in_project):
-      findings.append(Finding(project.filters_path, "filters-match", f"lists {kind} {path}, which the .vcxproj does not"))
+      findings.append(Finding(project.filters_path, "filters-match",
+                              f"lists {kind} {path}, which the .vcxproj does not"))
     for kind, path in sorted(in_project - in_filters):
       findings.append(Finding(project.filters_path, "filters-match", f"does not list {kind} {path}"))
   return findings
@@ -483,7 +485,8 @@ def check_includes(_tree):
         findings.append(Finding(where, "include-climb", f"'{match.group(2)}' climbs out of its project; include "
                                                         f"another library through its include path (ADR-002)"))
       if target.lower() == "wrl.h" or target.lower().startswith("wrl/"):
-        findings.append(Finding(where, "wrl", f"'{match.group(2)}' is WRL; use winrt::com_ptr from <winrt/base.h> (R12)"))
+        findings.append(Finding(where, "wrl",
+                                f"'{match.group(2)}' is WRL; use winrt::com_ptr from <winrt/base.h> (R12)"))
   return findings
 
 
@@ -619,7 +622,12 @@ INCLUDE_PATHS = {
   "GameLogic": ("NeuronCore", "NeuronServer", "GameProtocol"),
   "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
   "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
+  "GameLogicTests": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic"),
 }
+# The include directories outside the solution a project may name: the Microsoft C++ unit-test framework ships with
+# Visual Studio, not the Windows SDK, and a test project reaches it through the install folder.
+UNIT_TEST_INCLUDE = "$(VCInstallDir)Auxiliary\\VS\\UnitTest\\include"
+EXTERNAL_INCLUDES = {"GameLogicTests": (UNIT_TEST_INCLUDE,)}
 # ADR-001: the Windows Store project type adds its own folder, Generated Files\ and its intermediate folder to the
 # default include path, so the executable states its include path whole rather than appending to the default.
 NO_INHERITED_INCLUDES = {"OutpostCommander"}
@@ -650,8 +658,12 @@ def grouped(_findings):
   by_message = {}
   for location, check, message, where in _findings:
     by_message.setdefault((location, check, message), []).append(where)
-  return [Finding(location, check, f"{message} ({', '.join(f'{c}|{p}' for c, p in wheres)})")
-          for (location, check, message), wheres in by_message.items()]
+  findings = []
+  for (location, check, message), wheres in by_message.items():
+    if None not in wheres:
+      message = f"{message} ({', '.join(f'{configuration}|{platform}' for configuration, platform in wheres)})"
+    findings.append(Finding(location, check, message))
+  return findings
 
 
 def check_platforms(_tree):
@@ -724,10 +736,10 @@ def check_alignment(_tree):
       defines = split_list(values.get("ClCompile.PreprocessorDefinitions", ""))
       wanted = CONFIGURATION_DEFINES[configuration]
       unwanted = [name for name in CONFIGURATION_DEFINES.values() if name != wanted and name in defines]
+      other = CONFIGURATION_DEFINES["Release" if configuration == "Debug" else "Debug"]
       if wanted not in defines or unwanted:
         findings.append(Finding(project.vcxproj_path, "alignment",
-                                f"{configuration}|{platform} must define {wanted} and not "
-                                f"{CONFIGURATION_DEFINES['Release' if wanted == '_DEBUG' else 'Debug']} (AGENTS.md §3)"))
+                                f"{configuration}|{platform} must define {wanted} and not {other} (AGENTS.md §3)"))
   return findings
 
 
@@ -787,6 +799,8 @@ def check_include_paths(_tree):
                     where))
       named = set()
       for entry in entries:
+        if entry in EXTERNAL_INCLUDES.get(project.name, ()):
+          continue
         match = re.fullmatch(r"\$\(SolutionDir\)([A-Za-z0-9]+)[\\/]?", entry)
         if match is None:
           raw.append((project.vcxproj_path, "include-path",
@@ -799,7 +813,7 @@ def check_include_paths(_tree):
       for missing in sorted(expected - named):
         raw.append((project.vcxproj_path, "include-path",
                     f"does not include {missing}, which ADR-002 gives {project.name}", where))
-  return grouped([(location, check, message, where or ("any", "any")) for location, check, message, where in raw])
+  return grouped(raw)
 
 
 def check_packages(_tree):
@@ -810,12 +824,14 @@ def check_packages(_tree):
     listed = {}
     if (_tree.root / config_path).is_file():
       if not allowed:
-        findings.append(Finding(config_path, "packages", f"{project.name} is not in R14's table, so it has no packages"))
+        findings.append(Finding(config_path, "packages",
+                                f"{project.name} is not in R14's table, so it has no packages"))
       for package in parse_xml(_tree.root / config_path).iter("package"):
         identifier, version = package.get("id", ""), package.get("version", "")
         listed[f"{identifier}.{version}".lower()] = identifier
         if identifier not in allowed:
-          findings.append(Finding(config_path, "packages", f"lists {identifier}, which R14 does not give {project.name}"))
+          findings.append(Finding(config_path, "packages",
+                                  f"lists {identifier}, which R14 does not give {project.name}"))
     elif allowed:
       findings.append(Finding(project.vcxproj_path, "packages", f"has no packages.config, but R14 gives it "
                                                                 f"{', '.join(sorted(allowed))}"))
@@ -1055,7 +1071,8 @@ def self_test():
 
 def main():
   parser = argparse.ArgumentParser(description="Check the solution, the project files and the source tree's shape.")
-  parser.add_argument("--self-test", action="store_true", help="show that each check fires on a broken copy of the tree")
+  parser.add_argument("--self-test", action="store_true",
+                      help="show that each check fires on a broken copy of the tree")
   args = parser.parse_args()
   if args.self_test:
     return self_test()
