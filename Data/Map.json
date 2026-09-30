@@ -1,0 +1,33 @@
+{
+  "sizeMeters": 2000,
+  "minimumGapMeters": 60,
+  "starts": [
+    { "xMeters": -750, "zMeters": -750 },
+    { "xMeters": 750, "zMeters": 750 }
+  ],
+  "oreAsteroids": [
+    { "xMeters": -750, "zMeters": -490, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": -490, "zMeters": -750, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": -560, "zMeters": -560, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": 750, "zMeters": 490, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": 490, "zMeters": 750, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": 560, "zMeters": 560, "radiusMeters": 45, "yield": "home" },
+    { "xMeters": 290, "zMeters": 78, "radiusMeters": 45, "yield": "contested" },
+    { "xMeters": 78, "zMeters": 290, "radiusMeters": 45, "yield": "contested" },
+    { "xMeters": -212, "zMeters": 212, "radiusMeters": 45, "yield": "contested" },
+    { "xMeters": -290, "zMeters": -78, "radiusMeters": 45, "yield": "contested" },
+    { "xMeters": -78, "zMeters": -290, "radiusMeters": 45, "yield": "contested" },
+    { "xMeters": 212, "zMeters": -212, "radiusMeters": 45, "yield": "contested" }
+  ],
+  "asteroidFields": [
+    { "xMeters": 0, "zMeters": 0, "radiusMeters": 120 },
+    { "xMeters": -520, "zMeters": -200, "radiusMeters": 100 },
+    { "xMeters": -200, "zMeters": -520, "radiusMeters": 100 },
+    { "xMeters": -720, "zMeters": 250, "radiusMeters": 150 },
+    { "xMeters": 250, "zMeters": -720, "radiusMeters": 150 },
+    { "xMeters": 520, "zMeters": 200, "radiusMeters": 100 },
+    { "xMeters": 200, "zMeters": 520, "radiusMeters": 100 },
+    { "xMeters": 720, "zMeters": -250, "radiusMeters": 150 },
+    { "xMeters": -250, "zMeters": 720, "radiusMeters": 150 }
+  ]
+}

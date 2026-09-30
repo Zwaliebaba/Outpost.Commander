@@ -12,6 +12,9 @@ struct Entity
   StructureKind structure = StructureKind::CommandStation;
   PlanePosition position;
   float headingRadians = 0.0f;
+  float radiusMeters = 0.0f;
+  // Meaningful for an ore asteroid only.
+  OreYield oreYield = OreYield::Home;
   // Where a ship's last move order sends it, if anywhere. Movement toward it is task 2.4.
   std::optional<PlanePosition> destination;
 
@@ -44,8 +47,11 @@ class Simulation
 public:
   explicit Simulation(std::uint64_t _seed) noexcept;
 
-  // Match setup, before the first tick: places a ship. The map's starting entities (task 2.3) and production (4.3) will
-  // use it; until then only tests do.
+  // Match setup, before the first tick: places the map's ore asteroids and then its fields, in the file's order, as
+  // entities with no owner (task 2.3).
+  void PlaceMap(const Map& _map);
+
+  // Match setup, before the first tick: places a ship. Production (task 4.3) will use it; until then only tests do.
   EntityId SpawnShip(PlayerId _owner, DesignId _design, PlanePosition _position);
 
   // Runs one tick: applies _commands in order at its start, then advances the world. Returns one result per command.

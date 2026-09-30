@@ -36,7 +36,8 @@ struct LoggedCommand
 class InProcessServer final : public Server
 {
 public:
-  InProcessServer(Tuning _tuning, const ServerDesc& _desc);
+  // Places _map in a new simulation seeded from _desc.
+  InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc);
 
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
   void Advance(std::chrono::nanoseconds _elapsedWallTime) override;
@@ -49,6 +50,10 @@ public:
   [[nodiscard]] const Tuning& TuningData() const noexcept
   {
     return m_tuning;
+  }
+  [[nodiscard]] const Map& MapData() const noexcept
+  {
+    return m_map;
   }
   [[nodiscard]] const std::vector<LoggedCommand>& CommandLog() const noexcept
   {
@@ -67,6 +72,7 @@ private:
   };
 
   Tuning m_tuning;
+  Map m_map;
   Neuron::TickHost m_tickHost;
   Simulation m_simulation;
   std::vector<Connection> m_connections;
