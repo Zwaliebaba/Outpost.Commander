@@ -1,5 +1,6 @@
 #pragma once
-#include <windows.h>
+#include "framework.h"
+
 #include <unknwn.h>
 #include <restrictederrorinfo.h>
 #include <hstring.h>

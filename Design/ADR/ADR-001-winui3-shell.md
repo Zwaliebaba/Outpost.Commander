@@ -1,6 +1,6 @@
 # ADR-001 — WinUI 3 is the application shell (an exception to R14)
 
-Status: **accepted** · 2026-09-29
+Status: **accepted** · 2026-09-29 · Packaging decided and the template brought into line 2026-09-30
 
 ## Context
 
@@ -30,24 +30,34 @@ The alternative was a plain Win32 window that owns an `HWND` and a DXGI swap cha
 ## Consequences
 
 - AGENTS.md R14 and §2 point to this ADR as the one sanctioned exception.
-- CI has to restore NuGet packages before the Windows build (`nuget restore` or `msbuild /t:restore /p:RestorePackagesConfig=true`). A build on a clean clone does not work without it.
+- CI restores the NuGet packages in a step of its own before the Windows build: `nuget restore` for each `packages.config`, into `packages/`. A build on a clean clone does not work without it. The step was missing when this ADR was accepted, so CI stayed red on the missing packages until the milestone 1 scaffold added it.
 - **Composition adds latency.** A `SwapChainPanel` is presented through DWM composition, which typically adds a frame compared with a flip-model swap chain on an `HWND` in exclusive-like mode. For an RTS this is acceptable. For a twitch game it would not be. This figure is not measured here. Measure it when the renderer exists if it becomes a concern.
 - Windows App SDK versions move quickly. Updating is a deliberate change, done for all the packages above together, never one at a time.
 
-## Not yet brought into line (known, deliberate follow-ups)
+## Brought into line with the milestone 1 scaffold (2026-09-30)
 
-The template project still violates other rules in AGENTS.md. Fixing these is project setup, and it happens when the first real source file lands, not in this change:
+When this ADR was accepted, the template project still broke other rules in AGENTS.md. The milestone 1 scaffold is the first real source in the project, and it fixed them:
 
-- `Win32` and `ARM64` configurations in the project, and `ARM64`/`x86` platforms in `OutpostCommander.slnx` — §3 requires x64 only.
-- The `v143` fallback toolset, and `LanguageStandard` `stdcpp20`/`stdcpp17` — §3 requires `v145` and `/std:c++latest`.
-- `TreatWarningAsErrors`, `/permissive-`, `/fp:precise` and `/arch:AVX2` are not set explicitly — §3, R16.
-- `pch.h` includes `<windows.h>` itself instead of through the one header that owns the Windows macros (§4).
-- The `.filters` file has a `Project Files` filter and a `wil` natvis entry pointing outside the repository.
-- No `App.xaml` or entry point exists yet, so the project does not link (`LNK2019: WinMain`), before and after this change.
+- **x64 only.** The `Win32` and `ARM64` configurations are gone from the project, and the `ARM64` and `x86` platforms from `OutpostCommander.slnx` (§3).
+- **Toolset and standard.** The toolset is `v145` with no `v143` fallback, and `/std:c++latest` replaces `stdcpp20`/`stdcpp17` (§3).
+- **Compiler settings.** `TreatWarningAsError`, `ConformanceMode` (`/permissive-`), `/fp:precise` and `/arch:AVX2` are stated once in the project, for both configurations (§3, R16).
+- **Windows macros.** `pch.h` includes `framework.h`, the one header that owns the Windows macro family, instead of `<windows.h>` (§4).
+- **Filters.** They are functional: `Shell`, `Platform` and `Package`. The `Project Files` filter is gone, and so are the `wil` natvis entries that pointed outside the repository (§2).
+- **Entry point.** `App.xaml` and a `MainWindow` holding the `SwapChainPanel` give the executable the entry point the XAML compiler generates. Before this, it did not link (`LNK2019: WinMain`).
 
-## Open
+## What the shell brings into the tree
 
-**Packaged or unpackaged?** The template is MSIX-packaged (`AppxPackage`, `EnableMsixTooling`). Packaged apps must be deployed before they run, which slows the edit–run loop. `WindowsPackageType=None` (unpackaged, using the bootstrapper) runs straight from `x64/Debug`. Decide when milestone 1 is built.
+- **Two non-C++ source kinds, in the executable project only.** These are `.xaml` markup and `.idl` runtime-class definitions. Code-behind is named `<Type>.xaml.h` and `<Type>.xaml.cpp`, because the files the XAML compiler generates include those names. R7's `.h`/`.cpp` rule governs C++ source, and no library project has these files.
+- **Three namespaces that C++/WinRT requires by name:** `winrt`, `implementation` and `factory_implementation`. They keep the SDK's spelling (R4), and `.clang-tidy` exempts exactly these three from the CamelCase namespace rule.
+- **The executable is registered in `.clang-tidy`'s header filter.** The filter admits `.xaml.h`, so the code-behind headers are linted like any other.
+
+## Packaged, decided 2026-09-30
+
+The owner kept MSIX packaging (`AppxPackage`, `EnableMsixTooling`) for day-to-day development.
+
+- **What it buys:** the game runs as it will ship, with package identity, and the Windows App SDK runtime arrives as a framework-package dependency with no bootstrapper.
+- **What it costs:** a packaged app must be registered before it runs. Visual Studio's F5 registers the layout, and from the command line `Add-AppxPackage -Register <layout>\AppxManifest.xml` does. Either way, the edit–run loop is slower than an unpackaged executable run straight from `x64/Debug`.
+- CI builds the executable. It does not register or run the package.
 
 ## What this forecloses
 
