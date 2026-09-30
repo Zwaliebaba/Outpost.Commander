@@ -1,0 +1,481 @@
+# Outpost Commander — MVP Implementation Plan
+
+Status: **draft for review** · 2026-09-30 · Derived from [the MVP design](OutpostCommander-MVP.md)
+
+The MVP design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks an agent can pick up one at a time. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed.
+
+---
+
+## How an agent uses this plan
+
+1. **Read AGENTS.md first, then the design sections the task names.** Every task assumes both.
+2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done`, and whose gate is clear** (see the table below). Do one task per PR. A task too large for one PR is split in this file first, in its own small PR.
+3. **A gate is an owner decision.** If a task's gate is open, do not guess. Write the options with their costs, ask the owner, record the answer where the task says (the design document or an ADR), and only then build. The same applies to any design question this plan does not answer: AGENTS.md says the answer is written down before the code is.
+4. **Branch off `main`, fill in the PR template, and get CI green.** CI builds Debug|x64 only, and it runs the three checkers once phase 0 has written them.
+5. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU: CI is its only build. Anything touching rendering, input, audio or presentation must also be **run by the owner** (AGENTS.md §3). Such tasks say *Owner run*. Say plainly in the PR that it was not run, and the task stays `in review` until the owner has run it.
+6. **When the PR merges, update this file in the same PR or the next one:** status `done`, a link to the PR, and anything learned that changes a later task.
+7. **ADRs.** A task marked *ADR* takes an engineering decision. Write the ADR in the same PR, numbered after the highest existing one. Until the MVP is done, ADRs are edited in place (AGENTS.md §6).
+
+Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, GameApp, Opponent) need one namespace of their own (R9). Task 2.1 proposes it, and the owner confirms it before the first game type lands.
+
+---
+
+## Task board
+
+| Task | Title | Depends on | Gate | Status |
+|---|---|---|---|---|
+| 0.1 | `Build/CheckFormat.py` | — | — | todo |
+| 0.2 | `Build/CheckProjectFiles.py`: tree shape and names | — | — | todo |
+| 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | todo |
+| 0.4 | `Build/RunClangTidy.py` | 0.3 | — | todo |
+| 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | todo |
+| 1.1 | A Win32 window and message loop | 0.3 | — | todo |
+| 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
+| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
+| 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
+| 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
+| 1.6 | Milestone 1 review | 1.5 | — | todo |
+| 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | G4 game namespace | todo |
+| 2.2 | Tick host, seeded PRNG, in-process server | 2.1 | — | todo |
+| 2.3 | The map as data | 2.2 | — | todo |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
+| 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
+| 2.6 | Selection, orders and control groups | 2.5 | — | todo |
+| 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
+| 3.1 | Tuning data file, loaded by the game and the model | 2.2 | G6 data format | todo |
+| 3.2 | Components and designs | 3.1 | — | todo |
+| 3.3 | Combat rules | 3.2, 2.4 | — | todo |
+| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
+| 3.5 | Combat effects | 3.3, 2.5 | — | todo |
+| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 UI drawing | todo |
+| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | todo |
+| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | todo |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 Constructor numbers | todo |
+| 4.3 | Shipyard and Command Station queues | 4.2 | — | todo |
+| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | todo |
+| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | todo |
+| 4.6 | Hand checks of the structure numbers | 4.4 | — | todo |
+| 5.1 | Research | 4.3 | — | todo |
+| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | todo |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo |
+| 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
+| 6.2 | Win, lose and the menu | 6.1 | — | todo |
+| 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
+
+## Gates
+
+Each gate is an owner decision. Most are already listed as open in design §15.
+
+| Gate | Decision | Where it is recorded | Blocks |
+|---|---|---|---|
+| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling. Exclusive full screen is not ruled out by ADR-001, but it needs a reason. | New ADR | 1.2 |
+| G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
+| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
+| G4 | The namespace for the game layers. | AGENTS.md §1, R9 | 2.1 |
+| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
+| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy (design §12 says the numbers "will be loaded from a data file"). | New ADR; design §12 | 3.1 |
+| G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
+| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | Design §12 | 4.2 |
+| G9 | The AI's attack-group threshold (design §10, §15). | Design §12 | 6.1 |
+
+Turn rates (design §15) do not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 uses provisional values held as data.
+
+---
+
+## Phase 0 — The checkers
+
+AGENTS.md leans on three checkers that do not exist yet, and CI already runs each one the moment its file lands (`.github/workflows/build.yml`). They come first so that every later PR is gated by them. They are Python, and they run on Windows in CI; 0.1 and 0.2 must also run on Linux, so a cloud agent can run them before pushing.
+
+### 0.1 — `Build/CheckFormat.py`
+
+- **Goal:** the formatting gate of AGENTS.md §4.
+- **Scope:** `Build/CheckFormat.py`. It finds every tracked `.h` and `.cpp` except `CompiledShader/` output, and runs `clang-format --dry-run` on each. `--fix` rewrites the offending files in place. `--clang-format <exe>` picks the binary, which CI already passes as `clang-format-18`. It exits non-zero if any file is not clean, and names each one.
+- **Acceptance:** exit 0 on today's tree, which is clean under clang-format 18.1.3. Deliberately misformat one file and it names that file with exit 1; `--fix` then makes it clean. It needs nothing but the standard library.
+- **Verify:** run locally with `clang-format-18` on Linux; CI's `clang-format` job starts gating.
+
+### 0.2 — `Build/CheckProjectFiles.py`: tree shape and names
+
+- **Goal:** the checks in AGENTS.md §1's enforcement table that belong to this script, for the tree's shape.
+- **Scope:** `Build/CheckProjectFiles.py`, parsing `OutpostCommander.slnx`, every `.vcxproj` and every `.vcxproj.filters` with `xml.etree`. It checks:
+  - Every `.h`/`.cpp` in a project folder is in its `.vcxproj` and in its `.filters`, and every file those name exists (§2).
+  - Source sits directly in the project folder, apart from `Shader/` and `CompiledShader/` (§2). Shaders are named `<Shader>VS.hlsl` / `<Shader>PS.hlsl`.
+  - Filters are functional: no `Source Files`, `Header Files` or `Resource Files`, and a `.h` shares its `.cpp`'s filter (§2).
+  - File names are PascalCase `.h`/`.cpp` with R7's exceptions (`pch.h`, `pch.cpp`, `framework.h`, `targetver.h`, `Resource.h`). No `.hpp`, `.cc` or `.inl`.
+  - R2: no type name with an `I`/`C`/`S`/`E` prefix before a capital, a `Base`/`Abstract`/`Impl` affix, or a `_t` suffix. This is a regex over declarations; it does not need a parser.
+  - R11: no identifier uses the non-SDK spelling of a listed family (`colour`, `initialise`, `behaviour`, `centre`, …). Comments and strings are exempt.
+  - No `#include` climbs out of its own project (`..`), which is what makes ADR-002's include paths binding.
+  - `.clang-tidy`'s `HeaderFilterRegex` names every project in the solution.
+- **Acceptance:** exit 0 on today's tree, or a fix in the same PR for every finding (say which). Each check has a small negative case, as a script flag or a test, that shows it fires.
+- **Verify:** run locally on Linux; CI's "Check the build shape" step starts gating.
+
+### 0.3 — `Build/CheckProjectFiles.py`: build settings and include paths
+
+- **Goal:** the static alignment check that stands in for the Release and ARM64 builds CI never runs (AGENTS.md §3, ADR-003).
+- **Scope:** extend 0.2's script so that, for every project:
+  - `v145`, `stdcpplatest`, `ConformanceMode` true, `Level4`, `TreatWarningAsError` true and `Precise` are stated.
+  - The instruction set is `AdvancedVectorExtensions2` on x64 and `CPUExtensionRequirementsARMv80` on ARM64.
+  - Every setting outside AGENTS.md §3's list of what may differ reads the same in Debug and Release, and on x64 and ARM64 apart from the instruction set.
+  - Both platforms exist, and no others do.
+  - No project defines the Windows macro family (§4).
+  - Each project's include path matches ADR-002's table exactly.
+- **Acceptance:** exit 0 on today's tree. Removing one include directory from one configuration, or adding `NeuronServer` to `GameApp`'s include path, makes it fail and say which project and setting.
+- **Verify:** run locally; CI.
+
+### 0.4 — `Build/RunClangTidy.py`
+
+- **Goal:** the naming and lint gate of AGENTS.md §1.
+- **Scope:** `Build/RunClangTidy.py`. There is no CMake, so it builds each translation unit's command line from its `.vcxproj`:
+  - the include paths;
+  - `/std:c++latest`, `_DEBUG`, and the configuration's defines;
+  - the precompiled header, read as a normal include.
+
+  It then runs the pinned `clang-tidy` (CI installs `CLANG_TIDY_VERSION`) through its MSVC driver, with `INCLUDE` taken from the Developer environment, over every `.cpp` in the solution. Headers are covered through `.clang-tidy`'s `HeaderFilterRegex`. Any finding is exit 1.
+- **Acceptance:** CI's "Run clang-tidy" step passes on the tree, with any finding fixed in the same PR. A deliberately misnamed member (`int foo;` in a class) fails it.
+- **Verify:** CI only. It needs Windows.
+
+### 0.5 — `GameLogicTests` with `SuiteSmoke`
+
+- **Goal:** the test project that ADR-002 names, so that later tasks can test the simulation headlessly.
+- **Scope:** a native unit-test DLL project, `GameLogicTests`, using the Microsoft C++ unit-test framework that ships with Visual Studio. Its include path is `GameLogic`, `NeuronServer`, `GameProtocol` and `NeuronCore`, and it links those four; ADR-002 allows a test project to include `GameLogic`. It has a `SuiteSmoke` placeholder (AGENTS.md §3). It sits in the solution, and it matches 0.3's rules on both platforms. Add it to the ADR-002 table and to `.clang-tidy`'s header filter.
+- **Acceptance:** CI's "Run the tests" step finds the DLL and passes. `CheckProjectFiles.py` passes.
+- **Verify:** CI.
+
+---
+
+## Milestone 1 — A ship on screen
+
+Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded with its scale fixed, and the camera working.* The window, device and swap chain are engine code, in `NeuronClient`. `WinMain` stays in the executable.
+
+### 1.1 — A Win32 window and message loop
+
+- **Goal:** the executable opens a window and exits cleanly (ADR-001).
+- **Scope:** a window class in `NeuronClient`. It knows no game concept: title and size come from its caller. It has a `PeekMessage` loop that returns control each frame, and `wWinMain` in `OutpostCommander` returns the `WM_QUIT` message's `wParam`. It keeps the high-DPI awareness `app.manifest` declares.
+- **Acceptance:** CI green, the checkers pass, and the files are in `.vcxproj` and `.filters`.
+- **Verify:** CI; **owner run** of the packaged app (F5): a window appears and closes with exit code 0.
+
+### 1.2 — D3D12 device and flip-model swap chain
+
+- **Gate:** G1. **ADR:** the renderer's shape.
+- **Goal:** clear the window to a colour every frame, through `CreateSwapChainForHwnd` and `DXGI_SWAP_EFFECT_FLIP_DISCARD`.
+- **Scope:** in `NeuronClient`:
+  - device and adapter selection;
+  - command queue, allocators and lists, and fences;
+  - swap chain, back buffers and resize;
+  - present and device-removed handling.
+
+  COM lifetimes are held by `Microsoft::WRL::ComPtr` (R12), and barriers are written by hand (R14, no `d3dx12.h`). In Debug the D3D12 debug layer is on.
+- **Acceptance:** CI green. There are no debug-layer errors in a run, and resizing and minimising work.
+- **Verify:** **owner run**, x64 and ARM64: the development machine is ARM64 (ADR-003).
+
+### 1.3 — Mesh loading, with scale and forward axis as data
+
+- **Gate:** G2. **ADR:** how meshes reach the game.
+- **Goal:** load the hull meshes and draw one (design §11).
+- **Scope:**
+  - A loader in `NeuronClient` for what the meshes contain: positions, normals and faces. The `.mtl` references are ignored (design §11).
+  - A data file giving each model a scale and a forward axis. The hulls point along x and `Colonizer` along z, and up is y everywhere. The scale is measured from the mesh's extents, and the task states how. It is applied at load.
+  - The meshes are packaged into the MSIX layout under `Assets`, where `FileSys` looks (`NeuronCore/FileSys.h`).
+  - A mesh that fails to load is reported, not silently skipped.
+- **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes. The design notes that `Medium` is larger than `Large` before scaling.
+- **Verify:** **owner run:** one hull on screen, facing along its forward axis.
+
+### 1.4 — Flat-lit, team-coloured shading
+
+- **Goal:** meshes shaded with flat lighting and a team colour (design §11).
+- **Scope:** `NeuronClient/Shader/<Name>VS.hlsl` and `PS.hlsl`, compiled by `FXCompile` into `CompiledShader/` and included only by the `.cpp` that builds the pipeline state (AGENTS.md §2). Include a root signature, a pipeline state, a per-frame constant buffer and per-object colour.
+- **Acceptance:** CI green, with the compiled headers generated and not committed.
+- **Verify:** **owner run:** the hull reads clearly in two team colours.
+
+### 1.5 — The RTS camera
+
+- **Gate:** G3 for the final zoom limits; provisional limits are held as data.
+- **Goal:** design §4's camera. Pan by edge scroll, WASD and middle-drag. Zoom with the wheel, clamped. Rotate around the focus point with Q/E. The pitch comes from the zoom level, and the default view is about 500 m wide.
+- **Scope:** camera state and input in `GameApp`, since camera state is client state (ADR-002), over the view and projection math in `NeuronClient` (`DirectXMath`). A test grid on the y = 0 plane shows scale.
+- **Acceptance:** CI green. The camera math has unit tests where it is pure: the width at default zoom, and the pitch at each zoom limit.
+- **Verify:** **owner run.**
+
+### 1.6 — Milestone 1 review
+
+- **Goal:** close milestone 1 the way design §14 asks: run, not just built.
+- **Scope:** the owner runs the app on x64 and ARM64, Debug and Release. Record the outcome in this plan, fix what the run shows (split into tasks if large), and update design §14 if the milestone moved.
+- **Verify:** **owner run.**
+
+---
+
+## Milestone 2 — Ships that obey
+
+Design §14: *the in-process server ticking, selection, move commands, pathing around asteroids, and interpolated rendering.* This answers **Q5**, including the order-to-response delay, and the tick-time half of **Q4**. ADR-002 is the contract for everything here.
+
+### 2.1 — Protocol types: IDs, commands, snapshots, `Transport`
+
+- **Gate:** G4.
+- **Goal:** the types that cross the client/server boundary (ADR-002 decisions 2, 4, 6).
+- **Scope:** in `GameProtocol`:
+  - `EntityId` and `PlayerId`;
+  - a `Command` for each order in design §9 (move, attack, attack-move, stop, build structure, queue ship, start research, save design), tagged with its player;
+  - a per-player `Snapshot`;
+  - the `Transport` interface;
+  - the declaration of the in-process server factory.
+
+  All of them are plain data: no pointers into server state, and entities by ID only. The unit of each quantity is in its name (R6).
+- **Acceptance:** CI green. `GameApp` and `Opponent` compile against these types, and neither can include `GameLogic` (ADR-002's C1083 check).
+- **Verify:** CI.
+
+### 2.2 — Tick host, seeded PRNG, in-process server
+
+- **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
+- **Scope:**
+  - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data (design §12). Wall time becomes ticks at this one seam.
+  - A seeded PRNG owned by the server; never `std::random_device`.
+  - In `GameLogic`: world state, applying commands at the start of a tick with validation and rejection, building a snapshot per player, a `LoopbackTransport`, and the factory definition.
+  - The executable wires them together through `GameProtocol`.
+- **Acceptance:** tests in `GameLogicTests`:
+  - a command is applied on the next tick;
+  - an invalid command is rejected;
+  - the same seed and command log reproduce the same state on the same build.
+- **Verify:** CI.
+
+### 2.3 — The map as data
+
+- **Goal:** design §4's map. It is about 2,000 × 2,000 m, with two starts in opposite corners. It has 12 ore asteroids: 3 home asteroids by each base and 6 contested ones in the middle. Non-mineable asteroid fields act as circular obstacles and chokepoints.
+- **Scope:** a map data file and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `Art/Models/Asteroids`.
+- **Acceptance:** tests: the map loads, no obstacles overlap, and every asteroid can be reached from both starts.
+- **Verify:** CI; **owner run** once 2.5 renders it.
+
+### 2.4 — Movement, pathing and formations
+
+- **Gate:** G5 for the final footprint radii; provisional radii and turn rates are held as data.
+- **Goal:** ships path around circular obstacles and hold a loose formation at the pace of the group's slowest ship. They avoid overlapping but do not collide physically (design §9).
+- **Scope:** in `GameLogic`, with any reusable geometry in `NeuronServer` or `NeuronCore` if it knows no game concept (R9).
+- **Acceptance:** tests:
+  - a ship reaches a target behind an obstacle;
+  - a mixed group arrives together at its slowest member's speed;
+  - no two ships' footprints overlap by more than a stated tolerance after settling.
+- **Verify:** CI.
+
+### 2.5 — Rendering from interpolated snapshots
+
+- **Goal:** the client draws ships and asteroids from the last two snapshots, interpolated. It never draws server state (ADR-002 decision 5).
+- **Scope:** `GameApp` keeps the snapshot history and hands draw lists to `NeuronClient`.
+- **Acceptance:** CI green. A test covers the interpolation math.
+- **Verify:** **owner run:** smooth motion at 60 fps from a 20 Hz tick.
+
+### 2.6 — Selection, orders and control groups
+
+- **Goal:** design §9's player controls.
+  - Left-click to select, drag to box-select, Shift to add, and double-click to select every visible ship of that design.
+  - Right-click to move, or to attack an enemy. `A` and a click to attack-move, and `S` to stop.
+  - Ctrl+0–9 assigns a control group. 0–9 recalls it, and a double tap centres the camera on it.
+- **Scope:** selection and control groups are client state in `GameApp`. Orders become `Command`s through the transport.
+- **Acceptance:** CI green. Tests cover picking and box selection where they are pure math.
+- **Verify:** **owner run.**
+
+### 2.7 — Measure Q5 and the tick half of Q4
+
+- **Goal:** answer design Q5 (order-to-response delay ≤ 150 ms, and the boundary enforced by the build) and Q4's tick half (≤ 5 ms at 200 ships and 40 structures).
+- **Scope:**
+  - Instrument the tick time.
+  - Measure the time from input to the first frame showing the response. The PR states the method, so the figure is measured, not estimated (AGENTS.md §6).
+  - Add a scripted load of 200 ships and 40 static structures for the tick measurement.
+- **Acceptance:** the figures, the method and the machine are recorded in design §3. The Q5 boundary is confirmed by the C1083 check.
+- **Verify:** **owner run** on the development machine.
+
+---
+
+## Milestone 3 — Ships that fight
+
+Design §14: *weapons, damage and destruction, with designs as data from §12. A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in SimulationTests* (`GameLogicTests` here). This answers **Q2** and **Q4**.
+
+### 3.1 — Tuning data file, loaded by the game and the model
+
+- **Gate:** G6. **ADR:** the tuning data format.
+- **Goal:** design §12's numbers become data that the game loads and `Tools/BattleModel.py` reads, so that neither can disagree with the other.
+- **Scope:**
+  - The data file, and its loader in `GameLogic`.
+  - Change `Tools/BattleModel.py` to read it instead of §12's tables, together with §8's research table if G6 moves that too.
+  - Update design §12 as G6 decides.
+- **Acceptance:** `python Tools/BattleModel.py` gives the same verdicts as before the move. A test shows the game loads the same numbers.
+- **Verify:** CI; run the model locally.
+
+### 3.2 — Components and designs
+
+- **Goal:** hull + drive + weapon designs and their derived stats (design §7): hit points and speed from hull × drive, armour, cost, and the damage formula `max(damage × 0.25, damage − armour)`.
+- **Scope:** `GameLogic`.
+- **Acceptance:** a test compares every design's derived stats with the table `BattleModel.py` prints: cost, HP, armour, speed, range, and damage per second after armour against each hull.
+- **Verify:** CI.
+
+### 3.3 — Combat rules
+
+- **Goal:** design §7's combat rules.
+  - Hits are instant. Weapons are turrets and fire on the move.
+  - Auto-targeting takes the nearest enemy ship in range, otherwise the nearest structure, and keeps it until it dies or leaves range.
+  - An attack-moving ship stops at its own range and fires.
+  - Ships are destroyed at 0 HP.
+- **Scope:** `GameLogic`, using the server's PRNG for anything random, such as first-shot offsets.
+- **Acceptance:** tests:
+  - fire interval and damage after armour, per weapon;
+  - target choice and stickiness;
+  - attack-move stops at range;
+  - a ship can fire while moving.
+- **Verify:** CI.
+
+### 3.4 — The Q2 check as headless battles
+
+- **Goal:** design §3's Q2 check against the real simulation. From here on, where the model and the simulation disagree, the simulation is right and the model gets fixed.
+- **Scope:** scripted battles in `GameLogicTests` with the same stages, budgets, fire modes and criteria (a)–(d) as the model. Focus and spread fire are forced by test hooks, not by player orders.
+
+  The model fields a fractional ship for leftover Ore; the simulation cannot. So each budget runs as a grid of whole-ship budgets across the ±15% window, and the PR states how that maps onto the model's method.
+- **Acceptance:** the verdicts, and every disagreement with `BattleModel.py` with its cause, are recorded in design §12. Q2 stays "not yet" until 5.3, because the Missile Rack is not modelled.
+- **Verify:** CI. If the suite is too slow for CI, the PR proposes a split between a CI subset and a full local run.
+
+### 3.5 — Combat effects
+
+- **Goal:** the minimum needed to read combat (design §11): muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry. Hits are already resolved; effects are presentation.
+- **Scope:** `NeuronClient` rendering, driven from `GameApp`.
+- **Verify:** **owner run.**
+
+### 3.6 — In-game UI drawing and a first HUD
+
+- **Gate:** G7. **ADR:** how the game draws its UI.
+- **Goal:** text and panels drawn over the D3D12 scene, and a first HUD: the Ore stockpile and the selection panel. Q4 needs the HUD on screen.
+- **Scope:** UI rendering in `NeuronClient`. HUD state in `GameApp`.
+- **Verify:** **owner run.**
+
+### 3.7 — Q4 stress scene and measurement
+
+- **Goal:** answer design Q4. With 200 ships and 40 structures in combat at 1920×1080, with the HUD drawn, 99% of frames take ≤ 16.7 ms and a tick takes ≤ 5 ms.
+- **Scope:**
+  - A scripted stress scene.
+  - Frame-time capture: per-frame CPU and present intervals written to a file.
+  - A summary script under `Tools/`.
+- **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
+- **Verify:** **owner run**, Release.
+
+---
+
+## Milestone 4 — A base
+
+Design §14: *Constructors built at the Command Station, structures with the Defence gun, Ore, and the Shipyard queue.* Design §5 and §6 are the specification.
+
+### 4.1 — Ore, Mining Rigs and costs
+
+- **Goal:** design §5.
+  - One resource, Ore.
+  - A Mining Rig on an asteroid gives a fixed income: 5 Ore/s at home and 8 on a contested asteroid.
+  - There is no depletion and no hauling. One rig per asteroid, and it can be rebuilt after it is destroyed.
+  - Costs are paid when a job starts, with no refund. The starting stockpile comes from the tuning data.
+- **Acceptance:** tests of income per tick, payment at the start, no refund, and one rig per asteroid.
+- **Verify:** CI.
+
+### 4.2 — Structures, placement and Constructors
+
+- **Gate:** G8.
+- **Goal:** design §6.
+  - Structures have circular footprints that must not overlap, and a Mining Rig snaps to an asteroid.
+  - Constructors build structures, and several on one site build faster.
+  - A right-click on a damaged friendly repairs it.
+  - The client shows a ghost of the structure being placed.
+  - Players start with two Constructors, and the Command Station is placed before the match starts.
+- **Acceptance:** tests of placement legality, snapping, build progress with one and with two Constructors, and repair.
+- **Verify:** CI; **owner run** for the ghost and the build menu.
+
+### 4.3 — Shipyard and Command Station queues
+
+- **Goal:** the Shipyard builds ships from designs and the Command Station builds Constructors, each with a queue of up to 5 (design §6). Build times come from the tuning data.
+- **Acceptance:** tests of queue limits, build times and payment at the start.
+- **Verify:** CI.
+
+### 4.4 — The Defence gun and structure armour
+
+- **Goal:** the Defence Platform and the Command Station carry the Defence gun: 30 damage every 1.0 s, at 250 m. Both have armour 10; every other structure has none (design §6, §12). Auto-targeting uses the same rules as ships.
+- **Acceptance:** tests: the gun outranges the Lance and not the Missile Rack, and armour cuts a Mass Driver hit from 14 to 4.
+- **Verify:** CI.
+
+### 4.5 — The full HUD and the minimap
+
+- **Goal:** design §9's HUD: the Ore stockpile and income, the selection panel, build and research queues, and a minimap.
+- **Verify:** **owner run.**
+
+### 4.6 — Hand checks of the structure numbers
+
+- **Goal:** check design §6's hand estimates against the simulation. Design §15 says the Defence gun and structure armour are checked at milestone 4.
+- **Scope:** scripted scenarios in `GameLogicTests`:
+  - a lone platform against five Small+Ion+Mass Driver ships;
+  - the armed Command Station against seven;
+  - the unarmed-station rush time.
+- **Acceptance:** the results are recorded in design §6 and §12. Any number that misses its intent is raised with the owner, not retuned silently.
+- **Verify:** CI.
+
+---
+
+## Milestone 5 — Designs and research
+
+Design §14: *the designer in the Shipyard panel, components and the research tree.* Design §7, §8 and §9 are the specification.
+
+### 5.1 — Research
+
+- **Goal:** design §8.
+  - One Research Lab per player, researching one topic at a time.
+  - Topics cost Ore and time, and some require another topic.
+  - Upgrades apply at once to every existing ship and structure. They change rates, never the size of a hit.
+  - Some topics unlock the Large hull, the Fusion Drive or the Missile Rack.
+- **Acceptance:** tests of prerequisites, the one-lab limit, upgrades applying to units that already exist, and unlocks.
+- **Verify:** CI.
+
+### 5.2 — The ship designer in the Shipyard panel
+
+- **Goal:** design §9's designer.
+  - A picker for each slot.
+  - Live stats: damage per second after armour against each hull, per ship and per 100 Ore.
+  - Cost and build time.
+  - Save, rename and queue.
+  - Every match starts with the four starting designs saved.
+  - It pauses nothing.
+
+  "Save design" is a command.
+- **Verify:** CI for the stats math, which should match `BattleModel.py`; **owner run** for the panel.
+
+### 5.3 — The Missile Rack, in the game and in the model
+
+- **Gate:** G5.
+- **Goal:** splash damage with a 30 m radius, and the 280 m range, in both the simulation and `Tools/BattleModel.py`. This means the model's clumps get the spacing that ship sizes imply. Rerun the Q2 check, since it cannot be "yes" until the Missile Rack is in (design §3, §12).
+- **Acceptance:** Q2's standing is recorded in design §12, with the model and the simulation both including the Missile Rack.
+- **Verify:** CI; run the model locally.
+
+---
+
+## Milestone 6 — An opponent
+
+Design §14: *the AI player and the win/lose condition.* This answers **Q1** and **Q3**.
+
+### 6.1 — The AI player
+
+- **Gate:** G9.
+- **Goal:** design §10's scripted AI, in `Opponent`, as a client. It reads its snapshot and sends commands, and it includes only `GameProtocol` (ADR-002).
+  1. It builds a Shipyard, a Research Lab and rigs on its home asteroids, then expands to the contested ones.
+  2. It researches in a fixed order.
+  3. It counters the player's most common design, reviewed every 60 s.
+  4. It gathers an attack group to a threshold, then attack-moves on the nearest player structure.
+  5. It sends ships outside the attack group to defend a rig or platform under attack.
+  6. It rebuilds rigs and replaces Constructors.
+  7. It does not kite.
+- **Acceptance:** tests in which scripted snapshots produce the expected commands: the build order, the counter choice after a review, the defence response.
+- **Verify:** CI; **owner run.**
+
+### 6.2 — Win, lose and the menu
+
+- **Goal:** losing your Command Station loses the match. The menu offers Start skirmish and Quit, and nothing else (design §6, §9).
+- **Verify:** CI for the rule; **owner run.**
+
+### 6.3 — Q1 and Q3 playtests
+
+- **Goal:** answer design Q1 and Q3. Q1: a full match against the AI lasts 15–25 minutes and is something the owner wants to play again. Q3: research choices visibly change what gets built in the mid-game.
+- **Scope:** the owner plays. The agent's part is a match log: its length, the research order and timing, and the designs built over time. It writes the log to a file, and adds a summary tool under `Tools/`.
+- **Acceptance:** the answers to Q1 and Q3, "no" included, are recorded in design §3. A failed answer is still a result (design §3).
+- **Verify:** **owner run.**
+
+---
+
+## What finishes the MVP
+
+The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.

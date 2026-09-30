@@ -4,28 +4,28 @@ Status: **accepted** · 2026-09-30
 
 ## Context
 
-AGENTS.md §3 made x64 the only platform, and R16 made `/arch:AVX2` the instruction set of every project. The owner's direction is that the solution builds for **x64 and ARM64**, and for nothing else.
+The owner's direction is that the solution builds for **x64 and ARM64**, and for nothing else.
 
-The development machine is a Snapdragon X, an ARM64 CPU. Until now the game ran on it only as an emulated x64 binary. Windows on ARM is also a real share of the PCs the game can run on, and WinUI 3 and the Windows App SDK packages of ADR-001 ship ARM64 binaries. The dedicated server of ADR-002 runs in a Windows Server container. That is x64 in practice, but nothing in the server layer is tied to it.
+The development machine is a Snapdragon X, an ARM64 CPU, where an x64 build runs only under emulation. Windows on ARM is also a real share of the PCs the game can run on. The dedicated server of ADR-002 runs in a Windows Server container. That is x64 in practice, but nothing in the server layer is tied to it.
 
-`/arch:AVX2` is an x86 switch and means nothing on ARM64, so R16's rule has to be stated per platform.
+R16 requires the instruction set to be stated in every project. `/arch:AVX2` is an x86 switch and means nothing on ARM64, so the setting is stated per platform.
 
 ## Decision
 
 1. **The solution and every project have exactly two platforms, x64 and ARM64**, each with Debug and Release. There is no Win32/x86, no 32-bit ARM and no ARM64EC. ARM64EC exists to mix x64 and ARM64 code in one process, and nothing here needs that.
 2. **The instruction set is stated per platform, in every project, identically in Debug and Release** (R16):
-   - x64: `/arch:AVX2` (`AdvancedVectorExtensions2`), unchanged.
+   - x64: `/arch:AVX2` (`AdvancedVectorExtensions2`).
    - ARM64: `/arch:armv8.0` (`CPUExtensionRequirementsARMv80`). This is the ARM64 baseline and also MSVC's default, but R16 asks for the setting to be written down, not inherited. Raising the floor to a later ARMv8.x is a new decision with its own cost to name, as AVX2's is in R16.
 3. **Everything that is not the instruction set is the same on both platforms**: toolset, language standard, conformance, warnings, floating-point model, include paths and precompiled headers. §3's Debug/Release alignment rule applies in both directions: across configurations and across platforms.
 4. **Code is portable between the two by default.** An intrinsic or other platform-specific code path sits behind `_M_X64` / `_M_ARM64` with an implementation for each platform, and never builds for only one of them.
-5. **CI builds Debug|x64 only**, as before. ARM64 is built by whoever changes something platform-specific, and by whoever ships. It is not a second CI build.
+5. **CI builds Debug|x64 only.** ARM64 is built by whoever changes something platform-specific, and by whoever ships. It is not a second CI build.
 
 ## Consequences
 
-- Build output lands in `ARM64/` beside `x64/`. Both are already ignored.
+- Build output lands in `ARM64/` beside `x64/`. Both are ignored.
 - The same float code may give different results on the two platforms: the two instruction sets differ, and so do the compiler's choices about contracting `a*b+c` into an FMA. ADR-002 already requires no cross-machine determinism, because only the server simulates. A replay from a seed and command log (ADR-002 §8) reproduces on the same build for the same platform, not across platforms.
 - An ARM64-only defect cannot be caught by CI. The owner builds ARM64 natively on the development machine, which covers this in practice. If ARM64 starts breaking unnoticed, the fix is an ARM64 CI job, not a guard.
-- Only the executable restores packages (ADR-001). Every package it uses has to provide ARM64 binaries. A future package without them cannot be adopted.
+- The only packages are ADR-001's two build-time MSIX tools, and the game links nothing from them. A package the game linked would have to ship ARM64 binaries.
 
 ## What this forecloses
 
