@@ -100,15 +100,14 @@ WarningsAsErrors: '*'
 # compare this list against the solution rather than trusting anyone to remember.
 #
 # Seeded with the `<Something>Tests` convention; each project adds its own name when its first
-# hand-written header lands, as OutpostCommander and NeuronCore did. `(\.xaml)?` admits the code-behind headers the
-# XAML compiler names `<Type>.xaml.h` (ADR-001), which are hand-written like any other.
+# hand-written header lands, as OutpostCommander and NeuronCore did.
 #
 # [/\\], not '/'. On a Windows Clang build the paths arrive with backslashes, so a filter anchored
 # on a forward slash matches no header at all and silently suppresses every in-build diagnostic.
 # The pattern matches headers sitting DIRECTLY in a project folder, which is every hand-written
 # one (AGENTS.md §2's flat-directory rule). A bare `.*` would also match build output and the
 # Windows SDK, and most of what it reported would be from headers nobody here wrote.
-HeaderFilterRegex: '(NeuronCore|OutpostCommander|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+(\.xaml)?\.h$'
+HeaderFilterRegex: '(NeuronCore|OutpostCommander|[A-Za-z0-9]+Tests)[/\\][A-Za-z0-9]+\.h$'
 
 # A `Resource.h` is written by the Visual Studio resource editor, not by hand. Its
 # `#define IDC_STATIC -1` trips bugprone-macro-parentheses, and the fix would be undone the next
@@ -120,8 +119,6 @@ ExcludeHeaderFilterRegex: 'Resource\.h$'
 CheckOptions:
   # ── Types: PascalCase, no prefix of any kind (R2, R5) ──────────────────────────────
   - { key: readability-identifier-naming.NamespaceCase,            value: CamelCase  }
-  # C++/WinRT requires these three namespaces by name, so they keep the SDK's spelling (R4).
-  - { key: readability-identifier-naming.NamespaceIgnoredRegexp,   value: '^(winrt|implementation|factory_implementation)$' }
   - { key: readability-identifier-naming.ClassCase,                value: CamelCase  }
   - { key: readability-identifier-naming.StructCase,               value: CamelCase  }
   - { key: readability-identifier-naming.EnumCase,                 value: CamelCase  }

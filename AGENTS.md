@@ -4,7 +4,7 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in the design document.
 
-**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with two projects: NeuronCore, the static library every other project builds on, and the game executable (ADR-001), which starts and exits without a window yet. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
+**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with two projects: NeuronCore, the static library every other project builds on, and the game executable, a plain Win32 app packaged as MSIX (ADR-003), which starts and exits without a window yet. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
@@ -152,7 +152,7 @@ The concrete layout — the solution, the projects and the edges between them �
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the Windows App SDK / WinUI 3 packages listed in [ADR-001](Design/ADR/ADR-001-winui3-shell.md) through `packages.config`. See R14.
+**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the two MSIX packaging tools listed in [ADR-003](Design/ADR/ADR-003-win32-shell.md) through `packages.config`. See R14.
 
 **Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -220,7 +220,7 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 **R14 — No third-party dependencies and no package manager.** The Windows SDK and the MSVC standard library, and nothing else. If you believe something is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar.
 
-**The one exception is the application shell** ([ADR-001](Design/ADR/ADR-001-winui3-shell.md)). The game executable is a WinUI 3 app and restores the NuGet packages that WinUI 3 needs. ADR-001's table is the complete list. Only the executable project references them. Engine and simulation libraries stay within R14 as written, with no WinRT, XAML or package includes. Any other package is a new ADR.
+**The one exception is packaging** ([ADR-003](Design/ADR/ADR-003-win32-shell.md)). The game executable is packaged as MSIX and restores the two packaging tools ADR-003 lists; its table is the complete list. They are build-time tools, and the game compiles and links nothing from them. Only the executable project references them, and no project includes WinRT or XAML. Any other package is a new ADR.
 
 **It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are allowed, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 

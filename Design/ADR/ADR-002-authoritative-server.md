@@ -35,7 +35,7 @@ The owner chose the second. The decision to record is how the code is shaped so 
 ## Layer shape (proposal, fixed when the projects are created)
 
 ```
-OutpostCommander (exe, WinUI 3)  ── client: UI, input, camera, presentation
+OutpostCommander (exe, Win32)    ── client: UI, input, camera, presentation (ADR-003)
  ├── Engine     (static lib)      ── D3D12 renderer, mesh loading, math. Knows no game concepts (R9)
  ├── Protocol   (static lib)      ── commands, snapshots, entity IDs, Transport, the in-process server's factory
  ├── Opponent   (static lib)      ── the AI player. Builds on Protocol only

@@ -96,7 +96,7 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      # nuget.exe restores the game executable's packages.config (ADR-001). Taken from the action rather
+      # nuget.exe restores the game executable's packages.config (ADR-003). Taken from the action rather
       # than trusted to be on the image, and printed below like the rest of the toolchain.
       - name: Add NuGet to PATH
         uses: NuGet/setup-nuget@v2
@@ -162,8 +162,8 @@ jobs:
         shell: pwsh
         run: python Build\CheckProjectFiles.py
 
-      # The game executable restores the Windows App SDK packages it needs through packages.config
-      # (ADR-001), and without them the build stops before it compiles anything. Every packages.config
+      # The game executable restores the MSIX packaging tools it needs through packages.config
+      # (ADR-003), and without them the build stops before it compiles anything. Every packages.config
       # restores into the root packages/ folder, where the project imports look (..\packages from a
       # project folder, which AGENTS.md §2 keeps one level deep). Found, not named, like the solution.
       - name: Restore NuGet packages

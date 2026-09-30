@@ -1,6 +1,8 @@
 # ADR-001 — WinUI 3 is the application shell (an exception to R14)
 
-Status: **accepted** · 2026-09-29 · Packaging decided and the template brought into line 2026-09-30
+Status: **superseded** by [ADR-003](ADR-003-win32-shell.md) on 2026-09-30 · accepted 2026-09-29 · Packaging decided and the template brought into line 2026-09-30
+
+The executable is no longer a WinUI 3 app. ADR-003 keeps the packaging decision below and drops WinUI, XAML and the Windows App SDK. What follows is the record of the decision as it was taken.
 
 ## Context
 
