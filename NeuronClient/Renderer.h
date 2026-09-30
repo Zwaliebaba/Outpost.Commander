@@ -2,7 +2,8 @@
 
 namespace Neuron
 {
-// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). It knows no game
+// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). It uses d3dx12's
+// helpers for barriers and descriptors (ADR-007). It knows no game
 // concept: it clears to the color it is given and presents.
 class Renderer : NonCopyable
 {

@@ -6,7 +6,8 @@ authority for the layout; this script only asks clang-format whether each file a
 
 Which files: those git tracks, plus new files it does not yet track but does not ignore, so a file you have not added
 yet is checked before you push rather than first in CI. CompiledShader/ is build output (AGENTS.md §2) and is skipped
-even if something has put it in the index.
+even if something has put it in the index, and so is vendored third-party source (ADR-007), which keeps its upstream
+layout.
 
 How a file is judged: clang-format writes the formatted file to stdout, and the file is clean when that is
 byte-for-byte what is on disk. That is what `clang-format --dry-run` reports, with one difference: a clang-format that
@@ -34,6 +35,9 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from CheckProjectFiles import VENDORED_FILES  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PINNED_VERSION = "18.1.3"
@@ -74,7 +78,7 @@ def source_files():
     if not name.endswith(EXTENSIONS):
       continue
     relative = Path(name)
-    if any(part in SKIPPED_DIRECTORIES for part in relative.parts):
+    if any(part in SKIPPED_DIRECTORIES for part in relative.parts) or name in VENDORED_FILES:
       continue
     # Deleted from the working tree but still in the index: nothing to format.
     if (REPO_ROOT / relative).is_file():

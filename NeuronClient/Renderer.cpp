@@ -8,8 +8,8 @@
 
 #include "Renderer.h"
 
+// dxgi.lib and dxguid.lib are named by DirectXHelper.h.
 #pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
 
 namespace
 {
@@ -26,11 +26,11 @@ constexpr DWORD FRAME_WAIT_TIMEOUT_MILLISECONDS = 1000;
 void EnableDebugLayers() noexcept
 {
   winrt::com_ptr<ID3D12Debug> debug;
-  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(debug.put()))))
+  if (SUCCEEDED(D3D12GetDebugInterface(IID_GRAPHICS_PPV_ARGS(debug))))
     debug->EnableDebugLayer();
 
   winrt::com_ptr<ID3D12DeviceRemovedExtendedDataSettings> removedDeviceData;
-  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(removedDeviceData.put()))))
+  if (SUCCEEDED(D3D12GetDebugInterface(IID_GRAPHICS_PPV_ARGS(removedDeviceData))))
   {
     removedDeviceData->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
     removedDeviceData->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
@@ -42,10 +42,10 @@ winrt::com_ptr<IDXGIFactory6> CreateFactory()
 {
   winrt::com_ptr<IDXGIFactory6> factory;
 #if defined(_DEBUG)
-  if (SUCCEEDED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(factory.put()))))
+  if (SUCCEEDED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_GRAPHICS_PPV_ARGS(factory))))
     return factory;
 #endif
-  winrt::check_hresult(CreateDXGIFactory2(0, IID_PPV_ARGS(factory.put())));
+  winrt::check_hresult(CreateDXGIFactory2(0, IID_GRAPHICS_PPV_ARGS(factory)));
   return factory;
 }
 
@@ -55,7 +55,8 @@ winrt::com_ptr<ID3D12Device> CreateDevice(IDXGIFactory6* _factory)
   for (UINT index = 0;; ++index)
   {
     winrt::com_ptr<IDXGIAdapter1> adapter;
-    const HRESULT result = _factory->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(adapter.put()));
+    const HRESULT result =
+      _factory->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_GRAPHICS_PPV_ARGS(adapter));
     if (result == DXGI_ERROR_NOT_FOUND)
       break;
     winrt::check_hresult(result);
@@ -66,22 +67,10 @@ winrt::com_ptr<ID3D12Device> CreateDevice(IDXGIFactory6* _factory)
       continue;
 
     winrt::com_ptr<ID3D12Device> device;
-    if (SUCCEEDED(D3D12CreateDevice(adapter.get(), MINIMUM_FEATURE_LEVEL, IID_PPV_ARGS(device.put()))))
+    if (SUCCEEDED(D3D12CreateDevice(adapter.get(), MINIMUM_FEATURE_LEVEL, IID_GRAPHICS_PPV_ARGS(device))))
       return device;
   }
   throw winrt::hresult_error(DXGI_ERROR_UNSUPPORTED, L"No graphics adapter in this PC supports Direct3D 12.");
-}
-
-D3D12_RESOURCE_BARRIER Transition(ID3D12Resource* _resource, D3D12_RESOURCE_STATES _before, D3D12_RESOURCE_STATES _after) noexcept
-{
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = _resource;
-  barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-  barrier.Transition.StateBefore = _before;
-  barrier.Transition.StateAfter = _after;
-  return barrier;
 }
 } // namespace
 
@@ -101,7 +90,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
     .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
     .NodeMask = 0,
   };
-  winrt::check_hresult(m_device->CreateCommandQueue(&queueDescription, IID_PPV_ARGS(m_queue.put())));
+  winrt::check_hresult(m_device->CreateCommandQueue(&queueDescription, IID_GRAPHICS_PPV_ARGS(m_queue)));
 
   // Tearing can only be allowed when the swap chain is created, so it is asked for whenever the system supports it and
   // used only when vsync is off (ADR-006).
@@ -127,7 +116,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   };
   winrt::com_ptr<IDXGISwapChain1> swapChain;
   winrt::check_hresult(m_factory->CreateSwapChainForHwnd(m_queue.get(), _window, &swapChainDescription, nullptr, nullptr, swapChain.put()));
-  winrt::check_hresult(swapChain->QueryInterface(IID_PPV_ARGS(m_swapChain.put())));
+  winrt::check_hresult(swapChain->QueryInterface(IID_GRAPHICS_PPV_ARGS(m_swapChain)));
 
   // The game is always borderless full screen; DXGI's own Alt+Enter would switch to exclusive full screen (ADR-006).
   winrt::check_hresult(m_factory->MakeWindowAssociation(_window, DXGI_MWA_NO_ALT_ENTER));
@@ -140,16 +129,16 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
     .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     .NodeMask = 0,
   };
-  winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_PPV_ARGS(m_renderTargetHeap.put())));
+  winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_renderTargetHeap)));
   m_renderTargetDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
   for (auto& allocator : m_commandAllocators)
-    winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(allocator.put())));
+    winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].get(), nullptr,
-                                                   IID_PPV_ARGS(m_commandList.put())));
+                                                   IID_GRAPHICS_PPV_ARGS(m_commandList)));
   winrt::check_hresult(m_commandList->Close());
 
-  winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_fence.put())));
+  winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(m_fence)));
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
   CreateRenderTargets();
@@ -204,10 +193,11 @@ void Neuron::Renderer::RenderFrame(const std::array<float, 4>& _clearColor)
   PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Clear");
 
   ID3D12Resource* backBuffer = m_backBuffers[frameIndex].get();
-  const D3D12_RESOURCE_BARRIER toRenderTarget = Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+  const auto toRenderTarget =
+    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
   m_commandList->ResourceBarrier(1, &toRenderTarget);
   m_commandList->ClearRenderTargetView(RenderTargetView(frameIndex), _clearColor.data(), 0, nullptr);
-  const D3D12_RESOURCE_BARRIER toPresent = Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
   m_commandList->ResourceBarrier(1, &toPresent);
 
   PIXEndEvent(m_commandList.get());
@@ -236,16 +226,15 @@ void Neuron::Renderer::CreateRenderTargets()
 
   for (UINT index = 0; index < FRAME_COUNT; ++index)
   {
-    winrt::check_hresult(m_swapChain->GetBuffer(index, IID_PPV_ARGS(m_backBuffers[index].put())));
+    winrt::check_hresult(m_swapChain->GetBuffer(index, IID_GRAPHICS_PPV_ARGS(m_backBuffers[index])));
     m_device->CreateRenderTargetView(m_backBuffers[index].get(), &viewDescription, RenderTargetView(index));
   }
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::RenderTargetView(UINT _index) const noexcept
 {
-  D3D12_CPU_DESCRIPTOR_HANDLE handle = m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
-  handle.ptr += static_cast<SIZE_T>(_index) * m_renderTargetDescriptorSize;
-  return handle;
+  return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(_index),
+                                       m_renderTargetDescriptorSize);
 }
 
 void Neuron::Renderer::WaitForGpu()
