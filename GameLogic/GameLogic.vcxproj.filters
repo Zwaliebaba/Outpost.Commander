@@ -4,18 +4,41 @@
     <Filter Include="Tuning">
       <UniqueIdentifier>{e91331e2-ffa7-4473-8eb1-69a430dd69f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Simulation">
+      <UniqueIdentifier>{92ccb3a2-292c-47ba-8f2e-76c97ff86d78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Server">
+      <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameLogic.h" />
+    <ClInclude Include="Simulation.h">
+      <Filter>Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="InProcessServer.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Tuning</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Simulation.cpp">
+      <Filter>Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="InProcessServer.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Tuning</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\Data\Tuning.json">
+      <Filter>Tuning</Filter>
+    </Content>
   </ItemGroup>
 </Project>

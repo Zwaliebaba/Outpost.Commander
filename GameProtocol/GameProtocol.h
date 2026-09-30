@@ -5,6 +5,7 @@
 
 #include "NeuronCore.h"
 
+#include <chrono>
 #include <compare>
 #include <variant>
 
