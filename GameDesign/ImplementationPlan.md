@@ -31,17 +31,17 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | done, [#29](https://github.com/Zwaliebaba/Outpost.Commander/pull/29), run by the owner |
-| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`, meshes converted); provenance before shipping | in review, owner run |
-| 1.4 | Flat-lit, team-coloured shading | 1.3 | — | in review, owner run |
-| 1.5 | The RTS camera | 1.4 | G3 zoom limits (provisional in use) | in review, owner run |
-| 1.6 | Milestone 1 review | 1.5 | — | todo, next: the owner's run |
+| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`, meshes converted); provenance before shipping | done, [23f0c1f](https://github.com/Zwaliebaba/Outpost.Commander/commit/23f0c1f), run by the owner |
+| 1.4 | Flat-lit, team-coloured shading | 1.3 | — | done, [23f0c1f](https://github.com/Zwaliebaba/Outpost.Commander/commit/23f0c1f), run by the owner |
+| 1.5 | The RTS camera | 1.4 | G3 zoom limits (provisional in use) | done, [23f0c1f](https://github.com/Zwaliebaba/Outpost.Commander/commit/23f0c1f), run by the owner |
+| 1.6 | Milestone 1 review | 1.5 | — | done, run by the owner |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
-| 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | in review, owner run |
-| 2.6 | Selection, orders and control groups | 2.5 | — | in review, owner run |
-| 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | in review, owner run |
+| 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
+| 2.6 | Selection, orders and control groups | 2.5 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
+| 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | done, [0d90731](https://github.com/Zwaliebaba/Outpost.Commander/commit/0d90731), run by the owner |
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
@@ -194,7 +194,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   - A mesh that fails to load is reported, not silently skipped.
 - **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes in both sets, and that each hull is the same size in the Human and Tarkan sets. The design notes that the Tarkan `Medium` is larger than its `Large` before scaling.
 - **Verify:** **owner run:** one Human and one Tarkan hull on screen, each facing along its forward axis.
-- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::ParseCmo` and `Neuron::OrientMesh` in `NeuronClient`; `OutpostCommander/Assets/Models.json` gives each set its color and each model its `forwardAxis` and `lengthMeters`, read by `Outpost::LoadModelCatalog` in `GameApp`. The scale is the model's length divided by its mesh's extent along its forward axis. Hull lengths are provisional with G5: Small 20 m, Medium 35 m, Large 60 m. The Human set faces −z; the Tarkan hulls are set to +x, and several of them are close to symmetric end to end, so the owner's run confirms which end is the front. `GameAppTests`, a new test project, checks that every shipped model parses, that the hulls load in size order in both sets and at the same length in both, and that orienting keeps the winding. Every model loads at start, and one that fails stops the game with the file's name.
+- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::ParseCmo` and `Neuron::OrientMesh` in `NeuronClient`; `OutpostCommander/Assets/Models.json` gives each set its color and each model its `forwardAxis` and `lengthMeters`, read by `Outpost::LoadModelCatalog` in `GameApp`. The scale is the model's length divided by its mesh's extent along its forward axis. Hull lengths are provisional with G5: Small 20 m, Medium 35 m, Large 60 m. The Human set faces −z; the Tarkan hulls are set to +x, and several of them are close to symmetric end to end; the owner's run confirmed which end is the front. `GameAppTests`, a new test project, checks that every shipped model parses, that the hulls load in size order in both sets and at the same length in both, and that orienting keeps the winding. Every model loads at start, and one that fails stops the game with the file's name.
 
 ### 1.4 — Flat-lit, team-coloured shading
 
@@ -218,6 +218,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Goal:** close milestone 1 the way design §14 asks: run, not just built.
 - **Scope:** the owner runs the app on x64 and ARM64, Debug and Release. Record the outcome in this plan, fix what the run shows (split into tasks if large), and update design §14 if the milestone moved.
 - **Verify:** **owner run.**
+- **As built:** milestone 1 landed on `main` as one commit, [23f0c1f](https://github.com/Zwaliebaba/Outpost.Commander/commit/23f0c1f), and the owner closed it on 2026-09-30 after running it.
 
 ---
 
@@ -309,7 +310,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - **Q5 is met:** 43 ms mean and 67 ms worst, from an injected click to the frame that shows the ship respond. The boundary fails to compile, as it should.
   - **The tick half of Q4 is met in steady play:** 0.18 ms mean and 0.37 ms at the 99th percentile. It is **missed on the ticks that order both 100-ship fleets at once**: up to 8.3 ms. Whether that needs fixing is open in design §15.
   - **How it was built:** `--measure` logs tick durations and order-to-response times to `OutpostCommander-measure.log` in the temporary folder. `--load` places `PlaceMeasurementLoad`'s 200 ships and 40 structures, and `LoadDriver` keeps both fleets moving. `Server::TakeTickDurations` reports the server's own timing. `Simulation::SpawnStructure` places the load's structures, which do not block movement until 4.2.
-  - **Owner run still to do:** the runs were driven by a script on the owner's machine. The owner repeats them by hand with `OutpostCommander.exe --measure` and `--measure --load`.
+  - **How to repeat it:** the recorded runs were driven by a script on the owner's machine. `OutpostCommander.exe --measure` and `--measure --load` repeat them by hand. The owner closed the task on 2026-09-30.
 
 ---
 
