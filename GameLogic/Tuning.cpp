@@ -60,6 +60,8 @@ Outpost::HullTuning ReadHull(ObjectReader& _reader)
   hull.speedMetersPerSecond = _reader.Number("speedMetersPerSecond", JsonBound::Positive);
   hull.cost = _reader.Integer("cost", 0);
   hull.buildSeconds = _reader.Number("buildSeconds", JsonBound::Positive);
+  hull.footprintRadiusMeters = _reader.Number("footprintRadiusMeters", JsonBound::Positive);
+  hull.turnRateDegreesPerSecond = _reader.Number("turnRateDegreesPerSecond", JsonBound::Positive);
   return hull;
 }
 
@@ -70,6 +72,7 @@ Outpost::DriveTuning ReadDrive(ObjectReader& _reader)
   drive.name = _reader.String("name");
   drive.speedFactor = _reader.Number("speedFactor", JsonBound::Positive);
   drive.hitPointsFactor = _reader.Number("hitPointsFactor", JsonBound::Positive);
+  drive.turnRateFactor = _reader.Number("turnRateFactor", JsonBound::Positive);
   drive.cost = _reader.Integer("cost", 0);
   return drive;
 }

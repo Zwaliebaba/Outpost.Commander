@@ -84,8 +84,9 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "miningRigOrePerSecondHome": 5, "miningRigOrePerSecondContested": 8,
              "aiReviewIntervalSeconds": 60 },
-  "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10 } ],
-  "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "cost": 20 } ],
+  "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
+               "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
+  "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
   "weapons": [ { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120,
                  "splashRadiusMeters": 0, "cost": 35 } ],
   "structureWeapons": [ { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 } ],
@@ -165,7 +166,9 @@ public:
                   {"armor", Number(hull.armor)},
                   {"speedMetersPerSecond", hull.speedMetersPerSecond},
                   {"cost", Number(hull.cost)},
-                  {"buildSeconds", hull.buildSeconds}},
+                  {"buildSeconds", hull.buildSeconds},
+                  {"footprintRadiusMeters", hull.footprintRadiusMeters},
+                  {"turnRateDegreesPerSecond", hull.turnRateDegreesPerSecond}},
                  std::format("hulls[{}]", i));
     }
 
@@ -179,6 +182,7 @@ public:
                   {"name", drive.name},
                   {"speedFactor", drive.speedFactor},
                   {"hitPointsFactor", drive.hitPointsFactor},
+                  {"turnRateFactor", drive.turnRateFactor},
                   {"cost", Number(drive.cost)}},
                  std::format("drives[{}]", i));
     }
@@ -319,7 +323,7 @@ public:
 
   TEST_METHOD(RejectsText)
   {
-    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 5");
+    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 6");
     ExpectLoadError("[]", "the file");
   }
 };
