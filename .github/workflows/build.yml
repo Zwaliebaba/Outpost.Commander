@@ -7,12 +7,13 @@ name: Build
 # Every step that has something to run BLOCKS. Nothing here is `continue-on-error`, and a script
 # that exists and fails fails the build.
 #
-# But this repository is a clean start: there is no solution, no project and no checker script in
-# it yet, and a gate that cannot run must not be dressed up as a gate that passed. So each step is
-# guarded on the file it needs -- the checker script, the solution, the built test binaries -- and
-# a step whose input is absent is SKIPPED and says so in the log. The moment the file lands, the
-# step starts gating with no edit here. Remove a guard once its input is permanently there; never
-# add one to get past a red build.
+# But this repository is young, and some gates have nothing to run over yet: a checker script
+# that is not written, or a test project that does not exist. A gate that cannot run must not be
+# dressed up as a gate that passed, so each such step is guarded on the file it needs -- the
+# checker script, the solution, the built test binaries -- and a step whose input is absent is
+# SKIPPED and says so in the log. The moment the file lands, the step starts gating with no edit
+# here. Remove a guard once its input is permanently there, as the format job's came off when
+# Build/CheckFormat.py landed; never add one to get past a red build.
 #
 # Nothing is discovered by name. The solution is whatever single .slnx/.sln sits at the root, and
 # the test suites are whatever *Tests.vcxproj the tree contains -- so adding a project does not
