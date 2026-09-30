@@ -1,63 +1,98 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="pch.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Assets\Wide310x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\StoreLogo.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square150x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\SplashScreen.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\LockScreenLogo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Assets">
+    <Filter Include="Shell">
+      <UniqueIdentifier>{e252f7ff-44fb-4568-b6df-705e482ed28a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{c19d57aa-5af0-418f-9254-8dedaa5ef6d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Package">
+      <UniqueIdentifier>{52e329fe-15c9-4a76-8a0e-c3b3c59a9c0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Package\Assets">
       <UniqueIdentifier>{7f8c0835-f104-4767-9fce-16a2a3a42c5c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Project Files">
-      <UniqueIdentifier>{a5f985d1-f5ef-4a05-9b39-00b197e108e4}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Manifest Include="app.manifest">
-      <Filter>Project Files</Filter>
-    </Manifest>
+    <ApplicationDefinition Include="App.xaml">
+      <Filter>Shell</Filter>
+    </ApplicationDefinition>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="MainWindow.xaml">
+      <Filter>Shell</Filter>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="MainWindow.idl">
+      <Filter>Shell</Filter>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="App.xaml.h">
+      <Filter>Shell</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.xaml.h">
+      <Filter>Shell</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.xaml.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.xaml.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Platform</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
-      <Filter>Project Files</Filter>
+      <Filter>Package</Filter>
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Manifest Include="app.manifest">
+      <Filter>Package</Filter>
+    </Manifest>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config">
-      <Filter>Project Files</Filter>
+      <Filter>Package</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natstepfilter">
-      <Filter>Project Files</Filter>
-    </Natvis>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis">
-      <Filter>Project Files</Filter>
-    </Natvis>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Package\Assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>

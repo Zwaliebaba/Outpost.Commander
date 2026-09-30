@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+  x:Class="OutpostCommander.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Title="Outpost Commander">
+  <!-- D3D12 renders into this panel through a composition swap chain, and the HUD is XAML drawn over it (ADR-001). -->
+  <SwapChainPanel x:Name="ScenePanel" />
+</Window>

@@ -96,6 +96,11 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      # nuget.exe restores the game executable's packages.config (ADR-001). Taken from the action rather
+      # than trusted to be on the image, and printed below like the rest of the toolchain.
+      - name: Add NuGet to PATH
+        uses: NuGet/setup-nuget@v2
+
       # INCLUDE and LIB are what make the CRT and the Windows SDK visible to clang-tidy, which
       # runs through clang's MSVC driver rather than being told about the SDK by hand. MSBuild
       # does not need them -- it resolves the toolset itself -- so this exists for the linter.
@@ -125,6 +130,8 @@ jobs:
           Write-Output "runner image : $env:ImageOS / $env:ImageVersion"
           Write-Output "visual studio: $env:VSWHERE_INSTALL"
           msbuild -version -nologo
+          Write-Output "--- nuget ---"
+          nuget help | Select-Object -First 1
           Write-Output "--- clang-tidy (pinned to $env:CLANG_TIDY_VERSION) ---"
           clang-tidy --version
           Write-Output "--- python ---"
@@ -154,6 +161,25 @@ jobs:
         if: hashFiles('Build/CheckProjectFiles.py') != ''
         shell: pwsh
         run: python Build\CheckProjectFiles.py
+
+      # The game executable restores the Windows App SDK packages it needs through packages.config
+      # (ADR-001), and without them the build stops before it compiles anything. Every packages.config
+      # restores into the root packages/ folder, where the project imports look (..\packages from a
+      # project folder, which AGENTS.md §2 keeps one level deep). Found, not named, like the solution.
+      - name: Restore NuGet packages
+        if: steps.solution.outputs.path != ''
+        shell: pwsh
+        run: |
+          $configs = @(Get-ChildItem -Path . -Recurse -Filter 'packages.config' -File |
+            Where-Object { $_.FullName -notmatch '[\\/]packages[\\/]' })
+          if ($configs.Count -eq 0) {
+            Write-Output "::notice::No packages.config in the tree. Nothing to restore."
+            exit 0
+          }
+          foreach ($config in $configs) {
+            nuget restore $config.FullName -PackagesDirectory packages -NonInteractive
+            if ($LASTEXITCODE -ne 0) { throw "nuget restore failed for $($config.FullName)." }
+          }
 
       # /warnaserror covers MSBuild's own warnings; /WX for the compiler is set in the projects.
       - name: Build

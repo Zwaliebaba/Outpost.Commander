@@ -1,6 +1,6 @@
 # ADR-002 — An authoritative server, in-process for the MVP
 
-Status: **accepted** · 2026-09-29
+Status: **accepted** · 2026-09-29 · Layer shape amended 2026-09-30
 
 ## Context
 
@@ -21,7 +21,7 @@ The owner chose the second. The decision to record is how the code is shaped so 
 4. **Clients receive snapshots, addressed per player.** After each tick the server produces a snapshot for each player. In the MVP every player sees everything, but the snapshot is still built per player. That is the seam where fog of war goes later, on the server only.
 5. **The client renders from snapshots, never from server state.** It keeps the last two snapshots and interpolates between them. The client is always about one tick behind the server, which is 50 ms at 20 Hz. Client-side prediction is not needed for the MVP.
 6. **Commands and snapshots cross a `Transport`.** For the MVP it is a `LoopbackTransport`: in-process queues, with no serialisation. The command and snapshot types are nevertheless plain data — no pointers into server state, entities referred to by ID — so that a network transport can serialise them later without changing their meaning.
-7. **The AI is a client.** It gets its player's snapshot and sends commands through the same transport. It has no access to server internals.
+7. **The AI is a client.** It gets its player's snapshot and sends commands through the same transport. It has no access to server internals, and its library's include path is what enforces that (see Layer shape).
 8. **Floats are allowed in the simulation.** No cross-machine determinism is required. Two things are still required, because they are cheap now and expensive later: the fixed tick (3), and **all simulation randomness from one seeded PRNG** owned by the server, never `std::random_device` or anything address-dependent. That keeps a match reproducible from a seed and a command log on the same build, which is what debugging and bug reports need.
 
 ## Consequences
@@ -36,12 +36,16 @@ The owner chose the second. The decision to record is how the code is shaped so 
 
 ```
 OutpostCommander (exe, WinUI 3)  ── client: UI, input, camera, presentation
- ├── Engine    (static lib)       ── D3D12 renderer, mesh loading, math. Knows no game concepts (R9)
- └── Simulation (static lib)      ── server, rules, commands, snapshots, Transport, AI player
-SimulationTests (test DLL)        ── drives Simulation through commands
+ ├── Engine     (static lib)      ── D3D12 renderer, mesh loading, math. Knows no game concepts (R9)
+ ├── Protocol   (static lib)      ── commands, snapshots, entity IDs, Transport, the in-process server's factory
+ ├── Opponent   (static lib)      ── the AI player. Builds on Protocol only
+ └── Simulation (static lib)      ── the server: state, rules, LoopbackTransport. Builds on Protocol
+SimulationTests (test DLL)        ── drives Simulation through Protocol. The Q2 battles run here from milestone 3
 ```
 
-`Engine` and `Simulation` do not reference each other. The client links both and translates snapshots into draw calls. The final layout is recorded in AGENTS.md §2 when the first of these projects is created.
+**The boundary is enforced by include paths, not by review.** A project's include path lists only the projects it may include (AGENTS.md §3). The client lists `Engine` and `Protocol`, and `Opponent` lists `Protocol`. Neither lists `Simulation`, so a client or AI file that includes a server header does not compile. A quoted include is also resolved relative to the including file, so `#include "../Simulation/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Between them, that is how the design's Q5 is answered by the build rather than by review. The client still links `Simulation`, because the in-process server has to be in the executable. It gets the server through a factory declared in `Protocol` and defined in `Simulation`. `SimulationTests` may list `Simulation` as well, because it is a test and not a client.
+
+`Engine` and `Simulation` do not reference each other, and `Opponent` and `Simulation` share only `Protocol`. The client links all four libraries and translates snapshots into draw calls. The final layout is recorded in AGENTS.md §2 when the first of these projects is created.
 
 ## What this forecloses
 

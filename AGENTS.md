@@ -2,19 +2,19 @@
 
 Operating instructions for every agent (and human) writing code in this repository. **Read this before generating a single line.**
 
-This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in a design document that does not exist yet.
+This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in the design document.
 
-**The tree is empty.** This repository holds this file, the root configuration files, `.gitignore` and `.github/` — no solution, no projects, no source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — trivially today, and by conformance from then on.
+**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with one project: the WinUI 3 game executable (ADR-001), which opens a window and draws nothing yet. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
 **What is authoritative, in order:**
 
 1. **This file** — conformance: naming, style, build settings, and how to work here.
-2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6). **There are none yet**; numbering starts at `ADR-001` in this repository and does not continue another's.
+2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6), numbered from `ADR-001` in this repository and not continuing another's.
 3. **The surrounding code** — for anything neither of the above covers, match the file you are editing.
 
-A design document, when there is one, sits alongside rather than above: it says what is built and this file says how. Until it exists there is no design authority, and a task that needs a design answer asks the owner and gets the answer written down before the code is.
+The design document, [`GameDesign/OutpostCommander-MVP.md`](GameDesign/OutpostCommander-MVP.md), sits alongside rather than above: it says what is built and this file says how. It is a draft under review. A task that needs a design answer it does not give asks the owner, and gets the answer written down before the code is.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
