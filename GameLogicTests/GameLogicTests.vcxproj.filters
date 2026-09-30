@@ -6,5 +6,7 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="IdTests.cpp" />
+    <ClCompile Include="JsonTests.cpp" />
+    <ClCompile Include="TuningTests.cpp" />
   </ItemGroup>
 </Project>

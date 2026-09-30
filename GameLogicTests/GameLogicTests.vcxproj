@@ -92,6 +92,8 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="IdTests.cpp" />
+    <ClCompile Include="JsonTests.cpp" />
+    <ClCompile Include="TuningTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

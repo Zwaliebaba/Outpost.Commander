@@ -26,9 +26,11 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 #include "Debug.h"
 #include "NeuronHelper.h"
 
 #include "FileSys.h"
+#include "Json.h"

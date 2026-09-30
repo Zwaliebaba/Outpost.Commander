@@ -9,12 +9,14 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
+    <ClInclude Include="Json.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="NeuronHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
+    <ClCompile Include="Json.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
