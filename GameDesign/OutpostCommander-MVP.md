@@ -43,7 +43,7 @@ For the MVP, the opponent is a rival Terrakin outpost in another colour. Other r
 
 Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answer is still a result.** The MVP is done when all five are answered, not when they are all "yes".
 
-Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded.
+Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded. When a target is missed, PIX is the tool for finding where the time goes. The client's regions are named in Debug builds only (ADR-005), so the recorded figures come from the game's own timings of a Release build.
 
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
@@ -207,6 +207,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 - **The AI is a client.** It sees the snapshot its player is allowed to see and sends the same commands a human does. It cannot cheat by reading server state, and the build enforces that: it can include only the protocol headers (ADR-002).
 - **What a player sees is a per-player snapshot.** There is no fog in the MVP, but snapshots are addressed per player so that fog of war can be added on the server alone.
 - **The simulation ticks at a fixed rate**, independent of the frame rate. The client interpolates between snapshots for smooth rendering.
+- **The network comes after the MVP, over QUIC.** When the server moves to its own process, commands and snapshots cross the network over QUIC (ADR-004). In the MVP they stay in-process, and Q5 measures that. Network play will need Windows 11 or Windows Server 2022.
 
 ### Player controls
 
@@ -401,3 +402,8 @@ Decided on 2026-09-30, second review:
 - The executable is a plain Win32 app, still MSIX-packaged, and the game draws its own UI. WinUI 3, XAML and the Windows App SDK are gone (ADR-001).
 - Auto-targeting prefers ships over structures (§7).
 - The Defence gun and structure armour in §12 are the baseline for milestone 4, the AI reviews the player's fleet every 60 s, and the research tree lasts about 11½ minutes (§12).
+
+Decided on 2026-09-30, after the second review:
+
+- QUIC, through MsQuic, is the network transport once the server moves out of process. The MVP keeps the in-process loopback and has no QUIC code (§9, ADR-004).
+- PIX event markers name the client's regions in Debug builds only (§3, ADR-005).

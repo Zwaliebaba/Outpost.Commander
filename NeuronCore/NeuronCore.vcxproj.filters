@@ -1,6 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Network">
+      <UniqueIdentifier>{7acd7121-7c3a-4d0a-b76b-63ee814d8765}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
@@ -13,5 +18,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\build\native\bin\$(Platform)\msquic.dll">
+      <Filter>Network</Filter>
+    </Content>
+    <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\LICENSE">
+      <Filter>Network</Filter>
+    </Content>
   </ItemGroup>
 </Project>

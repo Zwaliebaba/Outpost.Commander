@@ -150,7 +150,7 @@ The solution is `OutpostCommander.slnx` at the repository root. Its projects, an
 | `GameApp` | static lib | game: the client | NeuronClient, GameProtocol |
 | `OutpostCommander` | Win32 exe, MSIX-packaged | shell | all of the above, but may include only NeuronCore, NeuronClient, GameProtocol, Opponent and GameApp |
 
-Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so nothing but the executable may depend on a package, and nothing at all on WinRT or XAML (ADR-001).
+Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so a library references a package only where an ADR puts it (R14), and nothing at all depends on XAML or a WinRT API (ADR-001).
 
 These are the standing constraints the layout satisfies, and any new project must satisfy them too.
 
@@ -167,7 +167,7 @@ These are the standing constraints the layout satisfies, and any new project mus
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager** — with one exception. The build depends on the Windows SDK and the MSVC standard library, and on nothing else, except that the game executable restores the two MSIX packaging tools listed in [ADR-001](Design/ADR/ADR-001-win32-shell.md) through `packages.config`. See R14.
+**There are no vendored SDKs, and the package manager restores only what R14 lists.** The build depends on the Windows SDK and the MSVC standard library, and on nothing else, apart from R14's exceptions. Each of those is restored through its project's `packages.config` into `packages/`: the two MSIX packaging tools in the executable ([ADR-001](Design/ADR/ADR-001-win32-shell.md)), MsQuic in `NeuronCore` ([ADR-004](Design/ADR/ADR-004-quic-transport.md)) and the PIX event runtime in `NeuronClient` ([ADR-005](Design/ADR/ADR-005-pix-markers.md)).
 
 **Build and IDE output is never committed** — `x64/`, `ARM64/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -236,15 +236,23 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 ## 5. Rules for this codebase
 
-**R12 — Graphics is Direct3D 12.** COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is not settled here; it is a design and engineering decision taken when the renderer is built, and recorded as an ADR (§6).
+**R12 — Graphics is Direct3D 12.** COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. **A COM pointer is a `winrt::com_ptr`, and an `HRESULT` is checked with `winrt::check_hresult`.** Both come from C++/WinRT's `<winrt/base.h>`, which the Windows SDK ships in its `cppwinrt` folder. Do not use `Microsoft::WRL::ComPtr` or a hand-rolled `ThrowIfFailed`. `check_hresult` throws `winrt::hresult_error`, and which failures the renderer handles instead of throwing, such as a removed device, is for the renderer's ADR to decide. Using `<winrt/base.h>` for COM is not using WinRT: there is no `Windows.*` header, no `.idl` and no C++/WinRT package (ADR-001). How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is not settled here; it is a design and engineering decision taken when the renderer is built, and recorded as an ADR (§6).
 
 **R14 — No third-party dependencies and no package manager.** The Windows SDK and the MSVC standard library, and nothing else. If you believe something is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar.
 
-**The one exception is packaging** ([ADR-001](Design/ADR/ADR-001-win32-shell.md)). The game executable is packaged as MSIX and restores the two packaging tools ADR-001 lists; its table is the complete list. They are build-time tools, and the game compiles and links nothing from them. Only the executable project references them, and no project includes WinRT or XAML. Any other package is a new ADR.
+**The exceptions are these, each recorded in an ADR, and this table is the complete list:**
+
+| Package | Project | What for | ADR |
+|---|---|---|---|
+| `Microsoft.Windows.SDK.BuildTools`, `Microsoft.Windows.SDK.BuildTools.MSIX` | `OutpostCommander` | MSIX packaging. These are build-time tools, and the game compiles and links nothing from them. | [ADR-001](Design/ADR/ADR-001-win32-shell.md) |
+| `Microsoft.Native.Quic.MsQuic.Schannel` | `NeuronCore` | QUIC, for the network transport after the MVP. The MVP does not use it. | [ADR-004](Design/ADR/ADR-004-quic-transport.md) |
+| `WinPixEventRuntime` | `NeuronClient` | PIX event markers, compiled in for Debug only | [ADR-005](Design/ADR/ADR-005-pix-markers.md) |
+
+Only the project in a package's row references it. That project merges the package's import library into its own `.lib` (`Lib` `AdditionalDependencies`), and lists the package's DLL and licence as content. An executable that links it gets all three through the project reference, and no other project names a package path. A package's headers are included only from that project's `.cpp` files, never from a header that another project includes. No project includes XAML or a WinRT API. `<winrt/base.h>` is used for COM (R12), and it is SDK content, not a package. Any other package needs a new ADR.
 
 **It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are allowed, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 
-For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `wrl/client.h` (`Microsoft::WRL::ComPtr` is the COM smart pointer R12 asks for) and the `fxc`/`dxc` compilers that `FXCompile` drives. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK and its `d3dx12.h`, DirectX-Headers, DirectXTK12, DirectXTex, and the DirectX Shader Compiler as a redistributable. Resource barriers and heap descriptions are written by hand.
+For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `winrt/base.h` (`winrt::com_ptr` and `winrt::check_hresult`, which R12 asks for) and the `fxc`/`dxc` compilers that `FXCompile` drives. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK and its `d3dx12.h`, DirectX-Headers, DirectXTK12, DirectXTex, and the DirectX Shader Compiler as a redistributable. Resource barriers and heap descriptions are written by hand. The PIX event runtime is NuGet content too; ADR-005 is what lets it in.
 
 **R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded in `Design/ADR/`.
 

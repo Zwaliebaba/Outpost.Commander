@@ -68,7 +68,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
-| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling. Exclusive full screen is not ruled out by ADR-001, but it needs a reason. | New ADR | 1.2 |
+| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. | New ADR | 1.2 |
 | G2 | How meshes reach the game: a runtime `.obj` loader in C++, or a `Tools/` baker to a binary format. The recommendation is a runtime loader: the meshes are at most 212 KB of text, and a baker would put Python into the build. It also covers how the meshes get into the MSIX package, and it needs the art's provenance (design §11, §15) answered before the meshes ship in a package. | New ADR; design §15 for provenance | 1.3 |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
 | G4 | The namespace for the game layers. | AGENTS.md §1, R9 | 2.1 |
@@ -104,6 +104,7 @@ AGENTS.md leans on three checkers that do not exist yet, and CI already runs eac
   - R2: no type name with an `I`/`C`/`S`/`E` prefix before a capital, a `Base`/`Abstract`/`Impl` affix, or a `_t` suffix. This is a regex over declarations; it does not need a parser.
   - R11: no identifier uses the non-SDK spelling of a listed family (`colour`, `initialise`, `behaviour`, `centre`, …). Comments and strings are exempt.
   - No `#include` climbs out of its own project (`..`), which is what makes ADR-002's include paths binding.
+  - R12: no `Microsoft::WRL::ComPtr` and no `<wrl/client.h>`. A COM pointer is a `winrt::com_ptr`.
   - `.clang-tidy`'s `HeaderFilterRegex` names every project in the solution.
 - **Acceptance:** exit 0 on today's tree, or a fix in the same PR for every finding (say which). Each check has a small negative case, as a script flag or a test, that shows it fires.
 - **Verify:** run locally on Linux; CI's "Check the build shape" step starts gating.
@@ -117,7 +118,9 @@ AGENTS.md leans on three checkers that do not exist yet, and CI already runs eac
   - Every setting outside AGENTS.md §3's list of what may differ reads the same in Debug and Release, and on x64 and ARM64 apart from the instruction set.
   - Both platforms exist, and no others do.
   - No project defines the Windows macro family (§4).
-  - Each project's include path matches ADR-002's table exactly.
+  - Each project's include path matches ADR-002's table exactly. The executable does not inherit `%(AdditionalIncludeDirectories)`, because its Windows Store project type would add its own folder, `Generated Files\` and its intermediate folder (ADR-001).
+  - Only the projects in R14's table have a `packages.config`, and each one lists and imports only the packages in its own row.
+  - No project defines `USE_PIX`, `USE_PIX_RETAIL` or `PROFILE` (ADR-005).
 - **Acceptance:** exit 0 on today's tree. Removing one include directory from one configuration, or adding `NeuronServer` to `GameApp`'s include path, makes it fail and say which project and setting.
 - **Verify:** run locally; CI.
 
@@ -163,9 +166,11 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   - swap chain, back buffers and resize;
   - present and device-removed handling.
 
-  COM lifetimes are held by `Microsoft::WRL::ComPtr` (R12), and barriers are written by hand (R14, no `d3dx12.h`). In Debug the D3D12 debug layer is on.
-- **Acceptance:** CI green. There are no debug-layer errors in a run, and resizing and minimising work.
-- **Verify:** **owner run**, x64 and ARM64: the development machine is ARM64 (ADR-003).
+  COM lifetimes are held by `winrt::com_ptr`, and `HRESULT`s are checked with `winrt::check_hresult` (R12), both already available through `NeuronCore.h`. Barriers are written by hand (R14, no `d3dx12.h`). In Debug the D3D12 debug layer is on.
+
+  PIX event markers name the frame's regions on the queue, the command lists and the CPU (ADR-005). They are compiled in for Debug only, and `pix3.h` sits between `#pragma warning(push)` and `pop` in a `NeuronClient` `.cpp`. The runtime's import library, DLL and licence already reach the executable through `NeuronClient`.
+- **Acceptance:** CI green. There are no debug-layer errors in a run, and resizing and minimising work. A Release build has no reference to the PIX runtime.
+- **Verify:** **owner run**, x64 and ARM64: the development machine is ARM64 (ADR-003). A PIX capture of the Debug build shows the named regions.
 
 ### 1.3 — Mesh loading, with scale and forward axis as data
 
@@ -209,7 +214,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 ### 2.1 — Protocol types: IDs, commands, snapshots, `Transport`
 
 - **Gate:** G4.
-- **Goal:** the types that cross the client/server boundary (ADR-002 decisions 2, 4, 6).
+- **Goal:** the types that cross the client/server boundary (ADR-002 decisions 2, 4, 6). The MVP's transport is the loopback. QUIC comes after the MVP (ADR-004), and no QUIC code is written here.
 - **Scope:** in `GameProtocol`:
   - `EntityId` and `PlayerId`;
   - a `Command` for each order in design §9 (move, attack, attack-move, stop, build structure, queue ship, start research, save design), tagged with its player;
@@ -274,7 +279,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 - **Goal:** answer design Q5 (order-to-response delay ≤ 150 ms, and the boundary enforced by the build) and Q4's tick half (≤ 5 ms at 200 ships and 40 structures).
 - **Scope:**
-  - Instrument the tick time.
+  - Instrument the tick time with the server's own timer. The server has no PIX markers (ADR-005).
   - Measure the time from input to the first frame showing the response. The PR states the method, so the figure is measured, not estimated (AGENTS.md §6).
   - Add a scripted load of 200 ships and 40 static structures for the tick measurement.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. The Q5 boundary is confirmed by the C1083 check.
@@ -346,7 +351,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Goal:** answer design Q4. With 200 ships and 40 structures in combat at 1920×1080, with the HUD drawn, 99% of frames take ≤ 16.7 ms and a tick takes ≤ 5 ms.
 - **Scope:**
   - A scripted stress scene.
-  - Frame-time capture: per-frame CPU and present intervals written to a file.
+  - Frame-time capture: per-frame CPU and present intervals written to a file. Release has no PIX markers (ADR-005), so these timings are the measurement. A PIX capture of Debug is where to look for the cause of a miss.
   - A summary script under `Tools/`.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
 - **Verify:** **owner run**, Release.

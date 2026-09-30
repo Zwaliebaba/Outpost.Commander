@@ -1,6 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Profiling">
+      <UniqueIdentifier>{ceb4ec25-96bd-4f4a-933f-8e665cabc6aa}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronClient.h" />
   </ItemGroup>
@@ -9,5 +14,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\packages\WinPixEventRuntime.1.0.240308001\license.txt">
+      <Filter>Profiling</Filter>
+    </Content>
   </ItemGroup>
 </Project>
