@@ -1,6 +1,6 @@
 # Outpost Commander — MVP Design
 
-Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first review
+Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews
 
 This is the design authority AGENTS.md refers to: it says *what* is built. AGENTS.md says *how* the code is written, and `Design/ADR/` records the engineering decisions taken while building it.
 
@@ -36,7 +36,7 @@ For the MVP, the opponent is a rival Terrakin outpost in another colour. Other r
 | # | Question | How we know |
 |---|---|---|
 | Q1 | Is the loop — mine, build, research, design, fight — fun? | A full match against the AI is something the owner wants to play again. It lasts 15–25 minutes. |
-| Q2 | Does ship design matter? | The Q2 check below passes: every design has a counter, every hull, drive and weapon is worth building, and no counter hangs on a single number. |
+| Q2 | Does ship design matter? | The Q2 check below passes: from the first minute to the late game every design has a counter and every hull, drive and weapon is worth building, no research topic is a trump card, and no counter hangs on a single number. |
 | Q3 | Does research drive the pacing? | Research choices visibly change what the player builds in the mid-game. |
 | Q4 | Is the tech feasible? | 200 ships and 40 structures in combat at 1920×1080 on the development machine, with XAML drawn over the swap chain: 99% of frames take ≤ 16.7 ms (a steady 60 fps), and a simulation tick takes ≤ 5 ms at that load. |
 | Q5 | Does the server boundary hold, and what does it cost? | The build enforces it: the client and the AI can include only the protocol headers, so reaching into server state does not compile (ADR-002). The delay from an order to the ship visibly responding is measured on the development machine and is ≤ 150 ms. |
@@ -45,23 +45,33 @@ Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answ
 
 Q4 is measured with XAML on screen because composition is the part of each frame this architecture adds (ADR-001). Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input, rendering and composition. Both are targets until the first measurement, and the measurement is what gets recorded.
 
-**The Q2 check.** Designs fight in clumps bought with equal Ore, at 2,000, 3,000, 4,500 and 6,000 Ore a side, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two. Q2 is "yes" when, at every budget and in both modes:
+**The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
+
+- **Every component**, at 2,000, 3,000, 4,500, 6,000, 9,000 and 12,000 Ore a side. The largest is about five minutes of income for a player who holds half the middle (§5): a late-game fleet.
+- **The starting components**, those no research topic unlocks (§8), at 2,000, 3,000 and 4,500 Ore: the armies of the first minutes, before the first unlock.
+
+Q2 is "yes" when, at every budget of both stages and in both modes:
 
 - **(a)** every design has a counter that beats it in at least four battles out of five;
-- **(b)** the designs worth building, those the equilibrium mix of the win-rate matrix gives 5% or more, use every hull, drive and weapon;
-- **(c)** none of the counters in (a) against those designs stops winning when any single number in §12 moves by 5%, so no result hangs on a breakpoint.
+- **(b)** the designs worth building, those the equilibrium mix of the win-rate matrix gives 5% or more, use every hull, drive and weapon available at that stage;
+- **(c)** none of the counters in (a) against those designs stops winning when any single number in §12 moves by 5%, so no result hangs on a breakpoint;
+- **(d)** at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a design that none of the other side's starting designs beats in at least half the battles. Research is an edge, not a trump card. The research comes free in this test, which favours the side that has it.
 
-`Tools/BattleModel.py` runs the check against §12 as written, and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
+A threshold counts as met only when the 95% confidence interval of the win rate clears it. A result whose interval straddles its threshold is run again with more battles, and if it is still in doubt, the check fails.
+
+The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
+
+`Tools/BattleModel.py` runs the check against §8 and §12 as written, and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in SimulationTests against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
 
 ---
 
 ## 4. The battlefield
 
 - **Flat plane, 3D rendering.** Every ship, structure and asteroid sits on the plane (y = 0). Ships turn and move in 2D. The renderer draws full 3D meshes under a tilted perspective camera. There is no altitude in the simulation.
-- **One map.** About 2,000 × 2,000 m, roughly 8 × 8 screens at default zoom. Two start positions in opposite corners. About 12 ore asteroids: 3 near each base, 6 contested in the middle. Non-mineable asteroid fields act as obstacles and chokepoints.
+- **One map.** About 2,000 × 2,000 m, roughly 4 × 4 screens at the default view. Two start positions in opposite corners. About 12 ore asteroids: 3 **home** asteroids near each base and 6 **contested** ones in the middle, which yield more (§5). Non-mineable asteroid fields act as obstacles and chokepoints.
 - **Obstacles are circles.** Asteroids block movement as circular footprints. There is no terrain, height or line of sight in the MVP.
 - **Camera.** Pan (edge scroll, WASD, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The pitch is fixed and comes from the zoom level.
-- **The default zoom shows a whole engagement.** At about 8 × 8 screens, one screen is 250 m wide. That is less than the Lance's 280 m range, so two Lance lines trading at full range are never both in view, which breaks pillar 4. Either the default view widens or the longest range comes down. It is settled with the zoom limit (§15).
+- **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. How far the camera zooms in and out from there is open (§15).
 - **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
 
 ---
@@ -69,7 +79,9 @@ Q4 is measured with XAML on screen because composition is the part of each frame
 ## 5. Economy
 
 - **One resource: Ore.** It works like Warzone 2100's oil: a **Mining Rig** built on an ore asteroid produces a fixed income into the owner's stockpile. There is no hauling and no depletion.
+- **The middle pays more.** A home asteroid yields 5 Ore/s and a contested one 8 Ore/s (§12). A player who holds only their home asteroids earns 15 Ore/s; one who also holds half the middle earns 39. The middle is the prize, and fighting for it is when the fleets meet. What keeps one lost fight from deciding the match is home defence: a Defence Platform holds off light raiders, and an attacker has to bring a Lance line or a Missile Rack to break it (§6).
 - Each ore asteroid holds one rig. A rig can be destroyed, and the asteroid is then free to rebuild on.
+- **A rig is cheap on purpose.** At 50 Ore it pays for itself in 10 s at home. What an expansion costs is exposure — a rig far from home needs the fleet or a platform to keep it — not its price.
 - Everything costs Ore: structures, ships and research. Costs are paid when the job **starts**, as in Warzone 2100. This keeps the rules simple, and there is no refund on cancel in the MVP.
 - Starting stockpile and income rates are tuning values (§12).
 
@@ -79,18 +91,19 @@ Q4 is measured with XAML on screen because composition is the part of each frame
 
 | Structure | Role | Placeholder mesh |
 |---|---|---|
-| **Command Station** | The base. Builds Constructors, queue of up to 5. Losing it loses the match. Pre-placed at start. | `Station` |
+| **Command Station** | The base. Builds Constructors, queue of up to 5. Carries a Defence gun. Losing it loses the match. Pre-placed at start. | `Station` |
 | **Shipyard** | Builds ships from designs. Queue of up to 5. | `Station`, scaled and tinted |
-| **Research Lab** | Researches one tech at a time. | `Satellite` |
+| **Research Lab** | Researches one topic at a time. One per player. | `Satellite` |
 | **Mining Rig** | Built on an ore asteroid. Produces Ore. | `Mine` |
-| **Defence Platform** | Stationary turret with a Mass Driver. | `Mine`, tinted |
+| **Defence Platform** | Stationary turret with a Defence gun. | `Mine`, tinted |
 
 - Structures are built by **Constructor** ships. Several constructors on one site build faster, as in Warzone 2100.
 - Structures are placed freely on the plane with a circular footprint that must not overlap anything. Mining Rigs snap to an ore asteroid.
 - There are no structure upgrades or modules in the MVP.
 - **Constructors come only from the Command Station.** It exists for as long as the match does, so a player can always rebuild, and the Shipyard's queue stays free for warships. If Shipyards built them, a player who lost every Shipyard and Constructor could never build again for the rest of the match.
-- Structures have no armour value yet (§15). The Missile Rack's role against defended positions depends on it (§7).
-- As §12 stands, the Lance (280 m) outranges the Defence Platform's Mass Driver (120 m) by 160 m, so Lance ships destroy platforms without taking fire. A platform meant to hold ground needs the range or the armour to matter. That is decided with the Missile Rack's tuning.
+- **Only the Missile Rack outranges a Defence Platform.** The Defence gun reaches 250 m, beyond the Mass Driver (120 m) and the Lance (220 m). A Lance line can still break a platform, but it takes fire while it does. Only the Missile Rack (280 m) destroys one without being shot at, and that is the Missile Rack's job (§7). No research extends a range (§8), so this ladder holds for the whole match.
+- **The armed structures are armoured.** The Defence Platform and the Command Station have an armour of 10, which cuts a Mass Driver hit from 14 to 4, so light raiders cannot simply swarm them: by hand estimate a lone platform outlasts a raid of five Small+Ion+Mass Driver ships and destroys it. Every other structure has no armour, so raiding a Mining Rig, Shipyard or Research Lab works.
+- **The Command Station is armed** so that a handful of early ships cannot end a match. Unarmed and unarmoured, it would fall to seven Small+Ion+Mass Driver ships — about 610 Ore, ready around 1:30 — in about 20 s. Armed and armoured, it needs about 70 s against them and its gun destroys all seven in under a minute. Both are hand estimates: the model has no structures.
 
 ---
 
@@ -102,63 +115,87 @@ The **Constructor** is the one fixed design. It has no weapon, it can build and 
 
 ### Components (MVP set)
 
+Research unlocks the Large hull, the Fusion Drive and the Missile Rack (§8). Everything else is available from the start, so the first minutes are played with four designs: a Small or Medium hull, the Ion Drive, and a Mass Driver or a Lance. Every match starts with those four saved (§9).
+
 **Hulls** set hit points, armour, base speed, size and cost.
 
-| Hull | Mesh | Available | Character |
-|---|---|---|---|
-| Small | `Small` | start | Cheap, fast to build, fragile |
-| Medium | `Medium` | start | The all-rounder |
-| Large | `Large` | research | Slow, expensive, very tough |
+| Hull | Mesh | Character |
+|---|---|---|
+| Small | `Small` | Cheap, fast to build, fragile |
+| Medium | `Medium` | The all-rounder |
+| Large | `Large` | Slow, expensive, very tough |
 
 **Drives** multiply speed, turn rate and hit points. A drive has no mesh, so the hull mesh is used as is.
 
-| Drive | Available | Character |
-|---|---|---|
-| Ion Drive | start | Fast, turns quickly, lightly protected |
-| Fusion Drive | research | Slow, much tougher, costs more |
+| Drive | Character |
+|---|---|
+| Ion Drive | Fast, turns quickly, lightly protected |
+| Fusion Drive | Slow, much tougher, costs more |
+
+The drive trades mobility for durability. The Q2 check cannot price speed (§3), so whether that trade is a real choice is judged in play.
 
 **Weapons** set damage, rate of fire, range and projectile type. Hits are instant in the simulation: the projectile or beam on screen is presentation (§11), and nothing dodges it.
 
-| Weapon | Available | Character |
+| Weapon | Range | Character |
 |---|---|---|
-| Mass Driver | start | Short range, fast fire, cheap. Good against small hulls. |
-| Lance | start | Long range, slow, heavy hit. Good against large hulls. |
-| Missile Rack | research | Medium range with splash damage. Good against structures and clumps. |
+| Mass Driver | 120 m | Short range, fast fire, cheap. The most damage per Ore against light armour, and armour blunts it. |
+| Lance | 220 m | Long range, slow, heavy hit. Armour barely slows it, and a small hull wastes much of its hit. |
+| Missile Rack | 280 m | The longest range, with splash damage. Breaks defended positions and clumps. |
+
+### Combat rules
+
+- **Weapons are turrets.** A ship fires in any direction and keeps firing while it moves, as in Warzone 2100. Turn rates therefore affect movement only.
+- **Auto-targeting.** A ship with no target order fires at the nearest enemy ship in range, or, with none in range, the nearest enemy structure. It keeps that target until the target dies or leaves range.
+- **Attack-move** heads for the destination. A ship that meets an enemy stops at its own weapon range and fires. This is the behaviour the Q2 model assumes.
+- **Kiting is allowed.** Firing on the move lets a faster ship with a longer gun hold a slower one at bay: Small+Ion+Lance (78 m/s) against Medium+Ion+Mass Driver (52 m/s), for example. The answer is a design at least as fast, and Small+Ion+Mass Driver beats Small+Ion+Lance in every modelled battle. The AI does not kite (§10).
+- **Groups move together.** A group ordered as one holds a loose formation at the pace of its slowest ship (§9).
 
 ### Damage model (MVP)
 
-Hit points and one **armour** value per ship: `damage taken = max(damage × 0.25, damage − armour)`. Warzone 2100 uses the same shape. It makes heavy weapons matter against heavy hulls without needing damage types.
+Hit points and one **armour** value per ship or structure: `damage taken = max(damage × 0.25, damage − armour)`. Warzone 2100 uses the same shape. It makes heavy weapons matter against heavy hulls without needing damage types.
 
 ### How the counters work
 
-There is no tracking, accuracy or damage type (§13). Every counter comes from four things the designer shows: damage per second after armour, shots to kill, range and cost. At equal Ore the numbers in §12 give this triangle (checked with `Tools/BattleModel.py`, §3):
+There is no tracking, accuracy or damage type (§13). Every counter comes from four things the designer shows: damage per second after armour, shots to kill, range and cost. With the numbers in §12, the model (§3) gives this picture.
 
-- **The swarm beats the line.** Small+Ion+Mass Driver beats Medium+Ion+Lance in every battle the model runs. The Lance needs three shots for a 198 HP Small hull, so a quarter of its damage is overkill, while the Mass Driver's small hits still get through the line's armour of 6.
-- **The line beats the heavy.** Medium+Ion+Lance beats Large+Fusion+Lance in 83–100% of battles. The Lance loses little to armour, and the line fields more than twice as many guns for the same Ore.
-- **The heavy beats the swarm, but only under spread fire.** Large+Fusion+Lance cuts every Mass Driver hit to the 25% floor, and wins 98–100% of spread-fire battles from 3,000 Ore up (65% at 2,000). Under focus fire the two trade about evenly. There the swarm's dependable counter is Medium+Ion+Mass Driver, which beats it in every battle because its armour of 6 nearly halves each Mass Driver hit.
+**The first minutes are a triangle of three designs.** With the starting components, in every battle the model runs at 2,000–4,500 Ore under both kinds of targeting:
 
-The Missile Rack is meant to break defended positions and clumped swarms, which would give the swarm a hard counter under any targeting. It can only be checked once ship sizes say how many ships its 30 m splash reaches (§15). Until then the heavy-versus-swarm leg is the weak one, and §12 cannot fix it alone. Making the heavy stronger against the swarm makes it stronger against the line too, because both legs turn on how much heavy the Ore buys. Only the 25% floor in the damage model separates them.
+- **The swarm beats the line.** Small+Ion+Mass Driver beats Medium+Ion+Lance every time. The Lance needs three hits for a 198 HP Small hull, so nearly a third of its damage is overkill, and for the same Ore the swarm fields more than twice as many guns.
+- **The line beats the brawler.** Medium+Ion+Lance beats Medium+Ion+Mass Driver every time. An armour of 8 takes a Mass Driver hit from 14 down to 6, and it takes a Lance hit only from 95 to 87.
+- **The brawler beats the swarm.** Medium+Ion+Mass Driver beats Small+Ion+Mass Driver every time, for the same reason: the swarm's small hits break on the brawler's armour.
 
-The other eight hull, drive and weapon combinations are legal but not worth building at these numbers. That is expected with twelve combinations; Q2 asks only that every component has a use.
+All three are worth building, each at about a third of the equilibrium mix. Small+Ion+Lance is not worth building yet, because the swarm beats it.
+
+**Research adds the heavy, and the heavy has its own answer.** Large+Fusion+Lance beats the brawler every time, and beats the swarm under spread fire but not under focus fire. Large+Fusion+Mass Driver beats the swarm every time. Both fall to the Small+Ion+Lance **picket** every time: the Lance loses little to armour, and the Ore buys more than three Lances for each gun the heavy carries. The picket falls to the swarm. At every budget of the full set, the designs worth building are the three starting designs, the picket and one heavy: Large+Fusion+Lance under spread fire, Large+Fusion+Mass Driver under focus fire. Each takes between 11% and 26% of the mix.
+
+**Every hull, drive and weapon has a use, but the Fusion Drive only on the Large hull.** That is the trade the drive is meant to be (§7 Components), and speed, the other half of it, is judged in play.
+
+The Missile Rack is meant to break defended positions and clumps. It can only be checked once ship sizes say how many ships its 30 m splash reaches (§15).
+
+The other hull, drive and weapon combinations are legal but not worth building at these numbers. That is expected with twelve combinations: Q2 asks only that every component has a use.
 
 ---
 
 ## 8. Research
 
-A **Research Lab** researches one topic at a time. Topics cost Ore and time, and some require another topic first. Eight topics:
+A **Research Lab** researches one topic at a time, and a player can have **one** lab. Topics cost Ore and time (§12), and some require another topic first. With one lab the order is the decision: the whole tree takes 11½ minutes of research, so a player who starts at once finishes around minute 12–13, and every topic taken early is another taken late.
 
 | # | Topic | Requires | Effect |
 |---|---|---|---|
 | 1 | Improved Extraction | — | Mining Rig income +25% |
 | 2 | Hull Plating | — | All hulls: HP +15% |
-| 3 | Mass Driver Calibration | — | Mass Driver damage +20% |
-| 4 | Lance Focusing | — | Lance range +15% |
+| 3 | Mass Driver Calibration | — | Mass Driver fire rate +15% |
+| 4 | Lance Focusing | — | Lance fire rate +15% |
 | 5 | Fusion Drive | 2 | Unlocks the Fusion Drive |
 | 6 | Large Hull | 2 | Unlocks the Large hull |
 | 7 | Missile Rack | 3 | Unlocks the Missile Rack |
 | 8 | Automated Shipyards | 1 | Shipyard build speed +25% |
 
 Upgrades apply at once to every existing ship and structure, as in Warzone 2100.
+
+**Upgrades change rates, never the size of a hit.** A weapon upgrade raises its fire rate, not its damage per hit, and no upgrade extends a range. Damage per hit is where armour and the shots-to-kill breakpoints act. At the numbers in §12, +15% Mass Driver damage would be +35% against a Medium hull's armour of 8, and +15% Lance damage would kill a Small hull in two hits instead of three. A fire-rate upgrade adds the same share against every target. Range stays fixed so that the range ladder (§6) holds all match.
+
+`Tools/BattleModel.py` reads this table for the one-sided research test (§3), so an effect is written as `<target> <stat> +N%` or `Unlocks the <component>`.
 
 ---
 
@@ -177,12 +214,12 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 - Right-click: move, or attack if the target is an enemy. `A` + click: attack-move. `S`: stop.
 - Ctrl+0–9 assigns control groups. 0–9 recalls them, and a double tap centres the camera on the group.
 - Constructors: a build menu, placing a ghost structure, and right-clicking a damaged friendly to repair.
-- Movement: ships path around asteroid obstacles and hold a loose formation when moved as a group. Ships avoid overlapping but do not collide physically.
+- Movement: ships path around asteroid obstacles and hold a loose formation, at the pace of the slowest ship, when moved as a group. Ships avoid overlapping but do not collide physically.
 
 ### UI (WinUI 3 over the D3D12 view)
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
-- **Ship designer:** a component picker for each slot, live stats, cost and build time, and save/rename. It is a XAML dialog that pauses nothing, because the match keeps running as in Warzone 2100.
+- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component.
 - **Menu:** Start skirmish, Quit. Nothing else.
 
 ---
@@ -191,13 +228,14 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 One scripted AI, deliberately simple. It exists to test the loop, not to be clever:
 
-1. Builds a Shipyard, a Research Lab and Mining Rigs on its nearest asteroids, then expands to the contested middle.
+1. Builds a Shipyard, a Research Lab and Mining Rigs on its home asteroids, then expands to the contested middle.
 2. Researches in a fixed order.
-3. Picks designs from a small list, favouring whatever counters the player's most common hull.
+3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It looks at the player's fleet again only once every review interval (§12), so it answers a switch late, as a player would, rather than at once from a map it sees in full.
 4. Gathers an attack group. When the group reaches a size threshold, it attack-moves on the nearest player structure, and repeats.
-5. Rebuilds destroyed Mining Rigs, and replaces lost Constructors at its Command Station.
+5. Defends: when one of its Mining Rigs or Defence Platforms is attacked, its ships outside the attack group go to it.
+6. Rebuilds destroyed Mining Rigs, and replaces lost Constructors at its Command Station.
 
-A difficulty setting is out of scope. One AI tuned to "beatable by a careful player" is enough.
+A difficulty setting is out of scope. One AI tuned to "beatable by a careful player" is enough. It does not kite (§7).
 
 ---
 
@@ -216,19 +254,20 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 12. Starting numbers (to be tuned)
 
-These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and will be loaded from a data file (engineering detail to follow). Until then this section is the data: `Tools/BattleModel.py` reads the Hull, Drive and Weapon tables by their column headings, so a heading changes together with the tool.
+These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and will be loaded from a data file (engineering detail to follow). Until then this section is the data: `Tools/BattleModel.py` reads the Hull, Drive and Weapon tables here and the research table in §8 by their column headings, so a heading changes together with the tool.
 
 | Item | Value |
 |---|---|
 | Simulation tick | 20 Hz |
 | Starting Ore | 1,000 |
-| Mining Rig income | 5 Ore/s |
-| Command Station HP | 5,000 |
+| Mining Rig income, home asteroid | 5 Ore/s |
+| Mining Rig income, contested asteroid | 8 Ore/s |
+| AI review interval | 60 s |
 
 | Hull | HP | Armour | Speed (m/s) | Cost | Build (s) |
 |---|---|---|---|---|---|
-| Small | 220 | 2 | 60 | 45 | 10 |
-| Medium | 500 | 6 | 40 | 110 | 20 |
+| Small | 220 | 2 | 60 | 32 | 10 |
+| Medium | 500 | 8 | 40 | 110 | 20 |
 | Large | 1,200 | 14 | 25 | 300 | 40 |
 
 | Drive | Speed × | HP × | Cost + |
@@ -238,48 +277,73 @@ These started as first guesses, written down so that tuning has a baseline. They
 
 | Weapon | Damage | Fire interval (s) | Range (m) | Cost + |
 |---|---|---|---|---|
-| Mass Driver | 13 | 0.4 | 120 | 30 |
-| Lance | 90 | 3.0 | 280 | 90 |
-| Missile Rack | 40 (splash 30 m) | 2.0 | 200 | 110 |
+| Mass Driver | 14 | 0.4 | 120 | 35 |
+| Lance | 95 | 3.0 | 220 | 85 |
+| Missile Rack | 40 (splash 30 m) | 2.0 | 280 | 110 |
 
-| Structure | HP | Cost | Build (constructor-seconds) |
+| Structure | HP | Armour | Cost | Build (constructor-seconds) |
+|---|---|---|---|---|
+| Command Station | 5,000 | 10 | — | — |
+| Shipyard | 2,500 | 0 | 300 | 40 |
+| Research Lab | 1,500 | 0 | 200 | 30 |
+| Mining Rig | 800 | 0 | 50 | 10 |
+| Defence Platform | 1,500 | 10 | 150 | 20 |
+
+| Structure weapon | Damage | Fire interval (s) | Range (m) |
 |---|---|---|---|
-| Shipyard | 2,500 | 300 | 40 |
-| Research Lab | 1,500 | 200 | 30 |
-| Mining Rig | 800 | 50 | 10 |
-| Defence Platform | 1,500 | 150 | 20 |
+| Defence gun | 30 | 1.0 | 250 |
 
-Each research topic costs 100–250 Ore and 30–60 s.
+| Topic | Ore | Time (s) |
+|---|---|---|
+| Improved Extraction | 150 | 60 |
+| Hull Plating | 150 | 60 |
+| Mass Driver Calibration | 150 | 75 |
+| Lance Focusing | 150 | 75 |
+| Fusion Drive | 200 | 90 |
+| Large Hull | 250 | 120 |
+| Missile Rack | 250 | 120 |
+| Automated Shipyards | 200 | 90 |
 
-**Retuned on 2026-09-30** against the Q2 check (§3). Four numbers changed from the first guesses, and nothing else:
+The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15).
 
-| Number | Was | Now | Why |
+**Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses:
+
+| Number | First guess | Now | Why |
 |---|---|---|---|
-| Small hull HP | 200 | 220 | With Ion it had 180 HP against two Lance hits of 176. At 195 base HP the swarm went from winning 68–100% of its battles against the line to winning 0–2%. It now has 198 HP, 11% clear of the breakpoint. |
-| Mass Driver damage | 12 | 13 | Under spread fire the swarm beat the line in only 68–77% of battles. |
-| Medium hull cost | 120 | 110 | The line beat the heavy in only 42–88% of battles. The cheaper hull buys more Lances for the Ore. |
-| Small hull cost | 50 | 45 | With the other three changes alone, no Small design was worth building under focus fire from 3,000 Ore up, because Medium+Ion+Mass Driver took its place. |
+| Lance range | 280 m | 220 m | The range ladder (§6): the Defence gun has to outrange it and the default view has to fit the fight. |
+| Missile Rack range | 200 m | 280 m | The range ladder: the one weapon that outranges a platform. |
+| Mass Driver Calibration | damage +20% | fire rate +15% | Upgrades change rates, never the size of a hit (§8). At +20% fire rate, one side's upgraded Medium+Ion+Mass Driver has no starting answer that wins half its battles under focus fire (10–47%). |
+| Lance Focusing | range +15% | fire rate +15% | A range upgrade would break the range ladder. |
+| Small hull HP | 200 | 220 | With Ion it had 180 HP against two Lance hits of 176. At 200, Medium+Ion+Lance has no counter that wins four battles in five at 2,000–3,000 Ore (25–48%). |
+| Small hull cost | 50 | 32 | At 35, one-sided Lance Focusing leaves the upgraded Medium+Ion+Lance without an answer that wins half its battles (25–32%). At 45, Medium+Ion+Lance has no counter at 2,000–3,000 Ore under spread fire (25–27%). |
+| Medium hull armour | 6 | 8 | At 6, Medium+Ion+Mass Driver was the only starting design worth building. Going back to 6 now leaves the swarm and the brawler without a counter in the starting stage (0–68%). |
+| Medium hull cost | 120 | 110 | At 120, one-sided Hull Plating or Mass Driver Calibration leaves the upgraded Small+Ion+Mass Driver without an answer (0–8% under focus fire). |
+| Mass Driver damage | 12 | 14 | Against armour 8 a hit of 13 does only 5. At 13, one-sided Lance Focusing leaves the upgraded Medium+Ion+Lance without an answer (17–18%). |
+| Mass Driver cost | 30 | 35 | At 30, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (2–15% under focus fire). |
+| Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer (12–42% under focus fire). |
+| Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (8–41% under focus fire). |
 
-**Where §12 stands against the Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, 30 per robustness case):
+**Where §12 stands against the Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks):
 
-- **(a) passes.**
+- **(a) passes** at every budget of both stages, in both modes. Every design's best counter wins all 60 of its battles.
+- **(b) passes for every modelled component.** It is reported as incomplete because the Missile Rack is not modelled, so Q2 cannot be "yes" until it is.
 - **(c) passes:** no counter flips when any single number moves 5%.
-- **(b) passes in part.** It holds under spread fire at every budget and under focus fire at 3,000 and 4,500 Ore. Under focus fire it fails at 2,000 Ore, where no Medium design is worth building, and at 6,000 Ore, where no Small design is.
+- **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 80% of battles at 3,000 Ore under focus fire. Every other topic leaves an answer that wins at least 92%.
 
-The first guesses failed all three parts. The Missile Rack is not in the model yet, so Q2 cannot be "yes" until it is.
+With the leftover Ore fielded, the model is close to deterministic: nearly every pairing is won by the same side at every budget in the window. Two margins are still thin and are the first place to look if a later change fails the check. A Mass Driver hit against a Medium hull is 6, so the brawler's matchups move sharply with Mass Driver damage or Medium armour. And a Small+Ion hull sits 6% above the Lance's two-hit breakpoint.
 
 **Not set yet** (each is open in §15):
 
 - ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches;
-- structure armour;
 - turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant;
-- the Constructor's HP, speed, cost and build time, and the build and repair rates.
+- the Constructor's HP, speed, cost and build time, and the build and repair rates;
+- the AI's attack-group threshold.
 
 ---
 
 ## 13. Out of scope for the MVP
 
-Campaign; multiplayer over a network; save and load; fog of war (first after the MVP); other races; carriers, fighters and VTOL-style rearming; commanders; sensors and artillery; transports and haulers; Huge and VeryLarge hulls; structure upgrades; damage types; unit veterancy; textures and materials; music; options, key rebinding and a real menu; AI difficulty levels.
+Campaign; multiplayer over a network; save and load; fog of war (first after the MVP); other races; carriers, fighters and VTOL-style rearming; commanders; sensors and artillery; transports and haulers; asteroid depletion; Huge and VeryLarge hulls; structure upgrades; damage types; unit veterancy; textures and materials; music; options, key rebinding and a real menu; AI difficulty levels.
 
 Something from this list goes into the MVP only if an MVP question cannot be answered without it.
 
@@ -292,27 +356,44 @@ Each milestone is playable or visible on screen, and each is **run**, not just b
 1. **A ship on screen.** The WinUI window with a D3D12 swap chain panel, a mesh loaded with its scale fixed, and the camera working.
 2. **Ships that obey.** The in-process server ticking, selection, move commands, pathing around asteroids, and interpolated rendering. **This answers Q5, including the order-to-response delay, and the tick-time half of Q4.**
 3. **Ships that fight.** Weapons, damage and destruction, with designs as data from §12 (the designer UI waits for milestone 5). A 200-ship stress scene under a representative XAML overlay, and the Q2 check as scripted headless battles in SimulationTests. **This answers Q2 and Q4.**
-4. **A base.** Constructors built at the Command Station, structures, Ore, and the Shipyard queue.
-5. **Designs and research.** The designer UI, components and the research tree.
+4. **A base.** Constructors built at the Command Station, structures with the Defence gun, Ore, and the Shipyard queue.
+5. **Designs and research.** The designer in the Shipyard panel, components and the research tree.
 6. **An opponent.** The AI player and the win/lose condition. **This answers Q1 and Q3.**
 
-Q2 moved from milestone 6 to milestone 3 in the 2026-09-30 revision. It is the design question most likely to change §7 and §12, and it needs no UI to answer.
+Q2 moved from milestone 6 to milestone 3 in the first review. It is the design question most likely to change §7 and §12, and it needs no UI to answer.
 
 ---
 
 ## 15. Open questions
 
 - Team colours and faction naming for the AI opponent.
-- How far can the camera zoom out? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view. The default zoom must also fit the longest weapon range (§4).
-- Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked.
-- Structure armour, and whether the Defence Platform should outrange or outlast a Lance (§6). Decided with the Missile Rack's tuning.
+- How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
+- Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes".
+- The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
+- The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only.
 - The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
 
-Decided on 2026-09-30:
+Decided on 2026-09-30, first review:
 
 - Constructors are built at the Command Station only (§6).
-- Counters come from stats alone: instant hits, no tracking, and §12 retuned against the Q2 check (§7, §12).
+- Counters come from stats alone: instant hits, no tracking, and §12 tuned against the Q2 check (§7, §12).
 - Q2 is answered at milestone 3, and `Tools/BattleModel.py` checks §12 until then (§3, §14).
 - The app stays MSIX-packaged for day-to-day development. ADR-001 records this with the milestone 1 scaffold.
+
+Decided on 2026-09-30, second review:
+
+- The default view is about 500 m wide, and the ranges form a ladder: Mass Driver 120 m, Lance 220 m, Defence gun 250 m, Missile Rack 280 m. No research extends a range (§4, §6, §8).
+- Only the Missile Rack outranges a Defence Platform (§6).
+- Contested asteroids yield more than home ones. The Mining Rig stays cheap, and nothing depletes (§5).
+- One Research Lab per player, and research lasts into the mid-game (§8). Upgrades change rates, never the size of a hit.
+- The Command Station carries the Defence gun (§6).
+- Q2(b) is not tightened for drives. What speed is worth is judged in play (§3).
+- Weapons are turrets and fire on the move (§7).
+- Q1 stays the owner's judgement (§3).
+- The Q2 check adds the starting components, one-sided research (d), and budgets up to 12,000 Ore (§3).
+- The AI counters designs rather than hulls, reviews the player's fleet at an interval, and defends its rigs (§10).
+- The designer lives in the Shipyard panel, and every match starts with the four starting designs saved (§9).
+- Auto-targeting prefers ships over structures (§7).
+- The Defence gun and structure armour in §12 are the baseline for milestone 4, the AI reviews the player's fleet every 60 s, and the research tree lasts about 11½ minutes (§12).

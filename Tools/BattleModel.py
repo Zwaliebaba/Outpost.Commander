@@ -5,8 +5,8 @@ Q2 asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3). Th
 version of that question before any C++ exists. §12's numbers are tuned against it until the scripted headless
 battles in SimulationTests take over at milestone 3 (§14).
 
-It reads the hull, drive and weapon tables from §12 of the design document itself, so the model and the document
-cannot disagree: change a number in §12 and run this again.
+It reads the hull, drive and weapon tables from §12 and the research table from §8 of the design document itself, so
+the model and the document cannot disagree: change a number in §12 or an effect in §8 and run this again.
 
 The model is deliberately small, and each simplification is one the design document also makes or leaves open:
 
@@ -15,20 +15,30 @@ The model is deliberately small, and each simplification is one the design docum
   - Each side is one clump of identical ships bought with the same Ore. Every ship in range of the enemy clump can
     shoot any ship in it. There is no formation, pathing or terrain.
   - Each battle's Ore is drawn from within 15% of the nominal budget, the same for both sides. Armies in a match are
-    never bought at an exact figure, and without the spread a budget that happens to cut one design's ship count
-    would decide the result rather than the designs.
+    never bought at an exact figure. The draws are stratified: battle k of n takes its Ore from the k-th of n equal
+    slices of that window, so n battles cover the window evenly rather than wherever the random draws fall.
+  - Ore that does not buy a whole ship buys a fractional one, with its hit points and damage scaled by the fraction.
+    Without it, the Ore left over after the last whole ship (up to one ship's cost, a fifth of a small budget) would be
+    thrown away, and the result would turn on where the budget cuts each design's ship count.
   - Both sides attack-move. Each closes on the other until its own weapon reaches, then stops and fires. Nobody kites
     or retreats.
   - Each ship's first shot comes at a random point within its fire interval, so volleys are not synchronised.
   - Targets are picked at random (spread fire) or as the weakest enemy (focus fire). Shots land together at the end
     of each tick, so focus fire overkills.
   - The Missile Rack is not modelled: its splash needs ship spacing, and ship sizes are not set yet (§15).
-  - Research upgrades are not applied.
+  - Structures are not modelled.
+  - Research is applied only in check (d), to one side, and comes free: that side spends no Ore on it.
 
-The Q2 check (§3) passes when, at every budget and in both fire modes:
+Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose interval straddles its threshold is
+run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
+
+The Q2 check (§3) runs at two stages: every component, at 2,000-12,000 Ore, and the starting components (those no
+research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of both stages and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
-  (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon, and
-  (c) none of the counters in (a) against those designs stops winning when any single §12 number moves by 5%.
+  (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage,
+  (c) none of the counters in (a) against those designs stops winning when any single §12 number moves by 5%, and
+  (d) at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a
+      design that none of the other side's starting designs beats at least half the time.
 
 Usage:
   python Tools/BattleModel.py                        the Q2 check against §12
@@ -56,9 +66,11 @@ TIME_LIMIT_S = 600.0
 RANGE_EPSILON_M = 1e-6
 
 COUNTER_WIN_RATE = 0.8  # (a): a counter wins at least four battles in five
-ROBUST_WIN_RATE = 0.5  # (c): a counter still wins after a 5% change
+ROBUST_WIN_RATE = 0.5  # (c): a counter still wins after a 5% change; (d): an answer to a researched design
 PERTURBATION = 0.05
 WORTH_BUILDING = 0.05  # a design is worth building when the equilibrium mix gives it at least 5%
+CONFIDENCE_Z = 1.96  # verdicts are taken on a 95% interval
+FRACTION_MIN = 0.01  # a fractional ship smaller than this is not fielded
 
 
 @dataclasses.dataclass(frozen=True)
@@ -101,6 +113,22 @@ class Design:
   damage: float
   interval: float
   range: float
+
+
+@dataclasses.dataclass(frozen=True)
+class Topic:
+  number: int
+  name: str
+  requires: tuple
+  unlocks: str  # the component the topic unlocks, or ""
+  target: str  # what an upgrade changes: "All hulls", a weapon, or an economy target such as "Mining Rig"
+  stat: str  # the §8 stat an upgrade changes, or ""
+  factor: float  # 1 + the upgrade's percentage
+
+
+UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("weapon", "damage"): "damage",
+            ("weapon", "range"): "range"}
+ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed")}  # upgrades with no effect on a battle
 
 
 # ---- Reading §12 -----------------------------------------------------------------------------------------------------
@@ -147,12 +175,12 @@ def number(text, where):
 
 def column(row, name, table):
   if name not in row:
-    sys.exit(f"§12's {table} table has no '{name}' column. It has: {', '.join(row)}.")
+    sys.exit(f"The {table} table has no '{name}' column. It has: {', '.join(row)}.")
   return row[name]
 
 
-def read_section_12(doc):
-  tables = tables_in(section_lines(doc.read_text(encoding="utf-8"), 12))
+def read_section_12(text):
+  tables = tables_in(section_lines(text, 12))
   for name in ("Item", "Hull", "Drive", "Weapon"):
     if name not in tables:
       sys.exit(f"§12 has no table whose first column is '{name}'.")
@@ -165,23 +193,98 @@ def read_section_12(doc):
   hulls = []
   for row in tables["Hull"]:
     name = row["Hull"]
-    hulls.append(Hull(name, *(number(column(row, c, "Hull"), f"{name} {c}")
+    hulls.append(Hull(name, *(number(column(row, c, "§12 Hull"), f"{name} {c}")
                               for c in ("HP", "Armour", "Speed (m/s)", "Cost"))))
   drives = []
   for row in tables["Drive"]:
     name = row["Drive"]
-    drives.append(Drive(name, *(number(column(row, c, "Drive"), f"{name} {c}") for c in ("Speed ×", "HP ×", "Cost +"))))
+    drives.append(Drive(name, *(number(column(row, c, "§12 Drive"), f"{name} {c}") for c in ("Speed ×", "HP ×", "Cost +"))))
   weapons = []
   for row in tables["Weapon"]:
     name = row["Weapon"]
-    damage_cell = column(row, "Damage", "Weapon")
+    damage_cell = column(row, "Damage", "§12 Weapon")
     splash = re.search(r"splash\s+([0-9.]+)\s*m", damage_cell)
     weapons.append(Weapon(name, number(damage_cell, f"{name} Damage"),
-                          number(column(row, "Fire interval (s)", "Weapon"), f"{name} Fire interval"),
-                          number(column(row, "Range (m)", "Weapon"), f"{name} Range"),
-                          number(column(row, "Cost +", "Weapon"), f"{name} Cost"),
+                          number(column(row, "Fire interval (s)", "§12 Weapon"), f"{name} Fire interval"),
+                          number(column(row, "Range (m)", "§12 Weapon"), f"{name} Range"),
+                          number(column(row, "Cost +", "§12 Weapon"), f"{name} Cost"),
                           float(splash.group(1)) if splash else 0.0))
   return tick_hz, hulls, drives, weapons
+
+
+def read_section_8(text, parts):
+  """The research topics in §8's table, with each effect read as an unlock or an upgrade."""
+  tables = tables_in(section_lines(text, 8))
+  if "#" not in tables:
+    sys.exit("§8 has no table whose first column is '#'.")
+  hulls, drives, weapons = parts
+  components = [p.name for group in parts for p in group]
+  weapon_names = {w.name for w in weapons}
+  topics = []
+  for row in tables["#"]:
+    where = f"§8 topic {row.get('#', '?')}"
+    cells_ = [row.get("#", "")] + [r for r in re.split(r"\s*,\s*", column(row, "Requires", "§8 research").strip())
+                                   if r not in ("—", "-", "")]
+    if not all(c.isdigit() for c in cells_):
+      sys.exit(f"{where}: the topic number and its requirements must be topic numbers.")
+    number_, requires = int(cells_[0]), tuple(int(c) for c in cells_[1:])
+    effect = column(row, "Effect", "§8 research")
+    unlock = re.fullmatch(r"Unlocks the (.+)", effect)
+    upgrade = re.fullmatch(r"(.+?):?\s+(HP|fire rate|damage|range|income|build speed)\s+\+([0-9.]+)%", effect)
+    if unlock:
+      named = [c for c in components if re.search(rf"\b{re.escape(c)}\b", unlock.group(1))]
+      if len(named) != 1:
+        sys.exit(f"{where}: '{effect}' should name exactly one hull, drive or weapon from §12.")
+      topics.append(Topic(number_, row["Topic"], requires, named[0], "", "", 1.0))
+    elif upgrade:
+      target, stat, percent = upgrade.group(1), upgrade.group(2), float(upgrade.group(3))
+      kind = "weapon" if target in weapon_names else target
+      if (kind, stat) not in UPGRADES and (target, stat) not in ECONOMY:
+        sys.exit(f"{where}: the model cannot apply '{effect}'. It knows All hulls HP, a weapon's fire rate, damage "
+                 f"or range, Mining Rig income and Shipyard build speed.")
+      topics.append(Topic(number_, row["Topic"], requires, "", target, stat, 1.0 + percent / 100.0))
+    else:
+      sys.exit(f"{where}: '{effect}' is neither 'Unlocks the <component>' nor '<target> <stat> +N%'.")
+  numbers = {t.number for t in topics}
+  for t in topics:
+    if set(t.requires) - numbers:
+      sys.exit(f"§8 topic {t.number} requires a topic that does not exist.")
+  return topics
+
+
+def with_prerequisites(topic, topics):
+  """The topic and every topic it needs, prerequisites first."""
+  by_number = {t.number: t for t in topics}
+  chain = []
+
+  def visit(t):
+    for r in t.requires:
+      visit(by_number[r])
+    if t not in chain:
+      chain.append(t)
+
+  visit(topic)
+  return chain
+
+
+def available(parts, topics, researched):
+  """The hulls, drives and weapons a player can build once `researched` is done."""
+  locked = {t.unlocks for t in topics if t.unlocks} - {t.unlocks for t in researched if t.unlocks}
+  return tuple([p for p in group if p.name not in locked] for group in parts)
+
+
+def upgraded(parts, researched):
+  """The parts with every upgrade in `researched` applied."""
+  hulls, drives, weapons = (list(group) for group in parts)
+  for t in researched:
+    if t.target == "All hulls":
+      hulls = [dataclasses.replace(h, hp=h.hp * t.factor) for h in hulls]
+    elif (t.target, t.stat) not in ECONOMY and t.stat:
+      field = UPGRADES[("weapon", t.stat)]
+      change = (lambda v: v / t.factor) if field == "interval" else (lambda v: v * t.factor)
+      weapons = [dataclasses.replace(w, **{field: change(getattr(w, field))}) if w.name == t.target else w
+                 for w in weapons]
+  return hulls, drives, weapons
 
 
 def apply_overrides(parts, overrides):
@@ -239,62 +342,134 @@ def hit(damage, armour):
 # ---- One battle ------------------------------------------------------------------------------------------------------
 
 
-def fight(a, b, budget, focus, seed, dt):
-  """One battle between clumps of `a` and `b` bought with `budget` Ore each. +1: a wins, -1: b wins, 0: draw."""
+def fight(a, b, budget, focus, seed, seeds, dt):
+  """Battle `seed` of `seeds` between clumps of `a` and `b` bought with `budget` Ore each, give or take the spread.
+
+  +1: a wins, -1: b wins, 0: draw.
+  """
   rng = random.Random(seed)
-  budget *= rng.uniform(1.0 - BUDGET_SPREAD, 1.0 + BUDGET_SPREAD)
+  uniform, rand = rng.uniform, rng.random
+  budget *= 1.0 - BUDGET_SPREAD + 2.0 * BUDGET_SPREAD * (seed % seeds + rand()) / seeds
   side = (a, b)
-  hp = [[d.hp] * int(budget // d.cost) for d in side]
-  if not hp[0] or not hp[1]:
-    raise ValueError(f"{budget:.0f} Ore does not buy one {a.code if not hp[0] else b.code}.")
-  alive = [list(range(len(hp[0]))), list(range(len(hp[1])))]
+  hp, scale = [], []
+  for d in side:
+    whole, fraction = divmod(budget / d.cost, 1.0)
+    if not whole:
+      raise ValueError(f"{budget:.0f} Ore does not buy one {d.code}.")
+    scales = [1.0] * int(whole) + ([fraction] if fraction >= FRACTION_MIN else [])
+    hp.append([d.hp * f for f in scales])
+    scale.append(scales)
+  n = (len(hp[0]), len(hp[1]))
+  alive = [list(range(n[0])), list(range(n[1]))]
   per_hit = (hit(a.damage, b.armour), hit(b.damage, a.armour))
-  when = [[0.0] * len(hp[0]), [0.0] * len(hp[1])]
+  interval = (a.interval, b.interval)
+  reach = (a.range + RANGE_EPSILON_M, b.range + RANGE_EPSILON_M)
+  step = (a.speed * dt, b.speed * dt)
+  when = ([0.0] * n[0], [0.0] * n[1])
   engaged = [False, False]
   queue = {}  # tick -> [(side, ship)]
   gap = START_GAP_M
+  ceil = math.ceil
+  tick, ticks = 0, int(TIME_LIMIT_S / dt)
 
-  def schedule(s, ship, time):
-    when[s][ship] = time
-    queue.setdefault(math.ceil(time / dt - 1e-9), []).append((s, ship))
+  while tick < ticks:
+    if not (engaged[0] and engaged[1]):
+      moving = [s for s in (0, 1) if gap > reach[s]]
+      if moving:
+        closed = sum(min(step[s], gap - side[s].range) for s in moving)
+        gap = max(gap - closed, min(side[s].range for s in moving))
+      for s in (0, 1):
+        if not engaged[s] and gap <= reach[s]:
+          engaged[s] = True
+          for ship in range(n[s]):
+            when[s][ship] = time = tick * dt + uniform(0.0, interval[s])
+            queue.setdefault(ceil(time / dt - 1e-9), []).append((s, ship))
 
-  for tick in range(int(TIME_LIMIT_S / dt)):
-    moving = [s for s in (0, 1) if gap > side[s].range + RANGE_EPSILON_M]
-    if moving:
-      closed = sum(min(side[s].speed * dt, gap - side[s].range) for s in moving)
-      gap = max(gap - closed, min(side[s].range for s in moving))
-    for s in (0, 1):
-      if not engaged[s] and gap <= side[s].range + RANGE_EPSILON_M:
-        engaged[s] = True
-        for ship in range(len(hp[s])):
-          schedule(s, ship, tick * dt + rng.uniform(0.0, side[s].interval))
-
-    shots = queue.pop(tick, ())
-    if not shots:
+    shots = queue.pop(tick, None)
+    if shots is None:
+      # Once both sides stand and fire, nothing happens until the next shot.
+      tick = min(queue) if engaged[0] and engaged[1] and queue else tick + 1
       continue
-    weakest = [min(alive[1], key=hp[1].__getitem__), min(alive[0], key=hp[0].__getitem__)] if focus else None
+    if focus:
+      weakest = (min(alive[1], key=hp[1].__getitem__), min(alive[0], key=hp[0].__getitem__))
     landed = []
     for s, ship in shots:
       if hp[s][ship] <= 0.0:
         continue
       enemy = 1 - s
-      target = weakest[s] if focus else alive[enemy][rng.randrange(len(alive[enemy]))]
-      landed.append((enemy, target, per_hit[s]))
-      schedule(s, ship, when[s][ship] + side[s].interval)
+      if focus:
+        target = weakest[s]
+      else:
+        targets = alive[enemy]
+        target = targets[int(rand() * len(targets))]
+      landed.append((enemy, target, per_hit[s] * scale[s][ship]))
+      when[s][ship] = time = when[s][ship] + interval[s]
+      queue.setdefault(ceil(time / dt - 1e-9), []).append((s, ship))
+    died = False
     for enemy, target, damage in landed:
-      hp[enemy][target] -= damage
-    for s in (0, 1):
-      alive[s] = [ship for ship in alive[s] if hp[s][ship] > 0.0]
-    if not alive[0] or not alive[1]:
-      break
+      before = hp[enemy][target]
+      hp[enemy][target] = before - damage
+      died |= before > 0.0 >= before - damage
+    if died:
+      alive[0] = [ship for ship in alive[0] if hp[0][ship] > 0.0]
+      alive[1] = [ship for ship in alive[1] if hp[1][ship] > 0.0]
+      if not alive[0] or not alive[1]:
+        break
+    tick += 1
   return (1 if alive[0] else 0) - (1 if alive[1] else 0)
 
 
 def pair_record(task):
   """Wins and losses of `a` against `b` over the seeds, for one budget and fire mode."""
   a, b, budget, focus, seeds, dt = task
-  outcomes = [fight(a, b, budget, focus, seed, dt) for seed in range(seeds)]
+  outcomes = [fight(a, b, budget, focus, seed, seeds, dt) for seed in range(seeds)]
   return outcomes.count(1), outcomes.count(-1)
+
+
+def wilson(wins, n):
+  """The 95% confidence interval of a win rate of wins/n."""
+  z = CONFIDENCE_Z
+  p, d = wins / n, 1.0 + z * z / n
+  centre = (p + z * z / (2 * n)) / d
+  half = z * math.sqrt(p * (1.0 - p) / n + z * z / (4.0 * n * n)) / d
+  return centre - half, centre + half
+
+
+def verdict(wins, n, threshold):
+  low, high = wilson(wins, n)
+  return "pass" if low >= threshold else "fail" if high < threshold else "unsure"
+
+
+def settle(pool, contests, threshold, seeds, max_seeds, dt):
+  """The best win rate and its verdict for each contest, re-running the uncertain ones with more battles.
+
+  A contest is a list of (a, b, budget, focus, wins, n) candidates for the same job: a counter to one design, an
+  answer to one researched design, or one counter under a perturbation. It passes if any candidate passes.
+  """
+  results = []
+  rerun = []
+  for c, candidates in enumerate(contests):
+    best = max(candidates, key=lambda x: x[4] / x[5])
+    verdicts = [verdict(x[4], x[5], threshold) for x in candidates]
+    if "pass" in verdicts or "unsure" not in verdicts:
+      results.append((best, "pass" if "pass" in verdicts else "fail"))
+    else:
+      results.append(None)
+      rerun.extend((c, x) for x, v in zip(candidates, verdicts) if v == "unsure")
+  if rerun and max_seeds > seeds:
+    tasks = [(x[0], x[1], x[2], x[3], max_seeds, dt) for _, x in rerun]
+    again = {}
+    for (c, x), (wins, _) in zip(rerun, pool.map(pair_record, tasks, chunksize=1)):
+      again.setdefault(c, []).append((*x[:4], wins, max_seeds))
+    for c, candidates in again.items():
+      best = max(candidates, key=lambda x: x[4] / x[5])
+      verdicts = [verdict(x[4], x[5], threshold) for x in candidates]
+      results[c] = (best, "pass" if "pass" in verdicts else "unsure" if "unsure" in verdicts else "fail")
+  for c, result in enumerate(results):
+    if result is None:  # nothing re-run: max_seeds is not above seeds
+      best = max(contests[c], key=lambda x: x[4] / x[5])
+      results[c] = (best, "unsure")
+  return results
 
 
 # ---- Matrices, the equilibrium mix and the Q2 check ------------------------------------------------------------------
@@ -372,30 +547,14 @@ def print_matrix(designs, matrix):
     print(f"{d.code:>10}" + "".join(f"{'-':>9}" if i == j else f"{matrix[i][j]:>9.0%}" for j in range(len(designs))))
 
 
-def run(args):
-  tick_hz, hulls, drives, weapons = read_section_12(args.doc)
-  parts = apply_overrides((hulls, drives, weapons), args.set)
-  hulls, drives, weapons = parts
-  dt = 1.0 / tick_hz
-  designs = designs_from(hulls, drives, weapons)
-  budgets = [int(b) for b in args.budgets.split(",")]
-  settings = [(budget, focus) for budget in budgets for focus in (False, True)]
-  unmodelled = [w.name for w in weapons if w.splash]
-
-  print(f"Numbers from {args.doc.name} §12" + (f", with {', '.join(args.set)}" if args.set else "") +
-        f". {len(designs)} designs, {args.seeds} battles per pairing, a {tick_hz:g} Hz tick.")
-  if unmodelled:
-    print(f"Not modelled: {', '.join(unmodelled)} (splash needs ship sizes, §15).")
-  print()
-  print_designs(designs, hulls)
-  if args.detail:
-    print_shots_to_kill(designs)
-
-  failures = {"a": [], "b": [], "c": []}
-  legs = set()
-  with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as pool:
-    for budget, focus in settings:
+def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
+  """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c)."""
+  designs = designs_from(*parts)
+  print(f"\n==== {label}: {len(designs)} designs ====")
+  for budget in budgets:
+    for focus in (False, True):
       mode = "focus" if focus else "spread"
+      where = f"{label}, {budget:,} Ore {mode}"
       matrix = win_matrix(pool, designs, budget, focus, args.seeds, dt)
       mix = equilibrium(matrix)
       built = [i for i, weight in enumerate(mix) if weight >= WORTH_BUILDING]
@@ -403,64 +562,144 @@ def run(args):
             ", ".join(f"{designs[i].code} {mix[i]:.0%}" for i in sorted(built, key=lambda i: -mix[i])))
       if args.detail:
         print_matrix(designs, matrix)
-      for j, target in enumerate(designs):
-        best = max((i for i in range(len(designs)) if i != j), key=lambda i: matrix[i][j])
-        if matrix[best][j] < COUNTER_WIN_RATE:
-          failures["a"].append(f"{budget:,} Ore {mode}: the best counter to {target.code} is {designs[best].code} "
-                               f"at {matrix[best][j]:.0%}")
+      contests = [[(designs[i], target, budget, focus, round(matrix[i][j] * args.seeds), args.seeds)
+                   for i in range(len(designs)) if i != j] for j, target in enumerate(designs)]
+      for j, ((counter, target, _, _, wins, n), status) in enumerate(
+          settle(pool, contests, COUNTER_WIN_RATE, args.seeds, args.max_seeds, dt)):
+        if status != "pass":
+          failures["a" if status == "fail" else "a?"].append(
+            f"{where}: the best counter to {target.code} is {counter.code} at {wins / n:.0%} of {n}")
         if j in built:
-          legs.add((designs[best].code, target.code, budget, focus))
-          print(f"  {target.code:>9} is countered by {designs[best].code} ({matrix[best][j]:.0%})")
+          legs.add((counter.code, target.code, budget, focus))
+          print(f"  {target.code:>9} is countered by {counter.code} ({wins / n:.0%} of {n})")
       used = [{getattr(designs[i], attribute) for i in built} for attribute in ("hull", "drive", "weapon")]
       for names, in_use, kind in zip(component_names(parts), used, ("hull", "drive", "weapon")):
         for name in names:
           if name not in in_use and name not in unmodelled:
-            failures["b"].append(f"{budget:,} Ore {mode}: no design worth building uses the {name} {kind}")
+            failures["b"].append(f"{where}: no design worth building uses the {name} {kind}")
+
+
+def research_check(pool, parts, topics, budgets, args, dt, failures):
+  """(d): each topic, with its prerequisites, researched by one side only, against the other side's starting designs."""
+  answers = designs_from(*available(parts, topics, []))
+  print(f"\n==== One-sided research (d): each topic against the {len(answers)} starting designs ====")
+  for topic in topics:
+    if (topic.target, topic.stat) in ECONOMY:
+      print(f"  {topic.name}: no effect on a battle")
+      continue
+    researched = with_prerequisites(topic, topics)
+    side = upgraded(available(parts, topics, researched), researched)
+    designs = designs_from(*side)
+    if topic.unlocks and not any(topic.unlocks in (d.hull, d.drive, d.weapon) for d in designs):
+      print(f"  {topic.name}: not modelled")
+      continue
+    keys = [(budget, focus, x) for budget in budgets for focus in (False, True) for x in designs]
+    tasks = [(y, x, budget, focus, args.seeds, dt) for budget, focus, x in keys for y in answers]
+    records = iter(pool.map(pair_record, tasks, chunksize=4))
+    contests = [[(y, x, budget, focus, next(records)[0], args.seeds) for y in answers] for budget, focus, x in keys]
+    settled = settle(pool, contests, ROBUST_WIN_RATE, args.seeds, args.max_seeds, dt)
+    chain = " + ".join(t.name for t in researched)
+    (y, x, budget, focus, wins, n), _ = min(settled, key=lambda r: r[0][4] / r[0][5])
+    print(f"  {chain}: weakest answer is {y.code} to {x.code}* at {wins / n:.0%} of {n} "
+          f"({budget:,} Ore {'focus' if focus else 'spread'})")
+    for (y, x, budget, focus, wins, n), status in settled:
+      if status != "pass":
+        failures["d" if status == "fail" else "d?"].append(
+          f"{chain}, {budget:,} Ore {'focus' if focus else 'spread'}: the best answer to {x.code}* is {y.code} "
+          f"at {wins / n:.0%} of {n}")
+
+
+def run(args):
+  text = args.doc.read_text(encoding="utf-8")
+  tick_hz, hulls, drives, weapons = read_section_12(text)
+  parts = apply_overrides((hulls, drives, weapons), args.set)
+  topics = read_section_8(text, parts)
+  hulls, drives, weapons = parts
+  dt = 1.0 / tick_hz
+  designs = designs_from(hulls, drives, weapons)
+  budgets = [int(b) for b in args.budgets.split(",")]
+  early = [int(b) for b in args.early_budgets.split(",")]
+  unmodelled = [w.name for w in weapons if w.splash]
+  start = available(parts, topics, [])
+
+  print(f"Numbers from {args.doc.name} §12" + (f", with {', '.join(args.set)}" if args.set else "") +
+        f". {len(designs)} designs, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
+        f"uncertain), a {tick_hz:g} Hz tick.")
+  print("Starting components: " + ", ".join(p.name for group in start for p in group) + ".")
+  if unmodelled:
+    print(f"Not modelled: {', '.join(unmodelled)} (splash needs ship sizes, §15).")
+  print()
+  print_designs(designs, hulls)
+  if args.detail:
+    print_shots_to_kill(designs)
+
+  failures = {key: [] for key in ("a", "a?", "b", "c", "c?", "d", "d?")}
+  legs = set()
+  with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as pool:
+    stage(pool, "Every component", parts, budgets, args, dt, unmodelled, failures, legs)
+    stage(pool, "Starting components", start, early, args, dt, unmodelled, failures, legs)
+    research_check(pool, parts, topics, early, args, dt, failures)
 
     if not args.quick:
       by_code = {d.code: d for d in designs}
-      checks = 0
+      keys, tasks = [], []
       for label, new_hulls, new_drives, new_weapons in perturbed_parts(parts):
         changed = {d.code: d for d in designs_from(new_hulls, new_drives, new_weapons)}
-        tasks, keys = [], []
         for counter, target, budget, focus in sorted(legs):
           if changed[counter] == by_code[counter] and changed[target] == by_code[target]:
             continue
           tasks.append((changed[counter], changed[target], budget, focus, args.robust_seeds, dt))
-          keys.append((counter, target, budget, focus))
-        for (counter, target, budget, focus), (wins, _) in zip(keys, pool.map(pair_record, tasks, chunksize=2)):
-          checks += 1
-          if wins / args.robust_seeds < ROBUST_WIN_RATE:
-            failures["c"].append(f"{label}: {counter} no longer beats {target} at {budget:,} Ore "
-                                 f"{'focus' if focus else 'spread'} fire ({wins / args.robust_seeds:.0%})")
-      print(f"\nRobustness: {checks} counter checks under one-number changes of +/-5%.")
+          keys.append(label)
+      records = pool.map(pair_record, tasks, chunksize=2)
+      contests = [[(*task[:4], wins, args.robust_seeds)] for task, (wins, _) in zip(tasks, records)]
+      for label, ((counter, target, budget, focus, wins, n), status) in zip(
+          keys, settle(pool, contests, ROBUST_WIN_RATE, args.robust_seeds, args.max_seeds, dt)):
+        if status != "pass":
+          failures["c" if status == "fail" else "c?"].append(
+            f"{label}: {counter.code} no longer beats {target.code} at {budget:,} Ore "
+            f"{'focus' if focus else 'spread'} fire ({wins / n:.0%} of {n})")
+      print(f"\nRobustness: {len(tasks)} counter checks under one-number changes of +/-5%.")
 
   print("\nQ2 check (§3):")
   verdicts = {
     "a": "every design has a counter that wins at least 80%",
     "b": "the designs worth building use every hull, drive and weapon",
     "c": "no counter stops winning when one number moves 5%",
+    "d": "no research topic leaves a design without an answer that wins half the time",
   }
   failed = False
   for key, text in verdicts.items():
     if key == "c" and args.quick:
       print(f"  ({key}) {text}: not run (--quick)")
       continue
-    status = "FAIL" if failures[key] else ("INCOMPLETE" if key == "b" and unmodelled else "PASS")
-    failed |= bool(failures[key])
+    unsure = failures.get(key + "?", [])
+    if failures[key]:
+      status = "FAIL"
+    elif unsure:
+      status = "UNSURE"
+    else:
+      status = "INCOMPLETE" if key == "b" and unmodelled else "PASS"
+    failed |= status in ("FAIL", "UNSURE")
     suffix = f" ({', '.join(unmodelled)} not modelled)" if status == "INCOMPLETE" else ""
     print(f"  ({key}) {text}: {status}{suffix}")
     for line in failures[key]:
       print(f"      {line}")
+    for line in unsure:
+      print(f"      unsure: {line}")
   return 1 if failed else 0
 
 
 def main():
   parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
   parser.add_argument("--doc", type=Path, default=DOC_DEFAULT, help="the design document to read §12 from")
-  parser.add_argument("--budgets", default="2000,3000,4500,6000", help="Ore per side, comma-separated")
+  parser.add_argument("--budgets", default="2000,3000,4500,6000,9000,12000",
+                      help="Ore per side for every component, comma-separated")
+  parser.add_argument("--early-budgets", default="2000,3000,4500",
+                      help="Ore per side for the starting components and the research check (d)")
   parser.add_argument("--seeds", type=int, default=60, help="battles per pairing for the matrices")
   parser.add_argument("--robust-seeds", type=int, default=30, help="battles per pairing for the robustness sweep")
+  parser.add_argument("--max-seeds", type=int, default=480,
+                      help="battles for a verdict whose confidence interval straddles its threshold")
   parser.add_argument("--jobs", type=int, default=None, help="worker processes (default: one per core)")
   parser.add_argument("--set", action="append", default=[], metavar="NAME.FIELD=VALUE",
                       help="override one §12 number, such as Small.hp=220 or Ion.hp_factor=1.0")
