@@ -42,9 +42,20 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   : m_tuning(std::move(_tuning)),
     m_map(std::move(_map)),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
-    m_simulation(_desc.seed)
+    m_simulation(_desc.seed, static_cast<std::uint32_t>(m_tuning.rules.tickHz))
 {
+  // Every passage is at least the map's minimum gap wide, which is what keeps every asteroid reachable (MapTests). A hull
+  // wider than that could be walled off, so the two files are checked against each other here, where both are known.
+  for (const HullTuning& hull : m_tuning.hulls)
+  {
+    if (2.0 * hull.footprintRadiusMeters > m_map.minimumGapMeters)
+      throw Neuron::Exception(std::format("The {} hull's footprint, {} m across, is wider than the map's narrowest passage, {} m.",
+                                          hull.name, 2.0 * hull.footprintRadiusMeters, m_map.minimumGapMeters));
+  }
   m_simulation.PlaceMap(m_map);
+  // The same float a ship of the hull is given (MovementFor), since the graphs are kept by radius.
+  for (const HullTuning& hull : m_tuning.hulls)
+    m_simulation.PreparePathfinding(static_cast<float>(hull.footprintRadiusMeters));
 }
 
 std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _player)

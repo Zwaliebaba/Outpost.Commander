@@ -36,7 +36,8 @@ struct LoggedCommand
 class InProcessServer final : public Server
 {
 public:
-  // Places _map in a new simulation seeded from _desc.
+  // Places _map in a new simulation seeded from _desc. Throws Neuron::Exception when a hull's footprint is wider than the
+  // map's minimum gap, since such a ship could be walled off.
   InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc);
 
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;

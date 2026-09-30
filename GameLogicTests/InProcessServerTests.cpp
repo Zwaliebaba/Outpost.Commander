@@ -11,6 +11,7 @@ namespace
 constexpr Outpost::PlayerId BLUE{1};
 constexpr Outpost::PlayerId RED{2};
 constexpr Outpost::DesignId SWARM{1};
+constexpr Outpost::ShipMovement SMALL_ION{.speedMetersPerSecond = 78.0f, .turnRateRadiansPerSecond = 3.927f, .radiusMeters = 8.0f};
 
 Outpost::Tuning RepositoryTuning()
 {
@@ -52,8 +53,8 @@ public:
   TEST_METHOD(AppliesACommandAtTheNextTickAsTheConnectionsPlayer)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
-    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, {});
-    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, {});
+    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
 
     // The client claims to be red, but it is on blue's connection, so it may move only blue's ships.
@@ -76,8 +77,8 @@ public:
   TEST_METHOD(ReplaysFromItsCommandLog)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 77});
-    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, {});
-    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, {});
+    const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     for (int frame = 0; frame < 120; ++frame)
@@ -91,10 +92,10 @@ public:
       server.Advance(std::chrono::microseconds(16'667));
     }
 
-    Outpost::Simulation replay(77);
+    Outpost::Simulation replay(77, 20);
     replay.PlaceMap(server.MapData());
-    (void)replay.SpawnShip(BLUE, SWARM, {});
-    (void)replay.SpawnShip(RED, SWARM, {});
+    (void)replay.SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    (void)replay.SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
     size_t next = 0;
     while (replay.CurrentTick() < server.World().CurrentTick())

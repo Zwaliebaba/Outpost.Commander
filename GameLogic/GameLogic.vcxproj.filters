@@ -10,6 +10,9 @@
     <Filter Include="Map">
       <UniqueIdentifier>{0de0c299-803b-4665-b63f-de161298e279}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Movement">
+      <UniqueIdentifier>{d0399d17-e251-4b68-abbe-6c9835502379}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Server">
       <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
     </Filter>
@@ -17,6 +20,12 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameLogic.h" />
+    <ClInclude Include="Pathfinder.h">
+      <Filter>Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="PlaneVector.h">
+      <Filter>Movement</Filter>
+    </ClInclude>
     <ClInclude Include="Map.h">
       <Filter>Map</Filter>
     </ClInclude>
@@ -32,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Pathfinder.cpp">
+      <Filter>Movement</Filter>
+    </ClCompile>
     <ClCompile Include="Map.cpp">
       <Filter>Map</Filter>
     </ClCompile>

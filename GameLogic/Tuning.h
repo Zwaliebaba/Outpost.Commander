@@ -28,6 +28,10 @@ struct HullTuning
   double speedMetersPerSecond = 0.0;
   std::int32_t cost = 0;
   double buildSeconds = 0.0;
+  // Provisional until ship sizes are set (G5): the circle a ship of this hull keeps clear, for movement and formation.
+  double footprintRadiusMeters = 0.0;
+  // Provisional, like the radius: how fast the hull turns before its drive's factor (design §7).
+  double turnRateDegreesPerSecond = 0.0;
 };
 
 struct DriveTuning
@@ -36,6 +40,7 @@ struct DriveTuning
   std::string name;
   double speedFactor = 0.0;
   double hitPointsFactor = 0.0;
+  double turnRateFactor = 0.0;
   std::int32_t cost = 0;
 };
 

@@ -9,5 +9,7 @@
 
 #include "Tuning.h"
 #include "Map.h"
+#include "PlaneVector.h"
+#include "Pathfinder.h"
 #include "Simulation.h"
 #include "InProcessServer.h"
