@@ -11,10 +11,10 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 **What is authoritative, in order:**
 
 1. **This file** — conformance: naming, style, build settings, and how to work here.
-2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6). **There are none yet**; numbering starts at `ADR-001` in this repository and does not continue another's.
+2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6), numbered from `ADR-001` in this repository and not continuing another's.
 3. **The surrounding code** — for anything neither of the above covers, match the file you are editing.
 
-A design document, when there is one, sits alongside rather than above: it says what is built and this file says how. Until it exists there is no design authority, and a task that needs a design answer asks the owner and gets the answer written down before the code is.
+The design document, [`GameDesign/OutpostCommander-MVP.md`](GameDesign/OutpostCommander-MVP.md), sits alongside rather than above: it says what is built and this file says how. It is a draft under review. A task that needs a design answer it does not give asks the owner, and gets the answer written down before the code is.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
