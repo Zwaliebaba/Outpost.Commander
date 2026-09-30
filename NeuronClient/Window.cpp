@@ -63,6 +63,36 @@ bool IsFullScreenToggle(const MSG& _message) noexcept
          (_message.lParam & REPEAT_BIT) == 0;
 }
 
+// A mouse message's button, whether it goes down, and the buttons it leaves held (its wParam's MK_ flags).
+struct ButtonMessage
+{
+  std::uint8_t key = 0;
+  bool down = false;
+};
+
+std::optional<ButtonMessage> AsButton(UINT _message) noexcept
+{
+  switch (_message)
+  {
+  case WM_LBUTTONDOWN:
+    return ButtonMessage{VK_LBUTTON, true};
+  case WM_LBUTTONUP:
+    return ButtonMessage{VK_LBUTTON, false};
+  case WM_RBUTTONDOWN:
+    return ButtonMessage{VK_RBUTTON, true};
+  case WM_RBUTTONUP:
+    return ButtonMessage{VK_RBUTTON, false};
+  case WM_MBUTTONDOWN:
+    return ButtonMessage{VK_MBUTTON, true};
+  case WM_MBUTTONUP:
+    return ButtonMessage{VK_MBUTTON, false};
+  default:
+    return std::nullopt;
+  }
+}
+
+constexpr WPARAM ANY_BUTTON_HELD = MK_LBUTTON | MK_RBUTTON | MK_MBUTTON;
+
 void PlaceWindow(HWND _hwnd, DWORD _style, const RECT& _frame) noexcept
 {
   SetWindowLongPtrW(_hwnd, GWL_STYLE, static_cast<LONG_PTR>(_style | WS_VISIBLE));
@@ -119,7 +149,7 @@ Neuron::Window::~Window()
   UnregisterClassW(WINDOW_CLASS_NAME, m_instance);
 }
 
-bool Neuron::Window::ProcessMessages() noexcept
+bool Neuron::Window::ProcessMessages()
 {
   MSG message{};
   while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE))
@@ -137,20 +167,38 @@ bool Neuron::Window::ProcessMessages() noexcept
       continue;
     }
     // Input is counted here, where the window's state is in reach, and the message still goes on to DefWindowProc.
-    // Capturing the mouse while the middle button is held keeps a drag going when the cursor leaves a window.
-    switch (message.message)
+    // Capturing the mouse while any button is held keeps a drag going when the cursor leaves a window.
+    if (message.message == WM_MOUSEWHEEL)
     {
-    case WM_MOUSEWHEEL:
       m_wheelDelta += GET_WHEEL_DELTA_WPARAM(message.wParam);
-      break;
-    case WM_MBUTTONDOWN:
-      SetCapture(m_hwnd);
-      break;
-    case WM_MBUTTONUP:
-      ReleaseCapture();
-      break;
-    default:
-      break;
+    }
+    else if (const std::optional<ButtonMessage> button = AsButton(message.message))
+    {
+      if (button->down)
+        SetCapture(m_hwnd);
+      else if ((message.wParam & ANY_BUTTON_HELD) == 0)
+        ReleaseCapture();
+      // A mouse message's lParam holds the client position as two signed 16-bit numbers.
+      m_events.push_back({.kind = button->down ? InputEventKind::ButtonDown : InputEventKind::ButtonUp,
+                          .key = button->key,
+                          .xPixels = static_cast<std::int16_t>(LOWORD(message.lParam)),
+                          .yPixels = static_cast<std::int16_t>(HIWORD(message.lParam)),
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .shift = (message.wParam & MK_SHIFT) != 0,
+                          .control = (message.wParam & MK_CONTROL) != 0});
+    }
+    else if (message.message == WM_KEYDOWN && (message.lParam & REPEAT_BIT) == 0 && message.wParam < 256)
+    {
+      POINT cursor = message.pt;
+      ScreenToClient(m_hwnd, &cursor);
+      // GetKeyState answers as of the message being handled, so the modifiers are the ones held with this key.
+      m_events.push_back({.kind = InputEventKind::KeyDown,
+                          .key = static_cast<std::uint8_t>(message.wParam),
+                          .xPixels = cursor.x,
+                          .yPixels = cursor.y,
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .shift = GetKeyState(VK_SHIFT) < 0,
+                          .control = GetKeyState(VK_CONTROL) < 0});
     }
     TranslateMessage(&message);
     DispatchMessageW(&message);
@@ -164,6 +212,9 @@ Neuron::InputState Neuron::Window::ReadInput() noexcept
   input.active = GetForegroundWindow() == m_hwnd && !IsMinimized();
   input.wheelNotches = static_cast<float>(m_wheelDelta) / static_cast<float>(WHEEL_DELTA);
   m_wheelDelta = 0;
+  if (input.active)
+    input.events = std::move(m_events);
+  m_events.clear();
 
   POINT cursor{};
   if (GetCursorPos(&cursor) != FALSE && ScreenToClient(m_hwnd, &cursor) != FALSE)

@@ -39,8 +39,8 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
-| 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
-| 2.6 | Selection, orders and control groups | 2.5 | — | todo |
+| 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | in review, owner run |
+| 2.6 | Selection, orders and control groups | 2.5 | — | in review, owner run |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | todo |
@@ -255,7 +255,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - an invalid command is rejected;
   - the same seed and command log reproduce the same state on the same build.
 - **Verify:** CI; **owner run**, because the executable now loads `Assets\Tuning.json` from the package at startup and reports a failure in a message box.
-- **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. Starting entities are not placed yet: 2.3 placed only the map. **Open:** which task spawns ships at the starts, so that 2.5 and 2.6 have something to draw and select, is the owner's to decide; 4.2 places the Command Station and the Constructors.
+- **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. Starting entities are not placed yet: 2.3 placed only the map. Ships at the starts: decided by the owner on 2026-09-30, 2.5 adds a provisional starting fleet held in `Map.json`, until 4.2 places the Command Station and the Constructors (ADR-013).
 
 ### 2.3 — The map as data
 
@@ -283,6 +283,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Scope:** `GameApp` keeps the snapshot history and hands draw lists to `NeuronClient`.
 - **Acceptance:** CI green. A test covers the interpolation math.
 - **Verify:** **owner run:** smooth motion at 60 fps from a 20 Hz tick.
+- **As built:** [ADR-013](../Design/ADR/ADR-013-client-view-and-controls.md). Started before 1.6's owner run, at the owner's choice. `SnapshotInterpolator` in `GameApp` shows the world one tick behind the newest snapshot, on a clock pulled gently toward it, and never extrapolates. `EntityView` carries the ship's `HullId`, and `Models.json` maps players to sets and hulls to models. `Server::TicksPerSecond()` gives the client the rate. The server places a provisional starting fleet from `Map.json` at each start (the owner's decision), so there is something to draw: four Small and two Medium ships per player, facing the map's center. Ore asteroids are drawn with the asteroid mesh at their radius, and a field as a ring of rocks. The milestone 1 lineup is gone. A test drives the view at 60 fps from 20 Hz snapshots and checks that every frame steps forward by close to the same distance. Ships move only once 2.6 gives orders, so the owner's run of 2.5 happens together with 2.6's.
 
 ### 2.6 — Selection, orders and control groups
 
@@ -293,6 +294,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Scope:** selection and control groups are client state in `GameApp`. Orders become `Command`s through the transport.
 - **Acceptance:** CI green. Tests cover picking and box selection where they are pure math.
 - **Verify:** **owner run.**
+- **As built:** [ADR-013](../Design/ADR/ADR-013-client-view-and-controls.md). The window records presses and releases as events. `PlayerControls` turns them into selection, control groups and `Command`s, which `WinMain` sends at once. The selection shows as green rings on the ground, amber while attack-move waits for its click, and a drag box as its outline on the ground until the HUD exists (G7). The arrow keys pan and A and S are orders, decided by the owner on 2026-09-30. The server rejects attack and attack-move until 3.3. Double-click compares hulls until designs exist (3.2).
 
 ### 2.7 — Measure Q5 and the tick half of Q4
 

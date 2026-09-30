@@ -33,6 +33,14 @@ Outpost::OreAsteroidPlacement ReadOreAsteroid(JsonObjectReader& _reader)
   return asteroid;
 }
 
+Outpost::StartingShips ReadStartingShips(JsonObjectReader& _reader)
+{
+  // Whether the hull and the drive exist is checked when the fleet is placed, where the tuning data is known.
+  return {.hull = _reader.Identifier<Outpost::HullId>("hull"),
+          .drive = _reader.Identifier<Outpost::DriveId>("drive"),
+          .count = static_cast<std::uint32_t>(_reader.Integer("count", 1))};
+}
+
 Outpost::AsteroidFieldPlacement ReadAsteroidField(JsonObjectReader& _reader)
 {
   Outpost::AsteroidFieldPlacement field;
@@ -102,6 +110,7 @@ Outpost::Map ReadMap(std::string_view _json)
   map.sizeMeters = static_cast<float>(root.Number("sizeMeters", JsonBound::Positive));
   map.minimumGapMeters = static_cast<float>(root.Number("minimumGapMeters", JsonBound::Positive));
   map.starts = Neuron::ReadJsonList<Outpost::PlanePosition>(root, "starts", ReadPosition);
+  map.startingFleet = Neuron::ReadJsonList<Outpost::StartingShips>(root, "startingFleet", ReadStartingShips);
   map.oreAsteroids = Neuron::ReadJsonList<Outpost::OreAsteroidPlacement>(root, "oreAsteroids", ReadOreAsteroid);
   map.asteroidFields = Neuron::ReadJsonList<Outpost::AsteroidFieldPlacement>(root, "asteroidFields", ReadAsteroidField);
   root.Finish();

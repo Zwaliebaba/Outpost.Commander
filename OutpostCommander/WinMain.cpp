@@ -41,7 +41,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
     // Loads every model before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011).
-    Outpost::GameClient client(renderer);
+    Outpost::GameClient client(renderer, server->TicksPerSecond());
 
     auto lastAdvance = std::chrono::steady_clock::now();
     for (;;)
@@ -62,8 +62,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       const auto elapsed = now - lastAdvance;
       server->Advance(elapsed);
       lastAdvance = now;
-      // Drawing from snapshots is task 2.5. Until then they are dropped, so that they do not pile up.
-      (void)player->Receive();
+      // The client draws only what the snapshots say, interpolated (ADR-002 decision 5, ADR-013).
+      client.Receive(player->Receive());
 
       // Read every loop, minimized too, so that the cursor is let go as soon as the game loses the foreground (ADR-012).
       const Neuron::InputState input = window.ReadInput();
@@ -72,6 +72,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
       renderer.Resize(window.ClientWidthPixels(), window.ClientHeightPixels());
       client.Update(input, std::chrono::duration<float>(elapsed).count(), renderer.WidthPixels(), renderer.HeightPixels());
+      // Orders leave as soon as they are given; the server applies them at the start of its next tick (ADR-002).
+      for (Outpost::Command& command : client.TakeCommands())
+        player->Send(std::move(command));
       ID3D12GraphicsCommandList* commandList = renderer.BeginFrame(CLEAR_COLOR);
       client.Render(renderer, commandList);
       renderer.EndFrame();

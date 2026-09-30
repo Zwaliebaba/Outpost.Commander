@@ -68,6 +68,26 @@ Outpost::ModelSet ReadSet(JsonObjectReader& _reader)
   }
   return set;
 }
+Outpost::PlayerModels ReadPlayer(JsonObjectReader& _reader)
+{
+  return {.player = _reader.Identifier<Outpost::PlayerId>("player"), .set = _reader.String("set")};
+}
+
+Outpost::HullModel ReadHull(JsonObjectReader& _reader)
+{
+  return {.hull = _reader.Identifier<Outpost::HullId>("hull"), .model = _reader.String("model")};
+}
+
+// The index of the first element before _index whose _key equals element _index's, or _index when there is none.
+template <typename T, typename Key> size_t FirstWithSameKey(const std::vector<T>& _list, size_t _index, Key T::*_key)
+{
+  for (size_t i = 0; i < _index; ++i)
+  {
+    if (_list[i].*_key == _list[_index].*_key)
+      return i;
+  }
+  return _index;
+}
 } // namespace
 
 const Outpost::ModelEntry& Outpost::ModelSet::Model(std::string_view _name) const
@@ -92,6 +112,8 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   JsonObjectReader reader(document, "");
   ModelCatalog catalog;
   catalog.sets = Neuron::ReadJsonList<ModelSet>(reader, "sets", ReadSet);
+  catalog.players = Neuron::ReadJsonList<PlayerModels>(reader, "players", ReadPlayer);
+  catalog.hulls = Neuron::ReadJsonList<HullModel>(reader, "hulls", ReadHull);
   reader.Finish();
 
   for (size_t i = 0; i < catalog.sets.size(); ++i)
@@ -100,7 +122,43 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
     if (first != catalog.sets.begin() + static_cast<std::ptrdiff_t>(i))
       Neuron::JsonFail(Neuron::JsonElementPath("sets", i), std::format("the set \"{}\" is listed twice", catalog.sets[i].name));
   }
+
+  for (size_t i = 0; i < catalog.players.size(); ++i)
+  {
+    const std::string path = Neuron::JsonElementPath("players", i);
+    if (FirstWithSameKey(catalog.players, i, &PlayerModels::player) != i)
+      Neuron::JsonFail(path, std::format("player {} is listed twice", catalog.players[i].player.value));
+    if (std::ranges::find(catalog.sets, catalog.players[i].set, &ModelSet::name) == catalog.sets.end())
+      Neuron::JsonFail(path + ".set", std::format("there is no set \"{}\"", catalog.players[i].set));
+  }
+  for (size_t i = 0; i < catalog.hulls.size(); ++i)
+  {
+    const std::string path = Neuron::JsonElementPath("hulls", i);
+    if (FirstWithSameKey(catalog.hulls, i, &HullModel::hull) != i)
+      Neuron::JsonFail(path, std::format("hull {} is listed twice", catalog.hulls[i].hull.value));
+    for (const PlayerModels& player : catalog.players)
+    {
+      const ModelSet& set = catalog.Set(player.set);
+      if (std::ranges::find(set.models, catalog.hulls[i].model, &ModelEntry::name) == set.models.end())
+        Neuron::JsonFail(path + ".model", std::format("the set \"{}\" has no model \"{}\"", set.name, catalog.hulls[i].model));
+    }
+  }
   return catalog;
+}
+
+const Outpost::ModelSet* Outpost::ModelCatalog::SetForPlayer(PlayerId _player) const noexcept
+{
+  const auto found = std::ranges::find(players, _player, &PlayerModels::player);
+  if (found == players.end())
+    return nullptr;
+  const auto set = std::ranges::find(sets, found->set, &ModelSet::name);
+  return set == sets.end() ? nullptr : &*set;
+}
+
+const std::string* Outpost::ModelCatalog::ModelForHull(HullId _hull) const noexcept
+{
+  const auto found = std::ranges::find(hulls, _hull, &HullModel::hull);
+  return found == hulls.end() ? nullptr : &found->model;
 }
 
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)

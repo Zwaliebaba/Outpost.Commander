@@ -4,6 +4,7 @@
 
 #include <array>
 #include <bitset>
+#include <optional>
 #include <span>
 
 // It builds on NeuronCore and knows no game concept (R9).

@@ -22,6 +22,8 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
+  // A ship's hull, which the client draws it by; no hull for anything else.
+  HullId hull;
   // Meaningful for a structure only.
   StructureKind structure = StructureKind::CommandStation;
   PlanePosition position;

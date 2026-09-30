@@ -38,6 +38,31 @@ float WrapAngle(float _angle) noexcept
   return _angle;
 }
 
+// Room between neighbors in a starting fleet beyond the widest ship's footprint.
+constexpr float FLEET_SPACING_MARGIN_METERS = 8.0f;
+
+// A starting ship's footprint must stay inside the map and clear of every obstacle. The map's own gap check keeps a
+// margin around the start, and a fleet too large for it is a data error, reported rather than overlapped.
+void CheckStartingSlot(const Outpost::Map& _map, size_t _player, PlanePosition _position, float _radiusMeters)
+{
+  const auto fail = [_player](std::string_view _what) {
+    throw Neuron::Exception(std::format("Player {}'s starting fleet does not fit around its start: a ship would {}.", _player + 1, _what));
+  };
+  const float half = _map.sizeMeters / 2.0f;
+  if (std::abs(_position.xMeters) + _radiusMeters > half || std::abs(_position.zMeters) + _radiusMeters > half)
+    fail("cross the map's edge");
+  for (const Outpost::OreAsteroidPlacement& asteroid : _map.oreAsteroids)
+  {
+    if (Outpost::Distance(_position, asteroid.position) < asteroid.radiusMeters + _radiusMeters)
+      fail("overlap an ore asteroid");
+  }
+  for (const Outpost::AsteroidFieldPlacement& field : _map.asteroidFields)
+  {
+    if (Outpost::Distance(_position, field.position) < field.radiusMeters + _radiusMeters)
+      fail("overlap an asteroid field");
+  }
+}
+
 float PathLength(PlanePosition _from, const std::vector<PlanePosition>& _path) noexcept
 {
   float length = 0.0f;
@@ -96,18 +121,66 @@ void Outpost::Simulation::PlaceMap(const Map& _map)
   m_pathfinder.SetObstacles(std::move(obstacles), _map.sizeMeters / 2.0f);
 }
 
-Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position)
+Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position,
+                                                 HullId _hull, float _headingRadians)
 {
   const EntityId id{++m_lastEntityId};
   m_entities.push_back({.id = id,
                         .kind = EntityKind::Ship,
                         .owner = _owner,
                         .design = _design,
+                        .hull = _hull,
                         .position = _position,
+                        .headingRadians = _headingRadians,
                         .radiusMeters = _movement.radiusMeters,
                         .speedMetersPerSecond = _movement.speedMetersPerSecond,
                         .turnRateRadiansPerSecond = _movement.turnRateRadiansPerSecond});
   return id;
+}
+
+void Outpost::Simulation::PlaceStartingFleets(const Map& _map, const Tuning& _tuning)
+{
+  struct Ship
+  {
+    HullId hull;
+    ShipMovement movement;
+  };
+  std::vector<Ship> fleet;
+  float widestMeters = 0.0f;
+  for (const StartingShips& group : _map.startingFleet)
+  {
+    const ShipMovement movement = MovementFor(_tuning, group.hull, group.drive);
+    widestMeters = std::max(widestMeters, movement.radiusMeters);
+    fleet.insert(fleet.end(), group.count, {group.hull, movement});
+  }
+  if (fleet.empty())
+    return;
+
+  // A square-ish grid, front row first, with room for the widest ship in every slot.
+  const float spacing = (2.0f * widestMeters) + FLEET_SPACING_MARGIN_METERS;
+  const auto columns = static_cast<size_t>(std::ceil(std::sqrt(static_cast<float>(fleet.size()))));
+  const size_t rows = (fleet.size() + columns - 1) / columns;
+
+  for (size_t player = 0; player < _map.starts.size(); ++player)
+  {
+    const PlanePosition start = _map.starts[player];
+    const float heading = (start.xMeters == 0.0f && start.zMeters == 0.0f) ? 0.0f : std::atan2(-start.zMeters, -start.xMeters);
+    const float forwardX = std::cos(heading);
+    const float forwardZ = std::sin(heading);
+    for (size_t i = 0; i < fleet.size(); ++i)
+    {
+      // The grid's row and column, whole numbers, then offsets from the start.
+      const size_t row = i / columns;
+      const size_t column = i % columns;
+      const float ahead = ((static_cast<float>(rows - 1) / 2.0f) - static_cast<float>(row)) * spacing;
+      const float across = (static_cast<float>(column) - (static_cast<float>(columns - 1) / 2.0f)) * spacing;
+      // Across is to the right of forward, a quarter turn clockwise seen from above.
+      const PlanePosition position{.xMeters = start.xMeters + (forwardX * ahead) + (forwardZ * across),
+                                   .zMeters = start.zMeters + (forwardZ * ahead) - (forwardX * across)};
+      CheckStartingSlot(_map, player, position, fleet[i].movement.radiusMeters);
+      (void)SpawnShip(PlayerId{static_cast<std::uint32_t>(player + 1)}, DesignId{}, fleet[i].movement, position, fleet[i].hull, heading);
+    }
+  }
 }
 
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands)
@@ -146,6 +219,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                  .kind = entity.kind,
                                  .owner = entity.owner,
                                  .design = entity.design,
+                                 .hull = entity.hull,
                                  .structure = entity.structure,
                                  .position = entity.position,
                                  .headingRadians = entity.headingRadians,

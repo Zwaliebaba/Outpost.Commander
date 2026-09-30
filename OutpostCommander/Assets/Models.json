@@ -47,5 +47,14 @@
         { "name": "Asteroid", "forwardAxis": "+x", "lengthMeters": 2 }
       ]
     }
+  ],
+  "players": [
+    { "player": 1, "set": "Human" },
+    { "player": 2, "set": "Tarkan" }
+  ],
+  "hulls": [
+    { "hull": 1, "model": "Small" },
+    { "hull": 2, "model": "Medium" },
+    { "hull": 3, "model": "Large" }
   ]
 }

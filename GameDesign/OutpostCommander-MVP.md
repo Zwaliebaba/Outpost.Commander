@@ -71,7 +71,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **One map.** About 2,000 × 2,000 m, roughly 4 × 4 screens at the default view. Two start positions in opposite corners. About 12 ore asteroids: 3 **home** asteroids near each base and 6 **contested** ones in the middle, which yield more (§5). Non-mineable asteroid fields act as obstacles and chokepoints.
 - **Obstacles are circles.** Asteroids block movement as circular footprints. There is no terrain, height or line of sight in the MVP.
 - **The layout is data:** [`OutpostCommander/Assets/Map.json`](../OutpostCommander/Assets/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
-- **Camera.** Pan (edge scroll, WASD, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The pitch is fixed and comes from the zoom level.
+- **Camera.** Pan (edge scroll, arrow keys, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The arrow keys pan because A and S are orders (§9). The pitch is fixed and comes from the zoom level.
 - **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. How far the camera zooms in and out from there is open (§15); until it is decided, the camera's data holds provisional limits of 150 m and 1,600 m (ADR-012).
 - **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
 
@@ -203,7 +203,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 ### Player controls
 
-- Left-click select. Drag for box select. Shift adds. Double-click selects all visible of that design.
+- Left-click select. Drag for box select. Shift adds. Double-click selects all visible of that design. Until designs exist (§7), "that design" means that hull.
 - Right-click: move, or attack if the target is an enemy. `A` + click: attack-move. `S`: stop.
 - Ctrl+0–9 assigns control groups. 0–9 recalls them, and a double tap centres the camera on the group.
 - Constructors: a build menu, placing a ghost structure, and right-clicking a damaged friendly to repair.
@@ -362,3 +362,5 @@ Decided on 2026-09-30, once implementation began:
 - Meshes reach the game in DirectX's `.cmo` format, converted by the owner (§11). Their provenance is still open.
 - The AI opponent is The Tarkan High Command, using the Tarkan mesh set, with the same rules as the player. The player's Terrakin use the Human mesh set (§1, §10, §11). The converted meshes and the data files live in `OutpostCommander/Assets/` (§11, ADR-008).
 - Each model's forward axis and length are data, and the scene is drawn flat-lit in team colors (§11, ADR-011). The camera's zoom is a view width with the pitch following it, and the cursor is held inside the window in full screen (§4, ADR-012).
+- The arrow keys pan the camera; A attack-moves and S stops (§4, §9, ADR-013).
+- Until milestone 4 places the Command Station and Constructors, every player starts with a provisional fleet held in the map data: four Small and two Medium ships on the Ion drive (ADR-013).

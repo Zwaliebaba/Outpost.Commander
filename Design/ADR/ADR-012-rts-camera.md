@@ -4,7 +4,7 @@ Status: **accepted** · 2026-09-30
 
 ## Context
 
-Design §4 gives the camera. It pans by edge scroll, WASD and middle-drag, zooms with the wheel within limits, and turns around the focus with Q and E. The pitch is fixed by the zoom, and the default view is about 500 m wide. Gate G3, the zoom limits, is still open, so task 1.5 holds provisional limits as data. ADR-006 left task 1.5 to decide two things. The first is whether the cursor is held inside the window while the game is active. The second is what edge scroll does in a window. The camera is client state (ADR-002).
+Design §4 gives the camera. It pans by edge scroll, the arrow keys and middle-drag, zooms with the wheel within limits, and turns around the focus with Q and E. The arrow keys replaced WASD on 2026-09-30, because §9 gives A and S to attack-move and stop (ADR-013). The pitch is fixed by the zoom, and the default view is about 500 m wide. Gate G3, the zoom limits, is still open, so task 1.5 holds provisional limits as data. ADR-006 left task 1.5 to decide two things. The first is whether the cursor is held inside the window while the game is active. The second is what edge scroll does in a window. The camera is client state (ADR-002).
 
 ## Decision
 
@@ -26,7 +26,7 @@ Design §4 gives the camera. It pans by edge scroll, WASD and middle-drag, zooms
    Panning in view widths makes it feel the same at every zoom. The loader rejects a default outside the limits, a pitch past vertical and a zoom factor that does not zoom.
 4. **At the start the camera looks along +z**, so the screen's right is +x and its top is +z, and a ship with heading 0 faces right.
 5. **The cursor is held inside the window while the game is full screen and in the foreground.** `Window::ReadInput` sets `ClipCursor` to the client area every frame, because Windows can drop the clip, and releases it when the game loses the foreground, goes windowed or closes. This makes edge scroll work beside another monitor.
-6. **Edge scroll works only while the cursor is held.** In a window the window's edge is not the screen's, so the cursor would leave before it scrolled. There, WASD and middle-drag pan. Middle-drag captures the mouse, so a drag keeps going when the cursor leaves a window.
+6. **Edge scroll works only while the cursor is held.** In a window the window's edge is not the screen's, so the cursor would leave before it scrolled. There, the arrow keys and middle-drag pan. Middle-drag captures the mouse, so a drag keeps going when the cursor leaves a window.
 7. **Input is read once per frame into a `Neuron::InputState`:** foreground, cursor held, cursor position, wheel notches since the last read, and the keyboard state including the mouse buttons. The window knows no game concept. Which key does what is the camera's. While the game is in the background, no key reads as down and the camera ignores input.
 
 ## Consequences

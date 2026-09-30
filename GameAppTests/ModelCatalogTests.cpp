@@ -15,7 +15,8 @@ constexpr std::array<const char*, 3> HULLS{"Small", "Medium", "Large"};
 // A catalog of one set of one model, with one member replaced, for the loader's error cases.
 std::string OneModel(std::string_view _setName, std::string_view _model, std::string_view _color)
 {
-  return std::format(R"({{ "sets": [ {{ "name": "{}", "color": {}, "models": [ {} ] }} ] }})", _setName, _color, _model);
+  return std::format(R"({{ "sets": [ {{ "name": "{}", "color": {}, "models": [ {} ] }} ], "players": [], "hulls": [] }})", _setName, _color,
+                     _model);
 }
 
 constexpr std::string_view GOOD_MODEL = R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 20 })";
@@ -41,6 +42,33 @@ public:
     Assert::AreEqual(human.models.size(), tarkan.models.size());
     for (const Outpost::ModelEntry& model : human.models)
       Assert::AreEqual(model.lengthMeters, tarkan.Model(model.name).lengthMeters);
+
+    // The player draws with the Human set and the AI with the Tarkan set, and each hull of the tuning data has a model.
+    Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{1}) == &human);
+    Assert::IsTrue(catalog.SetForPlayer(Outpost::PlayerId{2}) == &tarkan);
+    Assert::IsNull(catalog.SetForPlayer(Outpost::PlayerId{3}));
+    const std::string* smallModel = catalog.ModelForHull(Outpost::HullId{1});
+    Assert::IsNotNull(smallModel);
+    Assert::AreEqual(std::string("Small"), *smallModel);
+    Assert::IsNotNull(catalog.ModelForHull(Outpost::HullId{3}));
+    Assert::IsNull(catalog.ModelForHull(Outpost::HullId{4}));
+  }
+
+  TEST_METHOD(RejectsAHullWhoseModelAPlayersSetLacks)
+  {
+    std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+    const std::string empty = R"("players": [], "hulls": [])";
+    json.replace(json.find(empty), empty.size(),
+                 R"("players": [ { "player": 1, "set": "Human" } ], "hulls": [ { "hull": 1, "model": "Huge" } ])");
+    ExpectRejected(json);
+  }
+
+  TEST_METHOD(RejectsAPlayerOfAnUnknownSet)
+  {
+    std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+    const std::string empty = R"("players": [])";
+    json.replace(json.find(empty), empty.size(), R"("players": [ { "player": 1, "set": "Martian" } ])");
+    ExpectRejected(json);
   }
 
   // Task 1.3's acceptance: the hulls load at their intended relative sizes in both sets, and the same hull is the same

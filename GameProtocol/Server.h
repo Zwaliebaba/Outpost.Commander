@@ -22,6 +22,10 @@ public:
   // Tells the server how much wall time has passed. It runs the ticks that are now due, applying the commands that have
   // arrived and sending each connected player a snapshot per tick. This is where wall time becomes ticks (ADR-009).
   virtual void Advance(std::chrono::nanoseconds _elapsedWallTime) = 0;
+
+  // How many ticks the server runs per second of wall time. A client interpolates between snapshots at this rate
+  // (task 2.5).
+  [[nodiscard]] virtual std::uint32_t TicksPerSecond() const noexcept = 0;
 };
 
 // Loads the tuning data and the map from the package (ADR-008) and starts a server with them. Throws Neuron::Exception when the data is

@@ -77,6 +77,11 @@ void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime
     RunTick();
 }
 
+std::uint32_t Outpost::InProcessServer::TicksPerSecond() const noexcept
+{
+  return static_cast<std::uint32_t>(m_tuning.rules.tickHz);
+}
+
 void Outpost::InProcessServer::RunTick()
 {
   std::vector<Command> commands;
@@ -102,5 +107,8 @@ void Outpost::InProcessServer::RunTick()
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
-  return std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
+  auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
+  // Match setup: the map is placed, and now every player's starting fleet (task 2.5).
+  server->World().PlaceStartingFleets(server->MapData(), server->TuningData());
+  return server;
 }

@@ -23,18 +23,38 @@ struct ModelSet
   [[nodiscard]] const ModelEntry& Model(std::string_view _name) const;
 };
 
+// Which set draws a player's ships (design §1): the player's Human set, the AI's Tarkan set.
+struct PlayerModels
+{
+  PlayerId player;
+  std::string set;
+};
+
+// Which model draws a hull, as the tuning data numbers hulls (task 2.5). The same model name is in every player's set.
+struct HullModel
+{
+  HullId hull;
+  std::string model;
+};
+
 // Every model the game can draw, from OutpostCommander/Assets/Models.json.
 struct ModelCatalog
 {
   std::vector<ModelSet> sets;
+  std::vector<PlayerModels> players;
+  std::vector<HullModel> hulls;
 
   // The set with this name. Throws Neuron::Exception when there is none.
   [[nodiscard]] const ModelSet& Set(std::string_view _name) const;
+  // The set a player's ships are drawn with, or nullptr for a player the data does not name.
+  [[nodiscard]] const ModelSet* SetForPlayer(PlayerId _player) const noexcept;
+  // The model a hull is drawn with, or nullptr for a hull the data does not name.
+  [[nodiscard]] const std::string* ModelForHull(HullId _hull) const noexcept;
 };
 
 // Reads the text of OutpostCommander/Assets/Models.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "sets[1].models[4].forwardAxis". Besides types and ranges it checks that set names are unique, and model
-// names within a set.
+// names within a set, that each player and hull is listed once, and that every hull's model is in every player's set.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
 // Where a model's converted mesh is under the package's Assets folder: Models\<set>\<model>.cmo (design §11).

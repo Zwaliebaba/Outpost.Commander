@@ -7,6 +7,12 @@
     <Filter Include="Client">
       <UniqueIdentifier>{8b4f1a27-3e6c-4d95-a0b2-7f19c5e84d31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Snapshots">
+      <UniqueIdentifier>{4e8a2c61-b73f-4d09-9a5e-1c6f3b8d7e24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controls">
+      <UniqueIdentifier>{9d3b7f52-2a61-4c8e-b94d-6e05a1c3f718}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Models">
       <UniqueIdentifier>{c5a73e18-9f42-4b6d-8e01-3d27b6f9a4c5}</UniqueIdentifier>
     </Filter>
@@ -23,6 +29,15 @@
     <ClInclude Include="ModelCatalog.h">
       <Filter>Models</Filter>
     </ClInclude>
+    <ClInclude Include="Picking.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerControls.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="SnapshotInterpolator.h">
+      <Filter>Snapshots</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -34,6 +49,15 @@
     </ClCompile>
     <ClCompile Include="ModelCatalog.cpp">
       <Filter>Models</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking.cpp">
+      <Filter>Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerControls.cpp">
+      <Filter>Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="SnapshotInterpolator.cpp">
+      <Filter>Snapshots</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

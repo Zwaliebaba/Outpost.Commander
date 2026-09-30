@@ -80,6 +80,9 @@
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="ModelCatalog.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Picking.h" />
+    <ClInclude Include="PlayerControls.h" />
+    <ClInclude Include="SnapshotInterpolator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -88,6 +91,9 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
+    <ClCompile Include="Picking.cpp" />
+    <ClCompile Include="PlayerControls.cpp" />
+    <ClCompile Include="SnapshotInterpolator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

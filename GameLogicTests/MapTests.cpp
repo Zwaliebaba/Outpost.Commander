@@ -129,6 +129,7 @@ constexpr std::string_view MINIMAL_MAP = R"({
   "sizeMeters": 1000,
   "minimumGapMeters": 50,
   "starts": [ { "xMeters": -300, "zMeters": -300 }, { "xMeters": 300, "zMeters": 300 } ],
+  "startingFleet": [ { "hull": 1, "drive": 1, "count": 2 } ],
   "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home" },
                     { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested" } ],
   "asteroidFields": [ { "xMeters": 0, "zMeters": 0, "radiusMeters": 100 } ]
@@ -250,6 +251,8 @@ public:
     ExpectLoadError(Replace("\"yield\": \"home\"", "\"yield\": \"rich\""), "oreAsteroids[0].yield");
     ExpectLoadError(Replace("\"sizeMeters\": 1000,", "\"sizeMeters\": 1000, \"sizeMetres\": 1000,"), "sizeMetres");
     ExpectLoadError(Replace("\"minimumGapMeters\": 50,", ""), "the file: has no \"minimumGapMeters\"");
+    ExpectLoadError(Replace("\"count\": 2", "\"count\": 0"), "startingFleet[0].count");
+    ExpectLoadError(Replace("\"hull\": 1", "\"hull\": 0"), "startingFleet[0].hull");
   }
 
   TEST_METHOD(ThePlacedMapIsInTheSnapshot)

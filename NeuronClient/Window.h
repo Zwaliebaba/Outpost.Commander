@@ -2,6 +2,29 @@
 
 namespace Neuron
 {
+// A press or a release that happened since the last frame, in the order it happened (ADR-012). Held state alone would
+// miss a click that goes down and up between two frames.
+enum class InputEventKind : std::uint8_t
+{
+  KeyDown,
+  ButtonDown,
+  ButtonUp
+};
+
+struct InputEvent
+{
+  InputEventKind kind = InputEventKind::KeyDown;
+  // The virtual-key code: a key, or VK_LBUTTON, VK_RBUTTON or VK_MBUTTON for a mouse button.
+  std::uint8_t key = 0;
+  // The cursor in the client area when it happened, in physical pixels.
+  std::int32_t xPixels = 0;
+  std::int32_t yPixels = 0;
+  // When it happened, in the system's millisecond clock, for telling a double click from two clicks.
+  std::uint32_t timeMilliseconds = 0;
+  bool shift = false;
+  bool control = false;
+};
+
 // The mouse and keyboard as one frame sees them, read from the window once per frame (ADR-012). It knows no game
 // concept: which key does what is the caller's.
 struct InputState
@@ -17,6 +40,9 @@ struct InputState
   float wheelNotches = 0.0f;
   // Indexed by virtual-key code, mouse buttons included (VK_MBUTTON).
   std::bitset<256> keysDown;
+  // Key presses, not their auto-repeats, and mouse button presses and releases since the last read. Empty while the
+  // window is not active.
+  std::vector<InputEvent> events;
 
   [[nodiscard]] bool IsDown(std::uint8_t _virtualKey) const noexcept
   {
@@ -45,7 +71,7 @@ public:
 
   // Dispatches every message waiting in the queue and returns. False once WM_QUIT has arrived: the caller's loop ends
   // and ExitCode() holds the code WM_QUIT carried. Alt+Enter is handled here, and toggles full screen.
-  [[nodiscard]] bool ProcessMessages() noexcept;
+  [[nodiscard]] bool ProcessMessages();
 
   // The input for this frame, after ProcessMessages. It also holds the cursor inside the window while the game is in the
   // foreground and full screen, and lets it go otherwise (ADR-012). The wheel's movement is counted once.
@@ -81,6 +107,8 @@ private:
   RECT m_windowedFrame{};
   // The wheel's movement since the last ReadInput, in the units WM_MOUSEWHEEL counts.
   int m_wheelDelta = 0;
+  // Presses and releases since the last ReadInput.
+  std::vector<InputEvent> m_events;
   std::uint32_t m_windowedClientWidthPixels = 0;
   std::uint32_t m_windowedClientHeightPixels = 0;
   int m_exitCode = 0;

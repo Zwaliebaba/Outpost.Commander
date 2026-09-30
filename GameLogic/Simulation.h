@@ -24,6 +24,8 @@ struct Entity
   EntityKind kind = EntityKind::Ship;
   PlayerId owner;
   DesignId design;
+  // Meaningful for a ship only.
+  HullId hull;
   StructureKind structure = StructureKind::CommandStation;
   PlanePosition position;
   float headingRadians = 0.0f;
@@ -82,8 +84,14 @@ public:
     m_pathfinder.Prepare(_radiusMeters);
   }
 
-  // Match setup, before the first tick: places a ship. Production (task 4.3) will use it; until then only tests do.
-  EntityId SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position);
+  // Match setup, before the first tick: places a ship. The starting fleet uses it, and production will (task 4.3).
+  EntityId SpawnShip(PlayerId _owner, DesignId _design, const ShipMovement& _movement, PlanePosition _position, HullId _hull = {},
+                     float _headingRadians = 0.0f);
+
+  // Match setup, after PlaceMap: gives every player the map's starting fleet, in a grid centered on its start and facing
+  // the map's center (task 2.5). Throws Neuron::Exception when a hull or a drive names nothing in _tuning, or when a
+  // ship would overlap an obstacle or cross the map's edge.
+  void PlaceStartingFleets(const Map& _map, const Tuning& _tuning);
 
   // Runs one tick: applies _commands in order at its start, then advances the world. Returns one result per command.
   [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands);

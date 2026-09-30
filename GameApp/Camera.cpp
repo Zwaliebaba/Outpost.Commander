@@ -18,10 +18,11 @@ constexpr float NEAR_PLANE_SHARE_OF_DISTANCE = 0.01f;
 constexpr float MINIMUM_NEAR_PLANE_METERS = 1.0f;
 constexpr float FAR_PLANE_BEYOND_FOCUS_METERS = 4000.0f;
 
-constexpr std::uint8_t KEY_W = 'W';
-constexpr std::uint8_t KEY_A = 'A';
-constexpr std::uint8_t KEY_S = 'S';
-constexpr std::uint8_t KEY_D = 'D';
+// The arrow keys pan: A and S are attack-move and stop (design §9), decided by the owner on 2026-09-30.
+constexpr std::uint8_t KEY_PAN_UP = VK_UP;
+constexpr std::uint8_t KEY_PAN_LEFT = VK_LEFT;
+constexpr std::uint8_t KEY_PAN_DOWN = VK_DOWN;
+constexpr std::uint8_t KEY_PAN_RIGHT = VK_RIGHT;
 constexpr std::uint8_t KEY_Q = 'Q';
 constexpr std::uint8_t KEY_E = 'E';
 
@@ -112,8 +113,8 @@ void Outpost::Camera::Update(const Neuron::InputState& _input, float _elapsedSec
     m_dragCursorPixels.reset();
   }
 
-  float right = Axis(_input, KEY_D, KEY_A);
-  float forward = Axis(_input, KEY_W, KEY_S);
+  float right = Axis(_input, KEY_PAN_RIGHT, KEY_PAN_LEFT);
+  float forward = Axis(_input, KEY_PAN_UP, KEY_PAN_DOWN);
   // Edge scroll needs the screen's edge to be the window's, which is so only while the cursor is held (ADR-012).
   if (_input.cursorClipped)
   {
@@ -143,6 +144,13 @@ void Outpost::Camera::Pan(float _rightMeters, float _forwardMeters) noexcept
   const float limit = m_settings.focusLimitMeters;
   m_focusXMeters = std::clamp(m_focusXMeters + (right.x * _rightMeters) + (forward.x * _forwardMeters), -limit, limit);
   m_focusZMeters = std::clamp(m_focusZMeters + (right.y * _rightMeters) + (forward.y * _forwardMeters), -limit, limit);
+}
+
+void Outpost::Camera::SetFocus(float _xMeters, float _zMeters) noexcept
+{
+  const float limit = m_settings.focusLimitMeters;
+  m_focusXMeters = std::clamp(_xMeters, -limit, limit);
+  m_focusZMeters = std::clamp(_zMeters, -limit, limit);
 }
 
 void Outpost::Camera::Zoom(float _notches) noexcept
@@ -201,6 +209,33 @@ std::optional<DirectX::XMFLOAT2> Outpost::Camera::GroundPoint(float _screenX, fl
     return std::nullopt;
   const float along = -nearPoint.y / dy;
   return DirectX::XMFLOAT2{nearPoint.x + ((farPoint.x - nearPoint.x) * along), nearPoint.z + ((farPoint.z - nearPoint.z) * along)};
+}
+
+std::optional<Outpost::PlanePosition> Outpost::Camera::GroundPointAtPixel(float _xPixels, float _yPixels,
+                                                                          const Viewport& _viewport) const noexcept
+{
+  if (_viewport.widthPixels == 0 || _viewport.heightPixels == 0)
+    return std::nullopt;
+  const float screenX = ((2.0f * _xPixels) / static_cast<float>(_viewport.widthPixels)) - 1.0f;
+  const float screenY = 1.0f - ((2.0f * _yPixels) / static_cast<float>(_viewport.heightPixels));
+  const std::optional<DirectX::XMFLOAT2> point = GroundPoint(screenX, screenY, _viewport.AspectRatio());
+  if (!point.has_value())
+    return std::nullopt;
+  return PlanePosition{.xMeters = point->x, .zMeters = point->y};
+}
+
+std::optional<DirectX::XMFLOAT2> Outpost::Camera::PixelOf(PlanePosition _point, const Viewport& _viewport) const noexcept
+{
+  const DirectX::XMFLOAT4X4 viewProjection = ViewProjection(_viewport.AspectRatio());
+  DirectX::XMFLOAT4 clip;
+  DirectX::XMStoreFloat4(&clip, DirectX::XMVector4Transform(DirectX::XMVectorSet(_point.xMeters, 0.0f, _point.zMeters, 1.0f),
+                                                            DirectX::XMLoadFloat4x4(&viewProjection)));
+  if (clip.w <= 0.0f)
+    return std::nullopt;
+  const float screenX = clip.x / clip.w;
+  const float screenY = clip.y / clip.w;
+  return DirectX::XMFLOAT2{(screenX + 1.0f) * 0.5f * static_cast<float>(_viewport.widthPixels),
+                           (1.0f - screenY) * 0.5f * static_cast<float>(_viewport.heightPixels)};
 }
 
 DirectX::XMFLOAT2 Outpost::Camera::GroundForward() const noexcept

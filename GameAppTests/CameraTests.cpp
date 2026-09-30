@@ -132,7 +132,7 @@ public:
     Neuron::InputState input;
     input.active = false;
     input.wheelNotches = 5.0f;
-    input.keysDown.set('D');
+    input.keysDown.set(VK_RIGHT);
     camera.Update(input, 1.0f, 1920, 1080);
     Assert::AreEqual(500.0f, camera.ViewWidthMeters());
     Assert::AreEqual(0.0f, camera.Focus().x);
@@ -153,6 +153,46 @@ public:
     input.cursorClipped = true;
     camera.Update(input, 0.5f, 1920, 1080);
     Assert::IsTrue(camera.Focus().x > 0.0f);
+  }
+
+  // A and S are orders (design §9): they must not move the camera. The arrow keys do.
+  TEST_METHOD(PansWithTheArrowKeysAndNotWithAOrS)
+  {
+    Outpost::Camera camera(RepositorySettings());
+    Neuron::InputState input;
+    input.active = true;
+    input.cursorXPixels = 960;
+    input.cursorYPixels = 540;
+    input.keysDown.set('A');
+    input.keysDown.set('S');
+    input.keysDown.set('D');
+    input.keysDown.set('W');
+    camera.Update(input, 0.5f, 1920, 1080);
+    Assert::AreEqual(0.0f, camera.Focus().x);
+    Assert::AreEqual(0.0f, camera.Focus().y);
+
+    input.keysDown.reset();
+    input.keysDown.set(VK_RIGHT);
+    camera.Update(input, 0.5f, 1920, 1080);
+    Assert::IsTrue(camera.Focus().x > 0.0f);
+  }
+
+  // A pixel and the ground point under it map to each other, which picking relies on.
+  TEST_METHOD(MapsPixelsAndGroundPointsBothWays)
+  {
+    Outpost::Camera camera(RepositorySettings());
+    camera.Rotate(0.7f);
+    camera.Pan(-300.0f, 120.0f);
+    const Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
+    for (const auto& [x, y] : {std::pair{960.0f, 540.0f}, std::pair{10.0f, 20.0f}, std::pair{1900.0f, 1000.0f}})
+    {
+      const std::optional<Outpost::PlanePosition> ground = camera.GroundPointAtPixel(x, y, viewport);
+      Assert::IsTrue(ground.has_value());
+      const std::optional<DirectX::XMFLOAT2> pixel = camera.PixelOf(ground.value_or(Outpost::PlanePosition{}), viewport);
+      Assert::IsTrue(pixel.has_value());
+      Assert::AreEqual(x, pixel.value_or(DirectX::XMFLOAT2{}).x, 0.05f);
+      Assert::AreEqual(y, pixel.value_or(DirectX::XMFLOAT2{}).y, 0.05f);
+    }
   }
 
   TEST_METHOD(RejectsADefaultOutsideTheLimits)

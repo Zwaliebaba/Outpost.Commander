@@ -1,0 +1,75 @@
+#pragma once
+
+namespace Outpost
+{
+// Design §9's player controls, turned from input into selection and orders (task 2.6). Selection and control groups are
+// client state; orders leave as Commands for the transport (ADR-002).
+//
+//   Left-click selects a ship, a left-drag selects the player's ships in the box, Shift adds, and a double-click selects
+//   every visible ship of that design. Right-click moves the selection, or attacks an enemy ship under the cursor. A,
+//   then a left-click, attack-moves; Escape cancels it. S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and
+//   a second tap centers the camera on it.
+class PlayerControls
+{
+public:
+  // Two clicks or taps closer together than this are a double click or a double tap.
+  static constexpr std::uint32_t DOUBLE_CLICK_MILLISECONDS = 400;
+  // A left press that moves further than this before it is released is a box, not a click.
+  static constexpr float DRAG_PIXELS = 6.0f;
+  static constexpr size_t GROUP_COUNT = 10;
+
+  // Reads this frame's input against what the player sees. _entities is the interpolated view; _player is the player
+  // this client plays. Orders go to TakeCommands, and a double tap moves _camera.
+  void Update(const Neuron::InputState& _input, std::span<const EntityView> _entities, PlayerId _player, Camera& _camera,
+              const Viewport& _viewport);
+
+  // The orders given since the last call, in the order they were given.
+  [[nodiscard]] std::vector<Command> TakeCommands();
+
+  // In identifier order.
+  [[nodiscard]] const std::vector<EntityId>& Selected() const noexcept
+  {
+    return m_selected;
+  }
+  [[nodiscard]] bool IsAttackMoveArmed() const noexcept
+  {
+    return m_attackMoveArmed;
+  }
+  // The box being dragged, while the left button is held past DRAG_PIXELS.
+  [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
+
+private:
+  struct Frame
+  {
+    std::span<const EntityView> entities;
+    PlayerId player;
+    Camera& camera;
+    const Viewport& viewport;
+  };
+
+  void OnLeftDown(const Neuron::InputEvent& _event, const Frame& _frame);
+  void OnLeftUp(const Neuron::InputEvent& _event, const Frame& _frame);
+  void OnRightDown(const Neuron::InputEvent& _event, const Frame& _frame);
+  void OnKey(const Neuron::InputEvent& _event, const Frame& _frame);
+  void Select(std::vector<EntityId> _ships, bool _add);
+  void Give(Order _order);
+  // Drops ships that are gone or no longer the player's.
+  void Prune(const Frame& _frame);
+
+  std::vector<EntityId> m_selected;
+  std::array<std::vector<EntityId>, GROUP_COUNT> m_groups;
+  std::vector<Command> m_commands;
+  bool m_attackMoveArmed = false;
+
+  // The left press being held, where it went down and whether it has become a drag.
+  std::optional<DirectX::XMFLOAT2> m_pressPixels;
+  DirectX::XMFLOAT2 m_cursorPixels{};
+  bool m_dragging = false;
+
+  // The last click on a ship and the last group recalled, for double clicks and double taps.
+  std::optional<EntityId> m_lastClickedShip;
+  std::uint32_t m_lastClickMilliseconds = 0;
+  std::optional<size_t> m_lastRecalledGroup;
+  std::uint32_t m_lastRecallMilliseconds = 0;
+};
+} // namespace Outpost
