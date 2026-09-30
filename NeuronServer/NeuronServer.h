@@ -4,3 +4,9 @@
 // It builds on NeuronCore and knows no game concept (R9). No renderer, XAML or WinRT API (ADR-002).
 
 #include "NeuronCore.h"
+
+#include <array>
+#include <chrono>
+
+#include "Random.h"
+#include "TickHost.h"

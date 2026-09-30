@@ -36,13 +36,13 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
-| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | todo |
+| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | in review |
 | 2.3 | The map as data | 2.2 | — | todo |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
-| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | in review |
+| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
 | 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
@@ -237,7 +237,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 ### 2.2 — Tick host, seeded PRNG, in-process server
 
-- **ADR:** the deterministic core (R16). What the replay test below promises (the same build on the same machine, or also across x64 and ARM64), and the rules inside the core: no `float` where an integer quantity will do, no unordered iteration that reaches the outcome, ticks as the only clock, and the pinned PRNG. The owner decided on 2026-09-30 that 2.2 carries this ADR.
+- **ADR:** [ADR-009](../Design/ADR/ADR-009-deterministic-core.md), the deterministic core (R16). The owner decided on 2026-09-30 that a replay promises the same build on the same platform, and that the server ticks on the frame loop's thread.
 - **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
 - **Scope:**
   - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data that 3.1 loads (design §12). Wall time becomes ticks at this one seam.
@@ -249,7 +249,8 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - a command is applied on the next tick;
   - an invalid command is rejected;
   - the same seed and command log reproduce the same state on the same build.
-- **Verify:** CI.
+- **Verify:** CI; **owner run**, because the executable now loads `Assets\Data\Tuning.json` from the package at startup and reports a failure in a message box.
+- **As built:** `Neuron::TickHost` and `Neuron::Random` (xoshiro256\*\*) in `NeuronServer`; `Simulation` and `InProcessServer` in `GameLogic`; `Server::Advance(elapsed)` in `GameProtocol`. Move and stop are applied; the other orders are rejected as not yet supported until their tasks. 2.3 places the starting entities with `Simulation::SpawnShip` or its structure equivalent.
 
 ### 2.3 — The map as data
 

@@ -1,9 +1,7 @@
 #include "pch.h"
+#include "RepositoryTuning.h"
 
 #include <array>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -11,18 +9,6 @@ namespace GameLogicTests
 {
 namespace
 {
-// The file the game ships and Tools/BattleModel.py reads. UseFullPaths makes __FILE__ absolute, so the repository is two
-// levels up from this file.
-std::string ReadRepositoryTuning()
-{
-  const std::filesystem::path path = std::filesystem::path(__FILE__).parent_path().parent_path() / "Data" / "Tuning.json";
-  std::ifstream file(path, std::ios::binary);
-  Assert::IsTrue(file.is_open(), L"cannot open Data/Tuning.json");
-  std::ostringstream text;
-  text << file.rdbuf();
-  return text.str();
-}
-
 // A loaded field, to compare with the member of the same name in the file.
 struct LoadedField
 {

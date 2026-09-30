@@ -86,6 +86,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="RepositoryTuning.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -94,6 +95,10 @@
     <ClCompile Include="IdTests.cpp" />
     <ClCompile Include="JsonTests.cpp" />
     <ClCompile Include="TuningTests.cpp" />
+    <ClCompile Include="TickHostTests.cpp" />
+    <ClCompile Include="RandomTests.cpp" />
+    <ClCompile Include="SimulationTests.cpp" />
+    <ClCompile Include="InProcessServerTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">
