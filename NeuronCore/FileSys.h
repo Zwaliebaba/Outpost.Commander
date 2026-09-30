@@ -1,28 +1,39 @@
 #pragma once
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 namespace Neuron
 {
-  using byte_buffer_t = std::vector<uint8_t>;
+using ByteBuffer = std::vector<std::uint8_t>;
 
-  class FileSys
+class FileSys
+{
+public:
+  // Set once at startup, before any other thread exists, and only read after that.
+  static void SetHomeDirectory(const std::wstring& _path)
   {
-    public:
-      static void SetHomeDirectory(const std::wstring& _path) { m_homeDir = _path + L"\\Assets\\"; }
-      [[nodiscard]] static std::wstring GetHomeDirectory() { return m_homeDir; }
-
-    protected:
-      inline static std::wstring m_homeDir;
-  };
-
-  class BinaryFile : public FileSys
+    sm_homeDir = _path + L"\\Assets\\";
+  }
+  [[nodiscard]] static std::wstring GetHomeDirectory()
   {
-    public:
-      [[nodiscard]] static byte_buffer_t ReadFile(const std::wstring& _fileName);
-  };
+    return sm_homeDir;
+  }
 
-  class TextFile : public FileSys
-  {
-    public:
-      [[nodiscard]] static std::wstring ReadFile(const std::wstring& _fileName);
-  };
-}
+protected:
+  inline static std::wstring sm_homeDir;
+};
+
+class BinaryFile : public FileSys
+{
+public:
+  [[nodiscard]] static ByteBuffer ReadFile(const std::wstring& _fileName);
+};
+
+class TextFile : public FileSys
+{
+public:
+  [[nodiscard]] static std::wstring ReadFile(const std::wstring& _fileName);
+};
+} // namespace Neuron

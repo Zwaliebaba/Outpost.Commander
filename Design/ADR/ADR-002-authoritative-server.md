@@ -41,11 +41,12 @@ OutpostCommander (exe, WinUI 3)  ── client: UI, input, camera, presentation
  ├── Opponent   (static lib)      ── the AI player. Builds on Protocol only
  └── Simulation (static lib)      ── the server: state, rules, LoopbackTransport. Builds on Protocol
 SimulationTests (test DLL)        ── drives Simulation through Protocol. The Q2 battles run here from milestone 3
+NeuronCore (static lib)           ── below all of the above: diagnostics, files, Win32 handles. Knows no game concepts (R9)
 ```
 
 **The boundary is enforced by include paths, not by review.** A project's include path lists only the projects it may include (AGENTS.md §3). The client lists `Engine` and `Protocol`, and `Opponent` lists `Protocol`. Neither lists `Simulation`, so a client or AI file that includes a server header does not compile. A quoted include is also resolved relative to the including file, so `#include "../Simulation/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Between them, that is how the design's Q5 is answered by the build rather than by review. The client still links `Simulation`, because the in-process server has to be in the executable. It gets the server through a factory declared in `Protocol` and defined in `Simulation`. `SimulationTests` may list `Simulation` as well, because it is a test and not a client.
 
-`Engine` and `Simulation` do not reference each other, and `Opponent` and `Simulation` share only `Protocol`. The client links all four libraries and translates snapshots into draw calls. The final layout is recorded in AGENTS.md §2 when the first of these projects is created.
+`Engine` and `Simulation` do not reference each other, and `Opponent` and `Simulation` share only `Protocol`. Every project may build on `NeuronCore`, which builds on nothing but the Windows SDK and the standard library. It is the one project that exists today besides the executable, and `framework.h`, the one header that owns the Windows macros, lives in it. The client links all four libraries and translates snapshots into draw calls. The final layout is recorded in AGENTS.md §2 when the first of these projects is created.
 
 ## What this forecloses
 

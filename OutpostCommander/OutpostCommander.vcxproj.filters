@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Shell">
+      <UniqueIdentifier>{9b1bcc13-c27c-46f0-abeb-3a9de7873959}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{4222be4d-2c24-4652-a223-da8122ea9241}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Package">
       <UniqueIdentifier>{52e329fe-15c9-4a76-8a0e-c3b3c59a9c0b}</UniqueIdentifier>
     </Filter>
@@ -9,28 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="MainWindow.idl">
-      <Filter>Shell</Filter>
-    </Midl>
+    <ClInclude Include="pch.h">
+      <Filter>Platform</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.xaml.h">
-      <Filter>Shell</Filter>
-    </ClInclude>
-    <ClInclude Include="MainWindow.xaml.h">
-      <Filter>Shell</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="App.xaml.cpp">
+    <ClCompile Include="WinMain.cpp">
       <Filter>Shell</Filter>
     </ClCompile>
-    <ClCompile Include="MainWindow.xaml.cpp">
-      <Filter>Shell</Filter>
+    <ClCompile Include="pch.cpp">
+      <Filter>Platform</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -69,13 +64,5 @@
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Package\Assets</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natstepfilter">
-      <Filter>Package</Filter>
-    </Natvis>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis">
-      <Filter>Package</Filter>
-    </Natvis>
   </ItemGroup>
 </Project>

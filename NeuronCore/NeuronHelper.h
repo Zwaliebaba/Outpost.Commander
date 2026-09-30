@@ -1,9 +1,17 @@
 #pragma once
 
+#include "framework.h"
+
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 namespace Neuron
 {
+// clang-format off
 #define ENUM_HELPER(T, S, E)                                                                                                                         \
    T inline operator ++(T& _value) noexcept { return _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) + 1); }                  \
    T inline operator ++(T& _value, int) noexcept { T old = _value; _value = static_cast<T>(static_cast<std::underlying_type_t<T>>(_value) + 1); return old; }             \
@@ -36,43 +44,55 @@ namespace Neuron
   //template <> struct std::formatter<T> : std::formatter<int> {                                                                                     \
   //  auto format(const T& id, std::format_context& ctx) const {return std::formatter<int>::format(static_cast<int>(id), ctx); }                     \
   //}
+// clang-format on
 
-  template <typename T>
-  constexpr bool IsValidEnum(T _value) noexcept { return (_value >= begin(_value) && _value < end(_value)); }
-
-  template <typename T>
-  constexpr size_t I(T _value) noexcept { return static_cast<size_t>(_value); }
-
-  class BaseException : public std::exception
-  {
-  public:
-    BaseException(std::string s) noexcept : m_s(std::move(s)) {}
-    ~BaseException() noexcept override = default;
-
-    [[nodiscard]] const char* what() const noexcept override
-    {
-      return m_s.c_str();
-    }
-  protected:
-    std::string m_s;
-  };
-
-  struct NonCopyable
-  {
-    NonCopyable() = default;
-    NonCopyable(const NonCopyable&) = delete;
-    NonCopyable& operator=(const NonCopyable&) = delete;
-  };
-
-  struct handle_closer
-  {
-    void operator()(HANDLE h) const noexcept
-    {
-      if (h)
-        CloseHandle(h);
-    }
-  };
-
-  using ScopedHandle = std::unique_ptr<void, handle_closer>;
-  inline HANDLE safe_handle(HANDLE h) noexcept { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
+template <typename T> constexpr bool IsValidEnum(T _value) noexcept
+{
+  return (_value >= begin(_value) && _value < end(_value));
 }
+
+template <typename T> constexpr size_t I(T _value) noexcept
+{
+  return static_cast<size_t>(_value);
+}
+
+class Exception : public std::exception
+{
+public:
+  Exception(std::string _message) noexcept
+    : m_message(std::move(_message))
+  {
+  }
+  ~Exception() noexcept override = default;
+
+  [[nodiscard]] const char* what() const noexcept override
+  {
+    return m_message.c_str();
+  }
+
+protected:
+  std::string m_message;
+};
+
+struct NonCopyable
+{
+  NonCopyable() = default;
+  NonCopyable(const NonCopyable&) = delete;
+  NonCopyable& operator=(const NonCopyable&) = delete;
+};
+
+struct HandleCloser
+{
+  void operator()(HANDLE _handle) const noexcept
+  {
+    if (_handle)
+      CloseHandle(_handle);
+  }
+};
+
+using ScopedHandle = std::unique_ptr<void, HandleCloser>;
+inline HANDLE SafeHandle(HANDLE _handle) noexcept
+{
+  return (_handle == INVALID_HANDLE_VALUE) ? nullptr : _handle;
+}
+} // namespace Neuron
