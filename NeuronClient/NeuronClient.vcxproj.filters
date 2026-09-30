@@ -4,13 +4,22 @@
     <Filter Include="Profiling">
       <UniqueIdentifier>{ceb4ec25-96bd-4f4a-933f-8e665cabc6aa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Window">
+      <UniqueIdentifier>{3b3f9e06-bb42-405b-8a69-db79d7910f2d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="NeuronClient.h" />
+    <ClInclude Include="Window.h">
+      <Filter>Window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Window.cpp">
+      <Filter>Window</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

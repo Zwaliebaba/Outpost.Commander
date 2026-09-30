@@ -4,3 +4,5 @@
 // It builds on NeuronCore and knows no game concept (R9).
 
 #include "NeuronCore.h"
+
+#include "Window.h"

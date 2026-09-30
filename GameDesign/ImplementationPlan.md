@@ -29,20 +29,20 @@ Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, Ga
 | 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
-| 1.1 | A Win32 window and message loop | 0.3 | — | todo |
+| 1.1 | A Win32 window and message loop | 0.3 | — | in review, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27): waiting on the owner run |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | G4 game namespace | todo |
-| 2.2 | Tick host, seeded PRNG, in-process server | 2.1 | — | todo |
+| 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | todo |
 | 2.3 | The map as data | 2.2 | — | todo |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | todo |
-| 3.1 | Tuning data file, loaded by the game and the model | 2.2 | G6 data format | todo |
+| 3.1 | Tuning data file, loaded by the game and the model | 0.5 | G6 data format | todo |
 | 3.2 | Components and designs | 3.1 | — | todo |
 | 3.3 | Combat rules | 3.2, 2.4 | — | todo |
 | 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
@@ -73,7 +73,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | Design §4, §15 | 1.5 (final values) |
 | G4 | The namespace for the game layers. | AGENTS.md §1, R9 | 2.1 |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | Design §12 | 2.4 (final values), 5.3 |
-| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy (design §12 says the numbers "will be loaded from a data file"). | New ADR; design §12 | 3.1 |
+| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy (design §12 says the numbers "will be loaded from a data file"). It covers the map (2.3) and the provisional radii and turn rates (2.4) too, so that milestone 2 reads one format from its first task. The owner decided on 2026-09-30 that G6 comes before 2.2. | New ADR; design §12 | 3.1, and through it 2.2–2.4 |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | Design §12 | 4.2 |
 | G9 | The AI's attack-group threshold (design §10, §15). | Design §12 | 6.1 |
@@ -91,7 +91,7 @@ AGENTS.md leans on three checkers that do not exist yet, and CI already runs eac
 Phase 0 landed as one PR, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26), at the owner's choice, rather than one per task.
 
 - **All three checkers gate in CI**, and `CheckProjectFiles.py` and `RunClangTidy.py` run a `--self-test` there too. A task that adds a project adds its row to `INCLUDE_PATHS` in `CheckProjectFiles.py` as well as to ADR-002's table; the checker fails until it does.
-- **R11 is checked on the design's own words.** `CheckProjectFiles.py` rejects `armour`, `defence`, `metre` and the other non-SDK spellings in identifiers, so 4.4's Defence gun and structure armour are `DefenseGun` and `armor` in code, and distances are `...Meters` (R6). The design document keeps its spelling; only identifiers are checked.
+- **R11 is checked on the design's own words.** `CheckProjectFiles.py` rejects `armour`, `defence`, `metre` and the other non-SDK spellings in identifiers, so 4.4's Defence gun and structure armour are `DefenseGun` and `armor` in code, and distances are `...Meters` (R6). The design document keeps its spelling; only identifiers are checked. The owner confirmed this on 2026-09-30.
 - **`ENUM_HELPER` is gone from `NeuronHelper.h`.** It was unused and did not preprocess under clang. The first task with an enum that needs `++`, bit operators or a range adds a lint-clean replacement.
 - **`GameLogicTests` exists** with only `SuiteSmoke`. The first real test deletes the placeholder (AGENTS.md §3), and CI finds the DLL at `x64\Debug\GameLogicTests.dll`.
 
@@ -237,9 +237,10 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 ### 2.2 — Tick host, seeded PRNG, in-process server
 
+- **ADR:** the deterministic core (R16). What the replay test below promises (the same build on the same machine, or also across x64 and ARM64), and the rules inside the core: no `float` where an integer quantity will do, no unordered iteration that reaches the outcome, ticks as the only clock, and the pinned PRNG. The owner decided on 2026-09-30 that 2.2 carries this ADR.
 - **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
 - **Scope:**
-  - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data (design §12). Wall time becomes ticks at this one seam.
+  - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data that 3.1 loads (design §12). Wall time becomes ticks at this one seam.
   - A seeded PRNG owned by the server; never `std::random_device`.
   - In `GameLogic`: world state, applying commands at the start of a tick with validation and rejection, building a snapshot per player, a `LoopbackTransport`, and the factory definition.
   - The executable wires them together through `GameProtocol`.
@@ -302,7 +303,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 
 ### 3.1 — Tuning data file, loaded by the game and the model
 
-- **Gate:** G6. **ADR:** the tuning data format.
+- **Gate:** G6. **ADR:** the tuning data format. It runs before 2.2, which takes its tick rate from this file; the number stays 3.1 so that links to it hold.
 - **Goal:** design §12's numbers become data that the game loads and `Tools/BattleModel.py` reads, so that neither can disagree with the other.
 - **Scope:**
   - The data file, and its loader in `GameLogic`.
