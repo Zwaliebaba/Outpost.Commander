@@ -116,7 +116,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   };
   winrt::com_ptr<IDXGISwapChain1> swapChain;
   winrt::check_hresult(m_factory->CreateSwapChainForHwnd(m_queue.get(), _window, &swapChainDescription, nullptr, nullptr, swapChain.put()));
-  winrt::check_hresult(swapChain->QueryInterface(IID_GRAPHICS_PPV_ARGS(m_swapChain)));
+  m_swapChain = swapChain.as<IDXGISwapChain4>();
 
   // The game is always borderless full screen; DXGI's own Alt+Enter would switch to exclusive full screen (ADR-006).
   winrt::check_hresult(m_factory->MakeWindowAssociation(_window, DXGI_MWA_NO_ALT_ENTER));
