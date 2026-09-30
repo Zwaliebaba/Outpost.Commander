@@ -37,7 +37,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 1.6 | Milestone 1 review | 1.5 | — | todo |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | in review |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | in review |
-| 2.3 | The map as data | 2.2 | — | todo |
+| 2.3 | The map as data | 2.2 | — | in review |
 | 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii | todo |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | todo |
 | 2.6 | Selection, orders and control groups | 2.5 | — | todo |
@@ -258,6 +258,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Scope:** a map data file, `Data/Map.json` (ADR-008), and its loader in `GameLogic`. The layout is proposed in the PR and confirmed by the owner. Asteroids are drawn from `Art/Models/Asteroids`.
 - **Acceptance:** tests: the map loads, no obstacles overlap, and every asteroid can be reached from both starts.
 - **Verify:** CI; **owner run** once 2.5 renders it.
+- **As built:** `Data/Map.json` holds a 2,000 m square centered on the origin: two starts, 6 home and 6 contested ore asteroids, and 9 asteroid fields, point-symmetric. `Outpost::LoadMap` rejects any two obstacles, an obstacle and the edge, or a start and an obstacle closer than `minimumGapMeters` (60 m). With every gap at least that wide, a ship narrower than it cannot be walled off, and `MapTests` checks that with a flood fill. The server places ore asteroids and fields as entities (`EntityKind::Asteroid` and `AsteroidField`), and `EntityView` gains `radiusMeters`, so 2.5 can draw them from the snapshot. The JSON reading helpers moved from `Tuning.cpp` to `NeuronCore/JsonReader.h`, shared by both loaders.
 
 ### 2.4 — Movement, pathing and formations
 
