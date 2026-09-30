@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "RepositoryTuning.h"
+#include "RepositoryData.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace std::chrono_literals;
@@ -16,6 +16,11 @@ Outpost::Tuning RepositoryTuning()
 {
   return Outpost::LoadTuning(ReadRepositoryTuning());
 }
+
+Outpost::Map RepositoryMap()
+{
+  return Outpost::LoadMap(ReadRepositoryMap());
+}
 } // namespace
 
 TEST_CLASS(InProcessServerTests)
@@ -23,7 +28,7 @@ TEST_CLASS(InProcessServerTests)
 public:
   TEST_METHOD(TicksAtTheTunedRateAndSendsEachPlayerASnapshot)
   {
-    Outpost::InProcessServer server(RepositoryTuning(), {.seed = 1});
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
     Assert::AreEqual(20, server.TuningData().rules.tickHz);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
@@ -46,7 +51,7 @@ public:
 
   TEST_METHOD(AppliesACommandAtTheNextTickAsTheConnectionsPlayer)
   {
-    Outpost::InProcessServer server(RepositoryTuning(), {.seed = 1});
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
     const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, {});
     const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
@@ -70,7 +75,7 @@ public:
   // ADR-009: a match reproduces from its seed and the server's command log, on the same build.
   TEST_METHOD(ReplaysFromItsCommandLog)
   {
-    Outpost::InProcessServer server(RepositoryTuning(), {.seed = 77});
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 77});
     const Outpost::EntityId blueShip = server.World().SpawnShip(BLUE, SWARM, {});
     const Outpost::EntityId redShip = server.World().SpawnShip(RED, SWARM, {});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
@@ -87,6 +92,7 @@ public:
     }
 
     Outpost::Simulation replay(77);
+    replay.PlaceMap(server.MapData());
     (void)replay.SpawnShip(BLUE, SWARM, {});
     (void)replay.SpawnShip(RED, SWARM, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();
@@ -104,7 +110,7 @@ public:
 
   TEST_METHOD(RefusesADuplicateOrMissingPlayer)
   {
-    Outpost::InProcessServer server(RepositoryTuning(), {.seed = 1});
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     Assert::ExpectException<Neuron::Exception>([&server] { (void)server.Connect(BLUE); });
     Assert::ExpectException<Neuron::Exception>([&server] { (void)server.Connect(Outpost::PlayerId{}); });
@@ -114,7 +120,7 @@ public:
   {
     std::unique_ptr<Outpost::Transport> blue;
     {
-      Outpost::InProcessServer server(RepositoryTuning(), {.seed = 1});
+      Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
       blue = server.Connect(BLUE);
       server.Advance(50ms);
     }

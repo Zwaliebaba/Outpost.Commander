@@ -8,5 +8,6 @@
 #include <optional>
 
 #include "Tuning.h"
+#include "Map.h"
 #include "Simulation.h"
 #include "InProcessServer.h"

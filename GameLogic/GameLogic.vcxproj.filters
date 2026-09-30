@@ -7,6 +7,9 @@
     <Filter Include="Simulation">
       <UniqueIdentifier>{92ccb3a2-292c-47ba-8f2e-76c97ff86d78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Map">
+      <UniqueIdentifier>{0de0c299-803b-4665-b63f-de161298e279}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Server">
       <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
     </Filter>
@@ -14,6 +17,9 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameLogic.h" />
+    <ClInclude Include="Map.h">
+      <Filter>Map</Filter>
+    </ClInclude>
     <ClInclude Include="Simulation.h">
       <Filter>Simulation</Filter>
     </ClInclude>
@@ -26,6 +32,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Map.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
     <ClCompile Include="Simulation.cpp">
       <Filter>Simulation</Filter>
     </ClCompile>
@@ -37,6 +46,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\Data\Map.json">
+      <Filter>Map</Filter>
+    </Content>
     <Content Include="..\Data\Tuning.json">
       <Filter>Tuning</Filter>
     </Content>

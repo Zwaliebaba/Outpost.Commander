@@ -9,8 +9,18 @@ namespace
 // Ticks run by one Advance at most: 250 ms of simulation at 20 Hz. After a longer stall the simulation drops the rest
 // and resumes at its own pace (ADR-009).
 constexpr std::uint32_t MAX_TICKS_PER_ADVANCE = 5;
-// Where the server finds its tuning, under the package's Assets folder (ADR-008).
-constexpr const wchar_t* TUNING_FILE = L"Data\\Tuning.json";
+// Where the server finds its data, under the package's Assets folder (ADR-008).
+constexpr std::string_view TUNING_FILE = "Data\\Tuning.json";
+constexpr std::string_view MAP_FILE = "Data\\Map.json";
+
+std::string ReadDataFile(std::string_view _fileName)
+{
+  // The names above are ASCII, so widening them character by character is exact.
+  const Neuron::ByteBuffer bytes = Neuron::BinaryFile::ReadFile(std::wstring(_fileName.begin(), _fileName.end()));
+  if (bytes.empty())
+    throw Neuron::Exception(std::format("The game data file Assets\\{} is missing or cannot be read.", _fileName));
+  return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
+}
 } // namespace
 
 Outpost::LoopbackTransport::LoopbackTransport(std::shared_ptr<LoopbackChannel> _channel) noexcept
@@ -28,11 +38,13 @@ std::vector<Outpost::Snapshot> Outpost::LoopbackTransport::Receive()
   return std::exchange(m_channel->snapshots, {});
 }
 
-Outpost::InProcessServer::InProcessServer(Tuning _tuning, const ServerDesc& _desc)
+Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc)
   : m_tuning(std::move(_tuning)),
+    m_map(std::move(_map)),
     m_tickHost(static_cast<std::uint32_t>(m_tuning.rules.tickHz), MAX_TICKS_PER_ADVANCE),
     m_simulation(_desc.seed)
 {
+  m_simulation.PlaceMap(m_map);
 }
 
 std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _player)
@@ -79,9 +91,5 @@ void Outpost::InProcessServer::RunTick()
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
-  const Neuron::ByteBuffer bytes = Neuron::BinaryFile::ReadFile(TUNING_FILE);
-  if (bytes.empty())
-    throw Neuron::Exception("The tuning data, Assets\\Data\\Tuning.json, is missing or cannot be read.");
-  const std::string_view text(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-  return std::make_unique<InProcessServer>(LoadTuning(text), _desc);
+  return std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
 }

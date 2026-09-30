@@ -18,6 +18,25 @@ Outpost::Simulation::Simulation(std::uint64_t _seed) noexcept
 {
 }
 
+void Outpost::Simulation::PlaceMap(const Map& _map)
+{
+  for (const OreAsteroidPlacement& asteroid : _map.oreAsteroids)
+  {
+    m_entities.push_back({.id = EntityId{++m_lastEntityId},
+                          .kind = EntityKind::Asteroid,
+                          .position = asteroid.position,
+                          .radiusMeters = asteroid.radiusMeters,
+                          .oreYield = asteroid.yield});
+  }
+  for (const AsteroidFieldPlacement& field : _map.asteroidFields)
+  {
+    m_entities.push_back({.id = EntityId{++m_lastEntityId},
+                          .kind = EntityKind::AsteroidField,
+                          .position = field.position,
+                          .radiusMeters = field.radiusMeters});
+  }
+}
+
 Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _design, PlanePosition _position)
 {
   const EntityId id{++m_lastEntityId};
@@ -59,7 +78,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                  .design = entity.design,
                                  .structure = entity.structure,
                                  .position = entity.position,
-                                 .headingRadians = entity.headingRadians});
+                                 .headingRadians = entity.headingRadians,
+                                 .radiusMeters = entity.radiusMeters});
   }
   return snapshot;
 }
