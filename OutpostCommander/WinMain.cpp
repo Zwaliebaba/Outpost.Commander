@@ -14,5 +14,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
   Neuron::FileSys::SetHomeDirectory(path);
 
-  return 0;
+  Neuron::Window window({.title = L"Outpost Commander", .clientWidthPixels = 1280, .clientHeightPixels = 720});
+  while (window.ProcessMessages())
+  {
+    // A frame is rendered here once the renderer exists (implementation plan, task 1.2).
+  }
+
+  return window.ExitCode();
 }
