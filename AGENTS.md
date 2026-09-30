@@ -4,7 +4,7 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in the design document.
 
-**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with one project: the WinUI 3 game executable (ADR-001), which opens a window and draws nothing yet. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
+**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with the WinUI 3 game executable (ADR-001), which opens a window and draws nothing yet, and the seven static libraries it links (§2), which are mostly empty. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
@@ -137,7 +137,22 @@ private:
 
 ## 2. Repository shape
 
-The concrete layout — the solution, the projects and the edges between them — is settled when the first project is created, and recorded here and in an ADR at that point. Until then, these are the standing constraints any layout has to satisfy.
+The solution is `OutpostCommander.slnx` at the repository root. Its projects, and the edges between them, are fixed by [ADR-002](Design/ADR/ADR-002-authoritative-server.md), which also gives the include-path table that enforces them:
+
+| Project | Kind | Layer | Builds on |
+|---|---|---|---|
+| `NeuronCore` | static lib | engine, shared by client and server | — |
+| `NeuronClient` | static lib | engine, client only | NeuronCore |
+| `NeuronServer` | static lib | engine, server only | NeuronCore |
+| `GameProtocol` | static lib | game, shared: commands, snapshots, IDs | NeuronCore |
+| `Opponent` | static lib | game: the AI player, a client | GameProtocol |
+| `GameLogic` | static lib | game: the authoritative server | NeuronServer, GameProtocol |
+| `GameApp` | static lib | game: the client | NeuronClient, GameProtocol |
+| `OutpostCommander` | WinUI 3 exe | shell | all of the above, but may include only NeuronCore, NeuronClient, GameProtocol, Opponent and GameApp |
+
+Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so nothing but the executable may depend on WinRT, XAML or a package.
+
+These are the standing constraints the layout satisfies, and any new project must satisfy them too.
 
 **Project directories are flat, with exactly two sanctioned subdirectories.** C++ source — headers and `.cpp` alike — lives directly in its project's folder. **There is no `src/`, no `include/`**, and no other split of a project by file kind. This is not taste: `.clang-tidy`'s `HeaderFilterRegex` matches headers exactly one level in, so **a header in a subdirectory is silently unchecked** — no findings, no warning, and nobody notices for months. The two exceptions are the shader pipeline:
 
