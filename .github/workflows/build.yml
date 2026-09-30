@@ -158,11 +158,15 @@ jobs:
 
       # First, because it is two seconds and it catches the class of mistake that would otherwise
       # surface as a confusing build failure: a file missing from a project, a header in a
-      # subdirectory clang-tidy will never see, or Debug and Release drifting apart.
+      # subdirectory clang-tidy will never see, or Debug and Release drifting apart. The self-test
+      # runs too: it breaks a copy of the tree once per check and fails if a check stays silent,
+      # so a checker that has quietly stopped firing is caught here rather than never.
       - name: Check the build shape and the project registries
-        if: hashFiles('Build/CheckProjectFiles.py') != ''
         shell: pwsh
-        run: python Build\CheckProjectFiles.py
+        run: |
+          python Build\CheckProjectFiles.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Build\CheckProjectFiles.py --self-test
 
       # Each project in R14's table restores its packages through its own packages.config (ADR-001,
       # ADR-004, ADR-005), and without them the build stops before it compiles anything. Every packages.config

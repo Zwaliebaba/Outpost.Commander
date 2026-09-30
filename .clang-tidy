@@ -52,8 +52,8 @@
 # Four rules of AGENTS.md §1 this file cannot express — R2's banned type affixes, R7's file naming
 # and .vcxproj/.filters registration, R11's standing spelling families, and §2's flat project
 # directories — are checked by Build/CheckProjectFiles.py, which runs in the same CI job that
-# builds, once somebody writes it (AGENTS.md §6). A check that exists somewhere is worth more
-# than a rule everyone is asked to remember.
+# builds (AGENTS.md §6). A check that exists somewhere is worth more than a rule everyone is
+# asked to remember.
 #
 # readability-identifier-length is deliberately NOT enabled. Its defaults reject the domain
 # vocabulary this codebase is built on — x, y, _a, _b — and short names here are precise, not lazy.
@@ -96,8 +96,8 @@ WarningsAsErrors: '*'
 # THIS ALTERNATION IS A PROJECT REGISTRY. It names the projects whose headers are linted, so
 # ADDING A PROJECT MEANS ADDING IT HERE -- a project missing from this list is a project whose
 # headers are checked by nothing at all, with no finding and no warning to say so. It is the
-# quietest way to lose a gate, which is why Build/CheckProjectFiles.py should be written to
-# compare this list against the solution rather than trusting anyone to remember.
+# quietest way to lose a gate, which is why Build/CheckProjectFiles.py compares this list
+# against the solution rather than trusting anyone to remember.
 #
 # Seeded with the `<Something>Tests` convention; each project adds its own name when its first
 # hand-written header lands, as OutpostCommander did.

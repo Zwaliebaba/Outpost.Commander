@@ -59,11 +59,5 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natstepfilter">
-      <Filter>Package</Filter>
-    </Natvis>
-    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis">
-      <Filter>Package</Filter>
-    </Natvis>
   </ItemGroup>
 </Project>
