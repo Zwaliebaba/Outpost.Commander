@@ -52,6 +52,7 @@
 
 #include "FileSys.h"
 #include "Json.h"
+#include "JsonReader.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 

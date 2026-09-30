@@ -13,6 +13,7 @@
     <ClInclude Include="Debug.h" />
     <ClInclude Include="FileSys.h" />
     <ClInclude Include="Json.h" />
+    <ClInclude Include="JsonReader.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="NeuronHelper.h" />
   </ItemGroup>
@@ -20,6 +21,7 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Json.cpp" />
+    <ClCompile Include="JsonReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\build\native\bin\$(Platform)\msquic.dll">
