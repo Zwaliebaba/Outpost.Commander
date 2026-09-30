@@ -10,6 +10,15 @@
     <Filter Include="Package\Assets">
       <UniqueIdentifier>{7f8c0835-f104-4767-9fce-16a2a3a42c5c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Package\Assets\Models">
+      <UniqueIdentifier>{5f2acc97-725b-423a-9ca6-10cfc68af7d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Package\Assets\Models\Asteroid">
+      <UniqueIdentifier>{1841246e-b16e-4b07-83f1-6764f466d9be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Package\Assets\Models\Tarkan">
+      <UniqueIdentifier>{016b1ca7-296a-442f-8007-6a48dbbc4c6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -33,6 +42,51 @@
   <ItemGroup>
     <None Include="packages.config">
       <Filter>Package</Filter>
+    </None>
+    <None Include="Assets\Models\Asteroids\Asteroid.cmo">
+      <Filter>Package\Assets\Models\Asteroid</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Carrier.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Colonizer.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Drone.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Fighter.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Freighter.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Huge.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Large.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Medium.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Mine.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Satellite.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Small.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Station.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Tiny.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\VeryLarge.cmo">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -59,5 +113,11 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
+    <DesignData Include="Assets\Map.json">
+      <Filter>Package\Assets</Filter>
+    </DesignData>
+    <DesignData Include="Assets\Tuning.json">
+      <Filter>Package\Assets</Filter>
+    </DesignData>
   </ItemGroup>
 </Project>

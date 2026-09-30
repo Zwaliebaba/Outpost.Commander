@@ -1,0 +1,15 @@
+..\..\..\tools\meshconvert -ft cmo -n -t Carrier.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Colonizer.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Drone.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Fighter.obj
+..\..\..\tools\meshconvert -ft cmo -n -t FighterMK2.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Freighter.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Huge.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Large.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Medium.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Mine.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Satellite.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Small.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Station.obj
+..\..\..\tools\meshconvert -ft cmo -n -t Tiny.obj
+..\..\..\tools\meshconvert -ft cmo -n -t VeryLarge.obj

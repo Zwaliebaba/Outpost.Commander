@@ -1,7 +1,6 @@
 # XSI Wavefront OBJ Export v3.0
 # File Created: Thu Mar 18 23:32:45 2010
 # XSI Version: 7.0.609.0
-mtllib asteroid_lod0.mtl
 
 o LOD0
 # Hierarchy (from self to top father)
