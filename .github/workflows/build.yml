@@ -7,12 +7,11 @@ name: Build
 # Every step that has something to run BLOCKS. Nothing here is `continue-on-error`, and a script
 # that exists and fails fails the build.
 #
-# But this repository is a clean start: there is no solution, no project and no checker script in
-# it yet, and a gate that cannot run must not be dressed up as a gate that passed. So each step is
-# guarded on the file it needs -- the checker script, the solution, the built test binaries -- and
-# a step whose input is absent is SKIPPED and says so in the log. The moment the file lands, the
-# step starts gating with no edit here. Remove a guard once its input is permanently there; never
-# add one to get past a red build.
+# But a gate that cannot run must not be dressed up as a gate that passed, so a step whose input
+# can be absent is guarded on it -- the solution, the test projects -- and a step whose input is
+# absent is SKIPPED and says so in the log. The checker scripts are permanently in the tree, and
+# their steps carry no guard. Remove a guard once its input is permanently there; never add one to
+# get past a red build.
 #
 # Nothing is discovered by name. The solution is whatever single .slnx/.sln sits at the root, and
 # the test suites are whatever *Tests.vcxproj the tree contains -- so adding a project does not
@@ -157,11 +156,15 @@ jobs:
 
       # First, because it is two seconds and it catches the class of mistake that would otherwise
       # surface as a confusing build failure: a file missing from a project, a header in a
-      # subdirectory clang-tidy will never see, or Debug and Release drifting apart.
+      # subdirectory clang-tidy will never see, or Debug and Release drifting apart. The self-test
+      # runs too: it breaks a copy of the tree once per check and fails if a check stays silent,
+      # so a checker that has quietly stopped firing is caught here rather than never.
       - name: Check the build shape and the project registries
-        if: hashFiles('Build/CheckProjectFiles.py') != ''
         shell: pwsh
-        run: python Build\CheckProjectFiles.py
+        run: |
+          python Build\CheckProjectFiles.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Build\CheckProjectFiles.py --self-test
 
       # Each project in R14's table restores its packages through its own packages.config (ADR-001,
       # ADR-004, ADR-005), and without them the build stops before it compiles anything. Every packages.config
@@ -217,10 +220,14 @@ jobs:
 
       # After the build, so that a compile error is reported as a compile error rather than as
       # forty linter findings about a file that does not parse.
+      # The self-test runs too: it shows a misnamed member fails the gate, in a .cpp and through a
+      # header, so a runner that has quietly stopped finding anything is caught here.
       - name: Run clang-tidy
-        if: hashFiles('Build/RunClangTidy.py') != ''
         shell: pwsh
-        run: python Build\RunClangTidy.py
+        run: |
+          python Build\RunClangTidy.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Build\RunClangTidy.py --self-test
 
       - name: Upload the build log
         if: always()
@@ -252,11 +259,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install clang-format 18
-        if: hashFiles('Build/CheckFormat.py') != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y clang-format-18
 
       - name: Check formatting
-        if: hashFiles('Build/CheckFormat.py') != ''
         run: python3 Build/CheckFormat.py --clang-format clang-format-18

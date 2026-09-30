@@ -4,7 +4,7 @@ Operating instructions for every agent (and human) writing code in this reposito
 
 This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in the design document.
 
-**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with the game executable, a plain Win32 app packaged as MSIX (ADR-001), which starts and exits without a window yet, and the seven static libraries it links (§2), which are mostly empty. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
+**The tree is young.** This repository holds this file, the root configuration files, `.gitignore`, `.github/`, the design document, the ADRs, the art, the battle model under `Tools/`, and a solution with the game executable, a plain Win32 app packaged as MSIX (ADR-001), which starts and exits without a window yet, and the seven static libraries it links (§2), which are mostly empty, and a unit-test DLL for `GameLogic` that holds only its placeholder suite. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — by conformance, not by exception.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
@@ -131,8 +131,6 @@ private:
 | R2 affixes, R7 file names and project registration, R11 spellings, §2 flat directories, shader names and functional filters | `Build/CheckProjectFiles.py`, gated in CI |
 | R4, R6, R9, R10 | Review. Check your own diff against the table before handing it back. |
 
-**Neither checker exists yet** (§6). `.clang-tidy` is configured and gates the moment there is a translation unit to run it over; `Build/CheckProjectFiles.py` has to be written, and until it is, the four rules in its row are review's problem and nothing else. A rule nobody can run is a rule that rots, so writing that checker is early work rather than housekeeping.
-
 ---
 
 ## 2. Repository shape
@@ -149,6 +147,7 @@ The solution is `OutpostCommander.slnx` at the repository root. Its projects, an
 | `GameLogic` | static lib | game: the authoritative server | NeuronServer, GameProtocol |
 | `GameApp` | static lib | game: the client | NeuronClient, GameProtocol |
 | `OutpostCommander` | Win32 exe, MSIX-packaged | shell | all of the above, but may include only NeuronCore, NeuronClient, GameProtocol, Opponent and GameApp |
+| `GameLogicTests` | native unit-test DLL | test: drives GameLogic headlessly | GameLogic, NeuronServer, GameProtocol, NeuronCore |
 
 Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so a library references a package only where an ADR puts it (R14), and nothing at all depends on XAML or a WinRT API (ADR-001).
 
@@ -211,7 +210,7 @@ msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=ARM64 /m /v:minimal /
 
 ```powershell
 python Build\CheckFormat.py           # clang-format, whole tree. --fix rewrites the offenders
-python Build\CheckProjectFiles.py     # build shape, project registration, R2/R7/R11
+python Build\CheckProjectFiles.py     # build shape and settings, project registration, R2/R7/R11
 python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE must be set)
 ```
 
@@ -274,7 +273,7 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 **Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. **Until the MVP is done, an ADR is edited in place:** a decision that changes is rewritten where it stands, so each ADR says what is decided now, not how it got there, and a decision that is dropped is deleted. Git has the history. After the MVP an accepted ADR is no longer edited, and a changed decision is a new ADR that supersedes it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
 
-**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and **none of them exists yet.** Until each one lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
+**Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and all three gate in CI. `CheckProjectFiles.py` and `RunClangTidy.py` also have a `--self-test`, which CI runs, that shows each check still fires on a deliberately broken input.
 
 **What CI runs.** [`.github/workflows/build.yml`](.github/workflows/build.yml) has two jobs: a Windows job that checks the build shape, builds **Debug|x64**, runs the test suites and then clang-tidy; and a Linux job that checks formatting on a pinned clang-format. **Every step that has something to run blocks; a step whose input does not exist yet is skipped, not faked.** Each gate is guarded on the file it needs — the checker script, the solution, the built test DLLs — so the workflow is honest about today's empty tree and starts gating the moment that file lands. The guards are the only concession: nothing is `continue-on-error`, and a script that exists and fails still fails the build. Remove a guard once its input is permanently there, not before, and never add one to get past a red build.
 

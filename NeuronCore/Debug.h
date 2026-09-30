@@ -32,6 +32,7 @@ template <class... Types> void DebugTrace(const std::wstring_view _fmt, Types&&.
 template <class... Types> void __declspec(noreturn) Fatal(const std::string_view _fmt, Types&&... _args)
 {
   const std::string message = vformat(_fmt, std::make_format_args(_args...));
+  OutputDebugStringA(message.c_str());
   __debugbreak();
   throw std::exception("Fatal Error");
 }
@@ -39,6 +40,7 @@ template <class... Types> void __declspec(noreturn) Fatal(const std::string_view
 template <class... Types> void __declspec(noreturn) Fatal(const std::wstring_view _fmt, Types&&... _args)
 {
   const std::wstring message = vformat(_fmt, std::make_wformat_args(_args...));
+  OutputDebugStringW(message.c_str());
   __debugbreak();
   throw std::exception("Fatal Error");
 }

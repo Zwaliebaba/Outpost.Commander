@@ -24,11 +24,11 @@ Namespaces: the engine is `Neuron`. The game layers (GameProtocol, GameLogic, Ga
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 0.1 | `Build/CheckFormat.py` | — | — | todo |
-| 0.2 | `Build/CheckProjectFiles.py`: tree shape and names | — | — | todo |
-| 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | todo |
-| 0.4 | `Build/RunClangTidy.py` | 0.3 | — | todo |
-| 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | todo |
+| 0.1 | `Build/CheckFormat.py` | — | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
+| 0.2 | `Build/CheckProjectFiles.py`: tree shape and names | — | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
+| 0.3 | `Build/CheckProjectFiles.py`: build settings and include paths | 0.2 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
+| 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
+| 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | todo |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | G1 renderer shape | todo |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
@@ -85,6 +85,15 @@ Turn rates (design §15) do not gate anything: weapons are turrets and hits are 
 ## Phase 0 — The checkers
 
 AGENTS.md leans on three checkers that do not exist yet, and CI already runs each one the moment its file lands (`.github/workflows/build.yml`). They come first so that every later PR is gated by them. They are Python, and they run on Windows in CI; 0.1 and 0.2 must also run on Linux, so a cloud agent can run them before pushing.
+
+### What phase 0 changed for later tasks
+
+Phase 0 landed as one PR, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26), at the owner's choice, rather than one per task.
+
+- **All three checkers gate in CI**, and `CheckProjectFiles.py` and `RunClangTidy.py` run a `--self-test` there too. A task that adds a project adds its row to `INCLUDE_PATHS` in `CheckProjectFiles.py` as well as to ADR-002's table; the checker fails until it does.
+- **R11 is checked on the design's own words.** `CheckProjectFiles.py` rejects `armour`, `defence`, `metre` and the other non-SDK spellings in identifiers, so 4.4's Defence gun and structure armour are `DefenseGun` and `armor` in code, and distances are `...Meters` (R6). The design document keeps its spelling; only identifiers are checked.
+- **`ENUM_HELPER` is gone from `NeuronHelper.h`.** It was unused and did not preprocess under clang. The first task with an enum that needs `++`, bit operators or a range adds a lint-clean replacement.
+- **`GameLogicTests` exists** with only `SuiteSmoke`. The first real test deletes the placeholder (AGENTS.md §3), and CI finds the DLL at `x64\Debug\GameLogicTests.dll`.
 
 ### 0.1 — `Build/CheckFormat.py`
 
