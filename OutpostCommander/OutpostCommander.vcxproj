@@ -133,6 +133,12 @@
     the Windows App SDK Nuget package has not yet been restored.
   -->
   <ItemGroup>
+    <None Include="Assets\Camera.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Assets\Map.json">
       <DeploymentContent>true</DeploymentContent>
     </None>

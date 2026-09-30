@@ -1,10 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{2d6e9b41-7c35-4f0a-8b19-5e4a3c7d2f60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Client">
+      <UniqueIdentifier>{8b4f1a27-3e6c-4d95-a0b2-7f19c5e84d31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Models">
+      <UniqueIdentifier>{c5a73e18-9f42-4b6d-8e01-3d27b6f9a4c5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="GameApp.h" />
+    <ClInclude Include="Camera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="GameClient.h">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelCatalog.h">
+      <Filter>Models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Camera.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="GameClient.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
+    <ClCompile Include="ModelCatalog.cpp">
+      <Filter>Models</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

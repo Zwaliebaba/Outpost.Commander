@@ -636,11 +636,12 @@ INCLUDE_PATHS = {
   "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
   "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
   "GameLogicTests": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic"),
+  "GameAppTests": ("NeuronCore", "NeuronClient", "GameProtocol", "GameApp"),
 }
 # The include directories outside the solution a project may name: the Microsoft C++ unit-test framework ships with
 # Visual Studio, not the Windows SDK, and a test project reaches it through the install folder.
 UNIT_TEST_INCLUDE = "$(VCInstallDir)Auxiliary\\VS\\UnitTest\\include"
-EXTERNAL_INCLUDES = {"GameLogicTests": (UNIT_TEST_INCLUDE,)}
+EXTERNAL_INCLUDES = {"GameLogicTests": (UNIT_TEST_INCLUDE,), "GameAppTests": (UNIT_TEST_INCLUDE,)}
 # ADR-001: the Windows Store project type adds its own folder, Generated Files\ and its intermediate folder to the
 # default include path, so the executable states its include path whole rather than appending to the default.
 NO_INHERITED_INCLUDES = {"OutpostCommander"}

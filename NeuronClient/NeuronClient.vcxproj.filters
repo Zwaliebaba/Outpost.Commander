@@ -4,6 +4,9 @@
     <Filter Include="Profiling">
       <UniqueIdentifier>{ceb4ec25-96bd-4f4a-933f-8e665cabc6aa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shader">
+      <UniqueIdentifier>{6a0f3c1e-8d24-4b57-9e3a-2c71f0b5d8e4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Rendering">
       <UniqueIdentifier>{9f1c0e57-2d6b-4c1e-8a0d-5b7e3c2a41d9}</UniqueIdentifier>
     </Filter>
@@ -20,6 +23,15 @@
     <ClInclude Include="Window.h">
       <Filter>Window</Filter>
     </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshData.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshPipeline.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="d3dx12.h" />
   </ItemGroup>
@@ -31,6 +43,23 @@
     <ClCompile Include="Window.cpp">
       <Filter>Window</Filter>
     </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshData.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshPipeline.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FXCompile Include="Shader\MeshVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\MeshPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

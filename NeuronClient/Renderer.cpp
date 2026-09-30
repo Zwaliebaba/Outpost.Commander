@@ -8,13 +8,16 @@
 
 #include "Renderer.h"
 
+#include <cstring>
+
 // dxgi.lib and dxguid.lib are named by DirectXHelper.h.
 #pragma comment(lib, "d3d12.lib")
 
 namespace
 {
 constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
-constexpr DXGI_FORMAT RENDER_TARGET_VIEW_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+// The depth buffer is cleared to the far plane; nearer is smaller (ADR-011).
+constexpr float DEPTH_CLEAR = 1.0f;
 constexpr D3D_FEATURE_LEVEL MINIMUM_FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
 
 // A frame never waits longer than this for the swap chain, so a lost device cannot hang the loop.
@@ -132,6 +135,14 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_renderTargetHeap)));
   m_renderTargetDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+  const D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+    .NumDescriptors = 1,
+    .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+    .NodeMask = 0,
+  };
+  winrt::check_hresult(m_device->CreateDescriptorHeap(&depthHeapDescription, IID_GRAPHICS_PPV_ARGS(m_depthStencilHeap)));
+
   for (auto& allocator : m_commandAllocators)
     winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].get(), nullptr,
@@ -142,6 +153,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
   CreateRenderTargets();
+  CreateDepthBuffer();
 }
 
 Neuron::Renderer::~Renderer()
@@ -173,31 +185,54 @@ void Neuron::Renderer::Resize(UINT _widthPixels, UINT _heightPixels)
   m_widthPixels = _widthPixels;
   m_heightPixels = _heightPixels;
   CreateRenderTargets();
+  CreateDepthBuffer();
 }
 
-void Neuron::Renderer::RenderFrame(const std::array<float, 4>& _clearColor)
+ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 4>& _clearColor)
 {
   PIXBeginEvent(PIX_COLOR_DEFAULT, L"Frame");
-  const UINT frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+  m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 
   // This back buffer's allocator was last used FRAME_COUNT frames ago; the GPU must be done with it before it is reset.
-  if (m_fence->GetCompletedValue() < m_frameFenceValues[frameIndex])
+  if (m_fence->GetCompletedValue() < m_frameFenceValues[m_frameIndex])
   {
-    winrt::check_hresult(m_fence->SetEventOnCompletion(m_frameFenceValues[frameIndex], m_fenceEvent.get()));
+    winrt::check_hresult(m_fence->SetEventOnCompletion(m_frameFenceValues[m_frameIndex], m_fenceEvent.get()));
     WaitForSingleObjectEx(m_fenceEvent.get(), INFINITE, FALSE);
   }
 
-  ID3D12CommandAllocator* allocator = m_commandAllocators[frameIndex].get();
+  ID3D12CommandAllocator* allocator = m_commandAllocators[m_frameIndex].get();
   winrt::check_hresult(allocator->Reset());
   winrt::check_hresult(m_commandList->Reset(allocator, nullptr));
-  PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Clear");
+  PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Scene");
 
-  ID3D12Resource* backBuffer = m_backBuffers[frameIndex].get();
-  const auto toRenderTarget =
-    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+  const auto toRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(m_backBuffers[m_frameIndex].get(), D3D12_RESOURCE_STATE_PRESENT,
+                                                                   D3D12_RESOURCE_STATE_RENDER_TARGET);
   m_commandList->ResourceBarrier(1, &toRenderTarget);
-  m_commandList->ClearRenderTargetView(RenderTargetView(frameIndex), _clearColor.data(), 0, nullptr);
-  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+  const D3D12_CPU_DESCRIPTOR_HANDLE renderTarget = RenderTargetView(m_frameIndex);
+  const D3D12_CPU_DESCRIPTOR_HANDLE depthStencil = DepthStencilView();
+  m_commandList->ClearRenderTargetView(renderTarget, _clearColor.data(), 0, nullptr);
+  m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH, DEPTH_CLEAR, 0, 0, nullptr);
+  m_commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &depthStencil);
+
+  const D3D12_VIEWPORT viewport{
+    .TopLeftX = 0.0f,
+    .TopLeftY = 0.0f,
+    .Width = static_cast<float>(m_widthPixels),
+    .Height = static_cast<float>(m_heightPixels),
+    .MinDepth = D3D12_MIN_DEPTH,
+    .MaxDepth = D3D12_MAX_DEPTH,
+  };
+  const D3D12_RECT scissor{.left = 0, .top = 0, .right = static_cast<LONG>(m_widthPixels), .bottom = static_cast<LONG>(m_heightPixels)};
+  m_commandList->RSSetViewports(1, &viewport);
+  m_commandList->RSSetScissorRects(1, &scissor);
+  return m_commandList.get();
+}
+
+void Neuron::Renderer::EndFrame()
+{
+  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(m_backBuffers[m_frameIndex].get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
+                                                              D3D12_RESOURCE_STATE_PRESENT);
   m_commandList->ResourceBarrier(1, &toPresent);
 
   PIXEndEvent(m_commandList.get());
@@ -213,15 +248,51 @@ void Neuron::Renderer::RenderFrame(const std::array<float, 4>& _clearColor)
   CheckDeviceResult(m_swapChain->Present(syncInterval, presentFlags));
   m_frameWaitPending = true;
 
-  m_frameFenceValues[frameIndex] = ++m_fenceValue;
-  CheckDeviceResult(m_queue->Signal(m_fence.get(), m_frameFenceValues[frameIndex]));
+  m_frameFenceValues[m_frameIndex] = ++m_fenceValue;
+  CheckDeviceResult(m_queue->Signal(m_fence.get(), m_frameFenceValues[m_frameIndex]));
   PIXEndEvent();
+}
+
+winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
+{
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(_bytes.size());
+
+  // A buffer is created in the common state and promoted to whatever its first use needs, the copy here and reading
+  // vertices or indices after it, so no barrier is recorded.
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  winrt::com_ptr<ID3D12Resource> buffer;
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(buffer)));
+
+  const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
+  winrt::com_ptr<ID3D12Resource> upload;
+  winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
+  void* mapped = nullptr;
+  const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
+  winrt::check_hresult(upload->Map(0, &nothingRead, &mapped));
+  std::memcpy(mapped, _bytes.data(), _bytes.size());
+  upload->Unmap(0, nullptr);
+
+  winrt::com_ptr<ID3D12CommandAllocator> allocator;
+  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
+  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
+  commandList->CopyBufferRegion(buffer.get(), 0, upload.get(), 0, _bytes.size());
+  winrt::check_hresult(commandList->Close());
+  ID3D12CommandList* lists[] = {commandList.get()};
+  m_queue->ExecuteCommandLists(1, lists);
+
+  // The upload buffer and the allocator must outlive the copy.
+  WaitForGpu();
+  return buffer;
 }
 
 void Neuron::Renderer::CreateRenderTargets()
 {
   D3D12_RENDER_TARGET_VIEW_DESC viewDescription{};
-  viewDescription.Format = RENDER_TARGET_VIEW_FORMAT;
+  viewDescription.Format = RENDER_TARGET_FORMAT;
   viewDescription.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
   for (UINT index = 0; index < FRAME_COUNT; ++index)
@@ -231,10 +302,32 @@ void Neuron::Renderer::CreateRenderTargets()
   }
 }
 
+void Neuron::Renderer::CreateDepthBuffer()
+{
+  // The old buffer is released first; Resize has already drained the GPU.
+  m_depthBuffer = nullptr;
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  const CD3DX12_RESOURCE_DESC description =
+    CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+  const CD3DX12_CLEAR_VALUE clearValue(DEPTH_FORMAT, DEPTH_CLEAR, 0);
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_DEPTH_WRITE,
+                                                         &clearValue, IID_GRAPHICS_PPV_ARGS(m_depthBuffer)));
+
+  D3D12_DEPTH_STENCIL_VIEW_DESC viewDescription{};
+  viewDescription.Format = DEPTH_FORMAT;
+  viewDescription.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+  m_device->CreateDepthStencilView(m_depthBuffer.get(), &viewDescription, DepthStencilView());
+}
+
 D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::RenderTargetView(UINT _index) const noexcept
 {
   return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(_index),
                                        m_renderTargetDescriptorSize);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::DepthStencilView() const noexcept
+{
+  return m_depthStencilHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 void Neuron::Renderer::WaitForGpu()

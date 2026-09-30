@@ -31,10 +31,10 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
 | 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | done, [#29](https://github.com/Zwaliebaba/Outpost.Commander/pull/29), run by the owner |
-| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`, meshes converted); provenance before shipping | todo, next |
-| 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
-| 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
-| 1.6 | Milestone 1 review | 1.5 | — | todo |
+| 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 decided (`.cmo`, meshes converted); provenance before shipping | in review, owner run |
+| 1.4 | Flat-lit, team-coloured shading | 1.3 | — | in review, owner run |
+| 1.5 | The RTS camera | 1.4 | G3 zoom limits (provisional in use) | in review, owner run |
+| 1.6 | Milestone 1 review | 1.5 | — | todo, next: the owner's run |
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
@@ -71,8 +71,8 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. Provenance is still open. | New ADR in 1.3; design §15 for provenance | 1.3 (provenance before shipping) |
-| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data. | `OutpostCommander/Assets/` (the camera's data); design §4, §15 for the reasons | 1.5 (final values) |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. Provenance is still open. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md); design §15 for provenance | 1.3 (provenance before shipping) |
+| G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data: 150 m to 1,600 m. | `OutpostCommander/Assets/Camera.json`; design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
@@ -194,6 +194,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   - A mesh that fails to load is reported, not silently skipped.
 - **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes in both sets, and that each hull is the same size in the Human and Tarkan sets. The design notes that the Tarkan `Medium` is larger than its `Large` before scaling.
 - **Verify:** **owner run:** one Human and one Tarkan hull on screen, each facing along its forward axis.
+- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::ParseCmo` and `Neuron::OrientMesh` in `NeuronClient`; `OutpostCommander/Assets/Models.json` gives each set its color and each model its `forwardAxis` and `lengthMeters`, read by `Outpost::LoadModelCatalog` in `GameApp`. The scale is the model's length divided by its mesh's extent along its forward axis. Hull lengths are provisional with G5: Small 20 m, Medium 35 m, Large 60 m. The Human set faces −z; the Tarkan hulls are set to +x, and several of them are close to symmetric end to end, so the owner's run confirms which end is the front. `GameAppTests`, a new test project, checks that every shipped model parses, that the hulls load in size order in both sets and at the same length in both, and that orienting keeps the winding. Every model loads at start, and one that fails stops the game with the file's name.
 
 ### 1.4 — Flat-lit, team-coloured shading
 
@@ -201,6 +202,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Scope:** `NeuronClient/Shader/<Name>VS.hlsl` and `PS.hlsl`, compiled by `FXCompile` into `CompiledShader/` and included only by the `.cpp` that builds the pipeline state (AGENTS.md §2). Include a root signature, a pipeline state, a per-frame constant buffer and per-object colour.
 - **Acceptance:** CI green, with the compiled headers generated and not committed.
 - **Verify:** **owner run:** the hull reads clearly in two team colours.
+- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::MeshPipeline` with `Shader/MeshVS.hlsl` and `MeshPS.hlsl`, shader model 5.1; a root constant buffer view per frame and 20 root constants per object; Lambert lighting from one light over an ambient floor of 0.3. The renderer gained a depth buffer and a `BeginFrame`/`EndFrame` pair in place of `RenderFrame`. The provisional team colors are blue for the player and orange-red for the Tarkan (design §15).
 
 ### 1.5 — The RTS camera
 
@@ -209,6 +211,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Scope:** camera state and input in `GameApp`, since camera state is client state (ADR-002), over the view and projection math in `NeuronClient` (`DirectXMath`). A test grid on the y = 0 plane shows scale. Decide, and record, whether the cursor is clipped to the window while the game is active and what edge scroll does in a window (ADR-006).
 - **Acceptance:** CI green. The camera math has unit tests where it is pure: the width at default zoom, and the pitch at each zoom limit.
 - **Verify:** **owner run.**
+- **As built:** [ADR-012](../Design/ADR/ADR-012-rts-camera.md). `Outpost::Camera` in `GameApp` over DirectXMath; the numbers in `OutpostCommander/Assets/Camera.json`, provisional until G3. Input comes from `Neuron::Window::ReadInput`. The cursor is held inside the window while the game is full screen and in the foreground, and edge scroll works only then; in a window, WASD and middle-drag pan. The scene is milestone 1's placeholder until 2.5: the Small, Medium and Large hulls of each set side by side, facing +x, an asteroid at a home asteroid's size, and a grid with a line every 100 m and a brighter one every 500 m.
 
 ### 1.6 — Milestone 1 review
 

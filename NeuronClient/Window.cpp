@@ -111,6 +111,8 @@ Neuron::Window::Window(const Desc& _desc)
 
 Neuron::Window::~Window()
 {
+  if (m_cursorClipped)
+    ClipCursor(nullptr);
   // The window is already gone if the user closed it; otherwise it goes now, before its class.
   if (IsWindow(m_hwnd))
     DestroyWindow(m_hwnd);
@@ -134,10 +136,66 @@ bool Neuron::Window::ProcessMessages() noexcept
       ToggleFullScreen();
       continue;
     }
+    // Input is counted here, where the window's state is in reach, and the message still goes on to DefWindowProc.
+    // Capturing the mouse while the middle button is held keeps a drag going when the cursor leaves a window.
+    switch (message.message)
+    {
+    case WM_MOUSEWHEEL:
+      m_wheelDelta += GET_WHEEL_DELTA_WPARAM(message.wParam);
+      break;
+    case WM_MBUTTONDOWN:
+      SetCapture(m_hwnd);
+      break;
+    case WM_MBUTTONUP:
+      ReleaseCapture();
+      break;
+    default:
+      break;
+    }
     TranslateMessage(&message);
     DispatchMessageW(&message);
   }
   return true;
+}
+
+Neuron::InputState Neuron::Window::ReadInput() noexcept
+{
+  InputState input;
+  input.active = GetForegroundWindow() == m_hwnd && !IsMinimized();
+  input.wheelNotches = static_cast<float>(m_wheelDelta) / static_cast<float>(WHEEL_DELTA);
+  m_wheelDelta = 0;
+
+  POINT cursor{};
+  if (GetCursorPos(&cursor) != FALSE && ScreenToClient(m_hwnd, &cursor) != FALSE)
+  {
+    input.cursorXPixels = cursor.x;
+    input.cursorYPixels = cursor.y;
+  }
+
+  // The keyboard state as of the messages this thread has read, so it agrees with ProcessMessages.
+  std::array<BYTE, 256> keys{};
+  if (input.active && GetKeyboardState(keys.data()) != FALSE)
+  {
+    for (size_t key = 0; key < keys.size(); ++key)
+      input.keysDown.set(key, (keys[key] & 0x80) != 0);
+  }
+
+  // Full screen and in the foreground, the cursor stays on the game's monitor, so that edge scroll works beside another
+  // monitor. Windowed, it is free, because the window's edge is not the screen's (ADR-012). Windows can drop the clip
+  // behind the game's back, so it is set again every frame.
+  if (input.active && m_fullScreen)
+  {
+    RECT area = ClientArea(m_hwnd);
+    MapWindowPoints(m_hwnd, nullptr, reinterpret_cast<POINT*>(&area), 2);
+    m_cursorClipped = ClipCursor(&area) != FALSE;
+  }
+  else if (m_cursorClipped)
+  {
+    ClipCursor(nullptr);
+    m_cursorClipped = false;
+  }
+  input.cursorClipped = m_cursorClipped;
+  return input;
 }
 
 std::uint32_t Neuron::Window::ClientWidthPixels() const noexcept

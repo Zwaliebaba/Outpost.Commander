@@ -46,6 +46,12 @@
     <None Include="packages.config">
       <Filter>Package</Filter>
     </None>
+    <None Include="Assets\Camera.json">
+      <Filter>Package\Assets</Filter>
+    </None>
+    <None Include="Assets\Models.json">
+      <Filter>Package\Assets</Filter>
+    </None>
     <None Include="Assets\Map.json">
       <Filter>Package\Assets</Filter>
     </None>

@@ -47,6 +47,7 @@ OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX pac
  └── NeuronCore   (static lib)    ── engine code shared by client and server, including QUIC (ADR-004)
 OutpostServer (exe, later)        ── dedicated server for a Windows Server container. → GameLogic, NeuronServer
 GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. The Q2 battles run here from milestone 3
+GameAppTests (test DLL)           ── drives GameApp's camera math and model data, and NeuronClient's mesh reader, without a GPU
 ```
 
 Each library has a master header named after it, and its `pch.h` includes that header. `NeuronClient.h`, `NeuronServer.h` and `GameProtocol.h` include `NeuronCore.h`. `Opponent.h` includes `GameProtocol.h`. `GameLogic.h` includes `NeuronServer.h` and `GameProtocol.h`, and `GameApp.h` includes `NeuronClient.h` and `GameProtocol.h`.
@@ -66,6 +67,7 @@ Each library has a master header named after it, and its `pch.h` includes that h
 | GameApp | NeuronCore, NeuronClient, GameProtocol | — |
 | OutpostCommander | NeuronCore, NeuronClient, GameProtocol, Opponent, GameApp | all seven libraries |
 | GameLogicTests | NeuronCore, NeuronServer, GameProtocol, GameLogic, and the unit-test framework's folder in the Visual Studio install | NeuronCore, NeuronServer, GameProtocol, GameLogic |
+| GameAppTests | NeuronCore, NeuronClient, GameProtocol, GameApp, and the unit-test framework's folder | NeuronCore, NeuronClient, GameProtocol, GameApp |
 
 Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created. Adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client.
 

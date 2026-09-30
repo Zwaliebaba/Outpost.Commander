@@ -31,7 +31,7 @@ The owner took these decisions on 2026-09-30.
 ## Consequences
 
 - **Q4 frame time is measured as work, not as the present interval.** With vsync on, a frame that takes 5 ms of work still presents every 16.7 ms at 60 Hz, and one that takes 17 ms presents at 33.3 ms. Task 3.7 therefore records the CPU and GPU time of each frame, and states the development machine's refresh rate: a 120 Hz panel halves the vsync interval.
-- **Edge scroll needs the cursor held wherever the screen edge is not the window's edge.** In a window, and on a shared edge between monitors, the cursor leaves the game before it reaches the edge. Task 1.5, the camera, decides whether the cursor is clipped to the window while the game is active, and what edge scroll does in a window.
+- **Edge scroll needs the cursor held wherever the screen edge is not the window's edge.** In a window, and on a shared edge between monitors, the cursor leaves the game before it reaches the edge. ADR-012 decides both: the cursor is held inside the window while the game is full screen and in the foreground, and edge scroll works only while it is held.
 - **Debugging can happen beside a window.** Alt+Enter before a breakpoint, or at it, leaves the debugger visible on a single-screen machine.
 - **Alt+F4 closes the game** until the menu of task 6.2 exists.
 - **A driver reset ends the match.** Recovering from a lost device would mean every GPU resource can be rebuilt from CPU-side data, which constrains the whole renderer. Moving to recovery later means refactoring the renderer.

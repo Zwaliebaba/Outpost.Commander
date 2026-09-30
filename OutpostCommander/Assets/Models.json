@@ -1,0 +1,51 @@
+{
+  "sets": [
+    {
+      "name": "Human",
+      "color": { "red": 0.18, "green": 0.42, "blue": 0.95 },
+      "models": [
+        { "name": "Tiny", "forwardAxis": "-z", "lengthMeters": 14 },
+        { "name": "Small", "forwardAxis": "-z", "lengthMeters": 20 },
+        { "name": "Medium", "forwardAxis": "-z", "lengthMeters": 35 },
+        { "name": "Large", "forwardAxis": "-z", "lengthMeters": 60 },
+        { "name": "VeryLarge", "forwardAxis": "-z", "lengthMeters": 80 },
+        { "name": "Huge", "forwardAxis": "-z", "lengthMeters": 110 },
+        { "name": "Carrier", "forwardAxis": "-z", "lengthMeters": 100 },
+        { "name": "Freighter", "forwardAxis": "-z", "lengthMeters": 40 },
+        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 45 },
+        { "name": "Fighter", "forwardAxis": "-z", "lengthMeters": 10 },
+        { "name": "Drone", "forwardAxis": "-z", "lengthMeters": 6 },
+        { "name": "Mine", "forwardAxis": "+x", "lengthMeters": 4 },
+        { "name": "Satellite", "forwardAxis": "+x", "lengthMeters": 12 },
+        { "name": "Station", "forwardAxis": "+x", "lengthMeters": 60 }
+      ]
+    },
+    {
+      "name": "Tarkan",
+      "color": { "red": 0.9, "green": 0.25, "blue": 0.12 },
+      "models": [
+        { "name": "Tiny", "forwardAxis": "+x", "lengthMeters": 14 },
+        { "name": "Small", "forwardAxis": "+x", "lengthMeters": 20 },
+        { "name": "Medium", "forwardAxis": "+x", "lengthMeters": 35 },
+        { "name": "Large", "forwardAxis": "+x", "lengthMeters": 60 },
+        { "name": "VeryLarge", "forwardAxis": "+x", "lengthMeters": 80 },
+        { "name": "Huge", "forwardAxis": "+x", "lengthMeters": 110 },
+        { "name": "Carrier", "forwardAxis": "+x", "lengthMeters": 100 },
+        { "name": "Freighter", "forwardAxis": "+x", "lengthMeters": 40 },
+        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 45 },
+        { "name": "Fighter", "forwardAxis": "+x", "lengthMeters": 10 },
+        { "name": "Drone", "forwardAxis": "+x", "lengthMeters": 6 },
+        { "name": "Mine", "forwardAxis": "+x", "lengthMeters": 4 },
+        { "name": "Satellite", "forwardAxis": "+x", "lengthMeters": 12 },
+        { "name": "Station", "forwardAxis": "+x", "lengthMeters": 60 }
+      ]
+    },
+    {
+      "name": "Asteroids",
+      "color": { "red": 0.35, "green": 0.32, "blue": 0.3 },
+      "models": [
+        { "name": "Asteroid", "forwardAxis": "+x", "lengthMeters": 2 }
+      ]
+    }
+  ]
+}

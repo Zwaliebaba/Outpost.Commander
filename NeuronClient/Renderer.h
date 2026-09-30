@@ -2,14 +2,16 @@
 
 namespace Neuron
 {
-// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). It uses d3dx12's
-// helpers for barriers and descriptors (ADR-007). It knows no game
-// concept: it clears to the color it is given and presents.
+// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window, with a depth buffer the size of the
+// back buffer (ADR-006, ADR-011). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It knows no game
+// concept: a frame is cleared, whoever holds the command list draws into it, and it is presented.
 class Renderer : NonCopyable
 {
 public:
   // Back buffers, and so the frames the CPU may record ahead of the GPU (ADR-006).
   static constexpr UINT FRAME_COUNT = 2;
+  static constexpr DXGI_FORMAT RENDER_TARGET_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+  static constexpr DXGI_FORMAT DEPTH_FORMAT = DXGI_FORMAT_D32_FLOAT;
 
   // Creates the device on the high-performance hardware adapter, and the swap chain on the window at the given size.
   // Throws winrt::hresult_error on failure.
@@ -20,15 +22,44 @@ public:
   // shows is as fresh as the frame (ADR-006).
   void WaitForNextFrame() noexcept;
 
-  // Matches the back buffers to the window's client area. Nothing happens if the size has not changed, or is zero.
+  // Matches the back buffers and the depth buffer to the window's client area. Nothing happens if the size has not
+  // changed, or is zero.
   void Resize(UINT _widthPixels, UINT _heightPixels);
 
-  // Records a frame that clears the back buffer to a linear color, submits it and presents it.
-  void RenderFrame(const std::array<float, 4>& _clearColor);
+  // Starts a frame: clears the back buffer to a linear color and the depth buffer to the far plane, and binds both with
+  // a viewport over the whole back buffer. The command list it returns is open until EndFrame.
+  [[nodiscard]] ID3D12GraphicsCommandList* BeginFrame(const std::array<float, 4>& _clearColor);
+
+  // Submits the frame BeginFrame started and presents it.
+  void EndFrame();
+
+  // A buffer in video memory holding _bytes, for vertices or indices that never change. It is uploaded before this
+  // returns, so it is only for loading, not for use while frames are being recorded.
+  [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticBuffer(std::span<const std::byte> _bytes);
+
+  [[nodiscard]] ID3D12Device* Device() const noexcept
+  {
+    return m_device.get();
+  }
+  // Which of the FRAME_COUNT frames is being recorded, for resources kept once per frame in flight.
+  [[nodiscard]] UINT FrameIndex() const noexcept
+  {
+    return m_frameIndex;
+  }
+  [[nodiscard]] UINT WidthPixels() const noexcept
+  {
+    return m_widthPixels;
+  }
+  [[nodiscard]] UINT HeightPixels() const noexcept
+  {
+    return m_heightPixels;
+  }
 
 private:
   void CreateRenderTargets();
+  void CreateDepthBuffer();
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView(UINT _index) const noexcept;
+  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const noexcept;
   void WaitForGpu();
 
   // Throws for a failed HRESULT. A lost device is thrown with the reason the device gives for it (ADR-006).
@@ -39,7 +70,9 @@ private:
   winrt::com_ptr<ID3D12CommandQueue> m_queue;
   winrt::com_ptr<IDXGISwapChain4> m_swapChain;
   winrt::com_ptr<ID3D12DescriptorHeap> m_renderTargetHeap;
+  winrt::com_ptr<ID3D12DescriptorHeap> m_depthStencilHeap;
   std::array<winrt::com_ptr<ID3D12Resource>, FRAME_COUNT> m_backBuffers;
+  winrt::com_ptr<ID3D12Resource> m_depthBuffer;
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;
   winrt::com_ptr<ID3D12Fence> m_fence;
@@ -53,6 +86,8 @@ private:
   UINT m_swapChainFlags = 0;
   UINT m_widthPixels = 0;
   UINT m_heightPixels = 0;
+  // The back buffer of the frame being recorded, set by BeginFrame.
+  UINT m_frameIndex = 0;
   bool m_tearingSupported = false;
   bool m_vsync = true;
   // True once a frame has been presented and not yet waited for; the waitable object is signaled once per present.
