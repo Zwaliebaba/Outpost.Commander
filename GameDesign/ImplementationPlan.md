@@ -30,7 +30,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 0.4 | `Build/RunClangTidy.py` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 0.5 | `GameLogicTests` with `SuiteSmoke` | 0.3 | — | done, [#26](https://github.com/Zwaliebaba/Outpost.Commander/pull/26) |
 | 1.1 | A Win32 window and message loop | 0.3 | — | done, [#27](https://github.com/Zwaliebaba/Outpost.Commander/pull/27), run by the owner |
-| 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | in review: waiting on CI and the owner run |
+| 1.2 | D3D12 device and flip-model swap chain | 1.1 | — | done, [#29](https://github.com/Zwaliebaba/Outpost.Commander/pull/29), run by the owner |
 | 1.3 | Mesh loading, with scale and forward axis as data | 1.2 | G2 mesh format | todo |
 | 1.4 | Flat-lit, team-coloured shading | 1.3 | — | todo |
 | 1.5 | The RTS camera | 1.4 | G3 zoom limits | todo |
