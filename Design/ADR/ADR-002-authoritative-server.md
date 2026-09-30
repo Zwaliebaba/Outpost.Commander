@@ -37,7 +37,7 @@ The owner chose the second. The decision to record is how the code is shaped so 
 The engine is split three ways, into what both sides share, what only the client needs and what only the server needs. The game is split the same way, with one shared library in the middle.
 
 ```
-OutpostCommander (exe, WinUI 3)  ── the shell: WinMain, XAML, packages (ADR-001). Wires the pieces together
+OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX packaging (ADR-004). Wires the pieces together
  ├── GameApp      (static lib)    ── client game: presentation, selection, camera, UI state. → NeuronClient, GameProtocol
  ├── Opponent     (static lib)    ── the AI player. → GameProtocol only
  ├── GameLogic    (static lib)    ── the server: state, rules, LoopbackTransport. → NeuronServer, GameProtocol
@@ -53,7 +53,7 @@ Each library has a master header named after it, and its `pch.h` includes that h
 
 **The `Neuron*` libraries know no game concept (R9).** A command or a snapshot is a game concept, so the types that cross the boundary live in `GameProtocol` and not in `NeuronCore`. They cannot live in `GameLogic` either, because the client would then have to include server headers, and they cannot live in `GameApp`, because the server cannot see it.
 
-**Only the executable references WinRT, XAML or packages (ADR-001).** The server is linked into a Windows Server container later, where there is no WinUI, so every library stays within R14 as written. `NeuronCore.h` in particular includes no WinRT header, and it is the one header that owns the Windows macro family (AGENTS.md §4).
+**Only the executable references packages, and only the MSIX packaging tools (ADR-004).** No project includes WinRT or XAML, and every library stays within R14 as written, so the server can be linked into a Windows Server container later. `NeuronCore.h` in particular includes no WinRT header, and it is the one header that owns the Windows macro family (AGENTS.md §4).
 
 **The boundary is enforced by include paths, not by review.** A project's include path lists only the projects it may include (AGENTS.md §3):
 
