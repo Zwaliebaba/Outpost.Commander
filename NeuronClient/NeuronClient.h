@@ -20,5 +20,6 @@
 #include "MeshData.h"
 #include "Mesh.h"
 #include "MeshPipeline.h"
+#include "GlowPipeline.h"
 #include "GlyphAtlas.h"
 #include "UiPipeline.h"

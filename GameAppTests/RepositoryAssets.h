@@ -2,7 +2,7 @@
 
 namespace GameAppTests
 {
-// The bytes of a file the game ships, from OutpostCommander/Assets in the repository, such as "Models\\Human\\Small.cmo".
+// The bytes of a file the game ships, from OutpostCommander/Assets in the repository, such as "Models\\Human\\Small.nmf".
 // UseFullPaths makes __FILE__ absolute, so the repository is two levels up from this header.
 inline Neuron::ByteBuffer ReadRepositoryAsset(std::string_view _fileName)
 {
@@ -24,7 +24,7 @@ inline std::string ReadRepositoryAssetText(std::string_view _fileName)
 // A model's converted mesh, as the game builds it from the repository's copy.
 inline Neuron::MeshData ReadRepositoryModel(const Outpost::ModelSet& _set, const Outpost::ModelEntry& _model)
 {
-  const std::string fileName = std::format("Models\\{}\\{}.cmo", _set.name, _model.name);
+  const std::string fileName = std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
   return Outpost::BuildModelMesh(ReadRepositoryAsset(fileName), _model, fileName);
 }
 } // namespace GameAppTests

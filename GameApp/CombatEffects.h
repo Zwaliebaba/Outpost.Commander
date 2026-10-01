@@ -33,6 +33,12 @@ public:
     DirectX::XMFLOAT4 color{};
   };
 
+  // Where a shooter's gun is in the view, given the point it fires at (ADR-017): GameClient finds it from the shooter's
+  // model and where the view draws the ship. Nothing when it cannot, and the shot then leaves from where the server
+  // says the ship stood when it fired.
+  // It takes the shooter and the point it fires at.
+  using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition)>;
+
   explicit CombatEffects(std::uint32_t _ticksPerSecond);
 
   // Takes the shots and destructions of a snapshot. Each plays from one tick before the snapshot's own: the shot was
@@ -40,8 +46,9 @@ public:
   // (ADR-013).
   void Receive(const Snapshot& _snapshot);
 
-  // What to draw with the view at _viewTick. Effects that have played out are forgotten.
-  [[nodiscard]] std::vector<Draw> At(double _viewTick);
+  // What to draw with the view at _viewTick. Effects that have played out are forgotten. A shot leaves from the
+  // shooter's muzzle as _muzzle finds it in this frame, so it follows a ship that moves while it fires.
+  [[nodiscard]] std::vector<Draw> At(double _viewTick, const MuzzleLocator& _muzzle = {});
 
   // Effects waiting or playing; for tests.
   [[nodiscard]] size_t Pending() const noexcept
@@ -61,6 +68,8 @@ private:
   {
     Kind kind = Kind::Tracer;
     double startTick = 0.0;
+    // A shot's shooter; no identifier for an explosion.
+    EntityId shooter;
     PlanePosition from;
     PlanePosition to;
     float radiusMeters = 0.0f;

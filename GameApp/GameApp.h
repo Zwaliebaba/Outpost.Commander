@@ -14,6 +14,7 @@
 #include "GameProtocol.h"
 
 #include "ModelCatalog.h"
+#include "Hardpoints.h"
 #include "Camera.h"
 #include "SnapshotInterpolator.h"
 #include "Picking.h"

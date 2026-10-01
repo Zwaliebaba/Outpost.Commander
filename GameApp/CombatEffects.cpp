@@ -80,8 +80,11 @@ void Outpost::CombatEffects::Receive(const Snapshot& _snapshot)
 {
   const double start = static_cast<double>(_snapshot.tick) - 1.0;
   for (const ShotView& shot : _snapshot.shots)
-    m_effects.push_back(
-      {.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer, .startTick = start, .from = shot.from, .to = shot.to});
+    m_effects.push_back({.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer,
+                         .startTick = start,
+                         .shooter = shot.shooter,
+                         .from = shot.from,
+                         .to = shot.to});
   for (const DestroyedView& destroyed : _snapshot.destroyed)
     m_effects.push_back({.kind = Kind::Explosion,
                          .startTick = start,
@@ -90,7 +93,7 @@ void Outpost::CombatEffects::Receive(const Snapshot& _snapshot)
                          .radiusMeters = destroyed.radiusMeters});
 }
 
-std::vector<Outpost::CombatEffects::Draw> Outpost::CombatEffects::At(double _viewTick)
+std::vector<Outpost::CombatEffects::Draw> Outpost::CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle)
 {
   const auto lifetime = [](Kind _kind)
   {
@@ -113,9 +116,14 @@ std::vector<Outpost::CombatEffects::Draw> Outpost::CombatEffects::At(double _vie
     if (_viewTick < effect.startTick)
       continue;
     if (effect.kind == Kind::Explosion)
+    {
       AddExplosion(effect, _viewTick, draws);
-    else
-      AddShot(effect, _viewTick, draws);
+      continue;
+    }
+    Effect shot = effect;
+    if (_muzzle)
+      shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
+    AddShot(shot, _viewTick, draws);
   }
   return draws;
 }

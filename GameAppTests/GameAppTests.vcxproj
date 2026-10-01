@@ -96,6 +96,7 @@
     <ClCompile Include="LoadDriverTests.cpp" />
     <ClCompile Include="MeshDataTests.cpp" />
     <ClCompile Include="ModelCatalogTests.cpp" />
+    <ClCompile Include="HardpointsTests.cpp" />
     <ClCompile Include="PlayerControlsTests.cpp" />
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />

@@ -13,6 +13,8 @@ constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::PlanePosition GUN{.xMeters = 0.0f, .zMeters = 0.0f};
 constexpr Outpost::PlanePosition TARGET{.xMeters = 100.0f, .zMeters = 0.0f};
+// Where a test's view finds the shooter's gun.
+constexpr Outpost::PlanePosition MUZZLE{.xMeters = 6.0f, .zMeters = 2.0f};
 
 // A snapshot at _tick reporting one shot.
 Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon)
@@ -74,6 +76,24 @@ public:
     const auto band = std::ranges::find(draws, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
     Assert::IsTrue(band != draws.end());
     Assert::IsTrue(band->from == GUN && band->to == TARGET);
+  }
+
+  // ADR-017: a shot leaves from the shooter's muzzle where the view draws it this frame, or, when the view cannot find
+  // it, from where the server says the ship stood.
+  TEST_METHOD(AShotLeavesFromTheMuzzleTheViewFinds)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, LANCE));
+    const auto beamFrom = [&effects](const Outpost::CombatEffects::MuzzleLocator& _muzzle)
+    {
+      const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(10, 0.01), _muzzle);
+      const auto band = std::ranges::find(draws, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
+      Assert::IsTrue(band != draws.end() && band->to == TARGET);
+      return band->from;
+    };
+    Assert::IsTrue(beamFrom([](Outpost::EntityId _shooter, Outpost::PlanePosition) -> std::optional<Outpost::PlanePosition>
+                            { return _shooter == Outpost::EntityId{1} ? std::optional(MUZZLE) : std::nullopt; }) == MUZZLE);
+    Assert::IsTrue(beamFrom([](Outpost::EntityId, Outpost::PlanePosition) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
   }
 
   // An explosion swells where the entity was destroyed, then is forgotten.

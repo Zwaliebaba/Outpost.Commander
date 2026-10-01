@@ -41,6 +41,9 @@
     <ClInclude Include="ModelCatalog.h">
       <Filter>Models</Filter>
     </ClInclude>
+    <ClInclude Include="Hardpoints.h">
+      <Filter>Models</Filter>
+    </ClInclude>
     <ClInclude Include="Picking.h">
       <Filter>Controls</Filter>
     </ClInclude>
@@ -72,6 +75,9 @@
       <Filter>Measurement</Filter>
     </ClCompile>
     <ClCompile Include="ModelCatalog.cpp">
+      <Filter>Models</Filter>
+    </ClCompile>
+    <ClCompile Include="Hardpoints.cpp">
       <Filter>Models</Filter>
     </ClCompile>
     <ClCompile Include="Picking.cpp">

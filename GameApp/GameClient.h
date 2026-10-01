@@ -38,7 +38,22 @@ public:
   }
 
 private:
+  // A ship's or a structure's model and where it stands, which drawing it and finding its hardpoints share.
+  struct PlacedModel
+  {
+    const ModelSet* set = nullptr;
+    const std::string* model = nullptr;
+    ModelPose pose;
+    // The share of the set's color a structure is drawn in (StructureModel::tint).
+    float tint = 1.0f;
+  };
+
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
+  // Nothing for what is not a ship or a structure, or what the data does not map to a model.
+  [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-017).
+  [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
@@ -53,6 +68,8 @@ private:
   // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
+  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-018).
+  void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
   // health bar, a tracer or a beam.
@@ -62,6 +79,9 @@ private:
   ModelCatalog m_catalog;
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
+  Neuron::GlowPipeline m_glows;
+  // This frame's glows, kept so that their storage is not allocated every frame.
+  std::vector<Neuron::GlowPipeline::Glow> m_frameGlows;
   Neuron::UiPipeline m_ui;
   // The HUD as this frame draws it; the next frame's clicks are tested against it.
   Hud::Layout m_hudLayout;
@@ -75,6 +95,9 @@ private:
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;
+  std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
+  // How long the frame being drawn took to come, which a ship's speed is measured over.
+  float m_frameSeconds = 0.0f;
   std::unique_ptr<Neuron::Mesh> m_minorGrid;
   std::unique_ptr<Neuron::Mesh> m_majorGrid;
   // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn.

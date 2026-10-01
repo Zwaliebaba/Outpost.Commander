@@ -74,6 +74,9 @@ constexpr float RIG_LIFT_SHARE = 0.7f;
 constexpr DirectX::XMFLOAT4 GHOST_VALID_COLOR{0.2f, 0.75f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 GHOST_INVALID_COLOR{0.85f, 0.2f, 0.15f, 1.0f};
 constexpr int DISC_SEGMENTS = 24;
+// An exhaust is at its longest and brightest at this speed or faster (ADR-018): an Ion Medium's cruise, so that a fast
+// design reads as fast and a Fusion Large, at 20 m/s, burns well short of it.
+constexpr float EXHAUST_FULL_SPEED_METERS_PER_SECOND = 50.0f;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
 {
@@ -207,6 +210,11 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
   return result;
 }
 
+DirectX::XMFLOAT4X4 PoseMatrix(const Outpost::ModelPose& _pose) noexcept
+{
+  return WorldMatrix({_pose.position.xMeters, _pose.liftMeters, _pose.position.zMeters}, _pose.headingRadians, _pose.scale);
+}
+
 std::string MeshKey(std::string_view _set, std::string_view _model)
 {
   return std::format("{}/{}", _set, _model);
@@ -217,6 +225,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   : m_catalog(LoadDataFile(MODELS_FILE, LoadModelCatalog)),
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
+    m_glows(_renderer),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond)
@@ -227,8 +236,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     {
       const std::wstring fileName = ModelFileName(set, model);
       const Neuron::ByteBuffer bytes = ReadAsset(fileName);
-      const Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
+      Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
+      m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
     }
   }
   m_minorGrid =
@@ -275,7 +285,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
-  m_effectDraws = m_effects.At(m_view.ViewTick());
+  m_frameSeconds = _elapsedSeconds;
+  m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
@@ -450,6 +461,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawGhost(_commandList);
   DrawHealthBars(_commandList);
   DrawEffects(_commandList);
+  DrawGlows(_renderer, _commandList);
   DrawHud(_commandList, _renderer.FrameIndex());
 }
 
@@ -574,10 +586,8 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   {
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
-    const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
-    const std::string* model = _entity.role == ShipRole::Constructor ? &m_catalog.constructor : m_catalog.ModelForHull(_entity.hull);
-    if (set != nullptr && model != nullptr)
-      m_pipeline.Draw(_commandList, ModelMesh(set->name, *model), WorldMatrix(position, _entity.headingRadians, 1.0f), set->color);
+    if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
+      m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), placed->set->color);
     break;
   }
   case EntityKind::Asteroid:
@@ -612,10 +622,34 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
 {
-  const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
-  const StructureModel* model = m_catalog.ModelForStructure(_entity.structure);
-  if (set == nullptr || model == nullptr)
+  const std::optional<PlacedModel> placed = PlaceModel(_entity);
+  if (!placed.has_value())
     return;
+  const DirectX::XMFLOAT4& setColor = placed->set->color;
+  const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);
+  const float shade = placed->tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
+  const DirectX::XMFLOAT4 color{std::min(1.0f, setColor.x * shade), std::min(1.0f, setColor.y * shade), std::min(1.0f, setColor.z * shade),
+                                setColor.w};
+  m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), color);
+}
+
+std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(const EntityView& _entity) const
+{
+  const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
+  if (set == nullptr)
+    return std::nullopt;
+  if (_entity.kind == EntityKind::Ship)
+  {
+    const std::string* model = _entity.role == ShipRole::Constructor ? &m_catalog.constructor : m_catalog.ModelForHull(_entity.hull);
+    if (model == nullptr)
+      return std::nullopt;
+    return PlacedModel{.set = set, .model = model, .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians}};
+  }
+  if (_entity.kind != EntityKind::Structure || m_view.IsEmpty())
+    return std::nullopt;
+  const StructureModel* model = m_catalog.ModelForStructure(_entity.structure);
+  if (model == nullptr)
+    return std::nullopt;
   // Drawn across its kind's footprint: a Mining Rig's entity covers its asteroid, but the rig is the size of its kind,
   // standing on top of the rock.
   const Snapshot& newest = m_view.Newest();
@@ -624,13 +658,51 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   const float lift =
     _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters ? _entity.radiusMeters * RIG_LIFT_SHARE : 0.0f;
   const ModelEntry& entry = set->Model(model->model);
-  const float scale = 2.0f * radius / entry.lengthMeters;
-  const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);
-  const float shade = model->tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
-  const DirectX::XMFLOAT4 color{std::min(1.0f, set->color.x * shade), std::min(1.0f, set->color.y * shade),
-                                std::min(1.0f, set->color.z * shade), set->color.w};
-  const DirectX::XMFLOAT3 position{_entity.position.xMeters, lift, _entity.position.zMeters};
-  m_pipeline.Draw(_commandList, ModelMesh(set->name, model->model), WorldMatrix(position, _entity.headingRadians, scale), color);
+  return PlacedModel{.set = set,
+                     .model = &model->model,
+                     .pose = {.position = _entity.position,
+                              .liftMeters = lift,
+                              .headingRadians = _entity.headingRadians,
+                              .scale = 2.0f * radius / entry.lengthMeters},
+                     .tint = model->tint};
+}
+
+std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const
+{
+  const auto shooter = std::ranges::find(m_entities, _shooter, &EntityView::id);
+  if (shooter == m_entities.end())
+    return std::nullopt;
+  const std::optional<PlacedModel> placed = PlaceModel(*shooter);
+  if (!placed.has_value())
+    return std::nullopt;
+  return NearestMuzzle(ModelHardpoints(placed->set->name, *placed->model), placed->pose, _target);
+}
+
+void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)
+{
+  m_frameGlows.clear();
+  for (const EntityView& ship : m_entities)
+  {
+    const DirectX::XMFLOAT4* color = m_catalog.ExhaustColor(ship);
+    const std::optional<PlacedModel> placed = color != nullptr ? PlaceModel(ship) : std::nullopt;
+    if (!placed.has_value())
+      continue;
+    // How fast the view shows the ship going, from where the last frame drew it.
+    float speedShare = 0.0f;
+    const auto before = std::ranges::find(m_previousEntities, ship.id, &EntityView::id);
+    if (before != m_previousEntities.end() && m_frameSeconds > 0.0f)
+    {
+      const float meters = std::hypot(ship.position.xMeters - before->position.xMeters, ship.position.zMeters - before->position.zMeters);
+      speedShare = meters / m_frameSeconds / EXHAUST_FULL_SPEED_METERS_PER_SECOND;
+    }
+    AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
+  }
+
+  const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
+  const auto [right, up] = m_camera.ScreenAxes(aspectRatio);
+  const Neuron::GlowPipeline::FrameConstants constants{
+    .viewProjection = m_camera.ViewProjection(aspectRatio), .screenRight = right, .unused0 = 0.0f, .screenUp = up, .unused1 = 0.0f};
+  m_glows.Draw(_commandList, _renderer.FrameIndex(), constants, m_frameGlows);
 }
 
 void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
@@ -657,6 +729,14 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
                       ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
     }
   }
+}
+
+const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(std::string_view _set, std::string_view _model) const
+{
+  const auto found = m_modelHardpoints.find(MeshKey(_set, _model));
+  if (found == m_modelHardpoints.end())
+    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
+  return found->second;
 }
 
 const Neuron::Mesh& Outpost::GameClient::ModelMesh(std::string_view _set, std::string_view _model) const

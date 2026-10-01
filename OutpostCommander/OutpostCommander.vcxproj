@@ -142,94 +142,94 @@
     <None Include="Assets\Map.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Carrier.cmo">
+    <None Include="Assets\Models\Human\Carrier.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Colonizer.cmo">
+    <None Include="Assets\Models\Human\Colonizer.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Drone.cmo">
+    <None Include="Assets\Models\Human\Drone.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Fighter.cmo">
+    <None Include="Assets\Models\Human\Fighter.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Freighter.cmo">
+    <None Include="Assets\Models\Human\Freighter.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Huge.cmo">
+    <None Include="Assets\Models\Human\Huge.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Large.cmo">
+    <None Include="Assets\Models\Human\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Medium.cmo">
+    <None Include="Assets\Models\Human\Medium.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Mine.cmo">
+    <None Include="Assets\Models\Human\Mine.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Satellite.cmo">
+    <None Include="Assets\Models\Human\Satellite.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Small.cmo">
+    <None Include="Assets\Models\Human\Small.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Station.cmo">
+    <None Include="Assets\Models\Human\Station.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Tiny.cmo">
+    <None Include="Assets\Models\Human\Tiny.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\VeryLarge.cmo">
+    <None Include="Assets\Models\Human\VeryLarge.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Tuning.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Asteroids\Asteroid.cmo">
+    <None Include="Assets\Models\Asteroids\Asteroid.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Carrier.cmo">
+    <None Include="Assets\Models\Tarkan\Carrier.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Colonizer.cmo">
+    <None Include="Assets\Models\Tarkan\Colonizer.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Drone.cmo">
+    <None Include="Assets\Models\Tarkan\Drone.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Fighter.cmo">
+    <None Include="Assets\Models\Tarkan\Fighter.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Freighter.cmo">
+    <None Include="Assets\Models\Tarkan\Freighter.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Huge.cmo">
+    <None Include="Assets\Models\Tarkan\Huge.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Large.cmo">
+    <None Include="Assets\Models\Tarkan\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Medium.cmo">
+    <None Include="Assets\Models\Tarkan\Medium.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Mine.cmo">
+    <None Include="Assets\Models\Tarkan\Mine.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Satellite.cmo">
+    <None Include="Assets\Models\Tarkan\Satellite.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Small.cmo">
+    <None Include="Assets\Models\Tarkan\Small.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Station.cmo">
+    <None Include="Assets\Models\Tarkan\Station.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Tiny.cmo">
+    <None Include="Assets\Models\Tarkan\Tiny.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\VeryLarge.cmo">
+    <None Include="Assets\Models\Tarkan\VeryLarge.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="packages.config" />

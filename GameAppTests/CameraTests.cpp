@@ -117,6 +117,26 @@ public:
     Assert::AreEqual(60.0f, camera.Focus().y, TOLERANCE_METERS);
   }
 
+  // ADR-018: a glow is laid along the screen's right and up. Right is level, up leans back from the camera as the
+  // view tilts, the two are at right angles, and right is where panning right moves the view.
+  TEST_METHOD(GivesTheScreensAxesInTheWorld)
+  {
+    Outpost::Camera camera(RepositorySettings());
+    camera.Rotate(0.6f);
+    const auto [right, up] = camera.ScreenAxes(WIDE_SCREEN);
+    const auto length = [](const DirectX::XMFLOAT3& _v) { return std::sqrt((_v.x * _v.x) + (_v.y * _v.y) + (_v.z * _v.z)); };
+    Assert::AreEqual(1.0f, length(right), TOLERANCE_RADIANS);
+    Assert::AreEqual(1.0f, length(up), TOLERANCE_RADIANS);
+    Assert::AreEqual(0.0f, right.y, TOLERANCE_RADIANS);
+    Assert::IsTrue(up.y > 0.0f);
+    Assert::AreEqual(0.0f, (right.x * up.x) + (right.y * up.y) + (right.z * up.z), TOLERANCE_RADIANS);
+
+    const DirectX::XMFLOAT2 before = camera.Focus();
+    camera.Pan(10.0f, 0.0f);
+    const DirectX::XMFLOAT2 after = camera.Focus();
+    Assert::AreEqual(10.0f, ((after.x - before.x) * right.x) + ((after.y - before.y) * right.z), TOLERANCE_METERS);
+  }
+
   TEST_METHOD(KeepsTheFocusOverTheMap)
   {
     const Outpost::CameraSettings settings = RepositorySettings();

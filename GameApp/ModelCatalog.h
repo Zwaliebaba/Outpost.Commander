@@ -2,12 +2,11 @@
 
 namespace Outpost
 {
-// One model of a set, as OutpostCommander/Assets/Models.json describes it (ADR-011): which way its front points in its
-// file, and how long it is in the game along that axis.
+// One model of a set, as OutpostCommander/Assets/Models.json describes it (ADR-011): how long it is in the game along
+// its front, which its mesh faces (ADR-017).
 struct ModelEntry
 {
   std::string name;
-  Neuron::MeshAxis forward = Neuron::MeshAxis::PositiveX;
   float lengthMeters = 0.0f;
 };
 
@@ -46,6 +45,14 @@ struct StructureModel
   float tint = 1.0f;
 };
 
+// The color a drive's exhaust glows in (ADR-018), so that a ship's drive reads on sight. Linear, and provisional, like
+// the team colors (design §15).
+struct DriveExhaust
+{
+  DriveId drive;
+  DirectX::XMFLOAT4 color{};
+};
+
 // Every model the game can draw, from OutpostCommander/Assets/Models.json.
 struct ModelCatalog
 {
@@ -55,6 +62,9 @@ struct ModelCatalog
   // One per kind of structure, and the model a Constructor is drawn with; the same names are in every player's set.
   std::vector<StructureModel> structures;
   std::string constructor;
+  // One per drive the data names, and the Constructor's, which has no drive (design §7).
+  std::vector<DriveExhaust> exhausts;
+  DirectX::XMFLOAT4 constructorExhaust{};
 
   // The set with this name. Throws Neuron::Exception when there is none.
   [[nodiscard]] const ModelSet& Set(std::string_view _name) const;
@@ -64,19 +74,23 @@ struct ModelCatalog
   [[nodiscard]] const std::string* ModelForHull(HullId _hull) const noexcept;
   // How a kind of structure is drawn, or nullptr for one the data does not name.
   [[nodiscard]] const StructureModel* ModelForStructure(StructureKind _structure) const noexcept;
+  // The color a ship's exhaust glows in: its drive's, or the Constructor's; nullptr for a drive the data does not name,
+  // or anything that is not a ship.
+  [[nodiscard]] const DirectX::XMFLOAT4* ExhaustColor(const EntityView& _entity) const noexcept;
 };
 
 // Reads the text of OutpostCommander/Assets/Models.json. Throws Neuron::Exception on the first problem, naming where it
-// is, such as "sets[1].models[4].forwardAxis". Besides types and ranges it checks that set names are unique, and model
-// names within a set, that each player, hull and kind of structure is listed once and every kind is, and that every
-// hull's, structure's and the Constructor's model is in every player's set.
+// is, such as "sets[1].models[4].lengthMeters". Besides types and ranges it checks that set names are unique, and model
+// names within a set, that each player, hull, drive and kind of structure is listed once and every kind is, and that
+// every hull's, structure's and the Constructor's model is in every player's set.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
-// Where a model's converted mesh is under the package's Assets folder: Models\<set>\<model>.cmo (design §11).
+// Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-017).
 [[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model);
 
-// A model's mesh in the game's frame: read from the bytes of its .cmo file, centered, turned to face +x and scaled to its
-// length (ADR-011). Throws Neuron::Exception naming _fileName when the file cannot be read.
-[[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _cmoBytes, const ModelEntry& _model,
+// A model's mesh at its size in the game: read from the bytes of its .nmf file, centered and scaled to its length, its
+// hardpoints with it (ADR-017). Throws Neuron::Exception naming _fileName when the file cannot be read or has a
+// hardpoint whose tag the game does not know.
+[[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model,
                                               std::string_view _fileName);
 } // namespace Outpost

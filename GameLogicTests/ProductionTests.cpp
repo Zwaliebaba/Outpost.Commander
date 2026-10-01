@@ -66,6 +66,10 @@ public:
 
     const Outpost::Entity& ship = *arena.Owned(BLUE, Outpost::EntityKind::Ship).back();
     Assert::IsTrue(ship.design == design);
+    // Every player's snapshot carries the ship's drive, which the client colors its exhaust by (ADR-018).
+    const std::vector<Outpost::EntityView> seen = arena.World().BuildSnapshot(RED).entities;
+    const auto view = std::ranges::find(seen, ship.id, &Outpost::EntityView::id);
+    Assert::IsTrue(view != seen.end() && view->drive == arena.World().FindDesign(design)->components.drive);
     const float gap = Outpost::Distance(ship.position, YARD) - arena.Get(yard).radiusMeters - ship.radiusMeters;
     Assert::IsTrue(gap >= 0.0f && gap < 10.0f, std::to_wstring(gap).c_str());
     Assert::IsTrue(ship.position.xMeters > YARD.xMeters, L"on the side facing the map's center");
