@@ -44,6 +44,7 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   Outpost::RulesTuning rules;
   rules.tickHz = _reader.Integer("tickHz", 1);
   rules.startingOre = _reader.Integer("startingOre", 0);
+  rules.startingConstructors = _reader.Integer("startingConstructors", 0);
   rules.miningRigOrePerSecondHome = _reader.Number("miningRigOrePerSecondHome", JsonBound::NotNegative);
   rules.miningRigOrePerSecondContested = _reader.Number("miningRigOrePerSecondContested", JsonBound::NotNegative);
   rules.aiReviewIntervalSeconds = _reader.Number("aiReviewIntervalSeconds", JsonBound::Positive);
@@ -90,6 +91,21 @@ Outpost::WeaponTuning ReadWeapon(ObjectReader& _reader)
   return weapon;
 }
 
+Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
+{
+  Outpost::ConstructorTuning constructor;
+  constructor.hitPoints = _reader.Integer("hitPoints", 1);
+  constructor.armor = _reader.Integer("armor", 0);
+  constructor.speedMetersPerSecond = _reader.Number("speedMetersPerSecond", JsonBound::Positive);
+  constructor.cost = _reader.Integer("cost", 0);
+  constructor.buildSeconds = _reader.Number("buildSeconds", JsonBound::Positive);
+  constructor.footprintRadiusMeters = _reader.Number("footprintRadiusMeters", JsonBound::Positive);
+  constructor.turnRateDegreesPerSecond = _reader.Number("turnRateDegreesPerSecond", JsonBound::Positive);
+  constructor.extraConstructorBuildShare = _reader.Number("extraConstructorBuildShare", JsonBound::NotNegative);
+  constructor.repairPercentPerSecond = _reader.Number("repairPercentPerSecond", JsonBound::Positive);
+  return constructor;
+}
+
 Outpost::StructureWeaponTuning ReadStructureWeapon(ObjectReader& _reader)
 {
   Outpost::StructureWeaponTuning weapon;
@@ -121,6 +137,7 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   structure.name = _reader.String("name");
   structure.hitPoints = _reader.Integer("hitPoints", 1);
   structure.armor = _reader.Integer("armor", 0);
+  structure.footprintRadiusMeters = _reader.Number("footprintRadiusMeters", JsonBound::Positive);
 
   const JsonValue* cost = _reader.Optional("cost");
   const JsonValue* build = _reader.Optional("buildConstructorSeconds");
@@ -279,6 +296,9 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   tuning.hulls = Neuron::ReadJsonList<Outpost::HullTuning>(root, "hulls", ReadHull);
   tuning.drives = Neuron::ReadJsonList<Outpost::DriveTuning>(root, "drives", ReadDrive);
   tuning.weapons = Neuron::ReadJsonList<Outpost::WeaponTuning>(root, "weapons", ReadWeapon);
+  ObjectReader constructor(root.Required("constructor"), "constructor");
+  tuning.constructor = ReadConstructor(constructor);
+  constructor.Finish();
   tuning.structureWeapons = Neuron::ReadJsonList<Outpost::StructureWeaponTuning>(root, "structureWeapons", ReadStructureWeapon);
   tuning.structures = Neuron::ReadJsonList<Outpost::StructureTuning>(root, "structures", ReadStructure);
   tuning.research = Neuron::ReadJsonList<Outpost::ResearchTopicTuning>(root, "research", ReadResearchTopic);

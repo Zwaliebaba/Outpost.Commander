@@ -16,8 +16,32 @@ enum class EntityKind : std::uint8_t
   AsteroidField
 };
 
-// What one player may see of one entity. It carries what the client draws and selects; later tasks add to it, such as
-// queues with production (task 4.3).
+// What a ship is for. A warship is of a saved design; a Constructor is the one fixed design, which builds and repairs and
+// has no weapon (design §7).
+enum class ShipRole : std::uint8_t
+{
+  Warship,
+  Constructor
+};
+
+// One job in a Shipyard's or the Command Station's queue (design §6): a ship of one of the player's designs, or a
+// Constructor.
+struct JobView
+{
+  ShipRole role = ShipRole::Warship;
+  // The design of a warship; no design for a Constructor.
+  DesignId design;
+
+  friend bool operator==(const JobView&, const JobView&) = default;
+};
+
+// Jobs a Shipyard's or the Command Station's queue holds (design §6).
+inline constexpr size_t QUEUE_LIMIT = 5;
+
+// How far a structure's construction or a queue's front job has come, in thousandths.
+inline constexpr std::int32_t PERMILLE = 1000;
+
+// What one player may see of one entity. It carries what the client draws and selects.
 struct EntityView
 {
   EntityId id;
@@ -26,8 +50,10 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
-  // A ship's hull, which the client draws it by; no hull for anything else.
+  // A warship's hull, which the client draws it by; no hull for anything else.
   HullId hull;
+  // Meaningful for a ship only.
+  ShipRole role = ShipRole::Warship;
   // Meaningful for a structure only.
   StructureKind structure = StructureKind::CommandStation;
   PlanePosition position;
@@ -39,6 +65,13 @@ struct EntityView
   // a field, and a ship or structure placed without any.
   std::int32_t hitPointsHundredths = 0;
   std::int32_t maxHitPointsHundredths = 0;
+  // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
+  // construction does nothing but stand there and block (design §6).
+  std::int32_t builtPermille = PERMILLE;
+  // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
+  // while it waits for the Ore to start (design §5).
+  std::vector<JobView> queue;
+  std::int32_t jobPermille = 0;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
@@ -49,6 +82,19 @@ struct DesignView
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  // In whole Ore, paid when a Shipyard starts building one (design §5).
+  std::int32_t cost = 0;
+};
+
+// What the client needs to know of a kind of structure to name it, draw it and place it (design §6).
+struct StructureTypeView
+{
+  StructureKind structure = StructureKind::CommandStation;
+  std::string nameUtf8;
+  float radiusMeters = 0.0f;
+  // Whether a Constructor builds it, and for how much Ore; the Command Station is not built.
+  bool buildable = false;
+  std::int32_t cost = 0;
 };
 
 // A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
@@ -84,8 +130,15 @@ struct Snapshot
   // What happened in this tick that the entities alone do not show.
   std::vector<ShotView> shots;
   std::vector<DestroyedView> destroyed;
-  // The player's own: its Ore and its saved designs.
+  // The player's own: its Ore, whole, what its Mining Rigs earn each second in hundredths of an Ore, and its saved
+  // designs.
   std::int32_t ore = 0;
+  std::int32_t oreIncomeHundredthsPerSecond = 0;
   std::vector<DesignView> designs;
+  // The match's rules the client shows: the map, a square of this side centered on the origin; every kind of structure;
+  // and what a Constructor costs. Empty and zero when the server has no tuning data.
+  float mapSizeMeters = 0.0f;
+  std::vector<StructureTypeView> structureTypes;
+  std::int32_t constructorCost = 0;
 };
 } // namespace Outpost

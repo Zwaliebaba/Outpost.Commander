@@ -28,6 +28,13 @@ const Outpost::EntityView* Find(std::span<const Outpost::EntityView> _entities, 
   const auto found = std::ranges::find(_entities, _id, &Outpost::EntityView::id);
   return found == _entities.end() ? nullptr : &*found;
 }
+
+// Whether a Constructor has work to do on _entity: building it or repairing it.
+bool NeedsWork(const Outpost::EntityView& _entity) noexcept
+{
+  return _entity.maxHitPointsHundredths > 0 &&
+         (_entity.builtPermille < Outpost::PERMILLE || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths);
+}
 } // namespace
 
 void Outpost::PlayerControls::Update(const Neuron::InputState& _input, std::span<const EntityView> _entities, PlayerId _player,
@@ -35,6 +42,9 @@ void Outpost::PlayerControls::Update(const Neuron::InputState& _input, std::span
 {
   const Frame frame{.entities = _entities, .player = _player, .camera = _camera, .viewport = _viewport};
   Prune(frame);
+  // A placement lasts only while there are Constructors to build it.
+  if (m_placing.has_value() && !_entities.empty() && SelectedConstructors(_entities).empty())
+    m_placing.reset();
 
   if (!_input.active)
   {
@@ -66,6 +76,48 @@ std::vector<Outpost::Command> Outpost::PlayerControls::TakeCommands()
   return std::exchange(m_commands, {});
 }
 
+void Outpost::PlayerControls::ArmPlacement(StructureKind _structure, std::span<const EntityView> _entities)
+{
+  m_attackMoveArmed = false;
+  m_placing.reset();
+  if (!SelectedConstructors(_entities).empty())
+    m_placing = _structure;
+}
+
+void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
+{
+  Give(QueueShipCommand{.producer = _producer, .design = _design});
+}
+
+void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const EntityView> _entities)
+{
+  std::vector<EntityId> ships = SelectedShips(_entities);
+  if (!ships.empty())
+    Give(MoveCommand{.ships = std::move(ships), .destination = _destination});
+}
+
+std::vector<Outpost::EntityId> Outpost::PlayerControls::SelectedShips(std::span<const EntityView> _entities) const
+{
+  std::vector<EntityId> ships;
+  for (const EntityId id : m_selected)
+  {
+    if (const EntityView* entity = Find(_entities, id); entity != nullptr && entity->kind == EntityKind::Ship)
+      ships.push_back(id);
+  }
+  return ships;
+}
+
+std::vector<Outpost::EntityId> Outpost::PlayerControls::SelectedConstructors(std::span<const EntityView> _entities) const
+{
+  std::vector<EntityId> constructors;
+  for (const EntityId id : m_selected)
+  {
+    if (const EntityView* entity = Find(_entities, id); entity != nullptr && entity->role == ShipRole::Constructor)
+      constructors.push_back(id);
+  }
+  return constructors;
+}
+
 std::optional<Outpost::ScreenRect> Outpost::PlayerControls::DragBox() const noexcept
 {
   if (!m_dragging || !m_pressPixels.has_value())
@@ -81,8 +133,21 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
     m_attackMoveArmed = false;
     const std::optional<PlanePosition> destination =
       _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
-    if (destination.has_value() && !m_selected.empty())
-      Give(AttackMoveCommand{.ships = m_selected, .destination = *destination});
+    std::vector<EntityId> ships = SelectedShips(_frame.entities);
+    if (destination.has_value() && !ships.empty())
+      Give(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
+    return;
+  }
+  // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed.
+  if (m_placing.has_value())
+  {
+    const std::optional<PlanePosition> site =
+      _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
+    std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
+    if (site.has_value() && !constructors.empty())
+      Give(BuildStructureCommand{.constructors = std::move(constructors), .structure = *m_placing, .position = *site});
+    if (!_event.shift)
+      m_placing.reset();
     return;
   }
   m_pressPixels = DirectX::XMFLOAT2{static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels)};
@@ -112,11 +177,20 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
     PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship) { return _ship.owner == player; });
   if (!picked.has_value())
   {
-    if (!_event.shift)
+    // One of the player's structures is selected on its own, for its queue and its state (task 4.5).
+    const std::optional<EntityId> structure =
+      PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                 [player](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && _entity.owner == player; });
+    if (structure.has_value())
+      m_selected = {*structure};
+    else if (!_event.shift)
       m_selected.clear();
     m_lastClickedShip.reset();
     return;
   }
+  // A ship clicked with Shift joins ships, not a structure.
+  if (_event.shift)
+    m_selected = SelectedShips(_frame.entities);
 
   const bool doubleClick = m_lastClickedShip == picked && IsDouble(m_lastClickMilliseconds, _event.timeMilliseconds);
   const EntityView* ship = Find(_frame.entities, *picked);
@@ -139,25 +213,57 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
 void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, const Frame& _frame)
 {
   m_attackMoveArmed = false;
-  if (m_selected.empty())
+  // Right-click cancels a placement rather than ordering.
+  if (m_placing.has_value())
+  {
+    m_placing.reset();
+    return;
+  }
+  std::vector<EntityId> ships = SelectedShips(_frame.entities);
+  if (ships.empty())
     return;
   const auto x = static_cast<float>(_event.xPixels);
   const auto y = static_cast<float>(_event.yPixels);
-
-  // An enemy ship under the cursor is attacked; anywhere else is a destination.
   const PlayerId player = _frame.player;
-  const std::optional<EntityId> enemy =
-    PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship) { return _ship.owner != player; });
+
+  // Constructors repair, or build, one of the player's own ships or structures that needs it; the rest of the selection
+  // goes there.
+  std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
+  if (!constructors.empty())
+  {
+    const std::optional<EntityId> friendly =
+      PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                 [&](const EntityView& _entity)
+                 {
+                   return _entity.owner == player && (_entity.kind == EntityKind::Ship || _entity.kind == EntityKind::Structure) &&
+                          NeedsWork(_entity) && std::ranges::find(constructors, _entity.id) == constructors.end();
+                 });
+    if (friendly.has_value())
+    {
+      std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
+      Give(RepairCommand{.constructors = std::move(constructors), .target = *friendly});
+      if (const EntityView* target = Find(_frame.entities, *friendly); target != nullptr && !ships.empty())
+        Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
+      return;
+    }
+  }
+
+  // An enemy ship under the cursor is attacked, or failing that an enemy structure; anywhere else is a destination.
+  const auto isEnemy = [player](const EntityView& _entity) { return _entity.owner.IsValid() && _entity.owner != player; };
+  std::optional<EntityId> enemy = PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, isEnemy);
+  if (!enemy.has_value())
+    enemy = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                       [&isEnemy](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && isEnemy(_entity); });
   if (enemy.has_value())
   {
-    Give(AttackCommand{.ships = m_selected, .target = *enemy});
+    Give(AttackCommand{.ships = std::move(ships), .target = *enemy});
     return;
   }
   const std::optional<PlanePosition> destination = _frame.camera.GroundPointAtPixel(x, y, _frame.viewport);
   if (destination.has_value())
   {
-    Give(MoveCommand{.ships = m_selected, .destination = *destination});
-    m_lastMove = MoveOrder{.ships = m_selected, .inputRead = _event.read};
+    m_lastMove = MoveOrder{.ships = ships, .inputRead = _event.read};
+    Give(MoveCommand{.ships = std::move(ships), .destination = *destination});
   }
 }
 
@@ -166,17 +272,19 @@ void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Fram
   if (_event.key == VK_ESCAPE)
   {
     m_attackMoveArmed = false;
+    m_placing.reset();
     return;
   }
   if (_event.key == KEY_ATTACK_MOVE && !_event.control)
   {
-    m_attackMoveArmed = !m_selected.empty();
+    m_placing.reset();
+    m_attackMoveArmed = !SelectedShips(_frame.entities).empty();
     return;
   }
   if (_event.key == KEY_STOP && !_event.control)
   {
-    if (!m_selected.empty())
-      Give(StopCommand{.ships = m_selected});
+    if (std::vector<EntityId> ships = SelectedShips(_frame.entities); !ships.empty())
+      Give(StopCommand{.ships = std::move(ships)});
     return;
   }
 
@@ -231,8 +339,9 @@ void Outpost::PlayerControls::Prune(const Frame& _frame)
 {
   const auto gone = [&_frame](EntityId _id)
   {
-    const EntityView* ship = Find(_frame.entities, _id);
-    return ship == nullptr || ship->kind != EntityKind::Ship || ship->owner != _frame.player;
+    const EntityView* entity = Find(_frame.entities, _id);
+    return entity == nullptr || (entity->kind != EntityKind::Ship && entity->kind != EntityKind::Structure) ||
+           entity->owner != _frame.player;
   };
   // Before the first snapshot there is nothing to check against.
   if (_frame.entities.empty())

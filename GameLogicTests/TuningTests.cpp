@@ -82,21 +82,28 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 
 // A small file that loads, for the error cases to break one thing at a time.
 constexpr std::string_view MINIMAL_TUNING = R"({
-  "rules": { "tickHz": 20, "startingOre": 1000, "miningRigOrePerSecondHome": 5, "miningRigOrePerSecondContested": 8,
-             "aiReviewIntervalSeconds": 60 },
+  "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
+             "miningRigOrePerSecondContested": 8, "aiReviewIntervalSeconds": 60 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
   "weapons": [ { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120,
                  "splashRadiusMeters": 0, "cost": 35 } ],
   "structureWeapons": [ { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 } ],
+  "constructor": { "hitPoints": 300, "armor": 3, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15,
+                   "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5,
+                   "repairPercentPerSecond": 2 },
   "structures": [
-    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "structureWeapon": 1 },
-    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "cost": 300, "buildConstructorSeconds": 40 },
-    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "cost": 200, "buildConstructorSeconds": 30 },
-    { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "cost": 50, "buildConstructorSeconds": 10 },
-    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "cost": 150,
-      "buildConstructorSeconds": 20, "structureWeapon": 1 }
+    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45,
+      "structureWeapon": 1 },
+    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300,
+      "buildConstructorSeconds": 40 },
+    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200,
+      "buildConstructorSeconds": 30 },
+    { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50,
+      "buildConstructorSeconds": 10 },
+    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20,
+      "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
   ],
   "research": [
     { "id": 1, "name": "Hull Plating", "cost": 150, "researchSeconds": 60, "requires": [],
@@ -149,6 +156,7 @@ public:
     ExpectSame(*json.Find("rules"),
                {{"tickHz", Number(rules.tickHz)},
                 {"startingOre", Number(rules.startingOre)},
+                {"startingConstructors", Number(rules.startingConstructors)},
                 {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
                 {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
                 {"aiReviewIntervalSeconds", rules.aiReviewIntervalSeconds}},
@@ -203,6 +211,19 @@ public:
                  std::format("weapons[{}]", i));
     }
 
+    const Outpost::ConstructorTuning& constructor = tuning.constructor;
+    ExpectSame(*json.Find("constructor"),
+               {{"hitPoints", Number(constructor.hitPoints)},
+                {"armor", Number(constructor.armor)},
+                {"speedMetersPerSecond", constructor.speedMetersPerSecond},
+                {"cost", Number(constructor.cost)},
+                {"buildSeconds", constructor.buildSeconds},
+                {"footprintRadiusMeters", constructor.footprintRadiusMeters},
+                {"turnRateDegreesPerSecond", constructor.turnRateDegreesPerSecond},
+                {"extraConstructorBuildShare", constructor.extraConstructorBuildShare},
+                {"repairPercentPerSecond", constructor.repairPercentPerSecond}},
+               "constructor");
+
     const Neuron::JsonValue::Array& structureWeapons = json.Find("structureWeapons")->AsArray();
     Assert::AreEqual(structureWeapons.size(), tuning.structureWeapons.size());
     for (size_t i = 0; i < structureWeapons.size(); ++i)
@@ -225,7 +246,8 @@ public:
       std::vector<LoadedField> fields = {{"kind", std::string(KindName(structure.kind))},
                                          {"name", structure.name},
                                          {"hitPoints", Number(structure.hitPoints)},
-                                         {"armor", Number(structure.armor)}};
+                                         {"armor", Number(structure.armor)},
+                                         {"footprintRadiusMeters", structure.footprintRadiusMeters}};
       if (structure.cost.has_value())
         fields.push_back({"cost", Number(*structure.cost)});
       if (structure.buildConstructorSeconds.has_value())
@@ -267,6 +289,9 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
     Assert::AreEqual(20, tuning.rules.tickHz);
+    Assert::AreEqual(2, tuning.rules.startingConstructors);
+    Assert::AreEqual(0.5, tuning.constructor.extraConstructorBuildShare);
+    Assert::AreEqual(45.0, tuning.structures[0].footprintRadiusMeters);
     Assert::AreEqual(size_t{5}, tuning.structures.size());
     Assert::IsFalse(tuning.structures[0].cost.has_value());
     Assert::IsTrue(tuning.structures[1].cost == 300);
@@ -286,6 +311,8 @@ public:
     ExpectLoadError(Replace("\"cost\": 32, ", ""), "hulls[0]: has no \"cost\"");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 220, \"hitpoint\": 1,"), "hulls[0].hitpoint");
     ExpectLoadError(Replace("\"tickHz\": 20,", ""), "rules: has no \"tickHz\"");
+    ExpectLoadError(Replace("\"repairPercentPerSecond\": 2 },", "\"repairPercentPerSecond\": 0 },"), "constructor.repairPercentPerSecond");
+    ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 150, ", ""), "constructor: has no \"turnRateDegreesPerSecond\"");
     ExpectLoadError(Replace("\"splashRadiusMeters\": 0,", "\"splashRadiusMeters\": 0, \"splashRadius\": 5,"), "weapons[0].splashRadius");
   }
 
@@ -303,9 +330,11 @@ public:
   {
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
-    ExpectLoadError(Replace("\"armor\": 10, \"structureWeapon\": 1 },", "\"armor\": 10, \"structureWeapon\": 2 },"),
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
+                            "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"),
                     "structures[0].structureWeapon");
-    ExpectLoadError(Replace(", \"cost\": 300, \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 20,", ""), "structures[4]: has no \"footprintRadiusMeters\"");
+    ExpectLoadError(Replace(", \"cost\": 300,\n      \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
   }
 
   TEST_METHOD(RejectsABrokenResearchTree)

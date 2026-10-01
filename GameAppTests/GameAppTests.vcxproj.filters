@@ -15,5 +15,6 @@
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="GlyphAtlasTests.cpp" />
+    <ClCompile Include="PlacementTests.cpp" />
   </ItemGroup>
 </Project>

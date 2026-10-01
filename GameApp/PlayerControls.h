@@ -5,10 +5,13 @@ namespace Outpost
 // Design §9's player controls, turned from input into selection and orders (task 2.6). Selection and control groups are
 // client state; orders leave as Commands for the transport (ADR-002).
 //
-//   Left-click selects a ship, a left-drag selects the player's ships in the box, Shift adds, and a double-click selects
-//   every visible ship of that design. Right-click moves the selection, or attacks an enemy ship under the cursor. A,
-//   then a left-click, attack-moves; Escape cancels it. S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and
-//   a second tap centers the camera on it.
+//   Left-click selects a ship, or one of the player's structures, a left-drag selects the player's ships in the box,
+//   Shift adds, and a double-click selects every visible ship of that design. Right-click moves the selected ships, or
+//   attacks an enemy ship or structure under the cursor; selected Constructors right-clicked on one of the player's own
+//   ships or structures that is damaged or under construction repair or build it (task 4.2). A, then a left-click,
+//   attack-moves; Escape cancels it. S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
+//   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
+//   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another.
 class PlayerControls
 {
 public:
@@ -25,6 +28,17 @@ public:
 
   // The orders given since the last call, in the order they were given.
   [[nodiscard]] std::vector<Command> TakeCommands();
+
+  // From the HUD (task 4.5): arms placing a structure, when the selection holds a Constructor.
+  void ArmPlacement(StructureKind _structure, std::span<const EntityView> _entities);
+  [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
+  {
+    return m_placing;
+  }
+  // From the HUD: a job for a Shipyard's or the Command Station's queue.
+  void Queue(EntityId _producer, DesignId _design);
+  // From the minimap: the selected ships move to a point.
+  void MoveTo(PlanePosition _destination, std::span<const EntityView> _entities);
 
   // In identifier order.
   [[nodiscard]] const std::vector<EntityId>& Selected() const noexcept
@@ -64,6 +78,9 @@ private:
   void OnKey(const Neuron::InputEvent& _event, const Frame& _frame);
   void Select(std::vector<EntityId> _ships, bool _add);
   void Give(Order _order);
+  // The selection's ships, and the Constructors among them.
+  [[nodiscard]] std::vector<EntityId> SelectedShips(std::span<const EntityView> _entities) const;
+  [[nodiscard]] std::vector<EntityId> SelectedConstructors(std::span<const EntityView> _entities) const;
   // Drops ships that are gone or no longer the player's.
   void Prune(const Frame& _frame);
 
@@ -72,6 +89,7 @@ private:
   std::vector<Command> m_commands;
   std::optional<MoveOrder> m_lastMove;
   bool m_attackMoveArmed = false;
+  std::optional<StructureKind> m_placing;
 
   // The left press being held, where it went down and whether it has become a drag.
   std::optional<DirectX::XMFLOAT2> m_pressPixels;

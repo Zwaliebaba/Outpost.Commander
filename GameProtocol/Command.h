@@ -40,7 +40,16 @@ struct BuildStructureCommand
   PlanePosition position;
 };
 
-// A Shipyard queues a ship of a saved design, or the Command Station queues a Constructor (design §6).
+// Constructors work on one of their player's own ships or structures: they finish it while it is being built, and repair
+// it once it is damaged (design §6, §9: a right-click on a damaged friendly). Repair costs nothing.
+struct RepairCommand
+{
+  std::vector<EntityId> constructors;
+  EntityId target;
+};
+
+// A Shipyard queues a ship of a saved design, or the Command Station queues a Constructor, which ignores the design
+// (design §6). Each holds up to five jobs.
 struct QueueShipCommand
 {
   EntityId producer;
@@ -65,8 +74,8 @@ struct SaveDesignCommand
   WeaponId weapon;
 };
 
-using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, QueueShipCommand,
-                           StartResearchCommand, SaveDesignCommand>;
+using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
+                           QueueShipCommand, StartResearchCommand, SaveDesignCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

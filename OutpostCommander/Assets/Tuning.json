@@ -2,6 +2,7 @@
   "rules": {
     "tickHz": 20,
     "startingOre": 1000,
+    "startingConstructors": 2,
     "miningRigOrePerSecondHome": 5,
     "miningRigOrePerSecondContested": 8,
     "aiReviewIntervalSeconds": 60
@@ -20,15 +21,16 @@
     { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 3.0, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
     { "id": 3, "name": "Missile Rack", "damage": 40, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 110 }
   ],
+  "constructor": { "hitPoints": 300, "armor": 2, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15, "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5, "repairPercentPerSecond": 2 },
   "structureWeapons": [
     { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 }
   ],
   "structures": [
-    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "structureWeapon": 1 },
-    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "cost": 300, "buildConstructorSeconds": 40 },
-    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "cost": 200, "buildConstructorSeconds": 30 },
-    { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "cost": 50, "buildConstructorSeconds": 10 },
-    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
+    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1 },
+    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40 },
+    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30 },
+    { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
+    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
   ],
   "research": [
     { "id": 1, "name": "Improved Extraction", "cost": 150, "researchSeconds": 60, "requires": [],

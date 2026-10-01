@@ -25,8 +25,12 @@ struct ScreenRect
 // A click this close to a ship takes it, however small the ship shows.
 inline constexpr float PICK_TOLERANCE_PIXELS = 12.0f;
 
-// The ship under the cursor that _eligible accepts: the nearest on screen to _cursor among those whose footprint, or
+// The entity under the cursor that _eligible accepts: the nearest on screen to _cursor among those whose footprint, or
 // PICK_TOLERANCE_PIXELS if that is larger, reaches it. Nothing when none does.
+[[nodiscard]] std::optional<EntityId> PickEntity(std::span<const EntityView> _entities, const Camera& _camera, const Viewport& _viewport,
+                                                 DirectX::XMFLOAT2 _cursor, const std::function<bool(const EntityView&)>& _eligible);
+
+// PickEntity among ships only.
 [[nodiscard]] std::optional<EntityId> PickShip(std::span<const EntityView> _entities, const Camera& _camera, const Viewport& _viewport,
                                                DirectX::XMFLOAT2 _cursor, const std::function<bool(const EntityView&)>& _eligible);
 

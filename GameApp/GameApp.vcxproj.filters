@@ -56,6 +56,9 @@
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="Placement.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -85,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="Hud.cpp">
       <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Placement.cpp">
+      <Filter>Controls</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
