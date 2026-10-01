@@ -29,10 +29,7 @@ constexpr std::string_view GOOD_COLOR = R"({ "red": 0.5, "green": 0.5, "blue": 0
 
 void ExpectRejected(const std::string& _json)
 {
-  Assert::ExpectException<Neuron::Exception>([&]
-  {
-    (void)Outpost::LoadModelCatalog(_json);
-  });
+  Assert::ExpectException<Neuron::Exception>([&] { (void)Outpost::LoadModelCatalog(_json); });
 }
 } // namespace
 

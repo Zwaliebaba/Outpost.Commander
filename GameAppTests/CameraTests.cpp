@@ -50,10 +50,7 @@ void ExpectRejected(std::string_view _replace, std::string_view _with)
   const size_t at = json.find(_replace);
   Assert::AreNotEqual(std::string::npos, at);
   json.replace(at, _replace.size(), _with);
-  Assert::ExpectException<Neuron::Exception>([&]
-  {
-    (void)Outpost::LoadCameraSettings(json);
-  });
+  Assert::ExpectException<Neuron::Exception>([&] { (void)Outpost::LoadCameraSettings(json); });
 }
 } // namespace
 

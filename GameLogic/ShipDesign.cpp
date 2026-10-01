@@ -17,11 +17,12 @@ template <typename Entry, typename IdType> const Entry& Find(const std::vector<E
 // Whether a research topic unlocks this component.
 template <typename IdType> bool IsUnlockedByResearch(const Outpost::Tuning& _tuning, IdType _id)
 {
-  return std::ranges::any_of(_tuning.research, [_id](const Outpost::ResearchTopicTuning& _topic)
-  {
-    const IdType* unlocks = std::get_if<IdType>(&_topic.effect);
-    return unlocks != nullptr && *unlocks == _id;
-  });
+  return std::ranges::any_of(_tuning.research,
+                             [_id](const Outpost::ResearchTopicTuning& _topic)
+                             {
+                               const IdType* unlocks = std::get_if<IdType>(&_topic.effect);
+                               return unlocks != nullptr && *unlocks == _id;
+                             });
 }
 } // namespace
 
@@ -86,8 +87,8 @@ std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _t
     {
       for (const WeaponTuning& weapon : _tuning.weapons)
       {
-        if (!IsUnlockedByResearch(_tuning, hull.id) && !IsUnlockedByResearch(_tuning, drive.id) && !
-            IsUnlockedByResearch(_tuning, weapon.id))
+        if (!IsUnlockedByResearch(_tuning, hull.id) && !IsUnlockedByResearch(_tuning, drive.id) &&
+            !IsUnlockedByResearch(_tuning, weapon.id))
           designs.push_back({hull.id, drive.id, weapon.id});
       }
     }

@@ -43,15 +43,14 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
   const HRESULT result = D3DX12SerializeVersionedRootSignature(&description, feature.HighestVersion, blob.put(), error.put());
   if (FAILED(result))
   {
-    const std::string_view message = error
-                                       ? std::string_view(static_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize())
-                                       : std::string_view("no details");
+    const std::string_view message = error ? std::string_view(static_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize())
+                                           : std::string_view("no details");
     throw winrt::hresult_error(result, winrt::to_hstring(std::format("The interface root signature is invalid: {}", message)));
   }
 
   winrt::com_ptr<ID3D12RootSignature> rootSignature;
-  winrt::check_hresult(_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(),
-                                                    IID_GRAPHICS_PPV_ARGS(rootSignature)));
+  winrt::check_hresult(
+    _device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_GRAPHICS_PPV_ARGS(rootSignature)));
   return rootSignature;
 }
 } // namespace
@@ -64,10 +63,11 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   m_rootSignature = CreateRootSignature(device);
 
   // Matches Vertex.
-  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{
-    {{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, texel), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-     {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(Vertex, color), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},}};
+  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
+    {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, texel), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(Vertex, color), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  }};
 
   // Straight alpha over what is already drawn; the interface is flat, so nothing is culled and depth is ignored.
   CD3DX12_BLEND_DESC blend(D3D12_DEFAULT);
@@ -83,20 +83,25 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 
   // Every member with an enum that has no zero value is set here, so none is ever left at an invalid zero.
-  const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{.pRootSignature = m_rootSignature.get(),
-                                                       .VS = CD3DX12_SHADER_BYTECODE(g_UiVS, sizeof(g_UiVS)),
-                                                       .PS = CD3DX12_SHADER_BYTECODE(g_UiPS, sizeof(g_UiPS)), .BlendState = blend,
-                                                       .SampleMask = UINT_MAX, .RasterizerState = rasterizer,
-                                                       .DepthStencilState = depthStencil,
-                                                       .InputLayout = {.pInputElementDescs = inputLayout.data(),
-                                                                       .NumElements = static_cast<UINT>(inputLayout.size())},
-                                                       .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-                                                       .NumRenderTargets = 1, .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
-                                                       .DSVFormat = Renderer::DEPTH_FORMAT, .SampleDesc = {.Count = 1, .Quality = 0},};
+  const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{
+    .pRootSignature = m_rootSignature.get(),
+    .VS = CD3DX12_SHADER_BYTECODE(g_UiVS, sizeof(g_UiVS)),
+    .PS = CD3DX12_SHADER_BYTECODE(g_UiPS, sizeof(g_UiPS)),
+    .BlendState = blend,
+    .SampleMask = UINT_MAX,
+    .RasterizerState = rasterizer,
+    .DepthStencilState = depthStencil,
+    .InputLayout = {.pInputElementDescs = inputLayout.data(), .NumElements = static_cast<UINT>(inputLayout.size())},
+    .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    .NumRenderTargets = 1,
+    .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
+    .DSVFormat = Renderer::DEPTH_FORMAT,
+    .SampleDesc = {.Count = 1, .Quality = 0},
+  };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1,
-                                                       .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
+  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
   winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
 
   // Every quad is two triangles over its four corners: top-left, top-right, bottom-right, bottom-left.
@@ -110,12 +115,13 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   }
   const auto indexBytes = std::as_bytes(std::span(indices));
   m_indexBuffer = _renderer.CreateStaticBuffer(indexBytes);
-  m_indexBufferView = {.BufferLocation = m_indexBuffer->GetGPUVirtualAddress(), .SizeInBytes = static_cast<UINT>(indexBytes.size()),
+  m_indexBufferView = {.BufferLocation = m_indexBuffer->GetGPUVirtualAddress(),
+                       .SizeInBytes = static_cast<UINT>(indexBytes.size()),
                        .Format = DXGI_FORMAT_R16_UINT};
 
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  const CD3DX12_RESOURCE_DESC vertexDescription = CD3DX12_RESOURCE_DESC::Buffer(
-    UINT64{sizeof(Vertex)} * VERTICES_PER_QUAD * MAX_QUADS * Renderer::FRAME_COUNT);
+  const CD3DX12_RESOURCE_DESC vertexDescription =
+    CD3DX12_RESOURCE_DESC::Buffer(UINT64{sizeof(Vertex)} * VERTICES_PER_QUAD * MAX_QUADS * Renderer::FRAME_COUNT);
   winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &vertexDescription,
                                                        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(m_vertices)));
   constexpr D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
@@ -131,12 +137,13 @@ void Neuron::UiPipeline::Rasterize(float _fontPixels)
   m_fontPixels = std::round(_fontPixels);
   m_atlas = RasterizeGlyphs(m_fontFamily, m_fontPixels);
   // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
-  m_atlasTexture = m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM,
-                                                  std::as_bytes(std::span(m_atlas.coverage)));
-  constexpr D3D12_SHADER_RESOURCE_VIEW_DESC view{.Format = DXGI_FORMAT_R8_UNORM, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
-                                                 .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-                                                 .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1, .PlaneSlice = 0,
-                                                               .ResourceMinLODClamp = 0.0f}};
+  m_atlasTexture =
+    m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM, std::as_bytes(std::span(m_atlas.coverage)));
+  constexpr D3D12_SHADER_RESOURCE_VIEW_DESC view{
+    .Format = DXGI_FORMAT_R8_UNORM,
+    .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+    .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+    .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1, .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
   m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
@@ -199,9 +206,11 @@ void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _fram
   const std::size_t slot = std::size_t{_frameIndex} * MAX_QUADS * VERTICES_PER_QUAD;
   std::memcpy(m_mappedVertices + slot, m_frameVertices.data(), m_frameVertices.size() * sizeof(Vertex));
 
-  const D3D12_VERTEX_BUFFER_VIEW vertexView{.BufferLocation = m_vertices->GetGPUVirtualAddress() + (slot * sizeof(Vertex)),
-                                            .SizeInBytes = static_cast<UINT>(m_frameVertices.size() * sizeof(Vertex)),
-                                            .StrideInBytes = sizeof(Vertex),};
+  const D3D12_VERTEX_BUFFER_VIEW vertexView{
+    .BufferLocation = m_vertices->GetGPUVirtualAddress() + (slot * sizeof(Vertex)),
+    .SizeInBytes = static_cast<UINT>(m_frameVertices.size() * sizeof(Vertex)),
+    .StrideInBytes = sizeof(Vertex),
+  };
   const std::array<float, SCREEN_CONSTANT_COUNT> screen{m_widthPixels, m_heightPixels, 0.0f, 0.0f};
   ID3D12DescriptorHeap* heaps[] = {m_descriptorHeap.get()};
 

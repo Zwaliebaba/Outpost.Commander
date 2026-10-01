@@ -61,8 +61,8 @@ winrt::com_ptr<ID3D12Device> CreateDevice(IDXGIFactory6* _factory)
   for (UINT index = 0;; ++index)
   {
     winrt::com_ptr<IDXGIAdapter1> adapter;
-    const HRESULT result = _factory->
-      EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_GRAPHICS_PPV_ARGS(adapter));
+    const HRESULT result =
+      _factory->EnumAdapterByGpuPreference(index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_GRAPHICS_PPV_ARGS(adapter));
     if (result == DXGI_ERROR_NOT_FOUND)
       break;
     winrt::check_hresult(result);
@@ -90,26 +90,36 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   m_factory = CreateFactory();
   m_device = CreateDevice(m_factory.get());
 
-  constexpr D3D12_COMMAND_QUEUE_DESC queueDescription{.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                      .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
-                                                      .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE, .NodeMask = 0,};
+  constexpr D3D12_COMMAND_QUEUE_DESC queueDescription{
+    .Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
+    .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
+    .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+    .NodeMask = 0,
+  };
   winrt::check_hresult(m_device->CreateCommandQueue(&queueDescription, IID_GRAPHICS_PPV_ARGS(m_queue)));
 
   // Tearing can only be allowed when the swap chain is created, so it is asked for whenever the system supports it and
   // used only when vsync is off (ADR-006).
   BOOL allowTearing = FALSE;
-  m_tearingSupported =
-    SUCCEEDED(m_factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))) && allowTearing !=
-    FALSE;
+  m_tearingSupported = SUCCEEDED(m_factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing))) &&
+                       allowTearing != FALSE;
   m_swapChainFlags = static_cast<UINT>(DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
   if (m_tearingSupported)
     m_swapChainFlags |= static_cast<UINT>(DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
-  const DXGI_SWAP_CHAIN_DESC1 swapChainDescription{.Width = m_widthPixels, .Height = m_heightPixels, .Format = BACK_BUFFER_FORMAT,
-                                                   .Stereo = FALSE, .SampleDesc = {.Count = 1, .Quality = 0},
-                                                   .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT, .BufferCount = FRAME_COUNT,
-                                                   .Scaling = DXGI_SCALING_STRETCH, .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
-                                                   .AlphaMode = DXGI_ALPHA_MODE_IGNORE, .Flags = m_swapChainFlags,};
+  const DXGI_SWAP_CHAIN_DESC1 swapChainDescription{
+    .Width = m_widthPixels,
+    .Height = m_heightPixels,
+    .Format = BACK_BUFFER_FORMAT,
+    .Stereo = FALSE,
+    .SampleDesc = {.Count = 1, .Quality = 0},
+    .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+    .BufferCount = FRAME_COUNT,
+    .Scaling = DXGI_SCALING_STRETCH,
+    .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+    .AlphaMode = DXGI_ALPHA_MODE_IGNORE,
+    .Flags = m_swapChainFlags,
+  };
   winrt::com_ptr<IDXGISwapChain1> swapChain;
   winrt::check_hresult(m_factory->CreateSwapChainForHwnd(m_queue.get(), _window, &swapChainDescription, nullptr, nullptr, swapChain.put()));
   m_swapChain = swapChain.as<IDXGISwapChain4>();
@@ -119,13 +129,21 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_swapChain->SetMaximumFrameLatency(1));
   m_frameLatencyWaitable.attach(winrt::check_pointer(m_swapChain->GetFrameLatencyWaitableObject()));
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV, .NumDescriptors = FRAME_COUNT,
-                                                       .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE, .NodeMask = 0,};
+  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+    .NumDescriptors = FRAME_COUNT,
+    .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+    .NodeMask = 0,
+  };
   winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_renderTargetHeap)));
   m_renderTargetDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV, .NumDescriptors = 1,
-                                                            .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE, .NodeMask = 0,};
+  constexpr D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+    .NumDescriptors = 1,
+    .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+    .NodeMask = 0,
+  };
   winrt::check_hresult(m_device->CreateDescriptorHeap(&depthHeapDescription, IID_GRAPHICS_PPV_ARGS(m_depthStencilHeap)));
 
   for (auto& allocator : m_commandAllocators)
@@ -138,8 +156,11 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
   // Q4 measures a frame's GPU work, not the present interval (ADR-006).
-  constexpr D3D12_QUERY_HEAP_DESC timestampHeapDescription{.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
-                                                           .Count = TIMESTAMPS_PER_FRAME * FRAME_COUNT, .NodeMask = 0,};
+  constexpr D3D12_QUERY_HEAP_DESC timestampHeapDescription{
+    .Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
+    .Count = TIMESTAMPS_PER_FRAME * FRAME_COUNT,
+    .NodeMask = 0,
+  };
   winrt::check_hresult(m_device->CreateQueryHeap(&timestampHeapDescription, IID_GRAPHICS_PPV_ARGS(m_timestampHeap)));
   const CD3DX12_HEAP_PROPERTIES readbackHeap(D3D12_HEAP_TYPE_READBACK);
   const CD3DX12_RESOURCE_DESC readbackDescription = CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * TIMESTAMPS_PER_FRAME * FRAME_COUNT);
@@ -211,8 +232,8 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
     {
       // In two parts, so that the product cannot overflow whatever the frequency.
       const UINT64 ticks = timestamps[1] - timestamps[0];
-      const UINT64 nanoseconds = ((ticks / m_timestampFrequency) * NANOSECONDS_PER_SECOND) + (
-                                   (ticks % m_timestampFrequency) * NANOSECONDS_PER_SECOND / m_timestampFrequency);
+      const UINT64 nanoseconds = ((ticks / m_timestampFrequency) * NANOSECONDS_PER_SECOND) +
+                                 ((ticks % m_timestampFrequency) * NANOSECONDS_PER_SECOND / m_timestampFrequency);
       m_gpuFrameTimes.emplace_back(static_cast<std::int64_t>(nanoseconds));
     }
   }
@@ -233,8 +254,14 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH, DEPTH_CLEAR, 0, 0, nullptr);
   m_commandList->OMSetRenderTargets(1, &renderTarget, FALSE, &depthStencil);
 
-  const D3D12_VIEWPORT viewport{.TopLeftX = 0.0f, .TopLeftY = 0.0f, .Width = static_cast<float>(m_widthPixels),
-                                .Height = static_cast<float>(m_heightPixels), .MinDepth = D3D12_MIN_DEPTH, .MaxDepth = D3D12_MAX_DEPTH,};
+  const D3D12_VIEWPORT viewport{
+    .TopLeftX = 0.0f,
+    .TopLeftY = 0.0f,
+    .Width = static_cast<float>(m_widthPixels),
+    .Height = static_cast<float>(m_heightPixels),
+    .MinDepth = D3D12_MIN_DEPTH,
+    .MaxDepth = D3D12_MAX_DEPTH,
+  };
   const D3D12_RECT scissor{.left = 0, .top = 0, .right = static_cast<LONG>(m_widthPixels), .bottom = static_cast<LONG>(m_heightPixels)};
   m_commandList->RSSetViewports(1, &viewport);
   m_commandList->RSSetScissorRects(1, &scissor);
@@ -301,8 +328,8 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<co
   winrt::com_ptr<ID3D12CommandAllocator> allocator;
   winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr,
-                                                   IID_GRAPHICS_PPV_ARGS(commandList)));
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
   commandList->CopyBufferRegion(buffer.get(), 0, upload.get(), 0, _bytes.size());
   winrt::check_hresult(commandList->Close());
   ID3D12CommandList* lists[] = {commandList.get()};
@@ -332,15 +359,15 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
   winrt::com_ptr<ID3D12CommandAllocator> allocator;
   winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr,
-                                                   IID_GRAPHICS_PPV_ARGS(commandList)));
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
   // d3dx12 lays the rows out at the pitch the copy needs.
   const LONG_PTR rowBytes = static_cast<LONG_PTR>(_texels.size() / _height);
   const D3D12_SUBRESOURCE_DATA source{.pData = _texels.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(_texels.size())};
   if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, 1, &source) == 0)
     throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
-  const CD3DX12_RESOURCE_BARRIER toShader = CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST,
-                                                                                 D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  const CD3DX12_RESOURCE_BARRIER toShader =
+    CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
   commandList->ResourceBarrier(1, &toShader);
   winrt::check_hresult(commandList->Close());
   ID3D12CommandList* lists[] = {commandList.get()};
@@ -369,8 +396,8 @@ void Neuron::Renderer::CreateDepthBuffer()
   // The old buffer is released first; Resize has already drained the GPU.
   m_depthBuffer = nullptr;
   const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
-  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, 1, 0,
-                                                                         D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+  const CD3DX12_RESOURCE_DESC description =
+    CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   const CD3DX12_CLEAR_VALUE clearValue(DEPTH_FORMAT, DEPTH_CLEAR, 0);
   winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_DEPTH_WRITE,
                                                          &clearValue, IID_GRAPHICS_PPV_ARGS(m_depthBuffer)));

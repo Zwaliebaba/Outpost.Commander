@@ -41,15 +41,14 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
   const HRESULT result = D3DX12SerializeVersionedRootSignature(&description, feature.HighestVersion, blob.put(), error.put());
   if (FAILED(result))
   {
-    const std::string_view message = error
-                                       ? std::string_view(static_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize())
-                                       : std::string_view("no details");
+    const std::string_view message = error ? std::string_view(static_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize())
+                                           : std::string_view("no details");
     throw winrt::hresult_error(result, winrt::to_hstring(std::format("The mesh root signature is invalid: {}", message)));
   }
 
   winrt::com_ptr<ID3D12RootSignature> rootSignature;
-  winrt::check_hresult(_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(),
-                                                    IID_GRAPHICS_PPV_ARGS(rootSignature)));
+  winrt::check_hresult(
+    _device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_GRAPHICS_PPV_ARGS(rootSignature)));
   return rootSignature;
 }
 } // namespace
@@ -60,23 +59,28 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   m_rootSignature = CreateRootSignature(device);
 
   // Matches MeshVertex.
-  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{
-    {{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},}};
+  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{{
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  }};
 
   // The defaults cull back faces, which are the counterclockwise ones, and test depth with less-than (ADR-011).
   // Every member with an enum that has no zero value is set here, so none is ever left at an invalid zero.
-  const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{.pRootSignature = m_rootSignature.get(),
-                                                       .VS = CD3DX12_SHADER_BYTECODE(g_MeshVS, sizeof(g_MeshVS)),
-                                                       .PS = CD3DX12_SHADER_BYTECODE(g_MeshPS, sizeof(g_MeshPS)),
-                                                       .BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT), .SampleMask = UINT_MAX,
-                                                       .RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
-                                                       .DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
-                                                       .InputLayout = {.pInputElementDescs = inputLayout.data(),
-                                                                       .NumElements = static_cast<UINT>(inputLayout.size())},
-                                                       .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-                                                       .NumRenderTargets = 1, .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
-                                                       .DSVFormat = Renderer::DEPTH_FORMAT, .SampleDesc = {.Count = 1, .Quality = 0},};
+  const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{
+    .pRootSignature = m_rootSignature.get(),
+    .VS = CD3DX12_SHADER_BYTECODE(g_MeshVS, sizeof(g_MeshVS)),
+    .PS = CD3DX12_SHADER_BYTECODE(g_MeshPS, sizeof(g_MeshPS)),
+    .BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+    .SampleMask = UINT_MAX,
+    .RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
+    .DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+    .InputLayout = {.pInputElementDescs = inputLayout.data(), .NumElements = static_cast<UINT>(inputLayout.size())},
+    .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    .NumRenderTargets = 1,
+    .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
+    .DSVFormat = Renderer::DEPTH_FORMAT,
+    .SampleDesc = {.Count = 1, .Quality = 0},
+  };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);

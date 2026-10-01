@@ -26,13 +26,20 @@ struct ModelRow
 };
 
 // Copied from the model's output on 2026-10-01. The model rounds damage per second to one decimal.
-constexpr std::array<ModelRow, 12> MODEL_TABLE{
-  {{1, 1, 1, 87, 198, 2, 78.0, 120, {30.0, 15.0, 8.8}}, {1, 1, 2, 137, 198, 2, 78.0, 220, {31.0, 29.0, 27.0}},
-   {1, 2, 1, 147, 308, 2, 48.0, 120, {30.0, 15.0, 8.8}}, {1, 2, 2, 197, 308, 2, 48.0, 220, {31.0, 29.0, 27.0}},
-   {2, 1, 1, 165, 450, 8, 52.0, 120, {30.0, 15.0, 8.8}}, {2, 1, 2, 215, 450, 8, 52.0, 220, {31.0, 29.0, 27.0}},
-   {2, 2, 1, 225, 700, 8, 32.0, 120, {30.0, 15.0, 8.8}}, {2, 2, 2, 275, 700, 8, 32.0, 220, {31.0, 29.0, 27.0}},
-   {3, 1, 1, 355, 1080, 14, 32.5, 120, {30.0, 15.0, 8.8}}, {3, 1, 2, 405, 1080, 14, 32.5, 220, {31.0, 29.0, 27.0}},
-   {3, 2, 1, 415, 1680, 14, 20.0, 120, {30.0, 15.0, 8.8}}, {3, 2, 2, 465, 1680, 14, 20.0, 220, {31.0, 29.0, 27.0}},}};
+constexpr std::array<ModelRow, 12> MODEL_TABLE{{
+  {1, 1, 1, 87, 198, 2, 78.0, 120, {30.0, 15.0, 8.8}},
+  {1, 1, 2, 137, 198, 2, 78.0, 220, {31.0, 29.0, 27.0}},
+  {1, 2, 1, 147, 308, 2, 48.0, 120, {30.0, 15.0, 8.8}},
+  {1, 2, 2, 197, 308, 2, 48.0, 220, {31.0, 29.0, 27.0}},
+  {2, 1, 1, 165, 450, 8, 52.0, 120, {30.0, 15.0, 8.8}},
+  {2, 1, 2, 215, 450, 8, 52.0, 220, {31.0, 29.0, 27.0}},
+  {2, 2, 1, 225, 700, 8, 32.0, 120, {30.0, 15.0, 8.8}},
+  {2, 2, 2, 275, 700, 8, 32.0, 220, {31.0, 29.0, 27.0}},
+  {3, 1, 1, 355, 1080, 14, 32.5, 120, {30.0, 15.0, 8.8}},
+  {3, 1, 2, 405, 1080, 14, 32.5, 220, {31.0, 29.0, 27.0}},
+  {3, 2, 1, 415, 1680, 14, 20.0, 120, {30.0, 15.0, 8.8}},
+  {3, 2, 2, 465, 1680, 14, 20.0, 220, {31.0, 29.0, 27.0}},
+}};
 
 Outpost::Tuning RepositoryTuning()
 {
@@ -49,8 +56,8 @@ public:
     const Outpost::Tuning tuning = RepositoryTuning();
     for (const ModelRow& row : MODEL_TABLE)
     {
-      const Outpost::DesignStats stats = Outpost::DesignStatsFor(tuning, Outpost::HullId{row.hull}, Outpost::DriveId{row.drive},
-                                                                 Outpost::WeaponId{row.weapon});
+      const Outpost::DesignStats stats =
+        Outpost::DesignStatsFor(tuning, Outpost::HullId{row.hull}, Outpost::DriveId{row.drive}, Outpost::WeaponId{row.weapon});
       const std::wstring name = std::to_wstring(row.hull) + L"+" + std::to_wstring(row.drive) + L"+" + std::to_wstring(row.weapon);
       Assert::AreEqual(row.cost, stats.cost, name.c_str());
       Assert::AreEqual(row.hitPoints, static_cast<double>(stats.hitPointsHundredths) / Outpost::HUNDREDTHS, 1e-9, name.c_str());
@@ -130,14 +137,8 @@ public:
     Outpost::Simulation simulation(1, 20);
     simulation.SaveStartingDesigns(BLUE, tuning);
     const Outpost::DesignId blueDesign = simulation.FindDesign(BLUE, Outpost::StartingDesigns(tuning).front())->id;
-    Assert::ExpectException<Neuron::Exception>([&]
-    {
-      (void)simulation.SpawnShip(RED, blueDesign, {});
-    });
-    Assert::ExpectException<Neuron::Exception>([&]
-    {
-      (void)simulation.SpawnShip(BLUE, Outpost::DesignId{99}, {});
-    });
+    Assert::ExpectException<Neuron::Exception>([&] { (void)simulation.SpawnShip(RED, blueDesign, {}); });
+    Assert::ExpectException<Neuron::Exception>([&] { (void)simulation.SpawnShip(BLUE, Outpost::DesignId{99}, {}); });
   }
 };
 } // namespace GameLogicTests

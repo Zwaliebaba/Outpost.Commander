@@ -18,8 +18,8 @@ Neuron::TickHost::TickHost(std::uint32_t _ticksPerSecond, std::uint32_t _maxTick
   // The upper bound keeps MAX_ELAPSED_NANOSECONDS times the rate within 64 bits, with room to spare.
   if (_ticksPerSecond == 0 || _ticksPerSecond > MAX_TICKS_PER_SECOND || _maxTicksPerAdvance == 0)
   {
-    throw Exception(std::format("TickHost: a rate of {} ticks per second, up to {} at once, is out of range", _ticksPerSecond,
-                                _maxTicksPerAdvance));
+    throw Exception(
+      std::format("TickHost: a rate of {} ticks per second, up to {} at once, is out of range", _ticksPerSecond, _maxTicksPerAdvance));
   }
 }
 

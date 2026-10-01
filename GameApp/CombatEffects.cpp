@@ -62,25 +62,34 @@ Outpost::PlanePosition Lerp(Outpost::PlanePosition _from, Outpost::PlanePosition
 
 CombatEffects::Draw Disc(Outpost::PlanePosition _at, float _radiusMeters, float _heightMeters, const DirectX::XMFLOAT4& _color)
 {
-  return {.shape = CombatEffects::Shape::Disc, .from = _at, .to = _at, .radiusMeters = _radiusMeters, .heightMeters = _heightMeters,
+  return {.shape = CombatEffects::Shape::Disc,
+          .from = _at,
+          .to = _at,
+          .radiusMeters = _radiusMeters,
+          .heightMeters = _heightMeters,
           .color = _color};
 }
 } // namespace
 
 CombatEffects::CombatEffects(std::uint32_t _ticksPerSecond)
-  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond)) {}
+  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond))
+{
+}
 
 void CombatEffects::Receive(const Snapshot& _snapshot)
 {
   const double start = static_cast<double>(_snapshot.tick) - 1.0;
   for (const ShotView& shot : _snapshot.shots)
   {
-    m_effects.push_back({.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer, .startTick = start, .from = shot.from,
-                         .to = shot.to});
+    m_effects.push_back(
+      {.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer, .startTick = start, .from = shot.from, .to = shot.to});
   }
   for (const DestroyedView& destroyed : _snapshot.destroyed)
   {
-    m_effects.push_back({.kind = Kind::Explosion, .startTick = start, .from = destroyed.position, .to = destroyed.position,
+    m_effects.push_back({.kind = Kind::Explosion,
+                         .startTick = start,
+                         .from = destroyed.position,
+                         .to = destroyed.position,
                          .radiusMeters = destroyed.radiusMeters});
   }
 }
@@ -95,14 +104,12 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick)
       return TRACER_FLIGHT_SECONDS + SPARK_SECONDS;
     case Kind::Beam:
       return std::max(BEAM_SECONDS, SPARK_SECONDS);
-    case Kind::Explosion: default:
+    case Kind::Explosion:
+    default:
       return EXPLOSION_SECONDS;
     }
   };
-  std::erase_if(m_effects, [&](const Effect& _effect)
-  {
-    return Seconds(_viewTick - _effect.startTick) > lifetime(_effect.kind);
-  });
+  std::erase_if(m_effects, [&](const Effect& _effect) { return Seconds(_viewTick - _effect.startTick) > lifetime(_effect.kind); });
 
   std::vector<Draw> draws;
   for (const Effect& effect : m_effects)
@@ -134,8 +141,11 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
     if (elapsed < BEAM_SECONDS)
     {
       const double progress = elapsed / BEAM_SECONDS;
-      _draws.push_back({.shape = Shape::Band, .from = _effect.from, .to = _effect.to,
-                        .widthMeters = BEAM_WIDTH_METERS * static_cast<float>(1.0 - progress), .heightMeters = EFFECT_HEIGHT_METERS,
+      _draws.push_back({.shape = Shape::Band,
+                        .from = _effect.from,
+                        .to = _effect.to,
+                        .widthMeters = BEAM_WIDTH_METERS * static_cast<float>(1.0 - progress),
+                        .heightMeters = EFFECT_HEIGHT_METERS,
                         .color = Faded(BEAM_COLOR, progress * 0.5)});
     }
   }
@@ -147,8 +157,12 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
       // The streak's head runs from the gun to the target; its tail follows a streak's length behind, never behind the gun.
       const auto head = static_cast<float>(elapsed / TRACER_FLIGHT_SECONDS);
       const float tail = std::max(0.0f, head - (TRACER_LENGTH_METERS / lengthMeters));
-      _draws.push_back({.shape = Shape::Band, .from = Lerp(_effect.from, _effect.to, tail), .to = Lerp(_effect.from, _effect.to, head),
-                        .widthMeters = TRACER_WIDTH_METERS, .heightMeters = EFFECT_HEIGHT_METERS, .color = TRACER_COLOR});
+      _draws.push_back({.shape = Shape::Band,
+                        .from = Lerp(_effect.from, _effect.to, tail),
+                        .to = Lerp(_effect.from, _effect.to, head),
+                        .widthMeters = TRACER_WIDTH_METERS,
+                        .heightMeters = EFFECT_HEIGHT_METERS,
+                        .color = TRACER_COLOR});
     }
   }
 
@@ -160,14 +174,14 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
 void CombatEffects::AddExplosion(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const
 {
   const double progress = Seconds(_tick - _effect.startTick) / EXPLOSION_SECONDS;
-  const auto grow = [progress](float _start, float _end)
-  {
-    return _start + ((_end - _start) * static_cast<float>(progress));
-  };
+  const auto grow = [progress](float _start, float _end) { return _start + ((_end - _start) * static_cast<float>(progress)); };
   const float radius = _effect.radiusMeters;
-  _draws.push_back(Disc(_effect.from, radius * grow(FIREBALL_START_RADII, FIREBALL_END_RADII), EXPLOSION_HEIGHT_METERS,
-                        Faded(FIREBALL_COLOR, progress)));
-  _draws.push_back({.shape = Shape::Ring, .from = _effect.from, .to = _effect.from,
-                    .radiusMeters = radius * grow(SHOCK_START_RADII, SHOCK_END_RADII), .heightMeters = EXPLOSION_HEIGHT_METERS,
+  _draws.push_back(
+    Disc(_effect.from, radius * grow(FIREBALL_START_RADII, FIREBALL_END_RADII), EXPLOSION_HEIGHT_METERS, Faded(FIREBALL_COLOR, progress)));
+  _draws.push_back({.shape = Shape::Ring,
+                    .from = _effect.from,
+                    .to = _effect.from,
+                    .radiusMeters = radius * grow(SHOCK_START_RADII, SHOCK_END_RADII),
+                    .heightMeters = EXPLOSION_HEIGHT_METERS,
                     .color = Faded(SHOCK_COLOR, progress)});
 }

@@ -6,8 +6,8 @@ namespace GameLogicTests
 // __FILE__ absolute, so the repository is two levels up from this header.
 inline std::string ReadRepositoryData(std::string_view _fileName)
 {
-  const std::filesystem::path path = std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander" / "Assets" /
-                                     _fileName;
+  const std::filesystem::path path =
+    std::filesystem::path(__FILE__).parent_path().parent_path() / "OutpostCommander" / "Assets" / _fileName;
   std::ifstream file(path, std::ios::binary);
   Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(file.is_open(), path.wstring().c_str());
   std::ostringstream text;

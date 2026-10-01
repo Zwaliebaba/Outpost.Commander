@@ -42,8 +42,8 @@ public:
     Assert::AreEqual(size_t{12}, designs.size());
     for (const CheckDesign& design : designs)
     {
-      const Outpost::DesignStats stats = Outpost::DesignStatsFor(tuning, design.components.hull, design.components.drive,
-                                                                 design.components.weapon);
+      const Outpost::DesignStats stats =
+        Outpost::DesignStatsFor(tuning, design.components.hull, design.components.drive, design.components.weapon);
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);

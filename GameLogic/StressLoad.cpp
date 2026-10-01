@@ -54,10 +54,7 @@ std::vector<Outpost::PlanePosition> OpenPointsNear(const Outpost::Map& _map, Out
         points.push_back(point);
     }
   }
-  std::ranges::stable_sort(points, {}, [_to](Outpost::PlanePosition _point)
-  {
-    return Outpost::Distance(_point, _to);
-  });
+  std::ranges::stable_sort(points, {}, [_to](Outpost::PlanePosition _point) { return Outpost::Distance(_point, _to); });
   return points;
 }
 } // namespace
@@ -95,10 +92,9 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
       throw Neuron::Exception("The map has too little open ground for the stress load's ships.");
 
     // The structures the player already has, its Command Station, count toward the scene's.
-    const auto existing = static_cast<size_t>(std::ranges::count_if(_simulation.Entities(), [&side](const Entity& _entity)
-    {
-      return _entity.kind == EntityKind::Structure && _entity.owner == side.player;
-    }));
+    const auto existing =
+      static_cast<size_t>(std::ranges::count_if(_simulation.Entities(), [&side](const Entity& _entity)
+                                                { return _entity.kind == EntityKind::Structure && _entity.owner == side.player; }));
     const PlanePosition structuresAt{.xMeters = side.start.xMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE),
                                      .zMeters = side.start.zMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE)};
     float widestStructureMeters = 0.0f;
@@ -111,9 +107,7 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
       if (sites.size() + existing >= STRESS_STRUCTURES_PER_PLAYER)
         break;
       const bool clear = std::ranges::all_of(sites, [&](PlanePosition _site)
-      {
-        return Distance(_site, point) >= (2.0f * widestStructureMeters) + _map.minimumGapMeters;
-      });
+                                             { return Distance(_site, point) >= (2.0f * widestStructureMeters) + _map.minimumGapMeters; });
       if (clear)
         sites.push_back(point);
     }
@@ -171,14 +165,12 @@ std::vector<Outpost::Command> Outpost::StressLoad::TopUp(Simulation& _simulation
     for (size_t count = ships[index]; count < STRESS_SHIPS_PER_PLAYER; ++count)
       launched.push_back(Launch(_simulation, side));
     // The first time, the whole fleet sets off; after that, only the replacements.
-    std::vector<EntityId> ordered = m_ordered
-                                      ? std::move(launched)
-                                      : [&]
-                                      {
-                                        std::vector<EntityId> all = fleets[index];
-                                        all.insert(all.end(), launched.begin(), launched.end());
-                                        return all;
-                                      }();
+    std::vector<EntityId> ordered = m_ordered ? std::move(launched) : [&]
+    {
+      std::vector<EntityId> all = fleets[index];
+      all.insert(all.end(), launched.begin(), launched.end());
+      return all;
+    }();
     if (!ordered.empty())
       commands.push_back({.player = side.player, .order = AttackMoveCommand{.ships = std::move(ordered), .destination = side.enemyRally}});
     // Ships that won through and stand idle go after what is left of the enemy, so the whole of both fleets keeps

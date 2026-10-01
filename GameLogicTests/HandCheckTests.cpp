@@ -41,10 +41,8 @@ Outcome Raid(MatchArena& _arena, Outpost::EntityId _structure, size_t _raiders)
   for (std::uint32_t tick = 1; tick <= LIMIT_SECONDS * MatchArena::TICKS_PER_SECOND; ++tick)
   {
     _arena.Run(1);
-    const auto alive = static_cast<size_t>(std::ranges::count_if(raid, [&_arena](Outpost::EntityId _id)
-    {
-      return _arena.World().FindEntity(_id) != nullptr;
-    }));
+    const auto alive = static_cast<size_t>(
+      std::ranges::count_if(raid, [&_arena](Outpost::EntityId _id) { return _arena.World().FindEntity(_id) != nullptr; }));
     const double seconds = static_cast<double>(tick) / MatchArena::TICKS_PER_SECOND;
     if (_arena.World().FindEntity(_structure) == nullptr)
     {
@@ -66,7 +64,8 @@ void Report(std::string_view _scenario, const Outcome& _outcome)
 {
   Logger::WriteMessage(std::format("{}: structure fell at {:.1f} s with {} raiders left; raid fell at {:.1f} s with {} hit points left\n",
                                    _scenario, _outcome.structureFellSeconds, _outcome.raidersLeft, _outcome.raidFellSeconds,
-                                   _outcome.structureHitPointsLeft).c_str());
+                                   _outcome.structureHitPointsLeft)
+                         .c_str());
 }
 } // namespace
 
@@ -101,9 +100,9 @@ public:
   {
     MatchArena arena;
     const Outpost::StructureTuning& tuning = arena.StructureData(Outpost::StructureKind::CommandStation);
-    const Outpost::EntityId station = arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 0.0f},
-                                                                   static_cast<float>(tuning.footprintRadiusMeters),
-                                                                   tuning.hitPoints * Outpost::HUNDREDTHS, 0);
+    const Outpost::EntityId station =
+      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 0.0f}, static_cast<float>(tuning.footprintRadiusMeters),
+                                   tuning.hitPoints * Outpost::HUNDREDTHS, 0);
     const Outcome outcome = Raid(arena, station, 7);
     Report("Unarmed Command Station against seven", outcome);
     Assert::IsTrue(outcome.structureFellSeconds > 0.0, L"the raid did not destroy the unarmed station");
