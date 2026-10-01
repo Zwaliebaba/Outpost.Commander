@@ -60,7 +60,7 @@ public:
     const Outpost::EntityId red = simulation.SpawnShip(RED, SWARM, SMALL_ION, {});
     const Outpost::Simulation before = simulation;
 
-    constexpr float nan = std::numeric_limits<float>::quiet_NaN();
+    const float nan = std::numeric_limits<float>::quiet_NaN();
     const std::vector<Outpost::CommandResult> results = simulation.Tick({
       Move(BLUE, {}, {}),
       Move(BLUE, {Outpost::EntityId{99}}, {}),

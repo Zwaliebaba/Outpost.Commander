@@ -102,7 +102,7 @@ public:
         steps.push_back(x - previous);
       previous = x;
     }
-    constexpr float expected = METERS_PER_TICK * TICKS_PER_SECOND * FRAME_SECONDS;
+    const float expected = METERS_PER_TICK * TICKS_PER_SECOND * FRAME_SECONDS;
     for (const float step : steps)
     {
       Assert::IsTrue(step > 0.0f);

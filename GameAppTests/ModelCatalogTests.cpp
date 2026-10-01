@@ -85,7 +85,7 @@ public:
     ExpectRejected(replaced(R"("tint": 0.5)", R"("tint": 3)"));
     // A model a player's set lacks.
     std::string json = replaced(R"("constructor": "Small")", R"("constructor": "Huge")");
-    constexpr std::string_view noPlayers = R"("players": [])";
+    const std::string_view noPlayers = R"("players": [])";
     json.replace(json.find(noPlayers), noPlayers.size(), R"("players": [ { "player": 1, "set": "Human" } ])");
     ExpectRejected(json);
   }

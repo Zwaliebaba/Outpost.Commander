@@ -140,8 +140,8 @@ Neuron::GlyphAtlas Neuron::RasterizeGlyphs(std::wstring_view _family, float _emP
     // Whole pixels, so that every glyph starts on a texel and the text stays sharp.
     bitmap.advance = std::round(static_cast<float>(glyphMetrics.advanceWidth) * pixelsPerDesignUnit);
 
-    constexpr FLOAT noAdvance = 0.0f;
-    constexpr DWRITE_GLYPH_OFFSET noOffset{};
+    const FLOAT noAdvance = 0.0f;
+    const DWRITE_GLYPH_OFFSET noOffset{};
     DWRITE_GLYPH_RUN run{};
     run.fontFace = face.get();
     run.fontEmSize = _emPixels;

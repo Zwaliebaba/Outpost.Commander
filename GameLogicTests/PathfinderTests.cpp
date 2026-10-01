@@ -50,8 +50,8 @@ public:
   {
     Outpost::Pathfinder pathfinder;
     pathfinder.SetObstacles({{.center = {}, .radiusMeters = 100.0f}}, 1000.0f);
-    constexpr Outpost::PlanePosition start{-300.0f, 0.0f};
-    constexpr Outpost::PlanePosition goal{300.0f, 0.0f};
+    const Outpost::PlanePosition start{-300.0f, 0.0f};
+    const Outpost::PlanePosition goal{300.0f, 0.0f};
     const std::vector<Outpost::PlanePosition> path = pathfinder.FindPath(start, goal, SHIP_RADIUS_METERS);
 
     Assert::IsTrue(path.size() > 1);
@@ -68,7 +68,7 @@ public:
     // A wall with one 60 m gap in it, the map's minimum, between (0, -30) and (0, 30).
     pathfinder.SetObstacles({{.center = {0.0f, -330.0f}, .radiusMeters = 300.0f}, {.center = {0.0f, 330.0f}, .radiusMeters = 300.0f}},
                             700.0f);
-    constexpr Outpost::PlanePosition start{-400.0f, 200.0f};
+    const Outpost::PlanePosition start{-400.0f, 200.0f};
     const std::vector<Outpost::PlanePosition> path = pathfinder.FindPath(start, {400.0f, -200.0f}, SHIP_RADIUS_METERS);
     ExpectClear(pathfinder, start, path);
     Assert::IsTrue(path.back() == Outpost::PlanePosition{400.0f, -200.0f});
@@ -95,7 +95,7 @@ public:
   {
     Outpost::Pathfinder pathfinder;
     pathfinder.SetObstacles({{.center = {}, .radiusMeters = 100.0f}}, 1000.0f);
-    constexpr Outpost::PlanePosition center{-300.0f, 0.0f};
+    const Outpost::PlanePosition center{-300.0f, 0.0f};
     std::vector<Outpost::PlanePosition> route = pathfinder.FindPath(center, {300.0f, 0.0f}, SHIP_RADIUS_METERS);
     route.pop_back();
 
@@ -103,7 +103,7 @@ public:
     routes.SearchFrom(center);
     for (const Outpost::PlanePosition start : {Outpost::PlanePosition{-320.0f, 20.0f}, Outpost::PlanePosition{-280.0f, -20.0f}})
     {
-      constexpr Outpost::PlanePosition slot{300.0f, 30.0f};
+      const Outpost::PlanePosition slot{300.0f, 30.0f};
       const std::vector<Outpost::PlanePosition> path = routes.PathFor(start, slot, SHIP_RADIUS_METERS);
       Assert::IsTrue(path.back() == slot);
       ExpectClear(pathfinder, start, path);
@@ -123,8 +123,8 @@ public:
     routes.SearchFrom({0.0f, 400.0f});
 
     // Both ships are on the far side of the obstacle from their slots.
-    constexpr Outpost::PlanePosition first{-400.0f, 0.0f};
-    constexpr Outpost::PlanePosition second{-410.0f, 10.0f};
+    const Outpost::PlanePosition first{-400.0f, 0.0f};
+    const Outpost::PlanePosition second{-410.0f, 10.0f};
     const std::vector<Outpost::PlanePosition> firstPath = routes.PathFor(first, {400.0f, 0.0f}, SHIP_RADIUS_METERS);
     const std::vector<Outpost::PlanePosition> secondPath = routes.PathFor(second, {400.0f, 20.0f}, SHIP_RADIUS_METERS);
     ExpectClear(pathfinder, first, firstPath);

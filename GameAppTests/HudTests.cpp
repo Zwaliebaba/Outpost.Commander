@@ -183,7 +183,7 @@ public:
   // Task 4.5: an enabled button is a place to click, anchored to the bottom-right corner; a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
-    constexpr Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
+    const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
     const Outpost::Hud::Content content{
       .ore = 0, .buttons = {{.label = "Shipyard|300", .action = build}, {.label = "Research Lab|200", .action = build, .enabled = false}}};
     const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);

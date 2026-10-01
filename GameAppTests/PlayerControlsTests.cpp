@@ -251,7 +251,7 @@ public:
   {
     Driver driver;
     driver.Click(driver.WorldView()[1]);
-    constexpr Outpost::Viewport viewport = VIEWPORT;
+    const Outpost::Viewport viewport = VIEWPORT;
     driver.ClickPixel(static_cast<std::int32_t>(viewport.widthPixels / 2), 100, VK_RBUTTON);
     std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::AreEqual(size_t{1}, commands.size());

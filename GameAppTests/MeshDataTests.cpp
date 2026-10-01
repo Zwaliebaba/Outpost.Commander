@@ -16,7 +16,7 @@ constexpr float TOLERANCE = 1e-3f;
 Neuron::MeshData Triangle()
 {
   Neuron::MeshData mesh;
-  constexpr DirectX::XMFLOAT3 up{0.0f, 1.0f, 0.0f};
+  const DirectX::XMFLOAT3 up{0.0f, 1.0f, 0.0f};
   mesh.vertices = {{{0.0f, 0.0f, -10.0f}, up}, {{1.0f, 0.0f, 0.0f}, up}, {{-1.0f, 0.0f, 0.0f}, up}};
   mesh.indices = {0, 1, 2};
   mesh.boundsMin = {-1.0f, 0.0f, -10.0f};
@@ -79,7 +79,7 @@ public:
   TEST_METHOD(RejectsAMeshCountTooLargeForTheFile)
   {
     Neuron::ByteBuffer bytes = ReadRepositoryAsset("Models\\Human\\Small.cmo");
-    constexpr std::uint32_t meshCount = 1000;
+    const std::uint32_t meshCount = 1000;
     std::memcpy(bytes.data(), &meshCount, sizeof(meshCount));
     Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::ParseCmo(bytes, "Small.cmo"); });
   }

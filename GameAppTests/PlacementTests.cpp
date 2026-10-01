@@ -51,7 +51,7 @@ public:
   TEST_METHOD(ARigSnapsToAFreeAsteroid)
   {
     std::vector<Outpost::EntityView> world = World();
-    constexpr Outpost::PlanePosition beside{ASTEROID.xMeters, 45.0f + Outpost::RIG_SNAP_METERS - 1.0f};
+    const Outpost::PlanePosition beside{ASTEROID.xMeters, 45.0f + Outpost::RIG_SNAP_METERS - 1.0f};
     const Outpost::GhostPlacement ghost = Outpost::PlaceGhost(Rig(), beside, world, MAP_SIZE_METERS);
     Assert::IsTrue(ghost.valid);
     Assert::IsTrue(ghost.position == ASTEROID);

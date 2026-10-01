@@ -63,7 +63,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   m_rootSignature = CreateRootSignature(device);
 
   // Matches Vertex.
-  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
+  const std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, texel), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(Vertex, color), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -100,7 +100,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
+  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
   winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
 
@@ -124,7 +124,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
     CD3DX12_RESOURCE_DESC::Buffer(UINT64{sizeof(Vertex)} * VERTICES_PER_QUAD * MAX_QUADS * Renderer::FRAME_COUNT);
   winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &vertexDescription,
                                                        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(m_vertices)));
-  constexpr D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
+  const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
   void* mapped = nullptr;
   winrt::check_hresult(m_vertices->Map(0, &nothingRead, &mapped));
   m_mappedVertices = static_cast<Vertex*>(mapped);
@@ -139,7 +139,7 @@ void Neuron::UiPipeline::Rasterize(float _fontPixels)
   // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
   m_atlasTexture =
     m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM, std::as_bytes(std::span(m_atlas.coverage)));
-  constexpr D3D12_SHADER_RESOURCE_VIEW_DESC view{
+  const D3D12_SHADER_RESOURCE_VIEW_DESC view{
     .Format = DXGI_FORMAT_R8_UNORM,
     .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
     .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,

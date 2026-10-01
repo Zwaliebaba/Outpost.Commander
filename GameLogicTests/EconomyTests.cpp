@@ -85,7 +85,7 @@ public:
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 400.0f});
     const Outpost::EntityId enemy = arena.World().SpawnConstructor(RED, {100.0f, 400.0f});
     // Ordered beside the asteroid's edge, the rig snaps to its center.
-    constexpr Outpost::PlanePosition beside{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 70.0f};
+    const Outpost::PlanePosition beside{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 70.0f};
     Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, beside))})[0] ==
                    Outpost::CommandResult::Applied);
     const Outpost::Entity& rig = *arena.Owned(BLUE, Outpost::EntityKind::Structure).back();
@@ -112,7 +112,7 @@ public:
   TEST_METHOD(ARigUnderConstructionEarnsNothing)
   {
     MatchArena arena;
-    constexpr Outpost::PlanePosition nearAsteroid{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 80.0f};
+    const Outpost::PlanePosition nearAsteroid{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 80.0f};
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, nearAsteroid);
     (void)arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))});
     const std::int64_t paid = arena.World().OreHundredths(BLUE);

@@ -146,7 +146,7 @@ std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint
 // The 95% confidence interval of a win rate of _wins in _battles (Wilson).
 std::pair<double, double> Wilson(std::uint32_t _wins, std::uint32_t _battles)
 {
-  constexpr double z = CONFIDENCE_Z;
+  const double z = CONFIDENCE_Z;
   const double n = _battles;
   const double p = _wins / n;
   const double denominator = 1.0 + (z * z / n);
@@ -753,7 +753,7 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
                          {.player = SECOND, .order = Outpost::AttackMoveCommand{.ships = ships[1], .destination = centers[0]}}});
   // An attack-move ends where it was sent. Once a second each side sends any ship that has stopped there out of range
   // after what is left of the enemy, so that, as in the model, a battle ends only when one side is gone.
-  constexpr auto limit = static_cast<std::uint64_t>(TIME_LIMIT_SECONDS * TICKS_PER_SECOND);
+  const auto limit = static_cast<std::uint64_t>(TIME_LIMIT_SECONDS * TICKS_PER_SECOND);
   std::array<size_t, 2> alive{};
   while (true)
   {

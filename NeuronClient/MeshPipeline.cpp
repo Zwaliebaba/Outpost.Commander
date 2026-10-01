@@ -59,7 +59,7 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   m_rootSignature = CreateRootSignature(device);
 
   // Matches MeshVertex.
-  constexpr std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{{
+  const std::array<D3D12_INPUT_ELEMENT_DESC, 2> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, position), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshVertex, normal), D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   }};
@@ -88,7 +88,7 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &bufferDescription,
                                                        D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
                                                        IID_GRAPHICS_PPV_ARGS(m_frameConstants)));
-  constexpr D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
+  const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
   void* mapped = nullptr;
   winrt::check_hresult(m_frameConstants->Map(0, &nothingRead, &mapped));
   m_mappedFrameConstants = static_cast<std::byte*>(mapped);

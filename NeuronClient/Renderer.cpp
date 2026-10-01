@@ -90,7 +90,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   m_factory = CreateFactory();
   m_device = CreateDevice(m_factory.get());
 
-  constexpr D3D12_COMMAND_QUEUE_DESC queueDescription{
+  const D3D12_COMMAND_QUEUE_DESC queueDescription{
     .Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
     .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
     .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
@@ -129,7 +129,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_swapChain->SetMaximumFrameLatency(1));
   m_frameLatencyWaitable.attach(winrt::check_pointer(m_swapChain->GetFrameLatencyWaitableObject()));
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
+  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
     .NumDescriptors = FRAME_COUNT,
     .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
@@ -138,7 +138,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_renderTargetHeap)));
   m_renderTargetDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-  constexpr D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{
+  const D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
     .NumDescriptors = 1,
     .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
@@ -156,7 +156,7 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
   // Q4 measures a frame's GPU work, not the present interval (ADR-006).
-  constexpr D3D12_QUERY_HEAP_DESC timestampHeapDescription{
+  const D3D12_QUERY_HEAP_DESC timestampHeapDescription{
     .Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
     .Count = TIMESTAMPS_PER_FRAME * FRAME_COUNT,
     .NodeMask = 0,
@@ -225,7 +225,7 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
     winrt::check_hresult(m_timestampReadback->Map(0, &readRange, &mapped));
     std::array<UINT64, TIMESTAMPS_PER_FRAME> timestamps{};
     std::memcpy(timestamps.data(), static_cast<const std::byte*>(mapped) + readRange.Begin, sizeof(timestamps));
-    constexpr D3D12_RANGE nothingWritten{.Begin = 0, .End = 0};
+    const D3D12_RANGE nothingWritten{.Begin = 0, .End = 0};
     m_timestampReadback->Unmap(0, &nothingWritten);
     m_timestampsPending[m_frameIndex] = false;
     if (timestamps[1] >= timestamps[0] && m_timestampFrequency > 0)
@@ -320,7 +320,7 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<co
   winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_GENERIC_READ,
                                                          nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
   void* mapped = nullptr;
-  constexpr D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
+  const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
   winrt::check_hresult(upload->Map(0, &nothingRead, &mapped));
   std::memcpy(mapped, _bytes.data(), _bytes.size());
   upload->Unmap(0, nullptr);
