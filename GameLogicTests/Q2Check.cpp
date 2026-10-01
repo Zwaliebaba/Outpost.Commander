@@ -493,7 +493,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     const std::vector<const Outpost::ResearchTopicTuning*> researched = WithPrerequisites(topic, _tuning.research);
     const std::vector<CheckDesign> designs = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, researched));
     const bool unlocksUnmodelled = std::visit(
-      [&designs]<typename Effect>(const Effect& _effect)
+      [&designs]<typename Effect>([[maybe_unused]] const Effect& _effect)
       {
         if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
           return false;
