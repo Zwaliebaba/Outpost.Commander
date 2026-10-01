@@ -10,7 +10,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
 
 - **Gate G9: the attack group is 12 ships.**
 - **Research order, economy first and then the heavies:** Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
-- **Counters are design §7's triangle, held as data.** The swarm (Small+Ion+Mass Driver) is answered with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line with the swarm. The picket (Small+Ion+Lance) is answered with the swarm, and each heavy (Large+Fusion with any weapon) with the picket. Anything else, and no enemy fleet yet, gets the brawler. The AI uses only designs it has unlocked.
+- **Counters are design §7's triangle, held as data.** The swarm (Small+Ion+Mass Driver) is answered with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line with the swarm. The picket (Small+Ion+Lance) is answered with the swarm, and each heavy (Large+Fusion with any weapon) with the picket. Once it has the Large hull and the Fusion drive, it answers the swarm with Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance instead, as design §7 says they beat them. Anything else, and no enemy fleet yet, gets the brawler. The AI uses only designs it has unlocked.
 - **The base:** keep 4 Constructors. Rigs on the 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home. Then rigs on the 3 contested asteroids nearest the AI, each with a platform beside it. A Shipyard for each 10 Ore/s of income: the N-th once income reaches N × 10 Ore/s.
 - **The match end:** a Victory or Defeat banner with the match's length, and the world runs on until the player goes back to the menu.
 
@@ -24,7 +24,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
 6. **Shipyards join the plan as the income grows.** Once its income reaches N × `incomePerShipyardOrePerSecond` with N − 1 Shipyards planned, the AI plans the N-th: behind the station, then behind it to either side, each round of three farther out, at the nearest clear place. A planned Shipyard waits while the income is below its share, as after a rig is lost. One Shipyard spends 8 to 14 Ore/s depending on the design, and a quarter more after Automated Shipyards, so 10 Ore/s keeps the Shipyards spending about what the rigs earn.
 7. **The AI tracks its Constructors itself.** A snapshot shows no ship's orders, and the server does not report a refused command. So the AI remembers which Constructors it sent where. If the site it ordered has not appeared 3 s later, it takes the order as refused. A site with nobody on it gets the idle Constructors.
 8. **Counters, and the AI's fleet.**
-   - Every 60 s it finds the enemy's most common warship by components, and builds that design's counter if it has unlocked it, and the default otherwise. A tie goes to the lowest hull, then drive, then weapon.
+   - Every 60 s it finds the enemy's most common warship by components, and builds the first of that design's counters it has unlocked, and the default when it has none. `Opponent.json` lists a design's counters in order of preference, the heavy before the triangle's answer. A tie goes to the lowest hull, then drive, then weapon.
    - It saves a design it does not have, and keeps 2 jobs in each Shipyard's queue.
    - Its warships gather in reserve 170 m from its Command Station, toward the map's center.
    - When the reserve reaches 12 ships, they join the attack group. The group attack-moves on the nearest enemy structure, then on the next, until it dies out.
@@ -50,8 +50,8 @@ All figures below are from the GameLogicTests harness on Linux, built with clang
 
 - **The AI beats a player who does nothing at 5:24** (tick 6,483, seed 3). It places its base plan by 1:45 and its fourth Shipyard by 2:15, has all four built by 3:15, and sends its first attack group by 3:30.
 - **Its Shipyards spend most of what it earns.** From about 2:15 its income is 48.75 Ore/s: 3 home rigs, 3 contested rigs, and Improved Extraction, so it has 4 Shipyards. Building brawlers they spend about 33 Ore/s, and it holds about 3,300 Ore when the passive player's station falls, still gaining about 12 Ore/s.
-- **The AI researches Fusion Drive and Large Hull, but never builds a heavy.** No counter answers with one, and the default is the brawler, so those two topics cost it 450 Ore and 3½ minutes of its lab for nothing (design §15).
-- **Two AIs on the mirrored map end a match in 8:24 to 20:05** over seeds 1 to 5: 8:24, 8:30, 10:08, 20:05 and 10:27. Player 1 won 2 of the 5. Four of the five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
+- **The AI builds heavies once it can.** Large Hull lands at 6:35. In 4 of the 5 matches below one side or both built Large+Fusion+Lance or Large+Fusion+Mass Driver from then on, and what each side built changed from one 5-minute window to the next.
+- **Two AIs on the mirrored map end a match in 8:24 to 20:43** over seeds 1 to 5: 8:24, 8:30, 13:35, 20:43 and 13:27. Player 1 won 2 of the 5. Four of the five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
 - **The checks behind the AI** are:
   - Scripted snapshots: its first orders, its answer to each design of the triangle, and the reserve going to its Command Station and to a site under fire.
   - The real server: its base in order, its Shipyards by income, its answer to an enemy fleet, the attack at 12 ships, and the defence of an outpost.

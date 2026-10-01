@@ -276,7 +276,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 - It keeps 4 Constructors.
 - It builds rigs on its 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home, then rigs on the 3 contested asteroids nearest it, each with a platform beside it. It builds a Shipyard for each 10 Ore/s of income: the N-th once its income reaches N × 10 Ore/s, so that its Shipyards spend about what its rigs earn.
 - It researches economy first and then the heavies: Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
-- Its counters are §7's triangle. It answers the swarm (Small+Ion+Mass Driver) with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line and the picket (Small+Ion+Lance) with the swarm. It answers each heavy (Large+Fusion) with the picket. Anything else, and no fleet yet, gets the brawler. It builds only what it has unlocked.
+- Its counters are §7's triangle. It answers the swarm (Small+Ion+Mass Driver) with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line and the picket (Small+Ion+Lance) with the swarm. It answers each heavy (Large+Fusion) with the picket. Once it has the Large hull and the Fusion drive, it answers the swarm with Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance instead (§7). Anything else, and no fleet yet, gets the brawler. It builds only what it has unlocked.
 
 ---
 
@@ -397,7 +397,6 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
 - Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
-- The AI researches Fusion Drive and Large Hull but never builds a heavy, since no counter answers with one and its default is the brawler (§10). Does a counter or the default use them, or does the order drop them?
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
@@ -472,5 +471,6 @@ Decided on 2026-10-01, milestone 6:
 - The AI's attack group is 12 ships (gate G9). Its numbers are in `OutpostCommander/Assets/Opponent.json`, apart from the match's rules (§10, ADR-020).
 - The AI researches economy first and then the heavies, counters by §7's triangle, and builds rigs with a platform beside each contested one and a Shipyard for each 10 Ore/s of income (§10). The second Shipyard at 30 Ore/s, decided first, left it unable to spend what it earned.
 - The AI defends every structure of its, not only its rigs and platforms (§10).
+- Once the AI has the Large hull and the Fusion drive, it answers the swarm and the brawler with the heavies that beat them (§7, §10).
 - Every player sees every ship's components, as it sees the ship (§10, ADR-020).
 - A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).

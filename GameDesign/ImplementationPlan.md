@@ -620,7 +620,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   - **Its settings.** `OutpostCommander/Assets/Opponent.json`, read by `LoadAiSettings`. The review interval moved there from `Tuning.json`.
   - **What it needed from the protocol.** Every warship's drive and weapon in the snapshot, and `PlaceGhost` moved into `GameProtocol` so that the AI places by the client's rule.
   - **Tests.** `AiPlayerTests` checks scripted snapshots (the first orders, every counter, the defence) and the AI on the real server (its base in order, its Shipyards by income, its answer to a fleet, the attack at 12 ships, the defence of an outpost, a whole match against a player who does nothing). `AiSettingsTests` checks the file, and every identifier in it against `Tuning.json`. `GameLogicTests` now references `Opponent`.
-  - **What the tests found.** With a second Shipyard at 30 Ore/s, the AI earned three times what its two Shipyards spent. With a Shipyard for each 10 Ore/s (owner, 2026-10-01) it has 4 by 2:15, and wins against a passive player at 5:24. It still researches Fusion Drive and Large Hull without ever building a heavy (design §15).
+  - **What the tests found.** With a second Shipyard at 30 Ore/s, the AI earned three times what its two Shipyards spent. With a Shipyard for each 10 Ore/s (owner, 2026-10-01) it has 4 by 2:15, and wins against a passive player at 5:24. It researched Fusion Drive and Large Hull without ever building a heavy until the owner had it answer the swarm and the brawler with heavies once unlocked (2026-10-01).
 
 ### 6.2 — Win, lose and the menu
 
@@ -641,7 +641,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 - **As built (the agent's part):** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
   - **The log.** `Outpost::MatchLog` adds each match against the AI to `OutpostCommander-matches.log` in the temporary folder. It records the seed, each player's research as it finishes, each warship as it first appears, and the end. `MatchLogTests` covers it.
   - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
-  - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 20 minutes, four of five under 11, and the designs they build shift with each review. Only the owner's matches answer Q1 and Q3.
+  - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 21 minutes, four of five under 15, and the designs they build shift with each review and with the heavies from 6:35. Only the owner's matches answer Q1 and Q3.
 
 ---
 
