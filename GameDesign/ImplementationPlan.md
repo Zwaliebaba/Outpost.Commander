@@ -49,15 +49,15 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
-| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
-| 4.3 | Shipyard and Command Station queues | 4.2 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
-| 4.6 | Hand checks of the structure numbers | 4.4 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
-| 5.1 | Research | 4.3 | — | todo |
-| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | todo |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo |
+| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.3 | Shipyard and Command Station queues | 4.2 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
+| 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | in review, milestone 5's PR |
+| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | in review, milestone 5's PR, awaiting the owner's run |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo, its own PR once G5 is decided |
 | 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
 | 6.2 | Win, lose and the menu | 6.1 | — | todo |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
@@ -66,7 +66,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 
 Each gate is an owner decision. Most are already listed as open in design §15.
 
-**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7).
+**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7). **Milestone 5 is split** (owner, 2026-10-01): 5.1 and 5.2 in one PR, and 5.3 in its own once G5 is decided.
 
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
@@ -485,6 +485,8 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 
 ### What milestone 4 changed for later tasks
 
+Milestone 4 merged as [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) on 2026-10-01, with 4.2 and 4.5 not yet run by the owner.
+
 - **A match starts with a base, not a fleet.** Warships come from a Shipyard the player builds. A test that needs ships spawns them, as `MatchArena` does.
 - **The simulation needs the tuning data for the base** (`Simulation::UseTuning`). Tests that build a simulation without it still move and fight, and get `NotYetSupported` for base orders.
 - **Structures block movement**, so a task that places many structures pays a graph rebuild for each radius in use (ADR-010).
@@ -497,6 +499,8 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 
 Design §14: *the designer in the Shipyard panel, components and the research tree.* Design §7, §8 and §9 are the specification.
 
+The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows once G5 sets ship sizes. Before 5.1 the owner also decided the details design §8 leaves open: a Research Lab queues up to five topics, each paid when it starts; Hull Plating keeps a damaged ship's share of its hit points; and a lab destroyed mid-topic loses the topic and its Ore. They are recorded in design §8 and [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+
 ### 5.1 — Research
 
 - **Goal:** design §8.
@@ -506,6 +510,15 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
   - Some topics unlock the Large hull, the Fusion Drive or the Missile Rack.
 - **Acceptance:** tests of prerequisites, the one-lab limit, upgrades applying to units that already exist, and unlocks.
 - **Verify:** CI.
+- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+  - `StartResearchCommand` queues a topic at the player's built lab, up to `QUEUE_LIMIT`. A prerequisite may be ahead of the topic in the queue. The front topic waits for its Ore, is paid when it starts, and finishes in its `researchSeconds`.
+  - `Outpost::UpgradesFrom` turns a player's finished topics into factors, and `IsAvailable` says which components they unlock.
+  - When a topic finishes, the player's designs take their new stats. Its warships keep their share of hit points under Hull Plating. Rigs earn the raised income, and Shipyards build faster, the job under way included.
+  - Upgraded income that is not whole hundredths a tick is paid with a remainder carried.
+  - The tuning loader now rejects an upgrade whose stat is not its target's one rate.
+  - Snapshots carry each lab's queue and every topic, with its effect in words and whether the player has it.
+  - The HUD shows the topic under way under the Ore. A selected lab lists its queue and the topics the player may still take, with a button for each.
+  - `ResearchTests` covers the queue and payment, prerequisites, the lab's checks and the one-lab limit, waiting for Ore, Hull Plating on damaged and new ships, a fire-rate upgrade in combat, unlocks, the income and Shipyard upgrades, losing a lab, and a replay.
 
 ### 5.2 — The ship designer in the Shipyard panel
 
@@ -519,6 +532,18 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
 
   "Save design" is a command. The live stats need the component numbers on the client, which cannot include `GameLogic`'s loader (ADR-008): this task decides whether the tuning types move to `GameProtocol` or the server sends the numbers.
 - **Verify:** CI for the stats math, which should match `BattleModel.py`; **owner run** for the panel.
+- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+  - **The server sends the numbers.** Snapshots carry every hull, drive and weapon as the player has them, research applied and locked or not.
+  - **One derivation.** `DesignStatsOf`, with `HitHundredths` and `DamagePerSecond`, moved to `GameProtocol/DesignStats.h`, and the server derives its designs with it too. The tuning types stay in `GameLogic`.
+  - **Saving.** `SaveDesignCommand` saves a new design of unlocked components the player has no design of, or renames one of the player's designs. A design's components never change. Names are 1–32 printable ASCII characters (`IsValidDesignName`).
+  - **The panel.** `Outpost::Designer` in `GameApp` is the designer's state. The HUD draws it at the top right while one of the player's built Shipyards is selected alone. It has the picks, the name field, and hit points, armor, speed, range, cost and build time. Damage per second after armor against each hull is shown per ship and per 100 Ore. It offers Save, or Rename and Queue.
+  - **Typing.** `Neuron::Window` now reports typed characters. While the name field takes them, no order, control group or camera key reads the keyboard.
+  - **Tests.**
+    - `SaveDesignTests` covers saving, renaming and every refusal.
+    - It checks that the snapshot's components give the server's stats before and after research.
+    - `DesignerTests` checks the designer's stats against the model's table, its picks, saving and renaming, and typing.
+    - `HudTests` covers the research panel and the designer panel.
+  - **Not run:** the owner's run checks the panel, the research HUD and typing.
 
 ### 5.3 — The Missile Rack, in the game and in the model
 
@@ -526,6 +551,12 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
 - **Goal:** splash damage with a 30 m radius, and the 280 m range, in both the simulation and `Tools/BattleModel.py`. This means the model's clumps get the spacing that ship sizes imply. Rerun the Q2 check, since it cannot be "yes" until the Missile Rack is in (design §3, §12).
 - **Acceptance:** Q2's standing is recorded in design §12, with the model and the simulation both including the Missile Rack.
 - **Verify:** CI; run the model locally.
+
+### What milestone 5 changed for later tasks
+
+- **5.3 starts from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
+- **The AI (6.1) researches and designs through the same commands**, `StartResearchCommand` and `SaveDesignCommand`. It reads the topics, its components and what is unlocked from its snapshot.
+- **The log for 6.3** can read research order and timing from the snapshots: each topic's `researched` flag, and the lab's queue.
 
 ---
 

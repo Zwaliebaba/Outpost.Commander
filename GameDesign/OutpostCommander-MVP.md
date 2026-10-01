@@ -217,6 +217,13 @@ The eight topics, what each requires, what it does, and its Ore and time are in 
 
 Upgrades apply at once to every existing ship and structure, as in Warzone 2100.
 
+**How the lab works** (owner, 2026-10-01).
+- A lab queues up to five topics, as a Shipyard queues ships. Each is paid for when it starts, and waits at the front of the queue for its Ore.
+- A topic may follow its prerequisite in the queue.
+- A lab destroyed mid-topic loses that topic and its Ore. Nothing is refunded (§5), and finished topics stay.
+- Hull Plating keeps a damaged ship's share of its hit points, so an undamaged ship gains the whole upgrade.
+- The details are in ADR-017.
+
 **Upgrades change rates, never the size of a hit.** A weapon upgrade raises its fire rate, not its damage per hit, and no upgrade extends a range. Damage per hit is where armour and the shots-to-kill breakpoints act. At the numbers in §12, +15% Mass Driver damage would be +35% against a Medium hull's armour of 8, and +15% Lance damage would kill a Small hull in two hits instead of three. A fire-rate upgrade adds the same share against every target. Range stays fixed so that the range ladder (§6) holds all match.
 
 `Tools/BattleModel.py` reads the topics from the same file for the one-sided research test (§3).
@@ -246,7 +253,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 The game draws its own UI (ADR-001): text and panels as quads from one DirectWrite glyph atlas, and input focus as a rectangle test (ADR-015, gate G7). The renderer (ADR-006) fixes the layout: 1920×1080 reference units scaled to the screen.
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
-- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component.
+- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component. A saved design is renamed, never changed: other components are a new design, so the ships already built stay what they are. A name is up to 32 characters of the HUD's font (ADR-017).
 - **Menu:** Start skirmish, Quit. Nothing else.
 
 ---
@@ -361,7 +368,7 @@ Each milestone is playable or visible on screen, and each is **run**, not just b
 2. **Ships that obey.** The in-process server ticking, selection, move commands, pathing around asteroids, and interpolated rendering. **This answers Q5, including the order-to-response delay, and the tick-time half of Q4.**
 3. **Ships that fight.** Weapons, damage and destruction, with designs as data from §12 (the designer UI waits for milestone 5). A 200-ship stress scene under a representative HUD, and the Q2 check as scripted headless battles in `GameLogicTests`. **This answers Q2 and Q4.**
 4. **A base.** Constructors built at the Command Station, structures with the Defence gun, Ore, and the Shipyard queue.
-5. **Designs and research.** The designer in the Shipyard panel, components and the research tree.
+5. **Designs and research.** The designer in the Shipyard panel, components and the research tree. The Missile Rack's splash follows once ship sizes are set (§15), split off by the owner on 2026-10-01.
 6. **An opponent.** The AI player and the win/lose condition. **This answers Q1 and Q3.**
 
 Q2 moved from milestone 6 to milestone 3 in the first review. It is the design question most likely to change §7 and §12, and it needs no UI to answer.
@@ -430,3 +437,8 @@ Decided on 2026-10-01, milestone 3:
 - The provisional starting fleet carries all four starting designs: two Small+Ion+Mass Driver, two Small+Ion+Lance, one Medium+Ion+Mass Driver and one Medium+Ion+Lance per player (ADR-014).
 - A ship standing to fire holds its range when its own side pushes it, giving way only sideways round its target (§7, ADR-010).
 - The Constructor: 300 HP, armour 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free, a provisional baseline, in the tuning data since milestone 4 (§7, §12, gate G8).
+
+Decided on 2026-10-01, milestone 5:
+
+- Milestone 5 is split: research and the designer first, and the Missile Rack's splash once ship sizes are set (§14, §15).
+- A Research Lab queues up to five topics, each paid for when it starts. Hull Plating keeps a damaged ship's share of its hit points. A lab destroyed mid-topic loses the topic and its Ore (§8, ADR-017).
