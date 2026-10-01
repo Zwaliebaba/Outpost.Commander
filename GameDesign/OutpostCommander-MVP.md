@@ -108,7 +108,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **Obstacles are circles.** Asteroids block movement as circular footprints. There is no terrain, height or line of sight in the MVP.
 - **The layout is data:** [`OutpostCommander/Assets/Map.json`](../OutpostCommander/Assets/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
 - **Camera.** Pan (edge scroll, arrow keys, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The arrow keys pan because A and S are orders (§9). The pitch is fixed and comes from the zoom level.
-- **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. How far the camera zooms in and out from there is open (§15); until it is decided, the camera's data holds provisional limits of 150 m and 1,600 m (ADR-012).
+- **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. The camera zooms in to a view 150 m wide and out to one 1,600 m wide, the limits it has used since milestone 1 (owner, 2026-10-01; ADR-012).
 - **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
 
 ---
@@ -286,16 +286,16 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 11. Art and presentation
 
-- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). They are **placeholders, to be replaced** (owner, 2026-10-01). Their sources are glTF files in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`, edited in Blender. `Tools/BakeMeshes.py` bakes each into an `.nmf` file in `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\` (ADR-018). Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour.
+- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). They are **placeholders, to be replaced** (owner, 2026-10-01), and they stay through the MVP: replacing them is post-MVP work. Their sources are glTF files in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`, edited in Blender. `Tools/BakeMeshes.py` bakes each into an `.nmf` file in `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\` (ADR-018). Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour: blue for the player and orange-red for the Tarkan (owner, 2026-10-01; ADR-011).
 - **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the original `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Since 2026-10-01 every source faces the same way, and each model's **length is recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011, ADR-018). Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
 - **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh. The owner set the hulls' sizes on 2026-10-01 (gate G5), as the radii they had moved with since milestone 2: Small 8 m, Medium 14 m, Large 24 m. A group forms up three radii apart (ADR-010), which is also what decides how many ships a Missile Rack's splash reaches (§7).
 - **Materials are missing.** The converted meshes carry no materials the game uses, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
 - **Hardpoints:** a mesh marks where things attach to it, as empties in its source (ADR-018). A shot leaves from the shooter's `gun` nearest its target, and an `exhaust` shows where an engine's exhaust leaves.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.
-- **Exhaust** (owner, 2026-10-01): every ship's exhaust glows in its drive's color, so that a design's drive reads on sight, and it grows longer and brighter as the ship goes faster. The Constructor, which has no drive, has its own color. The colors are provisional (§15, ADR-019).
+- **Exhaust** (owner, 2026-10-01): every ship's exhaust glows in its drive's color, so that a design's drive reads on sight, and it grows longer and brighter as the ship goes faster. The Constructor, which has no drive, has its own color. Ion is cyan, Fusion magenta and the Constructor a pale gray (owner, 2026-10-01; ADR-019).
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
 - **LODs:** there are none. Each set has one mesh per model.
-- **Provenance and licence are not recorded.** Nothing in `Art/` says where the placeholder meshes come from or under what terms. They are to be replaced, so this matters only if one of them ships. If one does and it is under a licence, AGENTS.md R14 needs its text to travel with it (§15).
+- **Provenance and licence are not recorded.** Nothing in `Art/` says where the placeholder meshes come from or under what terms. None of them ships with the MVP (owner, 2026-10-01), so the question comes with their replacements: each one's provenance is recorded when it lands, and if it is under a licence, AGENTS.md R14 needs its text to travel with it.
 
 ---
 
@@ -390,9 +390,6 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 ## 15. Open questions
 
-- Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011). The exhaust colours are provisional too: Ion cyan, Fusion magenta (ADR-019).
-- How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
-- What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
 - Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
 
 Decided on 2026-09-30, first review:
@@ -431,7 +428,7 @@ Decided on 2026-09-30, once implementation began:
 - The map layout in `OutpostCommander/Assets/Map.json` (§4).
 - There is no cancel, so nothing is refunded (§5); repair is a command, added with milestone 4.
 - A match replays from its seed and command log on the same build, not across machines (ADR-009).
-- Meshes reach the game in DirectX's `.cmo` format, converted by the owner (§11). Their provenance is still open.
+- Meshes reach the game in DirectX's `.cmo` format, converted by the owner (§11). Their provenance was left open.
 - The AI opponent is The Tarkan High Command, using the Tarkan mesh set, with the same rules as the player. The player's Terrakin use the Human mesh set (§1, §10, §11). The converted meshes and the data files live in `OutpostCommander/Assets/` (§11, ADR-008).
 - Each model's forward axis and length are data, and the scene is drawn flat-lit in team colors (§11, ADR-011). The camera's zoom is a view width with the pitch following it, and the cursor is held inside the window in full screen (§4, ADR-012).
 - The arrow keys pan the camera; A attack-moves and S stops (§4, §9, ADR-013).
@@ -473,3 +470,9 @@ Decided on 2026-10-01, the open questions:
 - Q2's (b) is judged over each stage's budgets, not at every budget (§3). With the retune, Q2 passes all four criteria in the simulation (§12).
 - The structure and Constructor footprints and every turn rate are final as they are (§12).
 - The Defence gun's and structure armour's margins wait for the owner's playtests (§12).
+
+Decided on 2026-10-01, closing the open questions:
+
+- The team colours are final as they were: blue for the player and orange-red for the Tarkan (§11, ADR-011). So are the exhaust colours: Ion cyan, Fusion magenta, and a pale gray for the Constructor (§11, ADR-019).
+- The camera zooms from a view 150 m wide to one 1,600 m wide, the limits it has used since milestone 1 (§4, ADR-012, gate G3).
+- The placeholder meshes stay through the MVP, and replacing them is post-MVP work. None ships with the MVP, so their provenance does not arise; a replacement's is recorded when it lands (§11, gate G2).

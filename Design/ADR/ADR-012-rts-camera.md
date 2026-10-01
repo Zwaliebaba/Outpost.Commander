@@ -4,13 +4,13 @@ Status: **accepted** · 2026-09-30
 
 ## Context
 
-Design §4 gives the camera. It pans by edge scroll, the arrow keys and middle-drag, zooms with the wheel within limits, and turns around the focus with Q and E. The arrow keys replaced WASD on 2026-09-30, because §9 gives A and S to attack-move and stop (ADR-013). The pitch is fixed by the zoom, and the default view is about 500 m wide. Gate G3, the zoom limits, is still open, so task 1.5 holds provisional limits as data. ADR-006 left task 1.5 to decide two things. The first is whether the cursor is held inside the window while the game is active. The second is what edge scroll does in a window. The camera is client state (ADR-002).
+Design §4 gives the camera. It pans by edge scroll, the arrow keys and middle-drag, zooms with the wheel within limits, and turns around the focus with Q and E. The arrow keys replaced WASD on 2026-09-30, because §9 gives A and S to attack-move and stop (ADR-013). The pitch is fixed by the zoom, and the default view is about 500 m wide. Gate G3, the zoom limits, was decided on 2026-10-01: the limits task 1.5 first held as data are final. ADR-006 left task 1.5 to decide two things. The first is whether the cursor is held inside the window while the game is active. The second is what edge scroll does in a window. The camera is client state (ADR-002).
 
 ## Decision
 
 1. **The zoom is a view width: how much ground lies across the middle of the screen at the focus point.** The camera's distance follows from it and the horizontal field of view, `distance = width / (2 tan(hfov / 2))`. So the default 500 m is 500 m on any screen shape, and the test measures exactly that, by casting rays through the screen's left and right edges to the ground.
 2. **The pitch follows the view width in a straight line**, from `pitchAtMinimumDegrees` fully zoomed in to `pitchAtMaximumDegrees` fully zoomed out. Zooming out looks down more steeply.
-3. **The numbers are data, in `OutpostCommander/Assets/Camera.json`.** They are provisional until G3:
+3. **The numbers are data, in `OutpostCommander/Assets/Camera.json`.** The view width's limits are gate G3's, final since 2026-10-01:
 
    | Setting | Value |
    |---|---|
@@ -33,7 +33,7 @@ Design §4 gives the camera. It pans by edge scroll, the arrow keys and middle-d
 
 - **Alt+Tab releases the cursor.** Coming back holds it again on the next frame.
 - **The camera has no inertia or smoothing.** It moves exactly with input. If play shows that it needs smoothing, it is added here.
-- **G3 changes numbers only.** The final zoom limits are an edit to `Camera.json`.
+- **A camera number changes in `Camera.json` alone.** G3 set the zoom limits without a change to the code.
 
 ## What this forecloses
 
