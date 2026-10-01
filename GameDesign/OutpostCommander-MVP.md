@@ -144,7 +144,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 Every combat ship is a **design**: **hull + drive + weapon**. The player names a design, saves it, and queues it at a Shipyard. Design stats are derived from the components and shown live in the designer.
 
-The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are not set yet (§15).
+The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are a provisional baseline the owner set on 2026-10-01 (§15), which milestone 4 puts in the tuning data.
 
 ### Components (MVP set)
 
@@ -326,7 +326,6 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 - ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches. Movement uses provisional radii from the data file until then (ADR-010);
 - turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too;
-- the Constructor's HP, speed, cost and build time, and the build and repair rates;
 - the AI's attack-group threshold.
 
 ---
@@ -362,7 +361,6 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
 - The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
-- The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
 - Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
@@ -415,3 +413,4 @@ Decided on 2026-10-01, milestone 3:
 - A group's order paths once for the group, not once per ship, after task 2.7's order ticks of up to 8.3 ms (§3, ADR-010).
 - The provisional starting fleet carries all four starting designs: two Small+Ion+Mass Driver, two Small+Ion+Lance, one Medium+Ion+Mass Driver and one Medium+Ion+Lance per player (ADR-014).
 - A ship standing to fire holds its range when its own side pushes it, giving way only sideways round its target (§7, ADR-010).
+- The Constructor: 300 HP, armour 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free, a provisional baseline that milestone 4 puts in the tuning data (§7, §12, gate G8).
