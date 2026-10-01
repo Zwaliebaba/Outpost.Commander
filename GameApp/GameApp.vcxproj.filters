@@ -53,6 +53,9 @@
     <ClInclude Include="CombatEffects.h">
       <Filter>Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Designer.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -85,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="CombatEffects.cpp">
       <Filter>Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Designer.cpp">
+      <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Hud.cpp">
       <Filter>Interface</Filter>

@@ -277,15 +277,18 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_entities = m_view.Entities();
   m_effectDraws = m_effects.At(m_view.ViewTick());
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
-  m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
+  Neuron::InputState input = _input;
+  if (!m_view.IsEmpty())
+    m_designer.Update(m_view.Newest());
+  HandleTyping(input);
+  m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
   m_cursorGround =
-    m_camera.GroundPointAtPixel(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels), m_viewport);
-  HandleHudInput(_input);
+    m_camera.GroundPointAtPixel(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels), m_viewport);
+  HandleHudInput(input);
 
   // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
   // that a drag begun in the world ends wherever it is let go.
-  Neuron::InputState input = _input;
   std::erase_if(input.events,
                 [this](const Neuron::InputEvent& _event)
                 {
@@ -296,10 +299,67 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
-    m_hudLayout = Hud::Lay(Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing()), _viewportWidthPixels,
-                           _viewportHeightPixels, view);
+    const Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    // The name takes no more typing once the designer is not shown: its Shipyard was deselected or destroyed.
+    if (!content.designer.has_value())
+      m_designer.EndEditing();
+    m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view);
   }
   WatchForResponse();
+}
+
+void Outpost::GameClient::HandleTyping(Neuron::InputState& _input)
+{
+  if (!m_designer.IsEditing() || m_view.IsEmpty())
+    return;
+  for (const Neuron::InputEvent& event : _input.events)
+  {
+    if (std::optional<SaveDesignCommand> save = m_designer.Edit(event, m_view.Newest()))
+      m_controls.SaveDesign(std::move(*save));
+  }
+  std::erase_if(_input.events, [](const Neuron::InputEvent& _event)
+                { return _event.kind == Neuron::InputEventKind::KeyDown || _event.kind == Neuron::InputEventKind::Character; });
+  // The mouse buttons stay held; every key reads as up.
+  std::bitset<256> buttons;
+  for (const std::uint8_t button : std::array<std::uint8_t, 3>{VK_LBUTTON, VK_RBUTTON, VK_MBUTTON})
+    buttons.set(button, _input.keysDown.test(button));
+  _input.keysDown = buttons;
+}
+
+void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
+{
+  const Snapshot& newest = m_view.Newest();
+  switch (_action.kind)
+  {
+  case Hud::ActionKind::Build:
+    m_controls.ArmPlacement(_action.structure, m_entities);
+    break;
+  case Hud::ActionKind::Queue:
+    m_controls.Queue(_action.producer, _action.design);
+    break;
+  case Hud::ActionKind::Research:
+    m_controls.Research(_action.producer, _action.topic);
+    break;
+  case Hud::ActionKind::PickHull:
+    m_designer.PickHull(_action.hull);
+    break;
+  case Hud::ActionKind::PickDrive:
+    m_designer.PickDrive(_action.drive);
+    break;
+  case Hud::ActionKind::PickWeapon:
+    m_designer.PickWeapon(_action.weapon);
+    break;
+  case Hud::ActionKind::EditName:
+    m_designer.BeginEditing(newest);
+    break;
+  case Hud::ActionKind::SaveDesign:
+    if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(newest))
+    {
+      m_controls.SaveDesign(std::move(*save));
+      m_designer.ForgetTypedName();
+    }
+    break;
+  }
 }
 
 void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
@@ -319,12 +379,14 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
       continue;
     if (event.key == VK_LBUTTON)
     {
-      if (const std::optional<Hud::Action> action = m_hudLayout.ActionAt(x, y))
+      const std::optional<Hud::Action> action = m_hudLayout.ActionAt(x, y);
+      // A press anywhere but the name field stops typing; what was typed stays.
+      if (!action.has_value() || action->kind != Hud::ActionKind::EditName)
+        m_designer.EndEditing();
+      if (action.has_value())
       {
-        if (action->kind == Hud::ActionKind::Build)
-          m_controls.ArmPlacement(action->structure, m_entities);
-        else
-          m_controls.Queue(action->producer, action->design);
+        if (!m_view.IsEmpty())
+          HandleHudAction(*action);
       }
       else if (const std::optional<PlanePosition> point = m_hudLayout.MapPointAt(x, y))
       {

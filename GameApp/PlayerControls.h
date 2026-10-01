@@ -37,6 +37,10 @@ public:
   }
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
   void Queue(EntityId _producer, DesignId _design);
+  // From the HUD: a topic for the Research Lab's queue (task 5.1).
+  void Research(EntityId _lab, ResearchTopicId _topic);
+  // From the designer: a new design, or a new name for a saved one (task 5.2).
+  void SaveDesign(SaveDesignCommand _save);
   // From the minimap: the selected ships move to a point.
   void MoveTo(PlanePosition _destination, std::span<const EntityView> _entities);
 

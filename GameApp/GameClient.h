@@ -46,6 +46,11 @@ private:
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
   void HandleHudInput(const Neuron::InputState& _input);
+  // What a HUD button does: arms a placement, queues a job or a topic, or works the designer.
+  void HandleHudAction(const Hud::Action& _action);
+  // While the designer's name takes typing, the keyboard is the designer's: _input loses its keys, so no order, control
+  // group or camera key reads them.
+  void HandleTyping(Neuron::InputState& _input);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
@@ -67,6 +72,7 @@ private:
   Hud::Layout m_hudLayout;
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
+  Designer m_designer;
   CombatEffects m_effects;
   // What the effects draw this frame, at the view's tick.
   std::vector<CombatEffects::Draw> m_effectDraws;
