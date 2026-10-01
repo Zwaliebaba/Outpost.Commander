@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bakes the meshes' glTF sources into the NMF files the game loads (ADR-017).
+"""Bakes the meshes' glTF sources into the NMF files the game loads (ADR-018).
 
 Each model's source is a binary glTF, Art/Models/<Set>/<Model>.glb, edited with Blender's own glTF import and export.
 This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions and normals, and
@@ -344,7 +344,7 @@ def read_nmf_hardpoints(data):
   return hardpoints
 
 
-# ── Writing a .glb: for the self-test's sources, and for the one-off migration from .cmo (ADR-017) ─────────────────
+# ── Writing a .glb: for the self-test's sources, and for the one-off migration from .cmo (ADR-018) ─────────────────
 
 
 def write_glb(meshes, hardpoints=(), extra=None):

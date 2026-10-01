@@ -50,14 +50,17 @@ public:
   {
     return m_simulation;
   }
+
   [[nodiscard]] const Tuning& TuningData() const noexcept
   {
     return m_tuning;
   }
+
   [[nodiscard]] const Map& MapData() const noexcept
   {
     return m_map;
   }
+
   [[nodiscard]] const std::vector<LoggedCommand>& CommandLog() const noexcept
   {
     return m_commandLog;

@@ -55,11 +55,14 @@ Outpost::ModelSet ReadSet(JsonObjectReader& _reader)
   {
     const auto first = std::ranges::find(set.models, set.models[i].name, &Outpost::ModelEntry::name);
     if (first != set.models.begin() + static_cast<std::ptrdiff_t>(i))
+    {
       Neuron::JsonFail(Neuron::JsonElementPath(_reader.PathOf("models"), i),
                        std::format("the model \"{}\" is listed twice", set.models[i].name));
+    }
   }
   return set;
 }
+
 Outpost::PlayerModels ReadPlayer(JsonObjectReader& _reader)
 {
   return {.player = _reader.Identifier<Outpost::PlayerId>("player"), .set = _reader.String("set")};

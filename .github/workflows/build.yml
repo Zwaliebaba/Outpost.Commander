@@ -278,7 +278,7 @@ jobs:
     timeout-minutes: 10
 
     # The game's meshes are baked from their glTF sources by Tools/BakeMeshes.py, and the baked .nmf files are
-    # committed (ADR-017). This proves every one of them is byte for byte what its source bakes to, so a source edited
+    # committed (ADR-018). This proves every one of them is byte for byte what its source bakes to, so a source edited
     # without a bake, or a bake edited by hand, fails here. The baker uses the standard library only, and CPython's
     # floats are the same on every machine, so the runner's Python bakes what the owner's did. The self-test bakes small
     # sources the script builds and shows every refusal still fires.

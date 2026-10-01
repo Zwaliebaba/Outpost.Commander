@@ -21,6 +21,7 @@
 #include "Placement.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"
+#include "Designer.h"
 #include "Hud.h"
 #include "LoadDriver.h"
 #include "GameClient.h"

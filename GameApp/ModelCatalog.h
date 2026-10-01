@@ -3,7 +3,7 @@
 namespace Outpost
 {
 // One model of a set, as OutpostCommander/Assets/Models.json describes it (ADR-011): how long it is in the game along
-// its front, which its mesh faces (ADR-017).
+// its front, which its mesh faces (ADR-018).
 struct ModelEntry
 {
   std::string name;
@@ -45,7 +45,7 @@ struct StructureModel
   float tint = 1.0f;
 };
 
-// The color a drive's exhaust glows in (ADR-018), so that a ship's drive reads on sight. Linear, and provisional, like
+// The color a drive's exhaust glows in (ADR-019), so that a ship's drive reads on sight. Linear, and provisional, like
 // the team colors (design §15).
 struct DriveExhaust
 {
@@ -85,11 +85,11 @@ struct ModelCatalog
 // every hull's, structure's and the Constructor's model is in every player's set.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
-// Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-017).
+// Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-018).
 [[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model);
 
 // A model's mesh at its size in the game: read from the bytes of its .nmf file, centered and scaled to its length, its
-// hardpoints with it (ADR-017). Throws Neuron::Exception naming _fileName when the file cannot be read or has a
+// hardpoints with it (ADR-018). Throws Neuron::Exception naming _fileName when the file cannot be read or has a
 // hardpoint whose tag the game does not know.
 [[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model,
                                               std::string_view _fileName);

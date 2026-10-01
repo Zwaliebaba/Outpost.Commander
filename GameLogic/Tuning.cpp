@@ -26,8 +26,10 @@ template <typename Element> void CheckUniqueIds(const std::vector<Element>& _lis
     for (size_t j = 0; j < i; ++j)
     {
       if (_list[i].id == _list[j].id)
+      {
         Neuron::JsonFail(std::format("{}.id", Neuron::JsonElementPath(_path, i)),
                          std::format("{} is already used by {}", _list[i].id.value, Neuron::JsonElementPath(_path, j)));
+      }
     }
   }
 }
@@ -142,8 +144,10 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   const JsonValue* cost = _reader.Optional("cost");
   const JsonValue* build = _reader.Optional("buildConstructorSeconds");
   if ((cost == nullptr) != (build == nullptr))
+  {
     Neuron::JsonFail(_reader.PathOf(cost == nullptr ? "buildConstructorSeconds" : "cost"),
                      "needs \"cost\" and \"buildConstructorSeconds\" together");
+  }
   if (cost != nullptr)
   {
     structure.cost = Neuron::ReadJsonInteger(*cost, _reader.PathOf("cost"), 0);
@@ -188,6 +192,14 @@ Outpost::ResearchEffect ReadEffect(ObjectReader& _reader)
     if (upgrade.target == Outpost::UpgradeTarget::Weapon)
       upgrade.weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
     upgrade.stat = ReadName(_reader, "stat", UPGRADE_STATS);
+    // Each target has the one rate the game raises (design §8): upgrades change rates, never the size of a hit.
+    const bool pairs = (upgrade.target == Outpost::UpgradeTarget::MiningRig && upgrade.stat == Outpost::UpgradeStat::Income) ||
+                       (upgrade.target == Outpost::UpgradeTarget::AllHulls && upgrade.stat == Outpost::UpgradeStat::HitPoints) ||
+                       (upgrade.target == Outpost::UpgradeTarget::Weapon && upgrade.stat == Outpost::UpgradeStat::FireRate) ||
+                       (upgrade.target == Outpost::UpgradeTarget::Shipyards && upgrade.stat == Outpost::UpgradeStat::BuildSpeed);
+    if (!pairs)
+      Neuron::JsonFail(_reader.PathOf("stat"), "is not the rate this upgrade's target has: a Mining Rig's income, all hulls' "
+                                               "hitPoints, a weapon's fireRate or the shipyards' buildSpeed");
     upgrade.percent = _reader.Integer("percent", 1);
     return upgrade;
   }
@@ -283,6 +295,7 @@ void CheckResearchIsAcyclic(const std::vector<Outpost::ResearchTopicTuning>& _re
       Neuron::JsonFail(std::format("{}.requires", Neuron::JsonElementPath("research", i)), "the topic requires itself through a cycle");
   }
 }
+
 Outpost::Tuning ReadTuning(std::string_view _json)
 {
   const JsonValue document = Neuron::ParseJson(_json);

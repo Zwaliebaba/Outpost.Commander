@@ -11,6 +11,7 @@ public:
   {
     sm_homeDir = _path + L"\\Assets\\";
   }
+
   [[nodiscard]] static std::wstring GetHomeDirectory()
   {
     return sm_homeDir;

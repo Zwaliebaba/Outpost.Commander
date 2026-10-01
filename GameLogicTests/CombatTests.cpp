@@ -17,6 +17,7 @@ constexpr Outpost::DriveId ION{1};
 constexpr Outpost::DriveId FUSION{2};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
+constexpr Outpost::WeaponId MISSILE_RACK{3};
 
 // A simulation on open ground, with the repository's tuning data to make designs from.
 class Arena
@@ -102,9 +103,7 @@ public:
           Assert::AreEqual(Outpost::HitHundredths(damage, 800), previousHitPoints - hitPoints);
         }
         else
-        {
           Assert::AreEqual(previousHitPoints, hitPoints);
-        }
         previousHitPoints = hitPoints;
       }
       Assert::IsTrue(shotTicks.size() >= 3);
@@ -204,6 +203,43 @@ public:
     const auto firing =
       std::ranges::count_if(group, [&arena](Outpost::EntityId _id) { return arena.World().FindEntity(_id)->target.IsValid(); });
     Assert::IsTrue(firing >= 12, (std::to_wstring(firing) + L" of 16 in range").c_str());
+  }
+
+  // Task 5.3, ADR-014: a Missile Rack hit also hits every other enemy ship and structure whose center is within its 30 m
+  // splash of the target's, each after its own armor, and never the shooter's own side.
+  TEST_METHOD(SplashHitsEveryEnemyNearTheTarget)
+  {
+    Arena arena;
+    // The enemy ships are unarmed Constructors, so that the missile is the only thing that does damage.
+    arena.World().UseTuning(arena.TuningData());
+    const Outpost::EntityId launcher = arena.Ship(BLUE, SMALL, ION, MISSILE_RACK, {0.0f, 0.0f});
+    const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {250.0f, 0.0f});
+    const Outpost::EntityId beside = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
+    const Outpost::EntityId beyond = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
+    // Small footprints, so that nothing is pushed apart before the first missile lands.
+    const Outpost::EntityId armored =
+      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
+    const Outpost::EntityId friendly =
+      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {250.0f, -22.0f}, 5.0f, 1'000'000);
+
+    std::vector<Outpost::ShotView> shots;
+    for (int tick = 0; tick < 3 * static_cast<int>(TICKS_PER_SECOND) && shots.empty(); ++tick)
+      shots = arena.Tick();
+    Assert::AreEqual(size_t{1}, shots.size());
+    Assert::IsTrue(shots[0].shooter == launcher && shots[0].target == target);
+    Assert::AreEqual(30.0f, shots[0].splashRadiusMeters);
+
+    const auto lost = [&arena](Outpost::EntityId _id)
+    {
+      const Outpost::Entity& entity = *arena.World().FindEntity(_id);
+      return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
+    };
+    // 40 against a Constructor's armor of 2, and against the structure's 10.
+    Assert::AreEqual(3800, lost(target));
+    Assert::AreEqual(3800, lost(beside), L"22 m from the target");
+    Assert::AreEqual(0, lost(beyond), L"40 m from the target");
+    Assert::AreEqual(3000, lost(armored), L"a structure 25 m away, after its armor");
+    Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
 
   // Task 3.3: weapons are turrets, so a ship fires while it moves.

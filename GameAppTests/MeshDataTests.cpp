@@ -15,7 +15,7 @@ constexpr float TOLERANCE = 1e-3f;
 constexpr size_t VERTEX_COUNT_OFFSET = 8;
 constexpr size_t VERSION_OFFSET = 4;
 
-// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-017).
+// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018).
 class NmfWriter
 {
 public:
@@ -104,7 +104,7 @@ public:
     Assert::AreEqual(size_t{29}, models);
   }
 
-  // The baker turns the source's right-handed triangles into the game's left-handed ones (ADR-017): seen from its front,
+  // The baker turns the source's right-handed triangles into the game's left-handed ones (ADR-018): seen from its front,
   // where its normals point, a triangle winds clockwise, so the pipeline does not cull it. A triangle or two that a
   // modeler wound against its own normals is allowed; a model turned inside out is not.
   TEST_METHOD(EveryShippedModelWindsClockwiseFromItsFront)

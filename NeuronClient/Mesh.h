@@ -16,18 +16,22 @@ public:
   {
     return m_vertexBufferView;
   }
+
   [[nodiscard]] const D3D12_INDEX_BUFFER_VIEW& IndexBufferView() const noexcept
   {
     return m_indexBufferView;
   }
+
   [[nodiscard]] UINT IndexCount() const noexcept
   {
     return m_indexCount;
   }
+
   [[nodiscard]] const DirectX::XMFLOAT3& BoundsMin() const noexcept
   {
     return m_boundsMin;
   }
+
   [[nodiscard]] const DirectX::XMFLOAT3& BoundsMax() const noexcept
   {
     return m_boundsMax;

@@ -38,7 +38,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
-| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 decided | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.6 | Selection, orders and control groups | 2.5 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | done, [0d90731](https://github.com/Zwaliebaba/Outpost.Commander/commit/0d90731), run by the owner |
@@ -49,17 +49,17 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
-| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
-| 4.3 | Shipyard and Command Station queues | 4.2 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
-| 4.6 | Hand checks of the structure numbers | 4.4 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
+| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.3 | Shipyard and Command Station queues | 4.2 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
+| 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
+| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | in review; the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
 | A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
 | A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
-| 5.1 | Research | 4.3 | — | todo |
-| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | todo |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo |
 | 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
 | 6.2 | Win, lose and the menu | 6.1 | — | todo |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
@@ -68,15 +68,15 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 
 Each gate is an owner decision. Most are already listed as open in design §15.
 
-**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7).
+**PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7). **Milestone 5 is split** (owner, 2026-10-01): 5.1 and 5.2 in one PR, and 5.3 in its own once G5 is decided.
 
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. **Revised on 2026-10-01:** the meshes are glTF sources baked into the game's own `.nmf` format, which carries hardpoints, and the current meshes are placeholders to be replaced, so their provenance matters only for one that ships. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md), [ADR-017](../Design/ADR/ADR-017-nmf-and-hardpoints.md); design §11, §15 | 1.3 (provenance before shipping) |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. **Revised on 2026-10-01:** the meshes are glTF sources baked into the game's own `.nmf` format, which carries hardpoints, and the current meshes are placeholders to be replaced, so their provenance matters only for one that ships. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md), [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md); design §11, §15 | 1.3 (provenance before shipping) |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data: 150 m to 1,600 m. | `OutpostCommander/Assets/Camera.json`; design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
-| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
+| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. **Decided on 2026-10-01: the hulls' radii they had moved with are final, Small 8 m, Medium 14 m, Large 24 m. The Constructor's and the structures' footprints stay provisional (design §15).** | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). **Decided on 2026-10-01, as a provisional baseline:** The Constructor: 300 HP, armor 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free. 4.2 puts them in the tuning data. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
@@ -487,6 +487,8 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 
 ### What milestone 4 changed for later tasks
 
+Milestone 4 merged as [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) on 2026-10-01, with 4.2 and 4.5 not yet run by the owner.
+
 - **A match starts with a base, not a fleet.** Warships come from a Shipyard the player builds. A test that needs ships spawns them, as `MatchArena` does.
 - **The simulation needs the tuning data for the base** (`Simulation::UseTuning`). Tests that build a simulation without it still move and fight, and get `NotYetSupported` for base orders.
 - **Structures block movement**, so a task that places many structures pays a graph rebuild for each radius in use (ADR-010).
@@ -495,37 +497,11 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 
 ---
 
-## Inserted by the owner — Meshes with hardpoints, and exhaust
-
-The owner added this work on 2026-10-01, after milestone 4, and it lands as one PR. The meshes needed places where things attach, and the owner wanted to edit them in Blender (design §11). Exhaust colored by drive came into the MVP the same day.
-
-### A.1 — Meshes as NMF from glTF sources, with hardpoints
-
-- **ADR:** [ADR-017](../Design/ADR/ADR-017-nmf-and-hardpoints.md), and ADR-011 edited in place.
-- **Goal:** meshes and their hardpoints edited in Blender and baked into a format the game reads strictly, drawn as Blender shows them.
-- **As built:**
-  - **The baker.** `Tools/BakeMeshes.py` bakes `Art/Models/<Set>/<Model>.glb` into `OutpostCommander/Assets/Models/<Set>/<Model>.nmf`, and a new Linux CI job runs its `--check` and `--self-test`.
-  - **The reader.** `Neuron::ParseNmf` and `Neuron::FitMesh` replace `ParseCmo` and `OrientMesh`. `Models.json` loses `forwardAxis`.
-  - **The migration.** The 29 sources were written from the `.cmo` files, turned to face one way, with placeholder `gun` and `exhaust` hardpoints. The `.obj`, `.cmo` and `meshconvert.exe` are gone. The baked meshes match the old ones exactly, mirrored on purpose: the game no longer drew each model's mirror image.
-  - **The tags.** `Outpost::HardpointKindOf` knows `gun` and `exhaust`, and a model with any other tag fails to load.
-- **Verify:** CI; **owner run**, because every model is now drawn as Blender shows it. The Tarkan Station and Medium change visibly.
-
-### A.2 — Exhaust in its drive's color, and shots from the guns
-
-- **ADR:** [ADR-018](../Design/ADR/ADR-018-glows-and-exhaust.md).
-- **Goal:** every ship's exhaust in its drive's color, growing with speed, and every shot leaving from a gun (design §11).
-- **As built:**
-  - **The glow pass.** `Neuron::GlowPipeline` draws additive glows, facing the camera, as one instanced draw.
-  - **The exhaust.** `Outpost::AddExhaustGlows` makes a core and a plume at each exhaust. `Models.json` gives each drive's exhaust color and the Constructor's.
-  - **The drive in the snapshot.** `EntityView` carries a warship's drive.
-  - **Shots from the guns.** `CombatEffects` takes the muzzle from the shooter's nearest gun where the view draws it, through `GameClient`.
-- **Verify:** CI; **owner run**, to see whether drive and speed read from the RTS camera, and in the Q4 measurement (3.7), which now includes the glows.
-
----
-
 ## Milestone 5 — Designs and research
 
 Design §14: *the designer in the Shipyard panel, components and the research tree.* Design §7, §8 and §9 are the specification.
+
+The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows once G5 sets ship sizes. Before 5.1 the owner also decided the details design §8 leaves open: a Research Lab queues up to five topics, each paid when it starts; Hull Plating keeps a damaged ship's share of its hit points; and a lab destroyed mid-topic loses the topic and its Ore. They are recorded in design §8 and [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
 
 ### 5.1 — Research
 
@@ -536,6 +512,15 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
   - Some topics unlock the Large hull, the Fusion Drive or the Missile Rack.
 - **Acceptance:** tests of prerequisites, the one-lab limit, upgrades applying to units that already exist, and unlocks.
 - **Verify:** CI.
+- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+  - `StartResearchCommand` queues a topic at the player's built lab, up to `QUEUE_LIMIT`. A prerequisite may be ahead of the topic in the queue. The front topic waits for its Ore, is paid when it starts, and finishes in its `researchSeconds`.
+  - `Outpost::UpgradesFrom` turns a player's finished topics into factors, and `IsAvailable` says which components they unlock.
+  - When a topic finishes, the player's designs take their new stats. Its warships keep their share of hit points under Hull Plating. Rigs earn the raised income, and Shipyards build faster, the job under way included.
+  - Upgraded income that is not whole hundredths a tick is paid with a remainder carried.
+  - The tuning loader now rejects an upgrade whose stat is not its target's one rate.
+  - Snapshots carry each lab's queue and every topic, with its effect in words and whether the player has it.
+  - The HUD shows the topic under way under the Ore. A selected lab lists its queue and the topics the player may still take, with a button for each.
+  - `ResearchTests` covers the queue and payment, prerequisites, the lab's checks and the one-lab limit, waiting for Ore, Hull Plating on damaged and new ships, a fire-rate upgrade in combat, unlocks, the income and Shipyard upgrades, losing a lab, and a replay.
 
 ### 5.2 — The ship designer in the Shipyard panel
 
@@ -549,6 +534,18 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
 
   "Save design" is a command. The live stats need the component numbers on the client, which cannot include `GameLogic`'s loader (ADR-008): this task decides whether the tuning types move to `GameProtocol` or the server sends the numbers.
 - **Verify:** CI for the stats math, which should match `BattleModel.py`; **owner run** for the panel.
+- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+  - **The server sends the numbers.** Snapshots carry every hull, drive and weapon as the player has them, research applied and locked or not.
+  - **One derivation.** `DesignStatsOf`, with `HitHundredths` and `DamagePerSecond`, moved to `GameProtocol/DesignStats.h`, and the server derives its designs with it too. The tuning types stay in `GameLogic`.
+  - **Saving.** `SaveDesignCommand` saves a new design of unlocked components the player has no design of, or renames one of the player's designs. A design's components never change. Names are 1–32 printable ASCII characters (`IsValidDesignName`).
+  - **The panel.** `Outpost::Designer` in `GameApp` is the designer's state. The HUD draws it at the top right while one of the player's built Shipyards is selected alone. It has the picks, the name field, and hit points, armor, speed, range, cost and build time. Damage per second after armor against each hull is shown per ship and per 100 Ore. It offers Save, or Rename and Queue.
+  - **Typing.** `Neuron::Window` now reports typed characters. While the name field takes them, no order, control group or camera key reads the keyboard.
+  - **Tests.**
+    - `SaveDesignTests` covers saving, renaming and every refusal.
+    - It checks that the snapshot's components give the server's stats before and after research.
+    - `DesignerTests` checks the designer's stats against the model's table, its picks, saving and renaming, and typing.
+    - `HudTests` covers the research panel and the designer panel.
+  - **Not run:** the owner's run checks the panel, the research HUD and typing.
 
 ### 5.3 — The Missile Rack, in the game and in the model
 
@@ -556,6 +553,48 @@ Design §14: *the designer in the Shipyard panel, components and the research tr
 - **Goal:** splash damage with a 30 m radius, and the 280 m range, in both the simulation and `Tools/BattleModel.py`. This means the model's clumps get the spacing that ship sizes imply. Rerun the Q2 check, since it cannot be "yes" until the Missile Rack is in (design §3, §12).
 - **Acceptance:** Q2's standing is recorded in design §12, with the model and the simulation both including the Missile Rack.
 - **Verify:** CI; run the model locally.
+- **As built:** gate G5 decided by the owner on 2026-10-01, and [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md) decision 12.
+  - **The splash rule** (owner, 2026-10-01). A missile also hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armor. There is no falloff and no friendly fire.
+  - **The game.** `DesignStats`, `WeaponView` and `ShotView` carry the splash radius. The designer shows it. The client throws a ring out to the radius where a missile lands.
+  - **The model.** Each clump stands in a grid three footprint radii apart, the game's formation spacing, a second copy of a constant in `Simulation.cpp`.
+  - **The checks.** Both now field all eighteen designs, and the robustness sweep moves the splash radius too. The footprints are not moved: they are sizes.
+  - **The result.** The model fails only (b): the Missile Rack is never worth building under spread fire. The simulation fails all four. The Missile Rack, taken by one side with Mass Driver Calibration, leaves the other side's starting designs without a single win at 3,000–4,500 Ore. Design §12 and §15 record it for the owner, untuned.
+  - **Tests.** `CombatTests.SplashHitsEveryEnemyNearTheTarget` covers distance, structures, armor and friendly fire. `DesignTests` checks the model's Missile Rack rows, and `CombatEffectsTests` the ring.
+  - **Not run:** the owner's run checks that the ring reads.
+
+### What milestone 5 changed for later tasks
+
+- **5.3 started from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
+- **The AI (6.1) researches and designs through the same commands**, `StartResearchCommand` and `SaveDesignCommand`. It reads the topics, its components and what is unlocked from its snapshot.
+- **The log for 6.3** can read research order and timing from the snapshots: each topic's `researched` flag, and the lab's queue.
+
+---
+
+## Inserted by the owner — Meshes with hardpoints, and exhaust
+
+The owner added this work on 2026-10-01, alongside milestone 5, and it lands as one PR. The meshes needed places where things attach, and the owner wanted to edit them in Blender (design §11). Exhaust colored by drive came into the MVP the same day.
+
+### A.1 — Meshes as NMF from glTF sources, with hardpoints
+
+- **ADR:** [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md), and ADR-011 edited in place.
+- **Goal:** meshes and their hardpoints edited in Blender and baked into a format the game reads strictly, drawn as Blender shows them.
+- **As built:**
+  - **The baker.** `Tools/BakeMeshes.py` bakes `Art/Models/<Set>/<Model>.glb` into `OutpostCommander/Assets/Models/<Set>/<Model>.nmf`, and a new Linux CI job runs its `--check` and `--self-test`.
+  - **The reader.** `Neuron::ParseNmf` and `Neuron::FitMesh` replace `ParseCmo` and `OrientMesh`. `Models.json` loses `forwardAxis`.
+  - **The migration.** The 29 sources were written from the `.cmo` files, turned to face one way, with placeholder `gun` and `exhaust` hardpoints. The `.obj`, `.cmo` and `meshconvert.exe` are gone. The baked meshes match the old ones exactly, mirrored on purpose: the game no longer drew each model's mirror image.
+  - **The tags.** `Outpost::HardpointKindOf` knows `gun` and `exhaust`, and a model with any other tag fails to load.
+- **Verify:** CI; **owner run**, because every model is now drawn as Blender shows it. The Tarkan Station and Medium change visibly.
+
+### A.2 — Exhaust in its drive's color, and shots from the guns
+
+- **ADR:** [ADR-019](../Design/ADR/ADR-019-glows-and-exhaust.md).
+- **Goal:** every ship's exhaust in its drive's color, growing with speed, and every shot leaving from a gun (design §11).
+- **As built:**
+  - **The glow pass.** `Neuron::GlowPipeline` draws additive glows, facing the camera, as one instanced draw.
+  - **The exhaust.** `Outpost::AddExhaustGlows` makes a core and a plume at each exhaust. `Models.json` gives each drive's exhaust color and the Constructor's.
+  - **The drive in the snapshot.** `EntityView` carries a warship's drive.
+  - **Shots from the guns.** `CombatEffects` takes the muzzle from the shooter's nearest gun where the view draws it, through `GameClient`.
+- **Verify:** CI; **owner run**, to see whether drive and speed read from the RTS camera, and in the Q4 measurement (3.7), which now includes the glows.
 
 ---
 

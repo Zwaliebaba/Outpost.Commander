@@ -52,7 +52,7 @@ private:
   [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
-  // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-017).
+  // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
@@ -61,6 +61,11 @@ private:
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
   void HandleHudInput(const Neuron::InputState& _input);
+  // What a HUD button does: arms a placement, queues a job or a topic, or works the designer.
+  void HandleHudAction(const Hud::Action& _action);
+  // While the designer's name takes typing, the keyboard is the designer's: _input loses its keys, so no order, control
+  // group or camera key reads them.
+  void HandleTyping(Neuron::InputState& _input);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
@@ -68,7 +73,7 @@ private:
   // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
-  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-018).
+  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019).
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
@@ -87,6 +92,7 @@ private:
   Hud::Layout m_hudLayout;
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
+  Designer m_designer;
   CombatEffects m_effects;
   // What the effects draw this frame, at the view's tick.
   std::vector<CombatEffects::Draw> m_effectDraws;
@@ -116,6 +122,7 @@ private:
     std::vector<EntityView> ships;
     std::chrono::steady_clock::time_point inputRead;
   };
+
   void WatchForResponse();
   std::vector<EntityView> m_previousEntities;
   std::optional<ResponseProbe> m_probe;

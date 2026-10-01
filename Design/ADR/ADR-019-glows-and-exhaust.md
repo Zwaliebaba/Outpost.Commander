@@ -1,4 +1,4 @@
-# ADR-018 — Exhaust glows in its drive's color, drawn by an additive pass of camera-facing quads
+# ADR-019 — Exhaust glows in its drive's color, drawn by an additive pass of camera-facing quads
 
 Status: **accepted** · 2026-10-01
 
@@ -9,7 +9,7 @@ The owner put exhaust into the MVP on 2026-10-01, colored by drive. A drive has 
 ## Decision
 
 1. **`Neuron::GlowPipeline` in `NeuronClient` draws glows.** A glow is a point, a radius and a linear color with its brightness included. Its quad faces the camera along the screen's right and up, which `Outpost::Camera::ScreenAxes` reads from the view matrix. The pixel shader fades from the color at the center to nothing at the rim, as (1 − r²)², and the blend adds the result to the scene. Glows are tested against depth but write none, so a hull hides the part of a glow behind it while glows overlap in any order. A frame's glows are one instanced draw. The vertex shader makes each quad's corners from `SV_VertexID`, so the only buffer is the instances, one slot of up to 4,096 per frame in flight. Glows past that are dropped. The shaders are `GlowVS.hlsl` and `GlowPS.hlsl`, shader model 5.1, like the others. The pipeline knows no game concept.
-2. **Each `exhaust` hardpoint (ADR-017) makes four glows**, in `Outpost::AddExhaustGlows`:
+2. **Each `exhaust` hardpoint (ADR-018) makes four glows**, in `Outpost::AddExhaustGlows`:
    - a core just out of the nozzle;
    - three puffs streaming the way the hardpoint points, each further out, smaller and dimmer.
 
@@ -27,4 +27,4 @@ The owner put exhaust into the MVP on 2026-10-01, colored by drive. A drive has 
 ## What this forecloses
 
 - Glows sorted or alpha-blended: light only adds, so a glow cannot darken or hide what is behind it.
-- Lights and docking hardpoints until a task gives them a meaning. Their tags fail to load until then (ADR-017).
+- Lights and docking hardpoints until a task gives them a meaning. Their tags fail to load until then (ADR-018).

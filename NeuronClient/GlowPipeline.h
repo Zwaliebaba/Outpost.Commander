@@ -4,7 +4,7 @@ namespace Neuron
 {
 class Renderer;
 
-// Draws glows (ADR-018): soft round spots of light that face the camera, added to what is already drawn, so they only
+// Draws glows (ADR-019): soft round spots of light that face the camera, added to what is already drawn, so they only
 // ever brighten it. They are tested against the scene's depth but write none, so a hull hides the glow behind it while
 // glows overlap freely, in any order. A frame's glows are one instanced draw. It knows no game concept: the caller says
 // where each glow is, how big it is and its color.

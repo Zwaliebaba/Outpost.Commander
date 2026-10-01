@@ -17,10 +17,15 @@ constexpr Outpost::PlanePosition TARGET{.xMeters = 100.0f, .zMeters = 0.0f};
 constexpr Outpost::PlanePosition MUZZLE{.xMeters = 6.0f, .zMeters = 2.0f};
 
 // A snapshot at _tick reporting one shot.
-Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon)
+Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon, float _splashRadiusMeters = 0.0f)
 {
   Outpost::Snapshot snapshot{.tick = _tick, .player = Outpost::PlayerId{1}};
-  snapshot.shots.push_back({.shooter = Outpost::EntityId{1}, .target = Outpost::EntityId{2}, .weapon = _weapon, .from = GUN, .to = TARGET});
+  snapshot.shots.push_back({.shooter = Outpost::EntityId{1},
+                            .target = Outpost::EntityId{2},
+                            .weapon = _weapon,
+                            .from = GUN,
+                            .to = TARGET,
+                            .splashRadiusMeters = _splashRadiusMeters});
   return snapshot;
 }
 
@@ -67,6 +72,27 @@ public:
     Assert::IsTrue(landed.front().from == TARGET, L"the spark is at the target");
   }
 
+  // Task 5.3: a splash weapon's hit throws a ring at the target that runs out to its splash radius, then fades.
+  TEST_METHOD(ASplashRingRunsOutToItsRadius)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, Outpost::WeaponId{3}, 30.0f));
+    const auto ring = [&effects](double _seconds)
+    {
+      const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(10, _seconds));
+      const auto found = std::ranges::find(draws, Outpost::CombatEffects::Shape::Ring, &Outpost::CombatEffects::Draw::shape);
+      return found != draws.end() && found->from == TARGET ? found->radiusMeters : -1.0f;
+    };
+    Assert::AreEqual(-1.0f, ring(0.06), L"no ring while the tracer flies");
+    const float early = ring(0.15);
+    const float late = ring(0.38);
+    Assert::IsTrue(early > 0.0f && late > early && late <= 30.0f);
+    Assert::AreEqual(-1.0f, ring(0.45), L"gone once it has run out");
+
+    effects.Receive(Shot(40, MASS_DRIVER));
+    Assert::AreEqual(size_t{0}, CountOf(effects.At(After(40, 0.15)), Outpost::CombatEffects::Shape::Ring), L"no splash, no ring");
+  }
+
   // A Lance's beam joins the gun and the target at once.
   TEST_METHOD(ABeamJoinsGunAndTarget)
   {
@@ -78,7 +104,7 @@ public:
     Assert::IsTrue(band->from == GUN && band->to == TARGET);
   }
 
-  // ADR-017: a shot leaves from the shooter's muzzle where the view draws it this frame, or, when the view cannot find
+  // ADR-018: a shot leaves from the shooter's muzzle where the view draws it this frame, or, when the view cannot find
   // it, from where the server says the ship stood.
   TEST_METHOD(AShotLeavesFromTheMuzzleTheViewFinds)
   {

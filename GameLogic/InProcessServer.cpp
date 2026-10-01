@@ -49,8 +49,10 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   for (const HullTuning& hull : m_tuning.hulls)
   {
     if (2.0 * hull.footprintRadiusMeters > m_map.minimumGapMeters)
+    {
       throw Neuron::Exception(std::format("The {} hull's footprint, {} m across, is wider than the map's narrowest passage, {} m.",
                                           hull.name, 2.0 * hull.footprintRadiusMeters, m_map.minimumGapMeters));
+    }
   }
   m_simulation.PlaceMap(m_map);
   m_simulation.UseTuning(m_tuning);

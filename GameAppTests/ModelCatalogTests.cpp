@@ -128,7 +128,7 @@ public:
       {
         const Outpost::ModelEntry& model = set.Model(hull);
         const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
-        // Its length is along +x, its front (ADR-017), and it is the length the data asks for.
+        // Its length is along +x, its front (ADR-018), and it is the length the data asks for.
         Assert::AreEqual(model.lengthMeters, mesh.Extents().x, TOLERANCE);
         Assert::IsTrue(mesh.Extents().x > mesh.Extents().z);
         Assert::IsTrue(mesh.Extents().x > previousLength);
@@ -144,13 +144,13 @@ public:
     Assert::AreEqual(std::wstring(L"Models\\Human\\Small.nmf"), Outpost::ModelFileName(human, human.Model("Small")));
   }
 
-  // A model's front is in its mesh since ADR-017, so the data no longer says it.
+  // A model's front is in its mesh since ADR-018, so the data no longer says it.
   TEST_METHOD(RejectsAForwardAxis)
   {
     ExpectRejected(OneModel("Human", R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 20 })", GOOD_COLOR));
   }
 
-  // ADR-018: a warship's exhaust is its drive's color, and a Constructor's is its own; a drive listed twice is refused.
+  // ADR-019: a warship's exhaust is its drive's color, and a Constructor's is its own; a drive listed twice is refused.
   TEST_METHOD(ColorsEachExhaustByItsDrive)
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));

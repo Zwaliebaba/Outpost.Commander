@@ -1,5 +1,5 @@
 // A glow: a quad facing the camera around a point, made from the vertex index alone, so a frame's glows are one
-// instanced draw (ADR-018). cbuffer Frame must match GlowPipeline::FrameConstants and the input GlowPipeline::Glow;
+// instanced draw (ADR-019). cbuffer Frame must match GlowPipeline::FrameConstants and the input GlowPipeline::Glow;
 // VertexOut is declared again, identically, in GlowPS.hlsl.
 
 cbuffer Frame : register(b0)

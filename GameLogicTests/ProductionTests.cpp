@@ -66,7 +66,7 @@ public:
 
     const Outpost::Entity& ship = *arena.Owned(BLUE, Outpost::EntityKind::Ship).back();
     Assert::IsTrue(ship.design == design);
-    // Every player's snapshot carries the ship's drive, which the client colors its exhaust by (ADR-018).
+    // Every player's snapshot carries the ship's drive, which the client colors its exhaust by (ADR-019).
     const std::vector<Outpost::EntityView> seen = arena.World().BuildSnapshot(RED).entities;
     const auto view = std::ranges::find(seen, ship.id, &Outpost::EntityView::id);
     Assert::IsTrue(view != seen.end() && view->drive == arena.World().FindDesign(design)->components.drive);
@@ -85,9 +85,11 @@ public:
     // Spend the Ore down to less than one Medium ship, on Shipyards elsewhere.
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {600.0f, -600.0f});
     for (int i = 0; i < 3; ++i)
+    {
       (void)arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
                                                                    .structure = Outpost::StructureKind::Shipyard,
                                                                    .position = {600.0f, -1200.0f + (static_cast<float>(i) * 300.0f)}})});
+    }
     Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
 
     (void)arena.Tick({Queue(BLUE, yard, medium)});

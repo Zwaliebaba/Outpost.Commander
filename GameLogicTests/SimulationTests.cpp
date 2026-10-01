@@ -114,8 +114,10 @@ public:
       {
         std::vector<Outpost::Command> commands;
         if (tick % 7 == 0)
+        {
           commands.push_back(
             Move(BLUE, {first, second}, {.xMeters = static_cast<float>(tick) * 3.5f, .zMeters = static_cast<float>(-tick) * 1.25f}));
+        }
         if (tick % 11 == 0)
           commands.push_back(Move(RED, {enemy, first}, {}));
         if (tick % 13 == 0)

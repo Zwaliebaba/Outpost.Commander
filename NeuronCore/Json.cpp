@@ -59,7 +59,9 @@ private:
   void SkipWhitespace() noexcept
   {
     while (!AtEnd() && (Peek() == ' ' || Peek() == '\t' || Peek() == '\n' || Peek() == '\r'))
+    {
       ++m_position;
+    }
   }
 
   void Expect(char _character)
@@ -178,7 +180,9 @@ private:
     {
       const size_t first = m_position;
       while (!AtEnd() && Peek() >= '0' && Peek() <= '9')
+      {
         ++m_position;
+      }
       return m_position - first;
     };
 

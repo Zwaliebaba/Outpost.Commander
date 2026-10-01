@@ -89,6 +89,16 @@ void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
   Give(QueueShipCommand{.producer = _producer, .design = _design});
 }
 
+void Outpost::PlayerControls::Research(EntityId _lab, ResearchTopicId _topic)
+{
+  Give(StartResearchCommand{.lab = _lab, .topic = _topic});
+}
+
+void Outpost::PlayerControls::SaveDesign(SaveDesignCommand _save)
+{
+  Give(std::move(_save));
+}
+
 void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const EntityView> _entities)
 {
   std::vector<EntityId> ships = SelectedShips(_entities);
@@ -252,8 +262,10 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   const auto isEnemy = [player](const EntityView& _entity) { return _entity.owner.IsValid() && _entity.owner != player; };
   std::optional<EntityId> enemy = PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, isEnemy);
   if (!enemy.has_value())
+  {
     enemy = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
                        [&isEnemy](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && isEnemy(_entity); });
+  }
   if (enemy.has_value())
   {
     Give(AttackCommand{.ships = std::move(ships), .target = *enemy});

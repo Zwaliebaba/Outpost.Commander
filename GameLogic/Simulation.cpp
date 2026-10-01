@@ -36,9 +36,13 @@ float WrapAngle(float _angle) noexcept
 {
   constexpr float PI = std::numbers::pi_v<float>;
   while (_angle > PI)
+  {
     _angle -= 2.0f * PI;
+  }
   while (_angle <= -PI)
+  {
     _angle += 2.0f * PI;
+  }
   return _angle;
 }
 
@@ -156,8 +160,24 @@ std::int64_t Outpost::Simulation::OreHundredths(PlayerId _player) const noexcept
 
 Outpost::Simulation::PlayerState* Outpost::Simulation::FindPlayer(PlayerId _player) noexcept
 {
+  return const_cast<PlayerState*>(std::as_const(*this).FindPlayer(_player));
+}
+
+const Outpost::Simulation::PlayerState* Outpost::Simulation::FindPlayer(PlayerId _player) const noexcept
+{
   const auto state = std::ranges::find(m_players, _player, &PlayerState::id);
   return state != m_players.end() ? &*state : nullptr;
+}
+
+std::span<const Outpost::ResearchTopicId> Outpost::Simulation::Researched(PlayerId _player) const noexcept
+{
+  const PlayerState* state = FindPlayer(_player);
+  return state != nullptr ? std::span<const ResearchTopicId>(state->researched) : std::span<const ResearchTopicId>();
+}
+
+Outpost::Upgrades Outpost::Simulation::UpgradesOf(PlayerId _player) const
+{
+  return m_tuning ? UpgradesFrom(*m_tuning, Researched(_player)) : Upgrades{};
 }
 
 const Outpost::StructureTuning* Outpost::Simulation::StructureTuningFor(StructureKind _kind) const noexcept
@@ -184,8 +204,10 @@ void Outpost::Simulation::SaveStartingDesigns(PlayerId _owner, const Tuning& _tu
   for (const DesignComponents& components : designs)
   {
     if (FindDesign(_owner, components) == nullptr)
+    {
       (void)SaveDesign(_owner, DesignName(_tuning, components), components,
                        DesignStatsFor(_tuning, components.hull, components.drive, components.weapon));
+    }
   }
 }
 
@@ -284,9 +306,7 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
     }
   }
   else
-  {
     UpdateObstacles();
-  }
   return id;
 }
 
@@ -342,18 +362,16 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
         if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
                       std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
           return Apply(command.player, _order);
-        else if constexpr (std::is_same_v<OrderType, BuildStructureCommand> || std::is_same_v<OrderType, RepairCommand> ||
-                           std::is_same_v<OrderType, QueueShipCommand>)
-          return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
         else
-          return CommandResult::NotYetSupported;
+          return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
       },
       command.order));
   }
 
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
-  // and work orders head for their targets, and Constructors in reach build and repair; queues produce and Mining Rigs
-  // earn; ships steer along their paths, then make room for each other, then leave any obstacle they were pushed into.
+  // and work orders head for their targets, and Constructors in reach build and repair; queues produce, labs research and
+  // Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any obstacle they were
+  // pushed into.
   Fight();
   ChaseTargets();
   ApproachWork();
@@ -361,6 +379,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     Work();
     Produce();
+    Research();
     Mine();
   }
   MoveShips();
@@ -376,27 +395,18 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   if (const auto state = std::ranges::find(m_players, _player, &PlayerState::id); state != m_players.end())
     snapshot.ore = static_cast<std::int32_t>(state->oreHundredths / HUNDREDTHS);
   if (m_tuning)
-  {
-    for (const Entity& entity : m_entities)
-    {
-      if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::MiningRig && entity.owner == _player &&
-          entity.site.IsValid() && entity.IsBuilt())
-      {
-        const double perSecond =
-          entity.oreYield == OreYield::Home ? m_tuning->rules.miningRigOrePerSecondHome : m_tuning->rules.miningRigOrePerSecondContested;
-        snapshot.oreIncomeHundredthsPerSecond += static_cast<std::int32_t>(std::llround(perSecond * HUNDREDTHS));
-      }
-    }
-  }
+    snapshot.oreIncomeHundredthsPerSecond = static_cast<std::int32_t>(IncomeHundredthsPerSecond(_player));
   for (const ShipDesign& design : m_designs)
   {
     if (design.owner == _player)
+    {
       snapshot.designs.push_back({.id = design.id,
                                   .nameUtf8 = design.name,
                                   .hull = design.components.hull,
                                   .drive = design.components.drive,
                                   .weapon = design.components.weapon,
                                   .cost = design.stats.cost});
+    }
   }
   snapshot.mapSizeMeters = 2.0f * m_mapHalfSizeMeters;
   if (m_tuning)
@@ -410,6 +420,24 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                          .cost = structure.cost.value_or(0)});
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
+
+    const std::span<const ResearchTopicId> researched = Researched(_player);
+    const Upgrades upgrades = UpgradesFrom(*m_tuning, researched);
+    for (const HullTuning& hull : m_tuning->hulls)
+      snapshot.hulls.push_back(ViewOf(hull, upgrades, IsAvailable(*m_tuning, researched, hull.id)));
+    for (const DriveTuning& drive : m_tuning->drives)
+      snapshot.drives.push_back(ViewOf(drive, IsAvailable(*m_tuning, researched, drive.id)));
+    for (const WeaponTuning& weapon : m_tuning->weapons)
+      snapshot.weapons.push_back(ViewOf(weapon, upgrades, IsAvailable(*m_tuning, researched, weapon.id)));
+    for (const ResearchTopicTuning& topic : m_tuning->research)
+      snapshot.research.push_back({.id = topic.id,
+                                   .nameUtf8 = topic.name,
+                                   .effectUtf8 = EffectText(*m_tuning, topic),
+                                   .cost = topic.cost,
+                                   .researchSeconds = topic.researchSeconds,
+                                   .prerequisites = topic.prerequisites,
+                                   .researched = std::ranges::find(researched, topic.id) != researched.end()});
+    snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
   }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
@@ -430,9 +458,10 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       view.drive = design->components.drive;
     if (!entity.IsBuilt())
       view.builtPermille = static_cast<std::int32_t>(std::int64_t{entity.buildWorkDone} * PERMILLE / entity.buildWorkNeeded);
-    if (!entity.queue.empty())
+    if (!entity.queue.empty() || !entity.researchQueue.empty())
     {
       view.queue = entity.queue;
+      view.research = entity.researchQueue;
       if (entity.jobWorkNeeded > 0)
         view.jobPermille = static_cast<std::int32_t>(std::int64_t{entity.jobWorkDone} * PERMILLE / entity.jobWorkNeeded);
     }
@@ -738,7 +767,26 @@ void Outpost::Simulation::Fight()
       shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
     const Entity& target = *FindEntity(shotTarget);
     hits.push_back({target.id, HitHundredths(armament->damageHundredths, target.armorHundredths)});
-    m_shots.push_back({.shooter = ship.id, .target = target.id, .weapon = armament->weapon, .from = ship.position, .to = target.position});
+    m_shots.push_back({.shooter = ship.id,
+                       .target = target.id,
+                       .weapon = armament->weapon,
+                       .from = ship.position,
+                       .to = target.position,
+                       .splashRadiusMeters = armament->splashRadiusMeters});
+    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
+    // after its own armor. Never the shooter's own side (ADR-014).
+    if (armament->splashRadiusMeters > 0.0f)
+    {
+      const float reach = armament->splashRadiusMeters * armament->splashRadiusMeters;
+      for (const Entity& other : m_entities)
+      {
+        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == ship.owner)
+          continue;
+        const PlaneVector between = other.position - target.position;
+        if (Dot(between, between) <= reach)
+          hits.push_back({other.id, HitHundredths(armament->damageHundredths, other.armorHundredths)});
+      }
+    }
   }
 
   bool anyDestroyed = false;
@@ -755,6 +803,7 @@ void Outpost::Simulation::Fight()
   for (const Entity& entity : m_entities)
   {
     if (isDestroyed(entity))
+    {
       m_destroyed.push_back({.id = entity.id,
                              .kind = entity.kind,
                              .owner = entity.owner,
@@ -762,6 +811,7 @@ void Outpost::Simulation::Fight()
                              .position = entity.position,
                              .headingRadians = entity.headingRadians,
                              .radiusMeters = entity.radiusMeters});
+    }
   }
   const bool blockerDestroyed = std::ranges::any_of(
     m_entities, [&](const Entity& _entity)
@@ -874,9 +924,7 @@ void Outpost::Simulation::MoveShips()
       }
     }
     else
-    {
       ship.position = ship.position + PlaneVector{std::cos(ship.headingRadians), std::sin(ship.headingRadians)} * step;
-    }
   }
 }
 
@@ -980,6 +1028,7 @@ std::optional<Outpost::Simulation::Armament> Outpost::Simulation::ArmamentOf(con
     return Armament{.damageHundredths = design->stats.damageHundredths,
                     .fireIntervalSeconds = design->stats.fireIntervalSeconds,
                     .rangeMeters = design->stats.rangeMeters,
+                    .splashRadiusMeters = design->stats.splashRadiusMeters,
                     .weapon = design->components.weapon};
   }
   // A structure fires once it is built (design §6).
@@ -1327,7 +1376,11 @@ void Outpost::Simulation::Produce()
       producer.jobWorkNeeded = std::max(1, static_cast<std::int32_t>(std::llround(seconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
       producer.jobWorkDone = 0;
     }
-    producer.jobWorkDone += MILLITICKS_PER_TICK;
+    // Automated Shipyards speed a Shipyard's work, the job under way included (design §8); not the Command Station's.
+    producer.jobWorkDone +=
+      producer.structure == StructureKind::Shipyard
+        ? static_cast<std::int32_t>(std::llround(MILLITICKS_PER_TICK * UpgradesOf(producer.owner).shipyardBuildSpeedFactor))
+        : MILLITICKS_PER_TICK;
     if (producer.jobWorkDone < producer.jobWorkNeeded)
       continue;
     deliveries.push_back({producer.owner, job, producer.position, producer.radiusMeters});
@@ -1351,18 +1404,152 @@ void Outpost::Simulation::Produce()
   }
 }
 
-// Each built Mining Rig adds its asteroid's income to its owner's Ore every tick (design §5), in hundredths so that it
-// is whole.
-void Outpost::Simulation::Mine()
+// Each built Mining Rig adds its asteroid's income to its owner's Ore every tick (design §5), with the owner's research
+// applied (design §8). The income is counted per second in hundredths and paid a tick's share at a time, the remainder
+// carried, so that a rate that is not a whole number of hundredths a tick is still paid in full (ADR-017).
+std::int64_t Outpost::Simulation::IncomeHundredthsPerSecond(PlayerId _player) const
 {
-  const auto perTick = [this](double _perSecond) { return std::llround(_perSecond * HUNDREDTHS / m_ticksPerSecond); };
-  const std::int64_t home = perTick(m_tuning->rules.miningRigOrePerSecondHome);
-  const std::int64_t contested = perTick(m_tuning->rules.miningRigOrePerSecondContested);
+  const double factor = UpgradesOf(_player).miningIncomeFactor;
+  const std::int64_t home = std::llround(m_tuning->rules.miningRigOrePerSecondHome * HUNDREDTHS * factor);
+  const std::int64_t contested = std::llround(m_tuning->rules.miningRigOrePerSecondContested * HUNDREDTHS * factor);
+  std::int64_t income = 0;
   for (const Entity& rig : m_entities)
   {
-    if (rig.kind != EntityKind::Structure || rig.structure != StructureKind::MiningRig || !rig.site.IsValid() || !rig.IsBuilt())
-      continue;
-    if (PlayerState* player = FindPlayer(rig.owner))
-      player->oreHundredths += rig.oreYield == OreYield::Home ? home : contested;
+    if (rig.kind == EntityKind::Structure && rig.structure == StructureKind::MiningRig && rig.owner == _player && rig.site.IsValid() &&
+        rig.IsBuilt())
+      income += rig.oreYield == OreYield::Home ? home : contested;
   }
+  return income;
+}
+
+void Outpost::Simulation::Mine()
+{
+  for (PlayerState& player : m_players)
+  {
+    player.oreRemainder += IncomeHundredthsPerSecond(player.id);
+    player.oreHundredths += player.oreRemainder / m_ticksPerSecond;
+    player.oreRemainder %= m_ticksPerSecond;
+  }
+}
+
+// Each built Research Lab works on the front of its queue. A topic starts, and is paid for, once the player has the Ore
+// (design §5); until then it waits. A finished topic applies at once (design §8).
+void Outpost::Simulation::Research()
+{
+  std::vector<std::pair<PlayerId, ResearchTopicId>> finished;
+  for (Entity& lab : m_entities)
+  {
+    if (lab.kind != EntityKind::Structure || lab.researchQueue.empty() || !lab.IsBuilt())
+      continue;
+    const ResearchTopicId topicId = lab.researchQueue.front();
+    if (lab.jobWorkNeeded == 0)
+    {
+      const auto topic = std::ranges::find(m_tuning->research, topicId, &ResearchTopicTuning::id);
+      PlayerState* player = FindPlayer(lab.owner);
+      if (player == nullptr || player->oreHundredths < std::int64_t{topic->cost} * HUNDREDTHS)
+        continue;
+      player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
+      lab.jobWorkNeeded =
+        std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
+      lab.jobWorkDone = 0;
+    }
+    lab.jobWorkDone += MILLITICKS_PER_TICK;
+    if (lab.jobWorkDone < lab.jobWorkNeeded)
+      continue;
+    finished.emplace_back(lab.owner, topicId);
+    lab.researchQueue.erase(lab.researchQueue.begin());
+    lab.jobWorkDone = 0;
+    lab.jobWorkNeeded = 0;
+  }
+  for (const auto& [player, topic] : finished)
+  {
+    if (PlayerState* state = FindPlayer(player))
+      CompleteResearch(*state, topic);
+  }
+}
+
+void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId _topic)
+{
+  _player.researched.push_back(_topic);
+  const Upgrades upgrades = UpgradesFrom(*m_tuning, _player.researched);
+  for (ShipDesign& design : m_designs)
+  {
+    if (design.owner == _player.id)
+      design.stats = DesignStatsFor(*m_tuning, design.components.hull, design.components.drive, design.components.weapon, upgrades);
+  }
+  // A ship keeps the share of its hit points it had, so an undamaged ship gains the whole upgrade (owner, 2026-10-01).
+  for (Entity& ship : m_entities)
+  {
+    if (ship.kind != EntityKind::Ship || ship.owner != _player.id || ship.role != ShipRole::Warship || ship.maxHitPointsHundredths <= 0)
+      continue;
+    const ShipDesign* design = FindDesign(ship.design);
+    if (design == nullptr || design->stats.hitPointsHundredths == ship.maxHitPointsHundredths)
+      continue;
+    const std::int64_t before = ship.maxHitPointsHundredths;
+    const std::int64_t after = design->stats.hitPointsHundredths;
+    ship.hitPointsHundredths =
+      static_cast<std::int32_t>(std::max<std::int64_t>(1, ((ship.hitPointsHundredths * after) + (before / 2)) / before));
+    ship.maxHitPointsHundredths = static_cast<std::int32_t>(after);
+  }
+}
+
+// A topic joins the back of the lab's queue; it is paid for when it reaches the front and starts (Research). It may
+// follow its prerequisites there, since one lab researches them in order (design §8).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartResearchCommand& _research)
+{
+  Entity* lab = FindMutableEntity(_research.lab);
+  if (lab == nullptr)
+    return CommandResult::UnknownEntity;
+  if (lab->kind != EntityKind::Structure || lab->structure != StructureKind::ResearchLab || lab->owner != _player || !lab->IsBuilt())
+    return CommandResult::NotALab;
+  const auto topic = std::ranges::find(m_tuning->research, _research.topic, &ResearchTopicTuning::id);
+  if (topic == m_tuning->research.end())
+    return CommandResult::UnknownTopic;
+  const std::span<const ResearchTopicId> researched = Researched(_player);
+  const auto known = [&](ResearchTopicId _id)
+  {
+    return std::ranges::find(researched, _id) != researched.end() || std::ranges::find(lab->researchQueue, _id) != lab->researchQueue.end();
+  };
+  if (known(topic->id))
+    return CommandResult::AlreadyResearched;
+  if (!std::ranges::all_of(topic->prerequisites, known))
+    return CommandResult::PrerequisiteMissing;
+  if (lab->researchQueue.size() >= QUEUE_LIMIT)
+    return CommandResult::QueueFull;
+  lab->researchQueue.push_back(topic->id);
+  return CommandResult::Applied;
+}
+
+// A new design is of components the player has, and is not one it already has; a saved one is renamed (ADR-017).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDesignCommand& _save)
+{
+  if (!IsValidDesignName(_save.nameUtf8))
+    return CommandResult::InvalidName;
+  const DesignComponents components{_save.hull, _save.drive, _save.weapon};
+  const bool known = std::ranges::find(m_tuning->hulls, components.hull, &HullTuning::id) != m_tuning->hulls.end() &&
+                     std::ranges::find(m_tuning->drives, components.drive, &DriveTuning::id) != m_tuning->drives.end() &&
+                     std::ranges::find(m_tuning->weapons, components.weapon, &WeaponTuning::id) != m_tuning->weapons.end();
+  if (!known)
+    return CommandResult::UnknownComponent;
+
+  if (_save.design.IsValid())
+  {
+    const auto design = std::ranges::lower_bound(m_designs, _save.design, {}, &ShipDesign::id);
+    if (design == m_designs.end() || design->id != _save.design || design->owner != _player)
+      return CommandResult::UnknownDesign;
+    if (design->components != components)
+      return CommandResult::ComponentsFixed;
+    design->name = _save.nameUtf8;
+    return CommandResult::Applied;
+  }
+
+  const std::span<const ResearchTopicId> researched = Researched(_player);
+  if (!IsAvailable(*m_tuning, researched, components.hull) || !IsAvailable(*m_tuning, researched, components.drive) ||
+      !IsAvailable(*m_tuning, researched, components.weapon))
+    return CommandResult::ComponentLocked;
+  if (FindDesign(_player, components) != nullptr)
+    return CommandResult::DuplicateDesign;
+  (void)SaveDesign(_player, _save.nameUtf8, components,
+                   DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, UpgradesOf(_player)));
+  return CommandResult::Applied;
 }

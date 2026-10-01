@@ -8,12 +8,12 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
 
 ## Decision
 
-1. **Ore counts in hundredths.** A player's stockpile is an integer of hundredths of an Ore, so a rig's income per tick is whole: 5 Ore a second is 25 hundredths a tick at 20 Hz, and 8 is 40. Costs are whole Ore. A snapshot carries the stockpile rounded down to whole Ore and the player's income in hundredths per second, the sum of its built rigs.
+1. **Ore counts in hundredths.** A player's stockpile is an integer of hundredths of an Ore, so a rig's income per tick is whole: 5 Ore a second is 25 hundredths a tick at 20 Hz, and 8 is 40. An income that research makes uneven is paid with its remainder carried ([ADR-017](ADR-017-research-and-the-designer.md)). Costs are whole Ore. A snapshot carries the stockpile rounded down to whole Ore and the player's income in hundredths per second, the sum of its built rigs.
 2. **The tuning data holds the base's numbers** (ADR-008).
    - Every structure has a `footprintRadiusMeters`: Command Station 45, Shipyard 40, Research Lab 30, Mining Rig 25, Defence Platform 20.
    - The Constructor is a `constructor` entry: 300 hit points, armor 2, 45 m/s, 60 Ore, 15 s, a 10 m footprint and a 150°/s turn rate. It also holds G8's rates: `extraConstructorBuildShare` 0.5 and `repairPercentPerSecond` 2.
    - The rules gain `startingConstructors`, 2.
-   - The footprints, the Constructor's footprint and its turn rate are provisional in the same way the hulls' are, until G5 sets ship sizes.
+   - The footprints, the Constructor's footprint and its turn rate are provisional. Gate G5 set the hulls' sizes only (owner, 2026-10-01), and these are still open in design §15.
    - `Simulation::UseTuning` gives the simulation the data at match setup. Without it, orders to build, repair or queue are rejected as not yet supported, so movement and combat tests run as before.
 3. **A match starts with a base.** `Simulation::PlaceStartingBases` puts each player's Command Station on its start, built and armed. The starting Constructors stand in a row in front of it, facing the map's center. The server refuses to start when either would overlap an obstacle or cross the edge. The provisional starting fleet of milestones 2 and 3 is gone (ADR-013), and so is the map's `startingFleet`. Warships come from a Shipyard.
 4. **A structure is placed, and paid for, when the order is given.** `BuildStructureCommand` names Constructors only, and a structure a Constructor builds: not the Command Station.

@@ -2,13 +2,13 @@
 
 namespace Outpost
 {
-// What the game makes of a mesh's hardpoints (ADR-017). The engine carries each hardpoint's tag; what a tag means is
+// What the game makes of a mesh's hardpoints (ADR-018). The engine carries each hardpoint's tag; what a tag means is
 // decided here, and a model with a tag the game does not know fails to load.
 enum class HardpointKind : std::uint8_t
 {
   // Where a shot leaves from. Weapons are turrets (design §7), so only its position is used.
   Gun,
-  // Where an engine's exhaust leaves, pointing the way the exhaust streams, its size the nozzle's radius (ADR-018).
+  // Where an engine's exhaust leaves, pointing the way the exhaust streams, its size the nozzle's radius (ADR-019).
   Exhaust
 };
 
@@ -35,7 +35,7 @@ struct ModelPose
 [[nodiscard]] std::optional<PlanePosition> NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,
                                                          PlanePosition _target);
 
-// The glows of a ship's exhausts (ADR-018): at each exhaust a bright core, and a plume streaming the way the exhaust
+// The glows of a ship's exhausts (ADR-019): at each exhaust a bright core, and a plume streaming the way the exhaust
 // points, which grows longer and brighter as the ship goes faster. _speedShare runs from 0 at rest to 1 at full speed.
 void AddExhaustGlows(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose, const DirectX::XMFLOAT4& _color,
                      float _speedShare, std::vector<Neuron::GlowPipeline::Glow>& _glows);

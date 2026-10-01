@@ -38,7 +38,9 @@ Neuron::GlyphAtlas Neuron::PackGlyphs(const std::vector<GlyphBitmap>& _bitmaps, 
   }
   std::uint32_t width = MINIMUM_WIDTH_TEXELS;
   while (width < widest + (2 * PADDING_TEXELS) || std::uint64_t{width} * width < area * 2)
+  {
     width *= 2;
+  }
 
   GlyphAtlas atlas;
   atlas.ascent = _ascent;

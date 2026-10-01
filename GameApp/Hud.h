@@ -6,7 +6,8 @@ namespace Outpost
 // structure's construction and queue, the buttons that build structures and queue ships, and the minimap. It is laid
 // out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer by
 // one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
-// the UI pipeline (ADR-015). Clicks on it do not reach the world. The research queue arrives with research (task 5.1).
+// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore and in the Research Lab's
+// panel (task 5.1), and the ship designer beside a selected Shipyard (task 5.2).
 class Hud
 {
 public:
@@ -21,7 +22,15 @@ public:
     // Arms placing a structure for the selected Constructors.
     Build,
     // Queues a job at a Shipyard or the Command Station.
-    Queue
+    Queue,
+    // Queues a topic at the Research Lab.
+    Research,
+    // The designer: picks a component for a slot, starts typing the name, or saves the design.
+    PickHull,
+    PickDrive,
+    PickWeapon,
+    EditName,
+    SaveDesign
   };
 
   struct Action
@@ -31,6 +40,10 @@ public:
     EntityId producer;
     // The design a Shipyard builds; no design for the Command Station's Constructor.
     DesignId design;
+    ResearchTopicId topic;
+    HullId hull;
+    DriveId drive;
+    WeaponId weapon;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -41,6 +54,28 @@ public:
     Action action;
     // A button the player cannot afford, or may not use, is drawn dim and does nothing.
     bool enabled = true;
+    // A designer's pick, drawn lit.
+    bool selected = false;
+  };
+
+  // The designer beside a selected Shipyard (task 5.2).
+  struct DesignerPanel
+  {
+    std::string name;
+    bool editing = false;
+    // Whether the server takes the name (IsValidDesignName); it is drawn as a warning when not.
+    bool nameValid = true;
+    // A button for each component of each slot, the pick lit and a locked component dim.
+    std::vector<Button> hulls;
+    std::vector<Button> drives;
+    std::vector<Button> weapons;
+    // The picked design's hit points, armor and speed, then its range, cost and build time.
+    std::vector<std::string> summary;
+    // A row naming each hull, then damage per second after armor against it, per ship and per 100 Ore (design §9). The
+    // first cell of a row is its label.
+    std::vector<std::vector<std::string>> table;
+    // Save or rename, and queue.
+    std::vector<Button> actions;
   };
 
   // Whose a minimap mark is, which sets its color.
@@ -70,6 +105,9 @@ public:
     std::vector<Button> buttons;
     // A line at the top while a structure's placement is armed.
     std::string hint;
+    // A line under the Ore while the player's Research Lab has a topic (task 5.1).
+    std::string research;
+    std::optional<DesignerPanel> designer;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
@@ -119,11 +157,11 @@ public:
     [[nodiscard]] DirectX::XMFLOAT2 MinimapPixelOf(PlanePosition _point) const noexcept;
   };
 
-  // The content for _player: its Ore and income from the newest snapshot, a description of _selected, by design name
-  // from the snapshot's designs, the buttons the selection offers, and the minimap's marks. _placing is the structure
-  // being placed, if any.
+  // The content for _player: its Ore and income from the newest snapshot, its research, a description of _selected, by
+  // design name from the snapshot's designs, the buttons the selection offers, and the minimap's marks. _placing is the
+  // structure being placed, if any. With a _designer, a selected built Shipyard of the player's shows it.
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
-                                        std::optional<StructureKind> _placing = std::nullopt);
+                                        std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr);
 
   // Where everything goes on a back buffer of this size. _view is the ground the camera shows, its corners in order,
   // outlined on the minimap; empty when the camera sees past the horizon.

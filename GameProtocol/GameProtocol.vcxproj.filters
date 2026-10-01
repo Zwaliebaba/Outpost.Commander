@@ -10,6 +10,9 @@
     <Filter Include="Snapshots">
       <UniqueIdentifier>{0b238680-fc90-4781-9d34-0a1b57c3cbac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Designs">
+      <UniqueIdentifier>{77467800-d001-4c1b-8322-898d1d5831d4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Connection">
       <UniqueIdentifier>{21836da5-a4a5-4634-bfda-424081217b9e}</UniqueIdentifier>
     </Filter>
@@ -31,6 +34,9 @@
     </ClInclude>
     <ClInclude Include="Snapshot.h">
       <Filter>Snapshots</Filter>
+    </ClInclude>
+    <ClInclude Include="DesignStats.h">
+      <Filter>Designs</Filter>
     </ClInclude>
     <ClInclude Include="Transport.h">
       <Filter>Connection</Filter>

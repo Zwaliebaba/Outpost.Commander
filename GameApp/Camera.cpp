@@ -109,9 +109,7 @@ void Outpost::Camera::Update(const Neuron::InputState& _input, float _elapsedSec
     m_dragCursorPixels = {_input.cursorXPixels, _input.cursorYPixels};
   }
   else
-  {
     m_dragCursorPixels.reset();
-  }
 
   float right = Axis(_input, KEY_PAN_RIGHT, KEY_PAN_LEFT);
   float forward = Axis(_input, KEY_PAN_UP, KEY_PAN_DOWN);

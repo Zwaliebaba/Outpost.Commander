@@ -1,4 +1,4 @@
-// A glow fades from its color at the center to nothing at its rim, and the blend adds it to the scene (ADR-018). The
+// A glow fades from its color at the center to nothing at its rim, and the blend adds it to the scene (ADR-019). The
 // color is linear; the render target encodes it to sRGB.
 
 struct VertexOut

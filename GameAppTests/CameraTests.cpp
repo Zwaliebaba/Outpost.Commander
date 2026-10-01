@@ -117,7 +117,7 @@ public:
     Assert::AreEqual(60.0f, camera.Focus().y, TOLERANCE_METERS);
   }
 
-  // ADR-018: a glow is laid along the screen's right and up. Right is level, up leans back from the camera as the
+  // ADR-019: a glow is laid along the screen's right and up. Right is level, up leans back from the camera as the
   // view tilts, the two are at right angles, and right is where panning right moves the view.
   TEST_METHOD(GivesTheScreensAxesInTheWorld)
   {

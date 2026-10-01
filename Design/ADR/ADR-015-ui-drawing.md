@@ -21,13 +21,13 @@ The owner decided on 2026-10-01: **DirectWrite rasterizes a glyph atlas once, an
      - The minimap at the bottom left.
      - A hint at the top middle while a placement is armed.
    - **The minimap** is the map's square, +x to the right and +z up. Every entity is a square in its side's color, at its size or a few pixels. The camera's view is outlined as the box around the ground the screen shows.
-   - **The research queue** waits for research (task 5.1).
-5. **Input focus is a rectangle test.** A mouse button press on a HUD panel belongs to the HUD and does not reach the player's controls. A release always does, so that a drag begun in the world ends wherever it is let go. There is no keyboard focus yet: no HUD element takes keys.
+   - **Research and the designer** are [ADR-017](ADR-017-research-and-the-designer.md)'s: a line under the Ore for the topic under way, the Research Lab's queue and topics in its panels, and the designer at the top right beside a selected Shipyard.
+5. **Input focus is a rectangle test.** A mouse button press on a HUD panel belongs to the HUD and does not reach the player's controls. A release always does, so that a drag begun in the world ends wherever it is let go. The designer's name field is the one element that takes keys: while it has them, no order, control group or camera key reads the keyboard (ADR-017).
 
 ## Consequences
 
 - **Nothing ships for text.** The font is the one Windows installs, and nothing is baked or packaged.
-- **Only printable ASCII.** Design names and numbers are ASCII today. A name with other characters shows `?` in their place until the designer (task 5.2) needs more.
+- **Only printable ASCII.** Design names and numbers are ASCII, and the designer takes no other character into a name (ADR-017). Text from elsewhere with other characters shows `?` in their place.
 - **One font size.** Headings or small print need a second atlas or a second size in this one.
 - **The interface costs one draw call and one upload of its vertices per frame.** Q4's measurement (task 3.7) includes it.
 

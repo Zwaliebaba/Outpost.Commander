@@ -38,8 +38,8 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
-    // Twelve: three hulls, two drives, and the two weapons without splash.
-    Assert::AreEqual(size_t{12}, designs.size());
+    // Eighteen: three hulls, two drives and three weapons.
+    Assert::AreEqual(size_t{18}, designs.size());
     for (const CheckDesign& design : designs)
     {
       const Outpost::DesignStats stats =
@@ -47,7 +47,8 @@ public:
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
-    Assert::AreEqual(std::string("L+F+La"), designs.back().code);
+    Assert::AreEqual(std::string("L+F+MR"), designs.back().code);
+    Assert::AreEqual(30.0f, designs.back().stats.splashRadiusMeters);
   }
 
   // A battle replays: the same battle of the same pairing has the same outcome.
@@ -108,9 +109,7 @@ public:
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
   // TestCategory trait. The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The
   // verdicts are recorded in design §12.
-  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
-  TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full")
-  END_TEST_METHOD_ATTRIBUTE()
+  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck) TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full") END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(TheFullCheck)
   {
     if (GetEnvironmentVariableW(L"OUTPOST_Q2_FULL", nullptr, 0) == 0)

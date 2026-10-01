@@ -32,11 +32,13 @@ public:
   {
     return m_history.empty();
   }
+
   // The tick the view shows, with a fraction between two snapshots.
   [[nodiscard]] double ViewTick() const noexcept
   {
     return m_viewTick;
   }
+
   // The newest snapshot; only while not empty.
   [[nodiscard]] const Snapshot& Newest() const noexcept
   {

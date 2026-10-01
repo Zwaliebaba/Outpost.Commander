@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <numbers>
 
 namespace
 {
@@ -33,32 +32,51 @@ Outpost::ShipMovement Outpost::MovementFor(const Tuning& _tuning, HullId _hull, 
   const auto drive = std::ranges::find(_tuning.drives, _drive, &DriveTuning::id);
   if (hull == _tuning.hulls.end() || drive == _tuning.drives.end())
     throw Neuron::Exception(std::format("MovementFor: no hull {} or no drive {} in the tuning data", _hull.value, _drive.value));
-  constexpr double RADIANS_PER_DEGREE = std::numbers::pi / 180.0;
-  return {.speedMetersPerSecond = static_cast<float>(hull->speedMetersPerSecond * drive->speedFactor),
-          .turnRateRadiansPerSecond = static_cast<float>(hull->turnRateDegreesPerSecond * drive->turnRateFactor * RADIANS_PER_DEGREE),
-          .radiusMeters = static_cast<float>(hull->footprintRadiusMeters)};
+  return DesignStatsOf(ViewOf(*hull, {}, true), ViewOf(*drive, true), {}).movement;
 }
 
-Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, HullId _hull, DriveId _drive, WeaponId _weapon)
+Outpost::HullView Outpost::ViewOf(const HullTuning& _hull, const Upgrades& _upgrades, bool _available)
 {
-  const HullTuning& hull = Find(_tuning.hulls, _hull, "hull");
-  const DriveTuning& drive = Find(_tuning.drives, _drive, "drive");
-  const WeaponTuning& weapon = Find(_tuning.weapons, _weapon, "weapon");
-  return {.movement = MovementFor(_tuning, _hull, _drive),
-          .hitPointsHundredths = static_cast<std::int32_t>(std::llround(hull.hitPoints * drive.hitPointsFactor * HUNDREDTHS)),
-          .armorHundredths = hull.armor * HUNDREDTHS,
-          .cost = hull.cost + drive.cost + weapon.cost,
-          .buildSeconds = hull.buildSeconds,
-          .damageHundredths = weapon.damage * HUNDREDTHS,
-          .fireIntervalSeconds = weapon.fireIntervalSeconds,
-          .rangeMeters = static_cast<float>(weapon.rangeMeters)};
+  return {.id = _hull.id,
+          .nameUtf8 = _hull.name,
+          .hitPointsHundredths = static_cast<std::int32_t>(std::llround(_hull.hitPoints * HUNDREDTHS * _upgrades.hullHitPointsFactor)),
+          .armorHundredths = _hull.armor * HUNDREDTHS,
+          .speedMetersPerSecond = _hull.speedMetersPerSecond,
+          .turnRateDegreesPerSecond = _hull.turnRateDegreesPerSecond,
+          .footprintRadiusMeters = _hull.footprintRadiusMeters,
+          .cost = _hull.cost,
+          .buildSeconds = _hull.buildSeconds,
+          .available = _available};
 }
 
-double Outpost::DamagePerSecond(const DesignStats& _stats, std::int32_t _armorHundredths) noexcept
+Outpost::DriveView Outpost::ViewOf(const DriveTuning& _drive, bool _available)
 {
-  if (_stats.fireIntervalSeconds <= 0.0)
-    return 0.0;
-  return static_cast<double>(HitHundredths(_stats.damageHundredths, _armorHundredths)) / HUNDREDTHS / _stats.fireIntervalSeconds;
+  return {.id = _drive.id,
+          .nameUtf8 = _drive.name,
+          .speedFactor = _drive.speedFactor,
+          .hitPointsFactor = _drive.hitPointsFactor,
+          .turnRateFactor = _drive.turnRateFactor,
+          .cost = _drive.cost,
+          .available = _available};
+}
+
+Outpost::WeaponView Outpost::ViewOf(const WeaponTuning& _weapon, const Upgrades& _upgrades, bool _available)
+{
+  return {.id = _weapon.id,
+          .nameUtf8 = _weapon.name,
+          .damageHundredths = _weapon.damage * HUNDREDTHS,
+          .fireIntervalSeconds = _weapon.fireIntervalSeconds / _upgrades.FireRateFactor(_weapon.id),
+          .rangeMeters = _weapon.rangeMeters,
+          .splashRadiusMeters = _weapon.splashRadiusMeters,
+          .cost = _weapon.cost,
+          .available = _available};
+}
+
+Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, HullId _hull, DriveId _drive, WeaponId _weapon,
+                                             const Upgrades& _upgrades)
+{
+  return DesignStatsOf(ViewOf(Find(_tuning.hulls, _hull, "hull"), _upgrades, true), ViewOf(Find(_tuning.drives, _drive, "drive"), true),
+                       ViewOf(Find(_tuning.weapons, _weapon, "weapon"), _upgrades, true));
 }
 
 std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _tuning)

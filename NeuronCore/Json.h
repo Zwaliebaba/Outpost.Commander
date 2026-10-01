@@ -26,22 +26,27 @@ public:
   {
     return std::holds_alternative<std::monostate>(m_value);
   }
+
   [[nodiscard]] bool IsBool() const noexcept
   {
     return std::holds_alternative<bool>(m_value);
   }
+
   [[nodiscard]] bool IsNumber() const noexcept
   {
     return std::holds_alternative<double>(m_value);
   }
+
   [[nodiscard]] bool IsString() const noexcept
   {
     return std::holds_alternative<std::string>(m_value);
   }
+
   [[nodiscard]] bool IsArray() const noexcept
   {
     return std::holds_alternative<Array>(m_value);
   }
+
   [[nodiscard]] bool IsObject() const noexcept
   {
     return std::holds_alternative<Object>(m_value);

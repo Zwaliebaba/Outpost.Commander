@@ -218,6 +218,141 @@ public:
     Assert::IsFalse(layout.MapPointAt(map.left - 5.0f, map.top).has_value());
   }
 
+  // Task 5.1: a selected Research Lab shows its queue, and offers each topic not researched or queued yet with what it
+  // does and what it costs, dim while its prerequisite is neither; the topic under way shows under the Ore.
+  TEST_METHOD(DescribesTheResearchLab)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 250;
+    newest.research = {
+      {.id = Outpost::ResearchTopicId{1}, .nameUtf8 = "Improved Extraction", .effectUtf8 = "Mining Rig income +25%", .cost = 150},
+      {.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating", .effectUtf8 = "Hull hit points +15%", .cost = 150},
+      {.id = Outpost::ResearchTopicId{5},
+       .nameUtf8 = "Fusion Drive",
+       .effectUtf8 = "Unlocks the Fusion drive",
+       .cost = 200,
+       .prerequisites = {Outpost::ResearchTopicId{2}}},
+      {.id = Outpost::ResearchTopicId{8},
+       .nameUtf8 = "Automated Shipyards",
+       .effectUtf8 = "Shipyard build speed +25%",
+       .cost = 200,
+       .prerequisites = {Outpost::ResearchTopicId{1}},
+       .researched = false}};
+    newest.research[0].researched = true;
+    newest.structureTypes = {
+      {.structure = Outpost::StructureKind::ResearchLab, .nameUtf8 = "Research Lab", .buildable = true, .cost = 200}};
+    const Outpost::EntityView lab{.id = Outpost::EntityId{40},
+                                  .kind = Outpost::EntityKind::Structure,
+                                  .owner = PLAYER,
+                                  .structure = Outpost::StructureKind::ResearchLab,
+                                  .hitPointsHundredths = 150000,
+                                  .maxHitPointsHundredths = 150000,
+                                  .research = {Outpost::ResearchTopicId{2}},
+                                  .jobPermille = 250};
+    const std::vector<Outpost::EntityId> selected{lab.id};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    const std::vector<std::string> expected{"Research Lab", "Hit points 1,500 / 1,500", "1. Hull Plating, 25%",
+                                            "Fusion Drive: Unlocks the Fusion drive", "Automated Shipyards: Shipyard build speed +25%"};
+    Assert::IsTrue(content.selection == expected);
+    Assert::AreEqual(size_t{2}, content.buttons.size());
+    Assert::AreEqual(std::string("Fusion Drive|200"), content.buttons[0].label);
+    Assert::IsTrue(content.buttons[0].enabled, L"its prerequisite is queued");
+    Assert::IsTrue(content.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Research,
+                                                                     .producer = lab.id,
+                                                                     .topic = Outpost::ResearchTopicId{8}});
+    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), content.research);
+
+    // Nothing selected, the research still shows under the Ore.
+    const Outpost::Hud::Content unselected = Outpost::Hud::Describe(newest, std::vector{lab}, {});
+    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), unselected.research);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(unselected, 1920, 1080);
+    Assert::IsTrue(
+      std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Researching Hull Plating, 25%"; }));
+  }
+
+  // Task 5.2: a selected built Shipyard of the player's shows the designer at the top right: a lit pick and a dim locked
+  // component in each slot, the stats with damage per second against each hull, a name field to click, and the actions.
+  TEST_METHOD(ShowsTheDesignerBesideAShipyard)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 500;
+    newest.hulls = {{.id = Outpost::HullId{1},
+                     .nameUtf8 = "Small",
+                     .hitPointsHundredths = 22000,
+                     .armorHundredths = 200,
+                     .speedMetersPerSecond = 60.0,
+                     .cost = 32,
+                     .buildSeconds = 10.0,
+                     .available = true},
+                    {.id = Outpost::HullId{3},
+                     .nameUtf8 = "Large",
+                     .hitPointsHundredths = 120000,
+                     .armorHundredths = 1400,
+                     .speedMetersPerSecond = 25.0,
+                     .cost = 300,
+                     .buildSeconds = 40.0,
+                     .available = false}};
+    newest.drives = {
+      {.id = Outpost::DriveId{1}, .nameUtf8 = "Ion", .speedFactor = 1.3, .hitPointsFactor = 0.9, .cost = 20, .available = true}};
+    newest.weapons = {{.id = Outpost::WeaponId{1},
+                       .nameUtf8 = "Mass Driver",
+                       .damageHundredths = 1400,
+                       .fireIntervalSeconds = 0.4,
+                       .rangeMeters = 120.0,
+                       .cost = 35,
+                       .available = true}};
+    newest.designs = {{.id = SWARM,
+                       .nameUtf8 = "Swarm",
+                       .hull = Outpost::HullId{1},
+                       .drive = Outpost::DriveId{1},
+                       .weapon = Outpost::WeaponId{1},
+                       .cost = 87}};
+    newest.shipyardBuildSpeedFactor = 1.25;
+    const Outpost::EntityView yard{
+      .id = Outpost::EntityId{30}, .kind = Outpost::EntityKind::Structure, .owner = PLAYER, .structure = Outpost::StructureKind::Shipyard};
+    Outpost::Designer designer;
+    designer.Update(newest);
+    const std::vector<Outpost::EntityId> selected{yard.id};
+    Assert::IsFalse(Outpost::Hud::Describe(newest, std::vector{yard}, selected).designer.has_value(), L"no designer given");
+
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{yard}, selected, std::nullopt, &designer);
+    Assert::IsTrue(content.designer.has_value());
+    const Outpost::Hud::DesignerPanel panel = content.designer.value_or(Outpost::Hud::DesignerPanel{});
+    Assert::AreEqual(std::string("Swarm"), panel.name);
+    Assert::IsTrue(panel.hulls[0].selected && panel.hulls[0].enabled);
+    Assert::IsFalse(panel.hulls[1].enabled, L"the Large hull is locked");
+    const std::vector<std::string> summary{"Hit points 198   Armor 2   Speed 78 m/s", "Range 120 m   Cost 87   Build 8 s"};
+    Assert::IsTrue(panel.summary == summary);
+    const std::vector<std::string> perShip{"per ship", "30.0", "8.8"};
+    Assert::IsTrue(panel.table[1] == perShip);
+    const std::vector<std::string> perOre{"per 100 Ore", "34.5", "10.1"};
+    Assert::IsTrue(panel.table[2] == perOre);
+    Assert::AreEqual(std::string("Rename"), panel.actions[0].label);
+    Assert::IsFalse(panel.actions[0].enabled, L"the name has not changed");
+    Assert::IsTrue(panel.actions[1].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
+    Assert::IsTrue(panel.actions[1].enabled);
+
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto actionArea = [&layout](Outpost::Hud::ActionKind _kind)
+    { return std::ranges::find(layout.actions, _kind, [](const auto& _entry) { return _entry.second.kind; })->first; };
+    const Outpost::Hud::Rect name = actionArea(Outpost::Hud::ActionKind::EditName);
+    Assert::IsTrue(name.left > 1920.0f - 700.0f && name.top < 100.0f, L"top right");
+    Assert::IsTrue(layout.ActionAt(name.left + 5.0f, name.top + 5.0f) == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::EditName});
+    const Outpost::Hud::Rect pick = actionArea(Outpost::Hud::ActionKind::PickHull);
+    Assert::IsTrue(pick.top > name.top);
+    Assert::AreEqual(size_t{1},
+                     static_cast<size_t>(std::ranges::count(layout.actions, Outpost::Hud::ActionKind::PickHull,
+                                                            [](const auto& _entry) { return _entry.second.kind; })),
+                     L"the locked hull is no place to click");
+    Assert::IsTrue(layout.Covers(name.left + 5.0f, name.top + 5.0f));
+
+    // Another player's Shipyard shows no designer.
+    Outpost::EntityView theirs = yard;
+    theirs.owner = Outpost::PlayerId{2};
+    Assert::IsFalse(Outpost::Hud::Describe(newest, std::vector{theirs}, selected, std::nullopt, &designer).designer.has_value());
+  }
+
   // A press on a panel belongs to the HUD.
   TEST_METHOD(CoversItsPanels)
   {

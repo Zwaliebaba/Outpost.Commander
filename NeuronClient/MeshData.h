@@ -9,7 +9,7 @@ struct MeshVertex
   DirectX::XMFLOAT3 normal;
 };
 
-// A place on a mesh where something attaches, such as where a gun fires from or an engine's exhaust leaves (ADR-017).
+// A place on a mesh where something attaches, such as where a gun fires from or an engine's exhaust leaves (ADR-018).
 // The engine carries the tag and never reads it: what a tag means is the game's (R9).
 struct MeshHardpoint
 {
@@ -22,7 +22,7 @@ struct MeshHardpoint
   float size = 0.0f;
 };
 
-// A triangle list on the CPU, and its hardpoints: what an .nmf file holds (ADR-017). The mesh's front is +x and its up
+// A triangle list on the CPU, and its hardpoints: what an .nmf file holds (ADR-018). The mesh's front is +x and its up
 // +y, and the triangles wind clockwise seen from their front, Direct3D's default.
 struct MeshData
 {
@@ -39,7 +39,7 @@ struct MeshData
   }
 };
 
-// Reads the bytes of an .nmf file, the format Tools/BakeMeshes.py writes (ADR-017). Throws Neuron::Exception naming
+// Reads the bytes of an .nmf file, the format Tools/BakeMeshes.py writes (ADR-018). Throws Neuron::Exception naming
 // _fileName and the byte offset when the file is not version 1 of the format, is cut short or has bytes left over, has
 // no triangles or an index past its vertices, holds a number that is not finite, or has a hardpoint whose tag is not
 // lowercase letters and digits, whose directions are not unit vectors at right angles, or whose size is not positive.

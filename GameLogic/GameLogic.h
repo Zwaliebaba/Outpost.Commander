@@ -13,6 +13,7 @@
 #include "Map.h"
 #include "PlaneVector.h"
 #include "Pathfinder.h"
+#include "Research.h"
 #include "ShipDesign.h"
 #include "Simulation.h"
 #include "StressLoad.h"

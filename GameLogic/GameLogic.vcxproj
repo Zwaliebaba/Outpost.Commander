@@ -82,6 +82,7 @@
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PlaneVector.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Research.h" />
     <ClInclude Include="ShipDesign.h" />
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="Tuning.h" />
@@ -95,6 +96,7 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
+    <ClCompile Include="Research.cpp" />
     <ClCompile Include="ShipDesign.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Tuning.cpp" />

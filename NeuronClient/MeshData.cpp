@@ -9,7 +9,7 @@
 
 namespace
 {
-// The .nmf layout, version 1 (ADR-017). Sizes are in bytes.
+// The .nmf layout, version 1 (ADR-018). Sizes are in bytes.
 constexpr std::array<std::uint8_t, 4> NMF_MAGIC{'N', 'M', 'F', '\0'};
 constexpr std::uint32_t NMF_VERSION = 1;
 constexpr size_t FILE_VERTEX_BYTES = 6 * sizeof(float);

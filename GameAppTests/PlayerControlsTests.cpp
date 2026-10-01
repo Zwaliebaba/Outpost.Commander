@@ -89,10 +89,12 @@ public:
   {
     return m_world;
   }
+
   Outpost::PlayerControls& Controls()
   {
     return m_controls;
   }
+
   Outpost::Camera& CameraView()
   {
     return m_camera;

@@ -9,7 +9,7 @@
 
 namespace
 {
-constexpr const wchar_t* WINDOW_CLASS_NAME = L"NeuronWindow";
+constexpr auto WINDOW_CLASS_NAME = L"NeuronWindow";
 constexpr DWORD FULL_SCREEN_STYLE = WS_POPUP;
 constexpr DWORD WINDOWED_STYLE = WS_OVERLAPPEDWINDOW;
 constexpr DWORD WINDOW_EX_STYLE = 0;
@@ -95,7 +95,7 @@ constexpr WPARAM ANY_BUTTON_HELD = MK_LBUTTON | MK_RBUTTON | MK_MBUTTON;
 
 void PlaceWindow(HWND _hwnd, DWORD _style, const RECT& _frame) noexcept
 {
-  SetWindowLongPtrW(_hwnd, GWL_STYLE, static_cast<LONG_PTR>(_style | WS_VISIBLE));
+  SetWindowLongPtrW(_hwnd, GWL_STYLE, _style | WS_VISIBLE);
   SetWindowPos(_hwnd, nullptr, _frame.left, _frame.top, _frame.right - _frame.left, _frame.bottom - _frame.top,
                SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
@@ -169,9 +169,7 @@ bool Neuron::Window::ProcessMessages()
     // Input is counted here, where the window's state is in reach, and the message still goes on to DefWindowProc.
     // Capturing the mouse while any button is held keeps a drag going when the cursor leaves a window.
     if (message.message == WM_MOUSEWHEEL)
-    {
       m_wheelDelta += GET_WHEEL_DELTA_WPARAM(message.wParam);
-    }
     else if (const std::optional<ButtonMessage> button = AsButton(message.message))
     {
       if (button->down)
@@ -201,6 +199,14 @@ bool Neuron::Window::ProcessMessages()
                           .read = std::chrono::steady_clock::now(),
                           .shift = GetKeyState(VK_SHIFT) < 0,
                           .control = GetKeyState(VK_CONTROL) < 0});
+    }
+    else if (message.message == WM_CHAR)
+    {
+      // TranslateMessage below posts it for a key press, so it arrives in this loop after the WM_KEYDOWN it came from.
+      m_events.push_back({.kind = InputEventKind::Character,
+                          .character = static_cast<std::uint32_t>(message.wParam),
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now()});
     }
     TranslateMessage(&message);
     DispatchMessageW(&message);
@@ -294,8 +300,10 @@ LRESULT CALLBACK Neuron::Window::WindowProc(HWND _hwnd, UINT _message, WPARAM _w
     RECT monitor{};
     const bool fullScreen = (GetWindowLongPtrW(_hwnd, GWL_STYLE) & static_cast<LONG_PTR>(FULL_SCREEN_STYLE)) != 0;
     if (fullScreen && MonitorArea(MonitorFromWindow(_hwnd, MONITOR_DEFAULTTOPRIMARY), monitor))
+    {
       SetWindowPos(_hwnd, nullptr, monitor.left, monitor.top, monitor.right - monitor.left, monitor.bottom - monitor.top,
                    SWP_NOZORDER | SWP_NOACTIVATE);
+    }
     return 0;
   }
   case WM_DESTROY:

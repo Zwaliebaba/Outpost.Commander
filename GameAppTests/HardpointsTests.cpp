@@ -94,7 +94,7 @@ public:
     Assert::IsFalse(Outpost::NearestMuzzle(exhaustOnly, pose, {}).has_value());
   }
 
-  // ADR-018: the exhaust streams out behind the ship, in its drive's color, and longer and brighter at speed.
+  // ADR-019: the exhaust streams out behind the ship, in its drive's color, and longer and brighter at speed.
   TEST_METHOD(AnExhaustStreamsBehindAndGrowsWithSpeed)
   {
     const std::vector<Neuron::MeshHardpoint> hardpoints = TwoGunsAndAnExhaust();
@@ -123,7 +123,7 @@ public:
     Assert::AreEqual(2.0f * resting.front().radiusMeters, doubled.front().radiusMeters, TOLERANCE);
   }
 
-  // Every model that fires has a gun, and every model that moves has an exhaust, in both players' sets (ADR-017): the
+  // Every model that fires has a gun, and every model that moves has an exhaust, in both players' sets (ADR-018): the
   // hulls, the Constructor, and the two armed structures of design §6.
   TEST_METHOD(EveryModelHasTheHardpointsItsRoleNeeds)
   {

@@ -5,7 +5,7 @@ Neuron::ByteBuffer Neuron::BinaryFile::ReadFile(const std::wstring& _fileName)
 {
   ByteBuffer data;
 
-  std::wstring fullName = FileSys::GetHomeDirectory() + _fileName;
+  std::wstring fullName = GetHomeDirectory() + _fileName;
   ScopedHandle file(SafeHandle(CreateFile2(fullName.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
   if (!file)
     return {};

@@ -28,8 +28,10 @@ public:
   {
     std::vector<Neuron::GlyphBitmap> bitmaps;
     for (char character = Neuron::GlyphAtlas::FIRST; character <= Neuron::GlyphAtlas::LAST; ++character)
+    {
       bitmaps.push_back(character == ' ' ? Neuron::GlyphBitmap{.advance = 5.0f}
                                          : Bitmap(9 + (character % 7), 14 + (character % 5), static_cast<std::uint8_t>(character)));
+    }
     const Neuron::GlyphAtlas atlas = Neuron::PackGlyphs(bitmaps, 15.0f, 20.0f);
 
     Assert::IsTrue(std::has_single_bit(atlas.width) && std::has_single_bit(atlas.height));

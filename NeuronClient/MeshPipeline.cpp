@@ -18,6 +18,7 @@ struct ObjectConstants
   DirectX::XMFLOAT4X4 world;
   DirectX::XMFLOAT4 color;
 };
+
 constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)

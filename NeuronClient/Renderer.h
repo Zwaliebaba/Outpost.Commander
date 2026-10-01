@@ -51,15 +51,18 @@ public:
   {
     return m_device.get();
   }
+
   // Which of the FRAME_COUNT frames is being recorded, for resources kept once per frame in flight.
   [[nodiscard]] UINT FrameIndex() const noexcept
   {
     return m_frameIndex;
   }
+
   [[nodiscard]] UINT WidthPixels() const noexcept
   {
     return m_widthPixels;
   }
+
   [[nodiscard]] UINT HeightPixels() const noexcept
   {
     return m_heightPixels;
