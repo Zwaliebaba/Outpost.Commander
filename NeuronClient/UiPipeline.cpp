@@ -16,6 +16,8 @@ constexpr UINT SCREEN_CONSTANT_COUNT = 4;
 
 constexpr UINT VERTICES_PER_QUAD = 4;
 constexpr UINT INDICES_PER_QUAD = 6;
+// Two triangles over a quad's corners, clockwise: top-left, top-right, bottom-right, bottom-left.
+constexpr std::array<std::uint16_t, INDICES_PER_QUAD> QUAD_CORNERS{0, 1, 2, 0, 2, 3};
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
@@ -108,7 +110,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   for (UINT quad = 0; quad < MAX_QUADS; ++quad)
   {
     const auto first = static_cast<std::uint16_t>(quad * VERTICES_PER_QUAD);
-    for (const std::uint16_t corner : {0, 1, 2, 0, 2, 3})
+    for (const std::uint16_t corner : QUAD_CORNERS)
       indices.push_back(static_cast<std::uint16_t>(first + corner));
   }
   const auto indexBytes = std::as_bytes(std::span(indices));

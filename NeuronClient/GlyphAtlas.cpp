@@ -128,7 +128,7 @@ Neuron::GlyphAtlas Neuron::RasterizeGlyphs(std::wstring_view _family, float _emP
   std::vector<GlyphBitmap> bitmaps;
   for (char character = GlyphAtlas::FIRST; character <= GlyphAtlas::LAST; ++character)
   {
-    const auto codePoint = static_cast<UINT32>(character);
+    const auto codePoint = static_cast<UINT32>(static_cast<unsigned char>(character));
     UINT16 glyphIndex = 0;
     winrt::check_hresult(face->GetGlyphIndices(&codePoint, 1, &glyphIndex));
     DWRITE_GLYPH_METRICS glyphMetrics{};
