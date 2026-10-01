@@ -29,7 +29,7 @@ The owner answered both on 2026-09-30: the same build on the same platform, and 
 - **Frame time and tick time share one thread.** A slow frame delays ticks, and a slow tick delays the frame. At 20 Hz with a small world neither matters yet. Q4's tick-time measurement (task 2.7) times `Advance` on this thread. Moving the server to its own thread, or its own executable (ADR-002), changes the host and the transport, not `Simulation`.
 - **Snapshots are dropped until 2.5 renders them.** The executable calls `Receive` every frame, so the queue stays empty.
 - **A rejected command is invisible to the client.** `Simulation::Tick` returns a result per command, but the protocol has no message for it. A task that needs the player to see a rejection adds one.
-- **Only move and stop are applied so far.** The other orders are rejected as not yet supported until the tasks that give them meaning: attack with 3.3, build with 4.2, queue with 4.3, research with 5.1, and save design with 5.2.
+- **Every order is applied once its task gives it meaning:** attack with 3.3, build with 4.2, queue with 4.3, research with 5.1, and save design with 5.2. A simulation without the tuning data, as the movement and combat tests run, still rejects the base's, research's and the designer's orders as not yet supported (ADR-016).
 
 ## What this forecloses
 

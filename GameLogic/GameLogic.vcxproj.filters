@@ -16,6 +16,9 @@
     <Filter Include="Combat">
       <UniqueIdentifier>{6b1f3c52-8d0e-4f7a-9a21-3c5e7d4b2a10}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Research">
+      <UniqueIdentifier>{240628ee-817a-4d39-9c5c-17f29c648a74}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Server">
       <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
     </Filter>
@@ -44,6 +47,9 @@
     <ClInclude Include="ShipDesign.h">
       <Filter>Combat</Filter>
     </ClInclude>
+    <ClInclude Include="Research.h">
+      <Filter>Research</Filter>
+    </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Tuning</Filter>
     </ClInclude>
@@ -61,6 +67,9 @@
     </ClCompile>
     <ClCompile Include="Map.cpp">
       <Filter>Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Research.cpp">
+      <Filter>Research</Filter>
     </ClCompile>
     <ClCompile Include="Simulation.cpp">
       <Filter>Simulation</Filter>

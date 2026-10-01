@@ -27,7 +27,7 @@ The options were CSV with one file per table, JSON with a hand-written parser, t
 - **The tables are no longer in the design.** Reading a number means opening the file. The "Tuned on" table in §12 records the tuning pass of 2026-09-30, including the values it chose, and where it and the file disagree, the file is what the game plays.
 - **Diffs are noisier than CSV.** To keep them readable, each hull, drive, weapon and structure is one line of the file, and each research topic two, so a changed number is a one-line diff.
 - **The parser is this repository's to maintain.** `JsonTests` covers the grammar, the escapes and surrogate pairs, the depth limit, and the error positions. It reads the bytes of a string as they are and does not check that they are valid UTF-8.
-- **The client cannot include the loader.** `GameApp` cannot include `GameLogic` (ADR-002). The ship designer (5.2) shows a design's stats on the client, so it will need component numbers. Either the tuning types move to `GameProtocol`, or the server sends the numbers to the client. That choice is made in 5.2 and recorded there.
+- **The client cannot include the loader.** `GameApp` cannot include `GameLogic` (ADR-002). The ship designer (5.2) shows a design's stats on the client, so it will need component numbers. The server sends them in each snapshot, with the player's research applied, and the tuning types stay here ([ADR-017](ADR-017-research-and-the-designer.md)).
 
 ## What this forecloses
 

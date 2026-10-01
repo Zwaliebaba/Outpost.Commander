@@ -8,7 +8,7 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
 
 ## Decision
 
-1. **Ore counts in hundredths.** A player's stockpile is an integer of hundredths of an Ore, so a rig's income per tick is whole: 5 Ore a second is 25 hundredths a tick at 20 Hz, and 8 is 40. Costs are whole Ore. A snapshot carries the stockpile rounded down to whole Ore and the player's income in hundredths per second, the sum of its built rigs.
+1. **Ore counts in hundredths.** A player's stockpile is an integer of hundredths of an Ore, so a rig's income per tick is whole: 5 Ore a second is 25 hundredths a tick at 20 Hz, and 8 is 40. An income that research makes uneven is paid with its remainder carried ([ADR-017](ADR-017-research-and-the-designer.md)). Costs are whole Ore. A snapshot carries the stockpile rounded down to whole Ore and the player's income in hundredths per second, the sum of its built rigs.
 2. **The tuning data holds the base's numbers** (ADR-008).
    - Every structure has a `footprintRadiusMeters`: Command Station 45, Shipyard 40, Research Lab 30, Mining Rig 25, Defence Platform 20.
    - The Constructor is a `constructor` entry: 300 hit points, armor 2, 45 m/s, 60 Ore, 15 s, a 10 m footprint and a 150°/s turn rate. It also holds G8's rates: `extraConstructorBuildShare` 0.5 and `repairPercentPerSecond` 2.
