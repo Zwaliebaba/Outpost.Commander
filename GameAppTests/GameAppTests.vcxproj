@@ -100,6 +100,7 @@
     <ClCompile Include="PlayerControlsTests.cpp" />
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
+    <ClCompile Include="StarfieldTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />
     <ClCompile Include="DesignerTests.cpp" />

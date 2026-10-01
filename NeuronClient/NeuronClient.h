@@ -21,5 +21,6 @@
 #include "Mesh.h"
 #include "MeshPipeline.h"
 #include "GlowPipeline.h"
+#include "StarPipeline.h"
 #include "GlyphAtlas.h"
 #include "UiPipeline.h"
