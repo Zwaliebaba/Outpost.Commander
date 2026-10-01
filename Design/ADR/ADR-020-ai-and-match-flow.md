@@ -28,7 +28,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
    - It saves a design it does not have, and keeps 2 jobs in each Shipyard's queue.
    - Its warships gather in reserve 170 m from its Command Station, toward the map's center.
    - When the reserve reaches 12 ships, they join the attack group. The group attack-moves on the nearest enemy structure, then on the next, until it dies out.
-   - A shot on one of its Mining Rigs or Defence Platforms sends the reserve there with an attack-move (design §10). The reserve goes back 10 s after the last shot.
+   - A shot on any of its structures, built or a site, sends the reserve there with an attack-move (design §10, owner, 2026-10-01). The reserve goes back 10 s after the last shot.
    - The AI never kites (design §7).
 9. **A match ends once a player whose base was placed has no Command Station.** Every snapshot carries `matchOver`, the winner, and `matchEndedTick`. The winner is no player when both stations fall in the same tick. The world runs on after the match ends, and the outcome stands. A world with no bases placed never ends, as in the movement and combat tests.
 10. **The game opens on a menu with Start skirmish and Quit.** `GameClient` has a menu screen and a match screen. Starting or leaving a match resets everything the last match left in the view, without reloading a mesh. Each match has its own server and seed.
@@ -51,9 +51,9 @@ All figures below are from the GameLogicTests harness on Linux, built with clang
 - **The AI beats a player who does nothing at 5:24** (tick 6,483, seed 3). It places its base plan by 1:45 and its fourth Shipyard by 2:15, has all four built by 3:15, and sends its first attack group by 3:30.
 - **Its Shipyards spend most of what it earns.** From about 2:15 its income is 48.75 Ore/s: 3 home rigs, 3 contested rigs, and Improved Extraction, so it has 4 Shipyards. Building brawlers they spend about 33 Ore/s, and it holds about 3,300 Ore when the passive player's station falls, still gaining about 12 Ore/s.
 - **The AI researches Fusion Drive and Large Hull, but never builds a heavy.** No counter answers with one, and the default is the brawler, so those two topics cost it 450 Ore and 3½ minutes of its lab for nothing (design §15).
-- **Two AIs on the mirrored map end a match in 8:24 to 20:05** over seeds 1 to 5: 8:24, 8:30, 10:07, 20:05 and 10:27. Player 1 won 2 of the 5. Four of the five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
+- **Two AIs on the mirrored map end a match in 8:24 to 20:05** over seeds 1 to 5: 8:24, 8:30, 10:08, 20:05 and 10:27. Player 1 won 2 of the 5. Four of the five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
 - **The checks behind the AI** are:
-  - Scripted snapshots: its first orders, its answer to each design of the triangle, and the reserve going to a platform under fire but not to the Command Station.
+  - Scripted snapshots: its first orders, its answer to each design of the triangle, and the reserve going to its Command Station and to a site under fire.
   - The real server: its base in order, its Shipyards by income, its answer to an enemy fleet, the attack at 12 ships, and the defence of an outpost.
   - A whole match against a passive player.
 - **Not run yet.** The menu, the banner and the match flow are presentation and input. They are checked by the HUD's tests and by the owner's run (AGENTS.md §3).

@@ -266,7 +266,7 @@ The opponent is **The Tarkan High Command** (§1). It is one scripted AI, delibe
 2. Researches in a fixed order.
 3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It looks at the player's fleet again only once every review interval, 60 s, so it answers a switch late, as a player would, rather than at once from a map it sees in full.
 4. Gathers an attack group. When the group reaches 12 ships (gate G9), it attack-moves on the nearest player structure, and repeats.
-5. Defends: when one of its Mining Rigs or Defence Platforms is attacked, its ships outside the attack group go to it.
+5. Defends: when any of its structures is attacked, its ships outside the attack group go to it.
 6. Rebuilds destroyed Mining Rigs, and replaces lost Constructors at its Command Station.
 
 A difficulty setting is out of scope. One AI tuned to "beatable by a careful player" is enough. It does not kite (§7).
@@ -398,7 +398,6 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
 - Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
 - The AI researches Fusion Drive and Large Hull but never builds a heavy, since no counter answers with one and its default is the brawler (§10). Does a counter or the default use them, or does the order drop them?
-- The AI defends only its Mining Rigs and Defence Platforms (§10). Does it defend its Shipyards, its Research Lab and its Command Station too?
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
@@ -472,5 +471,6 @@ Decided on 2026-10-01, milestone 6:
 
 - The AI's attack group is 12 ships (gate G9). Its numbers are in `OutpostCommander/Assets/Opponent.json`, apart from the match's rules (§10, ADR-020).
 - The AI researches economy first and then the heavies, counters by §7's triangle, and builds rigs with a platform beside each contested one and a Shipyard for each 10 Ore/s of income (§10). The second Shipyard at 30 Ore/s, decided first, left it unable to spend what it earned.
+- The AI defends every structure of its, not only its rigs and platforms (§10).
 - Every player sees every ship's components, as it sees the ship (§10, ADR-020).
 - A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).

@@ -610,13 +610,13 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   2. It researches in a fixed order.
   3. It counters the player's most common design, reviewed every 60 s.
   4. It gathers an attack group to a threshold, then attack-moves on the nearest player structure.
-  5. It sends ships outside the attack group to defend a rig or platform under attack.
+  5. It sends ships outside the attack group to defend any of its structures under attack (owner, 2026-10-01; the plan first said a rig or platform).
   6. It rebuilds rigs and replaces Constructors.
   7. It does not kite.
 - **Acceptance:** tests in which scripted snapshots produce the expected commands: the build order, the counter choice after a review, the defence response.
 - **Verify:** CI; **owner run.**
 - **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base, and a Shipyard for each 10 Ore/s of income), and [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md).
-  - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, its Shipyards by income, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its rigs and platforms.
+  - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, its Shipyards by income, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its structures.
   - **Its settings.** `OutpostCommander/Assets/Opponent.json`, read by `LoadAiSettings`. The review interval moved there from `Tuning.json`.
   - **What it needed from the protocol.** Every warship's drive and weapon in the snapshot, and `PlaceGhost` moved into `GameProtocol` so that the AI places by the client's rule.
   - **Tests.** `AiPlayerTests` checks scripted snapshots (the first orders, every counter, the defence) and the AI on the real server (its base in order, its Shipyards by income, its answer to a fleet, the attack at 12 ships, the defence of an outpost, a whole match against a player who does nothing). `AiSettingsTests` checks the file, and every identifier in it against `Tuning.json`. `GameLogicTests` now references `Opponent`.
