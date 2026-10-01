@@ -175,6 +175,17 @@ float MeanDistance(const Outpost::Snapshot& _snapshot, const std::vector<Outpost
   }
   return alive > 0 ? sum / static_cast<float>(alive) : 0.0f;
 }
+// The orders of one kind among _commands.
+template <typename Order> std::vector<Order> OrdersOf(const std::vector<Outpost::Command>& _commands)
+{
+  std::vector<Order> orders;
+  for (const Outpost::Command& command : _commands)
+  {
+    if (const Order* order = std::get_if<Order>(&command.order))
+      orders.push_back(*order);
+  }
+  return orders;
+}
 } // namespace
 
 TEST_CLASS(AiPlayerTests)
@@ -214,6 +225,73 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Get()) == BRAWLER);
     Assert::IsTrue(Outpost::ChooseAnswer(
                      settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Get()) == HEAVY_LANCE);
+  }
+
+  // Plan task 6.1's acceptance, from the match's first snapshot: a Constructor queued, and both Constructors sent to put
+  // a rig on the home asteroid nearest the Command Station.
+  TEST_METHOD(OrdersARigAndAConstructorFirst)
+  {
+    AiMatch match;
+    const Outpost::Snapshot first = match.View(AI);
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    const std::vector<Outpost::Command> commands = ai.Update(first);
+    Assert::IsTrue(std::ranges::all_of(commands, [](const Outpost::Command& _command) { return _command.player == AI; }));
+
+    const auto station = std::ranges::find_if(first.entities,
+                                              [](const Outpost::EntityView& _entity)
+                                              {
+                                                return _entity.owner == AI && _entity.structure == Outpost::StructureKind::CommandStation &&
+                                                       _entity.kind == Outpost::EntityKind::Structure;
+                                              });
+    const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(commands);
+    Assert::AreEqual(size_t{1}, queued.size());
+    Assert::IsTrue(queued.front().producer == station->id);
+
+    const Outpost::EntityView* nearest = nullptr;
+    for (const Outpost::EntityView& entity : first.entities)
+    {
+      if (entity.kind == Outpost::EntityKind::Asteroid && (nearest == nullptr || Outpost::Distance(entity.position, station->position) <
+                                                                                   Outpost::Distance(nearest->position, station->position)))
+        nearest = &entity;
+    }
+    const std::vector<Outpost::BuildStructureCommand> builds = OrdersOf<Outpost::BuildStructureCommand>(commands);
+    Assert::AreEqual(size_t{1}, builds.size());
+    Assert::IsTrue(builds.front().structure == Outpost::StructureKind::MiningRig);
+    Assert::AreEqual(0.0f, Outpost::Distance(builds.front().position, nearest->position), 0.01f);
+    Assert::AreEqual(size_t{2}, builds.front().constructors.size());
+    Assert::AreEqual(size_t{2}, commands.size(), L"nothing else: no lab to research in, no warship to order");
+  }
+
+  // Plan task 6.1's acceptance: a shot on one of its structures sends the reserve there, and once the shooting has
+  // stopped for the settings' ten seconds, back to where it gathers.
+  TEST_METHOD(SendsTheReserveWhereItsBaseIsShot)
+  {
+    AiMatch match;
+    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 3, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    const std::vector<Outpost::AttackMoveCommand> gather = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, gather.size());
+    Assert::IsTrue(std::ranges::is_permutation(gather.front().ships, reserve));
+    const Outpost::PlanePosition rally = gather.front().destination;
+
+    const auto station = std::ranges::find_if(snapshot.entities, [](const Outpost::EntityView& _entity)
+                                              { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
+    snapshot.tick += 20;
+    snapshot.shots.push_back({.shooter = Outpost::EntityId{999}, .target = station->id, .weapon = Outpost::WeaponId{2}});
+    const std::vector<Outpost::AttackMoveCommand> defend = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, defend.size());
+    Assert::IsTrue(std::ranges::is_permutation(defend.front().ships, reserve));
+    Assert::AreEqual(0.0f, Outpost::Distance(defend.front().destination, station->position), 0.01f);
+
+    snapshot.shots.clear();
+    // Five seconds later, then eleven, at twenty ticks a second.
+    snapshot.tick += 100;
+    Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)).empty(), L"it stays while the attack may go on");
+    snapshot.tick += 120;
+    const std::vector<Outpost::AttackMoveCommand> back = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, back.size());
+    Assert::AreEqual(0.0f, Outpost::Distance(back.front().destination, rally), 0.01f);
   }
 
   // Owner, 2026-10-01: rigs on the three home asteroids come first, then the Shipyard, the Research Lab and the Defence
