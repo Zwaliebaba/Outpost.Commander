@@ -43,12 +43,12 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.6 | Selection, orders and control groups | 2.5 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | done, [0d90731](https://github.com/Zwaliebaba/Outpost.Commander/commit/0d90731), run by the owner |
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
-| 3.2 | Components and designs | 3.1 | — | todo |
-| 3.3 | Combat rules | 3.2, 2.4 | — | todo |
-| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | todo |
-| 3.5 | Combat effects | 3.3, 2.5 | — | todo |
-| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 UI drawing | todo |
-| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | todo |
+| 3.2 | Components and designs | 3.1 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
+| 3.3 | Combat rules | 3.2, 2.4 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
+| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check fails (design §12) |
+| 3.5 | Combat effects | 3.3, 2.5 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's run |
+| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's run |
+| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's measurement |
 | 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | todo |
 | 4.2 | Structures, placement and Constructors | 4.1 | G8 Constructor numbers | todo |
 | 4.3 | Shipyard and Command Station queues | 4.2 | — | todo |
@@ -76,7 +76,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
-| G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. | New ADR | 3.6 |
+| G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 4.2 |
 | G9 | The AI's attack-group threshold (design §10, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 6.1 |
 
@@ -311,6 +311,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - **The tick half of Q4 is met in steady play:** 0.18 ms mean and 0.37 ms at the 99th percentile. It is **missed on the ticks that order both 100-ship fleets at once**: up to 8.3 ms. Whether that needs fixing is open in design §15.
   - **How it was built:** `--measure` logs tick durations and order-to-response times to `OutpostCommander-measure.log` in the temporary folder. `--load` places `PlaceMeasurementLoad`'s 200 ships and 40 structures, and `LoadDriver` keeps both fleets moving. `Server::TakeTickDurations` reports the server's own timing. `Simulation::SpawnStructure` places the load's structures, which do not block movement until 4.2.
   - **How to repeat it:** the recorded runs were driven by a script on the owner's machine. `OutpostCommander.exe --measure` and `--measure --load` repeat them by hand. The owner closed the task on 2026-09-30.
+  - **Follow-up, 2026-10-01:** the owner chose to path a group's order once for the group (ADR-010). In a Linux container the same 200-ship order tick fell from about 3.4 ms to about 1 ms; the development machine's figure needs `--measure --load` again.
 
 ---
 
@@ -337,6 +338,8 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Acceptance:** a test compares every design's derived stats with the table `BattleModel.py` prints: cost, HP, armour, speed, range, and damage per second after armour against each hull.
 - **Verify:** CI.
 
+- **As built:** [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md). `Outpost::DesignStatsFor` derives every stat from the tuning data, and `ShipDesign` holds a saved design. Hit points, armor and damage count in integer hundredths. Every player starts with the four starting designs saved, and the provisional starting fleet carries all four (owner, 2026-10-01). `DesignTests` compares every design with the model's table and the armor rule.
+
 ### 3.3 — Combat rules
 
 - **Goal:** design §7's combat rules.
@@ -352,6 +355,8 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - a ship can fire while moving.
 - **Verify:** CI.
 
+- **As built:** [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md) and [ADR-010](../Design/ADR/ADR-010-movement-and-pathing.md) decision 7. Attack, attack-move and stop are applied. A weapon reloads in thousandths of a tick, and a cold weapon's first shot comes at a random moment within its interval. Shots are chosen from where everything stands at the start of a tick and land together at its end; snapshots carry the tick's shots and the destroyed. Ships part rather than collide, and a ship standing to fire gives way only sideways round its target, so a group spreads into an arc at its range (owner, 2026-10-01). `CombatTests` covers the interval and damage, target choice and stickiness, attack-move stopping at range, a group keeping its stand-off, firing on the move, the attack order and replays.
+
 ### 3.4 — The Q2 check as headless battles
 
 - **Goal:** design §3's Q2 check against the real simulation. From here on, where the model and the simulation disagree, the simulation is right and the model gets fixed.
@@ -361,11 +366,15 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Acceptance:** the verdicts, and every disagreement with `BattleModel.py` with its cause, are recorded in design §12. Q2 stays "not yet" until 5.3, because the Missile Rack is not modelled.
 - **Verify:** CI. If the suite is too slow for CI, the PR proposes a split between a CI subset and a full local run.
 
+- **As built:** `GameLogicTests/Q2Check.cpp` plays design §3's check as headless battles on every hardware thread. Whole ships are fielded at the center of each slice of the ±15% window, and the Ore left over is not; the second side is the first turned half a turn, so a mirror match is fair. `Simulation::SetTargetRule` forces spread or focus fire, for the check only. **The check fails against the simulation**, where it passes in the model, and design §12 records each failure and why the two disagree; what to do about it is open in design §15. CI runs the fast part, `TheRecordedCountersHold` among it. The full check, `TheFullCheck`, runs only when `OUTPOST_Q2_FULL` is set, which CI never does, and took about ten minutes on four threads in a Linux container. It is gated in the test because the native test adapter ignores a vstest filter on its `TestCategory` trait: CI's first try at filtering it out ran it in Debug until the job timed out.
+
 ### 3.5 — Combat effects
 
 - **Goal:** the minimum needed to read combat (design §11): muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry. Hits are already resolved; effects are presentation.
 - **Scope:** `NeuronClient` rendering, driven from `GameApp`.
 - **Verify:** **owner run.**
+
+- **As built:** `Outpost::CombatEffects` in `GameApp` turns each snapshot's shots and destroyed into effects drawn with the mesh pipeline: a muzzle flash, a tracer for the Mass Driver and a beam for the Lance, a hit spark, and an explosion where a ship or structure died. Health bars show over damaged ships and structures. Effects start one tick back, so they line up with the interpolated view. Not run yet: the owner's run decides whether they read.
 
 ### 3.6 — In-game UI drawing and a first HUD
 
@@ -373,6 +382,8 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Goal:** text and panels drawn over the D3D12 scene, and a first HUD: the Ore stockpile and the selection panel. Q4 needs the HUD on screen.
 - **Scope:** UI rendering in `NeuronClient`. HUD state in `GameApp`.
 - **Verify:** **owner run.**
+
+- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md). `Neuron::RasterizeGlyphs` and `PackGlyphs` build the atlas, and `Neuron::UiPipeline` draws panels and text in one draw call with `UiVS.hlsl` and `UiPS.hlsl`. `Outpost::Hud` lays out the Ore stockpile in the top-left corner and, for a selection, a panel at the bottom middle with the ship count, the count of each design by name, and their hit points, in reference units. A button press on a HUD panel does not reach the player's controls. `HudTests` and `GlyphAtlasTests` run without a GPU; rasterizing a system font needs Windows. Not run yet: the owner's run checks the text is sharp at the native resolution.
 
 ### 3.7 — Q4 stress scene and measurement
 
@@ -383,6 +394,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - A summary script under `Tools/`.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
 - **Verify:** **owner run**, Release.
+- **As built:** the stress scene is `Outpost::StressLoad`, run by `OutpostCommander.exe --stress`; with `--measure` the game logs each frame's CPU and GPU work, each tick, the back buffer's size and the display's refresh rate, and `python Tools/FrameTimes.py` summarizes the log against Q4. Design §3 gives the method. `Neuron::Renderer` takes the GPU timestamps and `TakeGpuFrameTimes` returns them. `StressLoadTests` runs the scene for 60 simulated seconds: each side stays above 80 ships, with more than 1,000 shots and more than 20 ships or structures destroyed. In a Linux container its ticks took 0.11 ms at the median, 0.45 ms at the 99th percentile and 1.7 ms at worst, which is not the development machine. **Q4 is not answered until the owner's measurement**, Release on the development machine, is recorded in design §3.
 
 ---
 

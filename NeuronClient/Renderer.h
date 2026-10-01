@@ -37,6 +37,16 @@ public:
   // returns, so it is only for loading, not for use while frames are being recorded.
   [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticBuffer(std::span<const std::byte> _bytes);
 
+  // A 2D texture in video memory holding _texels, one mip level, rows of _width texels of _format packed with no gap,
+  // ready to be read by pixel shaders. Like CreateStaticBuffer, it waits for the upload and is only for loading; it may
+  // also be called between frames, since it waits for every frame in flight too.
+  [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                   std::span<const std::byte> _texels);
+
+  // The GPU time of every frame whose work has finished since the last call, from the first command of its command list
+  // to the last, oldest first (ADR-006). A frame's time arrives FRAME_COUNT frames after it was submitted.
+  [[nodiscard]] std::vector<std::chrono::nanoseconds> TakeGpuFrameTimes();
+
   [[nodiscard]] ID3D12Device* Device() const noexcept
   {
     return m_device.get();
@@ -76,12 +86,20 @@ private:
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;
   winrt::com_ptr<ID3D12Fence> m_fence;
+  // Two timestamps per frame in flight, at the start and the end of its command list, resolved into a readback buffer.
+  winrt::com_ptr<ID3D12QueryHeap> m_timestampHeap;
+  winrt::com_ptr<ID3D12Resource> m_timestampReadback;
   winrt::handle m_fenceEvent;
   winrt::handle m_frameLatencyWaitable;
 
   // The fence value each back buffer's last frame signaled; its allocator is free again once the fence reaches it.
   std::array<UINT64, FRAME_COUNT> m_frameFenceValues{};
   UINT64 m_fenceValue = 0;
+  // Ticks per second of the queue's timestamps.
+  UINT64 m_timestampFrequency = 0;
+  // Which back buffers' last frames have timestamps not read yet.
+  std::array<bool, FRAME_COUNT> m_timestampsPending{};
+  std::vector<std::chrono::nanoseconds> m_gpuFrameTimes;
   UINT m_renderTargetDescriptorSize = 0;
   UINT m_swapChainFlags = 0;
   UINT m_widthPixels = 0;

@@ -87,6 +87,7 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="RepositoryData.h" />
+    <ClInclude Include="Q2Check.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -103,6 +104,11 @@
     <ClCompile Include="MeasurementLoadTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="PathfinderTests.cpp" />
+    <ClCompile Include="DesignTests.cpp" />
+    <ClCompile Include="CombatTests.cpp" />
+    <ClCompile Include="Q2Check.cpp" />
+    <ClCompile Include="Q2CheckTests.cpp" />
+    <ClCompile Include="StressLoadTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

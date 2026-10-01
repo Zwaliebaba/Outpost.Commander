@@ -82,8 +82,10 @@
     <ClInclude Include="Pathfinder.h" />
     <ClInclude Include="PlaneVector.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ShipDesign.h" />
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="Tuning.h" />
+    <ClInclude Include="StressLoad.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -93,8 +95,10 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />
+    <ClCompile Include="ShipDesign.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Tuning.cpp" />
+    <ClCompile Include="StressLoad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

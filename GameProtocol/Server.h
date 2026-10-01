@@ -9,6 +9,8 @@ struct ServerDesc
   std::uint64_t seed = 0;
   // A measurement run, not a match: the map also holds task 2.7's load of 200 ships and 40 structures.
   bool measurementLoad = false;
+  // A measurement run, not a match: task 3.7's stress scene, 200 ships and 40 structures in combat, kept at full size.
+  bool stressLoad = false;
 };
 
 // The authoritative simulation, as its clients see it (ADR-002). The in-process server is declared here and defined in

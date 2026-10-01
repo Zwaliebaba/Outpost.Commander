@@ -13,6 +13,9 @@
     <Filter Include="Movement">
       <UniqueIdentifier>{d0399d17-e251-4b68-abbe-6c9835502379}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Combat">
+      <UniqueIdentifier>{6b1f3c52-8d0e-4f7a-9a21-3c5e7d4b2a10}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Server">
       <UniqueIdentifier>{be7164de-0da7-4f61-bdc2-f9d191ff5452}</UniqueIdentifier>
     </Filter>
@@ -38,8 +41,14 @@
     <ClInclude Include="InProcessServer.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="ShipDesign.h">
+      <Filter>Combat</Filter>
+    </ClInclude>
     <ClInclude Include="Tuning.h">
       <Filter>Tuning</Filter>
+    </ClInclude>
+    <ClInclude Include="StressLoad.h">
+      <Filter>Server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -59,8 +68,14 @@
     <ClCompile Include="InProcessServer.cpp">
       <Filter>Server</Filter>
     </ClCompile>
+    <ClCompile Include="ShipDesign.cpp">
+      <Filter>Combat</Filter>
+    </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="StressLoad.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -135,6 +135,39 @@ public:
     }
   }
 
+  // ADR-010: a group follows one route round an obstacle, and every ship of it arrives.
+  TEST_METHOD(AGroupReachesATargetBehindAnObstacle)
+  {
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {}, .radiusMeters = 150.0f}}));
+    std::vector<Outpost::EntityId> ships;
+    for (int i = 0; i < 12; ++i)
+    {
+      // Four to a row, 40 m apart; every third ship a Medium hull.
+      const int column = i % 4;
+      const int row = i / 4;
+      const Outpost::ShipMovement movement = i % 3 == 0 ? Movement(2, 1) : Movement(1, 1);
+      ships.push_back(
+        simulation.SpawnShip(BLUE, DESIGN, movement, {-500.0f + static_cast<float>(column) * 40.0f, static_cast<float>(row) * 40.0f}));
+    }
+
+    (void)simulation.Tick({Move(ships, {500.0f, 0.0f})});
+    for (int tick = 0; tick < 60 * TICKS_PER_SECOND; ++tick)
+    {
+      (void)simulation.Tick({});
+      for (const Outpost::EntityId id : ships)
+      {
+        const Outpost::Entity& ship = *simulation.FindEntity(id);
+        Assert::IsTrue(Outpost::Distance(ship.position, {}) >= 150.0f + ship.radiusMeters - 0.01f);
+      }
+    }
+    for (const Outpost::EntityId id : ships)
+    {
+      Assert::IsTrue(Arrived(simulation, id), L"a ship never arrived");
+      Assert::IsTrue(Outpost::Distance(simulation.FindEntity(id)->position, {500.0f, 0.0f}) < 200.0f);
+    }
+  }
+
   TEST_METHOD(AShipInsideAnObstacleIsPushedOut)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);

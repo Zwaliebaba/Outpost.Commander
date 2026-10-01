@@ -64,4 +64,45 @@ private:
   // where moving MSVC's std::map can.
   mutable std::vector<std::pair<float, Graph>> m_graphs;
 };
+
+// The paths of the ships of one group order, sharing searches rather than making one per ship (ADR-010). The group searches
+// once, from its center to its destination, and each ship joins that route at the furthest corner it can see. A ship that
+// sees no route searches for itself, and its path becomes a route the ships after it may join, so a cluster of ships cut off
+// from the group pays for one search rather than one each.
+class GroupRoutes
+{
+public:
+  // _destination is moved clear of obstacles for _widestClearanceMeters, the clearance of the group's widest ship.
+  GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters);
+
+  // Where the group is going, clear of obstacles: every slot is laid out around it.
+  [[nodiscard]] PlanePosition Destination() const noexcept
+  {
+    return m_destination;
+  }
+
+  // Searches the group's route from _center, its ships' mean position.
+  void SearchFrom(PlanePosition _center);
+
+  // The waypoints from _start to _slot for a ship of _clearanceMeters, not including _start: straight when nothing is in the
+  // way, otherwise along a route and, when the route's end does not see the slot, through the destination.
+  [[nodiscard]] std::vector<PlanePosition> PathFor(PlanePosition _start, PlanePosition _slot, float _clearanceMeters);
+
+private:
+  struct Route
+  {
+    // The corners of a path, not including its end.
+    std::vector<PlanePosition> corners;
+    // The clearance it was searched with; a ship needing more may not join it.
+    float clearanceMeters = 0.0f;
+  };
+
+  [[nodiscard]] std::optional<std::vector<PlanePosition>> Join(const Route& _route, PlanePosition _start, PlanePosition _goal,
+                                                               float _clearanceMeters) const;
+
+  const Pathfinder& m_pathfinder;
+  float m_widestClearanceMeters = 0.0f;
+  PlanePosition m_destination;
+  std::vector<Route> m_routes;
+};
 } // namespace Outpost

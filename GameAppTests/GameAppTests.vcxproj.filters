@@ -12,5 +12,8 @@
     <ClCompile Include="ModelCatalogTests.cpp" />
     <ClCompile Include="PlayerControlsTests.cpp" />
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
+    <ClCompile Include="CombatEffectsTests.cpp" />
+    <ClCompile Include="HudTests.cpp" />
+    <ClCompile Include="GlyphAtlasTests.cpp" />
   </ItemGroup>
 </Project>

@@ -22,6 +22,9 @@ constexpr D3D_FEATURE_LEVEL MINIMUM_FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
 
 // A frame never waits longer than this for the swap chain, so a lost device cannot hang the loop.
 constexpr DWORD FRAME_WAIT_TIMEOUT_MILLISECONDS = 1000;
+// A frame's two timestamps: when its command list starts and when it ends.
+constexpr UINT TIMESTAMPS_PER_FRAME = 2;
+constexpr UINT64 NANOSECONDS_PER_SECOND = 1'000'000'000;
 
 #if defined(_DEBUG)
 // The debug layer and DRED both need the Graphics Tools optional feature. Without it the game runs undiagnosed rather
@@ -152,6 +155,20 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(m_fence)));
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
 
+  // Q4 measures a frame's GPU work, not the present interval (ADR-006).
+  const D3D12_QUERY_HEAP_DESC timestampHeapDescription{
+    .Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
+    .Count = TIMESTAMPS_PER_FRAME * FRAME_COUNT,
+    .NodeMask = 0,
+  };
+  winrt::check_hresult(m_device->CreateQueryHeap(&timestampHeapDescription, IID_GRAPHICS_PPV_ARGS(m_timestampHeap)));
+  const CD3DX12_HEAP_PROPERTIES readbackHeap(D3D12_HEAP_TYPE_READBACK);
+  const CD3DX12_RESOURCE_DESC readbackDescription = CD3DX12_RESOURCE_DESC::Buffer(sizeof(UINT64) * TIMESTAMPS_PER_FRAME * FRAME_COUNT);
+  winrt::check_hresult(m_device->CreateCommittedResource(&readbackHeap, D3D12_HEAP_FLAG_NONE, &readbackDescription,
+                                                         D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+                                                         IID_GRAPHICS_PPV_ARGS(m_timestampReadback)));
+  winrt::check_hresult(m_queue->GetTimestampFrequency(&m_timestampFrequency));
+
   CreateRenderTargets();
   CreateDepthBuffer();
 }
@@ -199,10 +216,32 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
     winrt::check_hresult(m_fence->SetEventOnCompletion(m_frameFenceValues[m_frameIndex], m_fenceEvent.get()));
     WaitForSingleObjectEx(m_fenceEvent.get(), INFINITE, FALSE);
   }
+  // That frame's timestamps are resolved now too.
+  if (m_timestampsPending[m_frameIndex])
+  {
+    const UINT first = m_frameIndex * TIMESTAMPS_PER_FRAME;
+    const D3D12_RANGE readRange{.Begin = sizeof(UINT64) * first, .End = sizeof(UINT64) * (first + TIMESTAMPS_PER_FRAME)};
+    void* mapped = nullptr;
+    winrt::check_hresult(m_timestampReadback->Map(0, &readRange, &mapped));
+    std::array<UINT64, TIMESTAMPS_PER_FRAME> timestamps{};
+    std::memcpy(timestamps.data(), static_cast<const std::byte*>(mapped) + readRange.Begin, sizeof(timestamps));
+    const D3D12_RANGE nothingWritten{.Begin = 0, .End = 0};
+    m_timestampReadback->Unmap(0, &nothingWritten);
+    m_timestampsPending[m_frameIndex] = false;
+    if (timestamps[1] >= timestamps[0] && m_timestampFrequency > 0)
+    {
+      // In two parts, so that the product cannot overflow whatever the frequency.
+      const UINT64 ticks = timestamps[1] - timestamps[0];
+      const UINT64 nanoseconds = ((ticks / m_timestampFrequency) * NANOSECONDS_PER_SECOND) +
+                                 ((ticks % m_timestampFrequency) * NANOSECONDS_PER_SECOND / m_timestampFrequency);
+      m_gpuFrameTimes.emplace_back(static_cast<std::int64_t>(nanoseconds));
+    }
+  }
 
   ID3D12CommandAllocator* allocator = m_commandAllocators[m_frameIndex].get();
   winrt::check_hresult(allocator->Reset());
   winrt::check_hresult(m_commandList->Reset(allocator, nullptr));
+  m_commandList->EndQuery(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, m_frameIndex * TIMESTAMPS_PER_FRAME);
   PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Scene");
 
   const auto toRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(m_backBuffers[m_frameIndex].get(), D3D12_RESOURCE_STATE_PRESENT,
@@ -236,6 +275,11 @@ void Neuron::Renderer::EndFrame()
   m_commandList->ResourceBarrier(1, &toPresent);
 
   PIXEndEvent(m_commandList.get());
+  const UINT first = m_frameIndex * TIMESTAMPS_PER_FRAME;
+  m_commandList->EndQuery(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first + 1);
+  m_commandList->ResolveQueryData(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, first, TIMESTAMPS_PER_FRAME, m_timestampReadback.get(),
+                                  sizeof(UINT64) * first);
+  m_timestampsPending[m_frameIndex] = true;
   winrt::check_hresult(m_commandList->Close());
 
   ID3D12CommandList* commandList = m_commandList.get();
@@ -251,6 +295,13 @@ void Neuron::Renderer::EndFrame()
   m_frameFenceValues[m_frameIndex] = ++m_fenceValue;
   CheckDeviceResult(m_queue->Signal(m_fence.get(), m_frameFenceValues[m_frameIndex]));
   PIXEndEvent();
+}
+
+std::vector<std::chrono::nanoseconds> Neuron::Renderer::TakeGpuFrameTimes()
+{
+  std::vector<std::chrono::nanoseconds> times;
+  times.swap(m_gpuFrameTimes);
+  return times;
 }
 
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
@@ -287,6 +338,44 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<co
   // The upload buffer and the allocator must outlive the copy.
   WaitForGpu();
   return buffer;
+}
+
+winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                     std::span<const std::byte> _texels)
+{
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, 1);
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  winrt::com_ptr<ID3D12Resource> texture;
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COPY_DEST,
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(texture)));
+
+  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, 1);
+  const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
+  const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(uploadBytes);
+  winrt::com_ptr<ID3D12Resource> upload;
+  winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDescription,
+                                                         D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
+
+  winrt::com_ptr<ID3D12CommandAllocator> allocator;
+  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
+  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
+  // d3dx12 lays the rows out at the pitch the copy needs.
+  const LONG_PTR rowBytes = static_cast<LONG_PTR>(_texels.size() / _height);
+  const D3D12_SUBRESOURCE_DATA source{.pData = _texels.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(_texels.size())};
+  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, 1, &source) == 0)
+    throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
+  const CD3DX12_RESOURCE_BARRIER toShader =
+    CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  commandList->ResourceBarrier(1, &toShader);
+  winrt::check_hresult(commandList->Close());
+  ID3D12CommandList* lists[] = {commandList.get()};
+  m_queue->ExecuteCommandLists(1, lists);
+
+  // The upload buffer and the allocator must outlive the copy.
+  WaitForGpu();
+  return texture;
 }
 
 void Neuron::Renderer::CreateRenderTargets()

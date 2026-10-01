@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{0061612e-5d71-4e7e-80fc-05e5b2b55316}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Effects">
+      <UniqueIdentifier>{7262894a-eaa4-4a30-8928-3bbeccbf3d1a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Camera">
       <UniqueIdentifier>{2d6e9b41-7c35-4f0a-8b19-5e4a3c7d2f60}</UniqueIdentifier>
     </Filter>
@@ -44,6 +50,12 @@
     <ClInclude Include="SnapshotInterpolator.h">
       <Filter>Snapshots</Filter>
     </ClInclude>
+    <ClInclude Include="CombatEffects.h">
+      <Filter>Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Hud.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -67,6 +79,12 @@
     </ClCompile>
     <ClCompile Include="SnapshotInterpolator.cpp">
       <Filter>Snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="CombatEffects.cpp">
+      <Filter>Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Hud.cpp">
+      <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

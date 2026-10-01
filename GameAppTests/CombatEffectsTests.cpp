@@ -1,0 +1,99 @@
+#include "pch.h"
+
+#include <algorithm>
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace GameAppTests
+{
+namespace
+{
+constexpr std::uint32_t TICKS_PER_SECOND = 20;
+constexpr Outpost::WeaponId MASS_DRIVER{1};
+constexpr Outpost::WeaponId LANCE{2};
+constexpr Outpost::PlanePosition GUN{.xMeters = 0.0f, .zMeters = 0.0f};
+constexpr Outpost::PlanePosition TARGET{.xMeters = 100.0f, .zMeters = 0.0f};
+
+// A snapshot at _tick reporting one shot.
+Outpost::Snapshot Shot(std::uint64_t _tick, Outpost::WeaponId _weapon)
+{
+  Outpost::Snapshot snapshot{.tick = _tick, .player = Outpost::PlayerId{1}};
+  snapshot.shots.push_back({.shooter = Outpost::EntityId{1}, .target = Outpost::EntityId{2}, .weapon = _weapon, .from = GUN, .to = TARGET});
+  return snapshot;
+}
+
+// Ticks after the shot's start, which is one tick before its snapshot.
+double After(std::uint64_t _snapshotTick, double _seconds)
+{
+  return static_cast<double>(_snapshotTick) - 1.0 + (_seconds * TICKS_PER_SECOND);
+}
+
+size_t CountOf(const std::vector<Outpost::CombatEffects::Draw>& _draws, Outpost::CombatEffects::Shape _shape)
+{
+  return static_cast<size_t>(std::ranges::count(_draws, _shape, &Outpost::CombatEffects::Draw::shape));
+}
+} // namespace
+
+TEST_CLASS(CombatEffectsTests)
+{
+public:
+  // Task 3.5: an effect plays when the view reaches the tick its shot was fired at, one before its snapshot.
+  TEST_METHOD(WaitsForTheViewToReachTheShot)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, MASS_DRIVER));
+    Assert::IsTrue(effects.At(8.5).empty());
+    const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(9.0);
+    Assert::AreEqual(size_t{1}, CountOf(draws, Outpost::CombatEffects::Shape::Disc), L"a muzzle flash");
+    Assert::AreEqual(size_t{1}, CountOf(draws, Outpost::CombatEffects::Shape::Band), L"a tracer");
+  }
+
+  // A tracer's head crosses from the gun to the target, and a spark shows where it lands.
+  TEST_METHOD(ATracerCrossesThenSparks)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, MASS_DRIVER));
+    const std::vector<Outpost::CombatEffects::Draw> midway = effects.At(After(10, 0.06));
+    const auto band = std::ranges::find(midway, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
+    Assert::IsTrue(band != midway.end());
+    Assert::AreEqual(50.0f, band->to.xMeters, 0.01f);
+    Assert::IsTrue(band->from.xMeters > 0.0f && band->from.xMeters < band->to.xMeters);
+
+    const std::vector<Outpost::CombatEffects::Draw> landed = effects.At(After(10, 0.15));
+    Assert::AreEqual(size_t{0}, CountOf(landed, Outpost::CombatEffects::Shape::Band));
+    Assert::AreEqual(size_t{1}, landed.size());
+    Assert::IsTrue(landed.front().from == TARGET, L"the spark is at the target");
+  }
+
+  // A Lance's beam joins the gun and the target at once.
+  TEST_METHOD(ABeamJoinsGunAndTarget)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, LANCE));
+    const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(10, 0.01));
+    const auto band = std::ranges::find(draws, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
+    Assert::IsTrue(band != draws.end());
+    Assert::IsTrue(band->from == GUN && band->to == TARGET);
+  }
+
+  // An explosion swells where the entity was destroyed, then is forgotten.
+  TEST_METHOD(AnExplosionSwellsAndEnds)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    Outpost::Snapshot snapshot{.tick = 30, .player = Outpost::PlayerId{1}};
+    snapshot.destroyed.push_back({.id = Outpost::EntityId{4}, .position = TARGET, .radiusMeters = 10.0f});
+    effects.Receive(snapshot);
+
+    const auto fireball = [&effects](double _seconds)
+    {
+      const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(30, _seconds));
+      const auto disc = std::ranges::find(draws, Outpost::CombatEffects::Shape::Disc, &Outpost::CombatEffects::Draw::shape);
+      Assert::IsTrue(disc != draws.end() && disc->from == TARGET);
+      return disc->radiusMeters;
+    };
+    Assert::IsTrue(fireball(0.6) > fireball(0.1));
+    Assert::IsTrue(effects.At(After(30, 1.0)).empty());
+    Assert::AreEqual(size_t{0}, effects.Pending());
+  }
+};
+} // namespace GameAppTests

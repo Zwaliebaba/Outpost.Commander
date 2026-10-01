@@ -92,8 +92,14 @@ public:
       server.Advance(std::chrono::microseconds(16'667));
     }
 
+    // The same match setup as the server's.
     Outpost::Simulation replay(77, 20);
     replay.PlaceMap(server.MapData());
+    for (const Outpost::PlayerId player : {BLUE, RED})
+    {
+      replay.AddPlayer(player, server.TuningData().rules.startingOre);
+      replay.SaveStartingDesigns(player, server.TuningData());
+    }
     (void)replay.SpawnShip(BLUE, SWARM, SMALL_ION, {});
     (void)replay.SpawnShip(RED, SWARM, SMALL_ION, {});
     const std::vector<Outpost::LoggedCommand>& log = server.CommandLog();

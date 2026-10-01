@@ -41,14 +41,26 @@ private:
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A strip on the ground from one point to another, for the outline of a drag box.
-  void DrawGroundLine(ID3D12GraphicsCommandList* _commandList, PlanePosition _from, PlanePosition _to, const DirectX::XMFLOAT4& _color);
+  // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5).
+  void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
+  void DrawEffects(ID3D12GraphicsCommandList* _commandList);
+  void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
+  // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
+  // health bar, a tracer or a beam.
+  void DrawBand(ID3D12GraphicsCommandList* _commandList, PlanePosition _from, PlanePosition _to, float _widthMeters, float _heightMeters,
+                const DirectX::XMFLOAT4& _color);
 
   ModelCatalog m_catalog;
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
+  Neuron::UiPipeline m_ui;
+  // The HUD as this frame draws it; the next frame's clicks are tested against it.
+  Hud::Layout m_hudLayout;
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
+  CombatEffects m_effects;
+  // What the effects draw this frame, at the view's tick.
+  std::vector<CombatEffects::Draw> m_effectDraws;
   // The view's entities this frame, which the controls pick from and the renderer draws.
   std::vector<EntityView> m_entities;
   Viewport m_viewport;
@@ -56,8 +68,9 @@ private:
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;
   std::unique_ptr<Neuron::Mesh> m_minorGrid;
   std::unique_ptr<Neuron::Mesh> m_majorGrid;
-  // A ring of radius 1 and a strip 1 long and 1 wide, both flat on the ground, scaled where they are drawn.
+  // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn.
   std::unique_ptr<Neuron::Mesh> m_ring;
+  std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
   bool m_cameraPlaced = false;
 

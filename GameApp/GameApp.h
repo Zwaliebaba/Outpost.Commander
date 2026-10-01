@@ -18,5 +18,7 @@
 #include "SnapshotInterpolator.h"
 #include "Picking.h"
 #include "PlayerControls.h"
+#include "CombatEffects.h"
+#include "Hud.h"
 #include "LoadDriver.h"
 #include "GameClient.h"

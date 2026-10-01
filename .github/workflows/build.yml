@@ -198,6 +198,12 @@ jobs:
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed. No suites at all is a state this repository is still legitimately in.
+      #
+      # The full Q2 check (implementation plan task 3.4) is thousands of battles that take minutes
+      # in Release and hours in Debug, so it runs only when OUTPOST_Q2_FULL is set, which CI never
+      # does: the test says so in its output. CI runs its small part, TheRecordedCountersHold, with
+      # the rest of the suite; the owner runs the whole. A /TestCaseFilter on its TestCategory does
+      # not work here: the native test adapter ignores it and runs everything.
       - name: Run the tests
         if: steps.solution.outputs.path != ''
         shell: pwsh

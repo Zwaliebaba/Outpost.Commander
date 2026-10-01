@@ -1,0 +1,169 @@
+#include "pch.h"
+#include "StressLoad.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+
+namespace
+{
+// Lattice points this far apart hold the widest hull with room to spare.
+constexpr float LATTICE_SPACING_METERS = 50.0f;
+constexpr float STRUCTURE_RADIUS_METERS = 20.0f;
+constexpr float RALLY_SHARE_TO_MIDDLE = 0.33f;
+// How often ships standing idle are sent back into the fight: once a second at 20 Hz.
+constexpr std::uint64_t REORDER_TICKS = 20;
+// Where a player's structures stand: centered this share of the way from its start to the map's middle.
+constexpr float STRUCTURE_SHARE_TO_MIDDLE = 0.55f;
+constexpr std::array<Outpost::StructureKind, 5> STRUCTURE_KINDS{Outpost::StructureKind::CommandStation, Outpost::StructureKind::Shipyard,
+                                                                Outpost::StructureKind::ResearchLab, Outpost::StructureKind::MiningRig,
+                                                                Outpost::StructureKind::DefensePlatform};
+
+// Clear of the edge and of every obstacle by _clearanceMeters.
+bool IsOpen(const Outpost::Map& _map, Outpost::PlanePosition _point, float _clearanceMeters) noexcept
+{
+  const float half = _map.sizeMeters / 2.0f;
+  if (std::abs(_point.xMeters) + _clearanceMeters > half || std::abs(_point.zMeters) + _clearanceMeters > half)
+    return false;
+  for (const Outpost::OreAsteroidPlacement& asteroid : _map.oreAsteroids)
+  {
+    if (Outpost::Distance(_point, asteroid.position) < asteroid.radiusMeters + _clearanceMeters)
+      return false;
+  }
+  for (const Outpost::AsteroidFieldPlacement& field : _map.asteroidFields)
+  {
+    if (Outpost::Distance(_point, field.position) < field.radiusMeters + _clearanceMeters)
+      return false;
+  }
+  return true;
+}
+
+// Every open lattice point of the map, nearest _to first; ties go to the lattice's order, so the result is the same on
+// every run.
+std::vector<Outpost::PlanePosition> OpenPointsNear(const Outpost::Map& _map, Outpost::PlanePosition _to, float _clearanceMeters)
+{
+  std::vector<Outpost::PlanePosition> points;
+  const float half = _map.sizeMeters / 2.0f;
+  const auto count = static_cast<int>(_map.sizeMeters / LATTICE_SPACING_METERS);
+  for (int row = 0; row < count; ++row)
+  {
+    for (int column = 0; column < count; ++column)
+    {
+      const Outpost::PlanePosition point{.xMeters = -half + ((static_cast<float>(column) + 0.5f) * LATTICE_SPACING_METERS),
+                                         .zMeters = -half + ((static_cast<float>(row) + 0.5f) * LATTICE_SPACING_METERS)};
+      if (IsOpen(_map, point, _clearanceMeters))
+        points.push_back(point);
+    }
+  }
+  std::ranges::stable_sort(points, {}, [_to](Outpost::PlanePosition _point) { return Outpost::Distance(_point, _to); });
+  return points;
+}
+} // namespace
+
+Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const Tuning& _tuning)
+{
+  if (_map.starts.size() != m_sides.size())
+    throw Neuron::Exception("The stress load needs a map with two starts.");
+  float widestMeters = 0.0f;
+  for (const HullTuning& hull : _tuning.hulls)
+    widestMeters = std::max(widestMeters, static_cast<float>(hull.footprintRadiusMeters));
+
+  for (size_t index = 0; index < m_sides.size(); ++index)
+  {
+    Side& side = m_sides[index];
+    side.player = PlayerId{static_cast<std::uint32_t>(index + 1)};
+    side.start = _map.starts[index];
+    // The fleets head for each other's rally, where replacements appear, so the fight stays in one place.
+    const PlanePosition enemyStart = _map.starts[1 - index];
+    side.enemyRally = {.xMeters = enemyStart.xMeters * (1.0f - RALLY_SHARE_TO_MIDDLE),
+                       .zMeters = enemyStart.zMeters * (1.0f - RALLY_SHARE_TO_MIDDLE)};
+    for (const DesignComponents& components : StartingDesigns(_tuning))
+    {
+      if (const ShipDesign* design = _simulation.FindDesign(side.player, components))
+        side.designs.push_back(design->id);
+    }
+    if (side.designs.empty())
+      throw Neuron::Exception(std::format("Player {} has no starting design for the stress load.", side.player.value));
+    // Ships gather a third of the way from the start to the middle, so the fleets meet soon after the run starts.
+    const PlanePosition rally{.xMeters = side.start.xMeters * (1.0f - RALLY_SHARE_TO_MIDDLE),
+                              .zMeters = side.start.zMeters * (1.0f - RALLY_SHARE_TO_MIDDLE)};
+    side.berths = OpenPointsNear(_map, rally, widestMeters);
+    side.berths.resize(std::min(side.berths.size(), STRESS_SHIPS_PER_PLAYER));
+    if (side.berths.size() < STRESS_SHIPS_PER_PLAYER)
+      throw Neuron::Exception("The map has too little open ground for the stress load's ships.");
+
+    const PlanePosition structuresAt{.xMeters = side.start.xMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE),
+                                     .zMeters = side.start.zMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE)};
+    const std::vector<PlanePosition> sites = OpenPointsNear(_map, structuresAt, STRUCTURE_RADIUS_METERS + _map.minimumGapMeters);
+    if (sites.size() < STRESS_STRUCTURES_PER_PLAYER)
+      throw Neuron::Exception("The map has too little open ground for the stress load's structures.");
+    for (size_t i = 0; i < STRESS_STRUCTURES_PER_PLAYER; ++i)
+    {
+      const StructureKind kind = STRUCTURE_KINDS[i % STRUCTURE_KINDS.size()];
+      const auto tuning = std::ranges::find(_tuning.structures, kind, &StructureTuning::kind);
+      const std::int32_t hitPoints = tuning != _tuning.structures.end() ? tuning->hitPoints : 1;
+      const std::int32_t armor = tuning != _tuning.structures.end() ? tuning->armor : 0;
+      (void)_simulation.SpawnStructure(side.player, kind, sites[i], STRUCTURE_RADIUS_METERS, hitPoints * HUNDREDTHS, armor * HUNDREDTHS);
+    }
+  }
+}
+
+Outpost::EntityId Outpost::StressLoad::Launch(Simulation& _simulation, Side& _side)
+{
+  const DesignId design = _side.designs[_side.nextDesign++ % _side.designs.size()];
+  const PlanePosition at = _side.berths[_side.nextBerth++ % _side.berths.size()];
+  const PlaneVector toEnemy = _side.enemyRally - at;
+  return _simulation.SpawnShip(_side.player, design, at, std::atan2(toEnemy.zMeters, toEnemy.xMeters));
+}
+
+std::vector<Outpost::Command> Outpost::StressLoad::TopUp(Simulation& _simulation)
+{
+  std::array<size_t, 2> ships{};
+  std::array<std::vector<EntityId>, 2> fleets;
+  std::array<std::vector<EntityId>, 2> idle;
+  std::array<PlaneVector, 2> sums{};
+  for (const Entity& entity : _simulation.Entities())
+  {
+    if (entity.kind != EntityKind::Ship)
+      continue;
+    for (size_t index = 0; index < m_sides.size(); ++index)
+    {
+      if (entity.owner != m_sides[index].player)
+        continue;
+      ++ships[index];
+      fleets[index].push_back(entity.id);
+      sums[index] = sums[index] + (entity.position - PlanePosition{});
+      if (entity.order == ShipOrder::None && !entity.target.IsValid())
+        idle[index].push_back(entity.id);
+    }
+  }
+  const bool reorderIdle = (_simulation.CurrentTick() % REORDER_TICKS) == 0;
+
+  std::vector<Command> commands;
+  for (size_t index = 0; index < m_sides.size(); ++index)
+  {
+    Side& side = m_sides[index];
+    std::vector<EntityId> launched;
+    for (size_t count = ships[index]; count < STRESS_SHIPS_PER_PLAYER; ++count)
+      launched.push_back(Launch(_simulation, side));
+    // The first time, the whole fleet sets off; after that, only the replacements.
+    std::vector<EntityId> ordered = m_ordered ? std::move(launched) : [&]
+    {
+      std::vector<EntityId> all = fleets[index];
+      all.insert(all.end(), launched.begin(), launched.end());
+      return all;
+    }();
+    if (!ordered.empty())
+      commands.push_back({.player = side.player, .order = AttackMoveCommand{.ships = std::move(ordered), .destination = side.enemyRally}});
+    // Ships that won through and stand idle go after what is left of the enemy, so the whole of both fleets keeps
+    // fighting.
+    const size_t enemy = 1 - index;
+    if (m_ordered && reorderIdle && !idle[index].empty() && ships[enemy] > 0)
+    {
+      const PlanePosition enemyCenter = PlanePosition{} + sums[enemy] * (1.0f / static_cast<float>(ships[enemy]));
+      commands.push_back({.player = side.player, .order = AttackMoveCommand{.ships = std::move(idle[index]), .destination = enemyCenter}});
+    }
+  }
+  m_ordered = true;
+  return commands;
+}
