@@ -270,7 +270,8 @@ public:
     for (int second = 0; second < 300 && !queued; ++second)
     {
       match.Run(1.0);
-      for (const Outpost::EntityView* yard : match.Structures(match.View(AI), AI))
+      const Outpost::Snapshot view = match.View(AI);
+      for (const Outpost::EntityView* yard : match.Structures(view, AI))
       {
         if (yard->structure != Outpost::StructureKind::Shipyard || yard->queue.empty())
           continue;
