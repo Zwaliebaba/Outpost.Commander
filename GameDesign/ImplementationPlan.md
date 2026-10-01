@@ -1,6 +1,6 @@
 # Outpost Commander — MVP Implementation Plan
 
-Status: **draft for review** · 2026-09-30 · Derived from [the MVP design](OutpostCommander-MVP.md)
+Status: **closed** · 2026-10-01, when the MVP was done · Derived from [the MVP design](OutpostCommander-MVP.md)
 
 The MVP design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks an agent can pick up one at a time. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -60,11 +60,10 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40), run by the owner; the check failed, with the Missile Rack a trump card, until B.1 retuned §12 |
 | A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | done, [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), run by the owner |
 | A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | done, [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), run by the owner |
-| 6.1 | The AI player | 5.2 | G9 decided | done, [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), run by the owner; too tough, which C.1 takes up |
-| 6.2 | Win, lose and the menu | 6.1 | — | merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), in review until the owner's run |
-| 6.3 | Q1 and Q3 playtests | 6.2 | — | done, the match log in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); Q1 "yes, with changes" and Q3 "yes" from the owner's match (design §3) |
+| 6.1 | The AI player | 5.2 | G9 decided | done, [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), run by the owner |
+| 6.2 | Win, lose and the menu | 6.1 | — | done, [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), run by the owner |
+| 6.3 | Q1 and Q3 playtests | 6.2 | — | done, the match log in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); Q1 "yes" and Q3 "yes" from the owner's matches (design §3) |
 | B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the check of record passes in Release\|ARM64 on the development machine |
-| C.1 | An AI the player can beat | 6.3 | owner, 2026-10-01 | todo |
 
 ## Gates
 
@@ -642,7 +641,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   - **The rule.** A player whose base was placed and who has no Command Station has lost. Every snapshot says whether the match is over, who won (no one in a draw), and on which tick. The world runs on (owner, 2026-10-01). `MatchOutcomeTests` covers it.
   - **The menu and the banner.** The game opens on the menu. A match that ends shows Victory, Defeat or Draw with its length, and a button back to the menu. `HudTests` covers both layouts and the outcome's words.
   - **The flow.** Each match has its own server and seed, made while the menu shows. The AI connects as player 2. The measurement switches skip the menu.
-  - **Not run:** none of it has been on screen. The owner's run checks the menu, the banner and going back and forth.
+  - **Run by the owner** on 2026-10-01: the menu, the Victory banner, and going back to the menu and on.
 
 ### 6.3 — Q1 and Q3 playtests
 
@@ -657,9 +656,9 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 
 ### What milestone 6 changed for later tasks
 
-Milestone 6 merged as [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42) on 2026-10-01. The owner ran 6.1 and played 6.3's first match later the same day.
+Milestone 6 merged as [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42) on 2026-10-01. The owner ran 6.1 and 6.2 and played 6.3's matches later the same day.
 
-- **Q1 and Q3 are answered** from the owner's first match (design §3). `python Tools/MatchLog.py --all` summarizes every match, and C.1's replays are judged the same way.
+- **Q1 and Q3 are answered** from the owner's first two matches (design §3). `python Tools/MatchLog.py --all` summarizes every match.
 - **The AI's numbers are in `Opponent.json`, and it names components and topics by `Tuning.json`'s identifiers.** `AiSettingsTests` fails when the two disagree, so a change to either is checked against the other.
 - **A change to §12 changes how the AI's matches play.** ADR-020's AI-against-AI figures are measured again when §12 moves, as B.1 did.
 
@@ -687,22 +686,6 @@ The owner settled design §15's open questions on 2026-10-01, and this work land
 
 ---
 
-## Inserted by the owner — An AI the player can beat
-
-The owner's first match answered Q1 "yes, with changes" on 2026-10-01. The AI was too tough: the owner left at 24:51, with the AI at 443 warships to the player's 141 (design §3). The owner decided the same day that the AI is made beatable before the MVP closes.
-
-### C.1 — An AI the player can beat
-
-- **Goal:** an AI the owner can beat, playing by the same rules as the player (design §10).
-- **Scope:**
-  - Measure where the AI out-builds the player: its rigs, Shipyards and Constructors over time, against the owner's match. The match log records research and warships but no structures, so this may add them to it.
-  - Propose the levers in `OutpostCommander/Assets/Opponent.json`, with what each changes in AI-against-AI matches and against a passive player, and ask the owner which to pull. A lever `Opponent.json` does not have yet is a code change, and the PR says so.
-  - Measure ADR-020's AI-against-AI figures again with the chosen settings.
-- **Acceptance:** the owner's next matches against the AI, summarized by `Tools/MatchLog.py`, and Q1 recorded again in design §3.
-- **Verify:** CI; **owner run.**
-
----
-
 ## What finishes the MVP
 
-The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". They were on 2026-10-01, and the owner decided that C.1 comes first: the MVP closes once C.1 is done and Q1 is recorded again. At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.
+The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". **They were on 2026-10-01, and the MVP is done.** From then the ADRs are frozen (AGENTS.md §6), and this plan is closed. The owner left the ticks over 5 ms for after the MVP. Design §3 also records 30 frames a second for the heavy view at 2880×1920, outside Q4's 1920×1080.

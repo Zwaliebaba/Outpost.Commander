@@ -1,6 +1,6 @@
 # Outpost Commander — MVP Design
 
-Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6, the retune of §12 and the answers to Q1–Q5
+Status: **MVP done** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6, the retune of §12 and the answers to Q1–Q5
 
 This is the design authority AGENTS.md refers to: it says *what* is built. AGENTS.md says *how* the code is written, and `Design/ADR/` records the engineering decisions taken while building it.
 
@@ -43,7 +43,7 @@ For the MVP, the opponent is **The Tarkan High Command**, the Tarkan for short: 
 
 Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answer is still a result.** The MVP is done when all five are answered, not when they are all "yes".
 
-**Where they stand on 2026-10-01: all five are answered.** Q1 is "yes, with changes": the owner wants to play again, and the AI is too tough. Q2 is "yes" in the simulation (below, and §12). Q3 is "yes". Q4 is met for frames at 1920×1080, and for ticks in steady play; ticks miss 5 ms when 200 ships are ordered at once and on a few ticks in combat, and fixing them is post-MVP work (owner, 2026-10-01). Q5 is met. The figures are from the development machine.
+**Where they stand on 2026-10-01: all five are answered.** Q1 is "yes": the owner wants to play again. Q2 is "yes" in the simulation (below, and §12). Q3 is "yes". Q4 is met for frames at 1920×1080, and for ticks in steady play; ticks miss 5 ms when 200 ships are ordered at once and on a few ticks in combat, and fixing them is post-MVP work (owner, 2026-10-01). Q5 is met. The figures are from the development machine.
 
 Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded. When a target is missed, PIX is the tool for finding where the time goes. The client's regions are named in Debug builds only (ADR-005), so the recorded figures come from the game's own timings of a Release build.
 
@@ -117,9 +117,13 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 **Q2's answer: yes, in the simulation** (2026-10-01). After §12 was retuned against it, the simulation's check passes all four criteria, (b) judged over each stage's budgets (§12). What it does not cover is said above: it judges designs in battles of two fleets, not in a match, and not the drive's speed. Q1's playtests are where both show.
 
-**Q1's answer: yes, with changes** (owner, 2026-10-01). The owner played a match against the AI (seed 17908775201362716, summarized by `Tools/MatchLog.py`) and left it at 24:51, before it ended, because the AI was too tough. It had built 443 warships to the player's 141, and 26 to 1 in the first five minutes. The owner wants to play again, and an AI the player can beat comes before the MVP closes (plan task C.1). The match gives no length for a finished match. Two AIs end one in 8 to 15 minutes (ADR-020).
+**Q1's answer: yes** (owner, 2026-10-01), from the owner's first two matches against the AI, summarized by `Tools/MatchLog.py`. The owner wants to play again.
 
-**Q3's answer: yes** (owner, 2026-10-01). In the same match, research visibly changed what was built in the mid-game. The AI moved to Large+Fusion designs after its Large Hull at 6:42, and its first heavies came between 10:00 and 15:00. The player had researched all eight topics by 13:04 and built Small and Medium hulls with the Mass Driver and the Lance, never the Large hull, the Fusion Drive or the Missile Rack.
+- **The first match** (seed 17908775201362716): the owner left at 24:51, before it ended, finding the AI too tough. It had built 443 warships to the player's 141, and 26 to 1 in the first five minutes.
+- **The second match** (seed 17908808925176743): the owner won at 14:31, with 55 warships to the AI's 261. That is just under the 15 to 25 minutes Q1 names.
+- **The AI is not changed for the MVP.** After the win, the owner decided that the AI can be beaten as it is.
+
+**Q3's answer: yes** (owner, 2026-10-01). In the first match, research visibly changed what was built in the mid-game. The AI moved to Large+Fusion designs after its Large Hull at 6:42, and its first heavies came between 10:00 and 15:00. The player had researched all eight topics by 13:04 and built Small and Medium hulls with the Mass Driver and the Lance, never the Large hull, the Fusion Drive or the Missile Rack.
 
 ---
 
@@ -502,5 +506,5 @@ Decided on 2026-10-01, closing the open questions:
 - The placeholder meshes stay through the MVP, and replacing them is post-MVP work. None ships with the MVP, so their provenance does not arise; a replacement's is recorded when it lands (§11, gate G2).
 - The development machine that Q4 and Q5 are measured on is the Snapdragon X of ADR-003, running the ARM64 build. Q4 is measured at 1920×1080, as it asks, and at the panel's native 2880×1920 (§3).
 - Q4 is recorded as measured. Frames are met at 1920×1080. Ticks are met in steady play, and missed when 200 ships are ordered at once and on a few ticks in combat. Fixing those ticks is post-MVP work (§3).
-- Q1 is "yes, with changes": the AI is too tough. Making it one the player can beat comes before the MVP closes (§3, §10).
+- Q1 is "yes". The owner found the AI too tough in a first match and beat it in a second, at 14:31, so the AI is not changed for the MVP (§3, §10).
 - Q3 is "yes" (§3).
