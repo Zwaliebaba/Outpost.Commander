@@ -399,7 +399,7 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                              });
 }
 
-std::vector<Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _snapshot, std::optional<size_t> _except) const
+std::vector<Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot) const
 {
   std::vector<EntityView> blockers;
   for (const EntityView& entity : _snapshot.entities)
@@ -411,7 +411,7 @@ std::vector<Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _sn
   {
     const Slot& slot = m_slots[i];
     // A rig stands on its asteroid, which already blocks.
-    if (i == _except || slot.abandoned || slot.structure == StructureKind::MiningRig || IsDone(slot, _snapshot))
+    if (i == _skippedSlot || slot.abandoned || slot.structure == StructureKind::MiningRig || IsDone(slot, _snapshot))
       continue;
     blockers.push_back(
       {.kind = EntityKind::Structure, .structure = slot.structure, .position = slot.position, .radiusMeters = slot.radiusMeters});

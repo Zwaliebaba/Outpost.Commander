@@ -69,8 +69,8 @@ private:
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,
-  // apart from slot _except.
-  [[nodiscard]] std::vector<EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _except) const;
+  // apart from slot _skippedSlot.
+  [[nodiscard]] std::vector<EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot) const;
   void TendWork(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   // Orders the next structures of the plan, and says whether the next one waits for Ore.
   [[nodiscard]] bool Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
