@@ -174,7 +174,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 Every combat ship is a **design**: **hull + drive + weapon**. The player names a design, saves it, and queues it at a Shipyard. Design stats are derived from the components and shown live in the designer.
 
-The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are a provisional baseline the owner set on 2026-10-01 (§15), in the tuning data with everything else (§12).
+The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are the owner's, set on 2026-10-01 and final (§15), in the tuning data with everything else (§12).
 
 ### Components (MVP set)
 
@@ -376,7 +376,7 @@ The model puts every ship of a clump in range of every enemy, at formation spaci
 
 **The base's numbers** (milestone 4).
 
-- **The Constructor and its rates are the owner's baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
+- **The Constructor and its rates are final** (gate G8; owner, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
 - **Footprint radii are final** (owner, 2026-10-01), as they were set with milestone 4: the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' sizes, which gate G5 set the same day. A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
 
 **The hand checks** (task 4.6, `HandCheckTests`): the raid gathers 400 m off, out of the gun's reach, and attacks; the run ends when one side is gone. Measured on 2026-10-01 in the Linux container the other figures in this section come from; the simulation is deterministic, so the figures are the game's.
@@ -508,3 +508,4 @@ Decided on 2026-10-01, closing the open questions:
 - Q4 is recorded as measured. Frames are met at 1920×1080. Ticks are met in steady play, and missed when 200 ships are ordered at once and on a few ticks in combat. Fixing those ticks is post-MVP work (§3).
 - Q1 is "yes". The owner found the AI too tough in a first match and beat it in a second, at 14:31, so the AI is not changed for the MVP (§3, §10).
 - Q3 is "yes" (§3).
+- The hull lengths, the Constructor's numbers, and the build and repair rates are final as they are (§7, §11, §12, ADR-011, ADR-016).

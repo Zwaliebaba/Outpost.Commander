@@ -4,7 +4,7 @@ Status: **accepted** · 2026-10-01
 
 ## Context
 
-Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Rigs, structures built by Constructors, a Shipyard and a Command Station that produce, and a Defence gun on the Command Station and the Defence Platform. Design §5 says costs are paid when a job starts and nothing is refunded. Design §6 says structures have circular footprints that must not overlap, Mining Rigs snap to ore asteroids, and several Constructors build faster. Gate G8 set the Constructor's numbers and the build and repair rates on 2026-10-01 as a provisional baseline. The design leaves open how these combine tick by tick, and those details decide determinism (ADR-009) and the tick's cost (Q4).
+Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Rigs, structures built by Constructors, a Shipyard and a Command Station that produce, and a Defence gun on the Command Station and the Defence Platform. Design §5 says costs are paid when a job starts and nothing is refunded. Design §6 says structures have circular footprints that must not overlap, Mining Rigs snap to ore asteroids, and several Constructors build faster. Gate G8 set the Constructor's numbers and the build and repair rates on 2026-10-01, as a baseline the owner made final the same day. The design leaves open how these combine tick by tick, and those details decide determinism (ADR-009) and the tick's cost (Q4).
 
 ## Decision
 
