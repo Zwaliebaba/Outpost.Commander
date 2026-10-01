@@ -81,6 +81,7 @@
     <ClInclude Include="StructureKind.h" />
     <ClInclude Include="Command.h" />
     <ClInclude Include="Snapshot.h" />
+    <ClInclude Include="DesignStats.h" />
     <ClInclude Include="Transport.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />

@@ -2,63 +2,21 @@
 
 namespace Outpost
 {
-// How a ship moves: from its hull and drive (design §7, §12), set when it is spawned.
-struct ShipMovement
-{
-  float speedMetersPerSecond = 0.0f;
-  float turnRateRadiansPerSecond = 0.0f;
-  // Its footprint: the circle it keeps clear of obstacles and of other ships.
-  float radiusMeters = 0.0f;
-
-  friend constexpr bool operator==(const ShipMovement&, const ShipMovement&) = default;
-};
-
 // A ship of this hull and drive: the hull's speed and turn rate times the drive's factors, and the hull's footprint.
 // Throws Neuron::Exception when either identifier names nothing in _tuning.
 [[nodiscard]] ShipMovement MovementFor(const Tuning& _tuning, HullId _hull, DriveId _drive);
 
-// The damage one hit does to a target, in hundredths: max(damage × 0.25, damage − armor) (design §7). The quarter is
-// rounded down to a hundredth, which no number in the tuning data needs.
-[[nodiscard]] constexpr std::int32_t HitHundredths(std::int32_t _damageHundredths, std::int32_t _armorHundredths) noexcept
-{
-  return std::max(_damageHundredths / 4, _damageHundredths - _armorHundredths);
-}
+// A component's numbers as a player with these upgrades has it, and whether it is available to the player (ADR-017). A
+// hull's hit points are raised by the upgrades' factor and a weapon's fire interval shortened by it (design §8).
+[[nodiscard]] HullView ViewOf(const HullTuning& _hull, const Upgrades& _upgrades, bool _available);
+[[nodiscard]] DriveView ViewOf(const DriveTuning& _drive, bool _available);
+[[nodiscard]] WeaponView ViewOf(const WeaponTuning& _weapon, const Upgrades& _upgrades, bool _available);
 
-// What every ship of one hull, drive and weapon is (design §7): the numbers the designer shows and combat uses, derived
-// from the tuning data.
-struct DesignStats
-{
-  ShipMovement movement;
-  // The hull's hit points times the drive's factor.
-  std::int32_t hitPointsHundredths = 0;
-  std::int32_t armorHundredths = 0;
-  // The hull's, the drive's and the weapon's, added.
-  std::int32_t cost = 0;
-  double buildSeconds = 0.0;
-  // A hit before armor, and how often it comes.
-  std::int32_t damageHundredths = 0;
-  double fireIntervalSeconds = 0.0;
-  float rangeMeters = 0.0f;
-
-  friend bool operator==(const DesignStats&, const DesignStats&) = default;
-};
-
-// The stats of a ship of this hull, drive and weapon. Throws Neuron::Exception when an identifier names nothing in
-// _tuning.
-[[nodiscard]] DesignStats DesignStatsFor(const Tuning& _tuning, HullId _hull, DriveId _drive, WeaponId _weapon);
-
-// Damage per second against a target of _armorHundredths, after armor (design §9: what the designer shows).
-[[nodiscard]] double DamagePerSecond(const DesignStats& _stats, std::int32_t _armorHundredths) noexcept;
-
-// One hull, drive and weapon.
-struct DesignComponents
-{
-  HullId hull;
-  DriveId drive;
-  WeaponId weapon;
-
-  friend constexpr bool operator==(const DesignComponents&, const DesignComponents&) = default;
-};
+// The stats of a ship of this hull, drive and weapon, for a player with these upgrades: DesignStatsOf over the
+// components' views, as the designer derives them (ADR-017). Throws Neuron::Exception when an identifier names nothing
+// in _tuning.
+[[nodiscard]] DesignStats DesignStatsFor(const Tuning& _tuning, HullId _hull, DriveId _drive, WeaponId _weapon,
+                                         const Upgrades& _upgrades = {});
 
 // A player's saved design (design §7). The server numbers designs as they are saved.
 struct ShipDesign

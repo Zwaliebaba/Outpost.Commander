@@ -8,14 +8,18 @@ enum class InputEventKind : std::uint8_t
 {
   KeyDown,
   ButtonDown,
-  ButtonUp
+  ButtonUp,
+  // A character typed, for text input: what the keyboard layout made of the keys, auto-repeats included.
+  Character
 };
 
 struct InputEvent
 {
   InputEventKind kind = InputEventKind::KeyDown;
-  // The virtual-key code: a key, or VK_LBUTTON, VK_RBUTTON or VK_MBUTTON for a mouse button.
+  // The virtual-key code: a key, or VK_LBUTTON, VK_RBUTTON or VK_MBUTTON for a mouse button. Zero for a character.
   std::uint8_t key = 0;
+  // A character's UTF-16 code unit, as WM_CHAR carries it; zero for anything else.
+  std::uint32_t character = 0;
   // The cursor in the client area when it happened, in physical pixels.
   std::int32_t xPixels = 0;
   std::int32_t yPixels = 0;

@@ -2,6 +2,8 @@
 #include "Hud.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 
 namespace
 {
@@ -14,6 +16,9 @@ constexpr DirectX::XMFLOAT4 DIM_TEXT_COLOR{0.42f, 0.45f, 0.5f, 1.0f};
 constexpr DirectX::XMFLOAT4 ORE_COLOR{1.0f, 0.8f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 BUTTON_COLOR{0.08f, 0.16f, 0.26f, 0.92f};
 constexpr DirectX::XMFLOAT4 DISABLED_BUTTON_COLOR{0.05f, 0.06f, 0.08f, 0.85f};
+constexpr DirectX::XMFLOAT4 SELECTED_BUTTON_COLOR{0.16f, 0.36f, 0.56f, 0.95f};
+// A designer's name the server would refuse.
+constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
 // The minimap: the map's square, and its marks in the side's color; the camera's view as a light outline.
 constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
@@ -55,6 +60,21 @@ constexpr float VIEW_LINE_UNITS = 1.5f;
 // The hint, anchored to the top edge's middle.
 constexpr float HINT_PANEL_WIDTH = 640.0f;
 
+// The research line, under the Ore panel.
+constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
+constexpr float RESEARCH_PANEL_GAP = 8.0f;
+
+// The designer, anchored to the top-right corner: a label column, then the picks or the name field.
+constexpr float DESIGNER_WIDTH = 660.0f;
+constexpr float DESIGNER_LABEL_WIDTH = 96.0f;
+constexpr float PICK_WIDTH = 176.0f;
+// The table's first column holds the row's label; the hulls follow.
+constexpr float TABLE_LABEL_WIDTH = 230.0f;
+constexpr float TABLE_COLUMN_WIDTH = 130.0f;
+constexpr float ACTION_WIDTH = 220.0f;
+// Room a button keeps for its cost at the right of a narrow button.
+constexpr float COST_ROOM = 70.0f;
+
 // A Constructor is of no design; the panel names it so.
 constexpr std::string_view CONSTRUCTOR_NAME = "Constructor";
 
@@ -62,6 +82,90 @@ constexpr std::string_view CONSTRUCTOR_NAME = "Constructor";
 std::int64_t WholePoints(std::int64_t _hundredths)
 {
   return (_hundredths + Outpost::HUNDREDTHS - 1) / Outpost::HUNDREDTHS;
+}
+
+// A number as a whole when it is one, and to a tenth otherwise: 78, 32.5.
+std::string Tenths(double _value)
+{
+  const double rounded = std::round(_value * 10.0) / 10.0;
+  return rounded == std::round(rounded) ? std::format("{:.0f}", rounded) : std::format("{:.1f}", rounded);
+}
+
+// The front topic of the player's Research Lab, and how far it has come (design §8).
+std::string ResearchLine(const Outpost::Snapshot& _newest, std::span<const Outpost::EntityView> _entities)
+{
+  for (const Outpost::EntityView& lab : _entities)
+  {
+    if (lab.kind != Outpost::EntityKind::Structure || lab.structure != Outpost::StructureKind::ResearchLab || lab.owner != _newest.player ||
+        lab.research.empty())
+      continue;
+    const auto topic = std::ranges::find(_newest.research, lab.research.front(), &Outpost::ResearchTopicView::id);
+    const std::string name = topic != _newest.research.end() ? topic->nameUtf8 : std::string("Research");
+    std::string line = lab.jobPermille > 0 ? std::format("Researching {}, {}%", name, lab.jobPermille / 10)
+                                           : std::format("Researching {}, waiting for Ore", name);
+    if (lab.research.size() > 1)
+      line += std::format(" (+{} queued)", lab.research.size() - 1);
+    return line;
+  }
+  return {};
+}
+
+// The designer beside a selected Shipyard (task 5.2, design §9): a pick for each slot, the live stats, and the actions.
+Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, const Outpost::Designer& _designer,
+                                             const Outpost::EntityView& _yard)
+{
+  Hud::DesignerPanel panel;
+  panel.name = _designer.Name(_newest);
+  panel.editing = _designer.IsEditing();
+  panel.nameValid = Outpost::IsValidDesignName(panel.name);
+
+  const Outpost::DesignComponents picked = _designer.Picked();
+  for (const Outpost::HullView& hull : _newest.hulls)
+    panel.hulls.push_back({.label = hull.nameUtf8,
+                           .action = {.kind = Hud::ActionKind::PickHull, .hull = hull.id},
+                           .enabled = hull.available,
+                           .selected = hull.id == picked.hull});
+  for (const Outpost::DriveView& drive : _newest.drives)
+    panel.drives.push_back({.label = drive.nameUtf8,
+                            .action = {.kind = Hud::ActionKind::PickDrive, .drive = drive.id},
+                            .enabled = drive.available,
+                            .selected = drive.id == picked.drive});
+  for (const Outpost::WeaponView& weapon : _newest.weapons)
+    panel.weapons.push_back({.label = weapon.nameUtf8,
+                             .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id},
+                             .enabled = weapon.available,
+                             .selected = weapon.id == picked.weapon});
+
+  if (const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest))
+  {
+    panel.summary.push_back(
+      std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
+                  Tenths(static_cast<double>(stats->armorHundredths) / Outpost::HUNDREDTHS), Tenths(stats->movement.speedMetersPerSecond)));
+    panel.summary.push_back(std::format("Range {} m   Cost {}   Build {} s", Tenths(stats->rangeMeters), stats->cost,
+                                        Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)));
+    std::vector<std::string> header{"Damage/s after armor vs"};
+    std::vector<std::string> perShip{"per ship"};
+    std::vector<std::string> perOre{"per 100 Ore"};
+    for (const Outpost::HullView& hull : _newest.hulls)
+    {
+      const double damage = Outpost::DamagePerSecond(*stats, hull.armorHundredths);
+      header.push_back(hull.nameUtf8);
+      perShip.push_back(std::format("{:.1f}", damage));
+      perOre.push_back(std::format("{:.1f}", stats->cost > 0 ? damage * 100.0 / stats->cost : 0.0));
+    }
+    panel.table = {std::move(header), std::move(perShip), std::move(perOre)};
+  }
+
+  const Outpost::DesignView* match = _designer.Match(_newest);
+  panel.actions.push_back({.label = match != nullptr ? "Rename" : "Save design",
+                           .action = {.kind = Hud::ActionKind::SaveDesign},
+                           .enabled = _designer.SaveCommand(_newest).has_value()});
+  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  panel.actions.push_back(
+    {.label = match != nullptr ? std::format("Queue|{}", match->cost) : std::string("Queue"),
+     .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match != nullptr ? match->id : Outpost::DesignId{}},
+     .enabled = match != nullptr && canQueue && _newest.ore >= match->cost});
+  return panel;
 }
 } // namespace
 
@@ -112,13 +216,16 @@ DirectX::XMFLOAT2 Outpost::Hud::Layout::MinimapPixelOf(PlanePosition _point) con
 }
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
-                                             std::span<const EntityId> _selected, std::optional<StructureKind> _placing)
+                                             std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
+                                             const Designer* _designer)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
                   .selection = {},
                   .buttons = {},
                   .hint = {},
+                  .research = ResearchLine(_newest, _entities),
+                  .designer = std::nullopt,
                   .mapSizeMeters = _newest.mapSizeMeters,
                   .marks = {}};
 
@@ -171,6 +278,22 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         else
           content.selection.push_back(std::format("1. {}, waiting for Ore", name));
       }
+      const auto topicOf = [&_newest](ResearchTopicId _topic) -> const ResearchTopicView*
+      {
+        const auto topic = std::ranges::find(_newest.research, _topic, &ResearchTopicView::id);
+        return topic != _newest.research.end() ? &*topic : nullptr;
+      };
+      for (size_t i = 0; i < structure->research.size(); ++i)
+      {
+        const ResearchTopicView* topic = topicOf(structure->research[i]);
+        const std::string name = topic != nullptr ? topic->nameUtf8 : std::string("Unknown topic");
+        if (i > 0)
+          content.selection.push_back(std::format("{}. {}", i + 1, name));
+        else if (structure->jobPermille > 0)
+          content.selection.push_back(std::format("1. {}, {}%", name, structure->jobPermille / 10));
+        else
+          content.selection.push_back(std::format("1. {}, waiting for Ore", name));
+      }
 
       const bool canQueue = structure->builtPermille >= PERMILLE && structure->queue.size() < QUEUE_LIMIT;
       if (structure->structure == StructureKind::CommandStation)
@@ -187,6 +310,28 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
           content.buttons.push_back({.label = std::format("{}|{}", design.nameUtf8, design.cost),
                                      .action = {.kind = ActionKind::Queue, .producer = structure->id, .design = design.id},
                                      .enabled = canQueue && _newest.ore >= design.cost});
+        if (_designer != nullptr && structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
+          content.designer = DescribeDesigner(_newest, *_designer, *structure);
+      }
+      else if (structure->structure == StructureKind::ResearchLab && structure->owner == _newest.player)
+      {
+        // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither is dim (design §8).
+        const bool canResearch = structure->builtPermille >= PERMILLE && structure->research.size() < QUEUE_LIMIT;
+        const auto known = [&](ResearchTopicId _topic)
+        {
+          const ResearchTopicView* topic = topicOf(_topic);
+          return (topic != nullptr && topic->researched) || std::ranges::find(structure->research, _topic) != structure->research.end();
+        };
+        for (const ResearchTopicView& topic : _newest.research)
+        {
+          if (known(topic.id))
+            continue;
+          content.selection.push_back(std::format("{}: {}", topic.nameUtf8, topic.effectUtf8));
+          content.buttons.push_back(
+            {.label = std::format("{}|{}", topic.nameUtf8, topic.cost),
+             .action = {.kind = ActionKind::Research, .producer = structure->id, .topic = topic.id},
+             .enabled = canResearch && std::ranges::all_of(topic.prerequisites, known) && _newest.ore >= topic.cost});
+        }
       }
       return content;
     }
@@ -283,6 +428,35 @@ Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _w
                                                           : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
   layout.texts.push_back({incomeText, oreLeft + (ORE_INCOME_LEFT * scale), textTop, TEXT_COLOR});
 
+  // Under the Ore: the research under way.
+  if (!_content.research.empty())
+  {
+    const float top = oreTop + ((ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP) * scale);
+    layout.panels.push_back({oreLeft, top, RESEARCH_PANEL_WIDTH * scale, ORE_PANEL_HEIGHT * scale, PANEL_COLOR});
+    layout.texts.push_back(
+      {_content.research, oreLeft + (PADDING * scale), top + ((ORE_PANEL_HEIGHT - LINE_STEP) / 2.0f * scale), TEXT_COLOR});
+  }
+
+  // A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
+  const auto addButton = [&layout, scale](const Rect& _area, const Button& _button)
+  {
+    Rect face = _area;
+    face.color = _button.selected ? SELECTED_BUTTON_COLOR : _button.enabled ? BUTTON_COLOR : DISABLED_BUTTON_COLOR;
+    layout.panels.push_back(face);
+    if (_button.enabled)
+      layout.actions.emplace_back(face, _button.action);
+    const size_t split = _button.label.find('|');
+    const float labelTop = face.top + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale);
+    const DirectX::XMFLOAT4& color = _button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
+    layout.texts.push_back({_button.label.substr(0, split), face.left + (PADDING * scale), labelTop, color});
+    if (split != std::string::npos)
+    {
+      const float costLeft = std::min(BUTTON_COST_LEFT * scale, face.width - (COST_ROOM * scale));
+      layout.texts.push_back(
+        {_button.label.substr(split + 1), face.left + costLeft, labelTop, _button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
+    }
+  };
+
   // Top-middle anchor: what a click on the ground will do.
   if (!_content.hint.empty())
   {
@@ -312,22 +486,68 @@ Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _w
     const float top = height - ((MARGIN + panelHeight) * scale);
     layout.panels.push_back({left, top, BUTTON_PANEL_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
     for (size_t i = 0; i < _content.buttons.size(); ++i)
+      addButton({left + (PADDING * scale), top + ((PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP))) * scale),
+                 (BUTTON_PANEL_WIDTH - (2.0f * PADDING)) * scale, BUTTON_HEIGHT * scale},
+                _content.buttons[i]);
+  }
+
+  // Top-right anchor: the designer, a row at a time.
+  if (_content.designer.has_value())
+  {
+    const DesignerPanel& designer = *_content.designer;
+    const float rowStep = BUTTON_HEIGHT + BUTTON_GAP;
+    const float rows = 5.0f + static_cast<float>(designer.table.size());
+    const float panelHeight = (2.0f * PADDING) + (rows * rowStep) + (static_cast<float>(designer.summary.size()) * LINE_STEP);
+    const float left = width - ((MARGIN + DESIGNER_WIDTH) * scale);
+    const float top = MARGIN * scale;
+    layout.panels.push_back({left, top, DESIGNER_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
+    const float inner = left + (PADDING * scale);
+    const float fieldLeft = inner + (DESIGNER_LABEL_WIDTH * scale);
+    float y = top + (PADDING * scale);
+    const auto labelAt = [&](std::string _text, float _left, float _rowTop, const DirectX::XMFLOAT4& _color)
+    { layout.texts.push_back({std::move(_text), _left, _rowTop + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale), _color}); };
+
+    // The name, a field that takes typing once clicked.
+    labelAt("Name", inner, y, TEXT_COLOR);
+    const Rect field{fieldLeft, y, (DESIGNER_WIDTH - (2.0f * PADDING) - DESIGNER_LABEL_WIDTH) * scale, BUTTON_HEIGHT * scale,
+                     designer.editing ? SELECTED_BUTTON_COLOR : BUTTON_COLOR};
+    layout.panels.push_back(field);
+    layout.actions.emplace_back(field, Action{.kind = ActionKind::EditName});
+    labelAt(designer.editing ? designer.name + "_" : designer.name, field.left + (PADDING * scale), y,
+            designer.nameValid ? TEXT_COLOR : WARNING_COLOR);
+    y += rowStep * scale;
+
+    const std::array<std::pair<std::string_view, const std::vector<Button>*>, 3> slots{
+      {{"Hull", &designer.hulls}, {"Drive", &designer.drives}, {"Weapon", &designer.weapons}}};
+    for (const auto& [label, picks] : slots)
     {
-      const Button& button = _content.buttons[i];
-      const Rect area{left + (PADDING * scale), top + ((PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP))) * scale),
-                      (BUTTON_PANEL_WIDTH - (2.0f * PADDING)) * scale, BUTTON_HEIGHT * scale,
-                      button.enabled ? BUTTON_COLOR : DISABLED_BUTTON_COLOR};
-      layout.panels.push_back(area);
-      if (button.enabled)
-        layout.actions.emplace_back(area, button.action);
-      const size_t split = button.label.find('|');
-      const float labelTop = area.top + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale);
-      const DirectX::XMFLOAT4& color = button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
-      layout.texts.push_back({button.label.substr(0, split), area.left + (PADDING * scale), labelTop, color});
-      if (split != std::string::npos)
-        layout.texts.push_back(
-          {button.label.substr(split + 1), area.left + (BUTTON_COST_LEFT * scale), labelTop, button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
+      labelAt(std::string(label), inner, y, TEXT_COLOR);
+      for (size_t i = 0; i < picks->size(); ++i)
+        addButton({fieldLeft + (static_cast<float>(i) * (PICK_WIDTH + BUTTON_GAP) * scale), y, PICK_WIDTH * scale, BUTTON_HEIGHT * scale},
+                  (*picks)[i]);
+      y += rowStep * scale;
     }
+
+    for (const std::string& line : designer.summary)
+    {
+      layout.texts.push_back({line, inner, y, TEXT_COLOR});
+      y += LINE_STEP * scale;
+    }
+    for (size_t row = 0; row < designer.table.size(); ++row)
+    {
+      const std::vector<std::string>& cells = designer.table[row];
+      for (size_t column = 0; column < cells.size(); ++column)
+      {
+        const float cellLeft =
+          column == 0 ? inner : inner + ((TABLE_LABEL_WIDTH + (static_cast<float>(column - 1) * TABLE_COLUMN_WIDTH)) * scale);
+        labelAt(cells[column], cellLeft, y, row == 0 || column == 0 ? DIM_TEXT_COLOR : TEXT_COLOR);
+      }
+      y += rowStep * scale;
+    }
+
+    for (size_t i = 0; i < designer.actions.size(); ++i)
+      addButton({inner + (static_cast<float>(i) * (ACTION_WIDTH + BUTTON_GAP) * scale), y, ACTION_WIDTH * scale, BUTTON_HEIGHT * scale},
+                designer.actions[i]);
   }
 
   // Bottom-left anchor: the minimap, with every mark and the camera's view.

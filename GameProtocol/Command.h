@@ -56,15 +56,36 @@ struct QueueShipCommand
   DesignId design;
 };
 
-// The player's Research Lab starts a topic (design §8).
+// The player's Research Lab queues a topic (design §8). It researches one topic at a time and holds up to QUEUE_LIMIT,
+// each paid for when it starts. A topic may follow its prerequisite in the queue.
 struct StartResearchCommand
 {
   EntityId lab;
   ResearchTopicId topic;
 };
 
-// Saves a design from the Shipyard panel's designer (design §7, §9). An invalid design identifier saves a new design,
-// and the server assigns its identifier; a valid one renames or changes that design.
+// The longest a design's name may be, in characters: room for the longest name design §7 writes, "Medium+Fusion+Missile Rack".
+inline constexpr size_t DESIGN_NAME_LIMIT = 32;
+
+// Whether a design may have this name: one to DESIGN_NAME_LIMIT printable ASCII characters, the ones the HUD's font holds
+// (ADR-015), and not only spaces. The designer and the server both check it.
+[[nodiscard]] constexpr bool IsValidDesignName(std::string_view _name) noexcept
+{
+  if (_name.empty() || _name.size() > DESIGN_NAME_LIMIT)
+    return false;
+  bool visible = false;
+  for (const char character : _name)
+  {
+    if (character < ' ' || character > '~')
+      return false;
+    visible = visible || character != ' ';
+  }
+  return visible;
+}
+
+// Saves a design from the Shipyard panel's designer (design §7, §9). An invalid design identifier saves a new design of
+// components the player has, and the server assigns its identifier. A valid one renames that design: a saved design's
+// components never change, so that the ships already built of it stay what they are (ADR-017).
 struct SaveDesignCommand
 {
   DesignId design;

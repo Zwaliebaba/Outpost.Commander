@@ -91,6 +91,8 @@ struct Entity
   // A Shipyard's or the Command Station's jobs, front first, and the front job's progress in thousandths of a tick. The
   // work needed is zero until the job starts, which is when it is paid for (design §5).
   std::vector<JobView> queue;
+  // A Research Lab's topics, front first, likewise; its front topic's progress is the job's (design §8).
+  std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
 
@@ -138,6 +140,23 @@ enum class CommandResult : std::uint8_t
   UnknownDesign,
   // The queue already holds five jobs (design §6).
   QueueFull,
+  // A research order's lab is not the player's built Research Lab.
+  NotALab,
+  // A research order's topic, or a design's hull, drive or weapon, is not in the tuning data.
+  UnknownTopic,
+  UnknownComponent,
+  // The topic is researched already, or already in the lab's queue.
+  AlreadyResearched,
+  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8).
+  PrerequisiteMissing,
+  // A design's name is empty, too long, or holds a character the HUD cannot show.
+  InvalidName,
+  // A new design uses a component the player has not unlocked (design §8).
+  ComponentLocked,
+  // The player already has a design of these components.
+  DuplicateDesign,
+  // A saved design's components never change; a design of other components is saved as a new one (ADR-017).
+  ComponentsFixed,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -173,8 +192,14 @@ public:
   // The player's Ore in hundredths, or zero for a player not added.
   [[nodiscard]] std::int64_t OreHundredths(PlayerId _player) const noexcept;
 
-  // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer will
-  // send a command (task 5.2).
+  // The topics the player has researched, in the order they finished; empty for a player not added (design §8).
+  [[nodiscard]] std::span<const ResearchTopicId> Researched(PlayerId _player) const noexcept;
+
+  // What the player's research has done to its rates; none before UseTuning.
+  [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
+
+  // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
+  // command (task 5.2).
   DesignId SaveDesign(PlayerId _owner, std::string _name, const DesignComponents& _components, const DesignStats& _stats);
 
   // Match setup: saves every starting design for _owner (design §7). Throws Neuron::Exception when the tuning data has
@@ -252,6 +277,10 @@ private:
     PlayerId id;
     // In hundredths, so that a Mining Rig's income per tick is whole (ADR-016).
     std::int64_t oreHundredths = 0;
+    // Income earned but not yet whole hundredths, in hundredths times ticks a second, so that an upgraded income that is
+    // not a whole number of hundredths a tick is still paid in full (ADR-017).
+    std::int64_t oreRemainder = 0;
+    std::vector<ResearchTopicId> researched;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
   };
@@ -268,6 +297,7 @@ private:
 
   Entity* FindMutableEntity(EntityId _id) noexcept;
   PlayerState* FindPlayer(PlayerId _player) noexcept;
+  [[nodiscard]] const PlayerState* FindPlayer(PlayerId _player) const noexcept;
   [[nodiscard]] std::optional<Armament> ArmamentOf(const Entity& _entity) const noexcept;
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;
   CommandResult ValidateShips(PlayerId _player, const std::vector<EntityId>& _ships) const noexcept;
@@ -281,6 +311,8 @@ private:
   CommandResult Apply(PlayerId _player, const BuildStructureCommand& _build);
   CommandResult Apply(PlayerId _player, const RepairCommand& _repair);
   CommandResult Apply(PlayerId _player, const QueueShipCommand& _queue);
+  CommandResult Apply(PlayerId _player, const StartResearchCommand& _research);
+  CommandResult Apply(PlayerId _player, const SaveDesignCommand& _save);
   void OrderWork(const std::vector<EntityId>& _constructors, EntityId _target);
   // The map's obstacles and every structure but the Mining Rigs, which stand on asteroids; and ships whose way a new
   // structure blocks look for another.
@@ -292,6 +324,12 @@ private:
   void ApproachWork();
   void Work();
   void Produce();
+  void Research();
+  // The player gains the topic's upgrade or unlock at once: its designs take their new stats, and its ships keep the
+  // share of their hit points they had (design §8).
+  void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
+  // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
+  [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
   void Mine();
   void MoveShips();
   void SeparateShips();

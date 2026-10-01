@@ -29,5 +29,7 @@
     <ClCompile Include="ProductionTests.cpp" />
     <ClCompile Include="DefenseTests.cpp" />
     <ClCompile Include="HandCheckTests.cpp" />
+    <ClCompile Include="ResearchTests.cpp" />
+    <ClCompile Include="SaveDesignTests.cpp" />
   </ItemGroup>
 </Project>

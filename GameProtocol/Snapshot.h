@@ -71,7 +71,61 @@ struct EntityView
   // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
   // while it waits for the Ore to start (design §5).
   std::vector<JobView> queue;
+  // A Research Lab's topics, front first; the front one's progress is jobPermille, as a queue's is (design §8).
+  std::vector<ResearchTopicId> research;
   std::int32_t jobPermille = 0;
+};
+
+// A hull as its player has it: its numbers after the player's research, and whether the player may build it yet (design
+// §7, §8). The designer derives a design's stats from these with DesignStatsOf, as the server does (ADR-017).
+struct HullView
+{
+  HullId id;
+  std::string nameUtf8;
+  std::int32_t hitPointsHundredths = 0;
+  std::int32_t armorHundredths = 0;
+  double speedMetersPerSecond = 0.0;
+  double turnRateDegreesPerSecond = 0.0;
+  double footprintRadiusMeters = 0.0;
+  std::int32_t cost = 0;
+  double buildSeconds = 0.0;
+  // False until research unlocks it.
+  bool available = false;
+};
+
+struct DriveView
+{
+  DriveId id;
+  std::string nameUtf8;
+  double speedFactor = 0.0;
+  double hitPointsFactor = 0.0;
+  double turnRateFactor = 0.0;
+  std::int32_t cost = 0;
+  bool available = false;
+};
+
+struct WeaponView
+{
+  WeaponId id;
+  std::string nameUtf8;
+  std::int32_t damageHundredths = 0;
+  double fireIntervalSeconds = 0.0;
+  double rangeMeters = 0.0;
+  std::int32_t cost = 0;
+  bool available = false;
+};
+
+// A research topic (design §8): what it does in words, what it costs, what it needs first, and whether the player has
+// it.
+struct ResearchTopicView
+{
+  ResearchTopicId id;
+  std::string nameUtf8;
+  std::string effectUtf8;
+  std::int32_t cost = 0;
+  double researchSeconds = 0.0;
+  std::vector<ResearchTopicId> prerequisites;
+  bool researched = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
@@ -140,5 +194,12 @@ struct Snapshot
   float mapSizeMeters = 0.0f;
   std::vector<StructureTypeView> structureTypes;
   std::int32_t constructorCost = 0;
+  // The player's components and research topics, in the tuning data's order, with the player's research applied, and how
+  // much faster than the base rate its Shipyards build (design §8). Empty and 1 when the server has no tuning data.
+  std::vector<HullView> hulls;
+  std::vector<DriveView> drives;
+  std::vector<WeaponView> weapons;
+  std::vector<ResearchTopicView> research;
+  double shipyardBuildSpeedFactor = 1.0;
 };
 } // namespace Outpost
