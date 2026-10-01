@@ -101,16 +101,23 @@ public:
     Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Focus, BATTLES) >= 16);
   }
 
-  // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release, so CI leaves it out by its category
-  // and the owner runs it:
-  //   vstest.console.exe x64\Release\GameLogicTests.dll /TestCaseFilter:"TestCategory=Q2Full"
-  // The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The verdicts are recorded in
-  // design §12.
+  // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release and hours in Debug, so it runs only
+  // when OUTPOST_Q2_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in Release:
+  //   set OUTPOST_Q2_FULL=1
+  //   vstest.console.exe x64\Release\GameLogicTests.dll
+  // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
+  // TestCategory trait. The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The
+  // verdicts are recorded in design §12.
   BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
   TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full")
   END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(TheFullCheck)
   {
+    if (GetEnvironmentVariableW(L"OUTPOST_Q2_FULL", nullptr, 0) == 0)
+    {
+      Logger::WriteMessage("Not run: set OUTPOST_Q2_FULL to run the full Q2 check.");
+      return;
+    }
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const CheckResult result = RunQ2Check(tuning, {});
     std::ofstream(std::filesystem::temp_directory_path() / "Q2Check-report.txt") << result.report;
