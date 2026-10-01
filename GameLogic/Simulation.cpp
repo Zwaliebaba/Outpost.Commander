@@ -18,6 +18,10 @@ constexpr float STALL_SECONDS = 1.0f;
 // Getting closer by less than this does not count as progress.
 constexpr float PROGRESS_METERS = 0.1f;
 
+// A ship standing to fire, pushed almost straight at its target, steps sideways instead (SeparateShips): below this share
+// of the push left over sideways.
+constexpr float SIDESTEP_SHARE = 0.2f;
+
 // Room between neighbors in a formation, in footprint radii of the group's widest ship: two radii for the ships
 // themselves, one for the gap. Loose, as design §9 asks.
 constexpr float FORMATION_SPACING_RADII = 3.0f;
@@ -751,9 +755,30 @@ void Outpost::Simulation::MoveShips()
 }
 
 // Ships do not collide, but they do not overlap either (design §9): each overlapping pair is pushed apart along the line
-// between them, half each, in identifier order.
+// between them, in identifier order. Two that both move, or both stand idle, part half each. A ship standing to fire
+// keeps its range (design §7, decided by the owner on 2026-10-01): pushed by a ship that is still moving up, it gives way
+// only sideways round its target, never toward it or away, and the mover takes the rest. A group closing on an enemy so
+// spreads its front into an arc at range, and its rear ships find their own places on it rather than shoving the front
+// into the enemy. An idle ship holds its ground against a moving one, which slides round it.
 void Outpost::Simulation::SeparateShips()
 {
+  const auto moving = [](const Entity& _ship)
+  { return !_ship.path.empty() && !(_ship.order == ShipOrder::AttackMove && _ship.target.IsValid()); };
+  // How far _stander gives way when _mover pushes it _overlap along _push: half of it, sideways round its target. When the
+  // push is straight at the target, it steps to the side its identifier picks, so that a ship right behind another is not
+  // stuck there.
+  const auto giveWay = [this](const Entity& _stander, const Entity& _mover, PlaneVector _push, float _overlap) -> PlaneVector
+  {
+    const Entity* target = _stander.target.IsValid() ? FindEntity(_stander.target) : nullptr;
+    if (target == nullptr)
+      return {};
+    const PlaneVector toTarget = Normalized(target->position - _stander.position, {1.0f, 0.0f});
+    PlaneVector sideways = _push + toTarget * -Dot(_push, toTarget);
+    if (Length(sideways) < SIDESTEP_SHARE)
+      sideways = Perpendicular(toTarget) * (_stander.id < _mover.id ? 1.0f : -1.0f);
+    return Normalized(sideways, {}) * (_overlap / 2.0f);
+  };
+
   for (std::size_t a = 0; a < m_entities.size(); ++a)
   {
     Entity& first = m_entities[a];
@@ -769,9 +794,34 @@ void Outpost::Simulation::SeparateShips()
       if (overlap <= 0.0f)
         continue;
       // Ships on the same spot part along +x, the earlier one to the left, so that the result does not depend on chance.
-      const PlaneVector apart = Normalized(between, {1.0f, 0.0f}) * (overlap / 2.0f);
-      first.position = first.position - apart;
-      second.position = second.position + apart;
+      const PlaneVector direction = Normalized(between, {1.0f, 0.0f});
+      const bool firstMoves = moving(first);
+      const bool secondMoves = moving(second);
+      if (firstMoves && secondMoves)
+      {
+        first.position = first.position - direction * (overlap / 2.0f);
+        second.position = second.position + direction * (overlap / 2.0f);
+        continue;
+      }
+      if (!firstMoves && !secondMoves)
+      {
+        // Two standing: each gives way half, and one standing to fire only sideways round its target.
+        const auto standAside = [&](const Entity& _ship, const Entity& _other, PlaneVector _push)
+        { return _ship.target.IsValid() ? giveWay(_ship, _other, _push, overlap) : _push * (overlap / 2.0f); };
+        const PlaneVector firstStep = standAside(first, second, direction * -1.0f);
+        const PlaneVector secondStep = standAside(second, first, direction);
+        first.position = first.position + firstStep;
+        second.position = second.position + secondStep;
+        continue;
+      }
+      // One stands and one moves: the stander gives way sideways at most, and the mover takes what is left of the push
+      // along the line between them.
+      Entity& stander = firstMoves ? second : first;
+      Entity& mover = firstMoves ? first : second;
+      const PlaneVector push = firstMoves ? direction : direction * -1.0f;
+      const PlaneVector step = giveWay(stander, mover, push, overlap);
+      stander.position = stander.position + step;
+      mover.position = mover.position - push * (overlap - Dot(step, push));
     }
   }
 }

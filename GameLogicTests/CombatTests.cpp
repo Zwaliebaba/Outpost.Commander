@@ -174,6 +174,38 @@ public:
     Assert::AreEqual(arena.World().FindEntity(ship)->maxHitPointsHundredths, arena.World().FindEntity(ship)->hitPointsHundredths);
   }
 
+  // Design §7, decided by the owner on 2026-10-01: a group attack-moving on an enemy stands at its own range. Its rear
+  // ships move up round its front ships, which give way sideways round the target, instead of pushing them forward into
+  // the enemy; so nearly every ship gets into range.
+  TEST_METHOD(AGroupKeepsItsStandOff)
+  {
+    Arena arena;
+    std::vector<Outpost::EntityId> group;
+    for (int i = 0; i < 16; ++i)
+    {
+      // Four rows of four, 30 m apart, the front row first.
+      const int row = i / 4;
+      const int column = i % 4;
+      group.push_back(arena.Ship(BLUE, MEDIUM, ION, LANCE, {-static_cast<float>(row) * 30.0f, static_cast<float>(column) * 30.0f - 45.0f}));
+    }
+    // Sturdy enough to outlast every Lance in range for the whole test.
+    const Outpost::EntityId target =
+      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {600.0f, 0.0f}, 20.0f, 1'000'000'000, 0);
+    (void)arena.Tick({Order(BLUE, Outpost::AttackMoveCommand{.ships = group, .destination = {600.0f, 0.0f}})});
+    for (int tick = 0; tick < 30 * static_cast<int>(TICKS_PER_SECOND); ++tick)
+      (void)arena.Tick();
+
+    const Outpost::PlanePosition targetPosition = arena.World().FindEntity(target)->position;
+    float nearestMeters = std::numeric_limits<float>::infinity();
+    for (const Outpost::EntityId id : group)
+      nearestMeters = std::min(nearestMeters, Outpost::Distance(arena.World().FindEntity(id)->position, targetPosition));
+    // No closer than a tick's travel inside the Lance's 220 m.
+    Assert::IsTrue(nearestMeters > 220.0f - 52.0f / TICKS_PER_SECOND - 1.0f, std::to_wstring(nearestMeters).c_str());
+    const auto firing =
+      std::ranges::count_if(group, [&arena](Outpost::EntityId _id) { return arena.World().FindEntity(_id)->target.IsValid(); });
+    Assert::IsTrue(firing >= 12, (std::to_wstring(firing) + L" of 16 in range").c_str());
+  }
+
   // Task 3.3: weapons are turrets, so a ship fires while it moves.
   TEST_METHOD(FiresWhileMoving)
   {
@@ -209,7 +241,8 @@ public:
         destroyed = snapshot.destroyed.front();
     }
     Assert::IsTrue(destroyed.has_value(), L"the target was never destroyed");
-    Assert::IsTrue(destroyed->id == target && destroyed->owner == RED && destroyed->hull == SMALL);
+    const Outpost::DestroyedView& view = destroyed.value();
+    Assert::IsTrue(view.id == target && view.owner == RED && view.hull == SMALL);
     Assert::IsNull(arena.World().FindEntity(target));
     Assert::IsTrue(arena.World().FindEntity(ship)->order == Outpost::ShipOrder::None);
   }
