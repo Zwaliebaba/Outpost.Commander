@@ -8,7 +8,7 @@ Tasks 3.2 and 3.3 give ships designs and make them fight. Design §7 sets the ru
 
 ## Decision
 
-1. **A design's stats are derived from the tuning data, never stored in it.** `Outpost::DesignStatsFor` combines a hull, a drive and a weapon into hit points, armor, speed, cost, build time, damage, fire interval and range, as the model's `designs_from` does. A saved design (`ShipDesign`) keeps its stats, so a ship reads them from its design rather than carrying a copy. Research (task 5.1) changes them by design.
+1. **A design's stats are derived from the tuning data, never stored in it.** `Outpost::DesignStatsFor` combines a hull, a drive and a weapon into hit points, armor, speed, cost, build time, damage, fire interval and range, as the model's `designs_from` does, through `DesignStatsOf` in `GameProtocol`, which the designer uses too ([ADR-017](ADR-017-research-and-the-designer.md)). A saved design (`ShipDesign`) keeps its stats, so a ship reads them from its design rather than carrying a copy. Research changes them by design, for its player (ADR-017).
 2. **Every player starts with the starting designs saved**, the components no research topic unlocks, in hull, drive and weapon order (design §7, §9): four with today's data. `InProcessServer` saves them and adds each player with the starting Ore as match setup.
 3. **Hit points, armor and damage count in hundredths of a point,** as integers (`hitPointsHundredths`, `armorHundredths`, `damageHundredths`). The Q2 check moves armor and damage by 5% (task 3.4), which the tuning data's whole numbers could not hold. A drive's factor gives whole hundredths for every hull today (220 × 0.9 = 198.00), and the armor rule's quarter hit always does: a Mass Driver hit on a Large hull is 3.50. Integers make the order of additions irrelevant, so ADR-009's replay holds without reasoning about float sums. A research upgrade of 15% still gives whole hundredths for every hull.
 4. **A weapon reloads in thousandths of a tick.** The fire interval becomes `interval × tick rate × 1000` milliticks, rounded once. Each tick takes 1000 off. The weapon fires on the tick the count reaches zero or less, and the interval is added back, so an interval that is not a whole number of ticks still fires at its average rate. Today's intervals are 8, 40 and 60 ticks exactly.
@@ -23,7 +23,7 @@ Tasks 3.2 and 3.3 give ships designs and make them fight. Design §7 sets the ru
 ## Consequences
 
 - **Targeting is O(n²) per tick when targets are lost.** A ship that keeps its target checks only that one. A ship looking for one checks every enemy: at 200 ships, 20,000 distance tests on a tick when everyone looks at once. Task 3.7 measures what that costs.
-- **Splash is not applied yet.** The Missile Rack's 30 m splash waits for task 5.3 and ship sizes (gate G5). Until then a Missile Rack hit hurts only its target, and no player can build one before research exists (task 5.1).
+- **Splash is not applied yet.** The Missile Rack's 30 m splash waits for task 5.3 and ship sizes (gate G5). Until then a Missile Rack hit hurts only its target. A player who researches the Missile Rack (ADR-017) can build one, which fires at its range without splash.
 - **Structures fire with task 4.4.** Until then a structure is a target only.
 - **The client cannot see why a command was rejected.** Attack now answers `UnknownTarget` or `NotAnEnemy`, but as ADR-009 says, the protocol has no message for it yet.
 

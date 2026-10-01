@@ -315,6 +315,8 @@ public:
     ExpectLoadError(Replace("\"unlockDrive\": 1", "\"unlockDrive\": 2"), "research[2].effect.unlockDrive");
     ExpectLoadError(Replace("\"weapon\": 1, \"stat\"", "\"weapon\": 4, \"stat\""), "research[1].effect.weapon");
     ExpectLoadError(Replace("\"stat\": \"fireRate\"", "\"stat\": \"damage\""), "research[1].effect.stat");
+    // Design §8: an upgrade raises its target's one rate, so a weapon's hit points are no upgrade the game can apply.
+    ExpectLoadError(Replace("\"stat\": \"fireRate\"", "\"stat\": \"hitPoints\""), "research[1].effect.stat");
     ExpectLoadError(Replace("\"upgrade\": \"allHulls\",", "\"upgrade\": \"allHulls\", \"weapon\": 1,"), "research[0].effect.weapon");
     ExpectLoadError(Replace("{ \"unlockDrive\": 1 }", "{}"), "research[2].effect");
   }

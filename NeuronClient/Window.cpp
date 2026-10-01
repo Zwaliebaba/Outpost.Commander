@@ -178,6 +178,14 @@ bool Neuron::Window::ProcessMessages()
                           .read = std::chrono::steady_clock::now(), .shift = GetKeyState(VK_SHIFT) < 0,
                           .control = GetKeyState(VK_CONTROL) < 0});
     }
+    else if (message.message == WM_CHAR)
+    {
+      // TranslateMessage below posts it for a key press, so it arrives in this loop after the WM_KEYDOWN it came from.
+      m_events.push_back({.kind = InputEventKind::Character,
+                          .character = static_cast<std::uint32_t>(message.wParam),
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now()});
+    }
     TranslateMessage(&message);
     DispatchMessageW(&message);
   }

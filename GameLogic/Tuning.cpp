@@ -186,6 +186,14 @@ Outpost::ResearchEffect ReadEffect(ObjectReader& _reader)
     if (upgrade.target == Outpost::UpgradeTarget::Weapon)
       upgrade.weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
     upgrade.stat = ReadName(_reader, "stat", UPGRADE_STATS);
+    // Each target has the one rate the game raises (design §8): upgrades change rates, never the size of a hit.
+    const bool pairs = (upgrade.target == Outpost::UpgradeTarget::MiningRig && upgrade.stat == Outpost::UpgradeStat::Income) ||
+                       (upgrade.target == Outpost::UpgradeTarget::AllHulls && upgrade.stat == Outpost::UpgradeStat::HitPoints) ||
+                       (upgrade.target == Outpost::UpgradeTarget::Weapon && upgrade.stat == Outpost::UpgradeStat::FireRate) ||
+                       (upgrade.target == Outpost::UpgradeTarget::Shipyards && upgrade.stat == Outpost::UpgradeStat::BuildSpeed);
+    if (!pairs)
+      Neuron::JsonFail(_reader.PathOf("stat"), "is not the rate this upgrade's target has: a Mining Rig's income, all hulls' "
+                                               "hitPoints, a weapon's fireRate or the shipyards' buildSpeed");
     upgrade.percent = _reader.Integer("percent", 1);
     return upgrade;
   }

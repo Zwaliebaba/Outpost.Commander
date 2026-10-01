@@ -89,6 +89,16 @@ void Outpost::PlayerControls::Queue(EntityId _producer, DesignId _design)
   Give(QueueShipCommand{.producer = _producer, .design = _design});
 }
 
+void Outpost::PlayerControls::Research(EntityId _lab, ResearchTopicId _topic)
+{
+  Give(StartResearchCommand{.lab = _lab, .topic = _topic});
+}
+
+void Outpost::PlayerControls::SaveDesign(SaveDesignCommand _save)
+{
+  Give(std::move(_save));
+}
+
 void Outpost::PlayerControls::MoveTo(PlanePosition _destination, std::span<const EntityView> _entities)
 {
   std::vector<EntityId> ships = SelectedShips(_entities);
