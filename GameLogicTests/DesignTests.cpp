@@ -61,22 +61,26 @@ public:
       const std::wstring name = std::to_wstring(row.hull) + L"+" + std::to_wstring(row.drive) + L"+" + std::to_wstring(row.weapon);
       Assert::AreEqual(row.cost, stats.cost, name.c_str());
       Assert::AreEqual(row.hitPoints, static_cast<double>(stats.hitPointsHundredths) / Outpost::HUNDREDTHS, 1e-9, name.c_str());
-      Assert::AreEqual(row.armor, stats.armor, name.c_str());
+      Assert::AreEqual(row.armor * Outpost::HUNDREDTHS, stats.armorHundredths, name.c_str());
       Assert::AreEqual(row.speedMetersPerSecond, static_cast<double>(stats.movement.speedMetersPerSecond), 1e-4, name.c_str());
       Assert::AreEqual(row.rangeMeters, static_cast<double>(stats.rangeMeters), 1e-9, name.c_str());
       for (size_t hull = 0; hull < tuning.hulls.size(); ++hull)
-        Assert::AreEqual(row.damagePerSecond[hull], Outpost::DamagePerSecond(stats, tuning.hulls[hull].armor), 0.0501, name.c_str());
+        Assert::AreEqual(row.damagePerSecond[hull], Outpost::DamagePerSecond(stats, tuning.hulls[hull].armor * Outpost::HUNDREDTHS), 0.0501,
+                         name.c_str());
     }
   }
 
   // Design §7: max(damage × 0.25, damage − armor), in hundredths.
   TEST_METHOD(ArmorTakesItsShareOfAHit)
   {
-    Assert::AreEqual(600, Outpost::HitHundredths(14, 8));
-    Assert::AreEqual(350, Outpost::HitHundredths(14, 14));
-    Assert::AreEqual(400, Outpost::HitHundredths(14, 10));
-    Assert::AreEqual(9300, Outpost::HitHundredths(95, 2));
-    Assert::AreEqual(1400, Outpost::HitHundredths(14, 0));
+    Assert::AreEqual(600, Outpost::HitHundredths(1400, 800));
+    Assert::AreEqual(350, Outpost::HitHundredths(1400, 1400));
+    // Design §6: a Defence Platform's armor of 10 takes a Mass Driver hit from 14 to 4.
+    Assert::AreEqual(400, Outpost::HitHundredths(1400, 1000));
+    Assert::AreEqual(9300, Outpost::HitHundredths(9500, 200));
+    Assert::AreEqual(1400, Outpost::HitHundredths(1400, 0));
+    // Fractional armor and damage, as the Q2 check's robustness sweep makes them.
+    Assert::AreEqual(630, Outpost::HitHundredths(1470, 840));
   }
 
   // Design §7: the first minutes are played with the four designs of the components no research unlocks.

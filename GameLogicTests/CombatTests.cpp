@@ -54,7 +54,7 @@ public:
   // An unarmed target that cannot move, with plenty of hit points.
   Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::PlanePosition _position, std::int32_t _armor = 0)
   {
-    return m_simulation.SpawnStructure(_owner, Outpost::StructureKind::Shipyard, _position, 20.0f, 1'000'000, _armor);
+    return m_simulation.SpawnStructure(_owner, Outpost::StructureKind::Shipyard, _position, 20.0f, 1'000'000, _armor * Outpost::HUNDREDTHS);
   }
 
   // Runs a tick and returns the shots fired in it.
@@ -86,7 +86,7 @@ public:
       Arena arena;
       const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, ION, weapon, {});
       const Outpost::EntityId target = arena.Structure(RED, {100.0f, 0.0f}, 8);
-      const std::int32_t damage = Outpost::DesignStatsFor(arena.TuningData(), SMALL, ION, weapon).damage;
+      const std::int32_t damage = Outpost::DesignStatsFor(arena.TuningData(), SMALL, ION, weapon).damageHundredths;
 
       std::vector<std::uint64_t> shotTicks;
       std::int32_t previousHitPoints = arena.World().FindEntity(target)->hitPointsHundredths;
@@ -99,7 +99,7 @@ public:
           Assert::AreEqual(size_t{1}, shots.size());
           Assert::IsTrue(shots[0].shooter == ship && shots[0].target == target && shots[0].weapon == weapon);
           shotTicks.push_back(arena.World().CurrentTick());
-          Assert::AreEqual(Outpost::HitHundredths(damage, 8), previousHitPoints - hitPoints);
+          Assert::AreEqual(Outpost::HitHundredths(damage, 800), previousHitPoints - hitPoints);
         }
         else
         {
@@ -121,28 +121,28 @@ public:
     Arena arena;
     const Outpost::EntityId ship = arena.Ship(BLUE, LARGE, FUSION, MASS_DRIVER, {});
     (void)arena.Structure(RED, {30.0f, 0.0f});
-    const Outpost::EntityId far = arena.Ship(RED, SMALL, ION, LANCE, {0.0f, 110.0f});
-    const Outpost::EntityId near = arena.Ship(RED, SMALL, ION, LANCE, {0.0f, -90.0f});
+    const Outpost::EntityId farShip = arena.Ship(RED, SMALL, ION, LANCE, {0.0f, 110.0f});
+    const Outpost::EntityId nearShip = arena.Ship(RED, SMALL, ION, LANCE, {0.0f, -90.0f});
     // Out of range: never chosen.
     (void)arena.Ship(RED, SMALL, ION, LANCE, {0.0f, 130.0f});
     (void)arena.Tick();
-    Assert::IsTrue(arena.World().FindEntity(ship)->target == near,
+    Assert::IsTrue(arena.World().FindEntity(ship)->target == nearShip,
                    (L"first " + std::to_wstring(arena.World().FindEntity(ship)->target.value)).c_str());
 
     // A nearer one arriving does not take the target away.
     (void)arena.Ship(RED, SMALL, ION, LANCE, {50.0f, 0.0f});
     for (int tick = 0; tick < 10; ++tick)
       (void)arena.Tick();
-    Assert::IsTrue(arena.World().FindEntity(ship)->target == near,
+    Assert::IsTrue(arena.World().FindEntity(ship)->target == nearShip,
                    (L"kept " + std::to_wstring(arena.World().FindEntity(ship)->target.value)).c_str());
 
     // Once it is destroyed, the next nearest ship is, and still not the structure.
-    for (int tick = 0; tick < 200 && arena.World().FindEntity(near) != nullptr; ++tick)
+    for (int tick = 0; tick < 200 && arena.World().FindEntity(nearShip) != nullptr; ++tick)
       (void)arena.Tick();
-    Assert::IsNull(arena.World().FindEntity(near));
+    Assert::IsNull(arena.World().FindEntity(nearShip));
     (void)arena.Tick();
     const Outpost::EntityId next = arena.World().FindEntity(ship)->target;
-    Assert::IsTrue(next.IsValid() && next != far && arena.World().FindEntity(next)->kind == Outpost::EntityKind::Ship);
+    Assert::IsTrue(next.IsValid() && next != farShip && arena.World().FindEntity(next)->kind == Outpost::EntityKind::Ship);
   }
 
   // Task 3.3: with no enemy ship in range, the nearest enemy structure.

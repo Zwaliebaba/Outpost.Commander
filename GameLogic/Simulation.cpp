@@ -174,7 +174,7 @@ Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _desi
   Entity& ship = m_entities.back();
   ship.hitPointsHundredths = design->stats.hitPointsHundredths;
   ship.maxHitPointsHundredths = design->stats.hitPointsHundredths;
-  ship.armor = design->stats.armor;
+  ship.armorHundredths = design->stats.armorHundredths;
   return id;
 }
 
@@ -196,7 +196,7 @@ Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _desi
 }
 
 Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                                                      std::int32_t _hitPointsHundredths, std::int32_t _armor)
+                                                      std::int32_t _hitPointsHundredths, std::int32_t _armorHundredths)
 {
   const EntityId id{++m_lastEntityId};
   m_entities.push_back({.id = id,
@@ -207,7 +207,7 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
                         .radiusMeters = _radiusMeters,
                         .hitPointsHundredths = _hitPointsHundredths,
                         .maxHitPointsHundredths = _hitPointsHundredths,
-                        .armor = _armor});
+                        .armorHundredths = _armorHundredths});
   return id;
 }
 
@@ -501,19 +501,41 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StopCo
   return CommandResult::Applied;
 }
 
-// Design §7's rule, unless the Q2 check forces one of its extremes. Ships come before structures: a structure is chosen
-// only when no enemy ship is in range.
-Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _rangeMeters)
+// Design §7's rule, or one of the Q2 check's extremes. Ships come before structures: a structure is chosen only when no
+// enemy ship is in range.
+Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule)
 {
   const auto isEnemy = [&_ship](const Entity& _other)
   { return _other.maxHitPointsHundredths > 0 && _other.owner.IsValid() && _other.owner != _ship.owner; };
 
-  if (m_targetRule == TargetRule::Nearest && _ship.target.IsValid())
+  if (_rule == TargetRule::Nearest)
   {
     // Kept until it dies or leaves range. A dead target has already left the entities.
-    if (const Entity* current = FindEntity(_ship.target);
-        current != nullptr && isEnemy(*current) && IsInRange(_ship, *current, _rangeMeters))
-      return _ship.target;
+    if (_ship.target.IsValid())
+    {
+      if (const Entity* current = FindEntity(_ship.target);
+          current != nullptr && isEnemy(*current) && IsInRange(_ship, *current, _rangeMeters))
+        return _ship.target;
+    }
+    // One pass, keeping the nearest ship and the nearest structure in range.
+    const float rangeSquared = _rangeMeters * _rangeMeters;
+    std::array<const Entity*, 2> nearest{};
+    std::array<float, 2> nearestSquared{rangeSquared, rangeSquared};
+    for (const Entity& other : m_entities)
+    {
+      if (!isEnemy(other))
+        continue;
+      const size_t kind = other.kind == EntityKind::Ship ? 0 : 1;
+      const PlaneVector between = other.position - _ship.position;
+      const float distanceSquared = Dot(between, between);
+      if (distanceSquared <= nearestSquared[kind] && (nearest[kind] == nullptr || distanceSquared < nearestSquared[kind]))
+      {
+        nearest[kind] = &other;
+        nearestSquared[kind] = distanceSquared;
+      }
+    }
+    const Entity* chosen = nearest[0] != nullptr ? nearest[0] : nearest[1];
+    return chosen != nullptr ? chosen->id : EntityId{};
   }
 
   for (const EntityKind kind : {EntityKind::Ship, EntityKind::Structure})
@@ -526,21 +548,9 @@ Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _
     }
     if (inRange.empty())
       continue;
-    switch (m_targetRule)
-    {
-    case TargetRule::Random:
+    if (_rule == TargetRule::Random)
       return inRange[m_random.NextBelow(static_cast<std::uint32_t>(inRange.size()))]->id;
-    case TargetRule::Weakest:
-      return (*std::ranges::min_element(inRange, {}, &Entity::hitPointsHundredths))->id;
-    case TargetRule::Nearest:
-      break;
-    }
-    const auto distanceSquared = [&_ship](const Entity* _other)
-    {
-      const PlaneVector between = _other->position - _ship.position;
-      return Dot(between, between);
-    };
-    return (*std::ranges::min_element(inRange, {}, distanceSquared))->id;
+    return (*std::ranges::min_element(inRange, {}, &Entity::hitPointsHundredths))->id;
   }
   return {};
 }
@@ -576,7 +586,7 @@ void Outpost::Simulation::Fight()
         chosen = ship.attackTarget;
     }
     if (!chosen.IsValid())
-      chosen = ChooseTarget(ship, design->stats.rangeMeters);
+      chosen = ChooseTarget(ship, design->stats.rangeMeters, TargetRule::Nearest);
     ship.target = chosen;
 
     const auto intervalMilliticks =
@@ -597,8 +607,13 @@ void Outpost::Simulation::Fight()
       continue;
     ship.reloadMilliticks += intervalMilliticks;
 
-    const Entity& target = *FindEntity(ship.target);
-    hits.push_back({target.id, HitHundredths(design->stats.damage, target.armor)});
+    // The Q2 check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells it
+    // that an enemy is in range.
+    EntityId shotTarget = ship.target;
+    if (m_targetRule != TargetRule::Nearest && ship.target != ship.attackTarget)
+      shotTarget = ChooseTarget(ship, design->stats.rangeMeters, m_targetRule);
+    const Entity& target = *FindEntity(shotTarget);
+    hits.push_back({target.id, HitHundredths(design->stats.damageHundredths, target.armorHundredths)});
     m_shots.push_back(
       {.shooter = ship.id, .target = target.id, .weapon = design->components.weapon, .from = ship.position, .to = target.position});
   }

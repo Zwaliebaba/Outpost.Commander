@@ -46,19 +46,19 @@ Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, HullId _hull
   const WeaponTuning& weapon = Find(_tuning.weapons, _weapon, "weapon");
   return {.movement = MovementFor(_tuning, _hull, _drive),
           .hitPointsHundredths = static_cast<std::int32_t>(std::llround(hull.hitPoints * drive.hitPointsFactor * HUNDREDTHS)),
-          .armor = hull.armor,
+          .armorHundredths = hull.armor * HUNDREDTHS,
           .cost = hull.cost + drive.cost + weapon.cost,
           .buildSeconds = hull.buildSeconds,
-          .damage = weapon.damage,
+          .damageHundredths = weapon.damage * HUNDREDTHS,
           .fireIntervalSeconds = weapon.fireIntervalSeconds,
           .rangeMeters = static_cast<float>(weapon.rangeMeters)};
 }
 
-double Outpost::DamagePerSecond(const DesignStats& _stats, std::int32_t _armor) noexcept
+double Outpost::DamagePerSecond(const DesignStats& _stats, std::int32_t _armorHundredths) noexcept
 {
   if (_stats.fireIntervalSeconds <= 0.0)
     return 0.0;
-  return static_cast<double>(HitHundredths(_stats.damage, _armor)) / HUNDREDTHS / _stats.fireIntervalSeconds;
+  return static_cast<double>(HitHundredths(_stats.damageHundredths, _armorHundredths)) / HUNDREDTHS / _stats.fireIntervalSeconds;
 }
 
 std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _tuning)

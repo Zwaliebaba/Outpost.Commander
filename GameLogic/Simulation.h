@@ -22,9 +22,9 @@ enum class TargetRule : std::uint8_t
 {
   // The nearest enemy ship in range, or with none in range the nearest enemy structure, kept until it dies or leaves range.
   Nearest,
-  // A random enemy in range, chosen again for every shot (spread fire).
+  // A random enemy in range, chosen again for every shot (spread fire). The ship stands and moves as under Nearest.
   Random,
-  // The enemy in range with the fewest hit points, chosen again for every shot (focus fire).
+  // The enemy in range with the fewest hit points, chosen again for every shot (focus fire), likewise.
   Weakest
 };
 
@@ -60,7 +60,7 @@ struct Entity
   // hit points, which movement tests and task 2.7's load do.
   std::int32_t hitPointsHundredths = 0;
   std::int32_t maxHitPointsHundredths = 0;
-  std::int32_t armor = 0;
+  std::int32_t armorHundredths = 0;
   ShipOrder order = ShipOrder::None;
   // An attack order's target, while the order lasts.
   EntityId attackTarget;
@@ -148,7 +148,7 @@ public:
   // Match setup: places a structure. Task 4.2 builds structures and makes them block movement. Without hit points it is
   // out of combat, as task 2.7's load places them.
   EntityId SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armor = 0);
+                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0);
 
   // Match setup, after PlaceMap: gives every player the map's starting fleet, in a grid centered on its start and facing
   // the map's center (task 2.5). Each ship is of the player's saved design of its components, which is saved first if
@@ -208,7 +208,7 @@ private:
   CommandResult Apply(PlayerId _player, const AttackCommand& _attack);
   CommandResult Apply(PlayerId _player, const StopCommand& _stop);
   CommandResult OrderMove(PlayerId _player, const std::vector<EntityId>& _ships, PlanePosition _destination, ShipOrder _order);
-  [[nodiscard]] EntityId ChooseTarget(const Entity& _ship, float _rangeMeters);
+  [[nodiscard]] EntityId ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule);
   void Fight();
   void ChaseTargets();
   void MoveShips();
