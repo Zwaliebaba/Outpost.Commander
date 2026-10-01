@@ -311,7 +311,7 @@ std::vector<Neuron::StarPipeline::Star> Outpost::BuildStarfield()
   SkyRandom random(SKY_SEED);
   const GalacticAxes axes = Axes();
   std::vector<Star> stars;
-  stars.reserve(static_cast<size_t>(FIELD_STARS + DISK_CANDIDATES + BULGE_CANDIDATES));
+  stars.reserve(static_cast<size_t>(FIELD_STARS) + static_cast<size_t>(DISK_CANDIDATES) + static_cast<size_t>(BULGE_CANDIDATES));
 
   for (int index = 0; index < FIELD_STARS; ++index)
   {
