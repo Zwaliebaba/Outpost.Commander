@@ -82,10 +82,10 @@ The slow ticks are the orders: pathing and forming up two groups of 100 ships in
 - **Every component**, at 2,000, 3,000, 4,500, 6,000, 9,000 and 12,000 Ore a side. The largest is about five minutes of income for a player who holds half the middle (§5): a late-game fleet.
 - **The starting components**, those no research topic unlocks (§8), at 2,000, 3,000 and 4,500 Ore: the armies of the first minutes, before the first unlock.
 
-Q2 is "yes" when, at every budget of both stages and in both modes:
+Q2 is "yes" when, at every budget of both stages and in both modes (for (b), over each stage's budgets):
 
 - **(a)** every design has a counter that beats it in at least four battles out of five;
-- **(b)** the designs worth building, those the equilibrium mix of the win-rate matrix gives 5% or more, use every hull, drive and weapon available at that stage;
+- **(b)** the designs worth building, those the equilibrium mix of the win-rate matrix gives 5% or more, use every hull, drive and weapon available at that stage, at one budget of the stage or more, in each mode (owner, 2026-10-01). A heavy hull need not pay its way in the smallest fight, nor a medium one in the largest: research and scale are what bring the heavies in;
 - **(c)** none of the counters in (a) against those designs stops winning when any single number in §12 moves by 5%, so no result hangs on a breakpoint;
 - **(d)** at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a design that none of the other side's starting designs beats in at least half the battles. Research is an edge, not a trump card. The research comes free in this test, which favours the side that has it.
 
@@ -351,8 +351,8 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 **The base's numbers** (milestone 4).
 
-- **The Constructor and its rates are the owner's provisional baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
-- **Footprint radii are provisional, set with milestone 4 rather than decided:** the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' sizes, which gate G5 set on 2026-10-01, and stay provisional themselves (§15). A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
+- **The Constructor and its rates are the owner's baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
+- **Footprint radii are final** (owner, 2026-10-01), as they were set with milestone 4: the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' sizes, which gate G5 set the same day. A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
 
 **The hand checks** (task 4.6, `HandCheckTests`): the raid gathers 400 m off, out of the gun's reach, and attacks; the run ends when one side is gone. Measured on 2026-10-01 in the Linux container the other figures in this section come from; the simulation is deterministic, so the figures are the game's.
 
@@ -362,9 +362,9 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 | The Command Station against seven | its gun destroys all seven in under a minute | **met:** in 57.6 s, keeping 2,952 of 5,000 hit points |
 | A Command Station without its gun or armour against seven | it falls in about 20 s, which is why it is armed | it falls in 24.9 s, approach included |
 
-Two of the margins are thin. The platform keeps 28% of its hit points, so a sixth raider, or one more Mass Driver damage, may tip it. And the station's minute is 2.4 s from failing. Neither number has been retuned (§15).
+Two of the margins are thin. The platform keeps 28% of its hit points, so a sixth raider, or one more Mass Driver damage, may tip it. And the station's minute is 2.4 s from failing. They are left as they are until the owner's playtests show whether raids play out as §6 intends (owner, 2026-10-01). The retune of 2026-10-01 moved no number they depend on.
 
-**Not set yet** (open in §15): turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too. The AI's numbers, its attack-group threshold among them, are not here but in its own file (§10).
+**Turn rates** for hulls and the drive multiplier on them only affect movement, because hits are instant. They are final as they are in the data file (owner, 2026-10-01). The AI's numbers, its attack-group threshold among them, are not here but in its own file (§10).
 
 ---
 
@@ -395,12 +395,7 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 - Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011). The exhaust colours are provisional too: Ion cyan, Fusion magenta (ADR-019).
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
-- The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
-- Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
-- Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
-- §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
-- The Missile Rack is a trump card in the simulation's check (d), where the model finds it not worth building under spread fire (§12). Is it retuned, and does the model learn how close ships stand while they fight?
 - Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
 
 Decided on 2026-09-30, first review:
