@@ -38,7 +38,9 @@ run again with --max-seeds battles, and if it still straddles it, the verdict is
 The Q2 check (§3) runs at two stages: every component, at 2,000-12,000 Ore, and the starting components (those no
 research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of both stages and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
-  (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage,
+  (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage at
+      one budget of the stage or more, in each fire mode (owner, 2026-10-01): a heavy hull need not pay at the
+      smallest budget, nor a medium one at the largest,
   (c) none of the counters in (a) against those designs stops winning when any single tuning number moves by 5%, and
   (d) at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a
       design that none of the other side's starting designs beats at least half the time.
@@ -553,6 +555,8 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
   """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c)."""
   designs = designs_from(*parts)
   print(f"\n==== {label}: {len(designs)} designs ====")
+  # (b) is judged over the stage, in each fire mode: the components used at any of its budgets.
+  used_in_stage = {False: [set(), set(), set()], True: [set(), set(), set()]}
   for budget in budgets:
     for focus in (False, True):
       mode = "focus" if focus else "spread"
@@ -575,10 +579,21 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
           legs.add((counter.code, target.code, budget, focus))
           print(f"  {target.code:>9} is countered by {counter.code} ({wins / n:.0%} of {n})")
       used = [{getattr(designs[i], attribute) for i in built} for attribute in ("hull", "drive", "weapon")]
-      for names, in_use, kind in zip(component_names(parts), used, ("hull", "drive", "weapon")):
-        for name in names:
-          if name not in in_use and name not in unmodelled:
-            failures["b"].append(f"{where}: no design worth building uses the {name} {kind}")
+      for in_stage, in_use in zip(used_in_stage[focus], used):
+        in_stage |= in_use
+      unused = unused_components(parts, used, unmodelled)
+      if unused:
+        print(f"  Not worth building at this budget: {unused}")
+  for focus in (False, True):
+    unused = unused_components(parts, used_in_stage[focus], unmodelled)
+    if unused:
+      failures["b"].append(f"{label}, {'focus' if focus else 'spread'} fire: no design worth building at any budget uses the {unused}")
+
+
+def unused_components(parts, used, unmodelled):
+  """The hulls, drives and weapons, modelled, that no design in `used` has, as "Large hull, Fusion drive"."""
+  return ", ".join(f"{name} {kind}" for names, in_use, kind in zip(component_names(parts), used, ("hull", "drive", "weapon"))
+                   for name in names if name not in in_use and name not in unmodelled)
 
 
 def research_check(pool, parts, topics, budgets, args, dt, failures):
@@ -662,7 +677,7 @@ def run(args):
   print("\nQ2 check (§3):")
   verdicts = {
     "a": "every design has a counter that wins at least 80%",
-    "b": "the designs worth building use every hull, drive and weapon",
+    "b": "the designs worth building use every hull, drive and weapon over each stage's budgets",
     "c": "no counter stops winning when one number moves 5%",
     "d": "no research topic leaves a design without an answer that wins half the time",
   }
