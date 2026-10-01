@@ -21,6 +21,9 @@ struct ObjectConstants
 
 constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
 
+// DrawTriangles' vertices are in the world already.
+constexpr DirectX::XMFLOAT4X4 IDENTITY{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
   std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
@@ -92,6 +95,14 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   void* mapped = nullptr;
   winrt::check_hresult(m_frameConstants->Map(0, &nothingRead, &mapped));
   m_mappedFrameConstants = static_cast<std::byte*>(mapped);
+
+  const CD3DX12_RESOURCE_DESC verticesDescription =
+    CD3DX12_RESOURCE_DESC::Buffer(UINT64{sizeof(MeshVertex)} * MAX_FRAME_VERTICES * Renderer::FRAME_COUNT);
+  winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &verticesDescription,
+                                                       D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(m_frameVertices)));
+  void* mappedVertices = nullptr;
+  winrt::check_hresult(m_frameVertices->Map(0, &nothingRead, &mappedVertices));
+  m_mappedFrameVertices = static_cast<MeshVertex*>(mappedVertices);
 }
 
 void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants)
@@ -100,6 +111,8 @@ void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList,
   // with this slot.
   const UINT64 offset = UINT64{FRAME_CONSTANTS_BYTES} * _frameIndex;
   std::memcpy(m_mappedFrameConstants + offset, &_constants, sizeof(FrameConstants));
+  m_frameIndex = _frameIndex;
+  m_frameVerticesUsed = 0;
 
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
@@ -115,4 +128,30 @@ void Neuron::MeshPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const M
   _commandList->IASetVertexBuffers(0, 1, &_mesh.VertexBufferView());
   _commandList->IASetIndexBuffer(&_mesh.IndexBufferView());
   _commandList->DrawIndexedInstanced(_mesh.IndexCount(), 1, 0, 0, 0);
+}
+
+bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices,
+                                         const DirectX::XMFLOAT4& _color)
+{
+  if (_vertices.empty())
+    return true;
+  if (_vertices.size() > MAX_FRAME_VERTICES - m_frameVerticesUsed)
+    return false;
+  const auto count = static_cast<UINT>(_vertices.size());
+  // The renderer waited for this frame index's previous frame before handing out the command list, so the GPU is done
+  // with this slot, as it is with the frame's constants.
+  const size_t first = (size_t{m_frameIndex} * MAX_FRAME_VERTICES) + m_frameVerticesUsed;
+  std::memcpy(m_mappedFrameVertices + first, _vertices.data(), _vertices.size_bytes());
+  m_frameVerticesUsed += count;
+
+  const D3D12_VERTEX_BUFFER_VIEW view{
+    .BufferLocation = m_frameVertices->GetGPUVirtualAddress() + (first * sizeof(MeshVertex)),
+    .SizeInBytes = static_cast<UINT>(_vertices.size_bytes()),
+    .StrideInBytes = sizeof(MeshVertex),
+  };
+  const ObjectConstants constants{.world = IDENTITY, .color = _color};
+  _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
+  _commandList->IASetVertexBuffers(0, 1, &view);
+  _commandList->DrawInstanced(count, 1, 0, 0);
+  return true;
 }

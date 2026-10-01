@@ -9,7 +9,7 @@ namespace
 {
 constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
-// The sprite of the sky's brightest stars (ADR-022).
+// The sprite of the sky's brightest stars (ADR-023).
 constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
@@ -20,7 +20,7 @@ constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
 // The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
-// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
+// that is barely there, so the sky shows through (ADR-023), and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
 constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
 constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
@@ -80,6 +80,9 @@ constexpr int DISC_SEGMENTS = 24;
 // An exhaust is at its longest and brightest at this speed or faster (ADR-019): an Ion Medium's cruise, so that a fast
 // design reads as fast and a Fusion Large, at 20 m/s, burns well short of it.
 constexpr float EXHAUST_FULL_SPEED_METERS_PER_SECOND = 50.0f;
+// A structure breaks into three sets of shards at once, as a DeepSpaceOutpost building does, and a ship into one
+// (ADR-023).
+constexpr int STRUCTURE_SHARD_COPIES = 3;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
 {
@@ -222,6 +225,15 @@ std::string MeshKey(std::string_view _set, std::string_view _model)
 {
   return std::format("{}/{}", _set, _model);
 }
+
+// The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
+// and is always built, so it is its set's color.
+DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
+{
+  const float built = static_cast<float>(_builtPermille) / static_cast<float>(Outpost::PERMILLE);
+  const float shade = _tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
+  return {std::min(1.0f, _setColor.x * shade), std::min(1.0f, _setColor.y * shade), std::min(1.0f, _setColor.z * shade), _setColor.w};
+}
 } // namespace
 
 Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond)
@@ -232,7 +244,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_glows(_renderer),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
-    m_effects(_ticksPerSecond)
+    m_effects(_ticksPerSecond),
+    m_particles(_ticksPerSecond),
+    m_explosions(_ticksPerSecond)
 {
   for (const ModelSet& set : m_catalog.sets)
   {
@@ -243,6 +257,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
+      // Kept on the CPU too, for an explosion to break into its triangles (ADR-023).
+      data.hardpoints.clear();
+      m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
     }
   }
   m_minorGrid =
@@ -276,6 +293,11 @@ void Outpost::GameClient::ClearMatch()
 {
   m_view = SnapshotInterpolator(m_ticksPerSecond);
   m_effects = CombatEffects(m_ticksPerSecond);
+  m_particles = ParticleSystem(m_ticksPerSecond);
+  m_explosions = ExplosionManager(m_ticksPerSecond);
+  m_particleGlows.clear();
+  m_shardVertices.clear();
+  m_shardBatches.clear();
   m_controls = PlayerControls();
   m_designer = Designer();
   m_effectDraws.clear();
@@ -297,6 +319,7 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
   for (Snapshot& snapshot : _snapshots)
   {
     m_effects.Receive(snapshot);
+    Explode(snapshot);
     m_view.Receive(std::move(snapshot));
   }
 
@@ -348,6 +371,11 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_entities = m_view.Entities();
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
+  m_particleGlows.clear();
+  m_particles.At(m_view.ViewTick(), m_particleGlows);
+  m_shardVertices.clear();
+  m_shardBatches.clear();
+  m_explosions.At(m_view.ViewTick(), m_shardVertices, m_shardBatches);
   Neuron::InputState input = _input;
   if (!m_view.IsEmpty())
     m_designer.Update(m_view.Newest());
@@ -583,7 +611,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.ambient = AMBIENT;
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
-  // resolution (ADR-006, ADR-022).
+  // resolution (ADR-006, ADR-023).
   const float skyScale = Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels());
   const Neuron::StarPipeline::FrameConstants sky{
     .viewProjection = constants.viewProjection,
@@ -608,6 +636,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   }
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
+  DrawShards(_commandList);
   DrawSelection(_commandList);
   DrawGhost(_commandList);
   DrawHealthBars(_commandList);
@@ -776,12 +805,50 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   const std::optional<PlacedModel> placed = PlaceModel(_entity);
   if (!placed.has_value())
     return;
-  const DirectX::XMFLOAT4& setColor = placed->set->color;
-  const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);
-  const float shade = placed->tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
-  const DirectX::XMFLOAT4 color{std::min(1.0f, setColor.x * shade), std::min(1.0f, setColor.y * shade), std::min(1.0f, setColor.z * shade),
-                                setColor.w};
-  m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), color);
+  m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose),
+                  ModelColor(placed->set->color, placed->tint, _entity.builtPermille));
+}
+
+void Outpost::GameClient::Explode(const Snapshot& _snapshot)
+{
+  // As a shot does, a destruction plays from one tick before its snapshot, where the view shows it (ADR-013).
+  const double start = static_cast<double>(_snapshot.tick) - 1.0;
+  for (const DestroyedView& destroyed : _snapshot.destroyed)
+  {
+    // What blew up as the view last held it, which says what a structure is and how it is drawn; it is not in this
+    // snapshot. It breaks where the server says it died. Without it, a ship falls back on its hull.
+    EntityView entity{.id = destroyed.id, .kind = destroyed.kind, .owner = destroyed.owner, .hull = destroyed.hull};
+    if (!m_view.IsEmpty())
+    {
+      const std::vector<EntityView>& last = m_view.Newest().entities;
+      if (const auto found = std::ranges::find(last, destroyed.id, &EntityView::id); found != last.end())
+        entity = *found;
+    }
+    entity.position = destroyed.position;
+    entity.headingRadians = destroyed.headingRadians;
+    entity.radiusMeters = destroyed.radiusMeters;
+
+    // The same destruction always looks the same.
+    const std::uint64_t seed = (std::uint64_t{destroyed.id.value} << 32U) ^ _snapshot.tick;
+    const std::optional<PlacedModel> placed = PlaceModel(entity);
+    const float liftMeters = placed.has_value() ? placed->pose.liftMeters : 0.0f;
+    m_particles.AddBlast({destroyed.position.xMeters, liftMeters, destroyed.position.zMeters}, destroyed.radiusMeters, destroyed.kind,
+                         start, seed);
+    if (placed.has_value())
+    {
+      m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose),
+                       ModelColor(placed->set->color, placed->tint, entity.builtPermille), start, seed,
+                       destroyed.kind == EntityKind::Structure ? STRUCTURE_SHARD_COPIES : 1);
+    }
+  }
+}
+
+void Outpost::GameClient::DrawShards(ID3D12GraphicsCommandList* _commandList)
+{
+  const std::span<const Neuron::MeshVertex> vertices(m_shardVertices);
+  // The batches come newest first, so a frame with more shards than the pipeline takes drops the oldest, darkest ones.
+  for (const ExplosionManager::Batch& batch : m_shardBatches)
+    m_pipeline.DrawTriangles(_commandList, vertices.subspan(batch.firstVertex, batch.vertexCount), batch.color);
 }
 
 std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(const EntityView& _entity) const
@@ -848,6 +915,8 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
     }
     AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
   }
+  // The particles after the exhausts, so that a frame with more glows than the pipeline takes drops particles first.
+  m_frameGlows.insert(m_frameGlows.end(), m_particleGlows.begin(), m_particleGlows.end());
 
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   const auto [right, up] = m_camera.ScreenAxes(aspectRatio);
@@ -886,6 +955,14 @@ const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(s
 {
   const auto found = m_modelHardpoints.find(MeshKey(_set, _model));
   if (found == m_modelHardpoints.end())
+    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
+  return found->second;
+}
+
+const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, std::string_view _model) const
+{
+  const auto found = m_modelShapes.find(MeshKey(_set, _model));
+  if (found == m_modelShapes.end())
     throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
   return found->second;
 }

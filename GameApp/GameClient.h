@@ -72,11 +72,18 @@ private:
 
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
+  // A model's triangles on the CPU, for an explosion to break (ADR-023).
+  [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-023), before the view
+  // takes the snapshot, so that the view still holds what blew up.
+  void Explode(const Snapshot& _snapshot);
+  // The shards of every explosion, as ExplosionManager gives them for the view's tick.
+  void DrawShards(ID3D12GraphicsCommandList* _commandList);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
@@ -97,7 +104,7 @@ private:
   // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
-  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019).
+  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles.
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
@@ -118,7 +125,7 @@ private:
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
-  // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
+  // The sky behind everything (ADR-023): its stars as points, and its brightest as starbursts.
   std::unique_ptr<Neuron::StarPipeline> m_sky;
   std::unique_ptr<Neuron::StarPipeline> m_bursts;
   // This frame's glows, kept so that their storage is not allocated every frame.
@@ -130,14 +137,22 @@ private:
   PlayerControls m_controls;
   Designer m_designer;
   CombatEffects m_effects;
+  // What blew up: its blast, as particles, and its shards (ADR-023).
+  ParticleSystem m_particles;
+  ExplosionManager m_explosions;
   // What the effects draw this frame, at the view's tick.
   std::vector<CombatEffects::Draw> m_effectDraws;
+  // The particles' glows, and the explosions' shards and their batches, this frame at the view's tick.
+  std::vector<Neuron::GlowPipeline::Glow> m_particleGlows;
+  std::vector<Neuron::MeshVertex> m_shardVertices;
+  std::vector<ExplosionManager::Batch> m_shardBatches;
   // The view's entities this frame, which the controls pick from and the renderer draws.
   std::vector<EntityView> m_entities;
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;
   std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
+  std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
   float m_frameSeconds = 0.0f;
   std::unique_ptr<Neuron::Mesh> m_minorGrid;

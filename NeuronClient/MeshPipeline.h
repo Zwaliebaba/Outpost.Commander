@@ -30,6 +30,15 @@ public:
   void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
             const DirectX::XMFLOAT4& _color) const;
 
+  // Vertices one frame's DrawTriangles calls can take between them.
+  static constexpr UINT MAX_FRAME_VERTICES = 65536;
+
+  // Draws a triangle list made on the CPU this frame, already in the world, in a linear color: geometry that changes every
+  // frame, such as an explosion's shards (ADR-023). The vertices are copied into this frame's slot of an upload buffer,
+  // so they need not outlive the call. A call that would take the frame past MAX_FRAME_VERTICES draws nothing and returns
+  // false. Only after BeginDrawing.
+  bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);
+
 private:
   // The frame's constants rounded up to the size a constant buffer view needs.
   static constexpr UINT FRAME_CONSTANTS_BYTES =
@@ -41,5 +50,11 @@ private:
   // is not reading.
   winrt::com_ptr<ID3D12Resource> m_frameConstants;
   std::byte* m_mappedFrameConstants = nullptr;
+  // One slot of MAX_FRAME_VERTICES vertices per frame in flight for DrawTriangles, mapped for the pipeline's lifetime, and
+  // how much of the frame's slot is taken.
+  winrt::com_ptr<ID3D12Resource> m_frameVertices;
+  MeshVertex* m_mappedFrameVertices = nullptr;
+  UINT m_frameIndex = 0;
+  UINT m_frameVerticesUsed = 0;
 };
 } // namespace Neuron

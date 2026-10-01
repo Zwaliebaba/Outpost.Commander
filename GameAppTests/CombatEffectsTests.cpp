@@ -122,24 +122,15 @@ public:
     Assert::IsTrue(beamFrom([](Outpost::EntityId, Outpost::PlanePosition) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
   }
 
-  // An explosion swells where the entity was destroyed, then is forgotten.
-  TEST_METHOD(AnExplosionSwellsAndEnds)
+  // ADR-023: what is destroyed is the particles' and the explosions', not the combat effects'.
+  TEST_METHOD(LeavesWhatIsDestroyedToTheExplosions)
   {
     Outpost::CombatEffects effects(TICKS_PER_SECOND);
     Outpost::Snapshot snapshot{.tick = 30, .player = Outpost::PlayerId{1}};
     snapshot.destroyed.push_back({.id = Outpost::EntityId{4}, .position = TARGET, .radiusMeters = 10.0f});
     effects.Receive(snapshot);
-
-    const auto fireball = [&effects](double _seconds)
-    {
-      const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(30, _seconds));
-      const auto disc = std::ranges::find(draws, Outpost::CombatEffects::Shape::Disc, &Outpost::CombatEffects::Draw::shape);
-      Assert::IsTrue(disc != draws.end() && disc->from == TARGET);
-      return disc->radiusMeters;
-    };
-    Assert::IsTrue(fireball(0.6) > fireball(0.1));
-    Assert::IsTrue(effects.At(After(30, 1.0)).empty());
     Assert::AreEqual(size_t{0}, effects.Pending());
+    Assert::IsTrue(effects.At(After(30, 0.1)).empty());
   }
 };
 } // namespace GameAppTests
