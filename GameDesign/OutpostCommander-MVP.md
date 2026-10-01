@@ -275,14 +275,16 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 11. Art and presentation
 
-- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). Their `.obj` sources are in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`. The owner converts each one to DirectX's `.cmo` format with `Tools/meshconvert.exe`, and the game loads the converted copies from `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\`. Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour.
-- **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Each model of each set has a **forward axis and a length recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011). Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
+- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). They are **placeholders, to be replaced** (owner, 2026-10-01). Their sources are glTF files in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`, edited in Blender. `Tools/BakeMeshes.py` bakes each into an `.nmf` file in `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\` (ADR-018). Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour.
+- **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the original `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Since 2026-10-01 every source faces the same way, and each model's **length is recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011, ADR-018). Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
 - **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh. The owner set the hulls' sizes on 2026-10-01 (gate G5), as the radii they had moved with since milestone 2: Small 8 m, Medium 14 m, Large 24 m. A group forms up three radii apart (ADR-010), which is also what decides how many ships a Missile Rack's splash reaches (§7).
 - **Materials are missing.** The converted meshes carry no materials the game uses, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
+- **Hardpoints:** a mesh marks where things attach to it, as empties in its source (ADR-018). A shot leaves from the shooter's `gun` nearest its target, and an `exhaust` shows where an engine's exhaust leaves.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.
+- **Exhaust** (owner, 2026-10-01): every ship's exhaust glows in its drive's color, so that a design's drive reads on sight, and it grows longer and brighter as the ship goes faster. The Constructor, which has no drive, has its own color. The colors are provisional (§15, ADR-019).
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
 - **LODs:** there are none. Each set has one mesh per model.
-- **Provenance and licence are not recorded.** Nothing in `Art/` says where the meshes come from or under what terms. If they are under a licence, AGENTS.md R14 needs its text to travel with them (§15).
+- **Provenance and licence are not recorded.** Nothing in `Art/` says where the placeholder meshes come from or under what terms. They are to be replaced, so this matters only if one of them ships. If one does and it is under a licence, AGENTS.md R14 needs its text to travel with it (§15).
 
 ---
 
@@ -387,13 +389,13 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 ## 15. Open questions
 
-- Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011).
+- Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011). The exhaust colours are provisional too: Ion cyan, Fusion magenta (ADR-019).
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
 - Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
 - The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
-- Where the meshes in `Art/` come from and under what terms (§11).
+- What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
 - The Missile Rack is a trump card in the simulation's check (d), where the model finds it not worth building under spread fire (§12). Is it retuned, and does the model learn how close ships stand while they fight?
 - Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
@@ -454,3 +456,9 @@ Decided on 2026-10-01, milestone 5:
 - A Research Lab queues up to five topics, each paid for when it starts. Hull Plating keeps a damaged ship's share of its hit points. A lab destroyed mid-topic loses the topic and its Ore (§8, ADR-017).
 - Ship sizes (gate G5): the hulls' footprint radii are final at Small 8 m, Medium 14 m and Large 24 m (§11). The Constructor's size and the structure footprints stay open (§15).
 - A Missile Rack's splash hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armour, with no falloff and no friendly fire (§7, ADR-014).
+
+Decided on 2026-10-01, meshes and exhaust:
+
+- The current meshes are placeholders, to be replaced (§11).
+- Meshes are edited in Blender as glTF sources and baked into the game's own `.nmf` format, which carries hardpoints. A model faces the same way in the game as in Blender, no longer its mirror image, and its front is in its mesh rather than in `Models.json` (§11, ADR-018). This supersedes the `.cmo` files and the forward axes decided on 2026-09-30.
+- Exhaust is in the MVP, colored by drive (§11, ADR-019).

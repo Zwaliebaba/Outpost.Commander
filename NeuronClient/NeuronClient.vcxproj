@@ -89,6 +89,7 @@
     <ClInclude Include="Window.h" />
     <ClInclude Include="GlyphAtlas.h" />
     <ClInclude Include="UiPipeline.h" />
+    <ClInclude Include="GlowPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -101,6 +102,7 @@
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="GlyphAtlas.cpp" />
     <ClCompile Include="UiPipeline.cpp" />
+    <ClCompile Include="GlowPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FXCompile Include="Shader\MeshVS.hlsl">
@@ -113,6 +115,24 @@
       <TreatWarningAsError>true</TreatWarningAsError>
     </FXCompile>
     <FXCompile Include="Shader\MeshPS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>5.1</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <VariableName>g_%(Filename)</VariableName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <ObjectFileOutput />
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXCompile>
+    <FXCompile Include="Shader\GlowVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>5.1</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <VariableName>g_%(Filename)</VariableName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <ObjectFileOutput />
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXCompile>
+    <FXCompile Include="Shader\GlowPS.hlsl">
       <ShaderType>Pixel</ShaderType>
       <ShaderModel>5.1</ShaderModel>
       <EntryPointName>main</EntryPointName>

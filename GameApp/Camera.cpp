@@ -178,13 +178,28 @@ DirectX::XMFLOAT3 Outpost::Camera::EyePosition(float _aspectRatio) const noexcep
   return {m_focusXMeters - (forward.x * across), distance * std::sin(pitch), m_focusZMeters - (forward.y * across)};
 }
 
+DirectX::XMFLOAT4X4 Outpost::Camera::View(float _aspectRatio) const noexcept
+{
+  const DirectX::XMFLOAT3 eye = EyePosition(_aspectRatio);
+  DirectX::XMFLOAT4X4 view;
+  DirectX::XMStoreFloat4x4(&view, DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(eye.x, eye.y, eye.z, 1.0f),
+                                                            DirectX::XMVectorSet(m_focusXMeters, 0.0f, m_focusZMeters, 1.0f),
+                                                            DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)));
+  return view;
+}
+
+std::pair<DirectX::XMFLOAT3, DirectX::XMFLOAT3> Outpost::Camera::ScreenAxes(float _aspectRatio) const noexcept
+{
+  // The view matrix's first two columns are the camera's right and up, seen from the world.
+  const DirectX::XMFLOAT4X4 view = View(_aspectRatio);
+  return {{view._11, view._21, view._31}, {view._12, view._22, view._32}};
+}
+
 DirectX::XMFLOAT4X4 Outpost::Camera::ViewProjection(float _aspectRatio) const noexcept
 {
   const float distance = DistanceToFocus(_aspectRatio);
-  const DirectX::XMFLOAT3 eye = EyePosition(_aspectRatio);
-  const DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(DirectX::XMVectorSet(eye.x, eye.y, eye.z, 1.0f),
-                                                           DirectX::XMVectorSet(m_focusXMeters, 0.0f, m_focusZMeters, 1.0f),
-                                                           DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+  const DirectX::XMFLOAT4X4 viewMatrix = View(_aspectRatio);
+  const DirectX::XMMATRIX view = DirectX::XMLoadFloat4x4(&viewMatrix);
   const float nearMeters = std::max(MINIMUM_NEAR_PLANE_METERS, distance * NEAR_PLANE_SHARE_OF_DISTANCE);
   const DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(Radians(m_settings.verticalFieldOfViewDegrees), _aspectRatio,
                                                                          nearMeters, distance + FAR_PLANE_BEYOND_FOCUS_METERS);

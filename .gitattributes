@@ -102,3 +102,8 @@
 # normalization pass can never corrupt one.
 *.rc            -text
 *.rc2           -text
+
+# Meshes (ADR-018): the glTF sources under Art/ and the NMF files baked from them. Both always hold NUL
+# bytes, so Git's heuristic would call them binary anyway; saying so means no normalization can touch them.
+*.glb           binary
+*.nmf           binary

@@ -58,6 +58,8 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
 | 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
 | 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | in review; the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
+| A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
+| A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
 | 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
 | 6.2 | Win, lose and the menu | 6.1 | — | todo |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
@@ -71,7 +73,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
 | G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. Provenance is still open. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md); design §15 for provenance | 1.3 (provenance before shipping) |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. **Revised on 2026-10-01:** the meshes are glTF sources baked into the game's own `.nmf` format, which carries hardpoints, and the current meshes are placeholders to be replaced, so their provenance matters only for one that ships. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md), [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md); design §11, §15 | 1.3 (provenance before shipping) |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data: 150 m to 1,600 m. | `OutpostCommander/Assets/Camera.json`; design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. **Decided on 2026-10-01: the hulls' radii they had moved with are final, Small 8 m, Medium 14 m, Large 24 m. The Constructor's and the structures' footprints stay provisional (design §15).** | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
@@ -565,6 +567,34 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
 - **5.3 started from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
 - **The AI (6.1) researches and designs through the same commands**, `StartResearchCommand` and `SaveDesignCommand`. It reads the topics, its components and what is unlocked from its snapshot.
 - **The log for 6.3** can read research order and timing from the snapshots: each topic's `researched` flag, and the lab's queue.
+
+---
+
+## Inserted by the owner — Meshes with hardpoints, and exhaust
+
+The owner added this work on 2026-10-01, alongside milestone 5, and it lands as one PR. The meshes needed places where things attach, and the owner wanted to edit them in Blender (design §11). Exhaust colored by drive came into the MVP the same day.
+
+### A.1 — Meshes as NMF from glTF sources, with hardpoints
+
+- **ADR:** [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md), and ADR-011 edited in place.
+- **Goal:** meshes and their hardpoints edited in Blender and baked into a format the game reads strictly, drawn as Blender shows them.
+- **As built:**
+  - **The baker.** `Tools/BakeMeshes.py` bakes `Art/Models/<Set>/<Model>.glb` into `OutpostCommander/Assets/Models/<Set>/<Model>.nmf`, and a new Linux CI job runs its `--check` and `--self-test`.
+  - **The reader.** `Neuron::ParseNmf` and `Neuron::FitMesh` replace `ParseCmo` and `OrientMesh`. `Models.json` loses `forwardAxis`.
+  - **The migration.** The 29 sources were written from the `.cmo` files, turned to face one way, with placeholder `gun` and `exhaust` hardpoints. The `.obj`, `.cmo` and `meshconvert.exe` are gone. The baked meshes match the old ones exactly, mirrored on purpose: the game no longer drew each model's mirror image.
+  - **The tags.** `Outpost::HardpointKindOf` knows `gun` and `exhaust`, and a model with any other tag fails to load.
+- **Verify:** CI; **owner run**, because every model is now drawn as Blender shows it. The Tarkan Station and Medium change visibly.
+
+### A.2 — Exhaust in its drive's color, and shots from the guns
+
+- **ADR:** [ADR-019](../Design/ADR/ADR-019-glows-and-exhaust.md).
+- **Goal:** every ship's exhaust in its drive's color, growing with speed, and every shot leaving from a gun (design §11).
+- **As built:**
+  - **The glow pass.** `Neuron::GlowPipeline` draws additive glows, facing the camera, as one instanced draw.
+  - **The exhaust.** `Outpost::AddExhaustGlows` makes a core and a plume at each exhaust. `Models.json` gives each drive's exhaust color and the Constructor's.
+  - **The drive in the snapshot.** `EntityView` carries a warship's drive.
+  - **Shots from the guns.** `CombatEffects` takes the muzzle from the shooter's nearest gun where the view draws it, through `GameClient`.
+- **Verify:** CI; **owner run**, to see whether drive and speed read from the RTS camera, and in the Q4 measurement (3.7), which now includes the glows.
 
 ---
 

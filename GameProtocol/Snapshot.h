@@ -50,9 +50,9 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
-  // A warship's hull, which the client draws it by, and its drive and weapon; none for anything else. Every player sees
-  // every ship's components, as it sees the ship (no fog of war in the MVP), so the AI can answer the player's designs
-  // (design §10, ADR-018).
+  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), and its
+  // weapon; none for anything else. Every player sees every ship's components, as it sees the ship (no fog of war in the
+  // MVP), so the AI can answer the player's designs (design §10, ADR-020).
   HullId hull;
   DriveId drive;
   WeaponId weapon;

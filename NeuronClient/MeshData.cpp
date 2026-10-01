@@ -2,26 +2,28 @@
 #include "MeshData.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <limits>
 
 namespace
 {
-// The .cmo layout, as DirectXTK's CMO reader defines it (ADR-011). Sizes are in bytes.
-constexpr size_t MATERIAL_CONSTANTS_BYTES = 132;
-constexpr size_t TEXTURES_PER_MATERIAL = 8;
-constexpr size_t SUBMESH_BYTES = 20;
-constexpr size_t FILE_VERTEX_BYTES = 52;
-constexpr size_t SKINNING_VERTEX_BYTES = 32;
-constexpr size_t EXTENTS_BYTES = 40;
+// The .nmf layout, version 1 (ADR-018). Sizes are in bytes.
+constexpr std::array<std::uint8_t, 4> NMF_MAGIC{'N', 'M', 'F', '\0'};
+constexpr std::uint32_t NMF_VERSION = 1;
+constexpr size_t FILE_VERTEX_BYTES = 6 * sizeof(float);
+static_assert(sizeof(Neuron::MeshVertex) == FILE_VERTEX_BYTES, "A file vertex is copied straight into a MeshVertex.");
+constexpr size_t MAXIMUM_TAG_LENGTH = 31;
+// Unit vectors and right angles are checked to this, far looser than float32 rounding and far tighter than a mistake.
+constexpr float DIRECTION_TOLERANCE = 1e-3f;
 
 // Reads the file front to back. Every read checks that the bytes are there, so a short file is an error and never a
 // read past the end.
-class CmoReader
+class NmfReader
 {
 public:
-  CmoReader(std::span<const std::uint8_t> _bytes, std::string_view _fileName)
+  NmfReader(std::span<const std::uint8_t> _bytes, std::string_view _fileName)
     : m_bytes(_bytes),
       m_fileName(_fileName)
   {
@@ -48,7 +50,7 @@ public:
     return value;
   }
 
-  // A count followed by that many items of _itemBytes each; the product is checked before it is used.
+  // That many items of _itemBytes each; the product is checked before it is used.
   std::span<const std::uint8_t> TakeArray(std::uint32_t _count, size_t _itemBytes)
   {
     if (_count > (m_bytes.size() - m_offset) / _itemBytes)
@@ -56,10 +58,12 @@ public:
     return Take(_count * _itemBytes);
   }
 
-  // A name: a count of UTF-16 code units, then the units. The game does not use the text.
-  void SkipName()
+  DirectX::XMFLOAT3 ReadFinite3()
   {
-    (void)TakeArray(Read<std::uint32_t>(), sizeof(char16_t));
+    const DirectX::XMFLOAT3 value{Read<float>(), Read<float>(), Read<float>()};
+    if (!std::isfinite(value.x) || !std::isfinite(value.y) || !std::isfinite(value.z))
+      Fail("a number is not finite");
+    return value;
   }
 
   [[nodiscard]] bool AtEnd() const noexcept
@@ -73,90 +77,42 @@ private:
   size_t m_offset = 0;
 };
 
-struct Submesh
+float Dot(const DirectX::XMFLOAT3& _a, const DirectX::XMFLOAT3& _b) noexcept
 {
-  std::uint32_t materialIndex;
-  std::uint32_t indexBufferIndex;
-  std::uint32_t vertexBufferIndex;
-  std::uint32_t startIndex;
-  std::uint32_t primitiveCount;
-};
+  return (_a.x * _b.x) + (_a.y * _b.y) + (_a.z * _b.z);
+}
 
-void ReadMesh(CmoReader& _reader, Neuron::MeshData& _mesh)
+bool IsUnit(const DirectX::XMFLOAT3& _vector) noexcept
 {
-  _reader.SkipName();
+  return std::abs(std::sqrt(Dot(_vector, _vector)) - 1.0f) <= DIRECTION_TOLERANCE;
+}
 
-  const auto materialCount = _reader.Read<std::uint32_t>();
-  for (std::uint32_t i = 0; i < materialCount; ++i)
-  {
-    _reader.SkipName();
-    (void)_reader.Take(MATERIAL_CONSTANTS_BYTES);
-    _reader.SkipName(); // the pixel shader
-    for (size_t texture = 0; texture < TEXTURES_PER_MATERIAL; ++texture)
-      _reader.SkipName();
-  }
+// A tag is lowercase ASCII letters and digits, starting with a letter, as the baker allows.
+bool IsTag(std::string_view _tag) noexcept
+{
+  const auto isLetter = [](char _c) { return _c >= 'a' && _c <= 'z'; };
+  return !_tag.empty() && isLetter(_tag.front()) &&
+         std::ranges::all_of(_tag, [&](char _c) { return isLetter(_c) || (_c >= '0' && _c <= '9'); });
+}
 
-  if (_reader.Read<std::uint8_t>() != 0)
-    _reader.Fail("it has a skeleton, and the game draws rigid meshes only");
-
-  std::vector<Submesh> submeshes(_reader.Read<std::uint32_t>());
-  for (Submesh& submesh : submeshes)
-  {
-    const auto bytes = _reader.Take(SUBMESH_BYTES);
-    std::memcpy(&submesh, bytes.data(), SUBMESH_BYTES);
-  }
-
-  std::vector<std::vector<std::uint16_t>> indexBuffers(_reader.Read<std::uint32_t>());
-  for (auto& indices : indexBuffers)
-  {
-    const auto count = _reader.Read<std::uint32_t>();
-    const auto bytes = _reader.TakeArray(count, sizeof(std::uint16_t));
-    indices.resize(count);
-    std::memcpy(indices.data(), bytes.data(), bytes.size());
-  }
-
-  std::vector<std::vector<Neuron::MeshVertex>> vertexBuffers(_reader.Read<std::uint32_t>());
-  for (auto& vertices : vertexBuffers)
-  {
-    const auto count = _reader.Read<std::uint32_t>();
-    const auto bytes = _reader.TakeArray(count, FILE_VERTEX_BYTES);
-    vertices.resize(count);
-    // A file vertex starts with its position and normal; its tangent, color and texture coordinates follow.
-    for (std::uint32_t v = 0; v < count; ++v)
-      std::memcpy(&vertices[v], bytes.data() + (v * FILE_VERTEX_BYTES), sizeof(Neuron::MeshVertex));
-  }
-
-  // Skinning vertex buffers are written even for a mesh without a skeleton, as an empty list.
-  const auto skinningBufferCount = _reader.Read<std::uint32_t>();
-  for (std::uint32_t i = 0; i < skinningBufferCount; ++i)
-    (void)_reader.TakeArray(_reader.Read<std::uint32_t>(), SKINNING_VERTEX_BYTES);
-
-  (void)_reader.Take(EXTENTS_BYTES);
-
-  // Each submesh draws a range of one index buffer into one vertex buffer. The game draws each mesh whole, so the
-  // ranges are appended to one list, with the vertex buffers after each other.
-  std::vector<std::uint32_t> firstVertex(vertexBuffers.size());
-  for (size_t i = 0; i < vertexBuffers.size(); ++i)
-  {
-    firstVertex[i] = static_cast<std::uint32_t>(_mesh.vertices.size());
-    _mesh.vertices.insert(_mesh.vertices.end(), vertexBuffers[i].begin(), vertexBuffers[i].end());
-  }
-  for (const Submesh& submesh : submeshes)
-  {
-    if (submesh.indexBufferIndex >= indexBuffers.size() || submesh.vertexBufferIndex >= vertexBuffers.size())
-      _reader.Fail("a submesh names a buffer the mesh does not have");
-    const auto& indices = indexBuffers[submesh.indexBufferIndex];
-    const size_t indexCount = static_cast<size_t>(submesh.primitiveCount) * 3;
-    if (submesh.startIndex > indices.size() || indexCount > indices.size() - submesh.startIndex)
-      _reader.Fail("a submesh's triangles run past its index buffer");
-    const size_t vertexCount = vertexBuffers[submesh.vertexBufferIndex].size();
-    for (size_t i = submesh.startIndex; i < submesh.startIndex + indexCount; ++i)
-    {
-      if (indices[i] >= vertexCount)
-        _reader.Fail("an index is past the end of its vertex buffer");
-      _mesh.indices.push_back(firstVertex[submesh.vertexBufferIndex] + indices[i]);
-    }
-  }
+Neuron::MeshHardpoint ReadHardpoint(NmfReader& _reader)
+{
+  const auto tagLength = _reader.Read<std::uint8_t>();
+  if (tagLength == 0 || tagLength > MAXIMUM_TAG_LENGTH)
+    _reader.Fail("a hardpoint's tag is empty or too long");
+  const auto tagBytes = _reader.Take(tagLength);
+  Neuron::MeshHardpoint hardpoint{.tag = std::string(reinterpret_cast<const char*>(tagBytes.data()), tagBytes.size())};
+  if (!IsTag(hardpoint.tag))
+    _reader.Fail("a hardpoint's tag is not lowercase letters and digits");
+  hardpoint.position = _reader.ReadFinite3();
+  hardpoint.forward = _reader.ReadFinite3();
+  hardpoint.up = _reader.ReadFinite3();
+  hardpoint.size = _reader.Read<float>();
+  if (!IsUnit(hardpoint.forward) || !IsUnit(hardpoint.up) || std::abs(Dot(hardpoint.forward, hardpoint.up)) > DIRECTION_TOLERANCE)
+    _reader.Fail(std::format("the hardpoint \"{}\" has directions that are not unit vectors at right angles", hardpoint.tag));
+  if (!std::isfinite(hardpoint.size) || hardpoint.size <= 0.0f)
+    _reader.Fail(std::format("the hardpoint \"{}\" has no size", hardpoint.tag));
+  return hardpoint;
 }
 
 void MeasureBounds(Neuron::MeshData& _mesh) noexcept
@@ -172,57 +128,69 @@ void MeasureBounds(Neuron::MeshData& _mesh) noexcept
   _mesh.boundsMin = low;
   _mesh.boundsMax = high;
 }
-
-// Turns a point about y so that _forward becomes +x. Each of these is a rotation, never a mirror, so the triangles keep
-// their winding.
-DirectX::XMFLOAT3 FaceForward(const DirectX::XMFLOAT3& _point, Neuron::MeshAxis _forward) noexcept
-{
-  switch (_forward)
-  {
-  case Neuron::MeshAxis::NegativeX:
-    return {-_point.x, _point.y, -_point.z};
-  case Neuron::MeshAxis::PositiveZ:
-    return {_point.z, _point.y, -_point.x};
-  case Neuron::MeshAxis::NegativeZ:
-    return {-_point.z, _point.y, _point.x};
-  case Neuron::MeshAxis::PositiveX:
-  default:
-    return _point;
-  }
-}
 } // namespace
 
-Neuron::MeshData Neuron::ParseCmo(std::span<const std::uint8_t> _bytes, std::string_view _fileName)
+Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::string_view _fileName)
 {
-  CmoReader reader(_bytes, _fileName);
+  NmfReader reader(_bytes, _fileName);
+  if (!std::ranges::equal(reader.Take(NMF_MAGIC.size()), NMF_MAGIC))
+    reader.Fail("it is not an .nmf file");
+  if (reader.Read<std::uint32_t>() != NMF_VERSION)
+    reader.Fail(std::format("it is not version {} of the format", NMF_VERSION));
+  const auto vertexCount = reader.Read<std::uint32_t>();
+  const auto indexCount = reader.Read<std::uint32_t>();
+  const auto hardpointCount = reader.Read<std::uint32_t>();
+  if (reader.Read<std::uint32_t>() != 0)
+    reader.Fail("its flags are not zero");
+  if (indexCount == 0 || indexCount % 3 != 0)
+    reader.Fail("it is not a whole number of triangles, or has none");
+
   MeshData mesh;
-  const auto meshCount = reader.Read<std::uint32_t>();
-  for (std::uint32_t i = 0; i < meshCount; ++i)
-    ReadMesh(reader, mesh);
+  const auto vertexBytes = reader.TakeArray(vertexCount, FILE_VERTEX_BYTES);
+  mesh.vertices.resize(vertexCount);
+  std::memcpy(mesh.vertices.data(), vertexBytes.data(), vertexBytes.size());
+  for (const MeshVertex& vertex : mesh.vertices)
+  {
+    for (const float value : {vertex.position.x, vertex.position.y, vertex.position.z, vertex.normal.x, vertex.normal.y, vertex.normal.z})
+    {
+      if (!std::isfinite(value))
+        reader.Fail("a vertex is not finite");
+    }
+  }
+
+  const auto indexBytes = reader.TakeArray(indexCount, sizeof(std::uint32_t));
+  mesh.indices.resize(indexCount);
+  std::memcpy(mesh.indices.data(), indexBytes.data(), indexBytes.size());
+  if (std::ranges::any_of(mesh.indices, [vertexCount](std::uint32_t _index) { return _index >= vertexCount; }))
+    reader.Fail("an index is past the last vertex");
+
+  // Read one at a time, so a count the file cannot hold fails where the file ends rather than reserving memory first.
+  for (std::uint32_t i = 0; i < hardpointCount; ++i)
+    mesh.hardpoints.push_back(ReadHardpoint(reader));
   if (!reader.AtEnd())
-    reader.Fail("there are bytes after the last mesh");
-  if (mesh.indices.empty())
-    reader.Fail("it has no triangles");
+    reader.Fail("there are bytes after the last hardpoint");
+
   MeasureBounds(mesh);
   return mesh;
 }
 
-void Neuron::OrientMesh(MeshData& _mesh, MeshAxis _forward, float _lengthMeters)
+void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
 {
   const DirectX::XMFLOAT3 center{(_mesh.boundsMin.x + _mesh.boundsMax.x) / 2.0f, (_mesh.boundsMin.y + _mesh.boundsMax.y) / 2.0f,
                                  (_mesh.boundsMin.z + _mesh.boundsMax.z) / 2.0f};
-  const DirectX::XMFLOAT3 extents = FaceForward(_mesh.Extents(), _forward);
-  const float lengthInFile = std::abs(extents.x);
+  const float lengthInFile = _mesh.Extents().x;
   if (lengthInFile <= 0.0f)
-    throw Exception("A mesh with no length along its forward axis cannot be scaled to one.");
+    throw Exception("A mesh with no length along its front cannot be scaled to one.");
   const float scale = _lengthMeters / lengthInFile;
+  const auto fit = [&center, scale](const DirectX::XMFLOAT3& _point) -> DirectX::XMFLOAT3
+  { return {(_point.x - center.x) * scale, (_point.y - center.y) * scale, (_point.z - center.z) * scale}; };
 
   for (MeshVertex& vertex : _mesh.vertices)
+    vertex.position = fit(vertex.position);
+  for (MeshHardpoint& hardpoint : _mesh.hardpoints)
   {
-    const DirectX::XMFLOAT3 centered{vertex.position.x - center.x, vertex.position.y - center.y, vertex.position.z - center.z};
-    const DirectX::XMFLOAT3 turned = FaceForward(centered, _forward);
-    vertex.position = {turned.x * scale, turned.y * scale, turned.z * scale};
-    vertex.normal = FaceForward(vertex.normal, _forward);
+    hardpoint.position = fit(hardpoint.position);
+    hardpoint.size *= scale;
   }
   MeasureBounds(_mesh);
 }

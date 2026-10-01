@@ -58,91 +58,91 @@
     <None Include="Assets\Tuning.json">
       <Filter>Package\Assets</Filter>
     </None>
-    <None Include="Assets\Models\Asteroids\Asteroid.cmo">
+    <None Include="Assets\Models\Asteroids\Asteroid.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>
-    <None Include="Assets\Models\Human\Carrier.cmo">
+    <None Include="Assets\Models\Human\Carrier.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Colonizer.cmo">
+    <None Include="Assets\Models\Human\Colonizer.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Drone.cmo">
+    <None Include="Assets\Models\Human\Drone.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Fighter.cmo">
+    <None Include="Assets\Models\Human\Fighter.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Freighter.cmo">
+    <None Include="Assets\Models\Human\Freighter.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Huge.cmo">
+    <None Include="Assets\Models\Human\Huge.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Large.cmo">
+    <None Include="Assets\Models\Human\Large.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Medium.cmo">
+    <None Include="Assets\Models\Human\Medium.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Mine.cmo">
+    <None Include="Assets\Models\Human\Mine.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Satellite.cmo">
+    <None Include="Assets\Models\Human\Satellite.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Small.cmo">
+    <None Include="Assets\Models\Human\Small.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Station.cmo">
+    <None Include="Assets\Models\Human\Station.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Tiny.cmo">
+    <None Include="Assets\Models\Human\Tiny.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\VeryLarge.cmo">
+    <None Include="Assets\Models\Human\VeryLarge.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Carrier.cmo">
+    <None Include="Assets\Models\Tarkan\Carrier.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Colonizer.cmo">
+    <None Include="Assets\Models\Tarkan\Colonizer.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Drone.cmo">
+    <None Include="Assets\Models\Tarkan\Drone.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Fighter.cmo">
+    <None Include="Assets\Models\Tarkan\Fighter.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Freighter.cmo">
+    <None Include="Assets\Models\Tarkan\Freighter.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Huge.cmo">
+    <None Include="Assets\Models\Tarkan\Huge.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Large.cmo">
+    <None Include="Assets\Models\Tarkan\Large.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Medium.cmo">
+    <None Include="Assets\Models\Tarkan\Medium.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Mine.cmo">
+    <None Include="Assets\Models\Tarkan\Mine.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Satellite.cmo">
+    <None Include="Assets\Models\Tarkan\Satellite.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Small.cmo">
+    <None Include="Assets\Models\Tarkan\Small.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Station.cmo">
+    <None Include="Assets\Models\Tarkan\Station.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Tiny.cmo">
+    <None Include="Assets\Models\Tarkan\Tiny.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\VeryLarge.cmo">
+    <None Include="Assets\Models\Tarkan\VeryLarge.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
   </ItemGroup>

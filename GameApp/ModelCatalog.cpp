@@ -9,20 +9,6 @@ namespace
 using Neuron::JsonBound;
 using Neuron::JsonObjectReader;
 
-Neuron::MeshAxis ReadAxis(JsonObjectReader& _reader)
-{
-  const std::string axis = _reader.String("forwardAxis");
-  if (axis == "+x")
-    return Neuron::MeshAxis::PositiveX;
-  if (axis == "-x")
-    return Neuron::MeshAxis::NegativeX;
-  if (axis == "+z")
-    return Neuron::MeshAxis::PositiveZ;
-  if (axis == "-z")
-    return Neuron::MeshAxis::NegativeZ;
-  Neuron::JsonFail(_reader.PathOf("forwardAxis"), std::format("\"{}\" is not \"+x\", \"-x\", \"+z\" or \"-z\"", axis));
-}
-
 // A set's or a model's name, which is also a folder or a file name under Assets\Models, so letters and digits only.
 std::string ReadName(JsonObjectReader& _reader)
 {
@@ -45,19 +31,24 @@ Outpost::ModelEntry ReadModel(JsonObjectReader& _reader)
 {
   Outpost::ModelEntry model;
   model.name = ReadName(_reader);
-  model.forward = ReadAxis(_reader);
   model.lengthMeters = static_cast<float>(_reader.Number("lengthMeters", JsonBound::Positive));
   return model;
+}
+
+// A linear color of three channels, each from 0 to 1.
+DirectX::XMFLOAT4 ReadColor(JsonObjectReader& _reader, std::string_view _name)
+{
+  JsonObjectReader color(_reader.Required(_name), _reader.PathOf(_name));
+  const DirectX::XMFLOAT4 value{ReadChannel(color, "red"), ReadChannel(color, "green"), ReadChannel(color, "blue"), 1.0f};
+  color.Finish();
+  return value;
 }
 
 Outpost::ModelSet ReadSet(JsonObjectReader& _reader)
 {
   Outpost::ModelSet set;
   set.name = ReadName(_reader);
-
-  JsonObjectReader color(_reader.Required("color"), _reader.PathOf("color"));
-  set.color = {ReadChannel(color, "red"), ReadChannel(color, "green"), ReadChannel(color, "blue"), 1.0f};
-  color.Finish();
+  set.color = ReadColor(_reader, "color");
 
   set.models = Neuron::ReadJsonList<Outpost::ModelEntry>(_reader, "models", ReadModel);
   for (size_t i = 0; i < set.models.size(); ++i)
@@ -80,6 +71,11 @@ Outpost::PlayerModels ReadPlayer(JsonObjectReader& _reader)
 Outpost::HullModel ReadHull(JsonObjectReader& _reader)
 {
   return {.hull = _reader.Identifier<Outpost::HullId>("hull"), .model = _reader.String("model")};
+}
+
+Outpost::DriveExhaust ReadExhaust(JsonObjectReader& _reader)
+{
+  return {.drive = _reader.Identifier<Outpost::DriveId>("drive"), .color = ReadColor(_reader, "color")};
 }
 
 // The file spells a kind as its enumerator, as the tuning data does.
@@ -148,6 +144,8 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   catalog.hulls = Neuron::ReadJsonList<HullModel>(reader, "hulls", ReadHull);
   catalog.structures = Neuron::ReadJsonList<StructureModel>(reader, "structures", ReadStructure);
   catalog.constructor = reader.String("constructor");
+  catalog.exhausts = Neuron::ReadJsonList<DriveExhaust>(reader, "exhausts", ReadExhaust);
+  catalog.constructorExhaust = ReadColor(reader, "constructorExhaust");
   reader.Finish();
 
   for (size_t i = 0; i < catalog.sets.size(); ++i)
@@ -176,6 +174,12 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
       if (std::ranges::find(set.models, catalog.hulls[i].model, &ModelEntry::name) == set.models.end())
         Neuron::JsonFail(path + ".model", std::format("the set \"{}\" has no model \"{}\"", set.name, catalog.hulls[i].model));
     }
+  }
+
+  for (size_t i = 0; i < catalog.exhausts.size(); ++i)
+  {
+    if (FirstWithSameKey(catalog.exhausts, i, &DriveExhaust::drive) != i)
+      Neuron::JsonFail(Neuron::JsonElementPath("exhausts", i), std::format("drive {} is listed twice", catalog.exhausts[i].drive.value));
   }
 
   // A model every player's set must have, for drawing whichever player owns it.
@@ -225,16 +229,32 @@ const Outpost::StructureModel* Outpost::ModelCatalog::ModelForStructure(Structur
   return found == structures.end() ? nullptr : &*found;
 }
 
+const DirectX::XMFLOAT4* Outpost::ModelCatalog::ExhaustColor(const EntityView& _entity) const noexcept
+{
+  if (_entity.kind != EntityKind::Ship)
+    return nullptr;
+  if (_entity.role == ShipRole::Constructor)
+    return &constructorExhaust;
+  const auto found = std::ranges::find(exhausts, _entity.drive, &DriveExhaust::drive);
+  return found == exhausts.end() ? nullptr : &found->color;
+}
+
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)
 {
   // The loader allows only ASCII letters and digits in names, so widening them character by character is exact.
-  const std::string name = std::format("Models\\{}\\{}.cmo", _set.name, _model.name);
+  const std::string name = std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
   return {name.begin(), name.end()};
 }
 
-Neuron::MeshData Outpost::BuildModelMesh(std::span<const std::uint8_t> _cmoBytes, const ModelEntry& _model, std::string_view _fileName)
+Neuron::MeshData Outpost::BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model, std::string_view _fileName)
 {
-  Neuron::MeshData mesh = Neuron::ParseCmo(_cmoBytes, _fileName);
-  Neuron::OrientMesh(mesh, _model.forward, _model.lengthMeters);
+  Neuron::MeshData mesh = Neuron::ParseNmf(_nmfBytes, _fileName);
+  for (const Neuron::MeshHardpoint& hardpoint : mesh.hardpoints)
+  {
+    if (!HardpointKindOf(hardpoint.tag).has_value())
+      throw Neuron::Exception(
+        std::format("The mesh {} has a hardpoint tagged \"{}\", which the game does not know.", _fileName, hardpoint.tag));
+  }
+  Neuron::FitMesh(mesh, _model.lengthMeters);
   return mesh;
 }

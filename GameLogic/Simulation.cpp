@@ -1574,12 +1574,9 @@ void Outpost::Simulation::DecideMatch()
   std::vector<PlayerId> standing;
   for (const PlayerId player : m_basePlayers)
   {
-    const bool hasStation = std::ranges::any_of(m_entities,
-                                                [player](const Entity& _entity)
-                                                {
-                                                  return _entity.kind == EntityKind::Structure &&
-                                                         _entity.structure == StructureKind::CommandStation && _entity.owner == player;
-                                                });
+    const bool hasStation = std::ranges::any_of(
+      m_entities, [player](const Entity& _entity)
+      { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == player; });
     if (hasStation)
       standing.push_back(player);
   }

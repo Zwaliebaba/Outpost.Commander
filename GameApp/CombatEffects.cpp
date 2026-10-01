@@ -86,6 +86,7 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
   {
     m_effects.push_back({.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer,
                          .startTick = start,
+                         .shooter = shot.shooter,
                          .from = shot.from,
                          .to = shot.to,
                          .radiusMeters = shot.splashRadiusMeters});
@@ -100,7 +101,7 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
   }
 }
 
-std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick)
+std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle)
 {
   const auto lifetime = [](Kind _kind)
   {
@@ -123,9 +124,14 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick)
     if (_viewTick < effect.startTick)
       continue;
     if (effect.kind == Kind::Explosion)
+    {
       AddExplosion(effect, _viewTick, draws);
-    else
-      AddShot(effect, _viewTick, draws);
+      continue;
+    }
+    Effect shot = effect;
+    if (_muzzle)
+      shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
+    AddShot(shot, _viewTick, draws);
   }
   return draws;
 }

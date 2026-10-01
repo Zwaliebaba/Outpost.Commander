@@ -79,6 +79,9 @@ public:
   // The camera's height and distance follow from the width it has to show across a screen of this shape.
   [[nodiscard]] DirectX::XMFLOAT3 EyePosition(float _aspectRatio) const noexcept;
   [[nodiscard]] DirectX::XMFLOAT4X4 ViewProjection(float _aspectRatio) const noexcept;
+  // Unit vectors in the world along the screen's right and its up, which what faces the camera is laid along, such as a
+  // glow (ADR-019).
+  [[nodiscard]] std::pair<DirectX::XMFLOAT3, DirectX::XMFLOAT3> ScreenAxes(float _aspectRatio) const noexcept;
 
   // Where the ray through a point of the screen meets the ground (y = 0), with the screen from -1 to 1 on both axes and
   // +1 at the top. Nothing when the ray does not come down to the ground.
@@ -95,6 +98,7 @@ private:
   [[nodiscard]] DirectX::XMFLOAT2 GroundForward() const noexcept;
   [[nodiscard]] DirectX::XMFLOAT2 GroundRight() const noexcept;
   [[nodiscard]] float DistanceToFocus(float _aspectRatio) const noexcept;
+  [[nodiscard]] DirectX::XMFLOAT4X4 View(float _aspectRatio) const noexcept;
 
   CameraSettings m_settings;
   float m_focusXMeters = 0.0f;
