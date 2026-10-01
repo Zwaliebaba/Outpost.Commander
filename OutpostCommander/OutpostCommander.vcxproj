@@ -117,6 +117,11 @@
     <Image Include="Assets\Square44x44Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\Textures\cloudyglow.dds" />
+    <Image Include="Assets\Textures\glow.dds" />
+    <Image Include="Assets\Textures\laser.dds" />
+    <Image Include="Assets\Textures\Particle.dds" />
+    <Image Include="Assets\Textures\starburst.dds" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
   <!--
