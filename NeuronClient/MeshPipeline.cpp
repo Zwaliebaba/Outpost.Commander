@@ -28,7 +28,8 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
   parameters[OBJECT_PARAMETER].InitAsConstants(OBJECT_CONSTANT_COUNT, 1);
 
   CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
-  description.Init_1_1(parameters.size(), parameters.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+  description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 0, nullptr,
+                       D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
   // Version 1.1 where the device has it, 1.0 otherwise; d3dx12 converts the description.
   D3D12_FEATURE_DATA_ROOT_SIGNATURE feature{.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1};
