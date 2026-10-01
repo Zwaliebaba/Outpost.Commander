@@ -198,6 +198,10 @@ jobs:
       # One suite per *Tests.vcxproj in the tree, and every one of them must have produced a DLL:
       # vstest reports "no tests found" as a pass, so a suite that did not build is not a suite
       # that passed. No suites at all is a state this repository is still legitimately in.
+      #
+      # The one test left out is the full Q2 check (category Q2Full, implementation plan task 3.4):
+      # thousands of battles that take minutes in Release and far longer in Debug. CI runs its
+      # small part, TheRecordedCountersHold, with the rest of the suite; the owner runs the whole.
       - name: Run the tests
         if: steps.solution.outputs.path != ''
         shell: pwsh
@@ -215,7 +219,7 @@ jobs:
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           $vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
           if (-not $vstest) { throw "vstest.console.exe not found." }
-          & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
+          & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults '/TestCaseFilter:TestCategory!=Q2Full'
           if ($LASTEXITCODE -ne 0) { throw "vstest reported failures." }
 
       # After the build, so that a compile error is reported as a compile error rather than as

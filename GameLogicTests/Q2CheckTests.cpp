@@ -1,0 +1,121 @@
+#include "pch.h"
+#include "RepositoryData.h"
+#include "Q2Check.h"
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace GameLogicTests
+{
+namespace
+{
+std::vector<CheckDesign> RepositoryDesigns(const Outpost::Tuning& _tuning)
+{
+  return DesignsFrom(_tuning, PartsFrom(_tuning));
+}
+
+const CheckDesign& Named(const std::vector<CheckDesign>& _designs, std::string_view _code)
+{
+  const auto found = std::ranges::find(_designs, _code, &CheckDesign::code);
+  Assert::IsTrue(found != _designs.end());
+  return *found;
+}
+
+// How many of _battles _a wins against _b.
+int Wins(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMode _mode, std::uint32_t _battles)
+{
+  int wins = 0;
+  for (std::uint32_t battle = 0; battle < _battles; ++battle)
+    wins += Fight(_a, _b, _budgetOre, _mode, battle, _battles) > 0 ? 1 : 0;
+  return wins;
+}
+} // namespace
+
+TEST_CLASS(Q2CheckTests)
+{
+public:
+  // The check's designs are the game's: the same stats DesignStatsFor derives, and the model's short codes.
+  TEST_METHOD(FieldsTheGamesDesigns)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
+    // Twelve: three hulls, two drives, and the two weapons without splash.
+    Assert::AreEqual(size_t{12}, designs.size());
+    for (const CheckDesign& design : designs)
+    {
+      const Outpost::DesignStats stats =
+        Outpost::DesignStatsFor(tuning, design.components.hull, design.components.drive, design.components.weapon);
+      Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
+    }
+    Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
+    Assert::AreEqual(std::string("L+F+La"), designs.back().code);
+  }
+
+  // A battle replays: the same battle of the same pairing has the same outcome.
+  TEST_METHOD(ABattleIsTheSameEveryTime)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
+    for (std::uint32_t battle = 0; battle < 4; ++battle)
+    {
+      const int first = Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Spread, battle, 4);
+      Assert::AreEqual(first, Fight(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Spread, battle, 4));
+    }
+  }
+
+  // A design against itself wins about as often on either side. The arena once placed the second side as the first's
+  // mirror image, and a partial last row then gave the second side every battle at 9,000 Ore.
+  TEST_METHOD(AMirrorMatchIsFair)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
+    const CheckDesign& swarm = Named(designs, "S+I+MD");
+    constexpr std::uint32_t BATTLES = 30;
+    int first = 0;
+    int second = 0;
+    for (std::uint32_t battle = 0; battle < BATTLES; ++battle)
+    {
+      const int outcome = Fight(swarm, swarm, 4500.0, FireMode::Spread, battle, BATTLES);
+      first += outcome > 0 ? 1 : 0;
+      second += outcome < 0 ? 1 : 0;
+    }
+    // Far outside chance for a fair coin over 30 battles is fewer than 7 for either side.
+    Assert::IsTrue(first >= 7 && second >= 7, (std::to_wstring(first) + L" to " + std::to_wstring(second)).c_str());
+  }
+
+  // Task 3.4, the part CI runs: the counters that design §12 records as holding in the simulation, at the smallest
+  // budget, so that a change that breaks them fails here rather than only in the full check.
+  TEST_METHOD(TheRecordedCountersHold)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
+    constexpr std::uint32_t BATTLES = 20;
+    for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
+    {
+      // The swarm beats the line, and the brawler beats the swarm (design §7).
+      Assert::IsTrue(Wins(Named(designs, "S+I+MD"), Named(designs, "M+I+La"), 2000.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "M+I+MD"), Named(designs, "S+I+MD"), 2000.0, mode, BATTLES) >= 16);
+      // The picket beats the heavy.
+      Assert::IsTrue(Wins(Named(designs, "S+I+La"), Named(designs, "L+F+MD"), 2000.0, mode, BATTLES) >= 16);
+    }
+    // The line beats the brawler under focus fire only: under spread fire it does not (design §12).
+    Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Focus, BATTLES) >= 16);
+  }
+
+  // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release, so CI leaves it out by its category
+  // and the owner runs it:
+  //   vstest.console.exe x64\Release\GameLogicTests.dll /TestCaseFilter:"TestCategory=Q2Full"
+  // The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The verdicts are recorded in
+  // design §12.
+  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
+  TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full")
+  END_TEST_METHOD_ATTRIBUTE()
+  TEST_METHOD(TheFullCheck)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const CheckResult result = RunQ2Check(tuning, {});
+    std::ofstream(std::filesystem::temp_directory_path() / "Q2Check-report.txt") << result.report;
+    Logger::WriteMessage(result.report.c_str());
+    Assert::IsTrue(result.Passed(), L"The Q2 check does not pass; the report says where.");
+  }
+};
+} // namespace GameLogicTests
