@@ -262,8 +262,9 @@ public:
     Assert::AreEqual(size_t{2}, commands.size(), L"nothing else: no lab to research in, no warship to order");
   }
 
-  // Plan task 6.1's acceptance: a shot on one of its structures sends the reserve there, and once the shooting has
-  // stopped for the settings' ten seconds, back to where it gathers.
+  // Plan task 6.1's acceptance and design §10: a shot on one of its rigs or platforms sends the reserve there, and once
+  // the shooting has stopped for the settings' ten seconds, back to where it gathers. A shot on its Command Station does
+  // not: the station's gun is its own defence.
   TEST_METHOD(SendsTheReserveWhereItsBaseIsShot)
   {
     AiMatch match;
@@ -279,10 +280,22 @@ public:
                                               { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
     snapshot.tick += 20;
     snapshot.shots.push_back({.shooter = Outpost::EntityId{999}, .target = station->id, .weapon = Outpost::WeaponId{2}});
+    Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)).empty(), L"the reserve left for the Command Station");
+
+    // A platform of its, as the snapshot shows it, under fire.
+    const Outpost::EntityView platform{.id = Outpost::EntityId{5000},
+                                       .kind = Outpost::EntityKind::Structure,
+                                       .owner = AI,
+                                       .structure = Outpost::StructureKind::DefensePlatform,
+                                       .position = {.xMeters = 200.0f, .zMeters = 400.0f},
+                                       .radiusMeters = 20.0f};
+    snapshot.entities.push_back(platform);
+    snapshot.shots = {{.shooter = Outpost::EntityId{999}, .target = platform.id, .weapon = Outpost::WeaponId{2}}};
+    snapshot.tick += 20;
     const std::vector<Outpost::AttackMoveCommand> defend = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
     Assert::AreEqual(size_t{1}, defend.size());
     Assert::IsTrue(std::ranges::is_permutation(defend.front().ships, reserve));
-    Assert::AreEqual(0.0f, Outpost::Distance(defend.front().destination, station->position), 0.01f);
+    Assert::AreEqual(0.0f, Outpost::Distance(defend.front().destination, platform.position), 0.01f);
 
     snapshot.shots.clear();
     // Five seconds later, then eleven, at twenty ticks a second.
