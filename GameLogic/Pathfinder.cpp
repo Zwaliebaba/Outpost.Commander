@@ -18,6 +18,21 @@ constexpr float MARGIN_METERS = 0.5f;
 constexpr float TOLERANCE_METERS = 0.01f;
 // Clear() pushes a point out of one obstacle at a time; a point wedged between two needs a few rounds.
 constexpr int CLEARING_ROUNDS = 4;
+// A ship of a group takes a shared route only when it is at most this many times the straight line to its slot. A
+// longer one is a detour, and since the group keeps the pace of its slowest ship, one ship's detour slows them all.
+constexpr float DETOUR_LIMIT = 1.5f;
+
+float PathLength(Outpost::PlanePosition _from, const std::vector<Outpost::PlanePosition>& _path) noexcept
+{
+  float meters = 0.0f;
+  Outpost::PlanePosition previous = _from;
+  for (const Outpost::PlanePosition waypoint : _path)
+  {
+    meters += Outpost::Distance(previous, waypoint);
+    previous = waypoint;
+  }
+  return meters;
+}
 } // namespace
 
 void Outpost::Pathfinder::SetObstacles(std::vector<Obstacle> _obstacles, float _halfSizeMeters)
@@ -37,11 +52,20 @@ bool Outpost::Pathfinder::IsInsideEdge(PlanePosition _position, float _clearance
 
 bool Outpost::Pathfinder::IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const
 {
+  const float minX = std::min(_a.xMeters, _b.xMeters);
+  const float maxX = std::max(_a.xMeters, _b.xMeters);
+  const float minZ = std::min(_a.zMeters, _b.zMeters);
+  const float maxZ = std::max(_a.zMeters, _b.zMeters);
   return std::ranges::all_of(m_obstacles,
                              [&](const Obstacle& _obstacle)
                              {
-                               const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS;
-                               return DistanceToSegment(_obstacle.center, _a, _b) >= grown - TOLERANCE_METERS;
+                               const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
+                               // Most obstacles are nowhere near the segment's box, and the box is cheaper to test.
+                               const PlanePosition center = _obstacle.center;
+                               if (center.xMeters + grown < minX || center.xMeters - grown > maxX || center.zMeters + grown < minZ ||
+                                   center.zMeters - grown > maxZ)
+                                 return true;
+                               return DistanceToSegment(center, _a, _b) >= grown;
                              });
 }
 
@@ -134,8 +158,11 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
 
   // A* over the graph's corners plus the start and the goal, which join it wherever they see a corner. The straight-line
   // distance to the goal never overestimates, so the first time the goal comes off the queue its path is the shortest.
-  // Whether a corner sees the goal is asked only of the corners the search reaches. Ties on the queue go to the lower
-  // node, so the path does not depend on the queue's implementation.
+  // Whether a corner sees the goal is asked only of the corners the search reaches. Whether the start sees a corner is
+  // asked lazily too: every corner is first given the straight line from the start, which no way round can beat, and the
+  // line is checked only when the corner comes off the queue. Most corners never do, and asking all of them up front was
+  // most of a search's cost. Ties on the queue go to the lower node, so the path does not depend on the queue's
+  // implementation.
   const Graph& graph = GraphFor(_clearanceMeters);
   const auto cornerCount = static_cast<std::uint32_t>(graph.nodes.size());
   const std::uint32_t startNode = cornerCount;
@@ -148,10 +175,23 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
   std::vector<float> distance(nodeCount, UNREACHED);
   std::vector<std::uint32_t> previous(nodeCount, NONE);
   std::vector<bool> done(nodeCount, false);
+  // Corners whose distance is the straight line from the start, not yet checked for an obstacle in the way.
+  std::vector<bool> unchecked(nodeCount, false);
   using Entry = std::pair<float, std::uint32_t>;
-  std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open;
+  // The start is done first: every corner gets the straight line from it, unchecked, and the queue is built from them in
+  // one go rather than a push at a time.
   distance[startNode] = 0.0f;
-  open.emplace(Distance(start, goal), startNode);
+  done[startNode] = true;
+  std::vector<Entry> fromStart;
+  fromStart.reserve(cornerCount);
+  for (std::uint32_t corner = 0; corner < cornerCount; ++corner)
+  {
+    distance[corner] = Distance(start, graph.nodes[corner]);
+    previous[corner] = startNode;
+    unchecked[corner] = true;
+    fromStart.emplace_back(distance[corner] + Distance(graph.nodes[corner], goal), corner);
+  }
+  std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open(std::greater<>{}, std::move(fromStart));
 
   auto relax = [&](std::uint32_t _from, std::uint32_t _to, float _length)
   {
@@ -167,21 +207,29 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
   {
     const std::uint32_t current = open.top().second;
     open.pop();
-    if (done[current])
+    if (done[current] || distance[current] == UNREACHED)
       continue;
+    if (unchecked[current] && previous[current] == startNode)
+    {
+      unchecked[current] = false;
+      if (!IsStraightPathClear(start, graph.nodes[current], _clearanceMeters))
+      {
+        // The start does not see it after all. Its straight-line distance may have turned away a longer way in from a
+        // corner already done, so those ways are offered again.
+        distance[current] = UNREACHED;
+        previous[current] = NONE;
+        for (const auto& [neighbor, length] : graph.edges[current])
+        {
+          if (done[neighbor])
+            relax(neighbor, current, length);
+        }
+        continue;
+      }
+    }
     done[current] = true;
     if (current == goalNode)
       break;
 
-    if (current == startNode)
-    {
-      for (std::uint32_t corner = 0; corner < cornerCount; ++corner)
-      {
-        if (IsStraightPathClear(start, graph.nodes[corner], _clearanceMeters))
-          relax(startNode, corner, Distance(start, graph.nodes[corner]));
-      }
-      continue;
-    }
     for (const auto& [neighbor, length] : graph.edges[current])
       relax(current, neighbor, length);
     if (IsStraightPathClear(graph.nodes[current], goal, _clearanceMeters))
@@ -200,4 +248,77 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
     reversed.push_back(position(node));
   path.insert(path.end(), reversed.rbegin(), reversed.rend());
   return path;
+}
+
+Outpost::GroupRoutes::GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters)
+  : m_pathfinder(_pathfinder),
+    m_widestClearanceMeters(_widestClearanceMeters),
+    m_destination(_pathfinder.Clear(_destination, _widestClearanceMeters))
+{
+}
+
+void Outpost::GroupRoutes::SearchFrom(PlanePosition _center)
+{
+  // The path's last waypoint is the destination itself; each ship ends at its own slot instead.
+  std::vector<PlanePosition> corners = m_pathfinder.FindPath(_center, m_destination, m_widestClearanceMeters);
+  corners.pop_back();
+  if (!corners.empty())
+    m_routes.push_back({std::move(corners), m_widestClearanceMeters});
+}
+
+std::vector<Outpost::PlanePosition> Outpost::GroupRoutes::PathFor(PlanePosition _start, PlanePosition _slot, float _clearanceMeters)
+{
+  const PlanePosition goal = m_pathfinder.Clear(_slot, _clearanceMeters);
+  // A ship in an obstacle's margin has to leave it first, which the full search knows how to do.
+  const bool inMargin = Distance(m_pathfinder.Clear(_start, _clearanceMeters), _start) > 0.0f;
+  if (!inMargin)
+  {
+    if (m_pathfinder.IsStraightPathClear(_start, goal, _clearanceMeters))
+      return {goal};
+    // The first route that is not a detour a search would save, and then the way through the destination.
+    const float limitMeters = DETOUR_LIMIT * Distance(_start, goal);
+    for (const Route& route : m_routes)
+    {
+      if (route.clearanceMeters < _clearanceMeters)
+        continue;
+      if (std::optional<std::vector<PlanePosition>> path = Join(route, _start, goal, _clearanceMeters);
+          path.has_value() && PathLength(_start, *path) <= limitMeters)
+        return std::move(*path);
+    }
+    if (m_pathfinder.IsStraightPathClear(_start, m_destination, _clearanceMeters) &&
+        m_pathfinder.IsStraightPathClear(m_destination, goal, _clearanceMeters) &&
+        Distance(_start, m_destination) + Distance(m_destination, goal) <= limitMeters)
+      return {m_destination, goal};
+  }
+
+  std::vector<PlanePosition> path = m_pathfinder.FindPath(_start, goal, _clearanceMeters);
+  if (path.size() > 1)
+    m_routes.push_back({{path.begin(), path.end() - 1}, _clearanceMeters});
+  return path;
+}
+
+std::optional<std::vector<Outpost::PlanePosition>> Outpost::GroupRoutes::Join(const Route& _route, PlanePosition _start,
+                                                                              PlanePosition _goal, float _clearanceMeters) const
+{
+  // Every leg of the route keeps at least this ship's clearance. Its end must see the goal, or see the destination when the
+  // destination sees the goal.
+  std::vector<PlanePosition> tail;
+  if (!m_pathfinder.IsStraightPathClear(_route.corners.back(), _goal, _clearanceMeters))
+  {
+    if (!m_pathfinder.IsStraightPathClear(_route.corners.back(), m_destination, _clearanceMeters) ||
+        !m_pathfinder.IsStraightPathClear(m_destination, _goal, _clearanceMeters))
+      return std::nullopt;
+    tail.push_back(m_destination);
+  }
+  tail.push_back(_goal);
+
+  for (size_t corner = _route.corners.size(); corner-- > 0;)
+  {
+    if (!m_pathfinder.IsStraightPathClear(_start, _route.corners[corner], _clearanceMeters))
+      continue;
+    std::vector<PlanePosition> path(_route.corners.begin() + static_cast<std::ptrdiff_t>(corner), _route.corners.end());
+    path.insert(path.end(), tail.begin(), tail.end());
+    return path;
+  }
+  return std::nullopt;
 }

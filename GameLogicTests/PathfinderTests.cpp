@@ -90,6 +90,51 @@ public:
     Assert::IsTrue(path.back() == Outpost::PlanePosition{500.0f - SHIP_RADIUS_METERS, -500.0f + SHIP_RADIUS_METERS});
   }
 
+  // ADR-010: ships of a group join the route the group searched from its center, rather than each searching its own.
+  TEST_METHOD(ShipsOfAGroupJoinItsRoute)
+  {
+    Outpost::Pathfinder pathfinder;
+    pathfinder.SetObstacles({{.center = {}, .radiusMeters = 100.0f}}, 1000.0f);
+    const Outpost::PlanePosition center{-300.0f, 0.0f};
+    std::vector<Outpost::PlanePosition> route = pathfinder.FindPath(center, {300.0f, 0.0f}, SHIP_RADIUS_METERS);
+    route.pop_back();
+
+    Outpost::GroupRoutes routes(pathfinder, {300.0f, 0.0f}, SHIP_RADIUS_METERS);
+    routes.SearchFrom(center);
+    for (const Outpost::PlanePosition start : {Outpost::PlanePosition{-320.0f, 20.0f}, Outpost::PlanePosition{-280.0f, -20.0f}})
+    {
+      const Outpost::PlanePosition slot{300.0f, 30.0f};
+      const std::vector<Outpost::PlanePosition> path = routes.PathFor(start, slot, SHIP_RADIUS_METERS);
+      Assert::IsTrue(path.back() == slot);
+      ExpectClear(pathfinder, start, path);
+      // Every waypoint but the slot is a corner of the group's route.
+      for (size_t i = 0; i + 1 < path.size(); ++i)
+        Assert::IsTrue(std::ranges::find(route, path[i]) != route.end());
+    }
+  }
+
+  // ADR-010: a ship with no route to join searches for itself, and a ship beside it then joins its path.
+  TEST_METHOD(AShipWithNoRouteToJoinSearchesAndLeavesOne)
+  {
+    Outpost::Pathfinder pathfinder;
+    pathfinder.SetObstacles({{.center = {}, .radiusMeters = 100.0f}}, 1000.0f);
+    // The group's center sees its destination, so the group's route has no corners.
+    Outpost::GroupRoutes routes(pathfinder, {400.0f, 0.0f}, SHIP_RADIUS_METERS);
+    routes.SearchFrom({0.0f, 400.0f});
+
+    // Both ships are on the far side of the obstacle from their slots.
+    const Outpost::PlanePosition first{-400.0f, 0.0f};
+    const Outpost::PlanePosition second{-410.0f, 10.0f};
+    const std::vector<Outpost::PlanePosition> firstPath = routes.PathFor(first, {400.0f, 0.0f}, SHIP_RADIUS_METERS);
+    const std::vector<Outpost::PlanePosition> secondPath = routes.PathFor(second, {400.0f, 20.0f}, SHIP_RADIUS_METERS);
+    ExpectClear(pathfinder, first, firstPath);
+    ExpectClear(pathfinder, second, secondPath);
+    Assert::IsTrue(firstPath.size() > 1 && secondPath.size() > 1);
+    Assert::IsTrue(secondPath.back() == Outpost::PlanePosition{400.0f, 20.0f});
+    Assert::IsTrue(std::ranges::find(firstPath, secondPath.front()) != firstPath.end(),
+                   L"the second ship did not join the first one's path");
+  }
+
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());

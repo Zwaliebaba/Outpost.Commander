@@ -265,9 +265,9 @@ Outpost::CommandResult Outpost::Simulation::ValidateShips(PlayerId _player, cons
 }
 
 // A group ordered as one keeps a loose formation (design §9): a grid of slots around the destination, facing the way the
-// group travels, with the ships that are ahead now taking the front slots so that few paths cross. Each ship paths to its
-// own slot, and each goes at the speed that brings the whole group in at the same moment, which is no faster than its
-// slowest ship allows.
+// group travels, with the ships that are ahead now taking the front slots so that few paths cross. The group searches one
+// route, and each ship joins it on the way to its own slot (ADR-010). Each goes at the speed that brings the whole group
+// in at the same moment, which is no faster than its slowest ship allows.
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const MoveCommand& _move)
 {
   if (!IsFinite(_move.destination))
@@ -308,6 +308,10 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const MoveCo
                       return _a->id < _b->id;
                     });
 
+  GroupRoutes routes(m_pathfinder, _move.destination, widestRadius);
+  if (ships.size() > 1)
+    routes.SearchFrom(center);
+
   const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   float slowestArrivalSeconds = 0.0f;
@@ -316,11 +320,11 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const MoveCo
     const std::size_t row = index / columns;
     const std::size_t inRow = std::min(columns, ships.size() - row * columns);
     const float across = (static_cast<float>(index % columns) - static_cast<float>(inRow - 1) / 2.0f) * spacing;
-    const PlanePosition slot = _move.destination + side * across - forward * (static_cast<float>(row) * spacing);
+    const PlanePosition slot = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing);
 
     Entity& ship = *ships[index];
     ship.destination = _move.destination;
-    ship.path = m_pathfinder.FindPath(ship.position, slot, ship.radiusMeters);
+    ship.path = routes.PathFor(ship.position, slot, ship.radiusMeters);
     ship.closestMeters = std::numeric_limits<float>::infinity();
     ship.stalledTicks = 0;
     if (ship.speedMetersPerSecond > 0.0f)

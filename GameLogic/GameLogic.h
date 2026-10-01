@@ -6,6 +6,7 @@
 #include "GameProtocol.h"
 
 #include <optional>
+#include <span>
 
 #include "Tuning.h"
 #include "Map.h"
