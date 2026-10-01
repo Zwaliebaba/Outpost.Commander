@@ -635,7 +635,7 @@ INCLUDE_PATHS = {
   "GameLogic": ("NeuronCore", "NeuronServer", "GameProtocol"),
   "GameApp": ("NeuronCore", "NeuronClient", "GameProtocol"),
   "OutpostCommander": ("NeuronCore", "NeuronClient", "GameProtocol", "Opponent", "GameApp"),
-  "GameLogicTests": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic"),
+  "GameLogicTests": ("NeuronCore", "NeuronServer", "GameProtocol", "GameLogic", "Opponent"),
   "GameAppTests": ("NeuronCore", "NeuronClient", "GameProtocol", "GameApp"),
 }
 # The include directories outside the solution a project may name: the Microsoft C++ unit-test framework ships with

@@ -232,8 +232,20 @@ public:
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
   // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would
-  // overlap an obstacle or cross the map's edge.
+  // overlap an obstacle or cross the map's edge. From then on a player that loses its last Command Station loses the
+  // match (task 6.2).
   void PlaceStartingBases(const Map& _map);
+
+  // Whether a player has lost its Command Station, which ends the match (design §6); the player who still has one won,
+  // or nobody when both fell in the same tick. Only a match whose bases were placed can end.
+  [[nodiscard]] bool MatchOver() const noexcept
+  {
+    return m_matchOver;
+  }
+  [[nodiscard]] PlayerId Winner() const noexcept
+  {
+    return m_winner;
+  }
 
   // How every ship picks its target. Only the Q2 check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
@@ -268,7 +280,9 @@ public:
   {
     return _a.m_tick == _b.m_tick && _a.m_entities == _b.m_entities && _a.m_lastEntityId == _b.m_lastEntityId &&
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
-           _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles();
+           _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
+           _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
+           _a.m_matchEndedTick == _b.m_matchEndedTick;
   }
 
 private:
@@ -333,6 +347,8 @@ private:
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
   void Mine();
+  // Ends the match once a player whose base was placed has no Command Station left.
+  void DecideMatch();
   void MoveShips();
   void SeparateShips();
   void KeepShipsClear();
@@ -356,6 +372,11 @@ private:
   float m_mapHalfSizeMeters = 0.0f;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.
   std::shared_ptr<const Tuning> m_tuning;
+  // The players whose bases PlaceStartingBases placed, and how the match stands.
+  std::vector<PlayerId> m_basePlayers;
+  bool m_matchOver = false;
+  PlayerId m_winner;
+  std::uint64_t m_matchEndedTick = 0;
   // What the last tick did, for the snapshots built after it.
   std::vector<ShotView> m_shots;
   std::vector<DestroyedView> m_destroyed;

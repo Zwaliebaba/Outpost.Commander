@@ -38,6 +38,9 @@
     <ClInclude Include="LoadDriver.h">
       <Filter>Measurement</Filter>
     </ClInclude>
+    <ClInclude Include="MatchLog.h">
+      <Filter>Measurement</Filter>
+    </ClInclude>
     <ClInclude Include="ModelCatalog.h">
       <Filter>Models</Filter>
     </ClInclude>
@@ -62,9 +65,6 @@
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
     </ClInclude>
-    <ClInclude Include="Placement.h">
-      <Filter>Controls</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -75,6 +75,9 @@
       <Filter>Client</Filter>
     </ClCompile>
     <ClCompile Include="LoadDriver.cpp">
+      <Filter>Measurement</Filter>
+    </ClCompile>
+    <ClCompile Include="MatchLog.cpp">
       <Filter>Measurement</Filter>
     </ClCompile>
     <ClCompile Include="ModelCatalog.cpp">
@@ -100,9 +103,6 @@
     </ClCompile>
     <ClCompile Include="Hud.cpp">
       <Filter>Interface</Filter>
-    </ClCompile>
-    <ClCompile Include="Placement.cpp">
-      <Filter>Controls</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

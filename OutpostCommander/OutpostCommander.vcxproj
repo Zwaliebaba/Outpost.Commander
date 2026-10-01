@@ -187,6 +187,9 @@
     <None Include="Assets\Tuning.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="Assets\Opponent.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Assets\Models\Asteroids\Asteroid.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>

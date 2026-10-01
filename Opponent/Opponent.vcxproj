@@ -76,12 +76,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Opponent.h" />
+    <ClInclude Include="AiSettings.h" />
+    <ClInclude Include="AiPlayer.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="AiSettings.cpp" />
+    <ClCompile Include="AiPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

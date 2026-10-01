@@ -79,6 +79,7 @@
     <ClInclude Include="GameApp.h" />
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="LoadDriver.h" />
+    <ClInclude Include="MatchLog.h" />
     <ClInclude Include="ModelCatalog.h" />
     <ClInclude Include="Hardpoints.h" />
     <ClInclude Include="pch.h" />
@@ -88,7 +89,6 @@
     <ClInclude Include="CombatEffects.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="Hud.h" />
-    <ClInclude Include="Placement.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -97,6 +97,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="LoadDriver.cpp" />
+    <ClCompile Include="MatchLog.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
     <ClCompile Include="Hardpoints.cpp" />
     <ClCompile Include="Picking.cpp" />
@@ -105,7 +106,6 @@
     <ClCompile Include="CombatEffects.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="Hud.cpp" />
-    <ClCompile Include="Placement.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

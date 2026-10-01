@@ -75,6 +75,11 @@ constexpr float ACTION_WIDTH = 220.0f;
 // Room a button keeps for its cost at the right of a narrow button.
 constexpr float COST_ROOM = 70.0f;
 
+// The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
+constexpr float BANNER_WIDTH = 520.0f;
+// The main menu, centered.
+constexpr float MENU_WIDTH = 440.0f;
+
 // A Constructor is of no design; the panel names it so.
 constexpr std::string_view CONSTRUCTOR_NAME = "Constructor";
 
@@ -168,6 +173,25 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
      .enabled = match != nullptr && canQueue && _newest.ore >= match->cost});
   return panel;
 }
+// A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
+void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
+{
+  Hud::Rect face = _area;
+  face.color = _button.selected ? SELECTED_BUTTON_COLOR : _button.enabled ? BUTTON_COLOR : DISABLED_BUTTON_COLOR;
+  _layout.panels.push_back(face);
+  if (_button.enabled)
+    _layout.actions.emplace_back(face, _button.action);
+  const size_t split = _button.label.find('|');
+  const float labelTop = face.top + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * _scale);
+  const DirectX::XMFLOAT4& color = _button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
+  _layout.texts.push_back({_button.label.substr(0, split), face.left + (PADDING * _scale), labelTop, color});
+  if (split != std::string::npos)
+  {
+    const float costLeft = std::min(BUTTON_COST_LEFT * _scale, face.width - (COST_ROOM * _scale));
+    _layout.texts.push_back(
+      {_button.label.substr(split + 1), face.left + costLeft, labelTop, _button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
+  }
+}
 } // namespace
 
 std::string Outpost::WithThousands(std::int64_t _value)
@@ -181,6 +205,46 @@ std::string Outpost::WithThousands(std::int64_t _value)
     grouped += digits[i];
   }
   return _value < 0 ? "-" + grouped : grouped;
+}
+
+std::string Outpost::MinutesAndSeconds(std::uint64_t _seconds)
+{
+  const std::uint64_t hours = _seconds / 3600;
+  const std::uint64_t minutes = (_seconds / 60) % 60;
+  const std::uint64_t seconds = _seconds % 60;
+  return hours > 0 ? std::format("{}:{:02}:{:02}", hours, minutes, seconds) : std::format("{}:{:02}", minutes, seconds);
+}
+
+std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond)
+{
+  if (!_newest.matchOver)
+    return std::nullopt;
+  const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";
+  const std::uint64_t seconds = _ticksPerSecond > 0 ? _newest.matchEndedTick / _ticksPerSecond : 0;
+  return Outcome{.title = std::string(title), .detail = std::format("Match length {}", MinutesAndSeconds(seconds))};
+}
+
+Hud::Layout Hud::LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  const float scale = Scale(_widthPixels, _heightPixels);
+  Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
+  const std::array<Button, 2> buttons{
+    {{.label = "Start skirmish", .action = {.kind = ActionKind::StartSkirmish}}, {.label = "Quit", .action = {.kind = ActionKind::Quit}}}};
+  const auto count = static_cast<float>(buttons.size());
+  const float panelHeight = (2.0f * PADDING) + (2.0f * LINE_STEP) + BUTTON_GAP + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
+  const float left = (static_cast<float>(_widthPixels) / 2.0f) - (MENU_WIDTH / 2.0f * scale);
+  const float top = (static_cast<float>(_heightPixels) / 2.0f) - (panelHeight / 2.0f * scale);
+  layout.panels.push_back({left, top, MENU_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
+  const float inner = left + (PADDING * scale);
+  layout.texts.push_back({"Outpost Commander", inner, top + (PADDING * scale), ORE_COLOR});
+  layout.texts.push_back({"A skirmish against the AI", inner, top + ((PADDING + LINE_STEP) * scale), DIM_TEXT_COLOR});
+  float y = top + ((PADDING + (2.0f * LINE_STEP) + BUTTON_GAP) * scale);
+  for (const Button& button : buttons)
+  {
+    AddButton(layout, scale, {inner, y, (MENU_WIDTH - (2.0f * PADDING)) * scale, BUTTON_HEIGHT * scale}, button);
+    y += (BUTTON_HEIGHT + BUTTON_GAP) * scale;
+  }
+  return layout;
 }
 
 bool Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
@@ -437,25 +501,7 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       {_content.research, oreLeft + (PADDING * scale), top + ((ORE_PANEL_HEIGHT - LINE_STEP) / 2.0f * scale), TEXT_COLOR});
   }
 
-  // A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
-  const auto addButton = [&layout, scale](const Rect& _area, const Button& _button)
-  {
-    Rect face = _area;
-    face.color = _button.selected ? SELECTED_BUTTON_COLOR : _button.enabled ? BUTTON_COLOR : DISABLED_BUTTON_COLOR;
-    layout.panels.push_back(face);
-    if (_button.enabled)
-      layout.actions.emplace_back(face, _button.action);
-    const size_t split = _button.label.find('|');
-    const float labelTop = face.top + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale);
-    const DirectX::XMFLOAT4& color = _button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
-    layout.texts.push_back({_button.label.substr(0, split), face.left + (PADDING * scale), labelTop, color});
-    if (split != std::string::npos)
-    {
-      const float costLeft = std::min(BUTTON_COST_LEFT * scale, face.width - (COST_ROOM * scale));
-      layout.texts.push_back(
-        {_button.label.substr(split + 1), face.left + costLeft, labelTop, _button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
-    }
-  };
+  const auto addButton = [&layout, scale](const Rect& _area, const Button& _button) { AddButton(layout, scale, _area, _button); };
 
   // Top-middle anchor: what a click on the ground will do.
   if (!_content.hint.empty())
@@ -463,6 +509,21 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     const float left = (width / 2.0f) - (HINT_PANEL_WIDTH / 2.0f * scale);
     layout.panels.push_back({left, oreTop, HINT_PANEL_WIDTH * scale, ORE_PANEL_HEIGHT * scale, PANEL_COLOR});
     layout.texts.push_back({_content.hint, left + (PADDING * scale), textTop, TEXT_COLOR});
+  }
+
+  // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
+  if (_content.outcome.has_value())
+  {
+    const float panelHeight = (2.0f * PADDING) + (2.0f * LINE_STEP) + BUTTON_GAP + BUTTON_HEIGHT;
+    const float left = (width / 2.0f) - (BANNER_WIDTH / 2.0f * scale);
+    const float top = oreTop + ((ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP) * scale);
+    layout.panels.push_back({left, top, BANNER_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
+    const float inner = left + (PADDING * scale);
+    layout.texts.push_back({_content.outcome->title, inner, top + (PADDING * scale), ORE_COLOR});
+    layout.texts.push_back({_content.outcome->detail, inner, top + ((PADDING + LINE_STEP) * scale), TEXT_COLOR});
+    addButton({inner, top + ((PADDING + (2.0f * LINE_STEP) + BUTTON_GAP) * scale), (BANNER_WIDTH - (2.0f * PADDING)) * scale,
+               BUTTON_HEIGHT * scale},
+              {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
   }
 
   // Bottom-middle anchor: the selection.

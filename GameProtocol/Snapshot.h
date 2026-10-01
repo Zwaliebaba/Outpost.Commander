@@ -50,10 +50,12 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
-  // A warship's hull, which the client draws it by; no hull for anything else.
+  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), and its
+  // weapon; none for anything else. Every player sees every ship's components, as it sees the ship (no fog of war in the
+  // MVP), so the AI can answer the player's designs (design §10, ADR-020).
   HullId hull;
-  // A warship's drive, which the client colors its exhaust by (ADR-019); no drive for anything else.
   DriveId drive;
+  WeaponId weapon;
   // Meaningful for a ship only.
   ShipRole role = ShipRole::Warship;
   // Meaningful for a structure only.
@@ -207,5 +209,10 @@ struct Snapshot
   std::vector<WeaponView> weapons;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
+  // The match is over once a player has lost its Command Station (design §6): the winner is the player who still has
+  // one, and no player when both fell in the same tick. The world runs on after it (owner, 2026-10-01).
+  bool matchOver = false;
+  PlayerId winner;
+  std::uint64_t matchEndedTick = 0;
 };
 } // namespace Outpost

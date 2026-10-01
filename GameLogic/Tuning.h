@@ -18,7 +18,6 @@ struct RulesTuning
   std::int32_t startingConstructors = 0;
   double miningRigOrePerSecondHome = 0.0;
   double miningRigOrePerSecondContested = 0.0;
-  double aiReviewIntervalSeconds = 0.0;
 };
 
 struct HullTuning

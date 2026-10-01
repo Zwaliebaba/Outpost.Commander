@@ -58,6 +58,9 @@
     <None Include="Assets\Tuning.json">
       <Filter>Package\Assets</Filter>
     </None>
+    <None Include="Assets\Opponent.json">
+      <Filter>Package\Assets</Filter>
+    </None>
     <None Include="Assets\Models\Asteroids\Asteroid.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>

@@ -46,7 +46,8 @@ OutpostCommander (exe, Win32)    ── the shell: WinMain, the window, MSIX pac
  ├── NeuronServer (static lib)    ── server engine: the tick host and the pinned PRNG (ADR-009). → NeuronCore
  └── NeuronCore   (static lib)    ── engine code shared by client and server, including QUIC (ADR-004)
 OutpostServer (exe, later)        ── dedicated server for a Windows Server container. → GameLogic, NeuronServer
-GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. The Q2 battles run here from milestone 3
+GameLogicTests (test DLL)         ── drives GameLogic through GameProtocol. The Q2 battles run here from milestone 3, and
+                                     the AI plays the real server here from milestone 6 (ADR-020)
 GameAppTests (test DLL)           ── drives GameApp's camera math and model data, and NeuronClient's mesh reader, without a GPU
 ```
 
@@ -66,10 +67,10 @@ Each library has a master header named after it, and its `pch.h` includes that h
 | GameLogic | NeuronCore, NeuronServer, GameProtocol | — |
 | GameApp | NeuronCore, NeuronClient, GameProtocol | — |
 | OutpostCommander | NeuronCore, NeuronClient, GameProtocol, Opponent, GameApp | all seven libraries |
-| GameLogicTests | NeuronCore, NeuronServer, GameProtocol, GameLogic, and the unit-test framework's folder in the Visual Studio install | NeuronCore, NeuronServer, GameProtocol, GameLogic |
+| GameLogicTests | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent, and the unit-test framework's folder in the Visual Studio install | NeuronCore, NeuronServer, GameProtocol, GameLogic, Opponent |
 | GameAppTests | NeuronCore, NeuronClient, GameProtocol, GameApp, and the unit-test framework's folder | NeuronCore, NeuronClient, GameProtocol, GameApp |
 
-Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created. Adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client.
+Neither `GameApp`, `Opponent` nor the executable lists `GameLogic` or `NeuronServer`, so a client or AI file that includes a server header does not compile. This was checked when the projects were created. Adding `#include "GameLogic.h"` to `GameApp` and to `Opponent` fails with C1083. A quoted include is also resolved relative to the including file, so `#include "../GameLogic/Server.h"` would slip past the include path. `Build/CheckProjectFiles.py` therefore rejects any include that climbs out of its own project. Together, these make the build, not review, answer the design's Q5. The executable still links `GameLogic` and `NeuronServer`, because the in-process server has to be in the executable. It gets the server through the factory declared in `GameProtocol` and defined in `GameLogic`. A test project for `GameLogic` may list `GameLogic` as well, because it is a test and not a client. `GameLogicTests` also lists `Opponent`, so that the AI plays the real server headlessly (ADR-020); the AI's own files still cannot include `GameLogic`.
 
 `NeuronClient` and `NeuronServer` do not reference each other, and neither do `GameApp` and `GameLogic`. `Opponent` and `GameLogic` share only `GameProtocol`. When the dedicated server is built, it is a second executable that links `GameLogic` and `NeuronServer` and none of the client libraries, and the only change on the client side is a network `Transport` in place of the loopback one.
 

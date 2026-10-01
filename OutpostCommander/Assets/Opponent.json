@@ -1,0 +1,25 @@
+{
+  "attackGroupShips": 12,
+  "reviewIntervalSeconds": 60,
+  "constructors": 4,
+  "incomePerShipyardOrePerSecond": 10,
+  "homeAsteroids": 3,
+  "contestedAsteroids": 3,
+  "shipyardQueueJobs": 2,
+  "defenseHoldSeconds": 10,
+  "structureGapMeters": 50,
+  "rallyDistanceMeters": 170,
+  "researchOrder": [1, 2, 5, 6, 3, 4, 8, 7],
+  "defaultDesign": { "hull": 2, "drive": 1, "weapon": 1 },
+  "counters": [
+    { "enemy": { "hull": 1, "drive": 1, "weapon": 1 }, "answer": { "hull": 3, "drive": 2, "weapon": 1 } },
+    { "enemy": { "hull": 1, "drive": 1, "weapon": 1 }, "answer": { "hull": 2, "drive": 1, "weapon": 1 } },
+    { "enemy": { "hull": 2, "drive": 1, "weapon": 1 }, "answer": { "hull": 3, "drive": 2, "weapon": 2 } },
+    { "enemy": { "hull": 2, "drive": 1, "weapon": 1 }, "answer": { "hull": 2, "drive": 1, "weapon": 2 } },
+    { "enemy": { "hull": 2, "drive": 1, "weapon": 2 }, "answer": { "hull": 1, "drive": 1, "weapon": 1 } },
+    { "enemy": { "hull": 1, "drive": 1, "weapon": 2 }, "answer": { "hull": 1, "drive": 1, "weapon": 1 } },
+    { "enemy": { "hull": 3, "drive": 2, "weapon": 1 }, "answer": { "hull": 1, "drive": 1, "weapon": 2 } },
+    { "enemy": { "hull": 3, "drive": 2, "weapon": 2 }, "answer": { "hull": 1, "drive": 1, "weapon": 2 } },
+    { "enemy": { "hull": 3, "drive": 2, "weapon": 3 }, "answer": { "hull": 1, "drive": 1, "weapon": 2 } }
+  ]
+}

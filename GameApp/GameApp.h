@@ -8,6 +8,8 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <ostream>
+#include <set>
 #include <utility>
 
 #include "NeuronClient.h"
@@ -18,10 +20,10 @@
 #include "Camera.h"
 #include "SnapshotInterpolator.h"
 #include "Picking.h"
-#include "Placement.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"
 #include "Designer.h"
 #include "Hud.h"
 #include "LoadDriver.h"
+#include "MatchLog.h"
 #include "GameClient.h"

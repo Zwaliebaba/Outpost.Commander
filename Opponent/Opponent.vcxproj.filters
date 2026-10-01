@@ -1,10 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Settings">
+      <UniqueIdentifier>{c7375cea-bda4-45e7-a12e-5f74d0b2a4fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Player">
+      <UniqueIdentifier>{29a04743-53e5-4bf5-a944-c409d9bf604e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Opponent.h" />
+    <ClInclude Include="AiSettings.h">
+      <Filter>Settings</Filter>
+    </ClInclude>
+    <ClInclude Include="AiPlayer.h">
+      <Filter>Player</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="AiSettings.cpp">
+      <Filter>Settings</Filter>
+    </ClCompile>
+    <ClCompile Include="AiPlayer.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

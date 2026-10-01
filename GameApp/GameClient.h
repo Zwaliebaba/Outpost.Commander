@@ -3,14 +3,36 @@
 namespace Outpost
 {
 // The client's view of the game: every model loaded into video memory, the camera, and the world drawn through it from
-// interpolated snapshots (task 2.5, ADR-013). It never sees server state, only what the transport brings.
+// interpolated snapshots (task 2.5, ADR-013). It never sees server state, only what the transport brings. It starts on the
+// main menu; the shell starts a match on it, and takes it back to the menu, when the player asks for either (task 6.2).
 class GameClient : Neuron::NonCopyable
 {
 public:
+  // What the player asked the shell for, from the menu or the match's end.
+  enum class Request : std::uint8_t
+  {
+    StartSkirmish,
+    Quit,
+    BackToMenu
+  };
+
   // Reads Models.json and Camera.json from the package's Assets folder and uploads every model's mesh. Throws
   // Neuron::Exception naming the file when a data file or a mesh is missing or cannot be read, so that no model is
   // silently left out. _ticksPerSecond is the server's rate, which the snapshots are interpolated at.
   GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond);
+
+  // Shows a new match from its first snapshot: whatever the last match left in the view, the selection, the designer and
+  // the effects is gone, and the camera centers again on the player's fleet.
+  void StartMatch();
+
+  // Shows the main menu, and nothing of the match that was.
+  void ShowMenu();
+
+  // What the player asked for since the last call, if anything.
+  [[nodiscard]] std::optional<Request> TakeRequest()
+  {
+    return std::exchange(m_request, std::nullopt);
+  }
 
   // Takes the snapshots that arrived since the last frame. The first one centers the camera on the player's own ships.
   void Receive(std::vector<Snapshot> _snapshots);
@@ -63,6 +85,8 @@ private:
   void HandleHudInput(const Neuron::InputState& _input);
   // What a HUD button does: arms a placement, queues a job or a topic, or works the designer.
   void HandleHudAction(const Hud::Action& _action);
+  // Forgets the match being shown.
+  void ClearMatch();
   // While the designer's name takes typing, the keyboard is the designer's: _input loses its keys, so no order, control
   // group or camera key reads them.
   void HandleTyping(Neuron::InputState& _input);
@@ -81,6 +105,15 @@ private:
   void DrawBand(ID3D12GraphicsCommandList* _commandList, PlanePosition _from, PlanePosition _to, float _widthMeters, float _heightMeters,
                 const DirectX::XMFLOAT4& _color);
 
+  enum class Screen : std::uint8_t
+  {
+    Menu,
+    Match
+  };
+
+  Screen m_screen = Screen::Menu;
+  std::optional<Request> m_request;
+  std::uint32_t m_ticksPerSecond = 0;
   ModelCatalog m_catalog;
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
