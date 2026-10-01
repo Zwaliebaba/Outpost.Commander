@@ -228,7 +228,7 @@ public:
 
     const Outpost::DesignStats& upgraded = arena.World().FindDesign(arena.Design(BLUE, SMALL, MASS_DRIVER))->stats;
     const Outpost::DesignStats& base = arena.World().FindDesign(arena.Design(RED, SMALL, MASS_DRIVER))->stats;
-    Assert::AreEqual(base.fireIntervalSeconds / 1.15, upgraded.fireIntervalSeconds, 1e-12);
+    Assert::AreEqual(base.fireIntervalSeconds / 1.10, upgraded.fireIntervalSeconds, 1e-12);
     Assert::AreEqual(base.damageHundredths, upgraded.damageHundredths, L"never the size of a hit");
     Assert::AreEqual(base.rangeMeters, upgraded.rangeMeters, L"never a range");
     Assert::AreEqual(arena.World().FindDesign(arena.Design(RED, SMALL, LANCE))->stats.fireIntervalSeconds,
@@ -243,8 +243,8 @@ public:
       redShots += ShotsBy(arena.World().BuildSnapshot(BLUE), red);
     }
     Assert::AreEqual(150u, redShots, L"one every 0.4 s");
-    // 0.4 s / 1.15 is 6.957 ticks, so a minute holds 172 or 173 shots, depending on where the first one fell.
-    Assert::IsTrue(blueShots == 172 || blueShots == 173, std::to_wstring(blueShots).c_str());
+    // 0.4 s / 1.10 is 7.273 ticks, so a minute holds 165 or 166 shots, depending on where the first one fell.
+    Assert::IsTrue(blueShots == 165 || blueShots == 166, std::to_wstring(blueShots).c_str());
   }
 
   // Design §7, §8: the Large hull is no one's until a player researches it, and then only that player's; a design of it can
