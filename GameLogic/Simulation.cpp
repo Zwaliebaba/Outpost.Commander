@@ -327,6 +327,8 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
     // Across is to the right of forward, a quarter turn clockwise seen from above.
     const PlaneVector across{forward.zMeters, -forward.xMeters};
     const PlayerId owner{static_cast<std::uint32_t>(player + 1)};
+    if (std::ranges::find(m_basePlayers, owner) == m_basePlayers.end())
+      m_basePlayers.push_back(owner);
 
     CheckStartingSlot(_map, player, start, stationRadius);
     for (size_t i = 0; i < constructors; ++i)
@@ -373,6 +375,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   // Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any obstacle they were
   // pushed into.
   Fight();
+  DecideMatch();
   ChaseTargets();
   ApproachWork();
   if (m_tuning)
@@ -439,6 +442,9 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                    .researched = std::ranges::find(researched, topic.id) != researched.end()});
     snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
   }
+  snapshot.matchOver = m_matchOver;
+  snapshot.winner = m_winner;
+  snapshot.matchEndedTick = m_matchEndedTick;
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
@@ -447,6 +453,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                                                  .owner = entity.owner,
                                                                  .design = entity.design,
                                                                  .hull = entity.hull,
+                                                                 .drive = {},
+                                                                 .weapon = {},
                                                                  .role = entity.role,
                                                                  .structure = entity.structure,
                                                                  .position = entity.position,
@@ -454,6 +462,11 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                                                  .radiusMeters = entity.radiusMeters,
                                                                  .hitPointsHundredths = entity.hitPointsHundredths,
                                                                  .maxHitPointsHundredths = entity.maxHitPointsHundredths});
+    if (const ShipDesign* design = entity.kind == EntityKind::Ship ? FindDesign(entity.design) : nullptr)
+    {
+      view.drive = design->components.drive;
+      view.weapon = design->components.weapon;
+    }
     if (!entity.IsBuilt())
       view.builtPermille = static_cast<std::int32_t>(std::int64_t{entity.buildWorkDone} * PERMILLE / entity.buildWorkNeeded);
     if (!entity.queue.empty() || !entity.researchQueue.empty())
@@ -1550,4 +1563,29 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
   (void)SaveDesign(_player, _save.nameUtf8, components,
                    DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, UpgradesOf(_player)));
   return CommandResult::Applied;
+}
+
+// A player whose base was placed and who has no Command Station left has lost (design §6). The match ends then, once:
+// the world runs on, but the outcome stands (owner, 2026-10-01).
+void Outpost::Simulation::DecideMatch()
+{
+  if (m_matchOver || m_basePlayers.empty())
+    return;
+  std::vector<PlayerId> standing;
+  for (const PlayerId player : m_basePlayers)
+  {
+    const bool hasStation = std::ranges::any_of(m_entities,
+                                                [player](const Entity& _entity)
+                                                {
+                                                  return _entity.kind == EntityKind::Structure &&
+                                                         _entity.structure == StructureKind::CommandStation && _entity.owner == player;
+                                                });
+    if (hasStation)
+      standing.push_back(player);
+  }
+  if (standing.size() == m_basePlayers.size())
+    return;
+  m_matchOver = true;
+  m_winner = standing.size() == 1 ? standing.front() : PlayerId{};
+  m_matchEndedTick = m_tick + 1;
 }

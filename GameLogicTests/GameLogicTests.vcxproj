@@ -108,6 +108,7 @@
     <ClCompile Include="DesignTests.cpp" />
     <ClCompile Include="ResearchTests.cpp" />
     <ClCompile Include="SaveDesignTests.cpp" />
+    <ClCompile Include="MatchOutcomeTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="Q2Check.cpp" />
     <ClCompile Include="Q2CheckTests.cpp" />
