@@ -211,8 +211,8 @@ public:
 
     settings.counters.front().answer = HEAVY_LANCE;
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Get()) == BRAWLER);
-    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Get()) ==
-                   HEAVY_LANCE);
+    Assert::IsTrue(Outpost::ChooseAnswer(
+                     settings, FleetSnapshot().Add(HUMAN, SWARM, 4).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Get()) == HEAVY_LANCE);
   }
 
   // Owner, 2026-10-01: rigs on the three home asteroids come first, then the Shipyard, the Research Lab and the Defence
@@ -238,7 +238,8 @@ public:
     for (size_t i = 0; i < 3; ++i)
     {
       Assert::IsTrue(built[i]->structure == Outpost::StructureKind::MiningRig);
-      const auto onHomeAsteroid = [&](const Outpost::EntityView* _asteroid) { return Outpost::Distance(_asteroid->position, built[i]->position) < 1.0f; };
+      const auto onHomeAsteroid = [&](const Outpost::EntityView* _asteroid)
+      { return Outpost::Distance(_asteroid->position, built[i]->position) < 1.0f; };
       Assert::IsTrue(std::any_of(asteroids.begin(), asteroids.begin() + 3, onHomeAsteroid), L"a first rig is not on a home asteroid");
     }
     Assert::IsTrue(built[3]->structure == Outpost::StructureKind::Shipyard);
@@ -247,9 +248,9 @@ public:
     for (size_t i = 3; i < 6; ++i)
       Assert::IsTrue(Outpost::Distance(built[i]->position, home) < 250.0f, L"a home structure is not beside the Command Station");
 
-    const auto constructors = std::ranges::count_if(view.entities, [](const Outpost::EntityView& _entity)
-                                                    { return _entity.owner == AI && _entity.role == Outpost::ShipRole::Constructor &&
-                                                             _entity.kind == Outpost::EntityKind::Ship; });
+    const auto constructors = std::ranges::count_if(
+      view.entities, [](const Outpost::EntityView& _entity)
+      { return _entity.owner == AI && _entity.role == Outpost::ShipRole::Constructor && _entity.kind == Outpost::EntityKind::Ship; });
     Assert::AreEqual(std::ptrdiff_t{4}, constructors);
     const auto extraction = std::ranges::find(view.research, Outpost::ResearchTopicId{1}, &Outpost::ResearchTopicView::id);
     Assert::IsTrue(extraction->researched, L"the first topic in its order is not done after four minutes");
@@ -307,8 +308,8 @@ public:
     match.Run(3.0);
     // An outpost of the AI's, far from its base, and a raider beside it.
     const Outpost::PlanePosition outpost{-100.0f, 700.0f};
-    const Outpost::EntityId platform = match.World().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f,
-                                                                    150000, 1000);
+    const Outpost::EntityId platform =
+      match.World().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f, 150000, 1000);
     const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {-100.0f, 900.0f});
     match.Human().Send({.player = HUMAN, .order = Outpost::AttackCommand{.ships = raider, .target = platform}});
     const float before = MeanDistance(match.View(AI), reserve, outpost);

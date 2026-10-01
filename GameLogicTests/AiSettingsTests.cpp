@@ -94,7 +94,8 @@ public:
   TEST_METHOD(RejectsAMissingOrUnknownMember)
   {
     ExpectLoadError(Replace("\"attackGroupShips\": 12,", ""), "has no \"attackGroupShips\"");
-    ExpectLoadError(Replace("\"constructors\": 4,", "\"constructors\": 4, \"constructor\": 4,"), "constructor: is not a member the game knows");
+    ExpectLoadError(Replace("\"constructors\": 4,", "\"constructors\": 4, \"constructor\": 4,"),
+                    "constructor: is not a member the game knows");
     ExpectLoadError(Replace("\"defaultDesign\": { \"hull\": 2, ", "\"defaultDesign\": { "), "defaultDesign: has no \"hull\"");
   }
 
@@ -109,8 +110,9 @@ public:
 
   TEST_METHOD(RejectsADesignAnsweredTwice)
   {
-    ExpectLoadError(Replace("{ \"enemy\": { \"hull\": 2, \"drive\": 1, \"weapon\": 1 }", "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }"),
-                    "counters[1].enemy");
+    ExpectLoadError(
+      Replace("{ \"enemy\": { \"hull\": 2, \"drive\": 1, \"weapon\": 1 }", "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }"),
+      "counters[1].enemy");
   }
 };
 } // namespace GameLogicTests

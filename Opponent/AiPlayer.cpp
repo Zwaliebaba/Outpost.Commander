@@ -205,9 +205,9 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   }
 
   // Constructors: the ones it has and the ones it has queued.
-  const auto constructors = std::ranges::count_if(_snapshot.entities, [this](const EntityView& _entity)
-                                                  { return _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Constructor &&
-                                                           _entity.owner == m_player; });
+  const auto constructors = std::ranges::count_if(
+    _snapshot.entities, [this](const EntityView& _entity)
+    { return _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Constructor && _entity.owner == m_player; });
   const auto queued = std::ranges::count(station->queue, ShipRole::Constructor, &JobView::role);
   if (constructors + queued < m_settings.constructors && station->queue.size() < QUEUE_LIMIT)
     _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = station->id, .design = {}}));
@@ -339,8 +339,8 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   addStructure(
     StructureKind::Shipyard, [&](float _radius) { return Along(home, acrossX, acrossZ, stationRadius + _radius + gap); }, std::nullopt, 0);
   addStructure(
-    StructureKind::ResearchLab, [&](float _radius) { return Along(home, -acrossX, -acrossZ, stationRadius + _radius + gap); },
-    std::nullopt, 0);
+    StructureKind::ResearchLab, [&](float _radius) { return Along(home, -acrossX, -acrossZ, stationRadius + _radius + gap); }, std::nullopt,
+    0);
   addStructure(
     StructureKind::DefensePlatform, [&](float _radius) { return Along(home, forwardX, forwardZ, stationRadius + _radius + gap); },
     std::nullopt, 0);
@@ -353,13 +353,13 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     const float towardZ = (home.zMeters - asteroid->position.zMeters) / toHome;
     const float rigRadius = m_slots[rig].radiusMeters;
     addStructure(
-      StructureKind::DefensePlatform,
-      [&](float _radius) { return Along(asteroid->position, towardX, towardZ, rigRadius + _radius + gap); }, rig, 0);
+      StructureKind::DefensePlatform, [&](float _radius) { return Along(asteroid->position, towardX, towardZ, rigRadius + _radius + gap); },
+      rig, 0);
   }
   const auto income = static_cast<std::int32_t>(std::llround(m_settings.secondShipyardIncomeOrePerSecond * HUNDREDTHS));
   addStructure(
-    StructureKind::Shipyard, [&](float _radius) { return Along(home, -forwardX, -forwardZ, stationRadius + _radius + gap); },
-    std::nullopt, income);
+    StructureKind::Shipyard, [&](float _radius) { return Along(home, -forwardX, -forwardZ, stationRadius + _radius + gap); }, std::nullopt,
+    income);
 
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
@@ -409,7 +409,8 @@ std::vector<Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _sn
     // A rig stands on its asteroid, which already blocks.
     if (i == _except || slot.abandoned || slot.structure == StructureKind::MiningRig || IsDone(slot, _snapshot))
       continue;
-    blockers.push_back({.kind = EntityKind::Structure, .structure = slot.structure, .position = slot.position, .radiusMeters = slot.radiusMeters});
+    blockers.push_back(
+      {.kind = EntityKind::Structure, .structure = slot.structure, .position = slot.position, .radiusMeters = slot.radiusMeters});
   }
   return blockers;
 }
@@ -447,8 +448,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   {
     if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Constructor || ship.owner != m_player)
       continue;
-    const bool busy =
-      std::ranges::any_of(m_work, [&ship](const Work& _work) { return std::ranges::find(_work.constructors, ship.id) != _work.constructors.end(); });
+    const bool busy = std::ranges::any_of(m_work, [&ship](const Work& _work)
+                                          { return std::ranges::find(_work.constructors, ship.id) != _work.constructors.end(); });
     if (!busy)
       _idle.push_back(ship.id);
   }
@@ -478,7 +479,8 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
-    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) || _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
+    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) ||
+        _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
         std::ranges::any_of(m_work, [i](const Work& _work) { return _work.slot == i; }))
       continue;
     const StructureTypeView* type = FindType(_snapshot, slot.structure);
@@ -518,8 +520,8 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
     const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_BUILD, _idle.size()));
     Work work{.constructors = {_idle.begin(), _idle.begin() + crew}, .target = {}, .slot = i, .orderedTick = _snapshot.tick};
     _idle.erase(_idle.begin(), _idle.begin() + crew);
-    _orders.push_back(
-      MakeCommand(m_player, BuildStructureCommand{.constructors = work.constructors, .structure = slot.structure, .position = slot.position}));
+    _orders.push_back(MakeCommand(
+      m_player, BuildStructureCommand{.constructors = work.constructors, .structure = slot.structure, .position = slot.position}));
     m_work.push_back(std::move(work));
     ore -= type->cost;
   }
@@ -616,8 +618,9 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = nearest->position}));
   }
 
-  const bool defending = m_lastDefenseShotTick.has_value() &&
-                         _snapshot.tick < *m_lastDefenseShotTick + static_cast<std::uint64_t>(std::llround(m_settings.defenseHoldSeconds * m_ticksPerSecond));
+  const bool defending =
+    m_lastDefenseShotTick.has_value() &&
+    _snapshot.tick < *m_lastDefenseShotTick + static_cast<std::uint64_t>(std::llround(m_settings.defenseHoldSeconds * m_ticksPerSecond));
   const PlanePosition destination = defending ? m_defensePosition : m_rally;
   std::vector<EntityId> sent;
   for (const EntityView* ship : reserve)

@@ -9,7 +9,7 @@ struct CounterRule
   DesignComponents answer;
 };
 
-// OutpostCommander/Assets/Opponent.json as the AI holds it (ADR-018). These are the AI's own numbers: how it builds its
+// OutpostCommander/Assets/Opponent.json as the AI holds it (ADR-020). These are the AI's own numbers: how it builds its
 // base, when it attacks and what it answers the enemy's fleet with. The rules of the match are Tuning.json's, which the
 // AI only sees through its snapshots.
 struct AiSettings
