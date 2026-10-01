@@ -501,7 +501,8 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
   {
     const std::string unused = UnusedComponents(_parts, used);
     if (!unused.empty())
-      _failures.lines["b"].push_back(std::format("{}, {} fire: no design worth building at any budget uses the {}", _label, ModeName(mode), unused));
+      _failures.lines["b"].push_back(
+        std::format("{}, {} fire: no design worth building at any budget uses the {}", _label, ModeName(mode), unused));
   }
 }
 
