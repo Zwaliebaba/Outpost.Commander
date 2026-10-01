@@ -8,6 +8,7 @@
 
 #include "Renderer.h"
 
+#include <algorithm>
 #include <cstring>
 
 // dxgi.lib and dxguid.lib are named by DirectXHelper.h.
@@ -343,13 +344,21 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<co
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                      std::span<const std::byte> _texels)
 {
-  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, 1);
+  const std::array<std::span<const std::byte>, 1> levels{_texels};
+  return CreateStaticTexture(_width, _height, _format, levels);
+}
+
+winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                     std::span<const std::span<const std::byte>> _levels)
+{
+  const auto levelCount = static_cast<UINT16>(_levels.size());
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, levelCount);
   const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
   winrt::com_ptr<ID3D12Resource> texture;
   winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COPY_DEST,
                                                          nullptr, IID_GRAPHICS_PPV_ARGS(texture)));
 
-  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, 1);
+  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, levelCount);
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
   const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(uploadBytes);
   winrt::com_ptr<ID3D12Resource> upload;
@@ -362,9 +371,15 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
   winrt::check_hresult(
     m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
   // d3dx12 lays the rows out at the pitch the copy needs.
-  const LONG_PTR rowBytes = static_cast<LONG_PTR>(_texels.size() / _height);
-  const D3D12_SUBRESOURCE_DATA source{.pData = _texels.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(_texels.size())};
-  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, 1, &source) == 0)
+  std::vector<D3D12_SUBRESOURCE_DATA> sources;
+  UINT levelHeight = _height;
+  for (const std::span<const std::byte> level : _levels)
+  {
+    const LONG_PTR rowBytes = static_cast<LONG_PTR>(level.size() / levelHeight);
+    sources.push_back({.pData = level.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(level.size())});
+    levelHeight = std::max(1u, levelHeight / 2);
+  }
+  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, levelCount, sources.data()) == 0)
     throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
   const CD3DX12_RESOURCE_BARRIER toShader =
     CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);

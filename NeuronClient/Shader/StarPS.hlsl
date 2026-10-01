@@ -1,6 +1,6 @@
 // A star fades as a Gaussian from its color at the center to nothing at the quad's inscribed circle, and the blend adds
-// it to the frame (ADR-021). The Gaussian is lowered by its value at the rim, so the quad's edge never shows. The color
-// is linear; the render target encodes it to sRGB.
+// it to the frame (ADR-021). The circle is REACH standard deviations out, and the Gaussian is lowered by its value
+// there, so the quad's edge never shows. The color is linear; the render target encodes it to sRGB.
 
 struct VertexOut
 {

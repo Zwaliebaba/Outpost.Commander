@@ -18,6 +18,7 @@
 #include "Window.h"
 #include "Renderer.h"
 #include "MeshData.h"
+#include "TextureData.h"
 #include "Mesh.h"
 #include "MeshPipeline.h"
 #include "GlowPipeline.h"

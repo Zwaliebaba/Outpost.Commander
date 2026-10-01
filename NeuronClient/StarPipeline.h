@@ -3,12 +3,15 @@
 namespace Neuron
 {
 class Renderer;
+struct TextureData;
 
-// Draws a sky of stars at infinity (ADR-021). Each star is a direction, so moving the camera never moves it and only
-// turning the camera does. A star is a small round spot a few pixels across, sized in pixels rather than meters, that
-// fades as a Gaussian to nothing at its rim and is added to the frame, so stars that overlap add up. The sky is drawn
-// first, with no depth test, and everything drawn after it covers it. The stars are uploaded once, and a frame draws
-// them all in one instanced draw. It knows no game concept: the caller says where each star is, how big and what color.
+// Draws a sky of stars at infinity (ADR-021, ADR-022). Each star is a direction, so moving the camera never moves it and
+// only turning the camera does. A star is a square facing the screen, sized in pixels rather than meters, and added to
+// the frame, so stars that overlap add up. Without a sprite, a star is a Gaussian spot that fades to nothing at the
+// square's inscribed circle. With one, it is the sprite's alpha in the star's color, upright on the screen, as a
+// camera's diffraction spikes are. The sky is drawn first, with no depth test, and everything drawn after it covers it.
+// The stars are uploaded once, and a frame draws them all in one instanced draw. It knows no game concept: the caller
+// says where each star is, how big and what color.
 class StarPipeline : NonCopyable
 {
 public:
@@ -17,9 +20,9 @@ public:
   {
     // A unit vector in the world, toward the star.
     DirectX::XMFLOAT3 direction;
-    // The standard deviation of the star's Gaussian, in pixels at the scale FrameConstants gives.
-    float spreadPixels;
-    // A linear color, its brightness included: what the star adds to the frame at its center.
+    // Half the square's side, in pixels at the scale FrameConstants gives.
+    float radiusPixels;
+    // A linear color, its brightness included: what the star adds to the frame where it is brightest.
     DirectX::XMFLOAT3 color;
   };
 
@@ -28,7 +31,7 @@ public:
   {
     // The camera's view and projection. Only its rotation reaches a star, since a direction has no position.
     DirectX::XMFLOAT4X4 viewProjection;
-    // How far one pixel of a star's spread is in clip space across the screen and up it: 2 / width and 2 / height for
+    // How far one pixel of a star's radius is in clip space across the screen and up it: 2 / width and 2 / height for
     // stars sized in the back buffer's pixels, or scaled by the caller.
     float clipPerPixelX;
     float clipPerPixelY;
@@ -37,8 +40,8 @@ public:
   };
 
   // Builds the root signature and the pipeline state for the renderer's formats, and uploads _stars, which the sky then
-  // keeps. Throws winrt::hresult_error on failure.
-  StarPipeline(Renderer& _renderer, std::span<const Star> _stars);
+  // keeps, and _sprite when there is one, which must have its mip levels. Throws winrt::hresult_error on failure.
+  StarPipeline(Renderer& _renderer, std::span<const Star> _stars, const TextureData* _sprite = nullptr);
 
   // Draws every star into the frame's command list. Call it before anything else is drawn.
   void Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const;
@@ -47,6 +50,9 @@ private:
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
   winrt::com_ptr<ID3D12Resource> m_instances;
+  // The sprite and the shader-visible heap with its view; both empty for Gaussian stars.
+  winrt::com_ptr<ID3D12Resource> m_sprite;
+  winrt::com_ptr<ID3D12DescriptorHeap> m_descriptorHeap;
   UINT m_starCount = 0;
 };
 } // namespace Neuron

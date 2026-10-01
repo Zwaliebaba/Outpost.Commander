@@ -42,6 +42,10 @@ public:
   // also be called between frames, since it waits for every frame in flight too.
   [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                    std::span<const std::byte> _texels);
+  // The same with mip levels: _levels holds each level's texels, largest first, each level half the size of the one
+  // before it and at least 1 by 1, with its rows packed with no gap.
+  [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                   std::span<const std::span<const std::byte>> _levels);
 
   // The GPU time of every frame whose work has finished since the last call, from the first command of its command list
   // to the last, oldest first (ADR-006). A frame's time arrives FRAME_COUNT frames after it was submitted.

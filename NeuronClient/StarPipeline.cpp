@@ -2,23 +2,30 @@
 #include "StarPipeline.h"
 
 #include "CompiledShader/StarPS.h"
+#include "CompiledShader/StarSpritePS.h"
 #include "CompiledShader/StarVS.h"
 
 namespace
 {
-// The root signature's one parameter: the frame's constants at b0, as root constants.
+// The root signature's parameters: the frame's constants at b0, as root constants, and for a sprite its texture at t0.
 constexpr UINT FRAME_PARAMETER = 0;
+constexpr UINT SPRITE_PARAMETER = 1;
 constexpr UINT FRAME_CONSTANT_COUNT = sizeof(Neuron::StarPipeline::FrameConstants) / sizeof(UINT);
 // Each star is a quad drawn as a strip of two triangles, its corners made by the vertex shader from SV_VertexID.
 constexpr UINT VERTICES_PER_STAR = 4;
 
-winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
+winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device, bool _sprite)
 {
-  std::array<CD3DX12_ROOT_PARAMETER1, 1> parameters{};
+  std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
   parameters[FRAME_PARAMETER].InitAsConstants(FRAME_CONSTANT_COUNT, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+  const CD3DX12_DESCRIPTOR_RANGE1 spriteRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+  parameters[SPRITE_PARAMETER].InitAsDescriptorTable(1, &spriteRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  // Trilinear, so that a sprite drawn smaller than its texture reads its mip levels and its spikes do not shimmer.
+  const CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 
   CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
-  description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 0, nullptr,
+  description.Init_1_1(_sprite ? 2u : 1u, parameters.data(), _sprite ? 1u : 0u, _sprite ? &sampler : nullptr,
                        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
   // Version 1.1 where the device has it, 1.0 otherwise; d3dx12 converts the description.
@@ -43,16 +50,16 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 }
 } // namespace
 
-Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _stars)
+Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _stars, const TextureData* _sprite)
   : m_starCount(static_cast<UINT>(_stars.size()))
 {
   ID3D12Device* device = _renderer.Device();
-  m_rootSignature = CreateRootSignature(device);
+  m_rootSignature = CreateRootSignature(device, _sprite != nullptr);
 
   // Matches Star, one per instance.
   const std::array<D3D12_INPUT_ELEMENT_DESC, 3> inputLayout{{
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Star, direction), D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    {"TEXCOORD", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(Star, spreadPixels), D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32_FLOAT, 0, offsetof(Star, radiusPixels), D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
     {"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Star, color), D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
   }};
 
@@ -74,7 +81,8 @@ Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _s
   const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{
     .pRootSignature = m_rootSignature.get(),
     .VS = CD3DX12_SHADER_BYTECODE(g_StarVS, sizeof(g_StarVS)),
-    .PS = CD3DX12_SHADER_BYTECODE(g_StarPS, sizeof(g_StarPS)),
+    .PS = _sprite != nullptr ? CD3DX12_SHADER_BYTECODE(g_StarSpritePS, sizeof(g_StarSpritePS))
+                             : CD3DX12_SHADER_BYTECODE(g_StarPS, sizeof(g_StarPS)),
     .BlendState = blend,
     .SampleMask = UINT_MAX,
     .RasterizerState = rasterizer,
@@ -90,6 +98,23 @@ Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _s
 
   if (m_starCount > 0)
     m_instances = _renderer.CreateStaticBuffer(std::as_bytes(_stars));
+  if (_sprite == nullptr)
+    return;
+
+  std::vector<std::span<const std::byte>> levels;
+  levels.reserve(_sprite->levels.size());
+  for (const ByteBuffer& level : _sprite->levels)
+    levels.push_back(std::as_bytes(std::span(level)));
+  m_sprite = _renderer.CreateStaticTexture(_sprite->width, _sprite->height, _sprite->format, levels);
+  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
+  winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
+  const D3D12_SHADER_RESOURCE_VIEW_DESC view{
+    .Format = _sprite->format,
+    .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+    .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+    .Texture2D = {.MostDetailedMip = 0, .MipLevels = static_cast<UINT>(levels.size()), .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
+  device->CreateShaderResourceView(m_sprite.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void Neuron::StarPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const
@@ -104,6 +129,12 @@ void Neuron::StarPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const F
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->SetGraphicsRoot32BitConstants(FRAME_PARAMETER, FRAME_CONSTANT_COUNT, &_constants, 0);
+  if (m_descriptorHeap)
+  {
+    ID3D12DescriptorHeap* heaps[] = {m_descriptorHeap.get()};
+    _commandList->SetDescriptorHeaps(1, heaps);
+    _commandList->SetGraphicsRootDescriptorTable(SPRITE_PARAMETER, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
+  }
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
   _commandList->IASetVertexBuffers(0, 1, &instanceView);
   _commandList->DrawInstanced(VERTICES_PER_STAR, m_starCount, 0, 0);

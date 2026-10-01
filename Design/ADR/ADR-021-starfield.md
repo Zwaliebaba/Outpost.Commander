@@ -1,6 +1,6 @@
 # ADR-021 — The sky is stars at infinity, drawn as points, with a Milky Way band made of nothing but stars
 
-Status: **accepted** · 2026-10-01
+Status: **superseded** by [ADR-022](ADR-022-natural-starfield.md) · 2026-10-01
 
 ## Context
 

@@ -118,8 +118,9 @@ private:
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
-  // The stars behind everything (ADR-021).
-  Neuron::StarPipeline m_sky;
+  // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
+  std::unique_ptr<Neuron::StarPipeline> m_sky;
+  std::unique_ptr<Neuron::StarPipeline> m_bursts;
   // This frame's glows, kept so that their storage is not allocated every frame.
   std::vector<Neuron::GlowPipeline::Glow> m_frameGlows;
   Neuron::UiPipeline m_ui;

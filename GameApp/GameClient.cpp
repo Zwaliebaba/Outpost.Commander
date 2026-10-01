@@ -9,6 +9,8 @@ namespace
 {
 constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
+// The sprite of the sky's brightest stars (ADR-022).
+constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
@@ -17,16 +19,16 @@ constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is dim, so the
-// stars show between its lines (ADR-021), and it is what shows the ground moving when the view pans.
+// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
+// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
 constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
 constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
 constexpr float MAJOR_GRID_SPACING_METERS = 500.0f;
 constexpr float MAJOR_GRID_LINE_WIDTH_METERS = 4.0f;
 constexpr int MINOR_LINES_PER_MAJOR = 5;
-constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.025f, 0.045f, 0.07f, 1.0f};
-constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.05f, 0.09f, 0.14f, 1.0f};
+constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.012f, 0.012f, 0.012f, 1.0f};
+constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.02f, 0.02f, 0.02f, 1.0f};
 
 // Asteroids are drawn with the one asteroid mesh, 2 m across, so its scale is a radius (ADR-011).
 constexpr std::string_view ASTEROID_SET = "Asteroids";
@@ -228,7 +230,6 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
     m_glows(_renderer),
-    m_sky(_renderer, BuildStarfield()),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond)
@@ -250,6 +251,13 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
+
+  const Starfield sky = BuildStarfield();
+  Neuron::TextureData burstSprite =
+    Neuron::ParseDds(ReadAsset(BURST_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(BURST_SPRITE_FILE)));
+  Neuron::BuildMipLevels(burstSprite);
+  m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, sky.points);
+  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, &burstSprite);
 }
 
 void Outpost::GameClient::StartMatch()
@@ -575,7 +583,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.ambient = AMBIENT;
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
-  // resolution (ADR-006, ADR-021).
+  // resolution (ADR-006, ADR-022).
   const float skyScale = Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels());
   const Neuron::StarPipeline::FrameConstants sky{
     .viewProjection = constants.viewProjection,
@@ -584,7 +592,8 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
     .unused0 = 0.0f,
     .unused1 = 0.0f,
   };
-  m_sky.Draw(_commandList, sky);
+  m_sky->Draw(_commandList, sky);
+  m_bursts->Draw(_commandList, sky);
 
   m_pipeline.BeginDrawing(_commandList, _renderer.FrameIndex(), constants);
 
