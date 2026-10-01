@@ -75,7 +75,7 @@ How each figure was measured:
   - **The display:** the back buffer's size and the refresh rate of the display the window is on, logged whenever the size changes.
   - `python Tools/FrameTimes.py` summarizes the log: mean, median, 95th and 99th percentiles and worst, for frames, ticks and order responses, leaving out the first 120 frames of loading. The run records the view it was taken at; zoomed out so that both fleets are in view is the heavy case.
 
-The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. The owner decided on 2026-10-01 that a group's order paths once for the group rather than once per ship (ADR-010), which cut the same order to about a third in a Linux container; the development machine's figure comes from repeating `--measure --load`.
+The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. The owner decided on 2026-10-01 that a group's order paths once for the group rather than once per ship (ADR-010), which cut the same order tick from about 3.4 ms to about 1 ms in a Linux container; the development machine's figure comes from repeating `--measure --load`.
 
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
