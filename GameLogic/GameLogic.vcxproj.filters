@@ -47,6 +47,9 @@
     <ClInclude Include="Tuning.h">
       <Filter>Tuning</Filter>
     </ClInclude>
+    <ClInclude Include="StressLoad.h">
+      <Filter>Server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -70,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="Tuning.cpp">
       <Filter>Tuning</Filter>
+    </ClCompile>
+    <ClCompile Include="StressLoad.cpp">
+      <Filter>Server</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

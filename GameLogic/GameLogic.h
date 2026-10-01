@@ -15,5 +15,6 @@
 #include "Pathfinder.h"
 #include "ShipDesign.h"
 #include "Simulation.h"
+#include "StressLoad.h"
 #include "InProcessServer.h"
 #include "MeasurementLoad.h"

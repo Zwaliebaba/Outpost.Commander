@@ -109,6 +109,13 @@ void Outpost::InProcessServer::RunTick()
     connection.channel->commands.clear();
   }
 
+  // The stress scene's replacements and their orders come after the players'.
+  if (m_stressLoad)
+  {
+    for (Command& command : m_stressLoad->TopUp(m_simulation))
+      commands.push_back(std::move(command));
+  }
+
   for (const Command& command : commands)
     m_commandLog.push_back({m_simulation.CurrentTick(), command});
   // A rejected command changes nothing. The protocol cannot tell the client yet; that arrives with the task that needs it.
@@ -119,6 +126,11 @@ void Outpost::InProcessServer::RunTick()
   m_tickDurations.push_back(std::chrono::steady_clock::now() - started);
 }
 
+void Outpost::InProcessServer::StartStressLoad()
+{
+  m_stressLoad.emplace(m_simulation, m_map, m_tuning);
+}
+
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
   auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
@@ -126,5 +138,7 @@ std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc
   server->World().PlaceStartingFleets(server->MapData(), server->TuningData());
   if (_desc.measurementLoad)
     PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
+  if (_desc.stressLoad)
+    server->StartStressLoad();
   return server;
 }

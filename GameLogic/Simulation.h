@@ -68,7 +68,8 @@ struct Entity
   // picked. No identifier when nothing is in range.
   EntityId target;
   // Thousandths of a tick until the weapon may fire again. It fires on the tick this reaches zero or less, and the fire
-  // interval is added back, so a fractional interval keeps its average (ADR-014).
+  // interval is added back, so a fractional interval keeps its average. Idle for a whole interval past ready, the weapon
+  // is cold, and its next first shot comes at a random moment (ADR-014).
   std::int32_t reloadMilliticks = 0;
   // The attack order's target's position when the ship last pathed to it, and the tick it may path again.
   PlanePosition chasedPosition;

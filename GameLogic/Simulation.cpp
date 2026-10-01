@@ -179,6 +179,8 @@ Outpost::EntityId Outpost::Simulation::SpawnShip(PlayerId _owner, DesignId _desi
   ship.hitPointsHundredths = design->stats.hitPointsHundredths;
   ship.maxHitPointsHundredths = design->stats.hitPointsHundredths;
   ship.armorHundredths = design->stats.armorHundredths;
+  // A new ship's weapon is cold: its first shot comes at a random moment once it finds a target (Fight).
+  ship.reloadMilliticks = std::numeric_limits<std::int32_t>::min() / 2;
   return id;
 }
 
@@ -582,7 +584,6 @@ void Outpost::Simulation::Fight()
 
     // The attack order's target when it is in range, and otherwise the targeting rule's choice, which keeps the target
     // the ship had last tick when it can.
-    const EntityId previous = ship.target;
     EntityId chosen;
     if (ship.order == ShipOrder::Attack)
     {
@@ -597,19 +598,20 @@ void Outpost::Simulation::Fight()
       static_cast<std::int32_t>(std::llround(design->stats.fireIntervalSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
     if (!ship.target.IsValid())
     {
-      // Idle: the weapon finishes reloading and waits.
-      ship.reloadMilliticks = std::max(0, ship.reloadMilliticks - MILLITICKS_PER_TICK);
+      // Idle: the weapon finishes reloading, waits, and an interval later goes cold.
+      ship.reloadMilliticks = std::max(-intervalMilliticks, ship.reloadMilliticks - MILLITICKS_PER_TICK);
       continue;
     }
-    // A ship that has just found a target fires its first shot at a random moment within its interval, so that a group's
-    // volleys do not land together (design §7, the Q2 model).
-    if (!previous.IsValid() && intervalMilliticks > 0)
-      ship.reloadMilliticks =
-        std::max(ship.reloadMilliticks, static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks))));
+    // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
+    // together (design §7, the Q2 model). A ship that lost its target only for a moment keeps its rhythm.
+    if (ship.reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
+      ship.reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
     ship.reloadMilliticks -= MILLITICKS_PER_TICK;
     if (ship.reloadMilliticks > 0)
       continue;
-    ship.reloadMilliticks += intervalMilliticks;
+    // A weapon that was ready and waiting fires now, and its next shot comes a whole interval later; one firing steadily
+    // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
+    ship.reloadMilliticks = std::max(ship.reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
 
     // The Q2 check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells it
     // that an enemy is in range.

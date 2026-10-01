@@ -63,6 +63,9 @@ public:
     return m_commandLog;
   }
 
+  // Match setup for a measurement run: places task 3.7's stress scene and keeps it at full size before every tick.
+  void StartStressLoad();
+
 private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player.
@@ -80,6 +83,7 @@ private:
   Simulation m_simulation;
   std::vector<Connection> m_connections;
   std::vector<LoggedCommand> m_commandLog;
+  std::optional<StressLoad> m_stressLoad;
   std::vector<std::chrono::nanoseconds> m_tickDurations;
 };
 } // namespace Outpost
