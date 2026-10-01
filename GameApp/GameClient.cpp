@@ -19,16 +19,16 @@ constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is dim, so the
-// stars show between its lines (ADR-021), and it is what shows the ground moving when the view pans.
+// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
+// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
 constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
 constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
 constexpr float MAJOR_GRID_SPACING_METERS = 500.0f;
 constexpr float MAJOR_GRID_LINE_WIDTH_METERS = 4.0f;
 constexpr int MINOR_LINES_PER_MAJOR = 5;
-constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.025f, 0.045f, 0.07f, 1.0f};
-constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.05f, 0.09f, 0.14f, 1.0f};
+constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.012f, 0.012f, 0.012f, 1.0f};
+constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.02f, 0.02f, 0.02f, 1.0f};
 
 // Asteroids are drawn with the one asteroid mesh, 2 m across, so its scale is a radius (ADR-011).
 constexpr std::string_view ASTEROID_SET = "Asteroids";

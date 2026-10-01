@@ -6,7 +6,7 @@ Status: **accepted** · 2026-10-01 · Supersedes [ADR-021](ADR-021-starfield.md)
 
 ADR-021 drew the sky as about 193,000 Gaussian points: an even field and a Milky Way band, with a bulge, star clouds and dust lanes made of nothing but stars. The owner ran it and did not like it, and asked on 2026-10-01 for three changes: remove the Milky Way, make the sky look more natural, and see whether two sprites added to `OutpostCommander/Assets/Textures/` make sense for it. The sprites are `glow.dds`, a soft round falloff, and `starburst.dds`, a bright core with diffraction spikes. Both are 128 by 128, uncompressed 8-bit BGRA in the legacy DDS header, with one mip level, white in their color and with their shape in their alpha. The owner added them; where they come from is not recorded yet.
 
-ADR-021 still holds on everything this ADR does not change: stars are directions at infinity, drawn first with no depth test, sized in pixels on the 1920×1080 reference frame and added to the frame. The clear color is black and the grid is dim.
+ADR-021 still holds on everything this ADR does not change: stars are directions at infinity, drawn first with no depth test, sized in pixels on the 1920×1080 reference frame and added to the frame. The clear color is black.
 
 ## Decision
 
@@ -17,7 +17,8 @@ ADR-021 still holds on everything this ADR does not change: stars are directions
 5. **`Neuron::StarPipeline` draws either kind.** Without a sprite it draws Gaussians as before. With a `TextureData`, its pixel shader, `StarSpritePS.hlsl`, returns the star's color times the sprite's alpha. A star's size is now `radiusPixels`, half its square's side; for a Gaussian, the rim is three standard deviations out. A sprite pipeline adds a descriptor table for the texture at t0, a shader-visible heap with its one view, and a static trilinear sampler with clamped addressing. `GameClient` draws the points, then the bursts: two instanced draws.
 6. **`Neuron::ParseDds` reads a DDS file without a library (R14).** It reads only what the game uses: an uncompressed 2D texture of 8-bit BGRA or RGBA texels, in the legacy header or the DX10 one, with any mip levels the file has. It throws, naming the file, for anything else: compressed formats, cube maps, volumes and arrays, a short file, or bytes left over.
 7. **`Neuron::BuildMipLevels` makes the sprite's mip chain on the CPU at start**, from 128 by 128 down to 1 by 1. Each texel is the rounded average of the 2 by 2 above it. `Renderer::CreateStaticTexture` gains an overload that uploads every level. Without mips, a 128-pixel sprite drawn 18 to 72 pixels across would sample its thin spikes at a texel here and there, and they would shimmer as the zoom changes the camera's pitch.
-8. **`starburst.dds` is packaged as deployment content**, a `None` item with `DeploymentContent`, like every other file the game reads at runtime. The other four textures stay as the owner added them, as `Image` items, until something reads them.
+8. **The grid is a neutral gray that is barely visible** (owner, 2026-10-01), rather than ADR-021's dim blue. Its minor lines are 0.012 and its major lines 0.020 in every channel, in linear color. Lit from above, as every mesh is (ADR-011), they show at about 26 and 35 out of 255 on screen. The grid stays for what ADR-021 gave it: it shows the ground moving when the view pans, and where the map ends.
+9. **`starburst.dds` is packaged as deployment content**, a `None` item with `DeploymentContent`, like every other file the game reads at runtime. The other four textures stay as the owner added them, as `Image` items, until something reads them.
 
 ## Consequences
 
