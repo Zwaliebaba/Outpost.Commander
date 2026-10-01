@@ -63,6 +63,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 6.1 | The AI player | 5.2 | G9 decided | in review on `claude/milestone-6`, awaiting CI and the owner's run |
 | 6.2 | Win, lose and the menu | 6.1 | — | in review on `claude/milestone-6`, awaiting CI and the owner's run |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | the match log is in review on `claude/milestone-6`; the playtests are the owner's |
+| B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | in review on `claude/q2-retune`, stacked on milestone 6; the full check passes |
 
 ## Gates
 
@@ -641,10 +642,24 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 - **As built (the agent's part):** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
   - **The log.** `Outpost::MatchLog` adds each match against the AI to `OutpostCommander-matches.log` in the temporary folder. It records the seed, each player's research as it finishes, each warship as it first appears, and the end. `MatchLogTests` covers it.
   - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
-  - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 21 minutes, four of five under 15, and the designs they build shift with each review and with the heavies from 6:35. Only the owner's matches answer Q1 and Q3.
+  - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 15 minutes with §12 as retuned, and the designs they build shift with each review and with the heavies from 6:35. Only the owner's matches answer Q1 and Q3.
 
 ---
 
-## What finishes the MVP
+## Inserted by the owner — §12 retuned against the simulation
+
+The owner settled design §15's open questions on 2026-10-01, and this work lands as its own PR, stacked on milestone 6's.
+
+### B.1 — §12 against the simulation's Q2 check
+
+- **Goal:** §12 passes the simulation's Q2 check, which is the game, and the model stays a rough guide (owner, 2026-10-01).
+- **As built:**
+  - **The numbers.** The Lance fires every 2.7 s instead of 3.0, Mass Driver Calibration gives +10% instead of +15%, and the Missile Rack does 30 damage instead of 40 and costs 130 Ore instead of 110. About twenty candidates were run through the simulation's check, and design §12 gives the reason for each number that moved.
+  - **The check.** (b) is judged over each stage's budgets, in both checks (owner, 2026-10-01). Each budget's unused components are still reported.
+  - **The result.** `Q2CheckTests.TheFullCheck` passes all four criteria, so Q2 is "yes" in the simulation (design §3). The model passes (a) only, and design §12 says why.
+  - **Also decided:** the structure and Constructor footprints and every turn rate are final, and the Defence margins wait for the playtests.
+  - **Tests.** Four tests that hold the moved numbers follow them: the Lance's interval, the Missile Rack's splash, Mass Driver Calibration's rate, and the model's design table.
+- **Verify:** CI; the owner runs the full check in Release, which CI never does.
+
 
 The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.

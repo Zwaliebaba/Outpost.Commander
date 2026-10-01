@@ -95,6 +95,8 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 `Tools/BattleModel.py` runs the check against the numbers in `OutpostCommander/Assets/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
 
+**Q2's answer: yes, in the simulation** (2026-10-01). After §12 was retuned against it, the simulation's check passes all four criteria, (b) judged over each stage's budgets (§12). What it does not cover is said above: it judges designs in battles of two fleets, not in a match, and not the drive's speed. Q1's playtests are where both show.
+
 ---
 
 ## 4. The battlefield
@@ -307,7 +309,7 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 |---|---|---|---|
 | Lance range | 280 m | 220 m | The range ladder (§6): the Defence gun has to outrange it and the default view has to fit the fight. |
 | Missile Rack range | 200 m | 280 m | The range ladder: the one weapon that outranges a platform. |
-| Mass Driver Calibration | damage +20% | fire rate +15% | Upgrades change rates, never the size of a hit (§8). At +20% fire rate, one side's upgraded Medium+Ion+Mass Driver has no starting answer that wins half its battles under focus fire (10–47%). |
+| Mass Driver Calibration | damage +20% | fire rate +10% | Upgrades change rates, never the size of a hit (§8). At +15%, the simulation's check (d) leaves one side's upgraded brawler and swarm without a starting answer that wins half their battles under spread fire (10–44%). |
 | Lance Focusing | range +15% | fire rate +15% | A range upgrade would break the range ladder. |
 | Small hull HP | 200 | 220 | With Ion it had 180 HP against two Lance hits of 176. At 200, Medium+Ion+Lance has no counter that wins four battles in five at 2,000–3,000 Ore (25–48%). |
 | Small hull cost | 50 | 32 | At 35, one-sided Lance Focusing leaves the upgraded Medium+Ion+Lance without an answer that wins half its battles (25–32%). At 45, Medium+Ion+Lance has no counter at 2,000–3,000 Ore under spread fire (25–27%). |
@@ -317,37 +319,30 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 | Mass Driver cost | 30 | 35 | At 30, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (2–15% under focus fire). |
 | Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer (12–42% under focus fire). |
 | Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (8–41% under focus fire). |
+| Lance fire interval | 3.0 s | 2.7 s | Retuned against the simulation. At 3.0 s the line beats the brawler in only 53% of battles at 2,000 Ore under spread fire, and eight single 5% changes flip it. A Lance hit of 100 does the same job but leaves a Small+Ion hull 2 hit points from dying to two hits, so (c) fails on it everywhere; the interval moves the rate and crosses no breakpoint. |
+| Missile Rack damage | 40 | 30 | Retuned against the simulation, where ships under fire stand close enough for a 30 m splash to reach eight Small or four Medium neighbours. At 40, taken by one side, no starting design wins a single battle against it at 3,000–4,500 Ore. At 25, no design worth building uses it at 2,000–3,000 Ore. |
+| Missile Rack cost | 110 | 130 | At 30 damage and 110 Ore, one side's upgraded Medium+Ion+Missile Rack still has no starting answer that wins more than 27% at 4,500 Ore under focus fire. |
 
-**Where §12 stood against the model's Q2 check before the Missile Rack** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks). How both checks stand with it is below, under *With the Missile Rack*:
+**Retuned against the simulation** (owner, 2026-10-01). The simulation is the game, so §12 is tuned against its check, and the model stays a rough guide that is not taught the simulation's geometry. The last four rows of the table are that pass: about twenty candidates, each run through the simulation's check in the Linux container. In the same decision (b) became a judgement over each stage's budgets (§3): no candidate made a heavy hull worth building in a 2,000 Ore fight and a Medium one in a 12,000 Ore fight at once, whatever moved.
 
-- **(a) passes** at every budget of both stages, in both modes. Every design's best counter wins all 60 of its battles.
-- **(b) passed for every modelled component.** It was reported as incomplete while the Missile Rack was not modelled.
-- **(c) passes:** no counter flips when any single number moves 5%.
-- **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 80% of battles at 3,000 Ore under focus fire. Every other topic leaves an answer that wins at least 92%.
+**Where §12 stands against the simulation** (`Q2CheckTests.TheFullCheck`, 2026-10-01; 278 s on four cores in the Linux container). The check plays the same stages, budgets, fire modes, criteria and confidence intervals as the model, with what the simulation is: armies of whole ships, the Ore left over not fielded, and each side a grid of real ships that close by attack-move, stand at their own range and fire at what is in range. Spread fire picks a random enemy in range, focus fire the weakest in range (ADR-014, ADR-010). **Q2 passes all four criteria:**
 
-With the leftover Ore fielded, the model is close to deterministic: nearly every pairing is won by the same side at every budget in the window. Two margins are still thin and are the first place to look if a later change fails the check. A Mass Driver hit against a Medium hull is 6, so the brawler's matchups move sharply with Mass Driver damage or Medium armour. And a Small+Ion hull sits 6% above the Lance's two-hit breakpoint.
+- **(a) passes.** Every design's best counter wins at least 80% of its battles at every budget, in both stages and modes, nearly all of them 100%.
+- **(b) passes** over each stage's budgets, in both modes. The starting stage plays its triangle at every budget. With every component, small and medium hulls with the Mass Driver and the Lance carry the 2,000 Ore fights. The heavies join from 2,000 Ore under focus fire and 3,000 under spread fire, and the Missile Rack from 3,000. At 12,000 Ore the mix is Small hulls and heavies. What a budget leaves out is reported, not failed: the Large hull, the Fusion drive and the Missile Rack at 2,000 Ore, the Medium hull at 12,000, and the Mass Driver under focus fire from 4,500 Ore up and under spread fire at 6,000–9,000.
+- **(c) passes:** none of 2,226 counters flips when any single number moves 5%.
+- **(d) passes.** The weakest answer to a one-sided topic is the brawler against the upgraded swarm: 55% with Hull Plating and 59% with Mass Driver Calibration, alone or with the Missile Rack. Lance Focusing leaves an answer at 87%.
 
-**Where §12 stands against the simulation** (task 3.4, 2026-10-01). The same check now runs as headless battles in `GameLogicTests` (`Q2CheckTests.TheFullCheck`), against the real simulation: the same stages, budgets, fire modes, criteria and confidence intervals. From here the simulation is right where the two disagree (§3). It differs from the model in what the simulation is. Armies are whole ships: battle *k* of *n* spends the Ore at the center of the *k*-th of *n* equal slices of the ±15% window, and the Ore left over is not fielded. And each side is a grid of real ships with real footprints, which close by attack-move, stand at their own range and fire, so a ship reaches only the enemies within its range, where the model's clump puts every ship in range of every enemy. Spread fire picks a random enemy in range, focus fire the weakest in range. The 20 Hz tick, the cold-weapon rule and the stand-off rule are ADR-014's and ADR-010's. **§12 fails all four criteria there, where it passes all four in the model:**
+`Q2CheckTests.TheRecordedCountersHold` keeps four counters in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore, and the line beats the brawler under focus fire.
 
-- **(a) fails at one point.** At 2,000 Ore in the starting stage under spread fire, the line does not beat the brawler: Medium+Ion+Lance wins 53% against Medium+Ion+Mass Driver. Everywhere else each design's best counter wins at least 84% of its battles, nearly all of them 100%.
-- **(b) fails throughout spread fire.** Under spread fire the Large hull and the Fusion drive are never worth building, at any budget. The mix is only the brawler and the line at 2,000 Ore, in both stages; the swarm, the brawler and the line at 3,000–6,000; and the swarm, the brawler and the picket at 9,000–12,000. Under focus fire the Medium hull drops out of the mix at 3,000–6,000 Ore, where the heavy Large+Fusion+Lance and the picket take its place, and the Large hull and the Fusion drive drop out again at 9,000–12,000.
-- **(c) fails on that one matchup.** The line against the brawler at 2,000 Ore under spread fire flips with eight different single 5% changes: Medium armor, Medium speed, the Ion drive's speed factor, the Mass Driver's damage, interval and cost, and the Lance's interval and cost.
-- **(d) fails on Mass Driver Calibration** under spread fire. One side's upgraded brawler is beaten by the line in only 10% of battles at 2,000 Ore and 32% at 3,000. One side's upgraded swarm is beaten by the brawler in only 37–44% at 2,000–4,500 Ore. Hull Plating and Lance Focusing sit on the edge, at 51% for the line against the brawler.
+**Where the model stands** (`python Tools/BattleModel.py`, 2026-10-01, 80 s). It passes (a) and fails the rest:
 
-**Why the two disagree.** The counters the model found hold in the simulation where focus fire decides them, and `Q2CheckTests.TheRecordedCountersHold` keeps the ones that hold under both modes in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore; the line beats the brawler under focus fire only. Spread fire is where they part. The simulation's spread fire is spread over the enemies in range, not over the whole enemy army, so a short-range weapon spreads its hits over the few ships at the front of the fight and works much like focus fire, while a long-range weapon spreads over many. That moves exactly the matchups that fail: the line, whose Lance reaches deep and wastes its heavy hits on spread targets, against the brawler, whose Mass Driver does not. This is reasoned from the battles, not isolated one cause at a time, and why the Large hull and the Fusion drive drop out of the spread-fire mix is not traced yet.
+- **(b):** no design worth building uses the Missile Rack at any budget.
+- **(c):** the swarm stops beating the line at every budget under spread fire when Mass Driver damage drops 5%.
+- **(d):** one side's Lance Focusing leaves its line without an answer that wins more than 13–25%.
 
-**With the Missile Rack** (task 5.3, 2026-10-01). Both checks now field all eighteen designs. The model gives each clump a square grid three footprint radii apart, the game's formation spacing (ADR-010), and a missile hits every ship of the target's clump within 30 m of it. The simulation plays ADR-014's splash rule. The figures come from the Linux container, where the model took about two minutes and the simulation's full check about four, each on four cores.
+The model puts every ship of a clump in range of every enemy, at formation spacing. So it values the Lance's reach more than the simulation does, where a ship reaches only the enemies near it. And it values the Missile Rack's splash less, where ships under fire stand at their footprints. It is a fast first guess at what a change does; the simulation's check decides.
 
-- **The model** (2,150 robustness checks) passes (a), (c) and (d). It fails (b) throughout spread fire: at no budget from 2,000 to 12,000 Ore is a design worth building that uses the Missile Rack. Under focus fire Large+Fusion+Missile Rack takes 11% of the mix at every budget. In a clump at formation spacing a missile reaches four neighbours only among Small hulls, and the Missile Rack's 40 damage every 2 s gives less damage per second than the Lance against every hull, and less than the Mass Driver against Small and Medium hulls.
-- **The simulation** fails all four, and the Missile Rack is strong there:
-  - **(a)** fails at the one point it failed before: the line wins 53% against the brawler at 2,000 Ore under spread fire.
-  - **(b)** changes. A Missile Rack design is worth building at every budget, in both modes, and Large+Fusion+Missile Rack takes 14–34% of the mix at 11 of the 12 budgets and modes. What drops out is the Medium hull, under focus fire at 3,000–12,000 Ore and under spread fire at 6,000–12,000. The Mass Driver drops out under focus fire at 3,000–12,000 Ore. The Fusion drive drops out at 12,000 Ore under spread fire, and the Small hull from the starting stage at 2,000 Ore under spread fire.
-  - **(c)** fails on the same matchup as before: the line against the brawler at 2,000 Ore under spread fire.
-  - **(d)** fails as before on one-sided Mass Driver Calibration. It now also fails on the Missile Rack, which requires Mass Driver Calibration. Taken by one side only, it is a trump card. At 3,000–4,500 Ore no starting design wins a single battle out of 60 against the upgraded Small+Ion+Missile Rack or Medium+Ion+Missile Rack, in either mode. At 2,000 Ore the best answer to the upgraded Medium+Ion+Missile Rack wins 35% under spread fire and 2% under focus fire.
-- **Why the two disagree** is reasoned from the battles, not isolated one cause at a time. In the simulation, ships standing to fire give way only sideways round their targets (ADR-010) and press together to their footprints, 16 m apart for Small hulls and 28 m for Medium ones. So a missile there reaches Medium hulls that the model's formation spacing keeps out of reach. And the starting designs reach 120 or 220 m against the Missile Rack's 280 m, so they take fire all the way in.
-- **Q2 stays "no"** in the simulation, now with every component in it, and (b) fails in the model too. The Missile Rack is the first number to look at, and retuning is the owner's call (§15).
-
-**What is open** (§15): whether §12 is retuned against the simulation, and whether the model's clump learns the simulation's geometry so that it stays a fast guide to tuning. The full check took about ten minutes on four threads in a Linux container, so it runs only when the `OUTPOST_Q2_FULL` environment variable is set, which CI never does, and the owner runs it: `set OUTPOST_Q2_FULL=1`, then `vstest.console.exe x64\Release\GameLogicTests.dll`. The report goes to `Q2Check-report.txt` in the temporary folder.
+**Running the check.** The full check takes about five minutes on four cores, so it runs only when the `OUTPOST_Q2_FULL` environment variable is set, which CI never does: `set OUTPOST_Q2_FULL=1`, then `vstest.console.exe x64\Release\GameLogicTests.dll`. The report goes to `Q2Check-report.txt` in the temporary folder.
 
 **The base's numbers** (milestone 4).
 
@@ -467,5 +462,12 @@ Decided on 2026-10-01, milestone 6:
 - The AI researches economy first and then the heavies, counters by §7's triangle, and builds rigs with a platform beside each contested one and a Shipyard for each 10 Ore/s of income (§10). The second Shipyard at 30 Ore/s, decided first, left it unable to spend what it earned.
 - The AI defends every structure of its, not only its rigs and platforms (§10).
 - Once the AI has the Large hull and the Fusion drive, it answers the swarm and the brawler with the heavies that beat them (§7, §10).
+
+Decided on 2026-10-01, the open questions:
+
+- §12 is retuned against the simulation, and the model stays a rough guide, not taught the simulation's geometry (§12).
+- Q2's (b) is judged over each stage's budgets, not at every budget (§3). With the retune, Q2 passes all four criteria in the simulation (§12).
+- The structure and Constructor footprints and every turn rate are final as they are (§12).
+- The Defence gun's and structure armour's margins wait for the owner's playtests (§12).
 - Every player sees every ship's components, as it sees the ship (§10, ADR-020).
 - A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).
