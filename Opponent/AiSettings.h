@@ -45,4 +45,8 @@ struct AiSettings
 // is, such as "counters[2].answer.hull". It cannot check the identifiers against the tuning data, which only the server
 // reads; an identifier the match does not have is a design the AI never sees and never builds.
 [[nodiscard]] AiSettings LoadAiSettings(std::string_view _json);
+
+// Reads Opponent.json from the package's Assets folder (ADR-008). Throws Neuron::Exception naming the file when it is
+// missing or invalid.
+[[nodiscard]] AiSettings LoadPackagedAiSettings();
 } // namespace Outpost

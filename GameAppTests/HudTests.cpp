@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include <algorithm>
+#include <array>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -359,6 +360,67 @@ public:
     const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .selection = {}}, 1920, 1080);
     Assert::IsTrue(layout.Covers(20.0f, 20.0f));
     Assert::IsFalse(layout.Covers(960.0f, 540.0f));
+  }
+  TEST_METHOD(WritesALengthAsMinutesAndSeconds)
+  {
+    Assert::AreEqual(std::string("0:00"), Outpost::MinutesAndSeconds(0));
+    Assert::AreEqual(std::string("0:59"), Outpost::MinutesAndSeconds(59));
+    Assert::AreEqual(std::string("6:13"), Outpost::MinutesAndSeconds(373));
+    Assert::AreEqual(std::string("59:59"), Outpost::MinutesAndSeconds(3599));
+    Assert::AreEqual(std::string("1:02:03"), Outpost::MinutesAndSeconds(3723));
+  }
+
+  // Task 6.2: once the match is over the player reads whether they won, and how long it took; nothing shows before.
+  TEST_METHOD(DescribesHowTheMatchEnded)
+  {
+    Outpost::Snapshot newest = Newest();
+    Assert::IsFalse(Outpost::Hud::DescribeOutcome(newest, 20).has_value());
+
+    newest.matchOver = true;
+    newest.matchEndedTick = 7460;
+    newest.winner = PLAYER;
+    const auto outcome = [&newest] { return Outpost::Hud::DescribeOutcome(newest, 20).value_or(Outpost::Hud::Outcome{}); };
+    Assert::AreEqual(std::string("Victory"), outcome().title);
+    Assert::AreEqual(std::string("Match length 6:13"), outcome().detail);
+
+    newest.winner = Outpost::PlayerId{2};
+    Assert::AreEqual(std::string("Defeat"), outcome().title);
+    newest.winner = {};
+    Assert::AreEqual(std::string("Draw"), outcome().title);
+  }
+
+  // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.
+  TEST_METHOD(LaysOutTheBannerWithTheWayBack)
+  {
+    const Outpost::Hud::Content content{.ore = 0, .outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Match length 6:13"}};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Defeat"; }));
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Match length 6:13"; }));
+    Assert::AreEqual(size_t{1}, layout.actions.size());
+    const auto& [area, action] = layout.actions.front();
+    Assert::IsTrue(action.kind == Outpost::Hud::ActionKind::BackToMenu);
+    Assert::IsTrue(area.top < 200.0f && area.left < 960.0f && area.left + area.width > 960.0f, L"top middle");
+    Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
+    Assert::IsFalse(layout.Covers(960.0f, 540.0f), L"the middle of the screen stays on the world");
+  }
+
+  // Task 6.2: the main menu starts a skirmish or quits, from the middle of the screen at any size.
+  TEST_METHOD(LaysOutTheMenu)
+  {
+    for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
+    {
+      const Outpost::Hud::Layout layout = Outpost::Hud::LayMenu(width, height);
+      Assert::AreEqual(size_t{2}, layout.actions.size());
+      Assert::IsTrue(layout.actions[0].second.kind == Outpost::Hud::ActionKind::StartSkirmish);
+      Assert::IsTrue(layout.actions[1].second.kind == Outpost::Hud::ActionKind::Quit);
+      const Outpost::Hud::Rect& start = layout.actions[0].first;
+      Assert::IsTrue(start.left < static_cast<float>(width) / 2.0f && start.left + start.width > static_cast<float>(width) / 2.0f);
+      Assert::IsTrue(layout.actions[1].first.top > start.top + start.height, L"Quit under Start skirmish");
+      Assert::IsTrue(layout.ActionAt(start.left + 5.0f, start.top + 5.0f) ==
+                     Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish});
+      Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Outpost Commander"; }));
+      Assert::IsFalse(layout.minimap.width > 0.0f);
+    }
   }
 };
 } // namespace GameAppTests

@@ -84,3 +84,11 @@ Outpost::AiSettings Outpost::LoadAiSettings(std::string_view _json)
     throw Neuron::Exception(std::format("Opponent: {}", error.what()));
   }
 }
+
+Outpost::AiSettings Outpost::LoadPackagedAiSettings()
+{
+  const Neuron::ByteBuffer bytes = Neuron::BinaryFile::ReadFile(L"Opponent.json");
+  if (bytes.empty())
+    throw Neuron::Exception("The game data file Assets\\Opponent.json is missing or cannot be read.");
+  return LoadAiSettings({reinterpret_cast<const char*>(bytes.data()), bytes.size()});
+}

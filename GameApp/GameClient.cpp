@@ -222,7 +222,8 @@ std::string MeshKey(std::string_view _set, std::string_view _model)
 } // namespace
 
 Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond)
-  : m_catalog(LoadDataFile(MODELS_FILE, LoadModelCatalog)),
+  : m_ticksPerSecond(_ticksPerSecond),
+    m_catalog(LoadDataFile(MODELS_FILE, LoadModelCatalog)),
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
     m_glows(_renderer),
@@ -249,8 +250,40 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
 }
 
+void Outpost::GameClient::StartMatch()
+{
+  ClearMatch();
+  m_screen = Screen::Match;
+}
+
+void Outpost::GameClient::ShowMenu()
+{
+  ClearMatch();
+  m_screen = Screen::Menu;
+}
+
+void Outpost::GameClient::ClearMatch()
+{
+  m_view = SnapshotInterpolator(m_ticksPerSecond);
+  m_effects = CombatEffects(m_ticksPerSecond);
+  m_controls = PlayerControls();
+  m_designer = Designer();
+  m_effectDraws.clear();
+  m_entities.clear();
+  m_previousEntities.clear();
+  m_hudLayout = {};
+  m_cameraPlaced = false;
+  m_minimapDragging = false;
+  m_cursorGround.reset();
+  m_probe.reset();
+  m_responseShown.reset();
+}
+
 void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
 {
+  // On the menu there is no match to show; anything still arriving from the last one is dropped.
+  if (m_screen == Screen::Menu)
+    return;
   for (Snapshot& snapshot : _snapshots)
   {
     m_effects.Receive(snapshot);
@@ -282,12 +315,29 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
 void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapsedSeconds, std::uint32_t _viewportWidthPixels,
                                  std::uint32_t _viewportHeightPixels)
 {
+  m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
+  if (m_screen == Screen::Menu)
+  {
+    // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
+    m_hudLayout = Hud::LayMenu(_viewportWidthPixels, _viewportHeightPixels);
+    if (!_input.active)
+      return;
+    for (const Neuron::InputEvent& event : _input.events)
+    {
+      if (event.kind != Neuron::InputEventKind::ButtonDown || event.key != VK_LBUTTON)
+        continue;
+      if (const std::optional<Hud::Action> action =
+            m_hudLayout.ActionAt(static_cast<float>(event.xPixels), static_cast<float>(event.yPixels)))
+        HandleHudAction(*action);
+    }
+    return;
+  }
+
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
-  m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   Neuron::InputState input = _input;
   if (!m_view.IsEmpty())
     m_designer.Update(m_view.Newest());
@@ -310,7 +360,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
-    const Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
     // The name takes no more typing once the designer is not shown: its Shipyard was deselected or destroyed.
     if (!content.designer.has_value())
       m_designer.EndEditing();
@@ -339,7 +390,6 @@ void Outpost::GameClient::HandleTyping(Neuron::InputState& _input)
 
 void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
 {
-  const Snapshot& newest = m_view.Newest();
   switch (_action.kind)
   {
   case Hud::ActionKind::Build:
@@ -361,14 +411,23 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_designer.PickWeapon(_action.weapon);
     break;
   case Hud::ActionKind::EditName:
-    m_designer.BeginEditing(newest);
+    m_designer.BeginEditing(m_view.Newest());
     break;
   case Hud::ActionKind::SaveDesign:
-    if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(newest))
+    if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(m_view.Newest()))
     {
       m_controls.SaveDesign(std::move(*save));
       m_designer.ForgetTypedName();
     }
+    break;
+  case Hud::ActionKind::StartSkirmish:
+    m_request = Request::StartSkirmish;
+    break;
+  case Hud::ActionKind::Quit:
+    m_request = Request::Quit;
+    break;
+  case Hud::ActionKind::BackToMenu:
+    m_request = Request::BackToMenu;
     break;
   }
 }
@@ -517,6 +576,12 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   const DirectX::XMFLOAT4X4 identity = WorldMatrix({}, 0.0f, 1.0f);
   m_pipeline.Draw(_commandList, *m_minorGrid, identity, MINOR_GRID_COLOR);
   m_pipeline.Draw(_commandList, *m_majorGrid, identity, MAJOR_GRID_COLOR);
+  // The menu shows over the empty grid.
+  if (m_screen == Screen::Menu)
+  {
+    DrawHud(_commandList, _renderer.FrameIndex());
+    return;
+  }
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
   DrawSelection(_commandList);

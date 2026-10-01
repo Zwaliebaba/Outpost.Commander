@@ -7,7 +7,8 @@ namespace Outpost
 // out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer by
 // one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
 // the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore and in the Research Lab's
-// panel (task 5.1), and the ship designer beside a selected Shipyard (task 5.2).
+// panel (task 5.1), and the ship designer beside a selected Shipyard (task 5.2). The main menu, and the banner that says
+// how a match ended, are laid out the same way (task 6.2).
 class Hud
 {
 public:
@@ -30,7 +31,11 @@ public:
     PickDrive,
     PickWeapon,
     EditName,
-    SaveDesign
+    SaveDesign,
+    // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
+    StartSkirmish,
+    Quit,
+    BackToMenu
   };
 
   struct Action
@@ -95,6 +100,13 @@ public:
     EntityKind kind = EntityKind::Ship;
   };
 
+  // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
+  struct Outcome
+  {
+    std::string title;
+    std::string detail;
+  };
+
   // What the HUD shows, in words and marks.
   struct Content
   {
@@ -111,6 +123,8 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
+    // Once the match is over, a banner with a button back to the menu; the world runs on behind it (owner, 2026-10-01).
+    std::optional<Outcome> outcome;
   };
 
   struct Rect
@@ -163,6 +177,13 @@ public:
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr);
 
+  // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
+  [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
+
+  // The main menu on a back buffer of this size: the game's name, and buttons to start a skirmish against the AI and to
+  // quit (task 6.2).
+  [[nodiscard]] static Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
+
   // Where everything goes on a back buffer of this size. _view is the ground the camera shows, its corners in order,
   // outlined on the minimap; empty when the camera sees past the horizon.
   [[nodiscard]] static Layout Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
@@ -174,4 +195,7 @@ public:
 
 // _value with a comma between each group of three digits, such as "12,000".
 [[nodiscard]] std::string WithThousands(std::int64_t _value);
+
+// A length of time as minutes and seconds, "6:13", with hours in front once there are any, "1:02:03".
+[[nodiscard]] std::string MinutesAndSeconds(std::uint64_t _seconds);
 } // namespace Outpost
