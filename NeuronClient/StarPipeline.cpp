@@ -102,6 +102,7 @@ Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _s
     return;
 
   std::vector<std::span<const std::byte>> levels;
+  levels.reserve(_sprite->levels.size());
   for (const ByteBuffer& level : _sprite->levels)
     levels.push_back(std::as_bytes(std::span(level)));
   m_sprite = _renderer.CreateStaticTexture(_sprite->width, _sprite->height, _sprite->format, levels);

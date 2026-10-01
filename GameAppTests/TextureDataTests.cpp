@@ -60,7 +60,7 @@ public:
     Assert::AreEqual(128u, texture.height);
     Assert::IsTrue(texture.format == DXGI_FORMAT_B8G8R8A8_UNORM);
     Assert::AreEqual(size_t{1}, texture.levels.size());
-    Assert::AreEqual(size_t{128 * 128 * TEXEL_BYTES}, texture.levels.front().size());
+    Assert::AreEqual(size_t{128} * 128 * TEXEL_BYTES, texture.levels.front().size());
     Assert::IsTrue(Alpha(texture, 64, 64) > 200);
     Assert::IsTrue(Alpha(texture, 0, 0) == 0);
   }
