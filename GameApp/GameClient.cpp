@@ -17,15 +17,16 @@ constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m.
+// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is dim, so the
+// stars show between its lines (ADR-021), and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
 constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
 constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
 constexpr float MAJOR_GRID_SPACING_METERS = 500.0f;
 constexpr float MAJOR_GRID_LINE_WIDTH_METERS = 4.0f;
 constexpr int MINOR_LINES_PER_MAJOR = 5;
-constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.05f, 0.09f, 0.14f, 1.0f};
-constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.10f, 0.18f, 0.28f, 1.0f};
+constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.025f, 0.045f, 0.07f, 1.0f};
+constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.05f, 0.09f, 0.14f, 1.0f};
 
 // Asteroids are drawn with the one asteroid mesh, 2 m across, so its scale is a radius (ADR-011).
 constexpr std::string_view ASTEROID_SET = "Asteroids";
@@ -227,6 +228,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
     m_glows(_renderer),
+    m_sky(_renderer, BuildStarfield()),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond)
@@ -571,12 +573,25 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.viewProjection = m_camera.ViewProjection(aspectRatio);
   DirectX::XMStoreFloat3(&constants.directionToLight, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&TOWARD_LIGHT)));
   constants.ambient = AMBIENT;
+
+  // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
+  // resolution (ADR-006, ADR-021).
+  const float skyScale = Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels());
+  const Neuron::StarPipeline::FrameConstants sky{
+    .viewProjection = constants.viewProjection,
+    .clipPerPixelX = 2.0f * skyScale / static_cast<float>(_renderer.WidthPixels()),
+    .clipPerPixelY = 2.0f * skyScale / static_cast<float>(_renderer.HeightPixels()),
+    .unused0 = 0.0f,
+    .unused1 = 0.0f,
+  };
+  m_sky.Draw(_commandList, sky);
+
   m_pipeline.BeginDrawing(_commandList, _renderer.FrameIndex(), constants);
 
   const DirectX::XMFLOAT4X4 identity = WorldMatrix({}, 0.0f, 1.0f);
   m_pipeline.Draw(_commandList, *m_minorGrid, identity, MINOR_GRID_COLOR);
   m_pipeline.Draw(_commandList, *m_majorGrid, identity, MAJOR_GRID_COLOR);
-  // The menu shows over the empty grid.
+  // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
   {
     DrawHud(_commandList, _renderer.FrameIndex());

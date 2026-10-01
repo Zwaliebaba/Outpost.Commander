@@ -22,6 +22,7 @@
 #include "Picking.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"
+#include "Starfield.h"
 #include "Designer.h"
 #include "Hud.h"
 #include "LoadDriver.h"
