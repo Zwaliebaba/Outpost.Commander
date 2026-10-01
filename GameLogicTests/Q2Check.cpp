@@ -400,11 +400,38 @@ std::string Percent(const Candidate& _candidate)
   return std::format("{:.0f}% of {}", 100.0 * _candidate.Rate(), _candidate.pairing.battles);
 }
 
+// The hulls, drives and weapons that no design in _used has, as "Large hull, Fusion drive"; empty when every one is used.
+std::string UnusedComponents(const CheckParts& _parts, const std::array<std::set<std::string>, 3>& _used)
+{
+  std::string unused;
+  const auto add = [&unused](const std::string& _name, std::string_view _kind)
+  { unused += std::format("{}{} {}", unused.empty() ? "" : ", ", _name, _kind); };
+  for (const GameLogicTests::CheckHull& hull : _parts.hulls)
+  {
+    if (!_used[0].contains(hull.name))
+      add(hull.name, "hull");
+  }
+  for (const GameLogicTests::CheckDrive& drive : _parts.drives)
+  {
+    if (!_used[1].contains(drive.name))
+      add(drive.name, "drive");
+  }
+  for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
+  {
+    if (!_used[2].contains(weapon.name))
+      add(weapon.name, "weapon");
+  }
+  return unused;
+}
+
 void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts,
               const std::vector<double>& _budgets, const GameLogicTests::CheckOptions& _options, Failures& _failures, std::set<Leg>& _legs,
               std::string& _report)
 {
   _report += std::format("\n==== {}: {} designs ====\n", _label, _designs.size());
+  // (b) is judged over the stage: every component is worth building at one budget or more, in each fire mode (owner,
+  // 2026-10-01). A heavy hull need not pay at the smallest budget, nor a medium one at the largest.
+  std::map<FireMode, std::array<std::set<std::string>, 3>> usedInStage;
   for (const double budget : _budgets)
   {
     for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
@@ -454,31 +481,28 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
         }
       }
 
-      std::set<std::string> hulls;
-      std::set<std::string> drives;
-      std::set<std::string> weapons;
+      std::array<std::set<std::string>, 3>& used = usedInStage[mode];
+      std::array<std::set<std::string>, 3> here;
       for (const size_t i : built)
       {
-        hulls.insert(_designs[i].hull);
-        drives.insert(_designs[i].drive);
-        weapons.insert(_designs[i].weapon);
+        for (std::array<std::set<std::string>, 3>* sets : {&used, &here})
+        {
+          (*sets)[0].insert(_designs[i].hull);
+          (*sets)[1].insert(_designs[i].drive);
+          (*sets)[2].insert(_designs[i].weapon);
+        }
       }
-      for (const GameLogicTests::CheckHull& hull : _parts.hulls)
-      {
-        if (!hulls.contains(hull.name))
-          _failures.lines["b"].push_back(std::format("{}: no design worth building uses the {} hull", where, hull.name));
-      }
-      for (const GameLogicTests::CheckDrive& drive : _parts.drives)
-      {
-        if (!drives.contains(drive.name))
-          _failures.lines["b"].push_back(std::format("{}: no design worth building uses the {} drive", where, drive.name));
-      }
-      for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
-      {
-        if (!weapons.contains(weapon.name))
-          _failures.lines["b"].push_back(std::format("{}: no design worth building uses the {} weapon", where, weapon.name));
-      }
+      const std::string unused = UnusedComponents(_parts, here);
+      if (!unused.empty())
+        _report += std::format("  Not worth building at this budget: {}\n", unused);
     }
+  }
+  for (const auto& [mode, used] : usedInStage)
+  {
+    const std::string unused = UnusedComponents(_parts, used);
+    if (!unused.empty())
+      _failures.lines["b"].push_back(
+        std::format("{}, {} fire: no design worth building at any budget uses the {}", _label, ModeName(mode), unused));
   }
 }
 
@@ -815,7 +839,7 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
   report += "\nQ2 check (design §3):\n";
   const std::array<std::pair<std::string, std::string>, 4> criteria{{
     {"a", "every design has a counter that wins at least 80%"},
-    {"b", "the designs worth building use every hull, drive and weapon"},
+    {"b", "the designs worth building use every hull, drive and weapon over each stage's budgets"},
     {"c", "no counter stops winning when one number moves 5%"},
     {"d", "no research topic leaves a design without an answer that wins half the time"},
   }};

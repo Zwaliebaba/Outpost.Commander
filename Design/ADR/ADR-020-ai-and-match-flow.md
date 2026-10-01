@@ -12,7 +12,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
 - **Research order, economy first and then the heavies:** Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
 - **Counters are design §7's triangle, held as data.** The swarm (Small+Ion+Mass Driver) is answered with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line with the swarm. The picket (Small+Ion+Lance) is answered with the swarm, and each heavy (Large+Fusion with any weapon) with the picket. Once it has the Large hull and the Fusion drive, it answers the swarm with Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance instead, as design §7 says they beat them. Anything else, and no enemy fleet yet, gets the brawler. The AI uses only designs it has unlocked.
 - **The base:** keep 4 Constructors. Rigs on the 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home. Then rigs on the 3 contested asteroids nearest the AI, each with a platform beside it. A Shipyard for each 10 Ore/s of income: the N-th once income reaches N × 10 Ore/s.
-- **The match end:** a Victory or Defeat banner with the match's length, and the world runs on until the player goes back to the menu.
+- **The match end:** a Victory, Defeat or Draw banner with the match's length, and the world runs on until the player goes back to the menu.
 
 ## Decision
 
@@ -51,7 +51,7 @@ All figures below are from the GameLogicTests harness on Linux, built with clang
 - **The AI beats a player who does nothing at 5:24** (tick 6,483, seed 3). It places its base plan by 1:45 and its fourth Shipyard by 2:15, has all four built by 3:15, and sends its first attack group by 3:30.
 - **Its Shipyards spend most of what it earns.** From about 2:15 its income is 48.75 Ore/s: 3 home rigs, 3 contested rigs, and Improved Extraction, so it has 4 Shipyards. Building brawlers they spend about 33 Ore/s, and it holds about 3,300 Ore when the passive player's station falls, still gaining about 12 Ore/s.
 - **The AI builds heavies once it can.** Large Hull lands at 6:35. In 4 of the 5 matches below one side or both built Large+Fusion+Lance or Large+Fusion+Mass Driver from then on, and what each side built changed from one 5-minute window to the next.
-- **Two AIs on the mirrored map end a match in 8:24 to 20:43** over seeds 1 to 5: 8:24, 8:30, 13:35, 20:43 and 13:27. Player 1 won 2 of the 5. Four of the five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
+- **Two AIs on the mirrored map end a match in 7:51 to 14:54** over seeds 1 to 5, with §12 as retuned on 2026-10-01: 12:09, 11:49, 11:24, 14:54 and 7:51. Player 1 won 2 of the 5. All five are shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1.
 - **The checks behind the AI** are:
   - Scripted snapshots: its first orders, its answer to each design of the triangle, and the reserve going to its Command Station and to a site under fire.
   - The real server: its base in order, its Shipyards by income, its answer to an enemy fleet, the attack at 12 ships, and the defence of an outpost.

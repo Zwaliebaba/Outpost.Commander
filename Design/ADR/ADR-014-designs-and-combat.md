@@ -26,7 +26,6 @@ Tasks 3.2 and 3.3 give ships designs and make them fight. Design §7 sets the ru
 - **Targeting is O(n²) per tick when targets are lost.** A ship that keeps its target checks only that one. A ship looking for one checks every enemy: at 200 ships, 20,000 distance tests on a tick when everyone looks at once. Task 3.7 measures what that costs.
 - **What a splash reaches depends on the hulls' sizes** (gate G5). A group forms up three footprint radii apart (ADR-010): 24 m for Small hulls, inside the 30 m splash, and 42 and 72 m for Medium and Large, outside it. A missile into a formed group of Small hulls hits up to four neighbors as well. One into Medium or Large ones hits only those pressed closer while they fight. `Tools/BattleModel.py` gives its clumps that formation spacing so that the model sees the same.
 - **Splash costs a pass over the entities per missile shot.** At 200 ships it is 200 distance tests per missile. That is small beside targeting.
-- **Structures fire with task 4.4.** Until then a structure is a target only.
 - **The client cannot see why a command was rejected.** Attack now answers `UnknownTarget` or `NotAnEnemy`, but as ADR-009 says, the protocol has no message for it yet.
 
 ## What this forecloses

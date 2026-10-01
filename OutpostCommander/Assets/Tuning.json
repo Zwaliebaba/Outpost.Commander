@@ -17,8 +17,8 @@
   ],
   "weapons": [
     { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120, "splashRadiusMeters": 0, "cost": 35 },
-    { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 3.0, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
-    { "id": 3, "name": "Missile Rack", "damage": 40, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 110 }
+    { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 2.7, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
+    { "id": 3, "name": "Missile Rack", "damage": 30, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 130 }
   ],
   "constructor": { "hitPoints": 300, "armor": 2, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15, "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5, "repairPercentPerSecond": 2 },
   "structureWeapons": [
@@ -37,7 +37,7 @@
     { "id": 2, "name": "Hull Plating", "cost": 150, "researchSeconds": 60, "requires": [],
       "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 15 } },
     { "id": 3, "name": "Mass Driver Calibration", "cost": 150, "researchSeconds": 75, "requires": [],
-      "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 15 } },
+      "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 10 } },
     { "id": 4, "name": "Lance Focusing", "cost": 150, "researchSeconds": 75, "requires": [],
       "effect": { "upgrade": "weapon", "weapon": 2, "stat": "fireRate", "percent": 15 } },
     { "id": 5, "name": "Fusion Drive", "cost": 200, "researchSeconds": 90, "requires": [2],

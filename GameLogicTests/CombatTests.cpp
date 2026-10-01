@@ -82,7 +82,7 @@ public:
   // Task 3.3: each weapon fires at its interval, and each hit does its damage after the target's armor.
   TEST_METHOD(FiresAtItsIntervalAndDamagesAfterArmor)
   {
-    for (const auto [weapon, intervalTicks] : {std::pair{MASS_DRIVER, 8u}, std::pair{LANCE, 60u}})
+    for (const auto [weapon, intervalTicks] : {std::pair{MASS_DRIVER, 8u}, std::pair{LANCE, 54u}})
     {
       Arena arena;
       const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, ION, weapon, {});
@@ -234,11 +234,11 @@ public:
       const Outpost::Entity& entity = *arena.World().FindEntity(_id);
       return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
     };
-    // 40 against a Constructor's armor of 2, and against the structure's 10.
-    Assert::AreEqual(3800, lost(target));
-    Assert::AreEqual(3800, lost(beside), L"22 m from the target");
+    // 30 against a Constructor's armor of 2, and against the structure's 10.
+    Assert::AreEqual(2800, lost(target));
+    Assert::AreEqual(2800, lost(beside), L"22 m from the target");
     Assert::AreEqual(0, lost(beyond), L"40 m from the target");
-    Assert::AreEqual(3000, lost(armored), L"a structure 25 m away, after its armor");
+    Assert::AreEqual(2000, lost(armored), L"a structure 25 m away, after its armor");
     Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
 
