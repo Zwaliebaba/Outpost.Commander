@@ -22,6 +22,9 @@
     <Filter Include="Package\Assets\Models\Tarkan">
       <UniqueIdentifier>{016b1ca7-296a-442f-8007-6a48dbbc4c6f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Package\Assets\Textures">
+      <UniqueIdentifier>{f18713d0-6cda-40d0-801f-7fd10cff831b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -170,6 +173,21 @@
     </Image>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Package\Assets</Filter>
+    </Image>
+    <Image Include="Assets\Textures\cloudyglow.dds">
+      <Filter>Package\Assets\Textures</Filter>
+    </Image>
+    <Image Include="Assets\Textures\glow.dds">
+      <Filter>Package\Assets\Textures</Filter>
+    </Image>
+    <Image Include="Assets\Textures\laser.dds">
+      <Filter>Package\Assets\Textures</Filter>
+    </Image>
+    <Image Include="Assets\Textures\Particle.dds">
+      <Filter>Package\Assets\Textures</Filter>
+    </Image>
+    <Image Include="Assets\Textures\starburst.dds">
+      <Filter>Package\Assets\Textures</Filter>
     </Image>
   </ItemGroup>
 </Project>
