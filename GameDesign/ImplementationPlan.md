@@ -615,12 +615,12 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   7. It does not kite.
 - **Acceptance:** tests in which scripted snapshots produce the expected commands: the build order, the counter choice after a review, the defence response.
 - **Verify:** CI; **owner run.**
-- **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base), and [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md).
-  - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its rigs and platforms.
+- **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base, and a Shipyard for each 10 Ore/s of income), and [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md).
+  - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, its Shipyards by income, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its rigs and platforms.
   - **Its settings.** `OutpostCommander/Assets/Opponent.json`, read by `LoadAiSettings`. The review interval moved there from `Tuning.json`.
   - **What it needed from the protocol.** Every warship's drive and weapon in the snapshot, and `PlaceGhost` moved into `GameProtocol` so that the AI places by the client's rule.
-  - **Tests.** `AiPlayerTests` checks scripted snapshots (the first orders, every counter, the defence) and the AI on the real server (its base in order, its answer to a fleet, the attack at 12 ships, the defence of an outpost, a whole match against a player who does nothing). `AiSettingsTests` checks the file, and every identifier in it against `Tuning.json`. `GameLogicTests` now references `Opponent`.
-  - **What the tests found.** The AI wins against a passive player at 6:13. From about 3 minutes it earns three times what its two Shipyards spend, and it researches Fusion Drive and Large Hull without ever building a heavy (design §15).
+  - **Tests.** `AiPlayerTests` checks scripted snapshots (the first orders, every counter, the defence) and the AI on the real server (its base in order, its Shipyards by income, its answer to a fleet, the attack at 12 ships, the defence of an outpost, a whole match against a player who does nothing). `AiSettingsTests` checks the file, and every identifier in it against `Tuning.json`. `GameLogicTests` now references `Opponent`.
+  - **What the tests found.** With a second Shipyard at 30 Ore/s, the AI earned three times what its two Shipyards spent. With a Shipyard for each 10 Ore/s (owner, 2026-10-01) it has 4 by 2:15, and wins against a passive player at 5:24. It still researches Fusion Drive and Large Hull without ever building a heavy (design §15).
 
 ### 6.2 — Win, lose and the menu
 
@@ -641,7 +641,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 - **As built (the agent's part):** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
   - **The log.** `Outpost::MatchLog` adds each match against the AI to `OutpostCommander-matches.log` in the temporary folder. It records the seed, each player's research as it finishes, each warship as it first appears, and the end. `MatchLogTests` covers it.
   - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
-  - **A first look, not an answer.** Two AIs on the real server end a match in 11 to 13 minutes, and the designs they build shift with each review. Only the owner's matches answer Q1 and Q3.
+  - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 20 minutes, four of five under 11, and the designs they build shift with each review. Only the owner's matches answer Q1 and Q3.
 
 ---
 
