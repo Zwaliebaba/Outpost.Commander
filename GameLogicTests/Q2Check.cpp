@@ -124,6 +124,7 @@ std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint
   const std::uint32_t threads = _threads != 0 ? _threads : std::max(1u, std::thread::hardware_concurrency());
   {
     std::vector<std::jthread> workers;
+    workers.reserve(threads);
     for (std::uint32_t i = 0; i < threads; ++i)
       workers.emplace_back(work);
   }
@@ -223,6 +224,7 @@ std::vector<Settled> Settle(const std::vector<Contest>& _contests, double _thres
     return results;
 
   std::vector<Pairing> pairings;
+  pairings.reserve(rerun.size());
   for (const auto& [contest, pairing] : rerun)
     pairings.push_back(pairing);
   const std::vector<Record> records = RunPairings(pairings, _options.threads);
@@ -622,6 +624,7 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
   }
   const std::vector<Record> records = RunPairings(pairings, _options.threads);
   std::vector<Contest> contests;
+  contests.reserve(pairings.size());
   for (size_t k = 0; k < pairings.size(); ++k)
     contests.push_back({{pairings[k], records[k].wins}});
   const std::vector<Settled> settled = Settle(contests, ROBUST_WIN_RATE, _options);

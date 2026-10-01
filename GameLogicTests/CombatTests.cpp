@@ -241,7 +241,7 @@ public:
         destroyed = snapshot.destroyed.front();
     }
     Assert::IsTrue(destroyed.has_value(), L"the target was never destroyed");
-    const Outpost::DestroyedView& view = destroyed.value();
+    const Outpost::DestroyedView view = destroyed.value_or(Outpost::DestroyedView{});
     Assert::IsTrue(view.id == target && view.owner == RED && view.hull == SMALL);
     Assert::IsNull(arena.World().FindEntity(target));
     Assert::IsTrue(arena.World().FindEntity(ship)->order == Outpost::ShipOrder::None);
