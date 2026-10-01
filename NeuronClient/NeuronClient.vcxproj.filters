@@ -35,6 +35,9 @@
     <ClInclude Include="MeshPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="GlowPipeline.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="GlyphAtlas.h">
@@ -61,6 +64,9 @@
     <ClCompile Include="MeshPipeline.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="GlowPipeline.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="GlyphAtlas.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
@@ -73,6 +79,12 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\MeshPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\GlowVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\GlowPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UiVS.hlsl">

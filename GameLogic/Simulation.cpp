@@ -454,6 +454,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                                                  .radiusMeters = entity.radiusMeters,
                                                                  .hitPointsHundredths = entity.hitPointsHundredths,
                                                                  .maxHitPointsHundredths = entity.maxHitPointsHundredths});
+    if (const ShipDesign* design = FindDesign(entity.design))
+      view.drive = design->components.drive;
     if (!entity.IsBuilt())
       view.builtPermille = static_cast<std::int32_t>(std::int64_t{entity.buildWorkDone} * PERMILLE / entity.buildWorkNeeded);
     if (!entity.queue.empty() || !entity.researchQueue.empty())

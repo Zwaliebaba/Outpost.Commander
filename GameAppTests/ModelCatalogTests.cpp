@@ -15,7 +15,9 @@ constexpr std::array<const char*, 3> HULLS{"Small", "Medium", "Large"};
 // Every kind of structure drawn with the one model, Small, for the catalogs below.
 constexpr std::string_view STRUCTURES = R"("structures": [ { "structure": "CommandStation", "model": "Small" },
   { "structure": "Shipyard", "model": "Small", "tint": 0.5 }, { "structure": "ResearchLab", "model": "Small" },
-  { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" } ], "constructor": "Small")";
+  { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" } ], "constructor": "Small",
+  "exhausts": [ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ],
+  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 })";
 
 // A catalog of one set of one model, with one member replaced, for the loader's error cases.
 std::string OneModel(std::string_view _setName, std::string_view _model, std::string_view _color)
@@ -24,7 +26,7 @@ std::string OneModel(std::string_view _setName, std::string_view _model, std::st
                      _color, _model, STRUCTURES);
 }
 
-constexpr std::string_view GOOD_MODEL = R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 20 })";
+constexpr std::string_view GOOD_MODEL = R"({ "name": "Small", "lengthMeters": 20 })";
 constexpr std::string_view GOOD_COLOR = R"({ "red": 0.5, "green": 0.5, "blue": 0.5 })";
 
 void ExpectRejected(const std::string& _json)
@@ -113,8 +115,8 @@ public:
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& tarkan = catalog.Set("Tarkan");
-    const Neuron::MeshData rawMedium = Neuron::ParseCmo(ReadRepositoryAsset("Models\\Tarkan\\Medium.cmo"), "Medium.cmo");
-    const Neuron::MeshData rawLarge = Neuron::ParseCmo(ReadRepositoryAsset("Models\\Tarkan\\Large.cmo"), "Large.cmo");
+    const Neuron::MeshData rawMedium = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Tarkan\\Medium.nmf"), "Medium.nmf");
+    const Neuron::MeshData rawLarge = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Tarkan\\Large.nmf"), "Large.nmf");
     Assert::IsTrue(rawMedium.Extents().x > rawLarge.Extents().x);
     Assert::IsTrue(tarkan.Model("Medium").lengthMeters < tarkan.Model("Large").lengthMeters);
 
@@ -126,7 +128,7 @@ public:
       {
         const Outpost::ModelEntry& model = set.Model(hull);
         const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
-        // Its length is along +x once oriented, and it is the length the data asks for.
+        // Its length is along +x, its front (ADR-018), and it is the length the data asks for.
         Assert::AreEqual(model.lengthMeters, mesh.Extents().x, TOLERANCE);
         Assert::IsTrue(mesh.Extents().x > mesh.Extents().z);
         Assert::IsTrue(mesh.Extents().x > previousLength);
@@ -139,18 +141,42 @@ public:
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& human = catalog.Set("Human");
-    Assert::AreEqual(std::wstring(L"Models\\Human\\Small.cmo"), Outpost::ModelFileName(human, human.Model("Small")));
+    Assert::AreEqual(std::wstring(L"Models\\Human\\Small.nmf"), Outpost::ModelFileName(human, human.Model("Small")));
   }
 
-  TEST_METHOD(RejectsAnUnknownAxis)
+  // A model's front is in its mesh since ADR-018, so the data no longer says it.
+  TEST_METHOD(RejectsAForwardAxis)
   {
-    ExpectRejected(OneModel("Human", R"({ "name": "Small", "forwardAxis": "+y", "lengthMeters": 20 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 20 })", GOOD_COLOR));
+  }
+
+  // ADR-019: a warship's exhaust is its drive's color, and a Constructor's is its own; a drive listed twice is refused.
+  TEST_METHOD(ColorsEachExhaustByItsDrive)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    Outpost::EntityView ship{.kind = Outpost::EntityKind::Ship, .drive = Outpost::DriveId{1}};
+    const DirectX::XMFLOAT4* ion = catalog.ExhaustColor(ship);
+    ship.drive = Outpost::DriveId{2};
+    const DirectX::XMFLOAT4* fusion = catalog.ExhaustColor(ship);
+    Assert::IsTrue(ion != nullptr && fusion != nullptr && ion != fusion);
+    ship.drive = Outpost::DriveId{9};
+    Assert::IsNull(catalog.ExhaustColor(ship));
+    ship.role = Outpost::ShipRole::Constructor;
+    Assert::IsTrue(catalog.ExhaustColor(ship) == &catalog.constructorExhaust);
+    Assert::IsNull(catalog.ExhaustColor({.kind = Outpost::EntityKind::Structure}));
+
+    std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+    const std::string_view one = R"([ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ])";
+    json.replace(
+      json.find(one), one.size(),
+      R"([ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } }, { "drive": 1, "color": { "red": 1, "green": 0, "blue": 0 } } ])");
+    ExpectRejected(json);
   }
 
   TEST_METHOD(RejectsANameThatIsNotAFileName)
   {
     ExpectRejected(OneModel("Hu man", GOOD_MODEL, GOOD_COLOR));
-    ExpectRejected(OneModel("Human", R"({ "name": "..", "forwardAxis": "+x", "lengthMeters": 20 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "..", "lengthMeters": 20 })", GOOD_COLOR));
   }
 
   TEST_METHOD(RejectsAColorChannelAboveOne)
@@ -165,12 +191,12 @@ public:
 
   TEST_METHOD(RejectsANonPositiveLength)
   {
-    ExpectRejected(OneModel("Human", R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 0 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "lengthMeters": 0 })", GOOD_COLOR));
   }
 
   TEST_METHOD(RejectsAnUnknownMember)
   {
-    ExpectRejected(OneModel("Human", R"({ "name": "Small", "forwardAxis": "+x", "lengthMeters": 20, "scale": 2 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "scale": 2 })", GOOD_COLOR));
   }
 
   TEST_METHOD(AcceptsAWellFormedCatalog)

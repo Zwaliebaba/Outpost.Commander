@@ -52,6 +52,8 @@ struct EntityView
   DesignId design;
   // A warship's hull, which the client draws it by; no hull for anything else.
   HullId hull;
+  // A warship's drive, which the client colors its exhaust by (ADR-019); no drive for anything else.
+  DriveId drive;
   // Meaningful for a ship only.
   ShipRole role = ShipRole::Warship;
   // Meaningful for a structure only.

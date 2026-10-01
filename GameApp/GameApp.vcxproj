@@ -80,6 +80,7 @@
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="LoadDriver.h" />
     <ClInclude Include="ModelCatalog.h" />
+    <ClInclude Include="Hardpoints.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Picking.h" />
     <ClInclude Include="PlayerControls.h" />
@@ -97,6 +98,7 @@
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="LoadDriver.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
+    <ClCompile Include="Hardpoints.cpp" />
     <ClCompile Include="Picking.cpp" />
     <ClCompile Include="PlayerControls.cpp" />
     <ClCompile Include="SnapshotInterpolator.cpp" />

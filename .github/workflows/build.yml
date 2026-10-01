@@ -271,3 +271,25 @@ jobs:
 
       - name: Check formatting
         run: python3 Build/CheckFormat.py --clang-format clang-format-18
+
+  meshes:
+    name: Meshes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # The game's meshes are baked from their glTF sources by Tools/BakeMeshes.py, and the baked .nmf files are
+    # committed (ADR-018). This proves every one of them is byte for byte what its source bakes to, so a source edited
+    # without a bake, or a bake edited by hand, fails here. The baker uses the standard library only, and CPython's
+    # floats are the same on every machine, so the runner's Python bakes what the owner's did. The self-test bakes small
+    # sources the script builds and shows every refusal still fires.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check the baked meshes
+        run: |
+          python3 Tools/BakeMeshes.py --check
+          python3 Tools/BakeMeshes.py --self-test
