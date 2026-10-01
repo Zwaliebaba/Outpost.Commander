@@ -46,24 +46,25 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 3.2 | Components and designs | 3.1 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
 | 3.3 | Combat rules | 3.2, 2.4 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
 | 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check failed until B.1 retuned §12 |
-| 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
-| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
-| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
+| 3.5 | Combat effects | 3.3, 2.5 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), run by the owner |
+| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), run by the owner |
+| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); measured on the development machine on 2026-10-01 (design §3) |
 | 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), run by the owner |
 | 4.3 | Shipyard and Command Station queues | 4.2 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
 | 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
-| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
+| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), run by the owner |
 | 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
 | 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
 | 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40); the check failed, with the Missile Rack a trump card, until B.1 retuned §12 |
-| A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | merged in [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), in review until the owner's run |
-| A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | merged in [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), in review until the owner's run |
-| 6.1 | The AI player | 5.2 | G9 decided | merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), in review until the owner's run |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40), run by the owner; the check failed, with the Missile Rack a trump card, until B.1 retuned §12 |
+| A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | done, [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), run by the owner |
+| A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | done, [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), run by the owner |
+| 6.1 | The AI player | 5.2 | G9 decided | done, [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), run by the owner; too tough, which C.1 takes up |
 | 6.2 | Win, lose and the menu | 6.1 | — | merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), in review until the owner's run |
-| 6.3 | Q1 and Q3 playtests | 6.2 | — | the match log merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); the playtests are the owner's |
-| B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the full check passes, and the owner's Release run is the check of record |
+| 6.3 | Q1 and Q3 playtests | 6.2 | — | done, the match log in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); Q1 "yes, with changes" and Q3 "yes" from the owner's match (design §3) |
+| B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the check of record passes in Release\|ARM64 on the development machine |
+| C.1 | An AI the player can beat | 6.3 | owner, 2026-10-01 | todo |
 
 ## Gates
 
@@ -314,7 +315,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - **The tick half of Q4 is met in steady play:** 0.18 ms mean and 0.37 ms at the 99th percentile. It is **missed on the ticks that order both 100-ship fleets at once**: up to 8.3 ms. Whether that needs fixing is open in design §15.
   - **How it was built:** `--measure` logs tick durations and order-to-response times to `OutpostCommander-measure.log` in the temporary folder. `--load` places `PlaceMeasurementLoad`'s 200 ships and 40 structures, and `LoadDriver` keeps both fleets moving. `Server::TakeTickDurations` reports the server's own timing. `Simulation::SpawnStructure` places the load's structures, which do not block movement until 4.2.
   - **How to repeat it:** the recorded runs were driven by a script on the owner's machine. `OutpostCommander.exe --measure` and `--measure --load` repeat them by hand. The owner closed the task on 2026-09-30.
-  - **Follow-up, 2026-10-01:** the owner chose to path a group's order once for the group (ADR-010). In a Linux container the same 200-ship order tick fell from about 3.4 ms to about 1 ms; the development machine's figure needs `--measure --load` again.
+  - **Follow-up, 2026-10-01:** the owner chose to path a group's order once for the group (ADR-010). In a Linux container the same 200-ship order tick fell from about 3.4 ms to about 1 ms; on the development machine on 2026-10-01 it took 5.7–8.7 ms, with the load's structures now blocking movement (design §3).
 
 ---
 
@@ -377,7 +378,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Scope:** `NeuronClient` rendering, driven from `GameApp`.
 - **Verify:** **owner run.**
 
-- **As built:** `Outpost::CombatEffects` in `GameApp` turns each snapshot's shots and destroyed into effects drawn with the mesh pipeline: a muzzle flash, a tracer for the Mass Driver and a beam for the Lance, a hit spark, and an explosion where a ship or structure died. Health bars show over damaged ships and structures. Effects start one tick back, so they line up with the interpolated view. Not run yet: the owner's run decides whether they read.
+- **As built:** `Outpost::CombatEffects` in `GameApp` turns each snapshot's shots and destroyed into effects drawn with the mesh pipeline: a muzzle flash, a tracer for the Mass Driver and a beam for the Lance, a hit spark, and an explosion where a ship or structure died. Health bars show over damaged ships and structures. Effects start one tick back, so they line up with the interpolated view. The owner's run on 2026-10-01 found that they read.
 
 ### 3.6 — In-game UI drawing and a first HUD
 
@@ -386,7 +387,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Scope:** UI rendering in `NeuronClient`. HUD state in `GameApp`.
 - **Verify:** **owner run.**
 
-- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md). `Neuron::RasterizeGlyphs` and `PackGlyphs` build the atlas, and `Neuron::UiPipeline` draws panels and text in one draw call with `UiVS.hlsl` and `UiPS.hlsl`. `Outpost::Hud` lays out the Ore stockpile in the top-left corner and, for a selection, a panel at the bottom middle with the ship count, the count of each design by name, and their hit points, in reference units. A button press on a HUD panel does not reach the player's controls. `HudTests` and `GlyphAtlasTests` run without a GPU; rasterizing a system font needs Windows. Not run yet: the owner's run checks the text is sharp at the native resolution.
+- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md). `Neuron::RasterizeGlyphs` and `PackGlyphs` build the atlas, and `Neuron::UiPipeline` draws panels and text in one draw call with `UiVS.hlsl` and `UiPS.hlsl`. `Outpost::Hud` lays out the Ore stockpile in the top-left corner and, for a selection, a panel at the bottom middle with the ship count, the count of each design by name, and their hit points, in reference units. A button press on a HUD panel does not reach the player's controls. `HudTests` and `GlyphAtlasTests` run without a GPU; rasterizing a system font needs Windows. The owner's run on 2026-10-01 found the text sharp at the native resolution.
 
 ### 3.7 — Q4 stress scene and measurement
 
@@ -397,14 +398,14 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - A summary script under `Tools/`.
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
 - **Verify:** **owner run**, Release.
-- **As built:** the stress scene is `Outpost::StressLoad`, run by `OutpostCommander.exe --stress`; with `--measure` the game logs each frame's CPU and GPU work, each tick, the back buffer's size and the display's refresh rate, and `python Tools/FrameTimes.py` summarizes the log against Q4. Design §3 gives the method. `Neuron::Renderer` takes the GPU timestamps and `TakeGpuFrameTimes` returns them. `StressLoadTests` runs the scene for 60 simulated seconds: each side stays above 80 ships, with more than 1,000 shots and more than 20 ships or structures destroyed. In a Linux container its ticks took 0.11 ms at the median, 0.45 ms at the 99th percentile and 1.7 ms at worst, which is not the development machine. **Q4 is not answered until the owner's measurement**, Release on the development machine, is recorded in design §3.
+- **As built:** the stress scene is `Outpost::StressLoad`, run by `OutpostCommander.exe --stress`; with `--measure` the game logs each frame's CPU and GPU work, each tick, the back buffer's size and the display's refresh rate, and `python Tools/FrameTimes.py` summarizes the log against Q4. Design §3 gives the method. `Neuron::Renderer` takes the GPU timestamps and `TakeGpuFrameTimes` returns them. `StressLoadTests` runs the scene for 60 simulated seconds: each side stays above 80 ships, with more than 1,000 shots and more than 20 ships or structures destroyed. In a Linux container its ticks took 0.11 ms at the median, 0.45 ms at the 99th percentile and 1.7 ms at worst, which is not the development machine. **Q4 was measured on the development machine on 2026-10-01**, in Release|ARM64 at 1920×1080 and at 2880×1920, and design §3 records it. Frames are met at 1920×1080, and ticks miss 5 ms on a few ticks a run, which the owner leaves for after the MVP. The run showed that the Adreno's GPU timestamps miss work, so design §3 counts the frames presented as well.
 
 ### What milestone 3 changed for later tasks
 
-Milestone 3 merged as [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) on 2026-10-01, with 3.5–3.7 not yet run by the owner.
+Milestone 3 merged as [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) on 2026-10-01. The owner ran 3.5 and 3.6, and 3.7 was measured on the development machine, later the same day.
 
 - **Q2 was answered "no" at milestone 3.** The check failed against the simulation where the model passed, and milestones 4 to 6 built on those numbers. B.1 retuned §12 against the simulation, and Q2 is now "yes" there (design §3, §12).
-- **Q4 waits on the owner's measurement** with `--measure --stress` in Release (design §3).
+- **Q4 is answered** from `--measure --stress` and `--measure --load` in Release on the development machine (design §3).
 - **Structures already fight.** `Simulation::SpawnStructure` takes hit points and armor, and auto-targeting falls back to structures, so 4.4 adds the Defence gun to what is there rather than a new kind of combatant.
 - **Snapshots carry Ore and the player's designs**, so 4.1's income and 4.5's HUD read what is already sent.
 - **The full Q2 check runs only with `OUTPOST_Q2_FULL` set**, because the native test adapter ignores vstest's category filter. A later slow test needs the same gate, not a filter.
@@ -448,7 +449,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
     - shows a ghost through `PlaceGhost`;
     - lets the player select a structure, place one from the HUD, repair with a right-click, and attack structures.
   - `ConstructionTests` covers placement, one and two Constructors, travel to a site, blocking, repair and joining a site. The client's tests cover placement and the controls.
-  - Not run: the owner's run checks the ghost and the build menu.
+  - Run by the owner on 2026-10-01: the ghost and the build menu read.
 
 ### 4.3 — Shipyard and Command Station queues
 
@@ -473,7 +474,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - At the bottom: the selection panel, which covers a structure's construction, hit points and queue; the buttons, which build and queue, show costs and are dim when unaffordable; and the minimap, which shows every entity and the camera's view. A left press or drag on the minimap moves the camera, and a right press sends the selected ships.
   - The research queue waits for task 5.1.
   - `HudTests` covers the content and the layout.
-  - Not run: the owner's run checks it reads.
+  - Run by the owner on 2026-10-01: it reads.
 
 ### 4.6 — Hand checks of the structure numbers
 
@@ -488,7 +489,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 
 ### What milestone 4 changed for later tasks
 
-Milestone 4 merged as [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) on 2026-10-01, with 4.2 and 4.5 not yet run by the owner.
+Milestone 4 merged as [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) on 2026-10-01, and the owner ran 4.2 and 4.5 later the same day.
 
 - **A match starts with a base, not a fleet.** Warships come from a Shipyard the player builds. A test that needs ships spawns them, as `MatchArena` does.
 - **The simulation needs the tuning data for the base** (`Simulation::UseTuning`). Tests that build a simulation without it still move and fight, and get `NotYetSupported` for base orders.
@@ -546,7 +547,7 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
     - It checks that the snapshot's components give the server's stats before and after research.
     - `DesignerTests` checks the designer's stats against the model's table, its picks, saving and renaming, and typing.
     - `HudTests` covers the research panel and the designer panel.
-  - **Not run:** the owner's run checks the panel, the research HUD and typing.
+  - **Run by the owner**, as the task board records.
 
 ### 5.3 — The Missile Rack, in the game and in the model
 
@@ -561,7 +562,7 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
   - **The checks.** Both now field all eighteen designs, and the robustness sweep moves the splash radius too. The footprints are not moved: they are sizes.
   - **The result.** The model fails only (b): the Missile Rack is never worth building under spread fire. The simulation fails all four. The Missile Rack, taken by one side with Mass Driver Calibration, leaves the other side's starting designs without a single win at 3,000–4,500 Ore. Design §12 and §15 record it for the owner, untuned.
   - **Tests.** `CombatTests.SplashHitsEveryEnemyNearTheTarget` covers distance, structures, armor and friendly fire. `DesignTests` checks the model's Missile Rack rows, and `CombatEffectsTests` the ring.
-  - **Not run:** the owner's run checks that the ring reads.
+  - **Run by the owner** on 2026-10-01: the ring reads.
 
 ### What milestone 5 changed for later tasks
 
@@ -601,7 +602,7 @@ The owner added this work on 2026-10-01, alongside milestone 5, and it lands as 
 
 ### What A.1 and A.2 changed for later tasks
 
-A.1 and A.2 merged as [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41) on 2026-10-01, not yet run by the owner.
+A.1 and A.2 merged as [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41) on 2026-10-01, and the owner ran them later the same day.
 
 - **A mesh change is a bake.** Edit the glTF source under `Art/Models/`, run `python Tools/BakeMeshes.py`, and commit both. CI's Meshes job fails when the two disagree (ADR-018).
 - **The owner's Q4 run (3.7) measures the glow pass too.**
@@ -656,9 +657,9 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 
 ### What milestone 6 changed for later tasks
 
-Milestone 6 merged as [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42) on 2026-10-01, with 6.1 and 6.2 not yet run by the owner, and 6.3's playtests still the owner's.
+Milestone 6 merged as [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42) on 2026-10-01. The owner ran 6.1 and played 6.3's first match later the same day.
 
-- **Q1 and Q3 wait on the owner's matches.** `python Tools/MatchLog.py --all` summarizes them, and the answers go in design §3.
+- **Q1 and Q3 are answered** from the owner's first match (design §3). `python Tools/MatchLog.py --all` summarizes every match, and C.1's replays are judged the same way.
 - **The AI's numbers are in `Opponent.json`, and it names components and topics by `Tuning.json`'s identifiers.** `AiSettingsTests` fails when the two disagree, so a change to either is checked against the other.
 - **A change to §12 changes how the AI's matches play.** ADR-020's AI-against-AI figures are measured again when §12 moves, as B.1 did.
 
@@ -682,10 +683,26 @@ The owner settled design §15's open questions on 2026-10-01, and this work land
 ### What B.1 changed for later tasks
 
 - **Q2 is "yes" in the simulation**, and `Q2CheckTests.TheFullCheck` is how a change to §12 is judged. `Tools/BattleModel.py` now agrees with it on (a) only, so it is a first guess, not a verdict (design §12).
-- **The MVP waits on the owner's runs.** Q1 and Q3 need the playtests (6.3), Q4 the `--measure --stress` run in Release (3.7) and a repeat of `--measure --load` since group pathing (2.7), and the owner's run of every task still in review.
+- **Q1–Q5 were answered on 2026-10-01**, from the owner's runs and first match and from measurements on the development machine (design §3).
+
+---
+
+## Inserted by the owner — An AI the player can beat
+
+The owner's first match answered Q1 "yes, with changes" on 2026-10-01. The AI was too tough: the owner left at 24:51, with the AI at 443 warships to the player's 141 (design §3). The owner decided the same day that the AI is made beatable before the MVP closes.
+
+### C.1 — An AI the player can beat
+
+- **Goal:** an AI the owner can beat, playing by the same rules as the player (design §10).
+- **Scope:**
+  - Measure where the AI out-builds the player: its rigs, Shipyards and Constructors over time, against the owner's match. The match log records research and warships but no structures, so this may add them to it.
+  - Propose the levers in `OutpostCommander/Assets/Opponent.json`, with what each changes in AI-against-AI matches and against a passive player, and ask the owner which to pull. A lever `Opponent.json` does not have yet is a code change, and the PR says so.
+  - Measure ADR-020's AI-against-AI figures again with the chosen settings.
+- **Acceptance:** the owner's next matches against the AI, summarized by `Tools/MatchLog.py`, and Q1 recorded again in design §3.
+- **Verify:** CI; **owner run.**
 
 ---
 
 ## What finishes the MVP
 
-The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.
+The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". They were on 2026-10-01, and the owner decided that C.1 comes first: the MVP closes once C.1 is done and Q1 is recorded again. At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.

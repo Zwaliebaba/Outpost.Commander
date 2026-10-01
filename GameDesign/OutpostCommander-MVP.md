@@ -1,6 +1,6 @@
 # Outpost Commander — MVP Design
 
-Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6 and the retune of §12
+Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6, the retune of §12 and the answers to Q1–Q5
 
 This is the design authority AGENTS.md refers to: it says *what* is built. AGENTS.md says *how* the code is written, and `Design/ADR/` records the engineering decisions taken while building it.
 
@@ -43,13 +43,31 @@ For the MVP, the opponent is **The Tarkan High Command**, the Tarkan for short: 
 
 Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answer is still a result.** The MVP is done when all five are answered, not when they are all "yes".
 
-**Where they stand on 2026-10-01.** Q2 is "yes" in the simulation (below, and §12). Q5 is met. Q4's tick half is met in steady play and was missed on the ticks that order both fleets at once, which group pathing has since cut; the development machine's figure waits on a repeat of the run. Q4 in combat, Q1 and Q3 wait on the owner's runs: the measurement in Release, and matches against the AI.
+**Where they stand on 2026-10-01: all five are answered.** Q1 is "yes, with changes": the owner wants to play again, and the AI is too tough. Q2 is "yes" in the simulation (below, and §12). Q3 is "yes". Q4 is met for frames at 1920×1080, and for ticks in steady play; ticks miss 5 ms when 200 ships are ordered at once and on a few ticks in combat, and fixing them is post-MVP work (owner, 2026-10-01). Q5 is met. The figures are from the development machine.
 
 Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded. When a target is missed, PIX is the tool for finding where the time goes. The client's regions are named in Debug builds only (ADR-005), so the recorded figures come from the game's own timings of a Release build.
 
-**Measured on 2026-09-30 (task 2.7).**
+**Measured on 2026-10-01, on the development machine.**
 
-The machine was a laptop with an Intel Core i7-12700H, 16 GB of memory, and an NVIDIA GeForce RTX 3070 Ti Laptop GPU rendering. The display was a 1920×1080 panel at 165 Hz driven by the integrated Intel Iris Xe. It ran Windows 11 Pro, build 26200, and the Release|x64 build. The runs were driven by a script that injected the input; the owner has not yet repeated them by hand.
+The development machine is the Snapdragon X of ADR-003 (owner, 2026-10-01): a laptop with a Qualcomm Snapdragon X X1P64100 (10 cores, 3.4 GHz), 16 GB of memory, and its integrated Qualcomm Adreno X1-85 GPU. The display is its built-in 2880×1920 panel at 60 Hz. It ran Windows 11 Home, build 26200, and the Release|ARM64 build. A script launched the game, moved the camera and injected the Q5 clicks. For the 1920×1080 run it set the display to 1920×1080 at 60 Hz for that run only.
+
+| Question | What | Figure | Target |
+|---|---|---|---|
+| Q4 | Combat at 1920×1080 with the HUD (`--measure --stress`), zoomed out to the 1,600 m view over the fight, 5,654 frames | presented 59.9 frames a second. CPU work: mean 2.57 ms, 99th percentile 4.64, worst 13.06. GPU work: mean 2.25, 99th percentile 2.43, worst 3.52 | 99% of frames ≤ 16.7 ms: **met** |
+| Q4 | The same at the panel's 2880×1920, 2,778 frames | **presented 30.0 frames a second**: every frame missed a vsync. CPU work: mean 3.43 ms, 99th percentile 5.31. GPU work: mean 2.94, 99th percentile 3.16 | not Q4's resolution |
+| Q4, tick half | Combat, the two runs above, 1,930 and 1,928 ticks | mean 0.88 ms, 99th percentile 1.57 and 1.74 ms; over 5 ms on 4 and 5 ticks, the first tick included, worst 9.4 and 9.9 ms | ≤ 5 ms: **missed on 4–5 ticks a run** |
+| Q4, tick half | 200 ships and 40 structures, both fleets ordered every 10 s (`--measure --load`), 1,464 ticks | between orders: mean 0.48 ms, 99th percentile 0.90 ms, one tick at 8.6 ms | ≤ 5 ms |
+| Q4, tick half | The ticks that order both 100-ship fleets | 20.7 ms on the first, then 2.1, 5.7, 8.2, 5.7, 8.7, 6.0 and 6.9 ms | ≤ 5 ms: **missed on 7 of 8** |
+| Q5 | From an injected right-click to the first presented frame in which an ordered ship visibly responds, 30 move orders to the two Constructors at rest | mean 48 ms, median 49 ms, 95th percentile 66 ms, worst 70 ms | ≤ 150 ms: **met** |
+| Q5 | The same, from when the game read the click | mean 38 ms, worst 55 ms | — |
+
+- **The method** is task 2.7's for Q5 and task 3.7's for Q4, below, with the clicks spread by the same random 150–400 ms pause.
+- **The frame rate is counted too.** Frames presented a second are the frames logged over the run's length in ticks, at 20 a second.
+- **This GPU's timestamps miss work.** At 2880×1920 the logged work was about 3 ms of CPU and 3 ms of GPU a frame, yet every frame took two vsyncs. Something outside the two timestamps cost more than 16.7 ms, so on this machine the frame rate, not the GPU work, is what says whether a frame was on time. Why the timestamps miss it is not known. The same view at 1920×1080 held 60 frames a second, and so did every view at 2880×1920 with less of the fight on screen.
+
+**Measured on 2026-09-30 (task 2.7), on a second machine.**
+
+That machine was not the development machine. It was a laptop with an Intel Core i7-12700H, 16 GB of memory, and an NVIDIA GeForce RTX 3070 Ti Laptop GPU rendering. The display was a 1920×1080 panel at 165 Hz driven by the integrated Intel Iris Xe. It ran Windows 11 Pro, build 26200, and the Release|x64 build. The runs were driven by a script that injected the input; the owner has not yet repeated them by hand.
 
 | Question | What | Figure | Target |
 |---|---|---|---|
@@ -58,7 +76,7 @@ The machine was a laptop with an Intel Core i7-12700H, 16 GB of memory, and an N
 | Q5 | The boundary: `#include "GameLogic.h"` added to `GameApp` and to `Opponent` | both fail with C1083 | fails to compile: **met** |
 | Q4, tick half | 200 ships and 40 structures, both fleets kept moving, 1,181 ticks over 60 s | mean 0.18 ms, 99th percentile 0.37 ms, and under 1 ms on every tick but those below | ≤ 5 ms |
 | Q4, tick half | The ticks where both 100-ship fleets are ordered at once, every 10 s | 3.0, 3.7, 2.7, 5.0, 6.8 and 8.3 ms, rising as the fleets spread | ≤ 5 ms: **missed on 2 of 6** |
-| Q4 | 200 ships and 40 structures in combat at 1920×1080 with the HUD (task 3.7, `--measure --stress`): frame CPU and GPU work, and every tick | **not measured yet**: the owner's run | 99% of frames ≤ 16.7 ms; ticks ≤ 5 ms |
+| Q4 | 200 ships and 40 structures in combat at 1920×1080 with the HUD (task 3.7, `--measure --stress`): frame CPU and GPU work, and every tick | not measured on this machine: see the development machine's, above | 99% of frames ≤ 16.7 ms; ticks ≤ 5 ms |
 
 How each figure was measured:
 
@@ -77,7 +95,7 @@ How each figure was measured:
   - **The display:** the back buffer's size and the refresh rate of the display the window is on, logged whenever the size changes.
   - `python Tools/FrameTimes.py` summarizes the log: mean, median, 95th and 99th percentiles and worst, for frames, ticks and order responses, leaving out the first 120 frames of loading. The run records the view it was taken at; zoomed out so that both fleets are in view is the heavy case.
 
-The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. The owner decided on 2026-10-01 that a group's order paths once for the group rather than once per ship (ADR-010), which cut the same order tick from about 3.4 ms to about 1 ms in a Linux container; the development machine's figure comes from repeating `--measure --load`.
+The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. The owner decided on 2026-10-01 that a group's order paths once for the group rather than once per ship (ADR-010), which cut the same order tick from about 3.4 ms to about 1 ms in a Linux container. On the development machine the order ticks still take 5.7–8.7 ms, and 20.7 ms on the first (2026-10-01, above); since milestone 4 the load's structures block movement, which the Linux figure predates. The owner decided on 2026-10-01 to record Q4 with these ticks and to fix them after the MVP.
 
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
@@ -98,6 +116,10 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 `Tools/BattleModel.py` runs the check against the numbers in `OutpostCommander/Assets/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right, and §12 is tuned against it. The model stays a rough guide and is not taught the simulation's geometry (owner, 2026-10-01). Where §12 stands against the check today is recorded in §12.
 
 **Q2's answer: yes, in the simulation** (2026-10-01). After §12 was retuned against it, the simulation's check passes all four criteria, (b) judged over each stage's budgets (§12). What it does not cover is said above: it judges designs in battles of two fleets, not in a match, and not the drive's speed. Q1's playtests are where both show.
+
+**Q1's answer: yes, with changes** (owner, 2026-10-01). The owner played a match against the AI (seed 17908775201362716, summarized by `Tools/MatchLog.py`) and left it at 24:51, before it ended, because the AI was too tough. It had built 443 warships to the player's 141, and 26 to 1 in the first five minutes. The owner wants to play again, and an AI the player can beat comes before the MVP closes (plan task C.1). The match gives no length for a finished match. Two AIs end one in 8 to 15 minutes (ADR-020).
+
+**Q3's answer: yes** (owner, 2026-10-01). In the same match, research visibly changed what was built in the mid-game. The AI moved to Large+Fusion designs after its Large Hull at 6:42, and its first heavies came between 10:00 and 15:00. The player had researched all eight topics by 13:04 and built Small and Medium hulls with the Mass Driver and the Lance, never the Large hull, the Fusion Drive or the Missile Rack.
 
 ---
 
@@ -346,6 +368,8 @@ The model puts every ship of a clump in range of every enemy, at formation spaci
 
 **Running the check.** The full check takes about five minutes on four cores, so it runs only when the `OUTPOST_Q2_FULL` environment variable is set, which CI never does: `set OUTPOST_Q2_FULL=1`, then `vstest.console.exe x64\Release\GameLogicTests.dll`. The report goes to `Q2Check-report.txt` in the temporary folder.
 
+**The check of record** ran on the development machine in Release|ARM64 on 2026-10-01, in 1 min 51 s on ten cores. It passes all four criteria with the verdicts above, the 55%, 59% and 87% of (d) included. Its robustness sweep made 2,304 counter checks where the Linux container's counted 2,226, so the two builds do not play every battle the same. ADR-009 promises a replay only on the same build and platform.
+
 **The base's numbers** (milestone 4).
 
 - **The Constructor and its rates are the owner's baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
@@ -390,7 +414,7 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 ## 15. Open questions
 
-- Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
+- None for the MVP. The last were closed on 2026-10-01, below.
 
 Decided on 2026-09-30, first review:
 
@@ -476,3 +500,7 @@ Decided on 2026-10-01, closing the open questions:
 - The team colours are final as they were: blue for the player and orange-red for the Tarkan (§11, ADR-011). So are the exhaust colours: Ion cyan, Fusion magenta, and a pale gray for the Constructor (§11, ADR-019).
 - The camera zooms from a view 150 m wide to one 1,600 m wide, the limits it has used since milestone 1 (§4, ADR-012, gate G3).
 - The placeholder meshes stay through the MVP, and replacing them is post-MVP work. None ships with the MVP, so their provenance does not arise; a replacement's is recorded when it lands (§11, gate G2).
+- The development machine that Q4 and Q5 are measured on is the Snapdragon X of ADR-003, running the ARM64 build. Q4 is measured at 1920×1080, as it asks, and at the panel's native 2880×1920 (§3).
+- Q4 is recorded as measured. Frames are met at 1920×1080. Ticks are met in steady play, and missed when 200 ships are ordered at once and on a few ticks in combat. Fixing those ticks is post-MVP work (§3).
+- Q1 is "yes, with changes": the AI is too tough. Making it one the player can beat comes before the MVP closes (§3, §10).
+- Q3 is "yes" (§3).
