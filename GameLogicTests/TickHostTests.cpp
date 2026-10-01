@@ -47,9 +47,18 @@ public:
 
   TEST_METHOD(RejectsARateOutOfRange)
   {
-    Assert::ExpectException<Neuron::Exception>([] { Neuron::TickHost host(0, 5); });
-    Assert::ExpectException<Neuron::Exception>([] { Neuron::TickHost host(20, 0); });
-    Assert::ExpectException<Neuron::Exception>([] { Neuron::TickHost host(1'000'000, 5); });
+    Assert::ExpectException<Neuron::Exception>([]
+    {
+      Neuron::TickHost host(0, 5);
+    });
+    Assert::ExpectException<Neuron::Exception>([]
+    {
+      Neuron::TickHost host(20, 0);
+    });
+    Assert::ExpectException<Neuron::Exception>([]
+    {
+      Neuron::TickHost host(1'000'000, 5);
+    });
   }
 };
 } // namespace GameLogicTests

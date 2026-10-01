@@ -23,9 +23,7 @@ class CmoReader
 public:
   CmoReader(std::span<const std::uint8_t> _bytes, std::string_view _fileName)
     : m_bytes(_bytes),
-      m_fileName(_fileName)
-  {
-  }
+      m_fileName(_fileName) {}
 
   [[noreturn]] void Fail(std::string_view _message) const
   {
@@ -185,8 +183,7 @@ DirectX::XMFLOAT3 FaceForward(const DirectX::XMFLOAT3& _point, Neuron::MeshAxis 
     return {_point.z, _point.y, -_point.x};
   case Neuron::MeshAxis::NegativeZ:
     return {-_point.z, _point.y, _point.x};
-  case Neuron::MeshAxis::PositiveX:
-  default:
+  case Neuron::MeshAxis::PositiveX: default:
     return _point;
   }
 }

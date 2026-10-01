@@ -68,10 +68,12 @@ public:
   {
     return m_viewWidthMeters;
   }
+
   [[nodiscard]] DirectX::XMFLOAT2 Focus() const noexcept
   {
     return {m_focusXMeters, m_focusZMeters};
   }
+
   // How far the camera looks down from the horizontal.
   [[nodiscard]] float PitchRadians() const noexcept;
   // The camera's height and distance follow from the width it has to show across a screen of this shape.

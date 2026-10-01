@@ -8,7 +8,10 @@ namespace
 {
 void ExpectParseError(std::string_view _text)
 {
-  Assert::ExpectException<Neuron::Exception>([_text] { (void)Neuron::ParseJson(_text); });
+  Assert::ExpectException<Neuron::Exception>([_text]
+  {
+    (void)Neuron::ParseJson(_text);
+  });
 }
 
 std::string ParseErrorMessage(std::string_view _text)
@@ -125,9 +128,18 @@ public:
   TEST_METHOD(ThrowsOnTheWrongType)
   {
     const Neuron::JsonValue value = Neuron::ParseJson("[1]");
-    Assert::ExpectException<Neuron::Exception>([&value] { (void)value.AsObject(); });
-    Assert::ExpectException<Neuron::Exception>([&value] { (void)value.AsArray()[0].AsString(); });
-    Assert::ExpectException<Neuron::Exception>([&value] { (void)value.Find("a"); });
+    Assert::ExpectException<Neuron::Exception>([&value]
+    {
+      (void)value.AsObject();
+    });
+    Assert::ExpectException<Neuron::Exception>([&value]
+    {
+      (void)value.AsArray()[0].AsString();
+    });
+    Assert::ExpectException<Neuron::Exception>([&value]
+    {
+      (void)value.Find("a");
+    });
   }
 };
 } // namespace GameLogicTests

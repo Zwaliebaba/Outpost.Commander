@@ -86,12 +86,11 @@ public:
     Assert::IsTrue(destroyed > 20, std::to_wstring(destroyed).c_str());
 
     std::ranges::sort(ticks);
-    Logger::WriteMessage(
-      std::format("{} ticks, {} shots, {} destroyed; tick median {:.3f} ms, 99th percentile {:.3f} ms, slowest {:.3f} ms", ticks.size(),
-                  shots, destroyed, std::chrono::duration<double, std::milli>(ticks[ticks.size() / 2]).count(),
-                  std::chrono::duration<double, std::milli>(ticks[ticks.size() * 99 / 100]).count(),
-                  std::chrono::duration<double, std::milli>(ticks.back()).count())
-        .c_str());
+    Logger::WriteMessage(std::format(
+      "{} ticks, {} shots, {} destroyed; tick median {:.3f} ms, 99th percentile {:.3f} ms, slowest {:.3f} ms", ticks.size(), shots,
+      destroyed, std::chrono::duration<double, std::milli>(ticks[ticks.size() / 2]).count(),
+      std::chrono::duration<double, std::milli>(ticks[ticks.size() * 99 / 100]).count(),
+      std::chrono::duration<double, std::milli>(ticks.back()).count()).c_str());
   }
 };
 } // namespace GameLogicTests

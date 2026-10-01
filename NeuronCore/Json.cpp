@@ -12,9 +12,7 @@ class Parser
 {
 public:
   explicit Parser(std::string_view _text) noexcept
-    : m_text(_text)
-  {
-  }
+    : m_text(_text) {}
 
   Neuron::JsonValue ParseDocument()
   {
@@ -59,7 +57,9 @@ private:
   void SkipWhitespace() noexcept
   {
     while (!AtEnd() && (Peek() == ' ' || Peek() == '\t' || Peek() == '\n' || Peek() == '\r'))
+    {
       ++m_position;
+    }
   }
 
   void Expect(char _character)
@@ -178,7 +178,9 @@ private:
     {
       const size_t first = m_position;
       while (!AtEnd() && Peek() >= '0' && Peek() <= '9')
+      {
         ++m_position;
+      }
       return m_position - first;
     };
 
@@ -360,29 +362,19 @@ private:
 } // namespace
 
 Neuron::JsonValue::JsonValue(bool _value) noexcept
-  : m_value(_value)
-{
-}
+  : m_value(_value) {}
 
 Neuron::JsonValue::JsonValue(double _value) noexcept
-  : m_value(_value)
-{
-}
+  : m_value(_value) {}
 
 Neuron::JsonValue::JsonValue(std::string _value) noexcept
-  : m_value(std::move(_value))
-{
-}
+  : m_value(std::move(_value)) {}
 
 Neuron::JsonValue::JsonValue(Array _value) noexcept
-  : m_value(std::move(_value))
-{
-}
+  : m_value(std::move(_value)) {}
 
 Neuron::JsonValue::JsonValue(Object _value) noexcept
-  : m_value(std::move(_value))
-{
-}
+  : m_value(std::move(_value)) {}
 
 bool Neuron::JsonValue::AsBool() const
 {

@@ -15,12 +15,8 @@ constexpr Outpost::HullId MEDIUM{2};
 
 Outpost::EntityView Ship(std::uint32_t _id, Outpost::PlayerId _owner, float _xMeters, float _zMeters, Outpost::HullId _hull = SMALL)
 {
-  return {.id = Outpost::EntityId{_id},
-          .kind = Outpost::EntityKind::Ship,
-          .owner = _owner,
-          .hull = _hull,
-          .position = {.xMeters = _xMeters, .zMeters = _zMeters},
-          .radiusMeters = 8.0f};
+  return {.id = Outpost::EntityId{_id}, .kind = Outpost::EntityKind::Ship, .owner = _owner, .hull = _hull,
+          .position = {.xMeters = _xMeters, .zMeters = _zMeters}, .radiusMeters = 8.0f};
 }
 
 // Three of mine near the focus, one Medium of mine, and an enemy, all on screen at the default zoom.
@@ -49,9 +45,7 @@ class Driver
 public:
   Driver()
     : m_camera(Outpost::LoadCameraSettings(ReadRepositoryAssetText("Camera.json"))),
-      m_world(World())
-  {
-  }
+      m_world(World()) {}
 
   void Click(const Outpost::EntityView& _at, std::uint8_t _button = VK_LBUTTON, bool _shift = false)
   {
@@ -62,8 +56,7 @@ public:
   void ClickPixel(std::int32_t _x, std::int32_t _y, std::uint8_t _button = VK_LBUTTON, bool _shift = false)
   {
     Frame({Event(Neuron::InputEventKind::ButtonDown, _button, _x, _y, _shift),
-           Event(Neuron::InputEventKind::ButtonUp, _button, _x, _y, _shift)},
-          _x, _y);
+           Event(Neuron::InputEventKind::ButtonUp, _button, _x, _y, _shift)}, _x, _y);
   }
 
   void Drag(std::int32_t _x0, std::int32_t _y0, std::int32_t _x1, std::int32_t _y1)
@@ -89,10 +82,12 @@ public:
   {
     return m_world;
   }
+
   Outpost::PlayerControls& Controls()
   {
     return m_controls;
   }
+
   Outpost::Camera& CameraView()
   {
     return m_camera;
@@ -146,14 +141,9 @@ void AddBase(std::vector<Outpost::EntityView>& _world)
   _world.push_back(constructor);
   const auto structure = [](std::uint32_t _id, Outpost::PlayerId _owner, float _x, float _z, std::int32_t _built)
   {
-    return Outpost::EntityView{.id = Outpost::EntityId{_id},
-                               .kind = Outpost::EntityKind::Structure,
-                               .owner = _owner,
-                               .structure = Outpost::StructureKind::Shipyard,
-                               .position = {.xMeters = _x, .zMeters = _z},
-                               .radiusMeters = 30.0f,
-                               .hitPointsHundredths = 100000,
-                               .maxHitPointsHundredths = 250000,
+    return Outpost::EntityView{.id = Outpost::EntityId{_id}, .kind = Outpost::EntityKind::Structure, .owner = _owner,
+                               .structure = Outpost::StructureKind::Shipyard, .position = {.xMeters = _x, .zMeters = _z},
+                               .radiusMeters = 30.0f, .hitPointsHundredths = 100000, .maxHitPointsHundredths = 250000,
                                .builtPermille = _built};
   };
   _world.push_back(structure(SITE, ME, -120.0f, -120.0f, 300));
@@ -182,9 +172,12 @@ public:
     const Outpost::Camera& camera = driver.CameraView();
     const std::vector<Outpost::EntityView> world = World();
     const auto [x, y] = PixelOf(camera, world[1]);
-    const auto mine = [](const Outpost::EntityView& _ship) { return _ship.owner == ME; };
-    const std::optional<Outpost::EntityId> picked =
-      Outpost::PickShip(world, camera, VIEWPORT, {static_cast<float>(x) + 3.0f, static_cast<float>(y)}, mine);
+    const auto mine = [](const Outpost::EntityView& _ship)
+    {
+      return _ship.owner == ME;
+    };
+    const std::optional<Outpost::EntityId> picked = Outpost::PickShip(world, camera, VIEWPORT,
+                                                                      {static_cast<float>(x) + 3.0f, static_cast<float>(y)}, mine);
     Assert::IsTrue(picked == Outpost::EntityId{2});
     // Far from every ship, nothing.
     Assert::IsFalse(Outpost::PickShip(world, camera, VIEWPORT, {5.0f, 5.0f}, mine).has_value());
@@ -199,11 +192,10 @@ public:
     const std::vector<Outpost::EntityView> world = World();
     const auto [x1, y1] = PixelOf(driver.CameraView(), world[0]);
     const auto [x3, y3] = PixelOf(driver.CameraView(), world[2]);
-    const std::vector<Outpost::EntityId> boxed =
-      Outpost::ShipsInBox(world, driver.CameraView(), VIEWPORT,
-                          Outpost::ScreenRect::Between(static_cast<float>(x1 - 20), static_cast<float>(y1 - 20),
-                                                       static_cast<float>(x3 + 20), static_cast<float>(y3 + 20)),
-                          ME);
+    const std::vector<Outpost::EntityId> boxed = Outpost::ShipsInBox(world, driver.CameraView(), VIEWPORT,
+                                                                     Outpost::ScreenRect::Between(
+                                                                       static_cast<float>(x1 - 20), static_cast<float>(y1 - 20),
+                                                                       static_cast<float>(x3 + 20), static_cast<float>(y3 + 20)), ME);
     Assert::AreEqual(size_t{3}, boxed.size());
   }
 
@@ -249,7 +241,7 @@ public:
   {
     Driver driver;
     driver.Click(driver.WorldView()[1]);
-    const Outpost::Viewport viewport = VIEWPORT;
+    constexpr Outpost::Viewport viewport = VIEWPORT;
     driver.ClickPixel(static_cast<std::int32_t>(viewport.widthPixels / 2), 100, VK_RBUTTON);
     std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
     Assert::AreEqual(size_t{1}, commands.size());
@@ -391,8 +383,8 @@ public:
     const auto* build = Only<Outpost::BuildStructureCommand>(commands, 1);
     Assert::IsTrue(build->structure == Outpost::StructureKind::DefensePlatform);
     Assert::IsTrue(build->constructors == std::vector{Outpost::EntityId{CONSTRUCTOR}});
-    const Outpost::PlanePosition ground =
-      driver.CameraView().GroundPointAtPixel(900.0f, 400.0f, VIEWPORT).value_or(Outpost::PlanePosition{});
+    const Outpost::PlanePosition ground = driver.CameraView().GroundPointAtPixel(900.0f, 400.0f, VIEWPORT).value_or(
+      Outpost::PlanePosition{});
     Assert::AreEqual(ground.xMeters, build->position.xMeters, 0.01f);
     Assert::AreEqual(ground.zMeters, build->position.zMeters, 0.01f);
     Assert::IsTrue(Ids{CONSTRUCTOR} == driver.Selected(), L"placing does not change the selection");

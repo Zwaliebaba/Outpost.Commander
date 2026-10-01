@@ -29,7 +29,10 @@ constexpr std::string_view GOOD_COLOR = R"({ "red": 0.5, "green": 0.5, "blue": 0
 
 void ExpectRejected(const std::string& _json)
 {
-  Assert::ExpectException<Neuron::Exception>([&] { (void)Outpost::LoadModelCatalog(_json); });
+  Assert::ExpectException<Neuron::Exception>([&]
+  {
+    (void)Outpost::LoadModelCatalog(_json);
+  });
 }
 } // namespace
 
@@ -85,7 +88,7 @@ public:
     ExpectRejected(replaced(R"("tint": 0.5)", R"("tint": 3)"));
     // A model a player's set lacks.
     std::string json = replaced(R"("constructor": "Small")", R"("constructor": "Huge")");
-    const std::string_view noPlayers = R"("players": [])";
+    constexpr std::string_view noPlayers = R"("players": [])";
     json.replace(json.find(noPlayers), noPlayers.size(), R"("players": [ { "player": 1, "set": "Human" } ])");
     ExpectRejected(json);
   }

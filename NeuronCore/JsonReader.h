@@ -62,8 +62,8 @@ private:
 
 // Reads each element of _parent's array _name with _readElement, which is handed a JsonObjectReader for the element and
 // returns an Element. Each element is finished after it is read.
-template <typename Element, typename Fn>
-[[nodiscard]] std::vector<Element> ReadJsonList(JsonObjectReader& _parent, std::string_view _name, Fn _readElement)
+template <typename Element, typename Fn> [[nodiscard]] std::vector<Element> ReadJsonList(
+  JsonObjectReader& _parent, std::string_view _name, Fn _readElement)
 {
   const std::string path = _parent.PathOf(_name);
   const JsonValue::Array& elements = ReadJsonArray(_parent.Required(_name), path);

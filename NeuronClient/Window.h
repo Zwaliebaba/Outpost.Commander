@@ -83,10 +83,12 @@ public:
   {
     return m_exitCode;
   }
+
   [[nodiscard]] HWND Handle() const noexcept
   {
     return m_hwnd;
   }
+
   [[nodiscard]] bool IsMinimized() const noexcept
   {
     return IsIconic(m_hwnd) != FALSE;

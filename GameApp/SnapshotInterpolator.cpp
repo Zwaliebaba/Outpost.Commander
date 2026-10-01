@@ -6,9 +6,7 @@
 #include <numbers>
 
 Outpost::SnapshotInterpolator::SnapshotInterpolator(std::uint32_t _ticksPerSecond)
-  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond))
-{
-}
+  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond)) {}
 
 void Outpost::SnapshotInterpolator::Receive(Snapshot _snapshot)
 {
@@ -51,8 +49,10 @@ std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
     return {};
 
   // The newer of the two snapshots around the view's tick: the first one past it, or the newest.
-  const auto newer =
-    std::ranges::find_if(m_history, [this](const Snapshot& _snapshot) { return static_cast<double>(_snapshot.tick) > m_viewTick; });
+  const auto newer = std::ranges::find_if(m_history, [this](const Snapshot& _snapshot)
+  {
+    return static_cast<double>(_snapshot.tick) > m_viewTick;
+  });
   if (newer == m_history.end() || newer == m_history.begin())
     return (newer == m_history.end() ? m_history.back() : m_history.front()).entities;
   const Snapshot& to = *newer;
@@ -64,8 +64,10 @@ std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
   auto previous = from.entities.begin();
   for (EntityView& entity : entities)
   {
-    previous =
-      std::lower_bound(previous, from.entities.end(), entity.id, [](const EntityView& _view, EntityId _id) { return _view.id < _id; });
+    previous = std::lower_bound(previous, from.entities.end(), entity.id, [](const EntityView& _view, EntityId _id)
+    {
+      return _view.id < _id;
+    });
     if (previous == from.entities.end() || previous->id != entity.id)
       continue;
     entity.position = {.xMeters = std::lerp(previous->position.xMeters, entity.position.xMeters, fraction),

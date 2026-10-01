@@ -21,9 +21,7 @@ public:
     : m_tuning(Outpost::LoadTuning(ReadRepositoryTuning())),
       m_simulation(11, TICKS_PER_SECOND)
   {
-    m_simulation.PlaceMap({.sizeMeters = 4000.0f,
-                           .minimumGapMeters = 60.0f,
-                           .starts = {},
+    m_simulation.PlaceMap({.sizeMeters = 4000.0f, .minimumGapMeters = 60.0f, .starts = {},
                            .oreAsteroids = {{HOME_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Home},
                                             {CONTESTED_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Contested}},
                            .asteroidFields = {}});

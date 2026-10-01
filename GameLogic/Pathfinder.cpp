@@ -62,17 +62,15 @@ bool Outpost::Pathfinder::IsStraightPathClear(PlanePosition _a, PlanePosition _b
   const float maxX = std::max(_a.xMeters, _b.xMeters);
   const float minZ = std::min(_a.zMeters, _b.zMeters);
   const float maxZ = std::max(_a.zMeters, _b.zMeters);
-  return std::ranges::all_of(m_obstacles,
-                             [&](const Obstacle& _obstacle)
-                             {
-                               const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
-                               // Most obstacles are nowhere near the segment's box, and the box is cheaper to test.
-                               const PlanePosition center = _obstacle.center;
-                               if (center.xMeters + grown < minX || center.xMeters - grown > maxX || center.zMeters + grown < minZ ||
-                                   center.zMeters - grown > maxZ)
-                                 return true;
-                               return DistanceToSegment(center, _a, _b) >= grown;
-                             });
+  return std::ranges::all_of(m_obstacles, [&](const Obstacle& _obstacle)
+  {
+    const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
+    // Most obstacles are nowhere near the segment's box, and the box is cheaper to test.
+    const PlanePosition center = _obstacle.center;
+    if (center.xMeters + grown < minX || center.xMeters - grown > maxX || center.zMeters + grown < minZ || center.zMeters - grown > maxZ)
+      return true;
+    return DistanceToSegment(center, _a, _b) >= grown;
+  });
 }
 
 Outpost::PlanePosition Outpost::Pathfinder::InsideEdge(PlanePosition _position, float _clearanceMeters) const noexcept
@@ -129,11 +127,10 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
       const float angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(corner) / static_cast<float>(corners);
       const PlaneVector normal{std::cos(angle), std::sin(angle)};
       const PlanePosition node = obstacle.center + normal * (grown * cornerScale);
-      const bool free =
-        IsInsideEdge(node, _clearanceMeters) &&
-        std::ranges::none_of(
-          m_obstacles, [&](const Obstacle& _other)
-          { return Distance(node, _other.center) < _other.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS; });
+      const bool free = IsInsideEdge(node, _clearanceMeters) && std::ranges::none_of(m_obstacles, [&](const Obstacle& _other)
+      {
+        return Distance(node, _other.center) < _other.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
+      });
       if (free)
       {
         graph.nodes.push_back(node);
@@ -199,7 +196,10 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
   const std::uint32_t startNode = cornerCount;
   const std::uint32_t goalNode = cornerCount + 1;
   const std::uint32_t nodeCount = cornerCount + 2;
-  auto position = [&](std::uint32_t _node) { return _node == startNode ? start : _node == goalNode ? goal : graph.nodes[_node]; };
+  auto position = [&](std::uint32_t _node)
+  {
+    return _node == startNode ? start : _node == goalNode ? goal : graph.nodes[_node];
+  };
 
   constexpr float UNREACHED = std::numeric_limits<float>::infinity();
   constexpr std::uint32_t NONE = std::numeric_limits<std::uint32_t>::max();
@@ -284,9 +284,7 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
 Outpost::GroupRoutes::GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters)
   : m_pathfinder(_pathfinder),
     m_widestClearanceMeters(_widestClearanceMeters),
-    m_destination(_pathfinder.Clear(_destination, _widestClearanceMeters))
-{
-}
+    m_destination(_pathfinder.Clear(_destination, _widestClearanceMeters)) {}
 
 void Outpost::GroupRoutes::SearchFrom(PlanePosition _center)
 {
@@ -313,12 +311,12 @@ std::vector<Outpost::PlanePosition> Outpost::GroupRoutes::PathFor(PlanePosition 
       if (route.clearanceMeters < _clearanceMeters)
         continue;
       if (std::optional<std::vector<PlanePosition>> path = Join(route, _start, goal, _clearanceMeters);
-          path.has_value() && PathLength(_start, *path) <= limitMeters)
+        path.has_value() && PathLength(_start, *path) <= limitMeters)
         return std::move(*path);
     }
-    if (m_pathfinder.IsStraightPathClear(_start, m_destination, _clearanceMeters) &&
-        m_pathfinder.IsStraightPathClear(m_destination, goal, _clearanceMeters) &&
-        Distance(_start, m_destination) + Distance(m_destination, goal) <= limitMeters)
+    if (m_pathfinder.IsStraightPathClear(_start, m_destination, _clearanceMeters) && m_pathfinder.
+        IsStraightPathClear(m_destination, goal, _clearanceMeters) && Distance(_start, m_destination) + Distance(m_destination, goal) <=
+        limitMeters)
       return {m_destination, goal};
   }
 
@@ -336,8 +334,8 @@ std::optional<std::vector<Outpost::PlanePosition>> Outpost::GroupRoutes::Join(co
   std::vector<PlanePosition> tail;
   if (!m_pathfinder.IsStraightPathClear(_route.corners.back(), _goal, _clearanceMeters))
   {
-    if (!m_pathfinder.IsStraightPathClear(_route.corners.back(), m_destination, _clearanceMeters) ||
-        !m_pathfinder.IsStraightPathClear(m_destination, _goal, _clearanceMeters))
+    if (!m_pathfinder.IsStraightPathClear(_route.corners.back(), m_destination, _clearanceMeters) || !m_pathfinder.IsStraightPathClear(
+          m_destination, _goal, _clearanceMeters))
       return std::nullopt;
     tail.push_back(m_destination);
   }

@@ -8,7 +8,7 @@ namespace
 {
 // Linear color; the render target view encodes it to sRGB (ADR-006).
 constexpr std::array<float, 4> CLEAR_COLOR{0.0f, 0.02f, 0.05f, 1.0f};
-constexpr const wchar_t* GAME_TITLE = L"Outpost Commander";
+constexpr auto GAME_TITLE = L"Outpost Commander";
 // Minimized there is no frame to wait for, so the loop wakes this often to let the simulation run on (ADR-009).
 constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 // The human player. The AI connects as another (task 6.1).
@@ -26,7 +26,7 @@ constexpr std::wstring_view LOAD_SWITCH = L"--load";
 // the place of --load. With --measure, every frame's CPU and GPU time is logged as well, with the back buffer's size and
 // the display's refresh rate whenever the size changes, for Q4 (ADR-006).
 constexpr std::wstring_view STRESS_SWITCH = L"--stress";
-constexpr const wchar_t* MEASUREMENT_LOG = L"OutpostCommander-measure.log";
+constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -52,7 +52,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
                     [[maybe_unused]] int _cmdShow)
 {
 #if defined(_DEBUG)
-//  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+  //  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
   // A failure anywhere below, at startup or when the graphics device is lost, ends up here once: it is shown, and its code
@@ -81,8 +81,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       measurements << std::format("seed {} load {} stress {}\n", seed, load ? 1 : 0, stress ? 1 : 0);
     }
 
-    const std::unique_ptr<Outpost::Server> server =
-      Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress});
+    const std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer(
+      {.seed = seed, .measurementLoad = load, .stressLoad = stress});
     const std::unique_ptr<Outpost::Transport> player = server->Connect(HUMAN_PLAYER);
     // Under load both players' ships are kept moving, the rival's through its own connection, as the AI's will be. The
     // stress scene orders its own ships, but the rival connects there too, so the server builds both players' snapshots
@@ -130,11 +130,15 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       if (load)
       {
         for (const Outpost::Snapshot& snapshot : snapshots)
+        {
           for (Outpost::Command& command : playerLoad.Update(snapshot))
             player->Send(std::move(command));
+        }
         for (const Outpost::Snapshot& snapshot : rival->Receive())
+        {
           for (Outpost::Command& command : rivalLoad.Update(snapshot))
             rival->Send(std::move(command));
+        }
       }
       else if (rival)
       {
@@ -190,10 +194,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   }
   catch (const winrt::hresult_error& error)
   {
-    const std::wstring message =
-      std::format(L"{}\n\nError 0x{:08X}", std::wstring_view(error.message()), static_cast<std::uint32_t>(error.code()));
+    const std::wstring message = std::format(L"{}\n\nError 0x{:08X}", std::wstring_view(error.message()),
+                                             static_cast<std::uint32_t>(error.code()));
     MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONERROR);
-    return static_cast<int>(error.code());
+    return error.code();
   }
   catch (const std::exception& error)
   {

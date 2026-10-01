@@ -21,8 +21,10 @@ Outpost::Command Queue(Outpost::PlayerId _player, Outpost::EntityId _producer, O
 
 size_t Warships(const MatchArena& _arena, Outpost::PlayerId _player)
 {
-  return static_cast<size_t>(std::ranges::count_if(_arena.Owned(_player, Outpost::EntityKind::Ship),
-                                                   [](const Outpost::Entity* _ship) { return _ship->role == Outpost::ShipRole::Warship; }));
+  return static_cast<size_t>(std::ranges::count_if(_arena.Owned(_player, Outpost::EntityKind::Ship), [](const Outpost::Entity* _ship)
+  {
+    return _ship->role == Outpost::ShipRole::Warship;
+  }));
 }
 } // namespace
 
@@ -81,9 +83,10 @@ public:
     // Spend the Ore down to less than one Medium ship, on Shipyards elsewhere.
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {600.0f, -600.0f});
     for (int i = 0; i < 3; ++i)
-      (void)arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
-                                                                   .structure = Outpost::StructureKind::Shipyard,
-                                                                   .position = {600.0f, -1200.0f + (static_cast<float>(i) * 300.0f)}})});
+    {
+      (void)arena.Tick(
+        {Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor}, .structure = Outpost::StructureKind::Shipyard, .position = {600.0f, -1200.0f + (static_cast<float>(i) * 300.0f)}})});
+    }
     Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
 
     (void)arena.Tick({Queue(BLUE, yard, medium)});
@@ -126,8 +129,7 @@ public:
     // A Shipyard under construction does not produce yet.
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, -600.0f});
     (void)arena.Tick(
-      {Order(BLUE, Outpost::BuildStructureCommand{
-                     .constructors = {constructor}, .structure = Outpost::StructureKind::Shipyard, .position = {0.0f, -400.0f}})});
+      {Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor}, .structure = Outpost::StructureKind::Shipyard, .position = {0.0f, -400.0f}})});
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
     Assert::IsTrue(arena.Tick({Queue(BLUE, site, mine)})[0] == Outpost::CommandResult::NotAProducer);
   }

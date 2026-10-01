@@ -21,10 +21,7 @@ Outpost::Snapshot Newest()
 
 Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int32_t _hitPointsHundredths, std::int32_t _maxHundredths)
 {
-  return {.id = Outpost::EntityId{_id},
-          .owner = PLAYER,
-          .design = _design,
-          .hitPointsHundredths = _hitPointsHundredths,
+  return {.id = Outpost::EntityId{_id}, .owner = PLAYER, .design = _design, .hitPointsHundredths = _hitPointsHundredths,
           .maxHitPointsHundredths = _maxHundredths};
 }
 } // namespace
@@ -49,7 +46,10 @@ public:
     Assert::IsTrue(content.selection.empty());
     const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
     Assert::AreEqual(size_t{1}, layout.panels.size());
-    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "12,345"; }));
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text)
+    {
+      return _text.text == "12,345";
+    }));
   }
 
   // One ship: its design's name and its hit points, rounded up to whole points.
@@ -126,12 +126,11 @@ public:
     Assert::AreEqual(std::string("Shipyard|300"), content.buttons[0].label);
     Assert::IsFalse(content.buttons[0].enabled, L"250 Ore does not buy a Shipyard");
     Assert::IsTrue(content.buttons[1].enabled);
-    Assert::IsTrue(content.buttons[2].action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::MiningRig});
+    Assert::IsTrue(
+      content.buttons[2].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build,
+                                                        .structure = Outpost::StructureKind::MiningRig});
 
-    entities.push_back({.id = Outpost::EntityId{20},
-                        .kind = Outpost::EntityKind::Structure,
-                        .owner = PLAYER,
+    entities.push_back({.id = Outpost::EntityId{20}, .kind = Outpost::EntityKind::Structure, .owner = PLAYER,
                         .structure = Outpost::StructureKind::ResearchLab});
     content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::IsFalse(content.buttons[1].enabled, L"one Research Lab a player");
@@ -148,22 +147,17 @@ public:
     Outpost::Snapshot newest = Newest();
     newest.designs[0].cost = 87;
     newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300}};
-    Outpost::EntityView yard{.id = Outpost::EntityId{30},
-                             .kind = Outpost::EntityKind::Structure,
-                             .owner = PLAYER,
-                             .structure = Outpost::StructureKind::Shipyard,
-                             .hitPointsHundredths = 250000,
-                             .maxHitPointsHundredths = 250000,
-                             .queue = {{.design = SWARM}, {.design = LINE}},
-                             .jobPermille = 455};
+    Outpost::EntityView yard{.id = Outpost::EntityId{30}, .kind = Outpost::EntityKind::Structure, .owner = PLAYER,
+                             .structure = Outpost::StructureKind::Shipyard, .hitPointsHundredths = 250000, .maxHitPointsHundredths = 250000,
+                             .queue = {{.design = SWARM}, {.design = LINE}}, .jobPermille = 455};
     const std::vector<Outpost::EntityId> selected{yard.id};
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{yard}, selected);
     const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500", "1. Small+Ion+Mass Driver, 45%", "2. Medium+Ion+Lance"};
     Assert::IsTrue(content.selection == expected);
     Assert::AreEqual(size_t{2}, content.buttons.size());
     Assert::AreEqual(std::string("Small+Ion+Mass Driver|87"), content.buttons[0].label);
-    Assert::IsTrue(content.buttons[0].action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
+    Assert::IsTrue(
+      content.buttons[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
     Assert::IsTrue(content.buttons[0].enabled);
 
     yard.jobPermille = 0;
@@ -183,7 +177,7 @@ public:
   // Task 4.5: an enabled button is a place to click, anchored to the bottom-right corner; a dim one is not.
   TEST_METHOD(LaysOutButtonsForClicks)
   {
-    const Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
+    constexpr Outpost::Hud::Action build{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Shipyard};
     const Outpost::Hud::Content content{
       .ore = 0, .buttons = {{.label = "Shipyard|300", .action = build}, {.label = "Research Lab|200", .action = build, .enabled = false}}};
     const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
@@ -208,8 +202,8 @@ public:
     const Outpost::Hud::Rect& map = layout.minimap;
     Assert::IsTrue(map.width > 0.0f && map.left < 400.0f && map.top + map.height > 800.0f, L"bottom-left");
 
-    const Outpost::PlanePosition center =
-      layout.MapPointAt(map.left + (map.width / 2.0f), map.top + (map.height / 2.0f)).value_or(Outpost::PlanePosition{1e9f, 1e9f});
+    const Outpost::PlanePosition center = layout.MapPointAt(map.left + (map.width / 2.0f), map.top + (map.height / 2.0f)).value_or(
+      Outpost::PlanePosition{1e9f, 1e9f});
     Assert::AreEqual(0.0f, center.xMeters, 0.5f);
     Assert::AreEqual(0.0f, center.zMeters, 0.5f);
     const DirectX::XMFLOAT2 northEast = layout.MinimapPixelOf({1000.0f, 1000.0f});

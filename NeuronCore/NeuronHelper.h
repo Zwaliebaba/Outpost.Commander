@@ -18,9 +18,8 @@ class Exception : public std::exception
 {
 public:
   Exception(std::string _message) noexcept
-    : m_message(std::move(_message))
-  {
-  }
+    : m_message(std::move(_message)) {}
+
   ~Exception() noexcept override = default;
 
   [[nodiscard]] const char* what() const noexcept override
@@ -49,6 +48,7 @@ struct HandleCloser
 };
 
 using ScopedHandle = std::unique_ptr<void, HandleCloser>;
+
 inline HANDLE SafeHandle(HANDLE _handle) noexcept
 {
   return (_handle == INVALID_HANDLE_VALUE) ? nullptr : _handle;

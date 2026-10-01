@@ -18,12 +18,11 @@ template <typename Entry, typename IdType> const Entry& Find(const std::vector<E
 // Whether a research topic unlocks this component.
 template <typename IdType> bool IsUnlockedByResearch(const Outpost::Tuning& _tuning, IdType _id)
 {
-  return std::ranges::any_of(_tuning.research,
-                             [_id](const Outpost::ResearchTopicTuning& _topic)
-                             {
-                               const IdType* unlocks = std::get_if<IdType>(&_topic.effect);
-                               return unlocks != nullptr && *unlocks == _id;
-                             });
+  return std::ranges::any_of(_tuning.research, [_id](const Outpost::ResearchTopicTuning& _topic)
+  {
+    const IdType* unlocks = std::get_if<IdType>(&_topic.effect);
+    return unlocks != nullptr && *unlocks == _id;
+  });
 }
 } // namespace
 
@@ -46,11 +45,8 @@ Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, HullId _hull
   const WeaponTuning& weapon = Find(_tuning.weapons, _weapon, "weapon");
   return {.movement = MovementFor(_tuning, _hull, _drive),
           .hitPointsHundredths = static_cast<std::int32_t>(std::llround(hull.hitPoints * drive.hitPointsFactor * HUNDREDTHS)),
-          .armorHundredths = hull.armor * HUNDREDTHS,
-          .cost = hull.cost + drive.cost + weapon.cost,
-          .buildSeconds = hull.buildSeconds,
-          .damageHundredths = weapon.damage * HUNDREDTHS,
-          .fireIntervalSeconds = weapon.fireIntervalSeconds,
+          .armorHundredths = hull.armor * HUNDREDTHS, .cost = hull.cost + drive.cost + weapon.cost, .buildSeconds = hull.buildSeconds,
+          .damageHundredths = weapon.damage * HUNDREDTHS, .fireIntervalSeconds = weapon.fireIntervalSeconds,
           .rangeMeters = static_cast<float>(weapon.rangeMeters)};
 }
 
@@ -70,8 +66,8 @@ std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _t
     {
       for (const WeaponTuning& weapon : _tuning.weapons)
       {
-        if (!IsUnlockedByResearch(_tuning, hull.id) && !IsUnlockedByResearch(_tuning, drive.id) &&
-            !IsUnlockedByResearch(_tuning, weapon.id))
+        if (!IsUnlockedByResearch(_tuning, hull.id) && !IsUnlockedByResearch(_tuning, drive.id) && !
+            IsUnlockedByResearch(_tuning, weapon.id))
           designs.push_back({hull.id, drive.id, weapon.id});
       }
     }

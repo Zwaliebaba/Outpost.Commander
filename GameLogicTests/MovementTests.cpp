@@ -147,8 +147,8 @@ public:
       const int column = i % 4;
       const int row = i / 4;
       const Outpost::ShipMovement movement = i % 3 == 0 ? Movement(2, 1) : Movement(1, 1);
-      ships.push_back(
-        simulation.SpawnShip(BLUE, DESIGN, movement, {-500.0f + static_cast<float>(column) * 40.0f, static_cast<float>(row) * 40.0f}));
+      ships.push_back(simulation.SpawnShip(BLUE, DESIGN, movement,
+                                           {-500.0f + static_cast<float>(column) * 40.0f, static_cast<float>(row) * 40.0f}));
     }
 
     (void)simulation.Tick({Move(ships, {500.0f, 0.0f})});
@@ -194,8 +194,10 @@ public:
   {
     Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     tuning.hulls.back().footprintRadiusMeters = 31.0;
-    Assert::ExpectException<Neuron::Exception>(
-      [&tuning] { Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1}); });
+    Assert::ExpectException<Neuron::Exception>([&tuning]
+    {
+      Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1});
+    });
   }
 };
 } // namespace GameLogicTests

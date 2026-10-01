@@ -60,25 +60,25 @@ public:
     const Outpost::EntityId red = simulation.SpawnShip(RED, SWARM, SMALL_ION, {});
     const Outpost::Simulation before = simulation;
 
-    const float nan = std::numeric_limits<float>::quiet_NaN();
-    const std::vector<Outpost::CommandResult> results = simulation.Tick({
-      Move(BLUE, {}, {}),
-      Move(BLUE, {Outpost::EntityId{99}}, {}),
-      Move(BLUE, {red}, {}),
-      Move(BLUE, {blue, red}, {}),
-      Move(BLUE, {blue}, {.xMeters = nan}),
-      Stop(RED, {blue}),
-      {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = Outpost::EntityId{99}}},
-      // A ship placed without hit points is out of combat, so it is not a target.
-      {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = red}},
-      {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = blue}},
-      {.player = BLUE, .order = Outpost::QueueShipCommand{.producer = blue, .design = SWARM}},
-    });
+    constexpr float nan = std::numeric_limits<float>::quiet_NaN();
+    const std::vector<Outpost::CommandResult> results = simulation.Tick({Move(BLUE, {}, {}), Move(BLUE, {Outpost::EntityId{99}}, {}),
+                                                                         Move(BLUE, {red}, {}), Move(BLUE, {blue, red}, {}),
+                                                                         Move(BLUE, {blue}, {.xMeters = nan}), Stop(RED, {blue}),
+                                                                         {.player = BLUE,
+                                                                          .order = Outpost::AttackCommand{
+                                                                            .ships = {blue}, .target = Outpost::EntityId{99}}},
+                                                                         // A ship placed without hit points is out of combat, so it is not a target.
+                                                                         {.player = BLUE,
+                                                                          .order = Outpost::AttackCommand{.ships = {blue}, .target = red}},
+                                                                         {.player = BLUE,
+                                                                          .order = Outpost::AttackCommand{.ships = {blue}, .target = blue}},
+                                                                         {.player = BLUE,
+                                                                          .order = Outpost::QueueShipCommand{
+                                                                            .producer = blue, .design = SWARM}},});
     ExpectResults({Outpost::CommandResult::NoShips, Outpost::CommandResult::UnknownEntity, Outpost::CommandResult::NotOwned,
                    Outpost::CommandResult::NotOwned, Outpost::CommandResult::InvalidPosition, Outpost::CommandResult::NotOwned,
                    Outpost::CommandResult::UnknownTarget, Outpost::CommandResult::NotAnEnemy, Outpost::CommandResult::NotAnEnemy,
-                   Outpost::CommandResult::NotYetSupported},
-                  results);
+                   Outpost::CommandResult::NotYetSupported}, results);
 
     // A command naming two ships, one of them not the sender's, moves neither.
     Assert::IsTrue(simulation.FindEntity(blue)->destination == before.FindEntity(blue)->destination);
@@ -114,8 +114,10 @@ public:
       {
         std::vector<Outpost::Command> commands;
         if (tick % 7 == 0)
-          commands.push_back(
-            Move(BLUE, {first, second}, {.xMeters = static_cast<float>(tick) * 3.5f, .zMeters = static_cast<float>(-tick) * 1.25f}));
+        {
+          commands.push_back(Move(BLUE, {first, second},
+                                  {.xMeters = static_cast<float>(tick) * 3.5f, .zMeters = static_cast<float>(-tick) * 1.25f}));
+        }
         if (tick % 11 == 0)
           commands.push_back(Move(RED, {enemy, first}, {}));
         if (tick % 13 == 0)

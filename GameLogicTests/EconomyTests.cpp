@@ -69,12 +69,13 @@ public:
     for (int i = 0; i < 3; ++i)
     {
       const Outpost::PlanePosition at{-600.0f + (static_cast<float>(i) * 300.0f), -400.0f};
-      Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, at))})[0] ==
-                     Outpost::CommandResult::Applied);
+      Assert::IsTrue(
+        arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, at))})[0] == Outpost::CommandResult::Applied);
     }
     const std::int64_t left = arena.World().OreHundredths(BLUE);
-    Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, {600.0f, -400.0f}))})[0] ==
-                   Outpost::CommandResult::NotEnoughOre);
+    Assert::IsTrue(
+      arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::Shipyard, {600.0f, -400.0f}))})[0] ==
+      Outpost::CommandResult::NotEnoughOre);
     Assert::AreEqual(left, arena.World().OreHundredths(BLUE), L"a refused job costs nothing");
   }
 
@@ -85,18 +86,20 @@ public:
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {0.0f, 400.0f});
     const Outpost::EntityId enemy = arena.World().SpawnConstructor(RED, {100.0f, 400.0f});
     // Ordered beside the asteroid's edge, the rig snaps to its center.
-    const Outpost::PlanePosition beside{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 70.0f};
-    Assert::IsTrue(arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, beside))})[0] ==
-                   Outpost::CommandResult::Applied);
+    constexpr Outpost::PlanePosition beside{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 70.0f};
+    Assert::IsTrue(
+      arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, beside))})[0] == Outpost::CommandResult::Applied);
     const Outpost::Entity& rig = *arena.Owned(BLUE, Outpost::EntityKind::Structure).back();
     Assert::IsTrue(rig.position == MatchArena::HOME_ASTEROID);
     const Outpost::EntityId rigId = rig.id;
 
     // Taken, by either player; and nowhere near an asteroid is no place for a rig.
-    Assert::IsTrue(arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))})[0] ==
-                   Outpost::CommandResult::InvalidPlacement);
-    Assert::IsTrue(arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, {-500.0f, -500.0f}))})[0] ==
-                   Outpost::CommandResult::InvalidPlacement);
+    Assert::IsTrue(
+      arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))})[0] ==
+      Outpost::CommandResult::InvalidPlacement);
+    Assert::IsTrue(
+      arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, {-500.0f, -500.0f}))})[0] ==
+      Outpost::CommandResult::InvalidPlacement);
 
     // Destroyed, the rig frees the asteroid.
     for (int i = 0; i < 6; ++i)
@@ -104,15 +107,16 @@ public:
     for (int tick = 0; tick < 60 * 20 && arena.World().FindEntity(rigId) != nullptr; ++tick)
       arena.Run(1);
     Assert::IsNull(arena.World().FindEntity(rigId), L"the rig survived");
-    Assert::IsTrue(arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))})[0] ==
-                   Outpost::CommandResult::Applied);
+    Assert::IsTrue(
+      arena.Tick({Order(RED, Build(enemy, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))})[0] ==
+      Outpost::CommandResult::Applied);
   }
 
   // A rig earns nothing until it is built.
   TEST_METHOD(ARigUnderConstructionEarnsNothing)
   {
     MatchArena arena;
-    const Outpost::PlanePosition nearAsteroid{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 80.0f};
+    constexpr Outpost::PlanePosition nearAsteroid{MatchArena::HOME_ASTEROID.xMeters, MatchArena::HOME_ASTEROID.zMeters - 80.0f};
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, nearAsteroid);
     (void)arena.Tick({Order(BLUE, Build(constructor, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID))});
     const std::int64_t paid = arena.World().OreHundredths(BLUE);
@@ -122,8 +126,8 @@ public:
     arena.Run(20);
     Assert::AreEqual(paid, arena.World().OreHundredths(BLUE));
 
-    const auto buildTicks = static_cast<std::uint32_t>(
-      arena.StructureData(Outpost::StructureKind::MiningRig).buildConstructorSeconds.value_or(0.0) * MatchArena::TICKS_PER_SECOND);
+    const auto buildTicks = static_cast<std::uint32_t>(arena.StructureData(Outpost::StructureKind::MiningRig).buildConstructorSeconds.
+                                                             value_or(0.0) * MatchArena::TICKS_PER_SECOND);
     arena.Run(buildTicks);
     Assert::IsTrue(arena.Get(rigId).IsBuilt());
     Assert::IsTrue(arena.World().OreHundredths(BLUE) > paid);

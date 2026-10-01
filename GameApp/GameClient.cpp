@@ -7,8 +7,8 @@
 
 namespace
 {
-constexpr const wchar_t* MODELS_FILE = L"Models.json";
-constexpr const wchar_t* CAMERA_FILE = L"Camera.json";
+constexpr auto MODELS_FILE = L"Models.json";
+constexpr auto CAMERA_FILE = L"Camera.json";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
@@ -231,8 +231,8 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
     }
   }
-  m_minorGrid =
-    std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MINOR_GRID_SPACING_METERS, MINOR_GRID_LINE_WIDTH_METERS, MINOR_LINES_PER_MAJOR));
+  m_minorGrid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MINOR_GRID_SPACING_METERS, MINOR_GRID_LINE_WIDTH_METERS,
+                                                                    MINOR_LINES_PER_MAJOR));
   m_majorGrid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MAJOR_GRID_SPACING_METERS, MAJOR_GRID_LINE_WIDTH_METERS, 0));
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
@@ -279,19 +279,18 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
-  m_cursorGround =
-    m_camera.GroundPointAtPixel(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels), m_viewport);
+  m_cursorGround = m_camera.GroundPointAtPixel(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels),
+                                               m_viewport);
   HandleHudInput(_input);
 
   // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
   // that a drag begun in the world ends wherever it is let go.
   Neuron::InputState input = _input;
-  std::erase_if(input.events,
-                [this](const Neuron::InputEvent& _event)
-                {
-                  return _event.kind == Neuron::InputEventKind::ButtonDown &&
-                         m_hudLayout.Covers(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
-                });
+  std::erase_if(input.events, [this](const Neuron::InputEvent& _event)
+  {
+    return _event.kind == Neuron::InputEventKind::ButtonDown && m_hudLayout.Covers(static_cast<float>(_event.xPixels),
+                                                                                   static_cast<float>(_event.yPixels));
+  });
   if (!m_view.IsEmpty())
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
@@ -341,8 +340,8 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
   }
   if (m_minimapDragging && _input.IsDown(VK_LBUTTON))
   {
-    if (const std::optional<PlanePosition> point =
-          m_hudLayout.MapPointAt(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels)))
+    if (const std::optional<PlanePosition> point = m_hudLayout.MapPointAt(static_cast<float>(_input.cursorXPixels),
+                                                                          static_cast<float>(_input.cursorYPixels)))
       m_camera.SetFocus(point->xMeters, point->zMeters);
   }
 }
@@ -482,16 +481,18 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
     }
     if (entity.maxHitPointsHundredths <= 0 || entity.hitPointsHundredths >= entity.maxHitPointsHundredths)
       continue;
-    const float share =
-      std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f, 1.0f);
+    const float share = std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f,
+                                   1.0f);
     const float left = entity.position.xMeters - entity.radiusMeters;
     const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
     const PlanePosition start{.xMeters = left, .zMeters = z};
     DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
              HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
-    const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
-                                     : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
-                                                                : HEALTH_LOW_COLOR;
+    const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE
+                                       ? HEALTH_GOOD_COLOR
+                                       : share > HEALTH_LOW_SHARE
+                                       ? HEALTH_HURT_COLOR
+                                       : HEALTH_LOW_COLOR;
     // A little higher than the dark bar, so the two do not fight over the same depth.
     DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters * share), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
              HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, color);
@@ -511,8 +512,7 @@ void Outpost::GameClient::DrawEffects(ID3D12GraphicsCommandList* _commandList)
     case CombatEffects::Shape::Ring:
       m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, draw.radiusMeters), draw.color);
       break;
-    case CombatEffects::Shape::Band:
-    default:
+    case CombatEffects::Shape::Band: default:
       DrawBand(_commandList, draw.from, draw.to, draw.widthMeters, draw.heightMeters, draw.color);
       break;
     }
@@ -603,8 +603,7 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     }
     break;
   }
-  case EntityKind::Structure:
-  default:
+  case EntityKind::Structure: default:
     DrawStructure(_commandList, _entity);
     break;
   }
@@ -621,8 +620,9 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   const Snapshot& newest = m_view.Newest();
   const auto type = std::ranges::find(newest.structureTypes, _entity.structure, &StructureTypeView::structure);
   const float radius = type != newest.structureTypes.end() ? type->radiusMeters : _entity.radiusMeters;
-  const float lift =
-    _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters ? _entity.radiusMeters * RIG_LIFT_SHARE : 0.0f;
+  const float lift = _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters
+                       ? _entity.radiusMeters * RIG_LIFT_SHARE
+                       : 0.0f;
   const ModelEntry& entry = set->Model(model->model);
   const float scale = 2.0f * radius / entry.lengthMeters;
   const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);

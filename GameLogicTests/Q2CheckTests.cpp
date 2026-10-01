@@ -42,8 +42,8 @@ public:
     Assert::AreEqual(size_t{12}, designs.size());
     for (const CheckDesign& design : designs)
     {
-      const Outpost::DesignStats stats =
-        Outpost::DesignStatsFor(tuning, design.components.hull, design.components.drive, design.components.weapon);
+      const Outpost::DesignStats stats = Outpost::DesignStatsFor(tuning, design.components.hull, design.components.drive,
+                                                                 design.components.weapon);
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
@@ -108,9 +108,7 @@ public:
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
   // TestCategory trait. The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The
   // verdicts are recorded in design §12.
-  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
-  TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full")
-  END_TEST_METHOD_ATTRIBUTE()
+  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck) TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full") END_TEST_METHOD_ATTRIBUTE()
   TEST_METHOD(TheFullCheck)
   {
     if (GetEnvironmentVariableW(L"OUTPOST_Q2_FULL", nullptr, 0) == 0)

@@ -78,12 +78,15 @@ std::string Outpost::WithThousands(std::int64_t _value)
   return _value < 0 ? "-" + grouped : grouped;
 }
 
-bool Outpost::Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
+bool Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
 {
-  return std::ranges::any_of(panels, [&](const Rect& _panel) { return _panel.Contains(_xPixels, _yPixels); });
+  return std::ranges::any_of(panels, [&](const Rect& _panel)
+  {
+    return _panel.Contains(_xPixels, _yPixels);
+  });
 }
 
-std::optional<Outpost::Hud::Action> Outpost::Hud::Layout::ActionAt(float _xPixels, float _yPixels) const noexcept
+std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels) const noexcept
 {
   for (const auto& [area, action] : actions)
   {
@@ -93,7 +96,7 @@ std::optional<Outpost::Hud::Action> Outpost::Hud::Layout::ActionAt(float _xPixel
   return std::nullopt;
 }
 
-std::optional<Outpost::PlanePosition> Outpost::Hud::Layout::MapPointAt(float _xPixels, float _yPixels) const noexcept
+std::optional<Outpost::PlanePosition> Hud::Layout::MapPointAt(float _xPixels, float _yPixels) const noexcept
 {
   if (mapSizeMeters <= 0.0f || !minimap.Contains(_xPixels, _yPixels))
     return std::nullopt;
@@ -103,7 +106,7 @@ std::optional<Outpost::PlanePosition> Outpost::Hud::Layout::MapPointAt(float _xP
                        .zMeters = half - ((_yPixels - minimap.top) / minimap.height * mapSizeMeters)};
 }
 
-DirectX::XMFLOAT2 Outpost::Hud::Layout::MinimapPixelOf(PlanePosition _point) const noexcept
+DirectX::XMFLOAT2 Hud::Layout::MinimapPixelOf(PlanePosition _point) const noexcept
 {
   const float half = mapSizeMeters / 2.0f;
   const float x = std::clamp((_point.xMeters + half) / mapSizeMeters, 0.0f, 1.0f);
@@ -111,16 +114,11 @@ DirectX::XMFLOAT2 Outpost::Hud::Layout::MinimapPixelOf(PlanePosition _point) con
   return {minimap.left + (x * minimap.width), minimap.top + (y * minimap.height)};
 }
 
-Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
-                                             std::span<const EntityId> _selected, std::optional<StructureKind> _placing)
+Hud::Content Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
+                           std::optional<StructureKind> _placing)
 {
-  Content content{.ore = _newest.ore,
-                  .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
-                  .selection = {},
-                  .buttons = {},
-                  .hint = {},
-                  .mapSizeMeters = _newest.mapSizeMeters,
-                  .marks = {}};
+  Content content{.ore = _newest.ore, .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond, .selection = {}, .buttons = {},
+                  .hint = {}, .mapSizeMeters = _newest.mapSizeMeters, .marks = {}};
 
   content.marks.reserve(_entities.size());
   for (const EntityView& entity : _entities)
@@ -175,8 +173,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       const bool canQueue = structure->builtPermille >= PERMILLE && structure->queue.size() < QUEUE_LIMIT;
       if (structure->structure == StructureKind::CommandStation)
       {
-        content.buttons.push_back({.label = std::string(CONSTRUCTOR_NAME),
-                                   .action = {.kind = ActionKind::Queue, .producer = structure->id},
+        content.buttons.push_back({.label = std::string(CONSTRUCTOR_NAME), .action = {.kind = ActionKind::Queue, .producer = structure->id},
                                    .enabled = canQueue && _newest.ore >= _newest.constructorCost});
         content.buttons.back().label += std::format("|{}", _newest.constructorCost);
       }
@@ -184,9 +181,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       {
         content.buttons.reserve(_newest.designs.size());
         for (const DesignView& design : _newest.designs)
+        {
           content.buttons.push_back({.label = std::format("{}|{}", design.nameUtf8, design.cost),
                                      .action = {.kind = ActionKind::Queue, .producer = structure->id, .design = design.id},
                                      .enabled = canQueue && _newest.ore >= design.cost});
+        }
       }
       return content;
     }
@@ -221,9 +220,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   for (const auto& [design, count] : byDesign)
     ships += count;
   if (ships == 1)
-  {
     content.selection.push_back(nameOf(byDesign.front().first));
-  }
   else
   {
     content.selection.reserve(byDesign.size() + 3);
@@ -233,17 +230,16 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (byDesign.size() > SELECTION_DESIGN_LINES)
       content.selection.push_back(std::format("and {} more designs", byDesign.size() - SELECTION_DESIGN_LINES));
   }
-  content.selection.push_back(
-    std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
+  content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)),
+                                          WithThousands(WholePoints(maxHitPoints))));
 
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
   {
-    const bool hasLab = std::ranges::any_of(_entities,
-                                            [&_newest](const EntityView& _entity) {
-                                              return _entity.kind == EntityKind::Structure &&
-                                                     _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
-                                            });
+    const bool hasLab = std::ranges::any_of(_entities, [&_newest](const EntityView& _entity)
+    {
+      return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
+    });
     content.buttons.reserve(_newest.structureTypes.size());
     for (const StructureTypeView& type : _newest.structureTypes)
     {
@@ -258,13 +254,12 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   return content;
 }
 
-float Outpost::Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept
+float Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept
 {
   return std::min(static_cast<float>(_widthPixels) / REFERENCE_WIDTH_UNITS, static_cast<float>(_heightPixels) / REFERENCE_HEIGHT_UNITS);
 }
 
-Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                       std::span<const PlanePosition> _view)
+Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels, std::span<const PlanePosition> _view)
 {
   const float scale = Scale(_widthPixels, _heightPixels);
   const auto width = static_cast<float>(_widthPixels);
@@ -279,8 +274,9 @@ Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _w
   layout.texts.push_back({"Ore", oreLeft + (PADDING * scale), textTop, TEXT_COLOR});
   layout.texts.push_back({WithThousands(_content.ore), oreLeft + (ORE_VALUE_LEFT * scale), textTop, ORE_COLOR});
   const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
-  const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
-                                                          : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
+  const std::string incomeText = income % HUNDREDTHS == 0
+                                   ? std::format("+{}/s", income / HUNDREDTHS)
+                                   : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
   layout.texts.push_back({incomeText, oreLeft + (ORE_INCOME_LEFT * scale), textTop, TEXT_COLOR});
 
   // Top-middle anchor: what a click on the ground will do.
@@ -299,8 +295,10 @@ Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _w
     const float top = height - ((MARGIN + panelHeight) * scale);
     layout.panels.push_back({left, top, SELECTION_PANEL_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
     for (size_t line = 0; line < _content.selection.size(); ++line)
+    {
       layout.texts.push_back({_content.selection[line], left + (PADDING * scale),
                               top + ((PADDING + (LINE_STEP * static_cast<float>(line))) * scale), TEXT_COLOR});
+    }
   }
 
   // Bottom-right anchor: the buttons, stacked upward from the corner. A label holds the name and the cost, split at '|'.
@@ -325,8 +323,10 @@ Outpost::Hud::Layout Outpost::Hud::Lay(const Content& _content, std::uint32_t _w
       const DirectX::XMFLOAT4& color = button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
       layout.texts.push_back({button.label.substr(0, split), area.left + (PADDING * scale), labelTop, color});
       if (split != std::string::npos)
-        layout.texts.push_back(
-          {button.label.substr(split + 1), area.left + (BUTTON_COST_LEFT * scale), labelTop, button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
+      {
+        layout.texts.push_back({button.label.substr(split + 1), area.left + (BUTTON_COST_LEFT * scale), labelTop,
+                                button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
+      }
     }
   }
 

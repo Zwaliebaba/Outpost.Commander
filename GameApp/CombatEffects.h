@@ -68,6 +68,7 @@ private:
 
   void AddShot(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const;
   void AddExplosion(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const;
+
   [[nodiscard]] double Seconds(double _ticks) const noexcept
   {
     return _ticks / m_ticksPerSecond;

@@ -31,10 +31,12 @@ public:
 
   // From the HUD (task 4.5): arms placing a structure, when the selection holds a Constructor.
   void ArmPlacement(StructureKind _structure, std::span<const EntityView> _entities);
+
   [[nodiscard]] std::optional<StructureKind> Placing() const noexcept
   {
     return m_placing;
   }
+
   // From the HUD: a job for a Shipyard's or the Command Station's queue.
   void Queue(EntityId _producer, DesignId _design);
   // From the minimap: the selected ships move to a point.
@@ -45,10 +47,12 @@ public:
   {
     return m_selected;
   }
+
   [[nodiscard]] bool IsAttackMoveArmed() const noexcept
   {
     return m_attackMoveArmed;
   }
+
   // The box being dragged, while the left button is held past DRAG_PIXELS.
   [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
 
@@ -58,6 +62,7 @@ public:
     std::vector<EntityId> ships;
     std::chrono::steady_clock::time_point inputRead;
   };
+
   [[nodiscard]] std::optional<MoveOrder> TakeLastMove()
   {
     return std::exchange(m_lastMove, std::nullopt);

@@ -68,7 +68,10 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
   std::vector<PlanePosition> open;
   const float half = _map.sizeMeters / 2.0f;
   const auto points = static_cast<int>(_map.sizeMeters / LATTICE_SPACING_METERS);
-  const auto at = [half](int _index) { return -half + ((static_cast<float>(_index) + 0.5f) * LATTICE_SPACING_METERS); };
+  const auto at = [half](int _index)
+  {
+    return -half + ((static_cast<float>(_index) + 0.5f) * LATTICE_SPACING_METERS);
+  };
   for (int row = 0; row < points; ++row)
   {
     for (int column = 0; column < points; ++column)
@@ -81,8 +84,10 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
   const size_t shipsToAdd = ships < MEASUREMENT_SHIPS ? MEASUREMENT_SHIPS - ships : 0;
   const size_t structuresToAdd = structures < MEASUREMENT_STRUCTURES ? MEASUREMENT_STRUCTURES - structures : 0;
   if (open.size() < shipsToAdd + structuresToAdd)
-    throw Neuron::Exception(
-      std::format("The map has room for {} of the measurement load's {} ships and structures.", open.size(), shipsToAdd + structuresToAdd));
+  {
+    throw Neuron::Exception(std::format("The map has room for {} of the measurement load's {} ships and structures.", open.size(),
+                                        shipsToAdd + structuresToAdd));
+  }
 
   // Every other lattice point, so ships and structures mix across the map rather than filling it from one corner.
   const size_t stride = open.size() / (shipsToAdd + structuresToAdd);
@@ -94,6 +99,8 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
     (void)_simulation.SpawnShip(OwnerOf(_map, open[next]), DesignId{}, movement, open[next], hull.id);
   }
   for (size_t i = 0; i < structuresToAdd; ++i, next += stride)
+  {
     (void)_simulation.SpawnStructure(OwnerOf(_map, open[next]), STRUCTURE_KINDS[i % STRUCTURE_KINDS.size()], open[next],
                                      STRUCTURE_RADIUS_METERS);
+  }
 }

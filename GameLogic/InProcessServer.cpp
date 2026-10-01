@@ -24,9 +24,7 @@ std::string ReadDataFile(std::string_view _fileName)
 } // namespace
 
 Outpost::LoopbackTransport::LoopbackTransport(std::shared_ptr<LoopbackChannel> _channel) noexcept
-  : m_channel(std::move(_channel))
-{
-}
+  : m_channel(std::move(_channel)) {}
 
 void Outpost::LoopbackTransport::Send(Command _command)
 {
@@ -49,8 +47,10 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   for (const HullTuning& hull : m_tuning.hulls)
   {
     if (2.0 * hull.footprintRadiusMeters > m_map.minimumGapMeters)
+    {
       throw Neuron::Exception(std::format("The {} hull's footprint, {} m across, is wider than the map's narrowest passage, {} m.",
                                           hull.name, 2.0 * hull.footprintRadiusMeters, m_map.minimumGapMeters));
+    }
   }
   m_simulation.PlaceMap(m_map);
   m_simulation.UseTuning(m_tuning);
@@ -76,7 +76,10 @@ std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _
 {
   if (!_player.IsValid())
     throw Neuron::Exception("InProcessServer: a connection needs a player");
-  if (std::ranges::any_of(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; }))
+  if (std::ranges::any_of(m_connections, [_player](const Connection& _connection)
+  {
+    return _connection.player == _player;
+  }))
     throw Neuron::Exception(std::format("InProcessServer: player {} is already connected", _player.value));
 
   auto channel = std::make_shared<LoopbackChannel>();

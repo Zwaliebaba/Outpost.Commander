@@ -27,8 +27,10 @@ Neuron::MeshAxis ReadAxis(JsonObjectReader& _reader)
 std::string ReadName(JsonObjectReader& _reader)
 {
   std::string name = _reader.String("name");
-  if (name.empty() ||
-      !std::ranges::all_of(name, [](char _c) { return (_c >= 'A' && _c <= 'Z') || (_c >= 'a' && _c <= 'z') || (_c >= '0' && _c <= '9'); }))
+  if (name.empty() || !std::ranges::all_of(name, [](char _c)
+  {
+    return (_c >= 'A' && _c <= 'Z') || (_c >= 'a' && _c <= 'z') || (_c >= '0' && _c <= '9');
+  }))
     Neuron::JsonFail(_reader.PathOf("name"), std::format("\"{}\" is not a name of ASCII letters and digits", name));
   return name;
 }
@@ -64,11 +66,14 @@ Outpost::ModelSet ReadSet(JsonObjectReader& _reader)
   {
     const auto first = std::ranges::find(set.models, set.models[i].name, &Outpost::ModelEntry::name);
     if (first != set.models.begin() + static_cast<std::ptrdiff_t>(i))
+    {
       Neuron::JsonFail(Neuron::JsonElementPath(_reader.PathOf("models"), i),
                        std::format("the model \"{}\" is listed twice", set.models[i].name));
+    }
   }
   return set;
 }
+
 Outpost::PlayerModels ReadPlayer(JsonObjectReader& _reader)
 {
   return {.player = _reader.Identifier<Outpost::PlayerId>("player"), .set = _reader.String("set")};
@@ -80,13 +85,10 @@ Outpost::HullModel ReadHull(JsonObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator, as the tuning data does.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
-  {"CommandStation", Outpost::StructureKind::CommandStation},
-  {"Shipyard", Outpost::StructureKind::Shipyard},
-  {"ResearchLab", Outpost::StructureKind::ResearchLab},
-  {"MiningRig", Outpost::StructureKind::MiningRig},
-  {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
-}};
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {
+  {{"CommandStation", Outpost::StructureKind::CommandStation}, {"Shipyard", Outpost::StructureKind::Shipyard},
+   {"ResearchLab", Outpost::StructureKind::ResearchLab}, {"MiningRig", Outpost::StructureKind::MiningRig},
+   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},}};
 // A tint brighter than this would wash a set's color out to white.
 constexpr double MAXIMUM_TINT = 2.0;
 
@@ -108,7 +110,7 @@ Outpost::StructureModel ReadStructure(JsonObjectReader& _reader)
 }
 
 // The index of the first element before _index whose _key equals element _index's, or _index when there is none.
-template <typename T, typename Key> size_t FirstWithSameKey(const std::vector<T>& _list, size_t _index, Key T::*_key)
+template <typename T, typename Key> size_t FirstWithSameKey(const std::vector<T>& _list, size_t _index, Key T::* _key)
 {
   for (size_t i = 0; i < _index; ++i)
   {

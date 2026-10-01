@@ -32,8 +32,8 @@ public:
 
 private:
   // The frame's constants rounded up to the size a constant buffer view needs.
-  static constexpr UINT FRAME_CONSTANTS_BYTES =
-    (sizeof(FrameConstants) + D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1) & ~(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+  static constexpr UINT FRAME_CONSTANTS_BYTES = (sizeof(FrameConstants) + D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1) & ~(
+                                                  D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
 
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;

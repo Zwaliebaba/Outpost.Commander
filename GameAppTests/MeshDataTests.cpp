@@ -16,7 +16,7 @@ constexpr float TOLERANCE = 1e-3f;
 Neuron::MeshData Triangle()
 {
   Neuron::MeshData mesh;
-  const DirectX::XMFLOAT3 up{0.0f, 1.0f, 0.0f};
+  constexpr DirectX::XMFLOAT3 up{0.0f, 1.0f, 0.0f};
   mesh.vertices = {{{0.0f, 0.0f, -10.0f}, up}, {{1.0f, 0.0f, 0.0f}, up}, {{-1.0f, 0.0f, 0.0f}, up}};
   mesh.indices = {0, 1, 2};
   mesh.boundsMin = {-1.0f, 0.0f, -10.0f};
@@ -61,27 +61,39 @@ public:
   {
     Neuron::ByteBuffer bytes = ReadRepositoryAsset("Models\\Human\\Small.cmo");
     bytes.resize(bytes.size() - 1);
-    Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::ParseCmo(bytes, "Small.cmo"); });
+    Assert::ExpectException<Neuron::Exception>([&]
+    {
+      (void)Neuron::ParseCmo(bytes, "Small.cmo");
+    });
   }
 
   TEST_METHOD(RejectsBytesAfterTheLastMesh)
   {
     Neuron::ByteBuffer bytes = ReadRepositoryAsset("Models\\Human\\Small.cmo");
     bytes.push_back(0);
-    Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::ParseCmo(bytes, "Small.cmo"); });
+    Assert::ExpectException<Neuron::Exception>([&]
+    {
+      (void)Neuron::ParseCmo(bytes, "Small.cmo");
+    });
   }
 
   TEST_METHOD(RejectsAnEmptyFile)
   {
-    Assert::ExpectException<Neuron::Exception>([] { (void)Neuron::ParseCmo({}, "Empty.cmo"); });
+    Assert::ExpectException<Neuron::Exception>([]
+    {
+      (void)Neuron::ParseCmo({}, "Empty.cmo");
+    });
   }
 
   TEST_METHOD(RejectsAMeshCountTooLargeForTheFile)
   {
     Neuron::ByteBuffer bytes = ReadRepositoryAsset("Models\\Human\\Small.cmo");
-    const std::uint32_t meshCount = 1000;
+    constexpr std::uint32_t meshCount = 1000;
     std::memcpy(bytes.data(), &meshCount, sizeof(meshCount));
-    Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::ParseCmo(bytes, "Small.cmo"); });
+    Assert::ExpectException<Neuron::Exception>([&]
+    {
+      (void)Neuron::ParseCmo(bytes, "Small.cmo");
+    });
   }
 
   TEST_METHOD(TurnsTheFrontToPlusXAndScalesToTheLength)
@@ -102,8 +114,8 @@ public:
   TEST_METHOD(KeepsTheWindingOnEveryAxis)
   {
     const float before = WindingUp(Triangle());
-    for (const Neuron::MeshAxis axis :
-         {Neuron::MeshAxis::PositiveX, Neuron::MeshAxis::NegativeX, Neuron::MeshAxis::PositiveZ, Neuron::MeshAxis::NegativeZ})
+    for (const Neuron::MeshAxis axis : {Neuron::MeshAxis::PositiveX, Neuron::MeshAxis::NegativeX, Neuron::MeshAxis::PositiveZ,
+                                        Neuron::MeshAxis::NegativeZ})
     {
       Neuron::MeshData mesh = Triangle();
       Neuron::OrientMesh(mesh, axis, 20.0f);

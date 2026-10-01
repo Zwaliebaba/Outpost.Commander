@@ -93,6 +93,7 @@ private:
     std::vector<EntityView> ships;
     std::chrono::steady_clock::time_point inputRead;
   };
+
   void WatchForResponse();
   std::vector<EntityView> m_previousEntities;
   std::optional<ResponseProbe> m_probe;

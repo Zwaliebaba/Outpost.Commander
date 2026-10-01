@@ -30,6 +30,7 @@ public:
   {
     return m_atlas.Width(_text);
   }
+
   [[nodiscard]] float LineHeight() const noexcept
   {
     return m_atlas.lineHeight;

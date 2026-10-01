@@ -33,13 +33,11 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
     }
     if (nearest == nullptr)
       return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = false};
-    const bool taken = std::ranges::any_of(_entities,
-                                           [nearest](const EntityView& _entity)
-                                           {
-                                             return _entity.kind == EntityKind::Structure &&
-                                                    _entity.structure == StructureKind::MiningRig &&
-                                                    Distance(_entity.position, nearest->position) < 1.0f;
-                                           });
+    const bool taken = std::ranges::any_of(_entities, [nearest](const EntityView& _entity)
+    {
+      return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::MiningRig && Distance(
+               _entity.position, nearest->position) < 1.0f;
+    });
     return {.position = nearest->position, .radiusMeters = std::max(_type.radiusMeters, nearest->radiusMeters), .valid = !taken};
   }
 
@@ -47,8 +45,8 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   bool valid = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
   for (const EntityView& other : _entities)
   {
-    const bool blocks =
-      other.kind == EntityKind::Asteroid || other.kind == EntityKind::AsteroidField || other.kind == EntityKind::Structure;
+    const bool blocks = other.kind == EntityKind::Asteroid || other.kind == EntityKind::AsteroidField || other.kind ==
+                        EntityKind::Structure;
     if (blocks && Distance(other.position, _cursor) < other.radiusMeters + _type.radiusMeters)
       valid = false;
   }

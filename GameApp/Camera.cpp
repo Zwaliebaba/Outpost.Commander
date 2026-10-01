@@ -72,8 +72,8 @@ Outpost::CameraSettings Outpost::LoadCameraSettings(std::string_view _json)
 
   if (settings.minimumViewWidthMeters > settings.maximumViewWidthMeters)
     Neuron::JsonFail("minimumViewWidthMeters", "is wider than maximumViewWidthMeters");
-  if (settings.defaultViewWidthMeters < settings.minimumViewWidthMeters ||
-      settings.defaultViewWidthMeters > settings.maximumViewWidthMeters)
+  if (settings.defaultViewWidthMeters < settings.minimumViewWidthMeters || settings.defaultViewWidthMeters > settings.
+      maximumViewWidthMeters)
     Neuron::JsonFail("defaultViewWidthMeters", "is outside the minimum and maximum view widths");
   if (settings.zoomFactorPerNotch <= 1.0f)
     Neuron::JsonFail("zoomFactorPerNotch", "must be more than 1, or the wheel would not zoom");
@@ -83,9 +83,7 @@ Outpost::CameraSettings Outpost::LoadCameraSettings(std::string_view _json)
 Outpost::Camera::Camera(const CameraSettings& _settings) noexcept
   : m_settings(_settings),
     m_yawRadians(INITIAL_YAW_RADIANS),
-    m_viewWidthMeters(_settings.defaultViewWidthMeters)
-{
-}
+    m_viewWidthMeters(_settings.defaultViewWidthMeters) {}
 
 void Outpost::Camera::Update(const Neuron::InputState& _input, float _elapsedSeconds, std::uint32_t _viewportWidthPixels,
                              std::uint32_t _viewportHeightPixels) noexcept
@@ -109,9 +107,7 @@ void Outpost::Camera::Update(const Neuron::InputState& _input, float _elapsedSec
     m_dragCursorPixels = {_input.cursorXPixels, _input.cursorYPixels};
   }
   else
-  {
     m_dragCursorPixels.reset();
-  }
 
   float right = Axis(_input, KEY_PAN_RIGHT, KEY_PAN_LEFT);
   float forward = Axis(_input, KEY_PAN_UP, KEY_PAN_DOWN);

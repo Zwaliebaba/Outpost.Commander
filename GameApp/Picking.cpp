@@ -13,8 +13,8 @@ bool IsShipOf(const Outpost::EntityView& _entity, Outpost::PlayerId _player) noe
 
 bool IsOnViewport(DirectX::XMFLOAT2 _pixel, const Outpost::Viewport& _viewport) noexcept
 {
-  return _pixel.x >= 0.0f && _pixel.y >= 0.0f && _pixel.x <= static_cast<float>(_viewport.widthPixels) &&
-         _pixel.y <= static_cast<float>(_viewport.heightPixels);
+  return _pixel.x >= 0.0f && _pixel.y >= 0.0f && _pixel.x <= static_cast<float>(_viewport.widthPixels) && _pixel.y <= static_cast<float>(
+           _viewport.heightPixels);
 }
 } // namespace
 
@@ -26,8 +26,10 @@ Outpost::ScreenRect Outpost::ScreenRect::Between(float _x0, float _y0, float _x1
 std::optional<Outpost::EntityId> Outpost::PickShip(std::span<const EntityView> _entities, const Camera& _camera, const Viewport& _viewport,
                                                    DirectX::XMFLOAT2 _cursor, const std::function<bool(const EntityView&)>& _eligible)
 {
-  return PickEntity(_entities, _camera, _viewport, _cursor,
-                    [&_eligible](const EntityView& _entity) { return _entity.kind == EntityKind::Ship && _eligible(_entity); });
+  return PickEntity(_entities, _camera, _viewport, _cursor, [&_eligible](const EntityView& _entity)
+  {
+    return _entity.kind == EntityKind::Ship && _eligible(_entity);
+  });
 }
 
 std::optional<Outpost::EntityId> Outpost::PickEntity(std::span<const EntityView> _entities, const Camera& _camera,

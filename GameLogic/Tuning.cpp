@@ -26,16 +26,21 @@ template <typename Element> void CheckUniqueIds(const std::vector<Element>& _lis
     for (size_t j = 0; j < i; ++j)
     {
       if (_list[i].id == _list[j].id)
+      {
         Neuron::JsonFail(std::format("{}.id", Neuron::JsonElementPath(_path, i)),
                          std::format("{} is already used by {}", _list[i].id.value, Neuron::JsonElementPath(_path, j)));
+      }
     }
   }
 }
 
-template <typename Element, typename IdType>
-void CheckExists(const std::vector<Element>& _list, IdType _id, std::string_view _path, std::string_view _listName)
+template <typename Element, typename IdType> void CheckExists(const std::vector<Element>& _list, IdType _id, std::string_view _path,
+                                                              std::string_view _listName)
 {
-  if (std::ranges::none_of(_list, [_id](const Element& _element) { return _element.id == _id; }))
+  if (std::ranges::none_of(_list, [_id](const Element& _element)
+  {
+    return _element.id == _id;
+  }))
     Neuron::JsonFail(_path, std::format("names {} {}, which does not exist", _listName, _id.value));
 }
 
@@ -118,13 +123,10 @@ Outpost::StructureWeaponTuning ReadStructureWeapon(ObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
-  {"CommandStation", Outpost::StructureKind::CommandStation},
-  {"Shipyard", Outpost::StructureKind::Shipyard},
-  {"ResearchLab", Outpost::StructureKind::ResearchLab},
-  {"MiningRig", Outpost::StructureKind::MiningRig},
-  {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
-}};
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {
+  {{"CommandStation", Outpost::StructureKind::CommandStation}, {"Shipyard", Outpost::StructureKind::Shipyard},
+   {"ResearchLab", Outpost::StructureKind::ResearchLab}, {"MiningRig", Outpost::StructureKind::MiningRig},
+   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},}};
 
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
 {
@@ -142,8 +144,10 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   const JsonValue* cost = _reader.Optional("cost");
   const JsonValue* build = _reader.Optional("buildConstructorSeconds");
   if ((cost == nullptr) != (build == nullptr))
+  {
     Neuron::JsonFail(_reader.PathOf(cost == nullptr ? "buildConstructorSeconds" : "cost"),
                      "needs \"cost\" and \"buildConstructorSeconds\" together");
+  }
   if (cost != nullptr)
   {
     structure.cost = Neuron::ReadJsonInteger(*cost, _reader.PathOf("cost"), 0);
@@ -155,22 +159,16 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   return structure;
 }
 
-constexpr std::array<std::pair<std::string_view, Outpost::UpgradeTarget>, 4> UPGRADE_TARGETS = {{
-  {"miningRig", Outpost::UpgradeTarget::MiningRig},
-  {"allHulls", Outpost::UpgradeTarget::AllHulls},
-  {"weapon", Outpost::UpgradeTarget::Weapon},
-  {"shipyards", Outpost::UpgradeTarget::Shipyards},
-}};
+constexpr std::array<std::pair<std::string_view, Outpost::UpgradeTarget>, 4> UPGRADE_TARGETS = {
+  {{"miningRig", Outpost::UpgradeTarget::MiningRig}, {"allHulls", Outpost::UpgradeTarget::AllHulls},
+   {"weapon", Outpost::UpgradeTarget::Weapon}, {"shipyards", Outpost::UpgradeTarget::Shipyards},}};
 
-constexpr std::array<std::pair<std::string_view, Outpost::UpgradeStat>, 4> UPGRADE_STATS = {{
-  {"income", Outpost::UpgradeStat::Income},
-  {"hitPoints", Outpost::UpgradeStat::HitPoints},
-  {"fireRate", Outpost::UpgradeStat::FireRate},
-  {"buildSpeed", Outpost::UpgradeStat::BuildSpeed},
-}};
+constexpr std::array<std::pair<std::string_view, Outpost::UpgradeStat>, 4> UPGRADE_STATS = {
+  {{"income", Outpost::UpgradeStat::Income}, {"hitPoints", Outpost::UpgradeStat::HitPoints}, {"fireRate", Outpost::UpgradeStat::FireRate},
+   {"buildSpeed", Outpost::UpgradeStat::BuildSpeed},}};
 
-template <typename Value, size_t Count>
-Value ReadName(ObjectReader& _reader, std::string_view _name, const std::array<std::pair<std::string_view, Value>, Count>& _names)
+template <typename Value, size_t Count> Value ReadName(ObjectReader& _reader, std::string_view _name,
+                                                       const std::array<std::pair<std::string_view, Value>, Count>& _names)
 {
   const std::string text = _reader.String(_name);
   const auto found = std::ranges::find(_names, text, &std::pair<std::string_view, Value>::first);
@@ -269,8 +267,10 @@ void CheckResearchIsAcyclic(const std::vector<Outpost::ResearchTopicTuning>& _re
     {
       if (std::ranges::find(reachable, topic.id) != reachable.end())
         continue;
-      if (std::ranges::all_of(topic.prerequisites,
-                              [&reachable](Outpost::ResearchTopicId _id) { return std::ranges::find(reachable, _id) != reachable.end(); }))
+      if (std::ranges::all_of(topic.prerequisites, [&reachable](Outpost::ResearchTopicId _id)
+      {
+        return std::ranges::find(reachable, _id) != reachable.end();
+      }))
       {
         reachable.push_back(topic.id);
         progressed = true;
@@ -283,6 +283,7 @@ void CheckResearchIsAcyclic(const std::vector<Outpost::ResearchTopicTuning>& _re
       Neuron::JsonFail(std::format("{}.requires", Neuron::JsonElementPath("research", i)), "the topic requires itself through a cycle");
   }
 }
+
 Outpost::Tuning ReadTuning(std::string_view _json)
 {
   const JsonValue document = Neuron::ParseJson(_json);
