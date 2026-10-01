@@ -57,12 +57,12 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
 | 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
 | 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | in review; the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40); the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
 | A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
 | A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
-| 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
-| 6.2 | Win, lose and the menu | 6.1 | — | todo |
-| 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
+| 6.1 | The AI player | 5.2 | G9 decided | in review on `claude/milestone-6`, awaiting CI and the owner's run |
+| 6.2 | Win, lose and the menu | 6.1 | — | in review on `claude/milestone-6`, awaiting CI and the owner's run |
+| 6.3 | Q1 and Q3 playtests | 6.2 | — | the match log is in review on `claude/milestone-6`; the playtests are the owner's |
 
 ## Gates
 
@@ -80,7 +80,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). **Decided on 2026-10-01, as a provisional baseline:** The Constructor: 300 HP, armor 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free. 4.2 puts them in the tuning data. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
-| G9 | The AI's attack-group threshold (design §10, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 6.1 |
+| G9 | The AI's attack-group threshold (design §10, §15). **Decided on 2026-10-01: 12 ships.** It is the AI's own number, so it is in the AI's settings file rather than the tuning data. | `OutpostCommander/Assets/Opponent.json`; [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md); design §10 | — |
 
 Turn rates (design §15) do not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 uses provisional values held as data.
 
@@ -615,11 +615,22 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   7. It does not kite.
 - **Acceptance:** tests in which scripted snapshots produce the expected commands: the build order, the counter choice after a review, the defence response.
 - **Verify:** CI; **owner run.**
+- **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base), and [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md).
+  - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its rigs and platforms.
+  - **Its settings.** `OutpostCommander/Assets/Opponent.json`, read by `LoadAiSettings`. The review interval moved there from `Tuning.json`.
+  - **What it needed from the protocol.** Every warship's drive and weapon in the snapshot, and `PlaceGhost` moved into `GameProtocol` so that the AI places by the client's rule.
+  - **Tests.** `AiPlayerTests` checks scripted snapshots (the first orders, every counter, the defence) and the AI on the real server (its base in order, its answer to a fleet, the attack at 12 ships, the defence of an outpost, a whole match against a player who does nothing). `AiSettingsTests` checks the file, and every identifier in it against `Tuning.json`. `GameLogicTests` now references `Opponent`.
+  - **What the tests found.** The AI wins against a passive player at 6:13. From about 3 minutes it earns three times what its two Shipyards spend, and it researches Fusion Drive and Large Hull without ever building a heavy (design §15).
 
 ### 6.2 — Win, lose and the menu
 
 - **Goal:** losing your Command Station loses the match. The menu offers Start skirmish and Quit, and nothing else (design §6, §9).
 - **Verify:** CI for the rule; **owner run.**
+- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decisions 8 and 9.
+  - **The rule.** A player whose base was placed and who has no Command Station has lost. Every snapshot says whether the match is over, who won (no one in a draw), and on which tick. The world runs on (owner, 2026-10-01). `MatchOutcomeTests` covers it.
+  - **The menu and the banner.** The game opens on the menu. A match that ends shows Victory, Defeat or Draw with its length, and a button back to the menu. `HudTests` covers both layouts and the outcome's words.
+  - **The flow.** Each match has its own server and seed, made while the menu shows. The AI connects as player 2. The measurement switches skip the menu.
+  - **Not run:** none of it has been on screen. The owner's run checks the menu, the banner and going back and forth.
 
 ### 6.3 — Q1 and Q3 playtests
 
@@ -627,6 +638,10 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 - **Scope:** the owner plays. The agent's part is a match log: its length, the research order and timing, and the designs built over time. It writes the log to a file, and adds a summary tool under `Tools/`.
 - **Acceptance:** the answers to Q1 and Q3, "no" included, are recorded in design §3. A failed answer is still a result (design §3).
 - **Verify:** **owner run.**
+- **As built (the agent's part):** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
+  - **The log.** `Outpost::MatchLog` adds each match against the AI to `OutpostCommander-matches.log` in the temporary folder. It records the seed, each player's research as it finishes, each warship as it first appears, and the end. `MatchLogTests` covers it.
+  - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
+  - **A first look, not an answer.** Two AIs on the real server end a match in 11 to 13 minutes, and the designs they build shift with each review. Only the owner's matches answer Q1 and Q3.
 
 ---
 

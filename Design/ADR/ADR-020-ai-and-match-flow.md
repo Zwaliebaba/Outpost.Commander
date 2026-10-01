@@ -1,0 +1,65 @@
+# ADR-020 — The AI is a client with its own settings file, a match ends when a Command Station falls, and the game opens on a menu
+
+Status: **accepted** · 2026-10-01
+
+## Context
+
+Milestone 6 adds the opponent and the match around it (design §10, §14): the AI player (task 6.1), winning, losing and the menu (task 6.2), and a log for the owner's Q1 and Q3 playtests (task 6.3). The AI must be a client that reads its snapshot and sends commands, and it may include only `GameProtocol` (ADR-002).
+
+Design §10 lists what the AI does and leaves the details open. The owner settled them on 2026-10-01:
+
+- **Gate G9: the attack group is 12 ships.**
+- **Research order, economy first and then the heavies:** Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
+- **Counters are design §7's triangle, held as data.** The swarm (Small+Ion+Mass Driver) is answered with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line with the swarm. The picket (Small+Ion+Lance) is answered with the swarm, and each heavy (Large+Fusion with any weapon) with the picket. Anything else, and no enemy fleet yet, gets the brawler. The AI uses only designs it has unlocked.
+- **The base:** keep 4 Constructors. Rigs on the 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home. Then rigs on the 3 contested asteroids nearest the AI, each with a platform beside it. A second Shipyard once income passes 30 Ore/s.
+- **The match end:** a Victory or Defeat banner with the match's length, and the world runs on until the player goes back to the menu.
+
+## Decision
+
+1. **The AI is `Outpost::AiPlayer` in `Opponent`.** The shell hands it every snapshot of its player, and it returns the commands to send through its own connection. It watches every snapshot for shots and decides once a second. It is not deterministic across builds, and it need not be: the server logs the commands it applied, so a match replays from its seed and command log without the AI (ADR-009).
+2. **The AI's numbers are in `OutpostCommander/Assets/Opponent.json`, not `Tuning.json`.** They are how one client plays, not the rules of the match, and the server never reads them. That is where gate G9 is recorded, `attackGroupShips`, though the plan named `Tuning.json`. The review interval moved there from `Tuning.json`. `LoadAiSettings` reads the file as strictly as the tuning loader does. It cannot check the identifiers against `Tuning.json`, which only the server reads, so `GameLogicTests` does: every component and topic it names exists, and the research order comes after each topic's prerequisites.
+3. **Every snapshot shows every warship's hull, drive and weapon, whoever owns it.** There is no fog of war in the MVP, so a player sees each ship, and now its components too. A design's identifier names a design in its owner's list only, so the components are what the AI counts. Fog of war, when it comes, filters these with the rest of the snapshot (ADR-002 decision 4).
+4. **`PlaceGhost` moved from `GameApp` to `GameProtocol`**, unchanged, so that the AI places structures by the rule the player's ghost shows. Both apply the server's placement rule to what a snapshot shows (ADR-016).
+5. **The base plan is fixed at the AI's first decision.** The home asteroids are the 3 nearest its Command Station. The contested ones are the next nearest, leaving out any nearer another player's station. The Shipyard, the Research Lab and the home platform stand to the sides and front of the station, toward the map's center. A contested platform stands beside its rig, toward the AI's base. The second Shipyard stands behind the station. Each place keeps 50 m clear of everything else, so that ships still pass, and is found by searching outward in rings when the preferred one is taken. A place is checked again when its structure is ordered. The AI builds the plan in order, at most two Constructors to a site, and the rest go to the next site. A rig whose asteroid another player holds is skipped, and so is its platform. A destroyed structure is built again. Ships are not queued while the next structure waits for Ore.
+6. **The AI tracks its Constructors itself.** A snapshot shows no ship's orders, and the server does not report a refused command. So the AI remembers which Constructors it sent where. If the site it ordered has not appeared 3 s later, it takes the order as refused. A site with nobody on it gets the idle Constructors.
+7. **Counters, and the AI's fleet.**
+   - Every 60 s it finds the enemy's most common warship by components, and builds that design's counter if it has unlocked it, and the default otherwise. A tie goes to the lowest hull, then drive, then weapon.
+   - It saves a design it does not have, and keeps 2 jobs in each Shipyard's queue.
+   - Its warships gather in reserve 170 m from its Command Station, toward the map's center.
+   - When the reserve reaches 12 ships, they join the attack group. The group attack-moves on the nearest enemy structure, then on the next, until it dies out.
+   - A shot on one of its Mining Rigs or Defence Platforms sends the reserve there with an attack-move (design §10). The reserve goes back 10 s after the last shot.
+   - The AI never kites (design §7).
+8. **A match ends once a player whose base was placed has no Command Station.** Every snapshot carries `matchOver`, the winner, and `matchEndedTick`. The winner is no player when both stations fall in the same tick. The world runs on after the match ends, and the outcome stands. A world with no bases placed never ends, as in the movement and combat tests.
+9. **The game opens on a menu with Start skirmish and Quit.** `GameClient` has a menu screen and a match screen. Starting or leaving a match resets everything the last match left in the view, without reloading a mesh. Each match has its own server and seed.
+   - The next match's server is made while the menu shows, and the first one before the window opens, so that bad tuning, map or AI data is reported before the screen goes full screen.
+   - The AI is player 2, which `Models.json` draws with the Tarkan set.
+   - `--measure`, `--load` and `--stress` skip the menu, and under load or stress no AI plays.
+10. **Every match against the AI is added to `OutpostCommander-matches.log` in the temporary folder**, by `Outpost::MatchLog` in `GameApp`. It records:
+    - the seed,
+    - each player's research as it finishes,
+    - each warship as it first appears, by its components,
+    - how the match ended, or that it was left.
+
+    `Tools/MatchLog.py` prints, for each match: its length against Q1's 15 to 25 minutes, the research times, and the designs each side built in 5-minute windows.
+11. **`GameLogicTests` lists `Opponent`** in its include path and references, so that the AI plays the real server headlessly (ADR-002's table, AGENTS.md §2).
+
+## Consequences
+
+All figures below are from the GameLogicTests harness on Linux, built with clang at `-O2` from this branch on 2026-10-01. They use the repository's data and the real server.
+
+- **The AI beats a player who does nothing at 6:13** (tick 7,460, seed 3). It places its whole base plan by 1:45 and sends its first attack group at 4:00.
+- **The AI cannot spend what it earns.** From about 3 minutes, its income is 48.75 Ore/s: 3 home rigs, 3 contested rigs, and Improved Extraction. Two Shipyards building 165-Ore ships every 20 s spend about 16.5 Ore/s. Against a passive player it holds 23,000 Ore unspent at 15 minutes. The settings cap its production at two Shipyards, by the owner's decision, so this is a tuning question, not a defect (design §15).
+- **The AI researches Fusion Drive and Large Hull, but never builds a heavy.** No counter answers with one, and the default is the brawler, so those two topics cost it 450 Ore and 3½ minutes of its lab for nothing (design §15).
+- **Two AIs on the mirrored map end a match in 11:02 to 13:12**, over seeds 1 to 5. Player 1 won 4 of the 5. That is shorter than Q1's 15 to 25 minutes, but a human does not play as the AI does, so it is no answer to Q1. The lean to player 1 is not explained yet. The server applies player 1's commands first in a tick, which may be enough.
+- **The checks behind the AI** are:
+  - Scripted snapshots: its first orders, its answer to each design of the triangle, and the reserve going to a platform under fire but not to the Command Station.
+  - The real server: its base in order, its answer to an enemy fleet, the attack at 12 ships, and the defence of an outpost.
+  - A whole match against a passive player.
+- **Not run yet.** The menu, the banner and the match flow are presentation and input. They are checked by the HUD's tests and by the owner's run (AGENTS.md §3).
+
+## What this forecloses
+
+- Tuning the AI in `Tuning.json`, or the server reading `Opponent.json`.
+- The AI reading server state, or acting more often than once a second, without a new decision.
+- A match that ends any other way, such as a time limit or a surrender, without a new decision.
+- Snapshots that hide another player's components while fog of war does not exist.

@@ -264,12 +264,19 @@ The opponent is **The Tarkan High Command** (§1). It is one scripted AI, delibe
 
 1. Builds a Shipyard, a Research Lab and Mining Rigs on its home asteroids, then expands to the contested middle.
 2. Researches in a fixed order.
-3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It looks at the player's fleet again only once every review interval (§12), so it answers a switch late, as a player would, rather than at once from a map it sees in full.
-4. Gathers an attack group. When the group reaches a size threshold, it attack-moves on the nearest player structure, and repeats.
+3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It looks at the player's fleet again only once every review interval, 60 s, so it answers a switch late, as a player would, rather than at once from a map it sees in full.
+4. Gathers an attack group. When the group reaches 12 ships (gate G9), it attack-moves on the nearest player structure, and repeats.
 5. Defends: when one of its Mining Rigs or Defence Platforms is attacked, its ships outside the attack group go to it.
 6. Rebuilds destroyed Mining Rigs, and replaces lost Constructors at its Command Station.
 
 A difficulty setting is out of scope. One AI tuned to "beatable by a careful player" is enough. It does not kite (§7).
+
+**Its numbers are its own** (owner, 2026-10-01). They are in `OutpostCommander/Assets/Opponent.json`, not with the match's rules in §12's file, because they are how one player plays (ADR-020):
+
+- It keeps 4 Constructors.
+- It builds rigs on its 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home, then rigs on the 3 contested asteroids nearest it, each with a platform beside it. It adds a second Shipyard once its income passes 30 Ore/s.
+- It researches economy first and then the heavies: Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
+- Its counters are §7's triangle. It answers the swarm (Small+Ion+Mass Driver) with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line and the picket (Small+Ion+Lance) with the swarm. It answers each heavy (Large+Fusion) with the picket. Anything else, and no fleet yet, gets the brawler. It builds only what it has unlocked.
 
 ---
 
@@ -357,10 +364,7 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 Two of the margins are thin. The platform keeps 28% of its hit points, so a sixth raider, or one more Mass Driver damage, may tip it. And the station's minute is 2.4 s from failing. Neither number has been retuned (§15).
 
-**Not set yet** (each is open in §15):
-
-- turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too;
-- the AI's attack-group threshold.
+**Not set yet** (open in §15): turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too. The AI's numbers, its attack-group threshold among them, are not here but in its own file (§10).
 
 ---
 
@@ -393,7 +397,10 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
 - Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
-- The AI's attack-group threshold (§10).
+- The AI cannot spend what it earns. From about 3 minutes its income is 48.75 Ore/s, and its two Shipyards spend about 16.5 Ore/s, so it holds 23,000 Ore at 15 minutes against a player who does nothing (ADR-020). Does it build Shipyards by income, or is the second its last?
+- The AI researches Fusion Drive and Large Hull but never builds a heavy, since no counter answers with one and its default is the brawler (§10). Does a counter or the default use them, or does the order drop them?
+- The AI defends only its Mining Rigs and Defence Platforms (§10). Does it defend its Shipyards, its Research Lab and its Command Station too?
+- Two AIs against each other end a match in 11 to 13 minutes, and player 1 won 4 of 5 on the mirrored map (ADR-020). Is the server's command order favouring player 1?
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - What replaces the placeholder meshes, and when (§11). Their provenance matters only if one of them ships.
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
@@ -462,3 +469,10 @@ Decided on 2026-10-01, meshes and exhaust:
 - The current meshes are placeholders, to be replaced (§11).
 - Meshes are edited in Blender as glTF sources and baked into the game's own `.nmf` format, which carries hardpoints. A model faces the same way in the game as in Blender, no longer its mirror image, and its front is in its mesh rather than in `Models.json` (§11, ADR-018). This supersedes the `.cmo` files and the forward axes decided on 2026-09-30.
 - Exhaust is in the MVP, colored by drive (§11, ADR-019).
+
+Decided on 2026-10-01, milestone 6:
+
+- The AI's attack group is 12 ships (gate G9). Its numbers are in `OutpostCommander/Assets/Opponent.json`, apart from the match's rules (§10, ADR-020).
+- The AI researches economy first and then the heavies, counters by §7's triangle, and builds rigs with a platform beside each contested one and a second Shipyard at 30 Ore/s of income (§10).
+- Every player sees every ship's components, as it sees the ship (§10, ADR-020).
+- A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).
