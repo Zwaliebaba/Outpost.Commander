@@ -41,6 +41,9 @@
     <ClInclude Include="StarPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="TextureData.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="GlyphAtlas.h">
@@ -73,6 +76,9 @@
     <ClCompile Include="StarPipeline.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="TextureData.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="GlyphAtlas.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
@@ -97,6 +103,9 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\StarPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\StarSpritePS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UiVS.hlsl">

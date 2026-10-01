@@ -319,7 +319,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 - **Hardpoints:** a mesh marks where things attach to it, as empties in its source (ADR-018). A shot leaves from the shooter's `gun` nearest its target, and an `exhaust` shows where an engine's exhaust leaves.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.
 - **Exhaust** (owner, 2026-10-01): every ship's exhaust glows in its drive's color, so that a design's drive reads on sight, and it grows longer and brighter as the ship goes faster. The Constructor, which has no drive, has its own color. Ion is cyan, Fusion magenta and the Constructor a pale gray (owner, 2026-10-01; ADR-019).
-- **Sky** (owner, 2026-10-01): deep space, with a dimmed grid over it to mark the ground and the map's edge. Stars cover the whole sky, and a Milky Way band, with its bulge, star clouds and dust lanes, crosses the default view. The band is made of individual stars and nothing else, with no haze or glow (ADR-021).
+- **Sky** (owner, 2026-10-01): deep space, with a dimmed grid over it to mark the ground and the map's edge. Stars cover the whole sky evenly, most of them faint and a few bright, as a real sky has them, and the brightest few have the spikes of a starburst. There is no galaxy, band or nebula (ADR-022).
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
 - **LODs:** there are none. Each set has one mesh per model.
 - **Provenance and licence are not recorded.** Nothing in `Art/` says where the placeholder meshes come from or under what terms. None of them ships with the MVP (owner, 2026-10-01), so the question comes with their replacements: each one's provenance is recorded when it lands, and if it is under a licence, AGENTS.md R14 needs its text to travel with it.
@@ -513,4 +513,5 @@ Decided on 2026-10-01, closing the open questions:
 
 Decided on 2026-10-01, after the MVP:
 
-- The blue ground colour is gone. The battlefield is drawn over a sky of stars with a Milky Way band, made of stars alone, and under a dimmed grid (§11, ADR-021).
+- The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
+- The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts (§11, ADR-022).
