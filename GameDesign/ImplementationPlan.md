@@ -43,14 +43,14 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.6 | Selection, orders and control groups | 2.5 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | done, [0d90731](https://github.com/Zwaliebaba/Outpost.Commander/commit/0d90731), run by the owner |
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
-| 3.2 | Components and designs | 3.1 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
-| 3.3 | Combat rules | 3.2, 2.4 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
-| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check fails (design §12) |
-| 3.5 | Combat effects | 3.3, 2.5 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's run |
-| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's run |
-| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | in review, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), awaiting the owner's measurement |
+| 3.2 | Components and designs | 3.1 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
+| 3.3 | Combat rules | 3.2, 2.4 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
+| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check fails (design §12) |
+| 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
+| 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
+| 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
 | 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | todo |
-| 4.2 | Structures, placement and Constructors | 4.1 | G8 Constructor numbers | todo |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | todo |
 | 4.3 | Shipyard and Command Station queues | 4.2 | — | todo |
 | 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | todo |
 | 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | todo |
@@ -77,7 +77,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
-| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 4.2 |
+| G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). **Decided on 2026-10-01, as a provisional baseline:** The Constructor: 300 HP, armor 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free. 4.2 puts them in the tuning data. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
 | G9 | The AI's attack-group threshold (design §10, §15). | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 6.1 |
 
 Turn rates (design §15) do not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 uses provisional values held as data.
@@ -395,6 +395,16 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Acceptance:** the figures, the method and the machine are recorded in design §3. This is x64 and ARM64 if the owner measures both.
 - **Verify:** **owner run**, Release.
 - **As built:** the stress scene is `Outpost::StressLoad`, run by `OutpostCommander.exe --stress`; with `--measure` the game logs each frame's CPU and GPU work, each tick, the back buffer's size and the display's refresh rate, and `python Tools/FrameTimes.py` summarizes the log against Q4. Design §3 gives the method. `Neuron::Renderer` takes the GPU timestamps and `TakeGpuFrameTimes` returns them. `StressLoadTests` runs the scene for 60 simulated seconds: each side stays above 80 ships, with more than 1,000 shots and more than 20 ships or structures destroyed. In a Linux container its ticks took 0.11 ms at the median, 0.45 ms at the 99th percentile and 1.7 ms at worst, which is not the development machine. **Q4 is not answered until the owner's measurement**, Release on the development machine, is recorded in design §3.
+
+### What milestone 3 changed for later tasks
+
+Milestone 3 merged as [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) on 2026-10-01, with 3.5–3.7 not yet run by the owner.
+
+- **Q2 is answered "no" for now.** The check fails against the simulation where the model passes (design §12). Whether §12 is retuned, the model fixed, or both is open in design §15, and milestone 4 builds on today's numbers.
+- **Q4 waits on the owner's measurement** with `--measure --stress` in Release (design §3).
+- **Structures already fight.** `Simulation::SpawnStructure` takes hit points and armor, and auto-targeting falls back to structures, so 4.4 adds the Defence gun to what is there rather than a new kind of combatant.
+- **Snapshots carry Ore and the player's designs**, so 4.1's income and 4.5's HUD read what is already sent.
+- **The full Q2 check runs only with `OUTPOST_Q2_FULL` set**, because the native test adapter ignores vstest's category filter. A later slow test needs the same gate, not a filter.
 
 ---
 
