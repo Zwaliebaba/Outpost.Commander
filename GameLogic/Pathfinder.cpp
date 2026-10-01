@@ -9,13 +9,19 @@
 
 namespace
 {
-// Corners of the polygon around each grown obstacle. More corners hug the circle closer; sixteen keep a path within 2%
-// of the circle's radius.
+// Corners of the polygon around each grown obstacle. More corners hug the circle closer but cost the graph more: sixteen
+// keep a path within 2% of a large circle's radius, and eight within 5 m of a circle no wider than SMALL_RADIUS_METERS,
+// such as a structure's (ADR-010).
 constexpr int POLYGON_CORNERS = 16;
+constexpr int SMALL_POLYGON_CORNERS = 8;
+constexpr float SMALL_RADIUS_METERS = 60.0f;
 // Kept between a ship's footprint and an obstacle on top of the ship's radius, so that a path never grazes one.
 constexpr float MARGIN_METERS = 0.5f;
 // A segment may pass this close inside a grown circle and still count as clear: the polygon's own edges touch it.
 constexpr float TOLERANCE_METERS = 0.01f;
+// A line within this much of touching a corner's polygon still counts as touching it, so that rounding never drops an edge
+// a shortest path needs.
+constexpr float TANGENT_TOLERANCE = 1e-3f;
 // Clear() pushes a point out of one obstacle at a time; a point wedged between two needs a few rounds.
 constexpr int CLEARING_ROUNDS = 4;
 // A ship of a group takes a shared route only when it is at most this many times the straight line to its slot. A
@@ -106,31 +112,56 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
     return found->second;
 
   Graph graph;
-  // The polygon's corners sit on a circle a little wider than the grown obstacle, so that its edges touch the obstacle
-  // rather than cut it.
-  const float cornerScale = 1.0f / std::cos(std::numbers::pi_v<float> / POLYGON_CORNERS);
+  // Each corner's outward direction, and how far from its tangent a line may turn and still touch its polygon there, as
+  // a squared sine: within half the polygon's turn at a corner.
+  std::vector<PlaneVector> normals;
+  std::vector<float> touchLimitsSquared;
   for (const Obstacle& obstacle : m_obstacles)
   {
     const float grown = obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS;
-    for (int corner = 0; corner < POLYGON_CORNERS; ++corner)
+    const int corners = grown <= SMALL_RADIUS_METERS ? SMALL_POLYGON_CORNERS : POLYGON_CORNERS;
+    // The polygon's corners sit on a circle a little wider than the grown obstacle, so that its edges touch the obstacle
+    // rather than cut it.
+    const float cornerScale = 1.0f / std::cos(std::numbers::pi_v<float> / static_cast<float>(corners));
+    const float touchLimit = std::sin(std::numbers::pi_v<float> / static_cast<float>(corners)) + TANGENT_TOLERANCE;
+    for (int corner = 0; corner < corners; ++corner)
     {
-      const float angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(corner) / POLYGON_CORNERS;
-      const PlanePosition node = obstacle.center + PlaneVector{std::cos(angle), std::sin(angle)} * (grown * cornerScale);
+      const float angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(corner) / static_cast<float>(corners);
+      const PlaneVector normal{std::cos(angle), std::sin(angle)};
+      const PlanePosition node = obstacle.center + normal * (grown * cornerScale);
       const bool free =
         IsInsideEdge(node, _clearanceMeters) &&
         std::ranges::none_of(
           m_obstacles, [&](const Obstacle& _other)
           { return Distance(node, _other.center) < _other.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS; });
       if (free)
+      {
         graph.nodes.push_back(node);
+        normals.push_back(normal);
+        touchLimitsSquared.push_back(touchLimit * touchLimit);
+      }
     }
   }
 
+  // A shortest path round convex obstacles bends only at corners, and leaves each corner along a line that touches its
+  // polygon there: one that cuts into the polygon could be shortened. So only those edges are kept, and whether a line
+  // touches the polygon at a corner, which a few multiplications tell, is asked before whether anything blocks it,
+  // which costs a pass over every obstacle (ADR-010). A line touches a regular polygon at a corner when it is within
+  // half the polygon's turn at a corner of the tangent there. The test is squared, against the squared length of the
+  // line, so that it needs no square root.
   graph.edges.resize(graph.nodes.size());
   for (std::uint32_t a = 0; a < graph.nodes.size(); ++a)
   {
     for (std::uint32_t b = a + 1; b < graph.nodes.size(); ++b)
     {
+      const PlaneVector between = graph.nodes[b] - graph.nodes[a];
+      const float lengthSquared = Dot(between, between);
+      const float alongA = Dot(between, normals[a]);
+      if (alongA * alongA > touchLimitsSquared[a] * lengthSquared)
+        continue;
+      const float alongB = Dot(between, normals[b]);
+      if (alongB * alongB > touchLimitsSquared[b] * lengthSquared)
+        continue;
       if (!IsStraightPathClear(graph.nodes[a], graph.nodes[b], _clearanceMeters))
         continue;
       const float length = Distance(graph.nodes[a], graph.nodes[b]);
