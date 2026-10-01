@@ -38,7 +38,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 2.1 | Protocol types: IDs, commands, snapshots, `Transport` | 0.5 | — | done, [#30](https://github.com/Zwaliebaba/Outpost.Commander/pull/30) |
 | 2.2 | Tick host, seeded PRNG, in-process server | 2.1, 3.1 | — | done, [#32](https://github.com/Zwaliebaba/Outpost.Commander/pull/32) |
 | 2.3 | The map as data | 2.2 | — | done, [#33](https://github.com/Zwaliebaba/Outpost.Commander/pull/33), layout confirmed by the owner |
-| 2.4 | Movement, pathing and formations | 2.3 | G5 footprint radii (provisional in use) | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
+| 2.4 | Movement, pathing and formations | 2.3 | G5 decided | done, [#34](https://github.com/Zwaliebaba/Outpost.Commander/pull/34) |
 | 2.5 | Rendering from interpolated snapshots | 1.6, 2.4 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.6 | Selection, orders and control groups | 2.5 | — | done, [bcaead5](https://github.com/Zwaliebaba/Outpost.Commander/commit/bcaead5), run by the owner |
 | 2.7 | Measure Q5 and the tick half of Q4 | 2.6 | — | done, [0d90731](https://github.com/Zwaliebaba/Outpost.Commander/commit/0d90731), run by the owner |
@@ -55,9 +55,9 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
 | 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | merged in [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), in review until the owner's run |
 | 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
-| 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | in review, milestone 5's PR |
-| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | in review, milestone 5's PR, awaiting the owner's run |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo, its own PR once G5 is decided |
+| 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
+| 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | in review; the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
 | 6.1 | The AI player | 5.2 | G9 attack-group threshold | todo |
 | 6.2 | Win, lose and the menu | 6.1 | — | todo |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | todo |
@@ -74,7 +74,7 @@ Each gate is an owner decision. Most are already listed as open in design §15.
 | G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. Provenance is still open. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md); design §15 for provenance | 1.3 (provenance before shipping) |
 | G3 | The camera's zoom range around the 500 m default view (design §4, §15). Until it is decided, 1.5 uses provisional limits held as data: 150 m to 1,600 m. | `OutpostCommander/Assets/Camera.json`; design §4, §15 for the reasons | 1.5 (final values) |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
-| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | 2.4 (final values), 5.3 |
+| G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. **Decided on 2026-10-01: the hulls' radii they had moved with are final, Small 8 m, Medium 14 m, Large 24 m. The Constructor's and the structures' footprints stay provisional (design §15).** | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
 | G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
 | G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). **Decided on 2026-10-01, as a provisional baseline:** The Constructor: 300 HP, armor 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free. 4.2 puts them in the tuning data. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
@@ -551,10 +551,18 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
 - **Goal:** splash damage with a 30 m radius, and the 280 m range, in both the simulation and `Tools/BattleModel.py`. This means the model's clumps get the spacing that ship sizes imply. Rerun the Q2 check, since it cannot be "yes" until the Missile Rack is in (design §3, §12).
 - **Acceptance:** Q2's standing is recorded in design §12, with the model and the simulation both including the Missile Rack.
 - **Verify:** CI; run the model locally.
+- **As built:** gate G5 decided by the owner on 2026-10-01, and [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md) decision 12.
+  - **The splash rule** (owner, 2026-10-01). A missile also hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armor. There is no falloff and no friendly fire.
+  - **The game.** `DesignStats`, `WeaponView` and `ShotView` carry the splash radius. The designer shows it. The client throws a ring out to the radius where a missile lands.
+  - **The model.** Each clump stands in a grid three footprint radii apart, the game's formation spacing, a second copy of a constant in `Simulation.cpp`.
+  - **The checks.** Both now field all eighteen designs, and the robustness sweep moves the splash radius too. The footprints are not moved: they are sizes.
+  - **The result.** The model fails only (b): the Missile Rack is never worth building under spread fire. The simulation fails all four. The Missile Rack, taken by one side with Mass Driver Calibration, leaves the other side's starting designs without a single win at 3,000–4,500 Ore. Design §12 and §15 record it for the owner, untuned.
+  - **Tests.** `CombatTests.SplashHitsEveryEnemyNearTheTarget` covers distance, structures, armor and friendly fire. `DesignTests` checks the model's Missile Rack rows, and `CombatEffectsTests` the ring.
+  - **Not run:** the owner's run checks that the ring reads.
 
 ### What milestone 5 changed for later tasks
 
-- **5.3 starts from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
+- **5.3 started from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
 - **The AI (6.1) researches and designs through the same commands**, `StartResearchCommand` and `SaveDesignCommand`. It reads the topics, its components and what is unlocked from its snapshot.
 - **The log for 6.3** can read research order and timing from the snapshots: each topic's `researched` flag, and the lab's queue.
 

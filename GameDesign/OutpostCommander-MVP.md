@@ -203,7 +203,7 @@ All three are worth building, each at about a third of the equilibrium mix. Smal
 
 **Every hull, drive and weapon has a use, but the Fusion Drive only on the Large hull.** That is the trade the drive is meant to be (§7 Components), and speed, the other half of it, is judged in play.
 
-The Missile Rack is meant to break defended positions and clumps. It can only be checked once ship sizes say how many ships its 30 m splash reaches (§15).
+The Missile Rack is meant to break defended positions and clumps. Its hit also hits every other enemy whose center is within 30 m of its target's, as hard as the target (ADR-014). With the hulls' sizes (§11, gate G5), a formed group of Small hulls stands close enough for a missile to reach four neighbours, and Medium and Large ones are pressed that close only while they fight. Where it stands against the check is in §12.
 
 The other hull, drive and weapon combinations are legal but not worth building at these numbers. That is expected with twelve combinations: Q2 asks only that every component has a use.
 
@@ -277,7 +277,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 - **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). Their `.obj` sources are in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`. The owner converts each one to DirectX's `.cmo` format with `Tools/meshconvert.exe`, and the game loads the converted copies from `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\`. Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour.
 - **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Each model of each set has a **forward axis and a length recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011). Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
-- **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh, and is set with ship sizes (§15).
+- **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh. The owner set the hulls' sizes on 2026-10-01 (gate G5), as the radii they had moved with since milestone 2: Small 8 m, Medium 14 m, Large 24 m. A group forms up three radii apart (ADR-010), which is also what decides how many ships a Missile Rack's splash reaches (§7).
 - **Materials are missing.** The converted meshes carry no materials the game uses, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
@@ -309,10 +309,10 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 | Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer (12–42% under focus fire). |
 | Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (8–41% under focus fire). |
 
-**Where §12 stands against the model's Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks):
+**Where §12 stood against the model's Q2 check before the Missile Rack** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks). How both checks stand with it is below, under *With the Missile Rack*:
 
 - **(a) passes** at every budget of both stages, in both modes. Every design's best counter wins all 60 of its battles.
-- **(b) passes for every modelled component.** It is reported as incomplete because the Missile Rack is not modelled, so Q2 cannot be "yes" until it is.
+- **(b) passed for every modelled component.** It was reported as incomplete while the Missile Rack was not modelled.
 - **(c) passes:** no counter flips when any single number moves 5%.
 - **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 80% of battles at 3,000 Ore under focus fire. Every other topic leaves an answer that wins at least 92%.
 
@@ -327,12 +327,23 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 **Why the two disagree.** The counters the model found hold in the simulation where focus fire decides them, and `Q2CheckTests.TheRecordedCountersHold` keeps the ones that hold under both modes in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore; the line beats the brawler under focus fire only. Spread fire is where they part. The simulation's spread fire is spread over the enemies in range, not over the whole enemy army, so a short-range weapon spreads its hits over the few ships at the front of the fight and works much like focus fire, while a long-range weapon spreads over many. That moves exactly the matchups that fail: the line, whose Lance reaches deep and wastes its heavy hits on spread targets, against the brawler, whose Mass Driver does not. This is reasoned from the battles, not isolated one cause at a time, and why the Large hull and the Fusion drive drop out of the spread-fire mix is not traced yet.
 
+**With the Missile Rack** (task 5.3, 2026-10-01). Both checks now field all eighteen designs. The model gives each clump a square grid three footprint radii apart, the game's formation spacing (ADR-010), and a missile hits every ship of the target's clump within 30 m of it. The simulation plays ADR-014's splash rule. The figures come from the Linux container, where the model took about two minutes and the simulation's full check about four, each on four cores.
+
+- **The model** (2,150 robustness checks) passes (a), (c) and (d). It fails (b) throughout spread fire: at no budget from 2,000 to 12,000 Ore is a design worth building that uses the Missile Rack. Under focus fire Large+Fusion+Missile Rack takes 11% of the mix at every budget. In a clump at formation spacing a missile reaches four neighbours only among Small hulls, and the Missile Rack's 40 damage every 2 s gives less damage per second than the Lance against every hull, and less than the Mass Driver against Small and Medium hulls.
+- **The simulation** fails all four, and the Missile Rack is strong there:
+  - **(a)** fails at the one point it failed before: the line wins 53% against the brawler at 2,000 Ore under spread fire.
+  - **(b)** changes. A Missile Rack design is worth building at every budget, in both modes, and Large+Fusion+Missile Rack takes 14–34% of the mix at 11 of the 12 budgets and modes. What drops out is the Medium hull, under focus fire at 3,000–12,000 Ore and under spread fire at 6,000–12,000. The Mass Driver drops out under focus fire at 3,000–12,000 Ore. The Fusion drive drops out at 12,000 Ore under spread fire, and the Small hull from the starting stage at 2,000 Ore under spread fire.
+  - **(c)** fails on the same matchup as before: the line against the brawler at 2,000 Ore under spread fire.
+  - **(d)** fails as before on one-sided Mass Driver Calibration. It now also fails on the Missile Rack, which requires Mass Driver Calibration. Taken by one side only, it is a trump card. At 3,000–4,500 Ore no starting design wins a single battle out of 60 against the upgraded Small+Ion+Missile Rack or Medium+Ion+Missile Rack, in either mode. At 2,000 Ore the best answer to the upgraded Medium+Ion+Missile Rack wins 35% under spread fire and 2% under focus fire.
+- **Why the two disagree** is reasoned from the battles, not isolated one cause at a time. In the simulation, ships standing to fire give way only sideways round their targets (ADR-010) and press together to their footprints, 16 m apart for Small hulls and 28 m for Medium ones. So a missile there reaches Medium hulls that the model's formation spacing keeps out of reach. And the starting designs reach 120 or 220 m against the Missile Rack's 280 m, so they take fire all the way in.
+- **Q2 stays "no"** in the simulation, now with every component in it, and (b) fails in the model too. The Missile Rack is the first number to look at, and retuning is the owner's call (§15).
+
 **What is open** (§15): whether §12 is retuned against the simulation, and whether the model's clump learns the simulation's geometry so that it stays a fast guide to tuning. The full check took about ten minutes on four threads in a Linux container, so it runs only when the `OUTPOST_Q2_FULL` environment variable is set, which CI never does, and the owner runs it: `set OUTPOST_Q2_FULL=1`, then `vstest.console.exe x64\Release\GameLogicTests.dll`. The report goes to `Q2Check-report.txt` in the temporary folder.
 
 **The base's numbers** (milestone 4).
 
 - **The Constructor and its rates are the owner's provisional baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
-- **Footprint radii are provisional, set with milestone 4 rather than decided:** the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' provisional sizes until G5 sets sizes for everything (§15). A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
+- **Footprint radii are provisional, set with milestone 4 rather than decided:** the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' sizes, which gate G5 set on 2026-10-01, and stay provisional themselves (§15). A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
 
 **The hand checks** (task 4.6, `HandCheckTests`): the raid gathers 400 m off, out of the gun's reach, and attacks; the run ends when one side is gone. Measured on 2026-10-01 in the Linux container the other figures in this section come from; the simulation is deterministic, so the figures are the game's.
 
@@ -346,7 +357,6 @@ Two of the margins are thin. The platform keeps 28% of its hit points, so a sixt
 
 **Not set yet** (each is open in §15):
 
-- ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches. Movement uses provisional radii from the data file until then (ADR-010);
 - turn rates for hulls and the drive multiplier on them, which only affect movement because hits are instant. These are provisional in the data file too;
 - the AI's attack-group threshold.
 
@@ -379,13 +389,13 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 
 - Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011).
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
-- Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes". Movement uses provisional radii from the data file meanwhile (ADR-010).
 - The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
-- Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). Do they join G5's sizes?
+- Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). G5 set the hulls' sizes only: do these join them?
 - The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - Where the meshes in `Art/` come from and under what terms (§11).
 - §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
+- The Missile Rack is a trump card in the simulation's check (d), where the model finds it not worth building under spread fire (§12). Is it retuned, and does the model learn how close ships stand while they fight?
 - Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
 
 Decided on 2026-09-30, first review:
@@ -442,3 +452,5 @@ Decided on 2026-10-01, milestone 5:
 
 - Milestone 5 is split: research and the designer first, and the Missile Rack's splash once ship sizes are set (§14, §15).
 - A Research Lab queues up to five topics, each paid for when it starts. Hull Plating keeps a damaged ship's share of its hit points. A lab destroyed mid-topic loses the topic and its Ore (§8, ADR-017).
+- Ship sizes (gate G5): the hulls' footprint radii are final at Small 8 m, Medium 14 m and Large 24 m (§11). The Constructor's size and the structure footprints stay open (§15).
+- A Missile Rack's splash hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armour, with no falloff and no friendly fire (§7, ADR-014).
