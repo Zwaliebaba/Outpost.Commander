@@ -56,6 +56,7 @@ The machine was a laptop with an Intel Core i7-12700H, 16 GB of memory, and an N
 | Q5 | The boundary: `#include "GameLogic.h"` added to `GameApp` and to `Opponent` | both fail with C1083 | fails to compile: **met** |
 | Q4, tick half | 200 ships and 40 structures, both fleets kept moving, 1,181 ticks over 60 s | mean 0.18 ms, 99th percentile 0.37 ms, and under 1 ms on every tick but those below | ≤ 5 ms |
 | Q4, tick half | The ticks where both 100-ship fleets are ordered at once, every 10 s | 3.0, 3.7, 2.7, 5.0, 6.8 and 8.3 ms, rising as the fleets spread | ≤ 5 ms: **missed on 2 of 6** |
+| Q4 | 200 ships and 40 structures in combat at 1920×1080 with the HUD (task 3.7, `--measure --stress`): frame CPU and GPU work, and every tick | **not measured yet**: the owner's run | 99% of frames ≤ 16.7 ms; ticks ≤ 5 ms |
 
 How each figure was measured:
 
@@ -67,7 +68,14 @@ How each figure was measured:
   - **Setup:** each order was given to ships at rest, and a random 150–400 ms pause placed the clicks across the frame and tick cycles.
 - **Q4.** The server times each tick on its own clock: applying its commands, the simulation step and every snapshot (`Server::TakeTickDurations`). `--load` adds the load (`PlaceMeasurementLoad`), and both players' ships are ordered across the map every 200 ticks.
 
-The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. Whether the MVP needs to spread the path planning of a large order over several ticks is for the owner (§15).
+- **Q4 in combat (task 3.7).** `--stress` runs the stress scene (`StressLoad`): each player keeps 100 ships of its four starting designs and 20 structures with the tuning data's hit points and armor. Both fleets attack-move on each other's rally a third of the way in from the starts, lost ships come back at the rally with the same order, and ships left standing idle are sent after the enemy once a second, so the whole of both fleets keeps fighting for as long as the run lasts. The rival connects, so the server builds both players' snapshots, as it will against the AI. With `--measure` the game logs, for every frame:
+  - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them run on that thread.
+  - **GPU work:** between two timestamps at the start and the end of the frame's command list, which holds the scene, the effects and the HUD, read back once the frame's fence has passed.
+  - **Not included:** the compositor, scanout and the display. The present interval is not the measure: with vsync on, a frame of 5 ms of work still presents every vsync interval (ADR-006).
+  - **The display:** the back buffer's size and the refresh rate of the display the window is on, logged whenever the size changes.
+  - `python Tools/FrameTimes.py` summarizes the log: mean, median, 95th and 99th percentiles and worst, for frames, ticks and order responses, leaving out the first 120 frames of loading. The run records the view it was taken at; zoomed out so that both fleets are in view is the heavy case.
+
+The slow ticks are the orders: pathing and forming up two groups of 100 ships in one tick. ADR-010 expected about one tick budget for a 200-ship order, and it grows as the ships spread out. Every other tick is a twentieth of the budget. The owner decided on 2026-10-01 that a group's order paths once for the group rather than once per ship (ADR-010), which cut the same order to about a third in a Linux container; the development machine's figure comes from repeating `--measure --load`.
 
 **The Q2 check.** Designs fight in clumps bought with equal Ore, under two targeting extremes: every ship shoots a random enemy (spread fire), or every ship shoots the weakest one (focus fire). Real targeting sits between the two (§7). The battles run at two stages of a match:
 
@@ -235,7 +243,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 ### UI (drawn by the game over the D3D12 view)
 
-The game draws its own UI (ADR-001). How it draws text, panels and input focus is gate G7, decided in its own ADR when the HUD is built; the renderer (ADR-006) already fixes the layout: 1920×1080 reference units scaled to the screen.
+The game draws its own UI (ADR-001): text and panels as quads from one DirectWrite glyph atlas, and input focus as a rectangle test (ADR-015, gate G7). The renderer (ADR-006) fixes the layout: 1920×1080 reference units scaled to the screen.
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
 - **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component.
@@ -294,7 +302,7 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 | Lance damage | 90 | 95 | At 90, one-sided Hull Plating leaves the upgraded Medium+Ion+Mass Driver without an answer (12–42% under focus fire). |
 | Lance cost | 90 | 85 | At 90, one-sided Mass Driver Calibration leaves the upgraded Medium+Ion+Mass Driver without an answer (8–41% under focus fire). |
 
-**Where §12 stands against the Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks):
+**Where §12 stands against the model's Q2 check** (`python Tools/BattleModel.py`: 60 battles per pairing, re-run with 480 where a verdict is in doubt; 30 per robustness case; 2,016 robustness checks):
 
 - **(a) passes** at every budget of both stages, in both modes. Every design's best counter wins all 60 of its battles.
 - **(b) passes for every modelled component.** It is reported as incomplete because the Missile Rack is not modelled, so Q2 cannot be "yes" until it is.
@@ -302,6 +310,17 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 - **(d) passes.** The closest case is one-sided Mass Driver Calibration: Medium+Ion+Lance still beats the upgraded Medium+Ion+Mass Driver in 80% of battles at 3,000 Ore under focus fire. Every other topic leaves an answer that wins at least 92%.
 
 With the leftover Ore fielded, the model is close to deterministic: nearly every pairing is won by the same side at every budget in the window. Two margins are still thin and are the first place to look if a later change fails the check. A Mass Driver hit against a Medium hull is 6, so the brawler's matchups move sharply with Mass Driver damage or Medium armour. And a Small+Ion hull sits 6% above the Lance's two-hit breakpoint.
+
+**Where §12 stands against the simulation** (task 3.4, 2026-10-01). The same check now runs as headless battles in `GameLogicTests` (`Q2CheckTests.TheFullCheck`), against the real simulation: the same stages, budgets, fire modes, criteria and confidence intervals. From here the simulation is right where the two disagree (§3). It differs from the model in what the simulation is. Armies are whole ships: battle *k* of *n* spends the Ore at the center of the *k*-th of *n* equal slices of the ±15% window, and the Ore left over is not fielded. And each side is a grid of real ships with real footprints, which close by attack-move, stand at their own range and fire, so a ship reaches only the enemies within its range, where the model's clump puts every ship in range of every enemy. Spread fire picks a random enemy in range, focus fire the weakest in range. The 20 Hz tick, the cold-weapon rule and the stand-off rule are ADR-014's and ADR-010's. **§12 fails all four criteria there, where it passes all four in the model:**
+
+- **(a) fails at one point.** At 2,000 Ore in the starting stage under spread fire, the line does not beat the brawler: Medium+Ion+Lance wins 53% against Medium+Ion+Mass Driver. Everywhere else each design's best counter wins at least 84% of its battles, nearly all of them 100%.
+- **(b) fails throughout spread fire.** Under spread fire the Large hull and the Fusion drive are never worth building, at any budget. The mix is only the brawler and the line at 2,000 Ore, in both stages; the swarm, the brawler and the line at 3,000–6,000; and the swarm, the brawler and the picket at 9,000–12,000. Under focus fire the Medium hull drops out of the mix at 3,000–6,000 Ore, where the heavy Large+Fusion+Lance and the picket take its place, and the Large hull and the Fusion drive drop out again at 9,000–12,000.
+- **(c) fails on that one matchup.** The line against the brawler at 2,000 Ore under spread fire flips with eight different single 5% changes: Medium armor, Medium speed, the Ion drive's speed factor, the Mass Driver's damage, interval and cost, and the Lance's interval and cost.
+- **(d) fails on Mass Driver Calibration** under spread fire. One side's upgraded brawler is beaten by the line in only 10% of battles at 2,000 Ore and 32% at 3,000. One side's upgraded swarm is beaten by the brawler in only 37–44% at 2,000–4,500 Ore. Hull Plating and Lance Focusing sit on the edge, at 51% for the line against the brawler.
+
+**Why the two disagree.** The counters the model found hold in the simulation where focus fire decides them, and `Q2CheckTests.TheRecordedCountersHold` keeps the ones that hold under both modes in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore; the line beats the brawler under focus fire only. Spread fire is where they part. The simulation's spread fire is spread over the enemies in range, not over the whole enemy army, so a short-range weapon spreads its hits over the few ships at the front of the fight and works much like focus fire, while a long-range weapon spreads over many. That moves exactly the matchups that fail: the line, whose Lance reaches deep and wastes its heavy hits on spread targets, against the brawler, whose Mass Driver does not. This is reasoned from the battles, not isolated one cause at a time, and why the Large hull and the Fusion drive drop out of the spread-fire mix is not traced yet.
+
+**What is open** (§15): whether §12 is retuned against the simulation, and whether the model's clump learns the simulation's geometry so that it stays a fast guide to tuning. The full check took about ten minutes on four threads in a Linux container, so CI leaves it out and the owner runs it: `vstest.console.exe x64\Release\GameLogicTests.dll /TestCaseFilter:"TestCategory=Q2Full"`. The report goes to `Q2Check-report.txt` in the temporary folder.
 
 **Not set yet** (each is open in §15):
 
@@ -345,8 +364,8 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - The Constructor's numbers, and the build and repair rates (§12). Needed by milestone 4.
 - Where the meshes in `Art/` come from and under what terms (§11).
-- A tick that orders two fleets of 100 ships each took up to 8.3 ms against Q4's 5 ms (§3). Is that acceptable for the MVP, or should a large order's path planning be spread over several ticks?
-- How the in-game UI draws text, panels and input focus over the D3D12 scene (§9). Decided with the first HUD, in its own ADR; the layout frame is ADR-006's.
+- §12 fails the Q2 check against the simulation, where it passes in the model (§12): the line against the brawler under spread fire, the Large hull and the Fusion drive under spread fire, and one-sided Mass Driver Calibration. Is §12 retuned against the simulation now, and does the model learn the simulation's geometry so that it stays a fast guide to tuning?
+- Q4 in combat is not measured yet: the owner's run of `--measure --stress` on the development machine, in Release (§3).
 
 Decided on 2026-09-30, first review:
 
@@ -389,3 +408,10 @@ Decided on 2026-09-30, once implementation began:
 - Each model's forward axis and length are data, and the scene is drawn flat-lit in team colors (§11, ADR-011). The camera's zoom is a view width with the pitch following it, and the cursor is held inside the window in full screen (§4, ADR-012).
 - The arrow keys pan the camera; A attack-moves and S stops (§4, §9, ADR-013).
 - Until milestone 4 places the Command Station and Constructors, every player starts with a provisional fleet held in the map data: four Small and two Medium ships on the Ion drive (ADR-013).
+
+Decided on 2026-10-01, milestone 3:
+
+- The in-game UI draws text and panels as quads from one DirectWrite glyph atlas, and input focus is a rectangle test (§9, ADR-015, gate G7).
+- A group's order paths once for the group, not once per ship, after task 2.7's order ticks of up to 8.3 ms (§3, ADR-010).
+- The provisional starting fleet carries all four starting designs: two Small+Ion+Mass Driver, two Small+Ion+Lance, one Medium+Ion+Mass Driver and one Medium+Ion+Lance per player (ADR-014).
+- A ship standing to fire holds its range when its own side pushes it, giving way only sideways round its target (§7, ADR-010).
