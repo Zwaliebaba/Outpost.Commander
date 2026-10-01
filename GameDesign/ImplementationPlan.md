@@ -45,7 +45,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 3.1 | Tuning data file, loaded by the game and the model | 0.5 | — | done, [#31](https://github.com/Zwaliebaba/Outpost.Commander/pull/31) |
 | 3.2 | Components and designs | 3.1 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
 | 3.3 | Combat rules | 3.2, 2.4 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) |
-| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check fails (design §12) |
+| 3.4 | The Q2 check as headless battles | 3.3, 0.5 | — | done, [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36); the check failed until B.1 retuned §12 |
 | 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
@@ -57,17 +57,17 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 4.6 | Hand checks of the structure numbers | 4.4 | — | done, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
 | 5.1 | Research | 4.3 | owner decisions of 2026-10-01 | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) |
 | 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | done, [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39), run by the owner |
-| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40); the check fails, and the Missile Rack is a trump card in the simulation (design §12) |
-| A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
-| A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | in review on `claude/busy-albattani-jlvllb`, awaiting CI and the owner's run |
-| 6.1 | The AI player | 5.2 | G9 decided | in review on `claude/milestone-6`, awaiting CI and the owner's run |
-| 6.2 | Win, lose and the menu | 6.1 | — | in review on `claude/milestone-6`, awaiting CI and the owner's run |
-| 6.3 | Q1 and Q3 playtests | 6.2 | — | the match log is in review on `claude/milestone-6`; the playtests are the owner's |
-| B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | in review on `claude/q2-retune`, stacked on milestone 6; the full check passes |
+| 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 decided | done, [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40); the check failed, with the Missile Rack a trump card, until B.1 retuned §12 |
+| A.1 | Meshes as NMF from glTF sources, with hardpoints | — | owner, 2026-10-01 | merged in [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), in review until the owner's run |
+| A.2 | Exhaust in its drive's color, and shots from the guns | A.1 | owner, 2026-10-01 | merged in [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41), in review until the owner's run |
+| 6.1 | The AI player | 5.2 | G9 decided | merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), in review until the owner's run |
+| 6.2 | Win, lose and the menu | 6.1 | — | merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), in review until the owner's run |
+| 6.3 | Q1 and Q3 playtests | 6.2 | — | the match log merged in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); the playtests are the owner's |
+| B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the full check passes, and the owner's Release run is the check of record |
 
 ## Gates
 
-Each gate is an owner decision. Most are already listed as open in design §15.
+Each gate is an owner decision. All are decided apart from G3's final zoom range and G2's provenance of a mesh that ships, and design §15 lists both.
 
 **PRs from here are one per milestone** (owner, 2026-09-30). Milestone 2's later tasks need milestone 1, so the order is: 2.4 on its own, then milestone 1 (1.3–1.6), then the rest of milestone 2 (2.5–2.7). **Milestone 5 is split** (owner, 2026-10-01): 5.1 and 5.2 in one PR, and 5.3 in its own once G5 is decided.
 
@@ -369,7 +369,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Acceptance:** the verdicts, and every disagreement with `BattleModel.py` with its cause, are recorded in design §12. Q2 stays "not yet" until 5.3, because the Missile Rack is not modelled.
 - **Verify:** CI. If the suite is too slow for CI, the PR proposes a split between a CI subset and a full local run.
 
-- **As built:** `GameLogicTests/Q2Check.cpp` plays design §3's check as headless battles on every hardware thread. Whole ships are fielded at the center of each slice of the ±15% window, and the Ore left over is not; the second side is the first turned half a turn, so a mirror match is fair. `Simulation::SetTargetRule` forces spread or focus fire, for the check only. **The check fails against the simulation**, where it passes in the model, and design §12 records each failure and why the two disagree; what to do about it is open in design §15. CI runs the fast part, `TheRecordedCountersHold` among it. The full check, `TheFullCheck`, runs only when `OUTPOST_Q2_FULL` is set, which CI never does, and took about ten minutes on four threads in a Linux container. It is gated in the test because the native test adapter ignores a vstest filter on its `TestCategory` trait: CI's first try at filtering it out ran it in Debug until the job timed out.
+- **As built:** `GameLogicTests/Q2Check.cpp` plays design §3's check as headless battles on every hardware thread. Whole ships are fielded at the center of each slice of the ±15% window, and the Ore left over is not; the second side is the first turned half a turn, so a mirror match is fair. `Simulation::SetTargetRule` forces spread or focus fire, for the check only. **The check failed against the simulation**, where it passed in the model. B.1 retuned §12 against the simulation, and it now passes there (design §12). CI runs the fast part, `TheRecordedCountersHold` among it. The full check, `TheFullCheck`, runs only when `OUTPOST_Q2_FULL` is set, which CI never does, and took about ten minutes on four threads in a Linux container. It is gated in the test because the native test adapter ignores a vstest filter on its `TestCategory` trait: CI's first try at filtering it out ran it in Debug until the job timed out.
 
 ### 3.5 — Combat effects
 
@@ -403,7 +403,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 
 Milestone 3 merged as [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36) on 2026-10-01, with 3.5–3.7 not yet run by the owner.
 
-- **Q2 is answered "no" for now.** The check fails against the simulation where the model passes (design §12). Whether §12 is retuned, the model fixed, or both is open in design §15, and milestone 4 builds on today's numbers.
+- **Q2 was answered "no" at milestone 3.** The check failed against the simulation where the model passed, and milestones 4 to 6 built on those numbers. B.1 retuned §12 against the simulation, and Q2 is now "yes" there (design §3, §12).
 - **Q4 waits on the owner's measurement** with `--measure --stress` in Release (design §3).
 - **Structures already fight.** `Simulation::SpawnStructure` takes hit points and armor, and auto-targeting falls back to structures, so 4.4 adds the Defence gun to what is there rather than a new kind of combatant.
 - **Snapshots carry Ore and the player's designs**, so 4.1's income and 4.5's HUD read what is already sent.
@@ -565,6 +565,8 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
 
 ### What milestone 5 changed for later tasks
 
+Milestone 5 merged as [#39](https://github.com/Zwaliebaba/Outpost.Commander/pull/39) (5.1 and 5.2) and [#40](https://github.com/Zwaliebaba/Outpost.Commander/pull/40) (5.3) on 2026-10-01.
+
 - **5.3 started from the research that exists.** A player who researches the Missile Rack can save and build a design with it today, and its hits have no splash until 5.3. Splash adds a field to `WeaponView` and `DesignStats` in `GameProtocol` (ADR-017).
 - **The AI (6.1) researches and designs through the same commands**, `StartResearchCommand` and `SaveDesignCommand`. It reads the topics, its components and what is unlocked from its snapshot.
 - **The log for 6.3** can read research order and timing from the snapshots: each topic's `researched` flag, and the lab's queue.
@@ -596,6 +598,14 @@ The owner added this work on 2026-10-01, alongside milestone 5, and it lands as 
   - **The drive in the snapshot.** `EntityView` carries a warship's drive.
   - **Shots from the guns.** `CombatEffects` takes the muzzle from the shooter's nearest gun where the view draws it, through `GameClient`.
 - **Verify:** CI; **owner run**, to see whether drive and speed read from the RTS camera, and in the Q4 measurement (3.7), which now includes the glows.
+
+### What A.1 and A.2 changed for later tasks
+
+A.1 and A.2 merged as [#41](https://github.com/Zwaliebaba/Outpost.Commander/pull/41) on 2026-10-01, not yet run by the owner.
+
+- **A mesh change is a bake.** Edit the glTF source under `Art/Models/`, run `python Tools/BakeMeshes.py`, and commit both. CI's Meshes job fails when the two disagree (ADR-018).
+- **The owner's Q4 run (3.7) measures the glow pass too.**
+- **`EntityView` carries a warship's drive for its exhaust**, the field 6.1 also reads to count the enemy's designs (ADR-019, ADR-020).
 
 ---
 
@@ -644,11 +654,19 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
   - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 15 minutes with §12 as retuned, and the designs they build shift with each review and with the heavies from 6:35. Only the owner's matches answer Q1 and Q3.
 
+### What milestone 6 changed for later tasks
+
+Milestone 6 merged as [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42) on 2026-10-01, with 6.1 and 6.2 not yet run by the owner, and 6.3's playtests still the owner's.
+
+- **Q1 and Q3 wait on the owner's matches.** `python Tools/MatchLog.py --all` summarizes them, and the answers go in design §3.
+- **The AI's numbers are in `Opponent.json`, and it names components and topics by `Tuning.json`'s identifiers.** `AiSettingsTests` fails when the two disagree, so a change to either is checked against the other.
+- **A change to §12 changes how the AI's matches play.** ADR-020's AI-against-AI figures are measured again when §12 moves, as B.1 did.
+
 ---
 
 ## Inserted by the owner — §12 retuned against the simulation
 
-The owner settled design §15's open questions on 2026-10-01, and this work lands as its own PR, stacked on milestone 6's.
+The owner settled design §15's open questions on 2026-10-01, and this work landed as its own PR after milestone 6's.
 
 ### B.1 — §12 against the simulation's Q2 check
 
@@ -661,5 +679,13 @@ The owner settled design §15's open questions on 2026-10-01, and this work land
   - **Tests.** Four tests that hold the moved numbers follow them: the Lance's interval, the Missile Rack's splash, Mass Driver Calibration's rate, and the model's design table.
 - **Verify:** CI; the owner runs the full check in Release, which CI never does.
 
+### What B.1 changed for later tasks
+
+- **Q2 is "yes" in the simulation**, and `Q2CheckTests.TheFullCheck` is how a change to §12 is judged. `Tools/BattleModel.py` now agrees with it on (a) only, so it is a first guess, not a verdict (design §12).
+- **The MVP waits on the owner's runs.** Q1 and Q3 need the playtests (6.3), Q4 the `--measure --stress` run in Release (3.7) and a repeat of `--measure --load` since group pathing (2.7), and the owner's run of every task still in review.
+
+---
+
+## What finishes the MVP
 
 The MVP is done when **Q1–Q5 are all answered and recorded in design §3**, not when they are all "yes". At that point the ADRs are frozen (AGENTS.md §6), and this plan is closed.

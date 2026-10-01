@@ -1,6 +1,6 @@
 # Outpost Commander — MVP Design
 
-Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews
+Status: **draft for review** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6 and the retune of §12
 
 This is the design authority AGENTS.md refers to: it says *what* is built. AGENTS.md says *how* the code is written, and `Design/ADR/` records the engineering decisions taken while building it.
 
@@ -42,6 +42,8 @@ For the MVP, the opponent is **The Tarkan High Command**, the Tarkan for short: 
 | Q5 | Does the server boundary hold, and what does it cost? | The build enforces it: the client and the AI can include only the protocol headers, so reaching into server state does not compile (ADR-002). The delay from an order to the ship visibly responding is measured on the development machine and is ≤ 150 ms. |
 
 Q4 and Q5 are the engineering risk. Q1–Q3 are the design risk. **A failed answer is still a result.** The MVP is done when all five are answered, not when they are all "yes".
+
+**Where they stand on 2026-10-01.** Q2 is "yes" in the simulation (below, and §12). Q5 is met. Q4's tick half is met in steady play and was missed on the ticks that order both fleets at once, which group pathing has since cut; the development machine's figure waits on a repeat of the run. Q4 in combat, Q1 and Q3 wait on the owner's runs: the measurement in Release, and matches against the AI.
 
 Q4 is measured with the HUD on screen because the game draws its own UI (ADR-001), and that is frame time the scene alone does not show. Q5's 150 ms is ADR-002's 50–100 ms for the tick and interpolation, plus about two frames for input and presentation. Both are targets until the first measurement, and the measurement is what gets recorded. When a target is missed, PIX is the tool for finding where the time goes. The client's regions are named in Debug builds only (ADR-005), so the recorded figures come from the game's own timings of a Release build.
 
@@ -93,7 +95,7 @@ A threshold counts as met only when the 95% confidence interval of the win rate 
 
 The check cannot judge the drive. Ion buys speed, and in a battle between two clumps that close and fire, speed only decides who fires first. What speed is worth — reaching a raid, leaving a losing fight, crossing the map — is judged in play, by Q1.
 
-`Tools/BattleModel.py` runs the check against the numbers in `OutpostCommander/Assets/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right and the model is what gets fixed. Where §12 stands against the check today is recorded in §12.
+`Tools/BattleModel.py` runs the check against the numbers in `OutpostCommander/Assets/Tuning.json` (§12), and §12 is tuned against it until milestone 3. From milestone 3 the same battles run as scripted headless tests in `GameLogicTests` against the real simulation. Where the two disagree, the simulation is right, and §12 is tuned against it. The model stays a rough guide and is not taught the simulation's geometry (owner, 2026-10-01). Where §12 stands against the check today is recorded in §12.
 
 **Q2's answer: yes, in the simulation** (2026-10-01). After §12 was retuned against it, the simulation's check passes all four criteria, (b) judged over each stage's budgets (§12). What it does not cover is said above: it judges designs in battles of two fleets, not in a match, and not the drive's speed. Q1's playtests are where both show.
 
@@ -301,7 +303,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and they live in [`OutpostCommander/Assets/Tuning.json`](../OutpostCommander/Assets/Tuning.json): the match rules, the hulls, drives and weapons, the structures and the Defence gun, and the research topics of §8 with their Ore and time. The game loads that file and `Tools/BattleModel.py` reads it, so the two cannot disagree (ADR-008). This section keeps no copy of the numbers. It keeps why they are what they are, and where they stand against the Q2 check.
 
-The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15); the simulation's hand checks below test the structure numbers against §6's intents.
+The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check; the simulation's hand checks below test the structure numbers against §6's intents, and the owner's playtests judge the rest.
 
 **Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses, with the value that pass chose (the file is what the game plays, if the two ever differ):
 
@@ -447,7 +449,7 @@ Decided on 2026-10-01, milestone 5:
 
 - Milestone 5 is split: research and the designer first, and the Missile Rack's splash once ship sizes are set (§14, §15).
 - A Research Lab queues up to five topics, each paid for when it starts. Hull Plating keeps a damaged ship's share of its hit points. A lab destroyed mid-topic loses the topic and its Ore (§8, ADR-017).
-- Ship sizes (gate G5): the hulls' footprint radii are final at Small 8 m, Medium 14 m and Large 24 m (§11). The Constructor's size and the structure footprints stay open (§15).
+- Ship sizes (gate G5): the hulls' footprint radii are final at Small 8 m, Medium 14 m and Large 24 m (§11). The Constructor's size and the structure footprints were made final with the open questions, below.
 - A Missile Rack's splash hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armour, with no falloff and no friendly fire (§7, ADR-014).
 
 Decided on 2026-10-01, meshes and exhaust:
@@ -462,6 +464,8 @@ Decided on 2026-10-01, milestone 6:
 - The AI researches economy first and then the heavies, counters by §7's triangle, and builds rigs with a platform beside each contested one and a Shipyard for each 10 Ore/s of income (§10). The second Shipyard at 30 Ore/s, decided first, left it unable to spend what it earned.
 - The AI defends every structure of its, not only its rigs and platforms (§10).
 - Once the AI has the Large hull and the Fusion drive, it answers the swarm and the brawler with the heavies that beat them (§7, §10).
+- Every player sees every ship's components, as it sees the ship (§10, ADR-020).
+- A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).
 
 Decided on 2026-10-01, the open questions:
 
@@ -469,5 +473,3 @@ Decided on 2026-10-01, the open questions:
 - Q2's (b) is judged over each stage's budgets, not at every budget (§3). With the retune, Q2 passes all four criteria in the simulation (§12).
 - The structure and Constructor footprints and every turn rate are final as they are (§12).
 - The Defence gun's and structure armour's margins wait for the owner's playtests (§12).
-- Every player sees every ship's components, as it sees the ship (§10, ADR-020).
-- A match ends when a player loses its Command Station. A banner says Victory, Defeat or Draw with the match's length, and the world runs on until the player goes back to the menu (§6, §9).

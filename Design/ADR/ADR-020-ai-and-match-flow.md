@@ -12,7 +12,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
 - **Research order, economy first and then the heavies:** Improved Extraction, Hull Plating, Fusion Drive, Large Hull, Mass Driver Calibration, Lance Focusing, Automated Shipyards, Missile Rack.
 - **Counters are design §7's triangle, held as data.** The swarm (Small+Ion+Mass Driver) is answered with the brawler (Medium+Ion+Mass Driver), the brawler with the line (Medium+Ion+Lance), and the line with the swarm. The picket (Small+Ion+Lance) is answered with the swarm, and each heavy (Large+Fusion with any weapon) with the picket. Once it has the Large hull and the Fusion drive, it answers the swarm with Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance instead, as design §7 says they beat them. Anything else, and no enemy fleet yet, gets the brawler. The AI uses only designs it has unlocked.
 - **The base:** keep 4 Constructors. Rigs on the 3 home asteroids, then a Shipyard, a Research Lab and a Defence Platform at home. Then rigs on the 3 contested asteroids nearest the AI, each with a platform beside it. A Shipyard for each 10 Ore/s of income: the N-th once income reaches N × 10 Ore/s.
-- **The match end:** a Victory or Defeat banner with the match's length, and the world runs on until the player goes back to the menu.
+- **The match end:** a Victory, Defeat or Draw banner with the match's length, and the world runs on until the player goes back to the menu.
 
 ## Decision
 

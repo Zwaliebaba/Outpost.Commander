@@ -2,8 +2,9 @@
 """Equal-Ore battle model for Q2 of the MVP design.
 
 Q2 asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3). This model answers the first-order
-version of that question until the simulation has combat. The tuning numbers are tuned against it until the scripted
-headless battles in GameLogicTests take over at milestone 3 (§14).
+version of that question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests
+decide, and the tuning numbers are tuned against them (§12). The model is not taught the simulation's geometry, so it
+can disagree with them (owner, 2026-10-01).
 
 It reads the hulls, drives, weapons and research topics from OutpostCommander/Assets/Tuning.json, the same file the game
 loads (ADR-008), so the model and the game cannot disagree: change a number or an effect there and run this again.
