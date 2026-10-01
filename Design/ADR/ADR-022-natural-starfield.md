@@ -4,7 +4,7 @@ Status: **accepted** · 2026-10-01 · Supersedes [ADR-021](ADR-021-starfield.md)
 
 ## Context
 
-ADR-021 drew the sky as about 193,000 Gaussian points: an even field and a Milky Way band, with a bulge, star clouds and dust lanes made of nothing but stars. The owner ran it and did not like it, and asked on 2026-10-01 for three changes: remove the Milky Way, make the sky look more natural, and see whether two sprites added to `OutpostCommander/Assets/Textures/` make sense for it. The sprites are `glow.dds`, a soft round falloff, and `starburst.dds`, a bright core with diffraction spikes. Both are 128 by 128, uncompressed 8-bit BGRA in the legacy DDS header, with one mip level, white in their color and with their shape in their alpha. The owner added them; where they come from is not recorded yet.
+ADR-021 drew the sky as about 193,000 Gaussian points: an even field and a Milky Way band, with a bulge, star clouds and dust lanes made of nothing but stars. The owner ran it and did not like it, and asked on 2026-10-01 for three changes: remove the Milky Way, make the sky look more natural, and see whether two sprites added to `OutpostCommander/Assets/Textures/` make sense for it. The sprites are `glow.dds`, a soft round falloff, and `starburst.dds`, a bright core with diffraction spikes. Both are 128 by 128, uncompressed 8-bit BGRA in the legacy DDS header, with one mip level, white in their color and with their shape in their alpha. The owner added them.
 
 ADR-021 still holds on everything this ADR does not change: stars are directions at infinity, drawn first with no depth test, sized in pixels on the 1920×1080 reference frame and added to the frame. The clear color is black.
 

@@ -322,7 +322,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 - **Sky** (owner, 2026-10-01): deep space, with a barely visible gray grid over it to mark the ground and the map's edge. Stars cover the whole sky evenly, most of them faint and a few bright, as a real sky has them, and the brightest few have the spikes of a starburst. There is no galaxy, band or nebula (ADR-022).
 - **Audio:** placeholder weapon and explosion sounds at most. Audio is not part of any MVP question.
 - **LODs:** there are none. Each set has one mesh per model.
-- **Provenance and licence are not recorded.** Nothing in `Art/` says where the placeholder meshes come from or under what terms. None of them ships with the MVP (owner, 2026-10-01), so the question comes with their replacements: each one's provenance is recorded when it lands, and if it is under a licence, AGENTS.md R14 needs its text to travel with it.
+- **Provenance and licence are not tracked** (owner, 2026-10-01). Third-party meshes, textures, fonts and sound need no record of where they came from or under what terms, and no licence text travels with them (AGENTS.md R14).
 
 ---
 
@@ -515,3 +515,4 @@ Decided on 2026-10-01, after the MVP:
 
 - The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
 - The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts. The grid is a faint neutral gray rather than blue (§11, ADR-022).
+- Third-party content needs no approval, licence text or record of where it came from. AGENTS.md R14 no longer covers it (§11).
