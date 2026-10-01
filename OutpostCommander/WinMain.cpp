@@ -224,6 +224,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
             startMatch();
           break;
         case Outpost::GameClient::Request::BackToMenu:
+          if (match && match->log)
+            match->log->Finish();
           match.reset();
           client.ShowMenu();
           seed = NewSeed();
@@ -266,6 +268,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         measurements.flush();
       }
     }
+    // Quitting from a match leaves it.
+    if (match && match->log)
+      match->log->Finish();
     return window.ExitCode();
   }
   catch (const winrt::hresult_error& error)

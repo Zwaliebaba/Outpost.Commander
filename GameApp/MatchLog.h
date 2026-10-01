@@ -12,13 +12,15 @@ namespace Outpost
 //   research <tick> player <player> topic <id> <name>
 //   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>
 //   end <tick> winner <player, or 0 for a draw>
-//   left <tick>                                  the match was left before it ended
+//   left <tick>                                  the match was left before it ended (Finish)
 class MatchLog : Neuron::NonCopyable
 {
 public:
   MatchLog(std::ostream& _out, std::uint64_t _seed, std::uint32_t _ticksPerSecond);
-  // Writes "left" when the match was left before it ended.
-  ~MatchLog();
+
+  // The player leaves the match: writes "left" when it had not ended, and flushes. Called by the shell, not by a
+  // destructor, since writing can throw.
+  void Finish();
 
   // Takes one player's snapshot. Research is read from each player's own snapshots, so every player's are needed; a
   // warship is written once, from whichever snapshot shows it first.

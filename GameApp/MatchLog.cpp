@@ -9,10 +9,11 @@ Outpost::MatchLog::MatchLog(std::ostream& _out, std::uint64_t _seed, std::uint32
   *m_out << std::format("match seed {} ticks_per_second {}\n", _seed, _ticksPerSecond);
 }
 
-Outpost::MatchLog::~MatchLog()
+void Outpost::MatchLog::Finish()
 {
   if (!m_ended)
-    *m_out << "left " << m_lastTick << '\n';
+    *m_out << std::format("left {}\n", m_lastTick);
+  m_ended = true;
   m_out->flush();
 }
 

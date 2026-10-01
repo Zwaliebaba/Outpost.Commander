@@ -73,14 +73,14 @@ public:
                      out.str());
   }
 
-  // A match the player leaves before it ends says so, at the last tick it saw.
+  // A match the player leaves before it ends says so, at the last tick it saw, once.
   TEST_METHOD(RecordsAMatchLeftEarly)
   {
     std::ostringstream out;
-    {
-      Outpost::MatchLog log(out, 7, 20);
-      log.Record(SnapshotOf(HUMAN, 340));
-    }
+    Outpost::MatchLog log(out, 7, 20);
+    log.Record(SnapshotOf(HUMAN, 340));
+    log.Finish();
+    log.Finish();
     Assert::AreEqual(std::string("match seed 7 ticks_per_second 20\nleft 340\n"), out.str());
   }
 };
