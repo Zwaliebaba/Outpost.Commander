@@ -82,6 +82,7 @@
     <ClInclude Include="Command.h" />
     <ClInclude Include="Snapshot.h" />
     <ClInclude Include="DesignStats.h" />
+    <ClInclude Include="Placement.h" />
     <ClInclude Include="Transport.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="pch.h" />
@@ -90,6 +91,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Placement.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

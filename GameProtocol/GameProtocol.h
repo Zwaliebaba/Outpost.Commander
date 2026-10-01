@@ -11,6 +11,7 @@
 #include <cmath>
 #include <compare>
 #include <numbers>
+#include <span>
 #include <variant>
 
 #include "Id.h"
@@ -19,5 +20,6 @@
 #include "Command.h"
 #include "Snapshot.h"
 #include "DesignStats.h"
+#include "Placement.h"
 #include "Transport.h"
 #include "Server.h"

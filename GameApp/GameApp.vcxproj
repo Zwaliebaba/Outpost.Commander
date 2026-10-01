@@ -87,7 +87,6 @@
     <ClInclude Include="CombatEffects.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="Hud.h" />
-    <ClInclude Include="Placement.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -103,7 +102,6 @@
     <ClCompile Include="CombatEffects.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="Hud.cpp" />
-    <ClCompile Include="Placement.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

@@ -13,6 +13,9 @@
     <Filter Include="Designs">
       <UniqueIdentifier>{77467800-d001-4c1b-8322-898d1d5831d4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Placement">
+      <UniqueIdentifier>{9406b141-264f-43f6-b1c3-d09ed5ae6623}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Connection">
       <UniqueIdentifier>{21836da5-a4a5-4634-bfda-424081217b9e}</UniqueIdentifier>
     </Filter>
@@ -38,6 +41,9 @@
     <ClInclude Include="DesignStats.h">
       <Filter>Designs</Filter>
     </ClInclude>
+    <ClInclude Include="Placement.h">
+      <Filter>Placement</Filter>
+    </ClInclude>
     <ClInclude Include="Transport.h">
       <Filter>Connection</Filter>
     </ClInclude>
@@ -47,5 +53,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Placement.cpp">
+      <Filter>Placement</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
