@@ -17,6 +17,7 @@
 #include "Camera.h"
 #include "SnapshotInterpolator.h"
 #include "Picking.h"
+#include "Placement.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"
 #include "Hud.h"

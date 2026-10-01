@@ -12,7 +12,7 @@
         { "name": "Huge", "forwardAxis": "-z", "lengthMeters": 110 },
         { "name": "Carrier", "forwardAxis": "-z", "lengthMeters": 100 },
         { "name": "Freighter", "forwardAxis": "-z", "lengthMeters": 40 },
-        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 45 },
+        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 24 },
         { "name": "Fighter", "forwardAxis": "-z", "lengthMeters": 10 },
         { "name": "Drone", "forwardAxis": "-z", "lengthMeters": 6 },
         { "name": "Mine", "forwardAxis": "+x", "lengthMeters": 4 },
@@ -32,7 +32,7 @@
         { "name": "Huge", "forwardAxis": "+x", "lengthMeters": 110 },
         { "name": "Carrier", "forwardAxis": "+x", "lengthMeters": 100 },
         { "name": "Freighter", "forwardAxis": "+x", "lengthMeters": 40 },
-        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 45 },
+        { "name": "Colonizer", "forwardAxis": "-z", "lengthMeters": 24 },
         { "name": "Fighter", "forwardAxis": "+x", "lengthMeters": 10 },
         { "name": "Drone", "forwardAxis": "+x", "lengthMeters": 6 },
         { "name": "Mine", "forwardAxis": "+x", "lengthMeters": 4 },
@@ -56,5 +56,13 @@
     { "hull": 1, "model": "Small" },
     { "hull": 2, "model": "Medium" },
     { "hull": 3, "model": "Large" }
-  ]
+  ],
+  "structures": [
+    { "structure": "CommandStation", "model": "Station" },
+    { "structure": "Shipyard", "model": "Station", "tint": 0.65 },
+    { "structure": "ResearchLab", "model": "Satellite" },
+    { "structure": "MiningRig", "model": "Mine" },
+    { "structure": "DefensePlatform", "model": "Mine", "tint": 1.4 }
+  ],
+  "constructor": "Colonizer"
 }

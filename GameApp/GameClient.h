@@ -40,8 +40,17 @@ public:
 private:
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // A structure drawn to its footprint, darker while it is built (task 4.2).
+  void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // The structure being placed, at the cursor, green where it may stand and red where it may not.
+  void DrawGhost(ID3D12GraphicsCommandList* _commandList);
+  // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
+  void HandleHudInput(const Neuron::InputState& _input);
+  // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
+  [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5).
+  // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
+  // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
@@ -73,6 +82,10 @@ private:
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
   bool m_cameraPlaced = false;
+  // The left button went down on the minimap and is still held.
+  bool m_minimapDragging = false;
+  // Where the cursor points on the ground this frame, for the ghost.
+  std::optional<PlanePosition> m_cursorGround;
 
   // The move order being watched: its ships as the view showed them when it was given.
   struct ResponseProbe

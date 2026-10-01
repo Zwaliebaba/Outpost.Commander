@@ -51,8 +51,6 @@ constexpr float CHASE_REPATH_METERS = 40.0f;
 
 // A Constructor works on what it is ordered to once its footprint comes this close to the target's (ADR-016).
 constexpr float WORK_REACH_METERS = 20.0f;
-// A Mining Rig ordered this close to an ore asteroid's edge, or onto it, snaps to it (design §6).
-constexpr float RIG_SNAP_METERS = 40.0f;
 // A structure under construction starts with this share of its hit points and gains the rest as it is built.
 constexpr std::int32_t SITE_STARTING_HIT_POINTS_DIVISOR = 10;
 // A new ship appears this far beyond its producer's footprint, on the side facing the map's center.
@@ -60,8 +58,6 @@ constexpr float SPAWN_GAP_METERS = 5.0f;
 // The starting Constructors stand in a row this far in front of the Command Station's footprint, this far apart.
 constexpr float BASE_ROW_GAP_METERS = 25.0f;
 constexpr float BASE_ROW_SPACING_METERS = 10.0f;
-// A queue holds this many jobs (design §6).
-constexpr size_t QUEUE_LIMIT = 5;
 
 // A starting Command Station or Constructor must stay inside the map and clear of every obstacle. A base too large for its
 // start is a data error, reported rather than overlapped.
@@ -399,7 +395,21 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                   .nameUtf8 = design.name,
                                   .hull = design.components.hull,
                                   .drive = design.components.drive,
-                                  .weapon = design.components.weapon});
+                                  .weapon = design.components.weapon,
+                                  .cost = design.stats.cost});
+  }
+  snapshot.mapSizeMeters = 2.0f * m_mapHalfSizeMeters;
+  if (m_tuning)
+  {
+    for (const StructureTuning& structure : m_tuning->structures)
+    {
+      snapshot.structureTypes.push_back({.structure = structure.kind,
+                                         .nameUtf8 = structure.name,
+                                         .radiusMeters = static_cast<float>(structure.footprintRadiusMeters),
+                                         .buildable = structure.cost.has_value(),
+                                         .cost = structure.cost.value_or(0)});
+    }
+    snapshot.constructorCost = m_tuning->constructor.cost;
   }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)

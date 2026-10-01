@@ -64,6 +64,15 @@ constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
 constexpr float HEALTH_HURT_SHARE = 0.5f;
 constexpr float HEALTH_LOW_SHARE = 0.25f;
+// A structure under construction: its color darkens toward this share at the start, and a blue bar shows the share built,
+// just beyond the health bar.
+constexpr float UNBUILT_SHADE = 0.35f;
+constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
+// A Mining Rig sits on its asteroid's top: this share of the asteroid's radius above the ground.
+constexpr float RIG_LIFT_SHARE = 0.7f;
+// The ghost: a flat disc of the footprint, a little above the ground.
+constexpr DirectX::XMFLOAT4 GHOST_VALID_COLOR{0.2f, 0.75f, 0.3f, 1.0f};
+constexpr DirectX::XMFLOAT4 GHOST_INVALID_COLOR{0.85f, 0.2f, 0.15f, 1.0f};
 constexpr int DISC_SEGMENTS = 24;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
@@ -270,6 +279,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
+  m_cursorGround =
+    m_camera.GroundPointAtPixel(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels), m_viewport);
+  HandleHudInput(_input);
+
   // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
   // that a drag begun in the world ends wherever it is let go.
   Neuron::InputState input = _input;
@@ -282,9 +295,71 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   if (!m_view.IsEmpty())
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
-    m_hudLayout = Hud::Lay(Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected()), _viewportWidthPixels, _viewportHeightPixels);
+    const std::vector<PlanePosition> view = ViewOnGround();
+    m_hudLayout = Hud::Lay(Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing()), _viewportWidthPixels,
+                           _viewportHeightPixels, view);
   }
   WatchForResponse();
+}
+
+void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
+{
+  if (!_input.active)
+  {
+    m_minimapDragging = false;
+    return;
+  }
+  for (const Neuron::InputEvent& event : _input.events)
+  {
+    const auto x = static_cast<float>(event.xPixels);
+    const auto y = static_cast<float>(event.yPixels);
+    if (event.kind == Neuron::InputEventKind::ButtonUp && event.key == VK_LBUTTON)
+      m_minimapDragging = false;
+    if (event.kind != Neuron::InputEventKind::ButtonDown)
+      continue;
+    if (event.key == VK_LBUTTON)
+    {
+      if (const std::optional<Hud::Action> action = m_hudLayout.ActionAt(x, y))
+      {
+        if (action->kind == Hud::ActionKind::Build)
+          m_controls.ArmPlacement(action->structure, m_entities);
+        else
+          m_controls.Queue(action->producer, action->design);
+      }
+      else if (const std::optional<PlanePosition> point = m_hudLayout.MapPointAt(x, y))
+      {
+        m_camera.SetFocus(point->xMeters, point->zMeters);
+        m_minimapDragging = true;
+      }
+    }
+    else if (event.key == VK_RBUTTON)
+    {
+      // A right-click on the minimap sends the selected ships there.
+      if (const std::optional<PlanePosition> point = m_hudLayout.MapPointAt(x, y))
+        m_controls.MoveTo(*point, m_entities);
+    }
+  }
+  if (m_minimapDragging && _input.IsDown(VK_LBUTTON))
+  {
+    if (const std::optional<PlanePosition> point =
+          m_hudLayout.MapPointAt(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels)))
+      m_camera.SetFocus(point->xMeters, point->zMeters);
+  }
+}
+
+std::vector<Outpost::PlanePosition> Outpost::GameClient::ViewOnGround() const
+{
+  const auto width = static_cast<float>(m_viewport.widthPixels);
+  const auto height = static_cast<float>(m_viewport.heightPixels);
+  std::vector<PlanePosition> corners;
+  for (const auto& [x, y] : std::array<std::pair<float, float>, 4>{{{0.0f, 0.0f}, {width, 0.0f}, {width, height}, {0.0f, height}}})
+  {
+    const std::optional<PlanePosition> point = m_camera.GroundPointAtPixel(x, y, m_viewport);
+    if (!point.has_value())
+      return {};
+    corners.push_back(*point);
+  }
+  return corners;
 }
 
 void Outpost::GameClient::WatchForResponse()
@@ -371,6 +446,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
   DrawSelection(_commandList);
+  DrawGhost(_commandList);
   DrawHealthBars(_commandList);
   DrawEffects(_commandList);
   DrawHud(_commandList, _renderer.FrameIndex());
@@ -393,6 +469,16 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
 {
   for (const EntityView& entity : m_entities)
   {
+    if (entity.builtPermille < PERMILLE)
+    {
+      const float left = entity.position.xMeters - entity.radiusMeters;
+      const float z = entity.position.zMeters - entity.radiusMeters - (2.0f * HEALTH_BAR_GAP_METERS) - HEALTH_BAR_WIDTH_METERS;
+      const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z},
+               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters * built), .zMeters = z},
+               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
+    }
     if (entity.maxHitPointsHundredths <= 0 || entity.hitPointsHundredths >= entity.maxHitPointsHundredths)
       continue;
     const float share =
@@ -485,9 +571,10 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   {
   case EntityKind::Ship:
   {
-    // The data maps every player and hull the server can send (ModelCatalog); anything else is not drawn.
+    // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
+    // drawn.
     const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
-    const std::string* model = m_catalog.ModelForHull(_entity.hull);
+    const std::string* model = _entity.role == ShipRole::Constructor ? &m_catalog.constructor : m_catalog.ModelForHull(_entity.hull);
     if (set != nullptr && model != nullptr)
       m_pipeline.Draw(_commandList, ModelMesh(set->name, *model), WorldMatrix(position, _entity.headingRadians, 1.0f), set->color);
     break;
@@ -517,8 +604,57 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   }
   case EntityKind::Structure:
   default:
-    // Structures are drawn from task 4.2.
+    DrawStructure(_commandList, _entity);
     break;
+  }
+}
+
+void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
+{
+  const ModelSet* set = m_catalog.SetForPlayer(_entity.owner);
+  const StructureModel* model = m_catalog.ModelForStructure(_entity.structure);
+  if (set == nullptr || model == nullptr)
+    return;
+  // Drawn across its kind's footprint: a Mining Rig's entity covers its asteroid, but the rig is the size of its kind,
+  // standing on top of the rock.
+  const Snapshot& newest = m_view.Newest();
+  const auto type = std::ranges::find(newest.structureTypes, _entity.structure, &StructureTypeView::structure);
+  const float radius = type != newest.structureTypes.end() ? type->radiusMeters : _entity.radiusMeters;
+  const float lift =
+    _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters ? _entity.radiusMeters * RIG_LIFT_SHARE : 0.0f;
+  const ModelEntry& entry = set->Model(model->model);
+  const float scale = 2.0f * radius / entry.lengthMeters;
+  const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);
+  const float shade = model->tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
+  const DirectX::XMFLOAT4 color{std::min(1.0f, set->color.x * shade), std::min(1.0f, set->color.y * shade),
+                                std::min(1.0f, set->color.z * shade), set->color.w};
+  const DirectX::XMFLOAT3 position{_entity.position.xMeters, lift, _entity.position.zMeters};
+  m_pipeline.Draw(_commandList, ModelMesh(set->name, model->model), WorldMatrix(position, _entity.headingRadians, scale), color);
+}
+
+void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
+{
+  const std::optional<StructureKind> placing = m_controls.Placing();
+  if (!placing.has_value() || !m_cursorGround.has_value() || m_view.IsEmpty())
+    return;
+  const Snapshot& newest = m_view.Newest();
+  const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
+  if (type == newest.structureTypes.end())
+    return;
+  const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, m_entities, newest.mapSizeMeters);
+  const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
+  m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
+  // The structure itself, shown where it would stand.
+  if (const ModelSet* set = m_catalog.SetForPlayer(newest.player))
+  {
+    if (const StructureModel* model = m_catalog.ModelForStructure(*placing))
+    {
+      const ModelEntry& entry = set->Model(model->model);
+      const DirectX::XMFLOAT3 standing{ghost.position.xMeters, 0.0f, ghost.position.zMeters};
+      m_pipeline.Draw(_commandList, ModelMesh(set->name, model->model),
+                      WorldMatrix(standing, 0.0f, 2.0f * type->radiusMeters / entry.lengthMeters),
+                      ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
+    }
   }
 }
 

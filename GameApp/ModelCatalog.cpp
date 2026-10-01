@@ -2,6 +2,7 @@
 #include "ModelCatalog.h"
 
 #include <algorithm>
+#include <array>
 
 namespace
 {
@@ -78,6 +79,34 @@ Outpost::HullModel ReadHull(JsonObjectReader& _reader)
   return {.hull = _reader.Identifier<Outpost::HullId>("hull"), .model = _reader.String("model")};
 }
 
+// The file spells a kind as its enumerator, as the tuning data does.
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
+  {"CommandStation", Outpost::StructureKind::CommandStation},
+  {"Shipyard", Outpost::StructureKind::Shipyard},
+  {"ResearchLab", Outpost::StructureKind::ResearchLab},
+  {"MiningRig", Outpost::StructureKind::MiningRig},
+  {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
+}};
+// A tint brighter than this would wash a set's color out to white.
+constexpr double MAXIMUM_TINT = 2.0;
+
+Outpost::StructureModel ReadStructure(JsonObjectReader& _reader)
+{
+  const std::string kind = _reader.String("structure");
+  const auto found = std::ranges::find(STRUCTURE_KINDS, kind, &std::pair<std::string_view, Outpost::StructureKind>::first);
+  if (found == STRUCTURE_KINDS.end())
+    Neuron::JsonFail(_reader.PathOf("structure"), std::format("\"{}\" is not a structure kind", kind));
+  Outpost::StructureModel structure{.structure = found->second, .model = _reader.String("model")};
+  if (const Neuron::JsonValue* tint = _reader.Optional("tint"))
+  {
+    const double value = Neuron::ReadJsonNumber(*tint, _reader.PathOf("tint"), JsonBound::Positive);
+    if (value > MAXIMUM_TINT)
+      Neuron::JsonFail(_reader.PathOf("tint"), std::format("a tint is at most {}, found {}", MAXIMUM_TINT, value));
+    structure.tint = static_cast<float>(value);
+  }
+  return structure;
+}
+
 // The index of the first element before _index whose _key equals element _index's, or _index when there is none.
 template <typename T, typename Key> size_t FirstWithSameKey(const std::vector<T>& _list, size_t _index, Key T::*_key)
 {
@@ -114,6 +143,8 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   catalog.sets = Neuron::ReadJsonList<ModelSet>(reader, "sets", ReadSet);
   catalog.players = Neuron::ReadJsonList<PlayerModels>(reader, "players", ReadPlayer);
   catalog.hulls = Neuron::ReadJsonList<HullModel>(reader, "hulls", ReadHull);
+  catalog.structures = Neuron::ReadJsonList<StructureModel>(reader, "structures", ReadStructure);
+  catalog.constructor = reader.String("constructor");
   reader.Finish();
 
   for (size_t i = 0; i < catalog.sets.size(); ++i)
@@ -143,6 +174,30 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
         Neuron::JsonFail(path + ".model", std::format("the set \"{}\" has no model \"{}\"", set.name, catalog.hulls[i].model));
     }
   }
+
+  // A model every player's set must have, for drawing whichever player owns it.
+  const auto checkInEverySet = [&catalog](const std::string& _model, const std::string& _path)
+  {
+    for (const PlayerModels& player : catalog.players)
+    {
+      const ModelSet& set = catalog.Set(player.set);
+      if (std::ranges::find(set.models, _model, &ModelEntry::name) == set.models.end())
+        Neuron::JsonFail(_path, std::format("the set \"{}\" has no model \"{}\"", set.name, _model));
+    }
+  };
+  for (size_t i = 0; i < catalog.structures.size(); ++i)
+  {
+    const std::string path = Neuron::JsonElementPath("structures", i);
+    if (FirstWithSameKey(catalog.structures, i, &StructureModel::structure) != i)
+      Neuron::JsonFail(path + ".structure", "the kind is listed twice");
+    checkInEverySet(catalog.structures[i].model, path + ".model");
+  }
+  for (const auto& [name, kind] : STRUCTURE_KINDS)
+  {
+    if (catalog.ModelForStructure(kind) == nullptr)
+      Neuron::JsonFail("structures", std::format("has no {}", name));
+  }
+  checkInEverySet(catalog.constructor, "constructor");
   return catalog;
 }
 
@@ -159,6 +214,12 @@ const std::string* Outpost::ModelCatalog::ModelForHull(HullId _hull) const noexc
 {
   const auto found = std::ranges::find(hulls, _hull, &HullModel::hull);
   return found == hulls.end() ? nullptr : &found->model;
+}
+
+const Outpost::StructureModel* Outpost::ModelCatalog::ModelForStructure(StructureKind _structure) const noexcept
+{
+  const auto found = std::ranges::find(structures, _structure, &StructureModel::structure);
+  return found == structures.end() ? nullptr : &*found;
 }
 
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)

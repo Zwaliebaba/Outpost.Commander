@@ -35,6 +35,13 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
 7. **Built armed structures fire under the ship rules.** The Command Station and the Defence Platform carry the tuning data's Defence gun: 30 damage every 1.0 s at 250 m, against armor 10 on both. They pick targets, reload and land hits as ships do (ADR-014): ships before structures, a cold gun's first shot at a random moment, and hits together at the end of the tick. A shot from a Defence gun names no weapon, and the client draws it as a tracer.
 8. **Structures block movement.** Every structure except a Mining Rig is an obstacle for pathing and for keeping ships clear; a rig stands on its asteroid, which already is one. Placing or destroying one rebuilds the pathfinder's graphs lazily, and ships whose way a new structure blocks search again (ADR-010).
 9. **A Constructor attacks nothing.** It has no weapon. An attack order that includes Constructors goes to the warships among them alone.
+10. **The client learns the base's rules from the snapshot.** Each snapshot carries what the client needs to name, draw, place and price things, since the client never reads the tuning data (ADR-002):
+    - every kind of structure, with its name, footprint, whether it is built and its cost;
+    - the Constructor's cost, and each design's cost;
+    - the map's size;
+    - the player's income;
+    - each structure's construction in thousandths, and each producer's queue.
+    The Mining Rig's snap distance and the queue's five jobs are protocol constants, shared by the two sides. Each snapshot repeats the static part, which is a few dozen bytes, rather than adding a message for it.
 
 ## Consequences
 

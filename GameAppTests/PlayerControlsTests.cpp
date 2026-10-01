@@ -130,6 +130,47 @@ private:
 };
 
 using Ids = std::vector<std::uint32_t>;
+
+// Task 4.2's world: World(), with a Constructor of mine, a Shipyard of mine under construction, a whole Command Station
+// of mine, and an enemy Shipyard.
+constexpr std::uint32_t CONSTRUCTOR = 11;
+constexpr std::uint32_t SITE = 12;
+constexpr std::uint32_t STATION = 13;
+constexpr std::uint32_t ENEMY_YARD = 14;
+
+void AddBase(std::vector<Outpost::EntityView>& _world)
+{
+  Outpost::EntityView constructor = Ship(CONSTRUCTOR, ME, -120.0f, 0.0f);
+  constructor.role = Outpost::ShipRole::Constructor;
+  constructor.hull = {};
+  _world.push_back(constructor);
+  const auto structure = [](std::uint32_t _id, Outpost::PlayerId _owner, float _x, float _z, std::int32_t _built)
+  {
+    return Outpost::EntityView{.id = Outpost::EntityId{_id},
+                               .kind = Outpost::EntityKind::Structure,
+                               .owner = _owner,
+                               .structure = Outpost::StructureKind::Shipyard,
+                               .position = {.xMeters = _x, .zMeters = _z},
+                               .radiusMeters = 30.0f,
+                               .hitPointsHundredths = 100000,
+                               .maxHitPointsHundredths = 250000,
+                               .builtPermille = _built};
+  };
+  _world.push_back(structure(SITE, ME, -120.0f, -120.0f, 300));
+  Outpost::EntityView station = structure(STATION, ME, 120.0f, 120.0f, Outpost::PERMILLE);
+  station.structure = Outpost::StructureKind::CommandStation;
+  station.hitPointsHundredths = station.maxHitPointsHundredths;
+  _world.push_back(station);
+  _world.push_back(structure(ENEMY_YARD, ENEMY, -150.0f, 120.0f, Outpost::PERMILLE));
+}
+
+template <typename OrderType> const OrderType* Only(const std::vector<Outpost::Command>& _commands, size_t _index = 0)
+{
+  Assert::IsTrue(_commands.size() > _index);
+  const auto* order = std::get_if<OrderType>(&_commands[_index].order);
+  Assert::IsNotNull(order);
+  return order;
+}
 } // namespace
 
 TEST_CLASS(PlayerControlsTests)
@@ -273,6 +314,104 @@ public:
     driver.Key('1');
     Assert::AreEqual(0.0f, driver.CameraView().Focus().x, 0.01f);
     Assert::AreEqual(0.0f, driver.CameraView().Focus().y, 0.01f);
+  }
+
+  // Task 4.5: a click on one of my structures selects it alone, and a box takes ships only.
+  TEST_METHOD(SelectsOneOfMyStructures)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.Click(driver.WorldView()[0]);
+    driver.Click(driver.WorldView()[7]);
+    Assert::IsTrue((Ids{STATION}) == driver.Selected());
+    driver.Click(driver.WorldView()[8]);
+    Assert::IsTrue(driver.Selected().empty(), L"an enemy structure is not selected");
+    driver.Drag(0, 0, 1919, 1079);
+    const Ids boxed = driver.Selected();
+    Assert::IsTrue(std::ranges::find(boxed, STATION) == boxed.end());
+  }
+
+  // Task 4.2: selected Constructors right-clicked on my own structure under construction, or damaged, work on it, and
+  // the warships with them go there; a whole one is only a destination.
+  TEST_METHOD(ConstructorsRepairAFriendlyThatNeedsIt)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.Click(driver.WorldView()[5]);
+    driver.Click(driver.WorldView()[0], VK_LBUTTON, true);
+    Assert::IsTrue((Ids{1, CONSTRUCTOR}) == driver.Selected());
+    (void)driver.Controls().TakeCommands();
+
+    driver.Click(driver.WorldView()[6], VK_RBUTTON);
+    std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{2}, commands.size());
+    const auto* repair = Only<Outpost::RepairCommand>(commands);
+    Assert::IsTrue(repair->target == Outpost::EntityId{SITE});
+    Assert::IsTrue(repair->constructors == std::vector{Outpost::EntityId{CONSTRUCTOR}});
+    const auto* move = Only<Outpost::MoveCommand>(commands, 1);
+    Assert::IsTrue(move->ships == std::vector{Outpost::EntityId{1}});
+
+    driver.Click(driver.WorldView()[7], VK_RBUTTON);
+    commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{1}, commands.size());
+    Assert::AreEqual(size_t{2}, Only<Outpost::MoveCommand>(commands)->ships.size(), L"a whole structure is a destination");
+  }
+
+  TEST_METHOD(RightClickAttacksAnEnemyStructure)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.Click(driver.WorldView()[0]);
+    (void)driver.Controls().TakeCommands();
+    driver.Click(driver.WorldView()[8], VK_RBUTTON);
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::IsTrue(Only<Outpost::AttackCommand>(commands)->target == Outpost::EntityId{ENEMY_YARD});
+  }
+
+  // Task 4.2: the HUD arms a placement for selected Constructors; the next left-click on the ground orders the build,
+  // Shift keeps it armed, and right-click or Escape cancels it.
+  TEST_METHOD(PlacesAStructureWithTheNextLeftClick)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    driver.Click(driver.WorldView()[0]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    Assert::IsFalse(driver.Controls().Placing().has_value(), L"no Constructor is selected");
+
+    driver.Click(driver.WorldView()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::DefensePlatform, driver.WorldView());
+    Assert::IsTrue(driver.Controls().Placing() == Outpost::StructureKind::DefensePlatform);
+    (void)driver.Controls().TakeCommands();
+    driver.ClickPixel(800, 400, VK_LBUTTON, true);
+    Assert::IsTrue(driver.Controls().Placing().has_value(), L"Shift keeps it armed");
+    driver.ClickPixel(900, 400);
+    Assert::IsFalse(driver.Controls().Placing().has_value());
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{2}, commands.size());
+    const auto* build = Only<Outpost::BuildStructureCommand>(commands, 1);
+    Assert::IsTrue(build->structure == Outpost::StructureKind::DefensePlatform);
+    Assert::IsTrue(build->constructors == std::vector{Outpost::EntityId{CONSTRUCTOR}});
+    const Outpost::PlanePosition ground =
+      driver.CameraView().GroundPointAtPixel(900.0f, 400.0f, VIEWPORT).value_or(Outpost::PlanePosition{});
+    Assert::AreEqual(ground.xMeters, build->position.xMeters, 0.01f);
+    Assert::AreEqual(ground.zMeters, build->position.zMeters, 0.01f);
+    Assert::IsTrue(Ids{CONSTRUCTOR} == driver.Selected(), L"placing does not change the selection");
+
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.ClickPixel(900, 400, VK_RBUTTON);
+    Assert::IsFalse(driver.Controls().Placing().has_value());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"the right-click only cancels");
+    driver.Controls().ArmPlacement(Outpost::StructureKind::Shipyard, driver.WorldView());
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().Placing().has_value());
+  }
+
+  TEST_METHOD(QueuesAJobFromTheHud)
+  {
+    Driver driver;
+    driver.Controls().Queue(Outpost::EntityId{STATION}, {});
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::IsTrue(Only<Outpost::QueueShipCommand>(commands)->producer == Outpost::EntityId{STATION});
   }
 
   TEST_METHOD(ForgetsShipsThatAreGone)

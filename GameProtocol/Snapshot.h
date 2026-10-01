@@ -35,6 +35,9 @@ struct JobView
   friend bool operator==(const JobView&, const JobView&) = default;
 };
 
+// Jobs a Shipyard's or the Command Station's queue holds (design §6).
+inline constexpr size_t QUEUE_LIMIT = 5;
+
 // How far a structure's construction or a queue's front job has come, in thousandths.
 inline constexpr std::int32_t PERMILLE = 1000;
 
@@ -79,6 +82,19 @@ struct DesignView
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  // In whole Ore, paid when a Shipyard starts building one (design §5).
+  std::int32_t cost = 0;
+};
+
+// What the client needs to know of a kind of structure to name it, draw it and place it (design §6).
+struct StructureTypeView
+{
+  StructureKind structure = StructureKind::CommandStation;
+  std::string nameUtf8;
+  float radiusMeters = 0.0f;
+  // Whether a Constructor builds it, and for how much Ore; the Command Station is not built.
+  bool buildable = false;
+  std::int32_t cost = 0;
 };
 
 // A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
@@ -119,5 +135,10 @@ struct Snapshot
   std::int32_t ore = 0;
   std::int32_t oreIncomeHundredthsPerSecond = 0;
   std::vector<DesignView> designs;
+  // The match's rules the client shows: the map, a square of this side centered on the origin; every kind of structure;
+  // and what a Constructor costs. Empty and zero when the server has no tuning data.
+  float mapSizeMeters = 0.0f;
+  std::vector<StructureTypeView> structureTypes;
+  std::int32_t constructorCost = 0;
 };
 } // namespace Outpost
