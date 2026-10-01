@@ -54,7 +54,7 @@ public:
     Assert::AreEqual(12, settings.attackGroupShips);
     Assert::AreEqual(60.0, settings.reviewIntervalSeconds);
     Assert::AreEqual(4, settings.constructors);
-    Assert::AreEqual(30.0, settings.secondShipyardIncomeOrePerSecond);
+    Assert::AreEqual(10.0, settings.incomePerShipyardOrePerSecond);
     Assert::AreEqual(3, settings.homeAsteroids);
     Assert::AreEqual(3, settings.contestedAsteroids);
     const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7};

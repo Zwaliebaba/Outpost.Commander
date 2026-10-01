@@ -66,6 +66,8 @@ private:
   void Watch(const Snapshot& _snapshot);
   void Decide(const Snapshot& _snapshot, std::vector<Command>& _orders);
   void Plan(const Snapshot& _snapshot, const EntityView& _station);
+  // Adds the next Shipyard to the plan once the income calls for it.
+  void PlanShipyards(const Snapshot& _snapshot, const EntityView& _station);
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,

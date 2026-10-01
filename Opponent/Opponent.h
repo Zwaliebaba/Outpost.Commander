@@ -5,6 +5,8 @@
 
 #include "GameProtocol.h"
 
+#include <array>
+#include <limits>
 #include <map>
 #include <optional>
 #include <tuple>

@@ -33,7 +33,7 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
   settings.attackGroupShips = root.Integer("attackGroupShips", 1);
   settings.reviewIntervalSeconds = root.Number("reviewIntervalSeconds", JsonBound::Positive);
   settings.constructors = root.Integer("constructors", 1);
-  settings.secondShipyardIncomeOrePerSecond = root.Number("secondShipyardIncomeOrePerSecond", JsonBound::NotNegative);
+  settings.incomePerShipyardOrePerSecond = root.Number("incomePerShipyardOrePerSecond", JsonBound::Positive);
   settings.homeAsteroids = root.Integer("homeAsteroids", 0);
   settings.contestedAsteroids = root.Integer("contestedAsteroids", 0);
   settings.shipyardQueueJobs = root.Integer("shipyardQueueJobs", 1);

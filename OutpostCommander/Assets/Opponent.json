@@ -2,7 +2,7 @@
   "attackGroupShips": 12,
   "reviewIntervalSeconds": 60,
   "constructors": 4,
-  "secondShipyardIncomeOrePerSecond": 30,
+  "incomePerShipyardOrePerSecond": 10,
   "homeAsteroids": 3,
   "contestedAsteroids": 3,
   "shipyardQueueJobs": 2,

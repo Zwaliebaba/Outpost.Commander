@@ -202,6 +202,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
     return;
   if (!m_planned)
     Plan(_snapshot, *station);
+  PlanShipyards(_snapshot, *station);
   if (_snapshot.tick >= m_nextReviewTick)
   {
     m_productionDesign = ChooseAnswer(m_settings, _snapshot);
@@ -261,8 +262,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 
 // The plan of the base (owner, 2026-10-01): rigs on the home asteroids; a Shipyard, a Research Lab and a Defence Platform
 // beside the Command Station; rigs on the contested asteroids nearest it, each with a platform beside it on the side of
-// the base; and a second Shipyard once the income allows. Each place is chosen once, here, and searched again only if
-// something has taken it by the time the structure is ordered.
+// the base. Each place is chosen once, here, and searched again only if something has taken it by the time the structure
+// is ordered. More Shipyards join the plan as the income grows (PlanShipyards).
 void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _station)
 {
   m_planned = true;
@@ -360,14 +361,55 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
       StructureKind::DefensePlatform, [&](float _radius) { return Along(asteroid->position, towardX, towardZ, rigRadius + _radius + gap); },
       rig, 0);
   }
-  const auto income = static_cast<std::int32_t>(std::llround(m_settings.secondShipyardIncomeOrePerSecond * HUNDREDTHS));
-  addStructure(
-    StructureKind::Shipyard, [&](float _radius) { return Along(home, -forwardX, -forwardZ, stationRadius + _radius + gap); }, std::nullopt,
-    income);
-
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
   m_rally = FindPlace(rally, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, 0.0f).value_or(preferred);
+}
+
+// Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times the settings' income per Shipyard,
+// since one Shipyard spends about as much as that. A Shipyard joins the plan once, and keeps waiting for the income if
+// the income drops again, as when a rig is lost. They stand behind the Command Station, then behind it to either side,
+// each round of three farther out; the search finds the nearest clear place to each.
+void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityView& _station)
+{
+  const auto shipyards = std::ranges::count(m_slots, StructureKind::Shipyard, &Slot::structure);
+  const auto income = static_cast<std::int64_t>(std::llround(m_settings.incomePerShipyardOrePerSecond * HUNDREDTHS)) * (shipyards + 1);
+  if (shipyards == 0 || _snapshot.oreIncomeHundredthsPerSecond < income)
+    return;
+
+  Slot slot{.structure = StructureKind::Shipyard,
+            .besideRig = std::nullopt,
+            .minimumIncomeHundredthsPerSecond =
+              static_cast<std::int32_t>(std::min<std::int64_t>(income, std::numeric_limits<std::int32_t>::max()))};
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
+  if (type == nullptr || !type->buildable)
+  {
+    slot.abandoned = true;
+    m_slots.push_back(slot);
+    return;
+  }
+  // Turns from the direction toward the map's center, which the first Shipyard, the lab and the platform stand around.
+  constexpr std::array<float, 3> TURNS_RADIANS{std::numbers::pi_v<float>, 0.75f * std::numbers::pi_v<float>,
+                                               -0.75f * std::numbers::pi_v<float>};
+  const auto extra = static_cast<size_t>(shipyards - 1);
+  const PlanePosition home = _station.position;
+  const float fromCenter = std::hypot(home.xMeters, home.zMeters);
+  const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
+  const float forwardZ = fromCenter > 0.0f ? -home.zMeters / fromCenter : 0.0f;
+  const float turn = TURNS_RADIANS[extra % TURNS_RADIANS.size()];
+  const float directionX = (forwardX * std::cos(turn)) - (forwardZ * std::sin(turn));
+  const float directionZ = (forwardX * std::sin(turn)) + (forwardZ * std::cos(turn));
+  const auto gap = static_cast<float>(m_settings.structureGapMeters);
+  const size_t roundIndex = extra / TURNS_RADIANS.size();
+  const auto round = static_cast<float>(roundIndex);
+  const float meters = _station.radiusMeters + type->radiusMeters + gap + (round * ((2.0f * type->radiusMeters) + gap));
+  const PlanePosition preferred = Along(home, directionX, directionZ, meters);
+
+  slot.radiusMeters = type->radiusMeters;
+  const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, gap);
+  slot.position = place.value_or(preferred);
+  slot.abandoned = !place.has_value();
+  m_slots.push_back(slot);
 }
 
 bool Outpost::AiPlayer::IsDone(const Slot& _slot, const Snapshot& _snapshot) const

@@ -20,8 +20,9 @@ struct AiSettings
   double reviewIntervalSeconds = 0.0;
   // Constructors it keeps, ordering more from its Command Station.
   std::int32_t constructors = 0;
-  // Its income, in whole Ore a second, from which it builds a second Shipyard.
-  double secondShipyardIncomeOrePerSecond = 0.0;
+  // The income, in whole Ore a second, that each of its Shipyards needs: it builds its N-th Shipyard once its income
+  // reaches N times this. The first is in its build order whatever its income.
+  double incomePerShipyardOrePerSecond = 0.0;
   // Ore asteroids it takes as its own: the ones nearest its Command Station.
   std::int32_t homeAsteroids = 0;
   // Ore asteroids beyond those that it takes too, nearest first, each with a Defence Platform beside it.

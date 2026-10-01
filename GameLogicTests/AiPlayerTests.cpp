@@ -348,6 +348,29 @@ public:
     Assert::IsTrue(extraction->researched, L"the first topic in its order is not done after four minutes");
   }
 
+  // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times 10 Ore/s, so that its Shipyards
+  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 48.75 Ore/s, and has 4.
+  TEST_METHOD(BuildsShipyardsByIncome)
+  {
+    AiMatch match;
+    const auto shipyards = [&match]
+    {
+      const Outpost::Snapshot view = match.View(AI);
+      const std::vector<const Outpost::EntityView*> structures = match.Structures(view, AI);
+      return std::ranges::count_if(structures, [](const Outpost::EntityView* _structure)
+                                   { return _structure->structure == Outpost::StructureKind::Shipyard; });
+    };
+    match.Run(60.0);
+    Assert::AreEqual(1500, match.View(AI).oreIncomeHundredthsPerSecond, L"three home rigs at a minute");
+    Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
+
+    match.Run(140.0);
+    Assert::AreEqual(4875, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
+    Assert::AreEqual(std::ptrdiff_t{4}, shipyards());
+    match.Run(60.0);
+    Assert::AreEqual(std::ptrdiff_t{4}, shipyards(), L"no fifth Shipyard below 50 Ore/s");
+  }
+
   // Design §10: at its review the AI answers the enemy's fleet, and its Shipyards build the answer.
   TEST_METHOD(BuildsTheAnswerToTheEnemysFleet)
   {
