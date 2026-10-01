@@ -25,9 +25,9 @@ Outpost::Snapshot Components(bool _unlocked = false)
                     {MEDIUM, "Medium", 50000, 800, 40.0, 120.0, 14.0, 110, 20.0, true},
                     {LARGE, "Large", 120000, 1400, 25.0, 60.0, 24.0, 300, 40.0, _unlocked}};
   snapshot.drives = {{ION, "Ion", 1.3, 0.9, 1.25, 20, true}, {FUSION, "Fusion", 0.8, 1.4, 0.8, 80, _unlocked}};
-  snapshot.weapons = {{MASS_DRIVER, "Mass Driver", 1400, 0.4, 120.0, 35, true},
-                      {LANCE, "Lance", 9500, 3.0, 220.0, 85, true},
-                      {Outpost::WeaponId{3}, "Missile Rack", 4000, 2.0, 280.0, 110, _unlocked}};
+  snapshot.weapons = {{MASS_DRIVER, "Mass Driver", 1400, 0.4, 120.0, 0.0, 35, true},
+                      {LANCE, "Lance", 9500, 3.0, 220.0, 0.0, 85, true},
+                      {Outpost::WeaponId{3}, "Missile Rack", 4000, 2.0, 280.0, 30.0, 110, _unlocked}};
   snapshot.designs = {{.id = SWARM, .nameUtf8 = "Swarm", .hull = SMALL, .drive = ION, .weapon = MASS_DRIVER, .cost = 87}};
   return snapshot;
 }

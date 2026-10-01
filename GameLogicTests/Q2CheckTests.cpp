@@ -38,8 +38,8 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
-    // Twelve: three hulls, two drives, and the two weapons without splash.
-    Assert::AreEqual(size_t{12}, designs.size());
+    // Eighteen: three hulls, two drives and three weapons.
+    Assert::AreEqual(size_t{18}, designs.size());
     for (const CheckDesign& design : designs)
     {
       const Outpost::DesignStats stats =
@@ -47,7 +47,8 @@ public:
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
-    Assert::AreEqual(std::string("L+F+La"), designs.back().code);
+    Assert::AreEqual(std::string("L+F+MR"), designs.back().code);
+    Assert::AreEqual(30.0f, designs.back().stats.splashRadiusMeters);
   }
 
   // A battle replays: the same battle of the same pairing has the same outcome.

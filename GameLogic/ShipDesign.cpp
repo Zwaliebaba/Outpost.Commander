@@ -67,6 +67,7 @@ Outpost::WeaponView Outpost::ViewOf(const WeaponTuning& _weapon, const Upgrades&
           .damageHundredths = _weapon.damage * HUNDREDTHS,
           .fireIntervalSeconds = _weapon.fireIntervalSeconds / _upgrades.FireRateFactor(_weapon.id),
           .rangeMeters = _weapon.rangeMeters,
+          .splashRadiusMeters = _weapon.splashRadiusMeters,
           .cost = _weapon.cost,
           .available = _available};
 }

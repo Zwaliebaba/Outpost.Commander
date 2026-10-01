@@ -765,7 +765,26 @@ void Outpost::Simulation::Fight()
       shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
     const Entity& target = *FindEntity(shotTarget);
     hits.push_back({target.id, HitHundredths(armament->damageHundredths, target.armorHundredths)});
-    m_shots.push_back({.shooter = ship.id, .target = target.id, .weapon = armament->weapon, .from = ship.position, .to = target.position});
+    m_shots.push_back({.shooter = ship.id,
+                       .target = target.id,
+                       .weapon = armament->weapon,
+                       .from = ship.position,
+                       .to = target.position,
+                       .splashRadiusMeters = armament->splashRadiusMeters});
+    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
+    // after its own armor. Never the shooter's own side (ADR-014).
+    if (armament->splashRadiusMeters > 0.0f)
+    {
+      const float reach = armament->splashRadiusMeters * armament->splashRadiusMeters;
+      for (const Entity& other : m_entities)
+      {
+        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == ship.owner)
+          continue;
+        const PlaneVector between = other.position - target.position;
+        if (Dot(between, between) <= reach)
+          hits.push_back({other.id, HitHundredths(armament->damageHundredths, other.armorHundredths)});
+      }
+    }
   }
 
   bool anyDestroyed = false;
@@ -1007,6 +1026,7 @@ std::optional<Outpost::Simulation::Armament> Outpost::Simulation::ArmamentOf(con
     return Armament{.damageHundredths = design->stats.damageHundredths,
                     .fireIntervalSeconds = design->stats.fireIntervalSeconds,
                     .rangeMeters = design->stats.rangeMeters,
+                    .splashRadiusMeters = design->stats.splashRadiusMeters,
                     .weapon = design->components.weapon};
   }
   // A structure fires once it is built (design §6).

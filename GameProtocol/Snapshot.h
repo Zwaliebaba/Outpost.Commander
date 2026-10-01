@@ -111,6 +111,8 @@ struct WeaponView
   std::int32_t damageHundredths = 0;
   double fireIntervalSeconds = 0.0;
   double rangeMeters = 0.0;
+  // Zero for a weapon without splash.
+  double splashRadiusMeters = 0.0;
   std::int32_t cost = 0;
   bool available = false;
 };
@@ -160,6 +162,8 @@ struct ShotView
   WeaponId weapon;
   PlanePosition from;
   PlanePosition to;
+  // How far its splash reached around `to`; zero for a weapon without splash.
+  float splashRadiusMeters = 0.0f;
 };
 
 // An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (task 3.5).

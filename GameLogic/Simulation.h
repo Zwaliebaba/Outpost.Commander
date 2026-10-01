@@ -291,6 +291,8 @@ private:
     std::int32_t damageHundredths = 0;
     double fireIntervalSeconds = 0.0;
     float rangeMeters = 0.0f;
+    // Zero for a weapon without splash, and for a Defence gun.
+    float splashRadiusMeters = 0.0f;
     // For the shot's presentation; no weapon for a Defence gun.
     WeaponId weapon;
   };

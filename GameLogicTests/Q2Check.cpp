@@ -475,7 +475,7 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
       }
       for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
       {
-        if (weapon.splashRadiusMeters <= 0.0 && !weapons.contains(weapon.name))
+        if (!weapons.contains(weapon.name))
           _failures.lines["b"].push_back(std::format("{}: no design worth building uses the {} weapon", where, weapon.name));
       }
     }
@@ -593,12 +593,12 @@ std::vector<std::pair<std::string, CheckParts>> Perturbed(const CheckParts& _par
   }
   for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
   {
-    if (weapon.splashRadiusMeters > 0.0)
-      continue;
     add(weapon.name, "damage", &GameLogicTests::CheckWeapon::damage, &weapon, &CheckParts::weapons);
     add(weapon.name, "interval", &GameLogicTests::CheckWeapon::fireIntervalSeconds, &weapon, &CheckParts::weapons);
     add(weapon.name, "range", &GameLogicTests::CheckWeapon::rangeMeters, &weapon, &CheckParts::weapons);
     add(weapon.name, "cost", &GameLogicTests::CheckWeapon::cost, &weapon, &CheckParts::weapons);
+    if (weapon.splashRadiusMeters > 0.0)
+      add(weapon.name, "splash", &GameLogicTests::CheckWeapon::splashRadiusMeters, &weapon, &CheckParts::weapons);
   }
   return changed;
 }
@@ -680,8 +680,6 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
     {
       for (const CheckWeapon& weapon : _parts.weapons)
       {
-        if (weapon.splashRadiusMeters > 0.0)
-          continue;
         CheckDesign design;
         design.code = std::format("{}+{}+{}", ShortName(hull.name, false), ShortName(drive.name, false), ShortName(weapon.name, true));
         design.hull = hull.name;
@@ -700,6 +698,7 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
         design.stats.damageHundredths = static_cast<std::int32_t>(std::llround(weapon.damage * Outpost::HUNDREDTHS));
         design.stats.fireIntervalSeconds = weapon.fireIntervalSeconds;
         design.stats.rangeMeters = static_cast<float>(weapon.rangeMeters);
+        design.stats.splashRadiusMeters = static_cast<float>(weapon.splashRadiusMeters);
         designs.push_back(std::move(design));
       }
     }
@@ -804,12 +803,6 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
   std::string& report = result.report;
   report += std::format("{} designs, {} battles per pairing (up to {} when a verdict is uncertain), a {} Hz tick.\n", every.size(),
                         _options.battles, _options.maxBattles, TICKS_PER_SECOND);
-  std::vector<std::string> unmodelled;
-  for (const CheckWeapon& weapon : parts.weapons)
-  {
-    if (weapon.splashRadiusMeters > 0.0)
-      unmodelled.push_back(weapon.name);
-  }
 
   Failures failures;
   std::set<Leg> legs;
@@ -837,11 +830,8 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
     else if (!failures.lines[key + "?"].empty())
       verdict = "UNSURE";
     else
-      verdict = key == "b" && !unmodelled.empty() ? "INCOMPLETE" : "PASS";
-    std::string names;
-    for (const std::string& name : unmodelled)
-      names += (names.empty() ? "" : ", ") + name;
-    report += std::format("  ({}) {}: {}{}\n", key, text, verdict, verdict == "INCOMPLETE" ? std::format(" ({} not modelled)", names) : "");
+      verdict = "PASS";
+    report += std::format("  ({}) {}: {}\n", key, text, verdict);
     for (const std::string& line : failures.lines[key])
       report += std::format("      {}\n", line);
     for (const std::string& line : failures.lines[key + "?"])

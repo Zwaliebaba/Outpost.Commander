@@ -141,7 +141,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     panel.summary.push_back(
       std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
                   Tenths(static_cast<double>(stats->armorHundredths) / Outpost::HUNDREDTHS), Tenths(stats->movement.speedMetersPerSecond)));
-    panel.summary.push_back(std::format("Range {} m   Cost {}   Build {} s", Tenths(stats->rangeMeters), stats->cost,
+    const std::string splash = stats->splashRadiusMeters > 0.0f ? std::format("   Splash {} m", Tenths(stats->splashRadiusMeters)) : "";
+    panel.summary.push_back(std::format("Range {} m{}   Cost {}   Build {} s", Tenths(stats->rangeMeters), splash, stats->cost,
                                         Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)));
     std::vector<std::string> header{"Damage/s after armor vs"};
     std::vector<std::string> perShip{"per ship"};

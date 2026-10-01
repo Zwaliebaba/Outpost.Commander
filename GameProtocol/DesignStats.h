@@ -45,6 +45,9 @@ struct DesignStats
   std::int32_t damageHundredths = 0;
   double fireIntervalSeconds = 0.0;
   float rangeMeters = 0.0f;
+  // Every other enemy whose center is this close to the target's takes the same hit, after its own armor; zero for a
+  // weapon without splash (design §7, ADR-014).
+  float splashRadiusMeters = 0.0f;
 
   friend bool operator==(const DesignStats&, const DesignStats&) = default;
 };
@@ -63,7 +66,8 @@ struct DesignStats
           .buildSeconds = _hull.buildSeconds,
           .damageHundredths = _weapon.damageHundredths,
           .fireIntervalSeconds = _weapon.fireIntervalSeconds,
-          .rangeMeters = static_cast<float>(_weapon.rangeMeters)};
+          .rangeMeters = static_cast<float>(_weapon.rangeMeters),
+          .splashRadiusMeters = static_cast<float>(_weapon.splashRadiusMeters)};
 }
 
 // Damage per second against a target of _armorHundredths, after armor (design §9: what the designer shows).
