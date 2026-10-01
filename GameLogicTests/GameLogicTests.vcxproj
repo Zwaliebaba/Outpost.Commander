@@ -60,7 +60,7 @@
       <FloatingPointModel>Precise</FloatingPointModel>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Platform)'=='ARM64'">CPUExtensionRequirementsARMv80</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;$(SolutionDir)NeuronServer;$(SolutionDir)GameProtocol;$(SolutionDir)GameLogic;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(SolutionDir)NeuronCore;$(SolutionDir)NeuronServer;$(SolutionDir)GameProtocol;$(SolutionDir)GameLogic;$(SolutionDir)Opponent;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UseFullPaths>true</UseFullPaths>
     </ClCompile>
     <Link>
@@ -109,6 +109,8 @@
     <ClCompile Include="ResearchTests.cpp" />
     <ClCompile Include="SaveDesignTests.cpp" />
     <ClCompile Include="MatchOutcomeTests.cpp" />
+    <ClCompile Include="AiSettingsTests.cpp" />
+    <ClCompile Include="AiPlayerTests.cpp" />
     <ClCompile Include="CombatTests.cpp" />
     <ClCompile Include="Q2Check.cpp" />
     <ClCompile Include="Q2CheckTests.cpp" />
@@ -131,6 +133,9 @@
     </ProjectReference>
     <ProjectReference Include="..\GameLogic\GameLogic.vcxproj">
       <Project>{35102b85-540a-4f45-819b-dc192c057115}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Opponent\Opponent.vcxproj">
+      <Project>{ad65d4ba-b5a9-49c0-b7ab-60c3a138d585}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

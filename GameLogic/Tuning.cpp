@@ -49,7 +49,6 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   rules.startingConstructors = _reader.Integer("startingConstructors", 0);
   rules.miningRigOrePerSecondHome = _reader.Number("miningRigOrePerSecondHome", JsonBound::NotNegative);
   rules.miningRigOrePerSecondContested = _reader.Number("miningRigOrePerSecondContested", JsonBound::NotNegative);
-  rules.aiReviewIntervalSeconds = _reader.Number("aiReviewIntervalSeconds", JsonBound::Positive);
   return rules;
 }
 

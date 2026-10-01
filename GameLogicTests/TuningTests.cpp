@@ -83,7 +83,7 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 // A small file that loads, for the error cases to break one thing at a time.
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
-             "miningRigOrePerSecondContested": 8, "aiReviewIntervalSeconds": 60 },
+             "miningRigOrePerSecondContested": 8 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
@@ -158,8 +158,7 @@ public:
                 {"startingOre", Number(rules.startingOre)},
                 {"startingConstructors", Number(rules.startingConstructors)},
                 {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
-                {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
-                {"aiReviewIntervalSeconds", rules.aiReviewIntervalSeconds}},
+                {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested}},
                "rules");
 
     const Neuron::JsonValue::Array& hulls = json.Find("hulls")->AsArray();

@@ -147,7 +147,7 @@ The solution is `OutpostCommander.slnx` at the repository root. Its projects, an
 | `GameLogic` | static lib | game: the authoritative server | NeuronServer, GameProtocol |
 | `GameApp` | static lib | game: the client | NeuronClient, GameProtocol |
 | `OutpostCommander` | Win32 exe, MSIX-packaged | shell | all of the above, but may include only NeuronCore, NeuronClient, GameProtocol, Opponent and GameApp |
-| `GameLogicTests` | native unit-test DLL | test: drives GameLogic headlessly | GameLogic, NeuronServer, GameProtocol, NeuronCore |
+| `GameLogicTests` | native unit-test DLL | test: drives GameLogic headlessly, and the AI against it | GameLogic, NeuronServer, GameProtocol, NeuronCore, Opponent |
 | `GameAppTests` | native unit-test DLL | test: drives GameApp and NeuronClient without a GPU | GameApp, NeuronClient, GameProtocol, NeuronCore |
 
 Every library has a master header named after it (`NeuronCore.h`, `GameLogic.h`, …) that includes the master headers of what it builds on, and its `pch.h` includes that header. Include another library through its master header or a header in its folder, and only if that library is on your project's include path. If a project is not in your row of the table, you cannot include its headers, and that is deliberate. The server moves to its own executable later (ADR-002), so a library references a package only where an ADR puts it (R14), and nothing at all depends on XAML or a WinRT API (ADR-001).
