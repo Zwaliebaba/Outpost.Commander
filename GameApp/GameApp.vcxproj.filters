@@ -38,6 +38,9 @@
     <ClInclude Include="LoadDriver.h">
       <Filter>Measurement</Filter>
     </ClInclude>
+    <ClInclude Include="MatchLog.h">
+      <Filter>Measurement</Filter>
+    </ClInclude>
     <ClInclude Include="ModelCatalog.h">
       <Filter>Models</Filter>
     </ClInclude>
@@ -72,6 +75,9 @@
       <Filter>Client</Filter>
     </ClCompile>
     <ClCompile Include="LoadDriver.cpp">
+      <Filter>Measurement</Filter>
+    </ClCompile>
+    <ClCompile Include="MatchLog.cpp">
       <Filter>Measurement</Filter>
     </ClCompile>
     <ClCompile Include="ModelCatalog.cpp">

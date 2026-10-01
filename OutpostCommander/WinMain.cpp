@@ -26,6 +26,8 @@ constexpr std::wstring_view LOAD_SWITCH = L"--load";
 // the display's refresh rate whenever the size changes, for Q4 (ADR-006).
 constexpr std::wstring_view STRESS_SWITCH = L"--stress";
 constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
+// Plan task 6.3: every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py.
+constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -54,7 +56,7 @@ std::uint64_t NewSeed()
   return seed;
 }
 
-// One match: its server, the human's connection, and the other player's with whatever drives it.
+// One match: its server, the human's connection, the other player's with whatever drives it, and its log.
 struct Match
 {
   std::unique_ptr<Outpost::Server> server;
@@ -63,6 +65,9 @@ struct Match
   std::optional<Outpost::AiPlayer> ai;
   Outpost::LoadDriver playerLoad;
   Outpost::LoadDriver rivalLoad;
+  // The log writes to the file, so it comes after it and is destroyed before it.
+  std::ofstream logFile;
+  std::optional<Outpost::MatchLog> log;
 };
 } // namespace
 
@@ -90,7 +95,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     const bool load = !stress && commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;
     // A measurement run skips the menu and starts its match at once (task 6.2).
     const bool skipMenu = measure || load || stress;
-    const std::uint64_t seed = NewSeed();
+    std::uint64_t seed = NewSeed();
     std::ofstream measurements;
     if (measure)
     {
@@ -104,7 +109,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     std::unique_ptr<Outpost::Server> nextServer = Outpost::CreateInProcessServer(serverDesc);
     const std::uint32_t ticksPerSecond = nextServer->TicksPerSecond();
     const Outpost::AiSettings aiSettings = Outpost::LoadPackagedAiSettings();
-    Match match;
+    std::optional<Match> match;
 
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
@@ -114,13 +119,18 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     auto lastAdvance = std::chrono::steady_clock::now();
     const auto startMatch = [&]
     {
-      match.server = std::move(nextServer);
-      match.player = match.server->Connect(HUMAN_PLAYER);
+      match.emplace();
+      match->server = std::move(nextServer);
+      match->player = match->server->Connect(HUMAN_PLAYER);
       // The rival always connects, so that the server builds both players' snapshots as in a match against the AI. Under
       // load the rival's ships are kept moving through it; the stress scene orders its own; otherwise it is the AI.
-      match.rival = match.server->Connect(RIVAL_PLAYER);
+      match->rival = match->server->Connect(RIVAL_PLAYER);
       if (!load && !stress)
-        match.ai.emplace(aiSettings, ticksPerSecond);
+      {
+        match->ai.emplace(aiSettings, ticksPerSecond);
+        match->logFile.open(std::filesystem::temp_directory_path() / MATCH_LOG, std::ios::app);
+        match->log.emplace(match->logFile, seed, ticksPerSecond);
+      }
       client.StartMatch();
       lastAdvance = std::chrono::steady_clock::now();
     };
@@ -147,38 +157,45 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       const auto now = std::chrono::steady_clock::now();
       const auto elapsed = now - lastAdvance;
       lastAdvance = now;
-      if (match.server)
+      if (match)
       {
-        match.server->Advance(elapsed);
+        match->server->Advance(elapsed);
         // Taken every frame, logged or not, so that they do not pile up.
-        for (const std::chrono::nanoseconds tick : match.server->TakeTickDurations())
+        for (const std::chrono::nanoseconds tick : match->server->TakeTickDurations())
         {
           if (measure)
             measurements << std::format("tick_ns {}\n", tick.count());
         }
 
-        std::vector<Outpost::Snapshot> snapshots = match.player->Receive();
+        std::vector<Outpost::Snapshot> snapshots = match->player->Receive();
         if (load)
         {
           for (const Outpost::Snapshot& snapshot : snapshots)
           {
-            for (Outpost::Command& command : match.playerLoad.Update(snapshot))
-              match.player->Send(std::move(command));
+            for (Outpost::Command& command : match->playerLoad.Update(snapshot))
+              match->player->Send(std::move(command));
           }
         }
         // The AI plays as a client: its snapshots in, its orders out, as the human's (ADR-002).
-        for (const Outpost::Snapshot& snapshot : match.rival->Receive())
+        for (const Outpost::Snapshot& snapshot : match->rival->Receive())
         {
+          if (match->log)
+            match->log->Record(snapshot);
           if (load)
           {
-            for (Outpost::Command& command : match.rivalLoad.Update(snapshot))
-              match.rival->Send(std::move(command));
+            for (Outpost::Command& command : match->rivalLoad.Update(snapshot))
+              match->rival->Send(std::move(command));
           }
-          else if (match.ai)
+          else if (match->ai)
           {
-            for (Outpost::Command& command : match.ai->Update(snapshot))
-              match.rival->Send(std::move(command));
+            for (Outpost::Command& command : match->ai->Update(snapshot))
+              match->rival->Send(std::move(command));
           }
+        }
+        if (match->log)
+        {
+          for (const Outpost::Snapshot& snapshot : snapshots)
+            match->log->Record(snapshot);
         }
         // The client draws only what the snapshots say, interpolated (ADR-002 decision 5, ADR-013).
         client.Receive(std::move(snapshots));
@@ -194,8 +211,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       // Orders leave as soon as they are given; the server applies them at the start of its next tick (ADR-002).
       for (Outpost::Command& command : client.TakeCommands())
       {
-        if (match.player)
-          match.player->Send(std::move(command));
+        if (match)
+          match->player->Send(std::move(command));
       }
       // The menu's buttons and the match end's (task 6.2). Leaving a match ends its server, and the next one is made.
       if (const std::optional<Outpost::GameClient::Request> request = client.TakeRequest())
@@ -203,13 +220,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         switch (*request)
         {
         case Outpost::GameClient::Request::StartSkirmish:
-          if (!match.server)
+          if (!match)
             startMatch();
           break;
         case Outpost::GameClient::Request::BackToMenu:
-          match = Match{};
+          match.reset();
           client.ShowMenu();
-          nextServer = Outpost::CreateInProcessServer({.seed = NewSeed(), .measurementLoad = load, .stressLoad = stress});
+          seed = NewSeed();
+          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress});
           break;
         case Outpost::GameClient::Request::Quit:
           PostQuitMessage(0);

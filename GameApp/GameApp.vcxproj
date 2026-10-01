@@ -79,6 +79,7 @@
     <ClInclude Include="GameApp.h" />
     <ClInclude Include="GameClient.h" />
     <ClInclude Include="LoadDriver.h" />
+    <ClInclude Include="MatchLog.h" />
     <ClInclude Include="ModelCatalog.h" />
     <ClInclude Include="Hardpoints.h" />
     <ClInclude Include="pch.h" />
@@ -96,6 +97,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="GameClient.cpp" />
     <ClCompile Include="LoadDriver.cpp" />
+    <ClCompile Include="MatchLog.cpp" />
     <ClCompile Include="ModelCatalog.cpp" />
     <ClCompile Include="Hardpoints.cpp" />
     <ClCompile Include="Picking.cpp" />
