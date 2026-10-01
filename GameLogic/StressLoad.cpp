@@ -9,7 +9,6 @@ namespace
 {
 // Lattice points this far apart hold the widest hull with room to spare.
 constexpr float LATTICE_SPACING_METERS = 50.0f;
-constexpr float STRUCTURE_RADIUS_METERS = 20.0f;
 constexpr float RALLY_SHARE_TO_MIDDLE = 0.33f;
 // How often ships standing idle are sent back into the fight: once a second at 20 Hz.
 constexpr std::uint64_t REORDER_TICKS = 20;
@@ -92,18 +91,36 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     if (side.berths.size() < STRESS_SHIPS_PER_PLAYER)
       throw Neuron::Exception("The map has too little open ground for the stress load's ships.");
 
+    // The structures the player already has, its Command Station, count toward the scene's.
+    const auto existing =
+      static_cast<size_t>(std::ranges::count_if(_simulation.Entities(), [&side](const Entity& _entity)
+                                                { return _entity.kind == EntityKind::Structure && _entity.owner == side.player; }));
     const PlanePosition structuresAt{.xMeters = side.start.xMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE),
                                      .zMeters = side.start.zMeters * (1.0f - STRUCTURE_SHARE_TO_MIDDLE)};
-    const std::vector<PlanePosition> sites = OpenPointsNear(_map, structuresAt, STRUCTURE_RADIUS_METERS + _map.minimumGapMeters);
-    if (sites.size() < STRESS_STRUCTURES_PER_PLAYER)
+    float widestStructureMeters = 0.0f;
+    for (const StructureTuning& structure : _tuning.structures)
+      widestStructureMeters = std::max(widestStructureMeters, static_cast<float>(structure.footprintRadiusMeters));
+    // Structures block movement (ADR-016), so each keeps the map's narrowest passage from the others, as from obstacles.
+    std::vector<PlanePosition> sites;
+    for (const PlanePosition point : OpenPointsNear(_map, structuresAt, widestStructureMeters + _map.minimumGapMeters))
+    {
+      if (sites.size() + existing >= STRESS_STRUCTURES_PER_PLAYER)
+        break;
+      const bool clear = std::ranges::all_of(sites, [&](PlanePosition _site)
+                                             { return Distance(_site, point) >= (2.0f * widestStructureMeters) + _map.minimumGapMeters; });
+      if (clear)
+        sites.push_back(point);
+    }
+    if (sites.size() + existing < STRESS_STRUCTURES_PER_PLAYER)
       throw Neuron::Exception("The map has too little open ground for the stress load's structures.");
-    for (size_t i = 0; i < STRESS_STRUCTURES_PER_PLAYER; ++i)
+    for (size_t i = 0; i < sites.size(); ++i)
     {
       const StructureKind kind = STRUCTURE_KINDS[i % STRUCTURE_KINDS.size()];
       const auto tuning = std::ranges::find(_tuning.structures, kind, &StructureTuning::kind);
-      const std::int32_t hitPoints = tuning != _tuning.structures.end() ? tuning->hitPoints : 1;
-      const std::int32_t armor = tuning != _tuning.structures.end() ? tuning->armor : 0;
-      (void)_simulation.SpawnStructure(side.player, kind, sites[i], STRUCTURE_RADIUS_METERS, hitPoints * HUNDREDTHS, armor * HUNDREDTHS);
+      if (tuning == _tuning.structures.end())
+        throw Neuron::Exception("The tuning data lacks a structure kind the stress load places.");
+      (void)_simulation.SpawnStructure(side.player, kind, sites[i], static_cast<float>(tuning->footprintRadiusMeters),
+                                       tuning->hitPoints * HUNDREDTHS, tuning->armor * HUNDREDTHS);
     }
   }
 }
@@ -124,7 +141,8 @@ std::vector<Outpost::Command> Outpost::StressLoad::TopUp(Simulation& _simulation
   std::array<PlaneVector, 2> sums{};
   for (const Entity& entity : _simulation.Entities())
   {
-    if (entity.kind != EntityKind::Ship)
+    // Warships only: the Constructors stay at home.
+    if (entity.kind != EntityKind::Ship || entity.role != ShipRole::Warship)
       continue;
     for (size_t index = 0; index < m_sides.size(); ++index)
     {

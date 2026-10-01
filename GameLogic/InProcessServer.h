@@ -67,6 +67,9 @@ public:
   void StartStressLoad();
 
 private:
+  // Builds the pathfinding graphs for every hull and the Constructor ahead of their first order.
+  void PreparePathfinding();
+
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player.
   void RunTick();

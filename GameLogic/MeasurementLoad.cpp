@@ -8,7 +8,7 @@ namespace
 {
 // Lattice points this far apart hold the widest hull, 48 m across, with room to spare.
 constexpr float LATTICE_SPACING_METERS = 60.0f;
-// Kept clear of a start, so the starting fleets stand alone.
+// Kept clear of a start, so the starting bases stand alone.
 constexpr float START_CLEARANCE_METERS = 150.0f;
 constexpr float STRUCTURE_RADIUS_METERS = 20.0f;
 constexpr std::array<Outpost::StructureKind, 5> STRUCTURE_KINDS{Outpost::StructureKind::CommandStation, Outpost::StructureKind::Shipyard,
@@ -55,10 +55,13 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
     throw Neuron::Exception("The measurement load needs at least one hull and one drive in the tuning data.");
 
   size_t ships = 0;
+  size_t structures = 0;
   for (const EntityView& entity : _simulation.BuildSnapshot(PlayerId{}).entities)
   {
     if (entity.kind == EntityKind::Ship)
       ++ships;
+    else if (entity.kind == EntityKind::Structure)
+      ++structures;
   }
 
   // The lattice, in rows along x, from the map's corner.
@@ -76,12 +79,13 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
     }
   }
   const size_t shipsToAdd = ships < MEASUREMENT_SHIPS ? MEASUREMENT_SHIPS - ships : 0;
-  if (open.size() < shipsToAdd + MEASUREMENT_STRUCTURES)
-    throw Neuron::Exception(std::format("The map has room for {} of the measurement load's {} ships and structures.", open.size(),
-                                        shipsToAdd + MEASUREMENT_STRUCTURES));
+  const size_t structuresToAdd = structures < MEASUREMENT_STRUCTURES ? MEASUREMENT_STRUCTURES - structures : 0;
+  if (open.size() < shipsToAdd + structuresToAdd)
+    throw Neuron::Exception(
+      std::format("The map has room for {} of the measurement load's {} ships and structures.", open.size(), shipsToAdd + structuresToAdd));
 
   // Every other lattice point, so ships and structures mix across the map rather than filling it from one corner.
-  const size_t stride = open.size() / (shipsToAdd + MEASUREMENT_STRUCTURES);
+  const size_t stride = open.size() / (shipsToAdd + structuresToAdd);
   size_t next = 0;
   for (size_t i = 0; i < shipsToAdd; ++i, next += stride)
   {
@@ -89,7 +93,7 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
     const ShipMovement movement = MovementFor(_tuning, hull.id, _tuning.drives.front().id);
     (void)_simulation.SpawnShip(OwnerOf(_map, open[next]), DesignId{}, movement, open[next], hull.id);
   }
-  for (size_t i = 0; i < MEASUREMENT_STRUCTURES; ++i, next += stride)
+  for (size_t i = 0; i < structuresToAdd; ++i, next += stride)
     (void)_simulation.SpawnStructure(OwnerOf(_map, open[next]), STRUCTURE_KINDS[i % STRUCTURE_KINDS.size()], open[next],
                                      STRUCTURE_RADIUS_METERS);
 }

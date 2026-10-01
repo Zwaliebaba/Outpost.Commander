@@ -14,6 +14,8 @@ struct RulesTuning
 {
   std::int32_t tickHz = 0;
   std::int32_t startingOre = 0;
+  // Constructors each player starts with, beside its Command Station (design §6).
+  std::int32_t startingConstructors = 0;
   double miningRigOrePerSecondHome = 0.0;
   double miningRigOrePerSecondContested = 0.0;
   double aiReviewIntervalSeconds = 0.0;
@@ -55,6 +57,25 @@ struct WeaponTuning
   std::int32_t cost = 0;
 };
 
+// The Constructor, the one fixed design (design §7): no weapon, built at the Command Station, and the rates it builds and
+// repairs at (gate G8, a provisional baseline the owner set on 2026-10-01).
+struct ConstructorTuning
+{
+  std::int32_t hitPoints = 0;
+  std::int32_t armor = 0;
+  double speedMetersPerSecond = 0.0;
+  std::int32_t cost = 0;
+  double buildSeconds = 0.0;
+  // Provisional with the hulls' (G5).
+  double footprintRadiusMeters = 0.0;
+  double turnRateDegreesPerSecond = 0.0;
+  // One Constructor builds a structure in its buildConstructorSeconds; each further one on the site adds this share of
+  // one more.
+  double extraConstructorBuildShare = 0.0;
+  // Hit points one Constructor restores each second, as a percentage of the target's maximum.
+  double repairPercentPerSecond = 0.0;
+};
+
 struct StructureWeaponTuning
 {
   StructureWeaponId id;
@@ -70,6 +91,8 @@ struct StructureTuning
   std::string name;
   std::int32_t hitPoints = 0;
   std::int32_t armor = 0;
+  // The circle it blocks and that no other structure may overlap (design §6). Provisional, like the hulls' (G5).
+  double footprintRadiusMeters = 0.0;
   // Both or neither: a structure a Constructor cannot build, the Command Station, has no cost and no build time.
   std::optional<std::int32_t> cost;
   std::optional<double> buildConstructorSeconds;
@@ -124,6 +147,7 @@ struct Tuning
   std::vector<HullTuning> hulls;
   std::vector<DriveTuning> drives;
   std::vector<WeaponTuning> weapons;
+  ConstructorTuning constructor;
   std::vector<StructureWeaponTuning> structureWeapons;
   // One per StructureKind, in the order of the file.
   std::vector<StructureTuning> structures;

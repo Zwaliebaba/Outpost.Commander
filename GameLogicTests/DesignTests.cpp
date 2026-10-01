@@ -94,35 +94,38 @@ public:
     Assert::IsTrue(names == expected);
   }
 
-  // Design §7, §9: every match starts with the starting designs saved, and the starting fleet is built of them.
-  TEST_METHOD(EveryPlayerStartsWithItsDesignsAndAnArmedFleet)
+  // Design §6, §7, §9: every match starts with the starting designs saved, the starting Ore, and a base of a Command
+  // Station and two Constructors, which are of no design.
+  TEST_METHOD(EveryPlayerStartsWithItsDesignsAndABase)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    server.World().PlaceStartingFleets(map, tuning);
+    server.World().PlaceStartingBases(map);
 
     for (const Outpost::PlayerId player : {BLUE, RED})
     {
       const Outpost::Snapshot snapshot = server.World().BuildSnapshot(player);
       Assert::AreEqual(size_t{4}, snapshot.designs.size());
       Assert::AreEqual(tuning.rules.startingOre, snapshot.ore);
-      std::vector<std::string> fleet;
+      size_t constructors = 0;
+      size_t stations = 0;
       for (const Outpost::EntityView& entity : snapshot.entities)
       {
-        if (entity.kind != Outpost::EntityKind::Ship || entity.owner != player)
+        if (entity.owner != player)
           continue;
-        const auto design = std::ranges::find(snapshot.designs, entity.design, &Outpost::DesignView::id);
-        Assert::IsTrue(design != snapshot.designs.end(), L"a starting ship's design is not one of its player's");
-        Assert::IsTrue(design->hull == entity.hull);
-        Assert::IsTrue(entity.hitPointsHundredths > 0 && entity.hitPointsHundredths == entity.maxHitPointsHundredths);
-        fleet.push_back(design->nameUtf8);
+        if (entity.kind == Outpost::EntityKind::Structure)
+        {
+          stations += entity.structure == Outpost::StructureKind::CommandStation ? 1 : 0;
+          continue;
+        }
+        Assert::IsTrue(entity.role == Outpost::ShipRole::Constructor);
+        Assert::IsFalse(entity.design.IsValid());
+        Assert::AreEqual(tuning.constructor.hitPoints * Outpost::HUNDREDTHS, entity.maxHitPointsHundredths);
+        ++constructors;
       }
-      // Owner's choice on 2026-10-01: every starting design is in the fleet.
-      std::ranges::sort(fleet);
-      const std::vector<std::string> expected{"Medium+Ion+Lance", "Medium+Ion+Mass Driver", "Small+Ion+Lance",
-                                              "Small+Ion+Lance",  "Small+Ion+Mass Driver",  "Small+Ion+Mass Driver"};
-      Assert::IsTrue(fleet == expected);
+      Assert::AreEqual(size_t{1}, stations);
+      Assert::AreEqual(static_cast<size_t>(tuning.rules.startingConstructors), constructors);
     }
   }
 

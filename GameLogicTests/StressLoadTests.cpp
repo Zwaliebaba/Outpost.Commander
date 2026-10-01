@@ -24,8 +24,10 @@ Census Count(const Outpost::Simulation& _simulation)
     if (!entity.owner.IsValid())
       continue;
     const size_t side = entity.owner.value - 1;
-    if (entity.kind == Outpost::EntityKind::Ship)
+    if (entity.kind == Outpost::EntityKind::Ship && entity.role == Outpost::ShipRole::Warship)
       ++census.ships[side];
+    else if (entity.kind == Outpost::EntityKind::Ship)
+      continue;
     else if (entity.kind == Outpost::EntityKind::Structure)
       ++census.structures[side];
   }
@@ -42,7 +44,7 @@ public:
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
     Outpost::InProcessServer server(tuning, map, {.seed = 3, .stressLoad = true});
-    server.World().PlaceStartingFleets(map, tuning);
+    server.World().PlaceStartingBases(map);
     server.StartStressLoad();
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
 
@@ -56,8 +58,8 @@ public:
     }
     for (const size_t ships : census.ships)
     {
-      // Until the first tick, only the starting fleets: the load tops them up as the tick starts.
-      Assert::AreEqual(size_t{6}, ships);
+      // Until the first tick, no warships: the load adds them as the tick starts.
+      Assert::AreEqual(size_t{0}, ships);
     }
 
     size_t destroyed = 0;

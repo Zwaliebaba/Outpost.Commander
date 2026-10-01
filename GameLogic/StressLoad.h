@@ -8,7 +8,8 @@ inline constexpr size_t STRESS_SHIPS_PER_PLAYER = 100;
 inline constexpr size_t STRESS_STRUCTURES_PER_PLAYER = 20;
 
 // Each of the map's two players fields its starting designs in turn, gathered at a rally a third of the way from its
-// start to the middle, and its structures, with the tuning data's hit points and armor, beyond it. Both fleets
+// start to the middle, and its structures, with the tuning data's footprints, hit points, armor and Defence guns, beyond
+// it; the Command Station a match starts with counts as one of them. Both fleets
 // attack-move on the other's rally, so they meet among the structures. Before every tick the load gives each player back
 // the ships it lost, at its rally with the same order, and once a second sends ships standing idle after what is left
 // of the enemy, so the whole of both fleets keeps fighting however long it is measured. Ships it adds are not in the
@@ -16,7 +17,7 @@ inline constexpr size_t STRESS_STRUCTURES_PER_PLAYER = 20;
 class StressLoad
 {
 public:
-  // Places the ships, counting any already there, and the structures. Throws Neuron::Exception when the map has no
+  // Places the ships, counting any warships already there, and the structures, counting the player's own. Throws Neuron::Exception when the map has no
   // two starts, a player has no starting design, or there is too little open ground.
   StressLoad(Simulation& _simulation, const Map& _map, const Tuning& _tuning);
 

@@ -24,16 +24,6 @@ struct AsteroidFieldPlacement
   float radiusMeters = 0.0f;
 };
 
-// Ships of one hull, drive and weapon that every player starts with (task 2.5). Provisional: task 4.2 places the Command
-// Station and the Constructors a match really starts with.
-struct StartingShips
-{
-  HullId hull;
-  DriveId drive;
-  WeaponId weapon;
-  std::uint32_t count = 0;
-};
-
 // OutpostCommander/Assets/Map.json as the game holds it (design §4, ADR-008). The map is a square centered on the origin.
 struct Map
 {
@@ -43,8 +33,6 @@ struct Map
   float minimumGapMeters = 0.0f;
   // One per player, in player order: the first is player 1's.
   std::vector<PlanePosition> starts;
-  // The same for every player, laid out around its start facing the map's center.
-  std::vector<StartingShips> startingFleet;
   std::vector<OreAsteroidPlacement> oreAsteroids;
   std::vector<AsteroidFieldPlacement> asteroidFields;
 };

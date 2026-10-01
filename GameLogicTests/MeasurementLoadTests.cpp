@@ -9,13 +9,13 @@ namespace GameLogicTests
 TEST_CLASS(MeasurementLoadTests)
 {
 public:
-  // Task 2.7: 200 ships and 40 structures, the starting fleets counted, each clear of every obstacle and of each other.
+  // Task 2.7: 200 ships and 40 structures, the starting bases counted, each clear of every obstacle and of each other.
   TEST_METHOD(PlacesTwoHundredShipsAndFortyStructures)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    server.World().PlaceStartingFleets(map, tuning);
+    server.World().PlaceStartingBases(map);
     Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
 
     std::vector<Outpost::EntityView> placed;

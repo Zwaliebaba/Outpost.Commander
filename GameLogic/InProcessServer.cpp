@@ -53,6 +53,7 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
                                           hull.name, 2.0 * hull.footprintRadiusMeters, m_map.minimumGapMeters));
   }
   m_simulation.PlaceMap(m_map);
+  m_simulation.UseTuning(m_tuning);
   // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
   for (size_t player = 0; player < m_map.starts.size(); ++player)
   {
@@ -60,9 +61,15 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
     m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
     m_simulation.SaveStartingDesigns(id, m_tuning);
   }
+  PreparePathfinding();
+}
+
+void Outpost::InProcessServer::PreparePathfinding()
+{
   // The same float a ship of the hull is given (MovementFor), since the graphs are kept by radius.
   for (const HullTuning& hull : m_tuning.hulls)
     m_simulation.PreparePathfinding(static_cast<float>(hull.footprintRadiusMeters));
+  m_simulation.PreparePathfinding(static_cast<float>(m_tuning.constructor.footprintRadiusMeters));
 }
 
 std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _player)
@@ -129,13 +136,15 @@ void Outpost::InProcessServer::RunTick()
 void Outpost::InProcessServer::StartStressLoad()
 {
   m_stressLoad.emplace(m_simulation, m_map, m_tuning);
+  // Its structures block movement, so the graphs are built again now rather than in the first tick.
+  PreparePathfinding();
 }
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
   auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
   // Match setup: the map is placed, and now every player's starting fleet (task 2.5).
-  server->World().PlaceStartingFleets(server->MapData(), server->TuningData());
+  server->World().PlaceStartingBases(server->MapData());
   if (_desc.measurementLoad)
     PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
   if (_desc.stressLoad)

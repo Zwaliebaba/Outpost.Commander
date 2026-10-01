@@ -115,62 +115,57 @@ public:
     Assert::IsTrue(replay == server.World());
   }
 
-  // Task 2.5: every player starts with the map's fleet around its start, facing the map's center, clear of obstacles
-  // and of each other, and each ship's snapshot names its hull so that the client can draw it.
-  TEST_METHOD(PlacesEachPlayersStartingFleet)
+  // Design §6: every player starts with its Command Station on its start and the starting Constructors in front of it,
+  // facing the map's center and clear of each other, all at full strength.
+  TEST_METHOD(PlacesEachPlayersStartingBase)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
     const Outpost::Map map = RepositoryMap();
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    server.World().PlaceStartingFleets(map, tuning);
+    server.World().PlaceStartingBases(map);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
     server.Advance(50ms);
     const std::vector<Outpost::Snapshot> snapshots = blue->Receive();
     Assert::AreEqual(size_t{1}, snapshots.size());
 
-    std::uint32_t fleetSize = 0;
-    for (const Outpost::StartingShips& group : map.startingFleet)
-      fleetSize += group.count;
-
-    std::vector<Outpost::EntityView> ships;
+    std::vector<Outpost::EntityView> placed;
     for (const Outpost::EntityView& entity : snapshots[0].entities)
     {
-      if (entity.kind == Outpost::EntityKind::Ship)
-        ships.push_back(entity);
-    }
-    Assert::AreEqual(size_t{2} * fleetSize, ships.size());
-
-    for (const Outpost::EntityView& ship : ships)
-    {
-      Assert::IsTrue(ship.hull.IsValid());
-      const Outpost::PlanePosition start = map.starts[ship.owner.value - 1];
-      Assert::IsTrue(Outpost::Distance(ship.position, start) < 100.0f);
-      const float towardCenter = std::atan2(-start.zMeters, -start.xMeters);
-      Assert::AreEqual(towardCenter, ship.headingRadians, 1e-5f);
-      for (const Outpost::EntityView& other : ships)
+      if (!entity.owner.IsValid())
+        continue;
+      placed.push_back(entity);
+      const Outpost::PlanePosition start = map.starts[entity.owner.value - 1];
+      Assert::IsTrue(entity.hitPointsHundredths > 0 && entity.hitPointsHundredths == entity.maxHitPointsHundredths);
+      if (entity.kind == Outpost::EntityKind::Structure)
       {
-        if (other.id != ship.id)
-          Assert::IsTrue(Outpost::Distance(ship.position, other.position) >= ship.radiusMeters + other.radiusMeters);
+        Assert::IsTrue(entity.structure == Outpost::StructureKind::CommandStation);
+        Assert::AreEqual(Outpost::PERMILLE, entity.builtPermille);
+        Assert::IsTrue(entity.position == start);
+        continue;
+      }
+      Assert::IsTrue(entity.role == Outpost::ShipRole::Constructor);
+      Assert::IsTrue(Outpost::Distance(entity.position, start) < 120.0f);
+      Assert::AreEqual(std::atan2(-start.zMeters, -start.xMeters), entity.headingRadians, 1e-5f);
+    }
+    Assert::AreEqual(size_t{2} * (1 + static_cast<size_t>(tuning.rules.startingConstructors)), placed.size());
+    for (const Outpost::EntityView& entity : placed)
+    {
+      for (const Outpost::EntityView& other : placed)
+      {
+        if (other.id != entity.id)
+          Assert::IsTrue(Outpost::Distance(entity.position, other.position) >= entity.radiusMeters + other.radiusMeters);
       }
     }
   }
 
-  TEST_METHOD(RefusesAStartingFleetThatDoesNotFit)
+  TEST_METHOD(RefusesAStartingBaseThatDoesNotFit)
   {
     const Outpost::Tuning tuning = RepositoryTuning();
     Outpost::Map map = RepositoryMap();
-    map.startingFleet = {{.hull = Outpost::HullId{3}, .drive = Outpost::DriveId{1}, .count = 100}};
+    // Within the Command Station's footprint of a home asteroid.
+    map.starts[0] = {map.oreAsteroids[0].position.xMeters, map.oreAsteroids[0].position.zMeters - 60.0f};
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    Assert::ExpectException<Neuron::Exception>([&] { server.World().PlaceStartingFleets(map, tuning); });
-  }
-
-  TEST_METHOD(RefusesAStartingFleetOfAnUnknownHull)
-  {
-    const Outpost::Tuning tuning = RepositoryTuning();
-    Outpost::Map map = RepositoryMap();
-    map.startingFleet = {{.hull = Outpost::HullId{99}, .drive = Outpost::DriveId{1}, .count = 1}};
-    Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    Assert::ExpectException<Neuron::Exception>([&] { server.World().PlaceStartingFleets(map, tuning); });
+    Assert::ExpectException<Neuron::Exception>([&] { server.World().PlaceStartingBases(map); });
   }
 
   TEST_METHOD(RefusesADuplicateOrMissingPlayer)
