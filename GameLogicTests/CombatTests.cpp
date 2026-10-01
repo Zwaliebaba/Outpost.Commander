@@ -214,8 +214,8 @@ public:
     arena.World().UseTuning(arena.TuningData());
     const Outpost::EntityId launcher = arena.Ship(BLUE, SMALL, ION, MISSILE_RACK, {0.0f, 0.0f});
     const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {250.0f, 0.0f});
-    const Outpost::EntityId near = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
-    const Outpost::EntityId far = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
+    const Outpost::EntityId beside = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
+    const Outpost::EntityId beyond = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
     // Small footprints, so that nothing is pushed apart before the first missile lands.
     const Outpost::EntityId armored =
       arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
@@ -236,8 +236,8 @@ public:
     };
     // 40 against a Constructor's armor of 2, and against the structure's 10.
     Assert::AreEqual(3800, lost(target));
-    Assert::AreEqual(3800, lost(near), L"22 m from the target");
-    Assert::AreEqual(0, lost(far), L"40 m from the target");
+    Assert::AreEqual(3800, lost(beside), L"22 m from the target");
+    Assert::AreEqual(0, lost(beyond), L"40 m from the target");
     Assert::AreEqual(3000, lost(armored), L"a structure 25 m away, after its armor");
     Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
