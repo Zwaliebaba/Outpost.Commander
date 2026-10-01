@@ -53,6 +53,13 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
                                           hull.name, 2.0 * hull.footprintRadiusMeters, m_map.minimumGapMeters));
   }
   m_simulation.PlaceMap(m_map);
+  // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
+  for (size_t player = 0; player < m_map.starts.size(); ++player)
+  {
+    const PlayerId id{static_cast<std::uint32_t>(player + 1)};
+    m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
+    m_simulation.SaveStartingDesigns(id, m_tuning);
+  }
   // The same float a ship of the hull is given (MovementFor), since the graphs are kept by radius.
   for (const HullTuning& hull : m_tuning.hulls)
     m_simulation.PreparePathfinding(static_cast<float>(hull.footprintRadiusMeters));

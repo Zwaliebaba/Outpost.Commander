@@ -129,7 +129,7 @@ constexpr std::string_view MINIMAL_MAP = R"({
   "sizeMeters": 1000,
   "minimumGapMeters": 50,
   "starts": [ { "xMeters": -300, "zMeters": -300 }, { "xMeters": 300, "zMeters": 300 } ],
-  "startingFleet": [ { "hull": 1, "drive": 1, "count": 2 } ],
+  "startingFleet": [ { "hull": 1, "drive": 1, "weapon": 1, "count": 2 } ],
   "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home" },
                     { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested" } ],
   "asteroidFields": [ { "xMeters": 0, "zMeters": 0, "radiusMeters": 100 } ]

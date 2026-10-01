@@ -6,8 +6,10 @@
     { "xMeters": 750, "zMeters": 750 }
   ],
   "startingFleet": [
-    { "hull": 1, "drive": 1, "count": 4 },
-    { "hull": 2, "drive": 1, "count": 2 }
+    { "hull": 1, "drive": 1, "weapon": 1, "count": 2 },
+    { "hull": 1, "drive": 1, "weapon": 2, "count": 2 },
+    { "hull": 2, "drive": 1, "weapon": 1, "count": 1 },
+    { "hull": 2, "drive": 1, "weapon": 2, "count": 1 }
   ],
   "oreAsteroids": [
     { "xMeters": -750, "zMeters": -490, "radiusMeters": 45, "yield": "home" },

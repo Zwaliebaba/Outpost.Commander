@@ -5,6 +5,7 @@
 #include "NeuronServer.h"
 #include "GameProtocol.h"
 
+#include <algorithm>
 #include <optional>
 #include <span>
 
@@ -12,6 +13,7 @@
 #include "Map.h"
 #include "PlaneVector.h"
 #include "Pathfinder.h"
+#include "ShipDesign.h"
 #include "Simulation.h"
 #include "InProcessServer.h"
 #include "MeasurementLoad.h"

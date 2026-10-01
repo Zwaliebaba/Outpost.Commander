@@ -35,9 +35,10 @@ Outpost::OreAsteroidPlacement ReadOreAsteroid(JsonObjectReader& _reader)
 
 Outpost::StartingShips ReadStartingShips(JsonObjectReader& _reader)
 {
-  // Whether the hull and the drive exist is checked when the fleet is placed, where the tuning data is known.
+  // Whether the components exist is checked when the fleet is placed, where the tuning data is known.
   return {.hull = _reader.Identifier<Outpost::HullId>("hull"),
           .drive = _reader.Identifier<Outpost::DriveId>("drive"),
+          .weapon = _reader.Identifier<Outpost::WeaponId>("weapon"),
           .count = static_cast<std::uint32_t>(_reader.Integer("count", 1))};
 }
 

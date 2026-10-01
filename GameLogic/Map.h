@@ -24,12 +24,13 @@ struct AsteroidFieldPlacement
   float radiusMeters = 0.0f;
 };
 
-// Ships of one hull and drive that every player starts with (task 2.5). Provisional: task 4.2 places the Command Station
-// and the Constructors a match really starts with.
+// Ships of one hull, drive and weapon that every player starts with (task 2.5). Provisional: task 4.2 places the Command
+// Station and the Constructors a match really starts with.
 struct StartingShips
 {
   HullId hull;
   DriveId drive;
+  WeaponId weapon;
   std::uint32_t count = 0;
 };
 

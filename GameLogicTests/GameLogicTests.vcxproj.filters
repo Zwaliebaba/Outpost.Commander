@@ -17,5 +17,7 @@
     <ClCompile Include="MeasurementLoadTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
     <ClCompile Include="PathfinderTests.cpp" />
+    <ClCompile Include="DesignTests.cpp" />
+    <ClCompile Include="CombatTests.cpp" />
   </ItemGroup>
 </Project>

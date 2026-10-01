@@ -68,10 +68,15 @@ public:
       Move(BLUE, {blue, red}, {}),
       Move(BLUE, {blue}, {.xMeters = nan}),
       Stop(RED, {blue}),
+      {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = Outpost::EntityId{99}}},
+      // A ship placed without hit points is out of combat, so it is not a target.
       {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = red}},
+      {.player = BLUE, .order = Outpost::AttackCommand{.ships = {blue}, .target = blue}},
+      {.player = BLUE, .order = Outpost::QueueShipCommand{.producer = blue, .design = SWARM}},
     });
     ExpectResults({Outpost::CommandResult::NoShips, Outpost::CommandResult::UnknownEntity, Outpost::CommandResult::NotOwned,
                    Outpost::CommandResult::NotOwned, Outpost::CommandResult::InvalidPosition, Outpost::CommandResult::NotOwned,
+                   Outpost::CommandResult::UnknownTarget, Outpost::CommandResult::NotAnEnemy, Outpost::CommandResult::NotAnEnemy,
                    Outpost::CommandResult::NotYetSupported},
                   results);
 

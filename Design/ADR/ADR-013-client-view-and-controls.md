@@ -8,12 +8,12 @@ Tasks 2.5 and 2.6 put the server's world on screen and let the player command it
 
 - **Nothing to draw.** The server placed only the map, and the plan left open which task spawns ships. The owner decided on 2026-09-30 that 2.5 adds a provisional starting fleet, held in the map data.
 - **Keys claimed twice.** Design §4 panned the camera with WASD, and §9 makes A attack-move and S stop. The owner decided on 2026-09-30 that the arrow keys pan and A and S are orders.
-- **A snapshot does not say how to draw a ship.** It carries a design, and designs do not exist until task 3.2.
+- **A snapshot did not say how to draw a ship.** It carried a design, and designs did not exist until task 3.2.
 
 ## Decision
 
-1. **The map's `startingFleet` gives every player the same ships:** a list of hull, drive and count, in `OutpostCommander/Assets/Map.json`. Today each player has four Small and two Medium hulls on the Ion drive, starting components only (design §8). `Simulation::PlaceStartingFleets` lays them out in a square-ish grid centered on each start, facing the map's center. The spacing is the widest footprint's diameter plus 8 m. The server refuses to start when a hull or drive is unknown, or when a ship would overlap an obstacle or cross the edge. `CreateInProcessServer` calls it after `PlaceMap`, as match setup. Tests that build a server themselves start empty, as before. This fleet is provisional: task 4.2 places the Command Station and Constructors that a match really starts with.
-2. **A ship's `EntityView` carries its `HullId`.** The client picks the mesh by hull, and by the owner's set, through `players` and `hulls` in `Models.json`. A ship's design stays in the snapshot, empty until 3.2.
+1. **The map's `startingFleet` gives every player the same ships:** a list of hull, drive, weapon and count, in `OutpostCommander/Assets/Map.json`. Today each player has every starting design (ADR-014): two Small+Ion+Mass Driver, two Small+Ion+Lance, one Medium+Ion+Mass Driver and one Medium+Ion+Lance. `Simulation::PlaceStartingFleets` lays them out in a square-ish grid centered on each start, facing the map's center. The spacing is the widest footprint's diameter plus 8 m. The server refuses to start when a component is unknown, or when a ship would overlap an obstacle or cross the edge. `CreateInProcessServer` calls it after `PlaceMap`, as match setup. Tests that build a server themselves start empty, as before. This fleet is provisional: task 4.2 places the Command Station and Constructors that a match really starts with.
+2. **A ship's `EntityView` carries its `HullId`.** The client picks the mesh by hull, and by the owner's set, through `players` and `hulls` in `Models.json`. The ship's design is in the snapshot too, and the player's designs with their names (ADR-014).
 3. **`Server::TicksPerSecond()` tells the client the tick rate.** Over a network it would come once, at connection.
 4. **`SnapshotInterpolator` shows the world one tick behind the newest snapshot**, interpolated between the two snapshots around that moment. Positions are interpolated linearly, and headings the short way round.
    - **The clock.** The view's clock runs at the tick rate. Each frame it is pulled 10% of the way toward "newest tick + time since it arrived − 1 tick". It jumps if it is more than 2 ticks off.
@@ -32,8 +32,7 @@ Tasks 2.5 and 2.6 put the server's world on screen and let the player command it
 ## Consequences
 
 - **What a player sees is at least one tick old.** Q5's measurement (task 2.7) includes that tick. An order is sent as soon as it is given, and the server applies it at its next tick.
-- **The server rejects attack and attack-move until task 3.3.** The controls already send them. The protocol cannot yet tell the client that a command was rejected.
-- **Double-click compares hulls until designs exist.** Every ship's design is empty until 3.2, so "same design" means "same hull" meanwhile.
+- **The protocol cannot tell the client that a command was rejected.** Attack and attack-move are applied since task 3.3 (ADR-014), and a rejected order is simply not obeyed.
 - **Picking measures a footprint at the focus's scale.** A ship far toward the horizon is picked with a slightly generous circle. The 12-pixel floor dominates at the default zoom anyway.
 
 ## What this forecloses
