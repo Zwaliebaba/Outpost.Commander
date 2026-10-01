@@ -134,8 +134,9 @@ public:
     std::vector<Outpost::EntityId> ships;
     for (int i = 0; i < _ships; ++i)
     {
-      const auto column = static_cast<float>((i % 4) - 1.5f);
-      const auto row = static_cast<float>((i / 4) - 1);
+      const int rowIndex = i / 4;
+      const float column = static_cast<float>(i % 4) - 1.5f;
+      const auto row = static_cast<float>(rowIndex - 1);
       ships.push_back(World().SpawnShip(_owner, design, {_center.xMeters + (30.0f * column), _center.zMeters + (30.0f * row)}));
     }
     return ships;
