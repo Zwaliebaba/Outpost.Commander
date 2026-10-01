@@ -13,9 +13,8 @@ namespace Outpost
 //
 // Once a second it builds its base in a fixed order, keeps its Constructors, researches in its order and keeps its
 // Shipyards busy with the design it last chose. Every review it chooses that design again from the enemy's fleet. Its
-// warships gather in reserve near its Command Station, go to the defence of a Mining Rig or Defence Platform of its that
-// comes under fire, and once enough have gathered they attack the nearest enemy structure, then the next, until none of
-// them is left.
+// warships gather in reserve near its Command Station, go to the defence of any structure of its that comes under fire,
+// and once enough have gathered they attack the nearest enemy structure, then the next, until none of them is left.
 class AiPlayer
 {
 public:
@@ -98,8 +97,8 @@ private:
   EntityId m_attackTarget;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
-  // Its Mining Rigs and Defence Platforms in the last snapshot, and where they stand.
-  std::vector<std::pair<EntityId, PlanePosition>> m_outposts;
+  // Its structures in the last snapshot, and where they stand.
+  std::vector<std::pair<EntityId, PlanePosition>> m_structures;
   // The last of them that came under fire, where it stands, and when.
   std::optional<std::uint64_t> m_lastDefenseShotTick;
   PlanePosition m_defensePosition;

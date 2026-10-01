@@ -262,9 +262,8 @@ public:
     Assert::AreEqual(size_t{2}, commands.size(), L"nothing else: no lab to research in, no warship to order");
   }
 
-  // Plan task 6.1's acceptance and design §10: a shot on one of its rigs or platforms sends the reserve there, and once
-  // the shooting has stopped for the settings' ten seconds, back to where it gathers. A shot on its Command Station does
-  // not: the station's gun is its own defence.
+  // Plan task 6.1's acceptance, and the owner's of 2026-10-01: a shot on any of its structures, built or a site, sends the
+  // reserve there, and once the shooting has stopped for the settings' ten seconds, back to where it gathers.
   TEST_METHOD(SendsTheReserveWhereItsBaseIsShot)
   {
     AiMatch match;
@@ -276,26 +275,31 @@ public:
     Assert::IsTrue(std::ranges::is_permutation(gather.front().ships, reserve));
     const Outpost::PlanePosition rally = gather.front().destination;
 
+    // Its Command Station under fire.
     const auto station = std::ranges::find_if(snapshot.entities, [](const Outpost::EntityView& _entity)
                                               { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
     snapshot.tick += 20;
     snapshot.shots.push_back({.shooter = Outpost::EntityId{999}, .target = station->id, .weapon = Outpost::WeaponId{2}});
-    Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)).empty(), L"the reserve left for the Command Station");
+    const std::vector<Outpost::AttackMoveCommand> home = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, home.size());
+    Assert::IsTrue(std::ranges::is_permutation(home.front().ships, reserve));
+    Assert::AreEqual(0.0f, Outpost::Distance(home.front().destination, station->position), 0.01f);
 
-    // A platform of its, as the snapshot shows it, under fire.
-    const Outpost::EntityView platform{.id = Outpost::EntityId{5000},
-                                       .kind = Outpost::EntityKind::Structure,
-                                       .owner = AI,
-                                       .structure = Outpost::StructureKind::DefensePlatform,
-                                       .position = {.xMeters = 200.0f, .zMeters = 400.0f},
-                                       .radiusMeters = 20.0f};
-    snapshot.entities.push_back(platform);
-    snapshot.shots = {{.shooter = Outpost::EntityId{999}, .target = platform.id, .weapon = Outpost::WeaponId{2}}};
+    // A Research Lab of its, still a site, under fire elsewhere.
+    const Outpost::EntityView site{.id = Outpost::EntityId{5000},
+                                   .kind = Outpost::EntityKind::Structure,
+                                   .owner = AI,
+                                   .structure = Outpost::StructureKind::ResearchLab,
+                                   .position = {.xMeters = 200.0f, .zMeters = 400.0f},
+                                   .radiusMeters = 30.0f,
+                                   .builtPermille = 200};
+    snapshot.entities.push_back(site);
+    snapshot.shots = {{.shooter = Outpost::EntityId{999}, .target = site.id, .weapon = Outpost::WeaponId{2}}};
     snapshot.tick += 20;
     const std::vector<Outpost::AttackMoveCommand> defend = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
     Assert::AreEqual(size_t{1}, defend.size());
     Assert::IsTrue(std::ranges::is_permutation(defend.front().ships, reserve));
-    Assert::AreEqual(0.0f, Outpost::Distance(defend.front().destination, platform.position), 0.01f);
+    Assert::AreEqual(0.0f, Outpost::Distance(defend.front().destination, site.position), 0.01f);
 
     snapshot.shots.clear();
     // Five seconds later, then eleven, at twenty ticks a second.

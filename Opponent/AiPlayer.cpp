@@ -168,20 +168,20 @@ std::vector<Outpost::Command> Outpost::AiPlayer::Update(const Snapshot& _snapsho
   return orders;
 }
 
-// Every tick, since a shot is in the snapshot of its tick only. Design §10: its Mining Rigs and Defence Platforms are
-// what it defends. The ones of the tick before are remembered, since the shot that destroys one names a structure that
-// has already left the snapshot.
+// Every tick, since a shot is in the snapshot of its tick only. It defends every structure of its, built or a site (owner,
+// 2026-10-01). Those of the tick before are remembered, since the shot that destroys one names a structure that has
+// already left the snapshot.
 void Outpost::AiPlayer::Watch(const Snapshot& _snapshot)
 {
-  std::vector<std::pair<EntityId, PlanePosition>> outposts;
+  std::vector<std::pair<EntityId, PlanePosition>> structures;
   for (const EntityView& entity : _snapshot.entities)
   {
-    if ((IsStructure(entity, StructureKind::MiningRig) || IsStructure(entity, StructureKind::DefensePlatform)) && entity.owner == m_player)
-      outposts.emplace_back(entity.id, entity.position);
+    if (entity.kind == EntityKind::Structure && entity.owner == m_player)
+      structures.emplace_back(entity.id, entity.position);
   }
   for (const ShotView& shot : _snapshot.shots)
   {
-    for (const auto* known : {&outposts, &m_outposts})
+    for (const auto* known : {&structures, &m_structures})
     {
       const auto target = std::ranges::find(*known, shot.target, &std::pair<EntityId, PlanePosition>::first);
       if (target == known->end())
@@ -191,7 +191,7 @@ void Outpost::AiPlayer::Watch(const Snapshot& _snapshot)
       break;
     }
   }
-  m_outposts = std::move(outposts);
+  m_structures = std::move(structures);
 }
 
 void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& _orders)
