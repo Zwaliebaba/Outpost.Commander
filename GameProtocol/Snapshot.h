@@ -2,6 +2,10 @@
 
 namespace Outpost
 {
+// Hit points, armor and damage count in hundredths of a point (ADR-014): a drive's factor and the armor rule's quarter of
+// a hit then stay whole numbers, which the tuning data's integers are not once they are multiplied.
+inline constexpr std::int32_t HUNDREDTHS = 100;
+
 enum class EntityKind : std::uint8_t
 {
   Ship,

@@ -289,6 +289,44 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<co
   return buffer;
 }
 
+winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                     std::span<const std::byte> _texels)
+{
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, 1);
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  winrt::com_ptr<ID3D12Resource> texture;
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COPY_DEST,
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(texture)));
+
+  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, 1);
+  const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
+  const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(uploadBytes);
+  winrt::com_ptr<ID3D12Resource> upload;
+  winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDescription,
+                                                         D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
+
+  winrt::com_ptr<ID3D12CommandAllocator> allocator;
+  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
+  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
+  // d3dx12 lays the rows out at the pitch the copy needs.
+  const LONG_PTR rowBytes = static_cast<LONG_PTR>(_texels.size() / _height);
+  const D3D12_SUBRESOURCE_DATA source{.pData = _texels.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(_texels.size())};
+  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, 1, &source) == 0)
+    throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
+  const CD3DX12_RESOURCE_BARRIER toShader =
+    CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  commandList->ResourceBarrier(1, &toShader);
+  winrt::check_hresult(commandList->Close());
+  ID3D12CommandList* lists[] = {commandList.get()};
+  m_queue->ExecuteCommandLists(1, lists);
+
+  // The upload buffer and the allocator must outlive the copy.
+  WaitForGpu();
+  return texture;
+}
+
 void Neuron::Renderer::CreateRenderTargets()
 {
   D3D12_RENDER_TARGET_VIEW_DESC viewDescription{};

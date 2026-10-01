@@ -17,10 +17,6 @@ struct ShipMovement
 // Throws Neuron::Exception when either identifier names nothing in _tuning.
 [[nodiscard]] ShipMovement MovementFor(const Tuning& _tuning, HullId _hull, DriveId _drive);
 
-// Hit points, armor and damage count in hundredths of a point (ADR-014): a drive's factor and the armor rule's quarter of
-// a hit then stay whole numbers, which the tuning data's integers are not once they are multiplied.
-inline constexpr std::int32_t HUNDREDTHS = 100;
-
 // The damage one hit does to a target, in hundredths: max(damage × 0.25, damage − armor) (design §7). The quarter is
 // rounded down to a hundredth, which no number in the tuning data needs.
 [[nodiscard]] constexpr std::int32_t HitHundredths(std::int32_t _damageHundredths, std::int32_t _armorHundredths) noexcept

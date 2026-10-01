@@ -9,6 +9,8 @@ namespace
 {
 constexpr const wchar_t* MODELS_FILE = L"Models.json";
 constexpr const wchar_t* CAMERA_FILE = L"Camera.json";
+// The HUD's font: installed with Windows, so nothing ships (ADR-015).
+constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
@@ -50,6 +52,19 @@ constexpr float DRAG_LINE_WIDTH_METERS = 1.5f;
 constexpr DirectX::XMFLOAT4 SELECTION_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
+
+// A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
+// above half its hit points, then amber, then red, over a dark full-length bar.
+constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
+constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
+constexpr float HEALTH_BAR_GAP_METERS = 4.0f;
+constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
+constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
+constexpr float HEALTH_HURT_SHARE = 0.5f;
+constexpr float HEALTH_LOW_SHARE = 0.25f;
+constexpr int DISC_SEGMENTS = 24;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
 {
@@ -136,6 +151,30 @@ Neuron::MeshData BuildRing()
   return ring;
 }
 
+// A flat disc of radius 1 on the ground, facing up: a fan of triangles round its center.
+Neuron::MeshData BuildDisc()
+{
+  Neuron::MeshData disc;
+  constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
+  disc.vertices.push_back({{0.0f, 0.0f, 0.0f}, UP});
+  for (int i = 0; i < DISC_SEGMENTS; ++i)
+  {
+    const float angle = static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / DISC_SEGMENTS;
+    disc.vertices.push_back({{std::cos(angle), 0.0f, std::sin(angle)}, UP});
+  }
+  for (int i = 0; i < DISC_SEGMENTS; ++i)
+  {
+    const auto rim = static_cast<std::uint32_t>(1 + i);
+    const auto next = static_cast<std::uint32_t>(1 + ((i + 1) % DISC_SEGMENTS));
+    // The angle turns counterclockwise seen from above, so center, next, this is clockwise and faces up.
+    for (const std::uint32_t corner : {0u, next, rim})
+      disc.indices.push_back(corner);
+  }
+  disc.boundsMin = {-1.0f, 0.0f, -1.0f};
+  disc.boundsMax = {1.0f, 0.0f, 1.0f};
+  return disc;
+}
+
 // A flat strip on the ground from x = 0 to 1 and z = -0.5 to 0.5, facing up.
 Neuron::MeshData BuildStrip()
 {
@@ -169,7 +208,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   : m_catalog(LoadDataFile(MODELS_FILE, LoadModelCatalog)),
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
-    m_view(_ticksPerSecond)
+    m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
+    m_view(_ticksPerSecond),
+    m_effects(_ticksPerSecond)
 {
   for (const ModelSet& set : m_catalog.sets)
   {
@@ -185,13 +226,17 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MINOR_GRID_SPACING_METERS, MINOR_GRID_LINE_WIDTH_METERS, MINOR_LINES_PER_MAJOR));
   m_majorGrid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MAJOR_GRID_SPACING_METERS, MAJOR_GRID_LINE_WIDTH_METERS, 0));
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
+  m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
 }
 
 void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
 {
   for (Snapshot& snapshot : _snapshots)
+  {
+    m_effects.Receive(snapshot);
     m_view.Receive(std::move(snapshot));
+  }
 
   // The player starts looking at its own fleet, wherever the map put its start.
   if (!m_cameraPlaced && !m_view.IsEmpty())
@@ -221,10 +266,24 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
+  m_effectDraws = m_effects.At(m_view.ViewTick());
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
   m_camera.Update(_input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
+
+  // A press on the HUD is the HUD's, not an order or a selection in the world; releases still reach the controls, so
+  // that a drag begun in the world ends wherever it is let go.
+  Neuron::InputState input = _input;
+  std::erase_if(input.events,
+                [this](const Neuron::InputEvent& _event)
+                {
+                  return _event.kind == Neuron::InputEventKind::ButtonDown &&
+                         m_hudLayout.Covers(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels));
+                });
   if (!m_view.IsEmpty())
-    m_controls.Update(_input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+  {
+    m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+    m_hudLayout = Hud::Lay(Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected()), _viewportWidthPixels, _viewportHeightPixels);
+  }
   WatchForResponse();
 }
 
@@ -312,6 +371,65 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
   DrawSelection(_commandList);
+  DrawHealthBars(_commandList);
+  DrawEffects(_commandList);
+  DrawHud(_commandList, _renderer.FrameIndex());
+}
+
+void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
+{
+  // Nothing to show before the first snapshot has been laid out.
+  if (m_hudLayout.fontPixels <= 0.0f)
+    return;
+  m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, m_hudLayout.fontPixels);
+  for (const Hud::Rect& panel : m_hudLayout.panels)
+    m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
+  for (const Hud::Text& text : m_hudLayout.texts)
+    m_ui.DrawText(text.text, text.left, text.top, text.color);
+  m_ui.End(_commandList, _frameIndex);
+}
+
+void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList)
+{
+  for (const EntityView& entity : m_entities)
+  {
+    if (entity.maxHitPointsHundredths <= 0 || entity.hitPointsHundredths >= entity.maxHitPointsHundredths)
+      continue;
+    const float share =
+      std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f, 1.0f);
+    const float left = entity.position.xMeters - entity.radiusMeters;
+    const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
+    const PlanePosition start{.xMeters = left, .zMeters = z};
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
+             HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+    const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
+                                     : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
+                                                                : HEALTH_LOW_COLOR;
+    // A little higher than the dark bar, so the two do not fight over the same depth.
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters * share), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
+             HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, color);
+  }
+}
+
+void Outpost::GameClient::DrawEffects(ID3D12GraphicsCommandList* _commandList)
+{
+  for (const CombatEffects::Draw& draw : m_effectDraws)
+  {
+    const DirectX::XMFLOAT3 at{draw.from.xMeters, draw.heightMeters, draw.from.zMeters};
+    switch (draw.shape)
+    {
+    case CombatEffects::Shape::Disc:
+      m_pipeline.Draw(_commandList, *m_disc, WorldMatrix(at, 0.0f, draw.radiusMeters), draw.color);
+      break;
+    case CombatEffects::Shape::Ring:
+      m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, draw.radiusMeters), draw.color);
+      break;
+    case CombatEffects::Shape::Band:
+    default:
+      DrawBand(_commandList, draw.from, draw.to, draw.widthMeters, draw.heightMeters, draw.color);
+      break;
+    }
+  }
 }
 
 void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
@@ -341,11 +459,11 @@ void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
     ground[i] = *point;
   }
   for (size_t i = 0; i < ground.size(); ++i)
-    DrawGroundLine(_commandList, ground[i], ground[(i + 1) % ground.size()], DRAG_BOX_COLOR);
+    DrawBand(_commandList, ground[i], ground[(i + 1) % ground.size()], DRAG_LINE_WIDTH_METERS, OVERLAY_LIFT_METERS, DRAG_BOX_COLOR);
 }
 
-void Outpost::GameClient::DrawGroundLine(ID3D12GraphicsCommandList* _commandList, PlanePosition _from, PlanePosition _to,
-                                         const DirectX::XMFLOAT4& _color)
+void Outpost::GameClient::DrawBand(ID3D12GraphicsCommandList* _commandList, PlanePosition _from, PlanePosition _to, float _widthMeters,
+                                   float _heightMeters, const DirectX::XMFLOAT4& _color)
 {
   const float dx = _to.xMeters - _from.xMeters;
   const float dz = _to.zMeters - _from.zMeters;
@@ -353,9 +471,8 @@ void Outpost::GameClient::DrawGroundLine(ID3D12GraphicsCommandList* _commandList
   if (length <= 0.0f)
     return;
   // The strip is stretched along x and widened along z, which keeps its upward normal, then turned onto the line.
-  const DirectX::XMMATRIX world = DirectX::XMMatrixScaling(length, 1.0f, DRAG_LINE_WIDTH_METERS) *
-                                  DirectX::XMMatrixRotationY(-std::atan2(dz, dx)) *
-                                  DirectX::XMMatrixTranslation(_from.xMeters, OVERLAY_LIFT_METERS, _from.zMeters);
+  const DirectX::XMMATRIX world = DirectX::XMMatrixScaling(length, 1.0f, _widthMeters) * DirectX::XMMatrixRotationY(-std::atan2(dz, dx)) *
+                                  DirectX::XMMatrixTranslation(_from.xMeters, _heightMeters, _from.zMeters);
   DirectX::XMFLOAT4X4 matrix;
   DirectX::XMStoreFloat4x4(&matrix, world);
   m_pipeline.Draw(_commandList, *m_strip, matrix, _color);

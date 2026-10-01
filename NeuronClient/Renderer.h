@@ -37,6 +37,12 @@ public:
   // returns, so it is only for loading, not for use while frames are being recorded.
   [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticBuffer(std::span<const std::byte> _bytes);
 
+  // A 2D texture in video memory holding _texels, one mip level, rows of _width texels of _format packed with no gap,
+  // ready to be read by pixel shaders. Like CreateStaticBuffer, it waits for the upload and is only for loading; it may
+  // also be called between frames, since it waits for every frame in flight too.
+  [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
+                                                                   std::span<const std::byte> _texels);
+
   [[nodiscard]] ID3D12Device* Device() const noexcept
   {
     return m_device.get();

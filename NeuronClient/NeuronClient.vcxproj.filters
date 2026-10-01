@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{5b6985c7-bb18-41dc-8d6a-b0b1b25c69ef}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Profiling">
       <UniqueIdentifier>{ceb4ec25-96bd-4f4a-933f-8e665cabc6aa}</UniqueIdentifier>
     </Filter>
@@ -34,6 +37,12 @@
     </ClInclude>
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="GlyphAtlas.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="UiPipeline.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -52,12 +61,24 @@
     <ClCompile Include="MeshPipeline.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="GlyphAtlas.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="UiPipeline.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FXCompile Include="Shader\MeshVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\MeshPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\UiPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
   </ItemGroup>
