@@ -140,10 +140,9 @@ Outpost::DesignComponents Outpost::ChooseAnswer(const AiSettings& _settings, con
                                                  return _a.second > _b.second;
                                                return ComponentOrder(_a.first) < ComponentOrder(_b.first);
                                              });
-  const auto rule = std::ranges::find(_settings.counters, most->first, &CounterRule::enemy);
-  if (rule == _settings.counters.end() || !IsAvailable(_snapshot, rule->answer))
-    return _settings.defaultDesign;
-  return rule->answer;
+  const auto rule = std::ranges::find_if(_settings.counters, [&](const CounterRule& _rule)
+                                         { return _rule.enemy == most->first && IsAvailable(_snapshot, _rule.answer); });
+  return rule != _settings.counters.end() ? rule->answer : _settings.defaultDesign;
 }
 
 Outpost::AiPlayer::AiPlayer(AiSettings _settings, std::uint32_t _ticksPerSecond)

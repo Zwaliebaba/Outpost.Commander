@@ -62,10 +62,10 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
   {
     for (size_t j = 0; j < i; ++j)
     {
-      if (settings.counters[i].enemy == settings.counters[j].enemy)
+      if (settings.counters[i].enemy == settings.counters[j].enemy && settings.counters[i].answer == settings.counters[j].answer)
       {
-        Neuron::JsonFail(std::format("{}.enemy", Neuron::JsonElementPath("counters", i)),
-                         std::format("the design is already answered by {}", Neuron::JsonElementPath("counters", j)));
+        Neuron::JsonFail(Neuron::JsonElementPath("counters", i),
+                         std::format("the same answer to the same design as {}", Neuron::JsonElementPath("counters", j)));
       }
     }
   }

@@ -203,6 +203,20 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
+  // Owner, 2026-10-01, and design §7: once the AI has the Large hull and the Fusion drive, it answers the swarm with
+  // Large+Fusion+Mass Driver and the brawler with Large+Fusion+Lance. The rest of the triangle stays as it was.
+  TEST_METHOD(AnswersWithHeaviesOnceUnlocked)
+  {
+    const Outpost::AiSettings settings = RepositorySettings();
+    const Outpost::DesignComponents heavyMassDriver{Outpost::HullId{3}, Outpost::DriveId{2}, Outpost::WeaponId{1}};
+    const auto unlocked = [](const Outpost::DesignComponents& _design, int _ships)
+    { return FleetSnapshot().Add(HUMAN, _design, _ships).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}); };
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(SWARM, 5).Get()) == heavyMassDriver);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(BRAWLER, 5).Get()) == HEAVY_LANCE);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(LINE, 5).Get()) == SWARM);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(HEAVY_LANCE, 5).Get()) == PICKET);
+  }
+
   // The enemy's most common design is the one answered; its own ships are not the enemy's.
   TEST_METHOD(AnswersTheMostCommonEnemyDesign)
   {

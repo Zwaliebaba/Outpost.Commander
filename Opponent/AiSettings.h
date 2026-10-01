@@ -2,7 +2,8 @@
 
 namespace Outpost
 {
-// One line of design §7's counter triangle as the AI reads it: when the enemy fields most of this design, build that one.
+// One line of design §7's counters as the AI reads it: when the enemy fields most of this design, build that one. A design
+// may be answered more than once, in order of preference: the first answer the AI has unlocked is the one it builds.
 struct CounterRule
 {
   DesignComponents enemy;

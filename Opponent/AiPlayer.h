@@ -2,9 +2,9 @@
 
 namespace Outpost
 {
-// The design the AI builds against the fleet in _snapshot (design §10): the counter, from _settings, to the enemy's most
-// common warship by hull, drive and weapon, when the AI has unlocked every component of it; the default design otherwise,
-// and while the enemy has no warship. A tie goes to the design of the lowest hull, then drive, then weapon.
+// The design the AI builds against the fleet in _snapshot (design §10): the first counter, from _settings, to the enemy's
+// most common warship by hull, drive and weapon whose every component the AI has unlocked; the default design when there
+// is none, and while the enemy has no warship. A tie goes to the design of the lowest hull, then drive, then weapon.
 [[nodiscard]] DesignComponents ChooseAnswer(const AiSettings& _settings, const Snapshot& _snapshot);
 
 // The computer opponent of design §10. It is a client like the human's (ADR-002): it reads its own player's snapshot every

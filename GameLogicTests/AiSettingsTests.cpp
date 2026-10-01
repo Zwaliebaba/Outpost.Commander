@@ -62,7 +62,7 @@ public:
     for (size_t i = 0; i < order.size(); ++i)
       Assert::AreEqual(order[i], settings.researchOrder[i].value);
     Assert::IsTrue(settings.defaultDesign == Outpost::DesignComponents{Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{1}});
-    Assert::AreEqual(size_t{7}, settings.counters.size());
+    Assert::AreEqual(size_t{9}, settings.counters.size());
   }
 
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
@@ -108,11 +108,13 @@ public:
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [0, 2,"), "researchOrder[0]");
   }
 
-  TEST_METHOD(RejectsADesignAnsweredTwice)
+  // A design may be answered more than once, in order of preference, but not twice with the same answer.
+  TEST_METHOD(RejectsTheSameCounterTwice)
   {
     ExpectLoadError(
-      Replace("{ \"enemy\": { \"hull\": 2, \"drive\": 1, \"weapon\": 1 }", "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }"),
-      "counters[1].enemy");
+      Replace("{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 2, \"drive\": 1, \"weapon\": 1 } }",
+              "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 3, \"drive\": 2, \"weapon\": 1 } }"),
+      "counters[1]: the same answer to the same design as counters[0]");
   }
 };
 } // namespace GameLogicTests
