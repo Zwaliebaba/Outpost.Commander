@@ -352,6 +352,7 @@ std::vector<Outpost::PlanePosition> Outpost::GameClient::ViewOnGround() const
   const auto width = static_cast<float>(m_viewport.widthPixels);
   const auto height = static_cast<float>(m_viewport.heightPixels);
   std::vector<PlanePosition> corners;
+  corners.reserve(4);
   for (const auto& [x, y] : std::array<std::pair<float, float>, 4>{{{0.0f, 0.0f}, {width, 0.0f}, {width, height}, {0.0f, height}}})
   {
     const std::optional<PlanePosition> point = m_camera.GroundPointAtPixel(x, y, m_viewport);

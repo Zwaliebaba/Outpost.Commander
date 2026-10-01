@@ -49,12 +49,12 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 3.5 | Combat effects | 3.3, 2.5 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.6 | In-game UI drawing and a first HUD | 2.6 | G7 decided | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's run |
 | 3.7 | Q4 stress scene and measurement | 3.5, 3.6 | — | merged in [#36](https://github.com/Zwaliebaba/Outpost.Commander/pull/36), in review until the owner's measurement |
-| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | todo |
-| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | todo |
-| 4.3 | Shipyard and Command Station queues | 4.2 | — | todo |
-| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | todo |
-| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | todo |
-| 4.6 | Hand checks of the structure numbers | 4.4 | — | todo |
+| 4.1 | Ore, Mining Rigs and costs | 3.2, 2.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.2 | Structures, placement and Constructors | 4.1 | G8 decided | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
+| 4.3 | Shipyard and Command Station queues | 4.2 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.4 | The Defence gun and structure armour | 4.2, 3.3 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38) |
+| 4.5 | The full HUD and the minimap | 4.3, 3.6 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38), awaiting the owner's run |
+| 4.6 | Hand checks of the structure numbers | 4.4 | — | in review, [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull/38); the intents hold, two narrowly (design §12) |
 | 5.1 | Research | 4.3 | — | todo |
 | 5.2 | The ship designer in the Shipyard panel | 5.1, 4.5 | — | todo |
 | 5.3 | The Missile Rack, in the game and in the model | 5.1, 3.4 | G5 footprint radii | todo |
@@ -421,6 +421,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - Costs are paid when a job starts, with no refund. The starting stockpile comes from the tuning data.
 - **Acceptance:** tests of income per tick, payment at the start, no refund, and one rig per asteroid.
 - **Verify:** CI.
+- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). A player's Ore is an integer of hundredths, and a built rig adds 25 or 40 a tick at 20 Hz. Every job is paid when it starts: a structure when it is ordered, a queued ship when it reaches the front. A refused order costs nothing. Snapshots carry the income. `EconomyTests` covers income per tick, payment, no refund, a refused job, one rig per asteroid, and a rig earning nothing until built.
 
 ### 4.2 — Structures, placement and Constructors
 
@@ -433,23 +434,43 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - Players start with two Constructors, and the Command Station is placed before the match starts.
 - **Acceptance:** tests of placement legality, snapping, build progress with one and with two Constructors, and repair.
 - **Verify:** CI; **owner run** for the ghost and the build menu.
+- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md), gate G8.
+  - The Constructor is a `constructor` entry in the tuning data, and every structure has a footprint. Both are provisional, set by this task.
+  - A match starts with the Command Station on each start and two Constructors in front of it. The provisional fleet and the map's `startingFleet` are gone.
+  - A site is placed and paid for when ordered, starts at a tenth of its hit points, and blocks movement at once. Constructors in reach build it, each extra one adding half of one.
+  - `RepairCommand` repairs, or joins a site.
+  - Structures are pathfinder obstacles: the graph is rebuilt when one appears or dies. ADR-010 now keeps only tangent edges, which made that 1.4–2.8 ms rather than 14–17 ms.
+  - The client:
+    - draws structures from new `structures` entries in `Models.json`, and the Constructor as a `Colonizer` shortened to 24 m;
+    - shows a ghost through `PlaceGhost`;
+    - lets the player select a structure, place one from the HUD, repair with a right-click, and attack structures.
+  - `ConstructionTests` covers placement, one and two Constructors, travel to a site, blocking, repair and joining a site. The client's tests cover placement and the controls.
+  - Not run: the owner's run checks the ghost and the build menu.
 
 ### 4.3 — Shipyard and Command Station queues
 
 - **Goal:** the Shipyard builds ships from designs and the Command Station builds Constructors, each with a queue of up to 5 (design §6). Build times come from the tuning data.
 - **Acceptance:** tests of queue limits, build times and payment at the start.
 - **Verify:** CI.
+- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). The queue holds `QUEUE_LIMIT` jobs, a protocol constant. The front job waits for the Ore, then pays and runs for its design's build time, or the Constructor's. The ship appears beside the producer, toward the map's center. Snapshots carry each queue and the front job's progress. `ProductionTests` covers the limit, the build time, payment at the start, waiting for Ore, Constructors from the Command Station, and refusals.
 
 ### 4.4 — The Defence gun and structure armour
 
 - **Goal:** the Defence Platform and the Command Station carry the Defence gun: 30 damage every 1.0 s, at 250 m. Both have armour 10; every other structure has none (design §6, §12). Auto-targeting uses the same rules as ships.
 - **Acceptance:** tests: the gun outranges the Lance and not the Missile Rack, and armour cuts a Mass Driver hit from 14 to 4.
 - **Verify:** CI.
+- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). Built Command Stations and Defence Platforms fire the tuning data's gun under ADR-014's rules: targeting, cold first shot, hits at the end of the tick. Armor comes from the tuning data. `DefenseTests` covers the range ladder against a Lance ship, armor's 14-to-4 cut, and that only built armed structures fire.
 
 ### 4.5 — The full HUD and the minimap
 
 - **Goal:** design §9's HUD: the Ore stockpile and income, the selection panel, build and research queues, and a minimap.
 - **Verify:** **owner run.**
+- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) decision 4.
+  - At the top: the Ore and its income, and a placement hint while one is armed.
+  - At the bottom: the selection panel, which covers a structure's construction, hit points and queue; the buttons, which build and queue, show costs and are dim when unaffordable; and the minimap, which shows every entity and the camera's view. A left press or drag on the minimap moves the camera, and a right press sends the selected ships.
+  - The research queue waits for task 5.1.
+  - `HudTests` covers the content and the layout.
+  - Not run: the owner's run checks it reads.
 
 ### 4.6 — Hand checks of the structure numbers
 
@@ -460,6 +481,15 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - the unarmed-station rush time.
 - **Acceptance:** the results are recorded in design §6 and §12. Any number that misses its intent is raised with the owner, not retuned silently.
 - **Verify:** CI.
+- **As built:** `HandCheckTests` plays the three scenarios; the raid starts 400 m off and attacks. Every intent holds. The platform beats five raiders with 28% of its hit points left. The station's gun destroys seven in 57.6 s. A station without its gun or armour falls in 24.9 s. Design §6 and §12 record the figures, and §15 asks whether the thin margins need moving.
+
+### What milestone 4 changed for later tasks
+
+- **A match starts with a base, not a fleet.** Warships come from a Shipyard the player builds. A test that needs ships spawns them, as `MatchArena` does.
+- **The simulation needs the tuning data for the base** (`Simulation::UseTuning`). Tests that build a simulation without it still move and fight, and get `NotYetSupported` for base orders.
+- **Structures block movement**, so a task that places many structures pays a graph rebuild for each radius in use (ADR-010).
+- **Research (5.1) has a Lab to run in**, and a Research Lab limit of one is already enforced. The HUD has no research queue yet.
+- **The AI (6.1) orders through the same commands:** `BuildStructureCommand`, `RepairCommand` and `QueueShipCommand`.
 
 ---
 

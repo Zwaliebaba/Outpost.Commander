@@ -122,6 +122,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                   .mapSizeMeters = _newest.mapSizeMeters,
                   .marks = {}};
 
+  content.marks.reserve(_entities.size());
   for (const EntityView& entity : _entities)
   {
     const Side side = !entity.owner.IsValid() ? Side::Neutral : entity.owner == _newest.player ? Side::Own : Side::Enemy;
@@ -181,6 +182,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       }
       else if (structure->structure == StructureKind::Shipyard)
       {
+        content.buttons.reserve(_newest.designs.size());
         for (const DesignView& design : _newest.designs)
           content.buttons.push_back({.label = std::format("{}|{}", design.nameUtf8, design.cost),
                                      .action = {.kind = ActionKind::Queue, .producer = structure->id, .design = design.id},
@@ -224,6 +226,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   }
   else
   {
+    content.selection.reserve(byDesign.size() + 3);
     content.selection.push_back(std::format("{} ships", ships));
     for (size_t i = 0; i < byDesign.size() && i < SELECTION_DESIGN_LINES; ++i)
       content.selection.push_back(std::format("{} x {}", byDesign[i].second, nameOf(byDesign[i].first)));
@@ -241,6 +244,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                               return _entity.kind == EntityKind::Structure &&
                                                      _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
                                             });
+    content.buttons.reserve(_newest.structureTypes.size());
     for (const StructureTypeView& type : _newest.structureTypes)
     {
       if (!type.buildable)

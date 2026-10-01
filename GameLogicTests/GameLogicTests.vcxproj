@@ -114,6 +114,7 @@
     <ClCompile Include="ConstructionTests.cpp" />
     <ClCompile Include="ProductionTests.cpp" />
     <ClCompile Include="DefenseTests.cpp" />
+    <ClCompile Include="HandCheckTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

@@ -68,7 +68,7 @@ How each figure was measured:
   - **Setup:** each order was given to ships at rest, and a random 150–400 ms pause placed the clicks across the frame and tick cycles.
 - **Q4.** The server times each tick on its own clock: applying its commands, the simulation step and every snapshot (`Server::TakeTickDurations`). `--load` adds the load (`PlaceMeasurementLoad`), and both players' ships are ordered across the map every 200 ticks.
 
-- **Q4 in combat (task 3.7).** `--stress` runs the stress scene (`StressLoad`): each player keeps 100 ships of its four starting designs and 20 structures with the tuning data's hit points and armor. Both fleets attack-move on each other's rally a third of the way in from the starts, lost ships come back at the rally with the same order, and ships left standing idle are sent after the enemy once a second, so the whole of both fleets keeps fighting for as long as the run lasts. The rival connects, so the server builds both players' snapshots, as it will against the AI. With `--measure` the game logs, for every frame:
+- **Q4 in combat (task 3.7).** `--stress` runs the stress scene (`StressLoad`): each player keeps 100 ships of its four starting designs and 20 structures with the tuning data's hit points and armor. Both fleets attack-move on each other's rally a third of the way in from the starts, lost ships come back at the rally with the same order, and ships left standing idle are sent after the enemy once a second, so the whole of both fleets keeps fighting for as long as the run lasts. Since milestone 4 the scene's structures block movement and its Command Stations and Defence Platforms fire, so a structure's death rebuilds the path graphs (ADR-010), and the starting base counts toward the 40 structures. The rival connects, so the server builds both players' snapshots, as it will against the AI. With `--measure` the game logs, for every frame:
   - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them run on that thread.
   - **GPU work:** between two timestamps at the start and the end of the frame's command list, which holds the scene, the effects and the HUD, read back once the frame's fence has passed.
   - **Not included:** the compositor, scanout and the display. The present interval is not the measure: with vsync on, a frame of 5 ms of work still presents every vsync interval (ADR-006).
@@ -135,8 +135,8 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - There are no structure upgrades or modules in the MVP.
 - **Constructors come only from the Command Station.** It exists for as long as the match does, so a player can always rebuild, and the Shipyard's queue stays free for warships. If Shipyards built them, a player who lost every Shipyard and Constructor could never build again for the rest of the match.
 - **Only the Missile Rack outranges a Defence Platform.** The Defence gun reaches 250 m, beyond the Mass Driver (120 m) and the Lance (220 m). A Lance line can still break a platform, but it takes fire while it does. Only the Missile Rack (280 m) destroys one without being shot at, and that is the Missile Rack's job (§7). No research extends a range (§8), so this ladder holds for the whole match.
-- **The armed structures are armoured.** The Defence Platform and the Command Station have an armour of 10, which cuts a Mass Driver hit from 14 to 4, so light raiders cannot simply swarm them: by hand estimate a lone platform outlasts a raid of five Small+Ion+Mass Driver ships and destroys it. Every other structure has no armour, so raiding a Mining Rig, Shipyard or Research Lab works.
-- **The Command Station is armed** so that a handful of early ships cannot end a match. Unarmed and unarmoured, it would fall to seven Small+Ion+Mass Driver ships — about 610 Ore, ready around 1:30 — in about 20 s. Armed and armoured, it needs about 70 s against them and its gun destroys all seven in under a minute. Both are hand estimates: the model has no structures.
+- **The armed structures are armoured.** The Defence Platform and the Command Station have an armour of 10, which cuts a Mass Driver hit from 14 to 4, so light raiders cannot simply swarm them: a lone platform outlasts a raid of five Small+Ion+Mass Driver ships and destroys it, in the simulation in 42 s with 28% of its hit points left (§12). Every other structure has no armour, so raiding a Mining Rig, Shipyard or Research Lab works.
+- **The Command Station is armed** so that a handful of early ships cannot end a match. Unarmed and unarmoured, it would fall to seven Small+Ion+Mass Driver ships — about 610 Ore, ready around 1:30 — in about 25 s. Armed and armoured, its gun destroys all seven in under a minute, with more than half its hit points left. The simulation plays both (task 4.6, §12).
 
 ---
 
@@ -144,7 +144,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 Every combat ship is a **design**: **hull + drive + weapon**. The player names a design, saves it, and queues it at a Shipyard. Design stats are derived from the components and shown live in the designer.
 
-The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are a provisional baseline the owner set on 2026-10-01 (§15), which milestone 4 puts in the tuning data.
+The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are a provisional baseline the owner set on 2026-10-01 (§15), in the tuning data with everything else (§12).
 
 ### Components (MVP set)
 
@@ -283,7 +283,7 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 These started as first guesses, written down so that tuning has a baseline. They are data, not code constants, and they live in [`OutpostCommander/Assets/Tuning.json`](../OutpostCommander/Assets/Tuning.json): the match rules, the hulls, drives and weapons, the structures and the Defence gun, and the research topics of §8 with their Ore and time. The game loads that file and `Tools/BattleModel.py` reads it, so the two cannot disagree (ADR-008). This section keeps no copy of the numbers. It keeps why they are what they are, and where they stand against the Q2 check.
 
-The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15).
+The research times add up to 690 s. The structure numbers, the Defence gun and the research costs are first guesses that the model does not check (§15); the simulation's hand checks below test the structure numbers against §6's intents.
 
 **Tuned on 2026-09-30, in two passes.** The first pass, after the first review, moved four numbers against the first version of the Q2 check. The second, after the second review, took the range ladder and the research rules as decided (§15) and tuned against the extended check: the starting stage, check (d) and budgets up to 12,000 Ore. It started from a search over fourteen hull, drive and weapon numbers. A review of the model then found that its win rates were measuring where each budget cut a design's ship count, and that 60 unstratified battles could not tell 53% from 48%. So the model now spreads its budgets evenly, fields the leftover Ore as a fractional ship, and takes its verdicts on 95% confidence intervals (§3), and §12 was retuned against that. Every change was then reverted one at a time, and those that were not needed went back: the Large hull returned to 300. Each reason below is what the check reports when that one number goes back, with everything else as it is now. Every number that has moved from the first guesses, with the value that pass chose (the file is what the game plays, if the two ever differ):
 
@@ -322,6 +322,21 @@ With the leftover Ore fielded, the model is close to deterministic: nearly every
 
 **What is open** (§15): whether §12 is retuned against the simulation, and whether the model's clump learns the simulation's geometry so that it stays a fast guide to tuning. The full check took about ten minutes on four threads in a Linux container, so it runs only when the `OUTPOST_Q2_FULL` environment variable is set, which CI never does, and the owner runs it: `set OUTPOST_Q2_FULL=1`, then `vstest.console.exe x64\Release\GameLogicTests.dll`. The report goes to `Q2Check-report.txt` in the temporary folder.
 
+**The base's numbers** (milestone 4).
+
+- **The Constructor and its rates are the owner's provisional baseline** (gate G8, 2026-10-01): 300 hit points, armour 2, 45 m/s, 60 Ore and 15 s. A second Constructor on a site adds half of one, so two build in two thirds of the time and three in half. Each repairs 2% of the target's hit points a second, for nothing. The reasons are the owner's to record when the baseline is reviewed.
+- **Footprint radii are provisional, set with milestone 4 rather than decided:** the Command Station 45 m, the Shipyard 40, the Research Lab 30, the Mining Rig 25 and the Defence Platform 20, and the Constructor 10, with a 150°/s turn rate. They follow the hulls' provisional sizes until G5 sets sizes for everything (§15). A rig's footprint covers its asteroid, so it is reached from the asteroid's edge.
+
+**The hand checks** (task 4.6, `HandCheckTests`): the raid gathers 400 m off, out of the gun's reach, and attacks; the run ends when one side is gone. Measured on 2026-10-01 in the Linux container the other figures in this section come from; the simulation is deterministic, so the figures are the game's.
+
+| Scenario | Intent (§6) | Result |
+|---|---|---|
+| A lone Defence Platform against five Small+Ion+Mass Driver ships | the platform outlasts the raid and destroys it | **met:** the raid is destroyed in 41.7 s; the platform keeps 420 of 1,500 hit points |
+| The Command Station against seven | its gun destroys all seven in under a minute | **met:** in 57.6 s, keeping 2,952 of 5,000 hit points |
+| A Command Station without its gun or armour against seven | it falls in about 20 s, which is why it is armed | it falls in 24.9 s, approach included |
+
+Two of the margins are thin. The platform keeps 28% of its hit points, so a sixth raider, or one more Mass Driver damage, may tip it. And the station's minute is 2.4 s from failing. Neither number has been retuned (§15).
+
 **Not set yet** (each is open in §15):
 
 - ship sizes in metres, which give the footprint radius and how many ships the Missile Rack's splash reaches. Movement uses provisional radii from the data file until then (ADR-010);
@@ -358,7 +373,8 @@ Q2 moved from milestone 6 to milestone 3 in the first review. It is the design q
 - Team colours for the player and the Tarkan. Until they are decided, the player is blue and the Tarkan orange-red (ADR-011).
 - How far can the camera zoom in and out from the 500 m default view (§4)? Warzone 2100 limits it hard. Sins of a Solar Empire goes to a strategic view.
 - Ship sizes in metres: the footprint radius for movement and formation (§11), and the spacing the Missile Rack's splash depends on (§7). Needed before the Missile Rack can be checked, and until it is, Q2 cannot be "yes". Movement uses provisional radii from the data file meanwhile (ADR-010).
-- The Defence gun and structure armour (§6, §12) are first guesses. The model has no structures, so they are checked by hand at milestone 4.
+- The Defence gun and structure armour (§6, §12) meet §6's intents in the simulation's hand checks, two of them narrowly (§12). Are the margins wide enough, or should the platform or the gun move?
+- Structure footprints and the Constructor's size and turn rate are provisional, set with milestone 4 (§12). Do they join G5's sizes?
 - The AI's attack-group threshold (§10).
 - Turn rates for hulls and drives (§7, §12). They affect movement only, and provisional ones are in the data file (ADR-010).
 - Where the meshes in `Art/` come from and under what terms (§11).
@@ -405,7 +421,7 @@ Decided on 2026-09-30, once implementation began:
 - The AI opponent is The Tarkan High Command, using the Tarkan mesh set, with the same rules as the player. The player's Terrakin use the Human mesh set (§1, §10, §11). The converted meshes and the data files live in `OutpostCommander/Assets/` (§11, ADR-008).
 - Each model's forward axis and length are data, and the scene is drawn flat-lit in team colors (§11, ADR-011). The camera's zoom is a view width with the pitch following it, and the cursor is held inside the window in full screen (§4, ADR-012).
 - The arrow keys pan the camera; A attack-moves and S stops (§4, §9, ADR-013).
-- Until milestone 4 places the Command Station and Constructors, every player starts with a provisional fleet held in the map data: four Small and two Medium ships on the Ion drive (ADR-013).
+- Every player starts with its Command Station and two Constructors (§6, ADR-016). The provisional fleet of four Small and two Medium ships that milestones 2 and 3 used is gone.
 
 Decided on 2026-10-01, milestone 3:
 
@@ -413,4 +429,4 @@ Decided on 2026-10-01, milestone 3:
 - A group's order paths once for the group, not once per ship, after task 2.7's order ticks of up to 8.3 ms (§3, ADR-010).
 - The provisional starting fleet carries all four starting designs: two Small+Ion+Mass Driver, two Small+Ion+Lance, one Medium+Ion+Mass Driver and one Medium+Ion+Lance per player (ADR-014).
 - A ship standing to fire holds its range when its own side pushes it, giving way only sideways round its target (§7, ADR-010).
-- The Constructor: 300 HP, armour 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free, a provisional baseline that milestone 4 puts in the tuning data (§7, §12, gate G8).
+- The Constructor: 300 HP, armour 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free, a provisional baseline, in the tuning data since milestone 4 (§7, §12, gate G8).
