@@ -43,9 +43,7 @@ public:
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, 0.0f});
     const float shipyard = static_cast<float>(arena.StructureData(Outpost::StructureKind::Shipyard).footprintRadiusMeters);
     const auto result = [&](Outpost::StructureKind _kind, Outpost::PlanePosition _at)
-    {
-      return arena.Tick({Build({constructor}, _kind, _at)})[0];
-    };
+    { return arena.Tick({Build({constructor}, _kind, _at)})[0]; };
 
     // Over an asteroid, or past the edge; and the Command Station anywhere.
     Assert::IsTrue(
@@ -58,8 +56,8 @@ public:
     const Outpost::PlanePosition clear{MatchArena::HOME_ASTEROID.xMeters + MatchArena::ASTEROID_RADIUS_METERS + shipyard + 1.0f,
                                        MatchArena::HOME_ASTEROID.zMeters};
     Assert::IsTrue(result(Outpost::StructureKind::Shipyard, clear) == Outpost::CommandResult::Applied);
-    Assert::IsTrue(
-      result(Outpost::StructureKind::Shipyard, {clear.xMeters + shipyard, clear.zMeters}) == Outpost::CommandResult::InvalidPlacement);
+    Assert::IsTrue(result(Outpost::StructureKind::Shipyard, {clear.xMeters + shipyard, clear.zMeters}) ==
+                   Outpost::CommandResult::InvalidPlacement);
 
     Assert::IsTrue(result(Outpost::StructureKind::ResearchLab, {-600.0f, -600.0f}) == Outpost::CommandResult::Applied);
     Assert::IsTrue(result(Outpost::StructureKind::ResearchLab, {600.0f, -600.0f}) == Outpost::CommandResult::LimitReached);
@@ -118,8 +116,8 @@ public:
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-600.0f, -300.0f});
     (void)arena.Tick({Build({constructor}, Outpost::StructureKind::DefensePlatform, SITE)});
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
-    const auto buildTicks = static_cast<std::uint32_t>(arena.StructureData(Outpost::StructureKind::DefensePlatform).buildConstructorSeconds.
-                                                             value_or(0.0) * MatchArena::TICKS_PER_SECOND);
+    const auto buildTicks = static_cast<std::uint32_t>(
+      arena.StructureData(Outpost::StructureKind::DefensePlatform).buildConstructorSeconds.value_or(0.0) * MatchArena::TICKS_PER_SECOND);
     Assert::IsTrue(TicksToBuild(arena, site, 60 * MatchArena::TICKS_PER_SECOND) > buildTicks, L"travel takes time");
     Assert::IsTrue(arena.Get(site).IsBuilt());
   }
@@ -164,11 +162,10 @@ public:
     const float reach = arena.Get(shipyard).radiusMeters + 25.0f;
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-reach, 0.0f});
     const std::int64_t ore = arena.World().OreHundredths(BLUE);
-    Assert::IsTrue(
-      arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
-      Outpost::CommandResult::Applied);
-    const auto perTick = static_cast<std::int32_t>(maximum * arena.TuningData().constructor.repairPercentPerSecond / 100.0 /
-                                                   MatchArena::TICKS_PER_SECOND);
+    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
+                   Outpost::CommandResult::Applied);
+    const auto perTick =
+      static_cast<std::int32_t>(maximum * arena.TuningData().constructor.repairPercentPerSecond / 100.0 / MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(std::min(maximum, damaged + perTick), arena.Get(shipyard).hitPointsHundredths);
     arena.Run(60 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(maximum, arena.Get(shipyard).hitPointsHundredths);
@@ -176,12 +173,10 @@ public:
     Assert::AreEqual(ore, arena.World().OreHundredths(BLUE), L"repair is free");
 
     // Whole, or an enemy's, it is not repaired.
-    Assert::IsTrue(
-      arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
-      Outpost::CommandResult::NotRepairable);
-    Assert::IsTrue(
-      arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = raider})})[0] ==
-      Outpost::CommandResult::NotRepairable);
+    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = shipyard})})[0] ==
+                   Outpost::CommandResult::NotRepairable);
+    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {constructor}, .target = raider})})[0] ==
+                   Outpost::CommandResult::NotRepairable);
   }
 
   // Further Constructors join a site under construction with a repair order, and speed it up.
@@ -192,8 +187,8 @@ public:
     (void)arena.Tick({Build({first}, Outpost::StructureKind::ResearchLab, SITE)});
     const Outpost::EntityId site = arena.Owned(BLUE, Outpost::EntityKind::Structure).back()->id;
     const Outpost::EntityId second = arena.World().SpawnConstructor(BLUE, {55.0f, 0.0f});
-    Assert::IsTrue(
-      arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {second}, .target = site})})[0] == Outpost::CommandResult::Applied);
+    Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::RepairCommand{.constructors = {second}, .target = site})})[0] ==
+                   Outpost::CommandResult::Applied);
     const std::int32_t before = arena.Get(site).buildWorkDone;
     arena.Run(1);
     Assert::AreEqual(1500, arena.Get(site).buildWorkDone - before, L"a tick and a half of work");

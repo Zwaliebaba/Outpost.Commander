@@ -11,8 +11,12 @@ namespace
 // A glyph bitmap of _width by _height texels, all at _coverage.
 Neuron::GlyphBitmap Bitmap(std::uint32_t _width, std::uint32_t _height, std::uint8_t _coverage)
 {
-  return {.width = _width, .height = _height, .offsetX = 1, .offsetY = -static_cast<std::int32_t>(_height),
-          .advance = static_cast<float>(_width + 2), .coverage = std::vector<std::uint8_t>(std::size_t{_width} * _height, _coverage)};
+  return {.width = _width,
+          .height = _height,
+          .offsetX = 1,
+          .offsetY = -static_cast<std::int32_t>(_height),
+          .advance = static_cast<float>(_width + 2),
+          .coverage = std::vector<std::uint8_t>(std::size_t{_width} * _height, _coverage)};
 }
 } // namespace
 
@@ -25,9 +29,8 @@ public:
     std::vector<Neuron::GlyphBitmap> bitmaps;
     for (char character = Neuron::GlyphAtlas::FIRST; character <= Neuron::GlyphAtlas::LAST; ++character)
     {
-      bitmaps.push_back(character == ' '
-                          ? Neuron::GlyphBitmap{.advance = 5.0f}
-                          : Bitmap(9 + (character % 7), 14 + (character % 5), static_cast<std::uint8_t>(character)));
+      bitmaps.push_back(character == ' ' ? Neuron::GlyphBitmap{.advance = 5.0f}
+                                         : Bitmap(9 + (character % 7), 14 + (character % 5), static_cast<std::uint8_t>(character)));
     }
     const Neuron::GlyphAtlas atlas = Neuron::PackGlyphs(bitmaps, 15.0f, 20.0f);
 

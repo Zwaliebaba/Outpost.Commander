@@ -22,8 +22,12 @@ Outpost::StructureTypeView Rig()
 std::vector<Outpost::EntityView> World()
 {
   return {{.id = Outpost::EntityId{1}, .kind = Outpost::EntityKind::Asteroid, .position = ASTEROID, .radiusMeters = 45.0f},
-          {.id = Outpost::EntityId{2}, .kind = Outpost::EntityKind::Structure, .owner = Outpost::PlayerId{1},
-           .structure = Outpost::StructureKind::CommandStation, .position = {.xMeters = -300.0f, .zMeters = 0.0f}, .radiusMeters = 45.0f}};
+          {.id = Outpost::EntityId{2},
+           .kind = Outpost::EntityKind::Structure,
+           .owner = Outpost::PlayerId{1},
+           .structure = Outpost::StructureKind::CommandStation,
+           .position = {.xMeters = -300.0f, .zMeters = 0.0f},
+           .radiusMeters = 45.0f}};
 }
 } // namespace
 
@@ -47,15 +51,19 @@ public:
   TEST_METHOD(ARigSnapsToAFreeAsteroid)
   {
     std::vector<Outpost::EntityView> world = World();
-    constexpr Outpost::PlanePosition beside{ASTEROID.xMeters, 45.0f + Outpost::RIG_SNAP_METERS - 1.0f};
+    const Outpost::PlanePosition beside{ASTEROID.xMeters, 45.0f + Outpost::RIG_SNAP_METERS - 1.0f};
     const Outpost::GhostPlacement ghost = Outpost::PlaceGhost(Rig(), beside, world, MAP_SIZE_METERS);
     Assert::IsTrue(ghost.valid);
     Assert::IsTrue(ghost.position == ASTEROID);
     Assert::AreEqual(45.0f, ghost.radiusMeters);
     Assert::IsFalse(Outpost::PlaceGhost(Rig(), {0.0f, 0.0f}, world, MAP_SIZE_METERS).valid, L"no asteroid within reach");
 
-    world.push_back({.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Structure, .owner = Outpost::PlayerId{2},
-                     .structure = Outpost::StructureKind::MiningRig, .position = ASTEROID, .radiusMeters = 45.0f});
+    world.push_back({.id = Outpost::EntityId{3},
+                     .kind = Outpost::EntityKind::Structure,
+                     .owner = Outpost::PlayerId{2},
+                     .structure = Outpost::StructureKind::MiningRig,
+                     .position = ASTEROID,
+                     .radiusMeters = 45.0f});
     Assert::IsFalse(Outpost::PlaceGhost(Rig(), beside, world, MAP_SIZE_METERS).valid, L"taken");
   }
 };

@@ -42,7 +42,12 @@ RECT CenteredWindowedFrame(HWND _hwnd, std::uint32_t _clientWidthPixels, std::ui
   GetMonitorInfoW(MonitorFromWindow(_hwnd, MONITOR_DEFAULTTOPRIMARY), &info);
   const RECT& work = info.rcWork;
 
-  RECT frame{.left = 0, .top = 0, .right = static_cast<LONG>(_clientWidthPixels), .bottom = static_cast<LONG>(_clientHeightPixels),};
+  RECT frame{
+    .left = 0,
+    .top = 0,
+    .right = static_cast<LONG>(_clientWidthPixels),
+    .bottom = static_cast<LONG>(_clientHeightPixels),
+  };
   AdjustWindowRectExForDpi(&frame, WINDOWED_STYLE, FALSE, WINDOW_EX_STYLE, GetDpiForWindow(_hwnd));
   const LONG widthPixels = frame.right - frame.left;
   const LONG heightPixels = frame.bottom - frame.top;
@@ -54,8 +59,8 @@ RECT CenteredWindowedFrame(HWND _hwnd, std::uint32_t _clientWidthPixels, std::ui
 // Alt+Enter, but not its auto-repeat, so that holding the keys toggles once (ADR-006).
 bool IsFullScreenToggle(const MSG& _message) noexcept
 {
-  return _message.message == WM_SYSKEYDOWN && _message.wParam == VK_RETURN && (_message.lParam & ALT_DOWN_BIT) != 0 && (
-           _message.lParam & REPEAT_BIT) == 0;
+  return _message.message == WM_SYSKEYDOWN && _message.wParam == VK_RETURN && (_message.lParam & ALT_DOWN_BIT) != 0 &&
+         (_message.lParam & REPEAT_BIT) == 0;
 }
 
 // A mouse message's button, whether it goes down, and the buttons it leaves held (its wParam's MK_ flags).
@@ -106,10 +111,20 @@ Neuron::Window::Window(const Desc& _desc)
   RECT monitor{};
   winrt::check_bool(MonitorArea(MonitorFromPoint(POINT{.x = 0, .y = 0}, MONITOR_DEFAULTTOPRIMARY), monitor));
 
-  const WNDCLASSEXW windowClass{.cbSize = sizeof(WNDCLASSEXW), .style = CS_HREDRAW | CS_VREDRAW, .lpfnWndProc = WindowProc, .cbClsExtra = 0,
-                                .cbWndExtra = 0, .hInstance = m_instance, .hIcon = nullptr, .hCursor = LoadCursorW(nullptr, IDC_ARROW),
-                                .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)), .lpszMenuName = nullptr,
-                                .lpszClassName = WINDOW_CLASS_NAME, .hIconSm = nullptr,};
+  const WNDCLASSEXW windowClass{
+    .cbSize = sizeof(WNDCLASSEXW),
+    .style = CS_HREDRAW | CS_VREDRAW,
+    .lpfnWndProc = WindowProc,
+    .cbClsExtra = 0,
+    .cbWndExtra = 0,
+    .hInstance = m_instance,
+    .hIcon = nullptr,
+    .hCursor = LoadCursorW(nullptr, IDC_ARROW),
+    .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)),
+    .lpszMenuName = nullptr,
+    .lpszClassName = WINDOW_CLASS_NAME,
+    .hIconSm = nullptr,
+  };
   winrt::check_bool(RegisterClassExW(&windowClass));
 
   m_hwnd = CreateWindowExW(WINDOW_EX_STYLE, WINDOW_CLASS_NAME, _desc.title, FULL_SCREEN_STYLE, monitor.left, monitor.top,
@@ -162,20 +177,27 @@ bool Neuron::Window::ProcessMessages()
       else if ((message.wParam & ANY_BUTTON_HELD) == 0)
         ReleaseCapture();
       // A mouse message's lParam holds the client position as two signed 16-bit numbers.
-      m_events.push_back({.kind = button->down ? InputEventKind::ButtonDown : InputEventKind::ButtonUp, .key = button->key,
+      m_events.push_back({.kind = button->down ? InputEventKind::ButtonDown : InputEventKind::ButtonUp,
+                          .key = button->key,
                           .xPixels = static_cast<std::int16_t>(LOWORD(message.lParam)),
                           .yPixels = static_cast<std::int16_t>(HIWORD(message.lParam)),
-                          .timeMilliseconds = static_cast<std::uint32_t>(message.time), .read = std::chrono::steady_clock::now(),
-                          .shift = (message.wParam & MK_SHIFT) != 0, .control = (message.wParam & MK_CONTROL) != 0});
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now(),
+                          .shift = (message.wParam & MK_SHIFT) != 0,
+                          .control = (message.wParam & MK_CONTROL) != 0});
     }
     else if (message.message == WM_KEYDOWN && (message.lParam & REPEAT_BIT) == 0 && message.wParam < 256)
     {
       POINT cursor = message.pt;
       ScreenToClient(m_hwnd, &cursor);
       // GetKeyState answers as of the message being handled, so the modifiers are the ones held with this key.
-      m_events.push_back({.kind = InputEventKind::KeyDown, .key = static_cast<std::uint8_t>(message.wParam), .xPixels = cursor.x,
-                          .yPixels = cursor.y, .timeMilliseconds = static_cast<std::uint32_t>(message.time),
-                          .read = std::chrono::steady_clock::now(), .shift = GetKeyState(VK_SHIFT) < 0,
+      m_events.push_back({.kind = InputEventKind::KeyDown,
+                          .key = static_cast<std::uint8_t>(message.wParam),
+                          .xPixels = cursor.x,
+                          .yPixels = cursor.y,
+                          .timeMilliseconds = static_cast<std::uint32_t>(message.time),
+                          .read = std::chrono::steady_clock::now(),
+                          .shift = GetKeyState(VK_SHIFT) < 0,
                           .control = GetKeyState(VK_CONTROL) < 0});
     }
     else if (message.message == WM_CHAR)

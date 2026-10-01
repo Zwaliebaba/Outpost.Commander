@@ -165,24 +165,15 @@ public:
     // Within the Command Station's footprint of a home asteroid.
     map.starts[0] = {map.oreAsteroids[0].position.xMeters, map.oreAsteroids[0].position.zMeters - 60.0f};
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
-    Assert::ExpectException<Neuron::Exception>([&]
-    {
-      server.World().PlaceStartingBases(map);
-    });
+    Assert::ExpectException<Neuron::Exception>([&] { server.World().PlaceStartingBases(map); });
   }
 
   TEST_METHOD(RefusesADuplicateOrMissingPlayer)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
-    Assert::ExpectException<Neuron::Exception>([&server]
-    {
-      (void)server.Connect(BLUE);
-    });
-    Assert::ExpectException<Neuron::Exception>([&server]
-    {
-      (void)server.Connect(Outpost::PlayerId{});
-    });
+    Assert::ExpectException<Neuron::Exception>([&server] { (void)server.Connect(BLUE); });
+    Assert::ExpectException<Neuron::Exception>([&server] { (void)server.Connect(Outpost::PlayerId{}); });
   }
 
   TEST_METHOD(TransportOutlivesTheServer)

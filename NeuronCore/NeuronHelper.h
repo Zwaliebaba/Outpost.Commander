@@ -18,7 +18,9 @@ class Exception : public std::exception
 {
 public:
   Exception(std::string _message) noexcept
-    : m_message(std::move(_message)) {}
+    : m_message(std::move(_message))
+  {
+  }
 
   ~Exception() noexcept override = default;
 

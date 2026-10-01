@@ -32,8 +32,8 @@ const Outpost::EntityView* Find(std::span<const Outpost::EntityView> _entities, 
 // Whether a Constructor has work to do on _entity: building it or repairing it.
 bool NeedsWork(const Outpost::EntityView& _entity) noexcept
 {
-  return _entity.maxHitPointsHundredths > 0 && (_entity.builtPermille < Outpost::PERMILLE || _entity.hitPointsHundredths < _entity.
-                                                maxHitPointsHundredths);
+  return _entity.maxHitPointsHundredths > 0 &&
+         (_entity.builtPermille < Outpost::PERMILLE || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths);
 }
 } // namespace
 
@@ -141,8 +141,8 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
   if (m_attackMoveArmed)
   {
     m_attackMoveArmed = false;
-    const std::optional<PlanePosition> destination = _frame.camera.GroundPointAtPixel(
-      static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
+    const std::optional<PlanePosition> destination =
+      _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
     std::vector<EntityId> ships = SelectedShips(_frame.entities);
     if (destination.has_value() && !ships.empty())
       Give(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
@@ -151,8 +151,8 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
   // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed.
   if (m_placing.has_value())
   {
-    const std::optional<PlanePosition> site = _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels),
-                                                                               static_cast<float>(_event.yPixels), _frame.viewport);
+    const std::optional<PlanePosition> site =
+      _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
     std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
     if (site.has_value() && !constructors.empty())
       Give(BuildStructureCommand{.constructors = std::move(constructors), .structure = *m_placing, .position = *site});
@@ -183,18 +183,14 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
   }
 
   const PlayerId player = _frame.player;
-  const std::optional<EntityId> picked = PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship)
-  {
-    return _ship.owner == player;
-  });
+  const std::optional<EntityId> picked =
+    PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [player](const EntityView& _ship) { return _ship.owner == player; });
   if (!picked.has_value())
   {
     // One of the player's structures is selected on its own, for its queue and its state (task 4.5).
-    const std::optional<EntityId> structure = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
-                                                         [player](const EntityView& _entity)
-                                                         {
-                                                           return _entity.kind == EntityKind::Structure && _entity.owner == player;
-                                                         });
+    const std::optional<EntityId> structure =
+      PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                 [player](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && _entity.owner == player; });
     if (structure.has_value())
       m_selected = {*structure};
     else if (!_event.shift)
@@ -245,20 +241,16 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
   if (!constructors.empty())
   {
-    const std::optional<EntityId> friendly = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
-                                                        [&](const EntityView& _entity)
-                                                        {
-                                                          return _entity.owner == player && (
-                                                                   _entity.kind == EntityKind::Ship || _entity.kind ==
-                                                                   EntityKind::Structure) && NeedsWork(_entity) && std::ranges::find(
-                                                                   constructors, _entity.id) == constructors.end();
-                                                        });
+    const std::optional<EntityId> friendly =
+      PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                 [&](const EntityView& _entity)
+                 {
+                   return _entity.owner == player && (_entity.kind == EntityKind::Ship || _entity.kind == EntityKind::Structure) &&
+                          NeedsWork(_entity) && std::ranges::find(constructors, _entity.id) == constructors.end();
+                 });
     if (friendly.has_value())
     {
-      std::erase_if(ships, [&constructors](EntityId _id)
-      {
-        return std::ranges::find(constructors, _id) != constructors.end();
-      });
+      std::erase_if(ships, [&constructors](EntityId _id) { return std::ranges::find(constructors, _id) != constructors.end(); });
       Give(RepairCommand{.constructors = std::move(constructors), .target = *friendly});
       if (const EntityView* target = Find(_frame.entities, *friendly); target != nullptr && !ships.empty())
         Give(MoveCommand{.ships = std::move(ships), .destination = target->position});
@@ -267,17 +259,12 @@ void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, cons
   }
 
   // An enemy ship under the cursor is attacked, or failing that an enemy structure; anywhere else is a destination.
-  const auto isEnemy = [player](const EntityView& _entity)
-  {
-    return _entity.owner.IsValid() && _entity.owner != player;
-  };
+  const auto isEnemy = [player](const EntityView& _entity) { return _entity.owner.IsValid() && _entity.owner != player; };
   std::optional<EntityId> enemy = PickShip(_frame.entities, _frame.camera, _frame.viewport, {x, y}, isEnemy);
   if (!enemy.has_value())
   {
-    enemy = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y}, [&isEnemy](const EntityView& _entity)
-    {
-      return _entity.kind == EntityKind::Structure && isEnemy(_entity);
-    });
+    enemy = PickEntity(_frame.entities, _frame.camera, _frame.viewport, {x, y},
+                       [&isEnemy](const EntityView& _entity) { return _entity.kind == EntityKind::Structure && isEnemy(_entity); });
   }
   if (enemy.has_value())
   {
@@ -365,8 +352,8 @@ void Outpost::PlayerControls::Prune(const Frame& _frame)
   const auto gone = [&_frame](EntityId _id)
   {
     const EntityView* entity = Find(_frame.entities, _id);
-    return entity == nullptr || (entity->kind != EntityKind::Ship && entity->kind != EntityKind::Structure) || entity->owner != _frame.
-           player;
+    return entity == nullptr || (entity->kind != EntityKind::Ship && entity->kind != EntityKind::Structure) ||
+           entity->owner != _frame.player;
   };
   // Before the first snapshot there is nothing to check against.
   if (_frame.entities.empty())

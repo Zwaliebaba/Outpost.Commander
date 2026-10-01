@@ -67,7 +67,8 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
     constexpr std::array<std::string_view, 4> TARGETS = {"miningRig", "allHulls", "weapon", "shipyards"};
     constexpr std::array<std::string_view, 4> STATS = {"income", "hitPoints", "fireRate", "buildSpeed"};
     std::vector<LoadedField> fields = {{"upgrade", std::string(TARGETS[Neuron::I(upgrade->target)])},
-                                       {"stat", std::string(STATS[Neuron::I(upgrade->stat)])}, {"percent", Number(upgrade->percent)}};
+                                       {"stat", std::string(STATS[Neuron::I(upgrade->stat)])},
+                                       {"percent", Number(upgrade->percent)}};
     if (upgrade->weapon.IsValid())
       fields.push_back({"weapon", Number(upgrade->weapon.value)});
     return fields;
@@ -152,21 +153,31 @@ public:
     const Neuron::JsonValue json = Neuron::ParseJson(text);
 
     const Outpost::RulesTuning& rules = tuning.rules;
-    ExpectSame(*json.Find("rules"), {{"tickHz", Number(rules.tickHz)}, {"startingOre", Number(rules.startingOre)},
-                                     {"startingConstructors", Number(rules.startingConstructors)},
-                                     {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
-                                     {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
-                                     {"aiReviewIntervalSeconds", rules.aiReviewIntervalSeconds}}, "rules");
+    ExpectSame(*json.Find("rules"),
+               {{"tickHz", Number(rules.tickHz)},
+                {"startingOre", Number(rules.startingOre)},
+                {"startingConstructors", Number(rules.startingConstructors)},
+                {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
+                {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
+                {"aiReviewIntervalSeconds", rules.aiReviewIntervalSeconds}},
+               "rules");
 
     const Neuron::JsonValue::Array& hulls = json.Find("hulls")->AsArray();
     Assert::AreEqual(hulls.size(), tuning.hulls.size());
     for (size_t i = 0; i < hulls.size(); ++i)
     {
       const Outpost::HullTuning& hull = tuning.hulls[i];
-      ExpectSame(hulls[i], {{"id", Number(hull.id.value)}, {"name", hull.name}, {"hitPoints", Number(hull.hitPoints)},
-                            {"armor", Number(hull.armor)}, {"speedMetersPerSecond", hull.speedMetersPerSecond}, {"cost", Number(hull.cost)},
-                            {"buildSeconds", hull.buildSeconds}, {"footprintRadiusMeters", hull.footprintRadiusMeters},
-                            {"turnRateDegreesPerSecond", hull.turnRateDegreesPerSecond}}, std::format("hulls[{}]", i));
+      ExpectSame(hulls[i],
+                 {{"id", Number(hull.id.value)},
+                  {"name", hull.name},
+                  {"hitPoints", Number(hull.hitPoints)},
+                  {"armor", Number(hull.armor)},
+                  {"speedMetersPerSecond", hull.speedMetersPerSecond},
+                  {"cost", Number(hull.cost)},
+                  {"buildSeconds", hull.buildSeconds},
+                  {"footprintRadiusMeters", hull.footprintRadiusMeters},
+                  {"turnRateDegreesPerSecond", hull.turnRateDegreesPerSecond}},
+                 std::format("hulls[{}]", i));
     }
 
     const Neuron::JsonValue::Array& drives = json.Find("drives")->AsArray();
@@ -174,9 +185,14 @@ public:
     for (size_t i = 0; i < drives.size(); ++i)
     {
       const Outpost::DriveTuning& drive = tuning.drives[i];
-      ExpectSame(drives[i], {{"id", Number(drive.id.value)}, {"name", drive.name}, {"speedFactor", drive.speedFactor},
-                             {"hitPointsFactor", drive.hitPointsFactor}, {"turnRateFactor", drive.turnRateFactor},
-                             {"cost", Number(drive.cost)}}, std::format("drives[{}]", i));
+      ExpectSame(drives[i],
+                 {{"id", Number(drive.id.value)},
+                  {"name", drive.name},
+                  {"speedFactor", drive.speedFactor},
+                  {"hitPointsFactor", drive.hitPointsFactor},
+                  {"turnRateFactor", drive.turnRateFactor},
+                  {"cost", Number(drive.cost)}},
+                 std::format("drives[{}]", i));
     }
 
     const Neuron::JsonValue::Array& weapons = json.Find("weapons")->AsArray();
@@ -184,20 +200,29 @@ public:
     for (size_t i = 0; i < weapons.size(); ++i)
     {
       const Outpost::WeaponTuning& weapon = tuning.weapons[i];
-      ExpectSame(weapons[i], {{"id", Number(weapon.id.value)}, {"name", weapon.name}, {"damage", Number(weapon.damage)},
-                              {"fireIntervalSeconds", weapon.fireIntervalSeconds}, {"rangeMeters", weapon.rangeMeters},
-                              {"splashRadiusMeters", weapon.splashRadiusMeters}, {"cost", Number(weapon.cost)}},
+      ExpectSame(weapons[i],
+                 {{"id", Number(weapon.id.value)},
+                  {"name", weapon.name},
+                  {"damage", Number(weapon.damage)},
+                  {"fireIntervalSeconds", weapon.fireIntervalSeconds},
+                  {"rangeMeters", weapon.rangeMeters},
+                  {"splashRadiusMeters", weapon.splashRadiusMeters},
+                  {"cost", Number(weapon.cost)}},
                  std::format("weapons[{}]", i));
     }
 
     const Outpost::ConstructorTuning& constructor = tuning.constructor;
-    ExpectSame(*json.Find("constructor"), {{"hitPoints", Number(constructor.hitPoints)}, {"armor", Number(constructor.armor)},
-                                           {"speedMetersPerSecond", constructor.speedMetersPerSecond}, {"cost", Number(constructor.cost)},
-                                           {"buildSeconds", constructor.buildSeconds},
-                                           {"footprintRadiusMeters", constructor.footprintRadiusMeters},
-                                           {"turnRateDegreesPerSecond", constructor.turnRateDegreesPerSecond},
-                                           {"extraConstructorBuildShare", constructor.extraConstructorBuildShare},
-                                           {"repairPercentPerSecond", constructor.repairPercentPerSecond}}, "constructor");
+    ExpectSame(*json.Find("constructor"),
+               {{"hitPoints", Number(constructor.hitPoints)},
+                {"armor", Number(constructor.armor)},
+                {"speedMetersPerSecond", constructor.speedMetersPerSecond},
+                {"cost", Number(constructor.cost)},
+                {"buildSeconds", constructor.buildSeconds},
+                {"footprintRadiusMeters", constructor.footprintRadiusMeters},
+                {"turnRateDegreesPerSecond", constructor.turnRateDegreesPerSecond},
+                {"extraConstructorBuildShare", constructor.extraConstructorBuildShare},
+                {"repairPercentPerSecond", constructor.repairPercentPerSecond}},
+               "constructor");
 
     const Neuron::JsonValue::Array& structureWeapons = json.Find("structureWeapons")->AsArray();
     Assert::AreEqual(structureWeapons.size(), tuning.structureWeapons.size());
@@ -205,8 +230,11 @@ public:
     {
       const Outpost::StructureWeaponTuning& weapon = tuning.structureWeapons[i];
       ExpectSame(structureWeapons[i],
-                 {{"id", Number(weapon.id.value)}, {"name", weapon.name}, {"damage", Number(weapon.damage)},
-                  {"fireIntervalSeconds", weapon.fireIntervalSeconds}, {"rangeMeters", weapon.rangeMeters}},
+                 {{"id", Number(weapon.id.value)},
+                  {"name", weapon.name},
+                  {"damage", Number(weapon.damage)},
+                  {"fireIntervalSeconds", weapon.fireIntervalSeconds},
+                  {"rangeMeters", weapon.rangeMeters}},
                  std::format("structureWeapons[{}]", i));
     }
 
@@ -215,8 +243,10 @@ public:
     for (size_t i = 0; i < structures.size(); ++i)
     {
       const Outpost::StructureTuning& structure = tuning.structures[i];
-      std::vector<LoadedField> fields = {{"kind", std::string(KindName(structure.kind))}, {"name", structure.name},
-                                         {"hitPoints", Number(structure.hitPoints)}, {"armor", Number(structure.armor)},
+      std::vector<LoadedField> fields = {{"kind", std::string(KindName(structure.kind))},
+                                         {"name", structure.name},
+                                         {"hitPoints", Number(structure.hitPoints)},
+                                         {"armor", Number(structure.armor)},
                                          {"footprintRadiusMeters", structure.footprintRadiusMeters}};
       if (structure.cost.has_value())
         fields.push_back({"cost", Number(*structure.cost)});
@@ -237,8 +267,8 @@ public:
       Assert::AreEqual(entry.AsObject().size(), size_t{6}, Widen(path).c_str());
       ExpectSame(*entry.Find("effect"), EffectFields(topic.effect), path + ".effect");
 
-      std::vector<LoadedField> fields = {{"id", Number(topic.id.value)}, {"name", topic.name}, {"cost", Number(topic.cost)},
-                                         {"researchSeconds", topic.researchSeconds}};
+      std::vector<LoadedField> fields = {
+        {"id", Number(topic.id.value)}, {"name", topic.name}, {"cost", Number(topic.cost)}, {"researchSeconds", topic.researchSeconds}};
       for (const LoadedField& field : fields)
       {
         const Neuron::JsonValue* member = entry.Find(field.name);
@@ -301,7 +331,8 @@ public:
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
-                            "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"), "structures[0].structureWeapon");
+                            "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"),
+                    "structures[0].structureWeapon");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 20,", ""), "structures[4]: has no \"footprintRadiusMeters\"");
     ExpectLoadError(Replace(", \"cost\": 300,\n      \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
   }

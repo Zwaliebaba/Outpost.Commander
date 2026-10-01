@@ -141,7 +141,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     panel.summary.push_back(
       std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
                   Tenths(static_cast<double>(stats->armorHundredths) / Outpost::HUNDREDTHS), Tenths(stats->movement.speedMetersPerSecond)));
-    panel.summary.push_back(std::format("Range {} m   Cost {}   Build {} s", Tenths(stats->rangeMeters), stats->cost,
+    const std::string splash = stats->splashRadiusMeters > 0.0f ? std::format("   Splash {} m", Tenths(stats->splashRadiusMeters)) : "";
+    panel.summary.push_back(std::format("Range {} m{}   Cost {}   Build {} s", Tenths(stats->rangeMeters), splash, stats->cost,
                                         Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)));
     std::vector<std::string> header{"Damage/s after armor vs"};
     std::vector<std::string> perShip{"per ship"};
@@ -184,10 +185,7 @@ std::string Outpost::WithThousands(std::int64_t _value)
 
 bool Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
 {
-  return std::ranges::any_of(panels, [&](const Rect& _panel)
-  {
-    return _panel.Contains(_xPixels, _yPixels);
-  });
+  return std::ranges::any_of(panels, [&](const Rect& _panel) { return _panel.Contains(_xPixels, _yPixels); });
 }
 
 std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels) const noexcept
@@ -301,7 +299,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       const bool canQueue = structure->builtPermille >= PERMILLE && structure->queue.size() < QUEUE_LIMIT;
       if (structure->structure == StructureKind::CommandStation)
       {
-        content.buttons.push_back({.label = std::string(CONSTRUCTOR_NAME), .action = {.kind = ActionKind::Queue, .producer = structure->id},
+        content.buttons.push_back({.label = std::string(CONSTRUCTOR_NAME),
+                                   .action = {.kind = ActionKind::Queue, .producer = structure->id},
                                    .enabled = canQueue && _newest.ore >= _newest.constructorCost});
         content.buttons.back().label += std::format("|{}", _newest.constructorCost);
       }
@@ -380,16 +379,17 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (byDesign.size() > SELECTION_DESIGN_LINES)
       content.selection.push_back(std::format("and {} more designs", byDesign.size() - SELECTION_DESIGN_LINES));
   }
-  content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)),
-                                          WithThousands(WholePoints(maxHitPoints))));
+  content.selection.push_back(
+    std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
 
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
   {
-    const bool hasLab = std::ranges::any_of(_entities, [&_newest](const EntityView& _entity)
-    {
-      return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
-    });
+    const bool hasLab = std::ranges::any_of(_entities,
+                                            [&_newest](const EntityView& _entity) {
+                                              return _entity.kind == EntityKind::Structure &&
+                                                     _entity.structure == StructureKind::ResearchLab && _entity.owner == _newest.player;
+                                            });
     content.buttons.reserve(_newest.structureTypes.size());
     for (const StructureTypeView& type : _newest.structureTypes)
     {
@@ -424,9 +424,8 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   layout.texts.push_back({"Ore", oreLeft + (PADDING * scale), textTop, TEXT_COLOR});
   layout.texts.push_back({WithThousands(_content.ore), oreLeft + (ORE_VALUE_LEFT * scale), textTop, ORE_COLOR});
   const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
-  const std::string incomeText = income % HUNDREDTHS == 0
-                                   ? std::format("+{}/s", income / HUNDREDTHS)
-                                   : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
+  const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
+                                                          : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
   layout.texts.push_back({incomeText, oreLeft + (ORE_INCOME_LEFT * scale), textTop, TEXT_COLOR});
 
   // Under the Ore: the research under way.

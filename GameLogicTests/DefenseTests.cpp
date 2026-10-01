@@ -33,9 +33,7 @@ public:
     MatchArena arena;
     const Outpost::StructureWeaponTuning& gun = arena.TuningData().structureWeapons.front();
     const auto range = [&](Outpost::WeaponId _id)
-    {
-      return std::ranges::find(arena.TuningData().weapons, _id, &Outpost::WeaponTuning::id)->rangeMeters;
-    };
+    { return std::ranges::find(arena.TuningData().weapons, _id, &Outpost::WeaponTuning::id)->rangeMeters; };
     Assert::IsTrue(gun.rangeMeters > range(LANCE));
     Assert::IsTrue(gun.rangeMeters < range(Outpost::WeaponId{3}));
     Assert::AreEqual(30, gun.damage);
@@ -86,7 +84,8 @@ public:
     (void)arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {0.0f, 500.0f});
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-900.0f, -900.0f});
     (void)arena.Tick(
-      {Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor}, .structure = Outpost::StructureKind::DefensePlatform, .position = {0.0f, -500.0f}})});
+      {Order(BLUE, Outpost::BuildStructureCommand{
+                     .constructors = {constructor}, .structure = Outpost::StructureKind::DefensePlatform, .position = {0.0f, -500.0f}})});
     // An enemy in range of all three, and a Constructor too far to build.
     (void)arena.Ship(RED, SMALL, MASS_DRIVER, {200.0f, 0.0f});
     (void)arena.Ship(RED, SMALL, MASS_DRIVER, {200.0f, 500.0f});

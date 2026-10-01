@@ -266,9 +266,9 @@ public:
   // Equal when the state is: the pathfinder's cache of graphs is not state, and nor is what the last tick reported.
   friend bool operator==(const Simulation& _a, const Simulation& _b) noexcept
   {
-    return _a.m_tick == _b.m_tick && _a.m_entities == _b.m_entities && _a.m_lastEntityId == _b.m_lastEntityId && _a.m_designs == _b.
-           m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players && _a.m_targetRule == _b.m_targetRule && _a.
-           m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles();
+    return _a.m_tick == _b.m_tick && _a.m_entities == _b.m_entities && _a.m_lastEntityId == _b.m_lastEntityId &&
+           _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
+           _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles();
   }
 
 private:
@@ -291,6 +291,8 @@ private:
     std::int32_t damageHundredths = 0;
     double fireIntervalSeconds = 0.0;
     float rangeMeters = 0.0f;
+    // Zero for a weapon without splash, and for a Defence gun.
+    float splashRadiusMeters = 0.0f;
     // For the shot's presentation; no weapon for a Defence gun.
     WeaponId weapon;
   };

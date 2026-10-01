@@ -13,7 +13,9 @@ The model is deliberately small, and each simplification is one the design docum
   - Hits are instant (§7). There is no accuracy, tracking or projectile flight.
   - Damage taken is max(damage x 0.25, damage - armour) (§7).
   - Each side is one clump of identical ships bought with the same Ore. Every ship in range of the enemy clump can
-    shoot any ship in it. There is no formation, pathing or terrain.
+    shoot any ship in it. There is no pathing or terrain.
+  - A clump stands in a square grid, as a group forms up in the game: its ships are FORMATION_SPACING_RADII footprint
+    radii apart (ADR-010), from the footprints the hulls' sizes give (gate G5). Only splash needs the grid.
   - Each battle's Ore is drawn from within 15% of the nominal budget, the same for both sides. Armies in a match are
     never bought at an exact figure. The draws are stratified: battle k of n takes its Ore from the k-th of n equal
     slices of that window, so n battles cover the window evenly rather than wherever the random draws fall.
@@ -25,7 +27,8 @@ The model is deliberately small, and each simplification is one the design docum
   - Each ship's first shot comes at a random point within its fire interval, so volleys are not synchronised.
   - Targets are picked at random (spread fire) or as the weakest enemy (focus fire). Shots land together at the end
     of each tick, so focus fire overkills.
-  - The Missile Rack is not modelled: its splash needs ship spacing, and ship sizes are not set yet (§15).
+  - A splash weapon's hit also hits every other ship of the target's clump whose center is within its splash radius of
+    the target's, each after its armour (§7, ADR-014). Ships do not close up as others die.
   - Structures are not modelled.
   - Research is applied only in check (d), to one side, and comes free: that side spends no Ore on it.
 
@@ -72,6 +75,9 @@ PERTURBATION = 0.05
 WORTH_BUILDING = 0.05  # a design is worth building when the equilibrium mix gives it at least 5%
 CONFIDENCE_Z = 1.96  # verdicts are taken on a 95% interval
 FRACTION_MIN = 0.01  # a fractional ship smaller than this is not fielded
+# The game's formation spacing, in footprint radii: FORMATION_SPACING_RADII in GameLogic/Simulation.cpp. It is code, not
+# tuning data, so this is a second copy; change both together.
+FORMATION_SPACING_RADII = 3.0
 
 
 @dataclasses.dataclass(frozen=True)
@@ -81,6 +87,7 @@ class Hull:
   armour: float
   speed: float
   cost: float
+  footprint: float  # the footprint's radius in metres (gate G5)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -114,6 +121,8 @@ class Design:
   damage: float
   interval: float
   range: float
+  splash: float
+  footprint: float
 
 
 @dataclasses.dataclass(frozen=True)
@@ -169,7 +178,8 @@ def read_tuning(path):
 
   tick_hz = number(field(data, "rules", path.name), "tickHz", "rules")
   hulls = [Hull(field(h, "name", "a hull"), *(number(h, n, f"hull {h['name']}") for n in
-                                               ("hitPoints", "armor", "speedMetersPerSecond", "cost")))
+                                               ("hitPoints", "armor", "speedMetersPerSecond", "cost",
+                                                "footprintRadiusMeters")))
            for h in entries(data, "hulls", path)]
   drives = [Drive(field(d, "name", "a drive"), *(number(d, n, f"drive {d['name']}") for n in
                                                  ("speedFactor", "hitPointsFactor", "cost")))
@@ -294,13 +304,12 @@ def short(name, initials):
 def designs_from(hulls, drives, weapons):
   designs = []
   for hull, drive, weapon in itertools.product(hulls, drives, weapons):
-    if weapon.splash:
-      continue
     designs.append(Design(code=f"{short(hull.name, False)}+{short(drive.name, False)}+{short(weapon.name, True)}",
                           hull=hull.name, drive=drive.name, weapon=weapon.name,
                           hp=hull.hp * drive.hp_factor, armour=hull.armour,
                           speed=hull.speed * drive.speed_factor, cost=hull.cost + drive.cost + weapon.cost,
-                          damage=weapon.damage, interval=weapon.interval, range=weapon.range))
+                          damage=weapon.damage, interval=weapon.interval, range=weapon.range, splash=weapon.splash,
+                          footprint=hull.footprint))
   if len({d.code for d in designs}) != len(designs):
     sys.exit("Two designs share a short code; give the hulls, drives or weapons distinct initials.")
   return designs
@@ -308,6 +317,21 @@ def designs_from(hulls, drives, weapons):
 
 def hit(damage, armour):
   return max(damage * ARMOUR_FLOOR, damage - armour)
+
+
+def splash_neighbours(count, footprint, splash):
+  """For each ship of a clump of `count`, the other ships whose centers are within `splash` metres of its center.
+
+  The clump is a square grid, ceil(sqrt(count)) columns wide, FORMATION_SPACING_RADII footprint radii apart.
+  """
+  if splash <= 0.0:
+    return None
+  spacing = FORMATION_SPACING_RADII * footprint
+  columns = math.ceil(math.sqrt(count))
+  places = [((i % columns) * spacing, (i // columns) * spacing) for i in range(count)]
+  reach = splash * splash + 1e-9
+  return [[j for j, (x, z) in enumerate(places) if j != i and (x - xi) ** 2 + (z - zi) ** 2 <= reach]
+          for i, (xi, zi) in enumerate(places)]
 
 
 # ---- One battle ------------------------------------------------------------------------------------------------------
@@ -332,6 +356,8 @@ def fight(a, b, budget, focus, seed, seeds, dt):
     scale.append(scales)
   n = (len(hp[0]), len(hp[1]))
   alive = [list(range(n[0])), list(range(n[1]))]
+  # Who a splash from side s also hits, around each ship of the other side.
+  splashed = (splash_neighbours(n[1], b.footprint, a.splash), splash_neighbours(n[0], a.footprint, b.splash))
   per_hit = (hit(a.damage, b.armour), hit(b.damage, a.armour))
   interval = (a.interval, b.interval)
   reach = (a.range + RANGE_EPSILON_M, b.range + RANGE_EPSILON_M)
@@ -374,6 +400,8 @@ def fight(a, b, budget, focus, seed, seeds, dt):
         targets = alive[enemy]
         target = targets[int(rand() * len(targets))]
       landed.append((enemy, target, per_hit[s] * scale[s][ship]))
+      if splashed[s] is not None:
+        landed.extend((enemy, other, per_hit[s] * scale[s][ship]) for other in splashed[s][target] if hp[enemy][other] > 0.0)
       when[s][ship] = time = when[s][ship] + interval[s]
       queue.setdefault(ceil(time / dt - 1e-9), []).append((s, ship))
     died = False
@@ -474,10 +502,13 @@ def equilibrium(matrix, iterations=40000):
 def perturbed_parts(parts):
   """Every (label, hulls, drives, weapons) with one modelled number moved by +/-5%."""
   hulls, drives, weapons = parts
-  groups = (hulls, drives, [w for w in weapons if not w.splash])
+  groups = (hulls, drives, weapons)
   for g, group in enumerate(groups):
     for i, part in enumerate(group):
-      for field in (f.name for f in dataclasses.fields(part) if f.name not in ("name", "splash")):
+      # The footprint is a size, not a combat number, and the simulation's check does not move it either.
+      for field in (f.name for f in dataclasses.fields(part) if f.name not in ("name", "footprint")):
+        if field == "splash" and not part.splash:
+          continue
         for sign in (-1, 1):
           changed = dataclasses.replace(part, **{field: getattr(part, field) * (1 + sign * PERTURBATION)})
           new = [list(hulls), list(drives), list(weapons)]
@@ -589,15 +620,13 @@ def run(args):
   designs = designs_from(hulls, drives, weapons)
   budgets = [int(b) for b in args.budgets.split(",")]
   early = [int(b) for b in args.early_budgets.split(",")]
-  unmodelled = [w.name for w in weapons if w.splash]
+  unmodelled = []  # every hull, drive and weapon is modelled
   start = available(parts, topics, [])
 
   print(f"Numbers from {args.tuning.name}" + (f", with {', '.join(args.set)}" if args.set else "") +
         f". {len(designs)} designs, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
         f"uncertain), a {tick_hz:g} Hz tick.")
   print("Starting components: " + ", ".join(p.name for group in start for p in group) + ".")
-  if unmodelled:
-    print(f"Not modelled: {', '.join(unmodelled)} (splash needs ship sizes, §15).")
   print()
   print_designs(designs, hulls)
   if args.detail:

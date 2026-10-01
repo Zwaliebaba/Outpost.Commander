@@ -192,26 +192,23 @@ public:
   TEST_METHOD(TheRepositoryMapIsPointSymmetric)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    auto mirrored = [](Outpost::PlanePosition _position)
-    {
-      return Outpost::PlanePosition{-_position.xMeters, -_position.zMeters};
-    };
+    auto mirrored = [](Outpost::PlanePosition _position) { return Outpost::PlanePosition{-_position.xMeters, -_position.zMeters}; };
 
     Assert::IsTrue(mirrored(map.starts[0]) == map.starts[1]);
     for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
     {
-      Assert::IsTrue(std::ranges::any_of(map.oreAsteroids, [&](const Outpost::OreAsteroidPlacement& _other)
-      {
-        return _other.position == mirrored(asteroid.position) && _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.
-               yield;
-      }));
+      Assert::IsTrue(std::ranges::any_of(map.oreAsteroids,
+                                         [&](const Outpost::OreAsteroidPlacement& _other)
+                                         {
+                                           return _other.position == mirrored(asteroid.position) &&
+                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield;
+                                         }));
     }
     for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
     {
-      Assert::IsTrue(std::ranges::any_of(map.asteroidFields, [&](const Outpost::AsteroidFieldPlacement& _other)
-      {
-        return _other.position == mirrored(field.position) && _other.radiusMeters == field.radiusMeters;
-      }));
+      Assert::IsTrue(
+        std::ranges::any_of(map.asteroidFields, [&](const Outpost::AsteroidFieldPlacement& _other)
+                            { return _other.position == mirrored(field.position) && _other.radiusMeters == field.radiusMeters; }));
     }
   }
 
@@ -248,7 +245,8 @@ public:
     ExpectLoadError(Replace("{ \"xMeters\": -300, \"zMeters\": -300 }", "{ \"xMeters\": -300, \"zMeters\": -160 }"),
                     "starts[0]: is closer than 50 m to oreAsteroids[0]");
     ExpectLoadError(Replace("{ \"xMeters\": 300, \"zMeters\": 300 } ]",
-                            "{ \"xMeters\": 300, \"zMeters\": 300 }, { \"xMeters\": 0, \"zMeters\": -300 } ]"), "starts: has 3 starts");
+                            "{ \"xMeters\": 300, \"zMeters\": 300 }, { \"xMeters\": 0, \"zMeters\": -300 } ]"),
+                    "starts: has 3 starts");
     ExpectLoadError(Replace("\"yield\": \"home\"", "\"yield\": \"rich\""), "oreAsteroids[0].yield");
     ExpectLoadError(Replace("\"sizeMeters\": 1000,", "\"sizeMeters\": 1000, \"sizeMetres\": 1000,"), "sizeMetres");
     ExpectLoadError(Replace("\"minimumGapMeters\": 50,", ""), "the file: has no \"minimumGapMeters\"");

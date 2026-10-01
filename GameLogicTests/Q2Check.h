@@ -85,7 +85,7 @@ struct CheckOptions
 
 struct CheckResult
 {
-  // "PASS", "FAIL", "UNSURE", "INCOMPLETE" or "NOT RUN" for each of (a)-(d).
+  // "PASS", "FAIL", "UNSURE" or "NOT RUN" for each of (a)-(d).
   std::array<std::string, 4> verdicts;
   std::string report;
   [[nodiscard]] bool Passed() const;
@@ -94,7 +94,7 @@ struct CheckResult
 // The hulls, drives and weapons of the tuning data, as the check moves them.
 [[nodiscard]] CheckParts PartsFrom(const Outpost::Tuning& _tuning);
 
-// Every design of the parts the model can field: every weapon but a splash weapon, which waits for ship sizes (G5).
+// Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (task 5.3).
 [[nodiscard]] std::vector<CheckDesign> DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts);
 
 // One battle: battle _battle of _battles between _a and _b, at _budgetOre each give or take the window. +1 when _a wins, -1

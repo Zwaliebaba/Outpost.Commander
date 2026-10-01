@@ -146,7 +146,7 @@ std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint
 // The 95% confidence interval of a win rate of _wins in _battles (Wilson).
 std::pair<double, double> Wilson(std::uint32_t _wins, std::uint32_t _battles)
 {
-  constexpr double z = CONFIDENCE_Z;
+  const double z = CONFIDENCE_Z;
   const double n = _battles;
   const double p = _wins / n;
   const double denominator = 1.0 + (z * z / n);
@@ -195,10 +195,7 @@ std::vector<Settled> Settle(const std::vector<Contest>& _contests, double _thres
 {
   std::vector<Settled> results(_contests.size());
   std::vector<std::pair<size_t, Pairing>> rerun;
-  const auto best = [](const Contest& _contest)
-  {
-    return *std::ranges::max_element(_contest, {}, &Candidate::Rate);
-  };
+  const auto best = [](const Contest& _contest) { return *std::ranges::max_element(_contest, {}, &Candidate::Rate); };
   for (size_t c = 0; c < _contests.size(); ++c)
   {
     bool pass = false;
@@ -324,29 +321,19 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
 {
   const auto locked = [&](auto _id)
   {
-    const bool unlockedByAny = std::ranges::any_of(_tuning.research, [_id](const Outpost::ResearchTopicTuning& _topic)
-    {
-      return Unlocks(_topic, _id);
-    });
-    const bool unlockedHere = std::ranges::any_of(_researched, [_id](const Outpost::ResearchTopicTuning* _topic)
-    {
-      return Unlocks(*_topic, _id);
-    });
+    const bool unlockedByAny =
+      std::ranges::any_of(_tuning.research, [_id](const Outpost::ResearchTopicTuning& _topic) { return Unlocks(_topic, _id); });
+    const bool unlockedHere =
+      std::ranges::any_of(_researched, [_id](const Outpost::ResearchTopicTuning* _topic) { return Unlocks(*_topic, _id); });
     return unlockedByAny && !unlockedHere;
   };
   CheckParts parts;
-  std::ranges::copy_if(_parts.hulls, std::back_inserter(parts.hulls), [&](const GameLogicTests::CheckHull& _hull)
-  {
-    return !locked(_hull.id);
-  });
-  std::ranges::copy_if(_parts.drives, std::back_inserter(parts.drives), [&](const GameLogicTests::CheckDrive& _drive)
-  {
-    return !locked(_drive.id);
-  });
-  std::ranges::copy_if(_parts.weapons, std::back_inserter(parts.weapons), [&](const GameLogicTests::CheckWeapon& _weapon)
-  {
-    return !locked(_weapon.id);
-  });
+  std::ranges::copy_if(_parts.hulls, std::back_inserter(parts.hulls),
+                       [&](const GameLogicTests::CheckHull& _hull) { return !locked(_hull.id); });
+  std::ranges::copy_if(_parts.drives, std::back_inserter(parts.drives),
+                       [&](const GameLogicTests::CheckDrive& _drive) { return !locked(_drive.id); });
+  std::ranges::copy_if(_parts.weapons, std::back_inserter(parts.weapons),
+                       [&](const GameLogicTests::CheckWeapon& _weapon) { return !locked(_weapon.id); });
 
   for (const Outpost::ResearchTopicTuning* topic : _researched)
   {
@@ -376,8 +363,8 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
 bool AffectsBattles(const Outpost::ResearchTopicTuning& _topic)
 {
   const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&_topic.effect);
-  return upgrade == nullptr || (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target !=
-                                Outpost::UpgradeTarget::Shipyards);
+  return upgrade == nullptr ||
+         (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target != Outpost::UpgradeTarget::Shipyards);
 }
 
 // ---- The check ---------------------------------------------------------------------------------------------------------
@@ -431,10 +418,7 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
         if (mix[i] >= WORTH_BUILDING)
           built.push_back(i);
       }
-      std::ranges::sort(built, [&mix](size_t _a, size_t _b)
-      {
-        return mix[_a] > mix[_b];
-      });
+      std::ranges::sort(built, [&mix](size_t _a, size_t _b) { return mix[_a] > mix[_b]; });
       std::string worth;
       for (const size_t i : built)
         worth += std::format("{}{} {:.0f}%", worth.empty() ? "" : ", ", _designs[i].code, 100.0 * mix[i]);
@@ -491,7 +475,7 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
       }
       for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
       {
-        if (weapon.splashRadiusMeters <= 0.0 && !weapons.contains(weapon.name))
+        if (!weapons.contains(weapon.name))
           _failures.lines["b"].push_back(std::format("{}: no design worth building uses the {} weapon", where, weapon.name));
       }
     }
@@ -512,23 +496,26 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     }
     const std::vector<const Outpost::ResearchTopicTuning*> researched = WithPrerequisites(topic, _tuning.research);
     const std::vector<CheckDesign> designs = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, researched));
-    const bool unlocksUnmodelled = std::visit([&designs]<typename Effect>([[maybe_unused]] const Effect& _effect)
-    {
-      if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
-        return false;
-      else
+    const bool unlocksUnmodelled = std::visit(
+      [&designs]<typename Effect>([[maybe_unused]] const Effect& _effect)
       {
-        return std::ranges::none_of(designs, [&_effect](const CheckDesign& _design)
+        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
+          return false;
+        else
         {
-          if constexpr (std::is_same_v<Effect, Outpost::HullId>)
-            return _design.components.hull == _effect;
-          else if constexpr (std::is_same_v<Effect, Outpost::DriveId>)
-            return _design.components.drive == _effect;
-          else
-            return _design.components.weapon == _effect;
-        });
-      }
-    }, topic.effect);
+          return std::ranges::none_of(designs,
+                                      [&_effect](const CheckDesign& _design)
+                                      {
+                                        if constexpr (std::is_same_v<Effect, Outpost::HullId>)
+                                          return _design.components.hull == _effect;
+                                        else if constexpr (std::is_same_v<Effect, Outpost::DriveId>)
+                                          return _design.components.drive == _effect;
+                                        else
+                                          return _design.components.weapon == _effect;
+                                      });
+        }
+      },
+      topic.effect);
     if (unlocksUnmodelled)
     {
       _report += std::format("  {}: not modelled\n", topic.name);
@@ -561,10 +548,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     std::string chain;
     for (const Outpost::ResearchTopicTuning* step : researched)
       chain += std::format("{}{}", chain.empty() ? "" : " + ", step->name);
-    const Settled& weakest = *std::ranges::min_element(settled, {}, [](const Settled& _settled)
-    {
-      return _settled.best.Rate();
-    });
+    const Settled& weakest = *std::ranges::min_element(settled, {}, [](const Settled& _settled) { return _settled.best.Rate(); });
     _report += std::format("  {}: weakest answer is {} to {}* at {} ({} Ore {})\n", chain, weakest.best.pairing.a->code,
                            weakest.best.pairing.b->code, Percent(weakest.best), Ore(weakest.best.pairing.budgetOre),
                            ModeName(weakest.best.pairing.mode));
@@ -572,9 +556,9 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     {
       if (result.verdict != Verdict::Pass)
       {
-        _failures.lines[result.verdict == Verdict::Fail ? "d" : "d?"].push_back(std::format(
-          "{}, {} Ore {}: the best answer to {}* is {} at {}", chain, Ore(result.best.pairing.budgetOre),
-          ModeName(result.best.pairing.mode), result.best.pairing.b->code, result.best.pairing.a->code, Percent(result.best)));
+        _failures.lines[result.verdict == Verdict::Fail ? "d" : "d?"].push_back(
+          std::format("{}, {} Ore {}: the best answer to {}* is {} at {}", chain, Ore(result.best.pairing.budgetOre),
+                      ModeName(result.best.pairing.mode), result.best.pairing.b->code, result.best.pairing.a->code, Percent(result.best)));
       }
     }
   }
@@ -589,10 +573,7 @@ std::vector<std::pair<std::string, CheckParts>> Perturbed(const CheckParts& _par
     for (const double sign : {-1.0, 1.0})
     {
       CheckParts parts = _parts;
-      auto& entry = *std::ranges::find((parts.*_list), _part->id, [](const auto& _each)
-      {
-        return _each.id;
-      });
+      auto& entry = *std::ranges::find((parts.*_list), _part->id, [](const auto& _each) { return _each.id; });
       entry.*_member *= 1.0 + (sign * PERTURBATION);
       changed.emplace_back(std::format("{}.{} {}5%", _name, _field, sign < 0.0 ? "-" : "+"), std::move(parts));
     }
@@ -612,12 +593,12 @@ std::vector<std::pair<std::string, CheckParts>> Perturbed(const CheckParts& _par
   }
   for (const GameLogicTests::CheckWeapon& weapon : _parts.weapons)
   {
-    if (weapon.splashRadiusMeters > 0.0)
-      continue;
     add(weapon.name, "damage", &GameLogicTests::CheckWeapon::damage, &weapon, &CheckParts::weapons);
     add(weapon.name, "interval", &GameLogicTests::CheckWeapon::fireIntervalSeconds, &weapon, &CheckParts::weapons);
     add(weapon.name, "range", &GameLogicTests::CheckWeapon::rangeMeters, &weapon, &CheckParts::weapons);
     add(weapon.name, "cost", &GameLogicTests::CheckWeapon::cost, &weapon, &CheckParts::weapons);
+    if (weapon.splashRadiusMeters > 0.0)
+      add(weapon.name, "splash", &GameLogicTests::CheckWeapon::splashRadiusMeters, &weapon, &CheckParts::weapons);
   }
   return changed;
 }
@@ -627,9 +608,7 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
 {
   const std::vector<CheckDesign> designs = GameLogicTests::DesignsFrom(_tuning, _parts);
   const auto byCode = [](const std::vector<CheckDesign>& _list, const std::string& _code)
-  {
-    return &*std::ranges::find(_list, _code, &CheckDesign::code);
-  };
+  { return &*std::ranges::find(_list, _code, &CheckDesign::code); };
 
   // Keeps every perturbed design alive while its pairings run.
   std::deque<std::vector<CheckDesign>> changedDesigns;
@@ -642,8 +621,8 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
     {
       const CheckDesign* counter = byCode(changed, leg.counter);
       const CheckDesign* target = byCode(changed, leg.target);
-      if (counter->stats == byCode(designs, leg.counter)->stats && counter->cost == byCode(designs, leg.counter)->cost && target->stats ==
-          byCode(designs, leg.target)->stats && target->cost == byCode(designs, leg.target)->cost)
+      if (counter->stats == byCode(designs, leg.counter)->stats && counter->cost == byCode(designs, leg.counter)->cost &&
+          target->stats == byCode(designs, leg.target)->stats && target->cost == byCode(designs, leg.target)->cost)
         continue;
       pairings.push_back({counter, target, leg.budgetOre, leg.mode, _options.robustBattles});
       labels.push_back(label);
@@ -660,9 +639,9 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
     if (settled[k].verdict != Verdict::Pass)
     {
       const Candidate& best = settled[k].best;
-      _failures.lines[settled[k].verdict == Verdict::Fail ? "c" : "c?"].push_back(std::format(
-        "{}: {} no longer beats {} at {} Ore {} fire ({})", labels[k], best.pairing.a->code, best.pairing.b->code,
-        Ore(best.pairing.budgetOre), ModeName(best.pairing.mode), Percent(best)));
+      _failures.lines[settled[k].verdict == Verdict::Fail ? "c" : "c?"].push_back(
+        std::format("{}: {} no longer beats {} at {} Ore {} fire ({})", labels[k], best.pairing.a->code, best.pairing.b->code,
+                    Ore(best.pairing.budgetOre), ModeName(best.pairing.mode), Percent(best)));
     }
   }
   _report += std::format("\nRobustness: {} counter checks under one-number changes of +/-5%.\n", pairings.size());
@@ -671,10 +650,7 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
 
 bool GameLogicTests::CheckResult::Passed() const
 {
-  return std::ranges::none_of(verdicts, [](const std::string& _verdict)
-  {
-    return _verdict == "FAIL" || _verdict == "UNSURE";
-  });
+  return std::ranges::none_of(verdicts, [](const std::string& _verdict) { return _verdict == "FAIL" || _verdict == "UNSURE"; });
 }
 
 CheckParts GameLogicTests::PartsFrom(const Outpost::Tuning& _tuning)
@@ -704,8 +680,6 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
     {
       for (const CheckWeapon& weapon : _parts.weapons)
       {
-        if (weapon.splashRadiusMeters > 0.0)
-          continue;
         CheckDesign design;
         design.code = std::format("{}+{}+{}", ShortName(hull.name, false), ShortName(drive.name, false), ShortName(weapon.name, true));
         design.hull = hull.name;
@@ -716,14 +690,15 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
         // time stay the tuning data's.
         design.stats = Outpost::DesignStatsFor(_tuning, hull.id, drive.id, weapon.id);
         design.stats.movement.speedMetersPerSecond = static_cast<float>(hull.speedMetersPerSecond * drive.speedFactor);
-        design.stats.hitPointsHundredths = static_cast<std::int32_t>(std::llround(
-          hull.hitPoints * drive.hitPointsFactor * Outpost::HUNDREDTHS));
+        design.stats.hitPointsHundredths =
+          static_cast<std::int32_t>(std::llround(hull.hitPoints * drive.hitPointsFactor * Outpost::HUNDREDTHS));
         design.stats.armorHundredths = static_cast<std::int32_t>(std::llround(hull.armor * Outpost::HUNDREDTHS));
         design.cost = hull.cost + drive.cost + weapon.cost;
         design.stats.cost = static_cast<std::int32_t>(std::llround(design.cost));
         design.stats.damageHundredths = static_cast<std::int32_t>(std::llround(weapon.damage * Outpost::HUNDREDTHS));
         design.stats.fireIntervalSeconds = weapon.fireIntervalSeconds;
         design.stats.rangeMeters = static_cast<float>(weapon.rangeMeters);
+        design.stats.splashRadiusMeters = static_cast<float>(weapon.splashRadiusMeters);
         designs.push_back(std::move(design));
       }
     }
@@ -734,8 +709,8 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
 int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMode _mode, std::uint32_t _battle,
                           std::uint32_t _battles)
 {
-  const double budget = _budgetOre * (1.0 - BUDGET_SPREAD + (
-                                        2.0 * BUDGET_SPREAD * (static_cast<double>(_battle % _battles) + 0.5) / _battles));
+  const double budget =
+    _budgetOre * (1.0 - BUDGET_SPREAD + (2.0 * BUDGET_SPREAD * (static_cast<double>(_battle % _battles) + 0.5) / _battles));
   const std::array<const CheckDesign*, 2> sides{&_a, &_b};
 
   Outpost::Simulation simulation(SeedFor(_a, _b, _budgetOre, _mode, _battle), TICKS_PER_SECOND);
@@ -777,7 +752,7 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
                          {.player = SECOND, .order = Outpost::AttackMoveCommand{.ships = ships[1], .destination = centers[0]}}});
   // An attack-move ends where it was sent. Once a second each side sends any ship that has stopped there out of range
   // after what is left of the enemy, so that, as in the model, a battle ends only when one side is gone.
-  constexpr auto limit = static_cast<std::uint64_t>(TIME_LIMIT_SECONDS * TICKS_PER_SECOND);
+  const auto limit = static_cast<std::uint64_t>(TIME_LIMIT_SECONDS * TICKS_PER_SECOND);
   std::array<size_t, 2> alive{};
   while (true)
   {
@@ -828,12 +803,6 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
   std::string& report = result.report;
   report += std::format("{} designs, {} battles per pairing (up to {} when a verdict is uncertain), a {} Hz tick.\n", every.size(),
                         _options.battles, _options.maxBattles, TICKS_PER_SECOND);
-  std::vector<std::string> unmodelled;
-  for (const CheckWeapon& weapon : parts.weapons)
-  {
-    if (weapon.splashRadiusMeters > 0.0)
-      unmodelled.push_back(weapon.name);
-  }
 
   Failures failures;
   std::set<Leg> legs;
@@ -844,10 +813,12 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
     RunRobustness(_tuning, parts, legs, _options, failures, report);
 
   report += "\nQ2 check (design §3):\n";
-  const std::array<std::pair<std::string, std::string>, 4> criteria{
-    {{"a", "every design has a counter that wins at least 80%"}, {"b", "the designs worth building use every hull, drive and weapon"},
-     {"c", "no counter stops winning when one number moves 5%"},
-     {"d", "no research topic leaves a design without an answer that wins half the time"},}};
+  const std::array<std::pair<std::string, std::string>, 4> criteria{{
+    {"a", "every design has a counter that wins at least 80%"},
+    {"b", "the designs worth building use every hull, drive and weapon"},
+    {"c", "no counter stops winning when one number moves 5%"},
+    {"d", "no research topic leaves a design without an answer that wins half the time"},
+  }};
   for (size_t k = 0; k < criteria.size(); ++k)
   {
     const auto& [key, text] = criteria[k];
@@ -859,11 +830,8 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
     else if (!failures.lines[key + "?"].empty())
       verdict = "UNSURE";
     else
-      verdict = key == "b" && !unmodelled.empty() ? "INCOMPLETE" : "PASS";
-    std::string names;
-    for (const std::string& name : unmodelled)
-      names += (names.empty() ? "" : ", ") + name;
-    report += std::format("  ({}) {}: {}{}\n", key, text, verdict, verdict == "INCOMPLETE" ? std::format(" ({} not modelled)", names) : "");
+      verdict = "PASS";
+    report += std::format("  ({}) {}: {}\n", key, text, verdict);
     for (const std::string& line : failures.lines[key])
       report += std::format("      {}\n", line);
     for (const std::string& line : failures.lines[key + "?"])

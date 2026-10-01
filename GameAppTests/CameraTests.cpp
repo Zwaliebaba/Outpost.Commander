@@ -50,10 +50,7 @@ void ExpectRejected(std::string_view _replace, std::string_view _with)
   const size_t at = json.find(_replace);
   Assert::AreNotEqual(std::string::npos, at);
   json.replace(at, _replace.size(), _with);
-  Assert::ExpectException<Neuron::Exception>([&]
-  {
-    (void)Outpost::LoadCameraSettings(json);
-  });
+  Assert::ExpectException<Neuron::Exception>([&] { (void)Outpost::LoadCameraSettings(json); });
 }
 } // namespace
 
@@ -186,7 +183,7 @@ public:
     Outpost::Camera camera(RepositorySettings());
     camera.Rotate(0.7f);
     camera.Pan(-300.0f, 120.0f);
-    constexpr Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
+    const Outpost::Viewport viewport{.widthPixels = 1920, .heightPixels = 1080};
     for (const auto& [x, y] : {std::pair{960.0f, 540.0f}, std::pair{10.0f, 20.0f}, std::pair{1900.0f, 1000.0f}})
     {
       const std::optional<Outpost::PlanePosition> ground = camera.GroundPointAtPixel(x, y, viewport);

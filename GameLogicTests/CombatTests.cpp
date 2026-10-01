@@ -17,6 +17,7 @@ constexpr Outpost::DriveId ION{1};
 constexpr Outpost::DriveId FUSION{2};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
+constexpr Outpost::WeaponId MISSILE_RACK{3};
 
 // A simulation on open ground, with the repository's tuning data to make designs from.
 class Arena
@@ -45,10 +46,9 @@ public:
   {
     const Outpost::DesignComponents components{_hull, _drive, _weapon};
     const Outpost::ShipDesign* design = m_simulation.FindDesign(_owner, components);
-    const Outpost::DesignId id = design != nullptr
-                                   ? design->id
-                                   : m_simulation.SaveDesign(_owner, Outpost::DesignName(m_tuning, components), components,
-                                                             Outpost::DesignStatsFor(m_tuning, _hull, _drive, _weapon));
+    const Outpost::DesignId id = design != nullptr ? design->id
+                                                   : m_simulation.SaveDesign(_owner, Outpost::DesignName(m_tuning, components), components,
+                                                                             Outpost::DesignStatsFor(m_tuning, _hull, _drive, _weapon));
     return m_simulation.SpawnShip(_owner, id, _position);
   }
 
@@ -188,8 +188,8 @@ public:
       group.push_back(arena.Ship(BLUE, MEDIUM, ION, LANCE, {-static_cast<float>(row) * 30.0f, static_cast<float>(column) * 30.0f - 45.0f}));
     }
     // Sturdy enough to outlast every Lance in range for the whole test.
-    const Outpost::EntityId target = arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {600.0f, 0.0f}, 20.0f,
-                                                                  1'000'000'000, 0);
+    const Outpost::EntityId target =
+      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {600.0f, 0.0f}, 20.0f, 1'000'000'000, 0);
     (void)arena.Tick({Order(BLUE, Outpost::AttackMoveCommand{.ships = group, .destination = {600.0f, 0.0f}})});
     for (int tick = 0; tick < 30 * static_cast<int>(TICKS_PER_SECOND); ++tick)
       (void)arena.Tick();
@@ -200,11 +200,46 @@ public:
       nearestMeters = std::min(nearestMeters, Outpost::Distance(arena.World().FindEntity(id)->position, targetPosition));
     // No closer than a tick's travel inside the Lance's 220 m.
     Assert::IsTrue(nearestMeters > 220.0f - 52.0f / TICKS_PER_SECOND - 1.0f, std::to_wstring(nearestMeters).c_str());
-    const auto firing = std::ranges::count_if(group, [&arena](Outpost::EntityId _id)
-    {
-      return arena.World().FindEntity(_id)->target.IsValid();
-    });
+    const auto firing =
+      std::ranges::count_if(group, [&arena](Outpost::EntityId _id) { return arena.World().FindEntity(_id)->target.IsValid(); });
     Assert::IsTrue(firing >= 12, (std::to_wstring(firing) + L" of 16 in range").c_str());
+  }
+
+  // Task 5.3, ADR-014: a Missile Rack hit also hits every other enemy ship and structure whose center is within its 30 m
+  // splash of the target's, each after its own armor, and never the shooter's own side.
+  TEST_METHOD(SplashHitsEveryEnemyNearTheTarget)
+  {
+    Arena arena;
+    // The enemy ships are unarmed Constructors, so that the missile is the only thing that does damage.
+    arena.World().UseTuning(arena.TuningData());
+    const Outpost::EntityId launcher = arena.Ship(BLUE, SMALL, ION, MISSILE_RACK, {0.0f, 0.0f});
+    const Outpost::EntityId target = arena.World().SpawnConstructor(RED, {250.0f, 0.0f});
+    const Outpost::EntityId beside = arena.World().SpawnConstructor(RED, {250.0f, 22.0f});
+    const Outpost::EntityId beyond = arena.World().SpawnConstructor(RED, {250.0f, -40.0f});
+    // Small footprints, so that nothing is pushed apart before the first missile lands.
+    const Outpost::EntityId armored =
+      arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, {275.0f, 0.0f}, 5.0f, 1'000'000, 10 * Outpost::HUNDREDTHS);
+    const Outpost::EntityId friendly =
+      arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {250.0f, -22.0f}, 5.0f, 1'000'000);
+
+    std::vector<Outpost::ShotView> shots;
+    for (int tick = 0; tick < 3 * static_cast<int>(TICKS_PER_SECOND) && shots.empty(); ++tick)
+      shots = arena.Tick();
+    Assert::AreEqual(size_t{1}, shots.size());
+    Assert::IsTrue(shots[0].shooter == launcher && shots[0].target == target);
+    Assert::AreEqual(30.0f, shots[0].splashRadiusMeters);
+
+    const auto lost = [&arena](Outpost::EntityId _id)
+    {
+      const Outpost::Entity& entity = *arena.World().FindEntity(_id);
+      return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
+    };
+    // 40 against a Constructor's armor of 2, and against the structure's 10.
+    Assert::AreEqual(3800, lost(target));
+    Assert::AreEqual(3800, lost(beside), L"22 m from the target");
+    Assert::AreEqual(0, lost(beyond), L"40 m from the target");
+    Assert::AreEqual(3000, lost(armored), L"a structure 25 m away, after its armor");
+    Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
 
   // Task 3.3: weapons are turrets, so a ship fires while it moves.
@@ -255,7 +290,8 @@ public:
     const Outpost::EntityId friendly = arena.Ship(BLUE, SMALL, ION, LANCE, {50.0f, 0.0f});
     const std::vector<Outpost::CommandResult> results = arena.World().Tick({
       Order(BLUE, Outpost::AttackCommand{.ships = {ship}, .target = friendly}),
-      Order(BLUE, Outpost::AttackCommand{.ships = {ship}, .target = Outpost::EntityId{1}}),});
+      Order(BLUE, Outpost::AttackCommand{.ships = {ship}, .target = Outpost::EntityId{1}}),
+    });
     // Entity 1 is the first thing the arena placed after the empty map: the ship itself, so also not an enemy.
     Assert::IsTrue(results[0] == Outpost::CommandResult::NotAnEnemy && results[1] == Outpost::CommandResult::NotAnEnemy);
   }
@@ -292,10 +328,10 @@ public:
       std::vector<Outpost::EntityId> red;
       for (int i = 0; i < 12; ++i)
       {
-        blue.push_back(arena.Ship(BLUE, i % 2 == 0 ? SMALL : MEDIUM, ION, i % 3 == 0 ? LANCE : MASS_DRIVER,
-                                  {-400.0f, static_cast<float>(i) * 30.0f}));
-        red.push_back(arena.Ship(RED, i % 2 == 0 ? MEDIUM : SMALL, ION, i % 4 == 0 ? LANCE : MASS_DRIVER,
-                                 {400.0f, static_cast<float>(i) * 30.0f}));
+        blue.push_back(
+          arena.Ship(BLUE, i % 2 == 0 ? SMALL : MEDIUM, ION, i % 3 == 0 ? LANCE : MASS_DRIVER, {-400.0f, static_cast<float>(i) * 30.0f}));
+        red.push_back(
+          arena.Ship(RED, i % 2 == 0 ? MEDIUM : SMALL, ION, i % 4 == 0 ? LANCE : MASS_DRIVER, {400.0f, static_cast<float>(i) * 30.0f}));
       }
       arena.World().SetTargetRule(Outpost::TargetRule::Random);
       (void)arena.Tick({Order(BLUE, Outpost::AttackMoveCommand{.ships = blue, .destination = {400.0f, 150.0f}}),

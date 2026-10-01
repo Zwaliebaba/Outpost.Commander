@@ -81,8 +81,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       measurements << std::format("seed {} load {} stress {}\n", seed, load ? 1 : 0, stress ? 1 : 0);
     }
 
-    const std::unique_ptr<Outpost::Server> server = Outpost::CreateInProcessServer(
-      {.seed = seed, .measurementLoad = load, .stressLoad = stress});
+    const std::unique_ptr<Outpost::Server> server =
+      Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress});
     const std::unique_ptr<Outpost::Transport> player = server->Connect(HUMAN_PLAYER);
     // Under load both players' ships are kept moving, the rival's through its own connection, as the AI's will be. The
     // stress scene orders its own ships, but the rival connects there too, so the server builds both players' snapshots
@@ -194,8 +194,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   }
   catch (const winrt::hresult_error& error)
   {
-    const std::wstring message = std::format(L"{}\n\nError 0x{:08X}", std::wstring_view(error.message()),
-                                             static_cast<std::uint32_t>(error.code()));
+    const std::wstring message =
+      std::format(L"{}\n\nError 0x{:08X}", std::wstring_view(error.message()), static_cast<std::uint32_t>(error.code()));
     MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONERROR);
     return error.code();
   }

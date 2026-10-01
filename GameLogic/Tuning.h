@@ -30,7 +30,8 @@ struct HullTuning
   double speedMetersPerSecond = 0.0;
   std::int32_t cost = 0;
   double buildSeconds = 0.0;
-  // Provisional until ship sizes are set (G5): the circle a ship of this hull keeps clear, for movement and formation.
+  // The ship's size (gate G5, decided 2026-10-01): the circle a ship of this hull keeps clear, for movement and formation,
+  // and the spacing a Missile Rack's splash reaches across.
   double footprintRadiusMeters = 0.0;
   // Provisional, like the radius: how fast the hull turns before its drive's factor (design §7).
   double turnRateDegreesPerSecond = 0.0;
@@ -66,7 +67,7 @@ struct ConstructorTuning
   double speedMetersPerSecond = 0.0;
   std::int32_t cost = 0;
   double buildSeconds = 0.0;
-  // Provisional with the hulls' (G5).
+  // Provisional: G5 set the hulls' sizes only, and the Constructor's is still open (design §15).
   double footprintRadiusMeters = 0.0;
   double turnRateDegreesPerSecond = 0.0;
   // One Constructor builds a structure in its buildConstructorSeconds; each further one on the site adds this share of
@@ -91,7 +92,8 @@ struct StructureTuning
   std::string name;
   std::int32_t hitPoints = 0;
   std::int32_t armor = 0;
-  // The circle it blocks and that no other structure may overlap (design §6). Provisional, like the hulls' (G5).
+  // The circle it blocks and that no other structure may overlap (design §6). Provisional: G5 set the hulls' sizes only
+  // (design §15).
   double footprintRadiusMeters = 0.0;
   // Both or neither: a structure a Constructor cannot build, the Command Station, has no cost and no build time.
   std::optional<std::int32_t> cost;

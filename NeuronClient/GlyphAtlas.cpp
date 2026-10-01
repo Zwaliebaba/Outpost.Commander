@@ -102,8 +102,8 @@ Neuron::GlyphAtlas Neuron::PackGlyphs(const std::vector<GlyphBitmap>& _bitmaps, 
 Neuron::GlyphAtlas Neuron::RasterizeGlyphs(std::wstring_view _family, float _emPixels)
 {
   winrt::com_ptr<IDWriteFactory2> factory;
-  winrt::check_hresult(DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED, __uuidof(IDWriteFactory2),
-                                           reinterpret_cast<IUnknown**>(factory.put())));
+  winrt::check_hresult(
+    DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED, __uuidof(IDWriteFactory2), reinterpret_cast<IUnknown**>(factory.put())));
 
   winrt::com_ptr<IDWriteFontCollection> fonts;
   winrt::check_hresult(factory->GetSystemFontCollection(fonts.put(), FALSE));
@@ -116,8 +116,8 @@ Neuron::GlyphAtlas Neuron::RasterizeGlyphs(std::wstring_view _family, float _emP
   winrt::com_ptr<IDWriteFontFamily> fontFamily;
   winrt::check_hresult(fonts->GetFontFamily(familyIndex, fontFamily.put()));
   winrt::com_ptr<IDWriteFont> font;
-  winrt::check_hresult(fontFamily->GetFirstMatchingFont(DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_FONT_STRETCH_NORMAL, DWRITE_FONT_STYLE_NORMAL,
-                                                        font.put()));
+  winrt::check_hresult(
+    fontFamily->GetFirstMatchingFont(DWRITE_FONT_WEIGHT_SEMI_BOLD, DWRITE_FONT_STRETCH_NORMAL, DWRITE_FONT_STYLE_NORMAL, font.put()));
   winrt::com_ptr<IDWriteFontFace> face;
   winrt::check_hresult(font->CreateFontFace(face.put()));
 
@@ -140,8 +140,8 @@ Neuron::GlyphAtlas Neuron::RasterizeGlyphs(std::wstring_view _family, float _emP
     // Whole pixels, so that every glyph starts on a texel and the text stays sharp.
     bitmap.advance = std::round(static_cast<float>(glyphMetrics.advanceWidth) * pixelsPerDesignUnit);
 
-    constexpr FLOAT noAdvance = 0.0f;
-    constexpr DWRITE_GLYPH_OFFSET noOffset{};
+    const FLOAT noAdvance = 0.0f;
+    const DWRITE_GLYPH_OFFSET noOffset{};
     DWRITE_GLYPH_RUN run{};
     run.fontFace = face.get();
     run.fontEmSize = _emPixels;
