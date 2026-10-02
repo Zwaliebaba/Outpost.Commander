@@ -2,6 +2,8 @@
 
 Status: **MVP done** · Owner: Stefan Zwaal · Started 2026-09-29 · Revised 2026-09-30 after the first and second reviews, and on 2026-10-01 through milestone 6, the retune of §12 and the answers to Q1–Q5
 
+**Amended by [the Phase 1 design](OutpostCommander-Phase1.md)** (2026-10-02): where the two differ, Phase 1 is the authority.
+
 This is the design authority AGENTS.md refers to: it says *what* is built. AGENTS.md says *how* the code is written, and `Design/ADR/` records the engineering decisions taken while building it.
 
 Outpost Commander is a real-time strategy game in space, built on the model of **Warzone 2100**: build a base with constructor units on contested resource points, research new technology, **design your own ships from components**, and use them to destroy the enemy.
