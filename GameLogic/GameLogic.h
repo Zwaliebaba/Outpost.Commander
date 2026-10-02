@@ -6,8 +6,13 @@
 #include "GameProtocol.h"
 
 #include <algorithm>
+#include <condition_variable>
+#include <exception>
+#include <mutex>
 #include <optional>
 #include <span>
+#include <stop_token>
+#include <thread>
 
 #include "Tuning.h"
 #include "Map.h"

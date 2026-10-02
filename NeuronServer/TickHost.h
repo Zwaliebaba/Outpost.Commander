@@ -15,6 +15,10 @@ public:
   // The ticks due after _elapsed more wall time, from 0 to the maximum. A negative duration counts as none.
   [[nodiscard]] std::uint32_t Advance(std::chrono::nanoseconds _elapsed) noexcept;
 
+  // How much more wall time makes the next tick due, rounded up to a whole nanosecond: what a host that sleeps between
+  // ticks waits for.
+  [[nodiscard]] std::chrono::nanoseconds UntilNextTick() const noexcept;
+
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept
   {
     return m_ticksPerSecond;

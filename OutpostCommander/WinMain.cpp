@@ -116,7 +116,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // Loads every model before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011).
     Outpost::GameClient client(renderer, ticksPerSecond);
 
-    auto lastAdvance = std::chrono::steady_clock::now();
+    auto lastFrame = std::chrono::steady_clock::now();
     const auto startMatch = [&]
     {
       match.emplace();
@@ -131,8 +131,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
         match->logFile.open(std::filesystem::temp_directory_path() / MATCH_LOG, std::ios::app);
         match->log.emplace(match->logFile, seed, ticksPerSecond);
       }
+      // Its ticks run on the server's own thread from here, at their fixed rate whatever the frame rate (ADR-025).
+      match->server->Start();
       client.StartMatch();
-      lastAdvance = std::chrono::steady_clock::now();
+      lastFrame = std::chrono::steady_clock::now();
     };
     if (skipMenu)
       startMatch();
@@ -153,14 +155,13 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       if (!window.ProcessMessages())
         break;
 
-      // The server runs on this thread, at its own fixed rate whatever the frame rate (ADR-009).
       const auto now = std::chrono::steady_clock::now();
-      const auto elapsed = now - lastAdvance;
-      lastAdvance = now;
+      const auto elapsed = now - lastFrame;
+      lastFrame = now;
       if (match)
       {
-        match->server->Advance(elapsed);
-        // Taken every frame, logged or not, so that they do not pile up.
+        // Taken every frame, logged or not, so that they do not pile up. This is also where a failure on the server's thread
+        // reaches this one.
         for (const std::chrono::nanoseconds tick : match->server->TakeTickDurations())
         {
           if (measure)
