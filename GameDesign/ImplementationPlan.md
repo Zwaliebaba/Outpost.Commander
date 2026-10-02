@@ -64,6 +64,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 6.2 | Win, lose and the menu | 6.1 | — | done, [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42), run by the owner |
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | done, the match log in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); Q1 "yes" and Q3 "yes" from the owner's matches (design §3) |
 | B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the check of record passes in Release\|ARM64 on the development machine |
+| C.1 | Explosions and particles after DeepSpaceOutpost | 3.5, A.2 | owner, 2026-10-01 | in review; not yet built or run |
 
 ## Gates
 
@@ -683,6 +684,20 @@ The owner settled design §15's open questions on 2026-10-01, and this work land
 
 - **Q2 is "yes" in the simulation**, and `Q2CheckTests.TheFullCheck` is how a change to §12 is judged. `Tools/BattleModel.py` now agrees with it on (a) only, so it is a first guess, not a verdict (design §12).
 - **Q1–Q5 were answered on 2026-10-01**, from the owner's runs and first match and from measurements on the development machine (design §3).
+
+---
+
+## Inserted by the owner after the MVP — Explosions and particles
+
+The owner asked on 2026-10-01 for DeepSpaceOutpost's particle and explosion managers, for the destruction of ships and structures. It is the first task after the MVP and lands as one PR.
+
+### C.1 — Explosions and particles after DeepSpaceOutpost
+
+- **Goal:** a ship or structure destroyed breaks into its own triangles, which tumble apart, in a blast of fireball, debris and smoke, as in DeepSpaceOutpost. It replaces task 3.5's disc and ring.
+- **Owner decisions of 2026-10-01:** one PR. Particles are analytic glows first, with no texture. Shards darken and shrink rather than fade with transparency.
+- **ADR:** [ADR-023](../Design/ADR/ADR-023-explosions-and-particles.md).
+- **As built:** `Outpost::ParticleSystem` and `Outpost::ExplosionManager` in `GameApp`, seeded by `Outpost::EffectRandom`, and `Neuron::MeshPipeline::DrawTriangles` for the shards. `GameClient` keeps each model's triangles on the CPU and starts both from each snapshot's destroyed. `ParticleSystemTests` and `ExplosionManagerTests` cover them without a GPU.
+- **Verify:** CI; **owner run**, to see whether a destruction reads from the RTS camera, and in the Q4 measurement (3.7), which now includes the shards.
 
 ---
 
