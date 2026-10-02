@@ -44,6 +44,9 @@
     <ClInclude Include="InProcessServer.h">
       <Filter>Server</Filter>
     </ClInclude>
+    <ClInclude Include="TickObserver.h">
+      <Filter>Server</Filter>
+    </ClInclude>
     <ClInclude Include="ShipDesign.h">
       <Filter>Combat</Filter>
     </ClInclude>
@@ -75,6 +78,9 @@
       <Filter>Simulation</Filter>
     </ClCompile>
     <ClCompile Include="InProcessServer.cpp">
+      <Filter>Server</Filter>
+    </ClCompile>
+    <ClCompile Include="TickObserver.cpp">
       <Filter>Server</Filter>
     </ClCompile>
     <ClCompile Include="ShipDesign.cpp">

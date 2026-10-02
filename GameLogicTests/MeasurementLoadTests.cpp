@@ -52,12 +52,48 @@ public:
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
     server.Advance(150ms);
-    const std::vector<std::chrono::nanoseconds> durations = server.TakeTickDurations();
-    Assert::AreEqual(size_t{3}, durations.size());
-    for (const std::chrono::nanoseconds duration : durations)
-      Assert::IsTrue(duration.count() > 0);
+    const std::vector<Outpost::TickTiming> timings = server.TakeTickTimings();
+    Assert::AreEqual(size_t{3}, timings.size());
+    for (const Outpost::TickTiming& timing : timings)
+    {
+      Assert::IsTrue(timing.total.count() > 0);
+      // Every tick builds a snapshot for its one player, inside the tick.
+      Assert::IsTrue(timing.Part(Outpost::TickPart::Snapshots).count() > 0);
+      Assert::IsTrue(timing.Part(Outpost::TickPart::Snapshots) <= timing.total);
+    }
     // Taken once.
-    Assert::IsTrue(server.TakeTickDurations().empty());
+    Assert::IsTrue(server.TakeTickTimings().empty());
+  }
+
+  // Task 8.1: an order tick on the measurement load names where its time went: the ships' paths, inside its commands,
+  // inside the tick.
+  TEST_METHOD(TimesTheOrdersOfATick)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    Outpost::InProcessServer server(tuning, map, {.seed = 1});
+    server.World().PlaceStartingBases(map);
+    Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(Outpost::PlayerId{1});
+    server.Advance(50ms);
+    (void)server.TakeTickTimings();
+
+    Outpost::MoveCommand move{.destination = {.xMeters = 600.0f, .zMeters = 600.0f}};
+    for (const Outpost::Entity& entity : server.World().Entities())
+    {
+      if (entity.kind == Outpost::EntityKind::Ship && entity.owner == Outpost::PlayerId{1})
+        move.ships.push_back(entity.id);
+    }
+    Assert::IsTrue(move.ships.size() > 1);
+    blue->Send({.order = move});
+    server.Advance(50ms);
+    const std::vector<Outpost::TickTiming> timings = server.TakeTickTimings();
+    Assert::AreEqual(size_t{1}, timings.size());
+    const Outpost::TickTiming& order = timings.front();
+    Assert::IsTrue(order.Part(Outpost::TickPart::ShipPaths).count() > 0);
+    Assert::IsTrue(order.Part(Outpost::TickPart::GroupRoute) + order.Part(Outpost::TickPart::ShipPaths) <=
+                   order.Part(Outpost::TickPart::Commands));
+    Assert::IsTrue(order.Part(Outpost::TickPart::Commands) <= order.total);
   }
 };
 } // namespace GameLogicTests

@@ -77,6 +77,7 @@
   <ItemGroup>
     <ClInclude Include="GameLogic.h" />
     <ClInclude Include="InProcessServer.h" />
+    <ClInclude Include="TickObserver.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MeasurementLoad.h" />
     <ClInclude Include="Pathfinder.h" />
@@ -93,6 +94,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="InProcessServer.cpp" />
+    <ClCompile Include="TickObserver.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MeasurementLoad.cpp" />
     <ClCompile Include="Pathfinder.cpp" />

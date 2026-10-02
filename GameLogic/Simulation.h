@@ -270,7 +270,9 @@ public:
   }
 
   // Runs one tick: applies _commands in order at its start, then advances the world. Returns one result per command.
-  [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands);
+  // _observer, when there is one, is told where each part of the tick begins and ends, for measurement (task 8.1). The
+  // simulation reads no clock itself (ADR-009), and nothing the observer learns reaches the state.
+  [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands, TickObserver* _observer = nullptr);
 
   // The ticks run so far. A snapshot built now is stamped with it.
   [[nodiscard]] std::uint64_t CurrentTick() const noexcept
@@ -406,6 +408,8 @@ private:
   Neuron::Random m_random;
   // The map's obstacles and edge, and the structures that block.
   Pathfinder m_pathfinder;
+  // Who measures the tick under way, if anyone (Tick); null between ticks, so a copy never holds one, and not state.
+  TickObserver* m_observer = nullptr;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.

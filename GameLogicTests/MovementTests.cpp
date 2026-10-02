@@ -35,6 +35,32 @@ bool Arrived(const Outpost::Simulation& _simulation, Outpost::EntityId _ship)
 {
   return !_simulation.FindEntity(_ship)->destination.has_value();
 }
+
+// Writes down every part a tick tells it of, as "+name" where it begins and "-name" where it ends (task 8.1).
+class PartRecorder final : public Outpost::TickObserver
+{
+public:
+  void Begin(Outpost::TickPart _part) noexcept override
+  {
+    m_parts.push_back(std::format("+{}", Outpost::TickPartName(_part)));
+  }
+
+  void End(Outpost::TickPart _part) noexcept override
+  {
+    m_parts.push_back(std::format("-{}", Outpost::TickPartName(_part)));
+  }
+
+  [[nodiscard]] std::string Take()
+  {
+    std::string parts;
+    for (const std::string& part : std::exchange(m_parts, {}))
+      parts += part + " ";
+    return parts;
+  }
+
+private:
+  std::vector<std::string> m_parts;
+};
 } // namespace
 
 TEST_CLASS(MovementTests)
@@ -48,6 +74,32 @@ public:
     // 180 degrees a second, times the Ion drive's 1.25.
     Assert::IsTrue(std::abs(smallIon.turnRateRadiansPerSecond - 3.9269908f) < 1e-5f);
     Assert::AreEqual(20.0f, Movement(3, 2).speedMetersPerSecond);
+  }
+
+  // Task 8.1: the simulation tells its observer where each part of a tick begins and ends, nested, in the order it runs
+  // them; a graph built for an order is inside the order. It reads no clock itself (ADR-009), and it tells only the tick
+  // it was given the observer for.
+  TEST_METHOD(TellsItsObserverEachPartOfATick)
+  {
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {}, .radiusMeters = 150.0f}}));
+    const Outpost::ShipMovement movement = Movement(1, 1);
+    const Outpost::EntityId first = simulation.SpawnShip(BLUE, DESIGN, movement, {-400.0f, 10.0f});
+    const Outpost::EntityId second = simulation.SpawnShip(BLUE, DESIGN, movement, {-400.0f, 40.0f});
+    PartRecorder recorder;
+
+    (void)simulation.Tick({Move({first, second}, {400.0f, 0.0f})}, &recorder);
+    Assert::AreEqual(std::string("+commands +group_route +graph_build -graph_build -group_route +ship_paths -ship_paths -commands "
+                                 "+fight -fight +targets -targets +move -move +separate -separate "),
+                     recorder.Take());
+    (void)simulation.Tick({}, &recorder);
+    Assert::AreEqual(std::string("+commands -commands +fight -fight +targets -targets +move -move +separate -separate "), recorder.Take());
+
+    // Neither a tick without it, nor a copy made after one with it, tells it anything.
+    (void)simulation.Tick({});
+    Outpost::Simulation copy = simulation;
+    (void)copy.Tick({});
+    Assert::AreEqual(std::string(), recorder.Take());
   }
 
   // Plan task 2.4: a ship reaches a target behind an obstacle, and never passes through it on the way.

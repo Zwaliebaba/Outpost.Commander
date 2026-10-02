@@ -7,6 +7,8 @@ The game writes OutpostCommander-measure.log to the temporary folder. Each line 
   frame_cpu_ns <ns>                           one frame's CPU work, from the swap chain's wait to Present's return
   frame_gpu_ns <ns>                           one frame's GPU work, between timestamps at its command list's ends
   tick_ns <ns>                                one server tick
+  tick_part_names <name> ...                  the parts of a tick, in the order tick_parts_ns gives them (task 8.1)
+  tick_parts_ns <ns> ...                      the tick just logged, part by part; the parts nest (GameProtocol/Server.h)
   response_ns <ns> input_read_ns ... presented_ns ...   Q5: a move order to its first visible response
 
 Usage: python Tools/FrameTimes.py [log] [--skip-frames N]
@@ -45,6 +47,21 @@ def describe(name, values_ms, target_ms):
           f"worst {values[-1]:.2f}; {within / len(values):.1%} within {target_ms:.1f} ms")
 
 
+def describe_parts(names, ticks, title):
+  """Each part's mean and worst over the given ticks, the heaviest mean first."""
+  if not ticks:
+    return [f"{title}: none"]
+  lines = [f"{title}, {len(ticks)} ticks (parts nest: commands holds group_route and ship_paths, and graph_build is "
+           f"counted inside whichever part built the graph):"]
+  rows = []
+  for index, name in enumerate(names):
+    values = [tick[index] for tick in ticks]
+    rows.append((sum(values) / len(values), max(values), name))
+  for mean, worst, name in sorted(rows, reverse=True):
+    lines.append(f"  {name:<12} mean {mean:7.3f} ms, worst {worst:7.3f} ms")
+  return lines
+
+
 def main():
   parser = argparse.ArgumentParser(description="Summarizes the game's measurement log.")
   parser.add_argument("log", nargs="?", default=os.path.join(tempfile.gettempdir(), LOG_NAME))
@@ -56,6 +73,9 @@ def main():
   cpu_ms = []
   gpu_ms = []
   tick_ms = []
+  part_names = []
+  # Each tick's parts in ms, paired with its total.
+  tick_parts = []
   response_ms = []
   with open(arguments.log, encoding="utf-8") as log:
     for line in log:
@@ -72,6 +92,10 @@ def main():
         gpu_ms.append(int(fields[1]) / 1e6)
       elif fields[0] == "tick_ns":
         tick_ms.append(int(fields[1]) / 1e6)
+      elif fields[0] == "tick_part_names":
+        part_names = fields[1:]
+      elif fields[0] == "tick_parts_ns" and tick_ms:
+        tick_parts.append((tick_ms[-1], [int(value) / 1e6 for value in fields[1:]]))
       elif fields[0] == "response_ns":
         response_ms.append(int(fields[1]) / 1e6)
 
@@ -84,6 +108,14 @@ def main():
   print(describe("Tick", tick_ms, TICK_TARGET_MS))
   if response_ms:
     print(describe("Order to response", response_ms, RESPONSE_TARGET_MS))
+  if part_names and tick_parts:
+    # Where the time goes over the whole run, and in the ticks over the target, which are the ones to fix (task 8.1).
+    every = [parts for _, parts in tick_parts]
+    slow = [parts for total, parts in tick_parts if total > TICK_TARGET_MS]
+    for line in describe_parts(part_names, every, "Tick parts, every tick"):
+      print(line)
+    for line in describe_parts(part_names, slow, f"Tick parts, ticks over {TICK_TARGET_MS:.0f} ms"):
+      print(line)
 
   # Q4: 99% of frames within 16.7 ms, on the CPU and on the GPU, and every tick within 5 ms.
   if cpu_ms and gpu_ms and tick_ms:

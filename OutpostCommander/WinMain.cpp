@@ -15,8 +15,8 @@ constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
 constexpr Outpost::PlayerId RIVAL_PLAYER{2};
 
-// Task 2.7's switches. --measure logs every tick's duration and every move order's time to its first visible response
-// to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
+// Task 2.7's switches. --measure logs every tick's duration, and since task 8.1 each of its parts, and every move order's
+// time to its first visible response to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
 // moving. Times are on std::chrono::steady_clock, which counts QueryPerformanceCounter, so a script injecting input
 // can line its own timestamps up with the game's.
 constexpr std::wstring_view MEASURE_SWITCH = L"--measure";
@@ -101,6 +101,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     {
       measurements.open(std::filesystem::temp_directory_path() / MEASUREMENT_LOG, std::ios::trunc);
       measurements << std::format("seed {} load {} stress {}\n", seed, load ? 1 : 0, stress ? 1 : 0);
+      // The names of the parts each tick_parts_ns line gives, in its order (task 8.1).
+      measurements << "tick_part_names";
+      for (std::size_t part = 0; part < Outpost::TICK_PART_COUNT; ++part)
+        measurements << ' ' << Outpost::TickPartName(static_cast<Outpost::TickPart>(part));
+      measurements << '\n';
     }
 
     // The next match's server is made while the menu shows, and the first before the window opens, so that bad tuning
@@ -162,10 +167,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       {
         // Taken every frame, logged or not, so that they do not pile up. This is also where a failure on the server's thread
         // reaches this one.
-        for (const std::chrono::nanoseconds tick : match->server->TakeTickDurations())
+        for (const Outpost::TickTiming& tick : match->server->TakeTickTimings())
         {
-          if (measure)
-            measurements << std::format("tick_ns {}\n", tick.count());
+          if (!measure)
+            continue;
+          measurements << std::format("tick_ns {}\ntick_parts_ns", tick.total.count());
+          for (const std::chrono::nanoseconds part : tick.parts)
+            measurements << ' ' << part.count();
+          measurements << '\n';
         }
 
         std::vector<Outpost::Snapshot> snapshots = match->player->Receive();

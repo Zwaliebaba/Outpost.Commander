@@ -493,46 +493,87 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
   }
 }
 
-std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands)
+std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
 {
+  // The observer watches this tick only, so that it is never left behind in a copy, even when the tick throws.
+  struct Watch
+  {
+    Simulation& simulation;
+    Watch(Simulation& _simulation, TickObserver* _observer) noexcept
+      : simulation(_simulation)
+    {
+      simulation.m_observer = _observer;
+      simulation.m_pathfinder.Observe(_observer);
+    }
+    Watch(const Watch&) = delete;
+    Watch& operator=(const Watch&) = delete;
+    Watch(Watch&&) = delete;
+    Watch& operator=(Watch&&) = delete;
+    ~Watch()
+    {
+      simulation.m_observer = nullptr;
+      simulation.m_pathfinder.Observe(nullptr);
+    }
+  };
+  const Watch watch(*this, _observer);
+
   std::vector<CommandResult> results;
   results.reserve(_commands.size());
   m_shots.clear();
   m_destroyed.clear();
-  for (const Command& command : _commands)
   {
-    results.push_back(std::visit(
-      [this, &command]<typename OrderType>(const OrderType& _order)
-      {
-        if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
-                      std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
-          return Apply(command.player, _order);
-        else
-          return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
-      },
-      command.order));
+    const ObservedPart part(m_observer, TickPart::Commands);
+    for (const Command& command : _commands)
+    {
+      results.push_back(std::visit(
+        [this, &command]<typename OrderType>(const OrderType& _order)
+        {
+          if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
+                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+            return Apply(command.player, _order);
+          else
+            return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
+        },
+        command.order));
+    }
   }
 
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
   // and work orders head for their targets, and Constructors in reach build and repair; queues produce, labs research and
   // Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any obstacle they were
-  // pushed into.
-  Fight();
-  DecideMatch();
-  ChaseTargets();
-  ApproachWork();
+  // pushed into. Each part is told to the observer, if there is one (task 8.1).
+  {
+    const ObservedPart part(m_observer, TickPart::Fight);
+    Fight();
+  }
+  {
+    const ObservedPart part(m_observer, TickPart::Targets);
+    DecideMatch();
+    ChaseTargets();
+    ApproachWork();
+  }
   if (m_tuning)
   {
+    const ObservedPart part(m_observer, TickPart::Economy);
     Work();
     Produce();
     Research();
     Mine();
   }
-  MoveShips();
-  SeparateShips();
-  KeepShipsClear();
+  {
+    const ObservedPart part(m_observer, TickPart::Move);
+    MoveShips();
+  }
+  {
+    const ObservedPart part(m_observer, TickPart::Separate);
+    SeparateShips();
+    KeepShipsClear();
+  }
   if (m_fog)
+  {
+    const ObservedPart part(m_observer, TickPart::Vision);
     UpdateVision();
+  }
   ++m_tick;
   return results;
 }
@@ -730,8 +771,12 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
 
   GroupRoutes routes(m_pathfinder, _destination, widestRadius);
   if (ships.size() > 1)
+  {
+    const ObservedPart part(m_observer, TickPart::GroupRoute);
     routes.SearchFrom(center);
+  }
 
+  const ObservedPart shipPaths(m_observer, TickPart::ShipPaths);
   const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   float slowestArrivalSeconds = 0.0f;
@@ -802,8 +847,12 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Attack
   }
   GroupRoutes routes(m_pathfinder, targetPosition, widestRadius);
   if (attack.ships.size() > 1)
+  {
+    const ObservedPart part(m_observer, TickPart::GroupRoute);
     routes.SearchFrom(PlanePosition{} + sum * (1.0f / static_cast<float>(attack.ships.size())));
+  }
 
+  const ObservedPart shipPaths(m_observer, TickPart::ShipPaths);
   for (const EntityId id : attack.ships)
   {
     Entity& ship = *FindMutableEntity(id);
@@ -1376,7 +1425,11 @@ void Outpost::Simulation::OrderWork(const std::vector<EntityId>& _constructors, 
   }
   GroupRoutes routes(m_pathfinder, target.position, widestRadius);
   if (_constructors.size() > 1)
+  {
+    const ObservedPart part(m_observer, TickPart::GroupRoute);
     routes.SearchFrom(PlanePosition{} + sum * (1.0f / static_cast<float>(_constructors.size())));
+  }
+  const ObservedPart shipPaths(m_observer, TickPart::ShipPaths);
   for (const EntityId id : _constructors)
   {
     Entity& ship = *FindMutableEntity(id);

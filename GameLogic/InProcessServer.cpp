@@ -143,16 +143,18 @@ std::uint32_t Outpost::InProcessServer::TicksPerSecond() const noexcept
   return static_cast<std::uint32_t>(m_tuning.rules.tickHz);
 }
 
-std::vector<std::chrono::nanoseconds> Outpost::InProcessServer::TakeTickDurations()
+std::vector<Outpost::TickTiming> Outpost::InProcessServer::TakeTickTimings()
 {
   const std::scoped_lock lock(m_reportMutex);
   if (m_failure)
     std::rethrow_exception(m_failure);
-  return std::exchange(m_tickDurations, {});
+  return std::exchange(m_tickTimings, {});
 }
 
 void Outpost::InProcessServer::RunTick()
 {
+  // What was timed between ticks, such as the graphs a structure's placement made match setup build, is no tick's.
+  (void)m_profiler.Take();
   const auto started = std::chrono::steady_clock::now();
   std::vector<Command> commands;
   for (const Connection& connection : m_connections)
@@ -177,17 +179,20 @@ void Outpost::InProcessServer::RunTick()
   for (const Command& command : commands)
     m_commandLog.push_back({m_simulation.CurrentTick(), command});
   // A rejected command changes nothing. The protocol cannot tell the client yet; that arrives with the task that needs it.
-  (void)m_simulation.Tick(commands);
+  (void)m_simulation.Tick(commands, &m_profiler);
 
-  for (const Connection& connection : m_connections)
   {
-    Snapshot snapshot = m_simulation.BuildSnapshot(connection.player);
-    const std::scoped_lock lock(connection.channel->mutex);
-    connection.channel->snapshots.push_back(std::move(snapshot));
+    const ObservedPart part(&m_profiler, TickPart::Snapshots);
+    for (const Connection& connection : m_connections)
+    {
+      Snapshot snapshot = m_simulation.BuildSnapshot(connection.player);
+      const std::scoped_lock lock(connection.channel->mutex);
+      connection.channel->snapshots.push_back(std::move(snapshot));
+    }
   }
-  const auto duration = std::chrono::steady_clock::now() - started;
+  const TickTiming timing{.total = std::chrono::steady_clock::now() - started, .parts = m_profiler.Take()};
   const std::scoped_lock lock(m_reportMutex);
-  m_tickDurations.push_back(duration);
+  m_tickTimings.push_back(timing);
 }
 
 void Outpost::InProcessServer::StartStressLoad()

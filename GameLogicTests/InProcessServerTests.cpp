@@ -109,7 +109,7 @@ public:
       Assert::AreEqual(snapshots[i - 1].tick + 1, snapshots[i].tick, L"a snapshot for every tick, in order");
     const auto moved = std::ranges::find(snapshots.back().entities, ship, &Outpost::EntityView::id);
     Assert::IsTrue(moved != snapshots.back().entities.end() && moved->position.xMeters > 0.0f, L"the order reached the server");
-    Assert::IsTrue(server->TakeTickDurations().size() >= 10);
+    Assert::IsTrue(server->TakeTickTimings().size() >= 10);
 
     server.reset();
     (void)blue->Receive();

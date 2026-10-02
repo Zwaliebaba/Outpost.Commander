@@ -46,6 +46,13 @@ public:
   // Whether a ship of _clearanceMeters can travel straight from _a to _b.
   [[nodiscard]] bool IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
+  // Tells _observer when a graph is built, as TickPart::GraphBuild (task 8.1); nullptr for no one. The simulation sets it
+  // for one tick at a time.
+  void Observe(TickObserver* _observer) noexcept
+  {
+    m_observer = _observer;
+  }
+
 private:
   struct Graph
   {
@@ -63,6 +70,7 @@ private:
   // searched in order rather than a map: there are only as many clearances as hulls, and moving a vector cannot throw,
   // where moving MSVC's std::map can.
   mutable std::vector<std::pair<float, Graph>> m_graphs;
+  TickObserver* m_observer = nullptr;
 };
 
 // The paths of the ships of one group order, sharing searches rather than making one per ship (ADR-010). The group searches

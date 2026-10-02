@@ -111,6 +111,7 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
   if (const auto found = std::ranges::find(m_graphs, _clearanceMeters, &std::pair<float, Graph>::first); found != m_graphs.end())
     return found->second;
 
+  const ObservedPart building(m_observer, TickPart::GraphBuild);
   Graph graph;
   // Each corner's outward direction, and how far from its tangent a line may turn and still touch its polygon there, as
   // a squared sine: within half the polygon's turn at a corner.

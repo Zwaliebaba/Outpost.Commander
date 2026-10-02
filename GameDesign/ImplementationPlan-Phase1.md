@@ -25,7 +25,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 8.1 | Measure where an order tick's time goes | — | — | todo |
+| 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | todo |
 | 9.2 | Floating windows | 9.1 | — | todo |
@@ -96,6 +96,12 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** time the parts of an order tick inside `Simulation` and `InProcessServer`: building the path graphs, the group's route, the per-ship searches, laying out the slots, the parting of ships, and the rest of the step. Log them with `--measure --load` alongside the tick times, and extend `Tools/FrameTimes.py` to summarize them. The timing is compiled into every build, as the tick timings are, and costs a few clock reads a tick.
 - **Acceptance:** the summary lists each part's mean and worst over a run.
 - **Verify:** CI; **owner run** of `--measure --load` in Release|ARM64 on the development machine. The breakdown is recorded in design §10 with how it was measured.
+- **As built:**
+  - **The parts.** `TickPart` and `TickTiming` in `GameProtocol/Server.h`: commands, and inside them each order's group route and ship paths; graph builds, wherever they happen; then fight, targets, economy, move, separate and vision in the simulation's order, and the snapshots. `Server::TakeTickTimings` replaces `TakeTickDurations` and gives each tick's total and its parts.
+  - **No clock in the simulation.** ADR-009 keeps wall time out of `Simulation`, so `Simulation::Tick` takes an optional `TickObserver` and tells it where each part begins and ends, through `ObservedPart`, and the pathfinder tells it when it builds a graph. The observer is set for that one tick and cleared after, so no copy of a simulation holds one. `InProcessServer` passes its `TickProfiler`, which reads `std::chrono::steady_clock`, and times the snapshots itself. ADR-009 needs no change: nothing the observer learns reaches the state.
+  - **The log and the summary.** `--measure` writes the part names once and a `tick_parts_ns` line after each `tick_ns`. `Tools/FrameTimes.py` prints each part's mean and worst over every tick and over the ticks over 5 ms.
+  - **Tests.** `MovementTests.TellsItsObserverEachPartOfATick` checks the parts and their nesting with a recording observer, and that only the observed tick tells it; `MeasurementLoadTests` checks that every tick's snapshots and an order tick's ship paths are timed, nested inside their tick.
+  - **Not built or run in the container**: the observer and the summary tool were checked there in a standalone build and on a sample log.
 
 ### 8.2 — Order ticks within 5 ms
 
