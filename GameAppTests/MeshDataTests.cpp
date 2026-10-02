@@ -336,7 +336,7 @@ public:
     Assert::AreEqual(-5.0f * std::sqrt(0.5f), *slope, TOLERANCE);
   }
 
-  // The owner's low-poly rocks (2026-10-02), as Tools/MakeAsteroids.py makes them: each is closed, has few and so big
+  // The owner's low-poly rocks (2026-10-02, ADR-027): each is closed, has few and so big
   // facets, shows most of its edges as ridges at GameClient's CREASE_DEGREES of 10, and fits inside its radius,
   // which is half its length once fitted, since the game blocks that circle.
   TEST_METHOD(TheRocksAreLowPolyAndShowTheirRidges)

@@ -27,7 +27,7 @@ constexpr float GRID_SPACING_METERS = 100.0f;
 constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 
 // Asteroids are drawn with three rock meshes, each 2 m long, so a rock's scale is its radius (ADR-011). They are
-// low-poly on purpose, big facets with clear ridges for the edge lines (Tools/MakeAsteroids.py, owner 2026-10-02). A
+// low-poly on purpose, big facets with clear ridges for the edge lines (owner 2026-10-02, ADR-027). A
 // rock takes the small mesh up to SMALL_ROCK_MAX_METERS of radius and the large one from LARGE_ROCK_MIN_METERS, so its
 // facets come out about the same size on the screen whatever its size: an ore asteroid, 45 m, is medium, and a field
 // mixes all three.
