@@ -635,6 +635,34 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       layout.panels.push_back({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, color});
     }
 
+    // The fog over the marks, one rectangle for each run of cells of one shade along a row (ADR-024). Rows go up the
+    // minimap as z grows.
+    const size_t cells = _content.fogCellsPerSide;
+    if (cells > 0 && _content.fogShades.size() == cells * cells)
+    {
+      const float cellPixels = inner / static_cast<float>(cells);
+      for (size_t row = 0; row < cells; ++row)
+      {
+        const float rowTop = layout.minimap.top + (static_cast<float>(cells - row - 1) * cellPixels);
+        const float* shades = &_content.fogShades[row * cells];
+        size_t start = 0;
+        for (size_t column = 1; column <= cells; ++column)
+        {
+          if (column < cells && shades[column] == shades[start])
+            continue;
+          if (shades[start] > 0.0f)
+          {
+            layout.panels.push_back({layout.minimap.left + (static_cast<float>(start) * cellPixels),
+                                     rowTop,
+                                     static_cast<float>(column - start) * cellPixels,
+                                     cellPixels,
+                                     {0.0f, 0.0f, 0.0f, shades[start]}});
+          }
+          start = column;
+        }
+      }
+    }
+
     // The view's outline, as the box around the ground the camera shows.
     if (!_view.empty())
     {

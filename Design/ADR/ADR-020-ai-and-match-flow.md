@@ -1,6 +1,6 @@
 # ADR-020 — The AI is a client with its own settings file, a match ends when a Command Station falls, and the game opens on a menu
 
-Status: **accepted** · 2026-10-01
+Status: **accepted** · 2026-10-01 · Decision 3, the enemy base in decision 5, and the review and attack in decision 8 are superseded by [ADR-024](ADR-024-fog-of-war.md), fog of war
 
 ## Context
 

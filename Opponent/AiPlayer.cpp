@@ -118,12 +118,21 @@ auto ComponentOrder(const Outpost::DesignComponents& _design) noexcept
 
 Outpost::DesignComponents Outpost::ChooseAnswer(const AiSettings& _settings, const Snapshot& _snapshot)
 {
-  std::vector<std::pair<DesignComponents, size_t>> fleet;
+  std::vector<DesignComponents> warships;
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || !ship.owner.IsValid() || ship.owner == _snapshot.player)
-      continue;
-    const DesignComponents design{.hull = ship.hull, .drive = ship.drive, .weapon = ship.weapon};
+    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner.IsValid() && ship.owner != _snapshot.player)
+      warships.push_back({.hull = ship.hull, .drive = ship.drive, .weapon = ship.weapon});
+  }
+  return ChooseAnswer(_settings, warships, _snapshot);
+}
+
+Outpost::DesignComponents Outpost::ChooseAnswer(const AiSettings& _settings, std::span<const DesignComponents> _enemyWarships,
+                                                const Snapshot& _snapshot)
+{
+  std::vector<std::pair<DesignComponents, size_t>> fleet;
+  for (const DesignComponents& design : _enemyWarships)
+  {
     const auto counted = std::ranges::find(fleet, design, &std::pair<DesignComponents, size_t>::first);
     if (counted != fleet.end())
       ++counted->second;
@@ -177,6 +186,8 @@ void Outpost::AiPlayer::Watch(const Snapshot& _snapshot)
   {
     if (entity.kind == EntityKind::Structure && entity.owner == m_player)
       structures.emplace_back(entity.id, entity.position);
+    else if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship && entity.owner.IsValid() && entity.owner != m_player)
+      m_seenWarships[entity.id] = {.hull = entity.hull, .drive = entity.drive, .weapon = entity.weapon};
   }
   for (const ShotView& shot : _snapshot.shots)
   {
@@ -204,7 +215,16 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   PlanShipyards(_snapshot, *station);
   if (_snapshot.tick >= m_nextReviewTick)
   {
-    m_productionDesign = ChooseAnswer(m_settings, _snapshot);
+    // What it has seen since the last review; with nothing seen it keeps the design it has.
+    if (!m_seenWarships.empty())
+    {
+      std::vector<DesignComponents> seen;
+      seen.reserve(m_seenWarships.size());
+      for (const auto& [id, design] : m_seenWarships)
+        seen.push_back(design);
+      m_productionDesign = ChooseAnswer(m_settings, seen, _snapshot);
+      m_seenWarships.clear();
+    }
     m_nextReviewTick = _snapshot.tick + static_cast<std::uint64_t>(std::llround(m_settings.reviewIntervalSeconds * m_ticksPerSecond));
   }
 
@@ -267,6 +287,7 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
 {
   m_planned = true;
   const PlanePosition home = _station.position;
+  m_home = home;
   const float fromCenter = std::hypot(home.xMeters, home.zMeters);
   // Toward the map's center, and across that to the right seen from above.
   const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
@@ -284,6 +305,10 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     else if (IsStructure(entity, StructureKind::CommandStation) && entity.owner != m_player)
       enemyStations.push_back(entity.position);
   }
+  // Under fog of war the enemy's base is out of sight at the start (ADR-024): the map is point-symmetric, so it is across
+  // the center from this one.
+  if (enemyStations.empty())
+    enemyStations.push_back({.xMeters = -home.xMeters, .zMeters = -home.zMeters});
   std::ranges::sort(asteroids,
                     [home](const EntityView* _a, const EntityView* _b)
                     {
@@ -624,8 +649,10 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
                 { return std::ranges::none_of(reserve, [&_entry](const EntityView* _ship) { return _ship->id == _entry.first; }); });
 
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
+  bool grown = false;
   if (std::cmp_greater_equal(reserve.size(), m_settings.attackGroupShips))
   {
+    grown = true;
     std::vector<EntityId> joined;
     for (const EntityView* ship : reserve)
     {
@@ -661,6 +688,10 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     m_attackTarget = nearest != nullptr ? nearest->id : EntityId{};
     if (nearest != nullptr)
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = nearest->position}));
+    else if (!m_searching || grown)
+      _orders.push_back(MakeCommand(
+        m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
+    m_searching = nearest == nullptr;
   }
 
   const bool defending =

@@ -1,6 +1,6 @@
 # ADR-002 — An authoritative server, in-process for the MVP
 
-Status: **accepted** · 2026-09-29
+Status: **accepted** · 2026-09-29 · Decision 4's "every player sees everything" is superseded by [ADR-024](ADR-024-fog-of-war.md), fog of war
 
 ## Context
 

@@ -20,6 +20,16 @@ struct RulesTuning
   double miningRigOrePerSecondContested = 0.0;
 };
 
+// How far each side sees under fog of war (ADR-024). An armed ship or structure sees its weapon's range and the margin
+// beyond it, so it always sees what it can shoot; one without a weapon sees unarmedMeters. A shooter is seen by the side
+// it hits for shotRevealSeconds after each hit.
+struct SightTuning
+{
+  double weaponMarginMeters = 0.0;
+  double unarmedMeters = 0.0;
+  double shotRevealSeconds = 0.0;
+};
+
 struct HullTuning
 {
   HullId id;
@@ -145,6 +155,7 @@ struct ResearchTopicTuning
 struct Tuning
 {
   RulesTuning rules;
+  SightTuning sight;
   std::vector<HullTuning> hulls;
   std::vector<DriveTuning> drives;
   std::vector<WeaponTuning> weapons;

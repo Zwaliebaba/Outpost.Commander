@@ -30,8 +30,8 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
     *m_out << std::format("research {} player {} topic {} {}\n", _snapshot.tick, _snapshot.player.value, topic.id.value, topic.nameUtf8);
   }
 
-  // Every player sees every ship's components (design §10), and every snapshot lists every component by name, unlocked
-  // or not; one it does not list is written as its identifier.
+  // A player sees the components of every ship it sees (design §10, ADR-024), and every snapshot lists every component by
+  // name, unlocked or not; one it does not list is written as its identifier.
   const auto nameOf = [](const auto& _views, auto _id)
   {
     const auto found = std::ranges::find_if(_views, [_id](const auto& _view) { return _view.id == _id; });

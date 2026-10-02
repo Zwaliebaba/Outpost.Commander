@@ -18,10 +18,10 @@ public:
     server.World().PlaceStartingBases(map);
     Outpost::PlaceMeasurementLoad(server.World(), map, tuning);
 
-    std::vector<Outpost::EntityView> placed;
+    std::vector<Outpost::Entity> placed;
     size_t ships = 0;
     size_t structures = 0;
-    for (const Outpost::EntityView& entity : server.World().BuildSnapshot(Outpost::PlayerId{1}).entities)
+    for (const Outpost::Entity& entity : server.World().Entities())
     {
       if (entity.kind == Outpost::EntityKind::Ship)
         ++ships;

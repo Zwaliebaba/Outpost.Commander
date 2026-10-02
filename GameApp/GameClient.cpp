@@ -230,6 +230,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
     m_glows(_renderer),
+    m_groundMask(_renderer),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond)
@@ -278,6 +279,7 @@ void Outpost::GameClient::ClearMatch()
   m_effects = CombatEffects(m_ticksPerSecond);
   m_controls = PlayerControls();
   m_designer = Designer();
+  m_fog = FogOfWar();
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -346,6 +348,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
+  if (!m_view.IsEmpty() && m_view.Newest().fogOfWar)
+  {
+    if (m_fog.CellsPerSide() == 0)
+      m_fog.Reset(m_view.Newest().mapSizeMeters);
+    m_fog.Update(m_entities, m_view.Newest().player);
+  }
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
   Neuron::InputState input = _input;
@@ -371,6 +379,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
+    content.fogCellsPerSide = m_fog.CellsPerSide();
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
     // The name takes no more typing once the designer is not shown: its Shipyard was deselected or destroyed.
     if (!content.designer.has_value())
@@ -613,7 +623,22 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawHealthBars(_commandList);
   DrawEffects(_commandList);
   DrawGlows(_renderer, _commandList);
+  DrawFog(_renderer, _commandList);
   DrawHud(_commandList, _renderer.FrameIndex());
+}
+
+void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)
+{
+  if (m_fog.CellsPerSide() == 0)
+    return;
+  const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
+  const PlanePosition origin = m_fog.Origin();
+  const Neuron::GroundMaskPipeline::FrameConstants constants{.viewProjection = m_camera.ViewProjection(aspectRatio),
+                                                             .originXMeters = origin.xMeters,
+                                                             .originZMeters = origin.zMeters,
+                                                             .cellMeters = FogOfWar::CELL_METERS,
+                                                             .cellsPerSide = m_fog.CellsPerSide()};
+  m_groundMask.Draw(_commandList, _renderer.FrameIndex(), constants, m_fog.Shades());
 }
 
 void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)

@@ -56,6 +56,8 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
   }
   m_simulation.PlaceMap(m_map);
   m_simulation.UseTuning(m_tuning);
+  // Every match is played under fog of war (ADR-024).
+  m_simulation.UseFog();
   // One player per start, each with the starting Ore and the starting designs saved (design §5, §7).
   for (size_t player = 0; player < m_map.starts.size(); ++player)
   {
