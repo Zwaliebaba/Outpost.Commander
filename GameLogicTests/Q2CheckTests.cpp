@@ -63,6 +63,28 @@ public:
     }
   }
 
+  // ADR-024: a battle under fog of war ends as it does without, since every armed ship sees beyond its weapon's range and
+  // nothing a ship fires at depends on what its side sees. The swarm against the line, the picket against a heavy, and the
+  // Missile Rack's splash, under both targeting extremes.
+  TEST_METHOD(FogChangesNoBattle)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
+    const std::array<std::pair<std::string_view, std::string_view>, 3> pairings{
+      {{"S+I+MD", "M+I+La"}, {"S+I+La", "L+F+MD"}, {"M+I+MR", "M+I+MD"}}};
+    for (const auto& [a, b] : pairings)
+    {
+      for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
+      {
+        for (std::uint32_t battle = 0; battle < 2; ++battle)
+        {
+          const int clear = Fight(Named(designs, a), Named(designs, b), 3000.0, mode, battle, 2);
+          Assert::AreEqual(clear, Fight(Named(designs, a), Named(designs, b), 3000.0, mode, battle, 2, tuning.sight));
+        }
+      }
+    }
+  }
+
   // A design against itself wins about as often on either side. The arena once placed the second side as the first's
   // mirror image, and a partial last row then gave the second side every battle at 9,000 Ore.
   TEST_METHOD(AMirrorMatchIsFair)

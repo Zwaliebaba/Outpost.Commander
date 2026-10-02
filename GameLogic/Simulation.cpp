@@ -152,6 +152,149 @@ void Outpost::Simulation::AddPlayer(PlayerId _player, std::int32_t _ore)
   m_players.push_back({_player, std::int64_t{_ore} * HUNDREDTHS});
 }
 
+void Outpost::Simulation::UseFog()
+{
+  if (!m_tuning)
+    throw Neuron::Exception("Simulation: fog of war needs the tuning data's sight");
+  m_fog = true;
+  UpdateVision();
+}
+
+bool Outpost::Simulation::Sees(PlayerId _player, const Entity& _entity) const noexcept
+{
+  if (!m_fog || !_entity.owner.IsValid() || _entity.owner == _player)
+    return true;
+  const PlayerState* state = FindPlayer(_player);
+  return state != nullptr && std::ranges::binary_search(state->seen, _entity.id);
+}
+
+float Outpost::Simulation::SightMetersOf(const Entity& _entity) const noexcept
+{
+  if (!m_tuning)
+    return 0.0f;
+  if (const std::optional<Armament> armament = ArmamentOf(_entity))
+    return armament->rangeMeters + static_cast<float>(m_tuning->sight.weaponMarginMeters);
+  return static_cast<float>(m_tuning->sight.unarmedMeters);
+}
+
+std::vector<Outpost::Simulation::Observer> Outpost::Simulation::ObserversOf(PlayerId _player) const
+{
+  std::vector<Observer> observers;
+  for (const Entity& entity : m_entities)
+  {
+    if (entity.owner == _player && (entity.kind == EntityKind::Ship || entity.kind == EntityKind::Structure))
+      observers.push_back({.position = entity.position, .sightMeters = SightMetersOf(entity)});
+  }
+  return observers;
+}
+
+bool Outpost::Simulation::InSight(std::span<const Observer> _observers, PlanePosition _position, float _radiusMeters) noexcept
+{
+  return std::ranges::any_of(_observers,
+                             [&](const Observer& _observer)
+                             {
+                               const float reach = _observer.sightMeters + _radiusMeters;
+                               const PlaneVector between = _position - _observer.position;
+                               return Dot(between, between) <= reach * reach;
+                             });
+}
+
+// A player sees an enemy entity that is within the sight of one of its own, measured from center to the entity's edge, or
+// that hit it in the last few seconds (ADR-024). Every armed entity sees beyond its weapon's range, so whatever it can
+// shoot it sees: fog never changes what a ship fires at, only what its player knows.
+void Outpost::Simulation::UpdateVision()
+{
+  for (PlayerState& player : m_players)
+  {
+    const std::vector<Observer> observers = ObserversOf(player.id);
+    std::erase_if(player.revealedUntil,
+                  [this](const auto& _reveal) { return _reveal.second <= m_tick || FindEntity(_reveal.first) == nullptr; });
+    player.seen.clear();
+    for (const Entity& entity : m_entities)
+    {
+      if (!entity.owner.IsValid() || entity.owner == player.id)
+        continue;
+      const bool revealed =
+        std::ranges::find(player.revealedUntil, entity.id, &std::pair<EntityId, std::uint64_t>::first) != player.revealedUntil.end();
+      if (!revealed && !InSight(observers, entity.position, entity.radiusMeters))
+        continue;
+      player.seen.push_back(entity.id);
+      if (entity.kind != EntityKind::Structure)
+        continue;
+      EntityView view = EntityViewOf(entity, false);
+      if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
+        *known = std::move(view);
+      else
+        player.remembered.push_back(std::move(view));
+    }
+    // A remembered structure whose place is in sight but that is not seen there is gone.
+    std::erase_if(player.remembered,
+                  [&](const EntityView& _known) {
+                    return !std::ranges::binary_search(player.seen, _known.id) && InSight(observers, _known.position, _known.radiusMeters);
+                  });
+
+    // An attack on a ship ends once the ship is out of sight; a structure stays where it was seen.
+    for (Entity& ship : m_entities)
+    {
+      if (ship.owner != player.id || ship.order != ShipOrder::Attack)
+        continue;
+      const Entity* target = FindEntity(ship.attackTarget);
+      if (target != nullptr && target->kind == EntityKind::Ship && !std::ranges::binary_search(player.seen, target->id))
+      {
+        ship.order = ShipOrder::None;
+        ship.attackTarget = {};
+        ship.path.clear();
+      }
+    }
+  }
+}
+
+void Outpost::Simulation::RevealShooter(PlayerId _hitPlayer, EntityId _shooter)
+{
+  PlayerState* player = FindPlayer(_hitPlayer);
+  if (!m_fog || player == nullptr)
+    return;
+  const auto ticks = static_cast<std::uint64_t>(std::ceil(m_tuning->sight.shotRevealSeconds * m_ticksPerSecond));
+  const auto known = std::ranges::find(player->revealedUntil, _shooter, &std::pair<EntityId, std::uint64_t>::first);
+  if (known != player->revealedUntil.end())
+    known->second = m_tick + ticks;
+  else
+    player->revealedUntil.emplace_back(_shooter, m_tick + ticks);
+}
+
+Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, bool _detailed) const
+{
+  EntityView view{.id = _entity.id,
+                  .kind = _entity.kind,
+                  .owner = _entity.owner,
+                  .design = _entity.design,
+                  .hull = _entity.hull,
+                  .drive = {},
+                  .weapon = {},
+                  .role = _entity.role,
+                  .structure = _entity.structure,
+                  .position = _entity.position,
+                  .headingRadians = _entity.headingRadians,
+                  .radiusMeters = _entity.radiusMeters,
+                  .hitPointsHundredths = _entity.hitPointsHundredths,
+                  .maxHitPointsHundredths = _entity.maxHitPointsHundredths};
+  if (const ShipDesign* design = _entity.kind == EntityKind::Ship ? FindDesign(_entity.design) : nullptr)
+  {
+    view.drive = design->components.drive;
+    view.weapon = design->components.weapon;
+  }
+  if (!_entity.IsBuilt())
+    view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
+  if (_detailed && (!_entity.queue.empty() || !_entity.researchQueue.empty()))
+  {
+    view.queue = _entity.queue;
+    view.research = _entity.researchQueue;
+    if (_entity.jobWorkNeeded > 0)
+      view.jobPermille = static_cast<std::int32_t>(std::int64_t{_entity.jobWorkDone} * PERMILLE / _entity.jobWorkNeeded);
+  }
+  return view;
+}
+
 std::int64_t Outpost::Simulation::OreHundredths(PlayerId _player) const noexcept
 {
   const auto state = std::ranges::find(m_players, _player, &PlayerState::id);
@@ -388,13 +531,41 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   MoveShips();
   SeparateShips();
   KeepShipsClear();
+  if (m_fog)
+    UpdateVision();
   ++m_tick;
   return results;
 }
 
 Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
 {
-  Snapshot snapshot{.tick = m_tick, .player = _player, .shots = m_shots, .destroyed = m_destroyed};
+  Snapshot snapshot{.tick = m_tick, .player = _player};
+  if (m_fog)
+  {
+    // A destruction is seen where it happened; a shot when its shooter or its target is.
+    const std::vector<Observer> observers = ObserversOf(_player);
+    for (const DestroyedView& destroyed : m_destroyed)
+    {
+      if (!destroyed.owner.IsValid() || destroyed.owner == _player || InSight(observers, destroyed.position, destroyed.radiusMeters))
+        snapshot.destroyed.push_back(destroyed);
+    }
+    const auto shown = [&](EntityId _id)
+    {
+      if (const Entity* entity = FindEntity(_id))
+        return Sees(_player, *entity);
+      return std::ranges::find(snapshot.destroyed, _id, &DestroyedView::id) != snapshot.destroyed.end();
+    };
+    for (const ShotView& shot : m_shots)
+    {
+      if (shown(shot.shooter) || shown(shot.target))
+        snapshot.shots.push_back(shot);
+    }
+  }
+  else
+  {
+    snapshot.shots = m_shots;
+    snapshot.destroyed = m_destroyed;
+  }
   if (const auto state = std::ranges::find(m_players, _player, &PlayerState::id); state != m_players.end())
     snapshot.ore = static_cast<std::int32_t>(state->oreHundredths / HUNDREDTHS);
   if (m_tuning)
@@ -445,37 +616,30 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
+  snapshot.fogOfWar = m_fog;
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
-    EntityView& view = snapshot.entities.emplace_back(EntityView{.id = entity.id,
-                                                                 .kind = entity.kind,
-                                                                 .owner = entity.owner,
-                                                                 .design = entity.design,
-                                                                 .hull = entity.hull,
-                                                                 .drive = {},
-                                                                 .weapon = {},
-                                                                 .role = entity.role,
-                                                                 .structure = entity.structure,
-                                                                 .position = entity.position,
-                                                                 .headingRadians = entity.headingRadians,
-                                                                 .radiusMeters = entity.radiusMeters,
-                                                                 .hitPointsHundredths = entity.hitPointsHundredths,
-                                                                 .maxHitPointsHundredths = entity.maxHitPointsHundredths});
-    if (const ShipDesign* design = entity.kind == EntityKind::Ship ? FindDesign(entity.design) : nullptr)
+    if (!Sees(_player, entity))
+      continue;
+    EntityView& view = snapshot.entities.emplace_back(EntityViewOf(entity, !m_fog || entity.owner == _player));
+    if (m_fog && entity.owner == _player)
+      view.sightMeters = SightMetersOf(entity);
+  }
+  // The enemy structures it remembers and does not see now, as it last saw them, in identifier order with the rest, as a
+  // client pairs two snapshots' entities by it (SnapshotInterpolator).
+  if (const PlayerState* state = m_fog ? FindPlayer(_player) : nullptr)
+  {
+    const auto seenEnd = static_cast<std::ptrdiff_t>(snapshot.entities.size());
+    for (const EntityView& known : state->remembered)
     {
-      view.drive = design->components.drive;
-      view.weapon = design->components.weapon;
+      if (std::ranges::binary_search(state->seen, known.id))
+        continue;
+      EntityView& view = snapshot.entities.emplace_back(known);
+      view.remembered = true;
     }
-    if (!entity.IsBuilt())
-      view.builtPermille = static_cast<std::int32_t>(std::int64_t{entity.buildWorkDone} * PERMILLE / entity.buildWorkNeeded);
-    if (!entity.queue.empty() || !entity.researchQueue.empty())
-    {
-      view.queue = entity.queue;
-      view.research = entity.researchQueue;
-      if (entity.jobWorkNeeded > 0)
-        view.jobPermille = static_cast<std::int32_t>(std::int64_t{entity.jobWorkDone} * PERMILLE / entity.jobWorkNeeded);
-    }
+    std::ranges::sort(snapshot.entities.begin() + seenEnd, snapshot.entities.end(), {}, &EntityView::id);
+    std::ranges::inplace_merge(snapshot.entities, snapshot.entities.begin() + seenEnd, {}, &EntityView::id);
   }
   return snapshot;
 }
@@ -618,6 +782,14 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Attack
     return CommandResult::UnknownTarget;
   if (!target->owner.IsValid() || target->owner == _player || target->maxHitPointsHundredths <= 0)
     return CommandResult::NotAnEnemy;
+  if (m_fog && !Sees(_player, *target))
+  {
+    const PlayerState* state = FindPlayer(_player);
+    const bool remembered =
+      state != nullptr && std::ranges::find(state->remembered, target->id, &EntityView::id) != state->remembered.end();
+    if (!remembered)
+      return CommandResult::NotVisible;
+  }
   const PlanePosition targetPosition = target->position;
 
   PlaneVector sum{};
@@ -778,6 +950,7 @@ void Outpost::Simulation::Fight()
       shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
     const Entity& target = *FindEntity(shotTarget);
     hits.push_back({target.id, HitHundredths(armament->damageHundredths, target.armorHundredths)});
+    RevealShooter(target.owner, ship.id);
     m_shots.push_back({.shooter = ship.id,
                        .target = target.id,
                        .weapon = armament->weapon,
@@ -789,13 +962,17 @@ void Outpost::Simulation::Fight()
     if (armament->splashRadiusMeters > 0.0f)
     {
       const float reach = armament->splashRadiusMeters * armament->splashRadiusMeters;
+      const std::int32_t damageHundredths = armament->damageHundredths;
       for (const Entity& other : m_entities)
       {
         if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == ship.owner)
           continue;
         const PlaneVector between = other.position - target.position;
         if (Dot(between, between) <= reach)
-          hits.push_back({other.id, HitHundredths(armament->damageHundredths, other.armorHundredths)});
+        {
+          hits.push_back({other.id, HitHundredths(damageHundredths, other.armorHundredths)});
+          RevealShooter(other.owner, ship.id);
+        }
       }
     }
   }

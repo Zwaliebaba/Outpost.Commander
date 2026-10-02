@@ -99,6 +99,8 @@ private:
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019).
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
+  // Under fog of war, the ground the player does not see now, dimmed or dark, over everything but the HUD (ADR-024).
+  void DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
   // health bar, a tracer or a beam.
@@ -118,6 +120,7 @@ private:
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
+  Neuron::GroundMaskPipeline m_groundMask;
   // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
   std::unique_ptr<Neuron::StarPipeline> m_sky;
   std::unique_ptr<Neuron::StarPipeline> m_bursts;
@@ -129,6 +132,8 @@ private:
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
   Designer m_designer;
+  // What the player has seen of the map, when the match is played under fog of war (ADR-024).
+  FogOfWar m_fog;
   CombatEffects m_effects;
   // What the effects draw this frame, at the view's tick.
   std::vector<CombatEffects::Draw> m_effectDraws;

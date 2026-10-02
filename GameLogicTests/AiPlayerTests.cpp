@@ -393,8 +393,12 @@ public:
   TEST_METHOD(BuildsTheAnswerToTheEnemysFleet)
   {
     AiMatch match;
-    // The human's line, parked in its own corner.
-    (void)match.Spawn(HUMAN, LINE, 6, {-850.0f, -600.0f});
+    // Two of the human's line, parked behind the AI's Command Station in the map's corner, 257 m and 278 m from it: inside
+    // the station's sight, its gun's 250 m and the 50 m margin and their 14 m footprint, out of the gun's and the Lances'
+    // reach, and away from where the AI builds (ADR-024).
+    const Outpost::PlanePosition station = match.Start(AI);
+    const float step = 310.0f / std::numbers::sqrt2_v<float>;
+    (void)match.Spawn(HUMAN, LINE, 2, {station.xMeters + step, station.zMeters + step});
     match.Run(1.0);
     Assert::IsTrue(match.Ai().ProductionDesign() == SWARM);
 
@@ -413,6 +417,18 @@ public:
       }
     }
     Assert::IsTrue(queued, L"no Shipyard queued a ship in five minutes");
+  }
+
+  // Under fog of war the AI answers only what it has seen (ADR-024): a fleet parked in the human's corner leaves it on its
+  // default design, review after review.
+  TEST_METHOD(AnswersOnlyAFleetItHasSeen)
+  {
+    AiMatch match;
+    (void)match.Spawn(HUMAN, LINE, 6, {-850.0f, -600.0f});
+    match.Run(1.0);
+    Assert::IsTrue(match.Ai().ProductionDesign() == RepositorySettings().defaultDesign);
+    match.Run(61.0);
+    Assert::IsTrue(match.Ai().ProductionDesign() == RepositorySettings().defaultDesign);
   }
 
   // Gate G9: the reserve waits until twelve warships have gathered, and then attacks the enemy's base.
@@ -456,6 +472,29 @@ public:
   TEST_METHOD(BeatsAPlayerWhoDoesNothing)
   {
     AiMatch match;
+    match.Run(25.0 * 60.0, true);
+    Assert::IsTrue(match.World().MatchOver(), L"the AI has not won in 25 minutes");
+    Assert::IsTrue(match.World().Winner() == AI);
+    Logger::WriteMessage(std::format("The AI won at tick {}.\n", match.View(AI).matchEndedTick).c_str());
+  }
+
+  // Under fog of war the AI cannot see that the human already holds the contested asteroids its plan wants (ADR-024). The
+  // server refuses those rigs, the AI takes a site it does not see appear as refused, and it still builds, attacks and
+  // wins.
+  TEST_METHOD(BeatsAPlayerWhoHoldsTheMiddle)
+  {
+    AiMatch match;
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const Outpost::StructureTuning& rig =
+      *std::ranges::find(tuning.structures, Outpost::StructureKind::MiningRig, &Outpost::StructureTuning::kind);
+    for (const Outpost::OreAsteroidPlacement& asteroid : Outpost::LoadMap(ReadRepositoryMap()).oreAsteroids)
+    {
+      if (asteroid.yield != Outpost::OreYield::Contested)
+        continue;
+      (void)match.World().SpawnStructure(HUMAN, Outpost::StructureKind::MiningRig, asteroid.position,
+                                         std::max(static_cast<float>(rig.footprintRadiusMeters), asteroid.radiusMeters),
+                                         rig.hitPoints * Outpost::HUNDREDTHS, rig.armor * Outpost::HUNDREDTHS);
+    }
     match.Run(25.0 * 60.0, true);
     Assert::IsTrue(match.World().MatchOver(), L"the AI has not won in 25 minutes");
     Assert::IsTrue(match.World().Winner() == AI);

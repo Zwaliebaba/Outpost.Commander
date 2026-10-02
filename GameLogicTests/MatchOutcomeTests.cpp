@@ -97,10 +97,14 @@ public:
     Assert::IsFalse(simulation.MatchOver());
   }
 
-  // Design §10: every player sees every ship's design as its components, so the AI can answer the player's designs.
+  // Design §10: a player sees the design of every ship it sees as its components, so the AI can answer the player's
+  // designs (ADR-024).
   TEST_METHOD(SnapshotsShowEveryShipsComponents)
   {
     RaidedMatch match(RED, BLUE);
+    // Under fog of war what a player sees is settled at the end of each tick (ADR-024). The ring stands inside the
+    // station's sight.
+    (void)match.World().Tick({});
     const Outpost::Snapshot blue = match.World().BuildSnapshot(BLUE);
     size_t seen = 0;
     for (const Outpost::EntityView& entity : blue.entities)

@@ -81,6 +81,9 @@ struct CheckOptions
   bool quick = false;
   // Worker threads; zero for one per hardware thread.
   std::uint32_t threads = 0;
+  // Play every battle under fog of war with this sight (ADR-024). Nothing a ship fires at depends on it, so the verdicts
+  // are the same with it and without.
+  std::optional<Outpost::SightTuning> fog;
 };
 
 struct CheckResult
@@ -97,10 +100,11 @@ struct CheckResult
 // Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (task 5.3).
 [[nodiscard]] std::vector<CheckDesign> DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts);
 
-// One battle: battle _battle of _battles between _a and _b, at _budgetOre each give or take the window. +1 when _a wins, -1
-// when _b wins, 0 for a draw, which is both sides destroyed in one tick or both standing after ten minutes.
+// One battle: battle _battle of _battles between _a and _b, at _budgetOre each give or take the window, under fog of war
+// with _fog's sight when there is one. +1 when _a wins, -1 when _b wins, 0 for a draw, which is both sides destroyed in
+// one tick or both standing after ten minutes.
 [[nodiscard]] int Fight(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMode _mode, std::uint32_t _battle,
-                        std::uint32_t _battles);
+                        std::uint32_t _battles, const std::optional<Outpost::SightTuning>& _fog = std::nullopt);
 
 // The check, against _tuning.
 [[nodiscard]] CheckResult RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options);

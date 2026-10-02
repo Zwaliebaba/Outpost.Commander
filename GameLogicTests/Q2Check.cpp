@@ -93,7 +93,7 @@ struct Record
 };
 
 // Each pairing's wins and losses for its first design. Every battle is one job, so the threads stay busy.
-std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint32_t _threads)
+std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, const GameLogicTests::CheckOptions& _options)
 {
   std::vector<std::pair<size_t, std::uint32_t>> jobs;
   for (size_t pairing = 0; pairing < _pairings.size(); ++pairing)
@@ -112,7 +112,8 @@ std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint
       for (size_t job = next++; job < jobs.size() && !failed; job = next++)
       {
         const Pairing& pairing = _pairings[jobs[job].first];
-        outcomes[job] = GameLogicTests::Fight(*pairing.a, *pairing.b, pairing.budgetOre, pairing.mode, jobs[job].second, pairing.battles);
+        outcomes[job] =
+          GameLogicTests::Fight(*pairing.a, *pairing.b, pairing.budgetOre, pairing.mode, jobs[job].second, pairing.battles, _options.fog);
       }
     }
     catch (const std::exception& error)
@@ -121,7 +122,7 @@ std::vector<Record> RunPairings(const std::vector<Pairing>& _pairings, std::uint
         failure = error.what();
     }
   };
-  const std::uint32_t threads = _threads != 0 ? _threads : std::max(1u, std::thread::hardware_concurrency());
+  const std::uint32_t threads = _options.threads != 0 ? _options.threads : std::max(1u, std::thread::hardware_concurrency());
   {
     std::vector<std::jthread> workers;
     workers.reserve(threads);
@@ -227,7 +228,7 @@ std::vector<Settled> Settle(const std::vector<Contest>& _contests, double _thres
   pairings.reserve(rerun.size());
   for (const auto& [contest, pairing] : rerun)
     pairings.push_back(pairing);
-  const std::vector<Record> records = RunPairings(pairings, _options.threads);
+  const std::vector<Record> records = RunPairings(pairings, _options);
   std::map<size_t, Contest> again;
   for (size_t i = 0; i < rerun.size(); ++i)
     again[rerun[i].first].push_back({rerun[i].second, records[i].wins});
@@ -261,7 +262,7 @@ std::vector<std::vector<double>> WinMatrix(const std::vector<CheckDesign>& _desi
       pairings.push_back({&_designs[i], &_designs[j], _budgetOre, _mode, _options.battles});
     }
   }
-  const std::vector<Record> records = RunPairings(pairings, _options.threads);
+  const std::vector<Record> records = RunPairings(pairings, _options);
   std::vector<std::vector<double>> matrix(_designs.size(), std::vector<double>(_designs.size(), 0.5));
   for (size_t k = 0; k < pairs.size(); ++k)
   {
@@ -558,7 +559,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
         }
       }
     }
-    const std::vector<Record> records = RunPairings(pairings, _options.threads);
+    const std::vector<Record> records = RunPairings(pairings, _options);
     std::vector<Contest> contests;
     for (size_t k = 0; k < pairings.size(); k += answers.size())
     {
@@ -652,7 +653,7 @@ void RunRobustness(const Outpost::Tuning& _tuning, const CheckParts& _parts, con
       labels.push_back(label);
     }
   }
-  const std::vector<Record> records = RunPairings(pairings, _options.threads);
+  const std::vector<Record> records = RunPairings(pairings, _options);
   std::vector<Contest> contests;
   contests.reserve(pairings.size());
   for (size_t k = 0; k < pairings.size(); ++k)
@@ -731,7 +732,7 @@ std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tun
 }
 
 int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMode _mode, std::uint32_t _battle,
-                          std::uint32_t _battles)
+                          std::uint32_t _battles, const std::optional<Outpost::SightTuning>& _fog)
 {
   const double budget =
     _budgetOre * (1.0 - BUDGET_SPREAD + (2.0 * BUDGET_SPREAD * (static_cast<double>(_battle % _battles) + 0.5) / _battles));
@@ -740,6 +741,16 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
   Outpost::Simulation simulation(SeedFor(_a, _b, _budgetOre, _mode, _battle), TICKS_PER_SECOND);
   simulation.PlaceMap({.sizeMeters = ARENA_METERS, .minimumGapMeters = 60.0f, .starts = {}, .oreAsteroids = {}, .asteroidFields = {}});
   simulation.SetTargetRule(_mode == FireMode::Spread ? Outpost::TargetRule::Random : Outpost::TargetRule::Weakest);
+  if (_fog.has_value())
+  {
+    // Fog needs only the sight of the tuning data; the designs carry their own numbers.
+    Outpost::Tuning sightOnly;
+    sightOnly.sight = *_fog;
+    simulation.UseTuning(sightOnly);
+    simulation.AddPlayer(FIRST, 0);
+    simulation.AddPlayer(SECOND, 0);
+    simulation.UseFog();
+  }
 
   // Each side a square-ish grid, front row first, facing the other across the gap. The second side is the first turned
   // half a turn about the middle, as the map's starts are (design §4): mirrored instead, a partial last row would sit on

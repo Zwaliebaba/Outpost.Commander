@@ -52,6 +52,15 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   return rules;
 }
 
+Outpost::SightTuning ReadSight(ObjectReader& _reader)
+{
+  Outpost::SightTuning sight;
+  sight.weaponMarginMeters = _reader.Number("weaponMarginMeters", JsonBound::Positive);
+  sight.unarmedMeters = _reader.Number("unarmedMeters", JsonBound::Positive);
+  sight.shotRevealSeconds = _reader.Number("shotRevealSeconds", JsonBound::Positive);
+  return sight;
+}
+
 Outpost::HullTuning ReadHull(ObjectReader& _reader)
 {
   Outpost::HullTuning hull;
@@ -304,6 +313,9 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   ObjectReader rules(root.Required("rules"), "rules");
   tuning.rules = ReadRules(rules);
   rules.Finish();
+  ObjectReader sight(root.Required("sight"), "sight");
+  tuning.sight = ReadSight(sight);
+  sight.Finish();
 
   tuning.hulls = Neuron::ReadJsonList<Outpost::HullTuning>(root, "hulls", ReadHull);
   tuning.drives = Neuron::ReadJsonList<Outpost::DriveTuning>(root, "drives", ReadDrive);

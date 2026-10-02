@@ -51,8 +51,8 @@ struct EntityView
   // A ship's design; no design for anything else.
   DesignId design;
   // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), and its
-  // weapon; none for anything else. Every player sees every ship's components, as it sees the ship (no fog of war in the
-  // MVP), so the AI can answer the player's designs (design §10, ADR-020).
+  // weapon; none for anything else. A player sees the components of every ship it sees, so the AI can answer the designs
+  // it meets (design §10, ADR-020, ADR-024).
   HullId hull;
   DriveId drive;
   WeaponId weapon;
@@ -75,9 +75,18 @@ struct EntityView
   // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
   // while it waits for the Ore to start (design §5).
   std::vector<JobView> queue;
-  // A Research Lab's topics, front first; the front one's progress is jobPermille, as a queue's is (design §8).
+  // A Research Lab's topics, front first; the front one's progress is jobPermille, as a queue's is (design §8). Under fog
+  // of war a player sees only its own queues (ADR-024).
   std::vector<ResearchTopicId> research;
   std::int32_t jobPermille = 0;
+  // An enemy structure out of the player's sight, as the player last saw it there (ADR-024). It may have changed, or be
+  // gone: the player learns which once it sees the place again.
+  bool remembered = false;
+  // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
+  // (ADR-024).
+  float sightMeters = 0.0f;
+
+  friend bool operator==(const EntityView&, const EntityView&) = default;
 };
 
 // A hull as its player has it: its numbers after the player's research, and whether the player may build it yet (design
@@ -182,8 +191,9 @@ struct DestroyedView
   float radiusMeters = 0.0f;
 };
 
-// The world as one player may see it after one tick (ADR-002 decision 4). It is built per player so that fog of war can
-// be added on the server alone; in the MVP every player sees everything.
+// The world as one player may see it after one tick (ADR-002 decision 4). Under fog of war it holds the player's own
+// entities, the asteroids and fields, the enemy entities the player sees and the enemy structures it remembers, and the
+// shots and destructions it sees (ADR-024).
 struct Snapshot
 {
   std::uint64_t tick = 0;
@@ -214,5 +224,7 @@ struct Snapshot
   bool matchOver = false;
   PlayerId winner;
   std::uint64_t matchEndedTick = 0;
+  // The match is played under fog of war, which the client draws (ADR-024).
+  bool fogOfWar = false;
 };
 } // namespace Outpost

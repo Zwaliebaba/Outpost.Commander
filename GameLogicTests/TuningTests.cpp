@@ -84,6 +84,7 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
              "miningRigOrePerSecondContested": 8 },
+  "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
@@ -160,6 +161,11 @@ public:
                 {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
                 {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested}},
                "rules");
+    ExpectSame(*json.Find("sight"),
+               {{"weaponMarginMeters", tuning.sight.weaponMarginMeters},
+                {"unarmedMeters", tuning.sight.unarmedMeters},
+                {"shotRevealSeconds", tuning.sight.shotRevealSeconds}},
+               "sight");
 
     const Neuron::JsonValue::Array& hulls = json.Find("hulls")->AsArray();
     Assert::AreEqual(hulls.size(), tuning.hulls.size());
@@ -310,6 +316,7 @@ public:
     ExpectLoadError(Replace("\"cost\": 32, ", ""), "hulls[0]: has no \"cost\"");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 220, \"hitpoint\": 1,"), "hulls[0].hitpoint");
     ExpectLoadError(Replace("\"tickHz\": 20,", ""), "rules: has no \"tickHz\"");
+    ExpectLoadError(Replace("\"unarmedMeters\": 200, ", ""), "sight: has no \"unarmedMeters\"");
     ExpectLoadError(Replace("\"repairPercentPerSecond\": 2 },", "\"repairPercentPerSecond\": 0 },"), "constructor.repairPercentPerSecond");
     ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 150, ", ""), "constructor: has no \"turnRateDegreesPerSecond\"");
     ExpectLoadError(Replace("\"splashRadiusMeters\": 0,", "\"splashRadiusMeters\": 0, \"splashRadius\": 5,"), "weapons[0].splashRadius");
@@ -322,6 +329,7 @@ public:
     ExpectLoadError(Replace("\"armor\": 2,", "\"armor\": \"2\","), "hulls[0].armor");
     ExpectLoadError(Replace("\"speedFactor\": 1.3,", "\"speedFactor\": 0,"), "drives[0].speedFactor");
     ExpectLoadError(Replace("\"tickHz\": 20,", "\"tickHz\": 0,"), "rules.tickHz");
+    ExpectLoadError(Replace("\"weaponMarginMeters\": 50,", "\"weaponMarginMeters\": 0,"), "sight.weaponMarginMeters");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 1e10,"), "hulls[0].hitPoints");
   }
 
@@ -353,7 +361,7 @@ public:
 
   TEST_METHOD(RejectsText)
   {
-    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 6");
+    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 7");
     ExpectLoadError("[]", "the file");
   }
 };

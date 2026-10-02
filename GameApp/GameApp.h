@@ -23,6 +23,7 @@
 #include "PlayerControls.h"
 #include "CombatEffects.h"
 #include "Starfield.h"
+#include "FogOfWar.h"
 #include "Designer.h"
 #include "Hud.h"
 #include "LoadDriver.h"

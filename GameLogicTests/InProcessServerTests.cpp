@@ -95,6 +95,8 @@ public:
     // The same match setup as the server's.
     Outpost::Simulation replay(77, 20);
     replay.PlaceMap(server.MapData());
+    replay.UseTuning(server.TuningData());
+    replay.UseFog();
     for (const Outpost::PlayerId player : {BLUE, RED})
     {
       replay.AddPlayer(player, server.TuningData().rules.startingOre);
@@ -124,15 +126,27 @@ public:
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
     server.World().PlaceStartingBases(map);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     server.Advance(50ms);
-    const std::vector<Outpost::Snapshot> snapshots = blue->Receive();
-    Assert::AreEqual(size_t{1}, snapshots.size());
+    const std::vector<Outpost::Snapshot> blueSnapshots = blue->Receive();
+    const std::vector<Outpost::Snapshot> redSnapshots = red->Receive();
+    Assert::AreEqual(size_t{1}, blueSnapshots.size());
+    Assert::AreEqual(size_t{1}, redSnapshots.size());
 
+    // Under fog of war each player sees its own base and not the other's, across the map (ADR-024).
     std::vector<Outpost::EntityView> placed;
-    for (const Outpost::EntityView& entity : snapshots[0].entities)
+    std::vector<Outpost::EntityView> entities;
+    for (const Outpost::Snapshot& snapshot : {blueSnapshots[0], redSnapshots[0]})
     {
-      if (!entity.owner.IsValid())
-        continue;
+      for (const Outpost::EntityView& entity : snapshot.entities)
+      {
+        Assert::IsTrue(!entity.owner.IsValid() || entity.owner == snapshot.player, L"the other base is out of sight");
+        if (entity.owner.IsValid())
+          entities.push_back(entity);
+      }
+    }
+    for (const Outpost::EntityView& entity : entities)
+    {
       placed.push_back(entity);
       const Outpost::PlanePosition start = map.starts[entity.owner.value - 1];
       Assert::IsTrue(entity.hitPointsHundredths > 0 && entity.hitPointsHundredths == entity.maxHitPointsHundredths);
