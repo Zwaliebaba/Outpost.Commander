@@ -36,30 +36,45 @@ bool Arrived(const Outpost::Simulation& _simulation, Outpost::EntityId _ship)
   return !_simulation.FindEntity(_ship)->destination.has_value();
 }
 
-// Writes down every part a tick tells it of, as "+name" where it begins and "-name" where it ends (task 8.1).
+// Writes down every part a tick tells it of, where it begins and where it ends (task 8.1). An observer may not throw, so
+// it keeps them in room set aside beforehand, and Take spells them "+name" and "-name".
 class PartRecorder final : public Outpost::TickObserver
 {
 public:
   void Begin(Outpost::TickPart _part) noexcept override
   {
-    m_parts.push_back(std::format("+{}", Outpost::TickPartName(_part)));
+    Record(true, _part);
   }
 
   void End(Outpost::TickPart _part) noexcept override
   {
-    m_parts.push_back(std::format("-{}", Outpost::TickPartName(_part)));
+    Record(false, _part);
   }
 
   [[nodiscard]] std::string Take()
   {
     std::string parts;
-    for (const std::string& part : std::exchange(m_parts, {}))
-      parts += part + " ";
+    for (std::size_t i = 0; i < m_count; ++i)
+      parts += std::format("{}{} ", m_marks[i].begins ? '+' : '-', Outpost::TickPartName(m_marks[i].part));
+    m_count = 0;
     return parts;
   }
 
 private:
-  std::vector<std::string> m_parts;
+  struct Mark
+  {
+    bool begins = false;
+    Outpost::TickPart part = Outpost::TickPart::Commands;
+  };
+
+  void Record(bool _begins, Outpost::TickPart _part) noexcept
+  {
+    if (m_count < m_marks.size())
+      m_marks[m_count++] = {.begins = _begins, .part = _part};
+  }
+
+  std::array<Mark, 64> m_marks{};
+  std::size_t m_count = 0;
 };
 } // namespace
 

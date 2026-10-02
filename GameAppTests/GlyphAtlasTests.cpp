@@ -38,7 +38,10 @@ std::uint8_t At(const Neuron::GlyphBitmap& _sprite, std::uint32_t _x, std::uint3
   return _sprite.coverage[(std::size_t{_y} * _sprite.width) + _x];
 }
 
-const Neuron::FontDesc SEGOE{.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 20.0f};
+Neuron::FontDesc Segoe()
+{
+  return {.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 20.0f};
+}
 } // namespace
 
 TEST_CLASS(GlyphAtlasTests)
@@ -147,7 +150,7 @@ public:
   // wide letter is wider than a narrow one; the multiplication sign is a glyph of the font, not its fallback.
   TEST_METHOD(RasterizesASystemFont)
   {
-    const Neuron::FontBitmaps bitmaps = Neuron::RasterizeFont(SEGOE, 20.0f);
+    const Neuron::FontBitmaps bitmaps = Neuron::RasterizeFont(Segoe(), 20.0f);
     Assert::IsTrue(bitmaps.family == L"Segoe UI");
     Assert::AreEqual(Neuron::GlyphAtlas::CHARACTER_COUNT, bitmaps.glyphs.size());
     const Neuron::GlyphAtlas atlas = Neuron::PackGlyphs({bitmaps}, {});
@@ -165,7 +168,7 @@ public:
   // rather than drawing in some other font.
   TEST_METHOD(TakesTheFirstInstalledFamily)
   {
-    Neuron::FontDesc font = SEGOE;
+    Neuron::FontDesc font = Segoe();
     font.families = {L"No Such Font Outpost", L"Segoe UI"};
     Assert::IsTrue(Neuron::RasterizeFont(font, 16.0f).family == L"Segoe UI");
     font.families = {L"No Such Font Outpost"};

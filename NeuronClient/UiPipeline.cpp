@@ -138,6 +138,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
 std::vector<float> Neuron::UiPipeline::PixelSizes(float _scale) const
 {
   std::vector<float> sizes;
+  sizes.reserve(m_fonts.size() + m_sprites.size());
   for (const FontDesc& font : m_fonts)
     sizes.push_back(std::max(1.0f, std::round(font.emUnits * _scale)));
   for (const SpriteDesc& sprite : m_sprites)
@@ -149,9 +150,11 @@ void Neuron::UiPipeline::Rasterize(float _scale)
 {
   m_pixelSizes = PixelSizes(_scale);
   std::vector<FontBitmaps> fonts;
+  fonts.reserve(m_fonts.size());
   for (size_t i = 0; i < m_fonts.size(); ++i)
     fonts.push_back(RasterizeFont(m_fonts[i], m_pixelSizes[i]));
   std::vector<GlyphBitmap> sprites;
+  sprites.reserve(m_sprites.size());
   for (size_t i = 0; i < m_sprites.size(); ++i)
     sprites.push_back(Neuron::DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
   m_atlas = PackGlyphs(fonts, sprites);
