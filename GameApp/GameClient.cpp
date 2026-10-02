@@ -45,10 +45,14 @@ constexpr float FIELD_RING_ROCK_SHARE = 0.3f;
 constexpr float FIELD_RING_START_RADIANS = 0.26f;
 // A field is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
-// Every rock also shows the edges of its triangles as thin lines, for a vector look from the eighties (owner,
-// 2026-10-02): unlit, in the rock's own color made this much brighter, so they read just lighter than the rock's lit
-// faces rather than white.
+// Every rock also shows its edges as thin lines, for a vector look from the eighties (owner, 2026-10-02). Only the edges
+// where its surface bends by more than ROCK_CREASE_DEGREES are drawn, which on the asteroid mesh is about a quarter of
+// them: the ridges that give it its shape, not the triangles that make it up. The lines are lit as the rock is, in its
+// color made this much brighter, so they read just lighter than the faces beside them on the lit side and the dark side
+// alike, and they are lifted this share of the mesh's size off the surface so that it does not hide them.
+constexpr float ROCK_CREASE_DEGREES = 30.0f;
 constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
+constexpr float ROCK_EDGE_LIFT_SHARE = 0.005f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -274,6 +278,10 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
+  const Neuron::MeshData rockEdges = Neuron::BuildCreaseLines(
+    ModelShape(ASTEROID_SET, ASTEROID_MODEL), ROCK_CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, ROCK_EDGE_LIFT_SHARE);
+  if (!rockEdges.vertices.empty())
+    m_rockEdges = std::make_unique<Neuron::Mesh>(_renderer, rockEdges);
 
   const Starfield sky = BuildStarfield();
   Neuron::TextureData burstSprite =
@@ -816,7 +824,8 @@ void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, cons
   m_pipeline.Draw(_commandList, rock, _world, _color);
   const DirectX::XMFLOAT4 edgeColor{std::min(1.0f, _color.x * ROCK_EDGE_BRIGHTNESS), std::min(1.0f, _color.y * ROCK_EDGE_BRIGHTNESS),
                                     std::min(1.0f, _color.z * ROCK_EDGE_BRIGHTNESS), _color.w};
-  m_pipeline.DrawEdges(_commandList, rock, _world, edgeColor);
+  if (m_rockEdges)
+    m_pipeline.DrawLines(_commandList, *m_rockEdges, _world, edgeColor);
 }
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)

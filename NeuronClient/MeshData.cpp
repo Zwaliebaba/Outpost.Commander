@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <map>
+#include <utility>
 
 namespace
 {
@@ -193,4 +195,73 @@ void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
     hardpoint.size *= scale;
   }
   MeasureBounds(_mesh);
+}
+
+Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians, float _liftShare)
+{
+  // Each corner once, by position.
+  std::map<std::array<float, 3>, std::uint32_t> cornerAt;
+  std::vector<DirectX::XMFLOAT3> corners;
+  std::vector<std::uint32_t> cornerOf(_mesh.vertices.size());
+  for (size_t i = 0; i < _mesh.vertices.size(); ++i)
+  {
+    const DirectX::XMFLOAT3& position = _mesh.vertices[i].position;
+    const auto [found, added] = cornerAt.try_emplace({position.x, position.y, position.z}, static_cast<std::uint32_t>(corners.size()));
+    if (added)
+      corners.push_back(position);
+    cornerOf[i] = found->second;
+  }
+
+  // Each edge, by its two corners in order, and the normals of the faces that have it. A triangle with no area has none.
+  std::map<std::pair<std::uint32_t, std::uint32_t>, std::vector<DirectX::XMFLOAT3>> faceNormals;
+  for (size_t i = 0; i + 2 < _mesh.indices.size(); i += 3)
+  {
+    const std::array<std::uint32_t, 3> triangle{cornerOf[_mesh.indices[i]], cornerOf[_mesh.indices[i + 1]], cornerOf[_mesh.indices[i + 2]]};
+    const DirectX::XMVECTOR a = DirectX::XMLoadFloat3(&corners[triangle[0]]);
+    const DirectX::XMVECTOR face = DirectX::XMVector3Cross(DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&corners[triangle[1]]), a),
+                                                           DirectX::XMVectorSubtract(DirectX::XMLoadFloat3(&corners[triangle[2]]), a));
+    if (DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(face)) <= 0.0f)
+      continue;
+    DirectX::XMFLOAT3 normal;
+    DirectX::XMStoreFloat3(&normal, DirectX::XMVector3Normalize(face));
+    for (size_t side = 0; side < 3; ++side)
+    {
+      const std::uint32_t from = triangle[side];
+      const std::uint32_t to = triangle[(side + 1) % 3];
+      faceNormals[{std::min(from, to), std::max(from, to)}].push_back(normal);
+    }
+  }
+
+  const DirectX::XMFLOAT3 extents = _mesh.Extents();
+  const float lift = _liftShare * std::max({extents.x, extents.y, extents.z});
+  const float flatCosine = std::cos(_minAngleRadians);
+  MeshData lines;
+  lines.boundsMin = _mesh.boundsMin;
+  lines.boundsMax = _mesh.boundsMax;
+  for (const auto& [edge, normals] : faceNormals)
+  {
+    if (normals.size() == 2)
+    {
+      const float cosine =
+        DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&normals[0]), DirectX::XMLoadFloat3(&normals[1])));
+      if (cosine >= flatCosine)
+        continue;
+    }
+    DirectX::XMVECTOR sum = DirectX::XMVectorZero();
+    for (const DirectX::XMFLOAT3& normal : normals)
+      sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&normal));
+    // Faces that fold right back on each other have no mean; the first face's normal stands in.
+    const DirectX::XMVECTOR mean = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(sum)) > 1e-6f ? DirectX::XMVector3Normalize(sum)
+                                                                                                  : DirectX::XMLoadFloat3(&normals.front());
+    MeshVertex vertex{};
+    DirectX::XMStoreFloat3(&vertex.normal, mean);
+    for (const std::uint32_t corner : {edge.first, edge.second})
+    {
+      DirectX::XMStoreFloat3(&vertex.position,
+                             DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&corners[corner]), DirectX::XMVectorScale(mean, lift)));
+      lines.indices.push_back(static_cast<std::uint32_t>(lines.vertices.size()));
+      lines.vertices.push_back(vertex);
+    }
+  }
+  return lines;
 }

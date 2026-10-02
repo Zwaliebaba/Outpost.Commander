@@ -1,8 +1,12 @@
 #include "pch.h"
 #include "RepositoryAssets.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <numbers>
+#include <utility>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -78,6 +82,61 @@ Neuron::ByteBuffer OneTriangle(std::string_view _tag = "exhaust", const DirectX:
 void ExpectRejected(const Neuron::ByteBuffer& _bytes)
 {
   Assert::ExpectException<Neuron::Exception>([&] { (void)Neuron::ParseNmf(_bytes, "Test.nmf"); });
+}
+
+// A box 2 m each way round the origin, flat-shaded as the baker writes one: each face its own four corners and normal,
+// split into two triangles along a diagonal.
+Neuron::MeshData FlatBox()
+{
+  Neuron::MeshData box;
+  for (int axis = 0; axis < 3; ++axis)
+  {
+    for (const float sign : {-1.0f, 1.0f})
+    {
+      std::array<float, 3> normal{};
+      normal[static_cast<size_t>(axis)] = sign;
+      const auto u = static_cast<size_t>((axis + 1) % 3);
+      const auto v = static_cast<size_t>((axis + 2) % 3);
+      const auto first = static_cast<std::uint32_t>(box.vertices.size());
+      for (const auto& [du, dv] : std::array<std::pair<float, float>, 4>{{{-1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, 1.0f}, {-1.0f, 1.0f}}})
+      {
+        std::array<float, 3> point = normal;
+        point[u] = du;
+        point[v] = dv;
+        box.vertices.push_back({.position = {point[0], point[1], point[2]}, .normal = {normal[0], normal[1], normal[2]}});
+      }
+      box.indices.insert(box.indices.end(), {first, first + 1, first + 2, first, first + 2, first + 3});
+    }
+  }
+  box.boundsMin = {-1.0f, -1.0f, -1.0f};
+  box.boundsMax = {1.0f, 1.0f, 1.0f};
+  return box;
+}
+
+// Two triangles 10 m across, facing up and wound as the baker winds them, so that their geometric normals agree with
+// their vertex normals. They share the edge along z at x = 0: the first lies flat toward -x, and the second runs out
+// toward +x folded down by _foldDegrees.
+Neuron::MeshData Hinge(float _foldDegrees)
+{
+  const float fold = _foldDegrees * std::numbers::pi_v<float> / 180.0f;
+  const DirectX::XMFLOAT3 tip{10.0f * std::cos(fold), -10.0f * std::sin(fold), 0.0f};
+  Neuron::MeshData hinge;
+  hinge.vertices = {{{0.0f, 0.0f, -5.0f}, UP}, {{0.0f, 0.0f, 5.0f}, UP}, {{-10.0f, 0.0f, 0.0f}, UP}, {{0.0f, 0.0f, -5.0f}, UP}, {tip, UP},
+                    {{0.0f, 0.0f, 5.0f}, UP}};
+  hinge.indices = {0, 2, 1, 3, 5, 4};
+  hinge.boundsMin = {-10.0f, tip.y, -5.0f};
+  hinge.boundsMax = {std::max(0.0f, tip.x), 0.0f, 5.0f};
+  return hinge;
+}
+
+size_t LineCount(const Neuron::MeshData& _lines)
+{
+  return _lines.indices.size() / 2;
+}
+
+float Degrees(float _degrees)
+{
+  return _degrees * std::numbers::pi_v<float> / 180.0f;
 }
 } // namespace
 
@@ -215,6 +274,61 @@ public:
     Assert::AreEqual(-1.0f, exhaust.forward.x, TOLERANCE);
     // The normal still points up, and keeps its length.
     Assert::AreEqual(1.0f, mesh.vertices[0].normal.y, TOLERANCE);
+  }
+
+  // The owner's asteroid edges (2026-10-02): a box shows its twelve edges, not the diagonals that split its faces.
+  TEST_METHOD(CreaseLinesAreTheEdgesWhereTheSurfaceBends)
+  {
+    const Neuron::MeshData lines = Neuron::BuildCreaseLines(FlatBox(), Degrees(30.0f), 0.0f);
+    Assert::AreEqual(size_t{12}, LineCount(lines));
+    Assert::AreEqual(lines.vertices.size(), lines.indices.size());
+    for (size_t i = 0; i < lines.indices.size(); ++i)
+      Assert::AreEqual(static_cast<std::uint32_t>(i), lines.indices[i]);
+    // Every line runs along an edge of the box: two of its coordinates are at a face.
+    for (const Neuron::MeshVertex& vertex : lines.vertices)
+    {
+      const int atFaces = (std::abs(vertex.position.x) == 1.0f ? 1 : 0) + (std::abs(vertex.position.y) == 1.0f ? 1 : 0) +
+                          (std::abs(vertex.position.z) == 1.0f ? 1 : 0);
+      Assert::IsTrue(atFaces >= 2);
+    }
+  }
+
+  // A fold shallower than the angle is not drawn; a steeper one is. The open rim is drawn either way.
+  TEST_METHOD(TheAngleDecidesWhichFoldsAreDrawn)
+  {
+    const Neuron::MeshData hinge = Hinge(45.0f);
+    Assert::AreEqual(size_t{5}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(30.0f), 0.0f)));
+    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(60.0f), 0.0f)));
+    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(Hinge(0.0f), Degrees(30.0f), 0.0f)), L"a flat sheet shows its rim");
+  }
+
+  // A line is lit and lifted along the mean of its faces' normals; the lift is a share of the mesh's largest extent.
+  TEST_METHOD(CreaseLinesAreLiftedAlongTheMeanNormal)
+  {
+    const Neuron::MeshData lines = Neuron::BuildCreaseLines(Hinge(90.0f), Degrees(30.0f), 0.01f);
+    // The fold's line is the one at x = 0 whose normal leans out between up and +x, the faces' two normals.
+    const auto fold = std::ranges::find_if(lines.vertices, [](const Neuron::MeshVertex& _vertex)
+                                           { return _vertex.normal.x > 0.1f && _vertex.normal.y > 0.1f; });
+    Assert::IsTrue(fold != lines.vertices.end());
+    const float half = std::sqrt(0.5f);
+    Assert::AreEqual(half, fold->normal.x, TOLERANCE);
+    Assert::AreEqual(half, fold->normal.y, TOLERANCE);
+    // Folded a quarter turn, the hinge is 10 m across in x, y and z alike, so the lift is 0.1 m.
+    Assert::AreEqual(0.1f * half, fold->position.x, TOLERANCE);
+    Assert::AreEqual(0.1f * half, fold->position.y, TOLERANCE);
+  }
+
+  // On the shipped asteroid the creases are a small share of its edges: the ridges, not its triangulation.
+  TEST_METHOD(TheAsteroidShowsItsRidgesNotItsTriangles)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    const Outpost::ModelSet& set = catalog.Set("Asteroids");
+    const Neuron::MeshData rock = ReadRepositoryModel(set, set.Model("Asteroid"));
+    const size_t triangles = rock.indices.size() / 3;
+    const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(30.0f), 0.005f));
+    // A closed mesh has one and a half edges per triangle.
+    Assert::IsTrue(creases > 0);
+    Assert::IsTrue(creases * 2 < triangles * 3 / 2, L"fewer than half the edges");
   }
 };
 } // namespace GameAppTests

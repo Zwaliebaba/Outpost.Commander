@@ -39,10 +39,10 @@ public:
   // false. Only after BeginDrawing.
   bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);
 
-  // Draws the edges of _mesh's triangles as one-pixel lines in a flat, unlit linear color, over the mesh as Draw drew it:
-  // the faces turned away are culled, as Draw culls them, and the lines are pulled just in front of the surface by a
-  // depth bias so that they do not fight it. The pipeline is back on Draw's state when it returns.
-  void DrawEdges(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
+  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines lit as a mesh is, in a
+  // linear color. They are tested against the depth of what is drawn but write none, so the far side of a mesh hides its
+  // own lines. The pipeline is back on Draw's state and topology when it returns.
+  void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color) const;
 
 private:
@@ -52,8 +52,8 @@ private:
 
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
-  // The same, drawing triangles as their edges (DrawEdges).
-  winrt::com_ptr<ID3D12PipelineState> m_edgeState;
+  // The same, drawing lines (DrawLines).
+  winrt::com_ptr<ID3D12PipelineState> m_lineState;
   // One slot per frame in flight, mapped for the pipeline's lifetime; the renderer's frame index picks the slot the GPU
   // is not reading.
   winrt::com_ptr<ID3D12Resource> m_frameConstants;

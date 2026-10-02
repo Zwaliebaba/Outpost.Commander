@@ -84,7 +84,7 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // One asteroid rock placed by _world in _color, and the edges of its triangles over it, a little lighter.
+  // One asteroid rock placed by _world in _color, and its creases over it as lines, a little lighter.
   void DrawRock(ID3D12GraphicsCommandList* _commandList, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
@@ -166,6 +166,8 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
+  // The asteroid's creases as a line list, drawn over every rock; nothing if it has none.
+  std::unique_ptr<Neuron::Mesh> m_rockEdges;
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;

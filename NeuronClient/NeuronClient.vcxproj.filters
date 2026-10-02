@@ -93,9 +93,6 @@
     <FXCompile Include="Shader\MeshPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
-    <FXCompile Include="Shader\EdgePS.hlsl">
-      <Filter>Shader</Filter>
-    </FXCompile>
     <FXCompile Include="Shader\GlowVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
