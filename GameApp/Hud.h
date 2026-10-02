@@ -32,6 +32,8 @@ public:
     PickWeapon,
     EditName,
     SaveDesign,
+    // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
+    SaveAndQueue,
     // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
     StartSkirmish,
     Quit,

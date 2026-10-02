@@ -141,7 +141,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
                              .enabled = weapon.available,
                              .selected = weapon.id == picked.weapon});
 
-  if (const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest))
+  const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest);
+  if (stats.has_value())
   {
     panel.summary.push_back(
       std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
@@ -163,14 +164,23 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   }
 
   const Outpost::DesignView* match = _designer.Match(_newest);
-  panel.actions.push_back({.label = match != nullptr ? "Rename" : "Save design",
-                           .action = {.kind = Hud::ActionKind::SaveDesign},
-                           .enabled = _designer.SaveCommand(_newest).has_value()});
-  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  const bool canSave = _designer.SaveCommand(_newest).has_value();
   panel.actions.push_back(
-    {.label = match != nullptr ? std::format("Queue|{}", match->cost) : std::string("Queue"),
-     .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match != nullptr ? match->id : Outpost::DesignId{}},
-     .enabled = match != nullptr && canQueue && _newest.ore >= match->cost});
+    {.label = match != nullptr ? "Rename" : "Save design", .action = {.kind = Hud::ActionKind::SaveDesign}, .enabled = canSave});
+  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  if (match != nullptr)
+  {
+    panel.actions.push_back({.label = std::format("Queue|{}", match->cost),
+                             .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match->id},
+                             .enabled = canQueue && _newest.ore >= match->cost});
+  }
+  else
+  {
+    // Picks that are no saved design yet are saved by their Queue, and queued once the server has the design (ADR-023).
+    panel.actions.push_back({.label = stats.has_value() ? std::format("Queue|{}", stats->cost) : std::string("Queue"),
+                             .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = _yard.id},
+                             .enabled = canSave && canQueue && stats.has_value() && _newest.ore >= stats->cost});
+  }
   return panel;
 }
 // A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
