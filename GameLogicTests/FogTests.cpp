@@ -47,11 +47,11 @@ public:
     MatchArena arena;
     // A swarm ship sees 120 m and the 50 m margin; a Constructor, unarmed, 200 m.
     const Outpost::EntityId scout = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -1000.0f, .zMeters = -1000.0f});
-    const Outpost::EntityId near = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -825.0f});
-    const Outpost::EntityId far = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -600.0f});
-    Assert::IsTrue(arena.World().Sees(BLUE, arena.Get(far)), L"no fog yet");
+    const Outpost::EntityId nearby = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -825.0f});
+    const Outpost::EntityId distant = arena.World().SpawnConstructor(RED, {.xMeters = -1000.0f, .zMeters = -600.0f});
+    Assert::IsTrue(arena.World().Sees(BLUE, arena.Get(distant)), L"no fog yet");
     Assert::AreEqual(170.0f, arena.World().SightMetersOf(arena.Get(scout)), 1e-4f);
-    Assert::AreEqual(200.0f, arena.World().SightMetersOf(arena.Get(near)), 1e-4f);
+    Assert::AreEqual(200.0f, arena.World().SightMetersOf(arena.Get(nearby)), 1e-4f);
 
     Assert::IsFalse(arena.World().BuildSnapshot(BLUE).fogOfWar);
 
@@ -59,10 +59,10 @@ public:
     const Outpost::Snapshot blue = arena.World().BuildSnapshot(BLUE);
     Assert::IsTrue(blue.fogOfWar);
     Assert::AreEqual(170.0f, FindView(blue, scout)->sightMeters, 1e-4f, L"its own entity's sight, which the client draws by");
-    Assert::IsNotNull(FindView(blue, near), L"175 m off, within 170 m and its 10 m footprint");
-    Assert::AreEqual(0.0f, FindView(blue, near)->sightMeters, L"an enemy's is not told");
-    Assert::IsNull(FindView(blue, far));
-    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(far)));
+    Assert::IsNotNull(FindView(blue, nearby), L"175 m off, within 170 m and its 10 m footprint");
+    Assert::AreEqual(0.0f, FindView(blue, nearby)->sightMeters, L"an enemy's is not told");
+    Assert::IsNull(FindView(blue, distant));
+    Assert::IsFalse(arena.World().Sees(BLUE, arena.Get(distant)));
     Assert::IsTrue(
       std::ranges::any_of(blue.entities, [](const Outpost::EntityView& _view) { return _view.kind == Outpost::EntityKind::Asteroid; }),
       L"the map is always seen");
