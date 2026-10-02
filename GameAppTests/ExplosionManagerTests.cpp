@@ -148,7 +148,7 @@ public:
     Assert::IsTrue(FrameAt(explosions, 0.9).batches.empty());
     const Frame frame = FrameAt(explosions, 1.0);
     Assert::AreEqual(size_t{1}, frame.batches.size());
-    Assert::AreEqual(std::uint32_t{12 * VERTICES_PER_SHARD}, frame.batches.front().vertexCount);
+    Assert::AreEqual(std::uint32_t{VERTICES_PER_SHARD * 12}, frame.batches.front().vertexCount);
     Assert::AreEqual(COLOR.x, frame.batches.front().color.x, TOLERANCE);
   }
 
@@ -261,7 +261,7 @@ public:
   {
     Outpost::ExplosionManager explosions(TICKS_PER_SECOND);
     explosions.Add(Box(2.0f), Identity(), COLOR, 0.0, SEED, 3);
-    Assert::AreEqual(std::uint32_t{3 * 12 * VERTICES_PER_SHARD}, FrameAt(explosions, 0.0).batches.front().vertexCount);
+    Assert::AreEqual(std::uint32_t{VERTICES_PER_SHARD * 3 * 12}, FrameAt(explosions, 0.0).batches.front().vertexCount);
   }
 
   // A triangle with no area, or too small to see go, makes no shard.
