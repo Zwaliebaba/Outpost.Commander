@@ -69,7 +69,7 @@ constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
 
 // A beam is its shooter's side's color taken this share of the way to white, so that the player sees whose fire it is
 // and it still reads as light (ADR-028).
-constexpr float BEAM_WHITE_SHARE = 0.5f;
+constexpr float BEAM_WHITE_SHARE = 0.35f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -84,11 +84,14 @@ constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 
 // A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
-// above half its hit points, then amber, then red, over a dark full-length bar.
+// above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
+// HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
+// side the data does not name. The gap is small, so that the bar reads as the ship's.
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
-constexpr float HEALTH_BAR_GAP_METERS = 4.0f;
+constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
+constexpr float HEALTH_BACK_SHADE = 0.3f;
 constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
@@ -776,13 +779,15 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
 {
   for (const EntityView& entity : m_entities)
   {
+    const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
+    const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
     if (entity.builtPermille < PERMILLE)
     {
       const float left = entity.position.xMeters - entity.radiusMeters;
       const float z = entity.position.zMeters - entity.radiusMeters - (2.0f * HEALTH_BAR_GAP_METERS) - HEALTH_BAR_WIDTH_METERS;
       const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
       DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, back);
       DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters * built), .zMeters = z},
                HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
     }
@@ -794,7 +799,7 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
     const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
     const PlanePosition start{.xMeters = left, .zMeters = z};
     DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
-             HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+             HEALTH_BAR_HEIGHT_METERS, back);
     const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
                                      : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
                                                                 : HEALTH_LOW_COLOR;

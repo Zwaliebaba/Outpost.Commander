@@ -31,7 +31,7 @@ constexpr DirectX::XMFLOAT4 TRACER_COLOR{1.0f, 0.85f, 0.35f, 1.0f};
 // A beam joins the gun and the target at once and narrows as it fades. Its color is its shooter's side's, from
 // GameClient; this one is for a shooter it cannot place.
 constexpr double BEAM_SECONDS = 0.25;
-constexpr float BEAM_WIDTH_METERS = 3.0f;
+constexpr float BEAM_WIDTH_METERS = 4.0f;
 constexpr DirectX::XMFLOAT4 BEAM_COLOR{0.55f, 0.9f, 1.0f, 1.0f};
 
 constexpr double SPARK_SECONDS = 0.12;

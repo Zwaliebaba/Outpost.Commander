@@ -12,8 +12,10 @@ using Outpost::ParticleSystem;
 // Placeholder looks, after DeepSpaceOutpost's Particle::SetupParticles, and presentation rather than tuning (design §11).
 // The colors are linear and carry DeepSpaceOutpost's brightness, its 90/255 alpha, since a glow's color includes its
 // brightness (ADR-019). Its fireball and debris were red; here they run from a white-yellow flash to amber, so that a
-// blast is never read as the Tarkan's red (owner, 2026-10-02, ADR-028). Its smoke stays gray. Its sizes and speeds were
-// in its own units; here they are shares of a blast's reach, so that a blast is as big as what blew up.
+// blast is never read as the Tarkan's red (owner, 2026-10-02, ADR-028). A fireball's puff is born near white and half as
+// bright again, and cools to its own color over its first moments, so that a blast reads as heat rather than dust. Its
+// smoke stays gray. Its sizes and speeds were in its own units; here they are shares of a blast's reach, so that a blast
+// is as big as what blew up.
 struct Look
 {
   double lifeSeconds = 0.0;
@@ -21,9 +23,17 @@ struct Look
   float friction = 0.0f;
   DirectX::XMFLOAT3 color1{};
   DirectX::XMFLOAT3 color2{};
+  // The color it is born in, and how long it takes to cool from it to its own; none for a look that does not cool.
+  DirectX::XMFLOAT3 hot{};
+  double coolSeconds = 0.0;
 };
 
-constexpr Look CORE{.lifeSeconds = 2.0, .friction = 0.2f, .color1 = {0.353f, 0.31f, 0.19f}, .color2 = {0.337f, 0.2f, 0.07f}};
+constexpr Look CORE{.lifeSeconds = 2.0,
+                    .friction = 0.2f,
+                    .color1 = {0.42f, 0.37f, 0.23f},
+                    .color2 = {0.4f, 0.24f, 0.08f},
+                    .hot = {0.55f, 0.52f, 0.44f},
+                    .coolSeconds = 0.4};
 constexpr Look DEBRIS{.lifeSeconds = 6.0, .friction = 0.2f, .color1 = {0.22f, 0.13f, 0.04f}, .color2 = {0.337f, 0.22f, 0.08f}};
 // DeepSpaceOutpost's rocket trail, the smoke its debris leaves.
 constexpr Look TRAIL{.lifeSeconds = 2.0, .friction = 0.6f, .color1 = {0.076f, 0.076f, 0.076f}, .color2 = {0.204f, 0.204f, 0.204f}};
@@ -96,6 +106,17 @@ float Brightness(const Look& _look, double _ageSeconds) noexcept
   if (_ageSeconds <= fadeStart)
     return 1.0f;
   return static_cast<float>(std::clamp(1.0 - ((_ageSeconds - fadeStart) / (_look.lifeSeconds - fadeStart)), 0.0, 1.0));
+}
+
+// A particle of _look's color at _ageSeconds: from its hot color at birth to _color once it has cooled.
+DirectX::XMFLOAT4 Cooled(const Look& _look, const DirectX::XMFLOAT4& _color, double _ageSeconds) noexcept
+{
+  if (_ageSeconds >= _look.coolSeconds)
+    return _color;
+  const auto heat = static_cast<float>(1.0 - (_ageSeconds / _look.coolSeconds));
+  const float keep = 1.0f - heat;
+  return {(_look.hot.x * heat) + (_color.x * keep), (_look.hot.y * heat) + (_color.y * keep), (_look.hot.z * heat) + (_color.z * keep),
+          _color.w};
 }
 
 Glow MakeGlow(const DirectX::XMFLOAT3& _position, float _radiusMeters, const DirectX::XMFLOAT4& _color, float _brightness) noexcept
@@ -189,7 +210,7 @@ void ParticleSystem::At(double _viewTick, std::vector<Glow>& _glows)
     if (age <= look.lifeSeconds)
     {
       const DirectX::XMFLOAT3 position = Along(particle.position, particle.velocity, Travel(look.friction, age));
-      _glows.push_back(MakeGlow(position, particle.radiusMeters, particle.color, Brightness(look, age)));
+      _glows.push_back(MakeGlow(position, particle.radiusMeters, Cooled(look, particle.color, age), Brightness(look, age)));
     }
     if (particle.kind == Kind::ExplosionDebris)
       AddTrail(particle, age, _glows);

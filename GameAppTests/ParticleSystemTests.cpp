@@ -111,6 +111,23 @@ public:
     Assert::AreEqual(size_t{0}, particles.Pending());
   }
 
+  // ADR-028: a fireball's puff is born near white and brighter, and cools to its own color in its first 0.4 s, so that a
+  // blast reads as heat. Debris does not cool.
+  TEST_METHOD(AFireballCoolsFromWhite)
+  {
+    Outpost::ParticleSystem particles(TICKS_PER_SECOND);
+    particles.Add(Kind::ExplosionCore, ORIGIN, {}, 1.0f, 0.0f, 0.0, SEED);
+    const Glow hot = GlowsAt(particles, 0.0).front();
+    const Glow cooled = GlowsAt(particles, 0.5).front();
+    Assert::IsTrue(hot.color.x > cooled.color.x, L"brighter at birth");
+    Assert::IsTrue(hot.color.z / hot.color.x > cooled.color.z / cooled.color.x, L"whiter at birth");
+    Assert::AreEqual(cooled.color.x, GlowsAt(particles, 0.45).front().color.x, TOLERANCE);
+
+    Outpost::ParticleSystem debris(TICKS_PER_SECOND);
+    debris.Add(Kind::ExplosionDebris, ORIGIN, {}, 1.0f, 0.0f, 0.0, SEED);
+    Assert::AreEqual(GlowsAt(debris, 1.0).front().color.x, GlowsAt(debris, 0.0).front().color.x, TOLERANCE);
+  }
+
   // Debris leaves puffs of smoke behind it as it flies, which outlive it by their own life, 2 s, and then it is forgotten.
   TEST_METHOD(DebrisLeavesATrailBehindIt)
   {
