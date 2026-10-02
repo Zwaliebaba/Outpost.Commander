@@ -16,7 +16,7 @@ constexpr std::uint32_t PADDING_TEXELS = 1;
 constexpr std::uint32_t SOLID_TEXELS = 4;
 constexpr std::uint32_t MINIMUM_WIDTH_TEXELS = 256;
 constexpr std::uint8_t FULL_COVERAGE = 255;
-constexpr char32_t REPLACEMENT = U'�';
+constexpr char32_t REPLACEMENT = char32_t{0xFFFD};
 // A sprite's lines are this share of its size, and at least a pixel.
 constexpr float SPRITE_LINE_SHARE = 1.0f / 12.0f;
 

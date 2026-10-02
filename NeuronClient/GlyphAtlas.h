@@ -63,7 +63,7 @@ struct GlyphAtlas
   // multiplication sign. Any other character is drawn as FALLBACK.
   static constexpr char32_t FIRST = U' ';
   static constexpr char32_t LAST = U'~';
-  static constexpr std::array<char32_t, 2> EXTRA_CHARACTERS{U'·', U'×'};
+  static constexpr std::array<char32_t, 2> EXTRA_CHARACTERS{0xB7, 0xD7};
   static constexpr char32_t FALLBACK = U'?';
   static constexpr std::size_t CHARACTER_COUNT = (LAST - FIRST) + 1 + EXTRA_CHARACTERS.size();
 

@@ -94,18 +94,18 @@ public:
   {
     const Neuron::GlyphAtlas atlas = Neuron::PackGlyphs({MadeUpFont(0)}, {});
     const Neuron::GlyphAtlas::Font& font = atlas.fonts.front();
-    const Neuron::GlyphAtlas::Glyph& times = font.For(U'×');
-    const Neuron::GlyphAtlas::Glyph& dot = font.For(U'·');
+    const Neuron::GlyphAtlas::Glyph& times = font.For(char32_t{0xD7});
+    const Neuron::GlyphAtlas::Glyph& dot = font.For(char32_t{0xB7});
     const Neuron::GlyphAtlas::Glyph& fallback = font.For(U'?');
     Assert::IsTrue(&times != &fallback && &dot != &fallback && &times != &dot);
-    Assert::IsTrue(&font.For(U'€') == &fallback, L"the euro sign is not held");
+    Assert::IsTrue(&font.For(char32_t{0x20AC}) == &fallback, L"the euro sign is not held");
 
     // "a×b" is a, the multiplication sign in two bytes, and b.
     const std::string_view axb = "a\xC3\x97"
                                  "b";
     Assert::AreEqual(font.For(U'a').advance + times.advance + font.For(U'b').advance, font.Width(axb));
     std::size_t index = 1;
-    Assert::IsTrue(Neuron::NextCodePoint(axb, index) == U'×');
+    Assert::IsTrue(Neuron::NextCodePoint(axb, index) == char32_t{0xD7});
     Assert::AreEqual(size_t{3}, index);
 
     // A lone continuation byte, and a three-byte character, are one fallback each.
@@ -157,7 +157,7 @@ public:
     const Neuron::GlyphAtlas::Glyph& letter = font.For(U'A');
     Assert::IsTrue(letter.width > 0 && letter.height > 0);
     Assert::IsTrue(font.For(U'W').advance > font.For(U'i').advance);
-    Assert::IsTrue(font.For(U'×').width > 0);
+    Assert::IsTrue(font.For(char32_t{0xD7}).width > 0);
     Assert::IsTrue(font.lineHeight >= font.ascent && font.ascent > 0.0f);
   }
 
