@@ -17,13 +17,14 @@ constexpr size_t TUMBLERS_PER_COPY = 5;
 // A spin is up to this fast about each axis to start with, and slows as e^(-SPIN_FRICTION * age).
 constexpr float MAX_SPIN_RADIANS_PER_SECOND = 4.0f;
 constexpr float SPIN_FRICTION = 0.2f;
-// A shard starts out from the center at this many times its distance from it a second.
-constexpr float OUTWARD_SPEED_PER_SECOND = 3.0f;
+// A shard starts out from the center at this many times its distance from it a second. DeepSpaceOutpost's 3 was too
+// slow for a ship to read as blowing apart (owner, 2026-10-02).
+constexpr float OUTWARD_SPEED_PER_SECOND = 5.0f;
 // And at up to this share of the explosion's radius a second more in any direction, which stands in for
 // DeepSpaceOutpost's upward throw, so that the shards of a flat hull do not all stay in its plane.
-constexpr float SCATTER_RADII_PER_SECOND = 0.3f;
+constexpr float SCATTER_RADII_PER_SECOND = 0.5f;
 // Drag slows a shard by the square of its speed, as DeepSpaceOutpost's friction does, at this over the explosion's
-// radius per meter: larger stops the shards sooner. At 1.5, a shard from the rim flies about 2.1 radii in its life.
+// radius per meter: larger stops the shards sooner. At 1.5, a shard from the rim flies about 2.1 radii in its 3 s life.
 constexpr float DRAG_RADII = 1.5f;
 // A triangle whose edges add up to less than this share of the explosion's radius is too small to see go.
 constexpr float MIN_PERIMETER_RADII = 0.05f;

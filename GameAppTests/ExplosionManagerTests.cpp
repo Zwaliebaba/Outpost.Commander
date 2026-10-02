@@ -199,13 +199,14 @@ public:
   {
     Outpost::ExplosionManager explosions(TICKS_PER_SECOND);
     explosions.Add(Box(2.0f), Identity(), COLOR, 0.0, SEED);
-    const Frame halfway = FrameAt(explosions, 2.5);
+    constexpr double LIFE = Outpost::ExplosionManager::LIFE_SECONDS;
+    const Frame halfway = FrameAt(explosions, LIFE * 0.5);
     Assert::AreEqual(COLOR.x * 0.5f, halfway.batches.front().color.x, TOLERANCE);
-    const Frame late = FrameAt(explosions, 4.5);
+    const Frame late = FrameAt(explosions, LIFE * 0.9);
     const auto edge = [](const Frame& _frame) { return Distance(_frame.vertices[0].position, _frame.vertices[1].position); };
     Assert::AreEqual(edge(halfway) * 0.25f, edge(late), TOLERANCE);
 
-    Assert::IsTrue(FrameAt(explosions, 5.1).batches.empty());
+    Assert::IsTrue(FrameAt(explosions, LIFE + 0.1).batches.empty());
     Assert::AreEqual(size_t{0}, explosions.Pending());
   }
 

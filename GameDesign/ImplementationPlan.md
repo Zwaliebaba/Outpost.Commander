@@ -697,7 +697,7 @@ The owner asked on 2026-10-01 for DeepSpaceOutpost's particle and explosion mana
 - **Owner decisions of 2026-10-01:** one PR. Particles are analytic glows first, with no texture. Shards darken and shrink rather than fade with transparency.
 - **ADR:** [ADR-023](../Design/ADR/ADR-023-explosions-and-particles.md).
 - **As built:** `Outpost::ParticleSystem` and `Outpost::ExplosionManager` in `GameApp`, seeded by `Outpost::EffectRandom`, and `Neuron::MeshPipeline::DrawTriangles` for the shards. `GameClient` keeps each model's triangles on the CPU and starts both from each snapshot's destroyed. `ParticleSystemTests` and `ExplosionManagerTests` cover them without a GPU.
-- **Also in this PR, on trial (owner, 2026-10-02):** every asteroid and field rock shows the edges of its triangles as thin light lines, an eighties vector look, through `Neuron::MeshPipeline::DrawEdges` and `EdgePS.hlsl`. It gets an ADR if the owner keeps it.
+- **Also in this PR, on trial (owner, 2026-10-02):** every asteroid and field rock shows the edges of its triangles as thin lines a little lighter than the rock, an eighties vector look, through `Neuron::MeshPipeline::DrawEdges` and `EdgePS.hlsl`. It gets an ADR if the owner keeps it.
 - **Verify:** CI; **owner run**, to see whether a destruction reads from the RTS camera, and in the Q4 measurement (3.7), which now includes the shards.
 
 ---

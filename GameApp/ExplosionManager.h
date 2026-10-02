@@ -22,8 +22,9 @@ public:
   // The shards one explosion keeps at most, all copies together. A mesh with more triangles gives a random selection of
   // them, as DeepSpaceOutpost's fraction does.
   static constexpr size_t MAX_SHARDS = 400;
-  // How long an explosion lasts, in seconds.
-  static constexpr double LIFE_SECONDS = 5.0;
+  // How long an explosion lasts, in seconds: shorter than DeepSpaceOutpost's 5, so a ship is gone quickly (owner,
+  // 2026-10-02).
+  static constexpr double LIFE_SECONDS = 3.0;
 
   explicit ExplosionManager(std::uint32_t _ticksPerSecond);
 
