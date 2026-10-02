@@ -33,6 +33,22 @@ Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int3
 TEST_CLASS(HudTests)
 {
 public:
+  // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The HUD's text stays
+  // in Segoe UI at its size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
+  TEST_METHOD(NamesItsTypefacesAndSprites)
+  {
+    const std::vector<Neuron::FontDesc> typefaces = Outpost::Hud::Typefaces();
+    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Typeface::LargeFigure) + 1, typefaces.size());
+    const Neuron::FontDesc& body = typefaces[static_cast<std::size_t>(Outpost::Hud::Typeface::Body)];
+    Assert::IsTrue(body.families == std::vector<std::wstring>{L"Segoe UI"});
+    Assert::AreEqual(Outpost::Hud::FONT_UNITS, body.emUnits);
+    const Neuron::FontDesc& figure = typefaces[static_cast<std::size_t>(Outpost::Hud::Typeface::Figure)];
+    Assert::IsTrue(figure.families == std::vector<std::wstring>{L"Cascadia Mono", L"Consolas"});
+    for (const Neuron::FontDesc& typeface : typefaces)
+      Assert::IsTrue(!typeface.families.empty() && typeface.emUnits > 0.0f);
+    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Sprite::Corner) + 1, Outpost::Hud::Sprites().size());
+  }
+
   TEST_METHOD(GroupsDigitsInThousands)
   {
     Assert::AreEqual(std::string("0"), Outpost::WithThousands(0));

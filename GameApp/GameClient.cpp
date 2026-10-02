@@ -12,8 +12,6 @@ constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
-// The HUD's font: installed with Windows, so nothing ships (ADR-015).
-constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
@@ -299,12 +297,14 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_pipeline(_renderer),
     m_glows(_renderer),
     m_groundMask(_renderer),
-    m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
+    m_ui(_renderer, Hud::Typefaces(), Hud::Sprites(), Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond),
     m_particles(_ticksPerSecond),
     m_explosions(_ticksPerSecond)
 {
+  // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
+  Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
   for (const ModelSet& set : m_catalog.sets)
   {
     for (const ModelEntry& model : set.models)
@@ -764,11 +764,12 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   // Nothing to show before the first snapshot has been laid out.
   if (m_hudLayout.fontPixels <= 0.0f)
     return;
-  m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, m_hudLayout.fontPixels);
+  // The layout's own scale, which its font size was set by.
+  m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, m_hudLayout.fontPixels / Hud::FONT_UNITS);
   for (const Hud::Rect& panel : m_hudLayout.panels)
     m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
   for (const Hud::Text& text : m_hudLayout.texts)
-    m_ui.DrawText(text.text, text.left, text.top, text.color);
+    m_ui.DrawText(static_cast<std::size_t>(text.typeface), text.text, text.left, text.top, text.color, text.trackingPixels);
   m_ui.End(_commandList, _frameIndex);
 }
 

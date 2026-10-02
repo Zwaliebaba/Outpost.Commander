@@ -17,6 +17,32 @@ public:
   // The text's size at the reference scale.
   static constexpr float FONT_UNITS = 20.0f;
 
+  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: the HUD's text as it has
+  // been since milestone 3, and the faces of the owner's mockup for the windows of Phase 1 (Phase 1 design §11): condensed
+  // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed.
+  enum class Typeface : std::uint8_t
+  {
+    Body,
+    Title,
+    Label,
+    Name,
+    Figure,
+    LargeFigure
+  };
+
+  [[nodiscard]] static std::vector<Neuron::FontDesc> Typefaces();
+
+  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's diamond, the box of
+  // a part research has yet to unlock, and a window's corner bracket.
+  enum class Sprite : std::uint8_t
+  {
+    OreMark,
+    Checkbox,
+    Corner
+  };
+
+  [[nodiscard]] static std::vector<Neuron::SpriteDesc> Sprites();
+
   // What a button does when it is pressed.
   enum class ActionKind : std::uint8_t
   {
@@ -147,12 +173,15 @@ public:
     }
   };
 
+  // A line of text, in UTF-8, in a typeface and with extra space between its letters.
   struct Text
   {
     std::string text;
     float left = 0.0f;
     float top = 0.0f;
     DirectX::XMFLOAT4 color{};
+    Typeface typeface = Typeface::Body;
+    float trackingPixels = 0.0f;
   };
 
   // The HUD on a back buffer of one size, in its pixels.

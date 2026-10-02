@@ -27,7 +27,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
-| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | todo |
+| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.2 | Floating windows | 9.1 | — | todo |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | todo |
 | 9.4 | Research and production as windows | 9.2 | — | todo |
@@ -125,9 +125,15 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Tracking.** A text run can be laid out with extra space between letters, for the spaced capitals.
   - **Sprites.** The ◆, a checkbox, a hatching tile that repeats, and a corner bracket, drawn into the atlas at start-up, so they scale with the rest. A panel can be filled with the hatching.
   - **A missing face fails loudly.** A font that is not installed is reported, not silently replaced.
-- **ADR:** a new one, superseding ADR-015's one size and ASCII-only text. It keeps ADR-015's atlas, quads, one draw call, and no shipped font.
+- **ADR:** [ADR-030](../Design/ADR/ADR-030-typography-and-sprites.md), superseding ADR-015's one size and ASCII-only text. It keeps ADR-015's atlas, quads, one draw call, and no shipped font.
 - **Acceptance:** `GlyphAtlasTests` cover several faces and sizes in one atlas, the two non-ASCII characters, tracking, and the sprites.
 - **Verify:** CI; **owner run**: every existing panel still reads, and text is sharp at 1920×1080 and 2880×1920.
+- **As built:** [ADR-030](../Design/ADR/ADR-030-typography-and-sprites.md).
+  - **The atlas.** `Neuron::RasterizeFont`, `Neuron::DrawSprite` and `Neuron::PackGlyphs` make one texture of every font and sprite; `NextCodePoint` reads UTF-8. `UiPipeline` takes a list of fonts and sprites and a scale, and draws text in a font with tracking, sprites mirrored or not, and hatched rectangles, which the pixel shader stripes.
+  - **The game's.** `Hud::Typefaces` and `Hud::Sprites`; `Hud::Text` names its typeface and tracking, Body by default, so the HUD draws as it did. In Debug the game writes to the debugger which face the figures found (H7).
+  - **Hatching is a shader branch, not an atlas tile**, as this plan first said: a tile is a quad per tile, and the sampler clamps.
+  - **Tests.** `GlyphAtlasTests` rewritten for several fonts and sprites, UTF-8, tracking and the family fallback; `HudTests.NamesItsTypefacesAndSprites`.
+  - **Not built or run in the container**: the packing, UTF-8, tracking and sprites were checked there in a standalone build. DirectWrite and the shader are CI's and the owner's.
 
 ### 9.2 — Floating windows
 

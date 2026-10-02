@@ -4,8 +4,10 @@
 #include "CompiledShader/UiPS.h"
 #include "CompiledShader/UiVS.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <utility>
 
 namespace
 {
@@ -55,9 +57,10 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 }
 } // namespace
 
-Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamily, float _fontPixels)
+Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, float _scale)
   : m_renderer(_renderer),
-    m_fontFamily(_fontFamily)
+    m_fonts(std::move(_fonts)),
+    m_sprites(std::move(_sprites))
 {
   ID3D12Device* device = _renderer.Device();
   m_rootSignature = CreateRootSignature(device);
@@ -129,13 +132,29 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
   winrt::check_hresult(m_vertices->Map(0, &nothingRead, &mapped));
   m_mappedVertices = static_cast<Vertex*>(mapped);
 
-  Rasterize(_fontPixels);
+  Rasterize(_scale);
 }
 
-void Neuron::UiPipeline::Rasterize(float _fontPixels)
+std::vector<float> Neuron::UiPipeline::PixelSizes(float _scale) const
 {
-  m_fontPixels = std::round(_fontPixels);
-  m_atlas = RasterizeGlyphs(m_fontFamily, m_fontPixels);
+  std::vector<float> sizes;
+  for (const FontDesc& font : m_fonts)
+    sizes.push_back(std::max(1.0f, std::round(font.emUnits * _scale)));
+  for (const SpriteDesc& sprite : m_sprites)
+    sizes.push_back(std::max(1.0f, std::round(sprite.sizeUnits * _scale)));
+  return sizes;
+}
+
+void Neuron::UiPipeline::Rasterize(float _scale)
+{
+  m_pixelSizes = PixelSizes(_scale);
+  std::vector<FontBitmaps> fonts;
+  for (size_t i = 0; i < m_fonts.size(); ++i)
+    fonts.push_back(RasterizeFont(m_fonts[i], m_pixelSizes[i]));
+  std::vector<GlyphBitmap> sprites;
+  for (size_t i = 0; i < m_sprites.size(); ++i)
+    sprites.push_back(DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
+  m_atlas = PackGlyphs(fonts, sprites);
   // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
   m_atlasTexture =
     m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM, std::as_bytes(std::span(m_atlas.coverage)));
@@ -147,10 +166,10 @@ void Neuron::UiPipeline::Rasterize(float _fontPixels)
   m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _fontPixels)
+void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
 {
-  if (std::abs(std::round(_fontPixels) - m_fontPixels) >= 1.0f)
-    Rasterize(_fontPixels);
+  if (PixelSizes(_scale) != m_pixelSizes)
+    Rasterize(_scale);
   m_widthPixels = static_cast<float>(_widthPixels);
   m_heightPixels = static_cast<float>(_heightPixels);
   m_frameVertices.clear();
@@ -175,16 +194,29 @@ void Neuron::UiPipeline::FillRect(float _left, float _top, float _width, float _
   AddQuad(_left, _top, _left + _width, _top + _height, u, v, u, v, _color);
 }
 
-void Neuron::UiPipeline::DrawText(std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color)
+void Neuron::UiPipeline::FillHatched(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
+                                     float _periodPixels, float _stripePixels)
 {
+  // A negative u tells the pixel shader to stripe the quad rather than sample the atlas: -u is the period and v the
+  // stripe's width, both in pixels (Shader/UiPS.hlsl).
+  const float period = std::max(1.0f, _periodPixels);
+  const float stripe = std::clamp(_stripePixels, 0.0f, period);
+  AddQuad(_left, _top, _left + _width, _top + _height, -period, stripe, -period, stripe, _color);
+}
+
+void Neuron::UiPipeline::DrawText(std::size_t _font, std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color,
+                                  float _trackingPixels)
+{
+  const GlyphAtlas::Font& font = m_atlas.fonts[_font];
   // Whole pixels, so that texels land on pixels and the text stays as DirectWrite drew it.
   float pen = std::round(_left);
-  const float baseline = std::round(_top) + m_atlas.ascent;
+  const float tracking = std::round(_trackingPixels);
+  const float baseline = std::round(_top) + font.ascent;
   const auto width = static_cast<float>(m_atlas.width);
   const auto height = static_cast<float>(m_atlas.height);
-  for (const char character : _text)
+  for (std::size_t index = 0; index < _text.size();)
   {
-    const GlyphAtlas::Glyph& glyph = m_atlas.For(character);
+    const GlyphAtlas::Glyph& glyph = font.For(NextCodePoint(_text, index));
     if (glyph.width > 0)
     {
       const float left = pen + static_cast<float>(glyph.offsetX);
@@ -193,8 +225,25 @@ void Neuron::UiPipeline::DrawText(std::string_view _text, float _left, float _to
               static_cast<float>(glyph.atlasX) / width, static_cast<float>(glyph.atlasY) / height,
               static_cast<float>(glyph.atlasX + glyph.width) / width, static_cast<float>(glyph.atlasY + glyph.height) / height, _color);
     }
-    pen += glyph.advance;
+    pen += glyph.advance + tracking;
   }
+}
+
+void Neuron::UiPipeline::DrawSprite(std::size_t _sprite, float _left, float _top, float _width, float _height,
+                                    const DirectX::XMFLOAT4& _color, bool _mirrorX, bool _mirrorY)
+{
+  const GlyphAtlas::Glyph& sprite = m_atlas.sprites[_sprite];
+  const auto width = static_cast<float>(m_atlas.width);
+  const auto height = static_cast<float>(m_atlas.height);
+  float u0 = static_cast<float>(sprite.atlasX) / width;
+  float u1 = static_cast<float>(sprite.atlasX + sprite.width) / width;
+  float v0 = static_cast<float>(sprite.atlasY) / height;
+  float v1 = static_cast<float>(sprite.atlasY + sprite.height) / height;
+  if (_mirrorX)
+    std::swap(u0, u1);
+  if (_mirrorY)
+    std::swap(v0, v1);
+  AddQuad(std::round(_left), std::round(_top), std::round(_left + _width), std::round(_top + _height), u0, v0, u1, v1, _color);
 }
 
 void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)

@@ -478,6 +478,30 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   return content;
 }
 
+std::vector<Neuron::FontDesc> Hud::Typefaces()
+{
+  // Weights as DirectWrite counts them: 600 is semibold, 700 bold. Sizes are the mockup's, in reference units.
+  const std::vector<std::wstring> condensed{L"Bahnschrift"};
+  const std::vector<std::wstring> figures{L"Cascadia Mono", L"Consolas"};
+  return {
+    {.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FONT_UNITS},
+    {.families = condensed, .weight = 700, .stretch = Neuron::FontStretch::SemiCondensed, .emUnits = 22.0f},
+    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 12.0f},
+    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 16.0f},
+    {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = 13.0f},
+    {.families = figures, .weight = 700, .stretch = Neuron::FontStretch::Normal, .emUnits = 28.0f},
+  };
+}
+
+std::vector<Neuron::SpriteDesc> Hud::Sprites()
+{
+  return {
+    {.shape = Neuron::SpriteShape::Diamond, .sizeUnits = 12.0f},
+    {.shape = Neuron::SpriteShape::Checkbox, .sizeUnits = 10.0f},
+    {.shape = Neuron::SpriteShape::CornerBracket, .sizeUnits = 12.0f},
+  };
+}
+
 float Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept
 {
   return std::min(static_cast<float>(_widthPixels) / REFERENCE_WIDTH_UNITS, static_cast<float>(_heightPixels) / REFERENCE_HEIGHT_UNITS);
