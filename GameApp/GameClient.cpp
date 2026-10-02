@@ -54,10 +54,12 @@ constexpr float FIELD_SHADE = 0.7f;
 // Every rock also shows its edges as thin lines, for a vector look from the eighties (owner, 2026-10-02). Only the edges
 // where its surface bends by more than ROCK_CREASE_DEGREES are drawn: on the low-poly rocks that is nearly every edge
 // between two facets, and two triangles that lie almost flat read as one facet. The lines are lit as the rock is, in
-// its color made this much brighter, so they stand out from the faces beside them on the lit side and the dark side
-// alike, and they are lifted this share of the mesh's size off the surface so that it does not hide them.
+// its color made ROCK_EDGE_BRIGHTNESS brighter, and the faces are drawn ROCK_FILL_SHADE darker, so the lines stand out
+// from the faces beside them on the lit side and the dark side alike (owner, 2026-10-02). They are lifted
+// ROCK_EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them.
 constexpr float ROCK_CREASE_DEGREES = 10.0f;
 constexpr float ROCK_EDGE_BRIGHTNESS = 2.0f;
+constexpr float ROCK_FILL_SHADE = 0.65f;
 constexpr float ROCK_EDGE_LIFT_SHARE = 0.005f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
@@ -875,7 +877,8 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
 void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
                                    const DirectX::XMFLOAT4& _color)
 {
-  m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, _model), _world, _color);
+  const DirectX::XMFLOAT4 fillColor{_color.x * ROCK_FILL_SHADE, _color.y * ROCK_FILL_SHADE, _color.z * ROCK_FILL_SHADE, _color.w};
+  m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, _model), _world, fillColor);
   const DirectX::XMFLOAT4 edgeColor{std::min(1.0f, _color.x * ROCK_EDGE_BRIGHTNESS), std::min(1.0f, _color.y * ROCK_EDGE_BRIGHTNESS),
                                     std::min(1.0f, _color.z * ROCK_EDGE_BRIGHTNESS), _color.w};
   if (const auto edges = m_rockEdges.find(_model); edges != m_rockEdges.end())

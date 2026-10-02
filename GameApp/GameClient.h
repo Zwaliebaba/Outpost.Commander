@@ -84,7 +84,8 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // One asteroid rock, the rock mesh _model, placed by _world in _color, and its creases over it as lines, lighter.
+  // One asteroid rock, the rock mesh _model, placed by _world: its faces darker than _color and its creases over them as
+  // lines, lighter.
   void DrawRock(ID3D12GraphicsCommandList* _commandList, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
                 const DirectX::XMFLOAT4& _color);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
