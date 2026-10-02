@@ -292,11 +292,6 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   }
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
-  if (_detailed)
-  {
-    view.shipyardNumber = _entity.shipyardNumber;
-    view.shipsBuilt = _entity.shipsBuilt;
-  }
   if (_detailed && (!_entity.queue.empty() || !_entity.researchQueue.empty()))
   {
     view.queue = _entity.queue;
@@ -681,6 +676,12 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     if (!Sees(_player, entity))
       continue;
     EntityView& view = snapshot.entities.emplace_back(EntityViewOf(entity, !m_fog || entity.owner == _player));
+    // A Shipyard's number and the ships it has built are its owner's alone, fog of war or not (Phase 1 design §11).
+    if (entity.owner == _player)
+    {
+      view.shipyardNumber = entity.shipyardNumber;
+      view.shipsBuilt = entity.shipsBuilt;
+    }
     if (m_fog && entity.owner == _player)
       view.sightMeters = SightMetersOf(entity);
   }
