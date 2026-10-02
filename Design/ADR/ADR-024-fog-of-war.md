@@ -46,6 +46,12 @@ Design §4 and §13 named fog of war the first feature after the MVP, and ADR-00
 ## Consequences
 
 - **Every match is played under fog.** So is the Q4 stress scene (`--stress`), which builds both players' snapshots. Vision is computed every tick for each player: each enemy entity is checked against each of the player's own, and so is each remembered structure.
+- **That costs about 0.03 ms a tick.** `StressLoadTests` ran 1,200 ticks of the stress scene three times with fog and three times without, in the Linux container (g++ 13, `-O2`).
+  - With fog: a median tick of 0.19–0.20 ms, and 0.29–0.47 ms at the 99th percentile.
+  - Without: 0.16–0.18 ms, and 0.24–0.44 ms.
+  - Both fired the same 2,020 shots and destroyed the same 340 ships and structures.
+  - The development machine has not run it.
+- **The Q2 check passes as before.** The full check's report is byte-identical with fog and without (design §12).
 - **The AI's results barely move.** It beats a player who does nothing at tick 6,516 (5:26), against 6,483 without fog. It beats one who holds the middle at tick 7,360. Both were measured in `AiPlayerTests` in the Linux container, which the simulation's determinism makes the game's figures (ADR-009).
 - **The fog is only as good as the client is honest.** The server never sends what a player does not see, apart from the asteroids. A client that ignores `fogOfWar` sees nothing more. The fog the client draws is presentation.
 - **The ground mask has not run on a GPU.** Its shaders compile under glslang's HLSL front end, which checks syntax and types. `fxc` and the D3D12 runtime have not seen them, so the owner's run is the test.

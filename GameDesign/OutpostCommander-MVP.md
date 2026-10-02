@@ -363,6 +363,8 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 
 `Q2CheckTests.TheRecordedCountersHold` keeps four counters in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore, and the line beats the brawler under focus fire.
 
+**Under fog of war** (ADR-024, 2026-10-02), the full check gives a report byte-identical to the one without it: all four criteria pass with the figures above, 2,226 counter checks included. Every armed ship sees beyond its weapon's range, so fog changes nothing a ship fires at. Measured in the Linux container by running `RunQ2Check` with and without its fog option. `Q2CheckTests.FogChangesNoBattle` keeps a sample of it in CI.
+
 **Where the model stands** (`python Tools/BattleModel.py`, 2026-10-01, 80 s). It passes (a) and fails the rest:
 
 - **(b):** no design worth building uses the Missile Rack at any budget.
