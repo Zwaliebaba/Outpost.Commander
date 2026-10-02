@@ -172,9 +172,18 @@ void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, co
 {
   // The root signature and the frame's constants stay as BeginDrawing set them; the state and the topology change, and
   // change back.
+  const LineDraw draw{.lines = &_lines, .world = _world, .color = _color};
+  DrawLines(_commandList, std::span(&draw, 1));
+}
+
+void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const LineDraw> _draws) const
+{
+  if (_draws.empty())
+    return;
   _commandList->SetPipelineState(m_lineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-  Draw(_commandList, _lines, _world, _color);
+  for (const LineDraw& draw : _draws)
+    Draw(_commandList, *draw.lines, draw.world, draw.color);
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }

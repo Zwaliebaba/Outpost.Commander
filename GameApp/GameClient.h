@@ -84,10 +84,10 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // One asteroid rock, the rock mesh _model, placed by _world: its faces darker than _color and its creases over them as
-  // lines, lighter.
-  void DrawRock(ID3D12GraphicsCommandList* _commandList, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                const DirectX::XMFLOAT4& _color);
+  // The model _set/_model placed by _world: its faces darker than _color now, and its creases over them as lines,
+  // lighter, queued for the frame's one pass of lines (ADR-027).
+  void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
+                 const DirectX::XMFLOAT4& _color);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
@@ -173,8 +173,12 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
-  // Each rock mesh's creases as a line list, keyed by its model's name; none for a mesh with no creases.
-  std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_rockEdges;
+  // Each model's creases as a line list, keyed as m_modelMeshes; none for a mesh with no creases (ADR-027).
+  std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelEdges;
+  // The lines of the models drawn this frame, drawn together after them.
+  std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
+  // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
+  std::array<float, 3> m_rockTops{};
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;

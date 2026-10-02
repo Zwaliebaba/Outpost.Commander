@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstring>
 #include <numbers>
+#include <optional>
 #include <utility>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -318,8 +319,25 @@ public:
     Assert::AreEqual(0.1f * half, fold->position.y, TOLERANCE);
   }
 
+  // A line straight down meets the box's top, wherever over it, and misses it beside the box.
+  TEST_METHOD(SurfaceHeightIsTheHighestTriangleBelowThePoint)
+  {
+    const Neuron::MeshData box = FlatBox();
+    const std::optional<float> center = Neuron::SurfaceHeightAt(box, 0.0f, 0.0f);
+    Assert::IsTrue(center.has_value());
+    Assert::AreEqual(1.0f, *center, TOLERANCE);
+    const std::optional<float> corner = Neuron::SurfaceHeightAt(box, 0.9f, -0.9f);
+    Assert::IsTrue(corner.has_value());
+    Assert::AreEqual(1.0f, *corner, TOLERANCE);
+    Assert::IsFalse(Neuron::SurfaceHeightAt(box, 1.5f, 0.0f).has_value());
+    // On a slope, the height is where the line meets it: the hinge folded down by 45 degrees, 5 m out along it.
+    const std::optional<float> slope = Neuron::SurfaceHeightAt(Hinge(45.0f), 5.0f * std::sqrt(0.5f), 0.0f);
+    Assert::IsTrue(slope.has_value());
+    Assert::AreEqual(-5.0f * std::sqrt(0.5f), *slope, TOLERANCE);
+  }
+
   // The owner's low-poly rocks (2026-10-02), as Tools/MakeAsteroids.py makes them: each is closed, has few and so big
-  // facets, shows most of its edges as ridges at GameClient's ROCK_CREASE_DEGREES of 10, and fits inside its radius,
+  // facets, shows most of its edges as ridges at GameClient's CREASE_DEGREES of 10, and fits inside its radius,
   // which is half its length once fitted, since the game blocks that circle.
   TEST_METHOD(TheRocksAreLowPolyAndShowTheirRidges)
   {

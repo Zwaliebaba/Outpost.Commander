@@ -56,4 +56,8 @@ void FitMesh(MeshData& _mesh, float _lengthMeters);
 // along that normal by _liftShare of the mesh's largest extent, so that a line drawn over the mesh is not lost in it: a
 // line gets no depth bias. The bounds are the mesh's. A mesh with no such edge gives no vertices.
 [[nodiscard]] MeshData BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians, float _liftShare);
+
+// The height of _mesh's highest surface over the point (_x, _z): where a line straight down through that point first
+// meets one of its triangles. Nothing when the line misses every triangle.
+[[nodiscard]] std::optional<float> SurfaceHeightAt(const MeshData& _mesh, float _x, float _z);
 } // namespace Neuron

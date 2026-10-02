@@ -45,6 +45,17 @@ public:
   void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color) const;
 
+  // One line list to draw, as DrawLines takes it.
+  struct LineDraw
+  {
+    const Mesh* lines = nullptr;
+    DirectX::XMFLOAT4X4 world{};
+    DirectX::XMFLOAT4 color{};
+  };
+
+  // Draws every one of _draws as DrawLines does, switching to the line state and back once for all of them.
+  void DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const LineDraw> _draws) const;
+
 private:
   // The frame's constants rounded up to the size a constant buffer view needs.
   static constexpr UINT FRAME_CONSTANTS_BYTES =
