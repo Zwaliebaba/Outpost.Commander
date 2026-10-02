@@ -173,12 +173,12 @@ public:
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     Outpost::EntityView ship{.kind = Outpost::EntityKind::Ship, .hull = Outpost::HullId{1}};
-    const Outpost::BankLimits* small = catalog.BankFor(ship);
+    const Outpost::BankLimits* smallHull = catalog.BankFor(ship);
     ship.hull = Outpost::HullId{3};
-    const Outpost::BankLimits* large = catalog.BankFor(ship);
-    Assert::IsTrue(small != nullptr && large != nullptr);
-    Assert::IsTrue(small->maxBankRadians > large->maxBankRadians);
-    Assert::IsTrue(small->settleSeconds < large->settleSeconds);
+    const Outpost::BankLimits* largeHull = catalog.BankFor(ship);
+    Assert::IsTrue(smallHull != nullptr && largeHull != nullptr);
+    Assert::IsTrue(smallHull->maxBankRadians > largeHull->maxBankRadians);
+    Assert::IsTrue(smallHull->settleSeconds < largeHull->settleSeconds);
     for (const Outpost::HullModel& hull : catalog.hulls)
       Assert::IsTrue(hull.bank.maxBankRadians > 0.0f && hull.bank.fullBankMetersPerSecondSquared > 0.0f && hull.bank.settleSeconds > 0.0f);
     ship.role = Outpost::ShipRole::Constructor;
