@@ -131,12 +131,12 @@ public:
   // A blast is sized by what blew up: a bigger footprint throws more, and farther.
   TEST_METHOD(ABiggerBlastReachesFarther)
   {
-    Outpost::ParticleSystem small(TICKS_PER_SECOND);
-    Outpost::ParticleSystem large(TICKS_PER_SECOND);
-    small.AddBlast(ORIGIN, 8.0f, Outpost::EntityKind::Ship, 0.0, SEED);
-    large.AddBlast(ORIGIN, 24.0f, Outpost::EntityKind::Ship, 0.0, SEED);
-    Assert::IsTrue(large.Pending() > small.Pending());
-    Assert::IsTrue(Reach(GlowsAt(large, 1.0)) > Reach(GlowsAt(small, 1.0)));
+    Outpost::ParticleSystem smallBlast(TICKS_PER_SECOND);
+    Outpost::ParticleSystem largeBlast(TICKS_PER_SECOND);
+    smallBlast.AddBlast(ORIGIN, 8.0f, Outpost::EntityKind::Ship, 0.0, SEED);
+    largeBlast.AddBlast(ORIGIN, 24.0f, Outpost::EntityKind::Ship, 0.0, SEED);
+    Assert::IsTrue(largeBlast.Pending() > smallBlast.Pending());
+    Assert::IsTrue(Reach(GlowsAt(largeBlast, 1.0)) > Reach(GlowsAt(smallBlast, 1.0)));
   }
 
   // As a DeepSpaceOutpost building does, a structure throws a flash of fast puffs as well.
