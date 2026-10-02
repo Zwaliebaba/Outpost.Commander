@@ -4,40 +4,30 @@
       "name": "Human",
       "color": { "red": 0.18, "green": 0.42, "blue": 0.95 },
       "models": [
-        { "name": "Tiny", "lengthMeters": 14 },
         { "name": "Small", "lengthMeters": 20 },
         { "name": "Medium", "lengthMeters": 35 },
         { "name": "Large", "lengthMeters": 60 },
-        { "name": "VeryLarge", "lengthMeters": 80 },
-        { "name": "Huge", "lengthMeters": 110 },
-        { "name": "Carrier", "lengthMeters": 100 },
-        { "name": "Freighter", "lengthMeters": 40 },
-        { "name": "Colonizer", "lengthMeters": 24 },
-        { "name": "Fighter", "lengthMeters": 10 },
-        { "name": "Drone", "lengthMeters": 6 },
-        { "name": "Mine", "lengthMeters": 4 },
-        { "name": "Satellite", "lengthMeters": 12 },
-        { "name": "Station", "lengthMeters": 60 }
+        { "name": "Constructor", "lengthMeters": 24 },
+        { "name": "CommandStation", "lengthMeters": 60 },
+        { "name": "Shipyard", "lengthMeters": 60 },
+        { "name": "ResearchLab", "lengthMeters": 12 },
+        { "name": "MiningRig", "lengthMeters": 4 },
+        { "name": "DefensePlatform", "lengthMeters": 4 }
       ]
     },
     {
       "name": "Tarkan",
       "color": { "red": 0.9, "green": 0.25, "blue": 0.12 },
       "models": [
-        { "name": "Tiny", "lengthMeters": 14 },
         { "name": "Small", "lengthMeters": 20 },
         { "name": "Medium", "lengthMeters": 35 },
         { "name": "Large", "lengthMeters": 60 },
-        { "name": "VeryLarge", "lengthMeters": 80 },
-        { "name": "Huge", "lengthMeters": 110 },
-        { "name": "Carrier", "lengthMeters": 100 },
-        { "name": "Freighter", "lengthMeters": 40 },
-        { "name": "Colonizer", "lengthMeters": 24 },
-        { "name": "Fighter", "lengthMeters": 10 },
-        { "name": "Drone", "lengthMeters": 6 },
-        { "name": "Mine", "lengthMeters": 4 },
-        { "name": "Satellite", "lengthMeters": 12 },
-        { "name": "Station", "lengthMeters": 60 }
+        { "name": "Constructor", "lengthMeters": 24 },
+        { "name": "CommandStation", "lengthMeters": 60 },
+        { "name": "Shipyard", "lengthMeters": 60 },
+        { "name": "ResearchLab", "lengthMeters": 12 },
+        { "name": "MiningRig", "lengthMeters": 4 },
+        { "name": "DefensePlatform", "lengthMeters": 4 }
       ]
     },
     {
@@ -60,13 +50,13 @@
     { "hull": 3, "model": "Large" }
   ],
   "structures": [
-    { "structure": "CommandStation", "model": "Station" },
-    { "structure": "Shipyard", "model": "Station", "tint": 0.65 },
-    { "structure": "ResearchLab", "model": "Satellite" },
-    { "structure": "MiningRig", "model": "Mine" },
-    { "structure": "DefensePlatform", "model": "Mine", "tint": 1.4 }
+    { "structure": "CommandStation", "model": "CommandStation" },
+    { "structure": "Shipyard", "model": "Shipyard" },
+    { "structure": "ResearchLab", "model": "ResearchLab" },
+    { "structure": "MiningRig", "model": "MiningRig" },
+    { "structure": "DefensePlatform", "model": "DefensePlatform" }
   ],
-  "constructor": "Colonizer",
+  "constructor": "Constructor",
   "exhausts": [
     { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1.0 } },
     { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } }

@@ -79,22 +79,13 @@
     <None Include="Assets\Models\Asteroids\Large.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>
-    <None Include="Assets\Models\Human\Carrier.nmf">
+    <None Include="Assets\Models\Human\CommandStation.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Colonizer.nmf">
+    <None Include="Assets\Models\Human\Constructor.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Drone.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Human\Fighter.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Human\Freighter.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Human\Huge.nmf">
+    <None Include="Assets\Models\Human\DefensePlatform.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
     <None Include="Assets\Models\Human\Large.nmf">
@@ -103,40 +94,25 @@
     <None Include="Assets\Models\Human\Medium.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Mine.nmf">
+    <None Include="Assets\Models\Human\MiningRig.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Satellite.nmf">
+    <None Include="Assets\Models\Human\ResearchLab.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
     <None Include="Assets\Models\Human\Small.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Station.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Human\Tiny.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Human\VeryLarge.nmf">
-      <Filter>Package\Assets\Models\Human</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Carrier.nmf">
+    <None Include="Assets\Models\Tarkan\CommandStation.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Colonizer.nmf">
+    <None Include="Assets\Models\Tarkan\Constructor.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Drone.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Fighter.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Freighter.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Huge.nmf">
+    <None Include="Assets\Models\Tarkan\DefensePlatform.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
     <None Include="Assets\Models\Tarkan\Large.nmf">
@@ -145,22 +121,16 @@
     <None Include="Assets\Models\Tarkan\Medium.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Mine.nmf">
+    <None Include="Assets\Models\Tarkan\MiningRig.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Satellite.nmf">
+    <None Include="Assets\Models\Tarkan\ResearchLab.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
     <None Include="Assets\Models\Tarkan\Small.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Station.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\Tiny.nmf">
-      <Filter>Package\Assets\Models\Tarkan</Filter>
-    </None>
-    <None Include="Assets\Models\Tarkan\VeryLarge.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
   </ItemGroup>

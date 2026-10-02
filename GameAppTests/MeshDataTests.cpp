@@ -159,8 +159,8 @@ public:
         ++models;
       }
     }
-    // Fourteen models in each ship set, and the three rocks (design §11).
-    Assert::AreEqual(size_t{31}, models);
+    // Nine models in each ship set, three hulls, the Constructor and the five structures, and the three rocks (design §11).
+    Assert::AreEqual(size_t{21}, models);
   }
 
   // The baker turns the source's right-handed triangles into the game's left-handed ones (ADR-018): seen from its front,
