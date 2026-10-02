@@ -127,6 +127,15 @@
       <ObjectFileOutput />
       <TreatWarningAsError>true</TreatWarningAsError>
     </FXCompile>
+    <FXCompile Include="Shader\EdgePS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>5.1</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <VariableName>g_%(Filename)</VariableName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <ObjectFileOutput />
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXCompile>
     <FXCompile Include="Shader\GlowVS.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>5.1</ShaderModel>

@@ -84,6 +84,9 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
+  // One asteroid rock placed by _world, and the edges of its triangles over it.
+  void DrawRock(ID3D12GraphicsCommandList* _commandList, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color,
+                const DirectX::XMFLOAT4& _edgeColor);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.

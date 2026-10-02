@@ -43,6 +43,9 @@ constexpr float FIELD_RING_ROCK_SHARE = 0.3f;
 constexpr float FIELD_RING_START_RADIANS = 0.26f;
 // A field is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
+// Every rock also shows the edges of its triangles as thin light lines, for a vector look from the eighties (owner,
+// 2026-10-02). A field's lines are darkened by FIELD_SHADE with its rocks.
+constexpr DirectX::XMFLOAT4 ROCK_EDGE_COLOR{0.75f, 0.72f, 0.68f, 1.0f};
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -773,23 +776,23 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
-    m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, ASTEROID_MODEL),
-                    WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
+    DrawRock(_commandList, WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color, ROCK_EDGE_COLOR);
     break;
   }
   case EntityKind::AsteroidField:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
-    const Neuron::Mesh& rock = ModelMesh(ASTEROID_SET, ASTEROID_MODEL);
+    const DirectX::XMFLOAT4 edgeColor{ROCK_EDGE_COLOR.x * FIELD_SHADE, ROCK_EDGE_COLOR.y * FIELD_SHADE, ROCK_EDGE_COLOR.z * FIELD_SHADE,
+                                      ROCK_EDGE_COLOR.w};
     const float radius = _entity.radiusMeters;
-    m_pipeline.Draw(_commandList, rock, WorldMatrix(position, 0.0f, radius * FIELD_CENTER_ROCK_SHARE), color);
+    DrawRock(_commandList, WorldMatrix(position, 0.0f, radius * FIELD_CENTER_ROCK_SHARE), color, edgeColor);
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      m_pipeline.Draw(_commandList, rock, WorldMatrix(at, angle * 2.0f, radius * FIELD_RING_ROCK_SHARE), color);
+      DrawRock(_commandList, WorldMatrix(at, angle * 2.0f, radius * FIELD_RING_ROCK_SHARE), color, edgeColor);
     }
     break;
   }
@@ -798,6 +801,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     DrawStructure(_commandList, _entity);
     break;
   }
+}
+
+void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, const DirectX::XMFLOAT4X4& _world,
+                                   const DirectX::XMFLOAT4& _color, const DirectX::XMFLOAT4& _edgeColor)
+{
+  const Neuron::Mesh& rock = ModelMesh(ASTEROID_SET, ASTEROID_MODEL);
+  m_pipeline.Draw(_commandList, rock, _world, _color);
+  m_pipeline.DrawEdges(_commandList, rock, _world, _edgeColor);
 }
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
