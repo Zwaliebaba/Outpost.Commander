@@ -45,16 +45,16 @@ constexpr float FIELD_RING_ROCK_SHARE = 0.3f;
 constexpr float FIELD_RING_START_RADIANS = 0.26f;
 // A field is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
-// Every rock also shows its edges as thin lines, for a vector look from the eighties (owner, 2026-10-02). Only the edges
-// where its surface bends by more than ROCK_CREASE_DEGREES are drawn: on the low-poly rocks that is nearly every edge
-// between two facets, and two triangles that lie almost flat read as one facet. The lines are lit as the rock is, in
-// its color made ROCK_EDGE_BRIGHTNESS brighter, and the faces are drawn ROCK_FILL_SHADE darker, so the lines stand out
-// from the faces beside them on the lit side and the dark side alike (owner, 2026-10-02). They are lifted
-// ROCK_EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them.
-constexpr float ROCK_CREASE_DEGREES = 10.0f;
-constexpr float ROCK_EDGE_BRIGHTNESS = 2.0f;
-constexpr float ROCK_FILL_SHADE = 0.65f;
-constexpr float ROCK_EDGE_LIFT_SHARE = 0.005f;
+// Every model, rock, ship and structure, also shows its edges as thin lines, for a vector look from the eighties (owner,
+// 2026-10-02, ADR-027). Only the edges where its surface bends by more than CREASE_DEGREES are drawn: on low-poly
+// models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. The
+// lines are lit as the model is, in its color made EDGE_BRIGHTNESS brighter, and the faces are drawn FILL_SHADE darker,
+// so the lines stand out from the faces beside them on the lit side and the dark side alike. They are lifted
+// EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them.
+constexpr float CREASE_DEGREES = 10.0f;
+constexpr float EDGE_BRIGHTNESS = 2.0f;
+constexpr float FILL_SHADE = 0.65f;
+constexpr float EDGE_LIFT_SHARE = 0.005f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -83,8 +83,6 @@ constexpr float HEALTH_LOW_SHARE = 0.25f;
 // just beyond the health bar.
 constexpr float UNBUILT_SHADE = 0.35f;
 constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
-// A Mining Rig sits on its asteroid's top: this share of the asteroid's radius above the ground.
-constexpr float RIG_LIFT_SHARE = 0.7f;
 // The ghost: a flat disc of the footprint, a little above the ground.
 constexpr DirectX::XMFLOAT4 GHOST_VALID_COLOR{0.2f, 0.75f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 GHOST_INVALID_COLOR{0.85f, 0.2f, 0.15f, 1.0f};
@@ -230,12 +228,24 @@ std::string MeshKey(std::string_view _set, std::string_view _model)
   return std::format("{}/{}", _set, _model);
 }
 
+// Which of ROCK_MODELS a rock of _radiusMeters is drawn with.
+size_t RockIndex(float _radiusMeters) noexcept
+{
+  if (_radiusMeters <= SMALL_ROCK_MAX_METERS)
+    return 0;
+  return _radiusMeters < LARGE_ROCK_MIN_METERS ? 1 : 2;
+}
+
 // The rock mesh for a rock of _radiusMeters.
 std::string_view RockModel(float _radiusMeters) noexcept
 {
-  if (_radiusMeters <= SMALL_ROCK_MAX_METERS)
-    return ROCK_MODELS[0];
-  return _radiusMeters < LARGE_ROCK_MIN_METERS ? ROCK_MODELS[1] : ROCK_MODELS[2];
+  return ROCK_MODELS[RockIndex(_radiusMeters)];
+}
+
+// A color times _scale, kept at most 1.
+DirectX::XMFLOAT4 Shaded(const DirectX::XMFLOAT4& _color, float _scale) noexcept
+{
+  return {std::min(1.0f, _color.x * _scale), std::min(1.0f, _color.y * _scale), std::min(1.0f, _color.z * _scale), _color.w};
 }
 
 // The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
@@ -270,6 +280,10 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
+      // Its creases, drawn over it as lines (ADR-027).
+      const Neuron::MeshData edges = Neuron::BuildCreaseLines(data, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, EDGE_LIFT_SHARE);
+      if (!edges.vertices.empty())
+        m_modelEdges.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, edges));
       // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
       data.hardpoints.clear();
       m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
@@ -279,12 +293,12 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
-  for (const std::string_view model : ROCK_MODELS)
+  // How high each rock reaches over its center, for a Mining Rig to stand there; the top of its bounds if the line down
+  // its center misses it.
+  for (size_t index = 0; index < ROCK_MODELS.size(); ++index)
   {
-    const Neuron::MeshData edges = Neuron::BuildCreaseLines(ModelShape(ASTEROID_SET, model),
-                                                            ROCK_CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, ROCK_EDGE_LIFT_SHARE);
-    if (!edges.vertices.empty())
-      m_rockEdges.emplace(std::string(model), std::make_unique<Neuron::Mesh>(_renderer, edges));
+    const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, ROCK_MODELS[index]);
+    m_rockTops[index] = Neuron::SurfaceHeightAt(rock, 0.0f, 0.0f).value_or(rock.boundsMax.y);
   }
 
   const Starfield sky = BuildStarfield();
@@ -673,9 +687,12 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
     DrawHud(_commandList, _renderer.FrameIndex());
     return;
   }
+  m_lineDraws.clear();
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
   DrawShards(_commandList);
+  // Every model's lines at once, after every face they may lie behind.
+  m_pipeline.DrawLines(_commandList, m_lineDraws);
   DrawSelection(_commandList);
   DrawGhost(_commandList);
   DrawHealthBars(_commandList);
@@ -821,13 +838,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
     if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
-      m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), placed->set->color);
+      DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color);
     break;
   }
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
-    DrawRock(_commandList, RockModel(_entity.radiusMeters), WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
+    DrawModel(_commandList, ASTEROID_SET, RockModel(_entity.radiusMeters),
+              WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
     break;
   }
   case EntityKind::AsteroidField:
@@ -836,14 +854,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
     const float radius = _entity.radiusMeters;
     const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
-    DrawRock(_commandList, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color);
+    DrawModel(_commandList, ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color);
     const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      DrawRock(_commandList, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color);
+      DrawModel(_commandList, ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color);
     }
     break;
   }
@@ -854,15 +872,12 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   }
 }
 
-void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                                   const DirectX::XMFLOAT4& _color)
+void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model,
+                                    const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color)
 {
-  const DirectX::XMFLOAT4 fillColor{_color.x * ROCK_FILL_SHADE, _color.y * ROCK_FILL_SHADE, _color.z * ROCK_FILL_SHADE, _color.w};
-  m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, _model), _world, fillColor);
-  const DirectX::XMFLOAT4 edgeColor{std::min(1.0f, _color.x * ROCK_EDGE_BRIGHTNESS), std::min(1.0f, _color.y * ROCK_EDGE_BRIGHTNESS),
-                                    std::min(1.0f, _color.z * ROCK_EDGE_BRIGHTNESS), _color.w};
-  if (const auto edges = m_rockEdges.find(_model); edges != m_rockEdges.end())
-    m_pipeline.DrawLines(_commandList, *edges->second, _world, edgeColor);
+  m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, FILL_SHADE));
+  if (const auto edges = m_modelEdges.find(MeshKey(_set, _model)); edges != m_modelEdges.end())
+    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = Shaded(_color, EDGE_BRIGHTNESS)});
 }
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
@@ -870,8 +885,8 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   const std::optional<PlacedModel> placed = PlaceModel(_entity);
   if (!placed.has_value())
     return;
-  m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose),
-                  ModelColor(placed->set->color, placed->tint, _entity.builtPermille));
+  DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose),
+            ModelColor(placed->set->color, placed->tint, _entity.builtPermille));
 }
 
 void Outpost::GameClient::Explode(const Snapshot& _snapshot)
@@ -901,8 +916,9 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
                          start, seed);
     if (placed.has_value())
     {
+      // The shards are the faces' color, which is the model's darkened (ADR-027).
       m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose),
-                       ModelColor(placed->set->color, placed->tint, entity.builtPermille), start, seed,
+                       Shaded(ModelColor(placed->set->color, placed->tint, entity.builtPermille), FILL_SHADE), start, seed,
                        destroyed.kind == EntityKind::Structure ? STRUCTURE_SHARD_COPIES : 1);
     }
   }
@@ -934,19 +950,22 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
   if (model == nullptr)
     return std::nullopt;
   // Drawn across its kind's footprint: a Mining Rig's entity covers its asteroid, but the rig is the size of its kind,
-  // standing on top of the rock.
+  // standing on top of the rock: its lowest point on the rock's surface over the rock's center, where the asteroid,
+  // drawn at its radius, reaches.
   const Snapshot& newest = m_view.Newest();
   const auto type = std::ranges::find(newest.structureTypes, _entity.structure, &StructureTypeView::structure);
   const float radius = type != newest.structureTypes.end() ? type->radiusMeters : _entity.radiusMeters;
-  const float lift =
-    _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters ? _entity.radiusMeters * RIG_LIFT_SHARE : 0.0f;
   const ModelEntry& entry = set->Model(model->model);
+  const float scale = 2.0f * radius / entry.lengthMeters;
+  float lift = 0.0f;
+  if (_entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters)
+  {
+    const float rockTop = m_rockTops[RockIndex(_entity.radiusMeters)] * _entity.radiusMeters;
+    lift = rockTop - (ModelShape(set->name, model->model).boundsMin.y * scale);
+  }
   return PlacedModel{.set = set,
                      .model = &model->model,
-                     .pose = {.position = _entity.position,
-                              .liftMeters = lift,
-                              .headingRadians = _entity.headingRadians,
-                              .scale = 2.0f * radius / entry.lengthMeters},
+                     .pose = {.position = _entity.position, .liftMeters = lift, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint};
 }
 

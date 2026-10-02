@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <optional>
 #include <utility>
 
 namespace
@@ -264,4 +265,30 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
     }
   }
   return lines;
+}
+
+std::optional<float> Neuron::SurfaceHeightAt(const MeshData& _mesh, float _x, float _z)
+{
+  // A point on a triangle's edge counts as on it, so that a line down a shared edge still meets the surface.
+  constexpr float ON_EDGE = -1e-5f;
+  std::optional<float> highest;
+  for (size_t i = 0; i + 2 < _mesh.indices.size(); i += 3)
+  {
+    const DirectX::XMFLOAT3& a = _mesh.vertices[_mesh.indices[i]].position;
+    const DirectX::XMFLOAT3& b = _mesh.vertices[_mesh.indices[i + 1]].position;
+    const DirectX::XMFLOAT3& c = _mesh.vertices[_mesh.indices[i + 2]].position;
+    // The point's barycentric weights in the triangle seen from above; a triangle seen edge-on from above has none.
+    const float area = ((b.z - c.z) * (a.x - c.x)) + ((c.x - b.x) * (a.z - c.z));
+    if (std::abs(area) < 1e-12f)
+      continue;
+    const float weightA = (((b.z - c.z) * (_x - c.x)) + ((c.x - b.x) * (_z - c.z))) / area;
+    const float weightB = (((c.z - a.z) * (_x - c.x)) + ((a.x - c.x) * (_z - c.z))) / area;
+    const float weightC = 1.0f - weightA - weightB;
+    if (weightA < ON_EDGE || weightB < ON_EDGE || weightC < ON_EDGE)
+      continue;
+    const float height = (weightA * a.y) + (weightB * b.y) + (weightC * c.y);
+    if (!highest.has_value() || height > *highest)
+      highest = height;
+  }
+  return highest;
 }

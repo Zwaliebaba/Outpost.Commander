@@ -146,22 +146,22 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Human\Large.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Human\Medium.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Human\Small.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Large.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Medium.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Small.nmf">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Textures\starburst.dds">
       <DeploymentContent>true</DeploymentContent>
