@@ -74,6 +74,49 @@ public:
   }
 
   // ADR-009: a match reproduces from its seed and the server's command log, on the same build.
+  // ADR-025: started, the server runs its own ticks on a thread of its own. Orders sent from this thread reach it, a
+  // snapshot arrives for every tick in order, and destroying the server stops its thread. Stepping it by hand, or
+  // connecting, is then refused.
+  TEST_METHOD(RunsItsTicksOnItsOwnThread)
+  {
+    auto server = std::make_unique<Outpost::InProcessServer>(RepositoryTuning(), RepositoryMap(), Outpost::ServerDesc{.seed = 5});
+    const Outpost::EntityId ship = server->World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const std::unique_ptr<Outpost::Transport> blue = server->Connect(BLUE);
+    server->Start();
+    Assert::ExpectException<Neuron::Exception>([&server] { (void)server->Connect(RED); });
+    Assert::ExpectException<Neuron::Exception>([&server] { server->Advance(50ms); });
+    Assert::ExpectException<Neuron::Exception>([&server] { server->Start(); });
+
+    // Orders sent while the server ticks, a few to each tick, the last of them sending the ship on its way.
+    for (int order = 0; order < 100; ++order)
+    {
+      blue->Send({.order = Outpost::StopCommand{.ships = {ship}}});
+      std::this_thread::sleep_for(1ms);
+    }
+    blue->Send({.order = Outpost::MoveCommand{.ships = {ship}, .destination = {.xMeters = 300.0f}}});
+    (void)blue->Receive();
+    std::vector<Outpost::Snapshot> snapshots;
+    // Ten ticks take half a second; the deadline only keeps a stalled server from hanging the test.
+    const auto deadline = std::chrono::steady_clock::now() + 30s;
+    while (snapshots.size() < 10 && std::chrono::steady_clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(10ms);
+      for (Outpost::Snapshot& snapshot : blue->Receive())
+        snapshots.push_back(std::move(snapshot));
+    }
+    Assert::IsTrue(snapshots.size() >= 10, L"the server ran no ticks on its own");
+    for (size_t i = 1; i < snapshots.size(); ++i)
+      Assert::AreEqual(snapshots[i - 1].tick + 1, snapshots[i].tick, L"a snapshot for every tick, in order");
+    const auto moved = std::ranges::find(snapshots.back().entities, ship, &Outpost::EntityView::id);
+    Assert::IsTrue(moved != snapshots.back().entities.end() && moved->position.xMeters > 0.0f, L"the order reached the server");
+    Assert::IsTrue(server->TakeTickDurations().size() >= 10);
+
+    server.reset();
+    (void)blue->Receive();
+    std::this_thread::sleep_for(200ms);
+    Assert::IsTrue(blue->Receive().empty(), L"no ticks once the server is gone");
+  }
+
   TEST_METHOD(ReplaysFromItsCommandLog)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 77});

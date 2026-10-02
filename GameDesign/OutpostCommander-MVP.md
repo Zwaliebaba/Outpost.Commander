@@ -89,7 +89,7 @@ How each figure was measured:
 - **Q4.** The server times each tick on its own clock: applying its commands, the simulation step and every snapshot (`Server::TakeTickDurations`). `--load` adds the load (`PlaceMeasurementLoad`), and both players' ships are ordered across the map every 200 ticks.
 
 - **Q4 in combat (task 3.7).** `--stress` runs the stress scene (`StressLoad`): each player keeps 100 ships of its four starting designs and 20 structures with the tuning data's hit points and armor. Both fleets attack-move on each other's rally a third of the way in from the starts, lost ships come back at the rally with the same order, and ships left standing idle are sent after the enemy once a second, so the whole of both fleets keeps fighting for as long as the run lasts. Since milestone 4 the scene's structures block movement and its Command Stations and Defence Platforms fire, so a structure's death rebuilds the path graphs (ADR-010), and the starting base counts toward the 40 structures. The rival connects, so the server builds both players' snapshots, as it will against the AI. With `--measure` the game logs, for every frame:
-  - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them run on that thread.
+  - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them ran on that thread. Since 2026-10-02 the server's ticks run on a thread of their own (ADR-025), so a later run's CPU work leaves them out.
   - **GPU work:** between two timestamps at the start and the end of the frame's command list, which holds the scene, the effects and the HUD, read back once the frame's fence has passed.
   - **Not included:** the compositor, scanout and the display. The present interval is not the measure: with vsync on, a frame of 5 ms of work still presents every vsync interval (ADR-006).
   - **The display:** the back buffer's size and the refresh rate of the display the window is on, logged whenever the size changes.
@@ -516,3 +516,7 @@ Decided on 2026-10-01, after the MVP:
 - The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
 - The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts. The grid is a faint neutral gray rather than blue (§11, ADR-022).
 - Third-party content needs no approval, licence text or record of where it came from. AGENTS.md R14 no longer covers it (§11).
+
+Decided on 2026-10-02:
+
+- The in-process server runs its ticks on a thread of its own, so a slow tick no longer holds up a frame (§3, ADR-025).

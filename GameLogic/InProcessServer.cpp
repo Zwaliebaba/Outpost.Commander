@@ -30,11 +30,13 @@ Outpost::LoopbackTransport::LoopbackTransport(std::shared_ptr<LoopbackChannel> _
 
 void Outpost::LoopbackTransport::Send(Command _command)
 {
+  const std::scoped_lock lock(m_channel->mutex);
   m_channel->commands.push_back(std::move(_command));
 }
 
 std::vector<Outpost::Snapshot> Outpost::LoopbackTransport::Receive()
 {
+  const std::scoped_lock lock(m_channel->mutex);
   return std::exchange(m_channel->snapshots, {});
 }
 
@@ -78,6 +80,8 @@ std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _
 {
   if (!_player.IsValid())
     throw Neuron::Exception("InProcessServer: a connection needs a player");
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: players connect before the server starts");
   if (std::ranges::any_of(m_connections, [_player](const Connection& _connection) { return _connection.player == _player; }))
     throw Neuron::Exception(std::format("InProcessServer: player {} is already connected", _player.value));
 
@@ -88,9 +92,48 @@ std::unique_ptr<Outpost::Transport> Outpost::InProcessServer::Connect(PlayerId _
 
 void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime)
 {
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: a started server runs its own ticks");
   const std::uint32_t ticks = m_tickHost.Advance(_elapsedWallTime);
   for (std::uint32_t i = 0; i < ticks; ++i)
     RunTick();
+}
+
+void Outpost::InProcessServer::Start()
+{
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: the server has started already");
+  m_thread = std::jthread([this](const std::stop_token& _stop) { Run(_stop); });
+}
+
+void Outpost::InProcessServer::Run(const std::stop_token& _stop)
+{
+  std::mutex sleeping;
+  std::condition_variable_any wake;
+  auto last = std::chrono::steady_clock::now();
+  try
+  {
+    while (true)
+    {
+      {
+        // Nothing wakes it early but a request to stop.
+        std::unique_lock lock(sleeping);
+        (void)wake.wait_until(lock, _stop, last + m_tickHost.UntilNextTick(), [] { return false; });
+      }
+      if (_stop.stop_requested())
+        return;
+      const auto now = std::chrono::steady_clock::now();
+      const std::uint32_t ticks = m_tickHost.Advance(now - last);
+      last = now;
+      for (std::uint32_t i = 0; i < ticks; ++i)
+        RunTick();
+    }
+  }
+  catch (...)
+  {
+    const std::scoped_lock lock(m_reportMutex);
+    m_failure = std::current_exception();
+  }
 }
 
 std::uint32_t Outpost::InProcessServer::TicksPerSecond() const noexcept
@@ -100,6 +143,9 @@ std::uint32_t Outpost::InProcessServer::TicksPerSecond() const noexcept
 
 std::vector<std::chrono::nanoseconds> Outpost::InProcessServer::TakeTickDurations()
 {
+  const std::scoped_lock lock(m_reportMutex);
+  if (m_failure)
+    std::rethrow_exception(m_failure);
   return std::exchange(m_tickDurations, {});
 }
 
@@ -109,6 +155,7 @@ void Outpost::InProcessServer::RunTick()
   std::vector<Command> commands;
   for (const Connection& connection : m_connections)
   {
+    const std::scoped_lock lock(connection.channel->mutex);
     for (Command& command : connection.channel->commands)
     {
       // The connection says who sent it; what the client wrote there is never trusted (ADR-002).
@@ -131,8 +178,14 @@ void Outpost::InProcessServer::RunTick()
   (void)m_simulation.Tick(commands);
 
   for (const Connection& connection : m_connections)
-    connection.channel->snapshots.push_back(m_simulation.BuildSnapshot(connection.player));
-  m_tickDurations.push_back(std::chrono::steady_clock::now() - started);
+  {
+    Snapshot snapshot = m_simulation.BuildSnapshot(connection.player);
+    const std::scoped_lock lock(connection.channel->mutex);
+    connection.channel->snapshots.push_back(std::move(snapshot));
+  }
+  const auto duration = std::chrono::steady_clock::now() - started;
+  const std::scoped_lock lock(m_reportMutex);
+  m_tickDurations.push_back(duration);
 }
 
 void Outpost::InProcessServer::StartStressLoad()
