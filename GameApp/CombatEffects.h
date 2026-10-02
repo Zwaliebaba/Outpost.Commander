@@ -40,6 +40,10 @@ public:
   // It takes the shooter and the point it fires at.
   using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition)>;
 
+  // The color a shooter's beam is drawn in, so that the player sees whose fire it is (ADR-028): GameClient gives one from
+  // the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
+  using BeamTint = std::function<std::optional<DirectX::XMFLOAT4>(EntityId)>;
+
   explicit CombatEffects(std::uint32_t _ticksPerSecond);
 
   // Takes the shots of a snapshot. Each plays from one tick before the snapshot's own: the shot was fired from where the
@@ -47,8 +51,9 @@ public:
   void Receive(const Snapshot& _snapshot);
 
   // What to draw with the view at _viewTick. Effects that have played out are forgotten. A shot leaves from the
-  // shooter's muzzle as _muzzle finds it in this frame, so it follows a ship that moves while it fires.
-  [[nodiscard]] std::vector<Draw> At(double _viewTick, const MuzzleLocator& _muzzle = {});
+  // shooter's muzzle as _muzzle finds it in this frame, so it follows a ship that moves while it fires, and a beam is in
+  // the color _tint gives its shooter.
+  [[nodiscard]] std::vector<Draw> At(double _viewTick, const MuzzleLocator& _muzzle = {}, const BeamTint& _tint = {});
 
   // Effects waiting or playing; for tests.
   [[nodiscard]] size_t Pending() const noexcept
@@ -74,7 +79,7 @@ private:
     float radiusMeters = 0.0f;
   };
 
-  void AddShot(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const;
+  void AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const;
 
   [[nodiscard]] double Seconds(double _ticks) const noexcept
   {

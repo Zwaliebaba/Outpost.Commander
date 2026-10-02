@@ -50,11 +50,18 @@ constexpr float FIELD_SHADE = 0.7f;
 // models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. The
 // lines are lit as the model is, in its color made EDGE_BRIGHTNESS brighter, and the faces are drawn FILL_SHADE darker,
 // so the lines stand out from the faces beside them on the lit side and the dark side alike. They are lifted
-// EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them.
+// EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them. The rocks are terrain, so their lines
+// are only ROCK_EDGE_BRIGHTNESS brighter: near white at EDGE_BRIGHTNESS, they outshone both fleets (owner, 2026-10-02,
+// ADR-028).
 constexpr float CREASE_DEGREES = 10.0f;
 constexpr float EDGE_BRIGHTNESS = 2.0f;
+constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
 constexpr float FILL_SHADE = 0.65f;
 constexpr float EDGE_LIFT_SHARE = 0.005f;
+
+// A beam is its shooter's side's color taken this share of the way to white, so that the player sees whose fire it is
+// and it still reads as light (ADR-028).
+constexpr float BEAM_WHITE_SHARE = 0.5f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -411,7 +418,9 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     m_fog.Update(m_entities, m_view.Newest().player);
   }
   m_frameSeconds = _elapsedSeconds;
-  m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
+  m_effectDraws = m_effects.At(
+    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); },
+    [this](EntityId _shooter) { return BeamColor(_shooter); });
   m_particleGlows.clear();
   m_particles.At(m_view.ViewTick(), m_particleGlows);
   m_shardVertices.clear();
@@ -877,7 +886,10 @@ void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std
 {
   m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, FILL_SHADE));
   if (const auto edges = m_modelEdges.find(MeshKey(_set, _model)); edges != m_modelEdges.end())
-    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = Shaded(_color, EDGE_BRIGHTNESS)});
+  {
+    const float brightness = _set == ASTEROID_SET ? ROCK_EDGE_BRIGHTNESS : EDGE_BRIGHTNESS;
+    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = Shaded(_color, brightness)});
+  }
 }
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
@@ -967,6 +979,18 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
                      .model = &model->model,
                      .pose = {.position = _entity.position, .liftMeters = lift, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint};
+}
+
+std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shooter) const
+{
+  const auto shooter = std::ranges::find(m_entities, _shooter, &EntityView::id);
+  if (shooter == m_entities.end())
+    return std::nullopt;
+  const ModelSet* set = m_catalog.SetForPlayer(shooter->owner);
+  if (set == nullptr)
+    return std::nullopt;
+  const auto toWhite = [](float _channel) { return std::lerp(_channel, 1.0f, BEAM_WHITE_SHARE); };
+  return DirectX::XMFLOAT4{toWhite(set->color.x), toWhite(set->color.y), toWhite(set->color.z), 1.0f};
 }
 
 std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const

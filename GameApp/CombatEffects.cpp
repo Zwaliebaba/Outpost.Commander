@@ -28,7 +28,8 @@ constexpr float TRACER_LENGTH_METERS = 14.0f;
 constexpr float TRACER_WIDTH_METERS = 2.0f;
 constexpr DirectX::XMFLOAT4 TRACER_COLOR{1.0f, 0.85f, 0.35f, 1.0f};
 
-// A beam joins the gun and the target at once and narrows as it fades.
+// A beam joins the gun and the target at once and narrows as it fades. Its color is its shooter's side's, from
+// GameClient; this one is for a shooter it cannot place.
 constexpr double BEAM_SECONDS = 0.25;
 constexpr float BEAM_WIDTH_METERS = 3.0f;
 constexpr DirectX::XMFLOAT4 BEAM_COLOR{0.55f, 0.9f, 1.0f, 1.0f};
@@ -83,7 +84,7 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
   }
 }
 
-std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle)
+std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle, const BeamTint& _tint)
 {
   const auto lifetime = [](Kind _kind)
   {
@@ -106,12 +107,13 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const Muzzl
     Effect shot = effect;
     if (_muzzle)
       shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
-    AddShot(shot, _viewTick, draws);
+    const DirectX::XMFLOAT4 beamColor = shot.kind == Kind::Beam && _tint ? _tint(shot.shooter).value_or(BEAM_COLOR) : BEAM_COLOR;
+    AddShot(shot, _viewTick, beamColor, draws);
   }
   return draws;
 }
 
-void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const
+void CombatEffects::AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const
 {
   const double elapsed = Seconds(_tick - _effect.startTick);
   const bool beam = _effect.kind == Kind::Beam;
@@ -133,7 +135,7 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
                         .to = _effect.to,
                         .widthMeters = BEAM_WIDTH_METERS * static_cast<float>(1.0 - progress),
                         .heightMeters = EFFECT_HEIGHT_METERS,
-                        .color = Faded(BEAM_COLOR, progress * 0.5)});
+                        .color = Faded(_beamColor, progress * 0.5)});
     }
   }
   else

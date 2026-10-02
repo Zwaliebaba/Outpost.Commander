@@ -122,6 +122,31 @@ public:
     Assert::IsTrue(beamFrom([](Outpost::EntityId, Outpost::PlanePosition) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
   }
 
+  // ADR-028: a beam is in the color the view gives its shooter, so the player sees whose fire it is, and a neutral one
+  // for a shooter the view cannot place.
+  TEST_METHOD(ABeamTakesItsShootersColor)
+  {
+    Outpost::CombatEffects effects(TICKS_PER_SECOND);
+    effects.Receive(Shot(10, LANCE));
+    static constexpr DirectX::XMFLOAT4 SIDE{1.0f, 0.5f, 0.25f, 1.0f};
+    const auto beamColor = [&effects](const Outpost::CombatEffects::BeamTint& _tint)
+    {
+      const std::vector<Outpost::CombatEffects::Draw> draws = effects.At(After(10, 0.0), {}, _tint);
+      const auto band = std::ranges::find(draws, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
+      Assert::IsTrue(band != draws.end());
+      return band->color;
+    };
+    const DirectX::XMFLOAT4 tinted = beamColor([](Outpost::EntityId _shooter) -> std::optional<DirectX::XMFLOAT4>
+                                               { return _shooter == Outpost::EntityId{1} ? std::optional(SIDE) : std::nullopt; });
+    Assert::AreEqual(SIDE.x, tinted.x);
+    Assert::AreEqual(SIDE.y, tinted.y);
+    Assert::AreEqual(SIDE.z, tinted.z);
+    const DirectX::XMFLOAT4 neutral = beamColor([](Outpost::EntityId) { return std::optional<DirectX::XMFLOAT4>(); });
+    Assert::AreNotEqual(SIDE.y, neutral.y);
+    const DirectX::XMFLOAT4 untinted = beamColor({});
+    Assert::AreEqual(neutral.y, untinted.y);
+  }
+
   // ADR-026: what is destroyed is the particles' and the explosions', not the combat effects'.
   TEST_METHOD(LeavesWhatIsDestroyedToTheExplosions)
   {

@@ -10,9 +10,10 @@ using Glow = Neuron::GlowPipeline::Glow;
 using Outpost::ParticleSystem;
 
 // Placeholder looks, after DeepSpaceOutpost's Particle::SetupParticles, and presentation rather than tuning (design §11).
-// Its colors are converted from sRGB to linear and already carry the 90/255 alpha it draws every particle with, since a
-// glow's color includes its brightness (ADR-019). Its sizes and speeds were in its own units; here they are shares of a
-// blast's reach, so that a blast is as big as what blew up.
+// The colors are linear and carry DeepSpaceOutpost's brightness, its 90/255 alpha, since a glow's color includes its
+// brightness (ADR-019). Its fireball and debris were red; here they run from a white-yellow flash to amber, so that a
+// blast is never read as the Tarkan's red (owner, 2026-10-02, ADR-028). Its smoke stays gray. Its sizes and speeds were
+// in its own units; here they are shares of a blast's reach, so that a blast is as big as what blew up.
 struct Look
 {
   double lifeSeconds = 0.0;
@@ -22,8 +23,8 @@ struct Look
   DirectX::XMFLOAT3 color2{};
 };
 
-constexpr Look CORE{.lifeSeconds = 2.0, .friction = 0.2f, .color1 = {0.204f, 0.045f, 0.045f}, .color2 = {0.353f, 0.066f, 0.066f}};
-constexpr Look DEBRIS{.lifeSeconds = 6.0, .friction = 0.2f, .color1 = {0.204f, 0.076f, 0.076f}, .color2 = {0.337f, 0.204f, 0.204f}};
+constexpr Look CORE{.lifeSeconds = 2.0, .friction = 0.2f, .color1 = {0.353f, 0.31f, 0.19f}, .color2 = {0.337f, 0.2f, 0.07f}};
+constexpr Look DEBRIS{.lifeSeconds = 6.0, .friction = 0.2f, .color1 = {0.22f, 0.13f, 0.04f}, .color2 = {0.337f, 0.22f, 0.08f}};
 // DeepSpaceOutpost's rocket trail, the smoke its debris leaves.
 constexpr Look TRAIL{.lifeSeconds = 2.0, .friction = 0.6f, .color1 = {0.076f, 0.076f, 0.076f}, .color2 = {0.204f, 0.204f, 0.204f}};
 
