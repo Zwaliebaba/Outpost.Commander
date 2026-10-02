@@ -32,6 +32,13 @@ public:
   // Picks the components of a saved design, and lets the name follow it.
   void Load(const DesignView& _design) noexcept;
 
+  // The first saved design's chip shown, when they do not all fit, and stepping it across _chips of them.
+  [[nodiscard]] std::size_t FirstChip() const noexcept
+  {
+    return m_firstChip;
+  }
+  void StepChips(int _step, std::size_t _chips) noexcept;
+
   void PickHull(HullId _hull) noexcept
   {
     m_hull = _hull;
@@ -113,6 +120,7 @@ private:
   WeaponId m_weapon;
   EntityId m_target;
   std::uint32_t m_count = 1;
+  std::size_t m_firstChip = 0;
   std::optional<std::string> m_typed;
   bool m_editing = false;
   std::vector<WaitingQueue> m_waiting;

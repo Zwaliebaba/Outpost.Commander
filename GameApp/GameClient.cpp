@@ -13,6 +13,10 @@ constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
+// The key that opens and closes the designer (Phase 1 design §12), clear of the orders' A and S, the camera's Q and E and
+// arrows, and the control groups' digits.
+constexpr std::uint8_t KEY_DESIGNER = 'D';
+
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
@@ -376,7 +380,7 @@ void Outpost::GameClient::ClearMatch()
   m_fog = FogOfWar();
   m_banking.Clear();
   m_windows.CloseAll();
-  m_designerOffered = false;
+  m_soleSelected = EntityId{};
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -470,11 +474,24 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
-  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12).
+  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D opens the designer,
+  // aimed at the selected Shipyard if one is, or closes it.
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     if (event->kind == Neuron::InputEventKind::KeyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
       event = input.events.erase(event);
+    else if (event->kind == Neuron::InputEventKind::KeyDown && event->key == KEY_DESIGNER && !m_view.IsEmpty())
+    {
+      if (m_windows.IsOpen(WindowKind::Designer))
+        m_windows.Close(WindowKind::Designer);
+      else
+      {
+        m_windows.Open(WindowKind::Designer);
+        if (m_controls.Selected().size() == 1)
+          m_designer.SetTarget(m_controls.Selected().front(), m_view.Newest());
+      }
+      event = input.events.erase(event);
+    }
     else
       ++event;
   }
@@ -496,17 +513,23 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
-    Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    // Selecting a Shipyard while the designer is open aims it there (Phase 1 design §11).
+    const std::vector<EntityId>& selected = m_controls.Selected();
+    const EntityId sole = selected.size() == 1 ? selected.front() : EntityId{};
+    if (sole != m_soleSelected && m_windows.IsOpen(WindowKind::Designer))
+      m_designer.SetTarget(sole, m_view.Newest());
+    m_soleSelected = sole;
+    // The name takes no more typing once the designer is closed.
+    const bool designerOpen = m_windows.IsOpen(WindowKind::Designer);
+    if (!designerOpen)
+      m_designer.EndEditing();
+    const std::optional<Hud::Action> hovered =
+      m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
+    Hud::Content content =
+      Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr, hovered);
     content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
     content.fogCellsPerSide = m_fog.CellsPerSide();
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
-    // Selecting a built Shipyard opens the designer, once: closed, it stays closed until a Shipyard is selected again.
-    if (content.designer.has_value() && !m_designerOffered)
-      m_windows.Open(WindowKind::Designer);
-    m_designerOffered = content.designer.has_value();
-    // The name takes no more typing once the designer is not shown: closed, or its Shipyard deselected or destroyed.
-    if (!content.designer.has_value() || !m_windows.IsOpen(WindowKind::Designer))
-      m_designer.EndEditing();
     m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
@@ -540,7 +563,8 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     m_controls.ArmPlacement(_action.structure, m_entities);
     break;
   case Hud::ActionKind::Queue:
-    m_controls.Queue(_action.producer, _action.design);
+    for (std::uint32_t ship = 0; ship < _action.count; ++ship)
+      m_controls.Queue(_action.producer, _action.design);
     break;
   case Hud::ActionKind::Research:
     m_controls.Research(_action.producer, _action.topic);
@@ -565,7 +589,7 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     }
     break;
   case Hud::ActionKind::SaveAndQueue:
-    if (std::optional<SaveDesignCommand> save = m_designer.SaveAndQueue(_action.producer, m_view.Newest()))
+    if (std::optional<SaveDesignCommand> save = m_designer.SaveAndQueue(_action.producer, m_view.Newest(), _action.count))
     {
       m_controls.SaveDesign(std::move(*save));
       m_designer.ForgetTypedName();
@@ -579,6 +603,27 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::BackToMenu:
     m_request = Request::BackToMenu;
+    break;
+  case Hud::ActionKind::OpenDesigner:
+    m_designer.SetTarget(_action.producer, m_view.Newest());
+    m_windows.Open(WindowKind::Designer);
+    break;
+  case Hud::ActionKind::PreviousShipyard:
+  case Hud::ActionKind::NextShipyard:
+    m_designer.StepTarget(_action.kind == Hud::ActionKind::NextShipyard ? 1 : -1, m_view.Newest());
+    break;
+  case Hud::ActionKind::FewerShips:
+  case Hud::ActionKind::MoreShips:
+    m_designer.StepCount(_action.kind == Hud::ActionKind::MoreShips ? 1 : -1, m_view.Newest());
+    break;
+  case Hud::ActionKind::LoadDesign:
+    if (const auto design = std::ranges::find(m_view.Newest().designs, _action.design, &DesignView::id);
+        design != m_view.Newest().designs.end())
+      m_designer.Load(*design);
+    break;
+  case Hud::ActionKind::PreviousDesigns:
+  case Hud::ActionKind::NextDesigns:
+    m_designer.StepChips(_action.kind == Hud::ActionKind::NextDesigns ? 1 : -1, m_view.Newest().designs.size());
     break;
   }
 }
@@ -608,7 +653,8 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
         m_windows.Close(window->kind);
         continue;
       }
-      if (window->titleBar.Contains(x, y))
+      // A button in the title bar is pressed, not grabbed.
+      if (window->titleBar.Contains(x, y) && !m_hudLayout.ActionAt(x, y).has_value())
       {
         m_windows.Grab(window->kind, ToUnits(x, y), window->corner);
         continue;

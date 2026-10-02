@@ -20,15 +20,61 @@ Outpost::Snapshot Newest()
   return snapshot;
 }
 
-// A designer with a name field and one pick of each slot, and a button of the HUD's, for laying windows out.
+// A designer with a name and one card, and a button of the HUD's, for laying windows out.
 Outpost::Hud::Content WithDesigner()
 {
   Outpost::Hud::Content content;
   content.buttons = {{.label = "Shipyard|300", .action = {.kind = Outpost::Hud::ActionKind::Build}}};
   Outpost::Hud::DesignerPanel designer{.name = "Swarm"};
-  designer.hulls = {{.label = "Small", .action = {.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}}}};
+  designer.slots[0].cards = {{.name = "Small", .action = {.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}}}};
   content.designer = designer;
   return content;
+}
+
+// The mockup's designer (Phase 1 design §11): the tuning data's components, with the Large hull, the Fusion drive and the
+// Missile Rack locked until _unlocked, and with _fiveWeapons the two of Phase 1 as well; the topics that unlock them; one
+// saved design; and Shipyard 01, which has built four ships and has two in its queue.
+Outpost::Snapshot DesignerSnapshot(bool _unlocked = false, bool _fiveWeapons = false)
+{
+  Outpost::Snapshot snapshot{.tick = 5, .player = PLAYER, .ore = 500};
+  snapshot.shipyardBuildSpeedFactor = 1.25;
+  snapshot.entities = {{.id = Outpost::EntityId{30},
+                        .kind = Outpost::EntityKind::Structure,
+                        .owner = PLAYER,
+                        .structure = Outpost::StructureKind::Shipyard,
+                        .shipyardNumber = 1,
+                        .shipsBuilt = 4,
+                        .queue = {{.design = SWARM}, {.design = SWARM}}}};
+  snapshot.hulls = {{Outpost::HullId{1}, "Small", 22000, 200, 60.0, 180.0, 8.0, 32, 10.0, true},
+                    {Outpost::HullId{2}, "Medium", 50000, 800, 40.0, 120.0, 14.0, 110, 20.0, true},
+                    {Outpost::HullId{3}, "Large", 120000, 1400, 25.0, 60.0, 24.0, 300, 40.0, _unlocked}};
+  snapshot.drives = {{Outpost::DriveId{1}, "Ion", 1.3, 0.9, 1.25, 20, true}, {Outpost::DriveId{2}, "Fusion", 0.8, 1.4, 0.8, 80, _unlocked}};
+  snapshot.weapons = {{Outpost::WeaponId{1}, "Mass Driver", 1400, 0.4, 120.0, 0.0, 35, true},
+                      {Outpost::WeaponId{2}, "Lance", 9500, 2.7, 220.0, 0.0, 85, true},
+                      {Outpost::WeaponId{3}, "Missile Rack", 3000, 2.0, 280.0, 30.0, 130, _unlocked}};
+  if (_fiveWeapons)
+  {
+    snapshot.weapons.push_back({Outpost::WeaponId{4}, "Flak Battery", 800, 0.5, 150.0, 20.0, 90, _unlocked});
+    snapshot.weapons.push_back({Outpost::WeaponId{5}, "Rail Cannon", 20000, 4.0, 340.0, 0.0, 220, _unlocked});
+  }
+  snapshot.research = {{.id = Outpost::ResearchTopicId{5}, .nameUtf8 = "Fusion Drive", .unlocksDrive = Outpost::DriveId{2}},
+                       {.id = Outpost::ResearchTopicId{6}, .nameUtf8 = "Large Hull", .unlocksHull = Outpost::HullId{3}},
+                       {.id = Outpost::ResearchTopicId{7}, .nameUtf8 = "Missile Rack", .unlocksWeapon = Outpost::WeaponId{3}}};
+  snapshot.designs = {{.id = SWARM,
+                       .nameUtf8 = "Swarm",
+                       .hull = Outpost::HullId{1},
+                       .drive = Outpost::DriveId{1},
+                       .weapon = Outpost::WeaponId{1},
+                       .cost = 87}};
+  return snapshot;
+}
+
+// The designer's panel for _designer, with _hovered under the pointer.
+Outpost::Hud::DesignerPanel DesignerOf(const Outpost::Snapshot& _newest, const Outpost::Designer& _designer,
+                                       std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
+{
+  return Outpost::Hud::Describe(_newest, _newest.entities, {}, std::nullopt, &_designer, _hovered)
+    .designer.value_or(Outpost::Hud::DesignerPanel{});
 }
 
 Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int32_t _hitPointsHundredths, std::int32_t _maxHundredths)
@@ -49,7 +95,7 @@ public:
   TEST_METHOD(NamesItsTypefacesAndSprites)
   {
     const std::vector<Neuron::FontDesc> typefaces = Outpost::Hud::Typefaces();
-    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Typeface::LargeFigure) + 1, typefaces.size());
+    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Typeface::Detail) + 1, typefaces.size());
     const Neuron::FontDesc& body = typefaces[static_cast<std::size_t>(Outpost::Hud::Typeface::Body)];
     Assert::IsTrue(body.families == std::vector<std::wstring>{L"Segoe UI"});
     Assert::AreEqual(Outpost::Hud::FONT_UNITS, body.emUnits);
@@ -71,12 +117,15 @@ public:
     Assert::AreEqual(size_t{1}, layout.windows.size());
     const Outpost::Hud::Window& window = layout.windows.front();
     Assert::IsTrue(window.kind == Outpost::WindowKind::Designer);
-    Assert::IsTrue(window.frame.left > 1920.0f - 700.0f && window.frame.top < 30.0f, L"top right");
+    Assert::IsTrue(window.frame.left > 1920.0f - 760.0f && window.frame.top < 30.0f, L"top right");
     Assert::IsTrue(window.titleBar.Contains(window.frame.left + 10.0f, window.frame.top + 10.0f));
     Assert::IsTrue(window.closeBox.left >= window.titleBar.left + window.titleBar.width);
     Assert::IsTrue(window.titleBar.fill == Outpost::Hud::Fill::Hatched);
     const Outpost::Hud::Span sprites = layout.SpritesOf(1);
-    Assert::AreEqual(size_t{4}, sprites.end - sprites.first);
+    const auto corners = std::ranges::count(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
+                                            layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end), Outpost::Hud::Sprite::Corner,
+                                            &Outpost::Hud::SpriteMark::sprite);
+    Assert::AreEqual(std::ptrdiff_t{4}, corners);
     Assert::AreEqual(size_t{0}, layout.SpritesOf(0).end, L"the HUD has none");
 
     const Outpost::Hud::Span actions = layout.ActionsOf(1);
@@ -249,7 +298,7 @@ public:
   }
 
   // Task 4.5: a selected Shipyard shows its state and its queue, the front job's progress or its wait for Ore, and a
-  // button per design, dim once the queue is full.
+  // button per design, dim once the queue is full; and, finished, the designer's (Phase 1 design §11).
   TEST_METHOD(DescribesAStructureAndItsQueue)
   {
     Outpost::Snapshot newest = Newest();
@@ -267,7 +316,8 @@ public:
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{yard}, selected);
     const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500", "1. Small+Ion+Mass Driver, 45%", "2. Medium+Ion+Lance"};
     Assert::IsTrue(content.selection == expected);
-    Assert::AreEqual(size_t{2}, content.buttons.size());
+    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::IsTrue(content.buttons[2].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenDesigner, .producer = yard.id});
     Assert::AreEqual(std::string("Small+Ion+Mass Driver|87"), content.buttons[0].label);
     Assert::IsTrue(content.buttons[0].action ==
                    Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
@@ -377,103 +427,260 @@ public:
       std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Researching Hull Plating, 25%"; }));
   }
 
-  // Task 5.2: a selected built Shipyard of the player's shows the designer at the top right: a lit pick and a dim locked
-  // component in each slot, the stats with damage per second against each hull, a name field to click, and the actions.
-  TEST_METHOD(ShowsTheDesignerBesideAShipyard)
+  // Phase 1 design §5, §11: a component's abbreviation is the capital initial of each word of its name.
+  TEST_METHOD(AbbreviatesComponentsByTheirInitials)
   {
-    Outpost::Snapshot newest = Newest();
-    newest.ore = 500;
-    newest.hulls = {{.id = Outpost::HullId{1},
-                     .nameUtf8 = "Small",
-                     .hitPointsHundredths = 22000,
-                     .armorHundredths = 200,
-                     .speedMetersPerSecond = 60.0,
-                     .cost = 32,
-                     .buildSeconds = 10.0,
-                     .available = true},
-                    {.id = Outpost::HullId{3},
-                     .nameUtf8 = "Large",
-                     .hitPointsHundredths = 120000,
-                     .armorHundredths = 1400,
-                     .speedMetersPerSecond = 25.0,
-                     .cost = 300,
-                     .buildSeconds = 40.0,
-                     .available = false}};
-    newest.drives = {
-      {.id = Outpost::DriveId{1}, .nameUtf8 = "Ion", .speedFactor = 1.3, .hitPointsFactor = 0.9, .cost = 20, .available = true}};
-    newest.weapons = {{.id = Outpost::WeaponId{1},
-                       .nameUtf8 = "Mass Driver",
-                       .damageHundredths = 1400,
-                       .fireIntervalSeconds = 0.4,
-                       .rangeMeters = 120.0,
-                       .cost = 35,
-                       .available = true}};
-    newest.designs = {{.id = SWARM,
-                       .nameUtf8 = "Swarm",
-                       .hull = Outpost::HullId{1},
-                       .drive = Outpost::DriveId{1},
-                       .weapon = Outpost::WeaponId{1},
-                       .cost = 87}};
-    newest.shipyardBuildSpeedFactor = 1.25;
-    const Outpost::EntityView yard{
-      .id = Outpost::EntityId{30}, .kind = Outpost::EntityKind::Structure, .owner = PLAYER, .structure = Outpost::StructureKind::Shipyard};
-    Outpost::Designer designer;
-    designer.Update(newest);
+    Assert::AreEqual(std::string("S"), Outpost::Abbreviation("Small"));
+    Assert::AreEqual(std::string("MD"), Outpost::Abbreviation("Mass Driver"));
+    Assert::AreEqual(std::string("RC"), Outpost::Abbreviation("rail cannon"));
+    Assert::AreEqual(std::string(""), Outpost::Abbreviation(""));
+  }
+
+  // Phase 1 design §11: the designer belongs to the player, not to a Shipyard: it is described whenever GameClient gives
+  // it, and a selected finished Shipyard of the player's offers to open it there.
+  TEST_METHOD(OffersTheDesignerAtThePlayersShipyards)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot();
+    const Outpost::EntityView& yard = newest.entities.front();
     const std::vector<Outpost::EntityId> selected{yard.id};
-    Assert::IsFalse(Outpost::Hud::Describe(newest, std::vector{yard}, selected).designer.has_value(), L"no designer given");
-
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{yard}, selected, std::nullopt, &designer);
-    Assert::IsTrue(content.designer.has_value());
-    const Outpost::Hud::DesignerPanel panel = content.designer.value_or(Outpost::Hud::DesignerPanel{});
-    Assert::AreEqual(std::string("Swarm"), panel.name);
-    Assert::IsTrue(panel.hulls[0].selected && panel.hulls[0].enabled);
-    Assert::IsFalse(panel.hulls[1].enabled, L"the Large hull is locked");
-    const std::vector<std::string> summary{"Hit points 198   Armor 2   Speed 78 m/s", "Range 120 m   Cost 87   Build 8 s"};
-    Assert::IsTrue(panel.summary == summary);
-    const std::vector<std::string> perShip{"per ship", "30.0", "8.8"};
-    Assert::IsTrue(panel.table[1] == perShip);
-    const std::vector<std::string> perOre{"per 100 Ore", "34.5", "10.1"};
-    Assert::IsTrue(panel.table[2] == perOre);
-    Assert::AreEqual(std::string("Rename"), panel.actions[0].label);
-    Assert::IsFalse(panel.actions[0].enabled, L"the name has not changed");
-    Assert::IsTrue(panel.actions[1].action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
-    Assert::IsTrue(panel.actions[1].enabled);
-
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
-    const auto actionArea = [&layout](Outpost::Hud::ActionKind _kind)
-    { return std::ranges::find(layout.actions, _kind, [](const auto& _entry) { return _entry.second.kind; })->first; };
-    const Outpost::Hud::Rect name = actionArea(Outpost::Hud::ActionKind::EditName);
-    Assert::IsTrue(name.left > 1920.0f - 700.0f && name.top < 100.0f, L"top right");
-    Assert::IsTrue(layout.ActionAt(name.left + 5.0f, name.top + 5.0f) == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::EditName});
-    const Outpost::Hud::Rect pick = actionArea(Outpost::Hud::ActionKind::PickHull);
-    Assert::IsTrue(pick.top > name.top);
-    Assert::AreEqual(size_t{1},
-                     static_cast<size_t>(std::ranges::count(layout.actions, Outpost::Hud::ActionKind::PickHull,
-                                                            [](const auto& _entry) { return _entry.second.kind; })),
-                     L"the locked hull is no place to click");
-    Assert::IsTrue(layout.Covers(name.left + 5.0f, name.top + 5.0f));
-
-    // Another player's Shipyard shows no designer.
+    Assert::IsFalse(Outpost::Hud::Describe(newest, newest.entities, selected).designer.has_value(), L"no designer given");
+    const auto opens = [&](const Outpost::EntityView& _yard)
+    {
+      const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{_yard}, selected);
+      return std::ranges::any_of(
+        content.buttons, [&](const Outpost::Hud::Button& _button)
+        { return _button.action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenDesigner, .producer = yard.id}; });
+    };
+    Assert::IsTrue(opens(yard));
+    Outpost::EntityView building = yard;
+    building.builtPermille = 500;
+    Assert::IsFalse(opens(building), L"not until it is finished");
     Outpost::EntityView theirs = yard;
     theirs.owner = Outpost::PlayerId{2};
-    Assert::IsFalse(Outpost::Hud::Describe(newest, std::vector{theirs}, selected, std::nullopt, &designer).designer.has_value());
+    Assert::IsFalse(opens(theirs), L"not the enemy's");
 
-    // Picks that are no saved design yet: Queue saves them first, at their cost (ADR-023).
-    newest.hulls[1].available = true;
-    designer.PickHull(Outpost::HullId{3});
-    const auto unsavedPanel = [&]()
+    Outpost::Designer designer;
+    designer.Update(newest);
+    Assert::IsTrue(Outpost::Hud::Describe(newest, newest.entities, {}, std::nullopt, &designer).designer.has_value(), L"nothing selected");
+  }
+
+  // Phase 1 design §11, after the mockup: the header's Shipyard, queue, ships built and Ore; the name and Saved; the saved
+  // design's chip; a card for each component with its numbers, the locked ones naming their research; the bars against the
+  // best any design reaches, locked components included; the damage cards rated by thirds; and Queue.
+  TEST_METHOD(DescribesTheDesignerAfterTheMockup)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot();
+    Outpost::Designer designer;
+    designer.Update(newest);
+    const Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    Assert::AreEqual(std::string("SHIPYARD 01"), panel.shipyard);
+    Assert::IsTrue(panel.hasShipyard);
+    Assert::AreEqual(2u, panel.queued);
+    Assert::AreEqual(4u, panel.built);
+    Assert::AreEqual(500, panel.ore);
+    Assert::AreEqual(std::string("Swarm"), panel.name);
+    Assert::AreEqual(std::string("SAVED"), panel.save.label);
+    Assert::IsTrue(panel.save.selected && !panel.save.enabled);
+    Assert::IsFalse(panel.rename.enabled, L"the name has not changed");
+
+    Assert::AreEqual(size_t{1}, panel.chips.size());
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD"), panel.chips[0].code);
+    Assert::IsTrue(panel.chips[0].shown);
+    Assert::IsTrue(panel.chips[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::LoadDesign, .design = SWARM});
+
+    const Outpost::Hud::SlotRow& hulls = panel.slots[0];
+    Assert::AreEqual(std::string("HULL"), hulls.label);
+    Assert::AreEqual(std::string("Small"), hulls.picked);
+    Assert::AreEqual(size_t{3}, hulls.cards.size());
+    Assert::IsTrue(hulls.cards[0].picked && !hulls.cards[0].IsLocked());
+    Assert::AreEqual(std::string("220 HP \xC2\xB7 ARM 2 \xC2\xB7 60m/s"), hulls.cards[0].numbers);
+    Assert::AreEqual(std::string("RESEARCH \xC2\xB7 LARGE HULL"), hulls.cards[2].lockedBy);
+    Assert::AreEqual(std::string("SPD \xC3\x97") + "1.3 \xC2\xB7 HP \xC3\x97" + "0.9", panel.slots[1].cards[0].numbers);
+    const Outpost::Hud::PartCard& missiles = panel.slots[2].cards[2];
+    Assert::AreEqual(std::string("30 dmg / 2s \xC2\xB7 280m"), missiles.numbers);
+    Assert::AreEqual(std::string("splash 30m"), missiles.note);
+
+    // Small+Ion+Mass Driver against the best of all: 1,680 hit points, armor 14, 78 m/s, 280 m, 510 Ore and 32 s.
+    Assert::AreEqual(size_t{6}, panel.bars.size());
+    const std::array<std::string, 6> values{"198", "2", "78", "120", "87", "8"};
+    const std::array<float, 6> shares{198.0f / 1680.0f, 2.0f / 14.0f, 1.0f, 120.0f / 280.0f, 87.0f / 510.0f, 8.0f / 32.0f};
+    for (size_t i = 0; i < panel.bars.size(); ++i)
     {
-      return Outpost::Hud::Describe(newest, std::vector{yard}, selected, std::nullopt, &designer)
-        .designer.value_or(Outpost::Hud::DesignerPanel{});
-    };
-    const Outpost::Hud::DesignerPanel unsaved = unsavedPanel();
-    Assert::AreEqual(std::string("Save design"), unsaved.actions[0].label);
-    Assert::AreEqual(std::string("Queue|355"), unsaved.actions[1].label);
-    Assert::IsTrue(unsaved.actions[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SaveAndQueue, .producer = yard.id});
-    Assert::IsTrue(unsaved.actions[1].enabled);
+      Assert::AreEqual(values[i], panel.bars[i].value);
+      Assert::AreEqual(shares[i], panel.bars[i].share, 1e-4f);
+      Assert::IsFalse(panel.bars[i].previewShare.has_value());
+    }
+    Assert::AreEqual(std::string("m/s"), panel.bars[2].unit);
+
+    // Against each hull, per ship and per 100 Ore, and rated against the best any design does to it: the Lance's 34.4 to
+    // the Small hull, 32.2 to the Medium and 30.0 to the Large.
+    Assert::AreEqual(size_t{3}, panel.damage.size());
+    Assert::AreEqual(std::string("30.0"), panel.damage[0].perShip);
+    Assert::AreEqual(std::string("34.5 / 100 ore"), panel.damage[0].perOre);
+    Assert::IsTrue(panel.damage[0].rating == Outpost::Hud::Rating::Good);
+    Assert::AreEqual(std::string("15.0"), panel.damage[1].perShip);
+    Assert::IsTrue(panel.damage[1].rating == Outpost::Hud::Rating::Fair);
+    Assert::AreEqual(std::string("8.8"), panel.damage[2].perShip);
+    Assert::AreEqual(std::string("ARM 14"), panel.damage[2].armor);
+    Assert::IsTrue(panel.damage[2].rating == Outpost::Hud::Rating::Poor);
+    Assert::AreEqual(8.75f / 30.0f, panel.damage[2].share, 1e-4f);
+
+    Assert::IsTrue(
+      panel.queue.action ==
+      Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = Outpost::EntityId{30}, .design = SWARM, .count = 1});
+    Assert::IsTrue(panel.queue.enabled);
+    Assert::AreEqual(87, panel.queueCost);
+    Assert::AreEqual(std::string("8 s each"), panel.queueDetail);
+    Assert::AreEqual(std::string("Hover any part to preview its effect."), panel.hint);
+  }
+
+  // Phase 1 design §11: hovering a part previews the design it would make, and how each number changes; lower is better
+  // for cost and build time. Hovering the pick previews nothing.
+  TEST_METHOD(PreviewsAHoveredPart)
+  {
+    const Outpost::Snapshot newest = DesignerSnapshot();
+    Outpost::Designer designer;
+    designer.Update(newest);
+    const Outpost::Hud::Action medium{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{2}};
+    const Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer, medium);
+    Assert::AreEqual(std::string("Preview: with Medium instead"), panel.hint);
+    using Change = Outpost::Hud::Change;
+    const std::array<std::string, 6> values{"450", "8", "52", "120", "165", "16"};
+    const std::array<Change, 6> changes{Change::Better, Change::Better, Change::Worse, Change::Same, Change::Worse, Change::Worse};
+    for (size_t i = 0; i < panel.bars.size(); ++i)
+    {
+      Assert::AreEqual(values[i], panel.bars[i].previewValue);
+      Assert::IsTrue(panel.bars[i].change == changes[i]);
+      Assert::IsTrue(panel.bars[i].previewShare.has_value());
+    }
+    Assert::AreEqual(std::string("198"), panel.bars[0].value, L"the pick's own stays");
+    Assert::AreEqual(450.0f / 1680.0f, panel.bars[0].previewShare.value_or(0.0f), 1e-4f);
+    Assert::AreEqual(std::string("18.2 / 100 ore"), panel.damage[0].perOre, L"the damage cards show the preview");
+    Assert::IsTrue(panel.damage[0].change == Change::Same, L"the same weapon");
+
+    const Outpost::Hud::DesignerPanel same =
+      DesignerOf(newest, designer, Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}});
+    Assert::IsFalse(same.bars[0].previewShare.has_value());
+  }
+
+  // Phase 1 design §11: picks that are no saved design are saved first by Queue (ADR-023); ×N asks for N ships at N times
+  // the cost, from 1 up to the target's free slots; and with no Shipyard, Queue is dim.
+  TEST_METHOD(QueuesNShipsAtTheTarget)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot(true);
+    Outpost::Designer designer;
+    designer.Update(newest);
+    designer.PickHull(Outpost::HullId{3});
+    Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    Assert::AreEqual(std::string("SAVE"), panel.save.label);
+    Assert::IsTrue(panel.save.enabled);
+    Assert::IsFalse(panel.canFewer);
+    Assert::IsTrue(panel.canMore);
+    Assert::IsTrue(panel.queue.action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SaveAndQueue, .producer = Outpost::EntityId{30}, .count = 1});
+    Assert::IsTrue(panel.queue.enabled);
+    Assert::AreEqual(355, panel.queueCost);
+
+    for (int i = 0; i < 5; ++i)
+      designer.StepCount(1, newest);
+    panel = DesignerOf(newest, designer);
+    Assert::AreEqual(3u, panel.count, L"three slots are free");
+    Assert::IsTrue(panel.canFewer && !panel.canMore);
+    Assert::AreEqual(3u, panel.queue.action.count);
+    Assert::AreEqual(1065, panel.queueCost);
+    Assert::IsTrue(panel.queue.enabled, L"each job is paid when it starts");
+
     newest.ore = 354;
-    Assert::IsFalse(unsavedPanel().actions[1].enabled, L"short of Ore");
+    Assert::IsFalse(DesignerOf(newest, designer).queue.enabled, L"short of Ore for one");
+
+    newest.ore = 500;
+    newest.entities.clear();
+    designer.Update(newest);
+    panel = DesignerOf(newest, designer);
+    Assert::AreEqual(std::string("NO SHIPYARD"), panel.shipyard);
+    Assert::IsFalse(panel.hasShipyard);
+    Assert::IsFalse(panel.queue.enabled);
+    Assert::IsFalse(panel.canMore);
+    Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
+  }
+
+  // Phase 1 design §11, after the mockup: a window 728 units wide; the Shipyard's arrows in its title bar, pressed rather
+  // than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the weapons wrap to a
+  // second line of cards once there are more than three; and Queue at the bottom.
+  TEST_METHOD(LaysTheDesignerOutAfterTheMockup)
+  {
+    const auto layOut = [](const Outpost::Snapshot& _newest)
+    {
+      Outpost::Designer designer;
+      designer.Update(_newest);
+      Outpost::Hud::Content content;
+      content.designer = DesignerOf(_newest, designer);
+      return Outpost::Hud::Lay(content, 1920, 1080);
+    };
+    const auto count = [](const Outpost::Hud::Layout& _layout, Outpost::Hud::ActionKind _kind)
+    { return static_cast<size_t>(std::ranges::count(_layout.actions, _kind, [](const auto& _entry) { return _entry.second.kind; })); };
+    const auto areaOf = [](const Outpost::Hud::Layout& _layout, Outpost::Hud::ActionKind _kind, size_t _nth = 0)
+    {
+      for (const auto& [area, action] : _layout.actions)
+      {
+        if (action.kind == _kind && _nth-- == 0)
+          return area;
+      }
+      return Outpost::Hud::Rect{};
+    };
+
+    const Outpost::Hud::Layout mockup = layOut(DesignerSnapshot());
+    const Outpost::Hud::Window& window = mockup.windows.front();
+    Assert::AreEqual(728.0f, window.frame.width, 0.01f);
+    Assert::AreEqual(1920.0f - 16.0f - 728.0f, window.frame.left, 0.01f, L"top right");
+    Assert::AreEqual(size_t{2}, count(mockup, Outpost::Hud::ActionKind::PickHull), L"the Large hull is locked");
+    Assert::AreEqual(size_t{1}, count(mockup, Outpost::Hud::ActionKind::PickDrive));
+    Assert::AreEqual(size_t{2}, count(mockup, Outpost::Hud::ActionKind::PickWeapon));
+    Assert::AreEqual(size_t{1}, count(mockup, Outpost::Hud::ActionKind::LoadDesign));
+    Assert::AreEqual(size_t{0}, count(mockup, Outpost::Hud::ActionKind::NextDesigns), L"one chip fits");
+    Assert::IsTrue(std::ranges::any_of(mockup.panels, [](const Outpost::Hud::Rect& _panel)
+                                       { return _panel.fill == Outpost::Hud::Fill::Hatched && _panel.width < 200.0f; }),
+                   L"a locked card is hatched");
+
+    const Outpost::Hud::Rect previous = areaOf(mockup, Outpost::Hud::ActionKind::PreviousShipyard);
+    Assert::IsTrue(window.titleBar.Contains(previous.left + 2.0f, previous.top + 2.0f));
+    Assert::IsTrue(mockup.ActionAt(previous.left + 2.0f, previous.top + 2.0f) ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PreviousShipyard});
+    const Outpost::Hud::Rect queue = areaOf(mockup, Outpost::Hud::ActionKind::Queue);
+    Assert::IsTrue(queue.top > areaOf(mockup, Outpost::Hud::ActionKind::PickWeapon).top);
+    Assert::IsTrue(queue.top + queue.height < window.frame.top + window.frame.height);
+
+    // Every part unlocked and five weapons: the fourth and fifth on a second line, the window taller by it.
+    const Outpost::Hud::Layout unlocked = layOut(DesignerSnapshot(true, true));
+    const Outpost::Hud::Window& tall = unlocked.windows.front();
+    Assert::AreEqual(size_t{3}, count(unlocked, Outpost::Hud::ActionKind::PickHull));
+    Assert::AreEqual(size_t{5}, count(unlocked, Outpost::Hud::ActionKind::PickWeapon));
+    const Outpost::Hud::Rect first = areaOf(unlocked, Outpost::Hud::ActionKind::PickWeapon, 0);
+    const Outpost::Hud::Rect fourth = areaOf(unlocked, Outpost::Hud::ActionKind::PickWeapon, 3);
+    Assert::AreEqual(first.left, fourth.left, 0.01f);
+    Assert::IsTrue(fourth.top > first.top + first.height);
+    Assert::AreEqual(fourth.top - first.top, tall.frame.height - window.frame.height, 0.01f);
+
+    // Every part locked: nothing to pick, no numbers and nothing to queue.
+    Outpost::Snapshot locked = DesignerSnapshot();
+    for (Outpost::HullView& hull : locked.hulls)
+      hull.available = false;
+    for (Outpost::DriveView& drive : locked.drives)
+      drive.available = false;
+    for (Outpost::WeaponView& weapon : locked.weapons)
+      weapon.available = false;
+    const Outpost::Hud::Layout none = layOut(locked);
+    Assert::AreEqual(size_t{0}, count(none, Outpost::Hud::ActionKind::PickHull) + count(none, Outpost::Hud::ActionKind::PickWeapon));
+    Assert::AreEqual(size_t{0}, count(none, Outpost::Hud::ActionKind::Queue) + count(none, Outpost::Hud::ActionKind::SaveAndQueue));
+
+    // More saved designs than fit: three chips, and an arrow on to the rest.
+    Outpost::Snapshot many = DesignerSnapshot();
+    for (std::uint32_t i = 2; i <= 5; ++i)
+      many.designs.push_back({.id = Outpost::DesignId{i}, .nameUtf8 = std::format("Design {}", i), .hull = Outpost::HullId{2}});
+    const Outpost::Hud::Layout chips = layOut(many);
+    Assert::AreEqual(size_t{3}, count(chips, Outpost::Hud::ActionKind::LoadDesign));
+    Assert::AreEqual(size_t{1}, count(chips, Outpost::Hud::ActionKind::NextDesigns));
+    Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
   // ADR-024: the minimap draws the fog over its marks, a rectangle for each run of one shade along a row, and nothing

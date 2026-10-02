@@ -29,7 +29,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.3 | The designer window after the mockup | 9.2 | H6 | todo |
+| 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.4 | Research and production as windows | 9.2 | — | todo |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | todo |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | todo |
@@ -164,6 +164,17 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** none, unless the task finds a decision the design does not make.
 - **Acceptance:** `DesignerTests` and `HudTests` cover the layout with every component locked and with every one unlocked (the weapon row wrapping), the bars' scale, the colors' thresholds, the preview's figures, the stepper's limits, and Queue with no Shipyard.
 - **Verify:** CI; **owner run**, side by side with the mockup. The owner's adjustments to colors and sizes close H6 and are recorded in design §11.
+- **As built:**
+  - **The snapshot.** A finished Shipyard takes its owner's next number and counts the warships it delivers (`EntityView::shipyardNumber`, `shipsBuilt`, the owner's only); a research topic names the hull, drive or weapon it unlocks (`ResearchTopicView::unlocksHull`, `unlocksDrive`, `unlocksWeapon`).
+  - **The designer.** `Designer` keeps its target Shipyard, the lowest numbered by default and stepped by number round the end; the count, 1 to the target's free slots; and the first chip shown. `Load` picks a saved design's components. ×N sends N `QueueShipCommand`s in one frame, or, for picks that are no saved design, one save and N queues once it is saved (ADR-023).
+  - **The content.** `Hud::DesignerPanel` is the mockup's content, described whenever GameClient gives a designer, which it does while the window is open: the header, the name and Save or Saved, the chips, a `SlotRow` of `PartCard`s per slot, six `StatBar`s against the best any combination of components reaches, a `DamageCard` per hull rated Good from two thirds of the best any design does to it and Fair from a third, the hint, Rename, the stepper and Queue. A hovered card's design fills the bars' and the damage cards' previews, each number marked better, the same or worse; lower is better for cost and build time.
+  - **The layout.** `LayDesigner` in `Hud.cpp`, at the mockup's size in reference units: 728 wide and 704 tall with three weapons, a card line taller with five. The hatched header is 72 units, of which the top 36 are the title bar it is dragged by (ADR-031 unchanged); the Shipyard's arrows sit in that bar, and a press on a button there presses it rather than starting a drag. Figures against a right edge are placed by an estimated advance per character, because the layout is made without the fonts. A chip's name is cut to 20 characters.
+  - **The look.** The mockup's colors, sampled from it and made linear, as the render target encodes to sRGB, for the designer and for every window's frame, title bar, close box and corners. Ore stays the HUD's gold outside the windows until 9.4. A seventh typeface, `Detail`, Cascadia Mono or Consolas at 11 units, sets a card's numbers.
+  - **Opening it.** A selected finished Shipyard of the player's offers "Ship designer", which opens the window aimed at it; **D** opens or closes it, aimed at the selected Shipyard if one is. Selecting a Shipyard while it is open aims it there. The selection panel's Queue buttons per design stay until 9.4.
+  - **The abbreviations are derived, not stored.** `Outpost::Abbreviation` in `GameProtocol` takes the capital initial of each word of a component's name, which gives exactly design §5's eleven, so that the designer and the match log read one rule and the abbreviation cannot drift from the name. This departs from the scope's field in `Tuning.json`; a component whose initials would clash or read badly gets the field then.
+  - **Not done:** a locked card takes no click, so it is not under the pointer as a button is, and hovering it previews nothing.
+  - **Tests.** `HudTests`: the mockup's content, figure by figure; the preview; ×N, Queue saving first, and Queue with no Shipyard; the layout with two parts locked, with every part unlocked and five weapons wrapping, with every part locked, and with more chips than fit; the open button. `DesignerTests`: the target, the count, loading and scrolling. `ProductionTests` and `ResearchTests` for the snapshot's new fields.
+  - **Not built or run in the container**, which has no Windows. The HUD's and the designer's tests ran there in a standalone build against a stand-in for the test framework, and the layout was drawn from `Hud::Lay`'s output with substitute fonts and compared with the mockup. CI builds Debug|x64 and runs the suites; the owner's run closes H6.
 
 ### 9.4 — Research and production as windows
 

@@ -84,6 +84,12 @@ void Outpost::Designer::StepCount(int _step, const Snapshot& _newest)
   m_count = Count(_newest);
 }
 
+void Outpost::Designer::StepChips(int _step, std::size_t _chips) noexcept
+{
+  const auto stepped = static_cast<std::ptrdiff_t>(m_firstChip) + _step;
+  m_firstChip = _chips == 0 ? 0 : static_cast<std::size_t>(std::clamp<std::ptrdiff_t>(stepped, 0, static_cast<std::ptrdiff_t>(_chips) - 1));
+}
+
 void Outpost::Designer::Load(const DesignView& _design) noexcept
 {
   m_hull = _design.hull;

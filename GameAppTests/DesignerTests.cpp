@@ -262,6 +262,22 @@ public:
     Assert::AreEqual(std::string("Swarm"), designer.Name(snapshot));
   }
 
+  // Phase 1 design §11: the saved designs' chips scroll sideways, from the first to the last, and no further.
+  TEST_METHOD(ScrollsTheSavedDesigns)
+  {
+    Outpost::Designer designer;
+    Assert::AreEqual(size_t{0}, designer.FirstChip());
+    designer.StepChips(-1, 5);
+    Assert::AreEqual(size_t{0}, designer.FirstChip(), L"not before the first");
+    for (int i = 0; i < 7; ++i)
+      designer.StepChips(1, 5);
+    Assert::AreEqual(size_t{4}, designer.FirstChip(), L"not past the last");
+    designer.StepChips(-1, 5);
+    Assert::AreEqual(size_t{3}, designer.FirstChip());
+    designer.StepChips(0, 0);
+    Assert::AreEqual(size_t{0}, designer.FirstChip(), L"none saved");
+  }
+
   // The name takes printable ASCII up to the limit and Backspace; Escape drops what was typed, and a name the server
   // would refuse saves nothing.
   TEST_METHOD(TypesTheName)

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 
 namespace
@@ -64,14 +65,6 @@ constexpr float HINT_PANEL_WIDTH = 640.0f;
 constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
 constexpr float RESEARCH_PANEL_GAP = 8.0f;
 
-// The designer, anchored to the top-right corner: a label column, then the picks or the name field.
-constexpr float DESIGNER_WIDTH = 660.0f;
-constexpr float DESIGNER_LABEL_WIDTH = 96.0f;
-constexpr float PICK_WIDTH = 176.0f;
-// The table's first column holds the row's label; the hulls follow.
-constexpr float TABLE_LABEL_WIDTH = 230.0f;
-constexpr float TABLE_COLUMN_WIDTH = 130.0f;
-constexpr float ACTION_WIDTH = 220.0f;
 // Room a button keeps for its cost at the right of a narrow button.
 constexpr float COST_ROOM = 70.0f;
 
@@ -115,74 +108,291 @@ std::string ResearchLine(const Outpost::Snapshot& _newest, std::span<const Outpo
   return {};
 }
 
-// The designer beside a selected Shipyard (task 5.2, design §9): a pick for each slot, the live stats, and the actions.
+// The middle dot and the multiplication sign, in UTF-8 (ADR-030).
+constexpr std::string_view DOT = " \xC2\xB7 ";
+constexpr std::string_view TIMES = "\xC3\x97";
+// How many saved designs' chips the designer shows at once.
+constexpr std::size_t CHIPS_SHOWN = 3;
+// A damage card's rating: Good from two thirds of the best any design does to the hull, Fair from a third.
+constexpr float GOOD_SHARE = 2.0f / 3.0f;
+constexpr float FAIR_SHARE = 1.0f / 3.0f;
+
+std::string Capitals(std::string_view _text)
+{
+  std::string capitals(_text);
+  for (char& character : capitals)
+    character = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
+  return capitals;
+}
+
+// The best each of a design's numbers reaches over every design the components make, locked ones included, so that the
+// designer's bars keep their scale as research unlocks parts (Phase 1 design §11).
+struct Best
+{
+  double hitPoints = 0.0;
+  double armor = 0.0;
+  double speed = 0.0;
+  double range = 0.0;
+  double cost = 0.0;
+  double build = 0.0;
+  // Damage per second after armor against each hull, in the snapshot's order.
+  std::vector<double> damage;
+};
+
+Best BestOfAll(const Outpost::Snapshot& _newest)
+{
+  Best best;
+  best.damage.assign(_newest.hulls.size(), 0.0);
+  for (const Outpost::HullView& hull : _newest.hulls)
+  {
+    for (const Outpost::DriveView& drive : _newest.drives)
+    {
+      for (const Outpost::WeaponView& weapon : _newest.weapons)
+      {
+        const Outpost::DesignStats stats = Outpost::DesignStatsOf(hull, drive, weapon);
+        best.hitPoints = std::max(best.hitPoints, static_cast<double>(stats.hitPointsHundredths));
+        best.armor = std::max(best.armor, static_cast<double>(stats.armorHundredths));
+        best.speed = std::max(best.speed, static_cast<double>(stats.movement.speedMetersPerSecond));
+        best.range = std::max(best.range, static_cast<double>(stats.rangeMeters));
+        best.cost = std::max(best.cost, static_cast<double>(stats.cost));
+        best.build = std::max(best.build, stats.buildSeconds / _newest.shipyardBuildSpeedFactor);
+        for (size_t i = 0; i < _newest.hulls.size(); ++i)
+          best.damage[i] = std::max(best.damage[i], Outpost::DamagePerSecond(stats, _newest.hulls[i].armorHundredths));
+      }
+    }
+  }
+  return best;
+}
+
+float ShareOf(double _value, double _best) noexcept
+{
+  return _best > 0.0 ? static_cast<float>(std::clamp(_value / _best, 0.0, 1.0)) : 0.0f;
+}
+
+// How _preview compares to _current, where higher is better unless _lowerIsBetter.
+Hud::Change ChangeOf(double _current, double _preview, bool _lowerIsBetter) noexcept
+{
+  if (_preview == _current)
+    return Hud::Change::Same;
+  return (_preview > _current) != _lowerIsBetter ? Hud::Change::Better : Hud::Change::Worse;
+}
+
+// The line a locked component's card names its research with: "RESEARCH · LARGE HULL", or "RESEARCH" alone when no topic
+// names the component.
+template <typename IdType>
+std::string LockedBy(const Outpost::Snapshot& _newest, IdType _component, IdType Outpost::ResearchTopicView::*_unlocks)
+{
+  const auto topic = std::ranges::find(_newest.research, _component, _unlocks);
+  return topic != _newest.research.end() ? std::format("RESEARCH{}{}", DOT, Capitals(topic->nameUtf8)) : std::string("RESEARCH");
+}
+
+// The designer's window (task 5.2, design §9; Phase 1 design §11): its target Shipyard, the name, the saved designs, a
+// card for each component of each slot, the design's numbers against the best in the game, its damage against each hull,
+// and saving, renaming and queuing. A hovered part previews the design it would make.
 Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, const Outpost::Designer& _designer,
-                                             const Outpost::EntityView& _yard)
+                                             std::optional<Hud::Action> _hovered)
 {
   Hud::DesignerPanel panel;
+  const Outpost::EntityView* target = _designer.Target(_newest);
+  panel.hasShipyard = target != nullptr;
+  panel.shipyard = target != nullptr ? std::format("SHIPYARD {:02}", target->shipyardNumber) : std::string("NO SHIPYARD");
+  panel.queued = target != nullptr ? static_cast<std::uint32_t>(target->queue.size()) : 0;
+  panel.built = target != nullptr ? target->shipsBuilt : 0;
+  panel.ore = _newest.ore;
   panel.name = _designer.Name(_newest);
   panel.editing = _designer.IsEditing();
   panel.nameValid = Outpost::IsValidDesignName(panel.name);
 
+  const Outpost::DesignView* match = _designer.Match(_newest);
+  const std::optional<Outpost::SaveDesignCommand> save = _designer.SaveCommand(_newest);
+  const bool savesNew = save.has_value() && !save->design.IsValid();
+  panel.save = {.label = match != nullptr && !save.has_value() ? "SAVED" : "SAVE",
+                .action = {.kind = Hud::ActionKind::SaveDesign},
+                .enabled = savesNew,
+                .selected = match != nullptr && !save.has_value()};
+  panel.rename = {.label = "RENAME", .action = {.kind = Hud::ActionKind::SaveDesign}, .enabled = save.has_value() && !savesNew};
+
+  panel.chips.reserve(_newest.designs.size());
+  for (const Outpost::DesignView& design : _newest.designs)
+  {
+    const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
+    {
+      const auto view = std::ranges::find(_views, _id, &View::id);
+      return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
+    };
+    panel.chips.push_back(
+      {.name = design.nameUtf8,
+       .code = std::format("{}{}{}{}{}", initials(_newest.hulls, design.hull), DOT.substr(1, 2), initials(_newest.drives, design.drive),
+                           DOT.substr(1, 2), initials(_newest.weapons, design.weapon)),
+       .shown = match != nullptr && match->id == design.id,
+       .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
+  }
+  panel.firstChip = std::min(_designer.FirstChip(), panel.chips.empty() ? 0 : panel.chips.size() - 1);
+
+  // The design the hovered part would make, if a part is hovered.
+  Outpost::DesignComponents preview = _designer.Picked();
+  std::string previewing;
+  if (_hovered.has_value())
+  {
+    if (_hovered->kind == Hud::ActionKind::PickHull && _hovered->hull != preview.hull)
+      preview.hull = _hovered->hull;
+    else if (_hovered->kind == Hud::ActionKind::PickDrive && _hovered->drive != preview.drive)
+      preview.drive = _hovered->drive;
+    else if (_hovered->kind == Hud::ActionKind::PickWeapon && _hovered->weapon != preview.weapon)
+      preview.weapon = _hovered->weapon;
+  }
+
   const Outpost::DesignComponents picked = _designer.Picked();
+  Hud::SlotRow& hulls = panel.slots[0];
+  hulls.label = "HULL";
+  hulls.cards.reserve(_newest.hulls.size());
   for (const Outpost::HullView& hull : _newest.hulls)
-    panel.hulls.push_back({.label = hull.nameUtf8,
-                           .action = {.kind = Hud::ActionKind::PickHull, .hull = hull.id},
-                           .enabled = hull.available,
-                           .selected = hull.id == picked.hull});
+  {
+    if (hull.id == picked.hull)
+      hulls.picked = hull.nameUtf8;
+    if (hull.id == preview.hull && preview.hull != picked.hull)
+      previewing = hull.nameUtf8;
+    hulls.cards.push_back(
+      {.name = hull.nameUtf8,
+       .cost = hull.cost,
+       .numbers =
+         std::format("{} HP{}ARM {}{}{}m/s", Outpost::WithThousands(WholePoints(hull.hitPointsHundredths)), DOT,
+                     Tenths(static_cast<double>(hull.armorHundredths) / Outpost::HUNDREDTHS), DOT, Tenths(hull.speedMetersPerSecond)),
+       .picked = hull.id == picked.hull,
+       .lockedBy = hull.available ? std::string() : LockedBy(_newest, hull.id, &Outpost::ResearchTopicView::unlocksHull),
+       .action = {.kind = Hud::ActionKind::PickHull, .hull = hull.id}});
+  }
+  Hud::SlotRow& drives = panel.slots[1];
+  drives.label = "DRIVE";
+  drives.cards.reserve(_newest.drives.size());
   for (const Outpost::DriveView& drive : _newest.drives)
-    panel.drives.push_back({.label = drive.nameUtf8,
-                            .action = {.kind = Hud::ActionKind::PickDrive, .drive = drive.id},
-                            .enabled = drive.available,
-                            .selected = drive.id == picked.drive});
+  {
+    if (drive.id == picked.drive)
+      drives.picked = drive.nameUtf8;
+    if (drive.id == preview.drive && preview.drive != picked.drive)
+      previewing = drive.nameUtf8;
+    drives.cards.push_back(
+      {.name = drive.nameUtf8,
+       .cost = drive.cost,
+       .numbers = std::format("SPD {}{}{}HP {}{}", TIMES, Tenths(drive.speedFactor), DOT, TIMES, Tenths(drive.hitPointsFactor)),
+       .picked = drive.id == picked.drive,
+       .lockedBy = drive.available ? std::string() : LockedBy(_newest, drive.id, &Outpost::ResearchTopicView::unlocksDrive),
+       .action = {.kind = Hud::ActionKind::PickDrive, .drive = drive.id}});
+  }
+  Hud::SlotRow& weapons = panel.slots[2];
+  weapons.label = "WEAPON";
+  weapons.cards.reserve(_newest.weapons.size());
   for (const Outpost::WeaponView& weapon : _newest.weapons)
-    panel.weapons.push_back({.label = weapon.nameUtf8,
-                             .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id},
-                             .enabled = weapon.available,
-                             .selected = weapon.id == picked.weapon});
+  {
+    if (weapon.id == picked.weapon)
+      weapons.picked = weapon.nameUtf8;
+    if (weapon.id == preview.weapon && preview.weapon != picked.weapon)
+      previewing = weapon.nameUtf8;
+    weapons.cards.push_back(
+      {.name = weapon.nameUtf8,
+       .cost = weapon.cost,
+       .numbers = std::format("{} dmg / {}s{}{}m", Tenths(static_cast<double>(weapon.damageHundredths) / Outpost::HUNDREDTHS),
+                              Tenths(weapon.fireIntervalSeconds), DOT, Tenths(weapon.rangeMeters)),
+       .note = weapon.splashRadiusMeters > 0.0 ? std::format("splash {}m", Tenths(weapon.splashRadiusMeters)) : std::string(),
+       .picked = weapon.id == picked.weapon,
+       .lockedBy = weapon.available ? std::string() : LockedBy(_newest, weapon.id, &Outpost::ResearchTopicView::unlocksWeapon),
+       .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id}});
+  }
 
   const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest);
+  std::optional<Outpost::DesignStats> previewStats;
+  if (!previewing.empty())
+  {
+    Outpost::Designer previewer;
+    previewer.PickHull(preview.hull);
+    previewer.PickDrive(preview.drive);
+    previewer.PickWeapon(preview.weapon);
+    previewStats = previewer.Stats(_newest);
+  }
+  panel.hint =
+    previewStats.has_value() ? std::format("Preview: with {} instead", previewing) : std::string("Hover any part to preview its effect.");
+
   if (stats.has_value())
   {
-    panel.summary.push_back(
-      std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
-                  Tenths(static_cast<double>(stats->armorHundredths) / Outpost::HUNDREDTHS), Tenths(stats->movement.speedMetersPerSecond)));
-    const std::string splash = stats->splashRadiusMeters > 0.0f ? std::format("   Splash {} m", Tenths(stats->splashRadiusMeters)) : "";
-    panel.summary.push_back(std::format("Range {} m{}   Cost {}   Build {} s", Tenths(stats->rangeMeters), splash, stats->cost,
-                                        Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)));
-    std::vector<std::string> header{"Damage/s after armor vs"};
-    std::vector<std::string> perShip{"per ship"};
-    std::vector<std::string> perOre{"per 100 Ore"};
-    for (const Outpost::HullView& hull : _newest.hulls)
+    const Best best = BestOfAll(_newest);
+    const double factor = _newest.shipyardBuildSpeedFactor;
+    // Lower is better for cost and build time.
+    const auto bar =
+      [&](std::string_view _label, std::string_view _unit, double _best, const auto& _value, const auto& _text, bool _lowerIsBetter = false)
     {
-      const double damage = Outpost::DamagePerSecond(*stats, hull.armorHundredths);
-      header.push_back(hull.nameUtf8);
-      perShip.push_back(std::format("{:.1f}", damage));
-      perOre.push_back(std::format("{:.1f}", stats->cost > 0 ? damage * 100.0 / stats->cost : 0.0));
+      Hud::StatBar row{
+        .label = std::string(_label), .value = _text(*stats), .unit = std::string(_unit), .share = ShareOf(_value(*stats), _best)};
+      if (previewStats.has_value())
+      {
+        row.previewShare = ShareOf(_value(*previewStats), _best);
+        row.previewValue = _text(*previewStats);
+        row.change = ChangeOf(_value(*stats), _value(*previewStats), _lowerIsBetter);
+      }
+      panel.bars.push_back(std::move(row));
+    };
+    panel.bars.reserve(6);
+    bar(
+      "Hit points", "", best.hitPoints, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.hitPointsHundredths); },
+      [](const Outpost::DesignStats& _s) { return Outpost::WithThousands(WholePoints(_s.hitPointsHundredths)); });
+    bar(
+      "Armor", "", best.armor, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.armorHundredths); },
+      [](const Outpost::DesignStats& _s) { return Tenths(static_cast<double>(_s.armorHundredths) / Outpost::HUNDREDTHS); });
+    bar(
+      "Speed", "m/s", best.speed, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.movement.speedMetersPerSecond); },
+      [](const Outpost::DesignStats& _s) { return Tenths(_s.movement.speedMetersPerSecond); });
+    bar(
+      "Range", "m", best.range, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.rangeMeters); },
+      [](const Outpost::DesignStats& _s) { return Tenths(_s.rangeMeters); });
+    bar(
+      "Cost", "ore", best.cost, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.cost); },
+      [](const Outpost::DesignStats& _s) { return std::to_string(_s.cost); }, true);
+    bar(
+      "Build", "s", best.build, [factor](const Outpost::DesignStats& _s) { return _s.buildSeconds / factor; },
+      [factor](const Outpost::DesignStats& _s) { return Tenths(_s.buildSeconds / factor); }, true);
+
+    const Outpost::DesignStats& shown = previewStats.has_value() ? *previewStats : *stats;
+    panel.damage.reserve(_newest.hulls.size());
+    for (size_t i = 0; i < _newest.hulls.size(); ++i)
+    {
+      const Outpost::HullView& hull = _newest.hulls[i];
+      const double damage = Outpost::DamagePerSecond(shown, hull.armorHundredths);
+      const Hud::Change change =
+        previewStats.has_value() ? ChangeOf(Outpost::DamagePerSecond(*stats, hull.armorHundredths), damage, false) : Hud::Change::Same;
+      const float share = ShareOf(damage, best.damage[i]);
+      panel.damage.push_back({.hull = hull.nameUtf8,
+                              .armor = std::format("ARM {}", Tenths(static_cast<double>(hull.armorHundredths) / Outpost::HUNDREDTHS)),
+                              .perShip = std::format("{:.1f}", damage),
+                              .perOre = std::format("{:.1f} / 100 ore", shown.cost > 0 ? damage * 100.0 / shown.cost : 0.0),
+                              .share = share,
+                              .rating = share >= GOOD_SHARE   ? Hud::Rating::Good
+                                        : share >= FAIR_SHARE ? Hud::Rating::Fair
+                                                              : Hud::Rating::Poor,
+                              .change = change});
     }
-    panel.table = {std::move(header), std::move(perShip), std::move(perOre)};
   }
 
-  const Outpost::DesignView* match = _designer.Match(_newest);
-  const bool canSave = _designer.SaveCommand(_newest).has_value();
-  panel.actions.push_back(
-    {.label = match != nullptr ? "Rename" : "Save design", .action = {.kind = Hud::ActionKind::SaveDesign}, .enabled = canSave});
-  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  // Queue asks for as many ships as the count, at the target Shipyard; picks that are no saved design yet are saved by
+  // it first, and queued once the server has the design (ADR-023).
+  const std::uint32_t free =
+    target != nullptr ? static_cast<std::uint32_t>(Outpost::QUEUE_LIMIT - std::min(target->queue.size(), Outpost::QUEUE_LIMIT)) : 0;
+  panel.count = _designer.Count(_newest);
+  panel.canFewer = panel.count > 1;
+  panel.canMore = panel.count < free;
+  const std::int32_t cost = match != nullptr ? match->cost : stats.has_value() ? stats->cost : 0;
+  panel.queueCost = cost * static_cast<std::int32_t>(panel.count);
+  panel.queueDetail = stats.has_value() ? std::format("{} s each", Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)) : "";
+  const Outpost::EntityId producer = target != nullptr ? target->id : Outpost::EntityId{};
   if (match != nullptr)
-  {
-    panel.actions.push_back({.label = std::format("Queue|{}", match->cost),
-                             .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match->id},
-                             .enabled = canQueue && _newest.ore >= match->cost});
-  }
+    panel.queue = {.label = "QUEUE",
+                   .action = {.kind = Hud::ActionKind::Queue, .producer = producer, .design = match->id, .count = panel.count},
+                   .enabled = free > 0 && _newest.ore >= cost};
   else
-  {
-    // Picks that are no saved design yet are saved by their Queue, and queued once the server has the design (ADR-023).
-    panel.actions.push_back({.label = stats.has_value() ? std::format("Queue|{}", stats->cost) : std::string("Queue"),
-                             .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = _yard.id},
-                             .enabled = canSave && canQueue && stats.has_value() && _newest.ore >= stats->cost});
-  }
+    panel.queue = {.label = "QUEUE",
+                   .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = producer, .count = panel.count},
+                   .enabled = savesNew && free > 0 && stats.has_value() && _newest.ore >= cost};
   return panel;
 }
+
 // A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
 void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
 {
@@ -205,10 +415,10 @@ void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const
 
 // A floating window's look (ADR-031), after the owner's mockup (Phase 1 design §11): a dark navy body, a hatched title bar
 // with the title in the title face, a close box at its right end, and a bracket at each corner.
-constexpr DirectX::XMFLOAT4 WINDOW_COLOR{0.035f, 0.05f, 0.08f, 0.95f};
-constexpr DirectX::XMFLOAT4 TITLE_HATCH_COLOR{0.12f, 0.16f, 0.22f, 0.9f};
-constexpr DirectX::XMFLOAT4 CLOSE_BOX_COLOR{0.08f, 0.11f, 0.16f, 1.0f};
-constexpr DirectX::XMFLOAT4 WINDOW_EDGE_COLOR{0.45f, 0.55f, 0.68f, 1.0f};
+constexpr DirectX::XMFLOAT4 WINDOW_COLOR{0.009f, 0.013f, 0.024f, 0.97f};
+constexpr DirectX::XMFLOAT4 TITLE_HATCH_COLOR{0.03f, 0.042f, 0.08f, 1.0f};
+constexpr DirectX::XMFLOAT4 CLOSE_BOX_COLOR{0.014f, 0.02f, 0.041f, 1.0f};
+constexpr DirectX::XMFLOAT4 WINDOW_EDGE_COLOR{0.25f, 0.43f, 0.76f, 1.0f};
 constexpr float CORNER_UNITS = 12.0f;
 // Where the title's and the close box's characters sit in the title bar.
 constexpr float TITLE_TEXT_INSET = 5.0f;
@@ -217,7 +427,7 @@ constexpr float CLOSE_TEXT_LEFT = 11.0f;
 constexpr std::string_view CLOSE_MARK = "\xC3\x97";
 
 // Opens a window in the layout: its frame, title bar, close box and corners, its place in the layout's lists, and its
-// title. The body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top
+// title, unless the caller draws its own. The body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top
 // in pixels.
 float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _title, Outpost::WindowManager::Point _corner,
                  float _widthUnits, float _bodyHeightUnits, float _scale)
@@ -238,8 +448,9 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
   _layout.panels.push_back(window.frame);
   _layout.panels.push_back(window.titleBar);
   _layout.panels.push_back(window.closeBox);
-  _layout.texts.push_back(
-    {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::Typeface::Title});
+  if (!_title.empty())
+    _layout.texts.push_back(
+      {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::Typeface::Title});
   _layout.texts.push_back({std::string(CLOSE_MARK), window.closeBox.left + (CLOSE_TEXT_LEFT * _scale), top + (TITLE_TEXT_INSET * _scale),
                            TEXT_COLOR, Hud::Typeface::Title});
   const float corner = CORNER_UNITS * _scale;
@@ -257,6 +468,383 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
   }
   _layout.windows.push_back(window);
   return top + titleHeight;
+}
+
+// The designer's window (Phase 1 design §11), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
+// drawn at the reference scale: every place below is in reference units from the window's top-left corner.
+constexpr float DESIGNER_WIDTH = 728.0f;
+constexpr float DESIGNER_INSET = 24.0f;
+// The hatched header runs on below the title bar, which the window is dragged by, to hold the title and the Shipyard.
+constexpr float DESIGNER_HEADER = 72.0f;
+constexpr float NAME_ROW_TOP = 84.0f;
+constexpr float NAME_ROW_HEIGHT = 38.0f;
+constexpr float CHIP_ROW_TOP = 132.0f;
+constexpr float CHIP_HEIGHT = 26.0f;
+constexpr float CHIPS_LEFT = 70.0f;
+constexpr float CHIP_WIDTH = 190.0f;
+// Room for a chip's name beside its abbreviation; a longer name is cut short.
+constexpr std::size_t CHIP_NAME_CHARACTERS = 20;
+constexpr float SLOTS_TOP = 168.0f;
+constexpr float SLOT_GAP = 10.0f;
+constexpr float SLOT_DIVIDER_LEFT = 108.0f;
+constexpr float CARDS_LEFT = 118.0f;
+constexpr float CARD_WIDTH = 190.0f;
+constexpr float CARD_HEIGHT = 80.0f;
+constexpr float CARD_GAP = 7.0f;
+constexpr std::size_t CARDS_PER_LINE = 3;
+constexpr float SECTION_GAP = 20.0f;
+constexpr float SECTION_LABEL_HEIGHT = 26.0f;
+constexpr float BAR_ROW_HEIGHT = 25.0f;
+constexpr float BAR_LEFT = 104.0f;
+constexpr float BAR_WIDTH = 116.0f;
+constexpr float BAR_VALUE_RIGHT = 290.0f;
+constexpr float DAMAGE_LEFT = 364.0f;
+constexpr float DAMAGE_CARD_HEIGHT = 96.0f;
+constexpr float DAMAGE_CARD_GAP = 8.0f;
+constexpr float FOOTER_HEIGHT = 48.0f;
+constexpr float SMALL_BUTTON_UNITS = 18.0f;
+constexpr float LINE_UNITS = 1.0f;
+// Labels in small spaced capitals.
+constexpr float LABEL_TRACKING_UNITS = 2.0f;
+// About how wide a character is set, for the few figures that stand against a right edge, since the layout is made
+// without the fonts: the monospaced faces' advance is three fifths of their size, and Bahnschrift's figures and capitals
+// a little narrower.
+constexpr float MONO_ADVANCE = 0.6f;
+constexpr float CONDENSED_ADVANCE = 0.52f;
+
+// The mockup's colors (gate H6, confirmed at the owner's run), sampled from it and made linear, as the render target
+// encodes them to sRGB.
+constexpr DirectX::XMFLOAT4 LABEL_COLOR{0.22f, 0.29f, 0.42f, 1.0f};
+constexpr DirectX::XMFLOAT4 ROW_LABEL_COLOR{0.41f, 0.49f, 0.61f, 1.0f};
+constexpr DirectX::XMFLOAT4 NUMBERS_COLOR{0.65f, 0.77f, 0.93f, 1.0f};
+constexpr DirectX::XMFLOAT4 SOFT_COLOR{0.29f, 0.37f, 0.5f, 1.0f};
+constexpr DirectX::XMFLOAT4 FAINT_COLOR{0.12f, 0.15f, 0.21f, 1.0f};
+constexpr DirectX::XMFLOAT4 CODE_COLOR{0.18f, 0.3f, 0.53f, 1.0f};
+constexpr DirectX::XMFLOAT4 ACCENT_COLOR{0.4f, 0.63f, 1.0f, 1.0f};
+constexpr DirectX::XMFLOAT4 GOLD_COLOR{0.93f, 0.5f, 0.045f, 1.0f};
+constexpr DirectX::XMFLOAT4 FIELD_COLOR{0.005f, 0.007f, 0.011f, 1.0f};
+constexpr DirectX::XMFLOAT4 CARD_COLOR{0.014f, 0.02f, 0.041f, 1.0f};
+constexpr DirectX::XMFLOAT4 EDGE_COLOR{0.026f, 0.037f, 0.07f, 1.0f};
+constexpr DirectX::XMFLOAT4 PICKED_COLOR{0.033f, 0.063f, 0.136f, 1.0f};
+constexpr DirectX::XMFLOAT4 PICKED_EDGE_COLOR{0.35f, 0.56f, 0.9f, 1.0f};
+constexpr DirectX::XMFLOAT4 LOCKED_COLOR{0.007f, 0.01f, 0.016f, 1.0f};
+constexpr DirectX::XMFLOAT4 LOCKED_HATCH_COLOR{0.012f, 0.016f, 0.024f, 1.0f};
+constexpr DirectX::XMFLOAT4 LOCKED_TEXT_COLOR{0.15f, 0.19f, 0.26f, 1.0f};
+constexpr DirectX::XMFLOAT4 AMBER_COLOR{0.62f, 0.34f, 0.09f, 1.0f};
+constexpr DirectX::XMFLOAT4 GOOD_COLOR{0.15f, 0.9f, 0.075f, 1.0f};
+constexpr DirectX::XMFLOAT4 FAIR_COLOR{0.9f, 0.46f, 0.026f, 1.0f};
+constexpr DirectX::XMFLOAT4 POOR_COLOR{0.75f, 0.08f, 0.044f, 1.0f};
+constexpr DirectX::XMFLOAT4 BAR_TRACK_COLOR{0.004f, 0.005f, 0.009f, 1.0f};
+constexpr DirectX::XMFLOAT4 BAR_FILL_COLOR{0.17f, 0.3f, 0.58f, 1.0f};
+constexpr DirectX::XMFLOAT4 QUEUE_COLOR{0.037f, 0.125f, 0.048f, 1.0f};
+constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.053f, 0.153f, 0.067f, 1.0f};
+constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
+constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
+constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
+
+// How many characters _text sets, counting a character of several UTF-8 bytes once.
+float CharactersOf(std::string_view _text) noexcept
+{
+  return static_cast<float>(std::ranges::count_if(_text, [](char _byte) { return (static_cast<unsigned char>(_byte) & 0xC0) != 0x80; }));
+}
+
+// _text cut to _characters, the last three of them dots, when it is longer.
+std::string CutShort(const std::string& _text, std::size_t _characters)
+{
+  return _text.size() <= _characters ? _text : _text.substr(0, _characters - 3) + "...";
+}
+
+// The color of a hovered part's change: green when better, red when worse, and _same when neither.
+DirectX::XMFLOAT4 ChangeColor(Hud::Change _change, const DirectX::XMFLOAT4& _same) noexcept
+{
+  return _change == Hud::Change::Better ? GOOD_COLOR : _change == Hud::Change::Worse ? POOR_COLOR : _same;
+}
+
+const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
+{
+  return _rating == Hud::Rating::Good ? GOOD_COLOR : _rating == Hud::Rating::Fair ? FAIR_COLOR : POOR_COLOR;
+}
+
+// How far the designer's sections reach, from its window's top, in reference units.
+struct DesignerExtent
+{
+  // Where each slot's row starts, and where the rows end.
+  std::array<float, 3> slotTops{};
+  float slotsEnd = 0.0f;
+  float sectionsTop = 0.0f;
+  float footerTop = 0.0f;
+  float height = 0.0f;
+};
+
+float CardLinesOf(const Hud::SlotRow& _slot) noexcept
+{
+  return static_cast<float>(std::max<std::size_t>(1, (_slot.cards.size() + CARDS_PER_LINE - 1) / CARDS_PER_LINE));
+}
+
+DesignerExtent ExtentOf(const Hud::DesignerPanel& _panel) noexcept
+{
+  DesignerExtent extent;
+  float y = SLOTS_TOP;
+  for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
+  {
+    extent.slotTops[slot] = y;
+    const float lines = CardLinesOf(_panel.slots[slot]);
+    y += (lines * CARD_HEIGHT) + ((lines - 1.0f) * CARD_GAP) + SLOT_GAP;
+  }
+  extent.slotsEnd = y - SLOT_GAP;
+  extent.sectionsTop = extent.slotsEnd + SECTION_GAP;
+  const float bars = SECTION_LABEL_HEIGHT + (6.0f * BAR_ROW_HEIGHT);
+  const float damage = SECTION_LABEL_HEIGHT + DAMAGE_CARD_HEIGHT + (2.0f * PADDING);
+  extent.footerTop = extent.sectionsTop + std::max(bars, damage) + PADDING;
+  extent.height = extent.footerTop + FOOTER_HEIGHT + SECTION_GAP;
+  return extent;
+}
+
+// Lays the designer's window out with its top-left corner at _corner.
+void LayDesigner(Hud::Layout& _layout, const Hud::DesignerPanel& _panel, Outpost::WindowManager::Point _corner, float _scale)
+{
+  const DesignerExtent extent = ExtentOf(_panel);
+  (void)OpenWindow(_layout, Outpost::WindowKind::Designer, std::string(), _corner, DESIGNER_WIDTH, extent.height - Hud::TITLE_BAR_UNITS,
+                   _scale);
+  const float originX = _corner.xUnits * _scale;
+  const float originY = _corner.yUnits * _scale;
+  const float tracking = LABEL_TRACKING_UNITS * _scale;
+  const auto area = [&](float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
+                        Hud::Fill _fill = Hud::Fill::Solid) -> Hud::Rect
+  { return {originX + (_left * _scale), originY + (_top * _scale), _width * _scale, _height * _scale, _color, _fill}; };
+  const auto panel = [&](float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
+                         Hud::Fill _fill = Hud::Fill::Solid) -> Hud::Rect
+  { return _layout.panels.emplace_back(area(_left, _top, _width, _height, _color, _fill)); };
+  const auto text =
+    [&](std::string _text, float _left, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _tracking = 0.0f)
+  { _layout.texts.push_back({std::move(_text), originX + (_left * _scale), originY + (_top * _scale), _color, _face, _tracking}); };
+  // A figure that ends at _right, at about _advance units a character.
+  const auto rightText =
+    [&](std::string _text, float _right, float _top, const DirectX::XMFLOAT4& _color, Hud::Typeface _face, float _advance)
+  {
+    const float left = _right - (CharactersOf(_text) * _advance);
+    text(std::move(_text), left, _top, _color, _face);
+  };
+  const auto sprite = [&](Hud::Sprite _sprite, float _left, float _top, float _size, const DirectX::XMFLOAT4& _color)
+  { _layout.sprites.push_back({.sprite = _sprite, .area = area(_left, _top, _size, _size, _color)}); };
+  // The edge round a lit rectangle.
+  const auto outline = [&](float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color)
+  {
+    panel(_left, _top, _width, LINE_UNITS, _color);
+    panel(_left, _top + _height - LINE_UNITS, _width, LINE_UNITS, _color);
+    panel(_left, _top, LINE_UNITS, _height, _color);
+    panel(_left + _width - LINE_UNITS, _top, LINE_UNITS, _height, _color);
+  };
+  const auto press = [&](const Hud::Rect& _rect, const Hud::Action& _action) { _layout.actions.emplace_back(_rect, _action); };
+  // A small square button with a mark on it, such as an arrow.
+  const auto smallButton = [&](std::string _mark, float _left, float _top, bool _enabled, const Hud::Action& _action)
+  {
+    const Hud::Rect face = panel(_left, _top, SMALL_BUTTON_UNITS, SMALL_BUTTON_UNITS, _enabled ? CARD_COLOR : DISABLED_BUTTON_COLOR);
+    if (_enabled)
+      press(face, _action);
+    text(std::move(_mark), _left + 5.0f, _top + 1.0f, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label);
+  };
+  const auto diamondAndFigure =
+    [&](std::int32_t _ore, float _right, float _top, Hud::Typeface _face, float _sizeUnits, const DirectX::XMFLOAT4& _color)
+  {
+    const std::string figure = std::to_string(_ore);
+    const float width = CharactersOf(figure) * _sizeUnits * (_face == Hud::Typeface::Title ? CONDENSED_ADVANCE : MONO_ADVANCE);
+    const float mark = std::round(_sizeUnits * 0.6f);
+    sprite(Hud::Sprite::OreMark, _right - width - mark - 5.0f, _top + ((_sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
+    text(figure, _right - width, _top, _color, _face);
+  };
+
+  // The header: the target Shipyard with its arrows, the title, the Shipyard's queue and ships built, and the Ore.
+  panel(0.0f, Hud::TITLE_BAR_UNITS, DESIGNER_WIDTH, DESIGNER_HEADER - Hud::TITLE_BAR_UNITS, TITLE_HATCH_COLOR, Hud::Fill::Hatched);
+  panel(0.0f, DESIGNER_HEADER - LINE_UNITS, DESIGNER_WIDTH, LINE_UNITS, EDGE_COLOR);
+  smallButton("<", DESIGNER_INSET, 9.0f, _panel.hasShipyard, {.kind = Hud::ActionKind::PreviousShipyard});
+  smallButton(">", DESIGNER_INSET + SMALL_BUTTON_UNITS + 4.0f, 9.0f, _panel.hasShipyard, {.kind = Hud::ActionKind::NextShipyard});
+  text(std::format("{}{}DESIGNER", _panel.shipyard, DOT), DESIGNER_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f, LABEL_COLOR,
+       Hud::Typeface::Label, tracking);
+  text("SHIP DESIGN", DESIGNER_INSET, 40.0f, TEXT_COLOR, Hud::Typeface::Title);
+  constexpr float SLOTS_LEFT = 412.0f;
+  constexpr float SLOT_SIZE = 30.0f;
+  text(std::format("QUEUE{}{} BUILT", DOT, _panel.built), SLOTS_LEFT, 12.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  for (std::size_t slot = 0; slot < Outpost::QUEUE_LIMIT; ++slot)
+  {
+    panel(SLOTS_LEFT + (static_cast<float>(slot) * (SLOT_SIZE + 3.0f)), 40.0f, SLOT_SIZE, 24.0f,
+          slot < _panel.queued ? SLOT_FILLED_COLOR : FIELD_COLOR);
+  }
+  panel(588.0f, 38.0f, 116.0f, 30.0f, FIELD_COLOR);
+  outline(588.0f, 38.0f, 116.0f, 30.0f, EDGE_COLOR);
+  diamondAndFigure(_panel.ore, 694.0f, 39.0f, Hud::Typeface::Title, 22.0f, GOLD_COLOR);
+
+  // The name, its count against the limit, and Save.
+  const float fieldWidth = 604.0f;
+  const Hud::Rect field = panel(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, FIELD_COLOR);
+  press(field, {.kind = Hud::ActionKind::EditName});
+  outline(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, _panel.editing ? PICKED_EDGE_COLOR : EDGE_COLOR);
+  text("NAME", DESIGNER_INSET + 12.0f, NAME_ROW_TOP + 13.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  text(_panel.editing ? _panel.name + "_" : _panel.name, DESIGNER_INSET + 66.0f, NAME_ROW_TOP + 9.0f,
+       _panel.nameValid ? TEXT_COLOR : WARNING_COLOR, Hud::Typeface::Name);
+  rightText(std::format("{}/{}", _panel.name.size(), Outpost::DESIGN_NAME_LIMIT), DESIGNER_INSET + fieldWidth - 12.0f, NAME_ROW_TOP + 12.0f,
+            FAINT_COLOR, Hud::Typeface::Figure, 13.0f * MONO_ADVANCE);
+  {
+    constexpr float SAVE_LEFT = 636.0f;
+    constexpr float SAVE_WIDTH = 68.0f;
+    const Hud::Button& save = _panel.save;
+    const Hud::Rect face = panel(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.enabled ? CARD_COLOR : FIELD_COLOR);
+    outline(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.selected ? QUEUE_EDGE_COLOR : EDGE_COLOR);
+    if (save.enabled)
+      press(face, save.action);
+    text(save.label, SAVE_LEFT + 12.0f, NAME_ROW_TOP + 13.0f,
+         save.selected  ? QUEUE_EDGE_COLOR
+         : save.enabled ? TEXT_COLOR
+                        : DIM_TEXT_COLOR,
+         Hud::Typeface::Label, tracking);
+  }
+
+  // The saved designs, as many as fit from the first shown, and the arrows that scroll them.
+  text("SAVED", DESIGNER_INSET, CHIP_ROW_TOP + 7.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  for (std::size_t i = _panel.firstChip, column = 0; i < _panel.chips.size() && column < CHIPS_SHOWN; ++i, ++column)
+  {
+    const Hud::DesignChip& chip = _panel.chips[i];
+    const float left = CHIPS_LEFT + (static_cast<float>(column) * (CHIP_WIDTH + 6.0f));
+    press(panel(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_COLOR : CARD_COLOR), chip.action);
+    outline(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_EDGE_COLOR : EDGE_COLOR);
+    text(CutShort(chip.name, CHIP_NAME_CHARACTERS), left + 8.0f, CHIP_ROW_TOP + 6.0f, TEXT_COLOR, Hud::Typeface::Label);
+    rightText(chip.code, left + CHIP_WIDTH - 8.0f, CHIP_ROW_TOP + 7.0f, CODE_COLOR, Hud::Typeface::Detail, 11.0f * MONO_ADVANCE);
+  }
+  if (_panel.chips.size() > CHIPS_SHOWN)
+  {
+    const float arrowsLeft = DESIGNER_WIDTH - DESIGNER_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
+    smallButton("<", arrowsLeft, CHIP_ROW_TOP + 4.0f, _panel.firstChip > 0, {.kind = Hud::ActionKind::PreviousDesigns});
+    smallButton(">", arrowsLeft + SMALL_BUTTON_UNITS + 4.0f, CHIP_ROW_TOP + 4.0f, _panel.firstChip + CHIPS_SHOWN < _panel.chips.size(),
+                {.kind = Hud::ActionKind::NextDesigns});
+  }
+
+  // A row for each slot: its label and pick, then its cards, three to a line.
+  for (std::size_t slot = 0; slot < _panel.slots.size(); ++slot)
+  {
+    const Hud::SlotRow& row = _panel.slots[slot];
+    const float top = extent.slotTops[slot];
+    const float lines = CardLinesOf(row);
+    text(row.label, DESIGNER_INSET, top + 22.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+    text(row.picked, DESIGNER_INSET, top + 38.0f, ACCENT_COLOR, Hud::Typeface::Name);
+    panel(SLOT_DIVIDER_LEFT, top + 6.0f, LINE_UNITS, (lines * CARD_HEIGHT) + ((lines - 1.0f) * CARD_GAP) - 12.0f, EDGE_COLOR);
+    for (std::size_t i = 0; i < row.cards.size(); ++i)
+    {
+      const Hud::PartCard& card = row.cards[i];
+      const std::size_t line = i / CARDS_PER_LINE;
+      const std::size_t column = i % CARDS_PER_LINE;
+      const float left = CARDS_LEFT + (static_cast<float>(column) * (CARD_WIDTH + CARD_GAP));
+      const float cardTop = top + (static_cast<float>(line) * (CARD_HEIGHT + CARD_GAP));
+      const bool locked = card.IsLocked();
+      const Hud::Rect face = panel(left, cardTop, CARD_WIDTH, CARD_HEIGHT, card.picked ? PICKED_COLOR : locked ? LOCKED_COLOR : CARD_COLOR);
+      if (locked)
+        panel(left, cardTop, CARD_WIDTH, CARD_HEIGHT, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
+      else
+        press(face, card.action);
+      outline(left, cardTop, CARD_WIDTH, CARD_HEIGHT, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
+      const DirectX::XMFLOAT4& nameColor = locked ? LOCKED_TEXT_COLOR : TEXT_COLOR;
+      text(card.name, left + 12.0f, cardTop + 8.0f, nameColor, Hud::Typeface::Name);
+      diamondAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure, 13.0f,
+                       locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
+      text(card.numbers, left + 12.0f, cardTop + 34.0f, locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR, Hud::Typeface::Detail);
+      if (!card.note.empty())
+        text(card.note, left + 12.0f, cardTop + 48.0f, locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR, Hud::Typeface::Detail);
+      if (locked)
+      {
+        sprite(Hud::Sprite::Checkbox, left + 12.0f, cardTop + 63.0f, 10.0f, AMBER_COLOR);
+        text(card.lockedBy, left + 28.0f, cardTop + 61.0f, AMBER_COLOR, Hud::Typeface::Label);
+      }
+    }
+  }
+  panel(DESIGNER_INSET, extent.slotsEnd + (SECTION_GAP / 2.0f), DESIGNER_WIDTH - (2.0f * DESIGNER_INSET), LINE_UNITS, EDGE_COLOR);
+
+  // Performance: each number's bar against the best in the game; while a part is hovered, the change it would make.
+  const float sections = extent.sectionsTop;
+  text("PERFORMANCE", DESIGNER_INSET, sections, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  for (std::size_t i = 0; i < _panel.bars.size(); ++i)
+  {
+    const Hud::StatBar& bar = _panel.bars[i];
+    const float top = sections + SECTION_LABEL_HEIGHT + (static_cast<float>(i) * BAR_ROW_HEIGHT);
+    text(bar.label, DESIGNER_INSET, top + 2.0f, ROW_LABEL_COLOR, Hud::Typeface::Label);
+    panel(BAR_LEFT, top + 6.0f, BAR_WIDTH, 7.0f, BAR_TRACK_COLOR);
+    if (bar.previewShare.has_value() && bar.change != Hud::Change::Same)
+    {
+      // The part of the bar the hovered part adds or takes away, in the change's color, under what both share.
+      panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * std::max(bar.share, *bar.previewShare), 7.0f, ChangeColor(bar.change, BAR_FILL_COLOR));
+      panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * std::min(bar.share, *bar.previewShare), 7.0f, BAR_FILL_COLOR);
+    }
+    else
+      panel(BAR_LEFT, top + 6.0f, BAR_WIDTH * bar.share, 7.0f, BAR_FILL_COLOR);
+    const bool previewing = bar.previewShare.has_value();
+    rightText(previewing ? bar.previewValue : bar.value, BAR_VALUE_RIGHT, top, ChangeColor(bar.change, TEXT_COLOR), Hud::Typeface::Figure,
+              13.0f * MONO_ADVANCE);
+    text(bar.unit, BAR_VALUE_RIGHT + 6.0f, top + 2.0f, LABEL_COLOR, Hud::Typeface::Label);
+  }
+
+  // Damage per second after armor against each hull, a card for each.
+  const float damageWidth = DESIGNER_WIDTH - DESIGNER_INSET - DAMAGE_LEFT;
+  text(std::format("DAMAGE / S AFTER ARMOR{}VS HULL", DOT), DAMAGE_LEFT, sections, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  const auto cards = static_cast<float>(std::max<std::size_t>(1, _panel.damage.size()));
+  const float cardWidth = (damageWidth - ((cards - 1.0f) * DAMAGE_CARD_GAP)) / cards;
+  const float cardsTop = sections + SECTION_LABEL_HEIGHT;
+  for (std::size_t i = 0; i < _panel.damage.size(); ++i)
+  {
+    const Hud::DamageCard& card = _panel.damage[i];
+    const float left = DAMAGE_LEFT + (static_cast<float>(i) * (cardWidth + DAMAGE_CARD_GAP));
+    panel(left, cardsTop, cardWidth, DAMAGE_CARD_HEIGHT, FIELD_COLOR);
+    outline(left, cardsTop, cardWidth, DAMAGE_CARD_HEIGHT, EDGE_COLOR);
+    text(card.hull, left + 10.0f, cardsTop + 8.0f, TEXT_COLOR, Hud::Typeface::Name);
+    rightText(card.armor, left + cardWidth - 8.0f, cardsTop + 11.0f, LABEL_COLOR, Hud::Typeface::Label, 12.0f * CONDENSED_ADVANCE);
+    text(card.perShip, left + 10.0f, cardsTop + 28.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
+    panel(left + 10.0f, cardsTop + 66.0f, cardWidth - 20.0f, 4.0f, BAR_TRACK_COLOR);
+    panel(left + 10.0f, cardsTop + 66.0f, (cardWidth - 20.0f) * card.share, 4.0f, RatingColor(card.rating));
+    text(card.perOre, left + 10.0f, cardsTop + 76.0f, SOFT_COLOR, Hud::Typeface::Detail);
+  }
+  text(_panel.hint, DAMAGE_LEFT, cardsTop + DAMAGE_CARD_HEIGHT + 10.0f, LABEL_COLOR, Hud::Typeface::Detail);
+
+  // The bottom row: Rename, the stepper, and Queue with the build time of one ship and the cost of all.
+  const float footer = extent.footerTop;
+  {
+    const Hud::Button& rename = _panel.rename;
+    const Hud::Rect face = panel(DESIGNER_INSET, footer, 90.0f, FOOTER_HEIGHT, rename.enabled ? CARD_COLOR : FIELD_COLOR);
+    outline(DESIGNER_INSET, footer, 90.0f, FOOTER_HEIGHT, EDGE_COLOR);
+    if (rename.enabled)
+      press(face, rename.action);
+    text(rename.label, DESIGNER_INSET + 14.0f, footer + 16.0f, rename.enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label,
+         tracking);
+  }
+  constexpr float STEPPER_LEFT = 346.0f;
+  constexpr float STEP_WIDTH = 36.0f;
+  constexpr float COUNT_WIDTH = 42.0f;
+  const auto step = [&](std::string _mark, float _left, bool _enabled, Hud::ActionKind _kind)
+  {
+    const Hud::Rect face = panel(_left, footer, STEP_WIDTH, FOOTER_HEIGHT, _enabled ? CARD_COLOR : FIELD_COLOR);
+    outline(_left, footer, STEP_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
+    if (_enabled)
+      press(face, {.kind = _kind});
+    text(std::move(_mark), _left + 13.0f, footer + 13.0f, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Name);
+  };
+  step("-", STEPPER_LEFT, _panel.canFewer, Hud::ActionKind::FewerShips);
+  panel(STEPPER_LEFT + STEP_WIDTH, footer, COUNT_WIDTH, FOOTER_HEIGHT, FIELD_COLOR);
+  outline(STEPPER_LEFT + STEP_WIDTH, footer, COUNT_WIDTH, FOOTER_HEIGHT, EDGE_COLOR);
+  text(std::format("{}{}", TIMES, _panel.count), STEPPER_LEFT + STEP_WIDTH + 10.0f, footer + 13.0f, TEXT_COLOR, Hud::Typeface::Name);
+  step("+", STEPPER_LEFT + STEP_WIDTH + COUNT_WIDTH, _panel.canMore, Hud::ActionKind::MoreShips);
+  {
+    constexpr float QUEUE_LEFT = 468.0f;
+    const float queueWidth = DESIGNER_WIDTH - DESIGNER_INSET - QUEUE_LEFT;
+    const Hud::Button& queue = _panel.queue;
+    const Hud::Rect face = panel(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_COLOR : FIELD_COLOR);
+    if (queue.enabled)
+    {
+      panel(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, QUEUE_HATCH_COLOR, Hud::Fill::Hatched);
+      press(face, queue.action);
+    }
+    outline(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_EDGE_COLOR : EDGE_COLOR);
+    const DirectX::XMFLOAT4& color = queue.enabled ? QUEUE_TEXT_COLOR : DIM_TEXT_COLOR;
+    text(queue.label, QUEUE_LEFT + 18.0f, footer + 3.0f, color, Hud::Typeface::Title, tracking);
+    text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 30.0f, color, Hud::Typeface::Detail);
+    diamondAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title, 22.0f,
+                     queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
+  }
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
@@ -404,7 +992,7 @@ DirectX::XMFLOAT2 Hud::Layout::MinimapPixelOf(PlanePosition _point) const noexce
 
 Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<const EntityView> _entities,
                                              std::span<const EntityId> _selected, std::optional<StructureKind> _placing,
-                                             const Designer* _designer)
+                                             const Designer* _designer, std::optional<Action> _hovered)
 {
   Content content{.ore = _newest.ore,
                   .oreIncomeHundredthsPerSecond = _newest.oreIncomeHundredthsPerSecond,
@@ -415,6 +1003,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                   .designer = std::nullopt,
                   .mapSizeMeters = _newest.mapSizeMeters,
                   .marks = {}};
+  if (_designer != nullptr)
+    content.designer = DescribeDesigner(_newest, *_designer, _hovered);
 
   content.marks.reserve(_entities.size());
   for (const EntityView& entity : _entities)
@@ -492,15 +1082,16 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       }
       else if (structure->structure == StructureKind::Shipyard)
       {
-        content.buttons.reserve(_newest.designs.size());
+        content.buttons.reserve(_newest.designs.size() + 1);
         for (const DesignView& design : _newest.designs)
         {
           content.buttons.push_back({.label = std::format("{}|{}", design.nameUtf8, design.cost),
                                      .action = {.kind = ActionKind::Queue, .producer = structure->id, .design = design.id},
                                      .enabled = canQueue && _newest.ore >= design.cost});
         }
-        if (_designer != nullptr && structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
-          content.designer = DescribeDesigner(_newest, *_designer, *structure);
+        // The designer opens aimed at the player's own finished Shipyard (Phase 1 design §11).
+        if (structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
+          content.buttons.push_back({.label = "Ship designer", .action = {.kind = ActionKind::OpenDesigner, .producer = structure->id}});
       }
       else if (structure->structure == StructureKind::ResearchLab && structure->owner == _newest.player)
       {
@@ -602,6 +1193,7 @@ std::vector<Neuron::FontDesc> Hud::Typefaces()
     {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 16.0f},
     {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = 13.0f},
     {.families = figures, .weight = 700, .stretch = Neuron::FontStretch::Normal, .emUnits = 28.0f},
+    {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = 11.0f},
   };
 }
 
@@ -784,64 +1376,12 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   };
   for (const WindowKind kind : backToFront)
   {
-    // The designer, at first in the top-right corner, a row at a time.
+    // The designer, at first in the top-right corner.
     if (kind == WindowKind::Designer && _content.designer.has_value())
     {
-      const DesignerPanel& designer = *_content.designer;
-      const float rowStep = BUTTON_HEIGHT + BUTTON_GAP;
-      const float rows = 5.0f + static_cast<float>(designer.table.size());
-      const float bodyHeight = (2.0f * PADDING) + (rows * rowStep) + (static_cast<float>(designer.summary.size()) * LINE_STEP);
       const WindowManager::Point corner =
         place(kind, {.xUnits = screenWidthUnits - MARGIN - DESIGNER_WIDTH, .yUnits = MARGIN}, DESIGNER_WIDTH);
-      const float left = corner.xUnits * scale;
-      const float top = OpenWindow(layout, kind, "SHIP DESIGN", corner, DESIGNER_WIDTH, bodyHeight, scale);
-      const float inner = left + (PADDING * scale);
-      const float fieldLeft = inner + (DESIGNER_LABEL_WIDTH * scale);
-      float y = top + (PADDING * scale);
-      const auto labelAt = [&](std::string _text, float _left, float _rowTop, const DirectX::XMFLOAT4& _color)
-      { layout.texts.push_back({std::move(_text), _left, _rowTop + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale), _color}); };
-
-      // The name, a field that takes typing once clicked.
-      labelAt("Name", inner, y, TEXT_COLOR);
-      const Rect field{fieldLeft, y, (DESIGNER_WIDTH - (2.0f * PADDING) - DESIGNER_LABEL_WIDTH) * scale, BUTTON_HEIGHT * scale,
-                       designer.editing ? SELECTED_BUTTON_COLOR : BUTTON_COLOR};
-      layout.panels.push_back(field);
-      layout.actions.emplace_back(field, Action{.kind = ActionKind::EditName});
-      labelAt(designer.editing ? designer.name + "_" : designer.name, field.left + (PADDING * scale), y,
-              designer.nameValid ? TEXT_COLOR : WARNING_COLOR);
-      y += rowStep * scale;
-
-      const std::array<std::pair<std::string_view, const std::vector<Button>*>, 3> slots{
-        {{"Hull", &designer.hulls}, {"Drive", &designer.drives}, {"Weapon", &designer.weapons}}};
-      for (const auto& [label, picks] : slots)
-      {
-        labelAt(std::string(label), inner, y, TEXT_COLOR);
-        for (size_t i = 0; i < picks->size(); ++i)
-          addButton({fieldLeft + (static_cast<float>(i) * (PICK_WIDTH + BUTTON_GAP) * scale), y, PICK_WIDTH * scale, BUTTON_HEIGHT * scale},
-                    (*picks)[i]);
-        y += rowStep * scale;
-      }
-
-      for (const std::string& line : designer.summary)
-      {
-        layout.texts.push_back({line, inner, y, TEXT_COLOR});
-        y += LINE_STEP * scale;
-      }
-      for (size_t row = 0; row < designer.table.size(); ++row)
-      {
-        const std::vector<std::string>& cells = designer.table[row];
-        for (size_t column = 0; column < cells.size(); ++column)
-        {
-          const float cellLeft =
-            column == 0 ? inner : inner + ((TABLE_LABEL_WIDTH + (static_cast<float>(column - 1) * TABLE_COLUMN_WIDTH)) * scale);
-          labelAt(cells[column], cellLeft, y, row == 0 || column == 0 ? DIM_TEXT_COLOR : TEXT_COLOR);
-        }
-        y += rowStep * scale;
-      }
-
-      for (size_t i = 0; i < designer.actions.size(); ++i)
-        addButton({inner + (static_cast<float>(i) * (ACTION_WIDTH + BUTTON_GAP) * scale), y, ACTION_WIDTH * scale, BUTTON_HEIGHT * scale},
-                  designer.actions[i]);
+      LayDesigner(layout, *_content.designer, corner, scale);
     }
   }
   return layout;

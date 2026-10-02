@@ -19,7 +19,8 @@ public:
 
   // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: the HUD's text as it has
   // been since milestone 3, and the faces of the owner's mockup for the windows of Phase 1 (Phase 1 design §11): condensed
-  // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed.
+  // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
+  // smaller size for a part card's numbers.
   enum class Typeface : std::uint8_t
   {
     Body,
@@ -27,7 +28,8 @@ public:
     Label,
     Name,
     Figure,
-    LargeFigure
+    LargeFigure,
+    Detail
   };
 
   [[nodiscard]] static std::vector<Neuron::FontDesc> Typefaces();
@@ -63,7 +65,17 @@ public:
     // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
     StartSkirmish,
     Quit,
-    BackToMenu
+    BackToMenu,
+    // The designer's window (Phase 1 design §11): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
+    // more ships, load a saved design, and scroll the saved designs.
+    OpenDesigner,
+    PreviousShipyard,
+    NextShipyard,
+    FewerShips,
+    MoreShips,
+    LoadDesign,
+    PreviousDesigns,
+    NextDesigns
   };
 
   struct Action
@@ -77,6 +89,8 @@ public:
     HullId hull;
     DriveId drive;
     WeaponId weapon;
+    // How many ships a Queue asks for (Phase 1 design §11).
+    std::uint32_t count = 1;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -91,24 +105,119 @@ public:
     bool selected = false;
   };
 
-  // The designer beside a selected Shipyard (task 5.2).
+  // A component as the designer shows it on its card (Phase 1 design §11): its name, cost and numbers, a note under them,
+  // such as a weapon's splash, whether it is the pick, and while research has yet to unlock it, the line that names the
+  // topic that does, "RESEARCH · LARGE HULL". A locked card takes no click.
+  struct PartCard
+  {
+    std::string name;
+    std::int32_t cost = 0;
+    std::string numbers;
+    std::string note;
+    bool picked = false;
+    std::string lockedBy;
+    Action action;
+
+    [[nodiscard]] bool IsLocked() const noexcept
+    {
+      return !lockedBy.empty();
+    }
+  };
+
+  // One slot of the design: its label, its pick's name, and a card for each component.
+  struct SlotRow
+  {
+    std::string label;
+    std::string picked;
+    std::vector<PartCard> cards;
+  };
+
+  // How a hovered part's design compares to the picked one on a number: better, no different, or worse. Lower is better
+  // for cost and build time.
+  enum class Change : std::uint8_t
+  {
+    Worse,
+    Same,
+    Better
+  };
+
+  // One of the picked design's numbers and its bar, measured against the best any design in the game reaches, locked
+  // components included, so that the scale holds as research unlocks parts. With a part hovered, the design it would make.
+  struct StatBar
+  {
+    std::string label;
+    std::string value;
+    std::string unit;
+    float share = 0.0f;
+    std::optional<float> previewShare;
+    std::string previewValue;
+    Change change = Change::Same;
+  };
+
+  // How a design's damage against one hull compares to the best any design does to it: from two thirds up, a third up,
+  // and below.
+  enum class Rating : std::uint8_t
+  {
+    Poor,
+    Fair,
+    Good
+  };
+
+  // Damage per second after armor against one hull (design §9), per ship and per 100 Ore: the hovered part's design while
+  // one is hovered, and how it compares to the picked one.
+  struct DamageCard
+  {
+    std::string hull;
+    std::string armor;
+    std::string perShip;
+    std::string perOre;
+    float share = 0.0f;
+    Rating rating = Rating::Poor;
+    Change change = Change::Same;
+  };
+
+  // A saved design's chip: its name, its components' initials, whether it is the one shown, and loading it.
+  struct DesignChip
+  {
+    std::string name;
+    std::string code;
+    bool shown = false;
+    Action action;
+  };
+
+  // The designer's window, after the owner's mockup (Phase 1 design §11, GameDesign/Mockups/ShipDesigner.png).
   struct DesignerPanel
   {
+    // The target Shipyard, such as "SHIPYARD 01", or "NO SHIPYARD"; its queue's length, the ships it has built, and the
+    // player's Ore.
+    std::string shipyard;
+    bool hasShipyard = false;
+    std::uint32_t queued = 0;
+    std::uint32_t built = 0;
+    std::int32_t ore = 0;
     std::string name;
     bool editing = false;
     // Whether the server takes the name (IsValidDesignName); it is drawn as a warning when not.
     bool nameValid = true;
-    // A button for each component of each slot, the pick lit and a locked component dim.
-    std::vector<Button> hulls;
-    std::vector<Button> drives;
-    std::vector<Button> weapons;
-    // The picked design's hit points, armor and speed, then its range, cost and build time.
-    std::vector<std::string> summary;
-    // A row naming each hull, then damage per second after armor against it, per ship and per 100 Ore (design §9). The
-    // first cell of a row is its label.
-    std::vector<std::vector<std::string>> table;
-    // Save or rename, and queue.
-    std::vector<Button> actions;
+    // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
+    Button save;
+    Button rename;
+    // The saved designs, and the first shown of those that do not all fit.
+    std::vector<DesignChip> chips;
+    std::size_t firstChip = 0;
+    std::array<SlotRow, 3> slots;
+    std::vector<StatBar> bars;
+    std::vector<DamageCard> damage;
+    // What the bars and the cards preview while a part is hovered; the help line otherwise.
+    std::string hint;
+    // How many ships Queue asks for, and whether it can ask for fewer or more.
+    std::uint32_t count = 1;
+    bool canFewer = false;
+    bool canMore = false;
+    // Queue: its cost for every ship asked for, and the build time of one.
+    Button queue;
+    std::int32_t queueCost = 0;
+    std::string queueDetail;
   };
 
   // Whose a minimap mark is, which sets its color.
@@ -275,9 +384,11 @@ public:
 
   // The content for _player: its Ore and income from the newest snapshot, its research, a description of _selected, by
   // design name from the snapshot's designs, the buttons the selection offers, and the minimap's marks. _placing is the
-  // structure being placed, if any. With a _designer, a selected built Shipyard of the player's shows it.
+  // structure being placed, if any. With a _designer, which GameClient gives while its window is open, the designer;
+  // _hovered is the button under the pointer, and a part's previews the design it would make.
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
-                                        std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr);
+                                        std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
+                                        std::optional<Action> _hovered = std::nullopt);
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);

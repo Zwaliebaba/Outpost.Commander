@@ -158,10 +158,10 @@ private:
   Designer m_designer;
   // What the player has seen of the map, when the match is played under fog of war (ADR-024).
   FogOfWar m_fog;
-  // The floating windows, which keep their places for as long as the game runs (ADR-031); and whether the designer was
-  // opened for the Shipyard selected now, so that one closed stays closed until the Shipyard is selected again.
+  // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
+  // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
-  bool m_designerOffered = false;
+  EntityId m_soleSelected;
   // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
   // allocated every frame (ADR-029).
   ShipBanking m_banking;
