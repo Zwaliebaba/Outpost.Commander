@@ -179,6 +179,89 @@ public:
     Assert::IsTrue(refused.TakeQueueCommands(snapshot).empty(), L"dropped once the wait was over");
   }
 
+  // Phase 1 design §11: the designer's queue goes to one of the player's finished Shipyards: the lowest numbered at first,
+  // one the player picks, the next or the previous by number round the end, and the lowest again when its own is gone.
+  TEST_METHOD(AimsTheQueueAtAShipyard)
+  {
+    Outpost::Snapshot snapshot = Components();
+    Outpost::Designer designer;
+    designer.Update(snapshot);
+    Assert::IsNull(designer.Target(snapshot), L"no Shipyard yet");
+
+    const auto yard = [](std::uint32_t _id, std::uint32_t _number)
+    {
+      return Outpost::EntityView{.id = Outpost::EntityId{_id},
+                                 .kind = Outpost::EntityKind::Structure,
+                                 .owner = PLAYER,
+                                 .structure = Outpost::StructureKind::Shipyard,
+                                 .shipyardNumber = _number};
+    };
+    snapshot.entities = {yard(40, 2), yard(30, 1), yard(50, 3)};
+    Outpost::EntityView building = yard(60, 0);
+    building.builtPermille = 500;
+    Outpost::EntityView theirs = yard(70, 1);
+    theirs.owner = Outpost::PlayerId{2};
+    snapshot.entities.push_back(building);
+    snapshot.entities.push_back(theirs);
+    const auto target = [&] { return designer.Target(snapshot)->id.value; };
+    Assert::AreEqual(30u, target(), L"the lowest numbered");
+    designer.StepTarget(1, snapshot);
+    Assert::AreEqual(40u, target());
+    designer.StepTarget(1, snapshot);
+    designer.StepTarget(1, snapshot);
+    Assert::AreEqual(30u, target(), L"round the end, past the unfinished and the enemy's");
+    designer.StepTarget(-1, snapshot);
+    Assert::AreEqual(50u, target());
+    designer.SetTarget(Outpost::EntityId{70}, snapshot);
+    Assert::AreEqual(50u, target(), L"not the enemy's");
+    designer.SetTarget(Outpost::EntityId{40}, snapshot);
+    Assert::AreEqual(40u, target());
+
+    std::erase_if(snapshot.entities, [](const Outpost::EntityView& _entity) { return _entity.id == Outpost::EntityId{40}; });
+    designer.Update(snapshot);
+    Assert::AreEqual(30u, target(), L"its own is gone");
+  }
+
+  // Phase 1 design §11: one Queue asks for from 1 up to as many ships as the target's queue has free slots (owner,
+  // 2026-10-02), and asks a new design's save for each.
+  TEST_METHOD(QueuesAsManyAsTheQueueHasRoomFor)
+  {
+    Outpost::Snapshot snapshot = Components(true);
+    snapshot.entities = {{.id = Outpost::EntityId{30},
+                          .kind = Outpost::EntityKind::Structure,
+                          .owner = PLAYER,
+                          .structure = Outpost::StructureKind::Shipyard,
+                          .shipyardNumber = 1,
+                          .queue = {{.design = SWARM}, {.design = SWARM}}}};
+    Outpost::Designer designer = Picking(LARGE, FUSION, LANCE);
+    Assert::AreEqual(1u, designer.Count(snapshot));
+    designer.StepCount(-1, snapshot);
+    Assert::AreEqual(1u, designer.Count(snapshot), L"never fewer than one");
+    for (int i = 0; i < 5; ++i)
+      designer.StepCount(1, snapshot);
+    Assert::AreEqual(3u, designer.Count(snapshot), L"three slots are free");
+    snapshot.entities.front().queue.push_back({.design = SWARM});
+    Assert::AreEqual(2u, designer.Count(snapshot), L"fewer once the queue fills");
+
+    const Outpost::SaveDesignCommand save =
+      designer.SaveAndQueue(Outpost::EntityId{30}, snapshot, designer.Count(snapshot)).value_or(Outpost::SaveDesignCommand{});
+    snapshot.tick = 2;
+    snapshot.designs.push_back({.id = Outpost::DesignId{2}, .nameUtf8 = save.nameUtf8, .hull = LARGE, .drive = FUSION, .weapon = LANCE});
+    Assert::AreEqual(size_t{2}, designer.TakeQueueCommands(snapshot).size(), L"one save, two ships");
+  }
+
+  // A saved design's chip loads its components, and the name follows it again.
+  TEST_METHOD(LoadsASavedDesign)
+  {
+    const Outpost::Snapshot snapshot = Components(true);
+    Outpost::Designer designer = Picking(LARGE, FUSION, LANCE);
+    designer.BeginEditing(snapshot);
+    designer.Load(snapshot.designs.front());
+    Assert::IsTrue(designer.Picked() == Outpost::DesignComponents{SMALL, ION, MASS_DRIVER});
+    Assert::IsFalse(designer.IsEditing());
+    Assert::AreEqual(std::string("Swarm"), designer.Name(snapshot));
+  }
+
   // The name takes printable ASCII up to the limit and Backspace; Escape drops what was typed, and a name the server
   // would refuse saves nothing.
   TEST_METHOD(TypesTheName)
