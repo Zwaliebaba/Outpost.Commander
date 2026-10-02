@@ -3,11 +3,14 @@
 namespace Neuron
 {
 class Renderer;
+struct TextureData;
 
-// Draws glows (ADR-019): soft round spots of light that face the camera, added to what is already drawn, so they only
-// ever brighten it. They are tested against the scene's depth but write none, so a hull hides the glow behind it while
-// glows overlap freely, in any order. A frame's glows are one instanced draw. It knows no game concept: the caller says
-// where each glow is, how big it is and its color.
+// Draws glows (ADR-019): spots of light that face the camera, added to what is already drawn, so they only ever brighten
+// it. They are tested against the scene's depth but write none, so a hull hides the glow behind it while glows overlap
+// freely, in any order. A frame's glows are one instanced draw. Without a sprite, a glow is a soft round spot. With one,
+// it is the sprite's color times the glow's, read texel by texel with no smoothing when magnified, as a particle of
+// DeepSpaceOutpost's is (ADR-023). It knows no game concept: the caller says where each glow is, how big it is and its
+// color.
 class GlowPipeline : NonCopyable
 {
 public:
@@ -24,7 +27,8 @@ public:
   struct FrameConstants
   {
     DirectX::XMFLOAT4X4 viewProjection;
-    // Unit vectors in the world along the screen's right and its up, which each glow's quad is laid along.
+    // Vectors in the world along which each glow's quad is laid, its corners at plus and minus each, times its radius:
+    // unit vectors along the screen's right and its up for an upright square. Others turn or stretch it.
     DirectX::XMFLOAT3 screenRight;
     float unused0;
     DirectX::XMFLOAT3 screenUp;
@@ -34,8 +38,9 @@ public:
   // Glows one frame can draw.
   static constexpr UINT MAX_GLOWS = 4096;
 
-  // Builds the root signature and the pipeline state for the renderer's formats. Throws winrt::hresult_error on failure.
-  explicit GlowPipeline(Renderer& _renderer);
+  // Builds the root signature and the pipeline state for the renderer's formats, and uploads _sprite when there is one,
+  // which must have its mip levels. Throws winrt::hresult_error on failure.
+  explicit GlowPipeline(Renderer& _renderer, const TextureData* _sprite = nullptr);
 
   // Draws _glows into the frame's command list. Glows past MAX_GLOWS are dropped.
   void Draw(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants, std::span<const Glow> _glows);
@@ -46,5 +51,8 @@ private:
   // One slot of MAX_GLOWS glows per frame in flight, mapped for the pipeline's lifetime.
   winrt::com_ptr<ID3D12Resource> m_instances;
   Glow* m_mappedInstances = nullptr;
+  // The sprite and the shader-visible heap with its view; both empty for soft spots.
+  winrt::com_ptr<ID3D12Resource> m_sprite;
+  winrt::com_ptr<ID3D12DescriptorHeap> m_descriptorHeap;
 };
 } // namespace Neuron

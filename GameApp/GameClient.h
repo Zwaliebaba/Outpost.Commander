@@ -106,7 +106,8 @@ private:
   // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
-  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles.
+  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
+  // as diamonds of their sprite (ADR-023).
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
@@ -127,7 +128,9 @@ private:
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
-  // The sky behind everything (ADR-023): its stars as points, and its brightest as starbursts.
+  // The particles, drawn with DeepSpaceOutpost's particle texture rather than as soft spots (ADR-023).
+  std::unique_ptr<Neuron::GlowPipeline> m_particleSprites;
+  // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
   std::unique_ptr<Neuron::StarPipeline> m_sky;
   std::unique_ptr<Neuron::StarPipeline> m_bursts;
   // This frame's glows, kept so that their storage is not allocated every frame.

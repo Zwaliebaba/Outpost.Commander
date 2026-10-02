@@ -102,6 +102,9 @@
     <FXCompile Include="Shader\GlowPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\GlowSpritePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\StarVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>

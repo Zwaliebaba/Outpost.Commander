@@ -9,8 +9,10 @@ namespace
 {
 constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
-// The sprite of the sky's brightest stars (ADR-023).
+// The sprite of the sky's brightest stars (ADR-022).
 constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
+// The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-023).
+constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
@@ -20,7 +22,7 @@ constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
 // The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
-// that is barely there, so the sky shows through (ADR-023), and it is what shows the ground moving when the view pans.
+// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
 constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
 constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
@@ -279,6 +281,11 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   Neuron::BuildMipLevels(burstSprite);
   m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, sky.points);
   m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, &burstSprite);
+
+  Neuron::TextureData particleSprite =
+    Neuron::ParseDds(ReadAsset(PARTICLE_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(PARTICLE_SPRITE_FILE)));
+  Neuron::BuildMipLevels(particleSprite);
+  m_particleSprites = std::make_unique<Neuron::GlowPipeline>(_renderer, &particleSprite);
 }
 
 void Outpost::GameClient::StartMatch()
@@ -615,7 +622,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.ambient = AMBIENT;
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
-  // resolution (ADR-006, ADR-023).
+  // resolution (ADR-006, ADR-022).
   const float skyScale = Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels());
   const Neuron::StarPipeline::FrameConstants sky{
     .viewProjection = constants.viewProjection,
@@ -927,14 +934,20 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
     }
     AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
   }
-  // The particles after the exhausts, so that a frame with more glows than the pipeline takes drops particles first.
-  m_frameGlows.insert(m_frameGlows.end(), m_particleGlows.begin(), m_particleGlows.end());
-
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   const auto [right, up] = m_camera.ScreenAxes(aspectRatio);
+  const DirectX::XMFLOAT4X4 viewProjection = m_camera.ViewProjection(aspectRatio);
   const Neuron::GlowPipeline::FrameConstants constants{
-    .viewProjection = m_camera.ViewProjection(aspectRatio), .screenRight = right, .unused0 = 0.0f, .screenUp = up, .unused1 = 0.0f};
+    .viewProjection = viewProjection, .screenRight = right, .unused0 = 0.0f, .screenUp = up, .unused1 = 0.0f};
   m_glows.Draw(_commandList, _renderer.FrameIndex(), constants, m_frameGlows);
+
+  // A particle is a diamond, as DeepSpaceOutpost draws it: the square turned an eighth of a turn, its tips a radius out
+  // along the screen's right and up. Its quad's axes are the sum and the difference of those, halved.
+  const DirectX::XMFLOAT3 diamondRight{(right.x + up.x) * 0.5f, (right.y + up.y) * 0.5f, (right.z + up.z) * 0.5f};
+  const DirectX::XMFLOAT3 diamondUp{(up.x - right.x) * 0.5f, (up.y - right.y) * 0.5f, (up.z - right.z) * 0.5f};
+  const Neuron::GlowPipeline::FrameConstants particleConstants{
+    .viewProjection = viewProjection, .screenRight = diamondRight, .unused0 = 0.0f, .screenUp = diamondUp, .unused1 = 0.0f};
+  m_particleSprites->Draw(_commandList, _renderer.FrameIndex(), particleConstants, m_particleGlows);
 }
 
 void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)

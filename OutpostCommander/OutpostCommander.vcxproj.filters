@@ -55,6 +55,9 @@
     <None Include="Assets\Textures\starburst.dds">
       <Filter>Package\Assets\Textures</Filter>
     </None>
+    <None Include="Assets\Textures\Particle.dds">
+      <Filter>Package\Assets\Textures</Filter>
+    </None>
     <None Include="Assets\Models.json">
       <Filter>Package\Assets</Filter>
     </None>
@@ -184,9 +187,6 @@
       <Filter>Package\Assets\Textures</Filter>
     </Image>
     <Image Include="Assets\Textures\laser.dds">
-      <Filter>Package\Assets\Textures</Filter>
-    </Image>
-    <Image Include="Assets\Textures\Particle.dds">
       <Filter>Package\Assets\Textures</Filter>
     </Image>
   </ItemGroup>
