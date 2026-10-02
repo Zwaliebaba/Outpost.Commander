@@ -16,9 +16,9 @@ constexpr float PI = std::numbers::pi_v<float>;
 constexpr std::uint64_t SKY_SEED = 0x5EED'5EED'0F5E'7A25ULL;
 
 // Stars over the whole sky, a few thousand of them on the screen at once, and the brightest of them, which are drawn
-// with the starburst sprite: a few on the screen.
+// as crosses: a handful on the screen (owner, 2026-10-02, ADR-028).
 constexpr int STAR_COUNT = 50000;
-constexpr int BURST_COUNT = 70;
+constexpr int BURST_COUNT = 25;
 
 // A point's light is its peak color times its Gaussian's area, so a bright point is drawn wider rather than brighter
 // than MAX_PEAK. Its square reaches REACH standard deviations, where StarPS.hlsl puts its rim.
@@ -31,10 +31,11 @@ constexpr float REACH = 3.0f;
 constexpr float MIN_FLUX = 0.018f * MIN_SPREAD_PIXELS * MIN_SPREAD_PIXELS;
 constexpr float COUNT_POWER = -1.5f;
 
-// A burst's square grows from the dimmest burst to the brightest, with the logarithm of its light, and its color is
-// the star's tint at this brightness. The sprite has its own bright core, so a burst is never a point as well.
-constexpr float MIN_BURST_RADIUS_PIXELS = 9.0f;
-constexpr float MAX_BURST_RADIUS_PIXELS = 36.0f;
+// A burst's square, and so its cross's arms, grows from the dimmest burst to the brightest, with the logarithm of its
+// light, and its color is the star's tint at this brightness. The cross has its own dot at its center, so a burst is
+// never a point as well. Small, so that the crosses are fine marks in the line art rather than flares.
+constexpr float MIN_BURST_RADIUS_PIXELS = 6.0f;
+constexpr float MAX_BURST_RADIUS_PIXELS = 16.0f;
 constexpr float BURST_PEAK = 0.6f;
 
 // Star colors by temperature, as linear colors with their brightest channel at 1. A star keeps this share of its tint

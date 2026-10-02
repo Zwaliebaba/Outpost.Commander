@@ -7,14 +7,24 @@ struct TextureData;
 
 // Draws a sky of stars at infinity (ADR-021, ADR-022). Each star is a direction, so moving the camera never moves it and
 // only turning the camera does. A star is a square facing the screen, sized in pixels rather than meters, and added to
-// the frame, so stars that overlap add up. Without a sprite, a star is a Gaussian spot that fades to nothing at the
-// square's inscribed circle. With one, it is the sprite's alpha in the star's color, upright on the screen, as a
-// camera's diffraction spikes are. The sky is drawn first, with no depth test, and everything drawn after it covers it.
+// the frame, so stars that overlap add up. Its Shape says what it looks like. The sky is drawn first, with no depth test, and everything drawn after it covers it.
 // The stars are uploaded once, and a frame draws them all in one instanced draw. It knows no game concept: the caller
 // says where each star is, how big and what color.
 class StarPipeline : NonCopyable
 {
 public:
+  // What a star looks like in its square.
+  enum class Shape : std::uint8_t
+  {
+    // A Gaussian spot that fades to nothing at the square's inscribed circle.
+    Spot,
+    // The sprite's alpha in the star's color, upright on the screen, as a camera's diffraction spikes are.
+    Sprite,
+    // A cross of two lines a pixel wide along the screen's axes, fading from the center to the square's edge, with a
+    // dot at the center: a vector-drawn star (ADR-028).
+    Cross
+  };
+
   // One star. The layout matches the per-instance input of Shader/StarVS.hlsl.
   struct Star
   {
@@ -40,8 +50,9 @@ public:
   };
 
   // Builds the root signature and the pipeline state for the renderer's formats, and uploads _stars, which the sky then
-  // keeps, and _sprite when there is one, which must have its mip levels. Throws winrt::hresult_error on failure.
-  StarPipeline(Renderer& _renderer, std::span<const Star> _stars, const TextureData* _sprite = nullptr);
+  // keeps, drawn as _shape, and _sprite, which Shape::Sprite needs and the others ignore, and which must have its mip
+  // levels. Throws winrt::hresult_error on failure, and when Shape::Sprite has no sprite.
+  StarPipeline(Renderer& _renderer, std::span<const Star> _stars, Shape _shape = Shape::Spot, const TextureData* _sprite = nullptr);
 
   // Draws every star into the frame's command list. Call it before anything else is drawn.
   void Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const;

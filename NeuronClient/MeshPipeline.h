@@ -30,6 +30,32 @@ public:
   void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
             const DirectX::XMFLOAT4& _color) const;
 
+  // Vertices one frame's DrawTriangles calls can take between them.
+  static constexpr UINT MAX_FRAME_VERTICES = 65536;
+
+  // Draws a triangle list made on the CPU this frame, already in the world, in a linear color: geometry that changes every
+  // frame, such as an explosion's shards (ADR-026). The vertices are copied into this frame's slot of an upload buffer,
+  // so they need not outlive the call. A call that would take the frame past MAX_FRAME_VERTICES draws nothing and returns
+  // false. Only after BeginDrawing.
+  bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);
+
+  // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines lit as a mesh is, in a
+  // linear color. They are tested against the depth of what is drawn but write none, so the far side of a mesh hides its
+  // own lines. The pipeline is back on Draw's state and topology when it returns.
+  void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
+                 const DirectX::XMFLOAT4& _color) const;
+
+  // One line list to draw, as DrawLines takes it.
+  struct LineDraw
+  {
+    const Mesh* lines = nullptr;
+    DirectX::XMFLOAT4X4 world{};
+    DirectX::XMFLOAT4 color{};
+  };
+
+  // Draws every one of _draws as DrawLines does, switching to the line state and back once for all of them.
+  void DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const LineDraw> _draws) const;
+
 private:
   // The frame's constants rounded up to the size a constant buffer view needs.
   static constexpr UINT FRAME_CONSTANTS_BYTES =
@@ -37,9 +63,17 @@ private:
 
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
+  // The same, drawing lines (DrawLines).
+  winrt::com_ptr<ID3D12PipelineState> m_lineState;
   // One slot per frame in flight, mapped for the pipeline's lifetime; the renderer's frame index picks the slot the GPU
   // is not reading.
   winrt::com_ptr<ID3D12Resource> m_frameConstants;
   std::byte* m_mappedFrameConstants = nullptr;
+  // One slot of MAX_FRAME_VERTICES vertices per frame in flight for DrawTriangles, mapped for the pipeline's lifetime, and
+  // how much of the frame's slot is taken.
+  winrt::com_ptr<ID3D12Resource> m_frameVertices;
+  MeshVertex* m_mappedFrameVertices = nullptr;
+  UINT m_frameIndex = 0;
+  UINT m_frameVerticesUsed = 0;
 };
 } // namespace Neuron

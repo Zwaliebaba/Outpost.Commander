@@ -3,10 +3,10 @@
 namespace Outpost
 {
 // The minimum that makes combat readable (design §11, task 3.5): a muzzle flash where a shot leaves, a tracer or a beam
-// to where it lands, a spark there, a blast ring as wide as its splash for a splash weapon (task 5.3), and an explosion
-// where a ship or structure is destroyed. Hits are instant on the
-// server (design §7); everything here is presentation, played from the shots and destructions the snapshots report, at
-// the moment the view reaches them. It keeps no GPU state: it says which flat shapes to draw, and GameClient draws them.
+// to where it lands, a spark there, and a blast ring as wide as its splash for a splash weapon (task 5.3). A ship or
+// structure destroyed is the ParticleSystem's and the ExplosionManager's (ADR-026). Hits are instant on the server
+// (design §7); everything here is presentation, played from the shots the snapshots report, at the moment the view
+// reaches them. It keeps no GPU state: it says which flat shapes to draw, and GameClient draws them.
 class CombatEffects
 {
 public:
@@ -40,16 +40,20 @@ public:
   // It takes the shooter and the point it fires at.
   using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition)>;
 
+  // The color a shooter's beam is drawn in, so that the player sees whose fire it is (ADR-028): GameClient gives one from
+  // the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
+  using BeamTint = std::function<std::optional<DirectX::XMFLOAT4>(EntityId)>;
+
   explicit CombatEffects(std::uint32_t _ticksPerSecond);
 
-  // Takes the shots and destructions of a snapshot. Each plays from one tick before the snapshot's own: the shot was
-  // fired from where the ships stood at the start of that tick, and the view shows the snapshot's world a tick late
-  // (ADR-013).
+  // Takes the shots of a snapshot. Each plays from one tick before the snapshot's own: the shot was fired from where the
+  // ships stood at the start of that tick, and the view shows the snapshot's world a tick late (ADR-013).
   void Receive(const Snapshot& _snapshot);
 
   // What to draw with the view at _viewTick. Effects that have played out are forgotten. A shot leaves from the
-  // shooter's muzzle as _muzzle finds it in this frame, so it follows a ship that moves while it fires.
-  [[nodiscard]] std::vector<Draw> At(double _viewTick, const MuzzleLocator& _muzzle = {});
+  // shooter's muzzle as _muzzle finds it in this frame, so it follows a ship that moves while it fires, and a beam is in
+  // the color _tint gives its shooter.
+  [[nodiscard]] std::vector<Draw> At(double _viewTick, const MuzzleLocator& _muzzle = {}, const BeamTint& _tint = {});
 
   // Effects waiting or playing; for tests.
   [[nodiscard]] size_t Pending() const noexcept
@@ -61,24 +65,21 @@ private:
   enum class Kind : std::uint8_t
   {
     Tracer,
-    Beam,
-    Explosion
+    Beam
   };
 
   struct Effect
   {
     Kind kind = Kind::Tracer;
     double startTick = 0.0;
-    // A shot's shooter; no identifier for an explosion.
     EntityId shooter;
     PlanePosition from;
     PlanePosition to;
-    // An explosion's size, or a shot's splash; zero for a shot without splash.
+    // The shot's splash; zero for a shot without splash.
     float radiusMeters = 0.0f;
   };
 
-  void AddShot(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const;
-  void AddExplosion(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const;
+  void AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const;
 
   [[nodiscard]] double Seconds(double _ticks) const noexcept
   {

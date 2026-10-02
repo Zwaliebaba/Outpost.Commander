@@ -72,11 +72,27 @@ private:
 
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
+  // A model's triangles on the CPU, for an explosion to break (ADR-026).
+  [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // How high a Mining Rig, the model _set/_model drawn at _scale, stands over the ground so that every foot reaches the
+  // rock under it (ADR-027).
+  [[nodiscard]] float RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
+  // The color of the shooter's beams: its side's, made lighter (ADR-028). Nothing for a shooter the view does not hold.
+  [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-026), before the view
+  // takes the snapshot, so that the view still holds what blew up.
+  void Explode(const Snapshot& _snapshot);
+  // The shards of every explosion, as ExplosionManager gives them for the view's tick.
+  void DrawShards(ID3D12GraphicsCommandList* _commandList);
+  // The model _set/_model placed by _world: its faces darker than _color now, and its creases over them as lines,
+  // lighter, queued for the frame's one pass of lines (ADR-027).
+  void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
+                 const DirectX::XMFLOAT4& _color);
   // A structure drawn to its footprint, darker while it is built (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
@@ -97,7 +113,8 @@ private:
   // structure under construction, its length the share built (task 4.2).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
-  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019).
+  // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
+  // as diamonds of their sprite (ADR-026).
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   // Under fog of war, the ground the player does not see now, dimmed or dark, over everything but the HUD (ADR-024).
   void DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
@@ -121,7 +138,9 @@ private:
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
   Neuron::GroundMaskPipeline m_groundMask;
-  // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
+  // The particles, drawn with DeepSpaceOutpost's particle texture rather than as soft spots (ADR-026).
+  std::unique_ptr<Neuron::GlowPipeline> m_particleSprites;
+  // The sky behind everything (ADR-022): its stars as points, and its brightest as crosses (ADR-028).
   std::unique_ptr<Neuron::StarPipeline> m_sky;
   std::unique_ptr<Neuron::StarPipeline> m_bursts;
   // This frame's glows, kept so that their storage is not allocated every frame.
@@ -135,22 +154,38 @@ private:
   // What the player has seen of the map, when the match is played under fog of war (ADR-024).
   FogOfWar m_fog;
   CombatEffects m_effects;
+  // What blew up: its blast, as particles, and its shards (ADR-026).
+  ParticleSystem m_particles;
+  ExplosionManager m_explosions;
   // What the effects draw this frame, at the view's tick.
   std::vector<CombatEffects::Draw> m_effectDraws;
+  // The particles' glows, and the explosions' shards and their batches, this frame at the view's tick.
+  std::vector<Neuron::GlowPipeline::Glow> m_particleGlows;
+  std::vector<Neuron::MeshVertex> m_shardVertices;
+  std::vector<ExplosionManager::Batch> m_shardBatches;
   // The view's entities this frame, which the controls pick from and the renderer draws.
   std::vector<EntityView> m_entities;
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;
   std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
+  std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
   float m_frameSeconds = 0.0f;
-  std::unique_ptr<Neuron::Mesh> m_minorGrid;
-  std::unique_ptr<Neuron::Mesh> m_majorGrid;
+  // The ground's grid, as lines.
+  std::unique_ptr<Neuron::Mesh> m_grid;
   // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn.
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
+  // Each model's creases as a line list, keyed as m_modelMeshes; none for a mesh with no creases (ADR-027).
+  std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelEdges;
+  // The lines of the models drawn this frame, drawn together after them.
+  std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
+  // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
+  std::array<float, 3> m_rockTops{};
+  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelMeshes.
+  std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;

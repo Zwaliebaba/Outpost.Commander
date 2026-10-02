@@ -120,7 +120,6 @@
     <Image Include="Assets\Textures\cloudyglow.dds" />
     <Image Include="Assets\Textures\glow.dds" />
     <Image Include="Assets\Textures\laser.dds" />
-    <Image Include="Assets\Textures\Particle.dds" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
   <!--
@@ -146,76 +145,13 @@
     <None Include="Assets\Map.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Textures\starburst.dds">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Carrier.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Colonizer.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Drone.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Fighter.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Freighter.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Huge.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="Assets\Models\Human\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Human\Medium.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Mine.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Satellite.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="Assets\Models\Human\Small.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Station.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\Tiny.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Human\VeryLarge.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Tuning.json">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Opponent.json">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Asteroids\Asteroid.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Carrier.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Colonizer.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Drone.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Fighter.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Freighter.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Huge.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Large.nmf">
@@ -224,22 +160,64 @@
     <None Include="Assets\Models\Tarkan\Medium.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Mine.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Assets\Models\Tarkan\Satellite.nmf">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="Assets\Models\Tarkan\Small.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Station.nmf">
+    <None Include="Assets\Textures\starburst.dds">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Tiny.nmf">
+    <None Include="Assets\Textures\Particle.dds">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\VeryLarge.nmf">
+    <None Include="Assets\Models\Human\CommandStation.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Constructor.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\DefensePlatform.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\MiningRig.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Constructor.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\DefensePlatform.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\MiningRig.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Tuning.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Opponent.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Asteroids\Small.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Asteroids\Medium.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Asteroids\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="packages.config" />

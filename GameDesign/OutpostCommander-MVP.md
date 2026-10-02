@@ -152,13 +152,13 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 ## 6. Structures
 
-| Structure | Role | Placeholder mesh |
+| Structure | Role | Mesh |
 |---|---|---|
-| **Command Station** | The base. Builds Constructors, queue of up to 5. Carries a Defence gun. Losing it loses the match. Pre-placed at start. | `Station` |
-| **Shipyard** | Builds ships from designs. Queue of up to 5. | `Station`, scaled and tinted |
-| **Research Lab** | Researches one topic at a time. One per player. | `Satellite` |
-| **Mining Rig** | Built on an ore asteroid. Produces Ore. | `Mine` |
-| **Defence Platform** | Stationary turret with a Defence gun. | `Mine`, tinted |
+| **Command Station** | The base. Builds Constructors, queue of up to 5. Carries a Defence gun. Losing it loses the match. Pre-placed at start. | `CommandStation` |
+| **Shipyard** | Builds ships from designs. Queue of up to 5. | `Shipyard` |
+| **Research Lab** | Researches one topic at a time. One per player. | `ResearchLab` |
+| **Mining Rig** | Built on an ore asteroid. Produces Ore. | `MiningRig` |
+| **Defence Platform** | Stationary turret with a Defence gun. | `DefensePlatform` |
 
 - Structures are built by **Constructor** ships. Several constructors on one site build faster, as in Warzone 2100.
 - Structures are placed freely on the plane with a circular footprint that must not overlap anything. Mining Rigs snap to an ore asteroid.
@@ -174,7 +174,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 
 Every combat ship is a **design**: **hull + drive + weapon**. The player names a design, saves it, and queues it at a Shipyard. Design stats are derived from the components and shown live in the designer.
 
-The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Colonizer` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are the owner's, set on 2026-10-01 and final (§15), in the tuning data with everything else (§12).
+The **Constructor** is the one fixed design. It has no weapon, it can build and repair, and it uses the `Constructor` mesh. Players start with two, and more are built at the Command Station (§6). Its numbers are the owner's, set on 2026-10-01 and final (§15), in the tuning data with everything else (§12).
 
 ### Components (MVP set)
 
@@ -312,9 +312,9 @@ A difficulty setting is out of scope. One AI tuned to "beatable by a careful pla
 
 ## 11. Art and presentation
 
-- **Meshes:** two ship sets with the same fourteen models, one per side, plus the asteroid. The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). They are **placeholders, to be replaced** (owner, 2026-10-01), and they stay through the MVP: replacing them is post-MVP work. Their sources are glTF files in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`, edited in Blender. `Tools/BakeMeshes.py` bakes each into an `.nmf` file in `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\` (ADR-018). Hull meshes map to hull components, and the other meshes are placeholders (§6, §7). Team colour still marks the side, so the two sets are told apart by shape and colour: blue for the player and orange-red for the Tarkan (owner, 2026-10-01; ADR-011).
-- **The meshes do not share a scale or orientation.** In the Tarkan set, measured extents range from 1.8 units (`Mine`) to 921 units (`Small`), `Medium` is larger than `Large`, and `Colonizer` points along z while the hulls point along x. The Human set is more regular: every model points along z, and the hulls grow in order, `Small` 445, `Medium` 597, `Large` 1,088, `VeryLarge` 1,493 and `Huge` 3,407 units long (measured from the original `.obj` sources on 2026-09-30). The two sets share no scale with each other either. Since 2026-10-01 every source faces the same way, and each model's **length is recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011, ADR-018). Up is y on every Tarkan model: each hull is mirror-symmetric across z (checked on 2026-09-30 by reflecting its vertices), so a scale and a forward axis are enough and no roll correction is needed. The Human set has not been checked for roll yet.
-- **From the RTS camera the Tarkan hulls are needles.** Seen from above, `Small` is 7.5 times longer than it is wide, `Medium` 7.8 times and `Large` 13.6 times. The Human hulls are stubbier: 3.2, 2.2 and 2.7 times. Their bulk is in height, which a top-down view hides. A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh. The owner set the hulls' sizes on 2026-10-01 (gate G5), as the radii they had moved with since milestone 2: Small 8 m, Medium 14 m, Large 24 m. A group forms up three radii apart (ADR-010), which is also what decides how many ships a Missile Rack's splash reaches (§7).
+- **Meshes:** two sets with the same nine models, one per side, plus the asteroids: the `Small`, `Medium` and `Large` hulls, the `Constructor`, and one model per structure (§6). The **Human** set is the player's Terrakin, and the **Tarkan** set is the AI's (§1, §10). They replaced the fourteen placeholder models of each set on 2026-10-02 (owner). Their sources are glTF files in `Art/Models/Human`, `Art/Models/Tarkan` and `Art/Models/Asteroids`, edited in Blender. `Tools/BakeMeshes.py` bakes each into an `.nmf` file in `OutpostCommander/Assets/Models/Human/`, `.../Tarkan/` and `.../Asteroids/`, which the executable packages under `Assets\Models\` (ADR-018). Hull meshes map to hull components (§7). Team colour still marks the side, so the two sets are told apart by shape and colour: blue for the player and orange-red for the Tarkan (owner, 2026-10-01; ADR-011).
+- **The meshes do not share a scale.** Every source faces +x in the game with +y up (ADR-018), but each is modelled at its own size: the hulls are 45, 112 and 330 units long in the Human set and 46, 110 and 466 in the Tarkan set (measured from the baked `.nmf` files on 2026-10-02). So each model's **length is recorded in data**, in `OutpostCommander/Assets/Models.json`, applied when the mesh is loaded (ADR-011, ADR-018), and a structure is drawn across its footprint.
+- **From the RTS camera a hull's length is not its footprint.** Seen from above, the Human `Small`, `Medium` and `Large` are 1.0, 2.3 and 3.5 times longer than they are wide, and the Tarkan ones 1.05, 1.1 and 1.55 times (measured on 2026-10-02). A circle sized to a hull's length wastes most of its area, and one sized to its width lets ships overlap on screen. So the footprint radius is chosen for movement and formation, not read off the mesh. The owner set the hulls' sizes on 2026-10-01 (gate G5), as the radii they had moved with since milestone 2: Small 8 m, Medium 14 m, Large 24 m. A group forms up three radii apart (ADR-010), which is also what decides how many ships a Missile Rack's splash reaches (§7).
 - **Materials are missing.** The converted meshes carry no materials the game uses, and there are no textures. The MVP shades with flat lighting and a **team colour**. Materials are post-MVP.
 - **Hardpoints:** a mesh marks where things attach to it, as empties in its source (ADR-018). A shot leaves from the shooter's `gun` nearest its target, and an `exhaust` shows where an engine's exhaust leaves.
 - **Effects:** the minimum needed to read combat — muzzle flash, projectile or beam, hit spark and explosion. These are placeholder sprites or simple geometry.

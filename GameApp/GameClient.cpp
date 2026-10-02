@@ -3,14 +3,15 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
 
 namespace
 {
 constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
-// The sprite of the sky's brightest stars (ADR-022).
-constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
+// The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
+constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 
@@ -19,20 +20,22 @@ constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
-// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
+// The grid covers the 2,000 m map (design §4) with a line every 100 m, each a pixel wide at any zoom, in the line art
+// of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
+// ridges stand out above it, and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
-constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
-constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
-constexpr float MAJOR_GRID_SPACING_METERS = 500.0f;
-constexpr float MAJOR_GRID_LINE_WIDTH_METERS = 4.0f;
-constexpr int MINOR_LINES_PER_MAJOR = 5;
-constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.012f, 0.012f, 0.012f, 1.0f};
-constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.02f, 0.02f, 0.02f, 1.0f};
+constexpr float GRID_SPACING_METERS = 100.0f;
+constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 
-// Asteroids are drawn with the one asteroid mesh, 2 m across, so its scale is a radius (ADR-011).
+// Asteroids are drawn with three rock meshes, each 2 m long, so a rock's scale is its radius (ADR-011). They are
+// low-poly on purpose, big facets with clear ridges for the edge lines (owner 2026-10-02, ADR-027). A
+// rock takes the small mesh up to SMALL_ROCK_MAX_METERS of radius and the large one from LARGE_ROCK_MIN_METERS, so its
+// facets come out about the same size on the screen whatever its size: an ore asteroid, 45 m, is medium, and a field
+// mixes all three.
 constexpr std::string_view ASTEROID_SET = "Asteroids";
-constexpr std::string_view ASTEROID_MODEL = "Asteroid";
+constexpr std::array<std::string_view, 3> ROCK_MODELS{"Small", "Medium", "Large"};
+constexpr float SMALL_ROCK_MAX_METERS = 35.0f;
+constexpr float LARGE_ROCK_MIN_METERS = 55.0f;
 // A field is a loose cluster of rocks inside its circle: one in the middle and a ring around it, each given as a
 // distance from the center and a size, both in shares of the field's radius, turned by a fixed angle per rock. The
 // server blocks the whole circle; this only has to read as a field (design §4).
@@ -43,6 +46,30 @@ constexpr float FIELD_RING_ROCK_SHARE = 0.3f;
 constexpr float FIELD_RING_START_RADIANS = 0.26f;
 // A field is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
+// Every model, rock, ship and structure, also shows its edges as thin lines, for a vector look from the eighties (owner,
+// 2026-10-02, ADR-027). Only the edges where its surface bends by more than CREASE_DEGREES are drawn: on low-poly
+// models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. The
+// lines are lit as the model is, in its color made EDGE_BRIGHTNESS brighter, and the faces are drawn FILL_SHADE darker,
+// so the lines stand out from the faces beside them on the lit side and the dark side alike. They are lifted
+// EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them. The rocks are terrain, so their lines
+// are only ROCK_EDGE_BRIGHTNESS brighter: near white at EDGE_BRIGHTNESS, they outshone both fleets (owner, 2026-10-02,
+// ADR-028).
+constexpr float CREASE_DEGREES = 10.0f;
+constexpr float EDGE_BRIGHTNESS = 2.0f;
+constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
+constexpr float FILL_SHADE = 0.65f;
+constexpr float EDGE_LIFT_SHARE = 0.005f;
+
+// A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
+// within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
+// rig is lowered until every foot reaches the rock under it, so that it stands on its asteroid rather than floating over
+// the rock's slopes (owner, 2026-10-02, ADR-027).
+constexpr float RIG_FOOT_RADIUS_SHARE = 0.5f;
+constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
+
+// A beam is its shooter's side's color taken this share of the way to white, so that the player sees whose fire it is
+// and it still reads as light (ADR-028).
+constexpr float BEAM_WHITE_SHARE = 0.35f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
 // click; a drag box is its outline on the ground. Both sit just above the grid so that they do not flicker with it.
@@ -57,11 +84,14 @@ constexpr DirectX::XMFLOAT4 ATTACK_MOVE_COLOR{1.0f, 0.65f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 
 // A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
-// above half its hit points, then amber, then red, over a dark full-length bar.
+// above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
+// HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
+// side the data does not name. The gap is small, so that the bar reads as the ship's.
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
-constexpr float HEALTH_BAR_GAP_METERS = 4.0f;
+constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
+constexpr float HEALTH_BACK_SHADE = 0.3f;
 constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_HURT_COLOR{1.0f, 0.7f, 0.1f, 1.0f};
 constexpr DirectX::XMFLOAT4 HEALTH_LOW_COLOR{0.95f, 0.2f, 0.15f, 1.0f};
@@ -71,8 +101,6 @@ constexpr float HEALTH_LOW_SHARE = 0.25f;
 // just beyond the health bar.
 constexpr float UNBUILT_SHADE = 0.35f;
 constexpr DirectX::XMFLOAT4 BUILD_BAR_COLOR{0.25f, 0.65f, 1.0f, 1.0f};
-// A Mining Rig sits on its asteroid's top: this share of the asteroid's radius above the ground.
-constexpr float RIG_LIFT_SHARE = 0.7f;
 // The ghost: a flat disc of the footprint, a little above the ground.
 constexpr DirectX::XMFLOAT4 GHOST_VALID_COLOR{0.2f, 0.75f, 0.3f, 1.0f};
 constexpr DirectX::XMFLOAT4 GHOST_INVALID_COLOR{0.85f, 0.2f, 0.15f, 1.0f};
@@ -80,6 +108,9 @@ constexpr int DISC_SEGMENTS = 24;
 // An exhaust is at its longest and brightest at this speed or faster (ADR-019): an Ion Medium's cruise, so that a fast
 // design reads as fast and a Fusion Large, at 20 m/s, burns well short of it.
 constexpr float EXHAUST_FULL_SPEED_METERS_PER_SECOND = 50.0f;
+// A structure breaks into three sets of shards at once, as a DeepSpaceOutpost building does, and a ship into one
+// (ADR-026).
+constexpr int STRUCTURE_SHARD_COPIES = 3;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
 {
@@ -108,34 +139,26 @@ template <typename Fn> auto LoadDataFile(const wchar_t* _fileName, Fn _load)
   }
 }
 
-// Lines along x and along z on the ground, every _spacingMeters across the grid, as flat strips facing up. Every
-// _skipEvery-th line is left out when it is not zero, where the major grid draws one instead: two strips in one place
-// at one depth would flicker.
-Neuron::MeshData BuildGrid(float _spacingMeters, float _lineWidthMeters, int _skipEvery)
+// Lines along x and along z on the ground, every GRID_SPACING_METERS across the grid, as a line list for
+// MeshPipeline::DrawLines, lit as the ground facing up.
+Neuron::MeshData BuildGrid()
 {
   Neuron::MeshData grid;
-  const auto addStrip = [&grid](float _x0, float _z0, float _x1, float _z1)
+  const auto addLine = [&grid](float _x0, float _z0, float _x1, float _z1)
   {
-    const auto first = static_cast<std::uint32_t>(grid.vertices.size());
     constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
-    grid.vertices.push_back({{_x0, 0.0f, _z1}, UP});
-    grid.vertices.push_back({{_x1, 0.0f, _z1}, UP});
-    grid.vertices.push_back({{_x1, 0.0f, _z0}, UP});
+    grid.indices.push_back(static_cast<std::uint32_t>(grid.vertices.size()));
     grid.vertices.push_back({{_x0, 0.0f, _z0}, UP});
-    // Clockwise seen from above, so the strip faces up (ADR-011).
-    for (const std::uint32_t corner : {0u, 1u, 2u, 0u, 2u, 3u})
-      grid.indices.push_back(first + corner);
+    grid.indices.push_back(static_cast<std::uint32_t>(grid.vertices.size()));
+    grid.vertices.push_back({{_x1, 0.0f, _z1}, UP});
   };
 
-  const float half = _lineWidthMeters / 2.0f;
-  const auto lineCount = static_cast<int>(std::lround(2.0f * GRID_HALF_EXTENT_METERS / _spacingMeters));
+  const auto lineCount = static_cast<int>(std::lround(2.0f * GRID_HALF_EXTENT_METERS / GRID_SPACING_METERS));
   for (int line = 0; line <= lineCount; ++line)
   {
-    if (_skipEvery != 0 && line % _skipEvery == 0)
-      continue;
-    const float at = -GRID_HALF_EXTENT_METERS + (static_cast<float>(line) * _spacingMeters);
-    addStrip(at - half, -GRID_HALF_EXTENT_METERS, at + half, GRID_HALF_EXTENT_METERS);
-    addStrip(-GRID_HALF_EXTENT_METERS, at - half, GRID_HALF_EXTENT_METERS, at + half);
+    const float at = -GRID_HALF_EXTENT_METERS + (static_cast<float>(line) * GRID_SPACING_METERS);
+    addLine(at, -GRID_HALF_EXTENT_METERS, at, GRID_HALF_EXTENT_METERS);
+    addLine(-GRID_HALF_EXTENT_METERS, at, GRID_HALF_EXTENT_METERS, at);
   }
   grid.boundsMin = {-GRID_HALF_EXTENT_METERS, 0.0f, -GRID_HALF_EXTENT_METERS};
   grid.boundsMax = {GRID_HALF_EXTENT_METERS, 0.0f, GRID_HALF_EXTENT_METERS};
@@ -222,6 +245,56 @@ std::string MeshKey(std::string_view _set, std::string_view _model)
 {
   return std::format("{}/{}", _set, _model);
 }
+
+// Which of ROCK_MODELS a rock of _radiusMeters is drawn with.
+size_t RockIndex(float _radiusMeters) noexcept
+{
+  if (_radiusMeters <= SMALL_ROCK_MAX_METERS)
+    return 0;
+  return _radiusMeters < LARGE_ROCK_MIN_METERS ? 1 : 2;
+}
+
+// The rock mesh for a rock of _radiusMeters.
+std::string_view RockModel(float _radiusMeters) noexcept
+{
+  return ROCK_MODELS[RockIndex(_radiusMeters)];
+}
+
+// The feet of a Mining Rig's mesh, fitted, as RIG_FOOT_RADIUS_SHARE and RIG_FOOT_HEIGHT_SHARE pick them.
+std::vector<DirectX::XMFLOAT3> RigFeet(const Neuron::MeshData& _rig)
+{
+  const float rim = RIG_FOOT_RADIUS_SHARE * _rig.Extents().x / 2.0f;
+  const auto outward = [rim](const Neuron::MeshVertex& _vertex) { return std::hypot(_vertex.position.x, _vertex.position.z) > rim; };
+  float lowest = std::numeric_limits<float>::max();
+  for (const Neuron::MeshVertex& vertex : _rig.vertices)
+  {
+    if (outward(vertex))
+      lowest = std::min(lowest, vertex.position.y);
+  }
+  const float reach = lowest + (RIG_FOOT_HEIGHT_SHARE * _rig.Extents().y);
+  std::vector<DirectX::XMFLOAT3> feet;
+  for (const Neuron::MeshVertex& vertex : _rig.vertices)
+  {
+    if (outward(vertex) && vertex.position.y <= reach)
+      feet.push_back(vertex.position);
+  }
+  return feet;
+}
+
+// A color times _scale, kept at most 1.
+DirectX::XMFLOAT4 Shaded(const DirectX::XMFLOAT4& _color, float _scale) noexcept
+{
+  return {std::min(1.0f, _color.x * _scale), std::min(1.0f, _color.y * _scale), std::min(1.0f, _color.z * _scale), _color.w};
+}
+
+// The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
+// and is always built, so it is its set's color.
+DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
+{
+  const float built = static_cast<float>(_builtPermille) / static_cast<float>(Outpost::PERMILLE);
+  const float shade = _tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
+  return {std::min(1.0f, _setColor.x * shade), std::min(1.0f, _setColor.y * shade), std::min(1.0f, _setColor.z * shade), _setColor.w};
+}
 } // namespace
 
 Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond)
@@ -233,7 +306,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_groundMask(_renderer),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
-    m_effects(_ticksPerSecond)
+    m_effects(_ticksPerSecond),
+    m_particles(_ticksPerSecond),
+    m_explosions(_ticksPerSecond)
 {
   for (const ModelSet& set : m_catalog.sets)
   {
@@ -244,21 +319,40 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
+      // Its creases, drawn over it as lines (ADR-027).
+      const Neuron::MeshData edges = Neuron::BuildCreaseLines(data, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, EDGE_LIFT_SHARE);
+      if (!edges.vertices.empty())
+        m_modelEdges.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, edges));
+      // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
+      data.hardpoints.clear();
+      m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
     }
   }
-  m_minorGrid =
-    std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MINOR_GRID_SPACING_METERS, MINOR_GRID_LINE_WIDTH_METERS, MINOR_LINES_PER_MAJOR));
-  m_majorGrid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MAJOR_GRID_SPACING_METERS, MAJOR_GRID_LINE_WIDTH_METERS, 0));
+  m_grid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid());
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
+  // How high each rock reaches over its center, for a Mining Rig to stand there; the top of its bounds if the line down
+  // its center misses it.
+  for (size_t index = 0; index < ROCK_MODELS.size(); ++index)
+  {
+    const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, ROCK_MODELS[index]);
+    m_rockTops[index] = Neuron::SurfaceHeightAt(rock, 0.0f, 0.0f).value_or(rock.boundsMax.y);
+  }
+  if (const StructureModel* rig = m_catalog.ModelForStructure(StructureKind::MiningRig))
+  {
+    for (const PlayerModels& player : m_catalog.players)
+      m_rigFeet.emplace(MeshKey(player.set, rig->model), RigFeet(ModelShape(player.set, rig->model)));
+  }
 
   const Starfield sky = BuildStarfield();
-  Neuron::TextureData burstSprite =
-    Neuron::ParseDds(ReadAsset(BURST_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(BURST_SPRITE_FILE)));
-  Neuron::BuildMipLevels(burstSprite);
   m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, sky.points);
-  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, &burstSprite);
+  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, Neuron::StarPipeline::Shape::Cross);
+
+  Neuron::TextureData particleSprite =
+    Neuron::ParseDds(ReadAsset(PARTICLE_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(PARTICLE_SPRITE_FILE)));
+  Neuron::BuildMipLevels(particleSprite);
+  m_particleSprites = std::make_unique<Neuron::GlowPipeline>(_renderer, &particleSprite);
 }
 
 void Outpost::GameClient::StartMatch()
@@ -277,6 +371,11 @@ void Outpost::GameClient::ClearMatch()
 {
   m_view = SnapshotInterpolator(m_ticksPerSecond);
   m_effects = CombatEffects(m_ticksPerSecond);
+  m_particles = ParticleSystem(m_ticksPerSecond);
+  m_explosions = ExplosionManager(m_ticksPerSecond);
+  m_particleGlows.clear();
+  m_shardVertices.clear();
+  m_shardBatches.clear();
   m_controls = PlayerControls();
   m_designer = Designer();
   m_fog = FogOfWar();
@@ -299,6 +398,7 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
   for (Snapshot& snapshot : _snapshots)
   {
     m_effects.Receive(snapshot);
+    Explode(snapshot);
     m_view.Receive(std::move(snapshot));
   }
 
@@ -355,7 +455,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     m_fog.Update(m_entities, m_view.Newest().player);
   }
   m_frameSeconds = _elapsedSeconds;
-  m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
+  m_effectDraws = m_effects.At(
+    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); },
+    [this](EntityId _shooter) { return BeamColor(_shooter); });
+  m_particleGlows.clear();
+  m_particles.At(m_view.ViewTick(), m_particleGlows);
+  m_shardVertices.clear();
+  m_shardBatches.clear();
+  m_explosions.At(m_view.ViewTick(), m_shardVertices, m_shardBatches);
   Neuron::InputState input = _input;
   if (!m_view.IsEmpty())
   {
@@ -619,16 +726,19 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   m_pipeline.BeginDrawing(_commandList, _renderer.FrameIndex(), constants);
 
   const DirectX::XMFLOAT4X4 identity = WorldMatrix({}, 0.0f, 1.0f);
-  m_pipeline.Draw(_commandList, *m_minorGrid, identity, MINOR_GRID_COLOR);
-  m_pipeline.Draw(_commandList, *m_majorGrid, identity, MAJOR_GRID_COLOR);
+  m_pipeline.DrawLines(_commandList, *m_grid, identity, GRID_COLOR);
   // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
   {
     DrawHud(_commandList, _renderer.FrameIndex());
     return;
   }
+  m_lineDraws.clear();
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
+  DrawShards(_commandList);
+  // Every model's lines at once, after every face they may lie behind.
+  m_pipeline.DrawLines(_commandList, m_lineDraws);
   DrawSelection(_commandList);
   DrawGhost(_commandList);
   DrawHealthBars(_commandList);
@@ -669,13 +779,15 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
 {
   for (const EntityView& entity : m_entities)
   {
+    const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
+    const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
     if (entity.builtPermille < PERMILLE)
     {
       const float left = entity.position.xMeters - entity.radiusMeters;
       const float z = entity.position.zMeters - entity.radiusMeters - (2.0f * HEALTH_BAR_GAP_METERS) - HEALTH_BAR_WIDTH_METERS;
       const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
       DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, back);
       DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters * built), .zMeters = z},
                HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
     }
@@ -687,7 +799,7 @@ void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList
     const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
     const PlanePosition start{.xMeters = left, .zMeters = z};
     DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
-             HEALTH_BAR_HEIGHT_METERS, HEALTH_BACK_COLOR);
+             HEALTH_BAR_HEIGHT_METERS, back);
     const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
                                      : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
                                                                 : HEALTH_LOW_COLOR;
@@ -774,29 +886,30 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
     if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
-      m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), placed->set->color);
+      DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color);
     break;
   }
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
-    m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, ASTEROID_MODEL),
-                    WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
+    DrawModel(_commandList, ASTEROID_SET, RockModel(_entity.radiusMeters),
+              WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
     break;
   }
   case EntityKind::AsteroidField:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
-    const Neuron::Mesh& rock = ModelMesh(ASTEROID_SET, ASTEROID_MODEL);
     const float radius = _entity.radiusMeters;
-    m_pipeline.Draw(_commandList, rock, WorldMatrix(position, 0.0f, radius * FIELD_CENTER_ROCK_SHARE), color);
+    const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
+    DrawModel(_commandList, ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color);
+    const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      m_pipeline.Draw(_commandList, rock, WorldMatrix(at, angle * 2.0f, radius * FIELD_RING_ROCK_SHARE), color);
+      DrawModel(_commandList, ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color);
     }
     break;
   }
@@ -807,17 +920,67 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   }
 }
 
+void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model,
+                                    const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color)
+{
+  m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, FILL_SHADE));
+  if (const auto edges = m_modelEdges.find(MeshKey(_set, _model)); edges != m_modelEdges.end())
+  {
+    const float brightness = _set == ASTEROID_SET ? ROCK_EDGE_BRIGHTNESS : EDGE_BRIGHTNESS;
+    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = Shaded(_color, brightness)});
+  }
+}
+
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
 {
   const std::optional<PlacedModel> placed = PlaceModel(_entity);
   if (!placed.has_value())
     return;
-  const DirectX::XMFLOAT4& setColor = placed->set->color;
-  const float built = static_cast<float>(_entity.builtPermille) / static_cast<float>(PERMILLE);
-  const float shade = placed->tint * (UNBUILT_SHADE + ((1.0f - UNBUILT_SHADE) * built));
-  const DirectX::XMFLOAT4 color{std::min(1.0f, setColor.x * shade), std::min(1.0f, setColor.y * shade), std::min(1.0f, setColor.z * shade),
-                                setColor.w};
-  m_pipeline.Draw(_commandList, ModelMesh(placed->set->name, *placed->model), PoseMatrix(placed->pose), color);
+  DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose),
+            ModelColor(placed->set->color, placed->tint, _entity.builtPermille));
+}
+
+void Outpost::GameClient::Explode(const Snapshot& _snapshot)
+{
+  // As a shot does, a destruction plays from one tick before its snapshot, where the view shows it (ADR-013).
+  const double start = static_cast<double>(_snapshot.tick) - 1.0;
+  for (const DestroyedView& destroyed : _snapshot.destroyed)
+  {
+    // What blew up as the view last held it, which says what a structure is and how it is drawn; it is not in this
+    // snapshot. It breaks where the server says it died. Without it, a ship falls back on its hull.
+    EntityView entity{.id = destroyed.id, .kind = destroyed.kind, .owner = destroyed.owner, .hull = destroyed.hull};
+    if (!m_view.IsEmpty())
+    {
+      const std::vector<EntityView>& last = m_view.Newest().entities;
+      if (const auto found = std::ranges::find(last, destroyed.id, &EntityView::id); found != last.end())
+        entity = *found;
+    }
+    entity.position = destroyed.position;
+    entity.headingRadians = destroyed.headingRadians;
+    entity.radiusMeters = destroyed.radiusMeters;
+
+    // The same destruction always looks the same.
+    const std::uint64_t seed = (std::uint64_t{destroyed.id.value} << 32U) ^ _snapshot.tick;
+    const std::optional<PlacedModel> placed = PlaceModel(entity);
+    const float liftMeters = placed.has_value() ? placed->pose.liftMeters : 0.0f;
+    m_particles.AddBlast({destroyed.position.xMeters, liftMeters, destroyed.position.zMeters}, destroyed.radiusMeters, destroyed.kind,
+                         start, seed);
+    if (placed.has_value())
+    {
+      // The shards are the faces' color, which is the model's darkened (ADR-027).
+      m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose),
+                       Shaded(ModelColor(placed->set->color, placed->tint, entity.builtPermille), FILL_SHADE), start, seed,
+                       destroyed.kind == EntityKind::Structure ? STRUCTURE_SHARD_COPIES : 1);
+    }
+  }
+}
+
+void Outpost::GameClient::DrawShards(ID3D12GraphicsCommandList* _commandList)
+{
+  const std::span<const Neuron::MeshVertex> vertices(m_shardVertices);
+  // The batches come newest first, so a frame with more shards than the pipeline takes drops the oldest, darkest ones.
+  for (const ExplosionManager::Batch& batch : m_shardBatches)
+    m_pipeline.DrawTriangles(_commandList, vertices.subspan(batch.firstVertex, batch.vertexCount), batch.color);
 }
 
 std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(const EntityView& _entity) const
@@ -838,20 +1001,64 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
   if (model == nullptr)
     return std::nullopt;
   // Drawn across its kind's footprint: a Mining Rig's entity covers its asteroid, but the rig is the size of its kind,
-  // standing on top of the rock.
+  // standing on the rock.
   const Snapshot& newest = m_view.Newest();
   const auto type = std::ranges::find(newest.structureTypes, _entity.structure, &StructureTypeView::structure);
   const float radius = type != newest.structureTypes.end() ? type->radiusMeters : _entity.radiusMeters;
-  const float lift =
-    _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters ? _entity.radiusMeters * RIG_LIFT_SHARE : 0.0f;
   const ModelEntry& entry = set->Model(model->model);
+  const float scale = 2.0f * radius / entry.lengthMeters;
+  const float lift = _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters
+                       ? RigLift(set->name, model->model, _entity, scale)
+                       : 0.0f;
   return PlacedModel{.set = set,
                      .model = &model->model,
-                     .pose = {.position = _entity.position,
-                              .liftMeters = lift,
-                              .headingRadians = _entity.headingRadians,
-                              .scale = 2.0f * radius / entry.lengthMeters},
+                     .pose = {.position = _entity.position, .liftMeters = lift, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint};
+}
+
+float Outpost::GameClient::RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const
+{
+  // The rig stands at its asteroid's center (design §6), so its entity's radius is the rock's.
+  const float rockRadius = _rig.radiusMeters;
+  const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, RockModel(rockRadius));
+  // Without feet over the rock, the rig's lowest point stands on the rock's top.
+  const float onTop = (m_rockTops[RockIndex(rockRadius)] * rockRadius) - (ModelShape(_set, _model).boundsMin.y * _scale);
+  const auto feet = m_rigFeet.find(MeshKey(_set, _model));
+  if (feet == m_rigFeet.end())
+    return onTop;
+
+  // The rock is turned by its asteroid's heading and the rig by its own, both as WorldMatrix turns them, so a foot lies
+  // over the rock's mesh where the rig's turn less the rock's puts it.
+  const auto asteroid = std::ranges::find_if(m_entities, [&_rig](const EntityView& _entity)
+                                             { return _entity.kind == EntityKind::Asteroid && _entity.position == _rig.position; });
+  const float rockHeading = asteroid != m_entities.end() ? asteroid->headingRadians : 0.0f;
+  const DirectX::XMMATRIX toRock = DirectX::XMMatrixRotationY(rockHeading - _rig.headingRadians);
+  // The lift that puts each foot on the rock under it; the least of them puts every foot on it or in it.
+  std::optional<float> deepest;
+  for (const DirectX::XMFLOAT3& foot : feet->second)
+  {
+    const DirectX::XMVECTOR over =
+      DirectX::XMVector3Transform(DirectX::XMVectorSet(foot.x * _scale / rockRadius, 0.0f, foot.z * _scale / rockRadius, 0.0f), toRock);
+    const std::optional<float> surface = Neuron::SurfaceHeightAt(rock, DirectX::XMVectorGetX(over), DirectX::XMVectorGetZ(over));
+    if (!surface.has_value())
+      continue;
+    const float footLift = (*surface * rockRadius) - (foot.y * _scale);
+    if (!deepest.has_value() || footLift < *deepest)
+      deepest = footLift;
+  }
+  return deepest.value_or(onTop);
+}
+
+std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shooter) const
+{
+  const auto shooter = std::ranges::find(m_entities, _shooter, &EntityView::id);
+  if (shooter == m_entities.end())
+    return std::nullopt;
+  const ModelSet* set = m_catalog.SetForPlayer(shooter->owner);
+  if (set == nullptr)
+    return std::nullopt;
+  const auto toWhite = [](float _channel) { return std::lerp(_channel, 1.0f, BEAM_WHITE_SHARE); };
+  return DirectX::XMFLOAT4{toWhite(set->color.x), toWhite(set->color.y), toWhite(set->color.z), 1.0f};
 }
 
 std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const
@@ -884,12 +1091,20 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
     }
     AddExhaustGlows(ModelHardpoints(placed->set->name, *placed->model), placed->pose, *color, speedShare, m_frameGlows);
   }
-
   const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
   const auto [right, up] = m_camera.ScreenAxes(aspectRatio);
+  const DirectX::XMFLOAT4X4 viewProjection = m_camera.ViewProjection(aspectRatio);
   const Neuron::GlowPipeline::FrameConstants constants{
-    .viewProjection = m_camera.ViewProjection(aspectRatio), .screenRight = right, .unused0 = 0.0f, .screenUp = up, .unused1 = 0.0f};
+    .viewProjection = viewProjection, .screenRight = right, .unused0 = 0.0f, .screenUp = up, .unused1 = 0.0f};
   m_glows.Draw(_commandList, _renderer.FrameIndex(), constants, m_frameGlows);
+
+  // A particle is a diamond, as DeepSpaceOutpost draws it: the square turned an eighth of a turn, its tips a radius out
+  // along the screen's right and up. Its quad's axes are the sum and the difference of those, halved.
+  const DirectX::XMFLOAT3 diamondRight{(right.x + up.x) * 0.5f, (right.y + up.y) * 0.5f, (right.z + up.z) * 0.5f};
+  const DirectX::XMFLOAT3 diamondUp{(up.x - right.x) * 0.5f, (up.y - right.y) * 0.5f, (up.z - right.z) * 0.5f};
+  const Neuron::GlowPipeline::FrameConstants particleConstants{
+    .viewProjection = viewProjection, .screenRight = diamondRight, .unused0 = 0.0f, .screenUp = diamondUp, .unused1 = 0.0f};
+  m_particleSprites->Draw(_commandList, _renderer.FrameIndex(), particleConstants, m_particleGlows);
 }
 
 void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
@@ -922,6 +1137,14 @@ const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(s
 {
   const auto found = m_modelHardpoints.find(MeshKey(_set, _model));
   if (found == m_modelHardpoints.end())
+    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
+  return found->second;
+}
+
+const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, std::string_view _model) const
+{
+  const auto found = m_modelShapes.find(MeshKey(_set, _model));
+  if (found == m_modelShapes.end())
     throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
   return found->second;
 }

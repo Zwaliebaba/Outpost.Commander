@@ -87,6 +87,9 @@
     <ClInclude Include="PlayerControls.h" />
     <ClInclude Include="SnapshotInterpolator.h" />
     <ClInclude Include="CombatEffects.h" />
+    <ClInclude Include="EffectRandom.h" />
+    <ClInclude Include="ExplosionManager.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Starfield.h" />
     <ClInclude Include="FogOfWar.h" />
     <ClInclude Include="Designer.h" />
@@ -106,6 +109,8 @@
     <ClCompile Include="PlayerControls.cpp" />
     <ClCompile Include="SnapshotInterpolator.cpp" />
     <ClCompile Include="CombatEffects.cpp" />
+    <ClCompile Include="ExplosionManager.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Starfield.cpp" />
     <ClCompile Include="FogOfWar.cpp" />
     <ClCompile Include="Designer.cpp" />

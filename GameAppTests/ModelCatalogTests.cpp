@@ -43,7 +43,7 @@ public:
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& human = catalog.Set("Human");
     const Outpost::ModelSet& tarkan = catalog.Set("Tarkan");
-    Assert::AreEqual(size_t{1}, catalog.Set("Asteroids").models.size());
+    Assert::AreEqual(size_t{3}, catalog.Set("Asteroids").models.size());
 
     // The two sides have the same models, so that every design can be drawn for either (design §11).
     Assert::AreEqual(human.models.size(), tarkan.models.size());
@@ -60,15 +60,14 @@ public:
     Assert::IsNotNull(catalog.ModelForHull(Outpost::HullId{3}));
     Assert::IsNull(catalog.ModelForHull(Outpost::HullId{4}));
 
-    // Design §6's placeholder meshes: the Shipyard is a Station tinted, the platform a Mine tinted; the Constructor is a
-    // Colonizer, the size of a Small hull's footprint.
-    Assert::AreEqual(std::string("Station"), catalog.ModelForStructure(Outpost::StructureKind::CommandStation)->model);
-    Assert::AreEqual(std::string("Station"), catalog.ModelForStructure(Outpost::StructureKind::Shipyard)->model);
-    Assert::IsTrue(catalog.ModelForStructure(Outpost::StructureKind::Shipyard)->tint != 1.0f);
-    Assert::AreEqual(std::string("Satellite"), catalog.ModelForStructure(Outpost::StructureKind::ResearchLab)->model);
-    Assert::AreEqual(std::string("Mine"), catalog.ModelForStructure(Outpost::StructureKind::MiningRig)->model);
-    Assert::AreEqual(std::string("Mine"), catalog.ModelForStructure(Outpost::StructureKind::DefensePlatform)->model);
-    Assert::AreEqual(std::string("Colonizer"), catalog.constructor);
+    // Every kind of structure and the Constructor has a model of its own name, drawn in its set's color.
+    Assert::AreEqual(std::string("CommandStation"), catalog.ModelForStructure(Outpost::StructureKind::CommandStation)->model);
+    Assert::AreEqual(std::string("Shipyard"), catalog.ModelForStructure(Outpost::StructureKind::Shipyard)->model);
+    Assert::AreEqual(1.0f, catalog.ModelForStructure(Outpost::StructureKind::Shipyard)->tint);
+    Assert::AreEqual(std::string("ResearchLab"), catalog.ModelForStructure(Outpost::StructureKind::ResearchLab)->model);
+    Assert::AreEqual(std::string("MiningRig"), catalog.ModelForStructure(Outpost::StructureKind::MiningRig)->model);
+    Assert::AreEqual(std::string("DefensePlatform"), catalog.ModelForStructure(Outpost::StructureKind::DefensePlatform)->model);
+    Assert::AreEqual(std::string("Constructor"), catalog.constructor);
   }
 
   TEST_METHOD(RejectsAMissingOrRepeatedStructure)
@@ -110,16 +109,10 @@ public:
   }
 
   // Task 1.3's acceptance: the hulls load at their intended relative sizes in both sets, and the same hull is the same
-  // size in both. Before scaling the Tarkan Medium is longer than the Tarkan Large (design §11).
+  // size in both.
   TEST_METHOD(LoadsTheHullsAtTheirIntendedSizes)
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
-    const Outpost::ModelSet& tarkan = catalog.Set("Tarkan");
-    const Neuron::MeshData rawMedium = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Tarkan\\Medium.nmf"), "Medium.nmf");
-    const Neuron::MeshData rawLarge = Neuron::ParseNmf(ReadRepositoryAsset("Models\\Tarkan\\Large.nmf"), "Large.nmf");
-    Assert::IsTrue(rawMedium.Extents().x > rawLarge.Extents().x);
-    Assert::IsTrue(tarkan.Model("Medium").lengthMeters < tarkan.Model("Large").lengthMeters);
-
     for (const char* setName : {"Human", "Tarkan"})
     {
       const Outpost::ModelSet& set = catalog.Set(setName);

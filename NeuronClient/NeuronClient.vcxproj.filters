@@ -105,6 +105,9 @@
     <FXCompile Include="Shader\GlowPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\GlowSpritePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\GroundMaskVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
@@ -118,6 +121,9 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\StarSpritePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\StarCrossPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\UiVS.hlsl">

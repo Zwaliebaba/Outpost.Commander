@@ -44,12 +44,12 @@ public:
     Assert::IsTrue(SameStars(first.bursts, second.bursts));
   }
 
-  // A few thousand points on the screen at a time, and only the brightest few dozen of the whole sky as starbursts.
+  // A few thousand points on the screen at a time, and only the brightest couple of dozen of the whole sky as crosses.
   TEST_METHOD(DrawsTheBrightestFewAsBursts)
   {
     const Outpost::Starfield sky = Outpost::BuildStarfield();
     Assert::AreEqual(size_t{50'000}, sky.points.size() + sky.bursts.size());
-    Assert::AreEqual(size_t{70}, sky.bursts.size());
+    Assert::AreEqual(size_t{25}, sky.bursts.size());
   }
 
   // Every point is a unit direction, a few pixels across and a pale color no brighter than an exhaust.
@@ -62,7 +62,8 @@ public:
     }
   }
 
-  // Every burst is larger than any point, so its sprite's spikes have room, and no larger than its sprite's texture.
+  // Every burst is larger than any point, so its cross's arms reach past the points, and small, so that it is a fine
+  // mark rather than a flare (ADR-028).
   TEST_METHOD(DrawsEveryBurstLargerThanAPoint)
   {
     const Outpost::Starfield sky = Outpost::BuildStarfield();
@@ -71,7 +72,7 @@ public:
     {
       CheckDirectionAndColor(star);
       Assert::IsTrue(star.radiusPixels > largestPoint);
-      Assert::IsTrue(star.radiusPixels <= 64.0f);
+      Assert::IsTrue(star.radiusPixels <= 16.0f + TOLERANCE);
     }
   }
 

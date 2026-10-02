@@ -16,7 +16,6 @@ constexpr Outpost::WeaponId BEAM_WEAPON{2};
 
 // Effects sit above the ships they belong to, so the ships do not hide them.
 constexpr float EFFECT_HEIGHT_METERS = 6.0f;
-constexpr float EXPLOSION_HEIGHT_METERS = 7.0f;
 
 constexpr double FLASH_SECONDS = 0.08;
 constexpr float TRACER_FLASH_RADIUS_METERS = 3.0f;
@@ -29,9 +28,10 @@ constexpr float TRACER_LENGTH_METERS = 14.0f;
 constexpr float TRACER_WIDTH_METERS = 2.0f;
 constexpr DirectX::XMFLOAT4 TRACER_COLOR{1.0f, 0.85f, 0.35f, 1.0f};
 
-// A beam joins the gun and the target at once and narrows as it fades.
+// A beam joins the gun and the target at once and narrows as it fades. Its color is its shooter's side's, from
+// GameClient; this one is for a shooter it cannot place.
 constexpr double BEAM_SECONDS = 0.25;
-constexpr float BEAM_WIDTH_METERS = 3.0f;
+constexpr float BEAM_WIDTH_METERS = 4.0f;
 constexpr DirectX::XMFLOAT4 BEAM_COLOR{0.55f, 0.9f, 1.0f, 1.0f};
 
 constexpr double SPARK_SECONDS = 0.12;
@@ -40,15 +40,6 @@ constexpr double BLAST_SECONDS = 0.3;
 constexpr DirectX::XMFLOAT4 BLAST_COLOR{1.0f, 0.6f, 0.25f, 1.0f};
 constexpr float SPARK_RADIUS_METERS = 4.0f;
 constexpr DirectX::XMFLOAT4 SPARK_COLOR{1.0f, 0.7f, 0.3f, 1.0f};
-
-// An explosion is a fireball that swells and darkens, and a shock ring that runs out past it, both sized by what blew.
-constexpr double EXPLOSION_SECONDS = 0.9;
-constexpr float FIREBALL_START_RADII = 0.6f;
-constexpr float FIREBALL_END_RADII = 1.6f;
-constexpr float SHOCK_START_RADII = 0.5f;
-constexpr float SHOCK_END_RADII = 3.0f;
-constexpr DirectX::XMFLOAT4 FIREBALL_COLOR{1.0f, 0.75f, 0.3f, 1.0f};
-constexpr DirectX::XMFLOAT4 SHOCK_COLOR{1.0f, 0.55f, 0.2f, 1.0f};
 
 // _color darkened toward black by how far through its life an effect is, from 0 to 1.
 DirectX::XMFLOAT4 Faded(const DirectX::XMFLOAT4& _color, double _progress) noexcept
@@ -91,29 +82,19 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
                          .to = shot.to,
                          .radiusMeters = shot.splashRadiusMeters});
   }
-  for (const DestroyedView& destroyed : _snapshot.destroyed)
-  {
-    m_effects.push_back({.kind = Kind::Explosion,
-                         .startTick = start,
-                         .from = destroyed.position,
-                         .to = destroyed.position,
-                         .radiusMeters = destroyed.radiusMeters});
-  }
 }
 
-std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle)
+std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle, const BeamTint& _tint)
 {
   const auto lifetime = [](Kind _kind)
   {
     switch (_kind)
     {
-    case Kind::Tracer:
-      return TRACER_FLIGHT_SECONDS + std::max(SPARK_SECONDS, BLAST_SECONDS);
     case Kind::Beam:
       return std::max(BEAM_SECONDS, SPARK_SECONDS);
-    case Kind::Explosion:
+    case Kind::Tracer:
     default:
-      return EXPLOSION_SECONDS;
+      return TRACER_FLIGHT_SECONDS + std::max(SPARK_SECONDS, BLAST_SECONDS);
     }
   };
   std::erase_if(m_effects, [&](const Effect& _effect) { return Seconds(_viewTick - _effect.startTick) > lifetime(_effect.kind); });
@@ -123,20 +104,16 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const Muzzl
   {
     if (_viewTick < effect.startTick)
       continue;
-    if (effect.kind == Kind::Explosion)
-    {
-      AddExplosion(effect, _viewTick, draws);
-      continue;
-    }
     Effect shot = effect;
     if (_muzzle)
       shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
-    AddShot(shot, _viewTick, draws);
+    const DirectX::XMFLOAT4 beamColor = shot.kind == Kind::Beam && _tint ? _tint(shot.shooter).value_or(BEAM_COLOR) : BEAM_COLOR;
+    AddShot(shot, _viewTick, beamColor, draws);
   }
   return draws;
 }
 
-void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const
+void CombatEffects::AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const
 {
   const double elapsed = Seconds(_tick - _effect.startTick);
   const bool beam = _effect.kind == Kind::Beam;
@@ -158,7 +135,7 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
                         .to = _effect.to,
                         .widthMeters = BEAM_WIDTH_METERS * static_cast<float>(1.0 - progress),
                         .heightMeters = EFFECT_HEIGHT_METERS,
-                        .color = Faded(BEAM_COLOR, progress * 0.5)});
+                        .color = Faded(_beamColor, progress * 0.5)});
     }
   }
   else
@@ -191,19 +168,4 @@ void CombatEffects::AddShot(const Effect& _effect, double _tick, std::vector<Dra
                       .heightMeters = EFFECT_HEIGHT_METERS,
                       .color = Faded(BLAST_COLOR, progress)});
   }
-}
-
-void CombatEffects::AddExplosion(const Effect& _effect, double _tick, std::vector<Draw>& _draws) const
-{
-  const double progress = Seconds(_tick - _effect.startTick) / EXPLOSION_SECONDS;
-  const auto grow = [progress](float _start, float _end) { return _start + ((_end - _start) * static_cast<float>(progress)); };
-  const float radius = _effect.radiusMeters;
-  _draws.push_back(
-    Disc(_effect.from, radius * grow(FIREBALL_START_RADII, FIREBALL_END_RADII), EXPLOSION_HEIGHT_METERS, Faded(FIREBALL_COLOR, progress)));
-  _draws.push_back({.shape = Shape::Ring,
-                    .from = _effect.from,
-                    .to = _effect.from,
-                    .radiusMeters = radius * grow(SHOCK_START_RADII, SHOCK_END_RADII),
-                    .heightMeters = EXPLOSION_HEIGHT_METERS,
-                    .color = Faded(SHOCK_COLOR, progress)});
 }

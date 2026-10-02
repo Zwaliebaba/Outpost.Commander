@@ -48,4 +48,16 @@ struct MeshData
 // Puts a mesh at its size in the game: the center of its bounds at the origin, and scaled uniformly so that its length
 // along x, its front, is _lengthMeters. Its hardpoints move and scale with it; their directions do not change.
 void FitMesh(MeshData& _mesh, float _lengthMeters);
+
+// The edges of _mesh's triangles where its surface bends by more than _minAngleRadians, and the edges only one triangle
+// has, as a line list: two vertices an edge, with indices counting up from zero. Corners are matched by position, since a
+// flat-shaded mesh repeats a corner once for each triangle at it. Each vertex's normal is the mean of the normals of the
+// faces that meet at the edge, so that the line is lit as the surface beside it is, and each is lifted off the surface
+// along that normal by _liftShare of the mesh's largest extent, so that a line drawn over the mesh is not lost in it: a
+// line gets no depth bias. The bounds are the mesh's. A mesh with no such edge gives no vertices.
+[[nodiscard]] MeshData BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians, float _liftShare);
+
+// The height of _mesh's highest surface over the point (_x, _z): where a line straight down through that point first
+// meets one of its triangles. Nothing when the line misses every triangle.
+[[nodiscard]] std::optional<float> SurfaceHeightAt(const MeshData& _mesh, float _x, float _z);
 } // namespace Neuron
