@@ -153,7 +153,7 @@ void Neuron::UiPipeline::Rasterize(float _scale)
     fonts.push_back(RasterizeFont(m_fonts[i], m_pixelSizes[i]));
   std::vector<GlyphBitmap> sprites;
   for (size_t i = 0; i < m_sprites.size(); ++i)
-    sprites.push_back(DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
+    sprites.push_back(Neuron::DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
   m_atlas = PackGlyphs(fonts, sprites);
   // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
   m_atlasTexture =
