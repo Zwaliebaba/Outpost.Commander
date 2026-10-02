@@ -70,7 +70,13 @@
     <None Include="Assets\Opponent.json">
       <Filter>Package\Assets</Filter>
     </None>
-    <None Include="Assets\Models\Asteroids\Asteroid.nmf">
+    <None Include="Assets\Models\Asteroids\Small.nmf">
+      <Filter>Package\Assets\Models\Asteroid</Filter>
+    </None>
+    <None Include="Assets\Models\Asteroids\Medium.nmf">
+      <Filter>Package\Assets\Models\Asteroid</Filter>
+    </None>
+    <None Include="Assets\Models\Asteroids\Large.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>
     <None Include="Assets\Models\Human\Carrier.nmf">

@@ -43,7 +43,7 @@ public:
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& human = catalog.Set("Human");
     const Outpost::ModelSet& tarkan = catalog.Set("Tarkan");
-    Assert::AreEqual(size_t{1}, catalog.Set("Asteroids").models.size());
+    Assert::AreEqual(size_t{3}, catalog.Set("Asteroids").models.size());
 
     // The two sides have the same models, so that every design can be drawn for either (design §11).
     Assert::AreEqual(human.models.size(), tarkan.models.size());

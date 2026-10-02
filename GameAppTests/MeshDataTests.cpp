@@ -159,8 +159,8 @@ public:
         ++models;
       }
     }
-    // Fourteen models in each ship set, and the asteroid (design §11).
-    Assert::AreEqual(size_t{29}, models);
+    // Fourteen models in each ship set, and the three rocks (design §11).
+    Assert::AreEqual(size_t{31}, models);
   }
 
   // The baker turns the source's right-handed triangles into the game's left-handed ones (ADR-018): seen from its front,
@@ -318,17 +318,37 @@ public:
     Assert::AreEqual(0.1f * half, fold->position.y, TOLERANCE);
   }
 
-  // On the shipped asteroid the creases are a small share of its edges: the ridges, not its triangulation.
-  TEST_METHOD(TheAsteroidShowsItsRidgesNotItsTriangles)
+  // The owner's low-poly rocks (2026-10-02), as Tools/MakeAsteroids.py makes them: each is closed, has few and so big
+  // facets, shows most of its edges as ridges at GameClient's ROCK_CREASE_DEGREES of 10, and fits inside its radius,
+  // which is half its length once fitted, since the game blocks that circle.
+  TEST_METHOD(TheRocksAreLowPolyAndShowTheirRidges)
   {
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& set = catalog.Set("Asteroids");
-    const Neuron::MeshData rock = ReadRepositoryModel(set, set.Model("Asteroid"));
-    const size_t triangles = rock.indices.size() / 3;
-    const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(30.0f), 0.005f));
-    // A closed mesh has one and a half edges per triangle.
-    Assert::IsTrue(creases > 0);
-    Assert::IsTrue(creases * 2 < triangles * 3 / 2, L"fewer than half the edges");
+    Assert::AreEqual(size_t{3}, set.models.size());
+    for (const Outpost::ModelEntry& model : set.models)
+    {
+      const Neuron::MeshData rock = ReadRepositoryModel(set, model);
+      const std::wstring name(model.name.begin(), model.name.end());
+      const size_t triangles = rock.indices.size() / 3;
+      Assert::IsTrue(triangles <= 100, name.c_str());
+      // Nothing folds by 179 degrees, so the only lines left are open edges, and a closed rock has none.
+      Assert::AreEqual(size_t{0}, LineCount(Neuron::BuildCreaseLines(rock, Degrees(179.0f), 0.0f)), name.c_str());
+      // A closed mesh has one and a half edges per triangle; at least half of them are ridges.
+      const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(10.0f), 0.0f));
+      Assert::IsTrue(creases * 4 >= triangles * 3, name.c_str());
+
+      const float half = rock.Extents().x / 2.0f;
+      const DirectX::XMFLOAT3 center{(rock.boundsMin.x + rock.boundsMax.x) / 2.0f, (rock.boundsMin.y + rock.boundsMax.y) / 2.0f,
+                                     (rock.boundsMin.z + rock.boundsMax.z) / 2.0f};
+      for (const Neuron::MeshVertex& vertex : rock.vertices)
+      {
+        const float dx = vertex.position.x - center.x;
+        const float dy = vertex.position.y - center.y;
+        const float dz = vertex.position.z - center.z;
+        Assert::IsTrue(std::sqrt((dx * dx) + (dy * dy) + (dz * dz)) <= half * 1.01f, name.c_str());
+      }
+    }
   }
 };
 } // namespace GameAppTests

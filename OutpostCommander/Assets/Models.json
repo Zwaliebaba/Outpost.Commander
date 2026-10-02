@@ -44,7 +44,9 @@
       "name": "Asteroids",
       "color": { "red": 0.35, "green": 0.32, "blue": 0.3 },
       "models": [
-        { "name": "Asteroid", "lengthMeters": 2 }
+        { "name": "Small", "lengthMeters": 2 },
+        { "name": "Medium", "lengthMeters": 2 },
+        { "name": "Large", "lengthMeters": 2 }
       ]
     }
   ],

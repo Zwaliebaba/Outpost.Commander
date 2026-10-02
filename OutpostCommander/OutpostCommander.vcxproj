@@ -199,7 +199,13 @@
     <None Include="Assets\Opponent.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Asteroids\Asteroid.nmf">
+    <None Include="Assets\Models\Asteroids\Small.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Asteroids\Medium.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Asteroids\Large.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Carrier.nmf">

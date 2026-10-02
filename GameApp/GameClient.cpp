@@ -32,9 +32,15 @@ constexpr int MINOR_LINES_PER_MAJOR = 5;
 constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.012f, 0.012f, 0.012f, 1.0f};
 constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.02f, 0.02f, 0.02f, 1.0f};
 
-// Asteroids are drawn with the one asteroid mesh, 2 m across, so its scale is a radius (ADR-011).
+// Asteroids are drawn with three rock meshes, each 2 m long, so a rock's scale is its radius (ADR-011). They are
+// low-poly on purpose, big facets with clear ridges for the edge lines (Tools/MakeAsteroids.py, owner 2026-10-02). A
+// rock takes the small mesh up to SMALL_ROCK_MAX_METERS of radius and the large one from LARGE_ROCK_MIN_METERS, so its
+// facets come out about the same size on the screen whatever its size: an ore asteroid, 45 m, is medium, and a field
+// mixes all three.
 constexpr std::string_view ASTEROID_SET = "Asteroids";
-constexpr std::string_view ASTEROID_MODEL = "Asteroid";
+constexpr std::array<std::string_view, 3> ROCK_MODELS{"Small", "Medium", "Large"};
+constexpr float SMALL_ROCK_MAX_METERS = 35.0f;
+constexpr float LARGE_ROCK_MIN_METERS = 55.0f;
 // A field is a loose cluster of rocks inside its circle: one in the middle and a ring around it, each given as a
 // distance from the center and a size, both in shares of the field's radius, turned by a fixed angle per rock. The
 // server blocks the whole circle; this only has to read as a field (design §4).
@@ -46,12 +52,12 @@ constexpr float FIELD_RING_START_RADIANS = 0.26f;
 // A field is darker than an ore asteroid, so the two read apart.
 constexpr float FIELD_SHADE = 0.7f;
 // Every rock also shows its edges as thin lines, for a vector look from the eighties (owner, 2026-10-02). Only the edges
-// where its surface bends by more than ROCK_CREASE_DEGREES are drawn, which on the asteroid mesh is about a quarter of
-// them: the ridges that give it its shape, not the triangles that make it up. The lines are lit as the rock is, in its
-// color made this much brighter, so they read just lighter than the faces beside them on the lit side and the dark side
+// where its surface bends by more than ROCK_CREASE_DEGREES are drawn: on the low-poly rocks that is nearly every edge
+// between two facets, and two triangles that lie almost flat read as one facet. The lines are lit as the rock is, in
+// its color made this much brighter, so they stand out from the faces beside them on the lit side and the dark side
 // alike, and they are lifted this share of the mesh's size off the surface so that it does not hide them.
-constexpr float ROCK_CREASE_DEGREES = 30.0f;
-constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
+constexpr float ROCK_CREASE_DEGREES = 10.0f;
+constexpr float ROCK_EDGE_BRIGHTNESS = 2.0f;
 constexpr float ROCK_EDGE_LIFT_SHARE = 0.005f;
 
 // The selection is a ring on the ground around each selected ship, green, or amber while attack-move waits for its
@@ -236,6 +242,14 @@ std::string MeshKey(std::string_view _set, std::string_view _model)
   return std::format("{}/{}", _set, _model);
 }
 
+// The rock mesh for a rock of _radiusMeters.
+std::string_view RockModel(float _radiusMeters) noexcept
+{
+  if (_radiusMeters <= SMALL_ROCK_MAX_METERS)
+    return ROCK_MODELS[0];
+  return _radiusMeters < LARGE_ROCK_MIN_METERS ? ROCK_MODELS[1] : ROCK_MODELS[2];
+}
+
 // The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
 // and is always built, so it is its set's color.
 DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
@@ -279,10 +293,13 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
-  const Neuron::MeshData rockEdges = Neuron::BuildCreaseLines(
-    ModelShape(ASTEROID_SET, ASTEROID_MODEL), ROCK_CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, ROCK_EDGE_LIFT_SHARE);
-  if (!rockEdges.vertices.empty())
-    m_rockEdges = std::make_unique<Neuron::Mesh>(_renderer, rockEdges);
+  for (const std::string_view model : ROCK_MODELS)
+  {
+    const Neuron::MeshData edges = Neuron::BuildCreaseLines(ModelShape(ASTEROID_SET, model),
+                                                            ROCK_CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, ROCK_EDGE_LIFT_SHARE);
+    if (!edges.vertices.empty())
+      m_rockEdges.emplace(std::string(model), std::make_unique<Neuron::Mesh>(_renderer, edges));
+  }
 
   const Starfield sky = BuildStarfield();
   Neuron::TextureData burstSprite =
@@ -828,7 +845,7 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
-    DrawRock(_commandList, WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
+    DrawRock(_commandList, RockModel(_entity.radiusMeters), WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
     break;
   }
   case EntityKind::AsteroidField:
@@ -836,13 +853,15 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
     const float radius = _entity.radiusMeters;
-    DrawRock(_commandList, WorldMatrix(position, 0.0f, radius * FIELD_CENTER_ROCK_SHARE), color);
+    const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
+    DrawRock(_commandList, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color);
+    const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      DrawRock(_commandList, WorldMatrix(at, angle * 2.0f, radius * FIELD_RING_ROCK_SHARE), color);
+      DrawRock(_commandList, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color);
     }
     break;
   }
@@ -853,15 +872,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
   }
 }
 
-void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, const DirectX::XMFLOAT4X4& _world,
+void Outpost::GameClient::DrawRock(ID3D12GraphicsCommandList* _commandList, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
                                    const DirectX::XMFLOAT4& _color)
 {
-  const Neuron::Mesh& rock = ModelMesh(ASTEROID_SET, ASTEROID_MODEL);
-  m_pipeline.Draw(_commandList, rock, _world, _color);
+  m_pipeline.Draw(_commandList, ModelMesh(ASTEROID_SET, _model), _world, _color);
   const DirectX::XMFLOAT4 edgeColor{std::min(1.0f, _color.x * ROCK_EDGE_BRIGHTNESS), std::min(1.0f, _color.y * ROCK_EDGE_BRIGHTNESS),
                                     std::min(1.0f, _color.z * ROCK_EDGE_BRIGHTNESS), _color.w};
-  if (m_rockEdges)
-    m_pipeline.DrawLines(_commandList, *m_rockEdges, _world, edgeColor);
+  if (const auto edges = m_rockEdges.find(_model); edges != m_rockEdges.end())
+    m_pipeline.DrawLines(_commandList, *edges->second, _world, edgeColor);
 }
 
 void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
