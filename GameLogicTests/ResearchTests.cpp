@@ -249,6 +249,20 @@ public:
 
   // Design §7, §8: the Large hull is no one's until a player researches it, and then only that player's; a design of it can
   // be saved once it is unlocked.
+  // Phase 1 design §11: each topic names the component it unlocks, for the designer to show on it while it is locked;
+  // an upgrade unlocks none.
+  TEST_METHOD(EachTopicNamesTheComponentItUnlocks)
+  {
+    MatchArena arena;
+    const std::vector<Outpost::ResearchTopicView> topics = arena.World().BuildSnapshot(BLUE).research;
+    const auto topic = [&topics](Outpost::ResearchTopicId _id) { return *std::ranges::find(topics, _id, &Outpost::ResearchTopicView::id); };
+    Assert::IsTrue(topic(LARGE_HULL).unlocksHull == LARGE);
+    Assert::IsFalse(topic(LARGE_HULL).unlocksDrive.IsValid() || topic(LARGE_HULL).unlocksWeapon.IsValid());
+    Assert::IsTrue(topic(FUSION_DRIVE).unlocksDrive == Outpost::DriveId{2});
+    Assert::IsFalse(topic(HULL_PLATING).unlocksHull.IsValid() || topic(HULL_PLATING).unlocksDrive.IsValid() ||
+                    topic(HULL_PLATING).unlocksWeapon.IsValid());
+  }
+
   TEST_METHOD(AnUnlockLetsThePlayerBuildTheComponent)
   {
     MatchArena arena;

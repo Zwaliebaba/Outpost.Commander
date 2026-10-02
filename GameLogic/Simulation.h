@@ -95,6 +95,10 @@ struct Entity
   std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
+  // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built (Phase 1 design
+  // §11).
+  std::uint32_t shipyardNumber = 0;
+  std::uint32_t shipsBuilt = 0;
 
   [[nodiscard]] bool IsBuilt() const noexcept
   {
@@ -313,6 +317,8 @@ private:
     // not a whole number of hundredths a tick is still paid in full (ADR-017).
     std::int64_t oreRemainder = 0;
     std::vector<ResearchTopicId> researched;
+    // The Shipyards it has finished, which numbers the next.
+    std::uint32_t shipyardsFinished = 0;
     // Under fog of war (ADR-024): the enemy entities the player sees, in identifier order; the enemy structures it has
     // seen, as it last saw them; and the enemy shooters it sees because they hit it, until the tick each fades on.
     std::vector<EntityId> seen;

@@ -72,6 +72,10 @@ struct EntityView
   // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
   // construction does nothing but stand there and block (design §6).
   std::int32_t builtPermille = PERMILLE;
+  // A finished Shipyard's number among its owner's, 1 for the first finished, never reused; and how many ships it has
+  // built this match (Phase 1 design §11). The owner's only; zero for anything else.
+  std::uint32_t shipyardNumber = 0;
+  std::uint32_t shipsBuilt = 0;
   // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
   // while it waits for the Ore to start (design §5).
   std::vector<JobView> queue;
@@ -141,6 +145,11 @@ struct ResearchTopicView
   double researchSeconds = 0.0;
   std::vector<ResearchTopicId> prerequisites;
   bool researched = false;
+  // The component the topic unlocks, if it unlocks one, which the designer names on the component while it is locked
+  // (Phase 1 design §11).
+  HullId unlocksHull;
+  DriveId unlocksDrive;
+  WeaponId unlocksWeapon;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.

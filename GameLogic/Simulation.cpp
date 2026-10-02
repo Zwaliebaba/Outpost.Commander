@@ -26,6 +26,13 @@ constexpr float SIDESTEP_SHARE = 0.2f;
 // themselves, one for the gap. Loose, as design §9 asks.
 constexpr float FORMATION_SPACING_RADII = 3.0f;
 
+// The component of kind T a research topic unlocks, or none.
+template <typename T> T UnlockedBy(const Outpost::ResearchTopicTuning& _topic) noexcept
+{
+  const T* unlocked = std::get_if<T>(&_topic.effect);
+  return unlocked != nullptr ? *unlocked : T{};
+}
+
 bool IsFinite(PlanePosition _position) noexcept
 {
   return std::isfinite(_position.xMeters) && std::isfinite(_position.zMeters);
@@ -285,6 +292,11 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   }
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
+  if (_detailed)
+  {
+    view.shipyardNumber = _entity.shipyardNumber;
+    view.shipsBuilt = _entity.shipsBuilt;
+  }
   if (_detailed && (!_entity.queue.empty() || !_entity.researchQueue.empty()))
   {
     view.queue = _entity.queue;
@@ -645,13 +657,18 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     for (const WeaponTuning& weapon : m_tuning->weapons)
       snapshot.weapons.push_back(ViewOf(weapon, upgrades, IsAvailable(*m_tuning, researched, weapon.id)));
     for (const ResearchTopicTuning& topic : m_tuning->research)
+    {
       snapshot.research.push_back({.id = topic.id,
                                    .nameUtf8 = topic.name,
                                    .effectUtf8 = EffectText(*m_tuning, topic),
                                    .cost = topic.cost,
                                    .researchSeconds = topic.researchSeconds,
                                    .prerequisites = topic.prerequisites,
-                                   .researched = std::ranges::find(researched, topic.id) != researched.end()});
+                                   .researched = std::ranges::find(researched, topic.id) != researched.end(),
+                                   .unlocksHull = UnlockedBy<HullId>(topic),
+                                   .unlocksDrive = UnlockedBy<DriveId>(topic),
+                                   .unlocksWeapon = UnlockedBy<WeaponId>(topic)});
+    }
     snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
   }
   snapshot.matchOver = m_matchOver;
@@ -1581,6 +1598,15 @@ void Outpost::Simulation::Work()
 // the map's center.
 void Outpost::Simulation::Produce()
 {
+  // A Shipyard finished since the last tick, built or placed whole, takes its owner's next number, in identifier order.
+  for (Entity& yard : m_entities)
+  {
+    if (yard.kind != EntityKind::Structure || yard.structure != StructureKind::Shipyard || yard.shipyardNumber != 0 || !yard.IsBuilt())
+      continue;
+    if (PlayerState* player = FindPlayer(yard.owner))
+      yard.shipyardNumber = ++player->shipyardsFinished;
+  }
+
   // Ships made this tick join the entities after the loop, which must not see the vector grow under it.
   struct Delivery
   {
@@ -1625,6 +1651,8 @@ void Outpost::Simulation::Produce()
     if (producer.jobWorkDone < producer.jobWorkNeeded)
       continue;
     deliveries.push_back({producer.owner, job, producer.position, producer.radiusMeters});
+    if (job.role == ShipRole::Warship)
+      ++producer.shipsBuilt;
     producer.queue.erase(producer.queue.begin());
     producer.jobWorkDone = 0;
     producer.jobWorkNeeded = 0;

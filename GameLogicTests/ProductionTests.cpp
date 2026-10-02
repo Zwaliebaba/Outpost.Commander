@@ -75,6 +75,35 @@ public:
     Assert::IsTrue(ship.position.xMeters > YARD.xMeters, L"on the side facing the map's center");
   }
 
+  // Phase 1 design §11: Shipyards are numbered as they are finished, each per player and never reused, and count the
+  // ships they build. Only their owner sees either.
+  TEST_METHOD(NumbersShipyardsAndCountsTheirShips)
+  {
+    MatchArena arena;
+    const Outpost::EntityId first = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
+    const Outpost::EntityId second = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {.xMeters = -400.0f, .zMeters = 200.0f});
+    const Outpost::EntityId theirs = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = 400.0f, .zMeters = 0.0f});
+    const Outpost::DesignId design = arena.Design(BLUE, SMALL, MASS_DRIVER);
+    (void)arena.Tick({Queue(BLUE, second, design)});
+    Assert::AreEqual(1u, arena.Get(first).shipyardNumber);
+    Assert::AreEqual(2u, arena.Get(second).shipyardNumber);
+    Assert::AreEqual(1u, arena.Get(theirs).shipyardNumber, L"each player counts its own");
+
+    arena.Run(static_cast<std::uint32_t>(arena.World().FindDesign(design)->stats.buildSeconds * MatchArena::TICKS_PER_SECOND));
+    Assert::AreEqual(1u, arena.Get(second).shipsBuilt);
+    Assert::AreEqual(0u, arena.Get(first).shipsBuilt);
+
+    const auto viewOf = [&arena](Outpost::PlayerId _player, Outpost::EntityId _yard)
+    {
+      const std::vector<Outpost::EntityView> entities = arena.World().BuildSnapshot(_player).entities;
+      return *std::ranges::find(entities, _yard, &Outpost::EntityView::id);
+    };
+    Assert::AreEqual(2u, viewOf(BLUE, second).shipyardNumber);
+    Assert::AreEqual(1u, viewOf(BLUE, second).shipsBuilt);
+    Assert::AreEqual(0u, viewOf(RED, second).shipyardNumber, L"the enemy does not see it");
+    Assert::AreEqual(0u, viewOf(RED, second).shipsBuilt);
+  }
+
   // Design §5: a job that cannot be paid for waits at the front of the queue until it can.
   TEST_METHOD(AJobWaitsForTheOre)
   {
