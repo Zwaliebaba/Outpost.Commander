@@ -51,8 +51,7 @@ std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
     return {};
 
   // The newer of the two snapshots around the view's tick: the first one past it, or the newest.
-  const auto newer =
-    std::ranges::find_if(m_history, [this](const Snapshot& _snapshot) { return static_cast<double>(_snapshot.tick) > m_viewTick; });
+  const auto newer = NewerThanView();
   if (newer == m_history.end() || newer == m_history.begin())
     return (newer == m_history.end() ? m_history.back() : m_history.front()).entities;
   const Snapshot& to = *newer;
@@ -73,6 +72,37 @@ std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
     entity.headingRadians = InterpolateHeading(previous->headingRadians, entity.headingRadians, fraction);
   }
   return entities;
+}
+
+std::vector<Outpost::EntityMotion> Outpost::SnapshotInterpolator::Motions() const
+{
+  const auto newer = NewerThanView();
+  if (m_history.empty() || newer == m_history.end() || newer == m_history.begin())
+    return {};
+  const Snapshot& to = *newer;
+  const Snapshot& from = *std::prev(newer);
+  const auto seconds = static_cast<float>(static_cast<double>(to.tick - from.tick) / m_ticksPerSecond);
+
+  std::vector<EntityMotion> motions;
+  motions.reserve(to.entities.size());
+  auto previous = from.entities.begin();
+  for (const EntityView& entity : to.entities)
+  {
+    previous =
+      std::lower_bound(previous, from.entities.end(), entity.id, [](const EntityView& _view, EntityId _id) { return _view.id < _id; });
+    if (previous == from.entities.end() || previous->id != entity.id)
+      continue;
+    const float meters =
+      std::hypot(entity.position.xMeters - previous->position.xMeters, entity.position.zMeters - previous->position.zMeters);
+    const float turned = InterpolateHeading(previous->headingRadians, entity.headingRadians, 1.0f) - previous->headingRadians;
+    motions.push_back({.id = entity.id, .speedMetersPerSecond = meters / seconds, .turnRadiansPerSecond = turned / seconds});
+  }
+  return motions;
+}
+
+std::deque<Outpost::Snapshot>::const_iterator Outpost::SnapshotInterpolator::NewerThanView() const
+{
+  return std::ranges::find_if(m_history, [this](const Snapshot& _snapshot) { return static_cast<double>(_snapshot.tick) > m_viewTick; });
 }
 
 float Outpost::InterpolateHeading(float _from, float _to, float _fraction) noexcept

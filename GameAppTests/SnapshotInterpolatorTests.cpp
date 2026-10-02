@@ -121,6 +121,35 @@ public:
     Assert::AreEqual(10.0f, ShipX(view), TOLERANCE);
   }
 
+  // ADR-029: how a ship moved between the two snapshots around the view, for banking: its speed, and its turn,
+  // counterclockwise positive and the short way round.
+  TEST_METHOD(ReadsEachShipsMotionBetweenTwoSnapshots)
+  {
+    Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+    view.Receive(At(10, 0.0f, 3.0f));
+    view.Receive(At(11, 4.0f, -3.0f, true));
+    view.Advance(0.0f);
+    view.Advance(SECONDS_PER_TICK / 2.0f);
+    const std::vector<Outpost::EntityMotion> motions = view.Motions();
+    Assert::AreEqual(size_t{1}, motions.size(), L"the second ship is new, so it has no motion yet");
+    Assert::IsTrue(motions.front().id == SHIP);
+    Assert::AreEqual(4.0f * TICKS_PER_SECOND, motions.front().speedMetersPerSecond, TOLERANCE);
+    const float turned = std::remainder(-3.0f - 3.0f, 2.0f * std::numbers::pi_v<float>);
+    Assert::AreEqual(turned * TICKS_PER_SECOND, motions.front().turnRadiansPerSecond, 1e-3f);
+    Assert::IsTrue(motions.front().turnRadiansPerSecond > 0.0f, L"from 3 to -3 radians is counterclockwise through pi");
+  }
+
+  // When snapshots stop the view holds still, so nothing is moving.
+  TEST_METHOD(ReadsNoMotionWhenSnapshotsStop)
+  {
+    Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);
+    view.Receive(At(10, 0.0f));
+    view.Receive(At(11, 10.0f, 1.0f));
+    for (int frame = 0; frame < 60; ++frame)
+      view.Advance(FRAME_SECONDS);
+    Assert::IsTrue(view.Motions().empty());
+  }
+
   TEST_METHOD(IgnoresASnapshotThatIsNotNewer)
   {
     Outpost::SnapshotInterpolator view(TICKS_PER_SECOND);

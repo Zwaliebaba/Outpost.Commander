@@ -2,6 +2,16 @@
 
 namespace Outpost
 {
+// How an entity moved between the two snapshots around the view's tick: how fast across the ground, and how fast its
+// heading turned, counterclockwise from above positive. The server sends only positions and headings, so this is the
+// client's reading of them, for presentation such as banking (ADR-029).
+struct EntityMotion
+{
+  EntityId id;
+  float speedMetersPerSecond = 0.0f;
+  float turnRadiansPerSecond = 0.0f;
+};
+
 // The client's view of the world between snapshots (task 2.5, ADR-013). It keeps the last few snapshots and shows the
 // world as it was one tick before the newest, interpolated between the two that bracket that moment, so that ships move
 // smoothly at any frame rate from a 20 Hz tick. It never draws server state and never extrapolates: when snapshots stop
@@ -49,7 +59,15 @@ public:
   // where it was in the older and where it is in the newer. An entity new in the newer snapshot is where it is.
   [[nodiscard]] std::vector<EntityView> Entities() const;
 
+  // How each entity of both bracketing snapshots moved from the older to the newer, in identifier order; the same for
+  // every view tick between them. None while the view is at either end of what is kept, as it is when snapshots stop
+  // coming: the view does not extrapolate, so nothing is moving.
+  [[nodiscard]] std::vector<EntityMotion> Motions() const;
+
 private:
+  // The first snapshot past the view's tick, or the end when there is none.
+  [[nodiscard]] std::deque<Snapshot>::const_iterator NewerThanView() const;
+
   double m_ticksPerSecond = 0.0;
   std::deque<Snapshot> m_history;
   double m_viewTick = 0.0;

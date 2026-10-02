@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <numbers>
 
 namespace
 {
@@ -68,9 +69,33 @@ Outpost::PlayerModels ReadPlayer(JsonObjectReader& _reader)
   return {.player = _reader.Identifier<Outpost::PlayerId>("player"), .set = _reader.String("set")};
 }
 
+// A bank steeper than this would stand a ship on its side, which reads as a roll, not a turn.
+constexpr double MAXIMUM_BANK_DEGREES = 60.0;
+constexpr double RADIANS_PER_DEGREE = std::numbers::pi / 180.0;
+
+// How a ship banks (ADR-029), from the optional member _name; all zero, flying level, when it is absent.
+Outpost::BankLimits ReadBank(JsonObjectReader& _reader, std::string_view _name)
+{
+  const Neuron::JsonValue* value = _reader.Optional(_name);
+  if (value == nullptr)
+    return {};
+  JsonObjectReader bank(*value, _reader.PathOf(_name));
+  const double degrees = bank.Number("maxDegrees", JsonBound::Positive);
+  if (degrees > MAXIMUM_BANK_DEGREES)
+    Neuron::JsonFail(bank.PathOf("maxDegrees"), std::format("a bank is at most {} degrees, found {}", MAXIMUM_BANK_DEGREES, degrees));
+  const Outpost::BankLimits limits{.maxBankRadians = static_cast<float>(degrees * RADIANS_PER_DEGREE),
+                                   .fullBankMetersPerSecondSquared =
+                                     static_cast<float>(bank.Number("fullAtMetersPerSecondSquared", JsonBound::Positive)),
+                                   .settleSeconds = static_cast<float>(bank.Number("settleSeconds", JsonBound::Positive))};
+  bank.Finish();
+  return limits;
+}
+
 Outpost::HullModel ReadHull(JsonObjectReader& _reader)
 {
-  return {.hull = _reader.Identifier<Outpost::HullId>("hull"), .model = _reader.String("model")};
+  Outpost::HullModel hull{.hull = _reader.Identifier<Outpost::HullId>("hull"), .model = _reader.String("model")};
+  hull.bank = ReadBank(_reader, "bank");
+  return hull;
 }
 
 Outpost::DriveExhaust ReadExhaust(JsonObjectReader& _reader)
@@ -146,6 +171,7 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   catalog.constructor = reader.String("constructor");
   catalog.exhausts = Neuron::ReadJsonList<DriveExhaust>(reader, "exhausts", ReadExhaust);
   catalog.constructorExhaust = ReadColor(reader, "constructorExhaust");
+  catalog.constructorBank = ReadBank(reader, "constructorBank");
   reader.Finish();
 
   for (size_t i = 0; i < catalog.sets.size(); ++i)
@@ -237,6 +263,16 @@ const DirectX::XMFLOAT4* Outpost::ModelCatalog::ExhaustColor(const EntityView& _
     return &constructorExhaust;
   const auto found = std::ranges::find(exhausts, _entity.drive, &DriveExhaust::drive);
   return found == exhausts.end() ? nullptr : &found->color;
+}
+
+const Outpost::BankLimits* Outpost::ModelCatalog::BankFor(const EntityView& _entity) const noexcept
+{
+  if (_entity.kind != EntityKind::Ship)
+    return nullptr;
+  if (_entity.role == ShipRole::Constructor)
+    return &constructorBank;
+  const auto found = std::ranges::find(hulls, _entity.hull, &HullModel::hull);
+  return found == hulls.end() ? nullptr : &found->bank;
 }
 
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)

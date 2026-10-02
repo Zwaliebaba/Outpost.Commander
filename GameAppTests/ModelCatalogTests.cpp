@@ -2,6 +2,7 @@
 #include "RepositoryAssets.h"
 
 #include <algorithm>
+#include <numbers>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -164,6 +165,50 @@ public:
       json.find(one), one.size(),
       R"([ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } }, { "drive": 1, "color": { "red": 1, "green": 0, "blue": 0 } } ])");
     ExpectRejected(json);
+  }
+
+  // ADR-029: every hull and the Constructor bank, a Small hull harder and faster than a Large one; anything that is not
+  // a ship does not.
+  TEST_METHOD(GivesEveryShipABank)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    Outpost::EntityView ship{.kind = Outpost::EntityKind::Ship, .hull = Outpost::HullId{1}};
+    const Outpost::BankLimits* small = catalog.BankFor(ship);
+    ship.hull = Outpost::HullId{3};
+    const Outpost::BankLimits* large = catalog.BankFor(ship);
+    Assert::IsTrue(small != nullptr && large != nullptr);
+    Assert::IsTrue(small->maxBankRadians > large->maxBankRadians);
+    Assert::IsTrue(small->settleSeconds < large->settleSeconds);
+    for (const Outpost::HullModel& hull : catalog.hulls)
+      Assert::IsTrue(hull.bank.maxBankRadians > 0.0f && hull.bank.fullBankMetersPerSecondSquared > 0.0f && hull.bank.settleSeconds > 0.0f);
+    ship.role = Outpost::ShipRole::Constructor;
+    Assert::IsTrue(catalog.BankFor(ship) == &catalog.constructorBank);
+    Assert::IsTrue(catalog.constructorBank.maxBankRadians > 0.0f);
+    Assert::IsNull(catalog.BankFor({.kind = Outpost::EntityKind::Structure}));
+  }
+
+  // A bank is optional, and a ship without one flies level; one too steep, or missing a member, is refused.
+  TEST_METHOD(ReadsAnOptionalBank)
+  {
+    const Outpost::ModelCatalog level = Outpost::LoadModelCatalog(OneModel("Human", GOOD_MODEL, GOOD_COLOR));
+    Assert::AreEqual(0.0f, level.constructorBank.maxBankRadians);
+
+    const auto withBank = [](std::string_view _bank)
+    {
+      std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+      const std::string_view constructor = R"("constructor": "Small",)";
+      json.replace(json.find(constructor), constructor.size(), std::format(R"("constructor": "Small", "constructorBank": {},)", _bank));
+      return json;
+    };
+    const Outpost::ModelCatalog banked =
+      Outpost::LoadModelCatalog(withBank(R"({ "maxDegrees": 30, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0.2 })"));
+    Assert::AreEqual(std::numbers::pi_v<float> / 6.0f, banked.constructorBank.maxBankRadians, TOLERANCE);
+    Assert::AreEqual(100.0f, banked.constructorBank.fullBankMetersPerSecondSquared);
+    Assert::AreEqual(0.2f, banked.constructorBank.settleSeconds);
+
+    ExpectRejected(withBank(R"({ "maxDegrees": 75, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0.2 })"));
+    ExpectRejected(withBank(R"({ "maxDegrees": 30, "settleSeconds": 0.2 })"));
+    ExpectRejected(withBank(R"({ "maxDegrees": 30, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0 })"));
   }
 
   TEST_METHOD(RejectsANameThatIsNotAFileName)

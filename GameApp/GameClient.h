@@ -76,6 +76,8 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
+  void UpdateBanking(float _elapsedSeconds);
   // How high a Mining Rig, the model _set/_model drawn at _scale, stands over the ground so that every foot reaches the
   // rock under it (ADR-027).
   [[nodiscard]] float RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
@@ -153,6 +155,10 @@ private:
   Designer m_designer;
   // What the player has seen of the map, when the match is played under fog of war (ADR-024).
   FogOfWar m_fog;
+  // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
+  // allocated every frame (ADR-029).
+  ShipBanking m_banking;
+  std::vector<ShipBanking::Target> m_bankTargets;
   CombatEffects m_effects;
   // What blew up: its blast, as particles, and its shards (ADR-026).
   ParticleSystem m_particles;

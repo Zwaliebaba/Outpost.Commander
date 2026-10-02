@@ -24,7 +24,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 7.1 | Ships bank in their turns | — | — | todo |
+| 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.1 | Measure where an order tick's time goes | — | — | todo |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | todo |
@@ -75,9 +75,16 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The data.** Each hull's and the Constructor's maximum bank and response time in `OutpostCommander/Assets/Models.json`, beside its length (ADR-011, ADR-018). The design's starting values: Small about 35°, Medium about 22°, Large about 12°, the Constructor about 15°, each settling in about a quarter of a second.
   - **What rolls.** The ship's world transform, and so its faces and crease lines (ADR-027); the gun and exhaust hardpoints (ADR-019, `Hardpoints.cpp`); and the starting pose of an explosion's shards (ADR-026). Not the footprint, the selection ring, the health bar or picking.
   - **No change** to `GameProtocol`, `GameLogic` or the snapshot.
-- **ADR:** a new one: how the bank is derived and smoothed, and that the simulation knows nothing of it.
-- **Acceptance:** `GameAppTests` cover the angle without a GPU: none flying straight, none turning on the spot, into the turn on both sides, clamped, smoothed, the same at 30 and 144 frames a second, and a hardpoint rolled with its hull.
+- **ADR:** [ADR-029](../Design/ADR/ADR-029-ship-banking.md): how the bank is derived and smoothed, and that the simulation knows nothing of it.
+- **Acceptance:** `GameAppTests` cover the angle without a GPU: none flying straight, none turning on the spot, into the turn on both sides, clamped, smoothed, the same at 30 and 120 frames a second, and a hardpoint rolled with its hull.
 - **Verify:** CI; **owner run**: whether the bank reads from the RTS camera at the default view, and that the exhaust stays on the hull.
+- **As built:** [ADR-029](../Design/ADR/ADR-029-ship-banking.md).
+  - **The motion.** `SnapshotInterpolator::Motions` gives each entity's speed and turn rate between the two snapshots around the view.
+  - **The bank.** `Outpost::TargetBankRadians` and `Outpost::ShipBanking` in `ShipBanking.h`, a critically damped spring solved exactly over each frame. `GameClient::UpdateBanking` runs it each frame, and `PlaceModel` puts the bank in a ship's pose.
+  - **The pose.** `ModelPose::bankRadians`, and `Outpost::PoseMatrix` moved to `Hardpoints.h` from `GameClient.cpp`, so that the hull, its crease lines, its hardpoints and its shards are placed by one rule.
+  - **The data.** An optional `bank` on each hull in `Models.json` and a `constructorBank`; ADR-029 gives the first values and why.
+  - **Tests.** `ShipBankingTests`, and new cases in `SnapshotInterpolatorTests`, `HardpointsTests` and `ModelCatalogTests`.
+  - **Not built or run in the container**, which has no Windows: the banking math and the roll's direction were checked there against a standalone build and the DirectXMath matrix convention. CI builds Debug|x64 and runs the suites; the owner's run judges the look.
 
 ---
 

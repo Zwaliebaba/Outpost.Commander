@@ -62,6 +62,9 @@
     <ClInclude Include="SnapshotInterpolator.h">
       <Filter>Snapshots</Filter>
     </ClInclude>
+    <ClInclude Include="ShipBanking.h">
+      <Filter>Models</Filter>
+    </ClInclude>
     <ClInclude Include="Starfield.h">
       <Filter>Sky</Filter>
     </ClInclude>
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="SnapshotInterpolator.cpp">
       <Filter>Snapshots</Filter>
+    </ClCompile>
+    <ClCompile Include="ShipBanking.cpp">
+      <Filter>Models</Filter>
     </ClCompile>
     <ClCompile Include="Starfield.cpp">
       <Filter>Sky</Filter>

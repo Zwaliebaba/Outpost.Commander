@@ -19,6 +19,7 @@
 #include "Hardpoints.h"
 #include "Camera.h"
 #include "SnapshotInterpolator.h"
+#include "ShipBanking.h"
 #include "Picking.h"
 #include "PlayerControls.h"
 #include "CombatEffects.h"

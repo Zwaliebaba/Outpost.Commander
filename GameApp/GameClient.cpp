@@ -236,11 +236,6 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
   return result;
 }
 
-DirectX::XMFLOAT4X4 PoseMatrix(const Outpost::ModelPose& _pose) noexcept
-{
-  return WorldMatrix({_pose.position.xMeters, _pose.liftMeters, _pose.position.zMeters}, _pose.headingRadians, _pose.scale);
-}
-
 std::string MeshKey(std::string_view _set, std::string_view _model)
 {
   return std::format("{}/{}", _set, _model);
@@ -379,6 +374,7 @@ void Outpost::GameClient::ClearMatch()
   m_controls = PlayerControls();
   m_designer = Designer();
   m_fog = FogOfWar();
+  m_banking.Clear();
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -454,6 +450,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_fog.Reset(m_view.Newest().mapSizeMeters);
     m_fog.Update(m_entities, m_view.Newest().player);
   }
+  UpdateBanking(_elapsedSeconds);
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(
     m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); },
@@ -993,7 +990,10 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
     const std::string* model = _entity.role == ShipRole::Constructor ? &m_catalog.constructor : m_catalog.ModelForHull(_entity.hull);
     if (model == nullptr)
       return std::nullopt;
-    return PlacedModel{.set = set, .model = model, .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians}};
+    return PlacedModel{
+      .set = set,
+      .model = model,
+      .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians, .bankRadians = m_banking.BankRadians(_entity.id)}};
   }
   if (_entity.kind != EntityKind::Structure || m_view.IsEmpty())
     return std::nullopt;
@@ -1014,6 +1014,22 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
                      .model = &model->model,
                      .pose = {.position = _entity.position, .liftMeters = lift, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint};
+}
+
+void Outpost::GameClient::UpdateBanking(float _elapsedSeconds)
+{
+  const std::vector<EntityMotion> motions = m_view.Motions();
+  m_bankTargets.clear();
+  for (const EntityView& ship : m_entities)
+  {
+    const BankLimits* limits = m_catalog.BankFor(ship);
+    if (limits == nullptr)
+      continue;
+    const auto motion = std::ranges::lower_bound(motions, ship.id, {}, &EntityMotion::id);
+    const float bank = motion != motions.end() && motion->id == ship.id ? TargetBankRadians(*motion, *limits) : 0.0f;
+    m_bankTargets.push_back({.id = ship.id, .bankRadians = bank, .settleSeconds = limits->settleSeconds});
+  }
+  m_banking.Update(m_bankTargets, _elapsedSeconds);
 }
 
 float Outpost::GameClient::RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const
