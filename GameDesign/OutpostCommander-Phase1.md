@@ -1,10 +1,10 @@
 # Outpost Commander — Phase 1 Design
 
-Status: **draft for the owner's review** · Owner: Stefan Zwaal · Started 2026-10-02, from the owner's answers of that day
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-02, from the owner's answers of that day; gates H1–H5 and H7 decided the same day
 
 This document says what Phase 1 builds on top of the finished MVP. It **amends** [the MVP design](OutpostCommander-MVP.md) rather than replacing it: everything the MVP design says still holds unless this document changes it, and where the two differ, this one is the authority. AGENTS.md still says how the code is written, `Design/ADR/` records the engineering decisions, and [the Phase 1 plan](ImplementationPlan-Phase1.md) gives the order of the work.
 
-Sections marked **proposal** are design content the owner has not yet given: names, numbers and layouts written down so that there is something to review. Each is a gate in the plan, and nothing marked proposal is built until the owner has confirmed it or changed it.
+The names, numbers and layouts here were first written as proposals for the owner to review, and the owner accepted them on 2026-10-02 (gates H1–H5). The numbers are first guesses, as the MVP's §12 began: the Q2 check and the P1 measurement tune them. What is still open is in §15.
 
 ---
 
@@ -58,15 +58,15 @@ The owner kept three answers that pull against the length target, and accepted w
 ## 4. The win condition
 
 - **A player loses when it has neither a Command Station nor a finished Shipyard.** A Shipyard still under construction does not count. Constructors, Research Labs, rigs and platforms do not keep a player alive. The match ends, as now, on the tick it happens: a banner says Victory, Defeat or Draw with the match's length, and the world runs on (ADR-020).
-- **A lost Command Station is lost for good.** Constructors still come only from the Command Station (MVP §6), so a player who loses it can build no more Constructors, but it keeps the ones it has, its Shipyards keep building warships, and its Constructors can still build Shipyards. The MVP's reason for building Constructors only at the Command Station, that it lasts as long as the match, no longer holds; Phase 1 keeps the rule anyway, so that losing the Command Station costs something real short of the match. **Proposal**, gate H5.
-- **The last production is revealed.** A player who has lost its Command Station has its remaining Shipyards shown to its opponent, through fog of war, as remembered structures (ADR-024), so that the end of a match is not a search of a 5 km map for one building. **Proposal**, gate H5.
+- **A lost Command Station is lost for good.** Constructors still come only from the Command Station (MVP §6), so a player who loses it can build no more Constructors, but it keeps the ones it has, its Shipyards keep building warships, and its Constructors can still build Shipyards. The MVP's reason for building Constructors only at the Command Station, that it lasts as long as the match, no longer holds; Phase 1 keeps the rule anyway, so that losing the Command Station costs something real short of the match (owner, 2026-10-02, gate H5).
+- **The last production is revealed.** A player who has lost its Command Station has its remaining Shipyards shown to its opponent, through fog of war, as remembered structures (ADR-024), so that the end of a match is not a search of a 5 km map for one building (owner, 2026-10-02, gate H5).
 - **What this changes elsewhere.** Auto-targeting is unchanged. The AI's attack group goes for the player's production — Shipyards first, then the Command Station — before any other structure (§13).
 
 ---
 
 ## 5. Components
 
-Phase 1 adds two weapons and one drive. With three hulls, three drives and five weapons, there are **45 designs**, where the MVP had 18. None is available at the start: each is unlocked by research in tier 2 or 3 (§6). **Every number in this section is a proposal** (gate H1), a first guess for the Q2 check to tune, as the MVP's §12 began.
+Phase 1 adds two weapons and one drive. With three hulls, three drives and five weapons, there are **45 designs**, where the MVP had 18. None is available at the start: each is unlocked by research in tier 2 or 3 (§6). **Every number in this section is a first guess** for the Q2 check to tune, as the MVP's §12 began, accepted as the starting values (owner, 2026-10-02, gate H1).
 
 ### The range ladder holds
 
@@ -88,7 +88,7 @@ No new weapon reaches past the Defence gun, so **the Missile Rack is still the o
 |---|---|---|---|---|---|---|
 | Pulse Drive | 2 | ×1.6 | ×0.75 | ×1.5 | 40 | **The raider.** The fastest ships in the game, and the most fragile. Small+Pulse moves at 96 m/s and goes from one start to the other in under a minute. |
 
-The Pulse Drive exists for the larger map. With ore that runs out, a player's income comes from rigs further and further from home (§8), and speed is what reaches them and gets away. **The Q2 check cannot price speed** (MVP §3): in a battle between two clumps, a Pulse ship is a weaker Ion ship. So the Pulse Drive will not be worth building in the check, and §7 asks whether (b) exempts it, as the MVP decided not to tighten (b) for drives (gate H4).
+The Pulse Drive exists for the larger map. With ore that runs out, a player's income comes from rigs further and further from home (§8), and speed is what reaches them and gets away. **The Q2 check cannot price speed** (MVP §3): in a battle between two clumps, a Pulse ship is a weaker Ion ship. So the Pulse Drive will not be worth building in the check, and (b) exempts it (§7), as the MVP decided not to tighten (b) for drives (owner, 2026-10-02, gate H4).
 
 ### What the designer shows for each
 
@@ -104,9 +104,9 @@ A Research Lab still researches one topic at a time, a player still has one lab,
 
 **Upgrades of the same stat add up.** Hull Plating's +15% and Composite Plating's +15% make +30% hit points, not +32.25%. **Upgrades still change rates, never the size of a hit, and never a range** (MVP §8). Structure upgrades raise hit points, never armour, because armour moves the same breakpoints the size of a hit does.
 
-### The topics — proposal (gate H2)
+### The topics
 
-Ore and time are first guesses. Tier 1 is the MVP's, unchanged, so the starting stage of the Q2 check stays the check of record.
+Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is the MVP's, unchanged, so the starting stage of the Q2 check stays the check of record.
 
 | # | Tier | Topic | Requires | Effect | Ore | Time |
 |---|---|---|---|---|---|---|
@@ -158,7 +158,7 @@ The MVP's check plays every design against every other at each budget. With 45 d
 **The criteria are the MVP's** (a)–(d), with two changes:
 
 - **(d) runs per tier.** A topic taken by one side only is tested at its own tier's budgets, against the designs the other side has at the tier before. The starting stage keeps the MVP's (d) for tier 1's topics.
-- **(b) and the Pulse Drive** (gate H4, **proposal**): the Pulse Drive's case is speed, which the check cannot see (§5), so (b) does not require it to be worth building, and play judges it, as the MVP left the Ion Drive's speed to play.
+- **(b) and the Pulse Drive** (owner, 2026-10-02, gate H4): the Pulse Drive's case is speed, which the check cannot see (§5), so (b) does not require it to be worth building, and play judges it, as the MVP left the Ion Drive's speed to play. What a stage leaves out is still reported.
 
 Budgets stay at or below 12,000 Ore. A battle's time grows with its ships, and at 12,000 Ore the cheapest design already fields 138 a side. A tier-3 fight is about which designs are fielded, not how many.
 
@@ -168,7 +168,9 @@ Tier 1's numbers are already tuned and are not moved by Phase 1 unless a tier-2 
 
 ## 8. The map and ore that runs out
 
-### Ore runs out — proposal (gate H3)
+### Ore runs out
+
+Accepted (owner, 2026-10-02, gate H3).
 
 - **Every ore asteroid holds a reserve**, set in the map data. Its Mining Rig draws its income from the reserve until the reserve is gone.
 - **An exhausted asteroid still pays a trickle**: its rig earns 20% of its yield for the rest of the match. So the map never runs completely dry, a match cannot stall for want of any income, and a player who has lost everything far from home still earns something.
@@ -176,7 +178,9 @@ Tier 1's numbers are already tuned and are not moved by Phase 1 unless a tier-2 
 - **A player sees what is left** in an asteroid it can see, and remembers the figure from when it last saw it, as it remembers structures (ADR-024).
 - The MVP put depletion out of scope (MVP §13). Phase 1 brings it in because it is what moves the fight across the map over an hour: home rigs run dry around minute 25–30, and from then the income is out where the fleets meet.
 
-### The map — proposal (gate H3)
+### The map
+
+Accepted (owner, 2026-10-02, gate H3); the layout itself is confirmed in its task.
 
 One map, **5,000 × 5,000 m**, point-symmetric as the MVP's, with the starts in opposite corners about 750 m in from the edges, about 4.9 km apart. Four rings of ore, each richer and further out than the last:
 
@@ -291,13 +295,17 @@ Everything the MVP put out of scope (MVP §13) stays out, apart from asteroid de
 
 Each is a gate in the plan, and blocks the tasks that need it.
 
-- **H1 — The new components' numbers** (§5): the Flak Battery, the Rail Cannon and the Pulse Drive, as first guesses for the Q2 check to tune.
-- **H2 — The research topics** (§6): the 17 new topics, their prerequisites, Ore and time.
-- **H3 — The map and its ore** (§8): the size, the rings, the yields, the reserves and the 20% trickle. The layout is confirmed in its task.
-- **H4 — Q2's (b) for the Pulse Drive** (§7): whether the check exempts a drive whose case is speed.
-- **H5 — After the Command Station** (§4): whether a lost Command Station stays lost, with no new Constructors, and whether a player's last Shipyards are revealed to its opponent.
 - **H6 — The look's details** (§11): the window's colors and sizes, taken from the mockup, confirmed when the owner first runs it.
-- **H7 — Cascadia Mono** (§11): whether it is installed on the development machine, or Consolas stands in.
+- **H7 — Cascadia Mono** (§11): task 9.1 checks whether it is installed on the development machine, and uses Consolas if it is not (owner, 2026-10-02). The task records which.
 - **H8 — The camera's zoom on the 5 km map** (§8): whether the 1,600 m limit of gate G3 stays, after the owner's first matches on the map.
 
 Decided on 2026-10-02, from the owner's answers: §3.
+
+Decided on 2026-10-02, the gates:
+
+- **H1:** the Flak Battery, the Rail Cannon and the Pulse Drive start at the numbers in §5, for the Q2 check to tune.
+- **H2:** the research tree of §6 as written: tier 1 unchanged, the two gateways, and the 17 new topics.
+- **H3:** the 5 km map of §8: four rings, 24 ore asteroids, their yields and reserves, and the 20% trickle once one runs dry.
+- **H4:** Q2's (b) does not require the Pulse Drive to be worth building; play judges it (§7).
+- **H5:** a lost Command Station is lost for good, and a player without one has its remaining Shipyards revealed to its opponent (§4).
+- **H7:** task 9.1 checks for Cascadia Mono, and falls back to Consolas.

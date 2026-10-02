@@ -27,18 +27,18 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 7.1 | Ships bank in their turns | — | — | todo |
 | 8.1 | Measure where an order tick's time goes | — | — | todo |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
-| 9.1 | Typography: two faces, several sizes, sprites | — | H7 | todo |
+| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | todo |
 | 9.2 | Floating windows | 9.1 | — | todo |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | todo |
 | 9.4 | Research and production as windows | 9.2 | — | todo |
-| 10.1 | Research tiers: the schema and the 17 topics | — | H2 | todo |
-| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 | todo |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 | todo |
+| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | todo |
+| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | todo |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | todo |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
-| 11.1 | Ore reserves and depletion | — | H3 | todo |
-| 11.2 | The 5 km map | 11.1 | H3 | todo |
+| 11.1 | Ore reserves and depletion | — | H3 decided | todo |
+| 11.2 | The 5 km map | 11.1 | H3 decided | todo |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | todo |
-| 12.1 | Losing all production | — | H5 | todo |
+| 12.1 | Losing all production | — | H5 decided | todo |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | todo |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -50,17 +50,17 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 ## Gates
 
-Each is an owner decision, from design §15.
+Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026-10-02; H6 and H8 are decided at owner runs.
 
 | Gate | Decision | Proposed in | Blocks |
 |---|---|---|---|
-| H1 | The Flak Battery, Rail Cannon and Pulse Drive numbers | design §5 | 10.2 |
-| H2 | The 17 new research topics: prerequisites, effects, Ore and time | design §6 | 10.1 |
-| H3 | The 5 km map's rings, yields, reserves, and the 20% trickle | design §8 | 11.1, 11.2 |
-| H4 | Whether Q2's (b) exempts the Pulse Drive | design §7 | 10.3 |
-| H5 | A lost Command Station stays lost; the last Shipyards are revealed | design §4 | 12.1 |
+| H1 | The Flak Battery, Rail Cannon and Pulse Drive numbers. **Decided on 2026-10-02:** as proposed, as starting values. | design §5 | — |
+| H2 | The 17 new research topics: prerequisites, effects, Ore and time. **Decided on 2026-10-02:** as proposed. | design §6 | — |
+| H3 | The 5 km map's rings, yields, reserves, and the 20% trickle. **Decided on 2026-10-02:** as proposed; the layout is confirmed in 11.2. | design §8 | — |
+| H4 | Whether Q2's (b) exempts the Pulse Drive. **Decided on 2026-10-02:** it does, and play judges it. | design §7 | — |
+| H5 | A lost Command Station stays lost; the last Shipyards are revealed. **Decided on 2026-10-02:** both, as proposed. | design §4 | — |
 | H6 | The designer's colors and sizes, from the mockup | design §11 | 9.3 (closed at its owner run) |
-| H7 | Cascadia Mono on the development machine, or Consolas | design §11 | 9.1 |
+| H7 | Cascadia Mono on the development machine, or Consolas. **Decided on 2026-10-02:** 9.1 checks, and falls back to Consolas. | design §11 | — |
 | H8 | The camera's zoom limit on the 5 km map | design §8 | nothing; decided after 11.2's owner run |
 
 ---
@@ -104,7 +104,7 @@ Each is an owner decision, from design §15.
 
 ### 9.1 — Typography: two faces, several sizes, sprites
 
-- **Gate:** H7.
+- **Gate:** H7, decided.
 - **Goal:** the interface can draw the mockup's text (design §11).
 - **Scope:**
   - **Faces and sizes.** `Neuron::RasterizeGlyphs` takes a face, a weight, a stretch and a size, and the atlas holds several: Bahnschrift semibold and semibold-condensed at the mockup's sizes, and Cascadia Mono, or Consolas under H7, for figures. Each is rasterized at its reference size times ADR-006's scale, as now.
@@ -152,7 +152,7 @@ Each is an owner decision, from design §15.
 
 ### 10.1 — Research tiers: the schema and the 17 topics
 
-- **Gate:** H2.
+- **Gate:** H2, decided.
 - **Goal:** design §6.
 - **Scope:**
   - **The tuning data** learns a topic's tier, a gateway topic with no effect of its own, and the new effects: an ore reserve, structure hit points, a structure weapon's fire rate, every ship's speed, and the Constructor's rates. Upgrades of one stat add their percentages.
@@ -165,7 +165,7 @@ Each is an owner decision, from design §15.
 
 ### 10.2 — The Pulse Drive, the Flak Battery and the Rail Cannon
 
-- **Gate:** H1.
+- **Gate:** H1, decided.
 - **Goal:** design §5, in the game and in the model.
 - **Scope:** the three components in `Tuning.json` with their abbreviations; the Flak Battery's splash through the Missile Rack's (ADR-014); their exhaust color (the Pulse Drive's) and their shots, as presentation data (ADR-019). The Pulse Drive's exhaust color is the owner's to pick at the run.
 - **Acceptance:** `CombatTests` and `DesignTests` cover each.
@@ -173,7 +173,7 @@ Each is an owner decision, from design §15.
 
 ### 10.3 — The Q2 check per tier, and tuning against it
 
-- **Gate:** H4.
+- **Gate:** H4, decided.
 - **Goal:** design §7. P3.
 - **Scope:** `Q2Check` gains the stages of design §7: starting, tier 1, tier 2 and tier 3, each with its components and budgets, and (d) per tier. Run it, tune the tier-2 and tier-3 numbers against it as B.1 tuned §12, and record each number that moved and why in design §5 and §6. Tier 1's numbers move only if a later tier's result requires it, and the owner decides that.
 - **Acceptance:** `Q2CheckTests.TheFullCheck` passes all four criteria at every stage, in the Linux container; `TheRecordedCountersHold` gains a counter per new component.
@@ -192,7 +192,7 @@ Each is an owner decision, from design §15.
 
 ### 11.1 — Ore reserves and depletion
 
-- **Gate:** H3.
+- **Gate:** H3, decided.
 - **Goal:** design §8, ore that runs out.
 - **Scope:** each ore asteroid's reserve and the trickle in the map data and the tuning data; a rig drawing its reserve down; Improved Extraction draining faster and Deep Core Survey adding to what is left; the reserve in the snapshot for an asteroid in sight, and remembered otherwise (ADR-024); the figure in the selection panel and a mark on the minimap for an exhausted asteroid.
 - **ADR:** a new one: depletion and what the snapshot carries of it.
@@ -201,7 +201,7 @@ Each is an owner decision, from design §15.
 
 ### 11.2 — The 5 km map
 
-- **Gate:** H3.
+- **Gate:** H3, decided.
 - **Goal:** design §8, the map.
 - **Scope:** `Map.json` at 5,000 m with the four rings, point-symmetric, every passage at least the minimum gap. `MapTests` check both. The fog of war's grid, the minimap and the path graphs at the new size are checked against Q4: a `--measure --load` run on the new map is part of the owner run.
 - **Acceptance:** `MapTests`; `PathfinderTests` on the new map.
@@ -220,7 +220,7 @@ Each is an owner decision, from design §15.
 
 ### 12.1 — Losing all production
 
-- **Gate:** H5.
+- **Gate:** H5, decided.
 - **Goal:** design §4.
 - **Scope:** the rule in `Simulation`: a player loses when it has no Command Station and no finished Shipyard. H5's answers: whether a lost Command Station stays lost, and the reveal of the last Shipyards through fog of war. The AI attacks production first (design §13). The banner is unchanged.
 - **ADR:** a new one, superseding ADR-020's decision 8.
