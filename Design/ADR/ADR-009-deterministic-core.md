@@ -1,6 +1,6 @@
 # ADR-009 — The simulation reproduces on the same build, and ticks on the frame loop's thread
 
-Status: **accepted** · 2026-09-30
+Status: **accepted** · 2026-09-30 · Decision 7, and the foreclosure of locks in the loopback transport, are superseded by [ADR-025](ADR-025-server-thread.md): the server ticks on its own thread
 
 ## Context
 

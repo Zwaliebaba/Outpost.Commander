@@ -122,7 +122,7 @@ public:
     Assert::IsTrue(beamFrom([](Outpost::EntityId, Outpost::PlanePosition) { return std::optional<Outpost::PlanePosition>(); }) == GUN);
   }
 
-  // ADR-023: what is destroyed is the particles' and the explosions', not the combat effects'.
+  // ADR-026: what is destroyed is the particles' and the explosions', not the combat effects'.
   TEST_METHOD(LeavesWhatIsDestroyedToTheExplosions)
   {
     Outpost::CombatEffects effects(TICKS_PER_SECOND);

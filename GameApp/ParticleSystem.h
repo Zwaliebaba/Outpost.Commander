@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// Particles after DeepSpaceOutpost's ParticleSystem (ADR-023): diamonds of light that fly out, slow under friction and
+// Particles after DeepSpaceOutpost's ParticleSystem (ADR-026): diamonds of light that fly out, slow under friction and
 // fade, drawn as glows (ADR-019) with DeepSpaceOutpost's particle texture. A particle's place is a closed form of its
 // age, so what is drawn depends only on the view's tick, as task 3.5's effects do, never on the frame rate. Space has no
 // ground and no down, so DeepSpaceOutpost's gravity and bouncing are left out. It is presentation: the server knows

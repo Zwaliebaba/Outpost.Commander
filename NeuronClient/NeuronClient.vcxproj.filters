@@ -38,6 +38,9 @@
     <ClInclude Include="GlowPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="GroundMaskPipeline.h">
+      <Filter>Rendering</Filter>
+    </ClInclude>
     <ClInclude Include="StarPipeline.h">
       <Filter>Rendering</Filter>
     </ClInclude>
@@ -73,6 +76,9 @@
     <ClCompile Include="GlowPipeline.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="GroundMaskPipeline.cpp">
+      <Filter>Rendering</Filter>
+    </ClCompile>
     <ClCompile Include="StarPipeline.cpp">
       <Filter>Rendering</Filter>
     </ClCompile>
@@ -100,6 +106,12 @@
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\GlowSpritePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\GroundMaskVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\GroundMaskPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
     <FXCompile Include="Shader\StarVS.hlsl">

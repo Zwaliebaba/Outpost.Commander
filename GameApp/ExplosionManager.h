@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// Explosions after DeepSpaceOutpost's ExplosionManager (ADR-023): what blew up breaks into its own triangles, which fly
+// Explosions after DeepSpaceOutpost's ExplosionManager (ADR-026): what blew up breaks into its own triangles, which fly
 // apart from its center and tumble, slowed by drag, darken to black and shrink away. Where a shard is follows from its
 // age in a closed form, so what is drawn depends only on the view's tick, as task 3.5's effects do, never on the frame
 // rate. Space has no down, so DeepSpaceOutpost's gravity and upward throw are left out. It keeps no GPU state: it says

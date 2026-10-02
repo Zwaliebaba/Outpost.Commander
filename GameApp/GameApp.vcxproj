@@ -91,6 +91,7 @@
     <ClInclude Include="ExplosionManager.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Starfield.h" />
+    <ClInclude Include="FogOfWar.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
@@ -111,6 +112,7 @@
     <ClCompile Include="ExplosionManager.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Starfield.cpp" />
+    <ClCompile Include="FogOfWar.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="Hud.cpp" />
   </ItemGroup>

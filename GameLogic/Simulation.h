@@ -157,6 +157,8 @@ enum class CommandResult : std::uint8_t
   DuplicateDesign,
   // A saved design's components never change; a design of other components is saved as a new one (ADR-017).
   ComponentsFixed,
+  // An attack's target is an enemy the player neither sees nor, for a structure, remembers (ADR-024).
+  NotVisible,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -185,6 +187,20 @@ public:
   // (milestone 4). Without it the simulation still moves and fights, and rejects orders to build, repair or queue as not
   // yet supported, which is what the movement and combat tests run on.
   void UseTuning(const Tuning& _tuning);
+
+  // Match setup, after UseTuning: fog of war (ADR-024). Each player then sees what its own ships and structures see, the
+  // tuning data's sight beyond their weapons' range, and an enemy shooter for a while after each hit it lands; it
+  // remembers the enemy structures it has seen. Without it every player sees everything. Throws Neuron::Exception before
+  // UseTuning.
+  void UseFog();
+
+  // Whether _player sees _entity now: its own and the map's always; an enemy's only under the rules of UseFog, as of the
+  // end of the last tick.
+  [[nodiscard]] bool Sees(PlayerId _player, const Entity& _entity) const noexcept;
+
+  // How far _entity sees under fog of war: its weapon's range and the tuning data's margin, or the unarmed sight. Zero
+  // before UseTuning.
+  [[nodiscard]] float SightMetersOf(const Entity& _entity) const noexcept;
 
   // Match setup: a player and its Ore. A snapshot for a player not added here shows no Ore.
   void AddPlayer(PlayerId _player, std::int32_t _ore);
@@ -262,8 +278,8 @@ public:
     return m_tick;
   }
 
-  // What _player may see. In the MVP that is every entity (ADR-002 decision 4), and every shot and destruction of the
-  // last tick.
+  // What _player may see (ADR-002 decision 4): every entity, shot and destruction of the last tick, or under fog of war
+  // what the player sees of them and the enemy structures it remembers (ADR-024).
   [[nodiscard]] Snapshot BuildSnapshot(PlayerId _player) const;
 
   // The entity with this identifier, or nullptr.
@@ -282,7 +298,7 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog;
   }
 
 private:
@@ -295,8 +311,20 @@ private:
     // not a whole number of hundredths a tick is still paid in full (ADR-017).
     std::int64_t oreRemainder = 0;
     std::vector<ResearchTopicId> researched;
+    // Under fog of war (ADR-024): the enemy entities the player sees, in identifier order; the enemy structures it has
+    // seen, as it last saw them; and the enemy shooters it sees because they hit it, until the tick each fades on.
+    std::vector<EntityId> seen;
+    std::vector<EntityView> remembered;
+    std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
+  };
+
+  // One of a player's ships or structures, as far as it sees.
+  struct Observer
+  {
+    PlanePosition position;
+    float sightMeters = 0.0f;
   };
 
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
@@ -315,6 +343,16 @@ private:
   PlayerState* FindPlayer(PlayerId _player) noexcept;
   [[nodiscard]] const PlayerState* FindPlayer(PlayerId _player) const noexcept;
   [[nodiscard]] std::optional<Armament> ArmamentOf(const Entity& _entity) const noexcept;
+  [[nodiscard]] std::vector<Observer> ObserversOf(PlayerId _player) const;
+  // Whether a circle at _position is within sight of any of _observers.
+  [[nodiscard]] static bool InSight(std::span<const Observer> _observers, PlanePosition _position, float _radiusMeters) noexcept;
+  // What a snapshot shows of _entity; _detailed adds its queues, which only its owner sees under fog of war.
+  [[nodiscard]] EntityView EntityViewOf(const Entity& _entity, bool _detailed) const;
+  // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
+  // out of sight end.
+  void UpdateVision();
+  // Under fog of war, the side a shot hits sees its shooter for the tuning data's time.
+  void RevealShooter(PlayerId _hitPlayer, EntityId _shooter);
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;
   CommandResult ValidateShips(PlayerId _player, const std::vector<EntityId>& _ships) const noexcept;
   CommandResult ValidateConstructors(PlayerId _player, const std::vector<EntityId>& _constructors) const noexcept;
@@ -377,6 +415,7 @@ private:
   bool m_matchOver = false;
   PlayerId m_winner;
   std::uint64_t m_matchEndedTick = 0;
+  bool m_fog = false;
   // What the last tick did, for the snapshots built after it.
   std::vector<ShotView> m_shots;
   std::vector<DestroyedView> m_destroyed;

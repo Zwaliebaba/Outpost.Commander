@@ -6,6 +6,9 @@ namespace Outpost
 // transport and the server share it, so either may be destroyed first.
 struct LoopbackChannel
 {
+  // Guards both queues: the server's thread takes the commands and adds the snapshots while the client's thread does the
+  // opposite (ADR-025).
+  std::mutex mutex;
   std::vector<Command> commands;
   std::vector<Snapshot> snapshots;
 };
@@ -31,8 +34,9 @@ struct LoggedCommand
   Command command;
 };
 
-// The server inside the client (ADR-002). It runs on whichever thread calls Advance, which in the MVP is the frame loop
-// (ADR-009), so nothing in it is locked.
+// The server inside the client (ADR-002). Started, it runs its ticks on a thread of its own (ADR-025); a test may instead
+// step it by hand with Advance, on the test's thread. Match setup, World and the command log belong to whichever thread
+// steps it, so a started server is touched only through its connections and TakeTickDurations.
 class InProcessServer final : public Server
 {
 public:
@@ -40,10 +44,17 @@ public:
   // map's minimum gap, since such a ship could be walled off.
   InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc);
 
+  // Throws Neuron::Exception once the server has started.
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
-  void Advance(std::chrono::nanoseconds _elapsedWallTime) override;
+  // Throws Neuron::Exception when it has started already.
+  void Start() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
   [[nodiscard]] std::vector<std::chrono::nanoseconds> TakeTickDurations() override;
+
+  // Steps a server that has not started, for tests: runs the ticks due after _elapsedWallTime more wall time, applying the
+  // commands that have arrived and sending each connected player a snapshot per tick. This and the started server's
+  // thread are where wall time becomes ticks (ADR-009). Throws Neuron::Exception once the server has started.
+  void Advance(std::chrono::nanoseconds _elapsedWallTime);
 
   // For match setup and for tests: the state the server owns.
   [[nodiscard]] Simulation& World() noexcept
@@ -77,6 +88,9 @@ private:
   // them, and then a snapshot for every connected player.
   void RunTick();
 
+  // The started server's thread: it sleeps until the next tick is due, runs the ticks that are, and stops when asked.
+  void Run(const std::stop_token& _stop);
+
   struct Connection
   {
     PlayerId player;
@@ -90,6 +104,11 @@ private:
   std::vector<Connection> m_connections;
   std::vector<LoggedCommand> m_commandLog;
   std::optional<StressLoad> m_stressLoad;
+  // Guards the tick durations and the failure, which the started server's thread writes and TakeTickDurations reads.
+  std::mutex m_reportMutex;
   std::vector<std::chrono::nanoseconds> m_tickDurations;
+  std::exception_ptr m_failure;
+  // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
+  std::jthread m_thread;
 };
 } // namespace Outpost

@@ -2,7 +2,7 @@
 
 namespace Outpost
 {
-// Randomness for how an effect looks (ADR-023): SplitMix64, written out so that the looks do not hang on a standard
+// Randomness for how an effect looks (ADR-026): SplitMix64, written out so that the looks do not hang on a standard
 // library's distributions. It is presentation, not the simulation's Random (ADR-009), but it is seeded, so that a test
 // sees the same draws every run and one destruction always looks the same.
 class EffectRandom

@@ -34,7 +34,7 @@ public:
   static constexpr UINT MAX_FRAME_VERTICES = 65536;
 
   // Draws a triangle list made on the CPU this frame, already in the world, in a linear color: geometry that changes every
-  // frame, such as an explosion's shards (ADR-023). The vertices are copied into this frame's slot of an upload buffer,
+  // frame, such as an explosion's shards (ADR-026). The vertices are copied into this frame's slot of an upload buffer,
   // so they need not outlive the call. A call that would take the frame past MAX_FRAME_VERTICES draws nothing and returns
   // false. Only after BeginDrawing.
   bool DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color);

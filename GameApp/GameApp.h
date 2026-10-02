@@ -26,6 +26,7 @@
 #include "ParticleSystem.h"
 #include "ExplosionManager.h"
 #include "Starfield.h"
+#include "FogOfWar.h"
 #include "Designer.h"
 #include "Hud.h"
 #include "LoadDriver.h"

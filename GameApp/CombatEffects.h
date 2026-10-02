@@ -4,7 +4,7 @@ namespace Outpost
 {
 // The minimum that makes combat readable (design §11, task 3.5): a muzzle flash where a shot leaves, a tracer or a beam
 // to where it lands, a spark there, and a blast ring as wide as its splash for a splash weapon (task 5.3). A ship or
-// structure destroyed is the ParticleSystem's and the ExplosionManager's (ADR-023). Hits are instant on the server
+// structure destroyed is the ParticleSystem's and the ExplosionManager's (ADR-026). Hits are instant on the server
 // (design §7); everything here is presentation, played from the shots the snapshots report, at the moment the view
 // reaches them. It keeps no GPU state: it says which flat shapes to draw, and GameClient draws them.
 class CombatEffects

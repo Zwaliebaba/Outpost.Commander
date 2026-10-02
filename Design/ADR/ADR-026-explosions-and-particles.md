@@ -1,4 +1,4 @@
-# ADR-023 — A destroyed ship or structure breaks into its own triangles in a blast of particles, after DeepSpaceOutpost
+# ADR-026 — A destroyed ship or structure breaks into its own triangles in a blast of particles, after DeepSpaceOutpost
 
 Status: **accepted** · 2026-10-02
 

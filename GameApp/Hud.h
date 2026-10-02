@@ -32,6 +32,8 @@ public:
     PickWeapon,
     EditName,
     SaveDesign,
+    // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
+    SaveAndQueue,
     // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
     StartSkirmish,
     Quit,
@@ -123,6 +125,10 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
+    // Under fog of war, the shade of each cell of the map as FogOfWar gives it, drawn over the marks, and its cells per
+    // side; empty without fog (ADR-024).
+    std::vector<float> fogShades;
+    std::uint32_t fogCellsPerSide = 0;
     // Once the match is over, a banner with a button back to the menu; the world runs on behind it (owner, 2026-10-01).
     std::optional<Outcome> outcome;
   };

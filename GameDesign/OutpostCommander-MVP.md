@@ -89,7 +89,7 @@ How each figure was measured:
 - **Q4.** The server times each tick on its own clock: applying its commands, the simulation step and every snapshot (`Server::TakeTickDurations`). `--load` adds the load (`PlaceMeasurementLoad`), and both players' ships are ordered across the map every 200 ticks.
 
 - **Q4 in combat (task 3.7).** `--stress` runs the stress scene (`StressLoad`): each player keeps 100 ships of its four starting designs and 20 structures with the tuning data's hit points and armor. Both fleets attack-move on each other's rally a third of the way in from the starts, lost ships come back at the rally with the same order, and ships left standing idle are sent after the enemy once a second, so the whole of both fleets keeps fighting for as long as the run lasts. Since milestone 4 the scene's structures block movement and its Command Stations and Defence Platforms fire, so a structure's death rebuilds the path graphs (ADR-010), and the starting base counts toward the 40 structures. The rival connects, so the server builds both players' snapshots, as it will against the AI. With `--measure` the game logs, for every frame:
-  - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them run on that thread.
+  - **CPU work:** from the moment the swap chain lets the frame start to the return from `Present`. It takes in the window's messages, the server's ticks, the client's update and the recording of the frame, since all of them ran on that thread. Since 2026-10-02 the server's ticks run on a thread of their own (ADR-025), so a later run's CPU work leaves them out.
   - **GPU work:** between two timestamps at the start and the end of the frame's command list, which holds the scene, the effects and the HUD, read back once the frame's fence has passed.
   - **Not included:** the compositor, scanout and the display. The present interval is not the measure: with vsync on, a frame of 5 ms of work still presents every vsync interval (ADR-006).
   - **The display:** the back buffer's size and the refresh rate of the display the window is on, logged whenever the size changes.
@@ -135,7 +135,7 @@ The check cannot judge the drive. Ion buys speed, and in a battle between two cl
 - **The layout is data:** [`OutpostCommander/Assets/Map.json`](../OutpostCommander/Assets/Map.json) (ADR-008). It is point-symmetric, so neither start is favored, and every passage is at least as wide as the file's `minimumGapMeters`, so every asteroid can be reached from both starts. The owner confirmed the layout on 2026-09-30.
 - **Camera.** Pan (edge scroll, arrow keys, middle-drag), zoom (wheel, clamped), rotate around the focus point (Q/E). The arrow keys pan because A and S are orders (§9). The pitch is fixed and comes from the zoom level.
 - **The default view shows a whole engagement.** It is about 500 m wide. The longest reach in the game is the Missile Rack's 280 m (§6, §7), so two groups trading at full range fit on one screen with room around them. The camera zooms in to a view 150 m wide and out to one 1,600 m wide, the limits it has used since milestone 1 (owner, 2026-10-01; ADR-012).
-- **No fog of war in the MVP.** It is the first feature after the MVP, and the server model is shaped so that it can be added (§9).
+- **Fog of war** (owner, 2026-10-02; ADR-024), the first feature after the MVP. Each side sees what its own ships and structures see: an armed one its weapon's range and 50 m more, so it always sees what it can shoot, and an unarmed one 200 m. A ship that hits a side is seen by that side for 3 s after each hit. Enemy structures stay where they were last seen until the place is seen again. Ground never seen is dark, and ground seen before is dimmed, in the world and on the minimap.
 
 ---
 
@@ -266,7 +266,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 
 - **Players issue commands, not changes.** Move, attack, attack-move, stop, build structure, queue ship, start research, save design, and repair (added with milestone 4's structures). There is no cancel (§5). The server validates each one (ownership, cost, legality) and may reject it.
 - **The AI is a client.** It sees the snapshot its player is allowed to see and sends the same commands a human does. It cannot cheat by reading server state, and the build enforces that: it can include only the protocol headers (ADR-002).
-- **What a player sees is a per-player snapshot.** There is no fog in the MVP, but snapshots are addressed per player so that fog of war can be added on the server alone.
+- **What a player sees is a per-player snapshot.** The server builds each player's from what that player sees, under fog of war (§4, ADR-024), so a client is never sent what its player cannot see. An attack order needs a target the player sees, or an enemy structure it remembers.
 - **The simulation ticks at a fixed rate**, independent of the frame rate. The client interpolates between snapshots for smooth rendering.
 - **The network comes after the MVP, over QUIC.** When the server moves to its own process, commands and snapshots cross the network over QUIC (ADR-004). In the MVP they stay in-process, and Q5 measures that. Network play will need Windows 11 or Windows Server 2022.
 
@@ -283,7 +283,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 The game draws its own UI (ADR-001): text and panels as quads from one DirectWrite glyph atlas, and input focus as a rectangle test (ADR-015, gate G7). The renderer (ADR-006) fixes the layout: 1920×1080 reference units scaled to the screen.
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
-- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component. A saved design is renamed, never changed: other components are a new design, so the ships already built stay what they are. A name is up to 32 characters of the HUD's font (ADR-017).
+- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component. A saved design is renamed, never changed: other components are a new design, so the ships already built stay what they are. Queue on components that are not yet a saved design saves them first, so a new design is one click from its first ship (ADR-023). A name is up to 32 characters of the HUD's font (ADR-017).
 - **Menu:** Start skirmish, Quit. Nothing else.
 
 ---
@@ -294,8 +294,8 @@ The opponent is **The Tarkan High Command** (§1). It is one scripted AI, delibe
 
 1. Builds a Shipyard, a Research Lab and Mining Rigs on its home asteroids, then expands to the contested middle.
 2. Researches in a fixed order.
-3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It looks at the player's fleet again only once every review interval, 60 s, so it answers a switch late, as a player would, rather than at once from a map it sees in full.
-4. Gathers an attack group. When the group reaches 12 ships (gate G9), it attack-moves on the nearest player structure, and repeats.
+3. Picks designs from a small list, favouring whatever counters the player's most common **design**. It reads the whole design, not the hull, because a counter depends on the weapon as much as the hull: Small+Ion+Mass Driver beats Medium+Ion+Lance and loses to Medium+Ion+Mass Driver. It chooses again only once every review interval, 60 s, so it answers a switch late, as a player would. Under fog of war (§4) it counts the player's warships it has seen since the last review, and keeps its choice when it has seen none (ADR-024).
+4. Gathers an attack group. When the group reaches 12 ships (gate G9), it attack-moves on the nearest player structure it sees or remembers, and repeats. Knowing none, it goes across the map's center from its own base, where the point-symmetric map puts the player's.
 5. Defends: when any of its structures is attacked, its ships outside the attack group go to it.
 6. Rebuilds destroyed Mining Rigs, and replaces lost Constructors at its Command Station.
 
@@ -363,6 +363,8 @@ The research times add up to 690 s. The structure numbers, the Defence gun and t
 
 `Q2CheckTests.TheRecordedCountersHold` keeps four counters in CI: the swarm beats the line, the brawler beats the swarm, and the picket beats the heavy Large+Fusion+Mass Driver, each at 2,000 Ore, and the line beats the brawler under focus fire.
 
+**Under fog of war** (ADR-024, 2026-10-02), the full check gives a report byte-identical to the one without it: all four criteria pass with the figures above, 2,226 counter checks included. Every armed ship sees beyond its weapon's range, so fog changes nothing a ship fires at. Measured in the Linux container by running `RunQ2Check` with and without its fog option. `Q2CheckTests.FogChangesNoBattle` keeps a sample of it in CI.
+
 **Where the model stands** (`python Tools/BattleModel.py`, 2026-10-01, 80 s). It passes (a) and fails the rest:
 
 - **(b):** no design worth building uses the Missile Rack at any budget.
@@ -396,7 +398,7 @@ Two of the margins are thin. The platform keeps 28% of its hit points, so a sixt
 
 ## 13. Out of scope for the MVP
 
-Campaign; multiplayer over a network; save and load; fog of war (first after the MVP); other races; carriers, fighters and VTOL-style rearming; commanders; sensors and artillery; transports and haulers; asteroid depletion; Huge and VeryLarge hulls; structure upgrades; damage types; unit veterancy; textures and materials; music; options, key rebinding and a real menu; AI difficulty levels.
+Campaign; multiplayer over a network; save and load; fog of war (added first after the MVP, §4); other races; carriers, fighters and VTOL-style rearming; commanders; sensors and artillery; transports and haulers; asteroid depletion; Huge and VeryLarge hulls; structure upgrades; damage types; unit veterancy; textures and materials; music; options, key rebinding and a real menu; AI difficulty levels.
 
 Something from this list goes into the MVP only if an MVP question cannot be answered without it.
 
@@ -516,3 +518,9 @@ Decided on 2026-10-01, after the MVP:
 - The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
 - The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts. The grid is a faint neutral gray rather than blue (§11, ADR-022).
 - Third-party content needs no approval, licence text or record of where it came from. AGENTS.md R14 no longer covers it (§11).
+
+Decided on 2026-10-02:
+
+- Queue in the designer saves a new design and queues it, in one click. Before, a new design had to be saved before Queue worked, and the owner's first match never built a Large hull because of it (§9, ADR-023).
+- Fog of war, the first feature after the MVP (§4, ADR-024). Sight is a weapon's range and 50 m, or 200 m without a weapon. A shooter is seen by the side it hits for 3 s. Enemy structures are remembered where they were seen, and the ground is drawn dark where never seen and dimmed where seen before. The AI plays under it and counters only what it has seen (§10).
+- The in-process server runs its ticks on a thread of its own, so a slow tick no longer holds up a frame (§3, ADR-025).

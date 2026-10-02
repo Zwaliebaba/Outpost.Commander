@@ -56,7 +56,7 @@ bool SameGlows(const std::vector<Glow>& _first, const std::vector<Glow>& _second
 TEST_CLASS(ParticleSystemTests)
 {
 public:
-  // ADR-023: a blast plays when the view reaches its start, and every particle starts at the center.
+  // ADR-026: a blast plays when the view reaches its start, and every particle starts at the center.
   TEST_METHOD(ABlastWaitsForTheView)
   {
     Outpost::ParticleSystem particles(TICKS_PER_SECOND);

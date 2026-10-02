@@ -140,7 +140,7 @@ bool SamePosition(const DirectX::XMFLOAT3& _a, const DirectX::XMFLOAT3& _b)
 TEST_CLASS(ExplosionManagerTests)
 {
 public:
-  // ADR-023: an explosion plays when the view reaches its start, as every one of its triangles, in its color.
+  // ADR-026: an explosion plays when the view reaches its start, as every one of its triangles, in its color.
   TEST_METHOD(WaitsForTheView)
   {
     Outpost::ExplosionManager explosions(TICKS_PER_SECOND);

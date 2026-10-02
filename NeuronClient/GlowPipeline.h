@@ -9,7 +9,7 @@ struct TextureData;
 // it. They are tested against the scene's depth but write none, so a hull hides the glow behind it while glows overlap
 // freely, in any order. A frame's glows are one instanced draw. Without a sprite, a glow is a soft round spot. With one,
 // it is the sprite's color times the glow's, read texel by texel with no smoothing when magnified, as a particle of
-// DeepSpaceOutpost's is (ADR-023). It knows no game concept: the caller says where each glow is, how big it is and its
+// DeepSpaceOutpost's is (ADR-026). It knows no game concept: the caller says where each glow is, how big it is and its
 // color.
 class GlowPipeline : NonCopyable
 {

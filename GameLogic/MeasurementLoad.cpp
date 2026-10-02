@@ -56,7 +56,7 @@ void Outpost::PlaceMeasurementLoad(Simulation& _simulation, const Map& _map, con
 
   size_t ships = 0;
   size_t structures = 0;
-  for (const EntityView& entity : _simulation.BuildSnapshot(PlayerId{}).entities)
+  for (const Entity& entity : _simulation.Entities())
   {
     if (entity.kind == EntityKind::Ship)
       ++ships;

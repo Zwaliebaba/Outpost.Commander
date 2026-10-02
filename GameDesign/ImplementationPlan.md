@@ -695,7 +695,7 @@ The owner asked on 2026-10-01 for DeepSpaceOutpost's particle and explosion mana
 
 - **Goal:** a ship or structure destroyed breaks into its own triangles, which tumble apart, in a blast of fireball, debris and smoke, as in DeepSpaceOutpost. It replaces task 3.5's disc and ring.
 - **Owner decisions of 2026-10-01:** one PR. Particles were analytic glows first, with no texture; on 2026-10-02, once it was clear that `Particle.dds` is DeepSpaceOutpost's flat square with a rim and not a soft dot, the owner asked for it. Shards darken and shrink rather than fade with transparency.
-- **ADR:** [ADR-023](../Design/ADR/ADR-023-explosions-and-particles.md).
+- **ADR:** [ADR-026](../Design/ADR/ADR-026-explosions-and-particles.md).
 - **As built:** `Outpost::ParticleSystem` and `Outpost::ExplosionManager` in `GameApp`, seeded by `Outpost::EffectRandom`, and `Neuron::MeshPipeline::DrawTriangles` for the shards. `GameClient` keeps each model's triangles on the CPU and starts both from each snapshot's destroyed. `ParticleSystemTests` and `ExplosionManagerTests` cover them without a GPU.
 - **Also in this PR, on trial (owner, 2026-10-02):** every asteroid and field rock shows its creases, the edges where its surface bends by more than 30°, as thin lines lit as the rock is and a little lighter, an eighties vector look. They are built once by `Neuron::BuildCreaseLines` and drawn by `Neuron::MeshPipeline::DrawLines`. It gets an ADR if the owner keeps it.
 - **Verify:** CI; **owner run**, to see whether a destruction reads from the RTS camera, and in the Q4 measurement (3.7), which now includes the shards.

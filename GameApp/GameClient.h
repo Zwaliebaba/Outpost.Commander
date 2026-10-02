@@ -72,14 +72,14 @@ private:
 
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
   [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
-  // A model's triangles on the CPU, for an explosion to break (ADR-023).
+  // A model's triangles on the CPU, for an explosion to break (ADR-026).
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
   void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
-  // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-023), before the view
+  // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-026), before the view
   // takes the snapshot, so that the view still holds what blew up.
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
@@ -107,8 +107,10 @@ private:
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
-  // as diamonds of their sprite (ADR-023).
+  // as diamonds of their sprite (ADR-026).
   void DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
+  // Under fog of war, the ground the player does not see now, dimmed or dark, over everything but the HUD (ADR-024).
+  void DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
   void DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
   // A level band from one point to another, _widthMeters wide and _heightMeters above the ground: a drag box's edge, a
   // health bar, a tracer or a beam.
@@ -128,7 +130,8 @@ private:
   Camera m_camera;
   Neuron::MeshPipeline m_pipeline;
   Neuron::GlowPipeline m_glows;
-  // The particles, drawn with DeepSpaceOutpost's particle texture rather than as soft spots (ADR-023).
+  Neuron::GroundMaskPipeline m_groundMask;
+  // The particles, drawn with DeepSpaceOutpost's particle texture rather than as soft spots (ADR-026).
   std::unique_ptr<Neuron::GlowPipeline> m_particleSprites;
   // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
   std::unique_ptr<Neuron::StarPipeline> m_sky;
@@ -141,8 +144,10 @@ private:
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
   Designer m_designer;
+  // What the player has seen of the map, when the match is played under fog of war (ADR-024).
+  FogOfWar m_fog;
   CombatEffects m_effects;
-  // What blew up: its blast, as particles, and its shards (ADR-023).
+  // What blew up: its blast, as particles, and its shards (ADR-026).
   ParticleSystem m_particles;
   ExplosionManager m_explosions;
   // What the effects draw this frame, at the view's tick.

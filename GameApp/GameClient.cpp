@@ -11,7 +11,7 @@ constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
 // The sprite of the sky's brightest stars (ADR-022).
 constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
-// The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-023).
+// The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
 constexpr std::wstring_view HUD_FONT = L"Segoe UI";
@@ -91,7 +91,7 @@ constexpr int DISC_SEGMENTS = 24;
 // design reads as fast and a Fusion Large, at 20 m/s, burns well short of it.
 constexpr float EXHAUST_FULL_SPEED_METERS_PER_SECOND = 50.0f;
 // A structure breaks into three sets of shards at once, as a DeepSpaceOutpost building does, and a ship into one
-// (ADR-023).
+// (ADR-026).
 constexpr int STRUCTURE_SHARD_COPIES = 3;
 
 Neuron::ByteBuffer ReadAsset(const std::wstring& _fileName)
@@ -252,6 +252,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
     m_pipeline(_renderer),
     m_glows(_renderer),
+    m_groundMask(_renderer),
     m_ui(_renderer, HUD_FONT, Hud::FONT_UNITS * Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
     m_effects(_ticksPerSecond),
@@ -267,7 +268,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
-      // Kept on the CPU too, for an explosion to break into its triangles (ADR-023).
+      // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
       data.hardpoints.clear();
       m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
     }
@@ -319,6 +320,7 @@ void Outpost::GameClient::ClearMatch()
   m_shardBatches.clear();
   m_controls = PlayerControls();
   m_designer = Designer();
+  m_fog = FogOfWar();
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -388,6 +390,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
+  if (!m_view.IsEmpty() && m_view.Newest().fogOfWar)
+  {
+    if (m_fog.CellsPerSide() == 0)
+      m_fog.Reset(m_view.Newest().mapSizeMeters);
+    m_fog.Update(m_entities, m_view.Newest().player);
+  }
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
   m_particleGlows.clear();
@@ -397,7 +405,11 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_explosions.At(m_view.ViewTick(), m_shardVertices, m_shardBatches);
   Neuron::InputState input = _input;
   if (!m_view.IsEmpty())
+  {
     m_designer.Update(m_view.Newest());
+    for (const QueueShipCommand& queue : m_designer.TakeQueueCommands(m_view.Newest()))
+      m_controls.Queue(queue.producer, queue.design);
+  }
   HandleTyping(input);
   m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
@@ -418,6 +430,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
     Hud::Content content = Hud::Describe(m_view.Newest(), m_entities, m_controls.Selected(), m_controls.Placing(), &m_designer);
+    content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
+    content.fogCellsPerSide = m_fog.CellsPerSide();
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
     // The name takes no more typing once the designer is not shown: its Shipyard was deselected or destroyed.
     if (!content.designer.has_value())
@@ -472,6 +486,13 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::SaveDesign:
     if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(m_view.Newest()))
+    {
+      m_controls.SaveDesign(std::move(*save));
+      m_designer.ForgetTypedName();
+    }
+    break;
+  case Hud::ActionKind::SaveAndQueue:
+    if (std::optional<SaveDesignCommand> save = m_designer.SaveAndQueue(_action.producer, m_view.Newest()))
     {
       m_controls.SaveDesign(std::move(*save));
       m_designer.ForgetTypedName();
@@ -661,7 +682,22 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawHealthBars(_commandList);
   DrawEffects(_commandList);
   DrawGlows(_renderer, _commandList);
+  DrawFog(_renderer, _commandList);
   DrawHud(_commandList, _renderer.FrameIndex());
+}
+
+void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)
+{
+  if (m_fog.CellsPerSide() == 0)
+    return;
+  const float aspectRatio = static_cast<float>(_renderer.WidthPixels()) / static_cast<float>(_renderer.HeightPixels());
+  const PlanePosition origin = m_fog.Origin();
+  const Neuron::GroundMaskPipeline::FrameConstants constants{.viewProjection = m_camera.ViewProjection(aspectRatio),
+                                                             .originXMeters = origin.xMeters,
+                                                             .originZMeters = origin.zMeters,
+                                                             .cellMeters = FogOfWar::CELL_METERS,
+                                                             .cellsPerSide = m_fog.CellsPerSide()};
+  m_groundMask.Draw(_commandList, _renderer.FrameIndex(), constants, m_fog.Shades());
 }
 
 void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)

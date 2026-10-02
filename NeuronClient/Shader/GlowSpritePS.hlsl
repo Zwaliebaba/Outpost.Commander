@@ -1,4 +1,4 @@
-// A glow with a sprite is the sprite's color times the glow's, and the blend adds it to the scene (ADR-019, ADR-023):
+// A glow with a sprite is the sprite's color times the glow's, and the blend adds it to the scene (ADR-019, ADR-026):
 // DeepSpaceOutpost's particle, its texture modulating its color. The texture's bytes are sRGB but read through a UNORM
 // view, so they are taken to linear here, as the glow's color already is. The color is linear; the render target
 // encodes it to sRGB. VertexOut is declared again, identically, in GlowVS.hlsl.
