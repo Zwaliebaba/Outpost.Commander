@@ -23,16 +23,18 @@ public:
   // A connection for one player, the human or the AI. The server keeps the other end.
   [[nodiscard]] virtual std::unique_ptr<Transport> Connect(PlayerId _player) = 0;
 
-  // Tells the server how much wall time has passed. It runs the ticks that are now due, applying the commands that have
-  // arrived and sending each connected player a snapshot per tick. This is where wall time becomes ticks (ADR-009).
-  virtual void Advance(std::chrono::nanoseconds _elapsedWallTime) = 0;
+  // Starts the server's ticks on a thread of its own, at its fixed rate whatever the client's frame rate (ADR-025). Each
+  // tick applies the commands that have arrived and sends each connected player a snapshot. Connect every player first.
+  // The thread stops when the server is destroyed.
+  virtual void Start() = 0;
 
   // How many ticks the server runs per second of wall time. A client interpolates between snapshots at this rate
   // (task 2.5).
   [[nodiscard]] virtual std::uint32_t TicksPerSecond() const noexcept = 0;
 
   // How long each tick since the last call took on the server's own clock, oldest first: its commands, its simulation
-  // step and its snapshots (task 2.7). The server has no PIX markers (ADR-005), so this is how its time is measured.
+  // step and its snapshots (task 2.7). The server has no PIX markers (ADR-005), so this is how its time is measured. An
+  // exception the server's thread met is thrown again here, on the caller's thread, and the server runs no more ticks.
   [[nodiscard]] virtual std::vector<std::chrono::nanoseconds> TakeTickDurations() = 0;
 };
 

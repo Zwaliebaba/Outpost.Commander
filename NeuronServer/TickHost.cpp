@@ -34,3 +34,9 @@ std::uint32_t Neuron::TickHost::Advance(std::chrono::nanoseconds _elapsed) noexc
     return m_maxTicksPerAdvance;
   return static_cast<std::uint32_t>(due);
 }
+
+std::chrono::nanoseconds Neuron::TickHost::UntilNextTick() const noexcept
+{
+  const std::uint64_t missing = NANOSECONDS_PER_SECOND - m_pending;
+  return std::chrono::nanoseconds(static_cast<std::int64_t>((missing + m_ticksPerSecond - 1) / m_ticksPerSecond));
+}

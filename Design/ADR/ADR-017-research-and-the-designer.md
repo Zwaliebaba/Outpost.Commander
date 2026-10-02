@@ -1,6 +1,6 @@
 # ADR-017 — Research is a paid queue whose upgrades apply at once, and the designer derives its stats from numbers the server sends
 
-Status: **accepted** · 2026-10-01
+Status: **accepted** · 2026-10-01 · The "New picks" part of decision 7 is superseded by [ADR-023](ADR-023-queue-saves-the-design.md)
 
 ## Context
 

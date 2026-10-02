@@ -74,6 +74,49 @@ public:
   }
 
   // ADR-009: a match reproduces from its seed and the server's command log, on the same build.
+  // ADR-025: started, the server runs its own ticks on a thread of its own. Orders sent from this thread reach it, a
+  // snapshot arrives for every tick in order, and destroying the server stops its thread. Stepping it by hand, or
+  // connecting, is then refused.
+  TEST_METHOD(RunsItsTicksOnItsOwnThread)
+  {
+    auto server = std::make_unique<Outpost::InProcessServer>(RepositoryTuning(), RepositoryMap(), Outpost::ServerDesc{.seed = 5});
+    const Outpost::EntityId ship = server->World().SpawnShip(BLUE, SWARM, SMALL_ION, {});
+    const std::unique_ptr<Outpost::Transport> blue = server->Connect(BLUE);
+    server->Start();
+    Assert::ExpectException<Neuron::Exception>([&server] { (void)server->Connect(RED); });
+    Assert::ExpectException<Neuron::Exception>([&server] { server->Advance(50ms); });
+    Assert::ExpectException<Neuron::Exception>([&server] { server->Start(); });
+
+    // Orders sent while the server ticks, a few to each tick, the last of them sending the ship on its way.
+    for (int order = 0; order < 100; ++order)
+    {
+      blue->Send({.order = Outpost::StopCommand{.ships = {ship}}});
+      std::this_thread::sleep_for(1ms);
+    }
+    blue->Send({.order = Outpost::MoveCommand{.ships = {ship}, .destination = {.xMeters = 300.0f}}});
+    (void)blue->Receive();
+    std::vector<Outpost::Snapshot> snapshots;
+    // Ten ticks take half a second; the deadline only keeps a stalled server from hanging the test.
+    const auto deadline = std::chrono::steady_clock::now() + 30s;
+    while (snapshots.size() < 10 && std::chrono::steady_clock::now() < deadline)
+    {
+      std::this_thread::sleep_for(10ms);
+      for (Outpost::Snapshot& snapshot : blue->Receive())
+        snapshots.push_back(std::move(snapshot));
+    }
+    Assert::IsTrue(snapshots.size() >= 10, L"the server ran no ticks on its own");
+    for (size_t i = 1; i < snapshots.size(); ++i)
+      Assert::AreEqual(snapshots[i - 1].tick + 1, snapshots[i].tick, L"a snapshot for every tick, in order");
+    const auto moved = std::ranges::find(snapshots.back().entities, ship, &Outpost::EntityView::id);
+    Assert::IsTrue(moved != snapshots.back().entities.end() && moved->position.xMeters > 0.0f, L"the order reached the server");
+    Assert::IsTrue(server->TakeTickDurations().size() >= 10);
+
+    server.reset();
+    (void)blue->Receive();
+    std::this_thread::sleep_for(200ms);
+    Assert::IsTrue(blue->Receive().empty(), L"no ticks once the server is gone");
+  }
+
   TEST_METHOD(ReplaysFromItsCommandLog)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 77});
@@ -95,6 +138,8 @@ public:
     // The same match setup as the server's.
     Outpost::Simulation replay(77, 20);
     replay.PlaceMap(server.MapData());
+    replay.UseTuning(server.TuningData());
+    replay.UseFog();
     for (const Outpost::PlayerId player : {BLUE, RED})
     {
       replay.AddPlayer(player, server.TuningData().rules.startingOre);
@@ -124,15 +169,27 @@ public:
     Outpost::InProcessServer server(tuning, map, {.seed = 1});
     server.World().PlaceStartingBases(map);
     const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    const std::unique_ptr<Outpost::Transport> red = server.Connect(RED);
     server.Advance(50ms);
-    const std::vector<Outpost::Snapshot> snapshots = blue->Receive();
-    Assert::AreEqual(size_t{1}, snapshots.size());
+    const std::vector<Outpost::Snapshot> blueSnapshots = blue->Receive();
+    const std::vector<Outpost::Snapshot> redSnapshots = red->Receive();
+    Assert::AreEqual(size_t{1}, blueSnapshots.size());
+    Assert::AreEqual(size_t{1}, redSnapshots.size());
 
+    // Under fog of war each player sees its own base and not the other's, across the map (ADR-024).
     std::vector<Outpost::EntityView> placed;
-    for (const Outpost::EntityView& entity : snapshots[0].entities)
+    std::vector<Outpost::EntityView> entities;
+    for (const Outpost::Snapshot& snapshot : {blueSnapshots[0], redSnapshots[0]})
     {
-      if (!entity.owner.IsValid())
-        continue;
+      for (const Outpost::EntityView& entity : snapshot.entities)
+      {
+        Assert::IsTrue(!entity.owner.IsValid() || entity.owner == snapshot.player, L"the other base is out of sight");
+        if (entity.owner.IsValid())
+          entities.push_back(entity);
+      }
+    }
+    for (const Outpost::EntityView& entity : entities)
+    {
       placed.push_back(entity);
       const Outpost::PlanePosition start = map.starts[entity.owner.value - 1];
       Assert::IsTrue(entity.hitPointsHundredths > 0 && entity.hitPointsHundredths == entity.maxHitPointsHundredths);

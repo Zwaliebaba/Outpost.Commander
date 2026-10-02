@@ -38,6 +38,21 @@ public:
     Assert::AreEqual(1u, host.Advance(50ms));
   }
 
+  // ADR-025: the server's thread sleeps until the next tick is due, which keeps the remainder in view.
+  TEST_METHOD(SaysHowLongUntilTheNextTick)
+  {
+    Neuron::TickHost host(20, 5);
+    Assert::IsTrue(host.UntilNextTick() == 50ms);
+    Assert::AreEqual(0u, host.Advance(30ms));
+    Assert::IsTrue(host.UntilNextTick() == 20ms);
+    Assert::AreEqual(1u, host.Advance(host.UntilNextTick()));
+    Assert::IsTrue(host.UntilNextTick() == 50ms);
+    // Rounded up, so that waiting this long always makes a tick due: a third of a second is 333,333,333.3 ns.
+    Neuron::TickHost thirds(3, 5);
+    Assert::IsTrue(thirds.UntilNextTick() == std::chrono::nanoseconds(333'333'334));
+    Assert::AreEqual(1u, thirds.Advance(thirds.UntilNextTick()));
+  }
+
   TEST_METHOD(IgnoresNegativeTime)
   {
     Neuron::TickHost host(20, 5);

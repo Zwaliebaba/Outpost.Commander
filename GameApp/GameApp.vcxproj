@@ -88,6 +88,7 @@
     <ClInclude Include="SnapshotInterpolator.h" />
     <ClInclude Include="CombatEffects.h" />
     <ClInclude Include="Starfield.h" />
+    <ClInclude Include="FogOfWar.h" />
     <ClInclude Include="Designer.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
@@ -106,6 +107,7 @@
     <ClCompile Include="SnapshotInterpolator.cpp" />
     <ClCompile Include="CombatEffects.cpp" />
     <ClCompile Include="Starfield.cpp" />
+    <ClCompile Include="FogOfWar.cpp" />
     <ClCompile Include="Designer.cpp" />
     <ClCompile Include="Hud.cpp" />
   </ItemGroup>

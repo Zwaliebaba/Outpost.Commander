@@ -141,7 +141,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
                              .enabled = weapon.available,
                              .selected = weapon.id == picked.weapon});
 
-  if (const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest))
+  const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest);
+  if (stats.has_value())
   {
     panel.summary.push_back(
       std::format("Hit points {}   Armor {}   Speed {} m/s", Outpost::WithThousands(WholePoints(stats->hitPointsHundredths)),
@@ -163,14 +164,23 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   }
 
   const Outpost::DesignView* match = _designer.Match(_newest);
-  panel.actions.push_back({.label = match != nullptr ? "Rename" : "Save design",
-                           .action = {.kind = Hud::ActionKind::SaveDesign},
-                           .enabled = _designer.SaveCommand(_newest).has_value()});
-  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  const bool canSave = _designer.SaveCommand(_newest).has_value();
   panel.actions.push_back(
-    {.label = match != nullptr ? std::format("Queue|{}", match->cost) : std::string("Queue"),
-     .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match != nullptr ? match->id : Outpost::DesignId{}},
-     .enabled = match != nullptr && canQueue && _newest.ore >= match->cost});
+    {.label = match != nullptr ? "Rename" : "Save design", .action = {.kind = Hud::ActionKind::SaveDesign}, .enabled = canSave});
+  const bool canQueue = _yard.builtPermille >= Outpost::PERMILLE && _yard.queue.size() < Outpost::QUEUE_LIMIT;
+  if (match != nullptr)
+  {
+    panel.actions.push_back({.label = std::format("Queue|{}", match->cost),
+                             .action = {.kind = Hud::ActionKind::Queue, .producer = _yard.id, .design = match->id},
+                             .enabled = canQueue && _newest.ore >= match->cost});
+  }
+  else
+  {
+    // Picks that are no saved design yet are saved by their Queue, and queued once the server has the design (ADR-023).
+    panel.actions.push_back({.label = stats.has_value() ? std::format("Queue|{}", stats->cost) : std::string("Queue"),
+                             .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = _yard.id},
+                             .enabled = canSave && canQueue && stats.has_value() && _newest.ore >= stats->cost});
+  }
   return panel;
 }
 // A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
@@ -633,6 +643,34 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
       const DirectX::XMFLOAT4& color = mark.side == Side::Own ? OWN_COLOR : mark.side == Side::Enemy ? ENEMY_COLOR : NEUTRAL_COLOR;
       layout.panels.push_back({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, color});
+    }
+
+    // The fog over the marks, one rectangle for each run of cells of one shade along a row (ADR-024). Rows go up the
+    // minimap as z grows.
+    const size_t cells = _content.fogCellsPerSide;
+    if (cells > 0 && _content.fogShades.size() == cells * cells)
+    {
+      const float cellPixels = inner / static_cast<float>(cells);
+      for (size_t row = 0; row < cells; ++row)
+      {
+        const float rowTop = layout.minimap.top + (static_cast<float>(cells - row - 1) * cellPixels);
+        const float* shades = &_content.fogShades[row * cells];
+        size_t start = 0;
+        for (size_t column = 1; column <= cells; ++column)
+        {
+          if (column < cells && shades[column] == shades[start])
+            continue;
+          if (shades[start] > 0.0f)
+          {
+            layout.panels.push_back({layout.minimap.left + (static_cast<float>(start) * cellPixels),
+                                     rowTop,
+                                     static_cast<float>(column - start) * cellPixels,
+                                     cellPixels,
+                                     {0.0f, 0.0f, 0.0f, shades[start]}});
+          }
+          start = column;
+        }
+      }
     }
 
     // The view's outline, as the box around the ground the camera shows.

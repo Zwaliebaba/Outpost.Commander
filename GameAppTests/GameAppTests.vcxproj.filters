@@ -15,6 +15,7 @@
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="StarfieldTests.cpp" />
+    <ClCompile Include="FogOfWarTests.cpp" />
     <ClCompile Include="TextureDataTests.cpp" />
     <ClCompile Include="HudTests.cpp" />
     <ClCompile Include="MatchLogTests.cpp" />

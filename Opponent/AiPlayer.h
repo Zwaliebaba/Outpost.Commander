@@ -2,9 +2,14 @@
 
 namespace Outpost
 {
-// The design the AI builds against the fleet in _snapshot (design §10): the first counter, from _settings, to the enemy's
-// most common warship by hull, drive and weapon whose every component the AI has unlocked; the default design when there
-// is none, and while the enemy has no warship. A tie goes to the design of the lowest hull, then drive, then weapon.
+// The design the AI builds against _enemyWarships, one entry for each enemy warship it has seen (design §10): the first
+// counter, from _settings, to the most common of them by hull, drive and weapon whose every component the AI has
+// unlocked in _snapshot; the default design when there is none, and when it has seen no warship. A tie goes to the design
+// of the lowest hull, then drive, then weapon.
+[[nodiscard]] DesignComponents ChooseAnswer(const AiSettings& _settings, std::span<const DesignComponents> _enemyWarships,
+                                            const Snapshot& _snapshot);
+
+// The same against the enemy warships _snapshot shows.
 [[nodiscard]] DesignComponents ChooseAnswer(const AiSettings& _settings, const Snapshot& _snapshot);
 
 // The computer opponent of design §10. It is a client like the human's (ADR-002): it reads its own player's snapshot every
@@ -12,9 +17,11 @@ namespace Outpost
 // server or given to it by the server, so it plays by the same rules.
 //
 // Once a second it builds its base in a fixed order, keeps its Constructors, researches in its order and keeps its
-// Shipyards busy with the design it last chose. Every review it chooses that design again from the enemy's fleet. Its
-// warships gather in reserve near its Command Station, go to the defence of any structure of its that comes under fire,
-// and once enough have gathered they attack the nearest enemy structure, then the next, until none of them is left.
+// Shipyards busy with the design it last chose. Every review it chooses that design again from the enemy warships it has
+// seen since the last one, and keeps it when it has seen none. Its warships gather in reserve near its Command Station, go
+// to the defence of any structure of its that comes under fire, and once enough have gathered they attack the nearest
+// enemy structure it sees or remembers, then the next. Under fog of war it may know none (ADR-024): the attack then goes
+// across the map's center from its own base, where the point-symmetric map puts the enemy's.
 class AiPlayer
 {
 public:
@@ -88,13 +95,19 @@ private:
   std::vector<Slot> m_slots;
   std::vector<Work> m_work;
   PlanePosition m_rally;
+  // Its Command Station's place, across the map's center from the enemy's.
+  PlanePosition m_home;
 
   DesignComponents m_productionDesign;
+  // The enemy warships it has seen since its last review, and what each is.
+  std::map<EntityId, DesignComponents> m_seenWarships;
   std::optional<std::uint64_t> m_designSaveTick;
 
-  // Warships committed to the attack, and the enemy structure they are sent at.
+  // Warships committed to the attack, and the enemy structure they are sent at; or, knowing none, whether they were sent
+  // across the map to look for one.
   std::vector<EntityId> m_attackGroup;
   EntityId m_attackTarget;
+  bool m_searching = false;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.
