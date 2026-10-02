@@ -350,7 +350,11 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   m_effectDraws = m_effects.At(m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); });
   Neuron::InputState input = _input;
   if (!m_view.IsEmpty())
+  {
     m_designer.Update(m_view.Newest());
+    for (const QueueShipCommand& queue : m_designer.TakeQueueCommands(m_view.Newest()))
+      m_controls.Queue(queue.producer, queue.design);
+  }
   HandleTyping(input);
   m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
@@ -425,6 +429,13 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::SaveDesign:
     if (std::optional<SaveDesignCommand> save = m_designer.SaveCommand(m_view.Newest()))
+    {
+      m_controls.SaveDesign(std::move(*save));
+      m_designer.ForgetTypedName();
+    }
+    break;
+  case Hud::ActionKind::SaveAndQueue:
+    if (std::optional<SaveDesignCommand> save = m_designer.SaveAndQueue(_action.producer, m_view.Newest()))
     {
       m_controls.SaveDesign(std::move(*save));
       m_designer.ForgetTypedName();

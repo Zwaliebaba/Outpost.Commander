@@ -352,6 +352,22 @@ public:
     Outpost::EntityView theirs = yard;
     theirs.owner = Outpost::PlayerId{2};
     Assert::IsFalse(Outpost::Hud::Describe(newest, std::vector{theirs}, selected, std::nullopt, &designer).designer.has_value());
+
+    // Picks that are no saved design yet: Queue saves them first, at their cost (ADR-023).
+    newest.hulls[1].available = true;
+    designer.PickHull(Outpost::HullId{3});
+    const auto unsavedPanel = [&]()
+    {
+      return Outpost::Hud::Describe(newest, std::vector{yard}, selected, std::nullopt, &designer)
+        .designer.value_or(Outpost::Hud::DesignerPanel{});
+    };
+    const Outpost::Hud::DesignerPanel unsaved = unsavedPanel();
+    Assert::AreEqual(std::string("Save design"), unsaved.actions[0].label);
+    Assert::AreEqual(std::string("Queue|355"), unsaved.actions[1].label);
+    Assert::IsTrue(unsaved.actions[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::SaveAndQueue, .producer = yard.id});
+    Assert::IsTrue(unsaved.actions[1].enabled);
+    newest.ore = 354;
+    Assert::IsFalse(unsavedPanel().actions[1].enabled, L"short of Ore");
   }
 
   // A press on a panel belongs to the HUD.

@@ -283,7 +283,7 @@ The server is **authoritative**. In the MVP the server runs **inside the client 
 The game draws its own UI (ADR-001): text and panels as quads from one DirectWrite glyph atlas, and input focus as a rectangle test (ADR-015, gate G7). The renderer (ADR-006) fixes the layout: 1920×1080 reference units scaled to the screen.
 
 - **HUD:** Ore stockpile and income, the selection panel, build and research queues, and a minimap.
-- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component. A saved design is renamed, never changed: other components are a new design, so the ships already built stay what they are. A name is up to 32 characters of the HUD's font (ADR-017).
+- **Ship designer:** part of the Shipyard panel rather than a screen of its own: a picker for each slot, live stats, cost and build time, save/rename, and queue, drawn as an in-game panel. The stats are damage per second after armour against each hull, both per ship and per 100 Ore, because Ore is what a counter is bought with: per ship the Lance out-damages the Mass Driver against every hull, and per Ore it does not against light ones. It pauses nothing, because the match keeps running as in Warzone 2100. Every match starts with the four starting designs saved (§7), so the designer is first needed when research unlocks a component. A saved design is renamed, never changed: other components are a new design, so the ships already built stay what they are. Queue on components that are not yet a saved design saves them first, so a new design is one click from its first ship (ADR-023). A name is up to 32 characters of the HUD's font (ADR-017).
 - **Menu:** Start skirmish, Quit. Nothing else.
 
 ---
@@ -516,3 +516,7 @@ Decided on 2026-10-01, after the MVP:
 - The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
 - The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts. The grid is a faint neutral gray rather than blue (§11, ADR-022).
 - Third-party content needs no approval, licence text or record of where it came from. AGENTS.md R14 no longer covers it (§11).
+
+Decided on 2026-10-02:
+
+- Queue in the designer saves a new design and queues it, in one click. Before, a new design had to be saved before Queue worked, and the owner's first match never built a Large hull because of it (§9, ADR-023).

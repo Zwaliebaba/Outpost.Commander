@@ -68,11 +68,31 @@ public:
     m_editing = false;
   }
 
+  // How long a save may take to come back in a snapshot before it counts as refused: two seconds at the server's 20 ticks
+  // a second.
+  static constexpr std::uint64_t SAVE_WAIT_TICKS = 40;
+
+  // Queue on picks that are no saved design yet (ADR-023): a queue at _producer waits for the design, and this returns
+  // the save to send, unless one for the same picks is already on its way. Nothing when SaveCommand has no new design.
+  [[nodiscard]] std::optional<SaveDesignCommand> SaveAndQueue(EntityId _producer, const Snapshot& _newest);
+
+  // The waiting queues whose design _newest holds, now that the server has saved it. A queue whose design is not in a
+  // snapshot within SAVE_WAIT_TICKS of its save was refused, and is dropped.
+  [[nodiscard]] std::vector<QueueShipCommand> TakeQueueCommands(const Snapshot& _newest);
+
 private:
+  struct WaitingQueue
+  {
+    EntityId producer;
+    DesignComponents components;
+    std::uint64_t savedTick = 0;
+  };
+
   HullId m_hull;
   DriveId m_drive;
   WeaponId m_weapon;
   std::optional<std::string> m_typed;
   bool m_editing = false;
+  std::vector<WaitingQueue> m_waiting;
 };
 } // namespace Outpost

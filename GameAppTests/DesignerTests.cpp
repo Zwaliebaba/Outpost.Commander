@@ -142,6 +142,43 @@ public:
     Assert::AreEqual(std::string("Swarm"), swarm.Name(snapshot), L"the name follows the snapshot again");
   }
 
+  // ADR-023: Queue on picks that are no saved design yet sends their save once and queues every press at its Shipyard
+  // when the design comes back in a snapshot. A save that does not come back in time drops its queues.
+  TEST_METHOD(QueuesADesignOnceItIsSaved)
+  {
+    constexpr Outpost::EntityId YARD{30};
+    constexpr Outpost::DesignId HEAVY{2};
+    Outpost::Designer heavy = Picking(LARGE, FUSION, LANCE);
+    Assert::IsFalse(heavy.SaveAndQueue(YARD, Components()).has_value(), L"locked");
+    Assert::IsTrue(heavy.TakeQueueCommands(Components()).empty(), L"a locked design waits for nothing");
+
+    Outpost::Snapshot snapshot = Components(true);
+    const Outpost::SaveDesignCommand save = heavy.SaveAndQueue(YARD, snapshot).value_or(Outpost::SaveDesignCommand{});
+    Assert::IsFalse(save.design.IsValid(), L"a new design");
+    Assert::AreEqual(std::string("Large+Fusion+Lance"), save.nameUtf8);
+    Assert::IsFalse(heavy.SaveAndQueue(YARD, snapshot).has_value(), L"the save is on its way");
+    Assert::IsTrue(heavy.TakeQueueCommands(snapshot).empty(), L"not saved yet");
+
+    snapshot.tick = 2;
+    snapshot.designs.push_back({.id = HEAVY, .nameUtf8 = save.nameUtf8, .hull = LARGE, .drive = FUSION, .weapon = LANCE, .cost = 465});
+    const std::vector<Outpost::QueueShipCommand> queues = heavy.TakeQueueCommands(snapshot);
+    Assert::AreEqual(size_t{2}, queues.size(), L"one for each press");
+    Assert::IsTrue(queues[0].producer == YARD && queues[0].design == HEAVY);
+    Assert::IsTrue(queues[1].producer == YARD && queues[1].design == HEAVY);
+    Assert::IsTrue(heavy.TakeQueueCommands(snapshot).empty(), L"taken once");
+    Assert::IsFalse(heavy.SaveAndQueue(YARD, snapshot).has_value(), L"saved, so the HUD queues it as it is");
+
+    Outpost::Designer refused = Picking(LARGE, ION, LANCE);
+    snapshot.tick = 100;
+    Assert::IsTrue(refused.SaveAndQueue(YARD, snapshot).has_value());
+    snapshot.tick += Outpost::Designer::SAVE_WAIT_TICKS;
+    Assert::IsTrue(refused.TakeQueueCommands(snapshot).empty(), L"still waiting");
+    ++snapshot.tick;
+    Assert::IsTrue(refused.TakeQueueCommands(snapshot).empty(), L"refused");
+    snapshot.designs.push_back({.id = Outpost::DesignId{3}, .nameUtf8 = "Late", .hull = LARGE, .drive = ION, .weapon = LANCE, .cost = 405});
+    Assert::IsTrue(refused.TakeQueueCommands(snapshot).empty(), L"dropped once the wait was over");
+  }
+
   // The name takes printable ASCII up to the limit and Backspace; Escape drops what was typed, and a name the server
   // would refuse saves nothing.
   TEST_METHOD(TypesTheName)

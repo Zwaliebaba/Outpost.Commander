@@ -77,6 +77,38 @@ std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveCommand(const S
   return SaveDesignCommand{.design = {}, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon};
 }
 
+std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveAndQueue(EntityId _producer, const Snapshot& _newest)
+{
+  std::optional<SaveDesignCommand> save = SaveCommand(_newest);
+  if (!save.has_value() || save->design.IsValid())
+    return std::nullopt;
+  const DesignComponents picked = Picked();
+  const bool saving = std::ranges::find(m_waiting, picked, &WaitingQueue::components) != m_waiting.end();
+  m_waiting.push_back({.producer = _producer, .components = picked, .savedTick = _newest.tick});
+  if (saving)
+    return std::nullopt;
+  return save;
+}
+
+std::vector<Outpost::QueueShipCommand> Outpost::Designer::TakeQueueCommands(const Snapshot& _newest)
+{
+  std::vector<QueueShipCommand> queues;
+  std::erase_if(m_waiting,
+                [&](const WaitingQueue& _waiting)
+                {
+                  const auto saved =
+                    std::ranges::find_if(_newest.designs, [&_waiting](const DesignView& _design)
+                                         { return DesignComponents{_design.hull, _design.drive, _design.weapon} == _waiting.components; });
+                  if (saved != _newest.designs.end())
+                  {
+                    queues.push_back({.producer = _waiting.producer, .design = saved->id});
+                    return true;
+                  }
+                  return _newest.tick > _waiting.savedTick + SAVE_WAIT_TICKS;
+                });
+  return queues;
+}
+
 void Outpost::Designer::BeginEditing(const Snapshot& _newest)
 {
   if (!m_typed.has_value())
