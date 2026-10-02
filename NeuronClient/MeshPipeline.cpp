@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MeshPipeline.h"
 
+#include "CompiledShader/EdgePS.h"
 #include "CompiledShader/MeshPS.h"
 #include "CompiledShader/MeshVS.h"
 
@@ -20,6 +21,13 @@ struct ObjectConstants
 };
 
 constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
+
+// How far DrawEdges pulls its lines toward the camera, so that they win over the surface they lie on. Direct3D applies
+// depth bias to triangles drawn as wireframe. In units of the depth buffer's precision at the line: at the camera's
+// default distance one unit is about 3 mm (ADR-012's near plane at 1% of the distance), so 16 is about 5 cm. The slope
+// term covers faces seen edge on, whose depth changes fastest across a pixel.
+constexpr INT EDGE_DEPTH_BIAS = -16;
+constexpr float EDGE_SLOPE_DEPTH_BIAS = -2.0f;
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
@@ -83,6 +91,21 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
+  // Edges: the same vertices, rasterized as lines along each triangle's sides, tested against the surface's depth but
+  // writing none, so the line drawn last never hides another.
+  CD3DX12_RASTERIZER_DESC edgeRasterizer(D3D12_DEFAULT);
+  edgeRasterizer.FillMode = D3D12_FILL_MODE_WIREFRAME;
+  edgeRasterizer.DepthBias = EDGE_DEPTH_BIAS;
+  edgeRasterizer.SlopeScaledDepthBias = EDGE_SLOPE_DEPTH_BIAS;
+  CD3DX12_DEPTH_STENCIL_DESC edgeDepth(D3D12_DEFAULT);
+  edgeDepth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+  edgeDepth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC edgeDescription = description;
+  edgeDescription.PS = CD3DX12_SHADER_BYTECODE(g_EdgePS, sizeof(g_EdgePS));
+  edgeDescription.RasterizerState = edgeRasterizer;
+  edgeDescription.DepthStencilState = edgeDepth;
+  winrt::check_hresult(device->CreateGraphicsPipelineState(&edgeDescription, IID_GRAPHICS_PPV_ARGS(m_edgeState)));
+
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
   const CD3DX12_RESOURCE_DESC bufferDescription = CD3DX12_RESOURCE_DESC::Buffer(UINT64{FRAME_CONSTANTS_BYTES} * Renderer::FRAME_COUNT);
   winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &bufferDescription,
@@ -115,4 +138,13 @@ void Neuron::MeshPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const M
   _commandList->IASetVertexBuffers(0, 1, &_mesh.VertexBufferView());
   _commandList->IASetIndexBuffer(&_mesh.IndexBufferView());
   _commandList->DrawIndexedInstanced(_mesh.IndexCount(), 1, 0, 0, 0);
+}
+
+void Neuron::MeshPipeline::DrawEdges(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
+                                     const DirectX::XMFLOAT4& _color) const
+{
+  // The root signature, the topology and the frame's constants stay as BeginDrawing set them; only the state changes.
+  _commandList->SetPipelineState(m_edgeState.get());
+  Draw(_commandList, _mesh, _world, _color);
+  _commandList->SetPipelineState(m_pipelineState.get());
 }

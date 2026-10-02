@@ -30,6 +30,12 @@ public:
   void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
             const DirectX::XMFLOAT4& _color) const;
 
+  // Draws the edges of _mesh's triangles as one-pixel lines in a flat, unlit linear color, over the mesh as Draw drew it:
+  // the faces turned away are culled, as Draw culls them, and the lines are pulled just in front of the surface by a
+  // depth bias so that they do not fight it. The pipeline is back on Draw's state when it returns.
+  void DrawEdges(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
+                 const DirectX::XMFLOAT4& _color) const;
+
 private:
   // The frame's constants rounded up to the size a constant buffer view needs.
   static constexpr UINT FRAME_CONSTANTS_BYTES =
@@ -37,6 +43,8 @@ private:
 
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
+  // The same, drawing triangles as their edges (DrawEdges).
+  winrt::com_ptr<ID3D12PipelineState> m_edgeState;
   // One slot per frame in flight, mapped for the pipeline's lifetime; the renderer's frame index picks the slot the GPU
   // is not reading.
   winrt::com_ptr<ID3D12Resource> m_frameConstants;
