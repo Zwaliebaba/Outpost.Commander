@@ -65,6 +65,9 @@
     <ClInclude Include="ShipBanking.h">
       <Filter>Models</Filter>
     </ClInclude>
+    <ClInclude Include="WindowManager.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Starfield.h">
       <Filter>Sky</Filter>
     </ClInclude>
@@ -121,6 +124,9 @@
     </ClCompile>
     <ClCompile Include="ShipBanking.cpp">
       <Filter>Models</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowManager.cpp">
+      <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Starfield.cpp">
       <Filter>Sky</Filter>

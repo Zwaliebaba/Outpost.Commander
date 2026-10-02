@@ -375,6 +375,8 @@ void Outpost::GameClient::ClearMatch()
   m_designer = Designer();
   m_fog = FogOfWar();
   m_banking.Clear();
+  m_windows.CloseAll();
+  m_designerOffered = false;
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -468,6 +470,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
+  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12).
+  for (auto event = input.events.begin(); event != input.events.end();)
+  {
+    if (event->kind == Neuron::InputEventKind::KeyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
+      event = input.events.erase(event);
+    else
+      ++event;
+  }
   m_camera.Update(input, _elapsedSeconds, _viewportWidthPixels, _viewportHeightPixels);
 
   m_cursorGround =
@@ -490,10 +500,16 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
     content.fogCellsPerSide = m_fog.CellsPerSide();
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
-    // The name takes no more typing once the designer is not shown: its Shipyard was deselected or destroyed.
-    if (!content.designer.has_value())
+    // Selecting a built Shipyard opens the designer, once: closed, it stays closed until a Shipyard is selected again.
+    if (content.designer.has_value() && !m_designerOffered)
+      m_windows.Open(WindowKind::Designer);
+    m_designerOffered = content.designer.has_value();
+    // The name takes no more typing once the designer is not shown: closed, or its Shipyard deselected or destroyed.
+    if (!content.designer.has_value() || !m_windows.IsOpen(WindowKind::Designer))
       m_designer.EndEditing();
-    m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view);
+    m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
+    for (const Hud::Window& window : m_hudLayout.windows)
+      m_windows.Settle(window.kind, window.corner);
   }
   WatchForResponse();
 }
@@ -579,9 +595,26 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
     const auto x = static_cast<float>(event.xPixels);
     const auto y = static_cast<float>(event.yPixels);
     if (event.kind == Neuron::InputEventKind::ButtonUp && event.key == VK_LBUTTON)
+    {
       m_minimapDragging = false;
+      m_windows.Release();
+    }
     if (event.kind != Neuron::InputEventKind::ButtonDown)
       continue;
+    if (const Hud::Window* window = m_hudLayout.WindowAt(x, y); window != nullptr && event.key == VK_LBUTTON)
+    {
+      if (window->closeBox.Contains(x, y))
+      {
+        m_windows.Close(window->kind);
+        continue;
+      }
+      if (window->titleBar.Contains(x, y))
+      {
+        m_windows.Grab(window->kind, ToUnits(x, y), window->corner);
+        continue;
+      }
+      m_windows.Open(window->kind);
+    }
     if (event.key == VK_LBUTTON)
     {
       const std::optional<Hud::Action> action = m_hudLayout.ActionAt(x, y);
@@ -606,12 +639,20 @@ void Outpost::GameClient::HandleHudInput(const Neuron::InputState& _input)
         m_controls.MoveTo(*point, m_entities);
     }
   }
+  if (m_windows.IsDragging() && _input.IsDown(VK_LBUTTON))
+    m_windows.Drag(ToUnits(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels)));
   if (m_minimapDragging && _input.IsDown(VK_LBUTTON))
   {
     if (const std::optional<PlanePosition> point =
           m_hudLayout.MapPointAt(static_cast<float>(_input.cursorXPixels), static_cast<float>(_input.cursorYPixels)))
       m_camera.SetFocus(point->xMeters, point->zMeters);
   }
+}
+
+Outpost::WindowManager::Point Outpost::GameClient::ToUnits(float _xPixels, float _yPixels) const noexcept
+{
+  const float scale = Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels);
+  return {.xUnits = _xPixels / scale, .yUnits = _yPixels / scale};
 }
 
 std::vector<Outpost::PlanePosition> Outpost::GameClient::ViewOnGround() const
@@ -765,11 +806,35 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
   if (m_hudLayout.fontPixels <= 0.0f)
     return;
   // The layout's own scale, which its font size was set by.
-  m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, m_hudLayout.fontPixels / Hud::FONT_UNITS);
-  for (const Hud::Rect& panel : m_hudLayout.panels)
-    m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
-  for (const Hud::Text& text : m_hudLayout.texts)
-    m_ui.DrawText(static_cast<std::size_t>(text.typeface), text.text, text.left, text.top, text.color, text.trackingPixels);
+  const float scale = m_hudLayout.fontPixels / Hud::FONT_UNITS;
+  m_ui.Begin(m_viewport.widthPixels, m_viewport.heightPixels, scale);
+  // The HUD, then each window back to front: each layer's panels, then its sprites, then its texts (ADR-031).
+  for (std::size_t layer = 0; layer < m_hudLayout.LayerCount(); ++layer)
+  {
+    const Hud::Span panels = m_hudLayout.PanelsOf(layer);
+    for (std::size_t i = panels.first; i < panels.end; ++i)
+    {
+      const Hud::Rect& panel = m_hudLayout.panels[i];
+      if (panel.fill == Hud::Fill::Hatched)
+        m_ui.FillHatched(panel.left, panel.top, panel.width, panel.height, panel.color, Hud::HATCH_PERIOD_UNITS * scale,
+                         Hud::HATCH_STRIPE_UNITS * scale);
+      else
+        m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
+    }
+    const Hud::Span sprites = m_hudLayout.SpritesOf(layer);
+    for (std::size_t i = sprites.first; i < sprites.end; ++i)
+    {
+      const Hud::SpriteMark& mark = m_hudLayout.sprites[i];
+      m_ui.DrawSprite(static_cast<std::size_t>(mark.sprite), mark.area.left, mark.area.top, mark.area.width, mark.area.height,
+                      mark.area.color, mark.mirrorX, mark.mirrorY);
+    }
+    const Hud::Span texts = m_hudLayout.TextsOf(layer);
+    for (std::size_t i = texts.first; i < texts.end; ++i)
+    {
+      const Hud::Text& text = m_hudLayout.texts[i];
+      m_ui.DrawText(static_cast<std::size_t>(text.typeface), text.text, text.left, text.top, text.color, text.trackingPixels);
+    }
+  }
   m_ui.End(_commandList, _frameIndex);
 }
 

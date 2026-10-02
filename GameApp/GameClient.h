@@ -100,7 +100,10 @@ private:
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
+  // A press on a window brings it to the front: on its close box it closes it, and on its title bar it drags it.
   void HandleHudInput(const Neuron::InputState& _input);
+  // A point on the back buffer in the HUD's reference units.
+  [[nodiscard]] WindowManager::Point ToUnits(float _xPixels, float _yPixels) const noexcept;
   // What a HUD button does: arms a placement, queues a job or a topic, or works the designer.
   void HandleHudAction(const Hud::Action& _action);
   // Forgets the match being shown.
@@ -155,6 +158,10 @@ private:
   Designer m_designer;
   // What the player has seen of the map, when the match is played under fog of war (ADR-024).
   FogOfWar m_fog;
+  // The floating windows, which keep their places for as long as the game runs (ADR-031); and whether the designer was
+  // opened for the Shipyard selected now, so that one closed stays closed until the Shipyard is selected again.
+  WindowManager m_windows;
+  bool m_designerOffered = false;
   // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
   // allocated every frame (ADR-029).
   ShipBanking m_banking;

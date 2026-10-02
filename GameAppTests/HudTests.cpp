@@ -20,6 +20,17 @@ Outpost::Snapshot Newest()
   return snapshot;
 }
 
+// A designer with a name field and one pick of each slot, and a button of the HUD's, for laying windows out.
+Outpost::Hud::Content WithDesigner()
+{
+  Outpost::Hud::Content content;
+  content.buttons = {{.label = "Shipyard|300", .action = {.kind = Outpost::Hud::ActionKind::Build}}};
+  Outpost::Hud::DesignerPanel designer{.name = "Swarm"};
+  designer.hulls = {{.label = "Small", .action = {.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}}}};
+  content.designer = designer;
+  return content;
+}
+
 Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int32_t _hitPointsHundredths, std::int32_t _maxHundredths)
 {
   return {.id = Outpost::EntityId{_id},
@@ -47,6 +58,85 @@ public:
     for (const Neuron::FontDesc& typeface : typefaces)
       Assert::IsTrue(!typeface.families.empty() && typeface.emUnits > 0.0f);
     Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Sprite::Corner) + 1, Outpost::Hud::Sprites().size());
+  }
+
+  // ADR-031: the designer is a window: at first in the top-right corner, its title bar left of its close box, a bracket at
+  // each corner, and its buttons its own layer's.
+  TEST_METHOD(LaysTheDesignerOutAsAWindow)
+  {
+    Outpost::WindowManager windows;
+    Assert::IsTrue(Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.empty(), L"closed, it is not laid out");
+    windows.Open(Outpost::WindowKind::Designer);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    Assert::AreEqual(size_t{1}, layout.windows.size());
+    const Outpost::Hud::Window& window = layout.windows.front();
+    Assert::IsTrue(window.kind == Outpost::WindowKind::Designer);
+    Assert::IsTrue(window.frame.left > 1920.0f - 700.0f && window.frame.top < 30.0f, L"top right");
+    Assert::IsTrue(window.titleBar.Contains(window.frame.left + 10.0f, window.frame.top + 10.0f));
+    Assert::IsTrue(window.closeBox.left >= window.titleBar.left + window.titleBar.width);
+    Assert::IsTrue(window.titleBar.fill == Outpost::Hud::Fill::Hatched);
+    const Outpost::Hud::Span sprites = layout.SpritesOf(1);
+    Assert::AreEqual(size_t{4}, sprites.end - sprites.first);
+    Assert::AreEqual(size_t{0}, layout.SpritesOf(0).end, L"the HUD has none");
+
+    const Outpost::Hud::Span actions = layout.ActionsOf(1);
+    const auto name = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
+                                        layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end),
+                                        Outpost::Hud::ActionKind::EditName, [](const auto& _entry) { return _entry.second.kind; });
+    Assert::IsTrue(name != layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.end));
+    Assert::AreEqual(size_t{1}, layout.LayerAt(name->first.left + 5.0f, name->first.top + 5.0f));
+    Assert::IsTrue(layout.WindowAt(name->first.left + 5.0f, name->first.top + 5.0f) == &window);
+    Assert::IsTrue(layout.Covers(window.frame.left + 1.0f, window.frame.top + 1.0f));
+  }
+
+  // ADR-031: a dragged window is laid out where it was left; a HUD button under it takes no click; and however far it is
+  // dragged, and on whatever screen, its title bar stays where it can be taken hold of again.
+  TEST_METHOD(KeepsAMovedWindowOnTheScreenAndInFront)
+  {
+    Outpost::WindowManager windows;
+    const Outpost::Hud::Layout hudOnly = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    const auto build =
+      std::ranges::find(hudOnly.actions, Outpost::Hud::ActionKind::Build, [](const auto& _entry) { return _entry.second.kind; });
+    Assert::IsTrue(build != hudOnly.actions.end());
+    const float buildX = build->first.left + 5.0f;
+    const float buildY = build->first.top + 5.0f;
+    Assert::IsTrue(hudOnly.ActionAt(buildX, buildY).has_value());
+
+    // At 1920x1080 a reference unit is a pixel. The window is moved so that its body covers the HUD's button.
+    windows.Open(Outpost::WindowKind::Designer);
+    const Outpost::WindowManager::Point over{.xUnits = buildX - 20.0f, .yUnits = buildY - 60.0f};
+    windows.Grab(Outpost::WindowKind::Designer, over, over);
+    windows.Release();
+    const Outpost::Hud::Layout covered = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows);
+    const Outpost::Hud::Window& window = covered.windows.front();
+    Assert::IsTrue(window.frame.Contains(buildX, buildY));
+    Assert::AreEqual(size_t{1}, covered.LayerAt(buildX, buildY));
+    const std::optional<Outpost::Hud::Action> under = covered.ActionAt(buildX, buildY);
+    Assert::IsTrue(!under.has_value() || under->kind != Outpost::Hud::ActionKind::Build, L"the window's, not the HUD's");
+
+    // Dragged off the bottom-right corner, it keeps its title bar and some of its width on the screen.
+    windows.Grab(Outpost::WindowKind::Designer, {}, {});
+    windows.Drag({.xUnits = 5000.0f, .yUnits = 5000.0f});
+    windows.Release();
+    const Outpost::Hud::Window farWindow = Outpost::Hud::Lay(WithDesigner(), 1920, 1080, {}, &windows).windows.front();
+    Assert::AreEqual(1920.0f - Outpost::Hud::WINDOW_KEPT_ON_SCREEN_UNITS, farWindow.frame.left, 0.01f);
+    Assert::AreEqual(1080.0f - Outpost::Hud::TITLE_BAR_UNITS, farWindow.frame.top, 0.01f);
+    // And off the top-left one.
+    windows.Grab(Outpost::WindowKind::Designer, {}, {});
+    windows.Drag({.xUnits = -5000.0f, .yUnits = -5000.0f});
+    windows.Release();
+    const Outpost::Hud::Window nearWindow = Outpost::Hud::Lay(WithDesigner(), 1280, 720, {}, &windows).windows.front();
+    Assert::AreEqual(Outpost::Hud::WINDOW_KEPT_ON_SCREEN_UNITS * (720.0f / 1080.0f), nearWindow.frame.left + nearWindow.frame.width, 0.01f);
+    Assert::AreEqual(0.0f, nearWindow.frame.top, 0.01f);
+  }
+
+  TEST_METHOD(KeepsAWindowsTitleBarOnTheScreen)
+  {
+    using Point = Outpost::WindowManager::Point;
+    const auto kept = [](Point _corner) { return Outpost::Hud::KeepOnScreen(_corner, 600.0f, 1920.0f, 1080.0f); };
+    Assert::IsTrue(kept({.xUnits = 100.0f, .yUnits = 100.0f}) == Point{.xUnits = 100.0f, .yUnits = 100.0f}, L"on the screen, it stays");
+    Assert::IsTrue(kept({.xUnits = 3000.0f, .yUnits = 3000.0f}) == Point{.xUnits = 1800.0f, .yUnits = 1044.0f});
+    Assert::IsTrue(kept({.xUnits = -3000.0f, .yUnits = -30.0f}) == Point{.xUnits = -480.0f, .yUnits = 0.0f});
   }
 
   TEST_METHOD(GroupsDigitsInThousands)

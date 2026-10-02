@@ -28,7 +28,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.2 | Floating windows | 9.1 | — | todo |
+| 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | todo |
 | 9.4 | Research and production as windows | 9.2 | — | todo |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | todo |
@@ -139,9 +139,16 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 
 - **Goal:** design §12.
 - **Scope:** in `GameApp`, a window manager the HUD lays out through: windows with a title bar, a front-to-back order, dragging by the title bar, clamping to the screen with the title bar always reachable, bringing to the front on a click, closing with × and Esc, and each window's position kept in memory for as long as the process lives. Input focus tests the windows front to back, then the anchored HUD, then the world (ADR-015's rectangle test). Positions are held in reference units and clamped again when the screen's size changes.
-- **ADR:** a new one: the window manager and its focus order.
+- **ADR:** [ADR-031](../Design/ADR/ADR-031-floating-windows.md): the window manager and its focus order.
 - **Acceptance:** `HudTests` cover dragging, clamping after a resize, the order of focus, Esc closing the front window, and a window reopening where it was closed.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-031](../Design/ADR/ADR-031-floating-windows.md).
+  - **The state.** `Outpost::WindowManager`: open windows front to back, where each was left, and the drag.
+  - **The layout.** `Hud::Lay` takes the manager and lays each open window out last, back to front, kept on the screen by `Hud::KeepOnScreen`; the layout is drawn and clicked in layers, so a window covers what is behind it and a HUD button under one takes no click.
+  - **The designer is the first window**, laid out as before inside a frame with a hatched title bar, a close box and corner brackets. Until 9.3 adds its button and key, selecting a built Shipyard opens it once.
+  - **Esc** closes the front window and goes no further, so with a window open it no longer cancels a placement first; the designer's name field still has it first while typing.
+  - **Tests.** `WindowManagerTests`; `HudTests` for the designer's window, its layers, a HUD button under it, and clamping at 1920×1080 and 1280×720. Esc and dragging by hand are the owner's run.
+  - **Not built or run in the container**: the manager was checked there in a standalone build.
 
 ### 9.3 — The designer window after the mockup
 

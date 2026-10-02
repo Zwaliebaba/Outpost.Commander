@@ -202,6 +202,73 @@ void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const
       {_button.label.substr(split + 1), face.left + costLeft, labelTop, _button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
   }
 }
+
+// A floating window's look (ADR-031), after the owner's mockup (Phase 1 design §11): a dark navy body, a hatched title bar
+// with the title in the title face, a close box at its right end, and a bracket at each corner.
+constexpr DirectX::XMFLOAT4 WINDOW_COLOR{0.035f, 0.05f, 0.08f, 0.95f};
+constexpr DirectX::XMFLOAT4 TITLE_HATCH_COLOR{0.12f, 0.16f, 0.22f, 0.9f};
+constexpr DirectX::XMFLOAT4 CLOSE_BOX_COLOR{0.08f, 0.11f, 0.16f, 1.0f};
+constexpr DirectX::XMFLOAT4 WINDOW_EDGE_COLOR{0.45f, 0.55f, 0.68f, 1.0f};
+constexpr float CORNER_UNITS = 12.0f;
+// Where the title's and the close box's characters sit in the title bar.
+constexpr float TITLE_TEXT_INSET = 5.0f;
+constexpr float CLOSE_TEXT_LEFT = 11.0f;
+// The multiplication sign, in UTF-8.
+constexpr std::string_view CLOSE_MARK = "\xC3\x97";
+
+// Opens a window in the layout: its frame, title bar, close box and corners, its place in the layout's lists, and its
+// title. The body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top
+// in pixels.
+float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _title, Outpost::WindowManager::Point _corner,
+                 float _widthUnits, float _bodyHeightUnits, float _scale)
+{
+  const float left = _corner.xUnits * _scale;
+  const float top = _corner.yUnits * _scale;
+  const float width = _widthUnits * _scale;
+  const float titleHeight = Hud::TITLE_BAR_UNITS * _scale;
+  Hud::Window window{.kind = _kind,
+                     .frame = {left, top, width, titleHeight + (_bodyHeightUnits * _scale), WINDOW_COLOR},
+                     .titleBar = {left, top, width - titleHeight, titleHeight, TITLE_HATCH_COLOR, Hud::Fill::Hatched},
+                     .closeBox = {left + width - titleHeight, top, titleHeight, titleHeight, CLOSE_BOX_COLOR},
+                     .corner = _corner,
+                     .firstPanel = _layout.panels.size(),
+                     .firstText = _layout.texts.size(),
+                     .firstSprite = _layout.sprites.size(),
+                     .firstAction = _layout.actions.size()};
+  _layout.panels.push_back(window.frame);
+  _layout.panels.push_back(window.titleBar);
+  _layout.panels.push_back(window.closeBox);
+  _layout.texts.push_back(
+    {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::Typeface::Title});
+  _layout.texts.push_back({std::string(CLOSE_MARK), window.closeBox.left + (CLOSE_TEXT_LEFT * _scale), top + (TITLE_TEXT_INSET * _scale),
+                           TEXT_COLOR, Hud::Typeface::Title});
+  const float corner = CORNER_UNITS * _scale;
+  const Hud::Rect& frame = window.frame;
+  for (const bool right : {false, true})
+  {
+    for (const bool bottom : {false, true})
+    {
+      _layout.sprites.push_back({.sprite = Hud::Sprite::Corner,
+                                 .area = {right ? frame.left + frame.width - corner : frame.left,
+                                          bottom ? frame.top + frame.height - corner : frame.top, corner, corner, WINDOW_EDGE_COLOR},
+                                 .mirrorX = right,
+                                 .mirrorY = bottom});
+    }
+  }
+  _layout.windows.push_back(window);
+  return top + titleHeight;
+}
+
+// Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
+std::size_t LayerStart(const Hud::Layout& _layout, std::size_t _window, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
+{
+  return _window < _layout.windows.size() ? _layout.windows[_window].*_first : _total;
+}
+
+Hud::Span LayerSpan(const Hud::Layout& _layout, std::size_t _layer, std::size_t Hud::Window::*_first, std::size_t _total) noexcept
+{
+  return {.first = _layer == 0 ? 0 : LayerStart(_layout, _layer - 1, _first, _total), .end = LayerStart(_layout, _layer, _first, _total)};
+}
 } // namespace
 
 std::string Outpost::WithThousands(std::int64_t _value)
@@ -264,12 +331,57 @@ bool Hud::Layout::Covers(float _xPixels, float _yPixels) const noexcept
 
 std::optional<Hud::Action> Hud::Layout::ActionAt(float _xPixels, float _yPixels) const noexcept
 {
-  for (const auto& [area, action] : actions)
+  const Span span = ActionsOf(LayerAt(_xPixels, _yPixels));
+  for (std::size_t i = span.first; i < span.end; ++i)
   {
-    if (area.Contains(_xPixels, _yPixels))
-      return action;
+    if (actions[i].first.Contains(_xPixels, _yPixels))
+      return actions[i].second;
   }
   return std::nullopt;
+}
+
+std::size_t Hud::Layout::LayerAt(float _xPixels, float _yPixels) const noexcept
+{
+  for (std::size_t window = windows.size(); window-- > 0;)
+  {
+    if (windows[window].frame.Contains(_xPixels, _yPixels))
+      return window + 1;
+  }
+  return 0;
+}
+
+const Hud::Window* Hud::Layout::WindowAt(float _xPixels, float _yPixels) const noexcept
+{
+  const std::size_t layer = LayerAt(_xPixels, _yPixels);
+  return layer == 0 ? nullptr : &windows[layer - 1];
+}
+
+Hud::Span Hud::Layout::PanelsOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstPanel, panels.size());
+}
+
+Hud::Span Hud::Layout::TextsOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstText, texts.size());
+}
+
+Hud::Span Hud::Layout::SpritesOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstSprite, sprites.size());
+}
+
+Hud::Span Hud::Layout::ActionsOf(std::size_t _layer) const noexcept
+{
+  return LayerSpan(*this, _layer, &Window::firstAction, actions.size());
+}
+
+Outpost::WindowManager::Point Hud::KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
+                                                float _screenHeightUnits) noexcept
+{
+  const float kept = std::min(WINDOW_KEPT_ON_SCREEN_UNITS, _widthUnits);
+  return {.xUnits = std::clamp(_corner.xUnits, kept - _widthUnits, std::max(kept - _widthUnits, _screenWidthUnits - kept)),
+          .yUnits = std::clamp(_corner.yUnits, 0.0f, std::max(0.0f, _screenHeightUnits - TITLE_BAR_UNITS))};
 }
 
 std::optional<Outpost::PlanePosition> Hud::Layout::MapPointAt(float _xPixels, float _yPixels) const noexcept
@@ -507,7 +619,8 @@ float Hud::Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexce
   return std::min(static_cast<float>(_widthPixels) / REFERENCE_WIDTH_UNITS, static_cast<float>(_heightPixels) / REFERENCE_HEIGHT_UNITS);
 }
 
-Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels, std::span<const PlanePosition> _view)
+Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels, std::span<const PlanePosition> _view,
+                     const WindowManager* _windows)
 {
   const float scale = Scale(_widthPixels, _heightPixels);
   const auto width = static_cast<float>(_widthPixels);
@@ -588,65 +701,6 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
                 _content.buttons[i]);
   }
 
-  // Top-right anchor: the designer, a row at a time.
-  if (_content.designer.has_value())
-  {
-    const DesignerPanel& designer = *_content.designer;
-    const float rowStep = BUTTON_HEIGHT + BUTTON_GAP;
-    const float rows = 5.0f + static_cast<float>(designer.table.size());
-    const float panelHeight = (2.0f * PADDING) + (rows * rowStep) + (static_cast<float>(designer.summary.size()) * LINE_STEP);
-    const float left = width - ((MARGIN + DESIGNER_WIDTH) * scale);
-    const float top = MARGIN * scale;
-    layout.panels.push_back({left, top, DESIGNER_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
-    const float inner = left + (PADDING * scale);
-    const float fieldLeft = inner + (DESIGNER_LABEL_WIDTH * scale);
-    float y = top + (PADDING * scale);
-    const auto labelAt = [&](std::string _text, float _left, float _rowTop, const DirectX::XMFLOAT4& _color)
-    { layout.texts.push_back({std::move(_text), _left, _rowTop + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale), _color}); };
-
-    // The name, a field that takes typing once clicked.
-    labelAt("Name", inner, y, TEXT_COLOR);
-    const Rect field{fieldLeft, y, (DESIGNER_WIDTH - (2.0f * PADDING) - DESIGNER_LABEL_WIDTH) * scale, BUTTON_HEIGHT * scale,
-                     designer.editing ? SELECTED_BUTTON_COLOR : BUTTON_COLOR};
-    layout.panels.push_back(field);
-    layout.actions.emplace_back(field, Action{.kind = ActionKind::EditName});
-    labelAt(designer.editing ? designer.name + "_" : designer.name, field.left + (PADDING * scale), y,
-            designer.nameValid ? TEXT_COLOR : WARNING_COLOR);
-    y += rowStep * scale;
-
-    const std::array<std::pair<std::string_view, const std::vector<Button>*>, 3> slots{
-      {{"Hull", &designer.hulls}, {"Drive", &designer.drives}, {"Weapon", &designer.weapons}}};
-    for (const auto& [label, picks] : slots)
-    {
-      labelAt(std::string(label), inner, y, TEXT_COLOR);
-      for (size_t i = 0; i < picks->size(); ++i)
-        addButton({fieldLeft + (static_cast<float>(i) * (PICK_WIDTH + BUTTON_GAP) * scale), y, PICK_WIDTH * scale, BUTTON_HEIGHT * scale},
-                  (*picks)[i]);
-      y += rowStep * scale;
-    }
-
-    for (const std::string& line : designer.summary)
-    {
-      layout.texts.push_back({line, inner, y, TEXT_COLOR});
-      y += LINE_STEP * scale;
-    }
-    for (size_t row = 0; row < designer.table.size(); ++row)
-    {
-      const std::vector<std::string>& cells = designer.table[row];
-      for (size_t column = 0; column < cells.size(); ++column)
-      {
-        const float cellLeft =
-          column == 0 ? inner : inner + ((TABLE_LABEL_WIDTH + (static_cast<float>(column - 1) * TABLE_COLUMN_WIDTH)) * scale);
-        labelAt(cells[column], cellLeft, y, row == 0 || column == 0 ? DIM_TEXT_COLOR : TEXT_COLOR);
-      }
-      y += rowStep * scale;
-    }
-
-    for (size_t i = 0; i < designer.actions.size(); ++i)
-      addButton({inner + (static_cast<float>(i) * (ACTION_WIDTH + BUTTON_GAP) * scale), y, ACTION_WIDTH * scale, BUTTON_HEIGHT * scale},
-                designer.actions[i]);
-  }
-
   // Bottom-left anchor: the minimap, with every mark and the camera's view.
   if (_content.mapSizeMeters > 0.0f)
   {
@@ -713,6 +767,81 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       layout.panels.push_back({low.x, high.y - line, high.x - low.x, line, VIEW_COLOR});
       layout.panels.push_back({low.x, low.y, line, high.y - low.y, VIEW_COLOR});
       layout.panels.push_back({high.x - line, low.y, line, high.y - low.y, VIEW_COLOR});
+    }
+  }
+
+  // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
+  // or, without a manager, every window the content has at its default place.
+  const float screenWidthUnits = width / scale;
+  const float screenHeightUnits = height / scale;
+  std::vector<WindowKind> backToFront{WindowKind::Designer};
+  if (_windows != nullptr)
+    backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
+  const auto place = [&](WindowKind _kind, WindowManager::Point _default, float _widthUnits)
+  {
+    const std::optional<WindowManager::Point> moved = _windows != nullptr ? _windows->PositionOf(_kind) : std::nullopt;
+    return KeepOnScreen(moved.value_or(_default), _widthUnits, screenWidthUnits, screenHeightUnits);
+  };
+  for (const WindowKind kind : backToFront)
+  {
+    // The designer, at first in the top-right corner, a row at a time.
+    if (kind == WindowKind::Designer && _content.designer.has_value())
+    {
+      const DesignerPanel& designer = *_content.designer;
+      const float rowStep = BUTTON_HEIGHT + BUTTON_GAP;
+      const float rows = 5.0f + static_cast<float>(designer.table.size());
+      const float bodyHeight = (2.0f * PADDING) + (rows * rowStep) + (static_cast<float>(designer.summary.size()) * LINE_STEP);
+      const WindowManager::Point corner =
+        place(kind, {.xUnits = screenWidthUnits - MARGIN - DESIGNER_WIDTH, .yUnits = MARGIN}, DESIGNER_WIDTH);
+      const float left = corner.xUnits * scale;
+      const float top = OpenWindow(layout, kind, "SHIP DESIGN", corner, DESIGNER_WIDTH, bodyHeight, scale);
+      const float inner = left + (PADDING * scale);
+      const float fieldLeft = inner + (DESIGNER_LABEL_WIDTH * scale);
+      float y = top + (PADDING * scale);
+      const auto labelAt = [&](std::string _text, float _left, float _rowTop, const DirectX::XMFLOAT4& _color)
+      { layout.texts.push_back({std::move(_text), _left, _rowTop + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * scale), _color}); };
+
+      // The name, a field that takes typing once clicked.
+      labelAt("Name", inner, y, TEXT_COLOR);
+      const Rect field{fieldLeft, y, (DESIGNER_WIDTH - (2.0f * PADDING) - DESIGNER_LABEL_WIDTH) * scale, BUTTON_HEIGHT * scale,
+                       designer.editing ? SELECTED_BUTTON_COLOR : BUTTON_COLOR};
+      layout.panels.push_back(field);
+      layout.actions.emplace_back(field, Action{.kind = ActionKind::EditName});
+      labelAt(designer.editing ? designer.name + "_" : designer.name, field.left + (PADDING * scale), y,
+              designer.nameValid ? TEXT_COLOR : WARNING_COLOR);
+      y += rowStep * scale;
+
+      const std::array<std::pair<std::string_view, const std::vector<Button>*>, 3> slots{
+        {{"Hull", &designer.hulls}, {"Drive", &designer.drives}, {"Weapon", &designer.weapons}}};
+      for (const auto& [label, picks] : slots)
+      {
+        labelAt(std::string(label), inner, y, TEXT_COLOR);
+        for (size_t i = 0; i < picks->size(); ++i)
+          addButton({fieldLeft + (static_cast<float>(i) * (PICK_WIDTH + BUTTON_GAP) * scale), y, PICK_WIDTH * scale, BUTTON_HEIGHT * scale},
+                    (*picks)[i]);
+        y += rowStep * scale;
+      }
+
+      for (const std::string& line : designer.summary)
+      {
+        layout.texts.push_back({line, inner, y, TEXT_COLOR});
+        y += LINE_STEP * scale;
+      }
+      for (size_t row = 0; row < designer.table.size(); ++row)
+      {
+        const std::vector<std::string>& cells = designer.table[row];
+        for (size_t column = 0; column < cells.size(); ++column)
+        {
+          const float cellLeft =
+            column == 0 ? inner : inner + ((TABLE_LABEL_WIDTH + (static_cast<float>(column - 1) * TABLE_COLUMN_WIDTH)) * scale);
+          labelAt(cells[column], cellLeft, y, row == 0 || column == 0 ? DIM_TEXT_COLOR : TEXT_COLOR);
+        }
+        y += rowStep * scale;
+      }
+
+      for (size_t i = 0; i < designer.actions.size(); ++i)
+        addButton({inner + (static_cast<float>(i) * (ACTION_WIDTH + BUTTON_GAP) * scale), y, ACTION_WIDTH * scale, BUTTON_HEIGHT * scale},
+                  designer.actions[i]);
     }
   }
   return layout;

@@ -87,6 +87,7 @@
     <ClInclude Include="PlayerControls.h" />
     <ClInclude Include="SnapshotInterpolator.h" />
     <ClInclude Include="ShipBanking.h" />
+    <ClInclude Include="WindowManager.h" />
     <ClInclude Include="CombatEffects.h" />
     <ClInclude Include="EffectRandom.h" />
     <ClInclude Include="ExplosionManager.h" />
@@ -110,6 +111,7 @@
     <ClCompile Include="PlayerControls.cpp" />
     <ClCompile Include="SnapshotInterpolator.cpp" />
     <ClCompile Include="ShipBanking.cpp" />
+    <ClCompile Include="WindowManager.cpp" />
     <ClCompile Include="CombatEffects.cpp" />
     <ClCompile Include="ExplosionManager.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />

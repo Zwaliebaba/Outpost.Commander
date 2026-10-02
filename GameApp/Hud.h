@@ -159,6 +159,22 @@ public:
     std::optional<Outcome> outcome;
   };
 
+  // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
+  enum class Fill : std::uint8_t
+  {
+    Solid,
+    Hatched
+  };
+
+  // A hatched panel's stripes: this wide, this far apart, in reference units.
+  static constexpr float HATCH_STRIPE_UNITS = 2.0f;
+  static constexpr float HATCH_PERIOD_UNITS = 7.0f;
+
+  // A window's title bar, which it is dragged by, and its close box at the bar's right end; and how much of a window's
+  // width stays on the screen however far it is dragged, so that its title bar can always be taken hold of again.
+  static constexpr float TITLE_BAR_UNITS = 36.0f;
+  static constexpr float WINDOW_KEPT_ON_SCREEN_UNITS = 120.0f;
+
   struct Rect
   {
     float left = 0.0f;
@@ -166,6 +182,7 @@ public:
     float width = 0.0f;
     float height = 0.0f;
     DirectX::XMFLOAT4 color{};
+    Fill fill = Fill::Solid;
 
     [[nodiscard]] bool Contains(float _xPixels, float _yPixels) const noexcept
     {
@@ -184,7 +201,40 @@ public:
     float trackingPixels = 0.0f;
   };
 
-  // The HUD on a back buffer of one size, in its pixels.
+  // A sprite drawn into a rectangle, in the rectangle's color, mirrored when asked (ADR-030).
+  struct SpriteMark
+  {
+    Sprite sprite = Sprite::OreMark;
+    Rect area;
+    bool mirrorX = false;
+    bool mirrorY = false;
+  };
+
+  // A floating window as laid out (ADR-031): its kind; where it stands, its title bar and its close box, in pixels; its
+  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, texts, sprites and
+  // buttons start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
+  struct Window
+  {
+    WindowKind kind = WindowKind::Designer;
+    Rect frame;
+    Rect titleBar;
+    Rect closeBox;
+    WindowManager::Point corner;
+    std::size_t firstPanel = 0;
+    std::size_t firstText = 0;
+    std::size_t firstSprite = 0;
+    std::size_t firstAction = 0;
+  };
+
+  // A layer's share of one of the layout's lists, from first up to end.
+  struct Span
+  {
+    std::size_t first = 0;
+    std::size_t end = 0;
+  };
+
+  // The HUD on a back buffer of one size, in its pixels. It is drawn in layers: the HUD, then each window back to front,
+  // each layer's panels, then its sprites, then its texts. A click belongs to the front layer under it.
   struct Layout
   {
     float fontPixels = 0.0f;
@@ -195,10 +245,27 @@ public:
     // The minimap's drawing area, the map's square; empty when there is no minimap.
     Rect minimap;
     float mapSizeMeters = 0.0f;
+    std::vector<SpriteMark> sprites;
+    // Back to front, the order they are drawn in.
+    std::vector<Window> windows;
+
+    // Layer 0 is the HUD and layer i + 1 the window windows[i]; there are windows.size() + 1.
+    [[nodiscard]] std::size_t LayerCount() const noexcept
+    {
+      return windows.size() + 1;
+    }
+    // The front layer under a point: the front window's that holds it, or the HUD's.
+    [[nodiscard]] std::size_t LayerAt(float _xPixels, float _yPixels) const noexcept;
+    [[nodiscard]] Span PanelsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span TextsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span SpritesOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
+    // The front window under a point, if any.
+    [[nodiscard]] const Window* WindowAt(float _xPixels, float _yPixels) const noexcept;
 
     // Whether a point in back-buffer pixels is on a panel, where a click belongs to the HUD.
     [[nodiscard]] bool Covers(float _xPixels, float _yPixels) const noexcept;
-    // The enabled button under a point, if any.
+    // The enabled button of the front layer under a point, if any: a button of the HUD under a window takes no click.
     [[nodiscard]] std::optional<Action> ActionAt(float _xPixels, float _yPixels) const noexcept;
     // The point on the map under a point on the minimap, if it is on the minimap.
     [[nodiscard]] std::optional<PlanePosition> MapPointAt(float _xPixels, float _yPixels) const noexcept;
@@ -220,9 +287,16 @@ public:
   [[nodiscard]] static Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
   // Where everything goes on a back buffer of this size. _view is the ground the camera shows, its corners in order,
-  // outlined on the minimap; empty when the camera sees past the horizon.
+  // outlined on the minimap; empty when the camera sees past the horizon. The floating windows (ADR-031) are those
+  // _windows has open, in its order and where it left them; without a manager, every window the content has, at its
+  // default place.
   [[nodiscard]] static Layout Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                  std::span<const PlanePosition> _view = {});
+                                  std::span<const PlanePosition> _view = {}, const WindowManager* _windows = nullptr);
+
+  // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
+  // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.
+  [[nodiscard]] static WindowManager::Point KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
+                                                         float _screenHeightUnits) noexcept;
 
   // The scale from reference units to pixels: the largest at which the whole reference frame fits (ADR-006).
   [[nodiscard]] static float Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept;

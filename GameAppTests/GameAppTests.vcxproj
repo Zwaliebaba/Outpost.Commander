@@ -100,6 +100,7 @@
     <ClCompile Include="PlayerControlsTests.cpp" />
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
     <ClCompile Include="ShipBankingTests.cpp" />
+    <ClCompile Include="WindowManagerTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="ExplosionManagerTests.cpp" />
     <ClCompile Include="ParticleSystemTests.cpp" />
