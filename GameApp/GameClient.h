@@ -76,6 +76,9 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // How high a Mining Rig, the model _set/_model drawn at _scale, stands over the ground so that every foot reaches the
+  // rock under it (ADR-027).
+  [[nodiscard]] float RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
   // The color of the shooter's beams: its side's, made lighter (ADR-028). Nothing for a shooter the view does not hold.
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
@@ -181,6 +184,8 @@ private:
   std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
+  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelMeshes.
+  std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;
