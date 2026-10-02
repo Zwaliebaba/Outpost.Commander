@@ -135,7 +135,7 @@ private:
   Neuron::GroundMaskPipeline m_groundMask;
   // The particles, drawn with DeepSpaceOutpost's particle texture rather than as soft spots (ADR-026).
   std::unique_ptr<Neuron::GlowPipeline> m_particleSprites;
-  // The sky behind everything (ADR-022): its stars as points, and its brightest as starbursts.
+  // The sky behind everything (ADR-022): its stars as points, and its brightest as crosses (ADR-028).
   std::unique_ptr<Neuron::StarPipeline> m_sky;
   std::unique_ptr<Neuron::StarPipeline> m_bursts;
   // This frame's glows, kept so that their storage is not allocated every frame.
@@ -167,8 +167,8 @@ private:
   std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
   float m_frameSeconds = 0.0f;
-  std::unique_ptr<Neuron::Mesh> m_minorGrid;
-  std::unique_ptr<Neuron::Mesh> m_majorGrid;
+  // The ground's grid, as lines.
+  std::unique_ptr<Neuron::Mesh> m_grid;
   // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn.
   std::unique_ptr<Neuron::Mesh> m_ring;
   std::unique_ptr<Neuron::Mesh> m_disc;

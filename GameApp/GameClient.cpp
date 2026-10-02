@@ -9,8 +9,6 @@ namespace
 {
 constexpr auto MODELS_FILE = L"Models.json";
 constexpr auto CAMERA_FILE = L"Camera.json";
-// The sprite of the sky's brightest stars (ADR-022).
-constexpr auto BURST_SPRITE_FILE = L"Textures\\starburst.dds";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 // The HUD's font: installed with Windows, so nothing ships (ADR-015).
@@ -21,16 +19,12 @@ constexpr std::wstring_view HUD_FONT = L"Segoe UI";
 constexpr DirectX::XMFLOAT3 TOWARD_LIGHT{-0.4f, 0.8f, 0.45f};
 constexpr float AMBIENT = 0.3f;
 
-// The grid covers the 2,000 m map (design §4): a line every 100 m, and a brighter one every 500 m. It is a neutral gray
-// that is barely there, so the sky shows through (ADR-022), and it is what shows the ground moving when the view pans.
+// The grid covers the 2,000 m map (design §4) with a line every 100 m, each a pixel wide at any zoom, in the line art
+// of the asteroids' ridges (ADR-028). It is a dim blue-gray, barely there, so the sky shows through (ADR-022) and the
+// ridges stand out above it, and it is what shows the ground moving when the view pans.
 constexpr float GRID_HALF_EXTENT_METERS = 1000.0f;
-constexpr float MINOR_GRID_SPACING_METERS = 100.0f;
-constexpr float MINOR_GRID_LINE_WIDTH_METERS = 1.5f;
-constexpr float MAJOR_GRID_SPACING_METERS = 500.0f;
-constexpr float MAJOR_GRID_LINE_WIDTH_METERS = 4.0f;
-constexpr int MINOR_LINES_PER_MAJOR = 5;
-constexpr DirectX::XMFLOAT4 MINOR_GRID_COLOR{0.012f, 0.012f, 0.012f, 1.0f};
-constexpr DirectX::XMFLOAT4 MAJOR_GRID_COLOR{0.02f, 0.02f, 0.02f, 1.0f};
+constexpr float GRID_SPACING_METERS = 100.0f;
+constexpr DirectX::XMFLOAT4 GRID_COLOR{0.012f, 0.013f, 0.019f, 1.0f};
 
 // Asteroids are drawn with three rock meshes, each 2 m long, so a rock's scale is its radius (ADR-011). They are
 // low-poly on purpose, big facets with clear ridges for the edge lines (Tools/MakeAsteroids.py, owner 2026-10-02). A
@@ -129,34 +123,26 @@ template <typename Fn> auto LoadDataFile(const wchar_t* _fileName, Fn _load)
   }
 }
 
-// Lines along x and along z on the ground, every _spacingMeters across the grid, as flat strips facing up. Every
-// _skipEvery-th line is left out when it is not zero, where the major grid draws one instead: two strips in one place
-// at one depth would flicker.
-Neuron::MeshData BuildGrid(float _spacingMeters, float _lineWidthMeters, int _skipEvery)
+// Lines along x and along z on the ground, every GRID_SPACING_METERS across the grid, as a line list for
+// MeshPipeline::DrawLines, lit as the ground facing up.
+Neuron::MeshData BuildGrid()
 {
   Neuron::MeshData grid;
-  const auto addStrip = [&grid](float _x0, float _z0, float _x1, float _z1)
+  const auto addLine = [&grid](float _x0, float _z0, float _x1, float _z1)
   {
-    const auto first = static_cast<std::uint32_t>(grid.vertices.size());
     constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
-    grid.vertices.push_back({{_x0, 0.0f, _z1}, UP});
-    grid.vertices.push_back({{_x1, 0.0f, _z1}, UP});
-    grid.vertices.push_back({{_x1, 0.0f, _z0}, UP});
+    grid.indices.push_back(static_cast<std::uint32_t>(grid.vertices.size()));
     grid.vertices.push_back({{_x0, 0.0f, _z0}, UP});
-    // Clockwise seen from above, so the strip faces up (ADR-011).
-    for (const std::uint32_t corner : {0u, 1u, 2u, 0u, 2u, 3u})
-      grid.indices.push_back(first + corner);
+    grid.indices.push_back(static_cast<std::uint32_t>(grid.vertices.size()));
+    grid.vertices.push_back({{_x1, 0.0f, _z1}, UP});
   };
 
-  const float half = _lineWidthMeters / 2.0f;
-  const auto lineCount = static_cast<int>(std::lround(2.0f * GRID_HALF_EXTENT_METERS / _spacingMeters));
+  const auto lineCount = static_cast<int>(std::lround(2.0f * GRID_HALF_EXTENT_METERS / GRID_SPACING_METERS));
   for (int line = 0; line <= lineCount; ++line)
   {
-    if (_skipEvery != 0 && line % _skipEvery == 0)
-      continue;
-    const float at = -GRID_HALF_EXTENT_METERS + (static_cast<float>(line) * _spacingMeters);
-    addStrip(at - half, -GRID_HALF_EXTENT_METERS, at + half, GRID_HALF_EXTENT_METERS);
-    addStrip(-GRID_HALF_EXTENT_METERS, at - half, GRID_HALF_EXTENT_METERS, at + half);
+    const float at = -GRID_HALF_EXTENT_METERS + (static_cast<float>(line) * GRID_SPACING_METERS);
+    addLine(at, -GRID_HALF_EXTENT_METERS, at, GRID_HALF_EXTENT_METERS);
+    addLine(-GRID_HALF_EXTENT_METERS, at, GRID_HALF_EXTENT_METERS, at);
   }
   grid.boundsMin = {-GRID_HALF_EXTENT_METERS, 0.0f, -GRID_HALF_EXTENT_METERS};
   grid.boundsMax = {GRID_HALF_EXTENT_METERS, 0.0f, GRID_HALF_EXTENT_METERS};
@@ -289,9 +275,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
     }
   }
-  m_minorGrid =
-    std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MINOR_GRID_SPACING_METERS, MINOR_GRID_LINE_WIDTH_METERS, MINOR_LINES_PER_MAJOR));
-  m_majorGrid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid(MAJOR_GRID_SPACING_METERS, MAJOR_GRID_LINE_WIDTH_METERS, 0));
+  m_grid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid());
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
@@ -304,11 +288,8 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   }
 
   const Starfield sky = BuildStarfield();
-  Neuron::TextureData burstSprite =
-    Neuron::ParseDds(ReadAsset(BURST_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(BURST_SPRITE_FILE)));
-  Neuron::BuildMipLevels(burstSprite);
   m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, sky.points);
-  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, &burstSprite);
+  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, Neuron::StarPipeline::Shape::Cross);
 
   Neuron::TextureData particleSprite =
     Neuron::ParseDds(ReadAsset(PARTICLE_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(PARTICLE_SPRITE_FILE)));
@@ -685,8 +666,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   m_pipeline.BeginDrawing(_commandList, _renderer.FrameIndex(), constants);
 
   const DirectX::XMFLOAT4X4 identity = WorldMatrix({}, 0.0f, 1.0f);
-  m_pipeline.Draw(_commandList, *m_minorGrid, identity, MINOR_GRID_COLOR);
-  m_pipeline.Draw(_commandList, *m_majorGrid, identity, MAJOR_GRID_COLOR);
+  m_pipeline.DrawLines(_commandList, *m_grid, identity, GRID_COLOR);
   // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
   {

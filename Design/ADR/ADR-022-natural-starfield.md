@@ -1,6 +1,6 @@
 # ADR-022 — The sky is an even field of stars, with its brightest few drawn as starburst sprites
 
-Status: **accepted** · 2026-10-01 · Supersedes [ADR-021](ADR-021-starfield.md)
+Status: **accepted** · 2026-10-01 · Supersedes [ADR-021](ADR-021-starfield.md) · Decisions 3 and 8 are superseded by [ADR-028](ADR-028-vector-grid-and-crosses.md): the brightest stars are crosses and the grid is pixel-wide lines
 
 ## Context
 

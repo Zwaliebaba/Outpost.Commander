@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StarPipeline.h"
 
+#include "CompiledShader/StarCrossPS.h"
 #include "CompiledShader/StarPS.h"
 #include "CompiledShader/StarSpritePS.h"
 #include "CompiledShader/StarVS.h"
@@ -50,9 +51,14 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device, b
 }
 } // namespace
 
-Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _stars, const TextureData* _sprite)
+Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _stars, Shape _shape, const TextureData* _sprite)
   : m_starCount(static_cast<UINT>(_stars.size()))
 {
+  if (_shape != Shape::Sprite)
+    _sprite = nullptr;
+  else if (_sprite == nullptr)
+    throw winrt::hresult_error(E_INVALIDARG, L"A sky of sprite stars needs its sprite.");
+
   ID3D12Device* device = _renderer.Device();
   m_rootSignature = CreateRootSignature(device, _sprite != nullptr);
 
@@ -77,12 +83,17 @@ Neuron::StarPipeline::StarPipeline(Renderer& _renderer, std::span<const Star> _s
   depthStencil.DepthEnable = FALSE;
   depthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 
+  CD3DX12_SHADER_BYTECODE pixelShader(g_StarPS, sizeof(g_StarPS));
+  if (_shape == Shape::Sprite)
+    pixelShader = CD3DX12_SHADER_BYTECODE(g_StarSpritePS, sizeof(g_StarSpritePS));
+  else if (_shape == Shape::Cross)
+    pixelShader = CD3DX12_SHADER_BYTECODE(g_StarCrossPS, sizeof(g_StarCrossPS));
+
   // Every member with an enum that has no zero value is set here, so none is ever left at an invalid zero.
   const D3D12_GRAPHICS_PIPELINE_STATE_DESC description{
     .pRootSignature = m_rootSignature.get(),
     .VS = CD3DX12_SHADER_BYTECODE(g_StarVS, sizeof(g_StarVS)),
-    .PS = _sprite != nullptr ? CD3DX12_SHADER_BYTECODE(g_StarSpritePS, sizeof(g_StarSpritePS))
-                             : CD3DX12_SHADER_BYTECODE(g_StarPS, sizeof(g_StarPS)),
+    .PS = pixelShader,
     .BlendState = blend,
     .SampleMask = UINT_MAX,
     .RasterizerState = rasterizer,

@@ -123,6 +123,9 @@
     <FXCompile Include="Shader\StarSpritePS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\StarCrossPS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\UiVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
