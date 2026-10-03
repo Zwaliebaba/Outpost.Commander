@@ -111,6 +111,8 @@ private:
   // While the designer's name takes typing, the keyboard is the designer's: _input loses its keys, so no order, control
   // group or camera key reads them.
   void HandleTyping(Neuron::InputState& _input);
+  // Opens a window, aimed at the structure selected on its own if it shows one, or closes it.
+  void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
@@ -162,6 +164,9 @@ private:
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
   EntityId m_soleSelected;
+  // The producer the production window shows, and the first topic the research window shows (Phase 1 design §12).
+  ProductionTarget m_production;
+  std::size_t m_firstTopic = 0;
   // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
   // allocated every frame (ADR-029).
   ShipBanking m_banking;

@@ -101,6 +101,7 @@
     <ClCompile Include="SnapshotInterpolatorTests.cpp" />
     <ClCompile Include="ShipBankingTests.cpp" />
     <ClCompile Include="WindowManagerTests.cpp" />
+    <ClCompile Include="ProductionTargetTests.cpp" />
     <ClCompile Include="CombatEffectsTests.cpp" />
     <ClCompile Include="ExplosionManagerTests.cpp" />
     <ClCompile Include="ParticleSystemTests.cpp" />

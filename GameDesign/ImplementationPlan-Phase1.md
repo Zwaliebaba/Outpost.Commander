@@ -30,7 +30,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.4 | Research and production as windows | 9.2 | — | todo |
+| 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | todo |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | todo |
 | 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | todo |
@@ -182,6 +182,14 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** both open from their structure's selection panel and from a key, take the mockup's look, and keep what the panels do today (ADR-017, ADR-015).
 - **Acceptance:** `HudTests` cover both.
 - **Verify:** CI; **owner run.**
+- **As built:** the owner's answers of 2026-10-03 are in design §12.
+  - **The production window** shows one producer, held by `ProductionTarget`: the one selected when it opens, another selected while it is open, or the next or previous by its arrows, among the player's finished Command Stations and then Shipyards by number. It shows the queue as five rows, the front job's progress or its wait for Ore, and a card per thing it builds: the Constructor, or each saved design with its abbreviation. `Hud::DescribeProduction`.
+  - **The research window** shows the player's Research Lab, its queue, and a card per topic not researched or queued yet with its effect, cost and time; one whose prerequisites are neither is hatched, dim, and names them. Ten cards show at once, two to a row, and it scrolls by a row (`Hud::StepTopics`), which 10.1's 25 topics need. `Hud::DescribeResearch`.
+  - **The selection panel** keeps a structure's name, hit points and construction, and its buttons open the windows: Production on the Command Station and a Shipyard, Ship designer on a Shipyard, Research on the Research Lab. The queue's lines and the queue buttons are the windows' alone, so an enemy structure's queue, which the panel showed without fog of war, is no longer shown.
+  - **Keys:** P and R open and close the windows, as D does the designer; opened by key, a window shows the structure selected, if it can.
+  - **The look** is the designer's: the window helpers `LayDesigner` had are a `Painter` all three share, with the header band and the Ore box. Production stands at first under the Ore, 480 units wide, and research beside it, 560 wide, clear of the designer.
+  - **Tests.** `HudTests`: the panel's open buttons, the production window at a Shipyard, at the Command Station and with neither, the research window with a topic blocked and with no Lab, and the three windows' layout and scrolling. `ProductionTargetTests`.
+  - **Not built or run in the container**: the HUD's tests ran there in a standalone build, and the two windows were drawn from `Hud::Lay`'s output with substitute fonts.
 
 ---
 

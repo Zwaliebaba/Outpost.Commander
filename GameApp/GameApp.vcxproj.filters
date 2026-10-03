@@ -83,6 +83,9 @@
     <ClInclude Include="ParticleSystem.h">
       <Filter>Effects</Filter>
     </ClInclude>
+    <ClInclude Include="ProductionTarget.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Designer.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -139,6 +142,9 @@
     </ClCompile>
     <ClCompile Include="ParticleSystem.cpp">
       <Filter>Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="ProductionTarget.cpp">
+      <Filter>Interface</Filter>
     </ClCompile>
     <ClCompile Include="Designer.cpp">
       <Filter>Interface</Filter>

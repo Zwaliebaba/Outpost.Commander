@@ -13,9 +13,11 @@ constexpr auto CAMERA_FILE = L"Camera.json";
 // The texture of every particle: DeepSpaceOutpost's, a flat square with a brighter rim (ADR-026).
 constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 
-// The key that opens and closes the designer (Phase 1 design §12), clear of the orders' A and S, the camera's Q and E and
-// arrows, and the control groups' digits.
+// The keys that open and close the designer, the production window and the research window (Phase 1 design §12), clear of
+// the orders' A and S, the camera's Q and E and arrows, and the control groups' digits.
 constexpr std::uint8_t KEY_DESIGNER = 'D';
+constexpr std::uint8_t KEY_PRODUCTION = 'P';
+constexpr std::uint8_t KEY_RESEARCH = 'R';
 
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
@@ -381,6 +383,8 @@ void Outpost::GameClient::ClearMatch()
   m_banking.Clear();
   m_windows.CloseAll();
   m_soleSelected = EntityId{};
+  m_production = ProductionTarget();
+  m_firstTopic = 0;
   m_effectDraws.clear();
   m_entities.clear();
   m_previousEntities.clear();
@@ -470,26 +474,28 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   if (!m_view.IsEmpty())
   {
     m_designer.Update(m_view.Newest());
+    m_production.Update(m_view.Newest());
     for (const QueueShipCommand& queue : m_designer.TakeQueueCommands(m_view.Newest()))
       m_controls.Queue(queue.producer, queue.design);
   }
   HandleTyping(input);
-  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D opens the designer,
-  // aimed at the selected Shipyard if one is, or closes it.
+  // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D, P and R open or close
+  // the designer, the production window and the research window.
   for (auto event = input.events.begin(); event != input.events.end();)
   {
-    if (event->kind == Neuron::InputEventKind::KeyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
+    const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
+    std::optional<WindowKind> toggled;
+    if (keyDown && event->key == KEY_DESIGNER)
+      toggled = WindowKind::Designer;
+    else if (keyDown && event->key == KEY_PRODUCTION)
+      toggled = WindowKind::Production;
+    else if (keyDown && event->key == KEY_RESEARCH)
+      toggled = WindowKind::Research;
+    if (keyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
       event = input.events.erase(event);
-    else if (event->kind == Neuron::InputEventKind::KeyDown && event->key == KEY_DESIGNER && !m_view.IsEmpty())
+    else if (toggled.has_value() && !m_view.IsEmpty())
     {
-      if (m_windows.IsOpen(WindowKind::Designer))
-        m_windows.Close(WindowKind::Designer);
-      else
-      {
-        m_windows.Open(WindowKind::Designer);
-        if (m_controls.Selected().size() == 1)
-          m_designer.SetTarget(m_controls.Selected().front(), m_view.Newest());
-      }
+      ToggleWindow(*toggled);
       event = input.events.erase(event);
     }
     else
@@ -513,11 +519,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
     const std::vector<PlanePosition> view = ViewOnGround();
-    // Selecting a Shipyard while the designer is open aims it there (Phase 1 design §11).
+    // Selecting a Shipyard while the designer is open aims it there, and a producer while the production window is open
+    // shows it (Phase 1 design §11, §12).
     const std::vector<EntityId>& selected = m_controls.Selected();
     const EntityId sole = selected.size() == 1 ? selected.front() : EntityId{};
     if (sole != m_soleSelected && m_windows.IsOpen(WindowKind::Designer))
       m_designer.SetTarget(sole, m_view.Newest());
+    if (sole != m_soleSelected && m_windows.IsOpen(WindowKind::Production))
+      m_production.Set(sole, m_view.Newest());
     m_soleSelected = sole;
     // The name takes no more typing once the designer is closed.
     const bool designerOpen = m_windows.IsOpen(WindowKind::Designer);
@@ -530,11 +539,36 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
     content.fogCellsPerSide = m_fog.CellsPerSide();
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
+    if (m_windows.IsOpen(WindowKind::Production))
+      content.production = Hud::DescribeProduction(m_view.Newest(), m_production.Target(m_view.Newest()));
+    if (m_windows.IsOpen(WindowKind::Research))
+    {
+      content.laboratory = Hud::DescribeResearch(m_view.Newest(), m_entities, m_firstTopic);
+      m_firstTopic = content.laboratory->firstTopic;
+    }
     m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
   }
   WatchForResponse();
+}
+
+void Outpost::GameClient::ToggleWindow(WindowKind _window)
+{
+  if (m_windows.IsOpen(_window))
+  {
+    m_windows.Close(_window);
+    return;
+  }
+  m_windows.Open(_window);
+  // A window that shows a structure opens on the one selected, if it can show it.
+  if (m_controls.Selected().size() != 1)
+    return;
+  const EntityId selected = m_controls.Selected().front();
+  if (_window == WindowKind::Designer)
+    m_designer.SetTarget(selected, m_view.Newest());
+  else if (_window == WindowKind::Production)
+    m_production.Set(selected, m_view.Newest());
 }
 
 void Outpost::GameClient::HandleTyping(Neuron::InputState& _input)
@@ -624,6 +658,22 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   case Hud::ActionKind::PreviousDesigns:
   case Hud::ActionKind::NextDesigns:
     m_designer.StepChips(_action.kind == Hud::ActionKind::NextDesigns ? 1 : -1, m_view.Newest().designs.size());
+    break;
+  case Hud::ActionKind::OpenProduction:
+    m_production.Set(_action.producer, m_view.Newest());
+    m_windows.Open(WindowKind::Production);
+    break;
+  case Hud::ActionKind::OpenResearch:
+    m_windows.Open(WindowKind::Research);
+    break;
+  case Hud::ActionKind::PreviousProducer:
+  case Hud::ActionKind::NextProducer:
+    m_production.Step(_action.kind == Hud::ActionKind::NextProducer ? 1 : -1, m_view.Newest());
+    break;
+  case Hud::ActionKind::PreviousTopics:
+  case Hud::ActionKind::NextTopics:
+    m_firstTopic = Hud::StepTopics(m_firstTopic, _action.kind == Hud::ActionKind::NextTopics ? 1 : -1,
+                                   Hud::DescribeResearch(m_view.Newest(), m_entities, m_firstTopic).topics.size());
     break;
   }
 }

@@ -29,6 +29,7 @@
 #include "Starfield.h"
 #include "FogOfWar.h"
 #include "Designer.h"
+#include "ProductionTarget.h"
 #include "WindowManager.h"
 #include "Hud.h"
 #include "LoadDriver.h"

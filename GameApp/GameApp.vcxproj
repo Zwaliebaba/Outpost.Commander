@@ -95,6 +95,7 @@
     <ClInclude Include="Starfield.h" />
     <ClInclude Include="FogOfWar.h" />
     <ClInclude Include="Designer.h" />
+    <ClInclude Include="ProductionTarget.h" />
     <ClInclude Include="Hud.h" />
   </ItemGroup>
   <ItemGroup>
@@ -118,6 +119,7 @@
     <ClCompile Include="Starfield.cpp" />
     <ClCompile Include="FogOfWar.cpp" />
     <ClCompile Include="Designer.cpp" />
+    <ClCompile Include="ProductionTarget.cpp" />
     <ClCompile Include="Hud.cpp" />
   </ItemGroup>
   <ItemGroup>

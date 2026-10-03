@@ -3,12 +3,12 @@
 namespace Outpost
 {
 // The HUD (tasks 3.6 and 4.5, design §9): the Ore stockpile and income, a panel describing the selection with a
-// structure's construction and queue, the buttons that build structures and queue ships, and the minimap. It is laid
-// out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer by
-// one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
-// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore and in the Research Lab's
-// panel (task 5.1), and the ship designer beside a selected Shipyard (task 5.2). The main menu, and the banner that says
-// how a match ended, are laid out the same way (task 6.2).
+// structure's construction, the buttons that build structures and open a structure's windows, and the minimap. It is
+// laid out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer
+// by one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
+// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore (task 5.1). Over it float
+// the designer, the production queue and the research as windows (ADR-031, Phase 1 design §11, §12). The main menu, and
+// the banner that says how a match ended, are laid out the same way (task 6.2).
 class Hud
 {
 public:
@@ -75,7 +75,15 @@ public:
     MoreShips,
     LoadDesign,
     PreviousDesigns,
-    NextDesigns
+    NextDesigns,
+    // The production and research windows (Phase 1 design §12): open them, step the production window's producer, and
+    // scroll the research window's topics.
+    OpenProduction,
+    OpenResearch,
+    PreviousProducer,
+    NextProducer,
+    PreviousTopics,
+    NextTopics
   };
 
   struct Action
@@ -220,6 +228,70 @@ public:
     std::string queueDetail;
   };
 
+  // One job of a queue as a window shows it: its name, and for the front job how far it has come, or that it waits for
+  // Ore.
+  struct QueueLine
+  {
+    std::string name;
+    bool front = false;
+    std::int32_t permille = 0;
+    bool waiting = false;
+  };
+
+  // A button of a window that adds to a queue: what it adds, a line under the name, such as a design's abbreviation, its
+  // cost, and whether it can be pressed now.
+  struct QueueOption
+  {
+    std::string name;
+    std::string detail;
+    std::int32_t cost = 0;
+    Action action;
+    bool enabled = true;
+  };
+
+  // The production window (Phase 1 design §12; owner, 2026-10-03): the producer it shows, such as "COMMAND STATION" or
+  // "SHIPYARD 02", whether there are others to step to, its queue, and a button for each thing it builds: a Constructor
+  // at the Command Station, each saved design at a Shipyard. With no producer, a line saying how to get one.
+  struct ProductionPanel
+  {
+    std::string producer;
+    bool hasProducer = false;
+    bool canStep = false;
+    std::int32_t ore = 0;
+    std::vector<QueueLine> queue;
+    std::vector<QueueOption> options;
+    std::string hint;
+  };
+
+  // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost
+  // and time, and while a prerequisite is neither researched nor queued, the line naming it; such a topic is dim.
+  struct TopicCard
+  {
+    std::string name;
+    std::string effect;
+    std::int32_t cost = 0;
+    std::string time;
+    std::string needs;
+    Action action;
+    bool enabled = true;
+  };
+
+  // The research window (Phase 1 design §12): the player's Research Lab, such as "RESEARCH LAB" or "NO RESEARCH LAB", its
+  // queue, and the topics, of which TOPICS_SHOWN are shown from firstTopic.
+  struct ResearchPanel
+  {
+    std::string lab;
+    bool hasLab = false;
+    std::int32_t ore = 0;
+    std::vector<QueueLine> queue;
+    std::vector<TopicCard> topics;
+    std::size_t firstTopic = 0;
+  };
+
+  // How many topic cards the research window shows at once, in rows of TOPIC_COLUMNS; it scrolls by a row.
+  static constexpr std::size_t TOPIC_COLUMNS = 2;
+  static constexpr std::size_t TOPICS_SHOWN = 10;
+
   // Whose a minimap mark is, which sets its color.
   enum class Side : std::uint8_t
   {
@@ -257,6 +329,9 @@ public:
     // A line under the Ore while the player's Research Lab has a topic (task 5.1).
     std::string research;
     std::optional<DesignerPanel> designer;
+    // The production and research windows' content, while they are open; GameClient fills them.
+    std::optional<ProductionPanel> production;
+    std::optional<ResearchPanel> laboratory;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
@@ -389,6 +464,19 @@ public:
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
                                         std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
                                         std::optional<Action> _hovered = std::nullopt);
+
+  // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
+  // (Phase 1 design §12).
+  [[nodiscard]] static ProductionPanel DescribeProduction(const Snapshot& _newest, const EntityView* _producer);
+
+  // The research window's content: the player's Research Lab among _entities, its queue, and the topics from _firstTopic
+  // (Phase 1 design §12).
+  [[nodiscard]] static ResearchPanel DescribeResearch(const Snapshot& _newest, std::span<const EntityView> _entities,
+                                                      std::size_t _firstTopic = 0);
+
+  // The first topic shown after scrolling a row forward, or back with a negative _step, among _topics: never before the
+  // first, nor past where the last row is shown.
+  [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);

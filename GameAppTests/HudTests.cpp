@@ -297,12 +297,11 @@ public:
     Assert::AreEqual(std::string("Placing Mining Rig: left-click to build, right-click to cancel"), content.hint);
   }
 
-  // Task 4.5: a selected Shipyard shows its state and its queue, the front job's progress or its wait for Ore, and a
-  // button per design, dim once the queue is full; and, finished, the designer's (Phase 1 design §11).
-  TEST_METHOD(DescribesAStructureAndItsQueue)
+  // Task 4.5, Phase 1 design §12: a selected structure shows its kind, hit points and construction; its queue and what it
+  // can add to it are its windows', which its panel opens once it is the player's own and finished (owner, 2026-10-03).
+  TEST_METHOD(DescribesAStructureAndOpensItsWindows)
   {
     Outpost::Snapshot newest = Newest();
-    newest.designs[0].cost = 87;
     newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300}};
     Outpost::EntityView yard{.id = Outpost::EntityId{30},
                              .kind = Outpost::EntityKind::Structure,
@@ -313,28 +312,93 @@ public:
                              .queue = {{.design = SWARM}, {.design = LINE}},
                              .jobPermille = 455};
     const std::vector<Outpost::EntityId> selected{yard.id};
-    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{yard}, selected);
-    const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500", "1. Small+Ion+Mass Driver, 45%", "2. Medium+Ion+Lance"};
-    Assert::IsTrue(content.selection == expected);
-    Assert::AreEqual(size_t{3}, content.buttons.size());
-    Assert::IsTrue(content.buttons[2].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenDesigner, .producer = yard.id});
-    Assert::AreEqual(std::string("Small+Ion+Mass Driver|87"), content.buttons[0].label);
+    const auto describe = [&](const Outpost::EntityView& _entity)
+    { return Outpost::Hud::Describe(newest, std::vector{_entity}, selected); };
+    Outpost::Hud::Content content = describe(yard);
+    const std::vector<std::string> expected{"Shipyard", "Hit points 2,500 / 2,500"};
+    Assert::IsTrue(content.selection == expected, L"the queue is the production window's");
+    Assert::AreEqual(size_t{2}, content.buttons.size());
     Assert::IsTrue(content.buttons[0].action ==
-                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = yard.id, .design = SWARM});
-    Assert::IsTrue(content.buttons[0].enabled);
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = yard.id});
+    Assert::IsTrue(content.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenDesigner, .producer = yard.id});
 
-    yard.jobPermille = 0;
-    yard.queue.resize(Outpost::QUEUE_LIMIT, {.design = SWARM});
-    content = Outpost::Hud::Describe(newest, std::vector{yard}, selected);
-    Assert::AreEqual(std::string("1. Small+Ion+Mass Driver, waiting for Ore"), content.selection[2]);
-    Assert::IsFalse(content.buttons[0].enabled, L"the queue is full");
+    Outpost::EntityView station = yard;
+    station.structure = Outpost::StructureKind::CommandStation;
+    content = describe(station);
+    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::IsTrue(content.buttons[0].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenProduction, .producer = station.id});
 
-    // Under construction, it says how far it has come, and offers nothing.
+    Outpost::EntityView lab = yard;
+    lab.structure = Outpost::StructureKind::ResearchLab;
+    content = describe(lab);
+    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::IsTrue(content.buttons[0].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::OpenResearch, .producer = lab.id});
+
+    Outpost::EntityView theirs = yard;
+    theirs.owner = Outpost::PlayerId{2};
+    Assert::IsTrue(describe(theirs).buttons.empty(), L"not the enemy's");
+
+    // Under construction, it says how far it has come, and opens nothing.
     yard.builtPermille = 600;
-    yard.queue.clear();
-    content = Outpost::Hud::Describe(newest, std::vector{yard}, selected);
+    content = describe(yard);
     Assert::AreEqual(std::string("Under construction, 60%"), content.selection[1]);
-    Assert::IsFalse(content.buttons[0].enabled);
+    Assert::IsTrue(content.buttons.empty());
+  }
+
+  // Phase 1 design §12: the production window shows one producer: the Command Station's Constructor or a Shipyard's saved
+  // designs, each with its abbreviation, dim once the queue is full or the Ore is short; the queue with the front job's
+  // progress or its wait for Ore; and with no producer, or no design, how to get one.
+  TEST_METHOD(DescribesTheProductionWindow)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot();
+    newest.constructorCost = 150;
+    newest.entities.front().queue = {{.design = SWARM}};
+    newest.entities.front().jobPermille = 455;
+    const Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                      .kind = Outpost::EntityKind::Structure,
+                                      .owner = PLAYER,
+                                      .structure = Outpost::StructureKind::CommandStation,
+                                      .queue = {{.role = Outpost::ShipRole::Constructor}}};
+    newest.entities.push_back(station);
+
+    Outpost::Hud::ProductionPanel panel = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Assert::AreEqual(std::string("SHIPYARD 01"), panel.producer);
+    Assert::IsTrue(panel.hasProducer && panel.canStep);
+    Assert::AreEqual(500, panel.ore);
+    Assert::AreEqual(size_t{1}, panel.queue.size());
+    Assert::AreEqual(std::string("Swarm"), panel.queue[0].name);
+    Assert::IsTrue(panel.queue[0].front && !panel.queue[0].waiting);
+    Assert::AreEqual(455, panel.queue[0].permille);
+    Assert::AreEqual(size_t{1}, panel.options.size());
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD"), panel.options[0].detail);
+    Assert::AreEqual(87, panel.options[0].cost);
+    Assert::IsTrue(panel.options[0].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = Outpost::EntityId{30}, .design = SWARM});
+    Assert::IsTrue(panel.options[0].enabled);
+    Assert::IsTrue(panel.hint.empty());
+
+    newest.entities.front().queue.resize(Outpost::QUEUE_LIMIT, {.design = SWARM});
+    Assert::IsFalse(Outpost::Hud::DescribeProduction(newest, &newest.entities.front()).options[0].enabled, L"the queue is full");
+
+    panel = Outpost::Hud::DescribeProduction(newest, &newest.entities.back());
+    Assert::AreEqual(std::string("COMMAND STATION"), panel.producer);
+    Assert::AreEqual(std::string("Constructor"), panel.queue[0].name);
+    Assert::IsTrue(panel.queue[0].waiting, L"nothing done yet");
+    Assert::AreEqual(size_t{1}, panel.options.size());
+    Assert::IsTrue(panel.options[0].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Queue, .producer = Outpost::EntityId{20}});
+    Assert::AreEqual(150, panel.options[0].cost);
+    newest.ore = 149;
+    Assert::IsFalse(Outpost::Hud::DescribeProduction(newest, &newest.entities.back()).options[0].enabled, L"short of Ore");
+
+    newest.designs.clear();
+    Assert::AreEqual(std::string("Save a design in the ship designer to build it here."),
+                     Outpost::Hud::DescribeProduction(newest, &newest.entities.front()).hint);
+    panel = Outpost::Hud::DescribeProduction(newest, nullptr);
+    Assert::AreEqual(std::string("NO PRODUCER"), panel.producer);
+    Assert::IsFalse(panel.hasProducer);
+    Assert::IsTrue(panel.options.empty() && !panel.hint.empty());
   }
 
   // Task 4.5: an enabled button is a place to click, anchored to the bottom-right corner; a dim one is not.
@@ -375,8 +439,9 @@ public:
     Assert::IsFalse(layout.MapPointAt(map.left - 5.0f, map.top).has_value());
   }
 
-  // Task 5.1: a selected Research Lab shows its queue, and offers each topic not researched or queued yet with what it
-  // does and what it costs, dim while its prerequisite is neither; the topic under way shows under the Ore.
+  // Task 5.1, Phase 1 design §12: the research window shows the Research Lab's queue, and offers each topic not researched
+  // or queued yet with what it does and what it costs, dim while its prerequisite is neither; the topic under way shows
+  // under the Ore.
   TEST_METHOD(DescribesTheResearchLab)
   {
     Outpost::Snapshot newest = Newest();
@@ -406,18 +471,34 @@ public:
                                   .maxHitPointsHundredths = 150000,
                                   .research = {Outpost::ResearchTopicId{2}},
                                   .jobPermille = 250};
-    const std::vector<Outpost::EntityId> selected{lab.id};
-    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
-    const std::vector<std::string> expected{"Research Lab", "Hit points 1,500 / 1,500", "1. Hull Plating, 25%",
-                                            "Fusion Drive: Unlocks the Fusion drive", "Automated Shipyards: Shipyard build speed +25%"};
-    Assert::IsTrue(content.selection == expected);
-    Assert::AreEqual(size_t{2}, content.buttons.size());
-    Assert::AreEqual(std::string("Fusion Drive|200"), content.buttons[0].label);
-    Assert::IsTrue(content.buttons[0].enabled, L"its prerequisite is queued");
-    Assert::IsTrue(content.buttons[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Research,
-                                                                     .producer = lab.id,
-                                                                     .topic = Outpost::ResearchTopicId{8}});
-    Assert::AreEqual(std::string("Researching Hull Plating, 25%"), content.research);
+    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::AreEqual(std::string("RESEARCH LAB"), panel.lab);
+    Assert::IsTrue(panel.hasLab);
+    Assert::AreEqual(size_t{1}, panel.queue.size());
+    Assert::AreEqual(std::string("Hull Plating"), panel.queue[0].name);
+    Assert::AreEqual(250, panel.queue[0].permille);
+    Assert::AreEqual(size_t{2}, panel.topics.size(), L"neither the researched topic nor the queued one");
+    const Outpost::Hud::TopicCard& fusion = panel.topics[0];
+    Assert::AreEqual(std::string("Fusion Drive"), fusion.name);
+    Assert::AreEqual(std::string("Unlocks the Fusion drive"), fusion.effect);
+    Assert::AreEqual(200, fusion.cost);
+    Assert::IsTrue(fusion.enabled && fusion.needs.empty(), L"its prerequisite is queued");
+    Assert::IsTrue(panel.topics[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Research,
+                                                                  .producer = lab.id,
+                                                                  .topic = Outpost::ResearchTopicId{8}});
+    Assert::IsTrue(panel.topics[1].enabled, L"its prerequisite is researched");
+
+    // A topic whose prerequisite is neither researched nor queued is dim and names it; so is every topic without a Lab.
+    newest.research[0].researched = false;
+    const Outpost::Hud::ResearchPanel waiting = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    const auto automated = std::ranges::find(waiting.topics, std::string("Automated Shipyards"), &Outpost::Hud::TopicCard::name);
+    Assert::IsTrue(automated != waiting.topics.end());
+    Assert::AreEqual(std::string("NEEDS \xC2\xB7 IMPROVED EXTRACTION"), automated->needs);
+    Assert::IsFalse(automated->enabled);
+    const Outpost::Hud::ResearchPanel none = Outpost::Hud::DescribeResearch(newest, {});
+    Assert::AreEqual(std::string("NO RESEARCH LAB"), none.lab);
+    Assert::IsTrue(std::ranges::none_of(none.topics, &Outpost::Hud::TopicCard::enabled));
+    newest.research[0].researched = true;
 
     // Nothing selected, the research still shows under the Ore.
     const Outpost::Hud::Content unselected = Outpost::Hud::Describe(newest, std::vector{lab}, {});
@@ -681,6 +762,55 @@ public:
     Assert::AreEqual(size_t{3}, count(chips, Outpost::Hud::ActionKind::LoadDesign));
     Assert::AreEqual(size_t{1}, count(chips, Outpost::Hud::ActionKind::NextDesigns));
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
+  }
+
+  // Phase 1 design §12: the production and research windows are laid out side by side under the Ore, clear of the
+  // designer; each enabled card is a place to click, and the research window scrolls its topics a row at a time.
+  TEST_METHOD(LaysOutTheProductionAndResearchWindows)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot();
+    Outpost::Hud::Content content;
+    content.production = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Outpost::Hud::ResearchPanel research{.lab = "RESEARCH LAB", .hasLab = true, .ore = 500};
+    for (std::uint32_t i = 1; i <= 12; ++i)
+    {
+      research.topics.push_back({.name = std::format("Topic {}", i),
+                                 .cost = 100,
+                                 .action = {.kind = Outpost::Hud::ActionKind::Research, .topic = Outpost::ResearchTopicId{i}},
+                                 .enabled = i != 2});
+    }
+    content.laboratory = research;
+    Outpost::Designer designer;
+    designer.Update(newest);
+    content.designer = DesignerOf(newest, designer);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{3}, layout.windows.size());
+    const Outpost::Hud::Window& production = layout.windows[0];
+    const Outpost::Hud::Window& lab = layout.windows[1];
+    const Outpost::Hud::Window& designerWindow = layout.windows[2];
+    Assert::IsTrue(production.kind == Outpost::WindowKind::Production && lab.kind == Outpost::WindowKind::Research);
+    Assert::IsTrue(production.frame.left + production.frame.width <= lab.frame.left, L"side by side");
+    Assert::IsTrue(lab.frame.left + lab.frame.width <= designerWindow.frame.left, L"clear of the designer");
+    Assert::IsTrue(production.frame.top + production.frame.height < 1080.0f && lab.frame.top + lab.frame.height < 1080.0f);
+
+    const auto count = [&layout](std::size_t _layer, Outpost::Hud::ActionKind _kind)
+    {
+      const Outpost::Hud::Span span = layout.ActionsOf(_layer);
+      return static_cast<size_t>(std::count_if(layout.actions.begin() + static_cast<std::ptrdiff_t>(span.first),
+                                               layout.actions.begin() + static_cast<std::ptrdiff_t>(span.end),
+                                               [_kind](const auto& _entry) { return _entry.second.kind == _kind; }));
+    };
+    Assert::AreEqual(size_t{1}, count(1, Outpost::Hud::ActionKind::Queue));
+    Assert::AreEqual(size_t{9}, count(2, Outpost::Hud::ActionKind::Research), L"ten shown, one of them dim");
+    Assert::AreEqual(size_t{1}, count(2, Outpost::Hud::ActionKind::NextTopics));
+    Assert::AreEqual(size_t{0}, count(2, Outpost::Hud::ActionKind::PreviousTopics), L"at the first");
+
+    // A row at a time, never past where the last row shows.
+    Assert::AreEqual(size_t{2}, Outpost::Hud::StepTopics(0, 1, 12));
+    Assert::AreEqual(size_t{2}, Outpost::Hud::StepTopics(2, 1, 12));
+    Assert::AreEqual(size_t{0}, Outpost::Hud::StepTopics(2, -3, 12));
+    Assert::AreEqual(size_t{0}, Outpost::Hud::StepTopics(0, 1, 10), L"all fit");
+    Assert::AreEqual(size_t{2}, Outpost::Hud::StepTopics(7, 0, 12), L"kept in range");
   }
 
   // ADR-024: the minimap draws the fog over its marks, a rectangle for each run of one shade along a row, and nothing
