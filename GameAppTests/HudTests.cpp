@@ -90,8 +90,8 @@ Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int3
 TEST_CLASS(HudTests)
 {
 public:
-  // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The HUD's text stays
-  // in Segoe UI at its size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
+  // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The default face is
+  // Segoe UI at the text's size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
   TEST_METHOD(NamesItsTypefacesAndSprites)
   {
     const std::vector<Neuron::FontDesc> typefaces = Outpost::Hud::Typefaces();

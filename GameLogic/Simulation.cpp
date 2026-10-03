@@ -1321,8 +1321,8 @@ void Outpost::Simulation::ChaseTargets()
   }
 }
 
-// A ship turns toward its next waypoint at its turn rate and moves the way it faces, slower the further it is from facing
-// the waypoint and not at all while it faces away, so it turns before it sets off rather than circling.
+// A ship turns toward its next waypoint at its turn rate as it flies the way it faces, and never on the spot: slower the
+// further it is from facing the waypoint, down to half speed, and never too fast to reach it on an arc (ADR-039).
 //
 // A corner of the path is only a way round an obstacle, so a ship lets it go as soon as it is within its own radius of it,
 // or can see the waypoint after it: ships crowding round the same corner then do not have to queue for its exact point.

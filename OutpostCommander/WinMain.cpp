@@ -11,7 +11,8 @@ namespace
 // Linear color; the render target view encodes it to sRGB (ADR-006). Black: the stars are all the sky has (ADR-022).
 constexpr std::array<float, 4> CLEAR_COLOR{0.0f, 0.0f, 0.0f, 1.0f};
 constexpr auto GAME_TITLE = L"Outpost Commander";
-// Minimized there is no frame to wait for, so the loop wakes this often to let the simulation run on (ADR-009).
+// Minimized there is no frame to wait for, so the loop wakes this often for its clients to keep taking their snapshots
+// (ADR-009, ADR-025).
 constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 // The human player, and the other: the AI in a skirmish (task 6.1), or a load driver in a measurement run.
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
@@ -225,7 +226,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     bool firstFramePresented = false;
     for (;;)
     {
-      // Minimized, there is nothing to show, so the loop sleeps until a message arrives or the simulation is due to run.
+      // Minimized, there is nothing to show, so the loop sleeps until a message arrives or the snapshots are due again.
       // Otherwise it waits until the swap chain can take a frame, and reads input right after, so the frame shows the
       // freshest input it can (ADR-006).
       if (window.IsMinimized())
