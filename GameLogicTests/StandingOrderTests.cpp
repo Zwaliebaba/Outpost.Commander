@@ -17,6 +17,7 @@ constexpr std::int32_t SOUTH = 2;
 std::vector<Outpost::EntityId> Group(TerritoryMatch& _match, std::size_t _count, Outpost::PlanePosition _position)
 {
   std::vector<Outpost::EntityId> ships;
+  ships.reserve(_count);
   for (std::size_t i = 0; i < _count; ++i)
     ships.push_back(_match.Warship(BLUE, {.xMeters = _position.xMeters + (30.0f * static_cast<float>(i)), .zMeters = _position.zMeters}));
   return ships;
