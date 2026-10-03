@@ -235,6 +235,61 @@ public:
     }
   }
 
+  // ADR-046: a group passes an obstacle side by side, each ship in its own lane, rather than in file through the one point
+  // where the obstacle's edge leaves room. Without lanes, the group below is 4.9 times as long as it is wide as it passes;
+  // in open space it is as long as it is wide.
+  TEST_METHOD(AGroupPassesAnObstacleSideBySide)
+  {
+    constexpr float MOST_LENGTH_PER_WIDTH = 2.0f;
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {}, .radiusMeters = 200.0f}}));
+    std::vector<Outpost::EntityId> ships;
+    for (int i = 0; i < 25; ++i)
+    {
+      // Five to a row, 30 m apart, square on the obstacle's middle.
+      const int column = i % 5;
+      const int row = i / 5;
+      ships.push_back(simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1),
+                                           {-1500.0f + (static_cast<float>(column) * 30.0f), -60.0f + (static_cast<float>(row) * 30.0f)}));
+    }
+
+    (void)simulation.Tick({Move(ships, {1500.0f, 0.0f})});
+    float mostLengthPerWidth = 0.0f;
+    for (int tick = 0;
+         tick < 60 * TICKS_PER_SECOND && !std::ranges::all_of(ships, [&](Outpost::EntityId _id) { return Arrived(simulation, _id); });
+         ++tick)
+    {
+      (void)simulation.Tick({});
+      // How long the group is along its ships' mean heading, and how wide across it.
+      Outpost::PlaneVector heading{};
+      Outpost::PlaneVector sum{};
+      for (const Outpost::EntityId id : ships)
+      {
+        const Outpost::Entity& ship = *simulation.FindEntity(id);
+        heading = heading + Outpost::PlaneVector{std::cos(ship.headingRadians), std::sin(ship.headingRadians)};
+        sum = sum + (ship.position - Outpost::PlanePosition{});
+      }
+      heading = Outpost::Normalized(heading, {1.0f, 0.0f});
+      const Outpost::PlanePosition center = Outpost::PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
+      float alongLeast = std::numeric_limits<float>::infinity();
+      float alongMost = -alongLeast;
+      float acrossLeast = alongLeast;
+      float acrossMost = -alongLeast;
+      for (const Outpost::EntityId id : ships)
+      {
+        const Outpost::PlaneVector offset = simulation.FindEntity(id)->position - center;
+        alongLeast = std::min(alongLeast, Outpost::Dot(offset, heading));
+        alongMost = std::max(alongMost, Outpost::Dot(offset, heading));
+        acrossLeast = std::min(acrossLeast, Outpost::Dot(offset, Outpost::Perpendicular(heading)));
+        acrossMost = std::max(acrossMost, Outpost::Dot(offset, Outpost::Perpendicular(heading)));
+      }
+      mostLengthPerWidth = std::max(mostLengthPerWidth, (alongMost - alongLeast) / std::max(acrossMost - acrossLeast, 1.0f));
+    }
+    for (const Outpost::EntityId id : ships)
+      Assert::IsTrue(Arrived(simulation, id), L"a ship never arrived");
+    Assert::IsTrue(mostLengthPerWidth <= MOST_LENGTH_PER_WIDTH, std::to_wstring(mostLengthPerWidth).c_str());
+  }
+
   TEST_METHOD(AShipInsideAnObstacleIsPushedOut)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);

@@ -867,25 +867,30 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
                       return _a->id < _b->id;
                     });
 
-  GroupRoutes routes(m_pathfinder, _destination, widestRadius);
+  // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010). The
+  // group keeps the grid's width as a band of lanes along its route (ADR-046).
+  const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
+  const float spacing = FORMATION_SPACING_RADII * widestRadius;
+  const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
+
+  GroupRoutes routes(m_pathfinder, _destination, widestRadius, bandHalfWidth);
   if (ships.size() > 1)
   {
     const ObservedPart part(m_observer, TickPart::GroupRoute);
     routes.SearchFrom(center);
   }
 
-  // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010).
-  PlannedOrder planned{.order = _order, .destination = _destination, .widestRadiusMeters = widestRadius};
-  const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
-  const float spacing = FORMATION_SPACING_RADII * widestRadius;
+  PlannedOrder planned{
+    .order = _order, .destination = _destination, .widestRadiusMeters = widestRadius, .bandHalfWidthMeters = bandHalfWidth};
   planned.members.reserve(ships.size());
   for (std::size_t index = 0; index < ships.size(); ++index)
   {
     const std::size_t row = index / columns;
     const std::size_t inRow = std::min(columns, ships.size() - row * columns);
     const float across = (static_cast<float>(index % columns) - static_cast<float>(inRow - 1) / 2.0f) * spacing;
-    planned.members.push_back(
-      {.ship = ships[index]->id, .goal = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing)});
+    planned.members.push_back({.ship = ships[index]->id,
+                               .goal = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing),
+                               .laneMeters = across});
   }
   planned.routes = routes.TakeRoutes();
   Plan(std::move(planned));
@@ -919,7 +924,7 @@ void Outpost::Simulation::Plan(PlannedOrder _order)
 void Outpost::Simulation::PlanPaths(PlannedOrder& _order, std::size_t _stride)
 {
   const ObservedPart part(m_observer, TickPart::ShipPaths);
-  GroupRoutes routes(m_pathfinder, _order.destination, _order.widestRadiusMeters, std::move(_order.routes));
+  GroupRoutes routes(m_pathfinder, _order.destination, _order.widestRadiusMeters, _order.bandHalfWidthMeters, std::move(_order.routes));
   for (std::size_t index = 0; index < _order.members.size(); index += _stride)
   {
     PlannedOrder::Member& member = _order.members[index];
@@ -927,7 +932,14 @@ void Outpost::Simulation::PlanPaths(PlannedOrder& _order, std::size_t _stride)
       continue;
     // A ship destroyed while its group planned has no path to plan.
     const Entity* ship = FindEntity(member.ship);
-    member.path = ship != nullptr ? routes.PathFor(ship->position, member.goal, ship->radiusMeters) : std::vector<PlanePosition>{};
+    if (ship == nullptr)
+    {
+      member.path = std::vector<PlanePosition>{};
+      continue;
+    }
+    GroupRoutes::Way way = routes.PathFor(ship->position, member.goal, ship->radiusMeters, member.laneMeters);
+    member.path = std::move(way.waypoints);
+    member.laneEnd = way.laneEnd;
   }
   _order.routes = routes.TakeRoutes();
 }
@@ -949,6 +961,7 @@ void Outpost::Simulation::SetOff(const PlannedOrder& _order)
       ship->workTarget = {};
       ship->destination.reset();
       ship->path = member.path.value_or(std::vector<PlanePosition>{});
+      ship->laneEnd = member.laneEnd;
       ship->cruiseSpeedMetersPerSecond = ship->speedMetersPerSecond;
       ship->closestMeters = std::numeric_limits<float>::infinity();
       ship->stalledTicks = 0;
@@ -970,6 +983,7 @@ void Outpost::Simulation::SetOff(const PlannedOrder& _order)
     ship->workTarget = {};
     ship->destination = _order.destination;
     ship->path = member.path.value_or(std::vector<PlanePosition>{});
+    ship->laneEnd = member.laneEnd;
     ship->closestMeters = std::numeric_limits<float>::infinity();
     ship->stalledTicks = 0;
     if (ship->speedMetersPerSecond > 0.0f)
@@ -1273,6 +1287,7 @@ void Outpost::Simulation::ChaseTargets()
     ship.path = m_pathfinder.IsStraightPathClear(ship.position, target.position, ship.radiusMeters)
                   ? std::vector<PlanePosition>{target.position}
                   : m_pathfinder.FindPath(ship.position, target.position, ship.radiusMeters);
+    ship.laneEnd.reset();
     ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
     ship.closestMeters = std::numeric_limits<float>::infinity();
     ship.stalledTicks = 0;
@@ -1286,9 +1301,21 @@ void Outpost::Simulation::ChaseTargets()
 //
 // A corner of the path is only a way round an obstacle, so a ship lets it go as soon as it is within its own radius of it,
 // or can see the waypoint after it: ships crowding round the same corner then do not have to queue for its exact point.
-// Only the last waypoint, the ship's slot, has to be reached.
+// Only the last waypoint, the ship's slot, has to be reached. A corner of the ship's lane is its place in its group's band
+// as well (ADR-046), so the ship lets it go at sight of the next only from within a place in the formation of it: a ship
+// that cut to its slot as soon as it saw it past an obstacle would pass the obstacle where every other ship does.
 void Outpost::Simulation::MoveShips()
 {
+  const auto mayLetGo = [this](const Entity& _ship)
+  {
+    const float meters = Distance(_ship.position, _ship.path.front());
+    if (meters <= _ship.radiusMeters)
+      return true;
+    const bool inLane = _ship.laneEnd.has_value() && std::ranges::find(_ship.path, *_ship.laneEnd) != _ship.path.end();
+    if (inLane && meters > FORMATION_SPACING_RADII * _ship.radiusMeters)
+      return false;
+    return m_pathfinder.IsStraightPathClear(_ship.position, _ship.path[1], _ship.radiusMeters);
+  };
   for (Entity& ship : m_entities)
   {
     if (ship.kind != EntityKind::Ship || ship.path.empty())
@@ -1296,8 +1323,7 @@ void Outpost::Simulation::MoveShips()
     // An attack-moving ship stands to fire while an enemy is in range (design §7).
     if (ship.order == ShipOrder::AttackMove && ship.target.IsValid())
       continue;
-    while (ship.path.size() > 1 && (Distance(ship.position, ship.path.front()) <= ship.radiusMeters ||
-                                    m_pathfinder.IsStraightPathClear(ship.position, ship.path[1], ship.radiusMeters)))
+    while (ship.path.size() > 1 && mayLetGo(ship))
     {
       ship.path.erase(ship.path.begin());
       ship.closestMeters = std::numeric_limits<float>::infinity();
@@ -1621,7 +1647,9 @@ void Outpost::Simulation::OrderWork(const std::vector<EntityId>& _constructors, 
     ship.workTarget = _target;
     ship.attackTarget = {};
     ship.destination.reset();
-    ship.path = routes.PathFor(ship.position, target.position, ship.radiusMeters);
+    GroupRoutes::Way way = routes.PathFor(ship.position, target.position, ship.radiusMeters);
+    ship.path = std::move(way.waypoints);
+    ship.laneEnd = way.laneEnd;
     ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
     ship.closestMeters = std::numeric_limits<float>::infinity();
     ship.stalledTicks = 0;
@@ -1662,6 +1690,7 @@ void Outpost::Simulation::UpdateObstacles()
     if (blocked)
     {
       ship.path = m_pathfinder.FindPath(ship.position, ship.path.back(), ship.radiusMeters);
+      ship.laneEnd.reset();
       ship.closestMeters = std::numeric_limits<float>::infinity();
       ship.stalledTicks = 0;
     }
@@ -1695,6 +1724,7 @@ void Outpost::Simulation::ApproachWork()
     if (!ship.path.empty() && !moved)
       continue;
     ship.path = m_pathfinder.FindPath(ship.position, target.position, ship.radiusMeters);
+    ship.laneEnd.reset();
     ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
     ship.closestMeters = std::numeric_limits<float>::infinity();
     ship.stalledTicks = 0;
