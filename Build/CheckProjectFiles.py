@@ -56,6 +56,7 @@ not be read.
 
 import argparse
 import dataclasses
+import functools
 import posixpath
 import re
 import shutil
@@ -253,6 +254,9 @@ def read_items(_root, _directory):
   return items
 
 
+# Kept for every text it is given: five checks strip every file, and the self-test runs them over 45 copies of the tree
+# that differ in one file each, so nearly every call has been made before.
+@functools.cache
 def strip_cpp(_text, _keep_strings=False):
   """Blanks out comments and, unless asked not to, the contents of string and character literals. Newlines survive,
   so a line number in the result is a line number in the file."""
@@ -463,6 +467,7 @@ def check_affixes(_tree):
   return findings
 
 
+@functools.cache
 def british_word(_word):
   lower = _word.lower()
   for stem, us in BRITISH_STEMS.items():

@@ -63,29 +63,6 @@ jobs:
       CONFIGURATION: Debug
       PLATFORM: x64
 
-      # ── Why clang-tidy is pinned and the rest of the toolchain is not ──────────────────────
-      #
-      # The clang-format job below pins clang-format 18 and says why: 18 and 22 break a long
-      # argument list in different places, so a floating version would flap. clang-tidy floated in
-      # the sibling tree and did exactly that -- the runner image moved to LLVM 20.1.8 and the
-      # build went red on code that had not changed, with two findings that were correct code:
-      #
-      #   clang-analyzer-optin.core.EnumCastOutOfRange on a BIT-FLAG enum, where an OR-ed pair of
-      #   enumerators names no enumerator of its own. Deliberate, and not reported by 22.
-      #
-      #   clang-analyzer-cplusplus.NewDeleteLeaks on a std::unique_ptr inside an aggregate
-      #   returned by value. Correct C++, and not reported by 22 either.
-      #
-      # A third finding from the same run was REAL -- an enum with no zero enumerator that the
-      # decoder cast one into -- and it was fixed in the code rather than pinned away. That is the
-      # distinction this pin is drawn on: a version change must not be able to turn main red on
-      # its own, and the way to bump it is to change the number here, run it, and fix what it says.
-      #
-      # From pip rather than from the image, because that is the only way a developer can run the
-      # same binary the gate runs. `python -m pip install clang-tidy==<this>` gets it on any
-      # machine; the runner's bundled LLVM cannot be asked for by version at all.
-      CLANG_TIDY_VERSION: 22.1.8
-
     steps:
       - uses: actions/checkout@v4
 
@@ -101,39 +78,15 @@ jobs:
       - name: Add NuGet to PATH
         uses: NuGet/setup-nuget@v2
 
-      # INCLUDE and LIB are what make the CRT and the Windows SDK visible to clang-tidy, which
-      # runs through clang's MSVC driver rather than being told about the SDK by hand. MSBuild
-      # does not need them -- it resolves the toolset itself -- so this exists for the linter.
-      - name: Import the MSVC environment
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $install = & $vswhere -latest -products * -property installationPath
-          if (-not $install) { throw "vswhere found no Visual Studio installation." }
-          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
-          cmd /c "`"$devcmd`" -arch=amd64 -host_arch=amd64 -no_logo && set" | ForEach-Object {
-            if ($_ -match '^(INCLUDE|LIB|LIBPATH|VCINSTALLDIR|VCToolsInstallDir|VSINSTALLDIR)=(.*)$') {
-              "$($Matches[1])=$($Matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-            }
-          }
-          "VSWHERE_INSTALL=$install" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-      # PINNED, and not taken from the runner image. CLANG_TIDY_VERSION at the top of this job
-      # carries the version and the reason.
-      - name: Install the pinned clang-tidy
-        shell: pwsh
-        run: python -m pip install --disable-pip-version-check "clang-tidy==$env:CLANG_TIDY_VERSION"
-
       - name: Record the toolchain
         shell: pwsh
         run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           Write-Output "runner image : $env:ImageOS / $env:ImageVersion"
-          Write-Output "visual studio: $env:VSWHERE_INSTALL"
+          Write-Output "visual studio: $(& $vswhere -latest -products * -property installationPath)"
           msbuild -version -nologo
           Write-Output "--- nuget ---"
           nuget help | Select-Object -First 1
-          Write-Output "--- clang-tidy (pinned to $env:CLANG_TIDY_VERSION) ---"
-          clang-tidy --version
           Write-Output "--- python ---"
           python --version
 
@@ -154,7 +107,7 @@ jobs:
             "path=$($found[0].Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           }
 
-      # First, because it is two seconds and it catches the class of mistake that would otherwise
+      # First, because it is a second and it catches the class of mistake that would otherwise
       # surface as a confusing build failure: a file missing from a project, a header in a
       # subdirectory clang-tidy will never see, or Debug and Release drifting apart. The self-test
       # runs too: it breaks a copy of the tree once per check and fails if a check stays silent,
@@ -221,19 +174,31 @@ jobs:
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           $vstest = & $vswhere -latest -products * -find '**\vstest.console.exe' | Select-Object -First 1
           if (-not $vstest) { throw "vstest.console.exe not found." }
-          & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
-          if ($LASTEXITCODE -ne 0) { throw "vstest reported failures." }
 
-      # After the build, so that a compile error is reported as a compile error rather than as
-      # forty linter findings about a file that does not parse.
-      # The self-test runs too: it shows a misnamed member fails the gate, in a .cpp and through a
-      # header, so a runner that has quietly stopped finding anything is caught here.
-      - name: Run clang-tidy
-        shell: pwsh
-        run: |
-          python Build\RunClangTidy.py
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python Build\RunClangTidy.py --self-test
+          # ReachesTierThree plays the AI to tier 3, about four of the step's seven minutes, so it runs in a vstest
+          # process of its own beside the other suites, which skip it under OUTPOST_TIER_THREE_APART. A name filter that
+          # ran nothing would read as a pass, so its process must run exactly that one test and pass it.
+          $tierThree = "x64\$env:CONFIGURATION\GameLogicTests.dll"
+          if (-not (Test-Path $tierThree)) { throw "$tierThree was not built." }
+          $apart = Start-Process -FilePath $vstest -NoNewWindow -PassThru `
+            -RedirectStandardOutput ReachesTierThree.log -RedirectStandardError ReachesTierThree.err.log `
+            -ArgumentList @($tierThree, '/Tests:ReachesTierThree', '/Platform:x64',
+                            '/Logger:trx;LogFileName=ReachesTierThree.trx', '/ResultsDirectory:TestResults')
+          $null = $apart.Handle  # kept, so that ExitCode is still there once the process has exited
+
+          $env:OUTPOST_TIER_THREE_APART = '1'
+          & $vstest $suites /Platform:x64 /Logger:trx /ResultsDirectory:TestResults
+          $rest = $LASTEXITCODE
+
+          $apart.WaitForExit()
+          Write-Output "--- ReachesTierThree, in its own process ---"
+          Get-Content ReachesTierThree.log, ReachesTierThree.err.log
+          if ($rest -ne 0) { throw "vstest reported failures." }
+          if ($apart.ExitCode -ne 0) { throw "ReachesTierThree failed." }
+          $counters = ([xml](Get-Content TestResults\ReachesTierThree.trx)).TestRun.ResultSummary.Counters
+          if ($counters.total -ne '1' -or $counters.passed -ne '1') {
+            throw "The ReachesTierThree process ran $($counters.total) tests and passed $($counters.passed); it must run that one test and pass it."
+          }
 
       - name: Upload the build log
         if: always()
@@ -250,6 +215,141 @@ jobs:
           name: test-results
           path: TestResults
           if-no-files-found: ignore
+
+  tidy:
+    name: clang-tidy
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    # Its own job, beside the build and the tests rather than after them, since neither needs the other: the two took
+    # about 7 and 6 minutes one after the other, and side by side the slower sets the pace. clang-tidy reads the
+    # sources, not the build, apart from the shader headers NeuronClient's FXCompile writes (AGENTS.md §2), which it
+    # builds here alone through the solution. A compile error elsewhere fails the Debug|x64 job, and may show here too as
+    # findings in a file that does not parse.
+    env:
+      CONFIGURATION: Debug
+      PLATFORM: x64
+
+      # ── Why clang-tidy is pinned and the rest of the toolchain is not ──────────────────────
+      #
+      # The clang-format job below pins clang-format 18 and says why: 18 and 22 break a long
+      # argument list in different places, so a floating version would flap. clang-tidy floated in
+      # the sibling tree and did exactly that -- the runner image moved to LLVM 20.1.8 and the
+      # build went red on code that had not changed, with two findings that were correct code:
+      #
+      #   clang-analyzer-optin.core.EnumCastOutOfRange on a BIT-FLAG enum, where an OR-ed pair of
+      #   enumerators names no enumerator of its own. Deliberate, and not reported by 22.
+      #
+      #   clang-analyzer-cplusplus.NewDeleteLeaks on a std::unique_ptr inside an aggregate
+      #   returned by value. Correct C++, and not reported by 22 either.
+      #
+      # A third finding from the same run was REAL -- an enum with no zero enumerator that the
+      # decoder cast one into -- and it was fixed in the code rather than pinned away. That is the
+      # distinction this pin is drawn on: a version change must not be able to turn main red on
+      # its own, and the way to bump it is to change the number here, run it, and fix what it says.
+      #
+      # From pip rather than from the image, because that is the only way a developer can run the
+      # same binary the gate runs. `python -m pip install clang-tidy==<this>` gets it on any
+      # machine; the runner's bundled LLVM cannot be asked for by version at all.
+      CLANG_TIDY_VERSION: 22.1.8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Add NuGet to PATH
+        uses: NuGet/setup-nuget@v2
+
+      # INCLUDE and LIB are what make the CRT and the Windows SDK visible to clang-tidy, which
+      # runs through clang's MSVC driver rather than being told about the SDK by hand. MSBuild
+      # does not need them -- it resolves the toolset itself -- so this exists for the linter.
+      - name: Import the MSVC environment
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $install = & $vswhere -latest -products * -property installationPath
+          if (-not $install) { throw "vswhere found no Visual Studio installation." }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          cmd /c "`"$devcmd`" -arch=amd64 -host_arch=amd64 -no_logo && set" | ForEach-Object {
+            if ($_ -match '^(INCLUDE|LIB|LIBPATH|VCINSTALLDIR|VCToolsInstallDir|VSINSTALLDIR)=(.*)$') {
+              "$($Matches[1])=$($Matches[2])" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          "VSWHERE_INSTALL=$install" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      # PINNED, and not taken from the runner image. CLANG_TIDY_VERSION at the top of this job
+      # carries the version and the reason.
+      - name: Install the pinned clang-tidy
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check "clang-tidy==$env:CLANG_TIDY_VERSION"
+
+      - name: Record the toolchain
+        shell: pwsh
+        run: |
+          Write-Output "runner image : $env:ImageOS / $env:ImageVersion"
+          Write-Output "visual studio: $env:VSWHERE_INSTALL"
+          msbuild -version -nologo
+          Write-Output "--- clang-tidy (pinned to $env:CLANG_TIDY_VERSION) ---"
+          clang-tidy --version
+          Write-Output "--- python ---"
+          python --version
+
+      # The solution is found, not named. Exactly one at the root, or none while the tree is still
+      # empty; two is a mistake worth failing on rather than picking between.
+      - name: Locate the solution
+        id: solution
+        shell: pwsh
+        run: |
+          $found = @(Get-ChildItem -Path . -File | Where-Object { $_.Extension -in '.slnx', '.sln' })
+          if ($found.Count -gt 1) { throw "More than one solution at the repository root: $($found.Name -join ', ')." }
+          if ($found.Count -eq 0) {
+            Write-Output "::notice::No solution at the repository root yet. The build and test steps will be skipped."
+            "path=" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+          else {
+            Write-Output "Solution: $($found[0].Name)"
+            "path=$($found[0].Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+
+      # A package's headers are part of what clang-tidy reads, such as pix3.h for NeuronClient (ADR-005).
+      - name: Restore NuGet packages
+        if: steps.solution.outputs.path != ''
+        shell: pwsh
+        run: |
+          $configs = @(Get-ChildItem -Path . -Recurse -Filter 'packages.config' -File |
+            Where-Object { $_.FullName -notmatch '[\\/]packages[\\/]' })
+          if ($configs.Count -eq 0) {
+            Write-Output "::notice::No packages.config in the tree. Nothing to restore."
+            exit 0
+          }
+          foreach ($config in $configs) {
+            nuget restore $config.FullName -PackagesDirectory packages -NonInteractive
+            if ($LASTEXITCODE -ne 0) { throw "nuget restore failed for $($config.FullName)." }
+          }
+
+      # Only what writes the shader headers, and what it builds on, through the solution (AGENTS.md §3).
+      - name: Build the shader headers
+        if: steps.solution.outputs.path != ''
+        shell: pwsh
+        run: |
+          msbuild "${{ steps.solution.outputs.path }}" /t:NeuronClient `
+            /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM `
+            /m /nologo /v:minimal /warnaserror
+
+      # The self-test runs too: it shows a misnamed member fails the gate, in a .cpp and through a
+      # header, so a runner that has quietly stopped finding anything is caught here.
+      - name: Run clang-tidy
+        shell: pwsh
+        run: |
+          python Build\RunClangTidy.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python Build\RunClangTidy.py --self-test
 
   format:
     name: clang-format

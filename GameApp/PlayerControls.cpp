@@ -148,11 +148,21 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
       Give(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
     return;
   }
-  // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed.
+  // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed. A
+  // Mining Rig is ordered only by an asteroid among the entities the controls are given, which leave out those in space
+  // the player has never seen; a click that orders none leaves the placement armed (ADR-046).
   if (m_placing.has_value())
   {
     const std::optional<PlanePosition> site =
       _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
+    const auto inReach = [&site](const EntityView& _asteroid)
+    {
+      return _asteroid.kind == EntityKind::Asteroid &&
+             std::hypot(_asteroid.position.xMeters - site->xMeters, _asteroid.position.zMeters - site->zMeters) - _asteroid.radiusMeters <=
+               RIG_SNAP_METERS;
+    };
+    if (*m_placing == StructureKind::MiningRig && site.has_value() && std::ranges::none_of(_frame.entities, inReach))
+      return;
     std::vector<EntityId> constructors = SelectedConstructors(_frame.entities);
     if (site.has_value() && !constructors.empty())
       Give(BuildStructureCommand{.constructors = std::move(constructors), .structure = *m_placing, .position = *site});

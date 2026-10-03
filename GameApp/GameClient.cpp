@@ -75,9 +75,14 @@ constexpr float STRUCTURE_FILL_SHADE = 0.22f;
 // Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
 // pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
-// selection's green ring takes its place. A Mining Rig's ring is its own footprint's, laid over its rock (ADR-042).
+// selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
+// fades as the camera comes in: at full strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
+// and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the
+// pointer and while a structure is placed (owner, 2026-10-03, ADR-046).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;
 constexpr int RING_LINE_SEGMENTS = 96;
+constexpr float RING_FULL_VIEW_SHARE = 0.03f;
+constexpr float RING_GONE_VIEW_SHARE = 0.065f;
 
 // A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
 // within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
@@ -105,10 +110,16 @@ constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 // A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
 // above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
 // HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
-// side the data does not name. The gap is small, so that the bar reads as the ship's.
+// side the data does not name. The gap is small, so that the bar reads as the ship's. Held, HEALTH_BAR_ALL_KEY shows a bar
+// over every ship and structure, whole or not (ADR-047).
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
 constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
+constexpr std::uint8_t HEALTH_BAR_ALL_KEY = VK_MENU;
+// A bar is never shorter or thinner on screen than these, in the HUD's reference units at the screen's middle: zoomed out,
+// a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-047).
+constexpr float HEALTH_BAR_LEAST_LENGTH_UNITS = 32.0f;
+constexpr float HEALTH_BAR_LEAST_THICKNESS_UNITS = 5.0f;
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
 constexpr float HEALTH_BACK_SHADE = 0.3f;
 constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
@@ -521,6 +532,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     return;
   }
 
+  m_everyHealthBar = _input.active && _input.IsDown(HEALTH_BAR_ALL_KEY);
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
@@ -529,6 +541,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     if (m_fog.CellsPerSide() == 0)
       m_fog.Reset(m_view.Newest().mapSizeMeters);
     m_fog.Update(m_entities, m_view.Newest().player);
+  }
+  // What the player may order on: the view, less the asteroids in space it has never seen, which it cannot claim with a
+  // Mining Rig (ADR-046).
+  m_knownEntities.clear();
+  for (const EntityView& entity : m_entities)
+  {
+    if (entity.kind != EntityKind::Asteroid || m_fog.HasSeen(entity.position, entity.radiusMeters))
+      m_knownEntities.push_back(entity);
   }
   UpdateBanking(_elapsedSeconds);
   m_frameSeconds = _elapsedSeconds;
@@ -587,7 +607,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                 });
   if (!m_view.IsEmpty())
   {
-    m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+    m_controls.Update(input, m_knownEntities, m_view.Newest().player, m_camera, m_viewport);
     const DirectX::XMFLOAT2 cursor{static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels)};
     m_hovered = m_hudLayout.Covers(cursor.x, cursor.y) ? std::nullopt
                                                        : PickEntity(m_entities, m_camera, m_viewport, cursor, [](const EntityView& _entity)
@@ -1013,34 +1033,42 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
 
 void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList)
 {
+  // How many meters of ground a reference unit of the HUD covers at the screen's middle, which sets a bar's least size.
+  const float metersPerUnit = m_camera.ViewWidthMeters() * Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels) /
+                              static_cast<float>(std::max(m_viewport.widthPixels, 1u));
+  const float thickness = std::max(HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_LEAST_THICKNESS_UNITS * metersPerUnit);
+  const float leastHalfLength = HEALTH_BAR_LEAST_LENGTH_UNITS * metersPerUnit / 2.0f;
+  // How far each bar's middle stands off the footprint: the health bar's near edge where a bar of HEALTH_BAR_WIDTH_METERS
+  // has it, and the build bar a gap beyond the health bar.
+  const float healthOffset = HEALTH_BAR_GAP_METERS - (HEALTH_BAR_WIDTH_METERS / 2.0f) + (thickness / 2.0f);
+  const float buildOffset = healthOffset + thickness + HEALTH_BAR_GAP_METERS;
   for (const EntityView& entity : m_entities)
   {
     const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
     const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
+    const float halfLength = std::max(entity.radiusMeters, leastHalfLength);
+    const float left = entity.position.xMeters - halfLength;
     if (entity.builtPermille < PERMILLE)
     {
-      const float left = entity.position.xMeters - entity.radiusMeters;
-      const float z = entity.position.zMeters - entity.radiusMeters - (2.0f * HEALTH_BAR_GAP_METERS) - HEALTH_BAR_WIDTH_METERS;
+      const float z = entity.position.zMeters - entity.radiusMeters - buildOffset;
       const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, back);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters * built), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness,
+               HEALTH_BAR_HEIGHT_METERS, back);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength * built), .zMeters = z}, thickness,
+               HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
     }
-    if (entity.maxHitPointsHundredths <= 0 || entity.hitPointsHundredths >= entity.maxHitPointsHundredths)
+    if (entity.maxHitPointsHundredths <= 0 || (!m_everyHealthBar && entity.hitPointsHundredths >= entity.maxHitPointsHundredths))
       continue;
     const float share =
       std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f, 1.0f);
-    const float left = entity.position.xMeters - entity.radiusMeters;
-    const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
+    const float z = entity.position.zMeters - entity.radiusMeters - healthOffset;
     const PlanePosition start{.xMeters = left, .zMeters = z};
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
-             HEALTH_BAR_HEIGHT_METERS, back);
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness, HEALTH_BAR_HEIGHT_METERS, back);
     const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
                                      : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
                                                                 : HEALTH_LOW_COLOR;
     // A little higher than the dark bar, so the two do not fight over the same depth.
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters * share), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength * share), .zMeters = z}, thickness,
              HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, color);
   }
 }
@@ -1079,19 +1107,26 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
     const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
     if (side == nullptr)
       continue;
-    const DirectX::XMFLOAT4 color = placing || m_hovered == structure.id ? EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)
-                                                                         : Shaded(side->color, FOOTPRINT_RING_SHADE);
+    const bool lit = placing || m_hovered == structure.id;
+    const DirectX::XMFLOAT4 litColor = EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
     // The rig's ring lies over the rock, so it is pulled toward the eye as a model's lines are, to show over the faces it
     // lies on. In a frame whose shards have taken every vertex DrawLineList can use, the rig goes without it.
-    if (structure.structure == StructureKind::MiningRig && DrapeRigRing(structure))
+    if (structure.structure == StructureKind::MiningRig)
     {
-      m_pipeline.DrawLineList(_commandList, m_drapedRing, color, LINE_LIFT_SHARE);
+      if (lit && DrapeRigRing(structure))
+        m_pipeline.DrawLineList(_commandList, m_drapedRing, litColor, LINE_LIFT_SHARE);
       continue;
     }
+    const float radius = structure.radiusMeters * RING_SIZE_PER_FOOTPRINT;
+    const float viewShare = radius / m_camera.ViewWidthMeters();
+    const float strength =
+      lit ? 1.0f : std::clamp((RING_GONE_VIEW_SHARE - viewShare) / (RING_GONE_VIEW_SHARE - RING_FULL_VIEW_SHARE), 0.0f, 1.0f);
+    if (strength <= 0.0f)
+      continue;
     const DirectX::XMFLOAT3 at{structure.position.xMeters, OVERLAY_LIFT_METERS, structure.position.zMeters};
     m_ringDraws.push_back({.lines = m_ringLine.get(),
-                           .world = WorldMatrix(at, 0.0f, structure.radiusMeters * RING_SIZE_PER_FOOTPRINT),
-                           .color = color,
+                           .world = WorldMatrix(at, 0.0f, radius),
+                           .color = lit ? litColor : Shaded(side->color, FOOTPRINT_RING_SHADE * strength),
                            .liftShare = 0.0f});
   }
   m_pipeline.DrawLines(_commandList, m_ringDraws);
@@ -1447,7 +1482,9 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, m_entities, newest.mapSizeMeters);
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046).
+  const GhostPlacement ghost =
+    PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities, newest.mapSizeMeters);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.

@@ -51,11 +51,18 @@ public:
     Census census = Count(server.World());
     Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, census.structures[0]);
     Assert::AreEqual(Outpost::STRESS_STRUCTURES_PER_PLAYER, census.structures[1]);
+    size_t rigs = 0;
     for (const Outpost::Entity& entity : server.World().Entities())
     {
       if (entity.owner.IsValid())
         Assert::IsTrue(entity.maxHitPointsHundredths > 0, L"everything in the scene can be destroyed");
+      if (entity.kind == Outpost::EntityKind::Structure && entity.structure == Outpost::StructureKind::MiningRig)
+      {
+        ++rigs;
+        Assert::IsTrue(entity.site.IsValid(), L"a Mining Rig stands on an ore asteroid");
+      }
     }
+    Assert::IsTrue(rigs > 0);
     for (const size_t ships : census.ships)
     {
       // Until the first tick, no warships: the load adds them as the tick starts.

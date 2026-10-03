@@ -17,6 +17,8 @@ constexpr DWORD WINDOW_EX_STYLE = 0;
 // In a keystroke's lParam, bit 29 is set while Alt is held and bit 30 when the key was already down (an auto-repeat).
 constexpr LPARAM ALT_DOWN_BIT = LPARAM{1} << 29;
 constexpr LPARAM REPEAT_BIT = LPARAM{1} << 30;
+// In WM_SYSCOMMAND's wParam, the low four bits are the system's own; the command is the rest.
+constexpr WPARAM SYSTEM_COMMAND_MASK = 0xFFF0;
 
 // The monitor's full area in physical pixels, since the process is per-monitor DPI aware (app.manifest).
 bool MonitorArea(HMONITOR _monitor, RECT& _outArea) noexcept
@@ -309,6 +311,13 @@ LRESULT CALLBACK Neuron::Window::WindowProc(HWND _hwnd, UINT _message, WPARAM _w
   case WM_DESTROY:
     PostQuitMessage(0);
     return 0;
+  case WM_SYSCOMMAND:
+    // Alt pressed and released alone would open the window's menu from the keyboard, and hold the frame loop in the
+    // menu's own until it closed, so a game that reads Alt as a key would stop. Every other command goes on, Alt+F4's
+    // close among them.
+    if ((_wParam & SYSTEM_COMMAND_MASK) == static_cast<WPARAM>(SC_KEYMENU))
+      return 0;
+    return DefWindowProcW(_hwnd, _message, _wParam, _lParam);
   default:
     return DefWindowProcW(_hwnd, _message, _wParam, _lParam);
   }

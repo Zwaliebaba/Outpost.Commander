@@ -294,6 +294,7 @@ The game's screens become windows that float over the battlefield, and the HUD s
 - **The research window** shows the player's Research Lab: its queue, and each topic not researched or queued yet with what it does and costs, dim while its prerequisites are neither, as the Lab's panel did.
 - **The queue buttons live in the windows only** (owner, 2026-10-03). A selected structure's panel keeps its name, hit points and construction, and the buttons that open its windows: Production on the Command Station and on a Shipyard, Ship designer on a Shipyard, Research on the Research Lab. Queuing a Constructor takes one click or key more than in the MVP.
 - **What stays put:** the Ore and income, the minimap, the selection panel, and the build and order buttons, anchored where they are (ADR-015). They take the windows' look (owner, 2026-10-03, ADR-043): a window's body and corner brackets, the mockup's faces, and Ore written as the windows write it.
+- **Holding Alt shows every health bar** over the battlefield, and a bar keeps a least size on screen when the camera is far out (owner, 2026-10-03, ADR-047). An income of nothing is written in the warning's color.
 - **A window** is dragged by its title bar and kept on the screen, at least its title bar. Clicking it brings it to the front. It closes with its × or with Esc, which closes the front window first. Several can be open at once.
 - **A window remembers where it was** until the game is closed (owner, 2026-10-02): closing and reopening it, or starting another match, puts it back where it was left. A new launch puts every window at its default place. Nothing is written to disk.
 - **The match keeps running** while any window is open (owner, 2026-10-02). The designer is large — about 38% of the screen's width and 65% of its height at the mockup's size — and it covers that much of the battlefield while it is open.
@@ -311,7 +312,7 @@ The AI is not made harder to rush (§3). It is changed only so that it can play 
 - **It attacks production first** (§4): Shipyards, then the Command Station, then anything else.
 - **It plays a longer match** (owner, 2026-10-03, task 12.2, ADR-041). This goes beyond Phase 1's rules: two AIs ended a match in 24 minutes, decided by one battle at minute 12, before tier 2 could matter. Now:
   - It attacks with 20 warships, and 12 more for each tier it has opened, where gate G9 had 12.
-  - An attack that has lost 30% of its ships falls back, and the AI waits 150 seconds before it attacks again.
+  - An attack that has lost 30% of its ships falls back, and the AI waits 120 seconds before it attacks again (owner, 2026-10-03, ADR-047).
   - It fortifies its base with 2 Defence Platforms for each Shipyard.
   - Two AIs now end a match in a median of 52 minutes over 80 seeds, but only 23 of the 80 within 45–60, and 3 had not ended at 150 minutes.
 

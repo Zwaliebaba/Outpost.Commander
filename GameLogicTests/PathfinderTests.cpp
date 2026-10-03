@@ -104,7 +104,7 @@ public:
     for (const Outpost::PlanePosition start : {Outpost::PlanePosition{-320.0f, 20.0f}, Outpost::PlanePosition{-280.0f, -20.0f}})
     {
       const Outpost::PlanePosition slot{300.0f, 30.0f};
-      const std::vector<Outpost::PlanePosition> path = routes.PathFor(start, slot, SHIP_RADIUS_METERS);
+      const std::vector<Outpost::PlanePosition> path = routes.PathFor(start, slot, SHIP_RADIUS_METERS).waypoints;
       Assert::IsTrue(path.back() == slot);
       ExpectClear(pathfinder, start, path);
       // Every waypoint but the slot is a corner of the group's route.
@@ -125,14 +125,52 @@ public:
     // Both ships are on the far side of the obstacle from their slots.
     const Outpost::PlanePosition first{-400.0f, 0.0f};
     const Outpost::PlanePosition second{-410.0f, 10.0f};
-    const std::vector<Outpost::PlanePosition> firstPath = routes.PathFor(first, {400.0f, 0.0f}, SHIP_RADIUS_METERS);
-    const std::vector<Outpost::PlanePosition> secondPath = routes.PathFor(second, {400.0f, 20.0f}, SHIP_RADIUS_METERS);
+    const std::vector<Outpost::PlanePosition> firstPath = routes.PathFor(first, {400.0f, 0.0f}, SHIP_RADIUS_METERS).waypoints;
+    const std::vector<Outpost::PlanePosition> secondPath = routes.PathFor(second, {400.0f, 20.0f}, SHIP_RADIUS_METERS).waypoints;
     ExpectClear(pathfinder, first, firstPath);
     ExpectClear(pathfinder, second, secondPath);
     Assert::IsTrue(firstPath.size() > 1 && secondPath.size() > 1);
     Assert::IsTrue(secondPath.back() == Outpost::PlanePosition{400.0f, 20.0f});
     Assert::IsTrue(std::ranges::find(firstPath, secondPath.front()) != firstPath.end(),
                    L"the second ship did not join the first one's path");
+  }
+
+  // ADR-047: ships of a group with a band keep their own lanes round the obstacle, side by side, rather than each passing
+  // the route's corner. The band moves off the obstacle, so the innermost lane passes the corner and the rest pass outside.
+  TEST_METHOD(ShipsOfAGroupKeepTheirLanesRoundAnObstacle)
+  {
+    constexpr float LANE_SPACING_METERS = 30.0f;
+    Outpost::Pathfinder pathfinder;
+    pathfinder.SetObstacles({{.center = {}, .radiusMeters = 100.0f}}, 1000.0f);
+    const Outpost::PlanePosition center{-300.0f, 0.0f};
+    std::vector<Outpost::PlanePosition> route = pathfinder.FindPath(center, {300.0f, 0.0f}, SHIP_RADIUS_METERS);
+    route.pop_back();
+
+    Outpost::GroupRoutes routes(pathfinder, {300.0f, 0.0f}, SHIP_RADIUS_METERS, LANE_SPACING_METERS);
+    routes.SearchFrom(center);
+    std::vector<Outpost::PlanePosition> laneEnds;
+    for (const float laneMeters : {-LANE_SPACING_METERS, 0.0f, LANE_SPACING_METERS})
+    {
+      // The group travels along +x, so a lane to the left is one towards +z.
+      const Outpost::PlanePosition start{-300.0f, laneMeters};
+      const Outpost::PlanePosition slot{300.0f, laneMeters};
+      const Outpost::GroupRoutes::Way way = routes.PathFor(start, slot, SHIP_RADIUS_METERS, laneMeters);
+      Assert::IsTrue(way.waypoints.back() == slot);
+      ExpectClear(pathfinder, start, way.waypoints);
+      Assert::IsTrue(way.laneEnd.has_value(), L"the ship keeps no lane");
+      const Outpost::PlanePosition laneEnd = way.laneEnd.value_or(Outpost::PlanePosition{});
+      Assert::IsTrue(std::ranges::find(way.waypoints, laneEnd) != way.waypoints.end());
+      laneEnds.push_back(laneEnd);
+    }
+
+    // Past the route's last corner, the lanes are a lane apart, the innermost at the corner itself.
+    for (std::size_t lane = 0; lane + 1 < laneEnds.size(); ++lane)
+      Assert::IsTrue(Outpost::Distance(laneEnds[lane], laneEnds[lane + 1]) >= LANE_SPACING_METERS - 0.01f);
+    const float cornerMeters = Outpost::Distance(route.back(), {});
+    float innermostMeters = std::numeric_limits<float>::infinity();
+    for (const Outpost::PlanePosition laneEnd : laneEnds)
+      innermostMeters = std::min(innermostMeters, Outpost::Distance(laneEnd, {}));
+    Assert::AreEqual(cornerMeters, innermostMeters, 0.01f);
   }
 
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)

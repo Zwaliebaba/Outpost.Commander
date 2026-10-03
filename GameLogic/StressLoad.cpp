@@ -113,13 +113,35 @@ Outpost::StressLoad::StressLoad(Simulation& _simulation, const Map& _map, const 
     }
     if (sites.size() + existing < STRESS_STRUCTURES_PER_PLAYER)
       throw Neuron::Exception("The map has too little open ground for the stress load's structures.");
+    // A Mining Rig stands on an ore asteroid, as one built in a match does (design §6): on the free ones nearest the
+    // structures, in the map's order where they tie (owner, 2026-10-03).
+    std::vector<OreAsteroidPlacement> ores = _map.oreAsteroids;
+    std::ranges::stable_sort(ores, {}, [structuresAt](const OreAsteroidPlacement& _ore) { return Distance(_ore.position, structuresAt); });
+    const auto taken = [&_simulation](const OreAsteroidPlacement& _ore)
+    {
+      return std::ranges::any_of(_simulation.Entities(),
+                                 [&_ore](const Entity& _entity) {
+                                   return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::MiningRig &&
+                                          _entity.position == _ore.position;
+                                 });
+    };
+    size_t nextOre = 0;
     for (size_t i = 0; i < sites.size(); ++i)
     {
       const StructureKind kind = STRUCTURE_KINDS[i % STRUCTURE_KINDS.size()];
       const auto tuning = std::ranges::find(_tuning.structures, kind, &StructureTuning::kind);
       if (tuning == _tuning.structures.end())
         throw Neuron::Exception("The tuning data lacks a structure kind the stress load places.");
-      (void)_simulation.SpawnStructure(side.player, kind, sites[i], static_cast<float>(tuning->footprintRadiusMeters),
+      PlanePosition at = sites[i];
+      if (kind == StructureKind::MiningRig)
+      {
+        while (nextOre < ores.size() && taken(ores[nextOre]))
+          ++nextOre;
+        if (nextOre == ores.size())
+          throw Neuron::Exception("The map has too few free ore asteroids for the stress load's Mining Rigs.");
+        at = ores[nextOre++].position;
+      }
+      (void)_simulation.SpawnStructure(side.player, kind, at, static_cast<float>(tuning->footprintRadiusMeters),
                                        tuning->hitPoints * HUNDREDTHS, tuning->armor * HUNDREDTHS);
     }
   }

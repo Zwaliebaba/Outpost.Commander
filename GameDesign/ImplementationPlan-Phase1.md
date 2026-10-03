@@ -26,13 +26,16 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 |---|---|---|---|---|
 | 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 7.2 | Ships turn in arcs | 7.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
+| 7.3 | An attacking group keeps its lanes | 9.7 | — | todo |
 | 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run on the development machine |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD and stance tested in the container, not yet built or run |
+| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); run by the owner on 2026-10-03 |
+| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | in review, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); HUD, fog and stress load tested in the container, not yet built or run |
+| 9.7 | The owner's look at a fight: lanes round obstacles, health bars, no income | 9.6 | — | in review, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); movement, AI matches and HUD tested in the container; the client's bars and Alt not yet run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
@@ -41,7 +44,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
+| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -104,6 +107,13 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **What it changes**, measured in the Linux container. A U-turn takes about 8% longer: a Large+Fusion ship sent 100 m behind itself arrives in 8.55 s against 7.90 s. A point 15 m abeam, which the old rule circled for seconds and gave up 2 m short of, is now reached exactly in 0.75–3.6 s, depending on the hull. Two AIs end a match at a median of 23:32 over 140 seeds, against 22:11 before. The balance check, run again with arcs: (a), (b) and (c) pass at every stage. (d) is UNSURE at tier 1: with Hull Plating, the plated swarm's best answer at 2,000 Ore under spread fire wins 53% of 480 battles, where it won 55% before. Nothing is retuned until the owner decides.
   - **Tests.** `MovementTests.AShipComesAboutInALoop` and `AShipReachesAPointInsideItsTurn`, both of which fail under the old rule; the other 185 GameLogic tests pass unchanged.
   - **Deeper banks.** With the arcs, the owner raised the bank limits in `Models.json` on 2026-10-03, graded by hull: Small 50°, Medium 45°, Large 35° and the Constructor 30°, from task 7.1's 35°, 22°, 12° and 15°. At first each "full at" stayed, and a Fusion ship reached only 40–70% of its limit. The owner then asked for Fusion ships to lean fully too. Each "full at" is now the sideways acceleration of the hull's Fusion design in a sharp turn at half speed: Small 60 m/s², Medium 26, Large 8 and the Constructor 55. So every ship reaches its limit in a sharp turn, and only a gentle bend leans part of the way.
+
+### 7.3 — An attacking group keeps its lanes
+
+- **Goal:** a group given an Attack order on one enemy passes an obstacle side by side, as a group given a Move or an attack-move order does after task 9.7.
+- **Why it is apart from 9.7:** each ship of an Attack order paths again alone, once a second, as its target moves (`ChaseTargets`), so a lane laid at the order is lost at the first new path. The group has to path again together, with its band, whenever its target moves (owner, 2026-10-03, ADR-047).
+- **Acceptance:** a `MovementTests` case as `AGroupPassesAnObstacleSideBySide`, with an Attack order on a moving target; the order ticks measured as ADR-032 measures them.
+- **Verify:** CI; the AI matches of seeds 1 to 40 again, since the AI's counter-attack is an Attack order.
 
 ---
 
@@ -258,6 +268,56 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Not built or run in the container**:
     - The HUD's tests ran there in a standalone build, and the screens were drawn from `Hud::Lay`'s output with substitute fonts.
     - `GameClient` and `MeshPipeline` were not compiled there, nor were `StanceMatrix` and its test, which need DirectXMath. `StandOnFeet` and `StandPoint` were, with the tests' cases and the shipped meshes.
+
+### 9.6 — The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore
+
+- **Goal:** the owner's review of a base's screen on 2026-10-03, after 9.5, and two faults the owner found playing:
+  - An asteroid never explored could be claimed with a rig.
+  - `--stress` stood rigs on open ground.
+- **Owner's answers, 2026-10-03:** do the review's seven recommendations, and fix the two faults.
+- **Scope:** `GameClient`'s rings, `Starfield`, `Hud`, `FogOfWar`, `PlayerControls` and `StressLoad`.
+- **ADR:** [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md).
+- **Acceptance:** `HudTests`, `FogOfWarTests`, `PlayerControlsTests`, `StarfieldTests` and `StressLoadTests` for what they cover; the rings and the crosses are the owner's run.
+- **Verify:** CI; **owner run.**
+- **As built:** as ADR-046 has it.
+  - **Rings:**
+    - A rig's ring shows only under the pointer and while placing.
+    - A resting ring fades out between 3% and 6.5% of the view's width.
+  - **The sky:** crosses are white or blue-white.
+  - **The HUD:**
+    - The Ore figure starts at the panel's left.
+    - The minimap's fields are darker, and its ore marks larger and under a rig's.
+    - The selection panel writes "×" and shows a health bar.
+    - A disabled button says why in place of its cost.
+  - **Faults fixed:**
+    - A rig is ordered only onto an asteroid the player has seen; the client enforces this, the server does not.
+    - `--stress` puts its rigs on ore asteroids.
+  - **Not built or run in the container:**
+    - `GameClient`, `PlayerControls`, `Starfield` and their tests need DirectXMath or D3D12.
+    - The HUD's, the fog's and the stress load's tests ran there.
+
+### 9.7 — The owner's look at a fight: lanes round obstacles, health bars, no income
+
+- **Goal:** the owner's review of a big fight on 2026-10-03, after 9.6:
+  - Both fleets fought as single-file columns.
+  - The health bars could not be read at that zoom.
+  - "+0/s" read like any other income.
+- **Owner's answers, 2026-10-03:**
+  - Fix all three. The columns are to be root-caused first.
+  - The AI regroups for 120 seconds, not 150, so that its matches stay within 45–60 minutes with lanes.
+  - An Attack order on one enemy keeps the shared route for now; its group keeping lanes is task 7.3.
+- **Scope:** `GroupRoutes` and `Simulation`'s group orders and corners, `Opponent.json`, `GameClient`'s health bars, `Window`'s menu key and `Hud`'s income.
+- **ADR:** [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md).
+- **Acceptance:**
+  - `MovementTests.AGroupPassesAnObstacleSideBySide`, `PathfinderTests.ShipsOfAGroupKeepTheirLanesRoundAnObstacle` and `HudTests.WarnsOfNoIncome`.
+  - The AI matches of seeds 1 to 40 still end in a median of 45–60 minutes (ADR-041).
+  - The order ticks stay within ADR-032's measure.
+- **Verify:** CI; **owner run** for the bars and the Alt key.
+- **As built:** as ADR-047 has it.
+  - **The columns** came from the group's shared route and from a ship cutting to its slot at sight. A group now keeps a band of lanes along its route, moved off the obstacle, and a ship keeps its lane's corners until it is close to them. Attack orders on one enemy keep the shared route.
+  - **Health bars** keep a least size of 32 × 5 reference units, and Alt shows every bar. The window no longer opens its menu on Alt.
+  - **"+0/s"** is in the warning's color.
+  - **The AI** regroups for 120 seconds. Two AIs end a match in a median of 47.5 minutes over seeds 1 to 40, and 51.1 over seeds 41 to 80; without the change, lanes made it 66.4 and 60.5.
 
 ---
 

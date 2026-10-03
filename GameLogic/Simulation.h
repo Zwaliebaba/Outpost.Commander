@@ -61,6 +61,9 @@ struct Entity
   std::optional<PlanePosition> destination;
   // The rest of the ship's way to its slot, and the speed that brings it there with the rest of its group.
   std::vector<PlanePosition> path;
+  // The last waypoint of the ship's lane through its group's band (ADR-047), while the path still holds it: the waypoints
+  // up to it are the ship's place in the band, which it keeps until it is close to each.
+  std::optional<PlanePosition> laneEnd;
   float cruiseSpeedMetersPerSecond = 0.0f;
   // How close the ship has come to its next waypoint, and for how many ticks it has come no closer.
   float closestMeters = 0.0f;
@@ -408,7 +411,11 @@ private:
     {
       EntityId ship;
       PlanePosition goal;
+      // How far to the left of the band's middle the ship keeps along its route (ADR-047), and where its lane ends once
+      // its path is planned.
+      float laneMeters = 0.0f;
       std::optional<std::vector<PlanePosition>> path;
+      std::optional<PlanePosition> laneEnd;
 
       friend bool operator==(const Member&, const Member&) = default;
     };
@@ -418,6 +425,8 @@ private:
     PlanePosition destination;
     EntityId attackTarget;
     float widestRadiusMeters = 0.0f;
+    // Half the width of the band of lanes the group keeps along its routes (ADR-047), or 0 for none.
+    float bandHalfWidthMeters = 0.0f;
     std::vector<GroupRoutes::Route> routes;
     std::vector<Member> members;
 

@@ -142,15 +142,17 @@ private:
   void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
-  // A faint ring, one pixel wide, in its side's color under every structure that is not selected, and at full strength
-  // under the one the pointer is on and under all of them while a structure is placed (ADR-042).
+  // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
+  // in, and at full strength under the one the pointer is on and under all of them while a structure is placed; a Mining
+  // Rig's only then (ADR-042, ADR-046).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   // The ring of a Mining Rig's own footprint, laid over its asteroid's rock, into m_drapedRing as a line list in the world
   // (ADR-042); false when the rig's kind is not known.
   bool DrapeRigRing(const EntityView& _rig);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
-  // structure under construction, its length the share built (task 4.2).
+  // A bar over each damaged ship and structure, or every one while Alt is held, its length the share of hit points left
+  // (task 3.5), and one over each structure under construction, its length the share built (task 4.2). Neither is smaller
+  // on screen than a least size (ADR-047).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
@@ -214,8 +216,10 @@ private:
   std::vector<Neuron::GlowPipeline::Glow> m_particleGlows;
   std::vector<Neuron::MeshVertex> m_shardVertices;
   std::vector<ExplosionManager::Batch> m_shardBatches;
-  // The view's entities this frame, which the controls pick from and the renderer draws.
+  // The view's entities this frame, which the renderer draws; and those the controls are given, less the asteroids in space
+  // the player has never seen (ADR-046).
   std::vector<EntityView> m_entities;
+  std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
   std::map<std::string, std::vector<ModelPiece>, std::less<>> m_modelPieces;
@@ -241,6 +245,8 @@ private:
   // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelPieces.
   std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
+  // Alt is held this frame, and every ship and structure shows its health bar.
+  bool m_everyHealthBar = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;
   // Where the cursor points on the ground this frame, for the ghost, and the structure it is on, whose ring shows at full
