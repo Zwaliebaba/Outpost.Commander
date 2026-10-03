@@ -47,10 +47,12 @@ PlanePosition Along(PlanePosition _from, float _directionX, float _directionZ, f
   return {.xMeters = _from.xMeters + (_directionX * _meters), .zMeters = _from.zMeters + (_directionZ * _meters)};
 }
 
+// The server lists a snapshot's entities in identifier order, each once (Simulation::BuildSnapshot), so one is found by a
+// binary search.
 const EntityView* FindEntity(const Snapshot& _snapshot, EntityId _id) noexcept
 {
-  const auto found = std::ranges::find(_snapshot.entities, _id, &EntityView::id);
-  return found != _snapshot.entities.end() ? &*found : nullptr;
+  const auto found = std::ranges::lower_bound(_snapshot.entities, _id, {}, &EntityView::id);
+  return found != _snapshot.entities.end() && found->id == _id ? &*found : nullptr;
 }
 
 bool IsStructure(const EntityView& _entity, StructureKind _kind) noexcept
@@ -237,6 +239,8 @@ void Outpost::AiPlayer::Watch(const Snapshot& _snapshot)
 
 void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
+  // What blocks in this snapshot is gathered when a place is first looked for (Blockers).
+  m_blockersGathered = false;
   const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
   const bool hasStation = station != _snapshot.entities.end();
@@ -606,24 +610,32 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                              });
 }
 
-std::vector<Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot) const
+std::span<const Outpost::EntityView> Outpost::AiPlayer::Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot)
 {
-  std::vector<EntityView> blockers;
-  for (const EntityView& entity : _snapshot.entities)
+  // The snapshot's part is gathered at the decision's first call. The plan's part changes as the plan grows, so it follows
+  // afresh at every call.
+  if (!m_blockersGathered)
   {
-    if (entity.kind != EntityKind::Ship)
-      blockers.push_back(entity);
+    m_blockers.clear();
+    for (const EntityView& entity : _snapshot.entities)
+    {
+      if (entity.kind != EntityKind::Ship)
+        m_blockers.push_back(entity);
+    }
+    m_snapshotBlockers = m_blockers.size();
+    m_blockersGathered = true;
   }
+  m_blockers.resize(m_snapshotBlockers);
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     const Slot& slot = m_slots[i];
     // A rig stands on its asteroid, which already blocks.
     if (i == _skippedSlot || slot.abandoned || slot.structure == StructureKind::MiningRig || IsDone(slot, _snapshot))
       continue;
-    blockers.push_back(
+    m_blockers.push_back(
       {.kind = EntityKind::Structure, .structure = slot.structure, .position = slot.position, .radiusMeters = slot.radiusMeters});
   }
-  return blockers;
+  return m_blockers;
 }
 
 // Keeps track of where its Constructors are, since a snapshot shows no ship's orders: a work ends when its structure is
@@ -707,7 +719,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
       // Something may have taken the place since it was planned.
       StructureTypeView padded = *type;
       padded.radiusMeters += gap;
-      const std::vector<EntityView> blockers = Blockers(_snapshot, i);
+      const std::span<const EntityView> blockers = Blockers(_snapshot, i);
       if (!PlaceGhost(padded, slot.position, blockers, _snapshot.mapSizeMeters).valid)
       {
         const std::optional<PlanePosition> place = FindPlace(*type, slot.position, blockers, _snapshot.mapSizeMeters, gap);

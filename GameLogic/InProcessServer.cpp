@@ -9,6 +9,8 @@ namespace
 // Ticks run by one Advance at most: 250 ms of simulation at 20 Hz. After a longer stall the simulation drops the rest
 // and resumes at its own pace (ADR-009).
 constexpr std::uint32_t MAX_TICKS_PER_ADVANCE = 5;
+// A waitable timer's due time is counted in hundreds of nanoseconds.
+using HundredNanoseconds = std::chrono::duration<std::int64_t, std::ratio<1, 10'000'000>>;
 // Where the server finds its data, under the package's Assets folder (ADR-008).
 constexpr std::string_view TUNING_FILE = "Tuning.json";
 constexpr std::string_view MAP_FILE = "Map.json";
@@ -20,6 +22,21 @@ std::string ReadDataFile(std::string_view _fileName)
   if (bytes.empty())
     throw Neuron::Exception(std::format("The game data file Assets\\{} is missing or cannot be read.", _fileName));
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
+}
+
+// Match setup on a server just made: the map is placed, and now every player's starting fleet (task 2.5), and the load a
+// measurement run asks for.
+std::unique_ptr<Outpost::Server> SetUpMatch(std::unique_ptr<Outpost::InProcessServer> _server, const Outpost::ServerDesc& _desc)
+{
+  _server->World().PlaceStartingBases(_server->MapData());
+  if (_desc.measurementLoad)
+    Outpost::PlaceMeasurementLoad(_server->World(), _server->MapData(), _server->TuningData());
+  if (_desc.stressLoad)
+    _server->StartStressLoad();
+  // Match setup is over, and every structure it places stands: the graphs are built once, now, so that the first order of
+  // the match does not pay for them (ADR-032).
+  _server->PreparePathfinding();
+  return _server;
 }
 } // namespace
 
@@ -67,7 +84,6 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
     m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
     m_simulation.SaveStartingDesigns(id, m_tuning);
   }
-  PreparePathfinding();
 }
 
 void Outpost::InProcessServer::PreparePathfinding()
@@ -117,17 +133,34 @@ void Outpost::InProcessServer::Start()
 
 void Outpost::InProcessServer::Run(const std::stop_token& _stop)
 {
-  std::mutex sleeping;
-  std::condition_variable_any wake;
   auto last = std::chrono::steady_clock::now();
   try
   {
+    // The thread sleeps on a waitable timer set for the next tick, and on an event that a request to stop signals, which
+    // nothing else does (ADR-055). A high-resolution timer ends the wait when the tick is due, where a plain one, like
+    // any other timed wait, ends on the system timer's next tick, 15.6 ms apart by default. Windows before 10 1803 makes
+    // no high-resolution timer, and a plain one serves there.
+    winrt::handle timer{CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS)};
+    if (!timer)
+      timer.attach(winrt::check_pointer(CreateWaitableTimerExW(nullptr, nullptr, 0, TIMER_ALL_ACCESS)));
+    winrt::handle stopped;
+    stopped.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, EVENT_ALL_ACCESS)));
+    // Declared after the event, so that it is gone before the event is.
+    const std::stop_callback wake(_stop, [&stopped]() noexcept { (void)SetEvent(stopped.get()); });
+    const std::array<HANDLE, 2> waits{stopped.get(), timer.get()};
     while (true)
     {
+      // What is left of the wait for the next tick, rounded up to the timer's hundreds of nanoseconds. A due time that
+      // has passed already is not waited for, as a timed wait would not wait for it.
+      const auto remaining = std::chrono::ceil<HundredNanoseconds>(last + m_tickHost.UntilNextTick() - std::chrono::steady_clock::now());
+      if (remaining.count() > 0)
       {
-        // Nothing wakes it early but a request to stop.
-        std::unique_lock lock(sleeping);
-        (void)wake.wait_until(lock, _stop, last + m_tickHost.UntilNextTick(), [] { return false; });
+        // A negative due time is relative to now.
+        LARGE_INTEGER due{};
+        due.QuadPart = -remaining.count();
+        winrt::check_bool(SetWaitableTimer(timer.get(), &due, 0, nullptr, nullptr, FALSE));
+        if (WaitForMultipleObjects(static_cast<DWORD>(waits.size()), waits.data(), FALSE, INFINITE) == WAIT_FAILED)
+          winrt::throw_last_error();
       }
       if (_stop.stop_requested())
         return;
@@ -205,21 +238,22 @@ void Outpost::InProcessServer::RunTick()
 void Outpost::InProcessServer::StartStressLoad()
 {
   m_stressLoad.emplace(m_simulation, m_map, m_tuning);
-  // Its structures block movement, so the graphs are built again now rather than in the first tick.
-  PreparePathfinding();
 }
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
-  auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
-  // Match setup: the map is placed, and now every player's starting fleet (task 2.5).
-  server->World().PlaceStartingBases(server->MapData());
-  if (_desc.measurementLoad)
-    PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
-  if (_desc.stressLoad)
-    server->StartStressLoad();
-  // The bases and the loads placed structures, each of which dropped the graphs; built again now, the first order of the
-  // match does not pay for them (ADR-032).
-  server->PreparePathfinding();
-  return server;
+  return SetUpMatch(std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc),
+                    _desc);
+}
+
+Outpost::ServerFactory Outpost::InProcessServerFactory()
+{
+  // Read and checked as CreateInProcessServer reads them, but once. Every server is given copies, so that none shares state
+  // with another, and the data itself is never written again.
+  auto data = std::make_shared<const std::pair<Tuning, Map>>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)));
+  return [data = std::move(data)](const ServerDesc& _desc)
+  {
+    const auto& [tuning, map] = *data;
+    return SetUpMatch(std::make_unique<InProcessServer>(tuning, map, _desc), _desc);
+  };
 }

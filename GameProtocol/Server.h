@@ -87,4 +87,13 @@ public:
 // Loads the tuning data and the map from the package (ADR-008) and starts a server with them. Throws Neuron::Exception when the data is
 // missing or invalid.
 [[nodiscard]] std::unique_ptr<Server> CreateInProcessServer(const ServerDesc& _desc);
+
+// Makes servers as CreateInProcessServer does, from one reading of the tuning data and the map, for a run that plays many
+// matches, such as the AI-against-AI matches (Phase 1 plan task 13.1).
+using ServerFactory = std::function<std::unique_ptr<Server>(const ServerDesc&)>;
+
+// Loads and checks the tuning data and the map once, and throws Neuron::Exception as CreateInProcessServer does when
+// they are missing or invalid. Each server the factory makes has a copy of the data of its own, so it may make them on
+// several threads at once.
+[[nodiscard]] ServerFactory InProcessServerFactory();
 } // namespace Outpost

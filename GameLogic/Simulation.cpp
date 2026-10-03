@@ -158,6 +158,9 @@ void Outpost::Simulation::PlaceMap(const Map& _map)
 void Outpost::Simulation::UseTuning(const Tuning& _tuning)
 {
   m_tuning = std::make_shared<const Tuning>(_tuning);
+  m_unresearched = EffectsFrom(*m_tuning, {});
+  for (PlayerState& player : m_players)
+    player.researchEffects = EffectsFrom(*m_tuning, player.researched);
 }
 
 void Outpost::Simulation::AddPlayer(PlayerId _player, std::int32_t _ore)
@@ -165,6 +168,8 @@ void Outpost::Simulation::AddPlayer(PlayerId _player, std::int32_t _ore)
   if (std::ranges::any_of(m_players, [_player](const PlayerState& _state) { return _state.id == _player; }))
     throw Neuron::Exception(std::format("Simulation: player {} is already added", _player.value));
   m_players.push_back({_player, std::int64_t{_ore} * HUNDREDTHS});
+  // It has researched nothing yet.
+  m_players.back().researchEffects = m_unresearched;
 }
 
 void Outpost::Simulation::UseFog()
@@ -376,7 +381,44 @@ std::span<const Outpost::ResearchTopicId> Outpost::Simulation::Researched(Player
 
 Outpost::Upgrades Outpost::Simulation::UpgradesOf(PlayerId _player) const
 {
-  return m_tuning ? UpgradesFrom(*m_tuning, Researched(_player)) : Upgrades{};
+  return EffectsOf(_player).upgrades;
+}
+
+Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuning& _tuning, std::span<const ResearchTopicId> _researched)
+{
+  ResearchEffects effects{.upgrades = UpgradesFrom(_tuning, _researched)};
+  effects.hulls.reserve(_tuning.hulls.size());
+  for (const HullTuning& hull : _tuning.hulls)
+    effects.hulls.push_back(ViewOf(hull, effects.upgrades, IsAvailable(_tuning, _researched, hull.id)));
+  effects.drives.reserve(_tuning.drives.size());
+  for (const DriveTuning& drive : _tuning.drives)
+    effects.drives.push_back(ViewOf(drive, IsAvailable(_tuning, _researched, drive.id)));
+  effects.weapons.reserve(_tuning.weapons.size());
+  for (const WeaponTuning& weapon : _tuning.weapons)
+    effects.weapons.push_back(ViewOf(weapon, effects.upgrades, IsAvailable(_tuning, _researched, weapon.id)));
+  effects.topics.reserve(_tuning.research.size());
+  for (const ResearchTopicTuning& topic : _tuning.research)
+  {
+    effects.topics.push_back({.id = topic.id,
+                              .nameUtf8 = topic.name,
+                              .effectUtf8 = EffectText(_tuning, topic),
+                              .cost = topic.cost,
+                              .researchSeconds = topic.researchSeconds,
+                              .prerequisites = topic.prerequisites,
+                              .researched = std::ranges::find(_researched, topic.id) != _researched.end(),
+                              .unlocksHull = UnlockedBy<HullId>(topic),
+                              .unlocksDrive = UnlockedBy<DriveId>(topic),
+                              .unlocksWeapon = UnlockedBy<WeaponId>(topic),
+                              .tier = topic.tier,
+                              .gateway = topic.IsGateway()});
+  }
+  return effects;
+}
+
+const Outpost::Simulation::ResearchEffects& Outpost::Simulation::EffectsOf(PlayerId _player) const noexcept
+{
+  const PlayerState* state = FindPlayer(_player);
+  return state != nullptr ? state->researchEffects : m_unresearched;
 }
 
 const Outpost::StructureTuning* Outpost::Simulation::StructureTuningFor(StructureKind _kind) const noexcept
@@ -716,30 +758,13 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
 
-    const std::span<const ResearchTopicId> researched = Researched(_player);
-    const Upgrades upgrades = UpgradesFrom(*m_tuning, researched);
-    for (const HullTuning& hull : m_tuning->hulls)
-      snapshot.hulls.push_back(ViewOf(hull, upgrades, IsAvailable(*m_tuning, researched, hull.id)));
-    for (const DriveTuning& drive : m_tuning->drives)
-      snapshot.drives.push_back(ViewOf(drive, IsAvailable(*m_tuning, researched, drive.id)));
-    for (const WeaponTuning& weapon : m_tuning->weapons)
-      snapshot.weapons.push_back(ViewOf(weapon, upgrades, IsAvailable(*m_tuning, researched, weapon.id)));
-    for (const ResearchTopicTuning& topic : m_tuning->research)
-    {
-      snapshot.research.push_back({.id = topic.id,
-                                   .nameUtf8 = topic.name,
-                                   .effectUtf8 = EffectText(*m_tuning, topic),
-                                   .cost = topic.cost,
-                                   .researchSeconds = topic.researchSeconds,
-                                   .prerequisites = topic.prerequisites,
-                                   .researched = std::ranges::find(researched, topic.id) != researched.end(),
-                                   .unlocksHull = UnlockedBy<HullId>(topic),
-                                   .unlocksDrive = UnlockedBy<DriveId>(topic),
-                                   .unlocksWeapon = UnlockedBy<WeaponId>(topic),
-                                   .tier = topic.tier,
-                                   .gateway = topic.IsGateway()});
-    }
-    snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
+    // The components and topics as the player has them, kept from when its research or the tuning data last changed.
+    const ResearchEffects& effects = EffectsOf(_player);
+    snapshot.hulls = effects.hulls;
+    snapshot.drives = effects.drives;
+    snapshot.weapons = effects.weapons;
+    snapshot.research = effects.topics;
+    snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
   }
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
@@ -1485,7 +1510,7 @@ std::optional<Outpost::Simulation::Armament> Outpost::Simulation::ArmamentOf(con
   if (gun == m_tuning->structureWeapons.end())
     return std::nullopt;
   return Armament{.damageHundredths = gun->damage * HUNDREDTHS,
-                  .fireIntervalSeconds = gun->fireIntervalSeconds / UpgradesOf(_entity.owner).FireRateFactor(gun->id),
+                  .fireIntervalSeconds = gun->fireIntervalSeconds / EffectsOf(_entity.owner).upgrades.FireRateFactor(gun->id),
                   .rangeMeters = static_cast<float>(gun->rangeMeters)};
 }
 
@@ -1660,6 +1685,8 @@ void Outpost::Simulation::OrderWork(const std::vector<EntityId>& _constructors, 
 
 void Outpost::Simulation::UpdateObstacles()
 {
+  // The map's obstacles, then the structures in identifier order. A structure placed is the newest, so its placement only
+  // adds an obstacle after the others, which extends the path graphs rather than dropping them (ADR-054).
   std::vector<Obstacle> obstacles = m_mapObstacles;
   for (const Entity& entity : m_entities)
   {
@@ -1760,7 +1787,7 @@ void Outpost::Simulation::Work()
   {
     Entity& target = *FindMutableEntity(id);
     // A player's Constructors build and repair only its own, so the target's owner's research sets their rate.
-    const double rate = UpgradesOf(target.owner).constructorRateFactor;
+    const double rate = EffectsOf(target.owner).upgrades.constructorRateFactor;
     if (!target.IsBuilt())
     {
       const auto work = static_cast<std::int32_t>(
@@ -1845,7 +1872,7 @@ void Outpost::Simulation::Produce()
     // Automated Shipyards speed a Shipyard's work, the job under way included (design §8); not the Command Station's.
     producer.jobWorkDone +=
       producer.structure == StructureKind::Shipyard
-        ? static_cast<std::int32_t>(std::llround(MILLITICKS_PER_TICK * UpgradesOf(producer.owner).shipyardBuildSpeedFactor))
+        ? static_cast<std::int32_t>(std::llround(MILLITICKS_PER_TICK * EffectsOf(producer.owner).upgrades.shipyardBuildSpeedFactor))
         : MILLITICKS_PER_TICK;
     if (producer.jobWorkDone < producer.jobWorkNeeded)
       continue;
@@ -1877,7 +1904,7 @@ void Outpost::Simulation::Produce()
 // carried, so that a rate that is not a whole number of hundredths a tick is still paid in full (ADR-017).
 std::int64_t Outpost::Simulation::IncomeHundredthsPerSecond(PlayerId _player) const
 {
-  const double factor = UpgradesOf(_player).miningIncomeFactor;
+  const double factor = EffectsOf(_player).upgrades.miningIncomeFactor;
   std::int64_t income = 0;
   for (const Entity& rig : m_entities)
   {
@@ -1934,7 +1961,7 @@ void Outpost::Simulation::Mine()
     Entity* asteroid = FindMutableEntity(rig.site);
     if (asteroid == nullptr || !asteroid->oreReserveHundredths.has_value() || *asteroid->oreReserveHundredths == 0)
       continue;
-    const Upgrades upgrades = UpgradesOf(rig.owner);
+    const Upgrades& upgrades = EffectsOf(rig.owner).upgrades;
     rig.reserveRemainder +=
       std::llround(static_cast<double>(RigIncomeHundredthsPerSecond(rig, upgrades.miningIncomeFactor)) / upgrades.oreReserveFactor);
     asteroid->oreReserveHundredths = std::max<std::int64_t>(0, *asteroid->oreReserveHundredths - (rig.reserveRemainder / m_ticksPerSecond));
@@ -1980,9 +2007,10 @@ void Outpost::Simulation::Research()
 
 void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId _topic)
 {
-  const double structuresBefore = UpgradesOf(_player.id).structureHitPointsFactor;
+  const double structuresBefore = _player.researchEffects.upgrades.structureHitPointsFactor;
   _player.researched.push_back(_topic);
-  const Upgrades upgrades = UpgradesFrom(*m_tuning, _player.researched);
+  _player.researchEffects = EffectsFrom(*m_tuning, _player.researched);
+  const Upgrades& upgrades = _player.researchEffects.upgrades;
   for (ShipDesign& design : m_designs)
   {
     if (design.owner == _player.id)
@@ -2026,12 +2054,12 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
 
 std::int32_t Outpost::Simulation::StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const
 {
-  return static_cast<std::int32_t>(std::llround(_tuning.hitPoints * HUNDREDTHS * UpgradesOf(_owner).structureHitPointsFactor));
+  return static_cast<std::int32_t>(std::llround(_tuning.hitPoints * HUNDREDTHS * EffectsOf(_owner).upgrades.structureHitPointsFactor));
 }
 
 float Outpost::Simulation::ConstructorSpeed(PlayerId _owner) const
 {
-  return static_cast<float>(m_tuning->constructor.speedMetersPerSecond * UpgradesOf(_owner).shipSpeedFactor);
+  return static_cast<float>(m_tuning->constructor.speedMetersPerSecond * EffectsOf(_owner).upgrades.shipSpeedFactor);
 }
 
 // A topic joins the back of the lab's queue; it is paid for when it reaches the front and starts (Research). It may
@@ -2091,7 +2119,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
   if (FindDesign(_player, components) != nullptr)
     return CommandResult::DuplicateDesign;
   (void)SaveDesign(_player, _save.nameUtf8, components,
-                   DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, UpgradesOf(_player)));
+                   DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, EffectsOf(_player).upgrades));
   return CommandResult::Applied;
 }
 

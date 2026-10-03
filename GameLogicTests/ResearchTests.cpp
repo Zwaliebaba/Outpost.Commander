@@ -9,9 +9,12 @@ namespace
 {
 constexpr Outpost::PlayerId BLUE = MatchArena::BLUE;
 constexpr Outpost::PlayerId RED = MatchArena::RED;
+// A player the simulation was never told of.
+constexpr Outpost::PlayerId STRANGER{7};
 constexpr Outpost::HullId SMALL{1};
 constexpr Outpost::HullId LARGE{3};
 constexpr Outpost::DriveId ION{1};
+constexpr Outpost::DriveId FUSION{2};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::PlanePosition LAB{.xMeters = -600.0f, .zMeters = -600.0f};
@@ -81,6 +84,91 @@ std::uint32_t ShotsBy(const Outpost::Snapshot& _snapshot, Outpost::EntityId _sho
 {
   return static_cast<std::uint32_t>(
     std::ranges::count_if(_snapshot.shots, [_shooter](const Outpost::ShotView& _shot) { return _shot.shooter == _shooter; }));
+}
+
+// The component of kind T a topic unlocks, or none.
+template <typename T> T UnlockedBy(const Outpost::ResearchTopicTuning& _topic)
+{
+  const T* unlocked = std::get_if<T>(&_topic.effect);
+  return unlocked != nullptr ? *unlocked : T{};
+}
+
+// What follows from the tuning data and the topics _player has researched alone: its upgrades, and the components, the
+// topics and the Shipyards' speed its snapshot shows. Each is, field for field, what working it out afresh gives; and the
+// designs the snapshot shows are the player's saved designs.
+void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simulation& _world, Outpost::PlayerId _player)
+{
+  const Outpost::Snapshot snapshot = _world.BuildSnapshot(_player);
+  const std::span<const Outpost::ResearchTopicId> researched = _world.Researched(_player);
+  const Outpost::Upgrades upgrades = Outpost::UpgradesFrom(_tuning, researched);
+  Assert::IsTrue(_world.UpgradesOf(_player) == upgrades, L"the upgrades");
+  Assert::IsTrue(snapshot.shipyardBuildSpeedFactor == upgrades.shipyardBuildSpeedFactor, L"the Shipyards' speed");
+
+  Assert::AreEqual(_tuning.hulls.size(), snapshot.hulls.size());
+  for (std::size_t i = 0; i < _tuning.hulls.size(); ++i)
+  {
+    const Outpost::HullView expected =
+      Outpost::ViewOf(_tuning.hulls[i], upgrades, Outpost::IsAvailable(_tuning, researched, _tuning.hulls[i].id));
+    const Outpost::HullView& actual = snapshot.hulls[i];
+    Assert::IsTrue(actual.id == expected.id && actual.nameUtf8 == expected.nameUtf8 &&
+                     actual.hitPointsHundredths == expected.hitPointsHundredths && actual.armorHundredths == expected.armorHundredths &&
+                     actual.speedMetersPerSecond == expected.speedMetersPerSecond &&
+                     actual.turnRateDegreesPerSecond == expected.turnRateDegreesPerSecond &&
+                     actual.footprintRadiusMeters == expected.footprintRadiusMeters && actual.cost == expected.cost &&
+                     actual.buildSeconds == expected.buildSeconds && actual.available == expected.available,
+                   L"a hull");
+  }
+  Assert::AreEqual(_tuning.drives.size(), snapshot.drives.size());
+  for (std::size_t i = 0; i < _tuning.drives.size(); ++i)
+  {
+    const Outpost::DriveView expected = Outpost::ViewOf(_tuning.drives[i], Outpost::IsAvailable(_tuning, researched, _tuning.drives[i].id));
+    const Outpost::DriveView& actual = snapshot.drives[i];
+    Assert::IsTrue(actual.id == expected.id && actual.nameUtf8 == expected.nameUtf8 && actual.speedFactor == expected.speedFactor &&
+                     actual.hitPointsFactor == expected.hitPointsFactor && actual.turnRateFactor == expected.turnRateFactor &&
+                     actual.cost == expected.cost && actual.available == expected.available,
+                   L"a drive");
+  }
+  Assert::AreEqual(_tuning.weapons.size(), snapshot.weapons.size());
+  for (std::size_t i = 0; i < _tuning.weapons.size(); ++i)
+  {
+    const Outpost::WeaponView expected =
+      Outpost::ViewOf(_tuning.weapons[i], upgrades, Outpost::IsAvailable(_tuning, researched, _tuning.weapons[i].id));
+    const Outpost::WeaponView& actual = snapshot.weapons[i];
+    Assert::IsTrue(actual.id == expected.id && actual.nameUtf8 == expected.nameUtf8 &&
+                     actual.damageHundredths == expected.damageHundredths && actual.fireIntervalSeconds == expected.fireIntervalSeconds &&
+                     actual.rangeMeters == expected.rangeMeters && actual.splashRadiusMeters == expected.splashRadiusMeters &&
+                     actual.cost == expected.cost && actual.available == expected.available,
+                   L"a weapon");
+  }
+  Assert::AreEqual(_tuning.research.size(), snapshot.research.size());
+  for (std::size_t i = 0; i < _tuning.research.size(); ++i)
+  {
+    const Outpost::ResearchTopicTuning& topic = _tuning.research[i];
+    const Outpost::ResearchTopicView& actual = snapshot.research[i];
+    Assert::IsTrue(
+      actual.id == topic.id && actual.nameUtf8 == topic.name && actual.effectUtf8 == Outpost::EffectText(_tuning, topic) &&
+        actual.cost == topic.cost && actual.researchSeconds == topic.researchSeconds && actual.prerequisites == topic.prerequisites &&
+        actual.researched == (std::ranges::find(researched, topic.id) != researched.end()) &&
+        actual.unlocksHull == UnlockedBy<Outpost::HullId>(topic) && actual.unlocksDrive == UnlockedBy<Outpost::DriveId>(topic) &&
+        actual.unlocksWeapon == UnlockedBy<Outpost::WeaponId>(topic) && actual.tier == topic.tier && actual.gateway == topic.IsGateway(),
+      L"a research topic");
+  }
+
+  std::vector<const Outpost::ShipDesign*> designs;
+  for (std::uint32_t id = 1; const Outpost::ShipDesign* design = _world.FindDesign(Outpost::DesignId{id}); ++id)
+  {
+    if (design->owner == _player)
+      designs.push_back(design);
+  }
+  Assert::AreEqual(designs.size(), snapshot.designs.size());
+  for (std::size_t i = 0; i < designs.size(); ++i)
+  {
+    const Outpost::DesignView& actual = snapshot.designs[i];
+    Assert::IsTrue(actual.id == designs[i]->id && actual.nameUtf8 == designs[i]->name && actual.hull == designs[i]->components.hull &&
+                     actual.drive == designs[i]->components.drive && actual.weapon == designs[i]->components.weapon &&
+                     actual.cost == designs[i]->stats.cost,
+                   L"a design");
+  }
 }
 } // namespace
 
@@ -483,6 +571,58 @@ public:
     const std::uint32_t rapid = buildTicks(true);
     // The Constructor's walk to the site is the same length; the building is a fifth shorter.
     Assert::IsTrue(rapid < plain && rapid > plain * 3 / 4, std::format(L"{} against {}", rapid, plain).c_str());
+  }
+
+  // A player's upgrades, and the components, topics and Shipyards' speed its snapshot shows, follow from the tuning data and
+  // the topics it has researched alone, so the simulation may keep them from one change of those to the next. Through
+  // research of every kind, a design saved with what it unlocked and one renamed, a copy of the simulation that then goes
+  // its own way, and the tuning data given again, each is what working it out afresh gives, for both players and for a
+  // player never added.
+  TEST_METHOD(KeepsWhatResearchMakesOfTheTuningData)
+  {
+    MatchArena arena;
+    const auto expectAll = [&arena](const Outpost::Simulation& _world)
+    {
+      for (const Outpost::PlayerId player : {BLUE, RED, STRANGER})
+        ExpectAsWorkedOutAfresh(arena.TuningData(), _world, player);
+    };
+    expectAll(arena.World());
+
+    // Some topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come.
+    (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
+    std::optional<Outpost::Simulation> copy;
+    for (const Outpost::ResearchTopicId topic : {HULL_PLATING, MASS_DRIVER_CALIBRATION, FUSION_DRIVE, IMPROVED_EXTRACTION,
+                                                 AUTOMATED_SHIPYARDS, RELAY_ARCHIVES, DEFENSE_AUTOLOADER})
+    {
+      Assert::IsTrue(arena.Tick({Research(BLUE, lab, topic)})[0] == Outpost::CommandResult::Applied);
+      for (int tick = 0; tick < 3600 * 20 && !HasResearched(arena, BLUE, topic); ++tick)
+        arena.Run(1);
+      Assert::IsTrue(HasResearched(arena, BLUE, topic));
+      expectAll(arena.World());
+      if (topic == FUSION_DRIVE)
+      {
+        const Outpost::DesignId renamed = arena.Design(BLUE, SMALL, MASS_DRIVER);
+        const std::vector<Outpost::CommandResult> results = arena.Tick(
+          {Order(BLUE, Save(SMALL, FUSION, MASS_DRIVER, "Fast Small")), Order(BLUE, Save(SMALL, ION, MASS_DRIVER, "Renamed", renamed))});
+        Assert::IsTrue(results[0] == Outpost::CommandResult::Applied && results[1] == Outpost::CommandResult::Applied);
+        expectAll(arena.World());
+        copy.emplace(arena.World());
+      }
+    }
+
+    // The copy keeps what it had when it was made, and goes on by itself.
+    Assert::IsTrue(copy.has_value());
+    if (!copy.has_value())
+      return;
+    expectAll(*copy);
+    Assert::IsFalse(std::ranges::find(copy->Researched(BLUE), RELAY_ARCHIVES) != copy->Researched(BLUE).end());
+    for (int tick = 0; tick < 20 * 60; ++tick)
+      (void)copy->Tick({});
+    expectAll(*copy);
+    // The tuning data given again.
+    arena.World().UseTuning(arena.TuningData());
+    expectAll(arena.World());
   }
 
   // The same seed and orders give the same research, upgrades included (ADR-009).

@@ -748,6 +748,38 @@ public:
     Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.World().CurrentTick()).c_str());
   }
 
+  // The AI finds an entity of its snapshot by a binary search, which needs every snapshot to list its entities once each,
+  // in rising identifier order, as the server sends them under fog of war. Two of the human's line look at the AI's base
+  // and leave, so that the human's snapshots list the structures they saw among the rest, remembered.
+  TEST_METHOD(ReadsSnapshotsInIdentifierOrder)
+  {
+    AiMatch match;
+    bool remembered = false;
+    const auto expectInOrder = [&match, &remembered]()
+    {
+      for (const Outpost::PlayerId player : {AI, HUMAN})
+      {
+        const Outpost::Snapshot view = match.View(player);
+        Assert::IsTrue(std::ranges::adjacent_find(view.entities, std::greater_equal<>(), &Outpost::EntityView::id) == view.entities.end(),
+                       L"out of identifier order");
+        remembered = remembered || std::ranges::any_of(view.entities, &Outpost::EntityView::remembered);
+      }
+    };
+    // Behind the AI's Command Station, within their sight of it and out of its gun's reach, as the answer's test parks them.
+    const Outpost::PlanePosition station = match.Start(AI);
+    const float step = 310.0f / std::numbers::sqrt2_v<float>;
+    const std::vector<Outpost::EntityId> scouts = match.Spawn(HUMAN, LINE, 2, {station.xMeters + step, station.zMeters + step});
+    match.Run(1.0);
+    expectInOrder();
+    match.Human().Send({.player = HUMAN, .order = Outpost::MoveCommand{.ships = scouts, .destination = match.Start(HUMAN)}});
+    for (int minute = 0; minute < 5; ++minute)
+    {
+      match.Run(60.0);
+      expectInOrder();
+    }
+    Assert::IsTrue(remembered, L"no snapshot held a remembered structure");
+  }
+
   TEST_METHOD(BeatsAPlayerWhoDoesNothing)
   {
     AiMatch match;

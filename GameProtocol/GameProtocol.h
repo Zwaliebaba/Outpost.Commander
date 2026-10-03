@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cmath>
 #include <compare>
+#include <functional>
 #include <numbers>
 #include <optional>
 #include <span>
