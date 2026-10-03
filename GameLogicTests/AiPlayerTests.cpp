@@ -14,6 +14,10 @@ constexpr Outpost::DesignComponents BRAWLER{Outpost::HullId{2}, Outpost::DriveId
 constexpr Outpost::DesignComponents LINE{Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{2}};
 constexpr Outpost::DesignComponents PICKET{Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}};
 constexpr Outpost::DesignComponents HEAVY_LANCE{Outpost::HullId{3}, Outpost::DriveId{2}, Outpost::WeaponId{2}};
+constexpr Outpost::WeaponId MISSILE_RACK{3};
+constexpr Outpost::DriveId PULSE{3};
+constexpr Outpost::WeaponId FLAK_BATTERY{4};
+constexpr Outpost::WeaponId RAIL_CANNON{5};
 
 Outpost::AiSettings RepositorySettings()
 {
@@ -30,10 +34,13 @@ public:
     m_snapshot.hulls = {{.id = Outpost::HullId{1}, .available = true},
                         {.id = Outpost::HullId{2}, .available = true},
                         {.id = Outpost::HullId{3}, .available = false}};
-    m_snapshot.drives = {{.id = Outpost::DriveId{1}, .available = true}, {.id = Outpost::DriveId{2}, .available = false}};
+    m_snapshot.drives = {
+      {.id = Outpost::DriveId{1}, .available = true}, {.id = Outpost::DriveId{2}, .available = false}, {.id = PULSE, .available = false}};
     m_snapshot.weapons = {{.id = Outpost::WeaponId{1}, .available = true},
                           {.id = Outpost::WeaponId{2}, .available = true},
-                          {.id = Outpost::WeaponId{3}, .available = false}};
+                          {.id = MISSILE_RACK, .available = false},
+                          {.id = FLAK_BATTERY, .available = false},
+                          {.id = RAIL_CANNON, .available = false}};
   }
 
   FleetSnapshot& Add(Outpost::PlayerId _owner, const Outpost::DesignComponents& _design, int _ships)
@@ -55,6 +62,12 @@ public:
   {
     std::ranges::find(m_snapshot.hulls, _hull, &Outpost::HullView::id)->available = true;
     std::ranges::find(m_snapshot.drives, _drive, &Outpost::DriveView::id)->available = true;
+    return *this;
+  }
+
+  FleetSnapshot& Unlock(Outpost::WeaponId _weapon)
+  {
+    std::ranges::find(m_snapshot.weapons, _weapon, &Outpost::WeaponView::id)->available = true;
     return *this;
   }
 
@@ -215,6 +228,31 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(BRAWLER, 5).Get()) == HEAVY_LANCE);
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(LINE, 5).Get()) == SWARM);
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(HEAVY_LANCE, 5).Get()) == PICKET);
+  }
+
+  // Task 10.4, from the Q2 check of task 10.3: the Flak Battery answers the swarm, the brawler, the picket and the Pulse
+  // raiders once unlocked; the Rail Cannon answers the heavies; missiles answer the Small Flak Battery, and the picket the
+  // Rail Cannon. Before an answer is unlocked, the MVP's answer or the default stands.
+  TEST_METHOD(AnswersThePhaseOneDesigns)
+  {
+    const Outpost::AiSettings settings = RepositorySettings();
+    const Outpost::DesignComponents mediumFlak{Outpost::HullId{2}, Outpost::DriveId{1}, FLAK_BATTERY};
+    const Outpost::DesignComponents smallFlak{Outpost::HullId{1}, Outpost::DriveId{1}, FLAK_BATTERY};
+    const Outpost::DesignComponents mediumMissiles{Outpost::HullId{2}, Outpost::DriveId{1}, MISSILE_RACK};
+    const Outpost::DesignComponents heavyRail{Outpost::HullId{3}, Outpost::DriveId{2}, RAIL_CANNON};
+    const Outpost::DesignComponents pulsePicket{Outpost::HullId{1}, PULSE, Outpost::WeaponId{2}};
+
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, PICKET, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, pulsePicket, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, pulsePicket, 5).Get()) == BRAWLER, L"the default");
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, smallFlak, 5).Unlock(MISSILE_RACK).Get()) == mediumMissiles);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, heavyRail, 5).Get()) == PICKET);
+    Assert::IsTrue(
+      Outpost::ChooseAnswer(
+        settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Unlock(RAIL_CANNON).Get()) ==
+      heavyRail);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
   // The enemy's most common design is the one answered; its own ships are not the enemy's.
@@ -469,6 +507,23 @@ public:
   }
 
   // The whole AI against a player who does nothing: it builds, gathers, attacks and wins.
+  // Task 10.4: against a player who does nothing, the AI researches through tier 2 and opens tier 3 (Phase 1 design §13).
+  TEST_METHOD(ReachesTierThree)
+  {
+    AiMatch match;
+    constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
+    const auto researched = [&match](Outpost::ResearchTopicId _topic)
+    {
+      const Outpost::Snapshot view = match.View(AI);
+      const auto topic = std::ranges::find(view.research, _topic, &Outpost::ResearchTopicView::id);
+      return topic != view.research.end() && topic->researched;
+    };
+    for (int minute = 0; minute < 45 && !researched(PRECURSOR_VAULT); ++minute)
+      match.Run(60.0);
+    Assert::IsTrue(researched(PRECURSOR_VAULT), L"the AI has not opened tier 3 in 45 minutes");
+    Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.World().CurrentTick()).c_str());
+  }
+
   TEST_METHOD(BeatsAPlayerWhoDoesNothing)
   {
     AiMatch match;

@@ -57,12 +57,13 @@ public:
     Assert::AreEqual(10.0, settings.incomePerShipyardOrePerSecond);
     Assert::AreEqual(3, settings.homeAsteroids);
     Assert::AreEqual(3, settings.contestedAsteroids);
-    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7};
+    // Tier 1, then tier 2 with the Flak Battery first, then tier 3 with the Rail Cannon first (task 10.4).
+    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 9, 11, 10, 13, 16, 17, 14, 15, 12, 18, 19, 20, 21, 22, 24, 23, 25};
     Assert::AreEqual(order.size(), settings.researchOrder.size());
     for (size_t i = 0; i < order.size(); ++i)
       Assert::AreEqual(order[i], settings.researchOrder[i].value);
     Assert::IsTrue(settings.defaultDesign == Outpost::DesignComponents{Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{1}});
-    Assert::AreEqual(size_t{9}, settings.counters.size());
+    Assert::AreEqual(size_t{24}, settings.counters.size());
   }
 
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
@@ -114,7 +115,7 @@ public:
     ExpectLoadError(
       Replace("{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 2, \"drive\": 1, \"weapon\": 1 } }",
               "{ \"enemy\": { \"hull\": 1, \"drive\": 1, \"weapon\": 1 }, \"answer\": { \"hull\": 3, \"drive\": 2, \"weapon\": 1 } }"),
-      "counters[1]: the same answer to the same design as counters[0]");
+      "counters[2]: the same answer to the same design as counters[1]");
   }
 };
 } // namespace GameLogicTests

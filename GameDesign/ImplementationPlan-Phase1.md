@@ -34,7 +34,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): tuned; the full check of record is running |
-| 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
+| 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 11.1 | Ore reserves and depletion | — | H3 decided | todo |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | todo |
@@ -267,6 +267,10 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `Opponent.json`: its research order through all three tiers, and counters for and with the new designs, from 10.3's results. `AiSettingsTests` checks every identifier against `Tuning.json`, as now.
 - **Acceptance:** `AiPlayerTests`: the AI reaches tier 3 against a passive player, and answers a Flak, a Rail and a Pulse design.
 - **Verify:** CI.
+- **As built:**
+  - **The research order** runs through all 25 topics: tier 1 as before, then Relay Archives and the Flak Battery first, the Pulse Drive, the upgrades of the weapons it fields and the structures; then Precursor Vault and the Rail Cannon first. Every topic comes after its prerequisites, which `AiSettingsTests` checks against `Tuning.json`.
+  - **The counters**, from task 10.3's battles: the Flak Battery is the first answer to the swarm, the brawler, the picket and every Pulse raider once the AI has it; the Rail Cannon to the heavy Mass Driver and Lance lines. The Medium Missile Rack answers the Small Flak Battery, the heavy Lance line the Medium and Large ones, and the picket every Rail Cannon design. An answer the AI has not unlocked falls through to the MVP's, as before, so nothing changes until tier 2.
+  - **Tests.** `AiPlayerTests.AnswersThePhaseOneDesigns`, and `ReachesTierThree`: against a player who does nothing, the AI opens tier 3 at tick 37,200, 31 minutes in, in the Linux container. It is the longest test in CI.
 
 ---
 
