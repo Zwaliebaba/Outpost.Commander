@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): tuned; the full check of record is running |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
@@ -259,7 +259,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The owner's answers** (2026-10-03): H9, (b) at tiers 2 and 3 judges only the components the tier adds, which both checks now do; H10, the Flak Battery gets a role against the Medium hull, which the tuning gives it.
   - **The tuning**, recorded with its reasons in design §5 and §6: the Flak Battery to 20 a hit, 200 m, a 26 m splash and 60 Ore, and Ablative Armour to +5%. Run in the container at 12 battles a pairing without (c), (a) and (b) then hold at tiers 2 and 3, the Flak Battery and the Rail Cannon each worth building at every one of their budgets; and at +5% the picket answers the plated Lance line in 95–100% of battles at every tier 3 budget.
   - **The recorded counters** gain one per new component, at its tier's smallest budget: Medium+Ion+Flak beats the swarm at 4,500 Ore, a Pulse picket beats the heavy brawler at 4,500, and a Rail Cannon heavy line beats the heavy Lance line at 6,000.
-  - **Not yet done:** the full check of record in the container, 60 battles a pairing with (c), which is running.
+  - **The check of record in the container passes all four criteria at every stage**: 60 battles a pairing, up to 480 when uncertain, with (c)'s 3,604 counter checks under one-number changes of ±5%, in 69 minutes on four threads. The owner's run in Release|ARM64 on the development machine, and its time, remain (design §7).
 
 ### 10.4 — The AI on tiers and new designs
 

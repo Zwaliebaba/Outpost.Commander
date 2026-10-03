@@ -175,6 +175,8 @@ Budgets stay at or below 12,000 Ore. A battle's time grows with its ships, and a
 
 Tier 1's numbers are already tuned and are not moved by Phase 1 unless a tier-2 or tier-3 result requires it, so that the starting stage remains the MVP's check of record.
 
+**The check with §5 and §6's tuned numbers passes all four criteria at every stage** (task 10.3, run in the Linux container: 60 battles a pairing, 3,604 counter checks under ±5%, 69 minutes on four threads). Tier 1's verdicts are the MVP's. At tier 2 the Flak Battery is worth building at every budget, in Small, Medium and Large designs; at tier 3 the Rail Cannon is, and the Medium Lance line and Missile Rack stay in the mix beside it. No design worth building uses the Pulse Drive, which (b) does not ask of it. The weakest answer to a researched design is 93%, the picket against the Medium Lance line with Composite Plating; with Ablative Armour as well it is 97%.
+
 **How the check reads this (task 10.3).** A stage plays the components through its tier at their own numbers, with no research, as the MVP's stages do. In (d), the side that does not take the topic has every topic of the tiers before, so it fields every design of the tier before with every upgrade; the side that takes it has the same and the topic with its prerequisites. Only the designs a topic adds or changes are tested: one the other side has with the same numbers is not the topic's doing. For tier 1 that is the MVP's (d).
 
 ---
