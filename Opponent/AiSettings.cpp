@@ -31,11 +31,17 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
 
   Outpost::AiSettings settings;
   settings.attackGroupShips = root.Integer("attackGroupShips", 1);
+  settings.attackGroupGrowthPerTier = root.Integer("attackGroupGrowthPerTier", 0);
+  settings.retreatLossShare = root.Number("retreatLossShare", JsonBound::NotNegative);
+  if (settings.retreatLossShare >= 1.0)
+    Neuron::JsonFail(root.PathOf("retreatLossShare"), "a share below 1, since a group that has lost every ship has none to bring back");
+  settings.regroupSeconds = root.Number("regroupSeconds", JsonBound::NotNegative);
   settings.reviewIntervalSeconds = root.Number("reviewIntervalSeconds", JsonBound::Positive);
   settings.constructors = root.Integer("constructors", 1);
   settings.incomePerShipyardOrePerSecond = root.Number("incomePerShipyardOrePerSecond", JsonBound::Positive);
   settings.homeAsteroids = root.Integer("homeAsteroids", 0);
   settings.contestedAsteroids = root.Integer("contestedAsteroids", 0);
+  settings.homePlatformsPerShipyard = root.Integer("homePlatformsPerShipyard", 0);
   settings.shipyardQueueJobs = root.Integer("shipyardQueueJobs", 1);
   if (std::cmp_greater(settings.shipyardQueueJobs, Outpost::QUEUE_LIMIT))
     Neuron::JsonFail(root.PathOf("shipyardQueueJobs"), std::format("a queue holds at most {} jobs", Outpost::QUEUE_LIMIT));

@@ -15,8 +15,15 @@ struct CounterRule
 // AI only sees through its snapshots.
 struct AiSettings
 {
-  // Warships the AI gathers in reserve before it commits them to an attack (gate G9).
+  // Warships the AI gathers in reserve before it commits them to an attack (gate G9), and how many more for each tier its
+  // player has opened past the first (Phase 1 plan task 12.2).
   std::int32_t attackGroupShips = 0;
+  std::int32_t attackGroupGrowthPerTier = 0;
+  // An attack group that has lost this share of the ships it set out with falls back to the rally and rejoins the
+  // reserve, which then waits regroupSeconds before it attacks again (task 12.2). Zero never falls back.
+  double retreatLossShare = 0.0;
+  double regroupSeconds = 0.0;
+
   // How often it reviews the enemy's fleet and picks the design it builds.
   double reviewIntervalSeconds = 0.0;
   // Constructors it keeps, ordering more from its Command Station.
@@ -31,6 +38,9 @@ struct AiSettings
   // Together, how many of its rigs it keeps on asteroids with ore left: when one runs dry, it takes the nearest asteroid
   // it knows still holds ore, with a platform beside it as a contested one (Phase 1 design §13). A dry rig stays for its
   // trickle.
+  // Defence Platforms it plans round its base for each Shipyard, each built once its income reaches that Shipyard's share
+  // (task 12.2).
+  std::int32_t homePlatformsPerShipyard = 0;
   // Jobs it keeps in each Shipyard's queue.
   std::int32_t shipyardQueueJobs = 0;
   // How long its reserve stays where an attack on its base came from after the last shot there.

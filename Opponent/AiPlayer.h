@@ -19,9 +19,10 @@ namespace Outpost
 // Once a second it builds its base in a fixed order, keeps its Constructors, researches in its order and keeps its
 // Shipyards busy with the design it last chose. Every review it chooses that design again from the enemy warships it has
 // seen since the last one, and keeps it when it has seen none. Its warships gather in reserve near its Command Station, go
-// to the defence of any structure of its that comes under fire, and once enough have gathered they attack the nearest
-// enemy structure it sees or remembers, then the next. Under fog of war it may know none (ADR-024): the attack then goes
-// across the map's center from its own base, where the point-symmetric map puts the enemy's.
+// to the defence of any structure of its that comes under fire, and once enough have gathered they attack the enemy's
+// production first, then the next structure (ADR-037). Under fog of war it may know none (ADR-024): the attack then goes
+// across the map's center from its own base, where the point-symmetric map puts the enemy's. An attack that has lost too
+// many ships falls back and regroups, and the AI fortifies its base as its Shipyards grow (ADR-041).
 class AiPlayer
 {
 public:
@@ -79,6 +80,8 @@ private:
   // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
   void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
   void AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig);
+  // A Defence Platform round the base, toward the map's center, built once the income reaches _minimumIncome (task 12.2).
+  void AddHomePlatform(const Snapshot& _snapshot, std::int32_t _minimumIncomeHundredthsPerSecond);
   // Where the enemy's Command Stations are, or under fog of war, where the enemy's base must be.
   [[nodiscard]] std::vector<PlanePosition> EnemyStations(const Snapshot& _snapshot) const;
   // Whether an asteroid is nearer an enemy base than this one: that is the enemy's home.
@@ -121,6 +124,12 @@ private:
   bool m_searching = false;
   // The ships of the attack group already ordered to attack its target from close by, once each.
   std::vector<EntityId> m_closingIn;
+  // The ships the attack group had when it last grew, which its losses are counted against, and the tick before which a
+  // reserve that fell back does not attack again (task 12.2).
+  size_t m_launchShips = 0;
+  std::uint64_t m_regroupUntilTick = 0;
+  // The Defence Platforms planned round the base so far, which places the next (task 12.2).
+  size_t m_homePlatforms = 0;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.

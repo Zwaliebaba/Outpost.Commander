@@ -309,6 +309,11 @@ The AI is not made harder to rush (§3). It is changed only so that it can play 
 - **It counters the new designs:** answers to the Flak Battery, the Rail Cannon and the Pulse Drive's designs in its counters, and the new designs as answers where the balance check says they win.
 - **It follows the ore.** It builds on the nearest asteroids with ore left and moves on when one runs dry, rather than holding a fixed list of home and contested asteroids.
 - **It attacks production first** (§4): Shipyards, then the Command Station, then anything else.
+- **It plays a longer match** (owner, 2026-10-03, task 12.2, ADR-041). This goes beyond Phase 1's rules: two AIs ended a match in 24 minutes, decided by one battle at minute 12, before tier 2 could matter. Now:
+  - It attacks with 20 warships, and 12 more for each tier it has opened, where gate G9 had 12.
+  - An attack that has lost 30% of its ships falls back, and the AI waits 150 seconds before it attacks again.
+  - It fortifies its base with 2 Defence Platforms for each Shipyard.
+  - Two AIs now end a match in a median of 52 minutes over 80 seeds, but only 23 of the 80 within 45–60, and 3 had not ended at 150 minutes.
 
 ---
 
