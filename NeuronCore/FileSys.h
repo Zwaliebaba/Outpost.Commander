@@ -27,10 +27,4 @@ class BinaryFile : public FileSys
 public:
   [[nodiscard]] static ByteBuffer ReadFile(const std::wstring& _fileName);
 };
-
-class TextFile : public FileSys
-{
-public:
-  [[nodiscard]] static std::wstring ReadFile(const std::wstring& _fileName);
-};
 } // namespace Neuron
