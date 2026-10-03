@@ -57,6 +57,15 @@ bool IsBuilt(const EntityView& _entity) noexcept
   return _entity.builtPermille >= Outpost::PERMILLE;
 }
 
+// The attack group goes for production first: Shipyards, then the Command Station, then anything else (Phase 1 design
+// §4, §13). A lower rank comes first.
+int AttackRank(const EntityView& _structure) noexcept
+{
+  if (_structure.structure == StructureKind::Shipyard)
+    return 0;
+  return _structure.structure == StructureKind::CommandStation ? 1 : 2;
+}
+
 const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureKind _kind) noexcept
 {
   const auto found = std::ranges::find(_snapshot.structureTypes, _kind, &Outpost::StructureTypeView::structure);
@@ -212,11 +221,16 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 {
   const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
-  if (station == _snapshot.entities.end())
-    return;
+  const bool hasStation = station != _snapshot.entities.end();
+  // A lost Command Station is lost for good, and the AI plays on without it, building no more Constructors (Phase 1
+  // design §4).
   if (!m_planned)
+  {
+    if (!hasStation)
+      return;
     Plan(_snapshot, *station);
-  PlanShipyards(_snapshot, *station);
+  }
+  PlanShipyards(_snapshot);
   FollowOre(_snapshot);
   if (_snapshot.tick >= m_nextReviewTick)
   {
@@ -237,9 +251,12 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   const auto constructors = std::ranges::count_if(
     _snapshot.entities, [this](const EntityView& _entity)
     { return _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Constructor && _entity.owner == m_player; });
-  const auto queued = std::ranges::count(station->queue, ShipRole::Constructor, &JobView::role);
-  if (constructors + queued < m_settings.constructors && station->queue.size() < QUEUE_LIMIT)
-    _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = station->id, .design = {}}));
+  if (hasStation)
+  {
+    const auto queued = std::ranges::count(station->queue, ShipRole::Constructor, &JobView::role);
+    if (constructors + queued < m_settings.constructors && station->queue.size() < QUEUE_LIMIT)
+      _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = station->id, .design = {}}));
+  }
 
   // Research, one topic at a time, in its order.
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
@@ -293,6 +310,7 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   m_planned = true;
   const PlanePosition home = _station.position;
   m_home = home;
+  m_homeRadiusMeters = _station.radiusMeters;
   const float fromCenter = std::hypot(home.xMeters, home.zMeters);
   // Toward the map's center, and across that to the right seen from above.
   const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
@@ -464,7 +482,7 @@ void Outpost::AiPlayer::FollowOre(const Snapshot& _snapshot)
 // since one Shipyard spends about as much as that. A Shipyard joins the plan once, and keeps waiting for the income if
 // the income drops again, as when a rig is lost. They stand behind the Command Station, then behind it to either side,
 // each round of three farther out; the search finds the nearest clear place to each.
-void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityView& _station)
+void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot)
 {
   const auto shipyards = std::ranges::count(m_slots, StructureKind::Shipyard, &Slot::structure);
   const auto income = static_cast<std::int64_t>(std::llround(m_settings.incomePerShipyardOrePerSecond * HUNDREDTHS)) * (shipyards + 1);
@@ -486,7 +504,7 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityVie
   constexpr std::array<float, 3> TURNS_RADIANS{std::numbers::pi_v<float>, 0.75f * std::numbers::pi_v<float>,
                                                -0.75f * std::numbers::pi_v<float>};
   const auto extra = static_cast<size_t>(shipyards - 1);
-  const PlanePosition home = _station.position;
+  const PlanePosition home = m_home;
   const float fromCenter = std::hypot(home.xMeters, home.zMeters);
   const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
   const float forwardZ = fromCenter > 0.0f ? -home.zMeters / fromCenter : 0.0f;
@@ -496,7 +514,7 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityVie
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
   const size_t roundIndex = extra / TURNS_RADIANS.size();
   const auto round = static_cast<float>(roundIndex);
-  const float meters = _station.radiusMeters + type->radiusMeters + gap + (round * ((2.0f * type->radiusMeters) + gap));
+  const float meters = m_homeRadiusMeters + type->radiusMeters + gap + (round * ((2.0f * type->radiusMeters) + gap));
   const PlanePosition preferred = Along(home, directionX, directionZ, meters);
 
   slot.radiusMeters = type->radiusMeters;
@@ -699,7 +717,7 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 }
 
 // The reserve gathers at the rally, or goes to where the base is under fire; once it is large enough it joins the attack
-// group, which attack-moves on the nearest enemy structure and then the next.
+// group, which attack-moves on the enemy's production first, the nearest of it, and then on the next structure.
 void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
   std::vector<const EntityView*> warships;
@@ -735,7 +753,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(joined), .destination = target->position}));
   }
 
-  if (!m_attackGroup.empty() && target == nullptr)
+  if (!m_attackGroup.empty())
   {
     float sumX = 0.0f;
     float sumZ = 0.0f;
@@ -747,22 +765,27 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     }
     const auto count = static_cast<float>(m_attackGroup.size());
     const PlanePosition center{.xMeters = sumX / count, .zMeters = sumZ / count};
-    const EntityView* nearest = nullptr;
+    const EntityView* best = nullptr;
     for (const EntityView& entity : _snapshot.entities)
     {
       if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player)
         continue;
-      if (nearest == nullptr || Distance(entity.position, center) < Distance(nearest->position, center))
-        nearest = &entity;
+      if (best == nullptr || AttackRank(entity) < AttackRank(*best) ||
+          (AttackRank(entity) == AttackRank(*best) && Distance(entity.position, center) < Distance(best->position, center)))
+        best = &entity;
     }
-    m_attackTarget = nearest != nullptr ? nearest->id : EntityId{};
-    m_closingIn.clear();
-    if (nearest != nullptr)
-      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = nearest->position}));
-    else if (!m_searching || grown)
-      _orders.push_back(MakeCommand(
-        m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
-    m_searching = nearest == nullptr;
+    // A target is kept until it is gone, or until production comes to light ahead of it.
+    if (target == nullptr || (best != nullptr && AttackRank(*best) < AttackRank(*target)))
+    {
+      m_attackTarget = best != nullptr ? best->id : EntityId{};
+      m_closingIn.clear();
+      if (best != nullptr)
+        _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = best->position}));
+      else if (!m_searching || grown)
+        _orders.push_back(MakeCommand(
+          m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
+      m_searching = best == nullptr;
+    }
   }
 
   // The attack group's ships near their target attack it, so that none stands idle out of range of it.

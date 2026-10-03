@@ -73,7 +73,7 @@ private:
   void Decide(const Snapshot& _snapshot, std::vector<Command>& _orders);
   void Plan(const Snapshot& _snapshot, const EntityView& _station);
   // Adds the next Shipyard to the plan once the income calls for it.
-  void PlanShipyards(const Snapshot& _snapshot, const EntityView& _station);
+  void PlanShipyards(const Snapshot& _snapshot);
   // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
   void FollowOre(const Snapshot& _snapshot);
   // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
@@ -104,8 +104,10 @@ private:
   std::vector<Slot> m_slots;
   std::vector<Work> m_work;
   PlanePosition m_rally;
-  // Its Command Station's place, across the map's center from the enemy's.
+  // Its Command Station's place, across the map's center from the enemy's, and its footprint: the base's center, which
+  // the Shipyards stand around, still once the station is lost.
   PlanePosition m_home;
+  float m_homeRadiusMeters = 0.0f;
 
   DesignComponents m_productionDesign;
   // The enemy warships it has seen since its last review, and what each is.

@@ -489,6 +489,87 @@ public:
     Assert::IsTrue(MeanDistance(match.View(AI), ships, enemy) < waiting - 300.0f, L"the attack group is not on its way");
   }
 
+  // Phase 1 design §4, §13: the attack group goes for the enemy's Shipyards first, then its Command Station, then
+  // anything else, nearest first in each; it keeps its target until it is gone, or until a Shipyard comes to light.
+  TEST_METHOD(AttacksProductionFirst)
+  {
+    AiMatch match;
+    const std::vector<Outpost::EntityId> group = match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    const auto enemy = [&snapshot](std::uint32_t _id, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
+    {
+      snapshot.entities.push_back({.id = Outpost::EntityId{_id},
+                                   .kind = Outpost::EntityKind::Structure,
+                                   .owner = HUMAN,
+                                   .structure = _kind,
+                                   .position = _position,
+                                   .radiusMeters = 30.0f,
+                                   .builtPermille = Outpost::PERMILLE});
+      return _position;
+    };
+    // Nearest the group a Defence Platform, then the Command Station, and the Shipyard farthest.
+    (void)enemy(9001, Outpost::StructureKind::DefensePlatform, {0.0f, 0.0f});
+    const Outpost::PlanePosition station = enemy(9002, Outpost::StructureKind::CommandStation, {-700.0f, -700.0f});
+    const Outpost::PlanePosition yard = enemy(9003, Outpost::StructureKind::Shipyard, {-1200.0f, -1000.0f});
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    const auto sentTo = [&ai, &snapshot, &group]() -> std::optional<Outpost::PlanePosition>
+    {
+      for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)))
+      {
+        if (std::ranges::is_permutation(order.ships, group))
+          return order.destination;
+      }
+      return std::nullopt;
+    };
+
+    std::optional<Outpost::PlanePosition> destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"the twelve were not sent");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), yard), 0.01f, L"not the Shipyard first");
+
+    std::erase_if(snapshot.entities, [](const Outpost::EntityView& _entity) { return _entity.id == Outpost::EntityId{9003}; });
+    snapshot.tick += 20;
+    destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"the group was not sent on once the Shipyard was gone");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), station), 0.01f,
+                     L"not the Command Station next");
+
+    snapshot.tick += 20;
+    Assert::IsFalse(sentTo().has_value(), L"the group was sent again with nothing changed");
+
+    const Outpost::PlanePosition another = enemy(9004, Outpost::StructureKind::Shipyard, {-300.0f, -1100.0f});
+    snapshot.tick += 20;
+    destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"a Shipyard came to light and the group stayed on the station");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), another), 0.01f);
+  }
+
+  // Phase 1 design §4: once its Command Station has fallen, the AI plays on with its Shipyards, and queues no more
+  // Constructors.
+  TEST_METHOD(PlaysOnWithoutItsStation)
+  {
+    AiMatch match;
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    (void)ai.Update(snapshot);
+
+    std::erase_if(snapshot.entities,
+                  [](const Outpost::EntityView& _entity) { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
+    const Outpost::PlanePosition home = match.Start(AI);
+    snapshot.entities.push_back({.id = Outpost::EntityId{9001},
+                                 .kind = Outpost::EntityKind::Structure,
+                                 .owner = AI,
+                                 .structure = Outpost::StructureKind::Shipyard,
+                                 .position = {home.xMeters + 150.0f, home.zMeters + 150.0f},
+                                 .radiusMeters = 40.0f,
+                                 .builtPermille = Outpost::PERMILLE});
+    snapshot.tick += 20;
+    const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(ai.Update(snapshot));
+    Assert::IsFalse(queued.empty(), L"its Shipyard was given no work");
+    Assert::IsTrue(std::ranges::all_of(queued, [](const Outpost::QueueShipCommand& _queue)
+                                       { return _queue.producer == Outpost::EntityId{9001} && _queue.design.IsValid(); }),
+                   L"something other than a warship was queued");
+  }
+
   // A structure under fire draws the reserve to it, and the reserve goes back once the shooting has stopped.
   TEST_METHOD(DefendsAStructureUnderFire)
   {

@@ -261,12 +261,13 @@ public:
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
   // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would
-  // overlap an obstacle or cross the map's edge. From then on a player that loses its last Command Station loses the
-  // match (task 6.2).
+  // overlap an obstacle or cross the map's edge. From then on a player left with neither a Command Station nor a
+  // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
-  // Whether a player has lost its Command Station, which ends the match (design §6); the player who still has one won,
-  // or nobody when both fell in the same tick. Only a match whose bases were placed can end.
+  // Whether a player has lost its Command Station and its last finished Shipyard, which ends the match (Phase 1 design
+  // §4); the player who still has one of them won, or nobody when both lost theirs in the same tick. Only a match whose
+  // bases were placed can end.
   [[nodiscard]] bool MatchOver() const noexcept
   {
     return m_matchOver;
@@ -374,6 +375,8 @@ private:
   // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
   // out of sight end.
   void UpdateVision();
+  // The players whose base was placed and whose Command Station has fallen.
+  [[nodiscard]] std::vector<PlayerId> PlayersWithoutStation() const;
   // Under fog of war, the side a shot hits sees its shooter for the tuning data's time.
   void RevealShooter(PlayerId _hitPlayer, EntityId _shooter);
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;

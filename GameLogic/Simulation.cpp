@@ -214,6 +214,7 @@ bool Outpost::Simulation::InSight(std::span<const Observer> _observers, PlanePos
 // shoot it sees: fog never changes what a ship fires at, only what its player knows.
 void Outpost::Simulation::UpdateVision()
 {
+  const std::vector<PlayerId> exposed = PlayersWithoutStation();
   for (PlayerState& player : m_players)
   {
     const std::vector<Observer> observers = ObserversOf(player.id);
@@ -230,6 +231,20 @@ void Outpost::Simulation::UpdateVision()
         continue;
       player.seen.push_back(entity.id);
       if (entity.kind != EntityKind::Structure)
+        continue;
+      EntityView view = EntityViewOf(entity, false);
+      if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
+        *known = std::move(view);
+      else
+        player.remembered.push_back(std::move(view));
+    }
+    // A player that has lost its Command Station has its finished Shipyards shown to its opponents, as remembered
+    // structures, so that the end of a match is not a search of the map for one building (Phase 1 design §4, ADR-037).
+    for (const Entity& entity : m_entities)
+    {
+      if (entity.kind != EntityKind::Structure || entity.structure != StructureKind::Shipyard || !entity.IsBuilt() ||
+          entity.owner == player.id || std::ranges::find(exposed, entity.owner) == exposed.end() ||
+          std::ranges::binary_search(player.seen, entity.id))
         continue;
       EntityView view = EntityViewOf(entity, false);
       if (const auto known = std::ranges::find(player.remembered, entity.id, &EntityView::id); known != player.remembered.end())
@@ -269,6 +284,20 @@ void Outpost::Simulation::UpdateVision()
       }
     }
   }
+}
+
+std::vector<Outpost::PlayerId> Outpost::Simulation::PlayersWithoutStation() const
+{
+  std::vector<PlayerId> players;
+  for (const PlayerId player : m_basePlayers)
+  {
+    const bool hasStation = std::ranges::any_of(
+      m_entities, [player](const Entity& _entity)
+      { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == player; });
+    if (!hasStation)
+      players.push_back(player);
+  }
+  return players;
 }
 
 void Outpost::Simulation::RevealShooter(PlayerId _hitPlayer, EntityId _shooter)
@@ -2028,8 +2057,8 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
   return CommandResult::Applied;
 }
 
-// A player whose base was placed and who has no Command Station left has lost (design §6). The match ends then, once:
-// the world runs on, but the outcome stands (owner, 2026-10-01).
+// A player whose base was placed and who has neither a Command Station nor a finished Shipyard has lost (Phase 1 design
+// §4, ADR-037). The match ends then, once: the world runs on, but the outcome stands (owner, 2026-10-01).
 void Outpost::Simulation::DecideMatch()
 {
   if (m_matchOver || m_basePlayers.empty())
@@ -2037,10 +2066,15 @@ void Outpost::Simulation::DecideMatch()
   std::vector<PlayerId> standing;
   for (const PlayerId player : m_basePlayers)
   {
-    const bool hasStation = std::ranges::any_of(
-      m_entities, [player](const Entity& _entity)
-      { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == player; });
-    if (hasStation)
+    const bool producing = std::ranges::any_of(m_entities,
+                                               [player](const Entity& _entity)
+                                               {
+                                                 const bool production =
+                                                   _entity.structure == StructureKind::CommandStation ||
+                                                   (_entity.structure == StructureKind::Shipyard && _entity.IsBuilt());
+                                                 return _entity.kind == EntityKind::Structure && _entity.owner == player && production;
+                                               });
+    if (producing)
       standing.push_back(player);
   }
   if (standing.size() == m_basePlayers.size())

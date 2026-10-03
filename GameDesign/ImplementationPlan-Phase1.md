@@ -38,7 +38,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
-| 12.1 | Losing all production | — | H5 decided | todo |
+| 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | todo |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -326,6 +326,11 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one, superseding ADR-020's decision 8.
 - **Acceptance:** `MatchOutcomeTests`: losing the Command Station alone does not end the match; losing it and the last finished Shipyard does; a Shipyard under construction does not count; the reveal. `AiPlayerTests`: the attack group goes for a Shipyard first.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-037](../Design/ADR/ADR-037-losing-all-production.md). It supersedes ADR-020's decision 9, the match's end, which this entry named as decision 8, and the attack in ADR-024's decision 8.
+  - **The rule.** A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard. A lost Command Station needed no change to stay lost: the tuning data gives it no cost, so no Constructor can build one.
+  - **The reveal.** Under fog of war, each finished Shipyard of a player without a Command Station is kept among its opponents' remembered structures, refreshed every tick, so they see it and can order an attack on it.
+  - **The AI.** Its attack group goes for Shipyards, then the Command Station, then the rest, nearest first in each, and turns to a Shipyard that comes to light. Without its Command Station it plays on, apart from queuing Constructors. It still beats a player who does nothing at 7.8 minutes, and one who holds the middle at 9.0.
+  - **Tests.** `MatchOutcomeTests.TheLastShipyardKeepsAPlayerIn`, `AShipyardSiteDoesNotCount` and `ALostCommandStationIsLostForGood`; `AiPlayerTests.AttacksProductionFirst` and `PlaysOnWithoutItsStation`.
 
 ---
 

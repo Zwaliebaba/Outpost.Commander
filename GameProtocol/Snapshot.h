@@ -234,8 +234,9 @@ struct Snapshot
   std::vector<WeaponView> weapons;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
-  // The match is over once a player has lost its Command Station (design §6): the winner is the player who still has
-  // one, and no player when both fell in the same tick. The world runs on after it (owner, 2026-10-01).
+  // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
+  // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
+  // (owner, 2026-10-01).
   bool matchOver = false;
   PlayerId winner;
   std::uint64_t matchEndedTick = 0;
