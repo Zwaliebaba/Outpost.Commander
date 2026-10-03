@@ -21,6 +21,21 @@ std::string ReadDataFile(std::string_view _fileName)
     throw Neuron::Exception(std::format("The game data file Assets\\{} is missing or cannot be read.", _fileName));
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
+
+// Match setup on a server just made: the map is placed, and now every player's starting fleet (task 2.5), and the load a
+// measurement run asks for.
+std::unique_ptr<Outpost::Server> SetUpMatch(std::unique_ptr<Outpost::InProcessServer> _server, const Outpost::ServerDesc& _desc)
+{
+  _server->World().PlaceStartingBases(_server->MapData());
+  if (_desc.measurementLoad)
+    Outpost::PlaceMeasurementLoad(_server->World(), _server->MapData(), _server->TuningData());
+  if (_desc.stressLoad)
+    _server->StartStressLoad();
+  // Match setup is over, and every structure it places stands: the graphs are built once, now, so that the first order of
+  // the match does not pay for them (ADR-032).
+  _server->PreparePathfinding();
+  return _server;
+}
 } // namespace
 
 Outpost::LoopbackTransport::LoopbackTransport(std::shared_ptr<LoopbackChannel> _channel) noexcept
@@ -208,15 +223,18 @@ void Outpost::InProcessServer::StartStressLoad()
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
 {
-  auto server = std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc);
-  // Match setup: the map is placed, and now every player's starting fleet (task 2.5).
-  server->World().PlaceStartingBases(server->MapData());
-  if (_desc.measurementLoad)
-    PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
-  if (_desc.stressLoad)
-    server->StartStressLoad();
-  // Match setup is over, and every structure it places stands: the graphs are built once, now, so that the first order of
-  // the match does not pay for them (ADR-032).
-  server->PreparePathfinding();
-  return server;
+  return SetUpMatch(std::make_unique<InProcessServer>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)), _desc),
+                    _desc);
+}
+
+Outpost::ServerFactory Outpost::InProcessServerFactory()
+{
+  // Read and checked as CreateInProcessServer reads them, but once. Every server is given copies, so that none shares state
+  // with another, and the data itself is never written again.
+  auto data = std::make_shared<const std::pair<Tuning, Map>>(LoadTuning(ReadDataFile(TUNING_FILE)), LoadMap(ReadDataFile(MAP_FILE)));
+  return [data = std::move(data)](const ServerDesc& _desc)
+  {
+    const auto& [tuning, map] = *data;
+    return SetUpMatch(std::make_unique<InProcessServer>(tuning, map, _desc), _desc);
+  };
 }
