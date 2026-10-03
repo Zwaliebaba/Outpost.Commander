@@ -5,28 +5,38 @@
 #include "CompiledShader/GroundMaskVS.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 namespace
 {
-// The root signature's parameters: the frame's constants at b0, as root constants, and the shades at t0, as a root
-// shader resource view straight into the upload buffer.
+// The root signature's parameters: the frame's constants at b0, as root constants, and the shades' texture at t0, as a
+// table of one in the renderer's shader-visible heap, sampled smoothly at s0.
 constexpr UINT FRAME_PARAMETER = 0;
 constexpr UINT SHADES_PARAMETER = 1;
+// One slot of the upload buffer: the whole texture, its rows TEXTURE_SIDE bytes apart, which is the pitch a copy needs.
+constexpr UINT64 UPLOAD_SLOT_BYTES = UINT64{Neuron::GroundMaskPipeline::TEXTURE_SIDE} * Neuron::GroundMaskPipeline::TEXTURE_SIDE;
+static_assert(Neuron::GroundMaskPipeline::TEXTURE_SIDE % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0,
+              "A row of the texture is a copy's pitch.");
+static_assert(UPLOAD_SLOT_BYTES % D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT == 0, "Each slot starts where a copy may.");
 constexpr UINT FRAME_CONSTANT_COUNT = sizeof(Neuron::GroundMaskPipeline::FrameConstants) / sizeof(UINT);
 // The square is two triangles, its corners made by the vertex shader from SV_VertexID.
 constexpr UINT VERTICES_PER_SQUARE = 6;
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
+  // The texture is copied into earlier in the same command list, so its data is only static while the table is set.
+  const CD3DX12_DESCRIPTOR_RANGE1 shadesRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
+                                              D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
   std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
   parameters[FRAME_PARAMETER].InitAsConstants(FRAME_CONSTANT_COUNT, 0, 0, D3D12_SHADER_VISIBILITY_ALL);
-  // The shades are rewritten every frame, in a slot the GPU is done with, before the command list runs.
-  parameters[SHADES_PARAMETER].InitAsShaderResourceView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE,
-                                                        D3D12_SHADER_VISIBILITY_PIXEL);
+  parameters[SHADES_PARAMETER].InitAsDescriptorTable(1, &shadesRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  // The four nearest texels blended, as the cells' centers are; the shader keeps its coordinates inside the grid.
+  const CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                            D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
 
   CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
-  description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+  description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 
   // Version 1.1 where the device has it, 1.0 otherwise; d3dx12 converts the description.
   D3D12_FEATURE_DATA_ROOT_SIGNATURE feature{.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1};
@@ -87,31 +97,70 @@ Neuron::GroundMaskPipeline::GroundMaskPipeline(Renderer& _renderer)
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  const CD3DX12_RESOURCE_DESC shadesDescription = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R8_UNORM, TEXTURE_SIDE, TEXTURE_SIDE, 1, 1);
+  winrt::check_hresult(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &shadesDescription,
+                                                       D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, nullptr,
+                                                       IID_GRAPHICS_PPV_ARGS(m_shades)));
+  const UINT slot = _renderer.TakeShaderView();
+  const D3D12_SHADER_RESOURCE_VIEW_DESC view{
+    .Format = DXGI_FORMAT_R8_UNORM,
+    .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+    .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+    .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1, .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
+  device->CreateShaderResourceView(m_shades.get(), &view, _renderer.ShaderViewCpu(slot));
+  m_shadesView = _renderer.ShaderViewGpu(slot);
+
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  const CD3DX12_RESOURCE_DESC shadesDescription = CD3DX12_RESOURCE_DESC::Buffer(UINT64{sizeof(float)} * MAX_CELLS * Renderer::FRAME_COUNT);
-  winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &shadesDescription,
-                                                       D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(m_shades)));
+  const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(UPLOAD_SLOT_BYTES * Renderer::FRAME_COUNT);
+  winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDescription,
+                                                       D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(m_upload)));
   const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
   void* mapped = nullptr;
-  winrt::check_hresult(m_shades->Map(0, &nothingRead, &mapped));
-  m_mappedShades = static_cast<float*>(mapped);
+  winrt::check_hresult(m_upload->Map(0, &nothingRead, &mapped));
+  m_mappedUpload = static_cast<std::uint8_t*>(mapped);
 }
 
-void Neuron::GroundMaskPipeline::Draw(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants,
-                                      std::span<const float> _shades)
+void Neuron::GroundMaskPipeline::SetShades(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, std::span<const float> _shades,
+                                           UINT _cellsPerSide)
 {
-  const size_t cells = size_t{_constants.cellsPerSide} * _constants.cellsPerSide;
-  if (cells == 0 || cells > MAX_CELLS || _shades.size() != cells)
+  if (_cellsPerSide == 0 || _cellsPerSide > TEXTURE_SIDE || _shades.size() != size_t{_cellsPerSide} * _cellsPerSide)
     return;
-  // The renderer waited for this frame index's previous frame before handing out the command list, so the GPU is done
-  // with this slot.
-  const size_t slot = size_t{_frameIndex} * MAX_CELLS;
-  std::memcpy(m_mappedShades + slot, _shades.data(), cells * sizeof(float));
+  // A byte a cell, into this frame's slot, which the GPU is done with: the renderer waited for this frame index's previous
+  // frame before handing out the command list. The row and the column past the grid repeat its last, where there is room.
+  const UINT side = std::min(_cellsPerSide + 1, TEXTURE_SIDE);
+  const UINT64 offset = UPLOAD_SLOT_BYTES * _frameIndex;
+  std::uint8_t* texels = m_mappedUpload + offset;
+  for (UINT z = 0; z < side; ++z)
+  {
+    const float* row = _shades.data() + (size_t{std::min(z, _cellsPerSide - 1)} * _cellsPerSide);
+    std::uint8_t* out = texels + (size_t{z} * TEXTURE_SIDE);
+    for (UINT x = 0; x < side; ++x)
+      out[x] = static_cast<std::uint8_t>(std::lround(std::clamp(row[std::min(x, _cellsPerSide - 1)], 0.0f, 1.0f) * 255.0f));
+  }
 
+  const auto toCopy =
+    CD3DX12_RESOURCE_BARRIER::Transition(m_shades.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+  _commandList->ResourceBarrier(1, &toCopy);
+  const D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{
+    .Offset = offset, .Footprint = {.Format = DXGI_FORMAT_R8_UNORM, .Width = side, .Height = side, .Depth = 1, .RowPitch = TEXTURE_SIDE}};
+  const CD3DX12_TEXTURE_COPY_LOCATION destination(m_shades.get(), 0);
+  const CD3DX12_TEXTURE_COPY_LOCATION source(m_upload.get(), footprint);
+  _commandList->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+  const auto toShader =
+    CD3DX12_RESOURCE_BARRIER::Transition(m_shades.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  _commandList->ResourceBarrier(1, &toShader);
+  m_cellsPerSide = _cellsPerSide;
+}
+
+void Neuron::GroundMaskPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const FrameConstants& _constants) const
+{
+  if (m_cellsPerSide == 0 || _constants.cellsPerSide != m_cellsPerSide)
+    return;
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->SetGraphicsRoot32BitConstants(FRAME_PARAMETER, FRAME_CONSTANT_COUNT, &_constants, 0);
-  _commandList->SetGraphicsRootShaderResourceView(SHADES_PARAMETER, m_shades->GetGPUVirtualAddress() + (slot * sizeof(float)));
+  _commandList->SetGraphicsRootDescriptorTable(SHADES_PARAMETER, m_shadesView);
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->DrawInstanced(VERTICES_PER_SQUARE, 1, 0, 0);
 }

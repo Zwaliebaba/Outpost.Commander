@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <future>
 
 namespace
 {
@@ -62,6 +63,31 @@ std::uint64_t NewSeed()
   return seed;
 }
 
+// The first match's server and the AI's settings, made together.
+struct ServerStart
+{
+  std::unique_ptr<Outpost::Server> server;
+  Outpost::AiSettings ai;
+};
+
+// Something made on another thread, and when it was done.
+template <typename T> struct Prepared
+{
+  T value;
+  std::chrono::steady_clock::time_point ready;
+};
+
+// Runs _make on a thread of its own, so that it overlaps whatever the caller does next (ADR-049).
+template <typename Fn> auto PrepareAsync(Fn _make)
+{
+  return std::async(std::launch::async,
+                    [make = std::move(_make)]
+                    {
+                      auto value = make();
+                      return Prepared<decltype(value)>{.value = std::move(value), .ready = std::chrono::steady_clock::now()};
+                    });
+}
+
 // One match: its server, the human's connection, the other player's with whatever drives it, and its log.
 struct Match
 {
@@ -88,6 +114,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   // is the exit code, so the game never closes without saying why (ADR-006).
   try
   {
+    const auto launched = std::chrono::steady_clock::now();
     wchar_t filename[MAX_PATH];
     GetModuleFileNameW(nullptr, filename, MAX_PATH);
     auto path = std::wstring(filename);
@@ -128,18 +155,48 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       measurements << '\n';
     }
 
-    // The next match's server is made while the menu shows, and the first before the window opens, so that bad tuning
-    // or map data is reported before the screen goes full screen; so are the AI's settings.
+    // Startup's stages, each at its time since wWinMain began (ADR-049).
+    const auto logStage = [&measurements, measure, launched](std::string_view _stage, std::chrono::steady_clock::time_point _at)
+    {
+      if (measure)
+        measurements << std::format("startup_ns {} {}\n", _stage, (_at - launched).count());
+    };
+
+    // The first match's server with the AI's settings, the client's models, and its interface's atlas are made on threads
+    // of their own while the window and the device are created (ADR-049). The window stays hidden until all of them are
+    // in, so that bad tuning, map or model data is still reported before the screen goes full screen. The next match's
+    // server is made while the menu shows.
     const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress};
-    std::unique_ptr<Outpost::Server> nextServer = Outpost::CreateInProcessServer(serverDesc);
-    const std::uint32_t ticksPerSecond = nextServer->TicksPerSecond();
-    const Outpost::AiSettings aiSettings = Outpost::LoadPackagedAiSettings();
-    std::optional<Match> match;
+    auto serverLoad = PrepareAsync(
+      [serverDesc] { return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc), .ai = Outpost::LoadPackagedAiSettings()}; });
+    auto assetsLoad = PrepareAsync(Outpost::LoadClientAssets);
 
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
+    logStage("window", std::chrono::steady_clock::now());
+    auto interfaceLoad = PrepareAsync([width = window.ClientWidthPixels(), height = window.ClientHeightPixels()]
+                                      { return Outpost::RasterizeInterface(width, height); });
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
-    // Loads every model before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011).
-    Outpost::GameClient client(renderer, ticksPerSecond);
+    logStage("device", std::chrono::steady_clock::now());
+
+    Prepared<ServerStart> serverStart = serverLoad.get();
+    logStage("server", serverStart.ready);
+    std::unique_ptr<Outpost::Server> nextServer = std::move(serverStart.value.server);
+    const std::uint32_t ticksPerSecond = nextServer->TicksPerSecond();
+    const Outpost::AiSettings aiSettings = std::move(serverStart.value.ai);
+    std::optional<Match> match;
+    Prepared<Outpost::ClientAssets> assets = assetsLoad.get();
+    logStage("assets", assets.ready);
+    Prepared<Neuron::UiAtlas> interfaceAtlas = interfaceLoad.get();
+    logStage("interface", interfaceAtlas.ready);
+
+    // Every model is loaded before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011).
+    // The client's uploads go to the GPU together, and are waited for once (ADR-048).
+    renderer.BeginUploads();
+    Outpost::GameClient client(renderer, ticksPerSecond, std::move(assets.value), std::move(interfaceAtlas.value));
+    logStage("client", std::chrono::steady_clock::now());
+    renderer.EndUploads();
+    logStage("uploads", std::chrono::steady_clock::now());
+    window.Show();
 
     auto lastFrame = std::chrono::steady_clock::now();
     const auto startMatch = [&]
@@ -165,6 +222,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       startMatch();
     UINT loggedWidthPixels = 0;
     UINT loggedHeightPixels = 0;
+    bool firstFramePresented = false;
     for (;;)
     {
       // Minimized, there is nothing to show, so the loop sleeps until a message arrives or the simulation is due to run.
@@ -268,7 +326,15 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       }
       ID3D12GraphicsCommandList* commandList = renderer.BeginFrame(CLEAR_COLOR);
       client.Render(renderer, commandList);
+      // The scene is resolved into the back buffer, and the interface drawn over it (ADR-050).
+      renderer.BeginInterface();
+      client.RenderInterface(commandList, renderer.FrameIndex());
       renderer.EndFrame();
+      if (!firstFramePresented)
+      {
+        firstFramePresented = true;
+        logStage("first_frame", std::chrono::steady_clock::now());
+      }
 
       // Q4: a frame's work on the CPU, up to the return from Present, and on the GPU, resolved a few frames later.
       const auto frameEnded = std::chrono::steady_clock::now();

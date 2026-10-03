@@ -45,6 +45,24 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = -500.0f}), L"an entity that sees nothing");
   }
 
+  // ADR-052: the revision moves on when the shades change, and only then, so the client copies them to the GPU only then.
+  TEST_METHOD(CountsWhenItsShadesChange)
+  {
+    Outpost::FogOfWar fog;
+    fog.Reset(2000.0f);
+    const std::uint64_t reset = fog.Revision();
+    fog.Update(std::vector{Seer(PLAYER, {}, 100.0f)}, PLAYER);
+    const std::uint64_t seen = fog.Revision();
+    Assert::IsTrue(seen != reset, L"a ship clears the ground it sees");
+    fog.Update(std::vector{Seer(PLAYER, {}, 100.0f)}, PLAYER);
+    Assert::AreEqual(seen, fog.Revision(), L"the same sight changes nothing");
+    fog.Update(std::vector{Seer(PLAYER, {.xMeters = 300.0f}, 100.0f)}, PLAYER);
+    Assert::IsTrue(fog.Revision() != seen, L"moving on dims what it left and clears what it reached");
+    const std::uint64_t moved = fog.Revision();
+    fog.Reset(2000.0f);
+    Assert::IsTrue(fog.Revision() != moved, L"a new match starts over");
+  }
+
   // Ground once seen stays dimmed after the player's entities have gone, rather than going dark again.
   TEST_METHOD(DimsWhatItSawBefore)
   {

@@ -117,6 +117,12 @@
     <FXCompile Include="Shader\GroundMaskPS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>
+    <FXCompile Include="Shader\ResolveVS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
+    <FXCompile Include="Shader\ResolvePS.hlsl">
+      <Filter>Shader</Filter>
+    </FXCompile>
     <FXCompile Include="Shader\StarVS.hlsl">
       <Filter>Shader</Filter>
     </FXCompile>

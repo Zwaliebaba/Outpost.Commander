@@ -115,15 +115,14 @@ Neuron::GlowPipeline::GlowPipeline(Renderer& _renderer, const TextureData* _spri
   for (const ByteBuffer& level : _sprite->levels)
     levels.push_back(std::as_bytes(std::span(level)));
   m_sprite = _renderer.CreateStaticTexture(_sprite->width, _sprite->height, _sprite->format, levels);
-  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
-    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
-  winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
+  const UINT slot = _renderer.TakeShaderView();
   const D3D12_SHADER_RESOURCE_VIEW_DESC view{
     .Format = _sprite->format,
     .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
     .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
     .Texture2D = {.MostDetailedMip = 0, .MipLevels = static_cast<UINT>(levels.size()), .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
-  device->CreateShaderResourceView(m_sprite.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+  device->CreateShaderResourceView(m_sprite.get(), &view, _renderer.ShaderViewCpu(slot));
+  m_spriteView = _renderer.ShaderViewGpu(slot);
 }
 
 void Neuron::GlowPipeline::Draw(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants,
@@ -145,12 +144,8 @@ void Neuron::GlowPipeline::Draw(ID3D12GraphicsCommandList* _commandList, UINT _f
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->SetGraphicsRoot32BitConstants(FRAME_PARAMETER, FRAME_CONSTANT_COUNT, &_constants, 0);
-  if (m_descriptorHeap)
-  {
-    ID3D12DescriptorHeap* heaps[] = {m_descriptorHeap.get()};
-    _commandList->SetDescriptorHeaps(1, heaps);
-    _commandList->SetGraphicsRootDescriptorTable(SPRITE_PARAMETER, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
-  }
+  if (m_sprite)
+    _commandList->SetGraphicsRootDescriptorTable(SPRITE_PARAMETER, m_spriteView);
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->IASetVertexBuffers(0, 1, &instanceView);
   _commandList->DrawInstanced(VERTICES_PER_GLOW, count, 0, 0);

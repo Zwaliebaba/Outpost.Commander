@@ -8,6 +8,9 @@
 
 #include "Renderer.h"
 
+#include "CompiledShader/ResolvePS.h"
+#include "CompiledShader/ResolveVS.h"
+
 #include <algorithm>
 #include <cstring>
 
@@ -29,6 +32,36 @@ constexpr DWORD FRAME_WAIT_TIMEOUT_MILLISECONDS = 1000;
 constexpr UINT TIMESTAMPS_PER_FRAME = 2;
 constexpr UINT64 NANOSECONDS_PER_SECOND = 1'000'000'000;
 
+// Static buffers are placed in default-heap buffers of this size, so that a mesh is not a heap of its own; one larger than
+// this gets a buffer to itself (ADR-048).
+constexpr UINT64 STATIC_PAGE_BYTES = UINT64{4} << 20U;
+// Every static buffer starts on this boundary, which views of vertices, indices and instances all accept.
+constexpr UINT64 STATIC_ALIGNMENT_BYTES = 256;
+// A batch writes its uploads into upload buffers of this size, or into one of its own for an upload larger than this.
+constexpr UINT64 UPLOAD_PAGE_BYTES = UINT64{4} << 20U;
+
+constexpr UINT64 AlignUp(UINT64 _value, UINT64 _alignment) noexcept
+{
+  return (_value + _alignment - 1) & ~(_alignment - 1);
+}
+
+// A target the frame writes whole before it reads it, so the memory under it need not be zeroed first: zeroing the
+// multisampled targets is a pass over hundreds of megabytes at 4K, at startup and on every resize (ADR-049). The OS may
+// zero it anyway, and runtimes before Windows 10 version 2004 refuse the flag and get the zeroed memory they always did.
+winrt::com_ptr<ID3D12Resource> CreateTarget(ID3D12Device* _device, const D3D12_RESOURCE_DESC& _description, D3D12_RESOURCE_STATES _state,
+                                            const D3D12_CLEAR_VALUE* _clearValue)
+{
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  winrt::com_ptr<ID3D12Resource> target;
+  if (SUCCEEDED(_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &_description, _state, _clearValue,
+                                                 IID_GRAPHICS_PPV_ARGS(target))))
+    return target;
+  target = nullptr;
+  winrt::check_hresult(_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &_description, _state, _clearValue,
+                                                        IID_GRAPHICS_PPV_ARGS(target)));
+  return target;
+}
+
 #if defined(_DEBUG)
 // The debug layer and DRED both need the Graphics Tools optional feature. Without it the game runs undiagnosed rather
 // than not at all (ADR-006).
@@ -46,6 +79,37 @@ void EnableDebugLayers() noexcept
   }
 }
 #endif
+
+// The resolve's root signature: the scene's view as a table of one, read by the pixel shader (ADR-050).
+winrt::com_ptr<ID3D12RootSignature> CreateResolveRootSignature(ID3D12Device* _device)
+{
+  const CD3DX12_DESCRIPTOR_RANGE1 sceneRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0,
+                                             D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
+  CD3DX12_ROOT_PARAMETER1 parameter;
+  parameter.InitAsDescriptorTable(1, &sceneRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
+  description.Init_1_1(1, &parameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+
+  // Version 1.1 where the device has it, 1.0 otherwise; d3dx12 converts the description.
+  D3D12_FEATURE_DATA_ROOT_SIGNATURE feature{.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1};
+  if (FAILED(_device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &feature, sizeof(feature))))
+    feature.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+
+  winrt::com_ptr<ID3DBlob> blob;
+  winrt::com_ptr<ID3DBlob> error;
+  const HRESULT result = D3DX12SerializeVersionedRootSignature(&description, feature.HighestVersion, blob.put(), error.put());
+  if (FAILED(result))
+  {
+    const std::string_view message = error ? std::string_view(static_cast<const char*>(error->GetBufferPointer()), error->GetBufferSize())
+                                           : std::string_view("no details");
+    throw winrt::hresult_error(result, winrt::to_hstring(std::format("The resolve root signature is invalid: {}", message)));
+  }
+
+  winrt::com_ptr<ID3D12RootSignature> rootSignature;
+  winrt::check_hresult(
+    _device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_GRAPHICS_PPV_ARGS(rootSignature)));
+  return rootSignature;
+}
 
 winrt::com_ptr<IDXGIFactory6> CreateFactory()
 {
@@ -132,9 +196,10 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_swapChain->SetMaximumFrameLatency(1));
   m_frameLatencyWaitable.attach(winrt::check_pointer(m_swapChain->GetFrameLatencyWaitableObject()));
 
+  // The scene target's view, then each back buffer's.
   const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-    .NumDescriptors = 1,
+    .NumDescriptors = 1 + FRAME_COUNT,
     .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     .NodeMask = 0,
   };
@@ -148,11 +213,52 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   };
   winrt::check_hresult(m_device->CreateDescriptorHeap(&depthHeapDescription, IID_GRAPHICS_PPV_ARGS(m_depthStencilHeap)));
 
+  const D3D12_DESCRIPTOR_HEAP_DESC shaderViewHeapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+    .NumDescriptors = SHADER_VIEW_COUNT,
+    .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+    .NodeMask = 0,
+  };
+  winrt::check_hresult(m_device->CreateDescriptorHeap(&shaderViewHeapDescription, IID_GRAPHICS_PPV_ARGS(m_shaderViewHeap)));
+  m_shaderViewBytes = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  m_sceneView = TakeShaderView();
+
+  // The resolve: a triangle over the screen that averages the scene's samples into the back buffer (ADR-050). It writes
+  // every pixel, so nothing is blended, tested or culled.
+  m_resolveRootSignature = CreateResolveRootSignature(m_device.get());
+  CD3DX12_RASTERIZER_DESC resolveRasterizer(D3D12_DEFAULT);
+  resolveRasterizer.CullMode = D3D12_CULL_MODE_NONE;
+  CD3DX12_DEPTH_STENCIL_DESC resolveDepth(D3D12_DEFAULT);
+  resolveDepth.DepthEnable = FALSE;
+  resolveDepth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+  // Every member with an enum that has no zero value is set here, so none is ever left at an invalid zero.
+  const D3D12_GRAPHICS_PIPELINE_STATE_DESC resolveDescription{
+    .pRootSignature = m_resolveRootSignature.get(),
+    .VS = CD3DX12_SHADER_BYTECODE(g_ResolveVS, sizeof(g_ResolveVS)),
+    .PS = CD3DX12_SHADER_BYTECODE(g_ResolvePS, sizeof(g_ResolvePS)),
+    .BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+    .SampleMask = UINT_MAX,
+    .RasterizerState = resolveRasterizer,
+    .DepthStencilState = resolveDepth,
+    .InputLayout = {.pInputElementDescs = nullptr, .NumElements = 0},
+    .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    .NumRenderTargets = 1,
+    .RTVFormats = {RENDER_TARGET_FORMAT},
+    .DSVFormat = DXGI_FORMAT_UNKNOWN,
+    .SampleDesc = {.Count = 1, .Quality = 0},
+  };
+  winrt::check_hresult(m_device->CreateGraphicsPipelineState(&resolveDescription, IID_GRAPHICS_PPV_ARGS(m_resolveState)));
+
   for (auto& allocator : m_commandAllocators)
     winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].get(), nullptr,
                                                    IID_GRAPHICS_PPV_ARGS(m_commandList)));
   winrt::check_hresult(m_commandList->Close());
+
+  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(m_uploadAllocator)));
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_uploadAllocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(m_uploadList)));
+  winrt::check_hresult(m_uploadList->Close());
 
   winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(m_fence)));
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
@@ -201,7 +307,6 @@ void Neuron::Renderer::Resize(UINT _widthPixels, UINT _heightPixels)
   for (auto& backBuffer : m_backBuffers)
     backBuffer = nullptr;
   m_sceneTarget = nullptr;
-  m_resolvedScene = nullptr;
   CheckDeviceResult(m_swapChain->ResizeBuffers(FRAME_COUNT, _widthPixels, _heightPixels, BACK_BUFFER_FORMAT, m_swapChainFlags));
   m_widthPixels = _widthPixels;
   m_heightPixels = _heightPixels;
@@ -213,6 +318,7 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
 {
   PIXBeginEvent(PIX_COLOR_DEFAULT, L"Frame");
   m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+  m_interfaceBegun = false;
 
   // This back buffer's allocator was last used FRAME_COUNT frames ago; the GPU must be done with it before it is reset.
   if (m_fence->GetCompletedValue() < m_frameFenceValues[m_frameIndex])
@@ -245,6 +351,9 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   ID3D12CommandAllocator* allocator = m_commandAllocators[m_frameIndex].get();
   winrt::check_hresult(allocator->Reset());
   winrt::check_hresult(m_commandList->Reset(allocator, nullptr));
+  // The frame's one shader-visible heap, bound before anything is drawn and never switched (ADR-051).
+  ID3D12DescriptorHeap* heaps[] = {m_shaderViewHeap.get()};
+  m_commandList->SetDescriptorHeaps(1, heaps);
   m_commandList->EndQuery(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, m_frameIndex * TIMESTAMPS_PER_FRAME);
   PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Scene");
 
@@ -269,29 +378,44 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   return m_commandList.get();
 }
 
-void Neuron::Renderer::EndFrame()
+void Neuron::Renderer::BeginInterface()
 {
-  // The samples are averaged in the sRGB format, so in linear color, into the resolved scene. A flip-model back buffer
-  // cannot be sRGB, and a resolve cannot change the format, so the resolved scene is copied into it, which a copy within
-  // one format group may do (ADR-040).
+  if (m_interfaceBegun)
+    return;
+  m_interfaceBegun = true;
+  PIXEndEvent(m_commandList.get());
+  PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Interface");
+
+  // The scene's samples are averaged in linear color by a shader that reads them through an sRGB view and writes the back
+  // buffer through one: a flip-model back buffer cannot be sRGB, but a view of it may be, so no texture stands between
+  // the two (ADR-050). The viewport and the scissor BeginFrame set cover the back buffer too.
   ID3D12Resource* backBuffer = m_backBuffers[m_frameIndex].get();
   const std::array toResolve{
-    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
-    CD3DX12_RESOURCE_BARRIER::Transition(m_resolvedScene.get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RESOLVE_DEST),
+    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
+                                         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),
+    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET),
   };
   m_commandList->ResourceBarrier(static_cast<UINT>(toResolve.size()), toResolve.data());
-  m_commandList->ResolveSubresource(m_resolvedScene.get(), 0, m_sceneTarget.get(), 0, RENDER_TARGET_FORMAT);
+  const D3D12_CPU_DESCRIPTOR_HANDLE target = BackBufferView(m_frameIndex);
+  m_commandList->OMSetRenderTargets(1, &target, FALSE, nullptr);
+  m_commandList->SetGraphicsRootSignature(m_resolveRootSignature.get());
+  m_commandList->SetPipelineState(m_resolveState.get());
+  m_commandList->SetGraphicsRootDescriptorTable(0, ShaderViewGpu(m_sceneView));
+  m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  m_commandList->DrawInstanced(3, 1, 0, 0);
+}
 
-  const std::array toCopy{
-    CD3DX12_RESOURCE_BARRIER::Transition(m_resolvedScene.get(), D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE),
-    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST),
-    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET),
+void Neuron::Renderer::EndFrame()
+{
+  BeginInterface();
+  // The scene target goes back to a render target for the next frame's clear.
+  ID3D12Resource* backBuffer = m_backBuffers[m_frameIndex].get();
+  const std::array toPresent{
+    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT),
+    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+                                         D3D12_RESOURCE_STATE_RENDER_TARGET),
   };
-  m_commandList->ResourceBarrier(static_cast<UINT>(toCopy.size()), toCopy.data());
-  m_commandList->CopyResource(backBuffer, m_resolvedScene.get());
-
-  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
-  m_commandList->ResourceBarrier(1, &toPresent);
+  m_commandList->ResourceBarrier(static_cast<UINT>(toPresent.size()), toPresent.data());
 
   PIXEndEvent(m_commandList.get());
   const UINT first = m_frameIndex * TIMESTAMPS_PER_FRAME;
@@ -316,6 +440,23 @@ void Neuron::Renderer::EndFrame()
   PIXEndEvent();
 }
 
+UINT Neuron::Renderer::TakeShaderView()
+{
+  if (m_shaderViewsTaken == SHADER_VIEW_COUNT)
+    throw winrt::hresult_error(E_OUTOFMEMORY, L"The renderer's shader-visible heap has no free slot.");
+  return m_shaderViewsTaken++;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::ShaderViewCpu(UINT _slot) const noexcept
+{
+  return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_shaderViewHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(_slot), m_shaderViewBytes);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE Neuron::Renderer::ShaderViewGpu(UINT _slot) const noexcept
+{
+  return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_shaderViewHeap->GetGPUDescriptorHandleForHeapStart(), static_cast<INT>(_slot), m_shaderViewBytes);
+}
+
 std::vector<std::chrono::nanoseconds> Neuron::Renderer::TakeGpuFrameTimes()
 {
   std::vector<std::chrono::nanoseconds> times;
@@ -323,40 +464,99 @@ std::vector<std::chrono::nanoseconds> Neuron::Renderer::TakeGpuFrameTimes()
   return times;
 }
 
-winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
+void Neuron::Renderer::BeginUploads()
 {
-  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(_bytes.size());
+  if (m_uploadsOpen)
+    return;
+  // The last batch was waited for, so its allocator is free.
+  winrt::check_hresult(m_uploadAllocator->Reset());
+  winrt::check_hresult(m_uploadList->Reset(m_uploadAllocator.get(), nullptr));
+  m_uploadsOpen = true;
+}
 
-  // A buffer is created in the common state and promoted to whatever its first use needs, the copy here and reading
-  // vertices or indices after it, so no barrier is recorded.
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
-  winrt::com_ptr<ID3D12Resource> buffer;
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
-                                                         nullptr, IID_GRAPHICS_PPV_ARGS(buffer)));
+void Neuron::Renderer::EndUploads()
+{
+  if (!m_uploadsOpen)
+    return;
+  m_uploadsOpen = false;
+  winrt::check_hresult(m_uploadList->Close());
+  ID3D12CommandList* lists[] = {m_uploadList.get()};
+  m_queue->ExecuteCommandLists(1, lists);
+  // The upload buffers and the allocator must outlive the copies.
+  WaitForGpu();
+  m_uploadPages.clear();
+}
 
+Neuron::Renderer::UploadSpace Neuron::Renderer::TakeUploadSpace(UINT64 _bytes, UINT64 _alignment)
+{
+  if (!m_uploadPages.empty())
+  {
+    UploadPage& page = m_uploadPages.back();
+    const UINT64 offset = AlignUp(page.usedBytes, _alignment);
+    if (offset <= page.sizeBytes && _bytes <= page.sizeBytes - offset)
+    {
+      page.usedBytes = offset + _bytes;
+      return {.resource = page.resource.get(), .offset = offset, .mapped = page.mapped + offset};
+    }
+  }
+
+  UploadPage page{.sizeBytes = std::max(UPLOAD_PAGE_BYTES, _bytes)};
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  winrt::com_ptr<ID3D12Resource> upload;
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(page.sizeBytes);
   winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                         nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(page.resource)));
   void* mapped = nullptr;
   const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
-  winrt::check_hresult(upload->Map(0, &nothingRead, &mapped));
-  std::memcpy(mapped, _bytes.data(), _bytes.size());
-  upload->Unmap(0, nullptr);
+  winrt::check_hresult(page.resource->Map(0, &nothingRead, &mapped));
+  page.mapped = static_cast<std::byte*>(mapped);
+  page.usedBytes = _bytes;
+  const UploadPage& added = m_uploadPages.emplace_back(std::move(page));
+  return {.resource = added.resource.get(), .offset = 0, .mapped = added.mapped};
+}
 
-  winrt::com_ptr<ID3D12CommandAllocator> allocator;
-  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
-  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(
-    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
-  commandList->CopyBufferRegion(buffer.get(), 0, upload.get(), 0, _bytes.size());
-  winrt::check_hresult(commandList->Close());
-  ID3D12CommandList* lists[] = {commandList.get()};
-  m_queue->ExecuteCommandLists(1, lists);
+Neuron::Renderer::StaticSpace Neuron::Renderer::TakeStaticSpace(UINT64 _bytes)
+{
+  // A buffer is created in the common state and promoted to whatever its use needs, the copy and then reading vertices,
+  // indices or instances, so no barrier is recorded.
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  if (_bytes > STATIC_PAGE_BYTES)
+  {
+    const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(_bytes);
+    StaticSpace space;
+    winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
+                                                           nullptr, IID_GRAPHICS_PPV_ARGS(space.buffer.resource)));
+    space.buffer.address = space.buffer.resource->GetGPUVirtualAddress();
+    return space;
+  }
 
-  // The upload buffer and the allocator must outlive the copy.
-  WaitForGpu();
-  return buffer;
+  UINT64 offset = AlignUp(m_staticPageUsedBytes, STATIC_ALIGNMENT_BYTES);
+  if (!m_staticPage || offset > STATIC_PAGE_BYTES || _bytes > STATIC_PAGE_BYTES - offset)
+  {
+    // The rest of the last page is left unused; the buffers in it keep it alive.
+    const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(STATIC_PAGE_BYTES);
+    m_staticPage = nullptr;
+    winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
+                                                           nullptr, IID_GRAPHICS_PPV_ARGS(m_staticPage)));
+    offset = 0;
+  }
+  m_staticPageUsedBytes = offset + _bytes;
+  return {.buffer = {.resource = m_staticPage, .address = m_staticPage->GetGPUVirtualAddress() + offset}, .offset = offset};
+}
+
+Neuron::StaticBuffer Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
+{
+  const bool ownBatch = !m_uploadsOpen;
+  BeginUploads();
+  StaticSpace space = TakeStaticSpace(_bytes.size());
+  if (!_bytes.empty())
+  {
+    const UploadSpace upload = TakeUploadSpace(_bytes.size(), STATIC_ALIGNMENT_BYTES);
+    std::memcpy(upload.mapped, _bytes.data(), _bytes.size());
+    m_uploadList->CopyBufferRegion(space.buffer.resource.get(), space.offset, upload.resource, upload.offset, _bytes.size());
+  }
+  if (ownBatch)
+    EndUploads();
+  return std::move(space.buffer);
 }
 
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
@@ -369,6 +569,8 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                      std::span<const std::span<const std::byte>> _levels)
 {
+  const bool ownBatch = !m_uploadsOpen;
+  BeginUploads();
   const auto levelCount = static_cast<UINT16>(_levels.size());
   const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, levelCount);
   const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
@@ -376,18 +578,8 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
   winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COPY_DEST,
                                                          nullptr, IID_GRAPHICS_PPV_ARGS(texture)));
 
-  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, levelCount);
-  const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(uploadBytes);
-  winrt::com_ptr<ID3D12Resource> upload;
-  winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDescription,
-                                                         D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
-
-  winrt::com_ptr<ID3D12CommandAllocator> allocator;
-  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
-  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(
-    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
+  const UploadSpace upload =
+    TakeUploadSpace(GetRequiredIntermediateSize(texture.get(), 0, levelCount), D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
   // d3dx12 lays the rows out at the pitch the copy needs.
   std::vector<D3D12_SUBRESOURCE_DATA> sources;
   UINT levelHeight = _height;
@@ -397,56 +589,55 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
     sources.push_back({.pData = level.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(level.size())});
     levelHeight = std::max(1u, levelHeight / 2);
   }
-  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, levelCount, sources.data()) == 0)
+  if (UpdateSubresources(m_uploadList.get(), texture.get(), upload.resource, upload.offset, 0, levelCount, sources.data()) == 0)
     throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
   const CD3DX12_RESOURCE_BARRIER toShader =
     CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-  commandList->ResourceBarrier(1, &toShader);
-  winrt::check_hresult(commandList->Close());
-  ID3D12CommandList* lists[] = {commandList.get()};
-  m_queue->ExecuteCommandLists(1, lists);
-
-  // The upload buffer and the allocator must outlive the copy.
-  WaitForGpu();
+  m_uploadList->ResourceBarrier(1, &toShader);
+  if (ownBatch)
+    EndUploads();
   return texture;
 }
 
 void Neuron::Renderer::CreateRenderTargets()
 {
-  // The back buffers are only copied into, so they need no view.
+  // The back buffers are written through sRGB views, which a flip-model swap chain allows on its UNORM buffers (ADR-050).
+  D3D12_RENDER_TARGET_VIEW_DESC backBufferViewDescription{};
+  backBufferViewDescription.Format = RENDER_TARGET_FORMAT;
+  backBufferViewDescription.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
   for (UINT index = 0; index < FRAME_COUNT; ++index)
+  {
     winrt::check_hresult(m_swapChain->GetBuffer(index, IID_GRAPHICS_PPV_ARGS(m_backBuffers[index])));
+    m_device->CreateRenderTargetView(m_backBuffers[index].get(), &backBufferViewDescription, BackBufferView(index));
+  }
 
   // Resize has already drained the GPU and released the old targets.
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
   const CD3DX12_RESOURCE_DESC sceneDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1,
                                                                               SAMPLE_COUNT, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
   const CD3DX12_CLEAR_VALUE clearValue(RENDER_TARGET_FORMAT, SCENE_CLEAR.data());
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &sceneDescription,
-                                                         D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue,
-                                                         IID_GRAPHICS_PPV_ARGS(m_sceneTarget)));
+  m_sceneTarget = CreateTarget(m_device.get(), sceneDescription, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue);
 
   D3D12_RENDER_TARGET_VIEW_DESC viewDescription{};
   viewDescription.Format = RENDER_TARGET_FORMAT;
   viewDescription.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
   m_device->CreateRenderTargetView(m_sceneTarget.get(), &viewDescription, SceneTargetView());
 
-  const CD3DX12_RESOURCE_DESC resolvedDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1);
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &resolvedDescription,
-                                                         D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr,
-                                                         IID_GRAPHICS_PPV_ARGS(m_resolvedScene)));
+  // The resolve's view of it, rewritten here on a resize, once the GPU no longer reads the old one.
+  const D3D12_SHADER_RESOURCE_VIEW_DESC sceneView{.Format = RENDER_TARGET_FORMAT,
+                                                  .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS,
+                                                  .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                                                  .Texture2DMS = {.UnusedField_NothingToDefine = 0}};
+  m_device->CreateShaderResourceView(m_sceneTarget.get(), &sceneView, ShaderViewCpu(m_sceneView));
 }
 
 void Neuron::Renderer::CreateDepthBuffer()
 {
   // The old buffer is released first; Resize has already drained the GPU.
   m_depthBuffer = nullptr;
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
   const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, SAMPLE_COUNT, 0,
                                                                          D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   const CD3DX12_CLEAR_VALUE clearValue(DEPTH_FORMAT, DEPTH_CLEAR, 0);
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                                                         &clearValue, IID_GRAPHICS_PPV_ARGS(m_depthBuffer)));
+  m_depthBuffer = CreateTarget(m_device.get(), description, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue);
 
   D3D12_DEPTH_STENCIL_VIEW_DESC viewDescription{};
   viewDescription.Format = DEPTH_FORMAT;
@@ -457,6 +648,12 @@ void Neuron::Renderer::CreateDepthBuffer()
 D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::SceneTargetView() const noexcept
 {
   return m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::BackBufferView(UINT _index) const noexcept
+{
+  return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(1 + _index),
+                                       m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::DepthStencilView() const noexcept

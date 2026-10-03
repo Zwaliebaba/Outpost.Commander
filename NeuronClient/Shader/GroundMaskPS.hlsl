@@ -16,24 +16,16 @@ struct VertexOut
   float2 ground : TEXCOORD0;
 };
 
-// Row by row along x, rows in order of z.
-StructuredBuffer<float> shades : register(t0);
-
-float ShadeOf(int2 _cell)
-{
-  const int last = (int)cellsPerSide - 1;
-  const uint2 cell = (uint2)clamp(_cell, int2(0, 0), int2(last, last));
-  return shades[cell.y * cellsPerSide + cell.x];
-}
+// Cell (x, z) at texel (x, z), its shade in red (ADR-052). Must match GroundMaskPipeline::TEXTURE_SIDE.
+static const float TEXTURE_SIDE = 256.0f;
+Texture2D<float> shades : register(t0);
+SamplerState shadesSampler : register(s0);
 
 float4 main(VertexOut input) : SV_Target
 {
-  // In cells, from the first cell's center.
-  const float2 at = (input.ground - float2(originXMeters, originZMeters)) / cellMeters - 0.5f;
-  const float2 corner = floor(at);
-  const int2 low = (int2)corner;
-  const float2 blend = at - corner;
-  const float nearRow = lerp(ShadeOf(low), ShadeOf(low + int2(1, 0)), blend.x);
-  const float farRow = lerp(ShadeOf(low + int2(0, 1)), ShadeOf(low + int2(1, 1)), blend.x);
-  return float4(0.0f, 0.0f, 0.0f, lerp(nearRow, farRow, blend.y));
+  // In cells, from the first cell's center, held between the first cell's center and the last's: beyond them the shade is
+  // the nearest cell's. A texel's center is half a texel in, and the sampler blends the four nearest.
+  const float last = (float)cellsPerSide - 1.0f;
+  const float2 at = clamp((input.ground - float2(originXMeters, originZMeters)) / cellMeters - 0.5f, 0.0f, last);
+  return float4(0.0f, 0.0f, 0.0f, shades.SampleLevel(shadesSampler, (at + 0.5f) / TEXTURE_SIDE, 0.0f));
 }

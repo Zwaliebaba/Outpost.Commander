@@ -28,6 +28,9 @@ bool PlayOne(Outpost::Server& _server, const Outpost::AiSettings& _settings, std
   for (std::uint64_t tick = 0; tick < _limitTicks && !ended; ++tick)
   {
     _server.Step();
+    // A stepped server still times its ticks (task 8.1). Nothing here reads them, so they are taken and dropped every tick
+    // rather than left to grow over the match.
+    (void)_server.TakeTickTimings();
     for (size_t seat = 0; seat < connections.size(); ++seat)
     {
       for (const Outpost::Snapshot& snapshot : connections[seat]->Receive())
@@ -44,14 +47,12 @@ bool PlayOne(Outpost::Server& _server, const Outpost::AiSettings& _settings, std
 }
 } // namespace
 
-// The servers are made one after the other, since each reads the game data from the package. The matches then play on
-// as many threads as the machine has, each into a log of its own, and the logs are written out in seed order.
+// The game data is read from the package and checked once, before any match starts. The matches then play on as many
+// threads as the machine has, each on a server of its own made from a copy of that data by the thread that plays it, and
+// each into a log of its own; the logs are written out in seed order.
 std::uint32_t Outpost::PlayAiMatches(std::ostream& _log, const AiSettings& _settings, const AiMatchesDesc& _desc)
 {
-  std::vector<std::unique_ptr<Server>> servers;
-  servers.reserve(_desc.matches);
-  for (std::uint32_t match = 0; match < _desc.matches; ++match)
-    servers.push_back(CreateInProcessServer({.seed = _desc.firstSeed + match}));
+  const ServerFactory createServer = InProcessServerFactory();
 
   std::vector<std::ostringstream> logs(_desc.matches);
   std::vector<std::uint8_t> ended(_desc.matches, 0);
@@ -71,9 +72,9 @@ std::uint32_t Outpost::PlayAiMatches(std::ostream& _log, const AiSettings& _sett
           {
             try
             {
-              Server& server = *servers[match];
-              const std::uint64_t limitTicks = std::uint64_t{_desc.limitMinutes} * SECONDS_PER_MINUTE * server.TicksPerSecond();
-              ended[match] = static_cast<std::uint8_t>(PlayOne(server, _settings, _desc.firstSeed + match, limitTicks, logs[match]));
+              const std::unique_ptr<Server> server = createServer({.seed = _desc.firstSeed + match});
+              const std::uint64_t limitTicks = std::uint64_t{_desc.limitMinutes} * SECONDS_PER_MINUTE * server->TicksPerSecond();
+              ended[match] = static_cast<std::uint8_t>(PlayOne(*server, _settings, _desc.firstSeed + match, limitTicks, logs[match]));
             }
             catch (...)
             {

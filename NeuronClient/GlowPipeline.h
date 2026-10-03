@@ -51,8 +51,8 @@ private:
   // One slot of MAX_GLOWS glows per frame in flight, mapped for the pipeline's lifetime.
   winrt::com_ptr<ID3D12Resource> m_instances;
   Glow* m_mappedInstances = nullptr;
-  // The sprite and the shader-visible heap with its view; both empty for soft spots.
+  // The sprite, and its view in the renderer's shader-visible heap (ADR-051); empty and null for soft spots.
   winrt::com_ptr<ID3D12Resource> m_sprite;
-  winrt::com_ptr<ID3D12DescriptorHeap> m_descriptorHeap;
+  D3D12_GPU_DESCRIPTOR_HANDLE m_spriteView{};
 };
 } // namespace Neuron

@@ -70,10 +70,16 @@ public:
     std::uint32_t windowedClientHeightPixels;
   };
 
-  // Registers the window class, creates the window over the primary monitor and shows it. Throws winrt::hresult_error
-  // on failure.
+  // Registers the window class and creates the window over the primary monitor, hidden until Show, so that the game can
+  // load behind it and report a failure before the screen goes full screen (ADR-049). Throws winrt::hresult_error on
+  // failure.
   explicit Window(const Desc& _desc);
   ~Window();
+
+  void Show() noexcept
+  {
+    ShowWindow(m_hwnd, SW_SHOW);
+  }
 
   // Dispatches every message waiting in the queue and returns. False once WM_QUIT has arrived: the caller's loop ends
   // and ExitCode() holds the code WM_QUIT carried. Alt+Enter is handled here, and toggles full screen.

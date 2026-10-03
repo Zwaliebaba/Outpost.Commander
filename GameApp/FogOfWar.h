@@ -38,6 +38,13 @@ public:
     return m_shades;
   }
 
+  // A count that moves on whenever Reset or Update changes the shades, so that whoever copies them elsewhere, such as into
+  // a texture, knows when to copy them again (ADR-052).
+  [[nodiscard]] std::uint64_t Revision() const noexcept
+  {
+    return m_revision;
+  }
+
   // The shade of the cell that holds _point, or the never-seen shade off the map.
   [[nodiscard]] float ShadeAt(PlanePosition _point) const noexcept;
 
@@ -53,5 +60,8 @@ private:
   std::uint32_t m_cellsPerSide = 0;
   std::vector<bool> m_explored;
   std::vector<float> m_shades;
+  // What Update finds in sight, kept so that its storage is not allocated on every update.
+  std::vector<bool> m_inSight;
+  std::uint64_t m_revision = 0;
 };
 } // namespace Outpost

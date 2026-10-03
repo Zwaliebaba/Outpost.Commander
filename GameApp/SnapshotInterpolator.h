@@ -58,6 +58,8 @@ public:
   // The entities at the view's tick: every entity of the newer of the two bracketing snapshots, placed and turned between
   // where it was in the older and where it is in the newer. An entity new in the newer snapshot is where it is.
   [[nodiscard]] std::vector<EntityView> Entities() const;
+  // The same into _into, whose storage is kept, so that a caller asking every frame does not allocate every frame.
+  void Entities(std::vector<EntityView>& _into) const;
 
   // How each entity of both bracketing snapshots moved from the older to the newer, in identifier order; the same for
   // every view tick between them. None while the view is at either end of what is kept, as it is when snapshots stop

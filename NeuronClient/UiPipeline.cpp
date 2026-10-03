@@ -14,6 +14,10 @@ namespace
 // The root signature's parameters, in order: the screen's size at b0, the atlas at t0.
 constexpr UINT SCREEN_PARAMETER = 0;
 constexpr UINT ATLAS_PARAMETER = 1;
+// The image DrawImage draws from at t1. Its quads carry u past this, which tells the pixel shader to sample the image at u
+// less this rather than the atlas (Shader/UiPS.hlsl).
+constexpr UINT IMAGE_PARAMETER = 2;
+constexpr float IMAGE_U_OFFSET = 2.0f;
 constexpr UINT SCREEN_CONSTANT_COUNT = 4;
 
 constexpr UINT VERTICES_PER_QUAD = 4;
@@ -21,12 +25,22 @@ constexpr UINT INDICES_PER_QUAD = 6;
 // Two triangles over a quad's corners, clockwise: top-left, top-right, bottom-right, bottom-left.
 constexpr std::array<std::uint16_t, INDICES_PER_QUAD> QUAD_CORNERS{0, 1, 2, 0, 2, 3};
 
+// A font's or a sprite's size in whole pixels, at least one, at _scale pixels to a reference unit.
+float PixelSize(float _units, float _scale) noexcept
+{
+  return std::max(1.0f, std::round(_units * _scale));
+}
+
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
   const CD3DX12_DESCRIPTOR_RANGE1 atlasRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-  std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
+  // The image may be written earlier in the frame's own command list, as the fog is (ADR-052).
+  const CD3DX12_DESCRIPTOR_RANGE1 imageRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0,
+                                             D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
+  std::array<CD3DX12_ROOT_PARAMETER1, 3> parameters{};
   parameters[SCREEN_PARAMETER].InitAsConstants(SCREEN_CONSTANT_COUNT, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
   parameters[ATLAS_PARAMETER].InitAsDescriptorTable(1, &atlasRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  parameters[IMAGE_PARAMETER].InitAsDescriptorTable(1, &imageRange, D3D12_SHADER_VISIBILITY_PIXEL);
   // Texels map one to one onto pixels, so filtering only matters at a glyph's edge; clamping keeps it inside the atlas.
   const CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                             D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
@@ -57,7 +71,28 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 }
 } // namespace
 
-Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, float _scale)
+Neuron::UiAtlas Neuron::RasterizeUiAtlas(const std::vector<FontDesc>& _fonts, const std::vector<SpriteDesc>& _sprites, float _scale)
+{
+  UiAtlas atlas;
+  atlas.pixelSizes.reserve(_fonts.size() + _sprites.size());
+  for (const FontDesc& font : _fonts)
+    atlas.pixelSizes.push_back(PixelSize(font.emUnits, _scale));
+  for (const SpriteDesc& sprite : _sprites)
+    atlas.pixelSizes.push_back(PixelSize(sprite.sizeUnits, _scale));
+
+  std::vector<FontBitmaps> fonts;
+  fonts.reserve(_fonts.size());
+  for (size_t i = 0; i < _fonts.size(); ++i)
+    fonts.push_back(RasterizeFont(_fonts[i], atlas.pixelSizes[i]));
+  std::vector<GlyphBitmap> sprites;
+  sprites.reserve(_sprites.size());
+  for (size_t i = 0; i < _sprites.size(); ++i)
+    sprites.push_back(DrawSprite(_sprites[i].shape, static_cast<std::uint32_t>(atlas.pixelSizes[_fonts.size() + i])));
+  atlas.glyphs = PackGlyphs(fonts, sprites);
+  return atlas;
+}
+
+Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, UiAtlas _atlas)
   : m_renderer(_renderer),
     m_fonts(std::move(_fonts)),
     m_sprites(std::move(_sprites))
@@ -98,14 +133,13 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
     .PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
     .NumRenderTargets = 1,
     .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
-    .DSVFormat = Renderer::DEPTH_FORMAT,
-    .SampleDesc = {.Count = Renderer::SAMPLE_COUNT, .Quality = 0},
+    // Drawn over the resolved scene, straight into the back buffer at one sample, with no depth buffer (ADR-050).
+    .DSVFormat = DXGI_FORMAT_UNKNOWN,
+    .SampleDesc = {.Count = 1, .Quality = 0},
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
-    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
-  winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
+  m_atlasView = _renderer.TakeShaderView();
 
   // Every quad is two triangles over its four corners: top-left, top-right, bottom-right, bottom-left.
   std::vector<std::uint16_t> indices;
@@ -118,9 +152,8 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
   }
   const auto indexBytes = std::as_bytes(std::span(indices));
   m_indexBuffer = _renderer.CreateStaticBuffer(indexBytes);
-  m_indexBufferView = {.BufferLocation = m_indexBuffer->GetGPUVirtualAddress(),
-                       .SizeInBytes = static_cast<UINT>(indexBytes.size()),
-                       .Format = DXGI_FORMAT_R16_UINT};
+  m_indexBufferView = {
+    .BufferLocation = m_indexBuffer.address, .SizeInBytes = static_cast<UINT>(indexBytes.size()), .Format = DXGI_FORMAT_R16_UINT};
 
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
   const CD3DX12_RESOURCE_DESC vertexDescription =
@@ -132,33 +165,31 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
   winrt::check_hresult(m_vertices->Map(0, &nothingRead, &mapped));
   m_mappedVertices = static_cast<Vertex*>(mapped);
 
-  Rasterize(_scale);
+  UseAtlas(std::move(_atlas));
 }
 
-std::vector<float> Neuron::UiPipeline::PixelSizes(float _scale) const
+bool Neuron::UiPipeline::IsRasterizedAt(float _scale) const noexcept
 {
-  std::vector<float> sizes;
-  sizes.reserve(m_fonts.size() + m_sprites.size());
-  for (const FontDesc& font : m_fonts)
-    sizes.push_back(std::max(1.0f, std::round(font.emUnits * _scale)));
-  for (const SpriteDesc& sprite : m_sprites)
-    sizes.push_back(std::max(1.0f, std::round(sprite.sizeUnits * _scale)));
-  return sizes;
-}
-
-void Neuron::UiPipeline::Rasterize(float _scale)
-{
-  m_pixelSizes = PixelSizes(_scale);
-  std::vector<FontBitmaps> fonts;
-  fonts.reserve(m_fonts.size());
+  if (m_pixelSizes.size() != m_fonts.size() + m_sprites.size())
+    return false;
   for (size_t i = 0; i < m_fonts.size(); ++i)
-    fonts.push_back(RasterizeFont(m_fonts[i], m_pixelSizes[i]));
-  std::vector<GlyphBitmap> sprites;
-  sprites.reserve(m_sprites.size());
+  {
+    if (m_pixelSizes[i] != PixelSize(m_fonts[i].emUnits, _scale))
+      return false;
+  }
   for (size_t i = 0; i < m_sprites.size(); ++i)
-    sprites.push_back(Neuron::DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
-  m_atlas = PackGlyphs(fonts, sprites);
-  // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
+  {
+    if (m_pixelSizes[m_fonts.size() + i] != PixelSize(m_sprites[i].sizeUnits, _scale))
+      return false;
+  }
+  return true;
+}
+
+void Neuron::UiPipeline::UseAtlas(UiAtlas _atlas)
+{
+  m_atlas = std::move(_atlas.glyphs);
+  m_pixelSizes = std::move(_atlas.pixelSizes);
+  // Outside a batch the upload waits for every frame in flight, so the old texture is no longer read when it is replaced.
   m_atlasTexture =
     m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM, std::as_bytes(std::span(m_atlas.coverage)));
   const D3D12_SHADER_RESOURCE_VIEW_DESC view{
@@ -166,13 +197,13 @@ void Neuron::UiPipeline::Rasterize(float _scale)
     .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
     .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
     .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1, .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
-  m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+  m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_renderer.ShaderViewCpu(m_atlasView));
 }
 
 void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
 {
-  if (PixelSizes(_scale) != m_pixelSizes)
-    Rasterize(_scale);
+  if (!IsRasterizedAt(_scale))
+    UseAtlas(RasterizeUiAtlas(m_fonts, m_sprites, _scale));
   m_widthPixels = static_cast<float>(_widthPixels);
   m_heightPixels = static_cast<float>(_heightPixels);
   m_frameVertices.clear();
@@ -249,6 +280,19 @@ void Neuron::UiPipeline::DrawSprite(std::size_t _sprite, float _left, float _top
   AddQuad(std::round(_left), std::round(_top), std::round(_left + _width), std::round(_top + _height), u0, v0, u1, v1, _color);
 }
 
+void Neuron::UiPipeline::SetImage(D3D12_GPU_DESCRIPTOR_HANDLE _view) noexcept
+{
+  m_imageView = _view;
+}
+
+void Neuron::UiPipeline::DrawImage(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _u0,
+                                   float _v0, float _u1, float _v1)
+{
+  if (m_imageView.ptr == 0)
+    return;
+  AddQuad(_left, _top, _left + _width, _top + _height, _u0 + IMAGE_U_OFFSET, _v0, _u1 + IMAGE_U_OFFSET, _v1, _color);
+}
+
 void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
 {
   if (m_frameVertices.empty())
@@ -264,13 +308,13 @@ void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _fram
     .StrideInBytes = sizeof(Vertex),
   };
   const std::array<float, SCREEN_CONSTANT_COUNT> screen{m_widthPixels, m_heightPixels, 0.0f, 0.0f};
-  ID3D12DescriptorHeap* heaps[] = {m_descriptorHeap.get()};
 
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
-  _commandList->SetDescriptorHeaps(1, heaps);
   _commandList->SetGraphicsRoot32BitConstants(SCREEN_PARAMETER, SCREEN_CONSTANT_COUNT, screen.data(), 0);
-  _commandList->SetGraphicsRootDescriptorTable(ATLAS_PARAMETER, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
+  _commandList->SetGraphicsRootDescriptorTable(ATLAS_PARAMETER, m_renderer.ShaderViewGpu(m_atlasView));
+  // A table that is never sampled is still bound to a view, the atlas's, while no image is set.
+  _commandList->SetGraphicsRootDescriptorTable(IMAGE_PARAMETER, m_imageView.ptr != 0 ? m_imageView : m_renderer.ShaderViewGpu(m_atlasView));
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->IASetVertexBuffers(0, 1, &vertexView);
   _commandList->IASetIndexBuffer(&m_indexBufferView);

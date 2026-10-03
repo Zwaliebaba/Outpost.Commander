@@ -2,6 +2,44 @@
 
 namespace Outpost
 {
+// What the client loads from the package and builds on the CPU before it can draw (ADR-049): the model catalog, the
+// camera's settings, every model's meshes and their crease lines, the starfield and the particle sprite. Making it needs
+// no device, so the shell makes it on a thread of its own while the window and the device are created.
+struct ClientAssets
+{
+  // A piece of a model (ADR-045): its triangles, their creases as lines (ADR-027), empty when there are none, and how the
+  // piece spins; nothing for the faces that stand still.
+  struct Piece
+  {
+    Neuron::MeshData faces;
+    Neuron::MeshData edges;
+    std::optional<Neuron::MeshPart> spin;
+  };
+
+  // A model: its pieces, and its whole mesh with its hardpoints.
+  struct Model
+  {
+    std::vector<Piece> pieces;
+    Neuron::MeshData shape;
+  };
+
+  ModelCatalog catalog;
+  CameraSettings camera;
+  // In the catalog's order: each set's models after the set before.
+  std::vector<Model> models;
+  Starfield sky;
+  Neuron::TextureData particleSprite;
+};
+
+// Reads Models.json, Camera.json, every model's mesh and the particle sprite from the package's Assets folder, and builds
+// what the client draws from them. Throws Neuron::Exception naming the file when a data file or a mesh is missing or
+// cannot be read, so that no model is silently left out. It may run on any thread.
+[[nodiscard]] ClientAssets LoadClientAssets();
+
+// The interface's fonts and sprites rasterized for a back buffer of this size (ADR-030). It needs no device and may run on
+// any thread. Throws Neuron::Exception when none of a font's families is installed.
+[[nodiscard]] Neuron::UiAtlas RasterizeInterface(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
+
 // The client's view of the game: every model loaded into video memory, the camera, and the world drawn through it from
 // interpolated snapshots (task 2.5, ADR-013). It never sees server state, only what the transport brings. It starts on the
 // main menu; the shell starts a match on it, and takes it back to the menu, when the player asks for either (task 6.2).
@@ -16,10 +54,10 @@ public:
     BackToMenu
   };
 
-  // Reads Models.json and Camera.json from the package's Assets folder and uploads every model's mesh. Throws
-  // Neuron::Exception naming the file when a data file or a mesh is missing or cannot be read, so that no model is
-  // silently left out. _ticksPerSecond is the server's rate, which the snapshots are interpolated at.
-  GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond);
+  // Builds the pipelines and uploads _assets and _interface, which LoadClientAssets and RasterizeInterface made, in the
+  // renderer's batch of uploads when one is open. _ticksPerSecond is the server's rate, which the snapshots are
+  // interpolated at. Throws winrt::hresult_error when the device fails.
+  GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond, ClientAssets _assets, Neuron::UiAtlas _interface);
 
   // Shows a new match from its first snapshot: whatever the last match left in the view, the selection, the designer and
   // the effects is gone, and the camera centers again on the player's fleet.
@@ -49,6 +87,9 @@ public:
 
   // Draws the world into the frame the renderer has begun.
   void Render(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
+
+  // Draws the HUD, the windows or the menu over the world, after Renderer::BeginInterface (ADR-050).
+  void RenderInterface(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
 
   // Task 2.7's order-to-response probe. When the frame just drawn is the first to show a ship of the last move order
   // visibly respond, its center or nose moved by a pixel or more, this returns when the order's input was read, once. The caller takes the time after presenting
@@ -94,6 +135,23 @@ private:
     std::optional<Neuron::MeshPart> spin;
   };
 
+  // A model as the client holds it: its pieces on the GPU, its hardpoints (ADR-018), its triangles on the CPU for an
+  // explosion to break (ADR-026), and for a side's Mining Rig, the feet it stands on (ADR-044).
+  struct LoadedModel
+  {
+    std::vector<ModelPiece> pieces;
+    std::vector<Neuron::MeshHardpoint> hardpoints;
+    Neuron::MeshData shape;
+    std::optional<std::vector<DirectX::XMFLOAT3>> feet;
+  };
+
+  // Where the model _set/_model is in m_models, found by name in the catalog with no key built, since it is asked for
+  // every model drawn. Throws Neuron::Exception for a model that is not loaded.
+  [[nodiscard]] std::size_t ModelIndex(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const LoadedModel& LoadedModelOf(std::string_view _set, std::string_view _model) const
+  {
+    return m_models[ModelIndex(_set, _model)];
+  }
   [[nodiscard]] const std::vector<ModelPiece>& ModelPieces(std::string_view _set, std::string_view _model) const;
   // The world matrix that draws _piece of a model drawn by _world, turned as far as its spin has gone at the view's tick.
   [[nodiscard]] DirectX::XMFLOAT4X4 PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept;
@@ -111,19 +169,20 @@ private:
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
-  void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // Queues _entity's model for the frame's batches of faces and lines (ADR-053).
+  void QueueEntity(const EntityView& _entity);
   // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-026), before the view
   // takes the snapshot, so that the view still holds what blew up.
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // The model _set/_model placed by _world: its faces _color at _fillShade now, and its creases over them as lines,
-  // lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
-  void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                 const DirectX::XMFLOAT4& _color, float _fillShade);
-  // A structure drawn to its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
+  // The model _set/_model placed by _world: its faces _color at _fillShade, queued for the frame's batch of faces
+  // (ADR-053), and its creases over them as lines, lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
+  void QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color,
+                  float _fillShade);
+  // A structure queued at its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
   // (task 4.2).
-  void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  void QueueStructure(const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
@@ -193,8 +252,11 @@ private:
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
   Designer m_designer;
-  // What the player has seen of the map, when the match is played under fog of war (ADR-024).
+  // What the player has seen of the map, when the match is played under fog of war (ADR-024); the newest snapshot's tick it
+  // was brought up to date at, and the revision of it the ground mask's texture holds (ADR-052).
   FogOfWar m_fog;
+  std::optional<std::uint64_t> m_fogTick;
+  std::optional<std::uint64_t> m_fogRevisionShown;
   // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;
@@ -221,10 +283,8 @@ private:
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
-  // Keyed by "<set>/<model>".
-  std::map<std::string, std::vector<ModelPiece>, std::less<>> m_modelPieces;
-  std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
-  std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
+  // Every set's models in the catalog's order, each set's after the one before.
+  std::vector<LoadedModel> m_models;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
   float m_frameSeconds = 0.0f;
   // The ground's grid, as lines.
@@ -235,15 +295,15 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
-  // The lines of the models drawn this frame, drawn together after them; and the structures' rings.
-  std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
-  std::vector<Neuron::MeshPipeline::LineDraw> m_ringDraws;
+  // The faces of the models drawn this frame, drawn together with each mesh's copies in one draw (ADR-053); their lines,
+  // drawn together after them; and the structures' rings.
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_faceDraws;
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_lineDraws;
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_ringDraws;
   // A Mining Rig's ring over its rock, made afresh for each rig as it is drawn.
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
-  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelPieces.
-  std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
   // Alt is held this frame, and every ship and structure shows its health bar.
   bool m_everyHealthBar = false;
@@ -262,6 +322,8 @@ private:
   };
 
   void WatchForResponse();
+  // The last frame's entities, in identifier order like m_entities. The two trade storage each frame, so that neither is
+  // allocated again.
   std::vector<EntityView> m_previousEntities;
   std::optional<ResponseProbe> m_probe;
   std::optional<std::chrono::steady_clock::time_point> m_responseShown;
