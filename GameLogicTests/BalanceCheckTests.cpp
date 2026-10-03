@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "RepositoryData.h"
-#include "Q2Check.h"
+#include "BalanceCheck.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -30,7 +30,7 @@ int Wins(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMo
 }
 } // namespace
 
-TEST_CLASS(Q2CheckTests)
+TEST_CLASS(BalanceCheckTests)
 {
 public:
   // The check's designs are the game's: the same stats DesignStatsFor derives, and the model's short codes.
@@ -141,26 +141,27 @@ public:
     }
   }
 
-  // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release and hours in Debug, so it runs only
-  // when OUTPOST_Q2_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in Release:
-  //   set OUTPOST_Q2_FULL=1
+  // Task 3.4: the whole balance check against the simulation. It takes minutes in Release and hours in Debug, so it runs
+  // only when OUTPOST_BALANCE_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in
+  // Release:
+  //   set OUTPOST_BALANCE_FULL=1
   //   vstest.console.exe x64\Release\GameLogicTests.dll
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
-  // TestCategory trait. The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The
-  // verdicts are recorded in design §12.
-  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck) TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full") END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(TheFullCheck)
+  // TestCategory trait. The report goes to the test's output and to BalanceCheck-report.txt in the temporary folder.
+  // The verdicts are recorded in design §12.
+  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
+  TEST_METHOD_ATTRIBUTE(L"TestCategory", L"BalanceFull") END_TEST_METHOD_ATTRIBUTE() TEST_METHOD(TheFullCheck)
   {
-    if (GetEnvironmentVariableW(L"OUTPOST_Q2_FULL", nullptr, 0) == 0)
+    if (GetEnvironmentVariableW(L"OUTPOST_BALANCE_FULL", nullptr, 0) == 0)
     {
-      Logger::WriteMessage("Not run: set OUTPOST_Q2_FULL to run the full Q2 check.");
+      Logger::WriteMessage("Not run: set OUTPOST_BALANCE_FULL to run the full balance check.");
       return;
     }
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const CheckResult result = RunQ2Check(tuning, {});
-    std::ofstream(std::filesystem::temp_directory_path() / "Q2Check-report.txt") << result.report;
+    const CheckResult result = RunBalanceCheck(tuning, {});
+    std::ofstream(std::filesystem::temp_directory_path() / "BalanceCheck-report.txt") << result.report;
     Logger::WriteMessage(result.report.c_str());
-    Assert::IsTrue(result.Passed(), L"The Q2 check does not pass; the report says where.");
+    Assert::IsTrue(result.Passed(), L"The balance check does not pass; the report says where.");
   }
 };
 } // namespace GameLogicTests

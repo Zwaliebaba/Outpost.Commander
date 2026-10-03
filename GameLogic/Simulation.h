@@ -18,7 +18,7 @@ enum class ShipOrder : std::uint8_t
   Work
 };
 
-// How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the Q2 check's two
+// How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the balance check's two
 // extremes, forced by its headless battles (task 3.4) and by nothing in a match.
 enum class TargetRule : std::uint8_t
 {
@@ -277,7 +277,7 @@ public:
     return m_winner;
   }
 
-  // How every ship picks its target. Only the Q2 check's headless battles change it (task 3.4).
+  // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
   {
     m_targetRule = _rule;

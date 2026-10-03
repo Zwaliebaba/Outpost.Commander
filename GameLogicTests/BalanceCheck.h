@@ -2,9 +2,10 @@
 
 namespace GameLogicTests
 {
-// Design §3's Q2 check, played by the real simulation instead of Tools/BattleModel.py's abstract clumps (task 3.4). It
-// follows the model's method: the same stages, budgets, fire modes, criteria (a)-(d) and confidence intervals. Two things
-// differ, and both are what the simulation is.
+// The balance check of design §3, played by the real simulation instead of Tools/BattleModel.py's abstract clumps (task
+// 3.4). The MVP's documents and the ADRs call it the Q2 check, after the MVP's question it answers: does ship design
+// matter? It follows the model's method: the same stages, budgets, fire modes, criteria (a)-(d) and confidence
+// intervals. Two things differ, and both are what the simulation is.
 //   - Armies are whole ships. The model fields the Ore left over as a fractional ship; the simulation cannot. Battle k
 //     of n spends the budget at the center of the k-th of n equal slices of the ±15% window, and buys as many whole
 //     ships as that affords. The Ore left over is not fielded.
@@ -119,5 +120,5 @@ struct CheckResult
                         std::uint32_t _battles, const std::optional<Outpost::SightTuning>& _fog = std::nullopt);
 
 // The check, against _tuning.
-[[nodiscard]] CheckResult RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options);
+[[nodiscard]] CheckResult RunBalanceCheck(const Outpost::Tuning& _tuning, const CheckOptions& _options);
 } // namespace GameLogicTests

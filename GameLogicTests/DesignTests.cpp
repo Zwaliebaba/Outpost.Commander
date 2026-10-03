@@ -139,7 +139,7 @@ public:
     Assert::AreEqual(400, Outpost::HitHundredths(1400, 1000));
     Assert::AreEqual(9300, Outpost::HitHundredths(9500, 200));
     Assert::AreEqual(1400, Outpost::HitHundredths(1400, 0));
-    // Fractional armor and damage, as the Q2 check's robustness sweep makes them.
+    // Fractional armor and damage, as the balance check's robustness sweep makes them.
     Assert::AreEqual(630, Outpost::HitHundredths(1470, 840));
   }
 

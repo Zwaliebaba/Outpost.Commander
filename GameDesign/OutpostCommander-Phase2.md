@@ -115,7 +115,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result.
 - **A design has an optional fourth slot, the module**, empty by default, beside hull, drive and weapon. The designer gains a fourth row, a saved design gains a field, and a design's abbreviation gains its module's initials when it has one.
 - **The first module is the Sensor Array**: the ship sees 700 m, whatever its weapon; costs 40 Ore; and slows its ship by 10%. On a Small+Ion hull it is the minute-3 scout; on a heavy it is a spotter for the Rail Cannon.
 - **Later modules use the same slot**: a repair module, extra plating, a jammer that hides a group from enemy sensors. Each is its own decision.
-- **The Q2 check leaves out modules a battle between clumps cannot see**, as it leaves out the Pulse Drive's speed (Phase 1 gate H4): a design with a Sensor Array is not required to be worth building.
+- **The balance check leaves out modules a battle between clumps cannot see**, as it leaves out the Pulse Drive's speed (Phase 1 gate H4): a design with a Sensor Array is not required to be worth building.
 
 ---
 

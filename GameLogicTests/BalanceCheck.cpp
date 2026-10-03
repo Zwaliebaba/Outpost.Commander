@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Q2Check.h"
+#include "BalanceCheck.h"
 
 #include <atomic>
 #include <cmath>
@@ -914,7 +914,7 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
   return (alive[0] > 0 ? 1 : 0) - (alive[1] > 0 ? 1 : 0);
 }
 
-GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options)
+GameLogicTests::CheckResult GameLogicTests::RunBalanceCheck(const Outpost::Tuning& _tuning, const CheckOptions& _options)
 {
   // The stages of Phase 1 design §7: the starting components, then each tier's, each at the budgets that fit when its
   // components arrive, and each tier's research against the tier before.
@@ -948,7 +948,7 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
   if (!_options.quick)
     RunRobustness(_tuning, last, legs, _options, failures, report);
 
-  report += "\nQ2 check (design §3):\n";
+  report += "\nBalance check (design §3):\n";
   const std::array<std::pair<std::string, std::string>, 4> criteria{{
     {"a", "every design has a counter that wins at least 80%"},
     {"b", "the designs worth building use every hull, drive and weapon over each stage's budgets"},

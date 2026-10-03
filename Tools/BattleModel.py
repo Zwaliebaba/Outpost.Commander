@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Equal-Ore battle model for Q2 of the MVP design.
+"""Equal-Ore battle model for the balance check of the MVP design.
 
-Q2 asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3). This model answers the first-order
-version of that question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests
-decide, and the tuning numbers are tuned against them (§12). The model is not taught the simulation's geometry, so it
+The balance check asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3), the MVP's question Q2,
+after which the MVP's documents and the ADRs call it the Q2 check. This model answers the first-order version of that
+question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests decide, and the
+tuning numbers are tuned against them (§12). The model is not taught the simulation's geometry, so it
 can disagree with them (owner, 2026-10-01).
 
 It reads the hulls, drives, weapons and research topics from OutpostCommander/Assets/Tuning.json, the same file the game
@@ -36,7 +37,7 @@ The model is deliberately small, and each simplification is one the design docum
 Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose interval straddles its threshold is
 run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
 
-The Q2 check (§3) runs at the stages of Phase 1 design §7: the starting components (those no research topic unlocks), at
+The balance check (§3) runs at the stages of Phase 1 design §7: the starting components (those no research topic unlocks), at
 2,000-4,500 Ore; tier 1's, the MVP's every component, at 2,000-12,000; tier 2's at 4,500-12,000; and tier 3's at
 6,000-12,000. It passes when, at every budget of every stage and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
@@ -51,7 +52,7 @@ The Q2 check (§3) runs at the stages of Phase 1 design §7: the starting compon
       Pulse Drive to be worth building: its case is speed, which no battle here sees.
 
 Usage:
-  python Tools/BattleModel.py                        the Q2 check against OutpostCommander/Assets/Tuning.json
+  python Tools/BattleModel.py                        the balance check against OutpostCommander/Assets/Tuning.json
   python Tools/BattleModel.py --detail               also print every win-rate matrix and the shots-to-kill table
   python Tools/BattleModel.py --quick                skip the robustness sweep in (c)
   python Tools/BattleModel.py --set Small.hp=220     try a number without editing the data (repeatable)
@@ -503,7 +504,7 @@ def settle(pool, contests, threshold, seeds, max_seeds, dt):
   return results
 
 
-# ---- Matrices, the equilibrium mix and the Q2 check ------------------------------------------------------------------
+# ---- Matrices, the equilibrium mix and the balance check -------------------------------------------------------------
 
 
 def win_matrix(pool, designs, budget, focus, seeds, dt):
@@ -743,7 +744,7 @@ def run(args):
             f"{'focus' if focus else 'spread'} fire ({wins / n:.0%} of {n})")
       print(f"\nRobustness: {len(tasks)} counter checks under one-number changes of +/-5%.")
 
-  print("\nQ2 check (§3):")
+  print("\nBalance check (§3):")
   verdicts = {
     "a": "every design has a counter that wins at least 80%",
     "b": "the designs worth building use every hull, drive and weapon over each stage's budgets",

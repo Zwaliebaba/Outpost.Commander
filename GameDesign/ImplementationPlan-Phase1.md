@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
+| 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
@@ -57,12 +57,12 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 | H1 | The Flak Battery, Rail Cannon and Pulse Drive numbers. **Decided on 2026-10-02:** as proposed, as starting values. | design §5 | — |
 | H2 | The 17 new research topics: prerequisites, effects, Ore and time. **Decided on 2026-10-02:** as proposed. | design §6 | — |
 | H3 | The 5 km map's rings, yields, reserves, and the 20% trickle. **Decided on 2026-10-02:** as proposed; the layout is confirmed in 11.2. | design §8 | — |
-| H4 | Whether Q2's (b) exempts the Pulse Drive. **Decided on 2026-10-02:** it does, and play judges it. | design §7 | — |
+| H4 | Whether the balance check's (b) exempts the Pulse Drive. **Decided on 2026-10-02:** it does, and play judges it. | design §7 | — |
 | H5 | A lost Command Station stays lost; the last Shipyards are revealed. **Decided on 2026-10-02:** both, as proposed. | design §4 | — |
 | H6 | The designer's colors and sizes, from the mockup | design §11 | 9.3 (closed at its owner run) |
 | H7 | Cascadia Mono on the development machine, or Consolas. **Decided on 2026-10-02:** 9.1 checks, and falls back to Consolas. | design §11 | — |
 | H8 | The camera's zoom limit on the 5 km map | design §8 | nothing; decided after 11.2's owner run |
-| H9 | Whether Q2's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds. **Decided on 2026-10-03:** only those the tier adds. | design §7, §15 | — |
+| H9 | Whether the balance check's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds. **Decided on 2026-10-03:** only those the tier adds. | design §7, §15 | — |
 | H10 | What the Flak Battery is for, beyond the swarm. **Decided on 2026-10-03:** a role against the Medium hull too, tuned in 10.3. | design §5, §15 | — |
 
 ---
@@ -110,7 +110,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Goal:** Q4's tick half met with the orders included: no tick over 5 ms at 200 ships and 40 structures on the development machine.
 - **Scope:** what 8.1 finds. Design §10 names the ways open to it. Any part of an order that moves to later ticks is done within Q5's 150 ms, which Q5 is measured again to show.
 - **ADR:** a new one: the change, superseding the parts of ADR-010 it changes.
-- **Acceptance:** `MovementTests` and `PathfinderTests` still pass, and the Q2 check's tier-1 stage still gives the MVP's report: a change to when ships start moving can change a battle, and if it does, the change is reported and the owner decides.
+- **Acceptance:** `MovementTests` and `PathfinderTests` still pass, and the balance check's tier-1 stage still gives the MVP's report: a change to when ships start moving can change a battle, and if it does, the change is reported and the owner decides.
 - **Verify:** CI; **owner run** of `--measure --load` and Q5's measurement on the development machine. The figures go to design §10 and the MVP design's Q4 row is noted as superseded.
 - **As built:** [ADR-032](../Design/ADR/ADR-032-order-ticks.md), which records the measurement and the figures.
   - **The measurement.** 8.1's parts, timed in a Linux build of the simulation with clang 18 and counted with callgrind, on task 2.7's load. The owner's breakdown from the development machine was not waited for: the container's order ticks are about a third of the MVP's on both the first and the later ticks, which is enough to say where the time goes. The breakdown is in ADR-032 and design §10.
@@ -118,7 +118,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **A large order** of more than `Simulation::SPLIT_ORDER_SHIPS`, 32, plans every other ship in its own tick and the rest in the next, and sets off then (`Simulation::PlannedOrder`, `Plan`, `PlanPaths`, `SetOff`, `FinishPlannedOrders`; `GroupRoutes` carries its routes over with `TakeRoutes`).
   - **A search** sorts the corners the start may see 64 at a time instead of heaping them all, and a ship passes over a route that cannot come within the detour limit (`GroupRoutes::ShortestJoinMeters`). Both are checked to give the same paths: the load ends in the same state, bit for bit, with and without them.
   - **Tests.** `MovementTests`: a large order planned over two ticks, held, then set off at one pace and arrived, a copy part-way equal to its original; a ship ordered again leaving its planning group; dropped graphs built on the quiet ticks after a structure, and an order then finding its graph built. Every `GameLogicTests` suite was also run in the container against a stand-in for the test framework: 164 passed.
-  - **The Q2 check** was run in full in the container before and after, and passes all four criteria both times. Large armies set off a tick later, so the shares of what is worth building move by a few points; ADR-032 lists the two that move more. The tier-1 stage's verdicts are the MVP's; whether its shares may move is the owner's to decide.
+  - **The balance check** was run in full in the container before and after, and passes all four criteria both times. Large armies set off a tick later, so the shares of what is worth building move by a few points; ADR-032 lists the two that move more. The tier-1 stage's verdicts are the MVP's; whether its shares may move is the owner's to decide.
   - **Not built or run on Windows in the container.** CI builds Debug|x64 and runs the suites. The owner's `--measure --load` run in Release|ARM64 is what closes the task and puts the development machine's figures in design §10.
 
 ---
@@ -223,7 +223,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The simulation.** Structures are placed with their owner's hit points and raised, keeping their share, when the topic finishes; a structure weapon fires at its owner's rate; a design's speed and every ship's follow the speed upgrade; the Constructors build and repair at their owner's rate. The ore reserve waits in `Upgrades` for task 11.1.
   - **13 of the 17 topics** are in `Tuning.json`: 9, 12–18, 20, 21 and 23–25. Topics 10, 11, 19 and 22 name the Pulse Drive, the Flak Battery and the Rail Cannon, which the loader refuses before they exist, so they arrive with them in 10.2.
   - **The research window** lists topics tier by tier, shows each card's tier, and edges a gateway in gold.
-  - **The Q2 checks.** Both the C++ check and `Tools/BattleModel.py` add percentages, read the new effects and leave out by name those a clump's battle cannot feel; their (d) stays over tier 1's topics until 10.3.
+  - **The balance checks.** Both the C++ check and `Tools/BattleModel.py` add percentages, read the new effects and leave out by name those a clump's battle cannot feel; their (d) stays over tier 1's topics until 10.3.
   - **Tests.** `TuningTests`: the new effects load, each tier rule is refused when broken, and the repository file's every member loads, `tier` included. `ResearchTests`: stacking of hulls and of a weapon's rate, and every new factor; a gateway gating its tier, queued with a topic of its tier, and changing no rate; Reinforced Structures on standing, new, enemy and test structures; Drive Harmonics on standing and new warships and Constructors, and Rapid Construction building faster. `HudTests`: the topics tier by tier and the gateway's card.
   - **Built and tested in CI** on Debug|x64; the container first ran the suites against a stand-in for the test framework. Not yet run.
 
@@ -237,20 +237,20 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **As built:** [ADR-034](../Design/ADR/ADR-034-shot-looks.md).
   - **The tuning data.** The Pulse drive (3), the Flak Battery (4) and the Rail Cannon (5), with design §5's numbers, and the four topics that waited for them: 10 Pulse Drive, 11 Flak Battery, 19 Rail Cannon and 22 Proximity Fuses. All 25 topics are in. Their abbreviations, **P**, **FB** and **RC**, come from their names as every component's do. The Flak Battery splashes through the Missile Rack's mechanism (ADR-014), which needed no change.
   - **The looks.** `Models.json` gives each weapon whose shot is not a tracer its look, the Lance's beam and the Rail Cannon's new slug, a white line that joins gun and target and lingers; the Flak Battery fires tracers with its splash ring. The Pulse Drive's exhaust is a provisional lime green, for the owner to pick at the run.
-  - **The Q2 checks** stay on tier 1's components, the MVP's 18 designs, in both the C++ check, through `PartsThrough`, and `Tools/BattleModel.py`, until 10.3 gives tiers 2 and 3 their stages.
-  - **Tests.** `DesignTests.DerivesThePhaseOneComponents`: each one's derived stats, its lock until its topic, its name and abbreviation. `CombatTests.FlakSplashesItsHits` and `ARailCannonOutrangesTheLance`, which also breaks a Pulse raider in one hit. `Q2CheckTests.FieldsTheGamesDesigns`: 45 designs, 18 through tier 1 and 36 through tier 2. `ModelCatalogTests.GivesEachWeaponItsShot` and the Pulse exhaust; `CombatEffectsTests.ASlugJoinsGunAndTargetAndLingers` and `AWeaponNotListedFiresTracers`.
+  - **The balance checks** stay on tier 1's components, the MVP's 18 designs, in both the C++ check, through `PartsThrough`, and `Tools/BattleModel.py`, until 10.3 gives tiers 2 and 3 their stages.
+  - **Tests.** `DesignTests.DerivesThePhaseOneComponents`: each one's derived stats, its lock until its topic, its name and abbreviation. `CombatTests.FlakSplashesItsHits` and `ARailCannonOutrangesTheLance`, which also breaks a Pulse raider in one hit. `BalanceCheckTests.FieldsTheGamesDesigns`: 45 designs, 18 through tier 1 and 36 through tier 2. `ModelCatalogTests.GivesEachWeaponItsShot` and the Pulse exhaust; `CombatEffectsTests.ASlugJoinsGunAndTargetAndLingers` and `AWeaponNotListedFiresTracers`.
   - **Design §6's tier 2 is 890 s, not 900 s**, by its own table, so the total is 2,590 s; still about 43 minutes. §6 now says so; the table's times are unchanged.
   - **Built and tested in CI** on Debug|x64; the container first ran the suites against a stand-in for the test framework. Not yet run.
 
-### 10.3 — The Q2 check per tier, and tuning against it
+### 10.3 — The balance check per tier, and tuning against it
 
 - **Gate:** H4, decided.
 - **Goal:** design §7. P3.
-- **Scope:** `Q2Check` gains the stages of design §7: starting, tier 1, tier 2 and tier 3, each with its components and budgets, and (d) per tier. Run it, tune the tier-2 and tier-3 numbers against it as B.1 tuned §12, and record each number that moved and why in design §5 and §6. Tier 1's numbers move only if a later tier's result requires it, and the owner decides that.
-- **Acceptance:** `Q2CheckTests.TheFullCheck` passes all four criteria at every stage, in the Linux container; `TheRecordedCountersHold` gains a counter per new component.
+- **Scope:** `BalanceCheck` gains the stages of design §7: starting, tier 1, tier 2 and tier 3, each with its components and budgets, and (d) per tier. Run it, tune the tier-2 and tier-3 numbers against it as B.1 tuned §12, and record each number that moved and why in design §5 and §6. Tier 1's numbers move only if a later tier's result requires it, and the owner decides that.
+- **Acceptance:** `BalanceCheckTests.TheFullCheck` passes all four criteria at every stage, in the Linux container; `TheRecordedCountersHold` gains a counter per new component.
 - **Verify:** CI; the owner runs the check of record in Release|ARM64 on the development machine, and its time is recorded.
 - **As built so far:**
-  - **The staged check.** `RunQ2Check` plays design §7's stages: tier 1 at 2,000–12,000 Ore, the starting components at 2,000–4,500, tier 2 at 4,500–12,000 and tier 3 at 6,000–12,000, each with the components through its tier and no upgrades. (d) runs per tier: a topic of tier 1 against the starting designs at the starting budgets, as the MVP's; a topic of a later tier at its tier's budgets against every design and upgrade of the tier before, the researching side having those too. Only the designs a topic adds or changes are tested, since one the other side has with the same numbers is not the topic's. (b) reports the Pulse Drive when no design worth building uses it and does not fail on it. `CheckOptions::lastTier` limits the stages; `Tools/BattleModel.py` runs the same stages.
+  - **The staged check.** `RunBalanceCheck` plays design §7's stages: tier 1 at 2,000–12,000 Ore, the starting components at 2,000–4,500, tier 2 at 4,500–12,000 and tier 3 at 6,000–12,000, each with the components through its tier and no upgrades. (d) runs per tier: a topic of tier 1 against the starting designs at the starting budgets, as the MVP's; a topic of a later tier at its tier's budgets against every design and upgrade of the tier before, the researching side having those too. Only the designs a topic adds or changes are tested, since one the other side has with the same numbers is not the topic's. (b) reports the Pulse Drive when no design worth building uses it and does not fail on it. `CheckOptions::lastTier` limits the stages; `Tools/BattleModel.py` runs the same stages.
   - **What it finds with the 10.2 numbers**, run in the container at 20 battles a pairing without (c):
     - **(a) holds** at tiers 2 and 3: every design has a counter.
     - **(b) fails on the Flak Battery**, at every budget of tiers 2 and 3. It is all or nothing: it beats every Small design 20–0 and loses 0–20 to every Medium and Large one, and a Small design is never most of the mix. Its 20 m splash also reaches nobody: the formation stands Small hulls 24 m apart (three footprint radii, ADR-010). A 26 m splash, or a hit of 12 or 14 at 60 Ore, still loses 0–20 to every Medium design and is still never worth building.

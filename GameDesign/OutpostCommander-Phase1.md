@@ -4,7 +4,7 @@ Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-02, from the owne
 
 This document says what Phase 1 builds on top of the finished MVP. It **amends** [the MVP design](OutpostCommander-MVP.md) rather than replacing it: everything the MVP design says still holds unless this document changes it, and where the two differ, this one is the authority. AGENTS.md still says how the code is written, `Design/ADR/` records the engineering decisions, and [the Phase 1 plan](ImplementationPlan-Phase1.md) gives the order of the work.
 
-The names, numbers and layouts here were first written as proposals for the owner to review, and the owner accepted them on 2026-10-02 (gates H1–H5). The numbers are first guesses, as the MVP's §12 began: the Q2 check and the P1 measurement tune them. What is still open is in §15.
+The names, numbers and layouts here were first written as proposals for the owner to review, and the owner accepted them on 2026-10-02 (gates H1–H5). The numbers are first guesses, as the MVP's §12 began: the balance check and the P1 measurement tune them. What is still open is in §15.
 
 ---
 
@@ -28,7 +28,7 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 |---|---|---|
 | P1 | Does a match last 45–60 minutes? | A match the owner plays against the AI **without rushing it** lasts 45–60 minutes. Two AIs on the real server give a repeatable figure besides: the median length of 10 seeded AI-against-AI matches is recorded, with the spread. |
 | P2 | Does each tier change the game? | In the match log, what each side builds after it finishes a tier's gateway topic differs visibly from what it built before (as Q3, per tier). |
-| P3 | Does ship design still matter? | The Q2 check, restructured per tier (§7), passes all four criteria at every tier. |
+| P3 | Does ship design still matter? | The balance check, restructured per tier (§7), passes all four criteria at every tier. |
 | P4 | Does the engine hold at Phase 1's scale? | The order ticks that missed Q4 meet 5 ms at 200 ships. Frame and tick times are recorded on the 5 km map at the ship counts a 60-minute match actually reaches, which the match log records (§10). |
 | P5 | Does the presentation read? | The owner judges the designer against the mockup, the floating windows, and the banking, in play. |
 
@@ -39,7 +39,7 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 - **The length comes from stages: 45–60 minutes first.** Tiers, the win condition and the map make the match longer, not slower clocks. Two hours is decided after P1 is measured.
 - **The win condition.** A player loses when its Command Station **and** every Shipyard are destroyed (§4).
 - **Content.** Two new weapons and one new drive (§5), and no new hulls, so no new meshes. A research tree of three tiers and about 25 topics, with structure upgrades (§6). One map of about 5 km a side, on which ore runs out (§8).
-- **Banking is drawn by the client only** (§9). The simulation, the replay and the Q2 check do not change. Ships still turn on the spot at sharp corners, as ADR-010 has them, and so do not bank there.
+- **Banking is drawn by the client only** (§9). The simulation, the replay and the balance check do not change. Ships still turn on the spot at sharp corners, as ADR-010 has them, and so do not bank there.
 - **The designer** is one window for all of a player's designs, and its queue goes to a Shipyard picked in it. Its ×N adds N separate jobs, as many as the Shipyard's queue has free slots. The match keeps running while it is open (§11).
 - **Windows float and the HUD stays put** (§12). A window's position lasts until the game is closed.
 - **Fonts:** Bahnschrift and Cascadia Mono, which Windows installs, so the game still ships no font (§11).
@@ -66,7 +66,7 @@ The owner kept three answers that pull against the length target, and accepted w
 
 ## 5. Components
 
-Phase 1 adds two weapons and one drive. With three hulls, three drives and five weapons, there are **45 designs**, where the MVP had 18. None is available at the start: each is unlocked by research in tier 2 or 3 (§6). **Every number in this section is a first guess** for the Q2 check to tune, as the MVP's §12 began, accepted as the starting values (owner, 2026-10-02, gate H1).
+Phase 1 adds two weapons and one drive. With three hulls, three drives and five weapons, there are **45 designs**, where the MVP had 18. None is available at the start: each is unlocked by research in tier 2 or 3 (§6). **Every number in this section is a first guess** for the balance check to tune, as the MVP's §12 began, accepted as the starting values (owner, 2026-10-02, gate H1).
 
 ### The range ladder holds
 
@@ -82,7 +82,7 @@ No new weapon reaches past the Defence gun, so **the Missile Rack is still the o
 - **The Flak Battery** is the second answer to the swarm, beside the brawler's armour (MVP §7), and the one that scales with the swarm's size. Splash works as the Missile Rack's does (ADR-014): every other enemy within 26 m of the target's center takes the hit, after its own armour.
 - **The Rail Cannon** gives a heavy line an answer to the heavy Lance line: Large+Fusion+Rail beats Large+Fusion+Lance. It was meant to answer the Lance picket too, by outranging it by 20 m; in the simulation it does not, since ships stand at their own range rather than kite, and the picket still beats every heavy. **The Rail Cannon is the anti-heavy weapon, and the Flak Battery answers the picket** (owner, 2026-10-03): its range stays below the Defence gun's, and nothing in Phase 1 makes ships hold an enemy off at their range.
 
-### Tuned by the Q2 check (task 10.3)
+### Tuned by the balance check (task 10.3)
 
 The numbers above are the check's, not the first guesses (gate H1). What moved and why:
 
@@ -96,7 +96,7 @@ The numbers above are the check's, not the first guesses (gate H1). What moved a
 |---|---|---|---|---|---|---|
 | Pulse Drive | 2 | ×1.6 | ×0.75 | ×1.5 | 40 | **The raider.** The fastest ships in the game, and the most fragile. Small+Pulse moves at 96 m/s and goes from one start to the other in under a minute. |
 
-The Pulse Drive exists for the larger map. With ore that runs out, a player's income comes from rigs further and further from home (§8), and speed is what reaches them and gets away. **The Q2 check cannot price speed** (MVP §3): in a battle between two clumps, a Pulse ship is a weaker Ion ship. So the Pulse Drive will not be worth building in the check, and (b) exempts it (§7), as the MVP decided not to tighten (b) for drives (owner, 2026-10-02, gate H4).
+The Pulse Drive exists for the larger map. With ore that runs out, a player's income comes from rigs further and further from home (§8), and speed is what reaches them and gets away. **The balance check cannot price speed** (MVP §3): in a battle between two clumps, a Pulse ship is a weaker Ion ship. So the Pulse Drive will not be worth building in the check, and (b) exempts it (§7), as the MVP decided not to tighten (b) for drives (owner, 2026-10-02, gate H4).
 
 ### What the designer shows for each
 
@@ -114,7 +114,7 @@ A Research Lab still researches one topic at a time, a player still has one lab,
 
 ### The topics
 
-Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is the MVP's, unchanged, so the starting stage of the Q2 check stays the check of record.
+Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is the MVP's, unchanged, so the starting stage of the balance check stays the check of record.
 
 | # | Tier | Topic | Requires | Effect | Ore | Time |
 |---|---|---|---|---|---|---|
@@ -146,15 +146,17 @@ Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is
 
 Tier 1 takes 690 s, tier 2 890 s and tier 3 1,010 s: 2,590 s, about 43 minutes. Its Ore is 1,500, 2,700 and 3,600.
 
-**Ablative Armour was tuned by the Q2 check (task 10.3): +15% → +5%.** A Medium+Ion+Lance line with every hull plating of tiers 1 and 2 holds 585 hit points, 6.7 of the picket's 87-point Lance hits. Anything above about 4% more takes it to eight hits, and then the picket, its only answer among the tier 2 designs with the same upgrades, wins under half its battles at 6,000 Ore (33% under focus fire at +15%, 45% at +10%). At +5% it still breaks in seven, and the picket wins 95–100% at every tier 3 budget. A hit-point upgrade moves the same breakpoints armour would (§6); the next one should be checked against them first.
+**Ablative Armour was tuned by the balance check (task 10.3): +15% → +5%.** A Medium+Ion+Lance line with every hull plating of tiers 1 and 2 holds 585 hit points, 6.7 of the picket's 87-point Lance hits. Anything above about 4% more takes it to eight hits, and then the picket, its only answer among the tier 2 designs with the same upgrades, wins under half its battles at 6,000 Ore (33% under focus fire at +15%, 45% at +10%). At +5% it still breaks in seven, and the picket wins 95–100% at every tier 3 budget. A hit-point upgrade moves the same breakpoints armour would (§6); the next one should be checked against them first.
 
 **New kinds of effect** the tuning data and the battle model have to learn: a gateway that does nothing itself, an ore reserve, structure hit points, a structure weapon's fire rate, every ship's speed, and the Constructor's rates. Drive Harmonics changes speed only, so the turn rates stay final (MVP §12).
 
 ---
 
-## 7. The Q2 check, per tier
+## 7. The balance check, per tier
 
-The MVP's check plays every design against every other at each budget. With 45 designs instead of 18, a stage that fields them all plays about six times the battles. Cutting the check along the tiers, below, is not what saves time: it is what asks the right question, since a tier-3 component does not exist in a 2,000 Ore fight. Counted from the MVP's 1 min 51 s on the development machine, the three stages below take about 13 minutes there, before the 5% robustness sweep, which grows with the number of components too. It still runs only when `OUTPOST_Q2_FULL` is set, as now.
+The balance check is the MVP's Q2 check (MVP §3), renamed on 2026-10-03 for what it does rather than for the MVP's question it answered; the MVP's documents and the ADRs keep the old name.
+
+The MVP's check plays every design against every other at each budget. With 45 designs instead of 18, a stage that fields them all plays about six times the battles. Cutting the check along the tiers, below, is not what saves time: it is what asks the right question, since a tier-3 component does not exist in a 2,000 Ore fight. Counted from the MVP's 1 min 51 s on the development machine, the three stages below take about 13 minutes there, before the 5% robustness sweep, which grows with the number of components too. It still runs only when `OUTPOST_BALANCE_FULL` is set, as now.
 
 **The check runs at three stages**, each with the components available by then and budgets that fit when they arrive:
 
@@ -221,7 +223,7 @@ That is 24 ore asteroids holding 285,000 Ore. Asteroid fields stand between the 
 
 ## 9. Banking
 
-Ships lean into their turns as aircraft do. **It is drawn by the client and nothing else** (owner, 2026-10-02): the server still knows only a ship's position and heading, and the simulation, the snapshot, the replay and the Q2 check are unchanged.
+Ships lean into their turns as aircraft do. **It is drawn by the client and nothing else** (owner, 2026-10-02): the server still knows only a ship's position and heading, and the simulation, the snapshot, the replay and the balance check are unchanged.
 
 - **The angle comes from the turn.** A ship banks in proportion to its sideways acceleration: how fast its heading turns times how fast it moves. A ship turning on the spot moves at nothing and does not bank. A ship flying straight levels out.
 - **Each hull has its own limit and its own response**, as presentation data: a Small hull leans hard and quickly, up to about 35°, and a Large one slowly and only about 12°. The Constructor banks too, gently. The numbers are presentation data beside each model's length (ADR-011, ADR-018), not tuning data.
@@ -300,7 +302,7 @@ The game's screens become windows that float over the battlefield, and the HUD s
 The AI is not made harder to rush (§3). It is changed only so that it can play Phase 1 at all, through its settings file where it can be (ADR-020):
 
 - **It researches the 25 topics** in a fixed order, extended past tier 1.
-- **It counters the new designs:** answers to the Flak Battery, the Rail Cannon and the Pulse Drive's designs in its counters, and the new designs as answers where the Q2 check says they win.
+- **It counters the new designs:** answers to the Flak Battery, the Rail Cannon and the Pulse Drive's designs in its counters, and the new designs as answers where the balance check says they win.
 - **It follows the ore.** It builds on the nearest asteroids with ore left and moves on when one runs dry, rather than holding a fixed list of home and contested asteroids.
 - **It attacks production first** (§4): Shipyards, then the Command Station, then anything else.
 
@@ -324,14 +326,14 @@ Decided on 2026-10-02, from the owner's answers: §3.
 
 Decided on 2026-10-02, the gates:
 
-- **H1:** the Flak Battery, the Rail Cannon and the Pulse Drive start at the numbers in §5, for the Q2 check to tune.
+- **H1:** the Flak Battery, the Rail Cannon and the Pulse Drive start at the numbers in §5, for the balance check to tune.
 - **H2:** the research tree of §6 as written: tier 1 unchanged, the two gateways, and the 17 new topics.
 - **H3:** the 5 km map of §8: four rings, 24 ore asteroids, their yields and reserves, and the 20% trickle once one runs dry.
-- **H4:** Q2's (b) does not require the Pulse Drive to be worth building; play judges it (§7).
+- **H4:** the balance check's (b) does not require the Pulse Drive to be worth building; play judges it (§7).
 - **H5:** a lost Command Station is lost for good, and a player without one has its remaining Shipyards revealed to its opponent (§4).
 - **H7:** task 9.1 checks for Cascadia Mono, and falls back to Consolas.
 
 Decided on 2026-10-03, from task 10.3's first runs:
 
-- **H9:** Q2's (b) at tiers 2 and 3 asks only the components the tier adds to be worth building (§7). The run found the Mass Driver never worth building at tier 3, nor under focus fire at tier 2, and that is the MVP's numbers: with them no Mass Driver design was worth building under focus fire at 4,500 Ore or more. Tier 1's numbers do not move for it.
+- **H9:** the balance check's (b) at tiers 2 and 3 asks only the components the tier adds to be worth building (§7). The run found the Mass Driver never worth building at tier 3, nor under focus fire at tier 2, and that is the MVP's numbers: with them no Mass Driver design was worth building under focus fire at 4,500 Ore or more. Tier 1's numbers do not move for it.
 - **H10:** the Flak Battery gets a role against the Medium hull, beside breaking the swarm, and task 10.3 tunes it to one (§5). As first written it beat every Small design and lost every battle to every Medium and Large one, and was never worth building; its 20 m splash also reached no neighbor of a Small hull, which the formation stands 24 m away.

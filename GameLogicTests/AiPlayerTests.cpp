@@ -230,9 +230,9 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
-  // Task 10.4, from the Q2 check of task 10.3: the Flak Battery answers the swarm, the brawler, the picket and the Pulse
-  // raiders once unlocked; the Rail Cannon answers the heavies; missiles answer the Small Flak Battery, and the picket the
-  // Rail Cannon. Before an answer is unlocked, the MVP's answer or the default stands.
+  // Task 10.4, from the balance check of task 10.3: the Flak Battery answers the swarm, the brawler, the picket and the
+  // Pulse raiders once unlocked; the Rail Cannon answers the heavies; missiles answer the Small Flak Battery, and the
+  // picket the Rail Cannon. Before an answer is unlocked, the MVP's answer or the default stands.
   TEST_METHOD(AnswersThePhaseOneDesigns)
   {
     const Outpost::AiSettings settings = RepositorySettings();

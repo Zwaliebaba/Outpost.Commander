@@ -91,7 +91,7 @@ void CheckStartingSlot(const Outpost::Map& _map, size_t _player, PlanePosition _
   }
 }
 
-// Range is measured between centers, as the Q2 model measures it between clumps (ADR-014).
+// Range is measured between centers, as the balance check's model measures it between clumps (ADR-014).
 bool IsInRange(const Outpost::Entity& _ship, const Outpost::Entity& _target, float _rangeMeters) noexcept
 {
   const PlaneVector between = _target.position - _ship.position;
@@ -1062,8 +1062,8 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StopCo
   return CommandResult::Applied;
 }
 
-// Design §7's rule, or one of the Q2 check's extremes. Ships come before structures: a structure is chosen only when no
-// enemy ship is in range.
+// Design §7's rule, or one of the balance check's extremes. Ships come before structures: a structure is chosen only
+// when no enemy ship is in range.
 Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule)
 {
   const auto isEnemy = [&_ship](const Entity& _other)
@@ -1118,8 +1118,8 @@ Outpost::EntityId Outpost::Simulation::ChooseTarget(const Entity& _ship, float _
 
 // Every armed ship picks its target from where everything stands at the start of the tick and fires if its weapon is
 // ready. The hits land together at the end, so no shot depends on which ship was handled first, and a target can be hit
-// more than it needs: focus fire overkills, as in the Q2 model. Then the destroyed leave the world, and every order on
-// them ends.
+// more than it needs: focus fire overkills, as in the balance check's model. Then the destroyed leave the world, and
+// every order on them ends.
 void Outpost::Simulation::Fight()
 {
   struct Hit
@@ -1158,7 +1158,7 @@ void Outpost::Simulation::Fight()
       continue;
     }
     // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
-    // together (design §7, the Q2 model). A ship that lost its target only for a moment keeps its rhythm.
+    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
     if (ship.reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
       ship.reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
     ship.reloadMilliticks -= MILLITICKS_PER_TICK;
@@ -1168,8 +1168,8 @@ void Outpost::Simulation::Fight()
     // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
     ship.reloadMilliticks = std::max(ship.reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
 
-    // The Q2 check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells it
-    // that an enemy is in range.
+    // The balance check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells
+    // it that an enemy is in range.
     EntityId shotTarget = ship.target;
     if (m_targetRule != TargetRule::Nearest && ship.target != ship.attackTarget)
       shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
