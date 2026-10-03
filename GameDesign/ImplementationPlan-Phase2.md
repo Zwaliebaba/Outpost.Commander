@@ -27,8 +27,8 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 14.3 | The client shows territory, and builds Relays | 14.2 | — | in review: owner run |
 | 14.4 | An attacking group keeps its lanes (Phase 1's 7.3) | — | — | done, not yet built on Windows |
 | 14.5 | The AI claims its flanks | 14.1 | — | done, not yet built on Windows |
-| 15.1 | Domination | 14.1 | J4 decided | todo |
-| 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | todo |
+| 15.1 | Domination | 14.1 | J4 decided | done, not yet built on Windows |
+| 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | in review: owner run |
 | 16.1 | The module slot and the Sensor Array | — | J6 decided | todo |
 | 16.2 | The designer's module row | 16.1 | — | todo |
 | 17.1 | Alerts | 14.3 | J5 decided | todo |
@@ -132,12 +132,18 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one, with the tickets' units.
 - **Acceptance:** `DominationTests`: a drain of the design's size and interval, none at equal nodes, a lead of one draining a side in 50 minutes, the end at zero, and the end reason.
 - **Verify:** CI.
+- **As built:** [ADR-057](../Design/ADR/ADR-057-domination.md).
+  - **Tickets are kept in shares, as many to a ticket as the map has nodes**, so 30 × the difference ÷ 9 is whole and a lead of one ends a match in exactly 50 minutes; the snapshot shows whole tickets, rounded up.
+  - **`MatchEnding`** says how a match ended, in the simulation and the snapshot; `Simulation::EndMatch` ends it for either reason.
+  - **Tests.** `DominationTests`, on a fixture shared with `TerritoryTests` (`TerritoryMatch.h`); 212 `GameLogicTests` pass in the container.
+  - **Seeds 1 to 10** all end, at a median of 41:50; three end by domination.
 
 ### 15.2 — The client shows the tickets and how a match ended
 
 - **Scope:** both sides' tickets in the HUD beside the nodes; the banner names a domination.
 - **Acceptance:** `HudTests`.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-057](../Design/ADR/ADR-057-domination.md) decision 8. The territory panel moved under the research line's place, where its second row fits; `HudTests.ShowsTheTickets` and `DescribesHowTheMatchEnded`.
 
 ---
 
