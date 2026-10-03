@@ -80,7 +80,7 @@ No new weapon reaches past the Defence gun, so **the Missile Rack is still the o
 | Rail Cannon | 3 | 320 | 6.0 s | 240 m | — | 150 | **Kills the heavy, and outranges the Lance.** Six hits break a Large+Fusion hull, where a Lance needs 21. Against a Small hull most of the hit is wasted. |
 
 - **The Flak Battery** is the second answer to the swarm, beside the brawler's armour (MVP §7), and the one that scales with the swarm's size. Splash works as the Missile Rack's does (ADR-014): every other enemy within 26 m of the target's center takes the hit, after its own armour.
-- **The Rail Cannon** gives a heavy line an answer to the heavy Lance line: Large+Fusion+Rail beats Large+Fusion+Lance. It was meant to answer the Lance picket too, by outranging it by 20 m; in the simulation it does not, since ships stand at their own range rather than kite, and the picket still beats every heavy.
+- **The Rail Cannon** gives a heavy line an answer to the heavy Lance line: Large+Fusion+Rail beats Large+Fusion+Lance. It was meant to answer the Lance picket too, by outranging it by 20 m; in the simulation it does not, since ships stand at their own range rather than kite, and the picket still beats every heavy. **The Rail Cannon is the anti-heavy weapon, and the Flak Battery answers the picket** (owner, 2026-10-03): its range stays below the Defence gun's, and nothing in Phase 1 makes ships hold an enemy off at their range.
 
 ### Tuned by the Q2 check (task 10.3)
 

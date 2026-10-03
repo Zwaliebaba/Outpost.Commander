@@ -270,7 +270,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **As built:**
   - **The research order** runs through all 25 topics: tier 1 as before, then Relay Archives and the Flak Battery first, the Pulse Drive, the upgrades of the weapons it fields and the structures; then Precursor Vault and the Rail Cannon first. Every topic comes after its prerequisites, which `AiSettingsTests` checks against `Tuning.json`.
   - **The counters**, from task 10.3's battles: the Flak Battery is the first answer to the swarm, the brawler, the picket and every Pulse raider once the AI has it; the Rail Cannon to the heavy Mass Driver and Lance lines. The Medium Missile Rack answers the Small Flak Battery, the heavy Lance line the Medium and Large ones, and the picket every Rail Cannon design. An answer the AI has not unlocked falls through to the MVP's, as before, so nothing changes until tier 2.
-  - **Tests.** `AiPlayerTests.AnswersThePhaseOneDesigns`, and `ReachesTierThree`: against a player who does nothing, the AI opens tier 3 at tick 37,200, 31 minutes in, in the Linux container. It is the longest test in CI.
+  - **Tests.** `AiPlayerTests.AnswersThePhaseOneDesigns`, and `ReachesTierThree`: against a player who does nothing, the AI opens tier 3 at tick 37,200, 31 minutes in, in the Linux container. It is the longest test in CI, about four minutes in Debug, and stays there (owner, 2026-10-03): it is what caught depletion starving the AI's research.
 
 ---
 
