@@ -40,6 +40,8 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 - **P4, the engine at scale: not answered.** The worst order tick falls from 2.58 ms to 1.24 ms in the container, about 4.2 ms on the development machine by that ratio (ADR-032, §10). Neither the development machine's `--measure --load` nor the frame and tick times on the 5 km map at a 60-minute match's peak ship count were measured.
 - **P5, the presentation: yes** (owner, 2026-10-03): the designer, the floating windows and the banking read in play.
 
+**Two hours, which §1 left for after P1** (owner, 2026-10-03): not yet. Phase 2 keeps the 45–60 minute target and makes those minutes busier with territory, on this phase's 5 km map; the larger world is Phase 3's ([the Phase 2 draft](../OutpostCommander-Phase2.md), §3 and §7).
+
 ---
 
 ## 3. Decided by the owner on 2026-10-02

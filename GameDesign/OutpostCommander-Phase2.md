@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 2 Design: Territory
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day
+Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review
 
-This document says what Phase 2 builds on top of Phase 1. It is a **draft**: the owner's decisions of 2026-10-03 (§3) are settled, and everything else is a proposal for the owner to review, gated in §13 as Phase 1's were. Until it is accepted it binds nothing, and [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) stay the authority for what is built. Its one effect on Phase 1 is that Phase 1's 5 km map is laid out so that Phase 2 can be played on it (§11).
+This document says what Phase 2 builds on top of Phase 1. It is a **draft**: the owner's decisions of 2026-10-03 (§3) are settled, and everything else is a proposal for the owner to review, gated in §13 as Phase 1's were. Until it is accepted it binds nothing, and [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) stay the authority for what is built. Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
 
 ---
 
@@ -12,47 +12,53 @@ The owner's question of 2026-10-03: **today a match is two players building ship
 
 **Why the game sieges today.** It is not a missing feature; the rules make a siege the right play:
 
-- **Nothing in between is worth fighting for.** The home asteroids stand 260 m from the Command Station, under one Defence Platform's cover; a contested asteroid pays 8 Ore a second against home's 5; and in the MVP home ore never runs out. Phase 1's depletion (Phase 1 §8) starts to change this.
+- **Nothing in between is worth fighting for.** The home asteroids stand 260 m from the Command Station, under one Defence Platform's cover. The rings pay 5 Ore a second at home, 6 near, 8 contested and 10 rich (ADR-036), and Phase 1's depletion (Phase 1 §8) only begins to push a player outward.
 - **A small fight is a bad trade.** Battles between clumps follow Lanchester's square law, so concentration wins; the armed Command Station beats seven raiders and a Defence Platform five. A raid of three ships feeds the defender.
 - **Winning a small fight earns nothing back.** A rig destroyed costs its owner 50 Ore.
 - **Seeing the enemy means fighting it.** Sight is a ship's weapon range and 50 m (ADR-024): a Small Mass Driver ship sees 170 m.
-- **The AI waits for twelve ships**, then attacks, and the player meets the game through the AI.
+- **The AI masses before it moves.** It attacks with a group of 20 warships, 12 more for each tier opened, and regroups for 120 seconds after a fall-back (ADR-041, ADR-047); the player meets the game through the AI.
 
-**What makes it work in PlanetSide is players, not area.** Thousands of people each run one soldier, so a continent is full of fights. Here one commander runs an army, and a bigger map alone gives long travel, losses nobody saw, and still one decisive battle at the end. So Phase 2 makes **territory** the thing that is fought over, a **lattice** that keeps several fights going along a front, and the **tools to command at that scale**. The world grows with them, not before them.
+**What makes it work in PlanetSide is players, not area.** Thousands of people each run one soldier, so a continent is full of fights. Here one commander runs an army, and a bigger map alone gives long travel, losses nobody saw, and still one decisive battle at the end. So Phase 2 makes **territory** the thing that is fought over, a **lattice** that keeps several fights going along a front, and the **tools to command it**, on the map the owner already has. **The world grows in Phase 3** (§7), once Phase 2 has shown that territory works (owner, 2026-10-03).
 
 ---
 
 ## 2. What Phase 2 must show
 
-These play the part of Phase 1's P1–P5. A failed answer is still a result.
+These play the part of Phase 1's P1–P5. A failed answer is still a result. Each question that depends on the owner's play also has a figure from AI-against-AI matches, so that it has an answer whether or not the owner measures it (owner, 2026-10-03).
 
 | # | Question | How we know |
 |---|---|---|
-| S1 | Is there contact early? | In a match the owner plays against the AI without rushing, the first shot is fired by minute 5. The match log records it. |
-| S2 | Are there skirmishes before the decisive battle? | The match log records each engagement (ships of both sides firing within one sector). Before minute 20 there are at least five, in at least three sectors. |
-| S3 | Does territory decide matches? | Over 10 seeded AI-against-AI matches, some end by domination and some by losing the Command Station and every Shipyard (§8); neither never happens. |
-| S4 | Does the engine hold at Phase 2's scale? | Ticks meet 5 ms on the Phase 2 map at the ship counts its matches reach, as Phase 1's P4. |
-| S5 | Can one commander follow it? | The owner judges the alerts, the zoom and the standing orders (§9) in play. |
+| S1 | Is there contact early? | In a match the owner plays against the AI without rushing, the first shot is fired by minute 5. Over 10 seeded AI-against-AI matches, the first shot is fired by minute 5 in at least 8. The match log records it. |
+| S2 | Are there skirmishes before the decisive battle? | The match log records each engagement: ships of both sides firing within one sector. Before minute 20 there are at least five, in at least three sectors, in the owner's match and in the median of the 10 AI-against-AI matches. |
+| S3 | Does territory decide matches? | Over the same 10 matches, both endings happen at least once: domination, and losing the Command Station and every Shipyard (§8). |
+| S4 | Does a match still last 45–60 minutes? | The median of the 10 AI-against-AI matches is 45–60 minutes, as Phase 1's P1 (owner, 2026-10-03). |
+| S5 | Can one commander follow it? | The owner judges the alerts, the strategic view and the standing orders (§9) in play. |
 
 ---
 
 ## 3. Decided by the owner on 2026-10-03
 
-- **Territory is Phase 2, shaped now.** Phase 1 is finished as planned, its tuning, AI and windows included, but its 5 km map is laid out in sectors with a node each, so that it is the first map Phase 2 plays (§11).
-- **A node is claimed by building a relay on it, and contested by attacking the relay** (§5). A Constructor builds a Relay on a free node; the enemy must destroy it to take the node. Enemy warships near a relay stop its income and vision while they stay (§5).
-- **A match ends by losing the base, or by domination** (§8). Phase 1's condition stays: a player without a Command Station or a finished Shipyard loses. Beside it, holding most of the nodes long enough wins, so territory decides most matches and the siege stays possible.
+- **Territory is Phase 2, on Phase 1's map.** Phase 1's 5 km map is laid out in nine sectors with a node each (ADR-036), and Phase 2 is played on it. The 10 km world, pathing by sector, forward Shipyards and relay jumps are Phase 3 (§7).
+- **A match lasts 45–60 minutes**, Phase 1's target. Territory makes those minutes busier, not longer.
+- **A node is claimed by building a relay on it, and contested by attacking the relay** (§5). A Constructor builds a Relay on a free node; the enemy must destroy it to take the node. Enemy warships near a relay suppress it while they stay (§5).
+- **The home sector cannot be suppressed.** The Command Station holds it from the first tick, and enemies near it stop nothing but what they shoot (§4).
+- **Ore belongs to sectors, flanks included.** A rig may stand only in a sector its player holds, so a player's near asteroids, in its two flank sectors, are mined only after it has built a Relay there. The flank Relays are a match's first territory decisions (§4).
+- **A suppressed Relay is still held.** Suppression stops the sector's income and the Relay's sight; ownership, the lattice and domination are unchanged until the Relay is destroyed (§5, §6, §8).
+- **Relays do not repair ships** in Phase 2. Repair waits for a module of its own (§10).
+- **A match ends by losing the base, or by domination** (§8). Phase 1's condition stays: a player without a Command Station or a finished Shipyard loses. Beside it, holding more of the nodes wins, drained in proportion to the share held, so territory decides most matches and the siege stays possible.
 - **Scouts see further through an optional module** (§10). A design gains a fourth slot, empty by default; its first module is a Sensor Array that lets a ship see far beyond its weapon.
 
 ---
 
 ## 4. Sectors and nodes
 
-*Proposal (gate J1).*
+*The map is decided (§3, ADR-036); the cut-off rule is a proposal (gate J1).*
 
-- **The map is divided into sectors**, each an area of space of about 1.5–2 km across, bounded by asteroid fields and open borders. Each sector has **one node site**: a place where a Relay can stand, among the sector's ore asteroids.
-- **Two sectors are adjacent when they share a border.** The map data names the sectors, their node sites and their adjacency, and the map's tests check that adjacency is symmetric, that every asteroid lies in one sector, and that every sector can be reached from both starts.
-- **Each player's start is its home sector**, and its Command Station holds that sector's node from the first tick. A Command Station counts as a relay (§5).
-- **Ore belongs to sectors.** A Mining Rig may be built only in a sector its player holds. This is what makes a node worth taking: the sector's asteroids, Phase 1's depletion included, are income only for whoever holds it.
+- **The map is Phase 1's**: 5 km a side in nine sectors on a grid of thirds, each about 1.7 km across, bounded by asteroid fields with passages (ADR-036). Each sector has **one node site** at its center, where a Relay can stand; each home's is at its start.
+- **Two sectors are adjacent when they share a border**, as `Map.json` and `MapTests` already have it.
+- **Each player's start is its home sector**, and its Command Station holds that sector's node from the first tick. A Command Station counts as a relay for the lattice and for domination, but **it is never suppressed**: the home sector always earns (owner, 2026-10-03).
+- **Ore belongs to sectors.** A Mining Rig may be built only in a sector its player holds, and **a rig earns only while its player holds the sector and the sector is not suppressed.** This is a sector's income, and the whole of it: a Relay earns nothing itself. The sector's asteroids, Phase 1's depletion included, are income only for whoever holds it.
+- **The opening.** Each home sector has its three home asteroids. A player's near asteroids, two in each of its flank sectors, wait for a Relay in that flank; the contested asteroids round the center and the rich ones in the two empty corners wait for a Relay there.
 
 ---
 
@@ -60,30 +66,31 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result.
 
 *The rule is decided (§3); the numbers are proposals (gate J2).*
 
-- **A Relay is a structure a Constructor builds on a free node site** of a sector adjacent to one its player holds (§6). About 200 Ore and 40 s of a Constructor's work; 3,000 hit points, armor 10, unarmed. A Defence Platform beside it is how a player fortifies a node.
-- **While its Relay stands, a player holds the sector**: it may build rigs there, it sees the whole sector, and its ships there are repaired, slowly, by the Relay.
-- **A Relay is suppressed** while an enemy warship is within 400 m of it and none of its owner's is. A suppressed Relay earns its sector nothing and sees only as a structure does, so raiders hurt a sector without destroying anything, and a defender has to come and fight. Suppression lasts as long as the enemy stays.
-- **A destroyed Relay frees its node**, and the sector's rigs stop earning until someone holds it again. Its wreck is worth part of its cost to whoever collects it with a Constructor (gate J7).
+- **A Relay is a structure a Constructor builds on a free node site** of a sector adjacent to one its player holds (§6). About 200 Ore and 40 s of a Constructor's work; 3,000 hit points, armor 10, unarmed. That is tougher than a Shipyard, on purpose: a raid suppresses a Relay rather than destroys it, and destroying one takes a force. A Defence Platform beside it is how a player fortifies a node.
+- **While its Relay stands, a player holds the sector**: its rigs there earn (§4), and it sees the whole sector.
+- **A Relay is suppressed** while an enemy warship is within 400 m of it and none of its owner's is. A suppressed Relay's sector earns nothing, and the Relay sees only as a structure does, so raiders hurt a sector without destroying anything, and a defender has to come and fight. Suppression lasts as long as the enemy stays. A suppressed Relay is still held (§3).
+- **A destroyed Relay frees its node**, and the sector's rigs stop earning until their player holds it again. Whether its wreck is worth part of its cost to whoever collects it is gate J7's proposal.
 
 ---
 
 ## 6. The lattice
 
-*Proposal (gate J1).*
+*The adjacency rule is decided (§3); the cut-off penalty is a proposal (gate J1).*
 
-- **A Relay can only be built on a node adjacent to one its player holds.** Territory therefore grows outward from the home sector and is taken back along a front, not leapfrogged.
+- **A Relay can only be built on a node adjacent to one its player holds.** A suppressed Relay counts. Territory therefore grows outward from the home sector and is taken back along a front, not leapfrogged.
 - **A Relay can be attacked anywhere.** A fast group can still raid deep, suppress a sector or destroy its Relay, which is a skirmish worth having, but it cannot claim the node unless the sector is next to its own.
-- **Cutting a sector off** from its owner's home sector through the lattice stops its Relay repairing and its rigs earning half, until the link is restored. This is what makes a pincer pay, and what a front is for.
+- **A sector cut off** from its owner's home sector through the lattice, by destroyed Relays, **earns half** until the link is restored. A suppressed Relay keeps the link. This is what makes a pincer pay, and what a front is for.
 
 ---
 
-## 7. The world
+## 7. The world: Phase 3
 
-*Proposal (gate J3).*
+*Deferred by the owner on 2026-10-03.* What follows is kept as the starting point for Phase 3, which is designed after Phase 2's answers.
 
-- **Phase 2's map is about 10 × 10 km**, four times Phase 1's, with about 25 sectors. It is point-symmetric, as every map has been, and its sectors are laid out so that the front between the two homes is three to five sectors wide.
-- **Travel takes minutes.** A Small+Ion ship crosses 14 km in about three minutes, a Large+Fusion in about twelve. That is the reason for forward Shipyards (a Shipyard may be built in any sector its player holds) and for relay jumps (§9).
-- **Pathing has to plan by sector.** One visibility graph over the whole map already takes about 4 ms to build on the 2.3 km map (ADR-032). A path is planned first across sectors, then within each sector on its own graph, which is also built and dropped sector by sector.
+- **A map of about 10 × 10 km**, four times Phase 1's, with about 25 sectors, point-symmetric, its front between the two homes three to five sectors wide.
+- **Travel takes minutes.** A Small+Ion ship crosses 14 km in about three minutes, a Large+Fusion in about twelve. That is the reason for forward Shipyards (a Shipyard in any sector its player holds) and for relay jumps: a group at one of its player's Relays jumps to another after a 10 s charge, with a cooldown.
+- **Pathing has to plan by sector.** One visibility graph over the whole map takes about 4 ms to build on the 2.3 km map, on the development machine (ADR-032). A path is planned first across sectors, then within each sector on its own graph, built and dropped sector by sector.
+- **Its question is the engine's at that scale**, as Phase 1's P4: ticks within 5 ms at the ship counts its matches reach.
 
 ---
 
@@ -92,19 +99,20 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result.
 *The rule is decided (§3); the numbers are proposals (gate J4).*
 
 - **Losing the base** is Phase 1's condition, unchanged: a player with neither a Command Station nor a finished Shipyard loses.
-- **Domination.** Each player starts with 1,000 tickets. Every 10 seconds, the player who holds fewer nodes loses twice the difference in tickets: a lead of five nodes costs the other side one ticket a second, about 17 minutes from full to nothing. A player whose tickets reach zero loses.
-- Suppressed Relays count for their owner, so a domination win has to be taken, not raided.
+- **Domination, in proportion to the share held** (owner, 2026-10-03). Each player starts with 1,000 tickets. Every 10 seconds, the player who holds fewer nodes loses 30 × the difference ÷ the number of nodes on the map. A player whose tickets reach zero loses. A node nobody holds counts for no one.
+- **What that gives on nine nodes**, proposed so that a clear lead ends a 45–60 minute match and a narrow one does not: a lead of one node drains a side in 50 minutes, two in 25, three, a third of the map, in about 17, and five in 10. The same shares give the same times on Phase 3's 25 nodes.
+- Suppressed Relays count for their owner, so a domination win has to be taken, not raided. The home sector always counts.
 
 ---
 
 ## 9. Commanding at this scale
 
-*Proposals (gate J5).* Without these, a big map is long travel and losses nobody saw.
+*Proposals (gate J5).* Without these, a front of nine sectors is losses nobody saw.
 
 - **Alerts.** A short message and a mark on the minimap when a Relay is suppressed or attacked, a rig is lost, or an enemy group enters a held sector; a key jumps the camera to the latest.
-- **A strategic view.** Zooming out beyond the RTS camera's limit (Phase 1's gate H8) to a map of sectors: who holds what, what is suppressed, where groups are.
+- **A strategic view.** Zooming out beyond the RTS camera's 1,600 m limit (Phase 1's gate H8) to a map of sectors: who holds what, what is suppressed, where groups are.
 - **Standing orders.** "Hold this sector": a group returns to the sector's Relay after it chases, and answers any enemy in the sector. "Patrol": between two points, attacking what it meets.
-- **Relay jumps.** A group at one of its player's Relays that is not suppressed can jump to another it holds, after a 10 s charge, with a cooldown. A reinforcement then takes seconds rather than minutes, and holding a connected territory is worth more than holding scattered nodes.
+- **Relay jumps** are Phase 3's, with the larger map that needs them (§7).
 
 ---
 
@@ -112,16 +120,16 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result.
 
 *The slot is decided (§3); the numbers are proposals (gate J6).*
 
-- **A design has an optional fourth slot, the module**, empty by default, beside hull, drive and weapon. The designer gains a fourth row, a saved design gains a field, and a design's abbreviation gains its module's initials when it has one.
+- **A design has an optional fourth slot, the module**, empty by default, beside hull, drive and weapon. The designer window from Phase 1's mockup gains a fourth row, a saved design gains a field, and a design's abbreviation gains its module's initials when it has one.
 - **The first module is the Sensor Array**: the ship sees 700 m, whatever its weapon; costs 40 Ore; and slows its ship by 10%. On a Small+Ion hull it is the minute-3 scout; on a heavy it is a spotter for the Rail Cannon.
-- **Later modules use the same slot**: a repair module, extra plating, a jammer that hides a group from enemy sensors. Each is its own decision.
+- **Later modules use the same slot**: a repair module, extra plating, a jammer that hides a group from enemy sensors. Each is its own decision; repair is the one §3 points to.
 - **The balance check leaves out modules a battle between clumps cannot see**, as it leaves out the Pulse Drive's speed (Phase 1 gate H4): a design with a Sensor Array is not required to be worth building.
 
 ---
 
-## 11. What Phase 1 does now
+## 11. What Phase 1 did for it
 
-Phase 1's 5 km map (Phase 1 §8, task 11.2) is laid out in sectors: about nine, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as §4 has them. Phase 1 reads none of it; its rules, rings, yields and reserves are unchanged. It makes the 5 km map the first one Phase 2 plays, and lets Phase 2's lattice be tried on a map the owner has already played.
+Phase 1's 5 km map (Phase 1 §8, task 11.2) is laid out in nine sectors, each with a node site, and the map data names the sectors, their node sites and their adjacency (ADR-036). Phase 1 reads none of it; Phase 2 is played on it.
 
 **Carried over from Phase 1** (owner, 2026-10-03), for Phase 2's plan: task 7.3, a group given an Attack order on one enemy keeps its lanes round an obstacle, as a group given a Move or an attack-move order does since task 9.7 (ADR-047).
 
@@ -131,9 +139,10 @@ Phase 1's 5 km map (Phase 1 §8, task 11.2) is laid out in sectors: about nine, 
 
 The node graph is what an AI can reason about: the threat in each sector, the weakest node adjacent to its own, where to reinforce. Phase 2's AI:
 
+- builds Relays on its two flanks early, since its near asteroids wait for them (§4);
 - sends a scout with a Sensor Array in the first two minutes;
 - claims nodes adjacent to its territory, and fortifies the ones on the front with a Defence Platform;
-- raids a sector it sees weakly held with a few fast ships, and pulls back when it loses;
+- raids a sector it sees weakly held with a few fast ships, suppressing it, and pulls back when it loses;
 - masses for a main attack only when it has a lead in nodes or the enemy's front has thinned.
 
 ---
@@ -142,10 +151,12 @@ The node graph is what an AI can reason about: the threat in each sector, the we
 
 Each is a gate for Phase 2's plan.
 
-- **J1 — Sectors, nodes and the lattice** (§4, §6): sectors of 1.5–2 km, one node each, rigs only in held sectors, Relays only adjacent to held nodes, and cut-off sectors earning half.
-- **J2 — The Relay's numbers and suppression** (§5): its cost, hit points and armor, and the 400 m suppression radius.
-- **J3 — The world** (§7): a 10 km map of about 25 sectors, forward Shipyards, and pathing by sector.
-- **J4 — Domination's numbers** (§8): 1,000 tickets, and twice the node difference every 10 s.
-- **J5 — Commanding at scale** (§9): which of alerts, the strategic view, standing orders and relay jumps are in Phase 2.
+- **J1 — The cut-off penalty** (§6): a cut-off sector earning half.
+- **J2 — The Relay's numbers and suppression** (§5): 200 Ore and 40 s, 3,000 hit points and armor 10, and the 400 m suppression radius.
+- **J3 — The world** moved to Phase 3 (§7) on 2026-10-03.
+- **J4 — Domination's numbers** (§8): 1,000 tickets, and 30 × the node difference ÷ the map's nodes every 10 s.
+- **J5 — Commanding at scale** (§9): which of alerts, the strategic view and standing orders are in Phase 2.
 - **J6 — Modules** (§10): the Sensor Array's sight, cost and penalty, and which modules follow it.
 - **J7 — Salvage** (§5): whether a destroyed Relay, rig or platform leaves a wreck worth part of its cost, and how much, so that a raid pays. Too much makes the first raid decide the match.
+
+Decided on 2026-10-03, from the owner's review of this draft: territory on Phase 1's map and the world in Phase 3; the 45–60 minute target; a home sector never suppressed; rigs only in held sectors, flanks included; a suppressed Relay still held; no repair by Relays; domination in proportion to the share held; and AI-against-AI figures for S1 and S2. With them, J1's sectors, nodes and adjacency are settled, and only its cut-off penalty is open.
