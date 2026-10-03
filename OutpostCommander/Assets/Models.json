@@ -45,9 +45,9 @@
     { "player": 2, "set": "Tarkan" }
   ],
   "hulls": [
-    { "hull": 1, "model": "Small", "bank": { "maxDegrees": 50, "fullAtMetersPerSecondSquared": 150, "settleSeconds": 0.25 } },
-    { "hull": 2, "model": "Medium", "bank": { "maxDegrees": 45, "fullAtMetersPerSecondSquared": 70, "settleSeconds": 0.3 } },
-    { "hull": 3, "model": "Large", "bank": { "maxDegrees": 35, "fullAtMetersPerSecondSquared": 20, "settleSeconds": 0.4 } }
+    { "hull": 1, "model": "Small", "bank": { "maxDegrees": 50, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.25 } },
+    { "hull": 2, "model": "Medium", "bank": { "maxDegrees": 45, "fullAtMetersPerSecondSquared": 26, "settleSeconds": 0.3 } },
+    { "hull": 3, "model": "Large", "bank": { "maxDegrees": 35, "fullAtMetersPerSecondSquared": 8, "settleSeconds": 0.4 } }
   ],
   "structures": [
     { "structure": "CommandStation", "model": "CommandStation" },
@@ -57,7 +57,7 @@
     { "structure": "DefensePlatform", "model": "DefensePlatform" }
   ],
   "constructor": "Constructor",
-  "constructorBank": { "maxDegrees": 30, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.3 },
+  "constructorBank": { "maxDegrees": 30, "fullAtMetersPerSecondSquared": 55, "settleSeconds": 0.3 },
   "exhausts": [
     { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1.0 } },
     { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } },
