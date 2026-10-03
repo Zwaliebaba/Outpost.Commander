@@ -40,5 +40,14 @@
     { "enemy": { "hull": 1, "drive": 3, "weapon": 1 }, "answer": { "hull": 2, "drive": 1, "weapon": 4 } },
     { "enemy": { "hull": 1, "drive": 3, "weapon": 2 }, "answer": { "hull": 2, "drive": 1, "weapon": 4 } },
     { "enemy": { "hull": 1, "drive": 3, "weapon": 4 }, "answer": { "hull": 2, "drive": 1, "weapon": 4 } }
-  ]
+  ],
+  "scouts": 1,
+  "scoutDesign": { "hull": 1, "drive": 1, "weapon": 1, "module": 1 },
+  "raidShips": 2,
+  "raidLossShare": 0.5,
+  "raidIntervalSeconds": 180,
+  "attackNodeLead": 1,
+  "attackWithoutLeadShare": 1.5,
+  "frontPlatforms": 1,
+  "claimSectors": 1
 }

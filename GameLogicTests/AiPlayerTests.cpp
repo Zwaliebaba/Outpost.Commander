@@ -18,6 +18,11 @@ constexpr Outpost::WeaponId MISSILE_RACK{3};
 constexpr Outpost::DriveId PULSE{3};
 constexpr Outpost::WeaponId FLAK_BATTERY{4};
 constexpr Outpost::WeaponId RAIL_CANNON{5};
+// The repository map's sectors (Phase 2 design §4): the AI's home is the Northeast, beside the East and the North, and the
+// player's the Southwest.
+constexpr std::int32_t CENTER = 5;
+constexpr std::int32_t EAST = 6;
+constexpr std::int32_t NORTH = 8;
 
 Outpost::AiSettings RepositorySettings()
 {
@@ -156,6 +161,20 @@ public:
     return ships;
   }
 
+  // A finished Relay of the tuning data's numbers on the sector's node.
+  Outpost::EntityId Relay(Outpost::PlayerId _owner, std::int32_t _sector)
+  {
+    const Outpost::StructureTuning& tuning =
+      *std::ranges::find(m_server.TuningData().structures, Outpost::StructureKind::Relay, &Outpost::StructureTuning::kind);
+    return World().SpawnStructure(_owner, Outpost::StructureKind::Relay, Node(_sector), static_cast<float>(tuning.footprintRadiusMeters),
+                                  tuning.hitPoints * Outpost::HUNDREDTHS, tuning.armor * Outpost::HUNDREDTHS);
+  }
+
+  [[nodiscard]] Outpost::PlanePosition Node(std::int32_t _sector) const
+  {
+    return std::ranges::find(m_map.sectors, _sector, &Outpost::SectorPlacement::id)->node;
+  }
+
   [[nodiscard]] std::vector<const Outpost::EntityView*> Structures(const Outpost::Snapshot& _snapshot, Outpost::PlayerId _owner) const
   {
     std::vector<const Outpost::EntityView*> structures;
@@ -201,7 +220,8 @@ template <typename Order> std::vector<Order> OrdersOf(const std::vector<Outpost:
   return orders;
 }
 // The repository's settings with the attack's numbers fixed, so that a test of how the AI attacks does not move with
-// their tuning (task 12.2): a group of 12 that falls back after losing half and regroups for 30 seconds.
+// their tuning (task 12.2): a group of 12 that falls back after losing half and regroups for 30 seconds. Territory's play
+// is set aside, so that the group needs no lead in nodes and no raid takes ships from it (task 18.1).
 Outpost::AiSettings AttackSettings()
 {
   Outpost::AiSettings settings = RepositorySettings();
@@ -209,7 +229,15 @@ Outpost::AiSettings AttackSettings()
   settings.attackGroupGrowthPerTier = 0;
   settings.retreatLossShare = 0.5;
   settings.regroupSeconds = 30.0;
+  settings.attackNodeLead = 0;
+  settings.attackWithoutLeadShare = 1.0;
+  settings.raidShips = 0;
   return settings;
+}
+
+Outpost::SectorView& SectorOf(Outpost::Snapshot& _snapshot, std::int32_t _id)
+{
+  return *std::ranges::find(_snapshot.sectors, _id, &Outpost::SectorView::id);
 }
 } // namespace
 
@@ -327,17 +355,18 @@ public:
   }
 
   // Plan task 6.1's acceptance, and the owner's of 2026-10-01: a shot on any of its structures, built or a site, sends the
-  // reserve there, and once the shooting has stopped for the settings' ten seconds, back to where it gathers.
+  // reserve there, and once the shooting has stopped for the settings' ten seconds, back to where it gathers. On a map
+  // with territory it gathers by holding a sector (task 18.1).
   TEST_METHOD(SendsTheReserveWhereItsBaseIsShot)
   {
     AiMatch match;
     const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 3, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
     Outpost::AiPlayer ai(RepositorySettings(), 20);
-    const std::vector<Outpost::AttackMoveCommand> gather = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    const std::vector<Outpost::HoldSectorCommand> gather = OrdersOf<Outpost::HoldSectorCommand>(ai.Update(snapshot));
     Assert::AreEqual(size_t{1}, gather.size());
     Assert::IsTrue(std::ranges::is_permutation(gather.front().ships, reserve));
-    const Outpost::PlanePosition rally = gather.front().destination;
+    const Outpost::PlanePosition rally = gather.front().position;
 
     // Its Command Station under fire.
     const auto station = std::ranges::find_if(snapshot.entities, [](const Outpost::EntityView& _entity)
@@ -368,11 +397,195 @@ public:
     snapshot.shots.clear();
     // Five seconds later, then eleven, at twenty ticks a second.
     snapshot.tick += 100;
-    Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)).empty(), L"it stays while the attack may go on");
+    const std::vector<Outpost::Command> staying = ai.Update(snapshot);
+    Assert::IsTrue(OrdersOf<Outpost::AttackMoveCommand>(staying).empty() && OrdersOf<Outpost::HoldSectorCommand>(staying).empty(),
+                   L"it stays while the attack may go on");
     snapshot.tick += 120;
-    const std::vector<Outpost::AttackMoveCommand> back = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    const std::vector<Outpost::HoldSectorCommand> back = OrdersOf<Outpost::HoldSectorCommand>(ai.Update(snapshot));
     Assert::AreEqual(size_t{1}, back.size());
-    Assert::AreEqual(0.0f, Outpost::Distance(back.front().destination, rally), 0.01f);
+    Assert::AreEqual(0.0f, Outpost::Distance(back.front().position, rally), 0.01f);
+  }
+
+  // Task 18.1: the reserve holds its front with a standing order: the sector it holds next to one the enemy holds, nearest
+  // its rally, or its home while it has no front.
+  TEST_METHOD(HoldsItsFrontWithAStandingOrder)
+  {
+    AiMatch match;
+    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 3, {1500.0f, 1500.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    std::vector<Outpost::HoldSectorCommand> holds = OrdersOf<Outpost::HoldSectorCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, holds.size());
+    Assert::IsTrue(std::ranges::is_permutation(holds.front().ships, reserve));
+    const Outpost::SectorView* home = Outpost::FindSector(snapshot.sectors, match.Start(AI));
+    Assert::AreEqual(0.0f, Outpost::Distance(holds.front().position, home->node), 0.01f, L"not its home, with no front");
+
+    // It holds the East, and the enemy the Center beside it.
+    SectorOf(snapshot, EAST).holder = AI;
+    SectorOf(snapshot, CENTER).holder = HUMAN;
+    snapshot.tick += 20;
+    holds = OrdersOf<Outpost::HoldSectorCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, holds.size());
+    Assert::IsTrue(std::ranges::is_permutation(holds.front().ships, reserve));
+    Assert::AreEqual(0.0f, Outpost::Distance(holds.front().position, SectorOf(snapshot, EAST).node), 0.01f, L"not the East");
+  }
+
+  // Task 18.1: on a map with territory the main attack waits for a lead in nodes, or for a reserve the settings' share
+  // larger than the group.
+  TEST_METHOD(AttacksWithALeadInNodesOrALargerReserve)
+  {
+    Outpost::AiSettings settings = AttackSettings();
+    settings.attackNodeLead = 1;
+    settings.attackWithoutLeadShare = 1.5;
+    AiMatch match;
+    (void)match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(settings, 20);
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"twelve attacked with the nodes even");
+
+    SectorOf(snapshot, EAST).holder = AI;
+    snapshot.tick += 20;
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{12}, ai.AttackGroupShips(), L"twelve did not attack with a lead of one");
+
+    // With the nodes even, half as many again as the group: seventeen wait, and eighteen go.
+    AiMatch larger;
+    (void)larger.Spawn(AI, BRAWLER, 17, {700.0f, 600.0f});
+    Outpost::AiPlayer patient(settings, 20);
+    (void)patient.Update(larger.View(AI));
+    Assert::AreEqual(size_t{0}, patient.AttackGroupShips());
+    (void)larger.Spawn(AI, BRAWLER, 1, {700.0f, 650.0f});
+    Outpost::Snapshot more = larger.View(AI);
+    more.tick += 20;
+    (void)patient.Update(more);
+    Assert::AreEqual(size_t{18}, patient.AttackGroupShips());
+  }
+
+  // Task 18.1: its first warship is a scout of the settings' design, with a Sensor Array, and it tours the sectors next to
+  // the enemy's home one after the other, attack-moving.
+  TEST_METHOD(SendsAScoutRoundTheEnemysFlanks)
+  {
+    const Outpost::AiSettings settings = RepositorySettings();
+    AiMatch match;
+    match.Run(120.0);
+    Outpost::Snapshot view = match.View(AI);
+    const auto scout = std::ranges::find_if(view.entities,
+                                            [&settings](const Outpost::EntityView& _ship)
+                                            {
+                                              return _ship.owner == AI && _ship.kind == Outpost::EntityKind::Ship &&
+                                                     _ship.role == Outpost::ShipRole::Warship && _ship.hull == settings.scoutDesign.hull &&
+                                                     _ship.module == settings.scoutDesign.module;
+                                            });
+    Assert::IsTrue(scout != view.entities.end(), L"no scout in the first two minutes");
+    const Outpost::EntityId id = scout->id;
+
+    // The enemy's home is the Southwest, beside the South and the West, as far from the AI's. Player 1's scout would go
+    // to the East first, the West's mirror.
+    Outpost::AiPlayer ai(settings, 20);
+    const auto sentTo = [&ai, &view, id]() -> std::optional<Outpost::PlanePosition>
+    {
+      for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(view)))
+      {
+        if (order.ships == std::vector<Outpost::EntityId>{id})
+          return order.destination;
+      }
+      return std::nullopt;
+    };
+    const std::optional<Outpost::PlanePosition> first = sentTo();
+    Assert::IsTrue(first.has_value(), L"the scout was not sent");
+    Assert::AreEqual(0.0f, Outpost::Distance(first.value_or(Outpost::PlanePosition{}), match.Node(4)), 0.01f, L"not the West first");
+    std::ranges::find(view.entities, id, &Outpost::EntityView::id)->position = match.Node(4);
+    view.tick += 20;
+    const std::optional<Outpost::PlanePosition> next = sentTo();
+    Assert::IsTrue(next.has_value(), L"the scout was not sent on");
+    Assert::AreEqual(0.0f, Outpost::Distance(next.value_or(Outpost::PlanePosition{}), match.Node(2)), 0.01f, L"not the South next");
+  }
+
+  // Task 18.1: once its first Shipyard stands it claims the free sector next to its territory nearest its base with a
+  // Relay on its node, up to the settings' count of claims.
+  TEST_METHOD(ClaimsAFreeSectorNextToItsTerritory)
+  {
+    const auto relays = [](std::int32_t _claims)
+    {
+      Outpost::AiSettings settings = RepositorySettings();
+      // No contested rig, which would take it to another sector by the ore.
+      settings.contestedAsteroids = 0;
+      settings.claimSectors = _claims;
+      AiMatch match(3, std::nullopt, settings);
+      match.Run(300.0);
+      const Outpost::Snapshot view = match.View(AI);
+      std::vector<std::int32_t> sectors;
+      for (const Outpost::EntityView* structure : match.Structures(view, AI))
+      {
+        if (structure->structure == Outpost::StructureKind::Relay && structure->builtPermille >= Outpost::PERMILLE)
+          sectors.push_back(Outpost::FindSector(view.sectors, structure->position)->id);
+      }
+      return sectors;
+    };
+    const std::vector<std::int32_t> claimed = relays(1);
+    Assert::AreEqual(size_t{1}, claimed.size(), L"not one claim at five minutes");
+    Assert::AreEqual(NORTH, claimed.front(), L"not the North, which mirrors the South player 1 claims");
+    Assert::IsTrue(relays(0).empty(), L"a claim with none in the settings");
+  }
+
+  // Task 18.1: a sector it holds next to one the enemy holds is its front, and gets the settings' Defence Platform by its
+  // Relay.
+  TEST_METHOD(FortifiesItsFront)
+  {
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.contestedAsteroids = 0;
+    settings.homePlatformsPerShipyard = 0;
+    settings.claimSectors = 0;
+    settings.frontPlatforms = 1;
+    AiMatch match(3, std::nullopt, settings);
+    (void)match.Relay(AI, NORTH);
+    (void)match.Relay(HUMAN, CENTER);
+    match.Run(300.0);
+    const Outpost::Snapshot view = match.View(AI);
+    const auto platforms = std::ranges::count_if(match.Structures(view, AI),
+                                                 [&match](const Outpost::EntityView* _structure)
+                                                 {
+                                                   return _structure->structure == Outpost::StructureKind::DefensePlatform &&
+                                                          Outpost::Distance(_structure->position, match.Node(NORTH)) < 250.0f;
+                                                 });
+    Assert::AreEqual(std::ptrdiff_t{1}, platforms, L"not one platform by the North's Relay at five minutes");
+  }
+
+  // Task 18.1: a few of the fastest of its reserve raid the nearest enemy sector it sees no enemy warship guarding, once
+  // the reserve holds twice as many, and come back once the sector is no longer the enemy's.
+  TEST_METHOD(RaidsASectorItSeesUnguarded)
+  {
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.raidShips = 4;
+    AiMatch match;
+    const std::vector<Outpost::EntityId> swarm = match.Spawn(AI, SWARM, 4, {1500.0f, 1500.0f});
+    (void)match.Spawn(AI, BRAWLER, 4, {1500.0f, 1400.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    SectorOf(snapshot, EAST).holder = HUMAN;
+    Outpost::AiPlayer ai(settings, 20);
+    const std::vector<Outpost::AttackMoveCommand> raid = OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, raid.size());
+    Assert::IsTrue(std::ranges::is_permutation(raid.front().ships, swarm), L"not the four smallest hulls");
+    Assert::AreEqual(0.0f, Outpost::Distance(raid.front().destination, SectorOf(snapshot, EAST).node), 0.01f);
+    Assert::AreEqual(size_t{4}, ai.RaidShips());
+
+    SectorOf(snapshot, EAST).holder = {};
+    snapshot.tick += 20;
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{0}, ai.RaidShips(), L"the raid went on once the sector was free");
+
+    // A sector with an enemy warship it sees by its node is not raided: the swarm sees 170 m, out of its 120 m range.
+    AiMatch guarded;
+    (void)guarded.Spawn(AI, SWARM, 8, {SectorOf(snapshot, EAST).node.xMeters, 160.0f});
+    (void)guarded.Spawn(HUMAN, SWARM, 1, SectorOf(snapshot, EAST).node);
+    // A tick, for the server to work out what each side sees.
+    guarded.Run(0.1);
+    Outpost::Snapshot watched = guarded.View(AI);
+    SectorOf(watched, EAST).holder = HUMAN;
+    Outpost::AiPlayer wary(settings, 20);
+    (void)wary.Update(watched);
+    Assert::AreEqual(size_t{0}, wary.RaidShips());
   }
 
   // Owner, 2026-10-01: rigs on the three home asteroids come first, then the Shipyard, the Research Lab and the Defence
@@ -423,6 +636,8 @@ public:
   {
     Outpost::AiSettings settings = RepositorySettings();
     settings.homePlatformsPerShipyard = 0;
+    // Nor the rigs of a claimed sector (task 18.1), which add to the income.
+    settings.claimSectors = 0;
     AiMatch match(3, std::nullopt, settings);
     const auto shipyards = [&match]
     {
@@ -486,11 +701,15 @@ public:
   }
 
   // Gate G9, which task 12.2 raised to the settings' twenty (owner, 2026-10-03): the reserve waits until the attack group
-  // has gathered, and then attacks the enemy's base.
+  // has gathered, and then attacks the enemy's base. Territory's gate on the attack has a test of its own.
   TEST_METHOD(AttacksOnceItsGroupHasGathered)
   {
-    AiMatch match;
-    const int groupShips = RepositorySettings().attackGroupShips;
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.attackNodeLead = 0;
+    settings.attackWithoutLeadShare = 1.0;
+    settings.raidShips = 0;
+    AiMatch match(3, std::nullopt, settings);
+    const int groupShips = settings.attackGroupShips;
     const Outpost::PlanePosition gathering{700.0f, 600.0f};
     std::vector<Outpost::EntityId> ships = match.Spawn(AI, BRAWLER, groupShips - 1, gathering);
     match.Run(5.0);

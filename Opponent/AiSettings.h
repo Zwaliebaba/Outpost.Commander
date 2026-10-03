@@ -54,6 +54,23 @@ struct AiSettings
   // What it builds when no counter applies, or the counter is one it has not unlocked.
   DesignComponents defaultDesign;
   std::vector<CounterRule> counters;
+
+  // On a map with territory (Phase 2 design §12, ADR-020 decision 13). Scouts it keeps, of a design with a Sensor Array,
+  // built ahead of its warships, which tour the enemy's flank sectors.
+  std::int32_t scouts = 0;
+  DesignComponents scoutDesign;
+  // A raid: this many warships of its reserve, sent at an enemy sector it sees no enemy warship guarding, when its reserve
+  // holds at least twice as many; it falls back once it has lost this share of them, and the next waits this long.
+  std::int32_t raidShips = 0;
+  double raidLossShare = 0.0;
+  double raidIntervalSeconds = 0.0;
+  // Its main attack waits for a lead of this many nodes, or for a reserve this many times the attack group's size.
+  std::int32_t attackNodeLead = 0;
+  double attackWithoutLeadShare = 1.0;
+  // Defence Platforms it builds by each Relay on its front: a sector it holds next to one the enemy holds.
+  std::int32_t frontPlatforms = 0;
+  // Free sectors it claims at most, beyond those its rigs take it to.
+  std::int32_t claimSectors = 0;
 };
 
 // Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it
