@@ -137,8 +137,6 @@ Neuron::Window::Window(const Desc& _desc)
     UnregisterClassW(WINDOW_CLASS_NAME, m_instance);
     winrt::throw_hresult(HRESULT_FROM_WIN32(error));
   }
-
-  ShowWindow(m_hwnd, SW_SHOW);
 }
 
 Neuron::Window::~Window()

@@ -63,7 +63,28 @@ winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 }
 } // namespace
 
-Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, float _scale)
+Neuron::UiAtlas Neuron::RasterizeUiAtlas(const std::vector<FontDesc>& _fonts, const std::vector<SpriteDesc>& _sprites, float _scale)
+{
+  UiAtlas atlas;
+  atlas.pixelSizes.reserve(_fonts.size() + _sprites.size());
+  for (const FontDesc& font : _fonts)
+    atlas.pixelSizes.push_back(PixelSize(font.emUnits, _scale));
+  for (const SpriteDesc& sprite : _sprites)
+    atlas.pixelSizes.push_back(PixelSize(sprite.sizeUnits, _scale));
+
+  std::vector<FontBitmaps> fonts;
+  fonts.reserve(_fonts.size());
+  for (size_t i = 0; i < _fonts.size(); ++i)
+    fonts.push_back(RasterizeFont(_fonts[i], atlas.pixelSizes[i]));
+  std::vector<GlyphBitmap> sprites;
+  sprites.reserve(_sprites.size());
+  for (size_t i = 0; i < _sprites.size(); ++i)
+    sprites.push_back(DrawSprite(_sprites[i].shape, static_cast<std::uint32_t>(atlas.pixelSizes[_fonts.size() + i])));
+  atlas.glyphs = PackGlyphs(fonts, sprites);
+  return atlas;
+}
+
+Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, UiAtlas _atlas)
   : m_renderer(_renderer),
     m_fonts(std::move(_fonts)),
     m_sprites(std::move(_sprites))
@@ -137,18 +158,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
   winrt::check_hresult(m_vertices->Map(0, &nothingRead, &mapped));
   m_mappedVertices = static_cast<Vertex*>(mapped);
 
-  Rasterize(_scale);
-}
-
-std::vector<float> Neuron::UiPipeline::PixelSizes(float _scale) const
-{
-  std::vector<float> sizes;
-  sizes.reserve(m_fonts.size() + m_sprites.size());
-  for (const FontDesc& font : m_fonts)
-    sizes.push_back(PixelSize(font.emUnits, _scale));
-  for (const SpriteDesc& sprite : m_sprites)
-    sizes.push_back(PixelSize(sprite.sizeUnits, _scale));
-  return sizes;
+  UseAtlas(std::move(_atlas));
 }
 
 bool Neuron::UiPipeline::IsRasterizedAt(float _scale) const noexcept
@@ -168,19 +178,11 @@ bool Neuron::UiPipeline::IsRasterizedAt(float _scale) const noexcept
   return true;
 }
 
-void Neuron::UiPipeline::Rasterize(float _scale)
+void Neuron::UiPipeline::UseAtlas(UiAtlas _atlas)
 {
-  m_pixelSizes = PixelSizes(_scale);
-  std::vector<FontBitmaps> fonts;
-  fonts.reserve(m_fonts.size());
-  for (size_t i = 0; i < m_fonts.size(); ++i)
-    fonts.push_back(RasterizeFont(m_fonts[i], m_pixelSizes[i]));
-  std::vector<GlyphBitmap> sprites;
-  sprites.reserve(m_sprites.size());
-  for (size_t i = 0; i < m_sprites.size(); ++i)
-    sprites.push_back(Neuron::DrawSprite(m_sprites[i].shape, static_cast<std::uint32_t>(m_pixelSizes[m_fonts.size() + i])));
-  m_atlas = PackGlyphs(fonts, sprites);
-  // Uploading waits for every frame in flight, so the old texture is no longer read when it is replaced.
+  m_atlas = std::move(_atlas.glyphs);
+  m_pixelSizes = std::move(_atlas.pixelSizes);
+  // Outside a batch the upload waits for every frame in flight, so the old texture is no longer read when it is replaced.
   m_atlasTexture =
     m_renderer.CreateStaticTexture(m_atlas.width, m_atlas.height, DXGI_FORMAT_R8_UNORM, std::as_bytes(std::span(m_atlas.coverage)));
   const D3D12_SHADER_RESOURCE_VIEW_DESC view{
@@ -194,7 +196,7 @@ void Neuron::UiPipeline::Rasterize(float _scale)
 void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
 {
   if (!IsRasterizedAt(_scale))
-    Rasterize(_scale);
+    UseAtlas(RasterizeUiAtlas(m_fonts, m_sprites, _scale));
   m_widthPixels = static_cast<float>(_widthPixels);
   m_heightPixels = static_cast<float>(_heightPixels);
   m_frameVertices.clear();

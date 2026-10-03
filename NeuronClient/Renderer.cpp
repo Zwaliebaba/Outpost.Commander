@@ -42,6 +42,23 @@ constexpr UINT64 AlignUp(UINT64 _value, UINT64 _alignment) noexcept
   return (_value + _alignment - 1) & ~(_alignment - 1);
 }
 
+// A target the frame writes whole before it reads it, so the memory under it need not be zeroed first: zeroing the
+// multisampled targets is a pass over hundreds of megabytes at 4K, at startup and on every resize (ADR-049). The OS may
+// zero it anyway, and runtimes before Windows 10 version 2004 refuse the flag and get the zeroed memory they always did.
+winrt::com_ptr<ID3D12Resource> CreateTarget(ID3D12Device* _device, const D3D12_RESOURCE_DESC& _description, D3D12_RESOURCE_STATES _state,
+                                            const D3D12_CLEAR_VALUE* _clearValue)
+{
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  winrt::com_ptr<ID3D12Resource> target;
+  if (SUCCEEDED(_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_CREATE_NOT_ZEROED, &_description, _state, _clearValue,
+                                                 IID_GRAPHICS_PPV_ARGS(target))))
+    return target;
+  target = nullptr;
+  winrt::check_hresult(_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &_description, _state, _clearValue,
+                                                        IID_GRAPHICS_PPV_ARGS(target)));
+  return target;
+}
+
 #if defined(_DEBUG)
 // The debug layer and DRED both need the Graphics Tools optional feature. Without it the game runs undiagnosed rather
 // than not at all (ADR-006).
@@ -483,13 +500,10 @@ void Neuron::Renderer::CreateRenderTargets()
     winrt::check_hresult(m_swapChain->GetBuffer(index, IID_GRAPHICS_PPV_ARGS(m_backBuffers[index])));
 
   // Resize has already drained the GPU and released the old targets.
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
   const CD3DX12_RESOURCE_DESC sceneDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1,
                                                                               SAMPLE_COUNT, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
   const CD3DX12_CLEAR_VALUE clearValue(RENDER_TARGET_FORMAT, SCENE_CLEAR.data());
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &sceneDescription,
-                                                         D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue,
-                                                         IID_GRAPHICS_PPV_ARGS(m_sceneTarget)));
+  m_sceneTarget = CreateTarget(m_device.get(), sceneDescription, D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue);
 
   D3D12_RENDER_TARGET_VIEW_DESC viewDescription{};
   viewDescription.Format = RENDER_TARGET_FORMAT;
@@ -497,21 +511,17 @@ void Neuron::Renderer::CreateRenderTargets()
   m_device->CreateRenderTargetView(m_sceneTarget.get(), &viewDescription, SceneTargetView());
 
   const CD3DX12_RESOURCE_DESC resolvedDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1);
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &resolvedDescription,
-                                                         D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr,
-                                                         IID_GRAPHICS_PPV_ARGS(m_resolvedScene)));
+  m_resolvedScene = CreateTarget(m_device.get(), resolvedDescription, D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr);
 }
 
 void Neuron::Renderer::CreateDepthBuffer()
 {
   // The old buffer is released first; Resize has already drained the GPU.
   m_depthBuffer = nullptr;
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
   const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, SAMPLE_COUNT, 0,
                                                                          D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   const CD3DX12_CLEAR_VALUE clearValue(DEPTH_FORMAT, DEPTH_CLEAR, 0);
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                                                         &clearValue, IID_GRAPHICS_PPV_ARGS(m_depthBuffer)));
+  m_depthBuffer = CreateTarget(m_device.get(), description, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue);
 
   D3D12_DEPTH_STENCIL_VIEW_DESC viewDescription{};
   viewDescription.Format = DEPTH_FORMAT;

@@ -4,6 +4,19 @@ namespace Neuron
 {
 class Renderer;
 
+// The interface's fonts and sprites rasterized and packed into one atlas at one scale, and the size in pixels each was
+// drawn at, fonts first (ADR-030). Making it needs no device, so it may be made on another thread while the device is
+// created (ADR-049).
+struct UiAtlas
+{
+  GlyphAtlas glyphs;
+  std::vector<float> pixelSizes;
+};
+
+// Rasterizes _fonts and _sprites at _scale pixels to a reference unit. Throws Neuron::Exception when a font is not
+// installed, and winrt::hresult_error when DirectWrite fails.
+[[nodiscard]] UiAtlas RasterizeUiAtlas(const std::vector<FontDesc>& _fonts, const std::vector<SpriteDesc>& _sprites, float _scale);
+
 // Draws the interface over the scene (ADR-015, ADR-030): solid and hatched rectangles, sprites and lines of text in
 // several fonts, as textured quads from one glyph atlas, alpha-blended, with no depth. Everything is in back-buffer
 // pixels from the top-left corner; laying out in reference units and scaling (ADR-006) is the caller's. It knows no game
@@ -14,9 +27,9 @@ public:
   // Quads one frame can draw.
   static constexpr UINT MAX_QUADS = 8192;
 
-  // Builds the pipeline for the renderer's formats and rasterizes _fonts and _sprites at _scale pixels to a reference
-  // unit. Throws Neuron::Exception when a font is not installed, and winrt::hresult_error on any other failure.
-  UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, float _scale);
+  // Builds the pipeline for the renderer's formats with _atlas, which RasterizeUiAtlas made of _fonts and _sprites, and
+  // uploads it. Throws winrt::hresult_error on failure.
+  UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, UiAtlas _atlas);
 
   // Starts a frame's interface on a back buffer of this size, at _scale pixels to a reference unit. When the scale moves
   // a font or a sprite by a whole pixel, the atlas is rasterized again first; that waits for the GPU, so it belongs to a
@@ -67,11 +80,11 @@ private:
     DirectX::XMFLOAT4 color;
   };
 
-  // Every font's and sprite's size in whole pixels at _scale; and whether the atlas was rasterized at those sizes, asked
-  // every frame without building the list.
-  [[nodiscard]] std::vector<float> PixelSizes(float _scale) const;
+  // Whether the atlas was rasterized at the sizes _scale gives every font and sprite, asked every frame without building
+  // the list.
   [[nodiscard]] bool IsRasterizedAt(float _scale) const noexcept;
-  void Rasterize(float _scale);
+  // Uploads _atlas and points the pipeline's view at it.
+  void UseAtlas(UiAtlas _atlas);
   void AddQuad(float _left, float _top, float _right, float _bottom, float _u0, float _v0, float _u1, float _v1,
                const DirectX::XMFLOAT4& _color);
 

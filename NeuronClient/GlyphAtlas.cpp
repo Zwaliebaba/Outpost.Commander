@@ -191,9 +191,11 @@ Neuron::GlyphAtlas Neuron::PackGlyphs(const std::vector<FontBitmaps>& _fonts, co
 
 Neuron::FontBitmaps Neuron::RasterizeFont(const FontDesc& _font, float _emPixels)
 {
+  // The shared factory, which the process keeps and DirectWrite's font cache serves: an isolated one for each font listed
+  // the system's fonts again for every font, with no cache (ADR-049). Its objects may be used from any thread.
   winrt::com_ptr<IDWriteFactory2> factory;
   winrt::check_hresult(
-    DWriteCreateFactory(DWRITE_FACTORY_TYPE_ISOLATED, __uuidof(IDWriteFactory2), reinterpret_cast<IUnknown**>(factory.put())));
+    DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory2), reinterpret_cast<IUnknown**>(factory.put())));
 
   winrt::com_ptr<IDWriteFontCollection> fonts;
   winrt::check_hresult(factory->GetSystemFontCollection(fonts.put(), FALSE));

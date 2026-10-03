@@ -2,6 +2,44 @@
 
 namespace Outpost
 {
+// What the client loads from the package and builds on the CPU before it can draw (ADR-049): the model catalog, the
+// camera's settings, every model's meshes and their crease lines, the starfield and the particle sprite. Making it needs
+// no device, so the shell makes it on a thread of its own while the window and the device are created.
+struct ClientAssets
+{
+  // A piece of a model (ADR-045): its triangles, their creases as lines (ADR-027), empty when there are none, and how the
+  // piece spins; nothing for the faces that stand still.
+  struct Piece
+  {
+    Neuron::MeshData faces;
+    Neuron::MeshData edges;
+    std::optional<Neuron::MeshPart> spin;
+  };
+
+  // A model: its pieces, and its whole mesh with its hardpoints.
+  struct Model
+  {
+    std::vector<Piece> pieces;
+    Neuron::MeshData shape;
+  };
+
+  ModelCatalog catalog;
+  CameraSettings camera;
+  // In the catalog's order: each set's models after the set before.
+  std::vector<Model> models;
+  Starfield sky;
+  Neuron::TextureData particleSprite;
+};
+
+// Reads Models.json, Camera.json, every model's mesh and the particle sprite from the package's Assets folder, and builds
+// what the client draws from them. Throws Neuron::Exception naming the file when a data file or a mesh is missing or
+// cannot be read, so that no model is silently left out. It may run on any thread.
+[[nodiscard]] ClientAssets LoadClientAssets();
+
+// The interface's fonts and sprites rasterized for a back buffer of this size (ADR-030). It needs no device and may run on
+// any thread. Throws Neuron::Exception when none of a font's families is installed.
+[[nodiscard]] Neuron::UiAtlas RasterizeInterface(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
+
 // The client's view of the game: every model loaded into video memory, the camera, and the world drawn through it from
 // interpolated snapshots (task 2.5, ADR-013). It never sees server state, only what the transport brings. It starts on the
 // main menu; the shell starts a match on it, and takes it back to the menu, when the player asks for either (task 6.2).
@@ -16,10 +54,10 @@ public:
     BackToMenu
   };
 
-  // Reads Models.json and Camera.json from the package's Assets folder and uploads every model's mesh. Throws
-  // Neuron::Exception naming the file when a data file or a mesh is missing or cannot be read, so that no model is
-  // silently left out. _ticksPerSecond is the server's rate, which the snapshots are interpolated at.
-  GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond);
+  // Builds the pipelines and uploads _assets and _interface, which LoadClientAssets and RasterizeInterface made, in the
+  // renderer's batch of uploads when one is open. _ticksPerSecond is the server's rate, which the snapshots are
+  // interpolated at. Throws winrt::hresult_error when the device fails.
+  GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond, ClientAssets _assets, Neuron::UiAtlas _interface);
 
   // Shows a new match from its first snapshot: whatever the last match left in the view, the selection, the designer and
   // the effects is gone, and the camera centers again on the player's fleet.

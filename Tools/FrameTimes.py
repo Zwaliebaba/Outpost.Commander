@@ -10,6 +10,7 @@ The game writes OutpostCommander-measure.log to the temporary folder. Each line 
   tick_part_names <name> ...                  the parts of a tick, in the order tick_parts_ns gives them (task 8.1)
   tick_parts_ns <ns> ...                      the tick just logged, part by part; the parts nest (GameProtocol/Server.h)
   response_ns <ns> input_read_ns ... presented_ns ...   Q5: a move order to its first visible response
+  startup_ns <stage> <ns>                     when a stage of startup was done, from the start of wWinMain (ADR-049)
 
 Usage: python Tools/FrameTimes.py [log] [--skip-frames N]
 
@@ -77,6 +78,8 @@ def main():
   # Each tick's parts in ms, paired with its total.
   tick_parts = []
   response_ms = []
+  # Startup's stages in the order they were logged, each with its time from the start of wWinMain.
+  startup = []
   with open(arguments.log, encoding="utf-8") as log:
     for line in log:
       fields = line.split()
@@ -98,11 +101,17 @@ def main():
         tick_parts.append((tick_ms[-1], [int(value) / 1e6 for value in fields[1:]]))
       elif fields[0] == "response_ns":
         response_ms.append(int(fields[1]) / 1e6)
+      elif fields[0] == "startup_ns":
+        startup.append((fields[1], int(fields[2]) / 1e6))
 
   cpu_ms = cpu_ms[arguments.skip_frames:]
   gpu_ms = gpu_ms[arguments.skip_frames:]
   print(f"{arguments.log}: {header}")
   print(f"Back buffer and display: {', '.join(displays) if displays else 'not recorded'}")
+  if startup:
+    # The server, the models and the interface are made on threads of their own, so their times overlap the window's and
+    # the device's; each is when that stage was done, not how long it took.
+    print("Startup, each stage when it was done: " + ", ".join(f"{stage} {at_ms:.1f} ms" for stage, at_ms in startup))
   print(describe("Frame CPU work", cpu_ms, FRAME_TARGET_MS))
   print(describe("Frame GPU work", gpu_ms, FRAME_TARGET_MS))
   print(describe("Tick", tick_ms, TICK_TARGET_MS))

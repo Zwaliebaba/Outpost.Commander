@@ -363,39 +363,25 @@ DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, st
 }
 } // namespace
 
-Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond)
-  : m_ticksPerSecond(_ticksPerSecond),
-    m_catalog(LoadDataFile(MODELS_FILE, LoadModelCatalog)),
-    m_camera(LoadDataFile(CAMERA_FILE, LoadCameraSettings)),
-    m_pipeline(_renderer),
-    m_glows(_renderer),
-    m_groundMask(_renderer),
-    m_ui(_renderer, Hud::Typefaces(), Hud::Sprites(), Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
-    m_view(_ticksPerSecond),
-    m_effects(_ticksPerSecond, m_catalog.shots),
-    m_particles(_ticksPerSecond),
-    m_explosions(_ticksPerSecond)
+Outpost::ClientAssets Outpost::LoadClientAssets()
 {
-  // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
-  Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
-  for (const ModelSet& set : m_catalog.sets)
+  ClientAssets assets{.catalog = LoadDataFile(MODELS_FILE, LoadModelCatalog), .camera = LoadDataFile(CAMERA_FILE, LoadCameraSettings)};
+  for (const ModelSet& set : assets.catalog.sets)
   {
     for (const ModelEntry& model : set.models)
     {
       const std::wstring fileName = ModelFileName(set, model);
       const Neuron::ByteBuffer bytes = ReadAsset(fileName);
-      Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
+      ClientAssets::Model& loaded = assets.models.emplace_back();
+      loaded.shape = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       // The faces that stand still and each spinning part's (ADR-045), each with its creases, drawn over it as lines
-      // (ADR-027). The models are kept in the catalog's order, which ModelIndex counts on.
-      LoadedModel& loaded = m_models.emplace_back();
-      const auto addPiece = [&](const Neuron::MeshData& _piece, const std::optional<Neuron::MeshPart>& _spin)
+      // (ADR-027).
+      const auto addPiece = [&loaded](Neuron::MeshData _piece, const std::optional<Neuron::MeshPart>& _spin)
       {
-        const Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
-        loaded.pieces.push_back(
-          {.faces = std::make_unique<Neuron::Mesh>(_renderer, _piece),
-           .edges = edges.vertices.empty() ? std::unique_ptr<Neuron::Mesh>{} : std::make_unique<Neuron::Mesh>(_renderer, edges),
-           .spin = _spin});
+        Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
+        loaded.pieces.push_back({.faces = std::move(_piece), .edges = std::move(edges), .spin = _spin});
       };
+      const Neuron::MeshData& data = loaded.shape;
       if (data.parts.empty())
         addPiece(data, std::nullopt);
       else
@@ -404,11 +390,52 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
         for (const Neuron::MeshPart& part : data.parts)
           addPiece(Neuron::MeshPiece(data, part.firstIndex, part.indexCount), part);
       }
-      loaded.hardpoints = std::move(data.hardpoints);
-      // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
-      data.hardpoints.clear();
-      loaded.shape = std::move(data);
     }
+  }
+  assets.sky = BuildStarfield();
+  assets.particleSprite =
+    Neuron::ParseDds(ReadAsset(PARTICLE_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(PARTICLE_SPRITE_FILE)));
+  Neuron::BuildMipLevels(assets.particleSprite);
+  return assets;
+}
+
+Neuron::UiAtlas Outpost::RasterizeInterface(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
+{
+  return Neuron::RasterizeUiAtlas(Hud::Typefaces(), Hud::Sprites(), Hud::Scale(_widthPixels, _heightPixels));
+}
+
+Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _ticksPerSecond, ClientAssets _assets,
+                                Neuron::UiAtlas _interface)
+  : m_ticksPerSecond(_ticksPerSecond),
+    m_catalog(std::move(_assets.catalog)),
+    m_camera(_assets.camera),
+    m_pipeline(_renderer),
+    m_glows(_renderer),
+    m_groundMask(_renderer),
+    m_ui(_renderer, Hud::Typefaces(), Hud::Sprites(), std::move(_interface)),
+    m_view(_ticksPerSecond),
+    m_effects(_ticksPerSecond, m_catalog.shots),
+    m_particles(_ticksPerSecond),
+    m_explosions(_ticksPerSecond)
+{
+  // Gate H7: which face the figures found, Cascadia Mono or Consolas in its place (Phase 1 design §11).
+  Neuron::DebugTrace(L"The interface's figures are set in {}.\n", m_ui.FamilyOf(static_cast<std::size_t>(Hud::Typeface::Figure)));
+  // The models are kept in the catalog's order, which ModelIndex counts on, as LoadClientAssets made them.
+  m_models.reserve(_assets.models.size());
+  for (ClientAssets::Model& model : _assets.models)
+  {
+    LoadedModel& loaded = m_models.emplace_back();
+    for (const ClientAssets::Piece& piece : model.pieces)
+    {
+      loaded.pieces.push_back(
+        {.faces = std::make_unique<Neuron::Mesh>(_renderer, piece.faces),
+         .edges = piece.edges.vertices.empty() ? std::unique_ptr<Neuron::Mesh>{} : std::make_unique<Neuron::Mesh>(_renderer, piece.edges),
+         .spin = piece.spin});
+    }
+    loaded.hardpoints = std::move(model.shape.hardpoints);
+    // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
+    model.shape.hardpoints.clear();
+    loaded.shape = std::move(model.shape);
   }
   m_grid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid());
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
@@ -431,14 +458,9 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     }
   }
 
-  const Starfield sky = BuildStarfield();
-  m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, sky.points);
-  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, sky.bursts, Neuron::StarPipeline::Shape::Cross);
-
-  Neuron::TextureData particleSprite =
-    Neuron::ParseDds(ReadAsset(PARTICLE_SPRITE_FILE), std::format("Assets\\{}", winrt::to_string(PARTICLE_SPRITE_FILE)));
-  Neuron::BuildMipLevels(particleSprite);
-  m_particleSprites = std::make_unique<Neuron::GlowPipeline>(_renderer, &particleSprite);
+  m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, _assets.sky.points);
+  m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, _assets.sky.bursts, Neuron::StarPipeline::Shape::Cross);
+  m_particleSprites = std::make_unique<Neuron::GlowPipeline>(_renderer, &_assets.particleSprite);
 }
 
 void Outpost::GameClient::StartMatch()
