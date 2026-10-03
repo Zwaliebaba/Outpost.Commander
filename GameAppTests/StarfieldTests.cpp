@@ -76,6 +76,16 @@ public:
     }
   }
 
+  // ADR-045: a cross is white or a hot star's blue-white, never warm, so it is not read as a marker in the Ore's gold.
+  TEST_METHOD(DrawsNoBurstWarm)
+  {
+    const Outpost::Starfield sky = Outpost::BuildStarfield();
+    for (const Star& star : sky.bursts)
+      Assert::IsTrue(star.color.z >= star.color.x - TOLERANCE);
+    Assert::IsTrue(std::ranges::any_of(sky.points, [](const Star& _star) { return _star.color.x > 1.2f * _star.color.z; }),
+                   L"the points keep their warm stars");
+  }
+
   // No band and no clump: each of the six caps of 30 degrees round the axes holds the share of the stars its area is,
   // (1 - cos 30°) / 2 of the sky, within 10%.
   TEST_METHOD(SpreadsTheStarsEvenlyOverTheSky)

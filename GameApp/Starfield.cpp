@@ -33,7 +33,8 @@ constexpr float COUNT_POWER = -1.5f;
 
 // A burst's square, and so its cross's arms, grows from the dimmest burst to the brightest, with the logarithm of its
 // light, and its color is the star's tint at this brightness. The cross has its own dot at its center, so a burst is
-// never a point as well. Small, so that the crosses are fine marks in the line art rather than flares.
+// never a point as well. Small, so that the crosses are fine marks in the line art rather than flares. A warm star's
+// cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-045).
 constexpr float MIN_BURST_RADIUS_PIXELS = 6.0f;
 constexpr float MAX_BURST_RADIUS_PIXELS = 16.0f;
 constexpr float BURST_PEAK = 0.6f;
@@ -148,9 +149,10 @@ Outpost::Starfield Outpost::BuildStarfield()
   {
     const Candidate& star = candidates[static_cast<size_t>(index)];
     const float share = brightestBurst > dimmestBurst ? (std::log(star.flux) - dimmestBurst) / (brightestBurst - dimmestBurst) : 1.0f;
+    const DirectX::XMFLOAT3 tint = star.tint.z >= star.tint.x ? star.tint : DirectX::XMFLOAT3{1.0f, 1.0f, 1.0f};
     sky.bursts.push_back({.direction = star.direction,
                           .radiusPixels = std::lerp(MIN_BURST_RADIUS_PIXELS, MAX_BURST_RADIUS_PIXELS, share),
-                          .color = Scaled(star.tint, BURST_PEAK)});
+                          .color = Scaled(tint, BURST_PEAK)});
   }
 
   sky.points.reserve(static_cast<size_t>(STAR_COUNT) - static_cast<size_t>(BURST_COUNT));
