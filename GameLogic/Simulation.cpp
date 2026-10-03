@@ -868,7 +868,7 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
                     });
 
   // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010). The
-  // group keeps the grid's width as a band of lanes along its route (ADR-046).
+  // group keeps the grid's width as a band of lanes along its route (ADR-047).
   const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
@@ -1302,7 +1302,7 @@ void Outpost::Simulation::ChaseTargets()
 // A corner of the path is only a way round an obstacle, so a ship lets it go as soon as it is within its own radius of it,
 // or can see the waypoint after it: ships crowding round the same corner then do not have to queue for its exact point.
 // Only the last waypoint, the ship's slot, has to be reached. A corner of the ship's lane is its place in its group's band
-// as well (ADR-046), so the ship lets it go at sight of the next only from within a place in the formation of it: a ship
+// as well (ADR-047), so the ship lets it go at sight of the next only from within a place in the formation of it: a ship
 // that cut to its slot as soon as it saw it past an obstacle would pass the obstacle where every other ship does.
 void Outpost::Simulation::MoveShips()
 {

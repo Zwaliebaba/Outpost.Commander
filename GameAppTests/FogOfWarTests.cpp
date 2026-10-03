@@ -71,7 +71,7 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = -990.0f, .zMeters = 990.0f}));
   }
 
-  // ADR-045: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen the map.
+  // ADR-046: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen the map.
   TEST_METHOD(SaysWhetherAnyOfACircleWasSeen)
   {
     Outpost::FogOfWar fog;

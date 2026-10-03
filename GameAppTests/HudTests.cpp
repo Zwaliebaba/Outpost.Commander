@@ -231,7 +231,7 @@ public:
                                                     Ship(4, SWARM, 19800, 19800)};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpost::EntityId{3}, Outpost::EntityId{4}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    // ADR-045: the count and the design between a multiplication sign.
+    // ADR-046: the count and the design between a multiplication sign.
     const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
                                             "Hit points 946 / 1,044"};
     Assert::IsTrue(content.selection == expected);
@@ -317,7 +317,7 @@ public:
                         .structure = Outpost::StructureKind::ResearchLab});
     content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::IsFalse(content.buttons[1].enabled, L"one Research Lab a player");
-    // ADR-045: the button says so in place of its cost; a button the player only cannot afford says nothing more.
+    // ADR-046: the button says so in place of its cost; a button the player only cannot afford says nothing more.
     Assert::AreEqual(std::string("ONE PER PLAYER"), content.buttons[1].note);
     Assert::IsTrue(content.buttons[0].note.empty());
     const Outpost::Hud::Layout noted = Outpost::Hud::Lay(content, 1920, 1080);
@@ -968,7 +968,7 @@ public:
     Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
   }
 
-  // ADR-045: the Ore's diamond and figure start at the panel's left whatever the figure, and the income keeps to its right.
+  // ADR-046: the Ore's diamond and figure start at the panel's left whatever the figure, and the income keeps to its right.
   TEST_METHOD(KeepsTheOreDiamondStillAsTheFigureChanges)
   {
     const auto oreAt = [](std::int32_t _ore)
@@ -988,7 +988,7 @@ public:
     Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
   }
 
-  // ADR-045: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
+  // ADR-046: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
   TEST_METHOD(DrawsTheSelectionsHealthAsABar)
   {
     const Outpost::Hud::Content healthy{.ore = 0, .selection = {"Shipyard", "Hit points 3,000 / 3,000"}};
@@ -1006,7 +1006,7 @@ public:
     Assert::IsTrue(track.top > panel.top + (panel.height / 2.0f) && track.top + track.height < panel.top + panel.height);
   }
 
-  // ADR-045: an ore asteroid's mark is the largest of the minimap's smallest marks, and a rig's own mark shows over it.
+  // ADR-046: an ore asteroid's mark is the largest of the minimap's smallest marks, and a rig's own mark shows over it.
   TEST_METHOD(DrawsARigsMarkOverItsAsteroid)
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 5000.0f};

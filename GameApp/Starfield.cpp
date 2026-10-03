@@ -34,7 +34,7 @@ constexpr float COUNT_POWER = -1.5f;
 // A burst's square, and so its cross's arms, grows from the dimmest burst to the brightest, with the logarithm of its
 // light, and its color is the star's tint at this brightness. The cross has its own dot at its center, so a burst is
 // never a point as well. Small, so that the crosses are fine marks in the line art rather than flares. A warm star's
-// cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-045).
+// cross is white instead: an orange cross read as a marker in the Ore's gold (owner, 2026-10-03, ADR-046).
 constexpr float MIN_BURST_RADIUS_PIXELS = 6.0f;
 constexpr float MAX_BURST_RADIUS_PIXELS = 16.0f;
 constexpr float BURST_PEAK = 0.6f;

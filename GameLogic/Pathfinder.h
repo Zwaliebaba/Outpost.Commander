@@ -86,7 +86,7 @@ private:
 class GroupRoutes
 {
 public:
-  // Where the group's band of lanes crosses a route at one of its corners (ADR-046): a ship's lane passes the corner at
+  // Where the group's band of lanes crosses a route at one of its corners (ADR-047): a ship's lane passes the corner at
   // middle + across * its place across the band, in meters. across lies along the corner's mitre, and is stretched so
   // that a lane keeps its distance from the route on both legs.
   struct Band
@@ -125,7 +125,7 @@ public:
   // Searches the group's route from _center, its ships' mean position.
   void SearchFrom(PlanePosition _center);
 
-  // A ship's way: its waypoints, and the last of those that are its lane (ADR-046), when it keeps one.
+  // A ship's way: its waypoints, and the last of those that are its lane (ADR-047), when it keeps one.
   struct Way
   {
     std::vector<PlanePosition> waypoints;
@@ -147,7 +147,7 @@ private:
   [[nodiscard]] std::optional<Way> Join(const Route& _route, PlanePosition _start, PlanePosition _goal, float _clearanceMeters,
                                         float _laneMeters) const;
   // The ship's lane along _route from its _corner on, from _start to _next: each corner moved _laneMeters across the band
-  // from its middle, or towards the corner as far as the way needs (ADR-046). Nothing when the route has no bands, or the
+  // from its middle, or towards the corner as far as the way needs (ADR-047). Nothing when the route has no bands, or the
   // lane cannot be made clear.
   [[nodiscard]] std::optional<std::vector<PlanePosition>> Lane(const Route& _route, std::size_t _corner, PlanePosition _start,
                                                                float _laneMeters, PlanePosition _next, float _clearanceMeters) const;

@@ -135,7 +135,7 @@ public:
                    L"the second ship did not join the first one's path");
   }
 
-  // ADR-046: ships of a group with a band keep their own lanes round the obstacle, side by side, rather than each passing
+  // ADR-047: ships of a group with a band keep their own lanes round the obstacle, side by side, rather than each passing
   // the route's corner. The band moves off the obstacle, so the innermost lane passes the corner and the rest pass outside.
   TEST_METHOD(ShipsOfAGroupKeepTheirLanesRoundAnObstacle)
   {

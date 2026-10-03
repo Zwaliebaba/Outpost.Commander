@@ -78,7 +78,7 @@ constexpr float STRUCTURE_FILL_SHADE = 0.22f;
 // selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
 // fades as the camera comes in: at full strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
 // and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the
-// pointer and while a structure is placed (owner, 2026-10-03, ADR-045).
+// pointer and while a structure is placed (owner, 2026-10-03, ADR-046).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;
 constexpr int RING_LINE_SEGMENTS = 96;
 constexpr float RING_FULL_VIEW_SHARE = 0.03f;
@@ -111,13 +111,13 @@ constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 // above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
 // HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
 // side the data does not name. The gap is small, so that the bar reads as the ship's. Held, HEALTH_BAR_ALL_KEY shows a bar
-// over every ship and structure, whole or not (ADR-046).
+// over every ship and structure, whole or not (ADR-047).
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
 constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
 constexpr std::uint8_t HEALTH_BAR_ALL_KEY = VK_MENU;
 // A bar is never shorter or thinner on screen than these, in the HUD's reference units at the screen's middle: zoomed out,
-// a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-046).
+// a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-047).
 constexpr float HEALTH_BAR_LEAST_LENGTH_UNITS = 32.0f;
 constexpr float HEALTH_BAR_LEAST_THICKNESS_UNITS = 5.0f;
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
@@ -528,7 +528,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     m_fog.Update(m_entities, m_view.Newest().player);
   }
   // What the player may order on: the view, less the asteroids in space it has never seen, which it cannot claim with a
-  // Mining Rig (ADR-045).
+  // Mining Rig (ADR-046).
   m_knownEntities.clear();
   for (const EntityView& entity : m_entities)
   {
@@ -1465,7 +1465,7 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-045).
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046).
   const GhostPlacement ghost =
     PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities, newest.mapSizeMeters);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};

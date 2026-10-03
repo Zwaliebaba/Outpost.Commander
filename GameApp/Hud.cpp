@@ -29,7 +29,7 @@ constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
 // An ore asteroid that has run out: dark, and warmed toward rust.
 constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 // An asteroid field is only in the way, so it is drawn darker than an ore asteroid, which is worth going to, though a
-// field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-045).
+// field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-046).
 constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.06f, 0.06f, 0.065f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 
@@ -43,7 +43,7 @@ constexpr float FIGURE_LINE_UNITS = 16.0f;
 
 // The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's diamond and the figure in the
 // title face from the panel's left, so that the diamond stays put as the figure changes, and the income at its right
-// (ADR-045).
+// (ADR-046).
 constexpr float ORE_PANEL_WIDTH = 260.0f;
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
 
@@ -53,7 +53,7 @@ constexpr float SELECTION_PANEL_WIDTH = 560.0f;
 // Lines of designs before the rest are counted together.
 constexpr size_t SELECTION_DESIGN_LINES = 5;
 // The selection's hit points as a bar under its lines: green above half, then amber, then red, as a bar over a damaged
-// ship is (ADR-045).
+// ship is (ADR-046).
 constexpr float HEALTH_BAR_UNITS = 6.0f;
 constexpr float HEALTH_BAR_GAP_UNITS = 8.0f;
 constexpr float HEALTH_HURT_SHARE = 0.5f;
@@ -69,7 +69,7 @@ constexpr float BUTTON_INSET = 12.0f;
 constexpr float MINIMAP_SIZE = 260.0f;
 constexpr float MINIMAP_PADDING = 8.0f;
 // The smallest a mark is drawn, and how wide the view's outline is, so that both stay visible. An ore asteroid's is the
-// largest, since it is what the player looks for on the map; a rig's mark is drawn over its asteroid's (ADR-045).
+// largest, since it is what the player looks for on the map; a rig's mark is drawn over its asteroid's (ADR-046).
 constexpr float SHIP_MARK_UNITS = 3.0f;
 constexpr float STRUCTURE_MARK_UNITS = 6.0f;
 constexpr float ORE_MARK_UNITS = 8.0f;

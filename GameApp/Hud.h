@@ -112,7 +112,7 @@ public:
     // A designer's pick, drawn lit.
     bool selected = false;
     // Why a button that is not enabled may not be pressed, when the reason is not its cost, shown in place of the cost
-    // (ADR-045).
+    // (ADR-046).
     std::string note;
   };
 
@@ -330,7 +330,7 @@ public:
     std::int32_t ore = 0;
     std::int32_t oreIncomeHundredthsPerSecond = 0;
     // The selection panel's lines, first to last; none when nothing is selected. With them, the share of its hit points
-    // the selection has left, for a bar under them (ADR-045).
+    // the selection has left, for a bar under them (ADR-046).
     std::vector<std::string> selection;
     std::optional<float> selectionHealth;
     std::vector<Button> buttons;

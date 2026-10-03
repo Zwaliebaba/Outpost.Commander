@@ -33,7 +33,7 @@ constexpr float DETOUR_LIMIT = 1.5f;
 // the limit by this share before a route is passed over untried: a route it passes over is then always one whose way
 // would have been longer than the limit.
 constexpr float ROUNDING_ALLOWANCE = 1e-4f;
-// A ship of a group keeps its own lane along a shared route (ADR-046): each corner moved across the way by the ship's
+// A ship of a group keeps its own lane along a shared route (ADR-047): each corner moved across the way by the ship's
 // place in the formation, along the corner's mitre, stretched so that the lane stays as far from the route on both legs,
 // but no more than this many times, so that a sharp corner does not throw the lane far out.
 constexpr float LANE_MITRE_LIMIT = 2.0f;

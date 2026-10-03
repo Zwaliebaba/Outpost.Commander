@@ -408,7 +408,7 @@ public:
     Assert::IsFalse(driver.Controls().Placing().has_value());
   }
 
-  // ADR-045: a Mining Rig is ordered only by an asteroid the controls are given, which leaves out those in space the
+  // ADR-046: a Mining Rig is ordered only by an asteroid the controls are given, which leaves out those in space the
   // player has never seen. A click by none orders nothing and leaves the placement armed.
   TEST_METHOD(OrdersAMiningRigOnlyByAKnownAsteroid)
   {

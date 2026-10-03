@@ -150,7 +150,7 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
   }
   // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed. A
   // Mining Rig is ordered only by an asteroid among the entities the controls are given, which leave out those in space
-  // the player has never seen; a click that orders none leaves the placement armed (ADR-045).
+  // the player has never seen; a click that orders none leaves the placement armed (ADR-046).
   if (m_placing.has_value())
   {
     const std::optional<PlanePosition> site =

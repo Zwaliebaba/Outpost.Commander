@@ -235,7 +235,7 @@ public:
     }
   }
 
-  // ADR-046: a group passes an obstacle side by side, each ship in its own lane, rather than in file through the one point
+  // ADR-047: a group passes an obstacle side by side, each ship in its own lane, rather than in file through the one point
   // where the obstacle's edge leaves room. Without lanes, the group below is 4.9 times as long as it is wide as it passes;
   // in open space it is as long as it is wide.
   TEST_METHOD(AGroupPassesAnObstacleSideBySide)

@@ -1,4 +1,4 @@
-# ADR-045 — After the owner's second look: rings that fade with zoom, white crosses, a clearer HUD, and rigs only on explored ore
+# ADR-046 — After the owner's second look: rings that fade with zoom, white crosses, a clearer HUD, and rigs only on explored ore
 
 Status: **accepted** · 2026-10-03 · supersedes [ADR-042](ADR-042-faint-footprint-lines.md) decisions 1 and 4 in part, [ADR-043](ADR-043-hud-in-the-windows-look.md) decisions 3 and 7 in part, and [ADR-028](ADR-028-vector-grid-and-crosses.md)'s color of a cross
 

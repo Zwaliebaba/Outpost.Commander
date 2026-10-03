@@ -132,7 +132,7 @@ private:
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
   // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
   // in, and at full strength under the one the pointer is on and under all of them while a structure is placed; a Mining
-  // Rig's only then (ADR-042, ADR-045).
+  // Rig's only then (ADR-042, ADR-046).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   // The ring of a Mining Rig's own footprint, laid over its asteroid's rock, into m_drapedRing as a line list in the world
   // (ADR-042); false when the rig's kind is not known.
@@ -140,7 +140,7 @@ private:
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
   // A bar over each damaged ship and structure, or every one while Alt is held, its length the share of hit points left
   // (task 3.5), and one over each structure under construction, its length the share built (task 4.2). Neither is smaller
-  // on screen than a least size (ADR-046).
+  // on screen than a least size (ADR-047).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
@@ -205,7 +205,7 @@ private:
   std::vector<Neuron::MeshVertex> m_shardVertices;
   std::vector<ExplosionManager::Batch> m_shardBatches;
   // The view's entities this frame, which the renderer draws; and those the controls are given, less the asteroids in space
-  // the player has never seen (ADR-045).
+  // the player has never seen (ADR-046).
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;

@@ -267,10 +267,10 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - `--stress` stood rigs on open ground.
 - **Owner's answers, 2026-10-03:** do the review's seven recommendations, and fix the two faults.
 - **Scope:** `GameClient`'s rings, `Starfield`, `Hud`, `FogOfWar`, `PlayerControls` and `StressLoad`.
-- **ADR:** [ADR-045](../Design/ADR/ADR-045-second-look-at-the-screen.md).
+- **ADR:** [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md).
 - **Acceptance:** `HudTests`, `FogOfWarTests`, `PlayerControlsTests`, `StarfieldTests` and `StressLoadTests` for what they cover; the rings and the crosses are the owner's run.
 - **Verify:** CI; **owner run.**
-- **As built:** as ADR-045 has it.
+- **As built:** as ADR-046 has it.
   - **Rings:**
     - A rig's ring shows only under the pointer and while placing.
     - A resting ring fades out between 3% and 6.5% of the view's width.
