@@ -106,6 +106,41 @@ bool IsInRange(const Outpost::Entity& _ship, const Outpost::Entity& _target, flo
   return Outpost::Dot(between, between) <= _rangeMeters * _rangeMeters;
 }
 
+// A group ordered as one keeps a loose formation (design §9, ADR-010): the ships ahead now take its front rows, each row
+// from one side to the other, so that few paths cross. The group keeps the formation's width as a band of lanes along its
+// route (ADR-047).
+void SortForFormation(std::vector<Outpost::Entity*>& _ships, PlanePosition _center, PlaneVector _forward)
+{
+  const PlaneVector side = Outpost::Perpendicular(_forward);
+  std::ranges::sort(_ships,
+                    [&](const Outpost::Entity* _a, const Outpost::Entity* _b)
+                    {
+                      const float aheadA = Outpost::Dot(_a->position - _center, _forward);
+                      const float aheadB = Outpost::Dot(_b->position - _center, _forward);
+                      if (aheadA != aheadB)
+                        return aheadA > aheadB;
+                      const float sideA = Outpost::Dot(_a->position - _center, side);
+                      const float sideB = Outpost::Dot(_b->position - _center, side);
+                      if (sideA != sideB)
+                        return sideA < sideB;
+                      return _a->id < _b->id;
+                    });
+}
+
+// The rows of a formation of _ships are this many wide.
+std::size_t FormationColumns(std::size_t _ships) noexcept
+{
+  return static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(_ships))));
+}
+
+// How far across the formation the _index-th of _ships keeps, in formation order: its row is centered.
+float FormationAcross(std::size_t _index, std::size_t _ships, std::size_t _columns, float _spacing) noexcept
+{
+  const std::size_t row = _index / _columns;
+  const std::size_t inRow = std::min(_columns, _ships - (row * _columns));
+  return (static_cast<float>(_index % _columns) - (static_cast<float>(inRow - 1) / 2.0f)) * _spacing;
+}
+
 float PathLength(PlanePosition _from, const std::vector<PlanePosition>& _path) noexcept
 {
   float length = 0.0f;
@@ -907,24 +942,11 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
   const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
   const PlaneVector forward = Normalized(_destination - center, {1.0f, 0.0f});
   const PlaneVector side = Perpendicular(forward);
-
-  std::ranges::sort(ships,
-                    [&](const Entity* _a, const Entity* _b)
-                    {
-                      const float aheadA = Dot(_a->position - center, forward);
-                      const float aheadB = Dot(_b->position - center, forward);
-                      if (aheadA != aheadB)
-                        return aheadA > aheadB;
-                      const float sideA = Dot(_a->position - center, side);
-                      const float sideB = Dot(_b->position - center, side);
-                      if (sideA != sideB)
-                        return sideA < sideB;
-                      return _a->id < _b->id;
-                    });
+  SortForFormation(ships, center, forward);
 
   // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010). The
   // group keeps the grid's width as a band of lanes along its route (ADR-047).
-  const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
+  const std::size_t columns = FormationColumns(ships.size());
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
 
@@ -941,8 +963,7 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
   for (std::size_t index = 0; index < ships.size(); ++index)
   {
     const std::size_t row = index / columns;
-    const std::size_t inRow = std::min(columns, ships.size() - row * columns);
-    const float across = (static_cast<float>(index % columns) - static_cast<float>(inRow - 1) / 2.0f) * spacing;
+    const float across = FormationAcross(index, ships.size(), columns, spacing);
     planned.members.push_back({.ship = ships[index]->id,
                                .goal = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing),
                                .laneMeters = across});
@@ -1066,7 +1087,8 @@ void Outpost::Simulation::FinishPlannedOrders()
 }
 
 // Each ship closes on the target, along a route the group searched once, and fires at it once it is in range (design §7).
-// Each goes at its own top speed: a chase is not a formation.
+// Each goes at its own top speed: a chase is not a formation, but the group keeps a band of lanes round obstacles as a
+// moving group does, and paths again as a group when its target moves (ADR-047).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const AttackCommand& _order)
 {
   if (const CommandResult result = ValidateShips(_player, _order.ships); result != CommandResult::Applied)
@@ -1095,26 +1117,43 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Attack
   }
   const PlanePosition targetPosition = target->position;
 
-  PlaneVector sum{};
-  float widestRadius = 0.0f;
+  std::vector<Entity*> ships;
   for (const EntityId id : attack.ships)
   {
-    const Entity* ship = FindEntity(id);
+    Entity* ship = FindMutableEntity(id);
+    if (std::ranges::find(ships, ship) == ships.end())
+      ships.push_back(ship);
+  }
+  PlaneVector sum{};
+  float widestRadius = 0.0f;
+  for (const Entity* ship : ships)
+  {
     sum = sum + (ship->position - PlanePosition{});
     widestRadius = std::max(widestRadius, ship->radiusMeters);
   }
-  GroupRoutes routes(m_pathfinder, targetPosition, widestRadius);
-  if (attack.ships.size() > 1)
+  const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
+  SortForFormation(ships, center, Normalized(targetPosition - center, {1.0f, 0.0f}));
+  const std::size_t columns = FormationColumns(ships.size());
+  const float spacing = FORMATION_SPACING_RADII * widestRadius;
+  const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
+  GroupRoutes routes(m_pathfinder, targetPosition, widestRadius, bandHalfWidth);
+  if (ships.size() > 1)
   {
     const ObservedPart part(m_observer, TickPart::GroupRoute);
-    routes.SearchFrom(PlanePosition{} + sum * (1.0f / static_cast<float>(attack.ships.size())));
+    routes.SearchFrom(center);
   }
 
-  PlannedOrder planned{
-    .order = ShipOrder::Attack, .destination = targetPosition, .attackTarget = attack.target, .widestRadiusMeters = widestRadius};
-  planned.members.reserve(attack.ships.size());
-  for (const EntityId id : attack.ships)
-    planned.members.push_back({.ship = id, .goal = targetPosition});
+  PlannedOrder planned{.order = ShipOrder::Attack,
+                       .destination = targetPosition,
+                       .attackTarget = attack.target,
+                       .widestRadiusMeters = widestRadius,
+                       .bandHalfWidthMeters = bandHalfWidth};
+  planned.members.reserve(ships.size());
+  for (std::size_t index = 0; index < ships.size(); ++index)
+  {
+    planned.members.push_back(
+      {.ship = ships[index]->id, .goal = targetPosition, .laneMeters = FormationAcross(index, ships.size(), columns, spacing)});
+  }
   planned.routes = routes.TakeRoutes();
   Plan(std::move(planned));
   return CommandResult::Applied;
@@ -1322,9 +1361,18 @@ void Outpost::Simulation::Fight()
 }
 
 // A ship on an attack order stands while its target is in range, and otherwise heads for it, pathing again when the
-// target has moved away from where it last pathed to, at most once a second.
+// target has moved away from where it last pathed to, at most once a second. The ships of one player that path again to
+// one target in the same tick path as a group, along one route in a band of lanes, as they set out (ADR-047).
 void Outpost::Simulation::ChaseTargets()
 {
+  // The ships to path again, by their owner and target, in the order their groups' first ships come.
+  struct Chase
+  {
+    PlayerId owner;
+    EntityId target;
+    std::vector<Entity*> ships;
+  };
+  std::vector<Chase> chases;
   for (Entity& ship : m_entities)
   {
     if (ship.order != ShipOrder::Attack)
@@ -1339,15 +1387,61 @@ void Outpost::Simulation::ChaseTargets()
     const bool moved = Distance(target.position, ship.chasedPosition) > CHASE_REPATH_METERS && m_tick >= ship.chaseTick;
     if (!ship.path.empty() && !moved)
       continue;
-    ship.path = m_pathfinder.IsStraightPathClear(ship.position, target.position, ship.radiusMeters)
-                  ? std::vector<PlanePosition>{target.position}
-                  : m_pathfinder.FindPath(ship.position, target.position, ship.radiusMeters);
-    ship.laneEnd.reset();
-    ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
-    ship.closestMeters = std::numeric_limits<float>::infinity();
-    ship.stalledTicks = 0;
-    ship.chasedPosition = target.position;
-    ship.chaseTick = m_tick + m_ticksPerSecond;
+    const auto chase = std::ranges::find_if(chases, [&ship](const Chase& _chase)
+                                            { return _chase.owner == ship.owner && _chase.target == ship.attackTarget; });
+    if (chase != chases.end())
+      chase->ships.push_back(&ship);
+    else
+      chases.push_back({.owner = ship.owner, .target = ship.attackTarget, .ships = {&ship}});
+  }
+
+  for (Chase& chase : chases)
+  {
+    const PlanePosition target = FindEntity(chase.target)->position;
+    if (chase.ships.size() == 1)
+    {
+      Entity& ship = *chase.ships.front();
+      ship.path = m_pathfinder.IsStraightPathClear(ship.position, target, ship.radiusMeters)
+                    ? std::vector<PlanePosition>{target}
+                    : m_pathfinder.FindPath(ship.position, target, ship.radiusMeters);
+      ship.laneEnd.reset();
+    }
+    else
+    {
+      PlaneVector sum{};
+      float widestRadius = 0.0f;
+      for (const Entity* ship : chase.ships)
+      {
+        sum = sum + (ship->position - PlanePosition{});
+        widestRadius = std::max(widestRadius, ship->radiusMeters);
+      }
+      const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(chase.ships.size()));
+      SortForFormation(chase.ships, center, Normalized(target - center, {1.0f, 0.0f}));
+      const std::size_t columns = FormationColumns(chase.ships.size());
+      const float spacing = FORMATION_SPACING_RADII * widestRadius;
+      GroupRoutes routes(m_pathfinder, target, widestRadius, static_cast<float>(columns - 1) * spacing / 2.0f);
+      {
+        const ObservedPart part(m_observer, TickPart::GroupRoute);
+        routes.SearchFrom(center);
+      }
+      const ObservedPart part(m_observer, TickPart::ShipPaths);
+      for (std::size_t index = 0; index < chase.ships.size(); ++index)
+      {
+        Entity& ship = *chase.ships[index];
+        GroupRoutes::Way way =
+          routes.PathFor(ship.position, target, ship.radiusMeters, FormationAcross(index, chase.ships.size(), columns, spacing));
+        ship.path = std::move(way.waypoints);
+        ship.laneEnd = way.laneEnd;
+      }
+    }
+    for (Entity* ship : chase.ships)
+    {
+      ship->cruiseSpeedMetersPerSecond = ship->speedMetersPerSecond;
+      ship->closestMeters = std::numeric_limits<float>::infinity();
+      ship->stalledTicks = 0;
+      ship->chasedPosition = target;
+      ship->chaseTick = m_tick + m_ticksPerSecond;
+    }
   }
 }
 
