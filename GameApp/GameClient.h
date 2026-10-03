@@ -169,7 +169,8 @@ private:
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).
   [[nodiscard]] std::optional<PlanePosition> MuzzleOf(EntityId _shooter, PlanePosition _target) const;
-  void DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  // Queues _entity's model for the frame's batches of faces and lines (ADR-053).
+  void QueueEntity(const EntityView& _entity);
   // Starts the blast and the explosion of every ship and structure _snapshot reports destroyed (ADR-026), before the view
   // takes the snapshot, so that the view still holds what blew up.
   void Explode(const Snapshot& _snapshot);
@@ -177,11 +178,11 @@ private:
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
   // The model _set/_model placed by _world: its faces _color at _fillShade, queued for the frame's batch of faces
   // (ADR-053), and its creases over them as lines, lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
-  void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                 const DirectX::XMFLOAT4& _color, float _fillShade);
-  // A structure drawn to its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
+  void QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color,
+                  float _fillShade);
+  // A structure queued at its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
   // (task 4.2).
-  void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
+  void QueueStructure(const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.

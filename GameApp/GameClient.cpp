@@ -1004,7 +1004,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   m_faceDraws.clear();
   m_lineDraws.clear();
   for (const EntityView& entity : m_entities)
-    DrawEntity(_commandList, entity);
+    QueueEntity(entity);
   // Every model's faces, each mesh's copies in one draw (ADR-053).
   m_pipeline.DrawMeshes(_commandList, m_faceDraws);
   DrawShards(_commandList);
@@ -1274,7 +1274,7 @@ void Outpost::GameClient::DrawBand(ID3D12GraphicsCommandList* _commandList, Plan
   m_pipeline.Draw(_commandList, *m_strip, matrix, _color);
 }
 
-void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
+void Outpost::GameClient::QueueEntity(const EntityView& _entity)
 {
   const DirectX::XMFLOAT3 position{_entity.position.xMeters, 0.0f, _entity.position.zMeters};
   switch (_entity.kind)
@@ -1284,14 +1284,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
     if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
-      DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE);
+      QueueModel(placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE);
     break;
   }
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
-    DrawModel(_commandList, ASTEROID_SET, RockModel(_entity.radiusMeters),
-              WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color, FILL_SHADE);
+    QueueModel(ASTEROID_SET, RockModel(_entity.radiusMeters), WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters),
+               set.color, FILL_SHADE);
     break;
   }
   case EntityKind::AsteroidField:
@@ -1300,26 +1300,26 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
     const float radius = _entity.radiusMeters;
     const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
-    DrawModel(_commandList, ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, FILL_SHADE);
+    QueueModel(ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, FILL_SHADE);
     const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      DrawModel(_commandList, ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, FILL_SHADE);
+      QueueModel(ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, FILL_SHADE);
     }
     break;
   }
   case EntityKind::Structure:
   default:
-    DrawStructure(_commandList, _entity);
+    QueueStructure(_entity);
     break;
   }
 }
 
-void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model,
-                                    const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _fillShade)
+void Outpost::GameClient::QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
+                                     const DirectX::XMFLOAT4& _color, float _fillShade)
 {
   const bool rock = _set == ASTEROID_SET;
   const DirectX::XMFLOAT4 edgeColor =
@@ -1333,13 +1333,13 @@ void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std
   }
 }
 
-void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity)
+void Outpost::GameClient::QueueStructure(const EntityView& _entity)
 {
   const std::optional<PlacedModel> placed = PlaceModel(_entity);
   if (!placed.has_value())
     return;
-  DrawModel(_commandList, placed->set->name, *placed->model, placed->World(),
-            TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE);
+  QueueModel(placed->set->name, *placed->model, placed->World(),
+             TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE);
 }
 
 void Outpost::GameClient::Explode(const Snapshot& _snapshot)
