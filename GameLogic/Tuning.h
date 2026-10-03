@@ -85,6 +85,18 @@ struct WeaponTuning
   std::int32_t cost = 0;
 };
 
+// A module, a design's optional fourth component (Phase 2 design §10, ADR-058): how far a ship with it sees, whatever its
+// weapon, the factor on its speed, and what it adds to the design's cost. No research unlocks one: every module is
+// available from the start.
+struct ModuleTuning
+{
+  ModuleId id;
+  std::string name;
+  double sightMeters = 0.0;
+  double speedFactor = 0.0;
+  std::int32_t cost = 0;
+};
+
 // The Constructor, the one fixed design (design §7): no weapon, built at the Command Station, and the rates it builds and
 // repairs at (gate G8, a provisional baseline the owner set on 2026-10-01).
 struct ConstructorTuning
@@ -205,6 +217,7 @@ struct Tuning
   std::vector<HullTuning> hulls;
   std::vector<DriveTuning> drives;
   std::vector<WeaponTuning> weapons;
+  std::vector<ModuleTuning> modules;
   ConstructorTuning constructor;
   std::vector<StructureWeaponTuning> structureWeapons;
   // One per StructureKind, in the order of the file.

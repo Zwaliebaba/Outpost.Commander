@@ -28,5 +28,7 @@ using DesignId = Id<struct DesignTag>;
 using HullId = Id<struct HullTag>;
 using DriveId = Id<struct DriveTag>;
 using WeaponId = Id<struct WeaponTag>;
+// A design's optional fourth component (Phase 2 design §10); no identifier for none.
+using ModuleId = Id<struct ModuleTag>;
 using ResearchTopicId = Id<struct ResearchTopicTag>;
 } // namespace Outpost

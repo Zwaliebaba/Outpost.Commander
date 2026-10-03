@@ -833,6 +833,50 @@ public:
   // Phase 1 design §11, after the mockup: a window 728 units wide; the Shipyard's arrows in its title bar, pressed rather
   // than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the weapons wrap to a
   // second line of cards once there are more than three; and Queue at the bottom.
+  // Phase 2 design §10: the designer's fourth row holds no module and each module; a design's chip names its module's
+  // initials; a Sensors bar shows how far a module lets the ship see; and the window still fits a 1080-line screen.
+  TEST_METHOD(OffersTheModulesInAFourthRow)
+  {
+    constexpr Outpost::ModuleId SENSOR_ARRAY{1};
+    Outpost::Snapshot newest = DesignerSnapshot(false, true);
+    newest.modules = {
+      {.id = SENSOR_ARRAY, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40, .available = true}};
+    newest.designs.push_back({.id = Outpost::DesignId{2},
+                              .nameUtf8 = "Scout",
+                              .hull = Outpost::HullId{1},
+                              .drive = Outpost::DriveId{1},
+                              .weapon = Outpost::WeaponId{1},
+                              .module = SENSOR_ARRAY,
+                              .cost = 127});
+    Outpost::Designer designer;
+    designer.Update(newest);
+    Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    const Outpost::Hud::SlotRow& modules = panel.slots[3];
+    Assert::AreEqual(std::string("MODULE"), modules.label);
+    Assert::AreEqual(std::string("None"), modules.picked);
+    Assert::AreEqual(size_t{2}, modules.cards.size());
+    Assert::IsTrue(modules.cards[0].picked && !modules.cards[1].picked);
+    Assert::IsTrue(modules.cards[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickModule, .module = SENSOR_ARRAY});
+    Assert::AreEqual(40, modules.cards[1].cost);
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.chips[1].code);
+    const auto sensors = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
+    Assert::IsTrue(sensors != panel.bars.end());
+    Assert::AreEqual(std::string("-"), sensors->value);
+
+    // Hovering the module previews the design it would make.
+    panel = DesignerOf(newest, designer, modules.cards[1].action);
+    Assert::AreEqual(std::string("Preview: with Sensor Array instead"), panel.hint);
+    const auto previewed = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
+    Assert::AreEqual(std::string("700"), previewed->previewValue);
+
+    Outpost::Hud::Content content;
+    content.designer = panel;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{1}, layout.windows.size());
+    const Outpost::Hud::Rect& frame = layout.windows.front().frame;
+    Assert::IsTrue(frame.top >= 0.0f && frame.top + frame.height <= 1080.0f, std::to_wstring(frame.top + frame.height).c_str());
+  }
+
   TEST_METHOD(LaysTheDesignerOutAfterTheMockup)
   {
     const auto layOut = [](const Outpost::Snapshot& _newest)

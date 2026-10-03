@@ -131,6 +131,22 @@ public:
   }
 
   // Design §7: max(damage × 0.25, damage − armor), in hundredths.
+  // Phase 2 design §10: a module's name follows the weapon's in a design's name, and its numbers change the design's.
+  TEST_METHOD(AModuleJoinsTheDesign)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
+    const Outpost::DesignComponents scout{Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}, Outpost::ModuleId{1}};
+    Assert::AreEqual(std::string("Small+Ion+Mass Driver+Sensor Array"), Outpost::DesignName(tuning, scout));
+    const Outpost::DesignStats with = Outpost::DesignStatsFor(tuning, scout);
+    const Outpost::DesignStats without = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1});
+    Assert::AreEqual(without.cost + 40, with.cost);
+    Assert::AreEqual(without.movement.speedMetersPerSecond * 0.9f, with.movement.speedMetersPerSecond, 1e-4f);
+    Assert::AreEqual(0.0f, without.moduleSightMeters);
+    Assert::AreEqual(700.0f, with.moduleSightMeters);
+    Assert::AreEqual(without.damageHundredths, with.damageHundredths);
+    Assert::AreEqual(without.hitPointsHundredths, with.hitPointsHundredths);
+  }
+
   TEST_METHOD(ArmorTakesItsShareOfAHit)
   {
     Assert::AreEqual(600, Outpost::HitHundredths(1400, 800));

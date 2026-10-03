@@ -356,6 +356,7 @@ private:
     std::vector<HullView> hulls;
     std::vector<DriveView> drives;
     std::vector<WeaponView> weapons;
+    std::vector<ModuleView> modules;
     std::vector<ResearchTopicView> topics;
 
     friend bool operator==(const ResearchEffects&, const ResearchEffects&) noexcept

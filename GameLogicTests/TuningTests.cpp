@@ -100,6 +100,7 @@ constexpr std::string_view MINIMAL_TUNING = R"({
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
   "weapons": [ { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120,
                  "splashRadiusMeters": 0, "cost": 35 } ],
+  "modules": [ { "id": 1, "name": "Sensor Array", "sightMeters": 700, "speedFactor": 0.9, "cost": 40 } ],
   "structureWeapons": [ { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 } ],
   "constructor": { "hitPoints": 300, "armor": 3, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15,
                    "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5,
@@ -250,6 +251,20 @@ public:
                  std::format("weapons[{}]", i));
     }
 
+    const Neuron::JsonValue::Array& modules = json.Find("modules")->AsArray();
+    Assert::AreEqual(modules.size(), tuning.modules.size());
+    for (size_t i = 0; i < modules.size(); ++i)
+    {
+      const Outpost::ModuleTuning& module = tuning.modules[i];
+      ExpectSame(modules[i],
+                 {{"id", Number(module.id.value)},
+                  {"name", module.name},
+                  {"sightMeters", module.sightMeters},
+                  {"speedFactor", module.speedFactor},
+                  {"cost", Number(module.cost)}},
+                 std::format("modules[{}]", i));
+    }
+
     const Outpost::ConstructorTuning& constructor = tuning.constructor;
     ExpectSame(*json.Find("constructor"),
                {{"hitPoints", Number(constructor.hitPoints)},
@@ -356,6 +371,7 @@ public:
     ExpectLoadError(Replace("\"unarmedMeters\": 200, ", ""), "sight: has no \"unarmedMeters\"");
     ExpectLoadError(Replace(", \"suppressionRadiusMeters\": 400", ""), "territory: has no \"suppressionRadiusMeters\"");
     ExpectLoadError(Replace("\"tickets\": 1000, ", ""), "territory: has no \"tickets\"");
+    ExpectLoadError(Replace("\"sightMeters\": 700, ", ""), "modules[0]: has no \"sightMeters\"");
     ExpectLoadError(Replace("\"repairPercentPerSecond\": 2 },", "\"repairPercentPerSecond\": 0 },"), "constructor.repairPercentPerSecond");
     ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 150, ", ""), "constructor: has no \"turnRateDegreesPerSecond\"");
     ExpectLoadError(Replace("\"splashRadiusMeters\": 0,", "\"splashRadiusMeters\": 0, \"splashRadius\": 5,"), "weapons[0].splashRadius");
@@ -373,6 +389,7 @@ public:
     ExpectLoadError(Replace("\"cutOffIncomePercent\": 50,", "\"cutOffIncomePercent\": 101,"), "territory.cutOffIncomePercent");
     ExpectLoadError(Replace("\"suppressionRadiusMeters\": 400", "\"suppressionRadiusMeters\": 0"), "territory.suppressionRadiusMeters");
     ExpectLoadError(Replace("\"tickets\": 1000", "\"tickets\": 0"), "territory.tickets");
+    ExpectLoadError(Replace("\"speedFactor\": 0.9", "\"speedFactor\": 0"), "modules[0].speedFactor");
     ExpectLoadError(Replace("\"drainIntervalSeconds\": 10", "\"drainIntervalSeconds\": 0"), "territory.drainIntervalSeconds");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 1e10,"), "hulls[0].hitPoints");
   }

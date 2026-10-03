@@ -119,6 +119,17 @@ Outpost::WeaponTuning ReadWeapon(ObjectReader& _reader)
   return weapon;
 }
 
+Outpost::ModuleTuning ReadModule(ObjectReader& _reader)
+{
+  Outpost::ModuleTuning module;
+  module.id = _reader.Identifier<Outpost::ModuleId>("id");
+  module.name = _reader.String("name");
+  module.sightMeters = _reader.Number("sightMeters", JsonBound::NotNegative);
+  module.speedFactor = _reader.Number("speedFactor", JsonBound::Positive);
+  module.cost = _reader.Integer("cost", 0);
+  return module;
+}
+
 Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
 {
   Outpost::ConstructorTuning constructor;
@@ -408,6 +419,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   tuning.hulls = Neuron::ReadJsonList<Outpost::HullTuning>(root, "hulls", ReadHull);
   tuning.drives = Neuron::ReadJsonList<Outpost::DriveTuning>(root, "drives", ReadDrive);
   tuning.weapons = Neuron::ReadJsonList<Outpost::WeaponTuning>(root, "weapons", ReadWeapon);
+  tuning.modules = Neuron::ReadJsonList<Outpost::ModuleTuning>(root, "modules", ReadModule);
   ObjectReader constructor(root.Required("constructor"), "constructor");
   tuning.constructor = ReadConstructor(constructor);
   constructor.Finish();
@@ -419,6 +431,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckUniqueIds(tuning.hulls, "hulls");
   CheckUniqueIds(tuning.drives, "drives");
   CheckUniqueIds(tuning.weapons, "weapons");
+  CheckUniqueIds(tuning.modules, "modules");
   CheckUniqueIds(tuning.structureWeapons, "structureWeapons");
   CheckUniqueIds(tuning.research, "research");
   CheckReferences(tuning);

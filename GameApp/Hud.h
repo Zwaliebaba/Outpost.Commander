@@ -58,6 +58,8 @@ public:
     PickHull,
     PickDrive,
     PickWeapon,
+    // The module, or none (Phase 2 design §10).
+    PickModule,
     EditName,
     SaveDesign,
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
@@ -97,6 +99,8 @@ public:
     HullId hull;
     DriveId drive;
     WeaponId weapon;
+    // A module to pick, or none.
+    ModuleId module;
     // How many ships a Queue asks for (Phase 1 design §11).
     std::uint32_t count = 1;
 
@@ -216,7 +220,8 @@ public:
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;
-    std::array<SlotRow, 3> slots;
+    // Hull, drive, weapon and module (Phase 2 design §10).
+    std::array<SlotRow, 4> slots;
     std::vector<StatBar> bars;
     std::vector<DamageCard> damage;
     // What the bars and the cards preview while a part is hovered; the help line otherwise.

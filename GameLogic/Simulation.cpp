@@ -233,9 +233,12 @@ float Outpost::Simulation::SightMetersOf(const Entity& _entity) const noexcept
 {
   if (!m_tuning)
     return 0.0f;
+  // A ship with a module that sees further sees that far, whatever its weapon (Phase 2 design §10, ADR-058).
+  const ShipDesign* design = _entity.kind == EntityKind::Ship ? FindDesign(_entity.design) : nullptr;
+  const float moduleSight = design != nullptr ? design->stats.moduleSightMeters : 0.0f;
   if (const std::optional<Armament> armament = ArmamentOf(_entity))
-    return armament->rangeMeters + static_cast<float>(m_tuning->sight.weaponMarginMeters);
-  return static_cast<float>(m_tuning->sight.unarmedMeters);
+    return std::max(moduleSight, armament->rangeMeters + static_cast<float>(m_tuning->sight.weaponMarginMeters));
+  return std::max(moduleSight, static_cast<float>(m_tuning->sight.unarmedMeters));
 }
 
 std::vector<Outpost::Simulation::Observer> Outpost::Simulation::ObserversOf(PlayerId _player) const
@@ -386,6 +389,7 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   {
     view.drive = design->components.drive;
     view.weapon = design->components.weapon;
+    view.module = design->components.module;
   }
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
@@ -439,6 +443,9 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
   effects.weapons.reserve(_tuning.weapons.size());
   for (const WeaponTuning& weapon : _tuning.weapons)
     effects.weapons.push_back(ViewOf(weapon, effects.upgrades, IsAvailable(_tuning, _researched, weapon.id)));
+  effects.modules.reserve(_tuning.modules.size());
+  for (const ModuleTuning& module : _tuning.modules)
+    effects.modules.push_back(ViewOf(module));
   effects.topics.reserve(_tuning.research.size());
   for (const ResearchTopicTuning& topic : _tuning.research)
   {
@@ -489,8 +496,7 @@ void Outpost::Simulation::SaveStartingDesigns(PlayerId _owner, const Tuning& _tu
   {
     if (FindDesign(_owner, components) == nullptr)
     {
-      (void)SaveDesign(_owner, DesignName(_tuning, components), components,
-                       DesignStatsFor(_tuning, components.hull, components.drive, components.weapon));
+      (void)SaveDesign(_owner, DesignName(_tuning, components), components, DesignStatsFor(_tuning, components));
     }
   }
 }
@@ -803,6 +809,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                   .hull = design.components.hull,
                                   .drive = design.components.drive,
                                   .weapon = design.components.weapon,
+                                  .module = design.components.module,
                                   .cost = design.stats.cost});
     }
   }
@@ -824,6 +831,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.hulls = effects.hulls;
     snapshot.drives = effects.drives;
     snapshot.weapons = effects.weapons;
+    snapshot.modules = effects.modules;
     snapshot.research = effects.topics;
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
   }
@@ -2291,7 +2299,7 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
   for (ShipDesign& design : m_designs)
   {
     if (design.owner == _player.id)
-      design.stats = DesignStatsFor(*m_tuning, design.components.hull, design.components.drive, design.components.weapon, upgrades);
+      design.stats = DesignStatsFor(*m_tuning, design.components, upgrades);
   }
   // A ship or structure keeps the share of its hit points it had, so an undamaged one gains the whole upgrade (owner,
   // 2026-10-01). A ship's speed follows its design's, and a Constructor's the rule's; a move under way keeps its pace.
@@ -2371,10 +2379,12 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
 {
   if (!IsValidDesignName(_save.nameUtf8))
     return CommandResult::InvalidName;
-  const DesignComponents components{_save.hull, _save.drive, _save.weapon};
-  const bool known = std::ranges::find(m_tuning->hulls, components.hull, &HullTuning::id) != m_tuning->hulls.end() &&
-                     std::ranges::find(m_tuning->drives, components.drive, &DriveTuning::id) != m_tuning->drives.end() &&
-                     std::ranges::find(m_tuning->weapons, components.weapon, &WeaponTuning::id) != m_tuning->weapons.end();
+  const DesignComponents components{_save.hull, _save.drive, _save.weapon, _save.module};
+  const bool known =
+    std::ranges::find(m_tuning->hulls, components.hull, &HullTuning::id) != m_tuning->hulls.end() &&
+    std::ranges::find(m_tuning->drives, components.drive, &DriveTuning::id) != m_tuning->drives.end() &&
+    std::ranges::find(m_tuning->weapons, components.weapon, &WeaponTuning::id) != m_tuning->weapons.end() &&
+    (!components.module.IsValid() || std::ranges::find(m_tuning->modules, components.module, &ModuleTuning::id) != m_tuning->modules.end());
   if (!known)
     return CommandResult::UnknownComponent;
 
@@ -2395,8 +2405,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
     return CommandResult::ComponentLocked;
   if (FindDesign(_player, components) != nullptr)
     return CommandResult::DuplicateDesign;
-  (void)SaveDesign(_player, _save.nameUtf8, components,
-                   DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, EffectsOf(_player).upgrades));
+  (void)SaveDesign(_player, _save.nameUtf8, components, DesignStatsFor(*m_tuning, components, EffectsOf(_player).upgrades));
   return CommandResult::Applied;
 }
 

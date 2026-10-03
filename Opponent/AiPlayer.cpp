@@ -797,8 +797,9 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 {
   if (_structureWaiting)
     return;
-  const auto design = std::ranges::find_if(_snapshot.designs, [this](const DesignView& _design)
-                                           { return DesignComponents{_design.hull, _design.drive, _design.weapon} == m_productionDesign; });
+  const auto design =
+    std::ranges::find_if(_snapshot.designs, [this](const DesignView& _design)
+                         { return DesignComponents{_design.hull, _design.drive, _design.weapon, _design.module} == m_productionDesign; });
   if (design == _snapshot.designs.end())
   {
     if (!m_designSaveTick.has_value() || _snapshot.tick >= *m_designSaveTick + (DESIGN_WAIT_SECONDS * m_ticksPerSecond))

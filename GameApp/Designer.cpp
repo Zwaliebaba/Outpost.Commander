@@ -26,6 +26,8 @@ void Outpost::Designer::Update(const Snapshot& _newest)
   m_hull = Available(_newest.hulls, m_hull);
   m_drive = Available(_newest.drives, m_drive);
   m_weapon = Available(_newest.weapons, m_weapon);
+  if (const ModuleView* module = Find(_newest.modules, m_module); module == nullptr || !module->available)
+    m_module = {};
   const EntityView* target = Target(_newest);
   m_target = target != nullptr ? target->id : EntityId{};
 }
@@ -95,14 +97,16 @@ void Outpost::Designer::Load(const DesignView& _design) noexcept
   m_hull = _design.hull;
   m_drive = _design.drive;
   m_weapon = _design.weapon;
+  m_module = _design.module;
   m_typed.reset();
   m_editing = false;
 }
 
 const Outpost::DesignView* Outpost::Designer::Match(const Snapshot& _newest) const noexcept
 {
-  const auto found = std::ranges::find_if(_newest.designs, [this](const DesignView& _design)
-                                          { return _design.hull == m_hull && _design.drive == m_drive && _design.weapon == m_weapon; });
+  const auto found = std::ranges::find_if(
+    _newest.designs, [this](const DesignView& _design)
+    { return _design.hull == m_hull && _design.drive == m_drive && _design.weapon == m_weapon && _design.module == m_module; });
   return found != _newest.designs.end() ? &*found : nullptr;
 }
 
@@ -117,7 +121,13 @@ std::string Outpost::Designer::Name(const Snapshot& _newest) const
   const WeaponView* weapon = Find(_newest.weapons, m_weapon);
   if (hull == nullptr || drive == nullptr || weapon == nullptr)
     return {};
-  return std::format("{}+{}+{}", hull->nameUtf8, drive->nameUtf8, weapon->nameUtf8);
+  std::string name = std::format("{}+{}+{}", hull->nameUtf8, drive->nameUtf8, weapon->nameUtf8);
+  if (const ModuleView* module = Find(_newest.modules, m_module))
+  {
+    const std::string whole = std::format("{}+{}", name, module->nameUtf8);
+    name = IsValidDesignName(whole) ? whole : std::format("{}+{}", name, Abbreviation(module->nameUtf8));
+  }
+  return name;
 }
 
 std::optional<Outpost::DesignStats> Outpost::Designer::Stats(const Snapshot& _newest) const
@@ -127,7 +137,10 @@ std::optional<Outpost::DesignStats> Outpost::Designer::Stats(const Snapshot& _ne
   const WeaponView* weapon = Find(_newest.weapons, m_weapon);
   if (hull == nullptr || drive == nullptr || weapon == nullptr)
     return std::nullopt;
-  return DesignStatsOf(*hull, *drive, *weapon);
+  const ModuleView* module = Find(_newest.modules, m_module);
+  if (m_module.IsValid() && module == nullptr)
+    return std::nullopt;
+  return DesignStatsOf(*hull, *drive, *weapon, module);
 }
 
 std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveCommand(const Snapshot& _newest) const
@@ -139,13 +152,15 @@ std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveCommand(const S
   {
     if (match->nameUtf8 == name)
       return std::nullopt;
-    return SaveDesignCommand{.design = match->id, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon};
+    return SaveDesignCommand{
+      .design = match->id, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module};
   }
-  const bool available =
-    Find(_newest.hulls, m_hull)->available && Find(_newest.drives, m_drive)->available && Find(_newest.weapons, m_weapon)->available;
+  const ModuleView* module = Find(_newest.modules, m_module);
+  const bool available = Find(_newest.hulls, m_hull)->available && Find(_newest.drives, m_drive)->available &&
+                         Find(_newest.weapons, m_weapon)->available && (module == nullptr || module->available);
   if (!available)
     return std::nullopt;
-  return SaveDesignCommand{.design = {}, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon};
+  return SaveDesignCommand{.design = {}, .nameUtf8 = name, .hull = m_hull, .drive = m_drive, .weapon = m_weapon, .module = m_module};
 }
 
 std::optional<Outpost::SaveDesignCommand> Outpost::Designer::SaveAndQueue(EntityId _producer, const Snapshot& _newest, std::uint32_t _count)
@@ -168,9 +183,9 @@ std::vector<Outpost::QueueShipCommand> Outpost::Designer::TakeQueueCommands(cons
   std::erase_if(m_waiting,
                 [&](const WaitingQueue& _waiting)
                 {
-                  const auto saved =
-                    std::ranges::find_if(_newest.designs, [&_waiting](const DesignView& _design)
-                                         { return DesignComponents{_design.hull, _design.drive, _design.weapon} == _waiting.components; });
+                  const auto saved = std::ranges::find_if(
+                    _newest.designs, [&_waiting](const DesignView& _design)
+                    { return DesignComponents{_design.hull, _design.drive, _design.weapon, _design.module} == _waiting.components; });
                   if (saved != _newest.designs.end())
                   {
                     queues.push_back({.producer = _waiting.producer, .design = saved->id});

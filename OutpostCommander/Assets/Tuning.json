@@ -28,6 +28,9 @@
     { "id": 4, "name": "Flak Battery", "damage": 20, "fireIntervalSeconds": 0.5, "rangeMeters": 200, "splashRadiusMeters": 26, "cost": 60 },
     { "id": 5, "name": "Rail Cannon", "damage": 320, "fireIntervalSeconds": 6.0, "rangeMeters": 240, "splashRadiusMeters": 0, "cost": 150 }
   ],
+  "modules": [
+    { "id": 1, "name": "Sensor Array", "sightMeters": 700, "speedFactor": 0.9, "cost": 40 }
+  ],
   "constructor": { "hitPoints": 300, "armor": 2, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15, "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5, "repairPercentPerSecond": 2 },
   "structureWeapons": [
     { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 }
