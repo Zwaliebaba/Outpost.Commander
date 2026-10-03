@@ -4,7 +4,9 @@
     "startingOre": 1000,
     "startingConstructors": 2,
     "miningRigOrePerSecondHome": 5,
+    "miningRigOrePerSecondNear": 6,
     "miningRigOrePerSecondContested": 8,
+    "miningRigOrePerSecondRich": 10,
     "exhaustedYieldPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },

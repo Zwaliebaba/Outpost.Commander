@@ -16,8 +16,11 @@ struct RulesTuning
   std::int32_t startingOre = 0;
   // Constructors each player starts with, beside its Command Station (design §6).
   std::int32_t startingConstructors = 0;
+  // A Mining Rig's income on each of Phase 1 design §8's rings of ore asteroids, home outward.
   double miningRigOrePerSecondHome = 0.0;
+  double miningRigOrePerSecondNear = 0.0;
   double miningRigOrePerSecondContested = 0.0;
+  double miningRigOrePerSecondRich = 0.0;
   // What a rig earns of its asteroid's rate once the asteroid's reserve has run out, in percent (Phase 1 design §8).
   std::int32_t exhaustedYieldPercent = 0;
 };

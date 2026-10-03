@@ -36,7 +36,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): tuned; the full check of record is running |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 11.2 | The 5 km map | 11.1 | H3 decided | todo |
+| 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | todo |
 | 12.1 | Losing all production | — | H5 decided | todo |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | todo |
@@ -297,6 +297,12 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `Map.json` at 5,000 m with the four rings, point-symmetric, every passage at least the minimum gap. `MapTests` check both. The layout is in sectors for Phase 2 (design §8; owner, 2026-10-03): about nine, each with a node site, and the map data names them, their node sites and their adjacency, which the game reads nothing of yet. `MapTests` check that adjacency is symmetric, every asteroid lies in one sector and every sector can be reached from both starts. The fog of war's grid, the minimap and the path graphs at the new size are checked against Q4: a `--measure --load` run on the new map is part of the owner run.
 - **Acceptance:** `MapTests`; `PathfinderTests` on the new map.
 - **Verify:** CI; **owner run**: the layout confirmed by the owner, as MVP task 2.3's was, and its first matches decide H8.
+- **As built:** [ADR-036](../Design/ADR/ADR-036-map-sectors.md).
+  - **The map.** 5,000 m, the starts at (−1,750, −1,750) and (1,750, 1,750), 4.95 km apart. Nine sectors on a grid of thirds: each home in its corner with its three home asteroids; each player's flanks with its four near ones, two in each; the six contested round the center; two rich in each empty corner, one nearer each start. 22 asteroid fields stand on the sector borders and at their junctions. 24 asteroids, 285,000 Ore, as design §8.
+  - **Rings and sectors in the data.** The yields `"near"` and `"rich"` join `"home"` and `"contested"`, with their rates in `Tuning.json`. `"sectors"` names each sector's rectangle, node and adjacency, which the loader checks and Phase 1 does not read.
+  - **The client** lets the camera's focus go 2,500 m out instead of 1,000, and draws the ground's grid over 5 km.
+  - **The AI on the bigger map.** Its attack-move left its fleet standing in formation out of its guns' reach of the Command Station it had come for, so its attack group's ships within 500 m of their target structure are ordered to attack it. It then beats a player who does nothing at 7.8 minutes, where it took 5.4 on the 2 km map.
+  - **Tests.** `MapTests`: the repository map's rings and reserves (`TheRepositoryMapHasPhaseOnesShape`), its sectors (`TheRepositoryMapIsLaidOutInSectors`), and the loader's refusals of broken sectors; the reachability, symmetry and pathing tests run on the new map unchanged. `AiPlayerTests`' figures follow the new map's rings, and the defence test is placed from the AI's start.
 
 ### 11.3 — The AI follows the ore
 

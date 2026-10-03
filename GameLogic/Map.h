@@ -2,11 +2,13 @@
 
 namespace Outpost
 {
-// What an ore asteroid yields, as design §5 and the tuning data's rules name it.
+// What an ore asteroid yields, as the tuning data's rules name it: Phase 1 design §8's rings, home outward.
 enum class OreYield : std::uint8_t
 {
   Home,
-  Contested
+  Near,
+  Contested,
+  Rich
 };
 
 // A mineable asteroid: one Mining Rig snaps to it (design §5, §6). It blocks movement as a circle.
@@ -27,6 +29,27 @@ struct AsteroidFieldPlacement
   float radiusMeters = 0.0f;
 };
 
+// An area of the map with one node site, where Phase 2's territory will be claimed (Phase 1 design §8; the Phase 2 draft,
+// §4). Phase 1 reads none of it. A sector is a rectangle, and two sectors are adjacent when they share a border.
+struct SectorPlacement
+{
+  std::int32_t id = 0;
+  std::string name;
+  float minXMeters = 0.0f;
+  float maxXMeters = 0.0f;
+  float minZMeters = 0.0f;
+  float maxZMeters = 0.0f;
+  PlanePosition node;
+  std::vector<std::int32_t> adjacent;
+
+  // Whether _position is in the sector, its borders included.
+  [[nodiscard]] bool Contains(PlanePosition _position) const noexcept
+  {
+    return _position.xMeters >= minXMeters && _position.xMeters <= maxXMeters && _position.zMeters >= minZMeters &&
+           _position.zMeters <= maxZMeters;
+  }
+};
+
 // OutpostCommander/Assets/Map.json as the game holds it (design §4, ADR-008). The map is a square centered on the origin.
 struct Map
 {
@@ -38,10 +61,15 @@ struct Map
   std::vector<PlanePosition> starts;
   std::vector<OreAsteroidPlacement> oreAsteroids;
   std::vector<AsteroidFieldPlacement> asteroidFields;
+  // None in a map without them.
+  std::vector<SectorPlacement> sectors;
 };
 
 // Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
-// such as "oreAsteroids[3].radiusMeters". Every ore asteroid states its reserve. Besides types and ranges it checks that
-// there are two starts, and that every obstacle, the edge and every start keep the minimum gap from each other.
+// such as "oreAsteroids[3].radiusMeters". Every ore asteroid states its reserve; sectors are optional. Besides types and
+// ranges it checks that every sector's identifier is unique, its rectangle is on the map with its node inside it, its
+// node keeps the minimum gap from every obstacle, and its adjacency names other sectors and is returned by them. It
+// checks that there are two starts, and that every obstacle, the edge and every start keep the minimum gap from each
+// other.
 [[nodiscard]] Map LoadMap(std::string_view _json);
 } // namespace Outpost

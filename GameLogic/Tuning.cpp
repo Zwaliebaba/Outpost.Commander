@@ -48,7 +48,9 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   rules.startingOre = _reader.Integer("startingOre", 0);
   rules.startingConstructors = _reader.Integer("startingConstructors", 0);
   rules.miningRigOrePerSecondHome = _reader.Number("miningRigOrePerSecondHome", JsonBound::NotNegative);
+  rules.miningRigOrePerSecondNear = _reader.Number("miningRigOrePerSecondNear", JsonBound::NotNegative);
   rules.miningRigOrePerSecondContested = _reader.Number("miningRigOrePerSecondContested", JsonBound::NotNegative);
+  rules.miningRigOrePerSecondRich = _reader.Number("miningRigOrePerSecondRich", JsonBound::NotNegative);
   rules.exhaustedYieldPercent = _reader.Integer("exhaustedYieldPercent", 0);
   if (rules.exhaustedYieldPercent > 100)
     Neuron::JsonFail(_reader.PathOf("exhaustedYieldPercent"), std::format("is at most 100, found {}", rules.exhaustedYieldPercent));

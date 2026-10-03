@@ -108,6 +108,8 @@ private:
   std::vector<EntityId> m_attackGroup;
   EntityId m_attackTarget;
   bool m_searching = false;
+  // The ships of the attack group already ordered to attack its target from close by, once each.
+  std::vector<EntityId> m_closingIn;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.

@@ -1823,8 +1823,11 @@ std::int64_t Outpost::Simulation::IncomeHundredthsPerSecond(PlayerId _player) co
 
 std::int64_t Outpost::Simulation::RigIncomeHundredthsPerSecond(const Entity& _rig, double _incomeFactor) const
 {
-  const double rate =
-    _rig.oreYield == OreYield::Home ? m_tuning->rules.miningRigOrePerSecondHome : m_tuning->rules.miningRigOrePerSecondContested;
+  const RulesTuning& rules = m_tuning->rules;
+  const double rate = _rig.oreYield == OreYield::Home        ? rules.miningRigOrePerSecondHome
+                      : _rig.oreYield == OreYield::Near      ? rules.miningRigOrePerSecondNear
+                      : _rig.oreYield == OreYield::Contested ? rules.miningRigOrePerSecondContested
+                                                             : rules.miningRigOrePerSecondRich;
   const Entity* asteroid = FindEntity(_rig.site);
   const bool dry = asteroid != nullptr && asteroid->oreReserveHundredths == 0;
   const double share = dry ? m_tuning->rules.exhaustedYieldPercent / 100.0 : 1.0;

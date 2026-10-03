@@ -88,7 +88,8 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 // A small file that loads, for the error cases to break one thing at a time.
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
-             "miningRigOrePerSecondContested": 8, "exhaustedYieldPercent": 20 },
+             "miningRigOrePerSecondNear": 6, "miningRigOrePerSecondContested": 8, "miningRigOrePerSecondRich": 10,
+             "exhaustedYieldPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
@@ -176,7 +177,9 @@ public:
                 {"startingOre", Number(rules.startingOre)},
                 {"startingConstructors", Number(rules.startingConstructors)},
                 {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
+                {"miningRigOrePerSecondNear", rules.miningRigOrePerSecondNear},
                 {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
+                {"miningRigOrePerSecondRich", rules.miningRigOrePerSecondRich},
                 {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)}},
                "rules");
     ExpectSame(*json.Find("sight"),
@@ -424,7 +427,7 @@ public:
 
   TEST_METHOD(RejectsText)
   {
-    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 7");
+    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 8");
     ExpectLoadError("[]", "the file");
   }
 };

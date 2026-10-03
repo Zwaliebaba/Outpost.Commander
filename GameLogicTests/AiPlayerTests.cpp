@@ -421,7 +421,8 @@ public:
     Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
 
     match.Run(140.0);
-    Assert::AreEqual(4875, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
+    // Phase 1 design §8's map: three home rigs at 5 Ore a second and three on the near ring at 6, raised by a quarter.
+    Assert::AreEqual(4125, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards());
     match.Run(60.0);
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards(), L"no fifth Shipyard below 50 Ore/s");
@@ -492,13 +493,14 @@ public:
   TEST_METHOD(DefendsAStructureUnderFire)
   {
     AiMatch match;
-    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 4, {700.0f, 600.0f});
+    const Outpost::PlanePosition home = match.Start(AI);
+    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 4, {home.xMeters - 50.0f, home.zMeters - 150.0f});
     match.Run(3.0);
     // An outpost of the AI's, far from its base, and a raider beside it.
-    const Outpost::PlanePosition outpost{-100.0f, 700.0f};
+    const Outpost::PlanePosition outpost{home.xMeters - 650.0f, home.zMeters - 600.0f};
     const Outpost::EntityId platform =
       match.World().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f, 150000, 1000);
-    const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {-100.0f, 900.0f});
+    const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {outpost.xMeters, outpost.zMeters + 200.0f});
     match.Human().Send({.player = HUMAN, .order = Outpost::AttackCommand{.ships = raider, .target = platform}});
     const float before = MeanDistance(match.View(AI), reserve, outpost);
     match.Run(12.0);

@@ -26,6 +26,10 @@ constexpr int SEARCH_RINGS = 20;
 constexpr float RALLY_RADIUS_METERS = 40.0f;
 // A reserve warship is sent again only when where it should be has moved this far.
 constexpr float RESEND_METERS = 50.0f;
+// An attack-move ends at each ship's place in the group's formation round the target, which for a large group or a
+// large structure can be out of the ship's range; a ship of the attack group this close to its target structure is
+// ordered to attack it, which closes it into range.
+constexpr float CLOSE_IN_METERS = 500.0f;
 
 float Distance(PlanePosition _a, PlanePosition _b) noexcept
 {
@@ -686,12 +690,32 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
         nearest = &entity;
     }
     m_attackTarget = nearest != nullptr ? nearest->id : EntityId{};
+    m_closingIn.clear();
     if (nearest != nullptr)
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = nearest->position}));
     else if (!m_searching || grown)
       _orders.push_back(MakeCommand(
         m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
     m_searching = nearest == nullptr;
+  }
+
+  // The attack group's ships near their target attack it, so that none stands idle out of range of it.
+  if (const EntityView* attacked = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget))
+  {
+    std::erase_if(m_closingIn, [this](EntityId _id) { return std::ranges::find(m_attackGroup, _id) == m_attackGroup.end(); });
+    std::vector<EntityId> closing;
+    for (const EntityId id : m_attackGroup)
+    {
+      const EntityView* ship = FindEntity(_snapshot, id);
+      if (ship != nullptr && std::ranges::find(m_closingIn, id) == m_closingIn.end() &&
+          Distance(ship->position, attacked->position) <= CLOSE_IN_METERS + attacked->radiusMeters)
+        closing.push_back(id);
+    }
+    if (!closing.empty())
+    {
+      m_closingIn.insert(m_closingIn.end(), closing.begin(), closing.end());
+      _orders.push_back(MakeCommand(m_player, AttackCommand{.ships = std::move(closing), .target = attacked->id}));
+    }
   }
 
   const bool defending =
