@@ -31,8 +31,8 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | in review: owner run |
 | 16.1 | The module slot and the Sensor Array | — | J6 decided | done, not yet built on Windows |
 | 16.2 | The designer's module row | 16.1 | — | in review: owner run |
-| 17.1 | Alerts | 14.3 | J5 decided | todo |
-| 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | todo |
+| 17.1 | Alerts | 14.3 | J5 decided | in review: owner run |
+| 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | in review: owner run |
 | 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | todo |
 | 19.1 | The match log for Phase 2 | 15.1 | — | todo |
 | 19.2 | S1–S5 | 18.1, 19.1 | — | todo |
@@ -177,6 +177,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one, with the alerts' rules and the key.
 - **Acceptance:** `AlertsTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-059](../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 1 and 2. Space moves the camera to the newest alert; `DestroyedView` carries a structure's kind, for a lost rig.
 
 ### 17.2 — Standing orders: hold a sector, patrol
 
@@ -185,6 +186,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** the one 17.1 writes.
 - **Acceptance:** `StandingOrderTests`; `PlayerControlsTests` for the keys.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-059](../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 3–7. H and T arm them, since P opens the production window. 217 `GameLogicTests` pass in the container.
 
 ---
 

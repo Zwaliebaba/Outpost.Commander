@@ -41,6 +41,14 @@ inline constexpr size_t QUEUE_LIMIT = 5;
 // How far a structure's construction or a queue's front job has come, in thousandths.
 inline constexpr std::int32_t PERMILLE = 1000;
 
+// A standing order a warship keeps until given another (Phase 2 design §9, ADR-059).
+enum class StandingOrder : std::uint8_t
+{
+  None,
+  HoldSector,
+  Patrol
+};
+
 // What one player may see of one entity. It carries what the client draws and selects.
 struct EntityView
 {
@@ -90,6 +98,8 @@ struct EntityView
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;
+  // A ship's standing order, which only its owner sees (ADR-059).
+  StandingOrder standing = StandingOrder::None;
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
   // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
   std::optional<std::int64_t> oreReserveHundredths;
@@ -271,6 +281,8 @@ struct DestroyedView
 {
   EntityId id;
   EntityKind kind = EntityKind::Ship;
+  // Meaningful for a structure only, such as a Mining Rig, which the client alerts its player to (ADR-059).
+  StructureKind structure = StructureKind::CommandStation;
   PlayerId owner;
   HullId hull;
   PlanePosition position;

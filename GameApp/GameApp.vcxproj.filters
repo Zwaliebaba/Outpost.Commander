@@ -95,6 +95,9 @@
     <ClInclude Include="Hud.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="Alerts.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -153,6 +156,9 @@
       <Filter>Fog</Filter>
     </ClCompile>
     <ClCompile Include="Hud.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Alerts.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
   </ItemGroup>

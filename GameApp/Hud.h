@@ -375,6 +375,8 @@ public:
     // The map's sectors, and the nodes each side holds; none on a map without sectors.
     std::vector<SectorMark> sectors;
     std::optional<Territory> territory;
+    // The alerts to show, newest first, each with where it happened, for the minimap (ADR-059); GameClient fills them.
+    std::vector<std::pair<std::string, PlanePosition>> alerts;
     // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
     // from the fog's own texture (ADR-052).
     bool fog = false;

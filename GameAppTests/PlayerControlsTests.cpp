@@ -285,6 +285,37 @@ public:
     Assert::IsNotNull(std::get_if<Outpost::StopCommand>(&commands[1].order));
   }
 
+  // ADR-059: H, then a click, holds the sector the click is in; T, then a click, patrols to it; Escape or a right-click
+  // cancels either, and A replaces it.
+  TEST_METHOD(HAndTThenClickGiveStandingOrders)
+  {
+    Driver driver;
+    driver.Click(driver.WorldView()[1]);
+    driver.Key('H');
+    Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::HoldSector);
+    driver.ClickPixel(960, 200);
+    Assert::IsFalse(driver.Controls().ArmedStanding().has_value());
+    Assert::IsTrue(Ids{2} == driver.Selected(), L"the click was an order, not a selection");
+    driver.Key('T');
+    Assert::IsTrue(driver.Controls().ArmedStanding() == Outpost::StandingOrder::Patrol);
+    driver.ClickPixel(960, 200);
+    std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::AreEqual(size_t{2}, commands.size());
+    const auto* hold = std::get_if<Outpost::HoldSectorCommand>(&commands[0].order);
+    const auto* patrol = std::get_if<Outpost::PatrolCommand>(&commands[1].order);
+    Assert::IsTrue(hold != nullptr && hold->ships == std::vector<Outpost::EntityId>{Outpost::EntityId{2}});
+    Assert::IsTrue(patrol != nullptr && patrol->destination == hold->position);
+
+    driver.Key('H');
+    driver.Key(VK_ESCAPE);
+    Assert::IsFalse(driver.Controls().ArmedStanding().has_value());
+    driver.Key('T');
+    driver.Key('A');
+    Assert::IsFalse(driver.Controls().ArmedStanding().has_value());
+    Assert::IsTrue(driver.Controls().IsAttackMoveArmed());
+    Assert::IsTrue(driver.Controls().TakeCommands().empty());
+  }
+
   TEST_METHOD(EscapeCancelsAttackMove)
   {
     Driver driver;
