@@ -39,7 +39,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | todo |
+| 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
 ### Milestone order
@@ -342,6 +342,11 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `MatchLog` records each gateway topic as it finishes, each side's warship count every 30 s and its peak, and each asteroid as it runs dry. `Tools/MatchLog.py` reports the match's length against 45–60 minutes, the designs built in each tier, and the peak ship count. A switch runs 10 seeded AI-against-AI matches on the real server headlessly and summarizes their lengths.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
+- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md).
+  - **The log** adds a `tier` record after each gateway, each player's `fleet` every 30 seconds from its own snapshots, a `dry` record as each asteroid runs out, and each player's `peak` as the match ends or is left.
+  - **The switch** is the executable's `--ai-matches`, since only the executable may include both the AI and the log. It steps the server a tick at a time through a new `Server::Step`, so each match reproduces from its seed, plays seeds 1 to 10 on every core to their end or 120 minutes, and writes `OutpostCommander-ai-matches.log` in the temporary folder. `Tools/MatchLog.py --ai-matches` gives each match and their lengths' median and spread; for every log it gives the tiers, the peak, and the warships built in each tier.
+  - **What it found in the container**, for 13.2 to weigh: two AIs end a match in 22 minutes, the median of 40 seeds, from 19:37 to 32:18, and none in P1's 45 to 60. They open tier 2 at 15:04 and never reach tier 3. Player 1 wins 30 of the 40 with the same AI in both seats; the cause is not the order the server applies their commands, and is not yet known.
+  - **Tests.** `MatchLogTests.RecordsTiersFleetsAndDryAsteroids`, with the two older tests' expected logs extended; `InProcessServerTests.StepsOneTickAtOnce`.
 
 ### 13.2 — P1–P5
 

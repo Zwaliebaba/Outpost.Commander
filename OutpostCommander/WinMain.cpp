@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AiMatches.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -28,6 +29,11 @@ constexpr std::wstring_view STRESS_SWITCH = L"--stress";
 constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
 // Plan task 6.3: every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py.
 constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
+// Phase 1 plan task 13.1's switch: ten seeded AI-against-AI matches on the real server, played headlessly as fast as it
+// ticks, into this log in the temporary folder, for P1's repeatable figure. No window opens; a message says when they
+// are done, and Tools/MatchLog.py --ai-matches summarizes them.
+constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
+constexpr auto AI_MATCH_LOG = L"OutpostCommander-ai-matches.log";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -90,6 +96,20 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     Neuron::FileSys::SetHomeDirectory(path);
 
     const std::wstring_view commandLine = _cmdLine != nullptr ? std::wstring_view(_cmdLine) : std::wstring_view();
+    if (commandLine.find(AI_MATCHES_SWITCH) != std::wstring_view::npos)
+    {
+      const std::filesystem::path logPath = std::filesystem::temp_directory_path() / AI_MATCH_LOG;
+      std::ofstream log(logPath, std::ios::trunc);
+      const Outpost::AiMatchesDesc desc;
+      const auto started = std::chrono::steady_clock::now();
+      const std::uint32_t ended = Outpost::PlayAiMatches(log, Outpost::LoadPackagedAiSettings(), desc);
+      const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - started).count();
+      const std::wstring message = std::format(L"Played {} AI-against-AI matches in {} seconds: {} ended within {} minutes.\n\n"
+                                               L"The log is {}.\nTools\\MatchLog.py --ai-matches summarizes them.",
+                                               desc.matches, seconds, ended, desc.limitMinutes, logPath.wstring());
+      MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONINFORMATION);
+      return EXIT_SUCCESS;
+    }
     const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
     const bool stress = commandLine.find(STRESS_SWITCH) != std::wstring_view::npos;
     const bool load = !stress && commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;

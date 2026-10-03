@@ -68,6 +68,11 @@ public:
   // The thread stops when the server is destroyed.
   virtual void Start() = 0;
 
+  // Runs one tick now, on the caller's thread, applying the commands that have arrived and sending each connected player
+  // its snapshot: a headless run that is not paced by wall time, such as the AI-against-AI matches (Phase 1 plan task
+  // 13.1), steps the server instead of starting it. Throws Neuron::Exception once the server has started.
+  virtual void Step() = 0;
+
   // How many ticks the server runs per second of wall time. A client interpolates between snapshots at this rate
   // (task 2.5).
   [[nodiscard]] virtual std::uint32_t TicksPerSecond() const noexcept = 0;

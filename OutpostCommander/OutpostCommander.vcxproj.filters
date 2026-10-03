@@ -27,10 +27,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AiMatches.h">
+      <Filter>Shell</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="AiMatches.cpp">
+      <Filter>Shell</Filter>
+    </ClCompile>
     <ClCompile Include="WinMain.cpp">
       <Filter>Shell</Filter>
     </ClCompile>

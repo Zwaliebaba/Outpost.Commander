@@ -101,6 +101,13 @@ void Outpost::InProcessServer::Advance(std::chrono::nanoseconds _elapsedWallTime
     RunTick();
 }
 
+void Outpost::InProcessServer::Step()
+{
+  if (m_thread.joinable())
+    throw Neuron::Exception("InProcessServer: a started server runs its own ticks");
+  RunTick();
+}
+
 void Outpost::InProcessServer::Start()
 {
   if (m_thread.joinable())

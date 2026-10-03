@@ -48,6 +48,7 @@ public:
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
   // Throws Neuron::Exception when it has started already.
   void Start() override;
+  void Step() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
   [[nodiscard]] std::vector<TickTiming> TakeTickTimings() override;
 
