@@ -1,10 +1,10 @@
 # ADR-043 — The HUD takes the windows' look, writes Ore one way, and keeps the production window's cards still
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-030](ADR-030-typography-and-sprites.md) decision 7
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-030 decision 7 kept the HUD as it had been since milestone 3, while the windows of tasks 9.3 and 9.4 took the owner's mockup. On 2026-10-03 the owner shared a screenshot of a match and asked for a review of the screen as a game's interface. The review found these faults:
+The HUD had kept its look of milestone 3, while the windows of tasks 9.3 and 9.4 took the owner's mockup. On 2026-10-03 the owner shared a screenshot of a match and asked for a review of the screen as a game's interface. The review found these faults:
 
 - **There were two visual styles.**
   - The windows have a dark navy body, corner brackets and the mockup's faces.
@@ -22,18 +22,18 @@ The owner asked on 2026-10-03 for these to be fixed in the same change as the ri
 2. **Its text takes the windows' faces**: a panel's first line in the title face, its other lines in the name face, and figures in the figure face.
 3. **Ore is written one way everywhere**: Ore's diamond and the figure grouped in thousands. This holds for the stockpile, a window's Ore box, a card's cost and a button's cost.
    - The stockpile drops the word "Ore".
-   - It ends at a fixed edge, so that it does not move as it changes.
+   - It is written from the panel's left: the diamond stays put and the figure grows to its right ([ADR-046](ADR-046-second-look-at-the-screen.md)).
 4. **A button is a card.**
    - It has a card's face and edge, and its label in the name face.
    - Any cost shows as the diamond and the figure at its right.
-   - A button that cannot be pressed is dim on the field's color.
+   - A button that cannot be pressed is dim on the field's color. One that cannot be pressed for a reason other than its cost says why in place of the cost (ADR-046).
 5. **The selection panel is as wide as its longest line**, between 280 and 560 units, and stays centered.
 6. **The production and research windows have their cards first and their queue under them.**
    - Both windows are 560 units wide, so a design's name is cut short only where it would run past its card: 28 characters by the estimate below.
    - The cards stay where they are as the queue grows, so a card can be clicked again and again.
    - The queue shows a row for each job and no empty ones. Its label still counts the jobs against the limit, "QUEUE · 2 / 5".
    - The window grows at its foot.
-7. **The minimap draws an ore asteroid in Ore's gold, darkened**, so that blue is the player's, red the enemy's and gold is ore. The rest stays as it was: a ship's small square, a structure's larger one, a rock at its size, a run-dry asteroid in rust, a field darker still, and the camera's view as an outline.
+7. **The minimap draws an ore asteroid in Ore's gold, darkened**, so that blue is the player's, red the enemy's and gold is ore. A ship is a small square, a structure a larger one, a rock at its size, a run-dry asteroid in rust, and the camera's view an outline. A field's darkness, the least size of an ore asteroid's mark and the order the marks are drawn in are ADR-046's.
 
 ## Consequences
 

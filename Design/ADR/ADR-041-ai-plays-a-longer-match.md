@@ -1,6 +1,6 @@
 # ADR-041 — The AI attacks in bigger groups that fall back and regroup, and fortifies its base, so that two AIs play a 45–60 minute match
 
-Status: **accepted** · 2026-10-03 · supersedes ADR-020's gate G9 value of 12 ships, and adds to its decision 8
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -8,7 +8,7 @@ P1 asks whether a match lasts 45–60 minutes. Beside the owner's own matches, i
 
 Two AIs on the 5 km map ended a match in a median of 24 minutes, over 140 seeds with task 7.2's arcs:
 
-- **Minute 4:** each side had 12 warships and started attacking, as gate G9 has it.
+- **Minute 4:** each side had 12 warships and started attacking, as gate G9 had it.
 - **Minute 10:** both fleets stood at about 53 ships.
 - **Minute 12:** the two fleets met in one battle. The loser kept about 13 of its 65 ships and the winner 60 to 80.
 - **About minute 23:** the winner ground down the base.
@@ -24,14 +24,14 @@ This goes beyond design §13, which had the AI change only as far as Phase 1's r
 
 ## Decision
 
-1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** Gate G9's 12 is superseded. `attackGroupShips` is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest gateway the AI has researched.
-2. **An attack that has lost 30% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 150 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.3, `regroupSeconds` 150). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it.
+1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** `attackGroupShips`, gate G9's value, is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest gateway the AI has researched.
+2. **An attack that has lost 30% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 120 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.3, `regroupSeconds` 120, [ADR-047](ADR-047-a-fight-seen-whole.md) decision 6). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it.
 3. **It plans 2 Defence Platforms round its base for each Shipyard** (`homePlatformsPerShipyard` 2). They stand toward the map's center, 260 m from the Command Station, at turns of 0 and ±0.5 and ±1 radian, then a ring 70 m further out. Each is built once the income reaches its Shipyard's share. An attack on a base that has grown so costs the attacker more than it costs the base.
 4. **Nothing else in its play changes.** It still goes for production first (ADR-037), defends its structures, counters what it has seen, and follows the ore.
 
 ## Consequences
 
-All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code against the real server and data.
+All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code against the real server and data, with `regroupSeconds` at 150 and before a group kept lanes round obstacles. [ADR-047](ADR-047-a-fight-seen-whole.md) measures today's 120 seconds with lanes.
 
 - **The target is met.**
   - Seeds 1 to 40 give a median of 53.9 minutes, the middle half from 43.0 to 74.0, every match ended.

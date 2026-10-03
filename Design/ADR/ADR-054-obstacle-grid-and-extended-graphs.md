@@ -1,12 +1,12 @@
 # ADR-054 — Line tests use a grid over the obstacles, and an added obstacle extends the graphs
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-010](ADR-010-movement-and-pathing.md) decision 2 where it says that a structure placed drops the graphs, and takes up the grid [ADR-032](ADR-032-order-ticks.md) tried and did not keep, for short lines and a graph's corners only
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-**Line tests.** `Pathfinder::IsStraightPathClear` tests a line against every obstacle: a cheap test of the obstacle's box against the line's, and the distance to the line for the obstacles the box does not rule out. ADR-032 counted line tests at 44% of an order's planning, and tried a uniform grid over the obstacles, looking in every cell of the line's box: on its load's long lines and 54 obstacles that cost 6% more than testing every obstacle. A graph build also asks, of every corner round every obstacle, whether any obstacle covers it, which is a square root per obstacle per corner.
+**Line tests.** `Pathfinder::IsStraightPathClear` tested a line against every obstacle: a cheap test of the obstacle's box against the line's, and the distance to the line for the obstacles the box does not rule out. ADR-032 counted line tests at 44% of an order's planning, and tried a uniform grid over the obstacles, looking in every cell of the line's box: on its load's long lines and 54 obstacles that cost 6% more than testing every obstacle. A graph build also asked, of every corner round every obstacle, whether any obstacle covers it, which is a square root per obstacle per corner.
 
-**Graph builds.** A structure placed or destroyed drops every graph (ADR-010 decision 2). A ship whose path a new structure blocks searches again in the same tick, which builds its radius's graph whole, up to four in one tick; ADR-032 decision 2 builds the rest on the quiet ticks after, one a tick. ADR-010 named patching a graph instead as the next step. Two AIs place structures all match long, and by its second half a graph spans some 150 obstacles.
+**Graph builds.** A structure placed or destroyed used to drop every graph. A ship whose path a new structure blocks searches again in the same tick, and that search built its radius's graph whole, up to four in one tick; the quiet ticks after built the rest, one a tick ([ADR-032](ADR-032-order-ticks.md) decision 2). Patching a graph instead had been named as the next step. Two AIs place structures all match long, and by its second half a graph spans some 150 obstacles.
 
 The owner's server work asked for both, with every path, tick and snapshot exactly as before, since a different answer would change a match (ADR-009).
 

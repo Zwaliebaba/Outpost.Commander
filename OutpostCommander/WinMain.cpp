@@ -8,7 +8,7 @@
 
 namespace
 {
-// Linear color; the render target view encodes it to sRGB (ADR-006). Black: the stars are all the sky has (ADR-021).
+// Linear color; the render target view encodes it to sRGB (ADR-006). Black: the stars are all the sky has (ADR-022).
 constexpr std::array<float, 4> CLEAR_COLOR{0.0f, 0.0f, 0.0f, 1.0f};
 constexpr auto GAME_TITLE = L"Outpost Commander";
 // Minimized there is no frame to wait for, so the loop wakes this often to let the simulation run on (ADR-009).

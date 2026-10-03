@@ -1,6 +1,6 @@
 # ADR-038 — The match log records tiers, fleets and dry asteroids, and a switch plays ten AI-against-AI matches headlessly
 
-Status: **accepted** · 2026-10-03 · beside ADR-020's decision 11, whose records it keeps
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -34,9 +34,9 @@ Three things stand in the way:
 
 ## Consequences
 
-- **The ten matches take 9 seconds** in the Linux container: clang 18 at `-O2` on four threads, building `AiMatches.cpp` against the real server and data.
-- **They end at about 22 minutes, not 45–60.** All ten ended: the median is 21:50, and the spread 19:47 to 32:18. Seeds 11 to 40 give a median of 22:44, from 19:37 to 29:14, and all 40 together 22:11. In the 40 matches, every AI opens tier 2 at 15:04, but one, at 15:09, and none reaches tier 3 before the end. Over the 40, a side's peak is a median of 80 warships, from 62 to 116. These are clang's outcomes: floats are promised to replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently.
-- **Player 1 wins 30 of the 40 matches**, on a point-symmetric map with the same AI in both seats. That is a seat bias, and its cause is not known. It is not the order the server applies the two players' commands: connecting player 2 first gives the same 30 to 10. P1's AI-against-AI figure is clean only once the bias is understood or removed.
+- **The ten matches took 9 seconds** in the Linux container: clang 18 at `-O2` on four threads, building `AiMatches.cpp` against the real server and data.
+- **With the AI of the time, they ended at about 22 minutes, not 45–60.** All ten ended: the median was 21:50, and the spread 19:47 to 32:18. Seeds 11 to 40 gave a median of 22:44, from 19:37 to 29:14, and all 40 together 22:11. In the 40 matches, every AI opened tier 2 at 15:04, but one, at 15:09, and none reached tier 3 before the end. Over the 40, a side's peak was a median of 80 warships, from 62 to 116. These are clang's outcomes: floats are promised to replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently. [ADR-041](ADR-041-ai-plays-a-longer-match.md) changed the AI's play to lengthen them, and gives the figures since.
+- **Player 1 won 30 of the 40 matches**, on a point-symmetric map with the same AI in both seats. That was a seat bias, and its cause is not known. It was not the order the server applies the two players' commands: connecting player 2 first gave the same 30 to 10. [ADR-041](ADR-041-ai-plays-a-longer-match.md) measures it gone, for now.
 - **`MatchLogTests` check the records**: the tier, the 30-second counts, the peak and a dry asteroid written once. `InProcessServerTests.StepsOneTickAtOnce` checks `Step`, and `RunsItsTicksOnItsOwnThread` checks that a started server refuses it.
 - **The switch has no test in CI.** No test project may include both the AI and the log. It was run in the container. The message and the switch itself have not run on Windows.
 

@@ -1,12 +1,12 @@
 # ADR-055 — Ticks wait on a high-resolution timer
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-025](ADR-025-server-thread.md) decision 2 where it says how the thread waits, and its consequence that ticks wake on the operating system's timer
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-025 put the in-process server's ticks on a thread of its own. Between ticks the thread waits on a `std::condition_variable_any` until `Neuron::TickHost::UntilNextTick` says the next tick is due, and only a request to stop wakes it early.
+[ADR-025](ADR-025-server-thread.md) put the in-process server's ticks on a thread of its own. Between ticks the thread used to wait on a `std::condition_variable_any` until `Neuron::TickHost::UntilNextTick` said the next tick was due, and only a request to stop woke it early.
 
-Its consequences named the cost of that wait. On Windows a timed wait ends on the system timer's tick, 15.6 ms apart by default, unless something in the process has asked for a finer one, and nothing in the tree does. So a tick can start up to about 16 ms late. The rate does not drift, because each wait is taken from the time that really passed, but a late tick delays its snapshot, and the client renders a tick behind the server (ADR-002 decision 5): at 20 Hz a tick is 50 ms, so a third of the client's margin can go to waiting for the system timer. ADR-025 left a high-resolution waitable timer until a measurement asked for it. This decision takes it now, as part of the server's performance work, without a measurement that asked for it: the cost is a few lines on the server's thread, and nothing else changes.
+That wait had a cost. On Windows a timed wait ends on the system timer's tick, 15.6 ms apart by default, unless something in the process has asked for a finer one, and nothing in the tree does. So a tick could start up to about 16 ms late. The rate does not drift, because each wait is taken from the time that really passed, but a late tick delays its snapshot, and the client renders a tick behind the server (ADR-002 decision 5): at 20 Hz a tick is 50 ms, so a third of the client's margin could go to waiting for the system timer. A high-resolution waitable timer had been left until a measurement asked for it. This decision takes it now, as part of the server's performance work, without a measurement that asked for it: the cost is a few lines on the server's thread, and nothing else changes.
 
 ## Decision
 

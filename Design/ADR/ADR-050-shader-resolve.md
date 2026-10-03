@@ -1,19 +1,19 @@
 # ADR-050 — A shader resolves the scene through the back buffer's sRGB view, and the interface is drawn after it at one sample
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-040](ADR-040-lines-over-dark-faces.md) decision 3's resolve, copy and HUD in the scene target, and [ADR-006](ADR-006-renderer-shape.md) decision 4 in part
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-040 draws the scene into a 4-sample `R8G8B8A8_UNORM_SRGB` target. `EndFrame` then did two things:
+ADR-040 draws the scene into a 4-sample `R8G8B8A8_UNORM_SRGB` target. `EndFrame` used to do two things:
 
 - it resolved that target into a single-sample sRGB texture, so the samples were averaged in linear color;
 - it copied that texture into the `R8G8B8A8_UNORM` back buffer.
 
-ADR-040 explains why both steps were needed: a flip-model back buffer cannot be sRGB, and `ResolveSubresource` cannot change the format.
+Both steps were needed because a flip-model back buffer cannot be sRGB, and `ResolveSubresource` cannot change the format.
 
 That is true of the resource, but not of a view of it. ADR-006 decision 4 already relies on that: the back buffer takes an `R8G8B8A8_UNORM_SRGB` render target view. So a pixel shader can read the scene's samples through an sRGB shader resource view, which decodes them to linear color, average them, and write the back buffer through its sRGB render target view. That gives the same mean, in linear color, with no texture in between.
 
-The interface was drawn into the 4-sample target with the scene, so every interface pixel went through the resolve as well. Its text is laid on whole pixels (ADR-030), so the samples gave it nothing.
+The interface was drawn into the 4-sample target with the scene, so every interface pixel went through the resolve as well. Its text is laid on whole pixels (ADR-015), so the samples gave it nothing.
 
 ## Decision
 

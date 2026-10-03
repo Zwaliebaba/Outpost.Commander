@@ -1,5 +1,5 @@
 // A star: a square facing the screen round a direction at infinity, made from the vertex index alone, so a sky is one
-// instanced draw (ADR-021, ADR-022). cbuffer Frame must match StarPipeline::FrameConstants and the input
+// instanced draw (ADR-022). cbuffer Frame must match StarPipeline::FrameConstants and the input
 // StarPipeline::Star; VertexOut is declared again, identically, in StarPS.hlsl, StarSpritePS.hlsl
 // and StarCrossPS.hlsl.
 
