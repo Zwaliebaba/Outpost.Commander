@@ -280,11 +280,11 @@ public:
     };
     const Outpost::PlanePosition destination{600.0f, 0.0f};
 
-    Outpost::Simulation small(1, TICKS_PER_SECOND);
-    small.PlaceMap(OpenMap({{.position = {0.0f, 0.0f}, .radiusMeters = 150.0f}}));
-    const std::vector<Outpost::EntityId> fleet = spawnGroup(small, Outpost::Simulation::SPLIT_ORDER_SHIPS);
-    (void)small.Tick({Move(fleet, destination)});
-    Assert::IsTrue(std::ranges::all_of(fleet, [&](Outpost::EntityId _id) { return !small.FindEntity(_id)->path.empty(); }),
+    Outpost::Simulation atLimit(1, TICKS_PER_SECOND);
+    atLimit.PlaceMap(OpenMap({{.position = {0.0f, 0.0f}, .radiusMeters = 150.0f}}));
+    const std::vector<Outpost::EntityId> fleet = spawnGroup(atLimit, Outpost::Simulation::SPLIT_ORDER_SHIPS);
+    (void)atLimit.Tick({Move(fleet, destination)});
+    Assert::IsTrue(std::ranges::all_of(fleet, [&](Outpost::EntityId _id) { return !atLimit.FindEntity(_id)->path.empty(); }),
                    L"a group of the limit sets off at once");
 
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
