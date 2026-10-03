@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); run by the owner on 2026-10-03 |
-| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | in review; HUD, fog and stress load tested in the container, not yet built or run |
+| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | in review, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); HUD, fog and stress load tested in the container, not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
