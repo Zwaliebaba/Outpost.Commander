@@ -67,7 +67,6 @@ Outpost::InProcessServer::InProcessServer(Tuning _tuning, Map _map, const Server
     m_simulation.AddPlayer(id, m_tuning.rules.startingOre);
     m_simulation.SaveStartingDesigns(id, m_tuning);
   }
-  PreparePathfinding();
 }
 
 void Outpost::InProcessServer::PreparePathfinding()
@@ -205,8 +204,6 @@ void Outpost::InProcessServer::RunTick()
 void Outpost::InProcessServer::StartStressLoad()
 {
   m_stressLoad.emplace(m_simulation, m_map, m_tuning);
-  // Its structures block movement, so the graphs are built again now rather than in the first tick.
-  PreparePathfinding();
 }
 
 std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc& _desc)
@@ -218,8 +215,8 @@ std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc
     PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
   if (_desc.stressLoad)
     server->StartStressLoad();
-  // The bases and the loads placed structures, each of which dropped the graphs; built again now, the first order of the
-  // match does not pay for them (ADR-032).
+  // Match setup is over, and every structure it places stands: the graphs are built once, now, so that the first order of
+  // the match does not pay for them (ADR-032).
   server->PreparePathfinding();
   return server;
 }

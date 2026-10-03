@@ -41,7 +41,8 @@ class InProcessServer final : public Server
 {
 public:
   // Places _map in a new simulation seeded from _desc. Throws Neuron::Exception when a hull's footprint is wider than the
-  // map's minimum gap, since such a ship could be walled off.
+  // map's minimum gap, since such a ship could be walled off. It builds no pathfinding graph: match setup ends with
+  // PreparePathfinding, and until then each graph is built by the first path that needs it.
   InProcessServer(Tuning _tuning, Map _map, const ServerDesc& _desc);
 
   // Throws Neuron::Exception once the server has started.
@@ -82,7 +83,7 @@ public:
   void StartStressLoad();
 
   // The end of match setup: builds the pathfinding graphs for every hull and the Constructor ahead of their first order,
-  // once every structure of the setup stands, since each one placed drops them (ADR-032).
+  // once every structure of the setup stands (ADR-032). Called once, after the bases and any load are placed.
   void PreparePathfinding();
 
 private:
