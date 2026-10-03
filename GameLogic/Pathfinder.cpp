@@ -2,6 +2,7 @@
 #include "Pathfinder.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <limits>
 #include <numbers>
@@ -105,6 +106,18 @@ bool Covers(const Outpost::Obstacle& _obstacle, Outpost::PlanePosition _corner, 
   return Outpost::Distance(_corner, _obstacle.center) < _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
 }
 
+// Whether two numbers are the same to the bit, as a graph built from one would be built from the other: -0 and 0 are not.
+bool SameBits(float _a, float _b) noexcept
+{
+  return std::bit_cast<std::uint32_t>(_a) == std::bit_cast<std::uint32_t>(_b);
+}
+
+bool SameObstacle(const Outpost::Obstacle& _a, const Outpost::Obstacle& _b) noexcept
+{
+  return SameBits(_a.center.xMeters, _b.center.xMeters) && SameBits(_a.center.zMeters, _b.center.zMeters) &&
+         SameBits(_a.radiusMeters, _b.radiusMeters);
+}
+
 // Whether the grid may answer for a coordinate or a distance: false beyond its limit, and for a number that is not one.
 bool IsWithinGridLimit(float _meters) noexcept
 {
@@ -123,9 +136,14 @@ std::int32_t GridCell(float _meters, float _originMeters, float _cellsPerMeter, 
 
 void Outpost::Pathfinder::SetObstacles(std::vector<Obstacle> _obstacles, float _halfSizeMeters)
 {
+  // Obstacles added after the ones there were, to the bit and in their order, as a structure placed adds its own, leave
+  // every graph to be extended over them when it is next needed; any other change drops the graphs (ADR-054).
+  const bool onlyAdded = SameBits(_halfSizeMeters, m_halfSizeMeters) && _obstacles.size() >= m_obstacles.size() &&
+                         std::equal(m_obstacles.begin(), m_obstacles.end(), _obstacles.begin(), SameObstacle);
   m_obstacles = std::move(_obstacles);
   m_halfSizeMeters = _halfSizeMeters;
-  m_graphs.clear();
+  if (!onlyAdded)
+    m_graphs.clear();
   BuildGrid();
 }
 
@@ -322,18 +340,45 @@ Outpost::PlanePosition Outpost::Pathfinder::Clear(PlanePosition _position, float
 
 const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearanceMeters) const
 {
-  if (const auto found = std::ranges::find(m_graphs, _clearanceMeters, &std::pair<float, Graph>::first); found != m_graphs.end())
+  const auto found = std::ranges::find(m_graphs, _clearanceMeters, &std::pair<float, Graph>::first);
+  if (found != m_graphs.end() && found->second.obstacleCount == m_obstacles.size())
     return found->second;
 
   const ObservedPart building(m_observer, TickPart::GraphBuild);
   if (std::ranges::find(m_clearances, _clearanceMeters) == m_clearances.end())
     m_clearances.push_back(_clearanceMeters);
+  // A graph built over the obstacles there were is extended over those added since; one never built is built over them
+  // all, which is extending an empty graph over every obstacle (ADR-054).
+  if (found != m_graphs.end())
+  {
+    found->second = Extended(found->second, _clearanceMeters);
+    return found->second;
+  }
+  return m_graphs.emplace_back(_clearanceMeters, Extended(Graph{}, _clearanceMeters)).second;
+}
+
+Outpost::Pathfinder::Graph Outpost::Pathfinder::Extended(const Graph& _graph, float _clearanceMeters) const
+{
+  const auto added = std::span<const Obstacle>(m_obstacles).subspan(_graph.obstacleCount);
   Graph graph;
-  // Each corner's outward direction, and how far from its tangent a line may turn and still touch its polygon there, as
-  // a squared sine: within half the polygon's turn at a corner.
-  std::vector<PlaneVector> normals;
-  std::vector<float> touchLimitsSquared;
-  for (const Obstacle& obstacle : m_obstacles)
+  graph.obstacleCount = m_obstacles.size();
+
+  // The corners round every obstacle, in the obstacles' order, that the map's edge and no obstacle cover. A corner of the
+  // graph's own obstacles that none of them covered stays unless an added obstacle covers it, in the order it had, and
+  // the added obstacles' corners follow theirs, as they would in a graph built over every obstacle at once.
+  constexpr std::uint32_t GONE = std::numeric_limits<std::uint32_t>::max();
+  std::vector<std::uint32_t> kept(_graph.nodes.size(), GONE);
+  for (std::uint32_t node = 0; node < _graph.nodes.size(); ++node)
+  {
+    if (std::ranges::any_of(added, [&](const Obstacle& _obstacle) { return Covers(_obstacle, _graph.nodes[node], _clearanceMeters); }))
+      continue;
+    kept[node] = static_cast<std::uint32_t>(graph.nodes.size());
+    graph.nodes.push_back(_graph.nodes[node]);
+    graph.normals.push_back(_graph.normals[node]);
+    graph.touchLimitsSquared.push_back(_graph.touchLimitsSquared[node]);
+  }
+  const auto keptNodes = static_cast<std::uint32_t>(graph.nodes.size());
+  for (const Obstacle& obstacle : added)
   {
     const float grown = obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS;
     const int corners = grown <= SMALL_RADIUS_METERS ? SMALL_POLYGON_CORNERS : POLYGON_CORNERS;
@@ -349,8 +394,8 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
       if (IsInsideEdge(node, _clearanceMeters) && IsUncovered(node, _clearanceMeters))
       {
         graph.nodes.push_back(node);
-        normals.push_back(normal);
-        touchLimitsSquared.push_back(touchLimit * touchLimit);
+        graph.normals.push_back(normal);
+        graph.touchLimitsSquared.push_back(touchLimit * touchLimit);
       }
     }
   }
@@ -358,30 +403,51 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
   // A shortest path round convex obstacles bends only at corners, and leaves each corner along a line that touches its
   // polygon there: one that cuts into the polygon could be shortened. So only those edges are kept, and whether a line
   // touches the polygon at a corner, which a few multiplications tell, is asked before whether anything blocks it,
-  // which costs a pass over every obstacle (ADR-010). A line touches a regular polygon at a corner when it is within
-  // half the polygon's turn at a corner of the tangent there. The test is squared, against the squared length of the
-  // line, so that it needs no square root.
+  // which costs a line test (ADR-010). A line touches a regular polygon at a corner when it is within half the polygon's
+  // turn at a corner of the tangent there. The test is squared, against the squared length of the line, so that it needs
+  // no square root. Each line is tested from its lower corner to its higher, and each corner's edges are in the order of
+  // the corners they reach.
   graph.edges.resize(graph.nodes.size());
+  const auto touchesBoth = [&graph](std::uint32_t _a, std::uint32_t _b)
+  {
+    const PlaneVector between = graph.nodes[_b] - graph.nodes[_a];
+    const float lengthSquared = Dot(between, between);
+    const float alongA = Dot(between, graph.normals[_a]);
+    if (alongA * alongA > graph.touchLimitsSquared[_a] * lengthSquared)
+      return false;
+    const float alongB = Dot(between, graph.normals[_b]);
+    return !(alongB * alongB > graph.touchLimitsSquared[_b] * lengthSquared);
+  };
+  // An edge between two corners the graph had stands as long as no added obstacle blocks it: whether its line touches
+  // both polygons depends on its corners alone, and the graph's own obstacles let it pass already (ADR-054).
+  for (std::uint32_t node = 0; node < _graph.nodes.size(); ++node)
+  {
+    if (kept[node] == GONE)
+      continue;
+    for (const auto& [neighbor, length] : _graph.edges[node])
+    {
+      if (neighbor < node || kept[neighbor] == GONE)
+        continue;
+      const Segment segment = SegmentOf(_graph.nodes[node], _graph.nodes[neighbor]);
+      if (!std::ranges::all_of(added, [&](const Obstacle& _obstacle) { return Passes(_obstacle, segment, _clearanceMeters); }))
+        continue;
+      graph.edges[kept[node]].emplace_back(kept[neighbor], length);
+      graph.edges[kept[neighbor]].emplace_back(kept[node], length);
+    }
+  }
+  // Every line to an added obstacle's corner is tested whole.
   for (std::uint32_t a = 0; a < graph.nodes.size(); ++a)
   {
-    for (std::uint32_t b = a + 1; b < graph.nodes.size(); ++b)
+    for (std::uint32_t b = std::max(a + 1, keptNodes); b < graph.nodes.size(); ++b)
     {
-      const PlaneVector between = graph.nodes[b] - graph.nodes[a];
-      const float lengthSquared = Dot(between, between);
-      const float alongA = Dot(between, normals[a]);
-      if (alongA * alongA > touchLimitsSquared[a] * lengthSquared)
-        continue;
-      const float alongB = Dot(between, normals[b]);
-      if (alongB * alongB > touchLimitsSquared[b] * lengthSquared)
-        continue;
-      if (!IsStraightPathClear(graph.nodes[a], graph.nodes[b], _clearanceMeters))
+      if (!touchesBoth(a, b) || !IsStraightPathClear(graph.nodes[a], graph.nodes[b], _clearanceMeters))
         continue;
       const float length = Distance(graph.nodes[a], graph.nodes[b]);
       graph.edges[a].emplace_back(b, length);
       graph.edges[b].emplace_back(a, length);
     }
   }
-  return m_graphs.emplace_back(_clearanceMeters, std::move(graph)).second;
+  return graph;
 }
 
 std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition _start, PlanePosition _goal, float _clearanceMeters) const
@@ -521,7 +587,8 @@ bool Outpost::Pathfinder::PrepareNext() const
 {
   for (const float clearance : m_clearances)
   {
-    if (std::ranges::find(m_graphs, clearance, &std::pair<float, Graph>::first) == m_graphs.end())
+    const auto found = std::ranges::find(m_graphs, clearance, &std::pair<float, Graph>::first);
+    if (found == m_graphs.end() || found->second.obstacleCount != m_obstacles.size())
     {
       (void)GraphFor(clearance);
       return true;

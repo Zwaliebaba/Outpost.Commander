@@ -14,11 +14,30 @@ struct Obstacle
 // Shortest paths around circular obstacles for a ship that must keep a clearance, its footprint radius (task 2.4).
 // Each obstacle is grown by the clearance and ringed by a polygon whose edges touch the grown circle; a path runs
 // straight between the polygons' corners wherever nothing blocks it. The graph of those corners depends only on the
-// obstacles and the clearance, so it is built once per clearance and kept.
+// obstacles and the clearance, so it is built once per clearance and kept, and extended when obstacles are added.
 class Pathfinder
 {
 public:
-  // Replaces the obstacles and the map's edge: a square of _halfSizeMeters around the origin, or none when it is 0.
+  // The corners for one clearance: those round every obstacle, in the obstacles' order, that the map's edge and no other
+  // obstacle cover, and for each corner the corners it sees.
+  struct Graph
+  {
+    std::vector<PlanePosition> nodes;
+    // For each node, the nodes it sees, in the order of their indices, and how far away they are.
+    std::vector<std::vector<std::pair<std::uint32_t, float>>> edges;
+    // Each node's outward direction from its obstacle, and how far from its tangent a line may turn and still touch its
+    // polygon there, as a squared sine: within half the polygon's turn at a corner. A line from a corner of an obstacle
+    // added later is tested against them.
+    std::vector<PlaneVector> normals;
+    std::vector<float> touchLimitsSquared;
+    // How many of the obstacles, from the first, the graph is built over. Fewer than there are once obstacles have been
+    // added: the graph is then extended over the rest before it is next used (ADR-054).
+    std::size_t obstacleCount = 0;
+  };
+
+  // Replaces the obstacles and the map's edge: a square of _halfSizeMeters around the origin, or none when it is 0. When
+  // the obstacles there were are the first of _obstacles, unchanged, and the edge is too, the graphs built are kept and
+  // extended over the added ones when next needed; otherwise they are dropped (ADR-054).
   void SetObstacles(std::vector<Obstacle> _obstacles, float _halfSizeMeters);
 
   [[nodiscard]] const std::vector<Obstacle>& Obstacles() const noexcept
@@ -43,9 +62,14 @@ public:
     (void)GraphFor(_clearanceMeters);
   }
 
-  // Builds the graph again for one clearance that had one before the obstacles last changed, the first such, and says
-  // whether there was one to build: the simulation spreads the rebuilding over quiet ticks (ADR-032).
+  // Builds again, or extends over the obstacles added since, the graph of one clearance that has had one, the first such
+  // that needs it, and says whether there was one: the simulation spreads the work over quiet ticks (ADR-032, ADR-054).
   bool PrepareNext() const;
+
+  // The graph for _clearanceMeters, built first, or extended over the obstacles added since it was built, when it needs
+  // to be. Valid until the obstacles next change. Paths are searched over it, and tests compare an extended graph with
+  // one built whole (ADR-054).
+  [[nodiscard]] const Graph& GraphFor(float _clearanceMeters) const;
 
   // Whether a ship of _clearanceMeters can travel straight from _a to _b. A short line tests only the obstacles the grid
   // over them finds near it, which gives the same answer as testing every obstacle, as a longer line does (ADR-054).
@@ -63,13 +87,6 @@ public:
   }
 
 private:
-  struct Graph
-  {
-    std::vector<PlanePosition> nodes;
-    // For each node, the nodes it sees and how far away they are.
-    std::vector<std::vector<std::pair<std::uint32_t, float>>> edges;
-  };
-
   // A uniform grid over the obstacles (ADR-054): each cell lists the obstacles whose circle's square overlaps it, so that
   // a line test visits only the obstacles near its line. It has no cells when it cannot answer exactly for the
   // obstacles, and every line test then tests every obstacle.
@@ -85,7 +102,9 @@ private:
     std::vector<std::uint32_t> cellObstacles;
   };
 
-  [[nodiscard]] const Graph& GraphFor(float _clearanceMeters) const;
+  // _graph extended over the obstacles added since it was built: the very graph a build over every obstacle makes, corner
+  // for corner and edge for edge, in the same order and to the bit (ADR-054). An empty graph extended is a whole build.
+  [[nodiscard]] Graph Extended(const Graph& _graph, float _clearanceMeters) const;
   [[nodiscard]] bool IsInsideEdge(PlanePosition _position, float _clearanceMeters) const noexcept;
   // Whether no obstacle grown by _clearanceMeters covers _corner.
   [[nodiscard]] bool IsUncovered(PlanePosition _corner, float _clearanceMeters) const;
@@ -103,9 +122,9 @@ private:
   mutable std::vector<std::uint32_t> m_near;
   mutable std::vector<std::uint32_t> m_foundInPass;
   mutable std::uint32_t m_pass = 0;
-  // Built on first use for each clearance; a function of the obstacles alone, so it holds no state of its own. A vector
-  // searched in order rather than a map: there are only as many clearances as hulls, and moving a vector cannot throw,
-  // where moving MSVC's std::map can.
+  // Built on first use for each clearance, and extended when obstacles are added; a function of the obstacles alone, so it
+  // holds no state of its own. A vector searched in order rather than a map: there are only as many clearances as hulls,
+  // and moving a vector cannot throw, where moving MSVC's std::map can.
   mutable std::vector<std::pair<float, Graph>> m_graphs;
   // Every clearance a graph has been built for, in the order first built, which outlives the graphs themselves.
   mutable std::vector<float> m_clearances;

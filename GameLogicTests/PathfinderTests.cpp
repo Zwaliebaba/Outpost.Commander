@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "RepositoryData.h"
 
+#include <bit>
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace GameLogicTests
@@ -19,6 +21,40 @@ float PathLength(Outpost::PlanePosition _start, const std::vector<Outpost::Plane
     previous = waypoint;
   }
   return length;
+}
+
+bool SameBits(float _a, float _b) noexcept
+{
+  return std::bit_cast<std::uint32_t>(_a) == std::bit_cast<std::uint32_t>(_b);
+}
+
+bool SameBits(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
+{
+  return SameBits(_a.xMeters, _b.xMeters) && SameBits(_a.zMeters, _b.zMeters);
+}
+
+// Two graphs are the same corner for corner and edge for edge, in the same order and to the bit.
+void ExpectSameGraph(const Outpost::Pathfinder::Graph& _expected, const Outpost::Pathfinder::Graph& _actual)
+{
+  Assert::AreEqual(_expected.nodes.size(), _actual.nodes.size(), L"a different number of corners");
+  Assert::AreEqual(_expected.edges.size(), _actual.edges.size());
+  Assert::AreEqual(_expected.normals.size(), _actual.normals.size());
+  Assert::AreEqual(_expected.touchLimitsSquared.size(), _actual.touchLimitsSquared.size());
+  for (size_t node = 0; node < _expected.nodes.size(); ++node)
+  {
+    Assert::IsTrue(SameBits(_expected.nodes[node], _actual.nodes[node]), L"a different corner");
+    Assert::IsTrue(SameBits(_expected.normals[node].xMeters, _actual.normals[node].xMeters) &&
+                   SameBits(_expected.normals[node].zMeters, _actual.normals[node].zMeters) &&
+                   SameBits(_expected.touchLimitsSquared[node], _actual.touchLimitsSquared[node]));
+    const std::vector<std::pair<std::uint32_t, float>>& expectedEdges = _expected.edges[node];
+    const std::vector<std::pair<std::uint32_t, float>>& actualEdges = _actual.edges[node];
+    Assert::AreEqual(expectedEdges.size(), actualEdges.size(), L"a corner with a different number of edges");
+    for (size_t edge = 0; edge < expectedEdges.size(); ++edge)
+    {
+      Assert::IsTrue(expectedEdges[edge].first == actualEdges[edge].first && SameBits(expectedEdges[edge].second, actualEdges[edge].second),
+                     L"a different edge");
+    }
+  }
 }
 
 // Every leg of the path keeps the ship's footprint off every obstacle.
@@ -236,6 +272,69 @@ public:
     }
     // Both answers are common, so neither was the only one tested.
     Assert::IsTrue(blocked > 2000 && clear > 2000, (std::to_wstring(blocked) + L" blocked, " + std::to_wstring(clear) + L" clear").c_str());
+  }
+
+  // ADR-054: obstacles added after the ones there were, as a placed structure adds its own, extend the graphs already
+  // built rather than dropping them. An extended graph is the very graph a build over every obstacle makes, corner for
+  // corner and edge for edge, in the same order and to the bit, whether it is extended after each addition or after
+  // several, and every path over it is the same to the bit. An obstacle taken away drops the graphs, as before.
+  TEST_METHOD(AddedObstaclesExtendTheGraphsToWhatAWholeBuildMakes)
+  {
+    Neuron::Random random(55);
+    const auto meters = [&random](float _from, float _to) { return _from + (static_cast<float>(random.NextUnit()) * (_to - _from)); };
+    constexpr std::array<float, 4> CLEARANCES{8.0f, 10.0f, 14.0f, 24.0f};
+    constexpr float HALF_SIZE_METERS = 2500.0f;
+    constexpr std::size_t MAP_OBSTACLES = 46;
+    constexpr std::size_t STEPS = 8;
+    const auto expectSame = [&](const Outpost::Pathfinder& _whole, const Outpost::Pathfinder& _extended, float _clearance)
+    {
+      ExpectSameGraph(_whole.GraphFor(_clearance), _extended.GraphFor(_clearance));
+      for (int query = 0; query < 30; ++query)
+      {
+        const Outpost::PlanePosition start{meters(-2500.0f, 2500.0f), meters(-2500.0f, 2500.0f)};
+        const Outpost::PlanePosition goal{meters(-2500.0f, 2500.0f), meters(-2500.0f, 2500.0f)};
+        const std::vector<Outpost::PlanePosition> expected = _whole.FindPath(start, goal, _clearance);
+        const std::vector<Outpost::PlanePosition> actual = _extended.FindPath(start, goal, _clearance);
+        Assert::IsTrue(
+          std::ranges::equal(expected, actual, [](Outpost::PlanePosition _a, Outpost::PlanePosition _b) { return SameBits(_a, _b); }),
+          L"a different path");
+      }
+    };
+    for (int layout = 0; layout < 6; ++layout)
+    {
+      // A map's asteroids and fields, and then structures, one to three at a time, anywhere: on corners of the graphs,
+      // across their edges, and now and then over another obstacle.
+      std::vector<Outpost::Obstacle> obstacles;
+      obstacles.reserve(MAP_OBSTACLES + (3 * STEPS));
+      for (std::size_t i = 0; i < MAP_OBSTACLES; ++i)
+        obstacles.push_back({.center = {meters(-2400.0f, 2400.0f), meters(-2400.0f, 2400.0f)}, .radiusMeters = meters(40.0f, 170.0f)});
+      Outpost::Pathfinder extended;
+      extended.SetObstacles(obstacles, HALF_SIZE_METERS);
+      for (const float clearance : CLEARANCES)
+        extended.Prepare(clearance);
+      for (std::size_t step = 0; step < STEPS; ++step)
+      {
+        const std::uint32_t structures = 1 + random.NextBelow(3);
+        for (std::uint32_t i = 0; i < structures; ++i)
+          obstacles.push_back({.center = {meters(-2400.0f, 2400.0f), meters(-2400.0f, 2400.0f)}, .radiusMeters = meters(20.0f, 45.0f)});
+        extended.SetObstacles(obstacles, HALF_SIZE_METERS);
+        Outpost::Pathfinder whole;
+        whole.SetObstacles(obstacles, HALF_SIZE_METERS);
+        // Half the graphs each step, so that the others are extended over several steps' structures at once.
+        for (std::size_t clearance = 0; clearance < CLEARANCES.size(); ++clearance)
+        {
+          if ((clearance + step) % 2 == 0)
+            expectSame(whole, extended, CLEARANCES[clearance]);
+        }
+      }
+      // A structure taken away.
+      obstacles.erase(obstacles.end() - 3);
+      extended.SetObstacles(obstacles, HALF_SIZE_METERS);
+      Outpost::Pathfinder whole;
+      whole.SetObstacles(obstacles, HALF_SIZE_METERS);
+      for (const float clearance : CLEARANCES)
+        expectSame(whole, extended, clearance);
+    }
   }
 
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)

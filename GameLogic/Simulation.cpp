@@ -1660,6 +1660,8 @@ void Outpost::Simulation::OrderWork(const std::vector<EntityId>& _constructors, 
 
 void Outpost::Simulation::UpdateObstacles()
 {
+  // The map's obstacles, then the structures in identifier order. A structure placed is the newest, so its placement only
+  // adds an obstacle after the others, which extends the path graphs rather than dropping them (ADR-054).
   std::vector<Obstacle> obstacles = m_mapObstacles;
   for (const Entity& entity : m_entities)
   {
