@@ -5,36 +5,32 @@
 #include "CompiledShader/MeshPS.h"
 #include "CompiledShader/MeshVS.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace
 {
-// The root signature's parameters, in order: the frame's constant buffer at b0, the object's constants at b1.
+// The root signature's parameters, in order: the frame's constant buffer at b0, where a draw's instances start in the
+// frame's slot at b1, as one root constant, and the frame's instances at t0, as a root shader resource view (ADR-053).
 constexpr UINT FRAME_PARAMETER = 0;
-constexpr UINT OBJECT_PARAMETER = 1;
+constexpr UINT DRAW_PARAMETER = 1;
+constexpr UINT INSTANCES_PARAMETER = 2;
 
-// cbuffer Object in the shaders: the world matrix, the color, and how far a line is pulled toward the eye. Whole
-// float4s, so that the root constants cover the cbuffer as the shader compiler sizes it.
-struct ObjectConstants
-{
-  DirectX::XMFLOAT4X4 world;
-  DirectX::XMFLOAT4 color;
-  float liftShare;
-  float unused0;
-  float unused1;
-  float unused2;
-};
-
-constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
+// struct Object in the shaders: four rows of the world matrix, the color, the lift and three floats unused, read from a
+// structured buffer, whose elements are packed with no padding.
+static_assert(sizeof(Neuron::MeshPipeline::Instance) == 24 * sizeof(float), "An instance is struct Object.");
 
 // DrawTriangles' and DrawLineList's vertices are in the world already.
 constexpr DirectX::XMFLOAT4X4 IDENTITY{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
-  std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
+  std::array<CD3DX12_ROOT_PARAMETER1, 3> parameters{};
   parameters[FRAME_PARAMETER].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
-  parameters[OBJECT_PARAMETER].InitAsConstants(OBJECT_CONSTANT_COUNT, 1);
+  parameters[DRAW_PARAMETER].InitAsConstants(1, 1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+  // Written on the CPU before the command list runs, in a slot the GPU is done with.
+  parameters[INSTANCES_PARAMETER].InitAsShaderResourceView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE,
+                                                           D3D12_SHADER_VISIBILITY_VERTEX);
 
   CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC description;
   description.Init_1_1(static_cast<UINT>(parameters.size()), parameters.data(), 0, nullptr,
@@ -125,6 +121,15 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   void* mappedVertices = nullptr;
   winrt::check_hresult(m_frameVertices->Map(0, &nothingRead, &mappedVertices));
   m_mappedFrameVertices = static_cast<MeshVertex*>(mappedVertices);
+
+  const CD3DX12_RESOURCE_DESC instancesDescription =
+    CD3DX12_RESOURCE_DESC::Buffer(UINT64{sizeof(Instance)} * MAX_FRAME_INSTANCES * Renderer::FRAME_COUNT);
+  winrt::check_hresult(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &instancesDescription,
+                                                       D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+                                                       IID_GRAPHICS_PPV_ARGS(m_frameInstances)));
+  void* mappedInstances = nullptr;
+  winrt::check_hresult(m_frameInstances->Map(0, &nothingRead, &mappedInstances));
+  m_mappedFrameInstances = static_cast<Instance*>(mappedInstances);
 }
 
 void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants)
@@ -135,28 +140,67 @@ void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList,
   std::memcpy(m_mappedFrameConstants + offset, &_constants, sizeof(FrameConstants));
   m_frameIndex = _frameIndex;
   m_frameVerticesUsed = 0;
+  m_frameInstancesUsed = 0;
 
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->SetGraphicsRootConstantBufferView(FRAME_PARAMETER, m_frameConstants->GetGPUVirtualAddress() + offset);
+  _commandList->SetGraphicsRootShaderResourceView(INSTANCES_PARAMETER, m_frameInstances->GetGPUVirtualAddress() +
+                                                                         (UINT64{sizeof(Instance)} * MAX_FRAME_INSTANCES * _frameIndex));
+}
+
+std::optional<UINT> Neuron::MeshPipeline::AddInstance(const Instance& _instance) noexcept
+{
+  if (m_frameInstancesUsed == MAX_FRAME_INSTANCES)
+    return std::nullopt;
+  // The slot is the GPU's no longer, as the frame's constants are.
+  m_mappedFrameInstances[(size_t{m_frameIndex} * MAX_FRAME_INSTANCES) + m_frameInstancesUsed] = _instance;
+  return m_frameInstancesUsed++;
+}
+
+void Neuron::MeshPipeline::DrawInstances(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, UINT _first, UINT _count) const
+{
+  _commandList->SetGraphicsRoot32BitConstant(DRAW_PARAMETER, _first, 0);
+  _commandList->IASetVertexBuffers(0, 1, &_mesh.VertexBufferView());
+  _commandList->IASetIndexBuffer(&_mesh.IndexBufferView());
+  _commandList->DrawIndexedInstanced(_mesh.IndexCount(), _count, 0, 0, 0);
 }
 
 void Neuron::MeshPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
-                                const DirectX::XMFLOAT4& _color) const
+                                const DirectX::XMFLOAT4& _color)
 {
-  DrawObject(_commandList, _mesh, _world, _color, 0.0f);
+  if (const std::optional<UINT> first =
+        AddInstance({.world = _world, .color = _color, .liftShare = 0.0f, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f}))
+    DrawInstances(_commandList, _mesh, *first, 1);
 }
 
-void Neuron::MeshPipeline::DrawObject(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
-                                      const DirectX::XMFLOAT4& _color, float _liftShare) const
+void Neuron::MeshPipeline::DrawGrouped(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws)
 {
-  const ObjectConstants constants{
-    .world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
-  _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
-  _commandList->IASetVertexBuffers(0, 1, &_mesh.VertexBufferView());
-  _commandList->IASetIndexBuffer(&_mesh.IndexBufferView());
-  _commandList->DrawIndexedInstanced(_mesh.IndexCount(), 1, 0, 0, 0);
+  // The meshes in the order they first appear; a frame draws a few dozen, so a list searched in order serves.
+  m_batchMeshes.clear();
+  for (const MeshDraw& draw : _draws)
+  {
+    if (std::ranges::find(m_batchMeshes, draw.mesh) == m_batchMeshes.end())
+      m_batchMeshes.push_back(draw.mesh);
+  }
+  // Each mesh's instances one after another in the frame's slot, then one draw of them all.
+  for (const Mesh* mesh : m_batchMeshes)
+  {
+    const UINT first = m_frameInstancesUsed;
+    for (const MeshDraw& draw : _draws)
+    {
+      if (draw.mesh == mesh && !AddInstance(draw.instance).has_value())
+        break;
+    }
+    if (m_frameInstancesUsed > first)
+      DrawInstances(_commandList, *mesh, first, m_frameInstancesUsed - first);
+  }
+}
+
+void Neuron::MeshPipeline::DrawMeshes(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws)
+{
+  DrawGrouped(_commandList, _draws);
 }
 
 bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices,
@@ -183,6 +227,10 @@ bool Neuron::MeshPipeline::DrawFrameVertices(ID3D12GraphicsCommandList* _command
     return true;
   if (_vertices.size() > MAX_FRAME_VERTICES - m_frameVerticesUsed)
     return false;
+  const std::optional<UINT> instance =
+    AddInstance({.world = IDENTITY, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f});
+  if (!instance.has_value())
+    return false;
   const auto count = static_cast<UINT>(_vertices.size());
   // The renderer waited for this frame index's previous frame before handing out the command list, so the GPU is done
   // with this slot, as it is with the frame's constants.
@@ -195,31 +243,30 @@ bool Neuron::MeshPipeline::DrawFrameVertices(ID3D12GraphicsCommandList* _command
     .SizeInBytes = static_cast<UINT>(_vertices.size_bytes()),
     .StrideInBytes = sizeof(MeshVertex),
   };
-  const ObjectConstants constants{
-    .world = IDENTITY, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
-  _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
+  _commandList->SetGraphicsRoot32BitConstant(DRAW_PARAMETER, *instance, 0);
   _commandList->IASetVertexBuffers(0, 1, &view);
   _commandList->DrawInstanced(count, 1, 0, 0);
   return true;
 }
 
 void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
-                                     const DirectX::XMFLOAT4& _color, float _liftShare) const
+                                     const DirectX::XMFLOAT4& _color, float _liftShare)
 {
   // The root signature and the frame's constants stay as BeginDrawing set them; the state and the topology change, and
   // change back.
-  const LineDraw draw{.lines = &_lines, .world = _world, .color = _color, .liftShare = _liftShare};
+  const MeshDraw draw{
+    .mesh = &_lines,
+    .instance = {.world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f}};
   DrawLines(_commandList, std::span(&draw, 1));
 }
 
-void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const LineDraw> _draws) const
+void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws)
 {
   if (_draws.empty())
     return;
   _commandList->SetPipelineState(m_lineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-  for (const LineDraw& draw : _draws)
-    DrawObject(_commandList, *draw.lines, draw.world, draw.color, draw.liftShare);
+  DrawGrouped(_commandList, _draws);
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }

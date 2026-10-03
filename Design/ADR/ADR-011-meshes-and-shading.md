@@ -1,6 +1,6 @@
 # ADR-011 — Meshes are sized by data and drawn flat-lit in a team color
 
-Status: **accepted** · 2026-09-30 · Decision 3 is superseded in part by [ADR-040](ADR-040-lines-over-dark-faces.md): a structure's color is its side's taken toward gray, and its faces are darker than a ship's · Decision 5 is superseded by [ADR-048](ADR-048-batched-static-uploads.md): static buffers share default-heap buffers, and their uploads are batched and waited for once
+Status: **accepted** · 2026-09-30 · Decision 3 is superseded in part by [ADR-040](ADR-040-lines-over-dark-faces.md): a structure's color is its side's taken toward gray, and its faces are darker than a ship's · Decision 5 is superseded by [ADR-048](ADR-048-batched-static-uploads.md): static buffers share default-heap buffers, and their uploads are batched and waited for once · Decision 6's root constants per object are superseded by [ADR-053](ADR-053-instanced-meshes.md): every object is an instance, and each mesh's copies in a batch are one draw
 
 ## Context
 

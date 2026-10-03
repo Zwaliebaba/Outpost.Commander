@@ -175,8 +175,8 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // The model _set/_model placed by _world: its faces _color at _fillShade now, and its creases over them as lines,
-  // lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
+  // The model _set/_model placed by _world: its faces _color at _fillShade, queued for the frame's batch of faces
+  // (ADR-053), and its creases over them as lines, lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
   void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color, float _fillShade);
   // A structure drawn to its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
@@ -294,9 +294,11 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
-  // The lines of the models drawn this frame, drawn together after them; and the structures' rings.
-  std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
-  std::vector<Neuron::MeshPipeline::LineDraw> m_ringDraws;
+  // The faces of the models drawn this frame, drawn together with each mesh's copies in one draw (ADR-053); their lines,
+  // drawn together after them; and the structures' rings.
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_faceDraws;
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_lineDraws;
+  std::vector<Neuron::MeshPipeline::MeshDraw> m_ringDraws;
   // A Mining Rig's ring over its rock, made afresh for each rig as it is drawn.
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.

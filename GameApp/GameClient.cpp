@@ -283,6 +283,12 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
   return result;
 }
 
+// One copy of a mesh as the mesh pipeline draws it (ADR-053).
+Neuron::MeshPipeline::Instance MeshInstance(const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _liftShare) noexcept
+{
+  return {.world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
+}
+
 // The entity of _entities with this identifier, or nullptr. Every snapshot lists its entities in identifier order, and the
 // view keeps that order (SnapshotInterpolator::Entities), so this is a binary search.
 const Outpost::EntityView* FindById(std::span<const Outpost::EntityView> _entities, Outpost::EntityId _id) noexcept
@@ -995,9 +1001,12 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
     return;
+  m_faceDraws.clear();
   m_lineDraws.clear();
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
+  // Every model's faces, each mesh's copies in one draw (ADR-053).
+  m_pipeline.DrawMeshes(_commandList, m_faceDraws);
   DrawShards(_commandList);
   // Every model's lines at once, after every face they may lie behind.
   m_pipeline.DrawLines(_commandList, m_lineDraws);
@@ -1173,10 +1182,9 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
     if (strength <= 0.0f)
       continue;
     const DirectX::XMFLOAT3 at{structure.position.xMeters, OVERLAY_LIFT_METERS, structure.position.zMeters};
-    m_ringDraws.push_back({.lines = m_ringLine.get(),
-                           .world = WorldMatrix(at, 0.0f, radius),
-                           .color = lit ? litColor : Shaded(side->color, FOOTPRINT_RING_SHADE * strength),
-                           .liftShare = 0.0f});
+    m_ringDraws.push_back({.mesh = m_ringLine.get(),
+                           .instance = MeshInstance(WorldMatrix(at, 0.0f, radius),
+                                                    lit ? litColor : Shaded(side->color, FOOTPRINT_RING_SHADE * strength), 0.0f)});
   }
   m_pipeline.DrawLines(_commandList, m_ringDraws);
 }
@@ -1319,9 +1327,9 @@ void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std
   for (const ModelPiece& piece : ModelPieces(_set, _model))
   {
     const DirectX::XMFLOAT4X4 world = PieceWorld(piece, _world);
-    m_pipeline.Draw(_commandList, *piece.faces, world, Shaded(_color, _fillShade));
+    m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = MeshInstance(world, Shaded(_color, _fillShade), 0.0f)});
     if (piece.edges != nullptr)
-      m_lineDraws.push_back({.lines = piece.edges.get(), .world = world, .color = edgeColor, .liftShare = LINE_LIFT_SHARE});
+      m_lineDraws.push_back({.mesh = piece.edges.get(), .instance = MeshInstance(world, edgeColor, LINE_LIFT_SHARE)});
   }
 }
 

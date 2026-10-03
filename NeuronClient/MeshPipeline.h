@@ -6,7 +6,9 @@ class Mesh;
 class Renderer;
 
 // Draws meshes flat-lit in one color each (ADR-011): a root signature, a pipeline state, and a constant buffer per frame
-// in flight for the camera and the light. It knows no game concept: the caller says where each mesh is and its color.
+// in flight for the camera and the light. Every object drawn is an instance: where it is and its color are written into
+// the frame's slot of an upload buffer, and the copies of one mesh drawn together are one instanced draw (ADR-053). It
+// knows no game concept: the caller says where each mesh is and its color.
 class MeshPipeline : NonCopyable
 {
 public:
@@ -23,6 +25,29 @@ public:
     float unused0;
   };
 
+  // Where one copy of a mesh is drawn and how: its world matrix, which may turn, move and scale uniformly, its linear
+  // color, and the share of its distance a line is pulled toward the eye (DrawLines). The layout matches struct Object in
+  // Shader/MeshVS.hlsl and Shader/MeshLineVS.hlsl.
+  struct Instance
+  {
+    DirectX::XMFLOAT4X4 world;
+    DirectX::XMFLOAT4 color;
+    float liftShare;
+    float unused0;
+    float unused1;
+    float unused2;
+  };
+
+  // A mesh and one copy of it, for drawing many in a batch.
+  struct MeshDraw
+  {
+    const Mesh* mesh = nullptr;
+    Instance instance{};
+  };
+
+  // Instances one frame can draw between all its calls; a call past them draws nothing.
+  static constexpr UINT MAX_FRAME_INSTANCES = 16384;
+
   // Builds the root signature and the pipeline state for the renderer's formats. Throws winrt::hresult_error on failure.
   explicit MeshPipeline(Renderer& _renderer);
 
@@ -30,8 +55,11 @@ public:
   void BeginDrawing(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex, const FrameConstants& _constants);
 
   // Draws _mesh placed by _world, which may turn, move and scale uniformly, in a linear color.
-  void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
-            const DirectX::XMFLOAT4& _color) const;
+  void Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color);
+
+  // Draws every one of _draws as Draw does, each mesh's copies together in one instanced draw, the meshes in the order they
+  // first appear in _draws (ADR-053).
+  void DrawMeshes(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws);
 
   // Vertices one frame's DrawTriangles calls can take between them.
   static constexpr UINT MAX_FRAME_VERTICES = 65536;
@@ -48,7 +76,7 @@ public:
   // puts it in front of the surface it lies on: Direct3D gives a line no depth bias (ADR-040). The pipeline is back on
   // Draw's state and topology when it returns.
   void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
-                 const DirectX::XMFLOAT4& _color, float _liftShare) const;
+                 const DirectX::XMFLOAT4& _color, float _liftShare);
 
   // Draws a line list made on the CPU this frame, already in the world, as DrawLines draws a mesh's lines: geometry that
   // follows what it lies on, such as a ring laid over a rock. Its vertices take DrawTriangles' slot, so a call that would
@@ -57,21 +85,17 @@ public:
   bool DrawLineList(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color,
                     float _liftShare);
 
-  // One line list to draw, as DrawLines takes it.
-  struct LineDraw
-  {
-    const Mesh* lines = nullptr;
-    DirectX::XMFLOAT4X4 world{};
-    DirectX::XMFLOAT4 color{};
-    float liftShare = 0.0f;
-  };
-
-  // Draws every one of _draws as DrawLines does, switching to the line state and back once for all of them.
-  void DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const LineDraw> _draws) const;
+  // Draws every one of _draws, line lists such as BuildCreaseLines makes, as DrawLines does, switching to the line state
+  // and back once for all of them, and each mesh's copies together in one instanced draw.
+  void DrawLines(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws);
 
 private:
-  void DrawObject(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
-                  const DirectX::XMFLOAT4& _color, float _liftShare) const;
+  // Writes _instance into the frame's slot; its place there, or nothing when the slot is full.
+  [[nodiscard]] std::optional<UINT> AddInstance(const Instance& _instance) noexcept;
+  // Draws _count copies of _mesh, whose instances follow each other in the frame's slot from _first.
+  void DrawInstances(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, UINT _first, UINT _count) const;
+  // Draws _draws with the bound state, each mesh's copies together, the meshes in the order they first appear.
+  void DrawGrouped(ID3D12GraphicsCommandList* _commandList, std::span<const MeshDraw> _draws);
   // Copies _vertices into this frame's slot and draws them as the bound state and topology take them, in the world as they
   // are; false, drawing nothing, when the slot has no room for them.
   bool DrawFrameVertices(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color,
@@ -95,5 +119,12 @@ private:
   MeshVertex* m_mappedFrameVertices = nullptr;
   UINT m_frameIndex = 0;
   UINT m_frameVerticesUsed = 0;
+  // One slot of MAX_FRAME_INSTANCES instances per frame in flight, mapped for the pipeline's lifetime, and how much of the
+  // frame's slot is taken (ADR-053).
+  winrt::com_ptr<ID3D12Resource> m_frameInstances;
+  Instance* m_mappedFrameInstances = nullptr;
+  UINT m_frameInstancesUsed = 0;
+  // The meshes of a batch in the order they first appear, kept so that its storage is not allocated every frame.
+  std::vector<const Mesh*> m_batchMeshes;
 };
 } // namespace Neuron
