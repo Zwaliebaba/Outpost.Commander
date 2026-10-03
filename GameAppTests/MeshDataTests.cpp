@@ -280,7 +280,7 @@ public:
   // The owner's asteroid edges (2026-10-02): a box shows its twelve edges, not the diagonals that split its faces.
   TEST_METHOD(CreaseLinesAreTheEdgesWhereTheSurfaceBends)
   {
-    const Neuron::MeshData lines = Neuron::BuildCreaseLines(FlatBox(), Degrees(30.0f), 0.0f);
+    const Neuron::MeshData lines = Neuron::BuildCreaseLines(FlatBox(), Degrees(30.0f));
     Assert::AreEqual(size_t{12}, LineCount(lines));
     Assert::AreEqual(lines.vertices.size(), lines.indices.size());
     for (size_t i = 0; i < lines.indices.size(); ++i)
@@ -298,15 +298,16 @@ public:
   TEST_METHOD(TheAngleDecidesWhichFoldsAreDrawn)
   {
     const Neuron::MeshData hinge = Hinge(45.0f);
-    Assert::AreEqual(size_t{5}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(30.0f), 0.0f)));
-    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(60.0f), 0.0f)));
-    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(Hinge(0.0f), Degrees(30.0f), 0.0f)), L"a flat sheet shows its rim");
+    Assert::AreEqual(size_t{5}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(30.0f))));
+    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(hinge, Degrees(60.0f))));
+    Assert::AreEqual(size_t{4}, LineCount(Neuron::BuildCreaseLines(Hinge(0.0f), Degrees(30.0f))), L"a flat sheet shows its rim");
   }
 
-  // A line is lit and lifted along the mean of its faces' normals; the lift is a share of the mesh's largest extent.
-  TEST_METHOD(CreaseLinesAreLiftedAlongTheMeanNormal)
+  // A line is lit along the mean of its faces' normals, and lies on the edge: DrawLines, not the mesh, keeps it in front
+  // of the surface (ADR-040).
+  TEST_METHOD(CreaseLinesAreLitAlongTheMeanNormalAndLieOnTheEdge)
   {
-    const Neuron::MeshData lines = Neuron::BuildCreaseLines(Hinge(90.0f), Degrees(30.0f), 0.01f);
+    const Neuron::MeshData lines = Neuron::BuildCreaseLines(Hinge(90.0f), Degrees(30.0f));
     // The fold's line is the one at x = 0 whose normal leans out between up and +x, the faces' two normals.
     const auto fold = std::ranges::find_if(lines.vertices, [](const Neuron::MeshVertex& _vertex)
                                            { return _vertex.normal.x > 0.1f && _vertex.normal.y > 0.1f; });
@@ -314,9 +315,8 @@ public:
     const float half = std::sqrt(0.5f);
     Assert::AreEqual(half, fold->normal.x, TOLERANCE);
     Assert::AreEqual(half, fold->normal.y, TOLERANCE);
-    // Folded a quarter turn, the hinge is 10 m across in x, y and z alike, so the lift is 0.1 m.
-    Assert::AreEqual(0.1f * half, fold->position.x, TOLERANCE);
-    Assert::AreEqual(0.1f * half, fold->position.y, TOLERANCE);
+    Assert::AreEqual(0.0f, fold->position.x, TOLERANCE);
+    Assert::AreEqual(0.0f, fold->position.y, TOLERANCE);
   }
 
   // A line straight down meets the box's top, wherever over it, and misses it beside the box.
@@ -351,9 +351,9 @@ public:
       const size_t triangles = rock.indices.size() / 3;
       Assert::IsTrue(triangles <= 100, name.c_str());
       // Nothing folds by 179 degrees, so the only lines left are open edges, and a closed rock has none.
-      Assert::AreEqual(size_t{0}, LineCount(Neuron::BuildCreaseLines(rock, Degrees(179.0f), 0.0f)), name.c_str());
+      Assert::AreEqual(size_t{0}, LineCount(Neuron::BuildCreaseLines(rock, Degrees(179.0f))), name.c_str());
       // A closed mesh has one and a half edges per triangle; at least half of them are ridges.
-      const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(10.0f), 0.0f));
+      const size_t creases = LineCount(Neuron::BuildCreaseLines(rock, Degrees(10.0f)));
       Assert::IsTrue(creases * 4 >= triangles * 3, name.c_str());
 
       const float half = rock.Extents().x / 2.0f;

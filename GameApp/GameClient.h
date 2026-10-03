@@ -91,11 +91,12 @@ private:
   void Explode(const Snapshot& _snapshot);
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
-  // The model _set/_model placed by _world: its faces darker than _color now, and its creases over them as lines,
-  // lighter, queued for the frame's one pass of lines (ADR-027).
+  // The model _set/_model placed by _world: its faces _color at _fillShade now, and its creases over them as lines,
+  // lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
   void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                 const DirectX::XMFLOAT4& _color);
-  // A structure drawn to its footprint, darker while it is built (task 4.2).
+                 const DirectX::XMFLOAT4& _color, float _fillShade);
+  // A structure drawn to its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
+  // (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
@@ -115,6 +116,8 @@ private:
   void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
+  // A faint ring in its side's color under every structure that is not selected (ADR-040).
+  void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
   // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
   // structure under construction, its length the share built (task 4.2).

@@ -908,6 +908,30 @@ public:
     Assert::AreEqual(size_t{2}, Outpost::Hud::StepTopics(7, 0, 12), L"kept in range");
   }
 
+  // ADR-040: an asteroid field is only in the way, so its mark is darker than an ore asteroid's, though it is the larger.
+  TEST_METHOD(DrawsFieldsDarkerThanOreAsteroidsOnTheMinimap)
+  {
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
+    content.marks = {
+      {.position = {.xMeters = -500.0f, .zMeters = 0.0f},
+       .radiusMeters = 45.0f,
+       .side = Outpost::Hud::Side::Neutral,
+       .kind = Outpost::EntityKind::Asteroid},
+      {.position = {.xMeters = 500.0f, .zMeters = 0.0f},
+       .radiusMeters = 150.0f,
+       .side = Outpost::Hud::Side::Neutral,
+       .kind = Outpost::EntityKind::AsteroidField},
+    };
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+
+    // With no fog and no view, the marks are the last panels, in order.
+    Assert::IsTrue(layout.panels.size() >= 2);
+    const Outpost::Hud::Rect& ore = layout.panels[layout.panels.size() - 2];
+    const Outpost::Hud::Rect& field = layout.panels.back();
+    Assert::IsTrue(field.width > ore.width, L"the field's square is the larger");
+    Assert::IsTrue(field.color.x < ore.color.x && field.color.y < ore.color.y && field.color.z < ore.color.z);
+  }
+
   // ADR-024: the minimap draws the fog over its marks, a rectangle for each run of one shade along a row, and nothing
   // where the player sees.
   TEST_METHOD(ShadesTheMinimapUnderFog)

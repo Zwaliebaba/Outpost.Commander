@@ -2,9 +2,10 @@
 
 namespace Neuron
 {
-// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window, with a depth buffer the size of the
-// back buffer (ADR-006, ADR-011). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It knows no game
-// concept: a frame is cleared, whoever holds the command list draws into it, and it is presented.
+// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame is drawn into a
+// multisampled scene target with a depth buffer of its own, both the size of the back buffer, and resolved into the back
+// buffer before it is presented (ADR-011, ADR-040). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It
+// knows no game concept: a frame is cleared, whoever holds the command list draws into it, and it is presented.
 class Renderer : NonCopyable
 {
 public:
@@ -12,6 +13,9 @@ public:
   static constexpr UINT FRAME_COUNT = 2;
   static constexpr DXGI_FORMAT RENDER_TARGET_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
   static constexpr DXGI_FORMAT DEPTH_FORMAT = DXGI_FORMAT_D32_FLOAT;
+  // Samples per pixel of the scene target and its depth buffer, which every pipeline state draws with (ADR-040). Feature
+  // level 11_0 guarantees four for both formats.
+  static constexpr UINT SAMPLE_COUNT = 4;
 
   // Creates the device on the high-performance hardware adapter, and the swap chain on the window at the given size.
   // Throws winrt::hresult_error on failure.
@@ -26,11 +30,11 @@ public:
   // changed, or is zero.
   void Resize(UINT _widthPixels, UINT _heightPixels);
 
-  // Starts a frame: clears the back buffer to a linear color and the depth buffer to the far plane, and binds both with
-  // a viewport over the whole back buffer. The command list it returns is open until EndFrame.
+  // Starts a frame: clears the scene target to a linear color and the depth buffer to the far plane, and binds both with
+  // a viewport over the whole of them. The command list it returns is open until EndFrame.
   [[nodiscard]] ID3D12GraphicsCommandList* BeginFrame(const std::array<float, 4>& _clearColor);
 
-  // Submits the frame BeginFrame started and presents it.
+  // Resolves the frame BeginFrame started into the back buffer, submits it and presents it.
   void EndFrame();
 
   // A buffer in video memory holding _bytes, for vertices or indices that never change. It is uploaded before this
@@ -75,7 +79,7 @@ public:
 private:
   void CreateRenderTargets();
   void CreateDepthBuffer();
-  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetView(UINT _index) const noexcept;
+  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE SceneTargetView() const noexcept;
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const noexcept;
   void WaitForGpu();
 
@@ -89,6 +93,10 @@ private:
   winrt::com_ptr<ID3D12DescriptorHeap> m_renderTargetHeap;
   winrt::com_ptr<ID3D12DescriptorHeap> m_depthStencilHeap;
   std::array<winrt::com_ptr<ID3D12Resource>, FRAME_COUNT> m_backBuffers;
+  // What a frame is drawn into, SAMPLE_COUNT samples a pixel; one serves every frame in flight, since the queue runs them
+  // in turn. It is resolved into m_resolvedScene, which is copied into the back buffer (ADR-040).
+  winrt::com_ptr<ID3D12Resource> m_sceneTarget;
+  winrt::com_ptr<ID3D12Resource> m_resolvedScene;
   winrt::com_ptr<ID3D12Resource> m_depthBuffer;
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;
@@ -107,7 +115,6 @@ private:
   // Which back buffers' last frames have timestamps not read yet.
   std::array<bool, FRAME_COUNT> m_timestampsPending{};
   std::vector<std::chrono::nanoseconds> m_gpuFrameTimes;
-  UINT m_renderTargetDescriptorSize = 0;
   UINT m_swapChainFlags = 0;
   UINT m_widthPixels = 0;
   UINT m_heightPixels = 0;

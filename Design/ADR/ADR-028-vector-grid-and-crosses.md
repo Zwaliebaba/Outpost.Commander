@@ -1,6 +1,6 @@
 # ADR-028 — The grid is pixel-wide lines, the brightest stars are crosses, and the scene's colors put the fleets first
 
-Status: **accepted** · 2026-10-02 · Supersedes [ADR-022](ADR-022-natural-starfield.md) decisions 3 and 8
+Status: **accepted** · 2026-10-02 · Supersedes [ADR-022](ADR-022-natural-starfield.md) decisions 3 and 8 · Decision 4's faces at 0.65 are superseded by [ADR-040](ADR-040-lines-over-dark-faces.md): every model's faces are at 0.3
 
 ## Context
 
