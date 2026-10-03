@@ -35,7 +35,7 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | in review: owner run |
 | 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | done, not yet built on Windows |
 | 19.1 | The match log for Phase 2 | 15.1 | — | done, not yet built on Windows |
-| 19.2 | S1–S5 | 18.1, 19.1 | — | todo |
+| 19.2 | S1–S5 | 18.1, 19.1 | — | in review: owner run |
 
 ### Milestone order
 
@@ -219,3 +219,4 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the AI-against-AI run, tuned against S1–S4 where the AI's own settings can reach them; the owner's matches and judgement for S5.
 - **Verify:** **owner run.**
+- **As built:** recorded in design §2. S1–S3 are met by two AIs. S4 is met over seeds 1–40, at 47:55, and 10 seconds short over seeds 1–10, after the AI's fall-back was tuned to 10% and 240 s ([ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 2, [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 6, edited in place). The owner's match for S1, S2 and S4, and S5, are the owner's run.

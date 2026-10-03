@@ -48,16 +48,16 @@ TEST_CLASS(AiSettingsTests)
 {
 public:
   // Gate G9 (owner, 2026-10-01) had the AI attack with twelve ships; task 12.2 tuned the attack so that two AIs play a
-  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, falling back after
-  // losing three in ten and regrouping for 120 seconds since groups keep lanes (ADR-047), behind two Defence Platforms for
-  // each Shipyard. The rest is the owner's milestone 6 answers.
+  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, behind two Defence
+  // Platforms for each Shipyard. Phase 2's task 19.2 tuned the fall-back against S4 with territory: after losing one in
+  // ten, regrouping for 240 seconds (ADR-041). The rest is the owner's milestone 6 answers.
   TEST_METHOD(LoadsTheRepositoryFile)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     Assert::AreEqual(20, settings.attackGroupShips);
     Assert::AreEqual(12, settings.attackGroupGrowthPerTier);
-    Assert::AreEqual(0.3, settings.retreatLossShare);
-    Assert::AreEqual(120.0, settings.regroupSeconds);
+    Assert::AreEqual(0.1, settings.retreatLossShare);
+    Assert::AreEqual(240.0, settings.regroupSeconds);
     Assert::AreEqual(2, settings.homePlatformsPerShipyard);
     Assert::AreEqual(60.0, settings.reviewIntervalSeconds);
     Assert::AreEqual(4, settings.constructors);
@@ -131,7 +131,7 @@ public:
     ExpectLoadError(Replace("\"attackGroupShips\": 20,", "\"attackGroupShips\": 0,"), "attackGroupShips");
     ExpectLoadError(Replace("\"reviewIntervalSeconds\": 60,", "\"reviewIntervalSeconds\": 0,"), "reviewIntervalSeconds");
     ExpectLoadError(Replace("\"shipyardQueueJobs\": 2,", "\"shipyardQueueJobs\": 6,"), "shipyardQueueJobs");
-    ExpectLoadError(Replace("\"retreatLossShare\": 0.3,", "\"retreatLossShare\": 1,"), "retreatLossShare");
+    ExpectLoadError(Replace("\"retreatLossShare\": 0.1,", "\"retreatLossShare\": 1,"), "retreatLossShare");
     ExpectLoadError(Replace("\"raidLossShare\": 0.5,", "\"raidLossShare\": 1,"), "raidLossShare");
     ExpectLoadError(Replace("\"attackWithoutLeadShare\": 1.5,", "\"attackWithoutLeadShare\": 0,"), "attackWithoutLeadShare");
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [1, 1,"), "researchOrder[1]");
