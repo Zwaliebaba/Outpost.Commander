@@ -101,6 +101,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The steering.** A ship always moves forward, at its cruise speed times ½ + ½·cos of its bearing to the waypoint: full speed on course, half with the waypoint abeam or behind. It also flies no faster than lets it reach the waypoint on the arc that leaves along its heading, so it never circles a point inside its turn. Only a tick it heads within 45° of its waypoint and gets no closer counts toward a stall.
   - **What it changes**, measured in the Linux container. A U-turn takes about 8% longer: a Large+Fusion ship sent 100 m behind itself arrives in 8.55 s against 7.90 s. A point 15 m abeam, which the old rule circled for seconds and gave up 2 m short of, is now reached exactly in 0.75–3.6 s, depending on the hull. Two AIs end a match at a median of 23:32 over 140 seeds, against 22:11 before. The balance check: not yet recorded; the full check is running in the container.
   - **Tests.** `MovementTests.AShipComesAboutInALoop` and `AShipReachesAPointInsideItsTurn`, both of which fail under the old rule; the other 185 GameLogic tests pass unchanged.
+  - **Deeper banks.** With the arcs, the owner raised the bank limits in `Models.json` on 2026-10-03, graded by hull: Small 50°, Medium 45°, Large 35° and the Constructor 30°, from task 7.1's 35°, 22°, 12° and 15°. Each "full at" stays, so an Ion or Pulse ship reaches its limit in a sharp turn and a Fusion ship 40–70% of it.
 
 ---
 
