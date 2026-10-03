@@ -44,13 +44,14 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
   }
 
   const float half = _mapSizeMeters / 2.0f;
-  bool valid = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
-  for (const EntityView& other : _entities)
+  const bool inside = std::abs(_cursor.xMeters) + _type.radiusMeters <= half && std::abs(_cursor.zMeters) + _type.radiusMeters <= half;
+  const auto overlaps = [&](const EntityView& _other)
   {
     const bool blocks =
-      other.kind == EntityKind::Asteroid || other.kind == EntityKind::AsteroidField || other.kind == EntityKind::Structure;
-    if (blocks && Distance(other.position, _cursor) < other.radiusMeters + _type.radiusMeters)
-      valid = false;
-  }
-  return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = valid};
+      _other.kind == EntityKind::Asteroid || _other.kind == EntityKind::AsteroidField || _other.kind == EntityKind::Structure;
+    return blocks && Distance(_other.position, _cursor) < _other.radiusMeters + _type.radiusMeters;
+  };
+  // A ghost outside the map, or one overlap, makes it invalid: the search stops at the first overlap, and outside the map
+  // it is not made at all.
+  return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = inside && std::ranges::none_of(_entities, overlaps)};
 }

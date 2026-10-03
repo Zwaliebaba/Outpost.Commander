@@ -29,6 +29,7 @@ public:
   AiPlayer(AiSettings _settings, std::uint32_t _ticksPerSecond);
 
   // Reads one snapshot of the AI's player, which must be handed every snapshot in order, and returns the orders to send.
+  // The snapshot lists its entities in identifier order, as the server sends them.
   [[nodiscard]] std::vector<Command> Update(const Snapshot& _snapshot);
 
   // The design the AI chose at its last review.
@@ -89,8 +90,8 @@ private:
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,
-  // apart from slot _skippedSlot.
-  [[nodiscard]] std::vector<EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot) const;
+  // apart from slot _skippedSlot. Called during a decision only, and good until the next call.
+  [[nodiscard]] std::span<const EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot);
   void TendWork(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   // Orders the next structures of the plan, and says whether the next one waits for Ore.
   [[nodiscard]] bool Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
@@ -130,6 +131,11 @@ private:
   std::uint64_t m_regroupUntilTick = 0;
   // The Defence Platforms planned round the base so far, which places the next (task 12.2).
   size_t m_homePlatforms = 0;
+  // Blockers' list: what blocks in the snapshot of the decision under way, the first m_snapshotBlockers, gathered once at
+  // the decision's first call, and after them the planned structures of the last call.
+  std::vector<EntityView> m_blockers;
+  size_t m_snapshotBlockers = 0;
+  bool m_blockersGathered = false;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.
