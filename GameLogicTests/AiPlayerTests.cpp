@@ -725,8 +725,15 @@ public:
   }
 
   // Task 10.4: against a player who does nothing, the AI researches through tier 2 and opens tier 3 (Phase 1 design §13).
+  // It is CI's slowest test by far, so CI runs it in a vstest process of its own beside the other suites, and sets
+  // OUTPOST_TIER_THREE_APART for those so that it runs once (build.yml).
   TEST_METHOD(ReachesTierThree)
   {
+    if (GetEnvironmentVariableW(L"OUTPOST_TIER_THREE_APART", nullptr, 0) != 0)
+    {
+      Logger::WriteMessage("Not run here: OUTPOST_TIER_THREE_APART says it runs in a process of its own.");
+      return;
+    }
     AiMatch match;
     constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
     const auto researched = [&match](Outpost::ResearchTopicId _topic)
