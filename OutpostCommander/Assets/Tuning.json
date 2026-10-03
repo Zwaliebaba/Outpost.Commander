@@ -10,6 +10,7 @@
     "exhaustedYieldPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
+  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400 },
   "hulls": [
     { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10, "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 },
     { "id": 2, "name": "Medium", "hitPoints": 500, "armor": 8, "speedMetersPerSecond": 40, "cost": 110, "buildSeconds": 20, "footprintRadiusMeters": 14, "turnRateDegreesPerSecond": 120 },
@@ -36,7 +37,8 @@
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40 },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30 },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
-    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
+    { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
+    { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 40 }
   ],
   "research": [
     { "id": 1, "name": "Improved Extraction", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],

@@ -56,6 +56,8 @@ std::string_view KindName(Outpost::StructureKind _kind)
     return "MiningRig";
   case Outpost::StructureKind::DefensePlatform:
     return "DefensePlatform";
+  case Outpost::StructureKind::Relay:
+    return "Relay";
   }
   return {};
 }
@@ -91,6 +93,7 @@ constexpr std::string_view MINIMAL_TUNING = R"({
              "miningRigOrePerSecondNear": 6, "miningRigOrePerSecondContested": 8, "miningRigOrePerSecondRich": 10,
              "exhaustedYieldPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
+  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
@@ -110,7 +113,9 @@ constexpr std::string_view MINIMAL_TUNING = R"({
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50,
       "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20,
-      "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
+      "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
+    { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200,
+      "buildConstructorSeconds": 40 }
   ],
   "research": [
     { "id": 1, "name": "Hull Plating", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
@@ -187,6 +192,10 @@ public:
                 {"unarmedMeters", tuning.sight.unarmedMeters},
                 {"shotRevealSeconds", tuning.sight.shotRevealSeconds}},
                "sight");
+    ExpectSame(*json.Find("territory"),
+               {{"cutOffIncomePercent", Number(tuning.territory.cutOffIncomePercent)},
+                {"suppressionRadiusMeters", tuning.territory.suppressionRadiusMeters}},
+               "territory");
 
     const Neuron::JsonValue::Array& hulls = json.Find("hulls")->AsArray();
     Assert::AreEqual(hulls.size(), tuning.hulls.size());
@@ -321,7 +330,7 @@ public:
     Assert::AreEqual(2, tuning.rules.startingConstructors);
     Assert::AreEqual(0.5, tuning.constructor.extraConstructorBuildShare);
     Assert::AreEqual(45.0, tuning.structures[0].footprintRadiusMeters);
-    Assert::AreEqual(size_t{5}, tuning.structures.size());
+    Assert::AreEqual(size_t{6}, tuning.structures.size());
     Assert::IsFalse(tuning.structures[0].cost.has_value());
     Assert::IsTrue(tuning.structures[1].cost == 300);
     Assert::IsTrue(tuning.structures[0].structureWeapon == Outpost::StructureWeaponId{1});
@@ -341,6 +350,7 @@ public:
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 220, \"hitpoint\": 1,"), "hulls[0].hitpoint");
     ExpectLoadError(Replace("\"tickHz\": 20,", ""), "rules: has no \"tickHz\"");
     ExpectLoadError(Replace("\"unarmedMeters\": 200, ", ""), "sight: has no \"unarmedMeters\"");
+    ExpectLoadError(Replace(", \"suppressionRadiusMeters\": 400", ""), "territory: has no \"suppressionRadiusMeters\"");
     ExpectLoadError(Replace("\"repairPercentPerSecond\": 2 },", "\"repairPercentPerSecond\": 0 },"), "constructor.repairPercentPerSecond");
     ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 150, ", ""), "constructor: has no \"turnRateDegreesPerSecond\"");
     ExpectLoadError(Replace("\"splashRadiusMeters\": 0,", "\"splashRadiusMeters\": 0, \"splashRadius\": 5,"), "weapons[0].splashRadius");
@@ -355,6 +365,8 @@ public:
     ExpectLoadError(Replace("\"tickHz\": 20,", "\"tickHz\": 0,"), "rules.tickHz");
     ExpectLoadError(Replace("\"exhaustedYieldPercent\": 20", "\"exhaustedYieldPercent\": 101"), "rules.exhaustedYieldPercent");
     ExpectLoadError(Replace("\"weaponMarginMeters\": 50,", "\"weaponMarginMeters\": 0,"), "sight.weaponMarginMeters");
+    ExpectLoadError(Replace("\"cutOffIncomePercent\": 50,", "\"cutOffIncomePercent\": 101,"), "territory.cutOffIncomePercent");
+    ExpectLoadError(Replace("\"suppressionRadiusMeters\": 400", "\"suppressionRadiusMeters\": 0"), "territory.suppressionRadiusMeters");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 1e10,"), "hulls[0].hitPoints");
   }
 
@@ -362,6 +374,8 @@ public:
   {
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
+    // Phase 2 design §5: the Relay is a structure kind like the others, which the file must have.
+    ExpectLoadError(Replace("\"kind\": \"Relay\"", "\"kind\": \"Shipyard\""), "structures[5].kind");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45, \"structureWeapon\": 2 },"),
                     "structures[0].structureWeapon");
@@ -427,7 +441,7 @@ public:
 
   TEST_METHOD(RejectsText)
   {
-    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 8");
+    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 9");
     ExpectLoadError("[]", "the file");
   }
 };

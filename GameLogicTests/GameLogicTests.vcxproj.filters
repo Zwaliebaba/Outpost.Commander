@@ -35,5 +35,6 @@
     <ClCompile Include="MatchOutcomeTests.cpp" />
     <ClCompile Include="AiSettingsTests.cpp" />
     <ClCompile Include="AiPlayerTests.cpp" />
+    <ClCompile Include="TerritoryTests.cpp" />
   </ItemGroup>
 </Project>

@@ -181,6 +181,45 @@ struct StructureTypeView
   std::int32_t cost = 0;
 };
 
+// One of the map's sectors and who holds it (Phase 2 design §4–§6, ADR-056). Every player sees every sector's holder,
+// fog of war or not: the territory is the map both sides play for.
+struct SectorView
+{
+  std::int32_t id = 0;
+  std::string nameUtf8;
+  float minXMeters = 0.0f;
+  float maxXMeters = 0.0f;
+  float minZMeters = 0.0f;
+  float maxZMeters = 0.0f;
+  // Its node site, where a Relay stands, or the Command Station in a home sector.
+  PlanePosition node;
+  std::vector<std::int32_t> adjacent;
+  // The owner of the finished Relay or the Command Station on its node; no player while the node is free.
+  PlayerId holder;
+  // Its Relay has an enemy warship within the suppression radius and none of its holder's: it earns nothing and the Relay
+  // sees only as a structure does, but the sector is still held.
+  bool suppressed = false;
+  // It is held but no longer linked to its holder's home sector through the sectors its holder holds: it earns the
+  // tuning data's share.
+  bool cutOff = false;
+
+  // Whether _position is in the sector, its borders included, as the map's sector is.
+  [[nodiscard]] bool Contains(PlanePosition _position) const noexcept
+  {
+    return _position.xMeters >= minXMeters && _position.xMeters <= maxXMeters && _position.zMeters >= minZMeters &&
+           _position.zMeters <= maxZMeters;
+  }
+
+  friend bool operator==(const SectorView&, const SectorView&) = default;
+};
+
+// The first of _sectors that holds _position, or nullptr.
+[[nodiscard]] inline const SectorView* FindSector(std::span<const SectorView> _sectors, PlanePosition _position) noexcept
+{
+  const auto found = std::ranges::find_if(_sectors, [_position](const SectorView& _sector) { return _sector.Contains(_position); });
+  return found != _sectors.end() ? &*found : nullptr;
+}
+
 // A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
 // at the moment it was fired (task 3.5).
 struct ShotView
@@ -242,5 +281,8 @@ struct Snapshot
   std::uint64_t matchEndedTick = 0;
   // The match is played under fog of war, which the client draws (ADR-024).
   bool fogOfWar = false;
+  // The map's sectors, in the map's order, and who holds each (ADR-056); none on a map without them, which plays without
+  // territory.
+  std::vector<SectorView> sectors;
 };
 } // namespace Outpost

@@ -71,6 +71,9 @@ constexpr float WORK_REACH_METERS = 20.0f;
 constexpr std::int32_t SITE_STARTING_HIT_POINTS_DIVISOR = 10;
 // A new ship appears this far beyond its producer's footprint, on the side facing the map's center.
 constexpr float SPAWN_GAP_METERS = 5.0f;
+// A Command Station or Relay this close to a sector's node stands on it: a Relay is placed on the node and a station on
+// its start, which is its home sector's node (ADR-036, ADR-056); this allows for float rounding.
+constexpr float NODE_REACH_METERS = 1.0f;
 // The starting Constructors stand in a row this far in front of the Command Station's footprint, this far apart.
 constexpr float BASE_ROW_GAP_METERS = 25.0f;
 constexpr float BASE_ROW_SPACING_METERS = 10.0f;
@@ -152,6 +155,9 @@ void Outpost::Simulation::PlaceMap(const Map& _map)
   }
   m_mapObstacles = std::move(obstacles);
   m_mapHalfSizeMeters = _map.sizeMeters / 2.0f;
+  m_sectors.clear();
+  for (const SectorPlacement& sector : _map.sectors)
+    m_sectors.push_back({.placement = sector});
   UpdateObstacles();
 }
 
@@ -237,7 +243,7 @@ void Outpost::Simulation::UpdateVision()
         continue;
       const bool revealed =
         std::ranges::find(player.revealedUntil, entity.id, &std::pair<EntityId, std::uint64_t>::first) != player.revealedUntil.end();
-      if (!revealed && !InSight(observers, entity.position, entity.radiusMeters))
+      if (!revealed && !InSight(observers, entity.position, entity.radiusMeters) && !InSectorSight(player.id, entity.position))
         continue;
       player.seen.push_back(entity.id);
       if (entity.kind != EntityKind::Structure)
@@ -266,7 +272,7 @@ void Outpost::Simulation::UpdateVision()
     for (const Entity& asteroid : m_entities)
     {
       if (asteroid.kind != EntityKind::Asteroid || !asteroid.oreReserveHundredths.has_value() ||
-          !InSight(observers, asteroid.position, asteroid.radiusMeters))
+          (!InSight(observers, asteroid.position, asteroid.radiusMeters) && !InSectorSight(player.id, asteroid.position)))
         continue;
       const auto known = std::ranges::find(player.knownReserves, asteroid.id, &std::pair<EntityId, std::int64_t>::first);
       if (known != player.knownReserves.end())
@@ -276,8 +282,10 @@ void Outpost::Simulation::UpdateVision()
     }
     // A remembered structure whose place is in sight but that is not seen there is gone.
     std::erase_if(player.remembered,
-                  [&](const EntityView& _known) {
-                    return !std::ranges::binary_search(player.seen, _known.id) && InSight(observers, _known.position, _known.radiusMeters);
+                  [&](const EntityView& _known)
+                  {
+                    return !std::ranges::binary_search(player.seen, _known.id) &&
+                           (InSight(observers, _known.position, _known.radiusMeters) || InSectorSight(player.id, _known.position));
                   });
 
     // An attack on a ship ends once the ship is out of sight; a structure stays where it was seen.
@@ -548,6 +556,9 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
   }
   else
     UpdateObstacles();
+  // A Command Station or a Relay placed whole holds its sector at once.
+  if (_kind == StructureKind::CommandStation || _kind == StructureKind::Relay)
+    UpdateTerritory();
   return id;
 }
 
@@ -686,6 +697,8 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     SeparateShips();
     KeepShipsClear();
   }
+  // Who holds what, once every structure built this tick stands and every ship is where the tick leaves it (ADR-056).
+  UpdateTerritory();
   if (m_fog)
   {
     const ObservedPart part(m_observer, TickPart::Vision);
@@ -709,7 +722,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     const std::vector<Observer> observers = ObserversOf(_player);
     for (const DestroyedView& destroyed : m_destroyed)
     {
-      if (!destroyed.owner.IsValid() || destroyed.owner == _player || InSight(observers, destroyed.position, destroyed.radiusMeters))
+      if (!destroyed.owner.IsValid() || destroyed.owner == _player || InSight(observers, destroyed.position, destroyed.radiusMeters) ||
+          InSectorSight(_player, destroyed.position))
         snapshot.destroyed.push_back(destroyed);
     }
     const auto shown = [&](EntityId _id)
@@ -770,6 +784,22 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
   snapshot.fogOfWar = m_fog;
+  snapshot.sectors.reserve(m_sectors.size());
+  for (const Sector& sector : m_sectors)
+  {
+    const SectorPlacement& placement = sector.placement;
+    snapshot.sectors.push_back({.id = placement.id,
+                                .nameUtf8 = placement.name,
+                                .minXMeters = placement.minXMeters,
+                                .maxXMeters = placement.maxXMeters,
+                                .minZMeters = placement.minZMeters,
+                                .maxZMeters = placement.maxZMeters,
+                                .node = placement.node,
+                                .adjacent = placement.adjacent,
+                                .holder = sector.holder,
+                                .suppressed = sector.suppressed,
+                                .cutOff = sector.cutOff});
+  }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
@@ -1528,11 +1558,22 @@ Outpost::CommandResult Outpost::Simulation::ValidateConstructors(PlayerId _playe
 }
 
 // A structure stands on the plane with a circular footprint that overlaps nothing and stays inside the map's edge. A
-// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center (design §6).
-Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, float _radiusMeters, PlanePosition& _position) const
+// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center (design §6); on
+// a map with territory the asteroid must be in a sector the player holds. A Relay snaps to the node of the sector it was
+// placed in, which must be free and adjacent to a sector the player holds (Phase 2 design §4–§6, ADR-056).
+Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, StructureKind _kind, float _radiusMeters,
+                                                           PlanePosition& _position) const
 {
   if (!IsFinite(_position))
     return CommandResult::InvalidPosition;
+  const Sector* relaySector = nullptr;
+  if (_kind == StructureKind::Relay)
+  {
+    relaySector = SectorAt(_position);
+    if (relaySector == nullptr)
+      return CommandResult::InvalidPlacement;
+    _position = relaySector->placement.node;
+  }
   if (_kind == StructureKind::MiningRig)
   {
     const Entity* nearest = nullptr;
@@ -1555,6 +1596,12 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, 
       { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::MiningRig && _entity.site == nearest->id; });
     if (taken)
       return CommandResult::InvalidPlacement;
+    if (HasTerritory())
+    {
+      const Sector* sector = SectorAt(nearest->position);
+      if (sector == nullptr || sector->holder != _player)
+        return CommandResult::SectorNotHeld;
+    }
     _position = nearest->position;
     return CommandResult::Applied;
   }
@@ -1569,6 +1616,14 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, 
     if (blocks && Distance(other.position, _position) < other.radiusMeters + _radiusMeters)
       return CommandResult::InvalidPlacement;
   }
+  // A Relay's node is free now, since nothing stands on it; it must be next to the player's territory (Phase 2 design §6).
+  if (relaySector != nullptr && std::ranges::none_of(relaySector->placement.adjacent,
+                                                     [this, _player](std::int32_t _id)
+                                                     {
+                                                       const Sector* adjacent = SectorById(_id);
+                                                       return adjacent != nullptr && adjacent->holder == _player;
+                                                     }))
+    return CommandResult::NotAdjacent;
   return CommandResult::Applied;
 }
 
@@ -1589,9 +1644,13 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
         { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::ResearchLab && _entity.owner == _player; }))
     return CommandResult::LimitReached;
 
+  // A Relay holds a sector, and a map without them has none to hold (ADR-056).
+  if (_build.structure == StructureKind::Relay && !HasTerritory())
+    return CommandResult::NotBuildable;
+
   const auto radius = static_cast<float>(tuning->footprintRadiusMeters);
   PlanePosition position = _build.position;
-  if (const CommandResult result = CheckPlacement(_build.structure, radius, position); result != CommandResult::Applied)
+  if (const CommandResult result = CheckPlacement(_player, _build.structure, radius, position); result != CommandResult::Applied)
     return result;
   PlayerState* player = FindPlayer(_player);
   const std::int64_t cost = std::int64_t{costOre} * HUNDREDTHS;
@@ -1925,7 +1984,111 @@ std::int64_t Outpost::Simulation::RigIncomeHundredthsPerSecond(const Entity& _ri
   const Entity* asteroid = FindEntity(_rig.site);
   const bool dry = asteroid != nullptr && asteroid->oreReserveHundredths == 0;
   const double share = dry ? m_tuning->rules.exhaustedYieldPercent / 100.0 : 1.0;
-  return std::llround(rate * HUNDREDTHS * _incomeFactor * share);
+  return std::llround(rate * HUNDREDTHS * _incomeFactor * share * TerritoryShare(_rig));
+}
+
+const Outpost::Simulation::Sector* Outpost::Simulation::SectorAt(PlanePosition _position) const noexcept
+{
+  const auto found = std::ranges::find_if(m_sectors, [_position](const Sector& _sector) { return _sector.placement.Contains(_position); });
+  return found != m_sectors.end() ? &*found : nullptr;
+}
+
+const Outpost::Simulation::Sector* Outpost::Simulation::SectorById(std::int32_t _id) const noexcept
+{
+  const auto found = std::ranges::find_if(m_sectors, [_id](const Sector& _sector) { return _sector.placement.id == _id; });
+  return found != m_sectors.end() ? &*found : nullptr;
+}
+
+// A sector is held by the owner of the finished Relay or the Command Station on its node; a site under construction holds
+// nothing yet. A Relay is suppressed while an enemy warship is within the tuning data's radius of it and none of its
+// owner's is; a Command Station never is. A held sector is linked when its holder holds a path of adjacent sectors to one
+// of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off (Phase 2
+// design §4–§6, ADR-056).
+void Outpost::Simulation::UpdateTerritory()
+{
+  if (!HasTerritory())
+    return;
+  const auto suppressionRadius = static_cast<float>(m_tuning->territory.suppressionRadiusMeters);
+  for (Sector& sector : m_sectors)
+  {
+    sector.holder = {};
+    sector.home = false;
+    sector.suppressed = false;
+    sector.cutOff = false;
+    const auto onNode = std::ranges::find_if(m_entities,
+                                             [&sector](const Entity& _entity)
+                                             {
+                                               const bool holds = _entity.structure == StructureKind::CommandStation ||
+                                                                  _entity.structure == StructureKind::Relay;
+                                               return _entity.kind == EntityKind::Structure && holds && _entity.owner.IsValid() &&
+                                                      _entity.IsBuilt() &&
+                                                      Distance(_entity.position, sector.placement.node) <= NODE_REACH_METERS;
+                                             });
+    if (onNode == m_entities.end())
+      continue;
+    sector.holder = onNode->owner;
+    sector.home = onNode->structure == StructureKind::CommandStation;
+    if (sector.home)
+      continue;
+    bool enemyNear = false;
+    bool ownNear = false;
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || ship.maxHitPointsHundredths <= 0 || !ship.owner.IsValid() ||
+          !IsInRange(ship, *onNode, suppressionRadius))
+        continue;
+      (ship.owner == sector.holder ? ownNear : enemyNear) = true;
+    }
+    sector.suppressed = enemyNear && !ownNear;
+  }
+
+  // Outward from each home sector through the sectors its holder holds.
+  std::vector<std::uint8_t> linked(m_sectors.size(), 0);
+  std::vector<size_t> frontier;
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+  {
+    if (m_sectors[index].home)
+    {
+      linked[index] = 1;
+      frontier.push_back(index);
+    }
+  }
+  while (!frontier.empty())
+  {
+    const size_t from = frontier.back();
+    frontier.pop_back();
+    for (const std::int32_t id : m_sectors[from].placement.adjacent)
+    {
+      const auto next = std::ranges::find_if(m_sectors, [id](const Sector& _sector) { return _sector.placement.id == id; });
+      if (next == m_sectors.end())
+        continue;
+      const auto index = static_cast<size_t>(next - m_sectors.begin());
+      if (linked[index] != 0 || next->holder != m_sectors[from].holder)
+        continue;
+      linked[index] = 1;
+      frontier.push_back(index);
+    }
+  }
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+    m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
+}
+
+double Outpost::Simulation::TerritoryShare(const Entity& _rig) const noexcept
+{
+  if (!HasTerritory())
+    return 1.0;
+  const Sector* sector = SectorAt(_rig.position);
+  if (sector == nullptr || sector->holder != _rig.owner || sector->suppressed)
+    return 0.0;
+  return sector->cutOff ? m_tuning->territory.cutOffIncomePercent / 100.0 : 1.0;
+}
+
+bool Outpost::Simulation::InSectorSight(PlayerId _player, PlanePosition _position) const noexcept
+{
+  if (!HasTerritory())
+    return false;
+  const Sector* sector = SectorAt(_position);
+  return sector != nullptr && sector->holder == _player && !sector->suppressed;
 }
 
 std::optional<std::int64_t> Outpost::Simulation::ReserveKnownTo(PlayerId _player, EntityId _asteroid) const

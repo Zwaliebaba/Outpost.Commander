@@ -13,8 +13,24 @@ float Distance(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
 } // namespace
 
 Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, PlanePosition _cursor, std::span<const EntityView> _entities,
-                                            float _mapSizeMeters)
+                                            float _mapSizeMeters, std::span<const SectorView> _sectors, PlayerId _player)
 {
+  if (_type.structure == StructureKind::Relay)
+  {
+    // The node of the sector under the cursor, free, and adjacent to a sector the player holds; without sectors, nowhere.
+    const SectorView* sector = FindSector(_sectors, _cursor);
+    if (sector == nullptr)
+      return {.position = _cursor, .radiusMeters = _type.radiusMeters, .valid = false};
+    const auto heldByPlayer = [&](std::int32_t _id)
+    {
+      const auto found = std::ranges::find(_sectors, _id, &SectorView::id);
+      return found != _sectors.end() && found->holder == _player;
+    };
+    GhostPlacement ghost =
+      PlaceGhost({.structure = StructureKind::Shipyard, .radiusMeters = _type.radiusMeters}, sector->node, _entities, _mapSizeMeters);
+    ghost.valid = ghost.valid && !sector->holder.IsValid() && std::ranges::any_of(sector->adjacent, heldByPlayer);
+    return ghost;
+  }
   if (_type.structure == StructureKind::MiningRig)
   {
     // The nearest ore asteroid whose edge is within reach of the cursor, free unless a rig already stands on it.
@@ -40,7 +56,10 @@ Outpost::GhostPlacement Outpost::PlaceGhost(const StructureTypeView& _type, Plan
                                                     _entity.structure == StructureKind::MiningRig &&
                                                     Distance(_entity.position, nearest->position) < 1.0f;
                                            });
-    return {.position = nearest->position, .radiusMeters = std::max(_type.radiusMeters, nearest->radiusMeters), .valid = !taken};
+    // On a map with sectors, ore belongs to the sector it lies in (Phase 2 design §4).
+    const SectorView* sector = FindSector(_sectors, nearest->position);
+    const bool held = _sectors.empty() || (sector != nullptr && sector->holder == _player);
+    return {.position = nearest->position, .radiusMeters = std::max(_type.radiusMeters, nearest->radiusMeters), .valid = !taken && held};
   }
 
   const float half = _mapSizeMeters / 2.0f;
