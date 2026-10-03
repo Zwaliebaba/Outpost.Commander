@@ -136,7 +136,7 @@ Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is
 | 24 | 3 | Fleet Automation | 18, 8 | Shipyard build speed +25% | 450 | 120 s |
 | 25 | 3 | Rapid Construction | 18 | Constructor build and repair rate +25% | 350 | 100 s |
 
-Tier 1 takes 690 s, tier 2 900 s and tier 3 1,010 s: 2,600 s, about 43 minutes. Its Ore is 1,500, 2,700 and 3,600.
+Tier 1 takes 690 s, tier 2 890 s and tier 3 1,010 s: 2,590 s, about 43 minutes. Its Ore is 1,500, 2,700 and 3,600.
 
 **New kinds of effect** the tuning data and the battle model have to learn: a gateway that does nothing itself, an ore reserve, structure hit points, a structure weapon's fire rate, every ship's speed, and the Constructor's rates. Drive Harmonics changes speed only, so the turn rates stay final (MVP §12).
 
@@ -163,6 +163,8 @@ The MVP's check plays every design against every other at each budget. With 45 d
 Budgets stay at or below 12,000 Ore. A battle's time grows with its ships, and at 12,000 Ore the cheapest design already fields 138 a side. A tier-3 fight is about which designs are fielded, not how many.
 
 Tier 1's numbers are already tuned and are not moved by Phase 1 unless a tier-2 or tier-3 result requires it, so that the starting stage remains the MVP's check of record.
+
+**How the check reads this (task 10.3).** A stage plays the components through its tier at their own numbers, with no research, as the MVP's stages do. In (d), the side that does not take the topic has every topic of the tiers before, so it fields every design of the tier before with every upgrade; the side that takes it has the same and the topic with its prerequisites. Only the designs a topic adds or changes are tested: one the other side has with the same numbers is not the topic's doing. For tier 1 that is the MVP's (d).
 
 ---
 
@@ -302,6 +304,8 @@ Each is a gate in the plan, and blocks the tasks that need it.
 - **H6 — The look's details** (§11): the window's colors and sizes, taken from the mockup, confirmed when the owner first runs it.
 - **H7 — Cascadia Mono** (§11): task 9.1 checks whether it is installed on the development machine, and uses Consolas if it is not (owner, 2026-10-02). The task records which.
 - **H8 — The camera's zoom on the 5 km map** (§8): whether the 1,600 m limit of gate G3 stays, after the owner's first matches on the map.
+- **H9 — (b) at the later tiers** (§7): whether every component of tiers 2 and 3's stages has to be worth building at their budgets, or only the components the tier adds. Task 10.3's first run found the Mass Driver never worth building at tier 3, and not under focus fire at tier 2. That is the MVP's numbers, not the new components: with them, no Mass Driver design was worth building under focus fire at 4,500 Ore or more, nor under spread fire at 6,000–9,000 Ore. Requiring it means moving tier 1's numbers.
+- **H10 — What the Flak Battery is for** (§5): as written, it answers the swarm and does almost nothing to a Medium hull, and the check finds exactly that: it beats every Small design and loses every battle to every Medium and Large one, and is never worth building, since a Small design is never most of the mix. Its 20 m splash also reaches no neighbor of a Small hull, which the formation stands 24 m away. A 26 m splash, a hit of 12, or a hit of 14 at 60 Ore change none of it. It needs a role against the Medium hull, or (b) to exempt it as it does the Pulse Drive.
 
 Decided on 2026-10-02, from the owner's answers: §3.
 

@@ -24,16 +24,16 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run on the development machine |
-| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); 13 of the 17 topics, the rest with 10.2 |
-| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning waits on the owner (below) |
+| 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run on the development machine |
+| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
+| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning waits on H9 and H10 |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
 | 11.1 | Ore reserves and depletion | — | H3 decided | todo |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
@@ -50,7 +50,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 ## Gates
 
-Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026-10-02; H6 and H8 are decided at owner runs.
+Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026-10-02; H6 and H8 are decided at owner runs; H9 and H10 came out of task 10.3's first runs.
 
 | Gate | Decision | Proposed in | Blocks |
 |---|---|---|---|
@@ -62,6 +62,8 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 | H6 | The designer's colors and sizes, from the mockup | design §11 | 9.3 (closed at its owner run) |
 | H7 | Cascadia Mono on the development machine, or Consolas. **Decided on 2026-10-02:** 9.1 checks, and falls back to Consolas. | design §11 | — |
 | H8 | The camera's zoom limit on the 5 km map | design §8 | nothing; decided after 11.2's owner run |
+| H9 | Whether Q2's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds | design §7, §15 | 10.3 |
+| H10 | What the Flak Battery is for, beyond the swarm | design §5, §15 | 10.3 |
 
 ---
 
@@ -223,7 +225,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The research window** lists topics tier by tier, shows each card's tier, and edges a gateway in gold.
   - **The Q2 checks.** Both the C++ check and `Tools/BattleModel.py` add percentages, read the new effects and leave out by name those a clump's battle cannot feel; their (d) stays over tier 1's topics until 10.3.
   - **Tests.** `TuningTests`: the new effects load, each tier rule is refused when broken, and the repository file's every member loads, `tier` included. `ResearchTests`: stacking of hulls and of a weapon's rate, and every new factor; a gateway gating its tier, queued with a topic of its tier, and changing no rate; Reinforced Structures on standing, new, enemy and test structures; Drive Harmonics on standing and new warships and Constructors, and Rapid Construction building faster. `HudTests`: the topics tier by tier and the gateway's card.
-  - **Not built on Windows in the container**: the suites ran there against a stand-in for the test framework.
+  - **Built and tested in CI** on Debug|x64; the container first ran the suites against a stand-in for the test framework. Not yet run.
 
 ### 10.2 — The Pulse Drive, the Flak Battery and the Rail Cannon
 
@@ -237,8 +239,8 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The looks.** `Models.json` gives each weapon whose shot is not a tracer its look, the Lance's beam and the Rail Cannon's new slug, a white line that joins gun and target and lingers; the Flak Battery fires tracers with its splash ring. The Pulse Drive's exhaust is a provisional lime green, for the owner to pick at the run.
   - **The Q2 checks** stay on tier 1's components, the MVP's 18 designs, in both the C++ check, through `PartsThrough`, and `Tools/BattleModel.py`, until 10.3 gives tiers 2 and 3 their stages.
   - **Tests.** `DesignTests.DerivesThePhaseOneComponents`: each one's derived stats, its lock until its topic, its name and abbreviation. `CombatTests.FlakSplashesItsSmallHits` and `ARailCannonOutrangesTheLance`, which also breaks a Pulse raider in one hit. `Q2CheckTests.FieldsTheGamesDesigns`: 45 designs, 18 through tier 1 and 36 through tier 2. `ModelCatalogTests.GivesEachWeaponItsShot` and the Pulse exhaust; `CombatEffectsTests.ASlugJoinsGunAndTargetAndLingers` and `AWeaponNotListedFiresTracers`.
-  - **Design §6's tier 2 is 890 s, not 900 s**, by its own table, so the total is 2,590 s; still about 43 minutes. The table's times are unchanged.
-  - **Not built on Windows in the container**: the suites ran there against a stand-in for the test framework.
+  - **Design §6's tier 2 is 890 s, not 900 s**, by its own table, so the total is 2,590 s; still about 43 minutes. §6 now says so; the table's times are unchanged.
+  - **Built and tested in CI** on Debug|x64; the container first ran the suites against a stand-in for the test framework. Not yet run.
 
 ### 10.3 — The Q2 check per tier, and tuning against it
 
@@ -254,9 +256,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
     - **(b) fails on the Flak Battery**, at every budget of tiers 2 and 3. It is all or nothing: it beats every Small design 20–0 and loses 0–20 to every Medium and Large one, and a Small design is never most of the mix. Its 20 m splash also reaches nobody: the formation stands Small hulls 24 m apart (three footprint radii, ADR-010). A 26 m splash, or a hit of 12 or 14 at 60 Ore, still loses 0–20 to every Medium design and is still never worth building.
     - **(b) fails on the Mass Driver** at tier 3 in both fire modes and at tier 2 under focus fire. This is not new: with the MVP's numbers no design with a Mass Driver was worth building under focus fire at 4,500 Ore or more, and under spread fire only S+I+MD at 7% at 12,000. Tier 1 passes (b) on it at its smaller budgets, which tiers 2 and 3 do not have.
     - **(d) fails on Ablative Armour**: M+I+La with +45% hit points against the tier 2 designs with +30% has no answer better than 37% at 6,000 Ore under focus fire.
-  - **Waiting on the owner:**
-    1. Whether (b) at tiers 2 and 3 asks every component of the stage to be worth building, which the Mass Driver cannot do without moving tier 1's numbers, or only the components the tier adds.
-    2. What the Flak Battery is for. As design §5 has it, an answer to the swarm and nothing else, no number tried makes it worth building; it needs a role against the Medium hull, or (b) to exempt it as it does the Pulse Drive.
+  - **Waiting on the owner:** gates H9, whether (b) at tiers 2 and 3 asks the Mass Driver to be worth building, and H10, what the Flak Battery is for (design §15).
   - **Not yet done:** the tuning, design §5 and §6's records of it, a counter per new component in `TheRecordedCountersHold`, and a full run with (c).
 
 ### 10.4 — The AI on tiers and new designs
