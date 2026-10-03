@@ -3,12 +3,19 @@
 namespace Outpost
 {
 // One model of a set, as OutpostCommander/Assets/Models.json describes it (ADR-011): how long it is in the game along
-// its front, which its mesh faces (ADR-018).
+// its front, which its mesh faces (ADR-018), and how many levels it grows through, each its own mesh (ADR-045); none for
+// a model that does not grow.
 struct ModelEntry
 {
   std::string name;
   float lengthMeters = 0.0f;
+  int levels = 0;
 };
+
+// The level a model that grows is drawn at, until the game grows it (ADR-045).
+inline constexpr int FIRST_MODEL_LEVEL = 1;
+// The most levels a model may have; the owner's models have five.
+inline constexpr int MAXIMUM_MODEL_LEVELS = 9;
 
 // A mesh set and the color it is drawn in: the player's Human set, the AI's Tarkan set, and the asteroid (design §1,
 // §11). The color is linear and provisional until team colors are decided (design §15).
@@ -121,10 +128,12 @@ struct ModelCatalog
 // is, such as "sets[1].models[4].lengthMeters". Besides types and ranges it checks that set names are unique, and model
 // names within a set, that each player, hull, drive, weapon's shot and kind of structure is listed once and every kind is, and that
 // every hull's, structure's and the Constructor's model is in every player's set. A hull's "bank" and the
-// "constructorBank" are optional; without one, those ships fly level.
+// "constructorBank" are optional; without one, those ships fly level. A model's "levels" is optional, from 1 to
+// MAXIMUM_MODEL_LEVELS; without it, the model does not grow.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
-// Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-018).
+// Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-018), or for a model
+// that grows, its first level's, Models\<set>\<model>_L1.nmf (ADR-045).
 [[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model);
 
 // A model's mesh at its size in the game: read from the bytes of its .nmf file, centered and scaled to its length, its

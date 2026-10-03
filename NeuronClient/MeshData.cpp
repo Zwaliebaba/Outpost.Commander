@@ -7,14 +7,15 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <numbers>
 #include <optional>
 #include <utility>
 
 namespace
 {
-// The .nmf layout, version 1 (ADR-018). Sizes are in bytes.
+// The .nmf layout, version 2 (ADR-018, ADR-045). Sizes are in bytes.
 constexpr std::array<std::uint8_t, 4> NMF_MAGIC{'N', 'M', 'F', '\0'};
-constexpr std::uint32_t NMF_VERSION = 1;
+constexpr std::uint32_t NMF_VERSION = 2;
 constexpr size_t FILE_VERTEX_BYTES = 6 * sizeof(float);
 static_assert(sizeof(Neuron::MeshVertex) == FILE_VERTEX_BYTES, "A file vertex is copied straight into a MeshVertex.");
 constexpr size_t MAXIMUM_TAG_LENGTH = 31;
@@ -118,6 +119,20 @@ Neuron::MeshHardpoint ReadHardpoint(NmfReader& _reader)
   return hardpoint;
 }
 
+// A part as the file gives it; where its triangles are is checked against the parts before it.
+Neuron::MeshPart ReadPart(NmfReader& _reader)
+{
+  Neuron::MeshPart part{.firstIndex = _reader.Read<std::uint32_t>(), .indexCount = _reader.Read<std::uint32_t>()};
+  part.pivot = _reader.ReadFinite3();
+  part.axis = _reader.ReadFinite3();
+  part.periodSeconds = _reader.Read<float>();
+  if (!IsUnit(part.axis))
+    _reader.Fail("a part's axis is not a unit vector");
+  if (!std::isfinite(part.periodSeconds) || part.periodSeconds <= 0.0f)
+    _reader.Fail("a part's period is not positive");
+  return part;
+}
+
 void MeasureBounds(Neuron::MeshData& _mesh) noexcept
 {
   constexpr float BIG = std::numeric_limits<float>::max();
@@ -143,6 +158,7 @@ Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::str
   const auto vertexCount = reader.Read<std::uint32_t>();
   const auto indexCount = reader.Read<std::uint32_t>();
   const auto hardpointCount = reader.Read<std::uint32_t>();
+  const auto partCount = reader.Read<std::uint32_t>();
   if (reader.Read<std::uint32_t>() != 0)
     reader.Fail("its flags are not zero");
   if (indexCount == 0 || indexCount % 3 != 0)
@@ -170,8 +186,20 @@ Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::str
   // Read one at a time, so a count the file cannot hold fails where the file ends rather than reserving memory first.
   for (std::uint32_t i = 0; i < hardpointCount; ++i)
     mesh.hardpoints.push_back(ReadHardpoint(reader));
+  // Some triangles stand still and come first; each part's follow the ones before them, and the last part's end the file's.
+  for (std::uint32_t i = 0; i < partCount; ++i)
+  {
+    const MeshPart part = ReadPart(reader);
+    const std::uint32_t follows = mesh.parts.empty() ? part.firstIndex : mesh.parts.back().firstIndex + mesh.parts.back().indexCount;
+    if (part.firstIndex == 0 || part.firstIndex % 3 != 0 || part.firstIndex != follows || part.firstIndex >= indexCount ||
+        part.indexCount == 0 || part.indexCount % 3 != 0 || part.indexCount > indexCount - part.firstIndex)
+      reader.Fail("a part's triangles do not follow the triangles before them");
+    mesh.parts.push_back(part);
+  }
+  if (!mesh.parts.empty() && mesh.parts.back().firstIndex + mesh.parts.back().indexCount != indexCount)
+    reader.Fail("the parts' triangles do not reach the last index");
   if (!reader.AtEnd())
-    reader.Fail("there are bytes after the last hardpoint");
+    reader.Fail("there are bytes after the last part");
 
   MeasureBounds(mesh);
   return mesh;
@@ -195,7 +223,38 @@ void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
     hardpoint.position = fit(hardpoint.position);
     hardpoint.size *= scale;
   }
+  for (MeshPart& part : _mesh.parts)
+    part.pivot = fit(part.pivot);
   MeasureBounds(_mesh);
+}
+
+Neuron::MeshData Neuron::MeshPiece(const MeshData& _mesh, std::uint32_t _firstIndex, std::uint32_t _indexCount)
+{
+  MeshData piece;
+  std::map<std::uint32_t, std::uint32_t> vertexOf;
+  for (const std::uint32_t index : std::span(_mesh.indices).subspan(_firstIndex, _indexCount))
+  {
+    const auto [found, added] = vertexOf.try_emplace(index, static_cast<std::uint32_t>(piece.vertices.size()));
+    if (added)
+      piece.vertices.push_back(_mesh.vertices[index]);
+    piece.indices.push_back(found->second);
+  }
+  MeasureBounds(piece);
+  return piece;
+}
+
+DirectX::XMFLOAT4X4 Neuron::PartWorld(const MeshPart& _part, double _seconds, const DirectX::XMFLOAT4X4& _world) noexcept
+{
+  // In doubles, so that a match's hours do not wear the angle's precision down.
+  const double period = _part.periodSeconds;
+  const auto angle = static_cast<float>(2.0 * std::numbers::pi * std::fmod(_seconds, period) / period);
+  const DirectX::XMVECTOR pivot = DirectX::XMLoadFloat3(&_part.pivot);
+  const DirectX::XMMATRIX turn = DirectX::XMMatrixTranslationFromVector(DirectX::XMVectorNegate(pivot)) *
+                                 DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(&_part.axis), angle) *
+                                 DirectX::XMMatrixTranslationFromVector(pivot);
+  DirectX::XMFLOAT4X4 world;
+  DirectX::XMStoreFloat4x4(&world, turn * DirectX::XMLoadFloat4x4(&_world));
+  return world;
 }
 
 Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians)

@@ -20,7 +20,7 @@ constexpr float TOLERANCE = 1e-3f;
 constexpr size_t VERTEX_COUNT_OFFSET = 8;
 constexpr size_t VERSION_OFFSET = 4;
 
-// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018).
+// The bytes of an .nmf file, written as Tools/BakeMeshes.py writes them (ADR-018, ADR-045).
 class NmfWriter
 {
 public:
@@ -62,7 +62,7 @@ Neuron::ByteBuffer OneTriangle(std::string_view _tag = "exhaust", const DirectX:
   NmfWriter writer;
   for (const char c : {'N', 'M', 'F', '\0'})
     writer.Put(c);
-  for (const std::uint32_t value : {1u, 3u, 3u, 1u, 0u})
+  for (const std::uint32_t value : {2u, 3u, 3u, 1u, 0u, 0u})
     writer.Put(value);
   for (const DirectX::XMFLOAT3& position :
        {DirectX::XMFLOAT3{-2.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{-2.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{8.0f, 0.0f, 0.0f}})
@@ -77,6 +77,33 @@ Neuron::ByteBuffer OneTriangle(std::string_view _tag = "exhaust", const DirectX:
   writer.Put3(_forward);
   writer.Put3(UP);
   writer.Put(_size);
+  return writer.Bytes();
+}
+
+// Two triangles facing up: one that stands still, from x = -2 to 8, and a part that turns about _axis through (4, 0, 0)
+// once in _periodSeconds, its run of indices as the caller gives it.
+Neuron::ByteBuffer TriangleAndPart(std::uint32_t _firstIndex = 3, std::uint32_t _indexCount = 3, const DirectX::XMFLOAT3& _axis = UP,
+                                   float _periodSeconds = 8.0f)
+{
+  NmfWriter writer;
+  for (const char c : {'N', 'M', 'F', '\0'})
+    writer.Put(c);
+  for (const std::uint32_t value : {2u, 6u, 6u, 0u, 1u, 0u})
+    writer.Put(value);
+  for (const DirectX::XMFLOAT3& position :
+       {DirectX::XMFLOAT3{-2.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{-2.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{8.0f, 0.0f, 0.0f},
+        DirectX::XMFLOAT3{4.0f, 0.0f, 0.0f}, DirectX::XMFLOAT3{4.0f, 0.0f, 1.0f}, DirectX::XMFLOAT3{5.0f, 0.0f, 0.0f}})
+  {
+    writer.Put3(position);
+    writer.Put3(UP);
+  }
+  for (const std::uint32_t index : {0u, 1u, 2u, 3u, 4u, 5u})
+    writer.Put(index);
+  writer.Put(_firstIndex);
+  writer.Put(_indexCount);
+  writer.Put3({4.0f, 0.0f, 0.0f});
+  writer.Put3(_axis);
+  writer.Put(_periodSeconds);
   return writer.Bytes();
 }
 
@@ -233,7 +260,7 @@ public:
   TEST_METHOD(RejectsAnotherVersion)
   {
     Neuron::ByteBuffer bytes = OneTriangle();
-    const std::uint32_t version = 2;
+    const std::uint32_t version = 1;
     std::memcpy(bytes.data() + VERSION_OFFSET, &version, sizeof(version));
     ExpectRejected(bytes);
   }
@@ -256,6 +283,94 @@ public:
     ExpectRejected(OneTriangle("exhaust", UP));
     ExpectRejected(OneTriangle("exhaust", BACK, 0.0f));
     ExpectRejected(OneTriangle("exhaust", BACK, std::nanf("")));
+  }
+
+  // ADR-045: a part is a run of the triangles after the ones that stand still, and turns about its pivot.
+  TEST_METHOD(ReadsASpinningPart)
+  {
+    const Neuron::MeshData mesh = Neuron::ParseNmf(TriangleAndPart(), "Test.nmf");
+    Assert::AreEqual(size_t{1}, mesh.parts.size());
+    Assert::AreEqual(3u, mesh.FixedIndexCount());
+    const Neuron::MeshPart& part = mesh.parts.front();
+    Assert::AreEqual(3u, part.firstIndex);
+    Assert::AreEqual(3u, part.indexCount);
+    Assert::AreEqual(4.0f, part.pivot.x);
+    Assert::AreEqual(1.0f, part.axis.y);
+    Assert::AreEqual(8.0f, part.periodSeconds);
+    Assert::AreEqual(3u, Neuron::ParseNmf(OneTriangle(), "Test.nmf").FixedIndexCount());
+  }
+
+  TEST_METHOD(RejectsABadPart)
+  {
+    ExpectRejected(TriangleAndPart(0, 6));
+    ExpectRejected(TriangleAndPart(3, 0));
+    ExpectRejected(TriangleAndPart(3, 6));
+    ExpectRejected(TriangleAndPart(2, 4));
+    ExpectRejected(TriangleAndPart(6, 3));
+    ExpectRejected(TriangleAndPart(3, 3, {0.0f, 2.0f, 0.0f}));
+    ExpectRejected(TriangleAndPart(3, 3, UP, 0.0f));
+    ExpectRejected(TriangleAndPart(3, 3, UP, std::nanf("")));
+  }
+
+  // Fitting moves a part's pivot with the mesh, and leaves its axis and period.
+  TEST_METHOD(FitsAPartsPivotWithTheMesh)
+  {
+    Neuron::MeshData mesh = Neuron::ParseNmf(TriangleAndPart(), "Test.nmf");
+    Neuron::FitMesh(mesh, 20.0f);
+    const Neuron::MeshPart& part = mesh.parts.front();
+    // The mesh is 10 m long from x = -2 and 1 m across from z = 0, so its center is (3, 0, 0.5) and it doubles.
+    Assert::AreEqual(2.0f, part.pivot.x, TOLERANCE);
+    Assert::AreEqual(-1.0f, part.pivot.z, TOLERANCE);
+    Assert::AreEqual(1.0f, part.axis.y);
+    Assert::AreEqual(8.0f, part.periodSeconds);
+  }
+
+  TEST_METHOD(APieceIsItsTrianglesAndTheVerticesTheyUse)
+  {
+    const Neuron::MeshData mesh = Neuron::ParseNmf(TriangleAndPart(), "Test.nmf");
+    const Neuron::MeshData piece = Neuron::MeshPiece(mesh, mesh.parts.front().firstIndex, mesh.parts.front().indexCount);
+    Assert::AreEqual(size_t{3}, piece.vertices.size());
+    Assert::IsTrue(piece.indices == std::vector<std::uint32_t>{0, 1, 2});
+    Assert::AreEqual(4.0f, piece.vertices[0].position.x);
+    Assert::AreEqual(4.0f, piece.boundsMin.x);
+    Assert::AreEqual(5.0f, piece.boundsMax.x);
+    Assert::IsTrue(piece.hardpoints.empty() && piece.parts.empty());
+  }
+
+  // A part about +y turns clockwise seen from above, as a heading does: a quarter of its period takes a point 1 m ahead of
+  // its pivot to 1 m to its right, at -z, and a whole period brings it back.
+  TEST_METHOD(APartTurnsAboutItsPivotOverItsPeriod)
+  {
+    const Neuron::MeshPart part = Neuron::ParseNmf(TriangleAndPart(), "Test.nmf").parts.front();
+    DirectX::XMFLOAT4X4 identity;
+    DirectX::XMStoreFloat4x4(&identity, DirectX::XMMatrixIdentity());
+    const auto turned = [&](double _seconds)
+    {
+      const DirectX::XMFLOAT4X4 world = Neuron::PartWorld(part, _seconds, identity);
+      DirectX::XMFLOAT3 point;
+      DirectX::XMStoreFloat3(
+        &point, DirectX::XMVector3TransformCoord(DirectX::XMVectorSet(5.0f, 0.0f, 0.0f, 1.0f), DirectX::XMLoadFloat4x4(&world)));
+      return point;
+    };
+    const DirectX::XMFLOAT3 quarter = turned(2.0);
+    Assert::AreEqual(4.0f, quarter.x, TOLERANCE);
+    Assert::AreEqual(-1.0f, quarter.z, TOLERANCE);
+    const DirectX::XMFLOAT3 later = turned((8.0 * 1000.0) + 2.0);
+    Assert::AreEqual(4.0f, later.x, TOLERANCE);
+    Assert::AreEqual(-1.0f, later.z, TOLERANCE);
+    Assert::AreEqual(5.0f, turned(8.0).x, TOLERANCE);
+  }
+
+  // The owner's Research Labs have a moving part at every level (2026-10-03, ADR-045): the game draws at least one.
+  TEST_METHOD(EachResearchLabHasASpinningPart)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    for (const Outpost::PlayerModels& player : catalog.players)
+    {
+      const Outpost::ModelSet& set = catalog.Set(player.set);
+      const Neuron::MeshData lab = ReadRepositoryModel(set, set.Model("ResearchLab"));
+      Assert::IsFalse(lab.parts.empty(), std::wstring(set.name.begin(), set.name.end()).c_str());
+    }
   }
 
   TEST_METHOD(FitsTheMeshAndItsHardpointsToTheLength)

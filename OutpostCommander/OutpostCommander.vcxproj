@@ -171,7 +171,19 @@
     <None Include="Assets\Textures\Particle.dds">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\CommandStation.nmf">
+    <None Include="Assets\Models\Human\CommandStation_L1.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L2.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L5.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Human\Constructor.nmf">
@@ -183,13 +195,49 @@
     <None Include="Assets\Models\Human\MiningRig.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\ResearchLab.nmf">
+    <None Include="Assets\Models\Human\ResearchLab_L1.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Human\Shipyard.nmf">
+    <None Include="Assets\Models\Human\ResearchLab_L2.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\CommandStation.nmf">
+    <None Include="Assets\Models\Human\ResearchLab_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab_L5.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L1.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L2.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L5.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L1.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L2.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L5.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Models\Tarkan\Constructor.nmf">
@@ -201,10 +249,34 @@
     <None Include="Assets\Models\Tarkan\MiningRig.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\ResearchLab.nmf">
+    <None Include="Assets\Models\Tarkan\ResearchLab_L1.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Assets\Models\Tarkan\Shipyard.nmf">
+    <None Include="Assets\Models\Tarkan\ResearchLab_L2.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L5.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L1.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L2.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L3.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L4.nmf">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L5.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="Assets\Tuning.json">
