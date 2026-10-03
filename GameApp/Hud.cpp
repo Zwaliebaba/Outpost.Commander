@@ -16,7 +16,7 @@ using Outpost::Hud;
 constexpr DirectX::XMFLOAT4 TEXT_COLOR{0.82f, 0.88f, 0.96f, 1.0f};
 constexpr DirectX::XMFLOAT4 DIM_TEXT_COLOR{0.42f, 0.45f, 0.5f, 1.0f};
 constexpr DirectX::XMFLOAT4 DISABLED_BUTTON_COLOR{0.05f, 0.06f, 0.08f, 0.85f};
-// A designer's name the server would refuse.
+// A designer's name the server would refuse, and an income of nothing.
 constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
 // The minimap: the map's square, and its marks in the side's color, an ore asteroid in Ore's gold, darkened, so that the
 // map reads without a legend: blue is the player's, red the enemy's, and gold is ore (ADR-043). The camera's view is a
@@ -1653,7 +1653,8 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   };
   const auto addButton = [&layout, scale](const Rect& _area, const Button& _button) { AddButton(layout, scale, _area, _button); };
 
-  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second.
+  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second, in the warning's color when they
+  // earn nothing, since then nothing the player spends comes back.
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
     paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, TITLE_FACE_UNITS,
@@ -1661,8 +1662,8 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
-    paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
-                    Typeface::Figure, 13.0f * MONO_ADVANCE);
+    paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f,
+                    income > 0 ? NUMBERS_COLOR : WARNING_COLOR, Typeface::Figure, 13.0f * MONO_ADVANCE);
   }
 
   // Under the Ore: the research under way.

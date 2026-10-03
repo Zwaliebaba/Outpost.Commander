@@ -271,6 +271,22 @@ public:
     Assert::AreEqual(std::string("+0/s"), incomeText(0));
   }
 
+  // An income of nothing is written in the warning's color: no rig earns, so nothing the player spends comes back.
+  TEST_METHOD(WarnsOfNoIncome)
+  {
+    const auto incomeColor = [](std::int32_t _hundredths)
+    {
+      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
+      const auto income = std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.ends_with("/s"); });
+      Assert::IsTrue(income != layout.texts.end());
+      return income->color;
+    };
+    const DirectX::XMFLOAT4 earning = incomeColor(650);
+    const DirectX::XMFLOAT4 nothing = incomeColor(0);
+    Assert::IsTrue(earning.z > earning.x, L"an income is in the figures' blue");
+    Assert::IsTrue(nothing.x > nothing.z, L"no income is in a warm warning color");
+  }
+
   // Task 4.2: selected Constructors offer every structure they build, with its cost, dim when the player cannot afford
   // it or already has its one Research Lab; the Command Station is not built.
   TEST_METHOD(OffersTheStructuresToConstructors)
