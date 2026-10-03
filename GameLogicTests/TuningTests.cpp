@@ -64,15 +64,20 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 {
   if (const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&_effect))
   {
-    constexpr std::array<std::string_view, 4> TARGETS = {"miningRig", "allHulls", "weapon", "shipyards"};
-    constexpr std::array<std::string_view, 4> STATS = {"income", "hitPoints", "fireRate", "buildSpeed"};
+    constexpr std::array<std::string_view, 9> TARGETS = {"miningRig",       "allHulls", "weapon",       "shipyards", "allStructures",
+                                                         "structureWeapon", "allShips", "constructors", "asteroids"};
+    constexpr std::array<std::string_view, 7> STATS = {"income", "hitPoints", "fireRate", "buildSpeed", "speed", "buildRate", "oreReserve"};
     std::vector<LoadedField> fields = {{"upgrade", std::string(TARGETS[Neuron::I(upgrade->target)])},
                                        {"stat", std::string(STATS[Neuron::I(upgrade->stat)])},
                                        {"percent", Number(upgrade->percent)}};
     if (upgrade->weapon.IsValid())
       fields.push_back({"weapon", Number(upgrade->weapon.value)});
+    if (upgrade->structureWeapon.IsValid())
+      fields.push_back({"structureWeapon", Number(upgrade->structureWeapon.value)});
     return fields;
   }
+  if (const auto* gateway = std::get_if<Outpost::GatewayEffect>(&_effect))
+    return {{"opensTier", Number(gateway->tier)}};
   if (const auto* hull = std::get_if<Outpost::HullId>(&_effect))
     return {{"unlockHull", Number(hull->value)}};
   if (const auto* drive = std::get_if<Outpost::DriveId>(&_effect))
@@ -107,12 +112,24 @@ constexpr std::string_view MINIMAL_TUNING = R"({
       "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
   ],
   "research": [
-    { "id": 1, "name": "Hull Plating", "cost": 150, "researchSeconds": 60, "requires": [],
+    { "id": 1, "name": "Hull Plating", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
       "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 15 } },
-    { "id": 2, "name": "Mass Driver Calibration", "cost": 150, "researchSeconds": 75, "requires": [1],
+    { "id": 2, "name": "Mass Driver Calibration", "tier": 1, "cost": 150, "researchSeconds": 75, "requires": [1],
       "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 15 } },
-    { "id": 3, "name": "Ion Drive", "cost": 200, "researchSeconds": 90, "requires": [2],
-      "effect": { "unlockDrive": 1 } }
+    { "id": 3, "name": "Ion Drive", "tier": 1, "cost": 200, "researchSeconds": 90, "requires": [2],
+      "effect": { "unlockDrive": 1 } },
+    { "id": 4, "name": "Relay Archives", "tier": 2, "cost": 400, "researchSeconds": 150, "requires": [1],
+      "effect": { "opensTier": 2 } },
+    { "id": 5, "name": "Reinforced Structures", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [4],
+      "effect": { "upgrade": "allStructures", "stat": "hitPoints", "percent": 25 } },
+    { "id": 6, "name": "Defence Autoloader", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [4],
+      "effect": { "upgrade": "structureWeapon", "structureWeapon": 1, "stat": "fireRate", "percent": 20 } },
+    { "id": 7, "name": "Drive Harmonics", "tier": 2, "cost": 450, "researchSeconds": 120, "requires": [4],
+      "effect": { "upgrade": "allShips", "stat": "speed", "percent": 10 } },
+    { "id": 8, "name": "Rapid Construction", "tier": 2, "cost": 350, "researchSeconds": 100, "requires": [4],
+      "effect": { "upgrade": "constructors", "stat": "buildRate", "percent": 25 } },
+    { "id": 9, "name": "Deep Core Survey", "tier": 2, "cost": 300, "researchSeconds": 90, "requires": [4, 1],
+      "effect": { "upgrade": "asteroids", "stat": "oreReserve", "percent": 30 } }
   ]
 })";
 
@@ -269,11 +286,14 @@ public:
       const Outpost::ResearchTopicTuning& topic = tuning.research[i];
       const std::string path = std::format("research[{}]", i);
       const Neuron::JsonValue& entry = research[i];
-      Assert::AreEqual(entry.AsObject().size(), size_t{6}, Widen(path).c_str());
+      Assert::AreEqual(entry.AsObject().size(), size_t{7}, Widen(path).c_str());
       ExpectSame(*entry.Find("effect"), EffectFields(topic.effect), path + ".effect");
 
-      std::vector<LoadedField> fields = {
-        {"id", Number(topic.id.value)}, {"name", topic.name}, {"cost", Number(topic.cost)}, {"researchSeconds", topic.researchSeconds}};
+      std::vector<LoadedField> fields = {{"id", Number(topic.id.value)},
+                                         {"name", topic.name},
+                                         {"tier", Number(topic.tier)},
+                                         {"cost", Number(topic.cost)},
+                                         {"researchSeconds", topic.researchSeconds}};
       for (const LoadedField& field : fields)
       {
         const Neuron::JsonValue* member = entry.Find(field.name);
@@ -347,16 +367,57 @@ public:
   TEST_METHOD(RejectsABrokenResearchTree)
   {
     ExpectLoadError(Replace("\"id\": 3, \"name\": \"Ion Drive\"", "\"id\": 2, \"name\": \"Ion Drive\""), "research[2].id");
-    ExpectLoadError(Replace("\"requires\": [2],", "\"requires\": [9],"), "research[2].requires[0]");
+    ExpectLoadError(Replace("\"requires\": [2],", "\"requires\": [99],"), "research[2].requires[0]");
     ExpectLoadError(Replace("\"researchSeconds\": 60, \"requires\": [],", "\"researchSeconds\": 60, \"requires\": [3],"),
                     "research[0].requires");
     ExpectLoadError(Replace("\"unlockDrive\": 1", "\"unlockDrive\": 2"), "research[2].effect.unlockDrive");
     ExpectLoadError(Replace("\"weapon\": 1, \"stat\"", "\"weapon\": 4, \"stat\""), "research[1].effect.weapon");
-    ExpectLoadError(Replace("\"stat\": \"fireRate\"", "\"stat\": \"damage\""), "research[1].effect.stat");
+    ExpectLoadError(Replace("\"weapon\": 1, \"stat\": \"fireRate\"", "\"weapon\": 1, \"stat\": \"damage\""), "research[1].effect.stat");
     // Design §8: an upgrade raises its target's one rate, so a weapon's hit points are no upgrade the game can apply.
-    ExpectLoadError(Replace("\"stat\": \"fireRate\"", "\"stat\": \"hitPoints\""), "research[1].effect.stat");
+    ExpectLoadError(Replace("\"weapon\": 1, \"stat\": \"fireRate\"", "\"weapon\": 1, \"stat\": \"hitPoints\""), "research[1].effect.stat");
     ExpectLoadError(Replace("\"upgrade\": \"allHulls\",", "\"upgrade\": \"allHulls\", \"weapon\": 1,"), "research[0].effect.weapon");
     ExpectLoadError(Replace("{ \"unlockDrive\": 1 }", "{}"), "research[2].effect");
+    // Phase 1 design §6: each target raises its one rate, and a structure weapon's upgrade names one that exists.
+    ExpectLoadError(Replace("\"stat\": \"speed\"", "\"stat\": \"hitPoints\""), "research[6].effect.stat");
+    ExpectLoadError(Replace("\"structureWeapon\": 1, \"stat\"", "\"structureWeapon\": 2, \"stat\""), "research[5].effect.structureWeapon");
+  }
+
+  // ADR-033: a topic has a tier, from 1 to the last; a gateway opens its own tier, which has no other; every other topic of
+  // a later tier requires its gateway; and no topic requires one of a later tier.
+  TEST_METHOD(RejectsBrokenTiers)
+  {
+    ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1", "\"name\": \"Ion Drive\""), "research[2]: has no \"tier\"");
+    ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1", "\"name\": \"Ion Drive\", \"tier\": 4"), "research[2].tier");
+    ExpectLoadError(Replace("\"opensTier\": 2", "\"opensTier\": 3"), "research[3].effect.opensTier");
+    ExpectLoadError(Replace("\"name\": \"Rapid Construction\", \"tier\": 2, \"cost\": 350, \"researchSeconds\": 100, \"requires\": [4]",
+                            "\"name\": \"Rapid Construction\", \"tier\": 2, \"cost\": 350, \"researchSeconds\": 100, \"requires\": [1]"),
+                    "research[7].requires");
+    ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [2]",
+                            "\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [5]"),
+                    "research[2].requires[0]");
+    ExpectLoadError(Replace("\"name\": \"Deep Core Survey\", \"tier\": 2", "\"name\": \"Deep Core Survey\", \"tier\": 3"),
+                    "research[8].tier");
+    ExpectLoadError(Replace("{ \"upgrade\": \"allShips\", \"stat\": \"speed\", \"percent\": 10 }", "{ \"opensTier\": 2 }"),
+                    "research[6].effect.opensTier");
+  }
+
+  // Phase 1 design §6: the new kinds of effect load, and a gateway is one.
+  TEST_METHOD(LoadsTheTiersEffects)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
+    Assert::AreEqual(size_t{9}, tuning.research.size());
+    Assert::IsTrue(tuning.research[3].IsGateway() && tuning.research[3].tier == 2);
+    Assert::IsFalse(tuning.research[4].IsGateway());
+    const auto upgrade = [&tuning](size_t _index) { return std::get<Outpost::UpgradeEffect>(tuning.research[_index].effect); };
+    Assert::IsTrue(upgrade(4).target == Outpost::UpgradeTarget::AllStructures && upgrade(4).stat == Outpost::UpgradeStat::HitPoints);
+    Assert::IsTrue(upgrade(5).target == Outpost::UpgradeTarget::StructureWeapon &&
+                   upgrade(5).structureWeapon == Outpost::StructureWeaponId{1});
+    Assert::IsTrue(upgrade(6).target == Outpost::UpgradeTarget::AllShips && upgrade(6).stat == Outpost::UpgradeStat::Speed);
+    Assert::IsTrue(upgrade(7).target == Outpost::UpgradeTarget::Constructors && upgrade(7).stat == Outpost::UpgradeStat::BuildRate);
+    Assert::IsTrue(upgrade(8).target == Outpost::UpgradeTarget::Asteroids && upgrade(8).percent == 30);
+    Assert::AreEqual(std::string("Opens tier 2"), Outpost::EffectText(tuning, tuning.research[3]));
+    Assert::AreEqual(std::string("Defence gun fire rate +20%"), Outpost::EffectText(tuning, tuning.research[5]));
+    Assert::AreEqual(std::string("Constructor build and repair rate +25%"), Outpost::EffectText(tuning, tuning.research[7]));
   }
 
   TEST_METHOD(RejectsText)

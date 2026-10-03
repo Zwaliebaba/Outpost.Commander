@@ -764,6 +764,53 @@ public:
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
+  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier, and marks a gateway.
+  TEST_METHOD(ListsTheTopicsTierByTier)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 1000;
+    newest.research = {{.id = Outpost::ResearchTopicId{9},
+                        .nameUtf8 = "Relay Archives",
+                        .effectUtf8 = "Opens tier 2",
+                        .cost = 400,
+                        .researchSeconds = 150.0,
+                        .tier = 2,
+                        .gateway = true},
+                       {.id = Outpost::ResearchTopicId{2},
+                        .nameUtf8 = "Hull Plating",
+                        .effectUtf8 = "Hull hit points +15%",
+                        .cost = 150,
+                        .researchSeconds = 60.0},
+                       {.id = Outpost::ResearchTopicId{14},
+                        .nameUtf8 = "Reinforced Structures",
+                        .effectUtf8 = "Structure hit points +25%",
+                        .cost = 250,
+                        .researchSeconds = 90.0,
+                        .prerequisites = {Outpost::ResearchTopicId{9}},
+                        .tier = 2}};
+    const Outpost::EntityView lab{.id = Outpost::EntityId{40},
+                                  .kind = Outpost::EntityKind::Structure,
+                                  .owner = PLAYER,
+                                  .structure = Outpost::StructureKind::ResearchLab};
+    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::AreEqual(size_t{3}, panel.topics.size());
+    Assert::AreEqual(std::string("Hull Plating"), panel.topics[0].name, L"tier 1 first");
+    Assert::AreEqual(std::string("TIER 1 \xC2\xB7 60 s"), panel.topics[0].time);
+    Assert::IsTrue(panel.topics[1].gateway && panel.topics[1].tier == 2);
+    Assert::AreEqual(std::string("TIER 2 \xC2\xB7 150 s"), panel.topics[1].time);
+    Assert::AreEqual(std::string("NEEDS \xC2\xB7 RELAY ARCHIVES"), panel.topics[2].needs, L"its tier waits for the gateway");
+    Assert::IsFalse(panel.topics[2].gateway);
+
+    Outpost::Hud::Content content;
+    content.laboratory = panel;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Span panels = layout.PanelsOf(1);
+    const auto gold = std::count_if(layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.first),
+                                    layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.end),
+                                    [](const Outpost::Hud::Rect& _rect) { return _rect.color.x > 0.9f && _rect.color.y > 0.45f; });
+    Assert::IsTrue(gold >= 4, L"the gateway's card is edged in gold");
+  }
+
   // Phase 1 design §12: the production and research windows are laid out side by side under the Ore, clear of the
   // designer; each enabled card is a place to click, and the research window scrolls its topics a row at a time.
   TEST_METHOD(LaysOutTheProductionAndResearchWindows)

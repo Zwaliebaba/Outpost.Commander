@@ -134,22 +134,28 @@ class Topic:
   name: str
   requires: tuple
   unlocks: str  # the component the topic unlocks, or ""
-  target: str  # what an upgrade changes: "All hulls", a weapon, or an economy target such as "Mining Rig"
+  target: str  # what an upgrade changes: "All hulls", a weapon, or a target no battle feels, such as "Mining Rig"
   stat: str  # the stat an upgrade changes, or ""
   factor: float  # 1 + the upgrade's percentage
+  tier: int = 1  # its research tier (Phase 1 design §6); a gateway has no target, stat or unlock
 
 
 UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("weapon", "damage"): "damage",
             ("weapon", "range"): "range"}
-ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed")}  # upgrades with no effect on a battle
+# Upgrades with no effect on a battle between two clumps: the economy, structures, speed, Constructors and ore. The model
+# reads them, names them, and leaves them out.
+ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed"), ("All structures", "HP"), ("Structure weapon", "fire rate"),
+           ("All ships", "speed"), ("Constructors", "build rate"), ("Asteroids", "ore reserve")}
 
 
 # ---- Reading the tuning data -----------------------------------------------------------------------------------------
 
 # How the tuning data names an upgrade's target and stat, and how the model names them.
-UPGRADE_TARGETS = {"allHulls": "All hulls", "miningRig": "Mining Rig", "shipyards": "Shipyard"}
+UPGRADE_TARGETS = {"allHulls": "All hulls", "miningRig": "Mining Rig", "shipyards": "Shipyard",
+                   "allStructures": "All structures", "structureWeapon": "Structure weapon", "allShips": "All ships",
+                   "constructors": "Constructors", "asteroids": "Asteroids"}
 UPGRADE_STATS = {"hitPoints": "HP", "fireRate": "fire rate", "damage": "damage", "range": "range", "income": "income",
-                 "buildSpeed": "build speed"}
+                 "buildSpeed": "build speed", "speed": "speed", "buildRate": "build rate", "oreReserve": "ore reserve"}
 
 
 def field(entry, name, where):
@@ -206,13 +212,17 @@ def read_research(research, ids):
     if not isinstance(requires, list) or not all(isinstance(r, int) for r in requires):
       sys.exit(f"{where}: 'requires' must be a list of topic ids.")
     effect = field(entry, "effect", where)
+    tier = int(entry.get("tier", 1))
+    if "opensTier" in effect:
+      topics.append(Topic(number_, field(entry, "name", where), tuple(requires), "", "", "", 1.0, tier))
+      continue
     unlocks = [(kind, effect[f"unlock{kind[:-1].capitalize()}"]) for kind in ("hulls", "drives", "weapons")
                if f"unlock{kind[:-1].capitalize()}" in effect]
     if unlocks:
       kind, component = unlocks[0]
       if len(unlocks) != 1 or component not in ids[kind]:
         sys.exit(f"{where}: an unlock names exactly one hull, drive or weapon by its id.")
-      topics.append(Topic(number_, field(entry, "name", where), tuple(requires), ids[kind][component], "", "", 1.0))
+      topics.append(Topic(number_, field(entry, "name", where), tuple(requires), ids[kind][component], "", "", 1.0, tier))
       continue
     target = field(effect, "upgrade", where)
     stat = UPGRADE_STATS.get(field(effect, "stat", where))
@@ -227,8 +237,9 @@ def read_research(research, ids):
       kind = target
     if stat is None or target is None or ((kind, stat) not in UPGRADES and (target, stat) not in ECONOMY):
       sys.exit(f"{where}: the model cannot apply this upgrade. It knows all hulls' HP, a weapon's fire rate, damage "
-               f"or range, Mining Rig income and Shipyard build speed.")
-    topics.append(Topic(number_, field(entry, "name", where), tuple(requires), "", target, stat, 1.0 + percent / 100.0))
+               f"or range, and leaves out what no battle feels: {', '.join(sorted(t for t, _ in ECONOMY))}.")
+    topics.append(Topic(number_, field(entry, "name", where), tuple(requires), "", target, stat, 1.0 + percent / 100.0,
+                        tier))
   numbers = {t.number for t in topics}
   for t in topics:
     if set(t.requires) - numbers:
@@ -258,15 +269,20 @@ def available(parts, topics, researched):
 
 
 def upgraded(parts, researched):
-  """The parts with every upgrade in `researched` applied."""
+  """The parts with every upgrade in `researched` applied. Upgrades of one stat add their percentages (ADR-033)."""
   hulls, drives, weapons = (list(group) for group in parts)
+  added = {}
   for t in researched:
-    if t.target == "All hulls":
-      hulls = [dataclasses.replace(h, hp=h.hp * t.factor) for h in hulls]
-    elif (t.target, t.stat) not in ECONOMY and t.stat:
-      field = UPGRADES[("weapon", t.stat)]
-      change = (lambda v: v / t.factor) if field == "interval" else (lambda v: v * t.factor)
-      weapons = [dataclasses.replace(w, **{field: change(getattr(w, field))}) if w.name == t.target else w
+    if t.stat and (t.target, t.stat) not in ECONOMY:
+      added[(t.target, t.stat)] = added.get((t.target, t.stat), 0.0) + (t.factor - 1.0)
+  for (target, stat), share in added.items():
+    factor = 1.0 + share
+    if target == "All hulls":
+      hulls = [dataclasses.replace(h, hp=h.hp * factor) for h in hulls]
+    else:
+      field = UPGRADES[("weapon", stat)]
+      change = (lambda v: v / factor) if field == "interval" else (lambda v: v * factor)
+      weapons = [dataclasses.replace(w, **{field: change(getattr(w, field))}) if w.name == target else w
                  for w in weapons]
   return hulls, drives, weapons
 
@@ -602,6 +618,9 @@ def research_check(pool, parts, topics, budgets, args, dt, failures):
   answers = designs_from(*available(parts, topics, []))
   print(f"\n==== One-sided research (d): each topic against the {len(answers)} starting designs ====")
   for topic in topics:
+    # The MVP's (d), over tier 1's topics; the later tiers get theirs with their stages (Phase 1 design §7, task 10.3).
+    if topic.tier != 1:
+      continue
     if (topic.target, topic.stat) in ECONOMY:
       print(f"  {topic.name}: no effect on a battle")
       continue

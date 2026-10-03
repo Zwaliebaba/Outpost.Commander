@@ -150,6 +150,9 @@ struct ResearchTopicView
   HullId unlocksHull;
   DriveId unlocksDrive;
   WeaponId unlocksWeapon;
+  // Its tier, and whether it is the gateway that opens it (Phase 1 design §6).
+  std::int32_t tier = 1;
+  bool gateway = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.

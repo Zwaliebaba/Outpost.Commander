@@ -1085,7 +1085,8 @@ void LayResearch(Hud::Layout& _layout, const Hud::ResearchPanel& _panel, Outpost
       paint.Panel(left, cardTop, width, TOPIC_HEIGHT, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
     if (topic.enabled)
       paint.Press(face, topic.action);
-    paint.Outline(left, cardTop, width, TOPIC_HEIGHT, EDGE_COLOR);
+    // A gateway, which opens its tier, is edged in gold.
+    paint.Outline(left, cardTop, width, TOPIC_HEIGHT, topic.gateway ? GOLD_COLOR : EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
     paint.Text(topic.name, left + 12.0f, cardTop + 6.0f, color, Hud::Typeface::Name);
     paint.DiamondAndFigure(topic.cost, left + width - 12.0f, cardTop + 9.0f, Hud::Typeface::Figure, 13.0f,
@@ -1484,11 +1485,15 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       {.name = topic.nameUtf8,
        .effect = topic.effectUtf8,
        .cost = topic.cost,
-       .time = std::format("{} s", Tenths(topic.researchSeconds)),
+       .time = std::format("TIER {}{}{} s", topic.tier, DOT, Tenths(topic.researchSeconds)),
        .needs = needs,
        .action = {.kind = ActionKind::Research, .producer = found != nullptr ? found->id : EntityId{}, .topic = topic.id},
-       .enabled = canResearch && needs.empty() && _newest.ore >= topic.cost});
+       .enabled = canResearch && needs.empty() && _newest.ore >= topic.cost,
+       .tier = topic.tier,
+       .gateway = topic.gateway});
   }
+  // Tier by tier, each in the tuning data's order (Phase 1 design §6).
+  std::ranges::stable_sort(panel.topics, {}, &TopicCard::tier);
   panel.firstTopic = StepTopics(_firstTopic, 0, panel.topics.size());
   return panel;
 }

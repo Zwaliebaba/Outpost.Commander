@@ -112,13 +112,19 @@ struct StructureTuning
 };
 
 // What a research upgrade applies to, and which of its rates it raises (design §8: upgrades change rates, never the size
-// of a hit or a range).
+// of a hit or a range). Phase 1's tiers add structures' hit points, a structure weapon's fire rate, every ship's speed,
+// the Constructors' build and repair rate, and the ore asteroids hold (Phase 1 design §6, ADR-033).
 enum class UpgradeTarget : std::uint8_t
 {
   MiningRig,
   AllHulls,
   Weapon,
-  Shipyards
+  Shipyards,
+  AllStructures,
+  StructureWeapon,
+  AllShips,
+  Constructors,
+  Asteroids
 };
 
 enum class UpgradeStat : std::uint8_t
@@ -126,30 +132,51 @@ enum class UpgradeStat : std::uint8_t
   Income,
   HitPoints,
   FireRate,
-  BuildSpeed
+  BuildSpeed,
+  Speed,
+  BuildRate,
+  OreReserve
 };
 
 struct UpgradeEffect
 {
   UpgradeTarget target = UpgradeTarget::MiningRig;
-  // Valid only when the target is UpgradeTarget::Weapon.
+  // Valid only when the target is UpgradeTarget::Weapon, and UpgradeTarget::StructureWeapon.
   WeaponId weapon;
+  StructureWeaponId structureWeapon;
   UpgradeStat stat = UpgradeStat::Income;
   std::int32_t percent = 0;
 };
 
-// An upgrade, or the component the topic unlocks.
-using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId>;
+// A tier's gateway (Phase 1 design §6): it does nothing itself, and every other topic of its tier requires it.
+struct GatewayEffect
+{
+  std::int32_t tier = 0;
+
+  friend bool operator==(const GatewayEffect&, const GatewayEffect&) = default;
+};
+
+// An upgrade, the component the topic unlocks, or the tier it opens.
+using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId, GatewayEffect>;
+
+// The research tiers (Phase 1 design §6): tier 1 needs no gateway, and each tier after it opens with one.
+inline constexpr std::int32_t RESEARCH_TIERS = 3;
 
 struct ResearchTopicTuning
 {
   ResearchTopicId id;
   std::string name;
+  std::int32_t tier = 1;
   std::int32_t cost = 0;
   double researchSeconds = 0.0;
   // The topics that must be researched first. The file calls them "requires", a keyword in C++.
   std::vector<ResearchTopicId> prerequisites;
   ResearchEffect effect;
+
+  [[nodiscard]] bool IsGateway() const noexcept
+  {
+    return std::holds_alternative<GatewayEffect>(effect);
+  }
 };
 
 struct Tuning
@@ -169,7 +196,8 @@ struct Tuning
 // Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
-// itself, even through others. A member the loader does not know is an error too, so that a misspelled optional member
+// itself, even through others. And the tiers hold: a topic requires none of a later tier, each tier after the first has
+// one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). A member the loader does not know is an error too, so that a misspelled optional member
 // is not ignored.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

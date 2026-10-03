@@ -263,8 +263,9 @@ public:
     std::string hint;
   };
 
-  // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost
-  // and time, and while a prerequisite is neither researched nor queued, the line naming it; such a topic is dim.
+  // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost,
+  // its tier and time, whether it is the gateway that opens its tier (Phase 1 design §6), and while a prerequisite is
+  // neither researched nor queued, the line naming it; such a topic is dim.
   struct TopicCard
   {
     std::string name;
@@ -274,10 +275,12 @@ public:
     std::string needs;
     Action action;
     bool enabled = true;
+    std::int32_t tier = 1;
+    bool gateway = false;
   };
 
   // The research window (Phase 1 design §12): the player's Research Lab, such as "RESEARCH LAB" or "NO RESEARCH LAB", its
-  // queue, and the topics, of which TOPICS_SHOWN are shown from firstTopic.
+  // queue, and the topics, tier by tier, of which TOPICS_SHOWN are shown from firstTopic.
   struct ResearchPanel
   {
     std::string lab;

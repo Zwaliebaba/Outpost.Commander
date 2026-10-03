@@ -217,6 +217,9 @@ public:
 
   // What the player's research has done to its rates; none before UseTuning.
   [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
+  // A structure's full hit points, in hundredths, and a Constructor's speed, with _owner's research (Phase 1 design §6).
+  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const;
+  [[nodiscard]] float ConstructorSpeed(PlayerId _owner) const;
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
   // command (task 5.2).

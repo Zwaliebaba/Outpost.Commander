@@ -411,7 +411,7 @@ Outpost::EntityId Outpost::Simulation::SpawnConstructor(PlayerId _owner, PlanePo
   if (!m_tuning)
     throw Neuron::Exception("SpawnConstructor: the simulation has no tuning data");
   const ConstructorTuning& constructor = m_tuning->constructor;
-  const ShipMovement movement{.speedMetersPerSecond = static_cast<float>(constructor.speedMetersPerSecond),
+  const ShipMovement movement{.speedMetersPerSecond = ConstructorSpeed(_owner),
                               .turnRateRadiansPerSecond =
                                 static_cast<float>(constructor.turnRateDegreesPerSecond * std::numbers::pi / 180.0),
                               .radiusMeters = static_cast<float>(constructor.footprintRadiusMeters)};
@@ -489,7 +489,7 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
       CheckStartingSlot(_map, player, position, constructorRadius);
     }
 
-    (void)SpawnStructure(owner, StructureKind::CommandStation, start, stationRadius, station->hitPoints * HUNDREDTHS,
+    (void)SpawnStructure(owner, StructureKind::CommandStation, start, stationRadius, StructureHitPoints(owner, *station),
                          station->armor * HUNDREDTHS);
     for (size_t i = 0; i < constructors; ++i)
     {
@@ -686,7 +686,9 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                    .researched = std::ranges::find(researched, topic.id) != researched.end(),
                                    .unlocksHull = UnlockedBy<HullId>(topic),
                                    .unlocksDrive = UnlockedBy<DriveId>(topic),
-                                   .unlocksWeapon = UnlockedBy<WeaponId>(topic)});
+                                   .unlocksWeapon = UnlockedBy<WeaponId>(topic),
+                                   .tier = topic.tier,
+                                   .gateway = topic.IsGateway()});
     }
     snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
   }
@@ -1400,7 +1402,7 @@ std::optional<Outpost::Simulation::Armament> Outpost::Simulation::ArmamentOf(con
   if (gun == m_tuning->structureWeapons.end())
     return std::nullopt;
   return Armament{.damageHundredths = gun->damage * HUNDREDTHS,
-                  .fireIntervalSeconds = gun->fireIntervalSeconds,
+                  .fireIntervalSeconds = gun->fireIntervalSeconds / UpgradesOf(_entity.owner).FireRateFactor(gun->id),
                   .rangeMeters = static_cast<float>(gun->rangeMeters)};
 }
 
@@ -1489,7 +1491,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
     return CommandResult::NotEnoughOre;
   player->oreHundredths -= cost;
 
-  const std::int32_t hitPoints = tuning->hitPoints * HUNDREDTHS;
+  const std::int32_t hitPoints = StructureHitPoints(_player, *tuning);
   const EntityId id = SpawnStructure(_player, _build.structure, position, radius, hitPoints, tuning->armor * HUNDREDTHS);
   Entity& structure = *FindMutableEntity(id);
   structure.buildWorkNeeded = static_cast<std::int32_t>(std::llround(buildSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
@@ -1670,10 +1672,12 @@ void Outpost::Simulation::Work()
   for (const auto& [id, constructors] : crews)
   {
     Entity& target = *FindMutableEntity(id);
+    // A player's Constructors build and repair only its own, so the target's owner's research sets their rate.
+    const double rate = UpgradesOf(target.owner).constructorRateFactor;
     if (!target.IsBuilt())
     {
       const auto work = static_cast<std::int32_t>(
-        std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1)))));
+        std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1))) * rate));
       const std::int64_t maximum = target.maxHitPointsHundredths;
       const std::int64_t starting = maximum / SITE_STARTING_HIT_POINTS_DIVISOR;
       const auto granted = [&](std::int64_t _done) { return starting + ((maximum - starting) * _done / target.buildWorkNeeded); };
@@ -1685,7 +1689,7 @@ void Outpost::Simulation::Work()
       continue;
     }
     const auto perConstructor = static_cast<std::int32_t>(
-      std::llround(static_cast<double>(target.maxHitPointsHundredths) * tuning.repairPercentPerSecond / 100.0 / m_ticksPerSecond));
+      std::llround(static_cast<double>(target.maxHitPointsHundredths) * tuning.repairPercentPerSecond / 100.0 / m_ticksPerSecond * rate));
     target.hitPointsHundredths = std::min(target.maxHitPointsHundredths, target.hitPointsHundredths + (perConstructor * constructors));
     if (target.hitPointsHundredths >= target.maxHitPointsHundredths)
       finished.push_back(id);
@@ -1847,6 +1851,7 @@ void Outpost::Simulation::Research()
 
 void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId _topic)
 {
+  const double structuresBefore = UpgradesOf(_player.id).structureHitPointsFactor;
   _player.researched.push_back(_topic);
   const Upgrades upgrades = UpgradesFrom(*m_tuning, _player.researched);
   for (ShipDesign& design : m_designs)
@@ -1854,20 +1859,50 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
     if (design.owner == _player.id)
       design.stats = DesignStatsFor(*m_tuning, design.components.hull, design.components.drive, design.components.weapon, upgrades);
   }
-  // A ship keeps the share of its hit points it had, so an undamaged ship gains the whole upgrade (owner, 2026-10-01).
-  for (Entity& ship : m_entities)
+  // A ship or structure keeps the share of its hit points it had, so an undamaged one gains the whole upgrade (owner,
+  // 2026-10-01). A ship's speed follows its design's, and a Constructor's the rule's; a move under way keeps its pace.
+  const auto rescale = [](Entity& _entity, std::int64_t _after)
   {
-    if (ship.kind != EntityKind::Ship || ship.owner != _player.id || ship.role != ShipRole::Warship || ship.maxHitPointsHundredths <= 0)
+    const std::int64_t before = _entity.maxHitPointsHundredths;
+    if (before <= 0 || before == _after)
+      return;
+    _entity.hitPointsHundredths =
+      static_cast<std::int32_t>(std::max<std::int64_t>(1, ((_entity.hitPointsHundredths * _after) + (before / 2)) / before));
+    _entity.maxHitPointsHundredths = static_cast<std::int32_t>(_after);
+  };
+  for (Entity& entity : m_entities)
+  {
+    if (entity.owner != _player.id)
       continue;
-    const ShipDesign* design = FindDesign(ship.design);
-    if (design == nullptr || design->stats.hitPointsHundredths == ship.maxHitPointsHundredths)
-      continue;
-    const std::int64_t before = ship.maxHitPointsHundredths;
-    const std::int64_t after = design->stats.hitPointsHundredths;
-    ship.hitPointsHundredths =
-      static_cast<std::int32_t>(std::max<std::int64_t>(1, ((ship.hitPointsHundredths * after) + (before / 2)) / before));
-    ship.maxHitPointsHundredths = static_cast<std::int32_t>(after);
+    if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Warship)
+    {
+      const ShipDesign* design = FindDesign(entity.design);
+      if (design == nullptr)
+        continue;
+      rescale(entity, design->stats.hitPointsHundredths);
+      entity.speedMetersPerSecond = design->stats.movement.speedMetersPerSecond;
+    }
+    else if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Constructor)
+      entity.speedMetersPerSecond = ConstructorSpeed(_player.id);
+    else if (entity.kind == EntityKind::Structure)
+    {
+      // Only a structure with the hit points its kind had before is upgraded: one placed with numbers of its own, as a
+      // test or a measurement load places them, keeps them.
+      const StructureTuning* tuning = StructureTuningFor(entity.structure);
+      if (tuning != nullptr && entity.maxHitPointsHundredths == std::llround(tuning->hitPoints * HUNDREDTHS * structuresBefore))
+        rescale(entity, StructureHitPoints(_player.id, *tuning));
+    }
   }
+}
+
+std::int32_t Outpost::Simulation::StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const
+{
+  return static_cast<std::int32_t>(std::llround(_tuning.hitPoints * HUNDREDTHS * UpgradesOf(_owner).structureHitPointsFactor));
+}
+
+float Outpost::Simulation::ConstructorSpeed(PlayerId _owner) const
+{
+  return static_cast<float>(m_tuning->constructor.speedMetersPerSecond * UpgradesOf(_owner).shipSpeedFactor);
 }
 
 // A topic joins the back of the lab's queue; it is paid for when it reaches the front and starts (Research). It may

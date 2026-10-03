@@ -31,7 +31,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | todo |
+| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); 13 of the 17 topics, the rest with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | todo |
 | 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | todo |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
@@ -215,6 +215,15 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: the tiers, gateways and the stacking of upgrades, beside ADR-017.
 - **Acceptance:** `ResearchTests` and `TuningTests` cover each new effect, stacking, a gateway gating its tier, and a lab's queue across tiers.
 - **Verify:** CI.
+- **As built:** [ADR-033](../Design/ADR/ADR-033-research-tiers.md).
+  - **The schema.** A topic's `"tier"`, required; a gateway's `"effect": { "opensTier": n }`, read as `GatewayEffect`; and five targets with their one rate each: `allStructures` hit points, `structureWeapon` fire rate, `allShips` speed, `constructors` build rate and `asteroids` ore reserve. The loader checks the tiers: a gateway opens its own tier, a tier has one, every other topic of a later tier requires it, and no topic requires one of a later tier.
+  - **Stacking.** `UpgradesFrom` adds each rate's percentages; the MVP's topics never stack, so tier 1 is unchanged.
+  - **The simulation.** Structures are placed with their owner's hit points and raised, keeping their share, when the topic finishes; a structure weapon fires at its owner's rate; a design's speed and every ship's follow the speed upgrade; the Constructors build and repair at their owner's rate. The ore reserve waits in `Upgrades` for task 11.1.
+  - **13 of the 17 topics** are in `Tuning.json`: 9, 12–18, 20, 21 and 23–25. Topics 10, 11, 19 and 22 name the Pulse Drive, the Flak Battery and the Rail Cannon, which the loader refuses before they exist, so they arrive with them in 10.2.
+  - **The research window** lists topics tier by tier, shows each card's tier, and edges a gateway in gold.
+  - **The Q2 checks.** Both the C++ check and `Tools/BattleModel.py` add percentages, read the new effects and leave out by name those a clump's battle cannot feel; their (d) stays over tier 1's topics until 10.3.
+  - **Tests.** `TuningTests`: the new effects load, each tier rule is refused when broken, and the repository file's every member loads, `tier` included. `ResearchTests`: stacking of hulls and of a weapon's rate, and every new factor; a gateway gating its tier, queued with a topic of its tier, and changing no rate; Reinforced Structures on standing, new, enemy and test structures; Drive Harmonics on standing and new warships and Constructors, and Rapid Construction building faster. `HudTests`: the topics tier by tier and the gateway's card.
+  - **Not built on Windows in the container**: the suites ran there against a stand-in for the test framework.
 
 ### 10.2 — The Pulse Drive, the Flak Battery and the Rail Cannon
 

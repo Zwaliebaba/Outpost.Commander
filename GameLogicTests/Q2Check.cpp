@@ -336,36 +336,45 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
   std::ranges::copy_if(_parts.weapons, std::back_inserter(parts.weapons),
                        [&](const GameLogicTests::CheckWeapon& _weapon) { return !locked(_weapon.id); });
 
+  // Upgrades of one stat add their percentages (ADR-033). Those a clump's battle cannot feel, its economy, its structures,
+  // its speed and its Constructors, change nothing here; a gateway does nothing at all.
+  std::int32_t hullPercent = 0;
+  std::vector<std::pair<Outpost::WeaponId, std::int32_t>> weaponPercents;
   for (const Outpost::ResearchTopicTuning* topic : _researched)
   {
     const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&topic->effect);
     if (upgrade == nullptr)
       continue;
-    const double factor = 1.0 + (upgrade->percent / 100.0);
     if (upgrade->target == Outpost::UpgradeTarget::AllHulls && upgrade->stat == Outpost::UpgradeStat::HitPoints)
-    {
-      for (GameLogicTests::CheckHull& hull : parts.hulls)
-        hull.hitPoints *= factor;
-    }
+      hullPercent += upgrade->percent;
     else if (upgrade->target == Outpost::UpgradeTarget::Weapon && upgrade->stat == Outpost::UpgradeStat::FireRate)
     {
-      for (GameLogicTests::CheckWeapon& weapon : parts.weapons)
-      {
-        if (weapon.id == upgrade->weapon)
-          weapon.fireIntervalSeconds /= factor;
-      }
+      const auto found = std::ranges::find(weaponPercents, upgrade->weapon, &std::pair<Outpost::WeaponId, std::int32_t>::first);
+      if (found != weaponPercents.end())
+        found->second += upgrade->percent;
+      else
+        weaponPercents.emplace_back(upgrade->weapon, upgrade->percent);
     }
-    else if (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target != Outpost::UpgradeTarget::Shipyards)
-      throw Neuron::Exception(std::format("The Q2 check cannot apply research topic {}'s upgrade.", topic->name));
+  }
+  for (GameLogicTests::CheckHull& hull : parts.hulls)
+    hull.hitPoints *= 1.0 + (hullPercent / 100.0);
+  for (const auto& [id, percent] : weaponPercents)
+  {
+    for (GameLogicTests::CheckWeapon& weapon : parts.weapons)
+    {
+      if (weapon.id == id)
+        weapon.fireIntervalSeconds /= 1.0 + (percent / 100.0);
+    }
   }
   return parts;
 }
 
 bool AffectsBattles(const Outpost::ResearchTopicTuning& _topic)
 {
+  if (_topic.IsGateway())
+    return false;
   const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&_topic.effect);
-  return upgrade == nullptr ||
-         (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target != Outpost::UpgradeTarget::Shipyards);
+  return upgrade == nullptr || upgrade->target == Outpost::UpgradeTarget::AllHulls || upgrade->target == Outpost::UpgradeTarget::Weapon;
 }
 
 // ---- The check ---------------------------------------------------------------------------------------------------------
@@ -514,6 +523,9 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
   _report += std::format("\n==== One-sided research (d): each topic against the {} starting designs ====\n", answers.size());
   for (const Outpost::ResearchTopicTuning& topic : _tuning.research)
   {
+    // The MVP's (d), over tier 1's topics; the later tiers get theirs with their stages (task 10.3).
+    if (topic.tier != 1)
+      continue;
     if (!AffectsBattles(topic))
     {
       _report += std::format("  {}: no effect on a battle\n", topic.name);
@@ -524,7 +536,7 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     const bool unlocksUnmodelled = std::visit(
       [&designs]<typename Effect>([[maybe_unused]] const Effect& _effect)
       {
-        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
+        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect> || std::is_same_v<Effect, Outpost::GatewayEffect>)
           return false;
         else
         {
