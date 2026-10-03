@@ -25,6 +25,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 7.2 | Ships turn in arcs | 7.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run on the development machine |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
@@ -87,6 +88,19 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The data.** An optional `bank` on each hull in `Models.json` and a `constructorBank`; ADR-029 gives the first values and why.
   - **Tests.** `ShipBankingTests`, and new cases in `SnapshotInterpolatorTests`, `HardpointsTests` and `ModelCatalogTests`.
   - **Not built or run in the container**, which has no Windows: the banking math and the roll's direction were checked there against a standalone build and the DirectXMath matrix convention. CI builds Debug|x64 and runs the suites; the owner's run judges the look.
+
+### 7.2 — Ships turn in arcs
+
+- **Goal:** design §9, as the owner changed it on 2026-10-03. Ships move as aircraft do, forward while they turn, and so bank in every corner, rather than stopping to turn on the spot.
+- **Owner's answers, 2026-10-03:** ships can still stop, at their destination and to fire; a ship slows into a sharp turn; and it is a Phase 1 task, on #49.
+- **Scope:** the steering in `Simulation::MoveShips` and the stall rule beside it. Not the paths, the formation, the turn rates, combat or the client.
+- **ADR:** a new one, superseding ADR-010's decision 5.
+- **Acceptance:** `MovementTests`: a ship sent behind itself comes about in a loop, never standing to turn; a point inside its full-speed turn is reached, not circled; every other suite still passes. The full balance check is run again.
+- **Verify:** CI; the balance check in the container; **owner run.**
+- **As built:** [ADR-039](../Design/ADR/ADR-039-ships-turn-in-arcs.md), which supersedes ADR-010's decision 5 and the stall rule's exemption in its decision 6.
+  - **The steering.** A ship always moves forward, at its cruise speed times ½ + ½·cos of its bearing to the waypoint: full speed on course, half with the waypoint abeam or behind. It also flies no faster than lets it reach the waypoint on the arc that leaves along its heading, so it never circles a point inside its turn. Only a tick it heads within 45° of its waypoint and gets no closer counts toward a stall.
+  - **What it changes**, measured in the Linux container. A U-turn takes about 8% longer: a Large+Fusion ship sent 100 m behind itself arrives in 8.55 s against 7.90 s. A point 15 m abeam, which the old rule circled for seconds and gave up 2 m short of, is now reached exactly in 0.75–3.6 s, depending on the hull. Two AIs end a match at a median of 23:32 over 140 seeds, against 22:11 before. The balance check: not yet recorded; the full check is running in the container.
+  - **Tests.** `MovementTests.AShipComesAboutInALoop` and `AShipReachesAPointInsideItsTurn`, both of which fail under the old rule; the other 185 GameLogic tests pass unchanged.
 
 ---
 

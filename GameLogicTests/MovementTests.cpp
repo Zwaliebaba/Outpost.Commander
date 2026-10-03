@@ -244,6 +244,60 @@ public:
     Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, {}) >= 108.0f - 0.01f);
   }
 
+  // Task 7.2, ADR-039: a ship turns in an arc, as an aircraft does. Sent to a point behind it, it never stands to turn:
+  // it moves every tick, turns no faster than its turn rate, comes about in a loop to one side at half its cruise speed
+  // or less, and arrives on the point.
+  TEST_METHOD(AShipComesAboutInALoop)
+  {
+    for (const Outpost::ShipMovement movement : {Movement(1, 1), Movement(3, 2)})
+    {
+      Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+      simulation.PlaceMap(OpenMap({}));
+      const Outpost::EntityId ship = simulation.SpawnShip(BLUE, DESIGN, movement, {});
+      const Outpost::PlanePosition goal{-150.0f, 0.0f};
+      (void)simulation.Tick({Move({ship}, goal)});
+      float widestMeters = 0.0f;
+      for (int tick = 0; tick < 60 * TICKS_PER_SECOND && !Arrived(simulation, ship); ++tick)
+      {
+        const Outpost::Entity before = *simulation.FindEntity(ship);
+        (void)simulation.Tick({});
+        const Outpost::Entity& after = *simulation.FindEntity(ship);
+        const float stepMeters = Outpost::Distance(before.position, after.position);
+        Assert::IsTrue(stepMeters > 0.0f, L"the ship stood to turn");
+        const float turned = std::abs(std::remainder(after.headingRadians - before.headingRadians, 2.0f * std::numbers::pi_v<float>));
+        Assert::IsTrue(turned <= (movement.turnRateRadiansPerSecond * SECONDS_PER_TICK) + 1e-4f, L"it turned faster than it can");
+        if (std::abs(std::remainder(before.headingRadians, 2.0f * std::numbers::pi_v<float>)) < std::numbers::pi_v<float> / 2.0f)
+          Assert::IsTrue(stepMeters <= (movement.speedMetersPerSecond * SECONDS_PER_TICK / 2.0f) + 1e-3f,
+                         L"it came about faster than half its cruise speed");
+        widestMeters = std::max(widestMeters, std::abs(after.position.zMeters));
+      }
+      Assert::IsTrue(Arrived(simulation, ship), L"the ship never arrived");
+      Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, goal) < 0.01f);
+      // A loop to one side, about twice its turn radius at half speed across.
+      const float halfSpeedRadiusMeters = movement.speedMetersPerSecond / 2.0f / movement.turnRateRadiansPerSecond;
+      Assert::IsTrue(widestMeters > halfSpeedRadiusMeters && widestMeters < 3.0f * halfSpeedRadiusMeters);
+    }
+  }
+
+  // Task 7.2, ADR-039: a point inside the circle a ship turns at full speed, 15 m abeam of a ship whose turn at full speed
+  // is 20 m across, is reached on a tighter arc, flown slower, and not circled.
+  TEST_METHOD(AShipReachesAPointInsideItsTurn)
+  {
+    const Outpost::ShipMovement movement = Movement(1, 1);
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({}));
+    const Outpost::EntityId ship = simulation.SpawnShip(BLUE, DESIGN, movement, {});
+    const Outpost::PlanePosition goal{0.0f, 15.0f};
+    (void)simulation.Tick({Move({ship}, goal)});
+    int ticks = 1;
+    for (; ticks < 10 * TICKS_PER_SECOND && !Arrived(simulation, ship); ++ticks)
+      (void)simulation.Tick({});
+    Assert::IsTrue(Arrived(simulation, ship), L"the ship never arrived");
+    Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, goal) < 0.01f, L"it gave up short of the point");
+    // A quarter turn takes 0.4 s at its 225 degrees a second; circling the point would take seconds.
+    Assert::IsTrue(ticks <= TICKS_PER_SECOND, L"it circled the point");
+  }
+
   TEST_METHOD(StopHaltsAMovingShip)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);

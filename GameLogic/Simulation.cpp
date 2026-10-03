@@ -17,6 +17,11 @@ using Outpost::PlaneVector;
 constexpr float STALL_SECONDS = 1.0f;
 // Getting closer by less than this does not count as progress.
 constexpr float PROGRESS_METERS = 0.1f;
+// Ships turn in arcs, as aircraft do (owner, 2026-10-03, ADR-039): a ship whose waypoint is abeam or behind it flies this
+// share of its cruise speed, so that it comes about in a tight loop rather than a wide one.
+constexpr float TURN_SPEED_SHARE = 0.5f;
+// A ship heading further off its waypoint than this is coming about, not stalled (MoveShips).
+constexpr float STALL_HEADING_RADIANS = std::numbers::pi_v<float> / 4.0f;
 
 // A ship standing to fire, pushed almost straight at its target, steps sideways instead (SeparateShips): below this share
 // of the push left over sideways.
@@ -1299,28 +1304,31 @@ void Outpost::Simulation::MoveShips()
       ship.stalledTicks = 0;
     }
 
+    // A ship flies the way it faces and turns as it goes, as an aircraft does: it never turns on the spot (owner,
+    // 2026-10-03, ADR-039). It slows into a turn, to half its cruise speed with its waypoint abeam or behind. It also flies
+    // no faster than lets it reach its waypoint on the arc that leaves along its heading, of radius half the distance over
+    // the sine of the bearing, so that it never circles a waypoint inside its turn.
     const PlanePosition waypoint = ship.path.front();
     const PlaneVector toWaypoint = waypoint - ship.position;
     const float remaining = Length(toWaypoint);
-    if (remaining > 0.0f)
-    {
-      const float wanted = std::atan2(toWaypoint.zMeters, toWaypoint.xMeters);
-      const float maxTurn = ship.turnRateRadiansPerSecond * m_secondsPerTick;
-      ship.headingRadians = WrapAngle(ship.headingRadians + std::clamp(WrapAngle(wanted - ship.headingRadians), -maxTurn, maxTurn));
-    }
+    const float bearing = remaining > 0.0f ? WrapAngle(std::atan2(toWaypoint.zMeters, toWaypoint.xMeters) - ship.headingRadians) : 0.0f;
+    float speed = ship.cruiseSpeedMetersPerSecond * (TURN_SPEED_SHARE + ((1.0f - TURN_SPEED_SHARE) * std::max(0.0f, std::cos(bearing))));
+    if (const float abeam = std::abs(std::sin(bearing)); abeam > 0.0f)
+      speed = std::min(speed, ship.turnRateRadiansPerSecond * remaining / (2.0f * abeam));
+    const float maxTurn = ship.turnRateRadiansPerSecond * m_secondsPerTick;
+    ship.headingRadians = WrapAngle(ship.headingRadians + std::clamp(bearing, -maxTurn, maxTurn));
+    const float step = speed * m_secondsPerTick;
 
+    // Coming about is not stalling, and progress counts from where the ship has come about: only a tick it heads within
+    // 45 degrees of its waypoint and gets no closer counts.
     const float offCourse = remaining > 0.0f ? WrapAngle(std::atan2(toWaypoint.zMeters, toWaypoint.xMeters) - ship.headingRadians) : 0.0f;
-    const float step = ship.cruiseSpeedMetersPerSecond * std::max(0.0f, std::cos(offCourse)) * m_secondsPerTick;
-    if (remaining < ship.closestMeters - PROGRESS_METERS)
+    if (std::abs(offCourse) > STALL_HEADING_RADIANS || remaining < ship.closestMeters - PROGRESS_METERS)
     {
       ship.closestMeters = remaining;
       ship.stalledTicks = 0;
     }
-    else if (step > 0.0f)
-    {
-      // Turning on the spot is not stalling: only a tick the ship tried to move and got no closer counts.
+    else
       ++ship.stalledTicks;
-    }
 
     if (step >= remaining || ship.stalledTicks >= m_stallLimitTicks)
     {

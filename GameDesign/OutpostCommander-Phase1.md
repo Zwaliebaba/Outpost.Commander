@@ -39,7 +39,7 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 - **The length comes from stages: 45–60 minutes first.** Tiers, the win condition and the map make the match longer, not slower clocks. Two hours is decided after P1 is measured.
 - **The win condition.** A player loses when its Command Station **and** every Shipyard are destroyed (§4).
 - **Content.** Two new weapons and one new drive (§5), and no new hulls, so no new meshes. A research tree of three tiers and about 25 topics, with structure upgrades (§6). One map of about 5 km a side, on which ore runs out (§8).
-- **Banking is drawn by the client only** (§9). The simulation, the replay and the balance check do not change. Ships still turn on the spot at sharp corners, as ADR-010 has them, and so do not bank there.
+- **Banking is drawn by the client only** (§9). The simulation, the replay and the balance check do not change. Ships turning in arcs, which the owner added on 2026-10-03, is the simulation's (§9).
 - **The designer** is one window for all of a player's designs, and its queue goes to a Shipyard picked in it. Its ×N adds N separate jobs, as many as the Shipyard's queue has free slots. The match keeps running while it is open (§11).
 - **Windows float and the HUD stays put** (§12). A window's position lasts until the game is closed.
 - **Fonts:** Bahnschrift and Cascadia Mono, which Windows installs, so the game still ships no font (§11).
@@ -229,7 +229,11 @@ Ships lean into their turns as aircraft do. **It is drawn by the client and noth
 - **Each hull has its own limit and its own response**, as presentation data: a Small hull leans hard and quickly, up to about 35°, and a Large one slowly and only about 12°. The Constructor banks too, gently. The numbers are presentation data beside each model's length (ADR-011, ADR-018), not tuning data.
 - **The bank is smoothed.** The heading arrives 20 times a second (ADR-009), so its rate steps every tick; the angle follows it through a spring that settles in about a quarter of a second, so the lean rolls in and out rather than jumping.
 - **Everything attached rolls with the hull**: the gun hardpoints that shots leave from, the exhaust (ADR-019), the crease lines (ADR-027), and the shards of an explosion that starts mid-turn (ADR-026). The footprint, the selection ring and the health bar stay flat on the plane.
-- **The limit.** ADR-010's ships turn toward their next waypoint before they move, and move slowly while they turn, so at a sharp corner a ship slows, pivots and goes on, and banks very little. Banking shows on the gentle curves of a long route and in formation. Turning in arcs, which would make every corner a bank, changes movement, pathing, kiting and the turn rates, and is not part of Phase 1.
+- **Ships turn in arcs** (owner, 2026-10-03, task 7.2, ADR-039), so every corner is a bank. As first built, a ship turned toward its next waypoint before it moved (ADR-010): at a sharp corner, or sent somewhere behind it, it stopped, pivoted and went on, and the owner judged that unnatural.
+  - **Never on the spot.** Now a ship flies the way it faces and turns as it goes, from a standstill too.
+  - **Slower in a sharp turn.** It slows into the turn, to half its cruise speed with its waypoint abeam or behind, so a U-turn is a loop about 20–25 m across.
+  - **Never circling.** Near a waypoint it slows enough to reach it on an arc, so it never circles it.
+  - **Ships can still stop** (owner, 2026-10-03). They stop at their destination and stand still to fire, with no momentum, so battles change only in how ships close. Paths, formations and the turn rates are unchanged.
 
 ---
 
@@ -310,7 +314,7 @@ The AI is not made harder to rush (§3). It is changed only so that it can play 
 
 ## 14. Out of scope for Phase 1
 
-Everything the MVP put out of scope (MVP §13) stays out, apart from asteroid depletion, which Phase 1 brings in. Also out of Phase 1, by the owner's answers of 2026-10-02: new hulls and new meshes; turning in arcs; a unit cap; save, load and pause; an AI that resists a rush, and difficulty levels; more than one map; a second Research Lab; writing window positions to disk. Two hours, as a target, waits for P1.
+Everything the MVP put out of scope (MVP §13) stays out, apart from asteroid depletion, which Phase 1 brings in. Also out of Phase 1, by the owner's answers of 2026-10-02: new hulls and new meshes; a unit cap; save, load and pause; an AI that resists a rush, and difficulty levels; more than one map; a second Research Lab; writing window positions to disk. Two hours, as a target, waits for P1. Turning in arcs was on that list until the owner moved it into Phase 1 on 2026-10-03 (§9).
 
 ---
 
