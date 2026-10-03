@@ -1,0 +1,54 @@
+# ADR-043 — The HUD takes the windows' look, writes Ore one way, and keeps the production window's cards still
+
+Status: **accepted** · 2026-10-03 · supersedes [ADR-030](ADR-030-typography-and-sprites.md) decision 7
+
+## Context
+
+ADR-030 decision 7 kept the HUD as it had been since milestone 3, while the windows of tasks 9.3 and 9.4 took the owner's mockup. On 2026-10-03 the owner shared a screenshot of a match and asked for a review of the screen as a game's interface. The review found these faults:
+
+- **There were two visual styles.**
+  - The windows have a dark navy body, corner brackets and the mockup's faces.
+  - The Ore panel, the research line, the selection panel, the buttons and the minimap are translucent boxes, with Segoe UI at one size.
+- **Ore was written two ways.** The HUD wrote "Ore 12,345", and the windows wrote "◆ 12345", without a separator.
+- **The production window cut design names short.** At 480 units its cards are 212 wide, and a name was cut at 20 characters, so "Small+Ion+Mass Driver" read "Small+Ion+Mass Dr...".
+- **Its queue was always five rows**, empty or not, and stood above the cards. A full queue and an empty one took the same room. A queue that put its rows under the cards could not have kept them there without moving the cards as it grew.
+- **The selection panel was 560 units wide** for a selected structure's two lines.
+
+The owner asked on 2026-10-03 for these to be fixed in the same change as the rings (ADR-042).
+
+## Decision
+
+1. **Every panel of the HUD takes a window's look**, without a title bar, since it does not move. That is the Ore, the research line, the hint, the match's end, the selection, the buttons, the minimap's square and the main menu. Each has a window's body and a bracket at each corner, and stays anchored where it was (design §12, ADR-015).
+2. **Its text takes the windows' faces**: a panel's first line in the title face, its other lines in the name face, and figures in the figure face.
+3. **Ore is written one way everywhere**: Ore's diamond and the figure grouped in thousands. This holds for the stockpile, a window's Ore box, a card's cost and a button's cost.
+   - The stockpile drops the word "Ore".
+   - It ends at a fixed edge, so that it does not move as it changes.
+4. **A button is a card.**
+   - It has a card's face and edge, and its label in the name face.
+   - Any cost shows as the diamond and the figure at its right.
+   - A button that cannot be pressed is dim on the field's color.
+5. **The selection panel is as wide as its longest line**, between 280 and 560 units, and stays centered.
+6. **The production and research windows have their cards first and their queue under them.**
+   - Both windows are 560 units wide, so a design's name is cut short only where it would run past its card: 28 characters by the estimate below.
+   - The cards stay where they are as the queue grows, so a card can be clicked again and again.
+   - The queue shows a row for each job and no empty ones. Its label still counts the jobs against the limit, "QUEUE · 2 / 5".
+   - The window grows at its foot.
+7. **The minimap draws an ore asteroid in Ore's gold, darkened**, so that blue is the player's, red the enemy's and gold is ore. The rest stays as it was: a ship's small square, a structure's larger one, a rock at its size, a run-dry asteroid in rust, a field darker still, and the camera's view as an outline.
+
+## Consequences
+
+- **The widths are estimated.** The layout is made without the fonts (ADR-030), so a line's width is its character count times about half the face's size. A line may end a little short of its panel's edge, or run a little past it, until the owner's run shows by how much.
+- **`HudTests` check it:**
+  - `LaysTheHudOutInTheWindowsLook`
+  - `WritesOreOneWay`
+  - `KeepsTheCardsStillAsTheQueueGrows`
+  - `FitsTheSelectionPanelToItsLines`
+  - `DrawsFieldsDarkerThanOreAsteroidsOnTheMinimap`, which now compares brightness and checks the gold. A gold has less blue than the field's gray, so "darker" can no longer be per channel.
+  - `ShowsTheIncome` finds the income by its text rather than its place in the list.
+  - `LaysTheDesignerOutAsAWindow` no longer expects the HUD to draw no sprites. It checks that none of the HUD's lie in the window.
+- **It is not run on Windows.** The HUD's tests ran in the Linux container in a standalone build, and every screen was drawn from `Hud::Lay`'s output with substitute fonts.
+
+## What this forecloses
+
+- The MVP's look for the HUD, without a new decision.
+- A production or research window whose cards move as its queue changes.

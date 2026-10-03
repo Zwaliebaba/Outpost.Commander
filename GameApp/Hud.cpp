@@ -4,28 +4,29 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <charconv>
 #include <cmath>
 
 namespace
 {
 using Outpost::Hud;
 
-// Dark translucent panels and light text; a button is a lighter panel, dim when it does nothing.
-constexpr DirectX::XMFLOAT4 PANEL_COLOR{0.01f, 0.015f, 0.03f, 0.78f};
+// Light text, dim where it does nothing. The HUD's panels and buttons are in the windows' look, whose colors, sampled from
+// the owner's mockup, follow the windows' code below (ADR-043).
 constexpr DirectX::XMFLOAT4 TEXT_COLOR{0.82f, 0.88f, 0.96f, 1.0f};
 constexpr DirectX::XMFLOAT4 DIM_TEXT_COLOR{0.42f, 0.45f, 0.5f, 1.0f};
-constexpr DirectX::XMFLOAT4 ORE_COLOR{1.0f, 0.8f, 0.3f, 1.0f};
-constexpr DirectX::XMFLOAT4 BUTTON_COLOR{0.08f, 0.16f, 0.26f, 0.92f};
 constexpr DirectX::XMFLOAT4 DISABLED_BUTTON_COLOR{0.05f, 0.06f, 0.08f, 0.85f};
-constexpr DirectX::XMFLOAT4 SELECTED_BUTTON_COLOR{0.16f, 0.36f, 0.56f, 0.95f};
 // A designer's name the server would refuse.
 constexpr DirectX::XMFLOAT4 WARNING_COLOR{1.0f, 0.5f, 0.35f, 1.0f};
-// The minimap: the map's square, and its marks in the side's color; the camera's view as a light outline.
+// The minimap: the map's square, and its marks in the side's color, an ore asteroid in Ore's gold, darkened, so that the
+// map reads without a legend: blue is the player's, red the enemy's, and gold is ore (ADR-043). The camera's view is a
+// light outline.
 constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
-// An ore asteroid that has run out: the neutral gray, darkened and warmed toward rust.
+constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
+// An ore asteroid that has run out: dark, and warmed toward rust.
 constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 // An asteroid field is only in the way, so it is drawn darker than an ore asteroid, which is worth going to, though a
 // field's square is the larger (ADR-040).
@@ -35,25 +36,29 @@ constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 // Everything below in reference units.
 constexpr float MARGIN = 16.0f;
 constexpr float PADDING = 12.0f;
-constexpr float LINE_STEP = 26.0f;
+// A line of text in the title face, and in the name face, as the HUD's panels set them; a figure's line.
+constexpr float TITLE_LINE_UNITS = 30.0f;
+constexpr float NAME_LINE_UNITS = 22.0f;
+constexpr float FIGURE_LINE_UNITS = 16.0f;
 
-// The Ore panel, anchored to the top-left corner.
-constexpr float ORE_PANEL_WIDTH = 300.0f;
+// The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's diamond and the figure in the
+// title face, ending at ORE_FIGURE_RIGHT so that it does not move as it changes, then the income.
+constexpr float ORE_PANEL_WIDTH = 260.0f;
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
-constexpr float ORE_VALUE_LEFT = 76.0f;
-constexpr float ORE_INCOME_LEFT = 196.0f;
+constexpr float ORE_FIGURE_RIGHT = 150.0f;
+constexpr float ORE_INCOME_LEFT = 166.0f;
 
-// The selection panel, anchored to the bottom edge's middle.
+// The selection panel, anchored to the bottom edge's middle, as wide as its longest line within these (ADR-043).
+constexpr float SELECTION_PANEL_MIN_WIDTH = 280.0f;
 constexpr float SELECTION_PANEL_WIDTH = 560.0f;
 // Lines of designs before the rest are counted together.
 constexpr size_t SELECTION_DESIGN_LINES = 5;
 
-// The buttons, stacked in a panel anchored to the bottom-right corner.
+// The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
 constexpr float BUTTON_HEIGHT = 34.0f;
 constexpr float BUTTON_GAP = 6.0f;
-// The cost, right of the label.
-constexpr float BUTTON_COST_LEFT = 290.0f;
+constexpr float BUTTON_INSET = 12.0f;
 
 // The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding.
 constexpr float MINIMAP_SIZE = 260.0f;
@@ -69,9 +74,6 @@ constexpr float HINT_PANEL_WIDTH = 640.0f;
 // The research line, under the Ore panel.
 constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
 constexpr float RESEARCH_PANEL_GAP = 8.0f;
-
-// Room a button keeps for its cost at the right of a narrow button.
-constexpr float COST_ROOM = 70.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
@@ -420,26 +422,6 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   return panel;
 }
 
-// A button: its face, its label and any cost after a '|', and its place among the actions when it does something.
-void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
-{
-  Hud::Rect face = _area;
-  face.color = _button.selected ? SELECTED_BUTTON_COLOR : _button.enabled ? BUTTON_COLOR : DISABLED_BUTTON_COLOR;
-  _layout.panels.push_back(face);
-  if (_button.enabled)
-    _layout.actions.emplace_back(face, _button.action);
-  const size_t split = _button.label.find('|');
-  const float labelTop = face.top + ((BUTTON_HEIGHT - LINE_STEP) / 2.0f * _scale);
-  const DirectX::XMFLOAT4& color = _button.enabled ? TEXT_COLOR : DIM_TEXT_COLOR;
-  _layout.texts.push_back({_button.label.substr(0, split), face.left + (PADDING * _scale), labelTop, color});
-  if (split != std::string::npos)
-  {
-    const float costLeft = std::min(BUTTON_COST_LEFT * _scale, face.width - (COST_ROOM * _scale));
-    _layout.texts.push_back(
-      {_button.label.substr(split + 1), face.left + costLeft, labelTop, _button.enabled ? ORE_COLOR : DIM_TEXT_COLOR});
-  }
-}
-
 // A floating window's look (ADR-031), after the owner's mockup (Phase 1 design §11): a dark navy body, a hatched title bar
 // with the title in the title face, a close box at its right end, and a bracket at each corner.
 constexpr DirectX::XMFLOAT4 WINDOW_COLOR{0.009f, 0.013f, 0.024f, 0.97f};
@@ -452,6 +434,23 @@ constexpr float TITLE_TEXT_INSET = 5.0f;
 constexpr float CLOSE_TEXT_LEFT = 11.0f;
 // The multiplication sign, in UTF-8.
 constexpr std::string_view CLOSE_MARK = "\xC3\x97";
+
+// A bracket at each corner of _frame, as a window has.
+void AddCorners(Hud::Layout& _layout, const Hud::Rect& _frame, float _scale)
+{
+  const float corner = CORNER_UNITS * _scale;
+  for (const bool right : {false, true})
+  {
+    for (const bool bottom : {false, true})
+    {
+      _layout.sprites.push_back({.sprite = Hud::Sprite::Corner,
+                                 .area = {right ? _frame.left + _frame.width - corner : _frame.left,
+                                          bottom ? _frame.top + _frame.height - corner : _frame.top, corner, corner, WINDOW_EDGE_COLOR},
+                                 .mirrorX = right,
+                                 .mirrorY = bottom});
+    }
+  }
+}
 
 // Opens a window in the layout: its frame, title bar, close box and corners, its place in the layout's lists, and its
 // title, unless the caller draws its own. The body below the title bar is _bodyHeightUnits tall; what goes in it is the caller's, and returns the body's top
@@ -480,21 +479,18 @@ float OpenWindow(Hud::Layout& _layout, Outpost::WindowKind _kind, std::string _t
       {std::move(_title), left + (PADDING * _scale), top + (TITLE_TEXT_INSET * _scale), TEXT_COLOR, Hud::Typeface::Title});
   _layout.texts.push_back({std::string(CLOSE_MARK), window.closeBox.left + (CLOSE_TEXT_LEFT * _scale), top + (TITLE_TEXT_INSET * _scale),
                            TEXT_COLOR, Hud::Typeface::Title});
-  const float corner = CORNER_UNITS * _scale;
-  const Hud::Rect& frame = window.frame;
-  for (const bool right : {false, true})
-  {
-    for (const bool bottom : {false, true})
-    {
-      _layout.sprites.push_back({.sprite = Hud::Sprite::Corner,
-                                 .area = {right ? frame.left + frame.width - corner : frame.left,
-                                          bottom ? frame.top + frame.height - corner : frame.top, corner, corner, WINDOW_EDGE_COLOR},
-                                 .mirrorX = right,
-                                 .mirrorY = bottom});
-    }
-  }
+  AddCorners(_layout, window.frame, _scale);
   _layout.windows.push_back(window);
   return top + titleHeight;
+}
+
+// A panel of the HUD, in pixels, in a window's look though it is anchored and has no title bar (ADR-043): a window's body
+// and a bracket at each corner. It returns the body.
+Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, float _height, float _scale)
+{
+  const Hud::Rect body = _layout.panels.emplace_back(Hud::Rect{_left, _top, _width, _height, WINDOW_COLOR});
+  AddCorners(_layout, body, _scale);
+  return body;
 }
 
 // The designer's window (Phase 1 design §11), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
@@ -538,6 +534,11 @@ constexpr float LABEL_TRACKING_UNITS = 2.0f;
 // a little narrower.
 constexpr float MONO_ADVANCE = 0.6f;
 constexpr float CONDENSED_ADVANCE = 0.52f;
+// The name face's letters, capitals and small letters together, are about half its size. The title and name faces' sizes
+// are those Hud::Typefaces gives them.
+constexpr float NAME_ADVANCE = 0.5f;
+constexpr float TITLE_FACE_UNITS = 22.0f;
+constexpr float NAME_FACE_UNITS = 16.0f;
 
 // The mockup's colors (gate H6, confirmed at the owner's run), sampled from it and made linear, as the render target
 // encodes them to sRGB.
@@ -701,7 +702,7 @@ public:
   // An amount of Ore that ends at _right: Ore's diamond, then the figure, in _face at _sizeUnits.
   void DiamondAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, float _sizeUnits, const DirectX::XMFLOAT4& _color)
   {
-    const std::string figure = std::to_string(_ore);
+    const std::string figure = Outpost::WithThousands(_ore);
     const float width = CharactersOf(figure) * _sizeUnits * (_face == Hud::Typeface::Title ? CONDENSED_ADVANCE : MONO_ADVANCE);
     const float mark = std::round(_sizeUnits * 0.6f);
     Sprite(Hud::Sprite::OreMark, _right - width - mark - 5.0f, _top + ((_sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
@@ -730,6 +731,34 @@ private:
   float m_originY;
   float m_scale;
 };
+
+// A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
+// any cost after a '|' as Ore's diamond and the figure at its right, and its place among the actions when it does
+// something.
+void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
+{
+  Painter paint(_layout, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
+  const float width = _area.width / _scale;
+  const float height = _area.height / _scale;
+  const Hud::Rect face = paint.Panel(0.0f, 0.0f, width, height,
+                                     _button.selected  ? PICKED_COLOR
+                                     : _button.enabled ? CARD_COLOR
+                                                       : FIELD_COLOR);
+  if (_button.enabled)
+    paint.Press(face, _button.action);
+  paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : EDGE_COLOR);
+  const size_t split = _button.label.find('|');
+  paint.Text(_button.label.substr(0, split), BUTTON_INSET, (height - NAME_LINE_UNITS) / 2.0f,
+             _button.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Name);
+  if (split == std::string::npos)
+    return;
+  const std::string figure = _button.label.substr(split + 1);
+  std::int32_t cost = 0;
+  if (std::from_chars(figure.data(), figure.data() + figure.size(), cost).ec != std::errc{})
+    return;
+  paint.DiamondAndFigure(cost, width - BUTTON_INSET, (height - FIGURE_LINE_UNITS) / 2.0f, Hud::Typeface::Figure, 13.0f,
+                         _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+}
 
 void LayDesigner(Hud::Layout& _layout, const Hud::DesignerPanel& _panel, Outpost::WindowManager::Point _corner, float _scale)
 {
@@ -933,33 +962,42 @@ void LayDesigner(Hud::Layout& _layout, const Hud::DesignerPanel& _panel, Outpost
 }
 
 // The production and research windows (Phase 1 design §12), in the designer's look, in reference units from the window's
-// top-left corner: a hatched header with the window's subject and the Ore, the queue as five rows, and the cards that add
-// to it.
-constexpr float PRODUCTION_WIDTH = 480.0f;
-constexpr float RESEARCH_WIDTH = 560.0f;
+// top-left corner: a hatched header with the window's subject and the Ore, the cards that add to the queue, and under them
+// the queue, a row for each job. The cards stay where they are as the queue grows, so that one can be clicked again and
+// again, and the window grows at its foot (ADR-043). Both windows are as wide, so that a design's name fits its card.
+constexpr float QUEUE_WINDOW_WIDTH = 560.0f;
 constexpr float WINDOW_INSET = 24.0f;
-constexpr float QUEUE_LABEL_TOP = 84.0f;
-constexpr float QUEUE_ROWS_TOP = 104.0f;
+// A section's label, and how far under it what it labels starts.
+constexpr float SECTION_TOP = 84.0f;
+constexpr float SECTION_BODY_GAP = 20.0f;
 constexpr float QUEUE_ROW_HEIGHT = 30.0f;
 constexpr float QUEUE_ROW_GAP = 4.0f;
 constexpr float QUEUE_BAR_WIDTH = 120.0f;
 constexpr float OPTION_HEIGHT = 48.0f;
 constexpr float TOPIC_HEIGHT = 64.0f;
 constexpr float CARD_SPACING = 8.0f;
+// A card's text stands this far in from its edges.
+constexpr float CARD_INSET = 12.0f;
 // Where the production and research windows stand at first: under the Ore panel and the research line.
 constexpr float WINDOWS_TOP = 128.0f;
+constexpr float CARDS_TOP = SECTION_TOP + SECTION_BODY_GAP;
 
-// Where the cards under the queue start: under its five rows and a label.
-constexpr float CardsTop() noexcept
-{
-  return QUEUE_ROWS_TOP + (static_cast<float>(Outpost::QUEUE_LIMIT) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP)) + 12.0f + SECTION_LABEL_HEIGHT;
-}
-
-// The height of _lines lines of cards _cardHeight tall, at least one, and the window's margin under them.
-float CardsHeight(std::size_t _lines, float _cardHeight) noexcept
+// The foot of _lines lines of cards _cardHeight tall, at least one.
+float CardsBottom(std::size_t _lines, float _cardHeight) noexcept
 {
   const auto lines = static_cast<float>(std::max<std::size_t>(_lines, 1));
-  return (lines * (_cardHeight + CARD_SPACING)) - CARD_SPACING + SECTION_GAP;
+  return CARDS_TOP + (lines * (_cardHeight + CARD_SPACING)) - CARD_SPACING;
+}
+
+// The queue's label stands under cards whose foot is at _cardsBottom; the window ends under its _jobs rows.
+float QueueTop(float _cardsBottom) noexcept
+{
+  return _cardsBottom + SECTION_GAP;
+}
+
+float QueueWindowHeight(float _cardsBottom, std::size_t _jobs) noexcept
+{
+  return QueueTop(_cardsBottom) + SECTION_BODY_GAP + (static_cast<float>(_jobs) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP)) + SECTION_GAP;
 }
 
 // A window's header: its subject in the title face, and the Ore.
@@ -970,22 +1008,19 @@ void Header(Painter& _paint, std::string _subject, std::int32_t _ore, float _wid
   _paint.OreBox(_ore, _widthUnits - WINDOW_INSET);
 }
 
-// A queue as five rows under its label: each job's name, the front one's progress or its wait for Ore, and the free slots
-// empty.
-void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float _widthUnits)
+// A queue under its label at _top: a row for each job, with its name, and the front one's progress or its wait for Ore.
+// The label counts the jobs against the queue's limit, which says how many more it takes.
+void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float _widthUnits, float _top)
 {
-  _paint.Text(std::format("QUEUE{}{} / {}", DOT, _queue.size(), Outpost::QUEUE_LIMIT), WINDOW_INSET, QUEUE_LABEL_TOP, LABEL_COLOR,
+  _paint.Text(std::format("QUEUE{}{} / {}", DOT, _queue.size(), Outpost::QUEUE_LIMIT), WINDOW_INSET, _top, LABEL_COLOR,
               Hud::Typeface::Label, _paint.Tracking());
   const float width = _widthUnits - (2.0f * WINDOW_INSET);
-  for (std::size_t slot = 0; slot < Outpost::QUEUE_LIMIT; ++slot)
+  for (std::size_t slot = 0; slot < _queue.size(); ++slot)
   {
-    const float top = QUEUE_ROWS_TOP + (static_cast<float>(slot) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP));
-    const bool filled = slot < _queue.size();
-    _paint.Panel(WINDOW_INSET, top, width, QUEUE_ROW_HEIGHT, filled ? CARD_COLOR : FIELD_COLOR);
+    const float top = _top + SECTION_BODY_GAP + (static_cast<float>(slot) * (QUEUE_ROW_HEIGHT + QUEUE_ROW_GAP));
+    _paint.Panel(WINDOW_INSET, top, width, QUEUE_ROW_HEIGHT, CARD_COLOR);
     _paint.Outline(WINDOW_INSET, top, width, QUEUE_ROW_HEIGHT, EDGE_COLOR);
-    _paint.Text(std::to_string(slot + 1), WINDOW_INSET + 10.0f, top + 7.0f, filled ? LABEL_COLOR : FAINT_COLOR, Hud::Typeface::Figure);
-    if (!filled)
-      continue;
+    _paint.Text(std::to_string(slot + 1), WINDOW_INSET + 10.0f, top + 7.0f, LABEL_COLOR, Hud::Typeface::Figure);
     const Hud::QueueLine& line = _queue[slot];
     _paint.Text(line.name, WINDOW_INSET + 32.0f, top + 5.0f, TEXT_COLOR, Hud::Typeface::Name);
     const float right = WINDOW_INSET + width - 10.0f;
@@ -1004,83 +1039,92 @@ void QueueRows(Painter& _paint, const std::vector<Hud::QueueLine>& _queue, float
   }
 }
 
-float ProductionHeight(const Hud::ProductionPanel& _panel) noexcept
+std::size_t OptionLines(const Hud::ProductionPanel& _panel) noexcept
 {
-  return CardsTop() + CardsHeight((_panel.options.size() + 1) / 2, OPTION_HEIGHT);
+  return (_panel.options.size() + 1) / 2;
 }
 
-// The production window: the producer with arrows to the others, its queue, and a card for each thing it builds.
+float ProductionHeight(const Hud::ProductionPanel& _panel) noexcept
+{
+  return QueueWindowHeight(CardsBottom(OptionLines(_panel), OPTION_HEIGHT), _panel.queue.size());
+}
+
+// The production window: the producer with arrows to the others, a card for each thing it builds, and its queue.
 void LayProduction(Hud::Layout& _layout, const Hud::ProductionPanel& _panel, Outpost::WindowManager::Point _corner, float _scale)
 {
-  (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, PRODUCTION_WIDTH,
+  (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, QUEUE_WINDOW_WIDTH,
                    ProductionHeight(_panel) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _corner, _scale);
   paint.SmallButton("<", WINDOW_INSET, 9.0f, _panel.canStep, {.kind = Hud::ActionKind::PreviousProducer});
   paint.SmallButton(">", WINDOW_INSET + SMALL_BUTTON_UNITS + 4.0f, 9.0f, _panel.canStep, {.kind = Hud::ActionKind::NextProducer});
   paint.Text("PRODUCTION", WINDOW_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.producer, _panel.ore, PRODUCTION_WIDTH);
-  QueueRows(paint, _panel.queue, PRODUCTION_WIDTH);
+  Header(paint, _panel.producer, _panel.ore, QUEUE_WINDOW_WIDTH);
 
-  const float top = CardsTop();
-  paint.Text("BUILD", WINDOW_INSET, top - SECTION_LABEL_HEIGHT + 4.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float width = (PRODUCTION_WIDTH - (2.0f * WINDOW_INSET) - CARD_SPACING) / 2.0f;
+  paint.Text("BUILD", WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  const float width = (QUEUE_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - CARD_SPACING) / 2.0f;
+  // A design's name is cut short only where it would run past its card.
+  const auto nameCharacters = static_cast<std::size_t>((width - (2.0f * CARD_INSET)) / (NAME_FACE_UNITS * NAME_ADVANCE));
   for (std::size_t i = 0; i < _panel.options.size(); ++i)
   {
     const Hud::QueueOption& option = _panel.options[i];
     const std::size_t line = i / 2;
     const std::size_t column = i % 2;
     const float left = WINDOW_INSET + (static_cast<float>(column) * (width + CARD_SPACING));
-    const float cardTop = top + (static_cast<float>(line) * (OPTION_HEIGHT + CARD_SPACING));
+    const float cardTop = CARDS_TOP + (static_cast<float>(line) * (OPTION_HEIGHT + CARD_SPACING));
     const Hud::Rect face = paint.Panel(left, cardTop, width, OPTION_HEIGHT, option.enabled ? CARD_COLOR : FIELD_COLOR);
     if (option.enabled)
       paint.Press(face, option.action);
     paint.Outline(left, cardTop, width, OPTION_HEIGHT, EDGE_COLOR);
-    paint.Text(CutShort(option.name, CHIP_NAME_CHARACTERS), left + 12.0f, cardTop + 6.0f, option.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR,
+    paint.Text(CutShort(option.name, nameCharacters), left + CARD_INSET, cardTop + 6.0f, option.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR,
                Hud::Typeface::Name);
-    paint.Text(option.detail, left + 12.0f, cardTop + 28.0f, option.enabled ? CODE_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-    paint.DiamondAndFigure(option.cost, left + width - 12.0f, cardTop + 28.0f, Hud::Typeface::Figure, 13.0f,
+    paint.Text(option.detail, left + CARD_INSET, cardTop + 28.0f, option.enabled ? CODE_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
+    paint.DiamondAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure, 13.0f,
                            option.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
   }
   if (!_panel.hint.empty())
-    paint.Text(_panel.hint, WINDOW_INSET, top + 16.0f, LABEL_COLOR, Hud::Typeface::Detail);
+    paint.Text(_panel.hint, WINDOW_INSET, CARDS_TOP + 16.0f, LABEL_COLOR, Hud::Typeface::Detail);
+  QueueRows(paint, _panel.queue, QUEUE_WINDOW_WIDTH, QueueTop(CardsBottom(OptionLines(_panel), OPTION_HEIGHT)));
+}
+
+std::size_t TopicLines(const Hud::ResearchPanel& _panel) noexcept
+{
+  const std::size_t shown = std::min(Hud::TOPICS_SHOWN, _panel.topics.size() - std::min(_panel.firstTopic, _panel.topics.size()));
+  return (shown + Hud::TOPIC_COLUMNS - 1) / Hud::TOPIC_COLUMNS;
 }
 
 float ResearchHeight(const Hud::ResearchPanel& _panel) noexcept
 {
-  const std::size_t shown = std::min(Hud::TOPICS_SHOWN, _panel.topics.size() - std::min(_panel.firstTopic, _panel.topics.size()));
-  return CardsTop() + CardsHeight((shown + Hud::TOPIC_COLUMNS - 1) / Hud::TOPIC_COLUMNS, TOPIC_HEIGHT);
+  return QueueWindowHeight(CardsBottom(TopicLines(_panel), TOPIC_HEIGHT), _panel.queue.size());
 }
 
-// The research window: the Research Lab, its queue, and a card for each topic not researched or queued yet, a page of
-// them at a time with arrows to scroll by a row.
+// The research window: the Research Lab, a card for each topic not researched or queued yet, a page of them at a time with
+// arrows to scroll by a row, and its queue.
 void LayResearch(Hud::Layout& _layout, const Hud::ResearchPanel& _panel, Outpost::WindowManager::Point _corner, float _scale)
 {
-  (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, RESEARCH_WIDTH,
+  (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, QUEUE_WINDOW_WIDTH,
                    ResearchHeight(_panel) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _corner, _scale);
   paint.Text("RESEARCH", WINDOW_INSET, 11.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.lab, _panel.ore, RESEARCH_WIDTH);
-  QueueRows(paint, _panel.queue, RESEARCH_WIDTH);
+  Header(paint, _panel.lab, _panel.ore, QUEUE_WINDOW_WIDTH);
 
-  const float top = CardsTop();
-  paint.Text("TOPICS", WINDOW_INSET, top - SECTION_LABEL_HEIGHT + 4.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  paint.Text("TOPICS", WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
   if (_panel.topics.size() > Hud::TOPICS_SHOWN)
   {
-    const float arrowsLeft = RESEARCH_WIDTH - WINDOW_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
-    const float arrowsTop = top - SECTION_LABEL_HEIGHT;
+    const float arrowsLeft = QUEUE_WINDOW_WIDTH - WINDOW_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
+    const float arrowsTop = SECTION_TOP - 4.0f;
     paint.SmallButton("<", arrowsLeft, arrowsTop, _panel.firstTopic > 0, {.kind = Hud::ActionKind::PreviousTopics});
     paint.SmallButton(">", arrowsLeft + SMALL_BUTTON_UNITS + 4.0f, arrowsTop, _panel.firstTopic + Hud::TOPICS_SHOWN < _panel.topics.size(),
                       {.kind = Hud::ActionKind::NextTopics});
   }
   const auto columns = static_cast<float>(Hud::TOPIC_COLUMNS);
-  const float width = (RESEARCH_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
+  const float width = (QUEUE_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
   for (std::size_t i = _panel.firstTopic, shown = 0; i < _panel.topics.size() && shown < Hud::TOPICS_SHOWN; ++i, ++shown)
   {
     const Hud::TopicCard& topic = _panel.topics[i];
     const std::size_t line = shown / Hud::TOPIC_COLUMNS;
     const std::size_t column = shown % Hud::TOPIC_COLUMNS;
     const float left = WINDOW_INSET + (static_cast<float>(column) * (width + CARD_SPACING));
-    const float cardTop = top + (static_cast<float>(line) * (TOPIC_HEIGHT + CARD_SPACING));
+    const float cardTop = CARDS_TOP + (static_cast<float>(line) * (TOPIC_HEIGHT + CARD_SPACING));
     const bool blocked = !topic.needs.empty();
     const Hud::Rect face = paint.Panel(left, cardTop, width, TOPIC_HEIGHT,
                                        blocked         ? LOCKED_COLOR
@@ -1093,18 +1137,19 @@ void LayResearch(Hud::Layout& _layout, const Hud::ResearchPanel& _panel, Outpost
     // A gateway, which opens its tier, is edged in gold.
     paint.Outline(left, cardTop, width, TOPIC_HEIGHT, topic.gateway ? GOLD_COLOR : EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
-    paint.Text(topic.name, left + 12.0f, cardTop + 6.0f, color, Hud::Typeface::Name);
-    paint.DiamondAndFigure(topic.cost, left + width - 12.0f, cardTop + 9.0f, Hud::Typeface::Figure, 13.0f,
+    paint.Text(topic.name, left + CARD_INSET, cardTop + 6.0f, color, Hud::Typeface::Name);
+    paint.DiamondAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure, 13.0f,
                            topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
-    paint.Text(topic.effect, left + 12.0f, cardTop + 28.0f, topic.enabled ? NUMBERS_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
+    paint.Text(topic.effect, left + CARD_INSET, cardTop + 28.0f, topic.enabled ? NUMBERS_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
     if (blocked)
     {
-      paint.Sprite(Hud::Sprite::Checkbox, left + 12.0f, cardTop + 46.0f, 10.0f, AMBER_COLOR);
+      paint.Sprite(Hud::Sprite::Checkbox, left + CARD_INSET, cardTop + 46.0f, 10.0f, AMBER_COLOR);
       paint.Text(topic.needs, left + 28.0f, cardTop + 44.0f, AMBER_COLOR, Hud::Typeface::Label);
     }
     else
-      paint.Text(topic.time, left + 12.0f, cardTop + 44.0f, topic.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
+      paint.Text(topic.time, left + CARD_INSET, cardTop + 44.0f, topic.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
   }
+  QueueRows(paint, _panel.queue, QUEUE_WINDOW_WIDTH, QueueTop(CardsBottom(TopicLines(_panel), TOPIC_HEIGHT)));
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
@@ -1156,18 +1201,19 @@ Hud::Layout Hud::LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels
   const std::array<Button, 2> buttons{
     {{.label = "Start skirmish", .action = {.kind = ActionKind::StartSkirmish}}, {.label = "Quit", .action = {.kind = ActionKind::Quit}}}};
   const auto count = static_cast<float>(buttons.size());
-  const float panelHeight = (2.0f * PADDING) + (2.0f * LINE_STEP) + BUTTON_GAP + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
-  const float left = (static_cast<float>(_widthPixels) / 2.0f) - (MENU_WIDTH / 2.0f * scale);
-  const float top = (static_cast<float>(_heightPixels) / 2.0f) - (panelHeight / 2.0f * scale);
-  layout.panels.push_back({left, top, MENU_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
-  const float inner = left + (PADDING * scale);
-  layout.texts.push_back({"Outpost Commander", inner, top + (PADDING * scale), ORE_COLOR});
-  layout.texts.push_back({"A skirmish against the AI", inner, top + ((PADDING + LINE_STEP) * scale), DIM_TEXT_COLOR});
-  float y = top + ((PADDING + (2.0f * LINE_STEP) + BUTTON_GAP) * scale);
+  const float heightUnits =
+    (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
+  const WindowManager::Point corner{.xUnits = (static_cast<float>(_widthPixels) / scale / 2.0f) - (MENU_WIDTH / 2.0f),
+                                    .yUnits = (static_cast<float>(_heightPixels) / scale / 2.0f) - (heightUnits / 2.0f)};
+  (void)Frame(layout, corner.xUnits * scale, corner.yUnits * scale, MENU_WIDTH * scale, heightUnits * scale, scale);
+  Painter paint(layout, corner, scale);
+  paint.Text("Outpost Commander", PADDING, PADDING, GOLD_COLOR, Typeface::Title);
+  paint.Text("A skirmish against the AI", PADDING, PADDING + TITLE_LINE_UNITS, DIM_TEXT_COLOR, Typeface::Name);
+  float top = PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP;
   for (const Button& button : buttons)
   {
-    AddButton(layout, scale, {inner, y, (MENU_WIDTH - (2.0f * PADDING)) * scale, BUTTON_HEIGHT * scale}, button);
-    y += (BUTTON_HEIGHT + BUTTON_GAP) * scale;
+    AddButton(layout, scale, paint.Area(PADDING, top, MENU_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT, CARD_COLOR), button);
+    top += BUTTON_HEIGHT + BUTTON_GAP;
   }
   return layout;
 }
@@ -1562,63 +1608,71 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   const auto height = static_cast<float>(_heightPixels);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
 
-  // Top-left anchor: the Ore, and what the rigs earn each second.
-  const float oreLeft = MARGIN * scale;
-  const float oreTop = MARGIN * scale;
-  layout.panels.push_back({oreLeft, oreTop, ORE_PANEL_WIDTH * scale, ORE_PANEL_HEIGHT * scale, PANEL_COLOR});
-  const float textTop = oreTop + ((ORE_PANEL_HEIGHT - LINE_STEP) / 2.0f * scale);
-  layout.texts.push_back({"Ore", oreLeft + (PADDING * scale), textTop, TEXT_COLOR});
-  layout.texts.push_back({WithThousands(_content.ore), oreLeft + (ORE_VALUE_LEFT * scale), textTop, ORE_COLOR});
-  const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
-  const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
-                                                          : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
-  layout.texts.push_back({incomeText, oreLeft + (ORE_INCOME_LEFT * scale), textTop, TEXT_COLOR});
-
-  // Under the Ore: the research under way.
-  if (!_content.research.empty())
+  // Every panel of the HUD is in the windows' look (ADR-043), and is laid out in reference units from its own top-left
+  // corner, as a window's content is.
+  const float screenWidthUnits = width / scale;
+  const float screenHeightUnits = height / scale;
+  const auto frame = [&layout, scale](WindowManager::Point _corner, float _widthUnits, float _heightUnits)
   {
-    const float top = oreTop + ((ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP) * scale);
-    layout.panels.push_back({oreLeft, top, RESEARCH_PANEL_WIDTH * scale, ORE_PANEL_HEIGHT * scale, PANEL_COLOR});
-    layout.texts.push_back(
-      {_content.research, oreLeft + (PADDING * scale), top + ((ORE_PANEL_HEIGHT - LINE_STEP) / 2.0f * scale), TEXT_COLOR});
+    (void)Frame(layout, _corner.xUnits * scale, _corner.yUnits * scale, _widthUnits * scale, _heightUnits * scale, scale);
+    return Painter(layout, _corner, scale);
+  };
+  const auto addButton = [&layout, scale](const Rect& _area, const Button& _button) { AddButton(layout, scale, _area, _button); };
+
+  // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second.
+  {
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    paint.DiamondAndFigure(_content.ore, ORE_FIGURE_RIGHT, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, TITLE_FACE_UNITS,
+                           GOLD_COLOR);
+    const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
+    const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
+                                                            : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
+    paint.Text(incomeText, ORE_INCOME_LEFT, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR, Typeface::Figure);
   }
 
-  const auto addButton = [&layout, scale](const Rect& _area, const Button& _button) { AddButton(layout, scale, _area, _button); };
+  // Under the Ore: the research under way.
+  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
+  if (!_content.research.empty())
+  {
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, RESEARCH_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    paint.Text(_content.research, PADDING, (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
+  }
 
   // Top-middle anchor: what a click on the ground will do.
   if (!_content.hint.empty())
   {
-    const float left = (width / 2.0f) - (HINT_PANEL_WIDTH / 2.0f * scale);
-    layout.panels.push_back({left, oreTop, HINT_PANEL_WIDTH * scale, ORE_PANEL_HEIGHT * scale, PANEL_COLOR});
-    layout.texts.push_back({_content.hint, left + (PADDING * scale), textTop, TEXT_COLOR});
+    Painter paint = frame({.xUnits = (screenWidthUnits - HINT_PANEL_WIDTH) / 2.0f, .yUnits = MARGIN}, HINT_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    paint.Text(_content.hint, PADDING, (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f, TEXT_COLOR, Typeface::Name);
   }
 
   // Top-middle anchor, under the hint: how the match ended, and the way back to the menu.
   if (_content.outcome.has_value())
   {
-    const float panelHeight = (2.0f * PADDING) + (2.0f * LINE_STEP) + BUTTON_GAP + BUTTON_HEIGHT;
-    const float left = (width / 2.0f) - (BANNER_WIDTH / 2.0f * scale);
-    const float top = oreTop + ((ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP) * scale);
-    layout.panels.push_back({left, top, BANNER_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
-    const float inner = left + (PADDING * scale);
-    layout.texts.push_back({_content.outcome->title, inner, top + (PADDING * scale), ORE_COLOR});
-    layout.texts.push_back({_content.outcome->detail, inner, top + ((PADDING + LINE_STEP) * scale), TEXT_COLOR});
-    addButton({inner, top + ((PADDING + (2.0f * LINE_STEP) + BUTTON_GAP) * scale), (BANNER_WIDTH - (2.0f * PADDING)) * scale,
-               BUTTON_HEIGHT * scale},
+    const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + BUTTON_HEIGHT;
+    Painter paint = frame({.xUnits = (screenWidthUnits - BANNER_WIDTH) / 2.0f, .yUnits = underOreUnits}, BANNER_WIDTH, heightUnits);
+    paint.Text(_content.outcome->title, PADDING, PADDING, GOLD_COLOR, Typeface::Title);
+    paint.Text(_content.outcome->detail, PADDING, PADDING + TITLE_LINE_UNITS, TEXT_COLOR, Typeface::Name);
+    addButton(paint.Area(PADDING, PADDING + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP, BANNER_WIDTH - (2.0f * PADDING), BUTTON_HEIGHT,
+                         CARD_COLOR),
               {.label = "Back to menu", .action = {.kind = ActionKind::BackToMenu}});
   }
 
-  // Bottom-middle anchor: the selection.
+  // Bottom-middle anchor: the selection, its first line in the title face and the rest in the name face, in a panel as
+  // wide as its longest line.
   if (!_content.selection.empty())
   {
-    const float panelHeight = (2.0f * PADDING) + (LINE_STEP * static_cast<float>(_content.selection.size()));
-    const float left = (width / 2.0f) - (SELECTION_PANEL_WIDTH / 2.0f * scale);
-    const float top = height - ((MARGIN + panelHeight) * scale);
-    layout.panels.push_back({left, top, SELECTION_PANEL_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
-    for (size_t line = 0; line < _content.selection.size(); ++line)
+    float textUnits = CharactersOf(_content.selection.front()) * TITLE_FACE_UNITS * CONDENSED_ADVANCE;
+    for (size_t line = 1; line < _content.selection.size(); ++line)
+      textUnits = std::max(textUnits, CharactersOf(_content.selection[line]) * NAME_FACE_UNITS * NAME_ADVANCE);
+    const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
+    const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
+    Painter paint = frame({.xUnits = (screenWidthUnits - widthUnits) / 2.0f, .yUnits = screenHeightUnits - MARGIN - heightUnits},
+                          widthUnits, heightUnits);
+    paint.Text(_content.selection.front(), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
+    for (size_t line = 1; line < _content.selection.size(); ++line)
     {
-      layout.texts.push_back({_content.selection[line], left + (PADDING * scale),
-                              top + ((PADDING + (LINE_STEP * static_cast<float>(line))) * scale), TEXT_COLOR});
+      paint.Text(_content.selection[line], PADDING, PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)),
+                 NUMBERS_COLOR, Typeface::Name);
     }
   }
 
@@ -1626,14 +1680,15 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   if (!_content.buttons.empty())
   {
     const auto count = static_cast<float>(_content.buttons.size());
-    const float panelHeight = (2.0f * PADDING) + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
-    const float left = width - ((MARGIN + BUTTON_PANEL_WIDTH) * scale);
-    const float top = height - ((MARGIN + panelHeight) * scale);
-    layout.panels.push_back({left, top, BUTTON_PANEL_WIDTH * scale, panelHeight * scale, PANEL_COLOR});
+    const float heightUnits = (2.0f * PADDING) + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);
+    Painter paint = frame({.xUnits = screenWidthUnits - MARGIN - BUTTON_PANEL_WIDTH, .yUnits = screenHeightUnits - MARGIN - heightUnits},
+                          BUTTON_PANEL_WIDTH, heightUnits);
     for (size_t i = 0; i < _content.buttons.size(); ++i)
-      addButton({left + (PADDING * scale), top + ((PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP))) * scale),
-                 (BUTTON_PANEL_WIDTH - (2.0f * PADDING)) * scale, BUTTON_HEIGHT * scale},
+    {
+      addButton(paint.Area(PADDING, PADDING + (static_cast<float>(i) * (BUTTON_HEIGHT + BUTTON_GAP)), BUTTON_PANEL_WIDTH - (2.0f * PADDING),
+                           BUTTON_HEIGHT, CARD_COLOR),
                 _content.buttons[i]);
+    }
   }
 
   // Bottom-left anchor: the minimap, with every mark and the camera's view.
@@ -1642,7 +1697,7 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     const float size = MINIMAP_SIZE * scale;
     const float left = MARGIN * scale;
     const float top = height - ((MARGIN + MINIMAP_SIZE) * scale);
-    layout.panels.push_back({left, top, size, size, PANEL_COLOR});
+    (void)Frame(layout, left, top, size, size, scale);
     const float inner = (MINIMAP_SIZE - (2.0f * MINIMAP_PADDING)) * scale;
     layout.minimap = {left + (MINIMAP_PADDING * scale), top + (MINIMAP_PADDING * scale), inner, inner, MAP_COLOR};
     layout.mapSizeMeters = _content.mapSizeMeters;
@@ -1658,6 +1713,7 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
                                        : mark.side == Side::Own                 ? OWN_COLOR
                                        : mark.side == Side::Enemy               ? ENEMY_COLOR
                                        : mark.kind == EntityKind::AsteroidField ? ASTEROID_FIELD_COLOR
+                                       : mark.kind == EntityKind::Asteroid      ? ORE_ASTEROID_COLOR
                                                                                 : NEUTRAL_COLOR;
       layout.panels.push_back({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, color});
     }
@@ -1711,8 +1767,6 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
 
   // The floating windows (ADR-031), over everything else, back to front: those the manager has open, where it left them,
   // or, without a manager, every window the content has at its default place.
-  const float screenWidthUnits = width / scale;
-  const float screenHeightUnits = height / scale;
   std::vector<WindowKind> backToFront{WindowKind::Production, WindowKind::Research, WindowKind::Designer};
   if (_windows != nullptr)
     backToFront.assign(_windows->FrontToBack().rbegin(), _windows->FrontToBack().rend());
@@ -1732,11 +1786,11 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     }
     // Production and research, at first side by side under the Ore and the research line, clear of the designer.
     else if (kind == WindowKind::Production && _content.production.has_value())
-      LayProduction(layout, *_content.production, place(kind, {.xUnits = MARGIN, .yUnits = WINDOWS_TOP}, PRODUCTION_WIDTH), scale);
+      LayProduction(layout, *_content.production, place(kind, {.xUnits = MARGIN, .yUnits = WINDOWS_TOP}, QUEUE_WINDOW_WIDTH), scale);
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
     {
       const WindowManager::Point corner =
-        place(kind, {.xUnits = (2.0f * MARGIN) + PRODUCTION_WIDTH, .yUnits = WINDOWS_TOP}, RESEARCH_WIDTH);
+        place(kind, {.xUnits = (2.0f * MARGIN) + QUEUE_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, QUEUE_WINDOW_WIDTH);
       LayResearch(layout, *_content.laboratory, corner, scale);
     }
   }

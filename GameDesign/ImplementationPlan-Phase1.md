@@ -32,6 +32,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 9.5 | The HUD in the windows' look, and faint rings | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD tested in the container, not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
@@ -40,7 +41,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); measured in the container, not yet run against the owner |
+| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -216,6 +217,37 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The look** is the designer's: the window helpers `LayDesigner` had are a `Painter` all three share, with the header band and the Ore box. Production stands at first under the Ore, 480 units wide, and research beside it, 560 wide, clear of the designer.
   - **Tests.** `HudTests`: the panel's open buttons, the production window at a Shipyard, at the Command Station and with neither, the research window with a topic blocked and with no Lab, and the three windows' layout and scrolling. `ProductionTargetTests`.
   - **Not built or run in the container**: the HUD's tests ran there in a standalone build, and the two windows were drawn from `Hud::Lay`'s output with substitute fonts.
+
+### 9.5 — The HUD in the windows' look, and faint rings
+
+- **Goal:** the owner's review of a match's screen on 2026-10-03. The HUD and the windows were two styles, Ore was written two ways, the production window cut names short and always showed five queue rows, and a thick ring under every structure was the loudest thing in a base.
+- **Owner's answers, 2026-10-03:**
+  - The rings are thin and faint, at full strength under the pointer.
+  - The Mining Rig gets a ring of its own.
+  - The HUD fixes go in the same change.
+- **Scope:** `Hud`, `GameClient`'s rings and `MeshPipeline`. Not where a rig stands on its rock (`RigLift`), which waits for the owner's answer on whether its legs or only its drill meet the rock.
+- **ADR:** [ADR-042](../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings, [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
+- **Acceptance:** `HudTests` for the HUD; the rings are the owner's run.
+- **Verify:** CI; **owner run.**
+- **As built:**
+  - **The rings:**
+    - A structure's ring is a line a pixel wide in its side's color at 0.35.
+    - It is at full strength under the pointer, and under every structure while one is placed.
+    - The selection and the placement ghost keep their bands.
+    - A Mining Rig's ring is its own 25 m footprint's, laid over its rock with `MeshPipeline::DrawLineList`.
+  - **The HUD:**
+    - Every panel takes a window's body and corner brackets, and its faces.
+    - Ore is the diamond and the figure in thousands everywhere.
+    - Buttons are cards.
+    - The selection panel fits its lines.
+    - The production and research windows are 560 wide, with their cards first and a row per job under them.
+    - The minimap's ore asteroids are gold.
+  - **Tests.**
+    - `HudTests.LaysTheHudOutInTheWindowsLook`, `WritesOreOneWay`, `KeepsTheCardsStillAsTheQueueGrows` and `FitsTheSelectionPanelToItsLines`.
+    - Three tests changed with the look, as ADR-043 says.
+  - **Not built or run in the container**:
+    - The HUD's tests ran there in a standalone build, and the screens were drawn from `Hud::Lay`'s output with substitute fonts.
+    - `GameClient` and `MeshPipeline` were not compiled there.
 
 ---
 
