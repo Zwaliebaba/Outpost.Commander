@@ -673,7 +673,7 @@ const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
 struct DesignerExtent
 {
   // Where each slot's row starts, and where the rows end.
-  std::array<float, 3> slotTops{};
+  std::array<float, std::tuple_size_v<decltype(Hud::DesignerPanel::slots)>> slotTops{};
   float slotsEnd = 0.0f;
   float sectionsTop = 0.0f;
   float footerTop = 0.0f;
