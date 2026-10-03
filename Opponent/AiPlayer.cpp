@@ -30,6 +30,12 @@ constexpr float RESEND_METERS = 50.0f;
 // large structure can be out of the ship's range; a ship of the attack group this close to its target structure is
 // ordered to attack it, which closes it into range.
 constexpr float CLOSE_IN_METERS = 500.0f;
+// The Defence Platforms planned round the base for its Shipyards (task 12.2) stand in rings toward the map's center: the
+// first this far from the Command Station, beyond the rally, then each ring this much further out, at these turns from
+// the way to the center.
+constexpr float HOME_PLATFORM_RING_METERS = 260.0f;
+constexpr float HOME_PLATFORM_RING_STEP_METERS = 70.0f;
+constexpr std::array<float, 5> HOME_PLATFORM_TURNS_RADIANS{0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 
 float Distance(PlanePosition _a, PlanePosition _b) noexcept
 {
@@ -55,6 +61,18 @@ bool IsStructure(const EntityView& _entity, StructureKind _kind) noexcept
 bool IsBuilt(const EntityView& _entity) noexcept
 {
   return _entity.builtPermille >= Outpost::PERMILLE;
+}
+
+// The highest tier the player has opened by researching its gateway (Phase 1 design §6): 1 before any.
+std::int32_t OpenedTier(const Snapshot& _snapshot) noexcept
+{
+  std::int32_t tier = 1;
+  for (const Outpost::ResearchTopicView& topic : _snapshot.research)
+  {
+    if (topic.gateway && topic.researched)
+      tier = std::max(tier, topic.tier);
+  }
+  return tier;
 }
 
 // The attack group goes for production first: Shipyards, then the Command Station, then anything else (Phase 1 design
@@ -383,6 +401,8 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     AddRigSlot(_snapshot, *asteroid);
     AddPlatformBesideRig(_snapshot, m_slots.size() - 1);
   }
+  for (std::int32_t platform = 0; platform < m_settings.homePlatformsPerShipyard; ++platform)
+    AddHomePlatform(_snapshot, 0);
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
   m_rally = FindPlace(rally, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, 0.0f).value_or(preferred);
@@ -519,6 +539,39 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot)
 
   slot.radiusMeters = type->radiusMeters;
   const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, gap);
+  slot.position = place.value_or(preferred);
+  slot.abandoned = !place.has_value();
+  m_slots.push_back(slot);
+  for (std::int32_t platform = 0; platform < m_settings.homePlatformsPerShipyard; ++platform)
+    AddHomePlatform(_snapshot, slot.minimumIncomeHundredthsPerSecond);
+}
+
+void Outpost::AiPlayer::AddHomePlatform(const Snapshot& _snapshot, std::int32_t _minimumIncomeHundredthsPerSecond)
+{
+  Slot slot{.structure = StructureKind::DefensePlatform,
+            .besideRig = std::nullopt,
+            .minimumIncomeHundredthsPerSecond = _minimumIncomeHundredthsPerSecond};
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::DefensePlatform);
+  if (type == nullptr || !type->buildable)
+  {
+    slot.abandoned = true;
+    m_slots.push_back(slot);
+    return;
+  }
+  const size_t index = m_homePlatforms++;
+  const float fromCenter = std::hypot(m_home.xMeters, m_home.zMeters);
+  const float forwardX = fromCenter > 0.0f ? -m_home.xMeters / fromCenter : 1.0f;
+  const float forwardZ = fromCenter > 0.0f ? -m_home.zMeters / fromCenter : 0.0f;
+  const float turn = HOME_PLATFORM_TURNS_RADIANS[index % HOME_PLATFORM_TURNS_RADIANS.size()];
+  const size_t ringIndex = index / HOME_PLATFORM_TURNS_RADIANS.size();
+  const auto ring = static_cast<float>(ringIndex);
+  const float directionX = (forwardX * std::cos(turn)) - (forwardZ * std::sin(turn));
+  const float directionZ = (forwardX * std::sin(turn)) + (forwardZ * std::cos(turn));
+  const PlanePosition preferred =
+    Along(m_home, directionX, directionZ, HOME_PLATFORM_RING_METERS + (ring * HOME_PLATFORM_RING_STEP_METERS));
+  slot.radiusMeters = type->radiusMeters;
+  const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters,
+                                                       static_cast<float>(m_settings.structureGapMeters));
   slot.position = place.value_or(preferred);
   slot.abandoned = !place.has_value();
   m_slots.push_back(slot);
@@ -727,6 +780,24 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       warships.push_back(&ship);
   }
   std::erase_if(m_attackGroup, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+  // An attack that has lost the settings' share of the ships it set out with falls back to the rally, out of the fight,
+  // and rejoins the reserve, which waits before it attacks again (task 12.2): a lost battle costs part of a fleet, not
+  // all of it.
+  const bool fallBack =
+    !m_attackGroup.empty() && m_settings.retreatLossShare > 0.0 &&
+    static_cast<double>(m_attackGroup.size()) <= static_cast<double>(m_launchShips) * (1.0 - m_settings.retreatLossShare);
+  if (fallBack)
+  {
+    _orders.push_back(MakeCommand(m_player, MoveCommand{.ships = m_attackGroup, .destination = m_rally}));
+    for (const EntityId id : m_attackGroup)
+      m_reserveDestinations[id] = m_rally;
+    m_attackGroup.clear();
+    m_attackTarget = {};
+    m_closingIn.clear();
+    m_searching = false;
+    m_launchShips = 0;
+    m_regroupUntilTick = _snapshot.tick + static_cast<std::uint64_t>(std::llround(m_settings.regroupSeconds * m_ticksPerSecond));
+  }
   std::vector<const EntityView*> reserve;
   for (const EntityView* ship : warships)
   {
@@ -738,7 +809,8 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
 
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
   bool grown = false;
-  if (std::cmp_greater_equal(reserve.size(), m_settings.attackGroupShips))
+  const std::int32_t groupShips = m_settings.attackGroupShips + ((OpenedTier(_snapshot) - 1) * m_settings.attackGroupGrowthPerTier);
+  if (std::cmp_greater_equal(reserve.size(), groupShips) && _snapshot.tick >= m_regroupUntilTick)
   {
     grown = true;
     std::vector<EntityId> joined;
@@ -749,6 +821,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       m_reserveDestinations.erase(ship->id);
     }
     reserve.clear();
+    m_launchShips = m_attackGroup.size();
     if (target != nullptr)
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(joined), .destination = target->position}));
   }

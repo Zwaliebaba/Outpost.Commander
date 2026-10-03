@@ -32,6 +32,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
+| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD and stance tested in the container, not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
@@ -40,6 +41,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
+| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -216,6 +218,47 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Tests.** `HudTests`: the panel's open buttons, the production window at a Shipyard, at the Command Station and with neither, the research window with a topic blocked and with no Lab, and the three windows' layout and scrolling. `ProductionTargetTests`.
   - **Not built or run in the container**: the HUD's tests ran there in a standalone build, and the two windows were drawn from `Hud::Lay`'s output with substitute fonts.
 
+### 9.5 — The HUD in the windows' look, faint rings, and the rig on its legs
+
+- **Goal:** the owner's review of a match's screen on 2026-10-03. The HUD and the windows were two styles, Ore was written two ways, the production window cut names short and always showed five queue rows, and a thick ring under every structure was the loudest thing in a base.
+- **Owner's answers, 2026-10-03:**
+  - The rings are thin and faint, at full strength under the pointer.
+  - The Mining Rig gets a ring of its own.
+  - The HUD fixes go in the same change.
+  - A Mining Rig's legs should touch the rock, with only its drill going in.
+- **Scope:** `Hud`, `GameClient`'s rings and its rig, `MeshPipeline`, and the stance in `Hardpoints`.
+- **ADR:**
+  - [ADR-042](../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings.
+  - [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
+  - [ADR-044](../Design/ADR/ADR-044-rig-stands-on-its-legs.md) for the rig's stance.
+- **Acceptance:** `HudTests` for the HUD; the rings are the owner's run.
+- **Verify:** CI; **owner run.**
+- **As built:**
+  - **The rings:**
+    - A structure's ring is a line a pixel wide in its side's color at 0.35.
+    - It is at full strength under the pointer, and under every structure while one is placed.
+    - The selection and the placement ghost keep their bands.
+    - A Mining Rig's ring is its own 25 m footprint's, laid over its rock with `MeshPipeline::DrawLineList`.
+  - **The rig:**
+    - It tilts about the middle of its feet to the plane that fits the rock under them, then lifts until no foot is in the rock (`StandOnFeet`, `StanceMatrix`).
+    - The three-legged Tarkan rig stands on all three legs, within 0.6 m.
+    - The four-legged Human rig rests on two, and its others hang up to 6.2 m.
+    - On a 45 m rock the crown goes up to 10 m into the Human rig's body.
+  - **The HUD:**
+    - Every panel takes a window's body and corner brackets, and its faces.
+    - Ore is the diamond and the figure in thousands everywhere.
+    - Buttons are cards.
+    - The selection panel fits its lines.
+    - The production and research windows are 560 wide, with their cards first and a row per job under them.
+    - The minimap's ore asteroids are gold.
+  - **Tests.**
+    - `HudTests.LaysTheHudOutInTheWindowsLook`, `WritesOreOneWay`, `KeepsTheCardsStillAsTheQueueGrows` and `FitsTheSelectionPanelToItsLines`.
+    - `HardpointsTests.StandsAPointWhereTheStanceMatrixDrawsIt`, `StandsOnLevelGroundAndTiltsWithASlope`, `StandsItsLegsOnUnevenGround` and `StandsOnlyOverGround`.
+    - Three tests changed with the look, as ADR-043 says.
+  - **Not built or run in the container**:
+    - The HUD's tests ran there in a standalone build, and the screens were drawn from `Hud::Lay`'s output with substitute fonts.
+    - `GameClient` and `MeshPipeline` were not compiled there, nor were `StanceMatrix` and its test, which need DirectXMath. `StandOnFeet` and `StandPoint` were, with the tests' cases and the shipped meshes.
+
 ---
 
 ## Milestone 10 — Tiers
@@ -346,6 +389,29 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The reveal.** Under fog of war, each finished Shipyard of a player without a Command Station is kept among its opponents' remembered structures, refreshed every tick, so they see it and can order an attack on it.
   - **The AI.** Its attack group goes for Shipyards, then the Command Station, then the rest, nearest first in each, and turns to a Shipyard that comes to light. Without its Command Station it plays on, apart from queuing Constructors. It still beats a player who does nothing at 7.8 minutes, and one who holds the middle at 9.0.
   - **Tests.** `MatchOutcomeTests.TheLastShipyardKeepsAPlayerIn`, `AShipyardSiteDoesNotCount` and `ALostCommandStationIsLostForGood`; `AiPlayerTests.AttacksProductionFirst` and `PlaysOnWithoutItsStation`.
+
+### 12.2 — The AI plays a 45–60 minute match
+
+- **Goal:** the owner's request of 2026-10-03. Two AIs ended a match in a median of 24 minutes, decided by one battle at minute 12, before tier 2; matches against the AI should last 45–60 minutes instead.
+- **Owner's answers, 2026-10-03:** change the AI's behavior first, through `Opponent.json` where possible, and come back before changing the game's rules; done when the median of seeds 1–40 falls within 45–60 minutes, with the spread reported.
+- **Scope:** `AiPlayer`, `AiSettings` and `Opponent.json`. Not `Tuning.json` or the simulation.
+- **ADR:** a new one; gate G9's 12 ships are superseded.
+- **Acceptance:** the median of `--ai-matches`' seeds 1–40 in the container; `AiPlayerTests` and `AiSettingsTests` for the new behavior.
+- **Verify:** the AI matches in the container; CI; **owner run.**
+- **As built:** [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md).
+  - **The behavior.**
+    - An attack group of 20 warships, and 12 more for each tier opened.
+    - Falling back to the rally once an attack has lost 30% of its ships, then 150 seconds before the next.
+    - 2 Defence Platforms round the base for each Shipyard.
+  - **What it gives.**
+    - A median of 53.9 minutes for seeds 1–40, the middle half 43.0–74.0.
+    - 50.8 minutes for seeds 41–80, run afterwards as a check, of which 3 had not ended at 150 minutes.
+    - 56.3 minutes for the switch's seeds 1–10.
+    - Of all 80, 23 end within 45–60 minutes.
+    - The seat bias is gone: 39 wins against 38.
+    - Only 2 of the 80 reach tier 3.
+  - **Tried and dropped:** falling back from a stronger fleet, which gave 32–34 minutes; and leaving the enemy's base alone until a later tier, which gave 26 minutes at tier 2 and stalled 36 of 40 matches at tier 3.
+  - **Tests.** `AiPlayerTests.FallsBackAfterLosingHalfAndRegroups`, `GrowsItsAttackGroupWithEachTier` and `FortifiesItsBaseForEachShipyard`; `AttacksOnceItsGroupHasGathered` in place of `AttacksOnceTwelveHaveGathered`; `AiSettingsTests` reads the new values and refuses a fall-back share of 1.
 
 ---
 

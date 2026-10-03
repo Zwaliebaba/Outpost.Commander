@@ -47,11 +47,18 @@ template <typename Element, typename IdType> bool Exists(const std::vector<Eleme
 TEST_CLASS(AiSettingsTests)
 {
 public:
-  // Gate G9 (owner, 2026-10-01): the AI attacks with twelve ships. The rest is the owner's milestone 6 answers.
+  // Gate G9 (owner, 2026-10-01) had the AI attack with twelve ships; task 12.2 tuned the attack so that two AIs play a
+  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, falling back after
+  // losing three in ten and regrouping for 150 seconds, behind two Defence Platforms for each Shipyard. The rest is the
+  // owner's milestone 6 answers.
   TEST_METHOD(LoadsTheRepositoryFile)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
-    Assert::AreEqual(12, settings.attackGroupShips);
+    Assert::AreEqual(20, settings.attackGroupShips);
+    Assert::AreEqual(12, settings.attackGroupGrowthPerTier);
+    Assert::AreEqual(0.3, settings.retreatLossShare);
+    Assert::AreEqual(150.0, settings.regroupSeconds);
+    Assert::AreEqual(2, settings.homePlatformsPerShipyard);
     Assert::AreEqual(60.0, settings.reviewIntervalSeconds);
     Assert::AreEqual(4, settings.constructors);
     Assert::AreEqual(10.0, settings.incomePerShipyardOrePerSecond);
@@ -94,7 +101,7 @@ public:
 
   TEST_METHOD(RejectsAMissingOrUnknownMember)
   {
-    ExpectLoadError(Replace("\"attackGroupShips\": 12,", ""), "has no \"attackGroupShips\"");
+    ExpectLoadError(Replace("\"attackGroupShips\": 20,", ""), "has no \"attackGroupShips\"");
     ExpectLoadError(Replace("\"constructors\": 4,", "\"constructors\": 4, \"constructor\": 4,"),
                     "constructor: is not a member the game knows");
     ExpectLoadError(Replace("\"defaultDesign\": { \"hull\": 2, ", "\"defaultDesign\": { "), "defaultDesign: has no \"hull\"");
@@ -102,9 +109,10 @@ public:
 
   TEST_METHOD(RejectsAWrongNumber)
   {
-    ExpectLoadError(Replace("\"attackGroupShips\": 12,", "\"attackGroupShips\": 0,"), "attackGroupShips");
+    ExpectLoadError(Replace("\"attackGroupShips\": 20,", "\"attackGroupShips\": 0,"), "attackGroupShips");
     ExpectLoadError(Replace("\"reviewIntervalSeconds\": 60,", "\"reviewIntervalSeconds\": 0,"), "reviewIntervalSeconds");
     ExpectLoadError(Replace("\"shipyardQueueJobs\": 2,", "\"shipyardQueueJobs\": 6,"), "shipyardQueueJobs");
+    ExpectLoadError(Replace("\"retreatLossShare\": 0.3,", "\"retreatLossShare\": 1,"), "retreatLossShare");
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [1, 1,"), "researchOrder[1]");
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [0, 2,"), "researchOrder[0]");
   }

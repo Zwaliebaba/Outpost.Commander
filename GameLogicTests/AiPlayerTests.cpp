@@ -85,12 +85,13 @@ private:
 class AiMatch
 {
 public:
-  explicit AiMatch(std::uint64_t _seed = 3, std::optional<Outpost::Map> _map = std::nullopt)
+  explicit AiMatch(std::uint64_t _seed = 3, std::optional<Outpost::Map> _map = std::nullopt,
+                   std::optional<Outpost::AiSettings> _settings = std::nullopt)
     : m_map(_map.has_value() ? std::move(*_map) : Outpost::LoadMap(ReadRepositoryMap())),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = _seed}),
       m_human(m_server.Connect(HUMAN)),
       m_aiConnection(m_server.Connect(AI)),
-      m_ai(RepositorySettings(), m_server.TicksPerSecond())
+      m_ai(_settings.has_value() ? std::move(*_settings) : RepositorySettings(), m_server.TicksPerSecond())
   {
     m_server.World().PlaceStartingBases(m_map);
   }
@@ -198,6 +199,17 @@ template <typename Order> std::vector<Order> OrdersOf(const std::vector<Outpost:
       orders.push_back(*order);
   }
   return orders;
+}
+// The repository's settings with the attack's numbers fixed, so that a test of how the AI attacks does not move with
+// their tuning (task 12.2): a group of 12 that falls back after losing half and regroups for 30 seconds.
+Outpost::AiSettings AttackSettings()
+{
+  Outpost::AiSettings settings = RepositorySettings();
+  settings.attackGroupShips = 12;
+  settings.attackGroupGrowthPerTier = 0;
+  settings.retreatLossShare = 0.5;
+  settings.regroupSeconds = 30.0;
+  return settings;
 }
 } // namespace
 
@@ -405,10 +417,13 @@ public:
   }
 
   // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times 10 Ore/s, so that its Shipyards
-  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 48.75 Ore/s, and has 4.
+  // spend about what its rigs earn. With all six rigs and Improved Extraction it earns 48.75 Ore/s, and has 4. Without the
+  // platforms task 12.2 adds for each Shipyard, which spend Ore first and so put the timings below later.
   TEST_METHOD(BuildsShipyardsByIncome)
   {
-    AiMatch match;
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.homePlatformsPerShipyard = 0;
+    AiMatch match(3, std::nullopt, settings);
     const auto shipyards = [&match]
     {
       const Outpost::Snapshot view = match.View(AI);
@@ -470,22 +485,24 @@ public:
     Assert::IsTrue(match.Ai().ProductionDesign() == RepositorySettings().defaultDesign);
   }
 
-  // Gate G9: the reserve waits until twelve warships have gathered, and then attacks the enemy's base.
-  TEST_METHOD(AttacksOnceTwelveHaveGathered)
+  // Gate G9, which task 12.2 raised to the settings' twenty (owner, 2026-10-03): the reserve waits until the attack group
+  // has gathered, and then attacks the enemy's base.
+  TEST_METHOD(AttacksOnceItsGroupHasGathered)
   {
     AiMatch match;
+    const int groupShips = RepositorySettings().attackGroupShips;
     const Outpost::PlanePosition gathering{700.0f, 600.0f};
-    std::vector<Outpost::EntityId> ships = match.Spawn(AI, BRAWLER, 11, gathering);
+    std::vector<Outpost::EntityId> ships = match.Spawn(AI, BRAWLER, groupShips - 1, gathering);
     match.Run(5.0);
     Assert::AreEqual(size_t{0}, match.Ai().AttackGroupShips());
     const Outpost::PlanePosition enemy = match.Start(HUMAN);
     const float waiting = MeanDistance(match.View(AI), ships, enemy);
-    Assert::IsTrue(waiting > 1500.0f, L"the reserve left before it had twelve");
+    Assert::IsTrue(waiting > 1500.0f, L"the reserve left before its group had gathered");
 
-    const std::vector<Outpost::EntityId> twelfth = match.Spawn(AI, BRAWLER, 1, gathering);
-    ships.push_back(twelfth.front());
+    const std::vector<Outpost::EntityId> last = match.Spawn(AI, BRAWLER, 1, gathering);
+    ships.push_back(last.front());
     match.Run(10.0);
-    Assert::AreEqual(size_t{12}, match.Ai().AttackGroupShips());
+    Assert::AreEqual(static_cast<size_t>(groupShips), match.Ai().AttackGroupShips());
     Assert::IsTrue(MeanDistance(match.View(AI), ships, enemy) < waiting - 300.0f, L"the attack group is not on its way");
   }
 
@@ -511,7 +528,7 @@ public:
     (void)enemy(9001, Outpost::StructureKind::DefensePlatform, {0.0f, 0.0f});
     const Outpost::PlanePosition station = enemy(9002, Outpost::StructureKind::CommandStation, {-700.0f, -700.0f});
     const Outpost::PlanePosition yard = enemy(9003, Outpost::StructureKind::Shipyard, {-1200.0f, -1000.0f});
-    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    Outpost::AiPlayer ai(AttackSettings(), 20);
     const auto sentTo = [&ai, &snapshot, &group]() -> std::optional<Outpost::PlanePosition>
     {
       for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)))
@@ -568,6 +585,94 @@ public:
     Assert::IsTrue(std::ranges::all_of(queued, [](const Outpost::QueueShipCommand& _queue)
                                        { return _queue.producer == Outpost::EntityId{9001} && _queue.design.IsValid(); }),
                    L"something other than a warship was queued");
+  }
+
+  // Task 12.2: an attack group that has lost half the ships it set out with falls back, and the reserve waits the
+  // settings' 30 seconds before it attacks again, even with enough ships.
+  TEST_METHOD(FallsBackAfterLosingHalfAndRegroups)
+  {
+    AiMatch match;
+    const std::vector<Outpost::EntityId> group = match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(AttackSettings(), 20);
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{12}, ai.AttackGroupShips());
+
+    // Six of them destroyed.
+    std::erase_if(snapshot.entities, [&group](const Outpost::EntityView& _entity)
+                  { return std::ranges::find(group.begin(), group.begin() + 6, _entity.id) != group.begin() + 6; });
+    snapshot.tick += 20;
+    const std::vector<Outpost::MoveCommand> moves = OrdersOf<Outpost::MoveCommand>(ai.Update(snapshot));
+    Assert::AreEqual(size_t{1}, moves.size(), L"the group did not fall back");
+    Assert::AreEqual(size_t{6}, moves.front().ships.size());
+    Assert::AreEqual(size_t{0}, ai.AttackGroupShips());
+
+    // Six more join the reserve: twelve, but it regroups first.
+    for (std::uint32_t i = 0; i < 6; ++i)
+    {
+      snapshot.entities.push_back({.id = Outpost::EntityId{9100 + i},
+                                   .kind = Outpost::EntityKind::Ship,
+                                   .owner = AI,
+                                   .hull = BRAWLER.hull,
+                                   .drive = BRAWLER.drive,
+                                   .weapon = BRAWLER.weapon,
+                                   .role = Outpost::ShipRole::Warship,
+                                   .position = {650.0f, 550.0f}});
+    }
+    snapshot.tick += 20;
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"it attacked again before it regrouped");
+    snapshot.tick += std::uint64_t{30} * 20;
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{12}, ai.AttackGroupShips(), L"it did not attack again once it had regrouped");
+  }
+
+  // Task 12.2: the attack group grows with each tier the AI has opened.
+  TEST_METHOD(GrowsItsAttackGroupWithEachTier)
+  {
+    AiMatch match;
+    (void)match.Spawn(AI, BRAWLER, 20, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    for (Outpost::ResearchTopicView& topic : snapshot.research)
+    {
+      if (topic.gateway && topic.tier == 2)
+        topic.researched = true;
+    }
+    Outpost::AiSettings settings = AttackSettings();
+    settings.attackGroupGrowthPerTier = 12;
+    Outpost::AiPlayer ai(settings, 20);
+    (void)ai.Update(snapshot);
+    Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"twenty attacked, where tier 2 asks for twenty-four");
+    (void)match.Spawn(AI, BRAWLER, 4, {700.0f, 650.0f});
+    Outpost::Snapshot more = match.View(AI);
+    more.research = snapshot.research;
+    more.tick = snapshot.tick + 20;
+    (void)ai.Update(more);
+    Assert::AreEqual(size_t{24}, ai.AttackGroupShips());
+  }
+
+  // Task 12.2: the AI fortifies its base with the settings' Defence Platforms for each Shipyard, toward the map's center.
+  TEST_METHOD(FortifiesItsBaseForEachShipyard)
+  {
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.homePlatformsPerShipyard = 2;
+    AiMatch match(3, std::nullopt, settings);
+    match.Run(5.0 * 60.0);
+    const Outpost::Snapshot view = match.View(AI);
+    const Outpost::PlanePosition home = match.Start(AI);
+    std::ptrdiff_t shipyards = 0;
+    std::ptrdiff_t homePlatforms = 0;
+    for (const Outpost::EntityView* structure : match.Structures(view, AI))
+    {
+      if (structure->structure == Outpost::StructureKind::Shipyard)
+        ++shipyards;
+      if (structure->structure == Outpost::StructureKind::DefensePlatform && Outpost::Distance(structure->position, home) < 500.0f &&
+          structure->builtPermille >= Outpost::PERMILLE)
+        ++homePlatforms;
+    }
+    Assert::IsTrue(shipyards >= 2, L"fewer Shipyards than five minutes bring");
+    // The one beside the Command Station, and two for each Shipyard.
+    Assert::IsTrue(homePlatforms >= 1 + (2 * shipyards) - 2, L"the base is not fortified as its Shipyards grow");
   }
 
   // A structure under fire draws the reserve to it, and the reserve goes back once the shooting has stopped.

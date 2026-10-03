@@ -36,6 +36,35 @@ struct ModelPose
 // A direction of the fitted mesh, where the pose rolls and turns it.
 [[nodiscard]] DirectX::XMFLOAT3 PlaceDirection(const ModelPose& _pose, const DirectX::XMFLOAT3& _direction) noexcept;
 
+// How a model on legs stands on uneven ground, such as a Mining Rig on its rock (owner, 2026-10-03, ADR-044): along its
+// own axes and in meters, tilted about pivotMeters, the middle of its feet, its +z side lowered by bankRadians as a bank
+// lowers it and then its front raised by pitchRadians, and lifted by liftMeters, before its pose turns and places it.
+struct Stance
+{
+  DirectX::XMFLOAT3 pivotMeters{};
+  float bankRadians = 0.0f;
+  float pitchRadians = 0.0f;
+  float liftMeters = 0.0f;
+};
+
+// The furthest a stance tilts a model either way, about 29 degrees.
+inline constexpr float MAX_STANCE_TILT_RADIANS = 0.5f;
+
+// The stance that stands a model on its feet. _feetMeters are its feet, in meters from its origin along its own axes, and
+// _groundAt gives the ground's height under a point given the same way, or nothing where there is no ground. The model
+// tilts to the plane that fits the ground under its feet best, fitted again as the tilt moves them, and then lifts until
+// no foot is under the ground: at least one stands on it, and a model on three legs stands on all three. Nothing when no
+// foot is over the ground.
+[[nodiscard]] std::optional<Stance> StandOnFeet(std::span<const DirectX::XMFLOAT3> _feetMeters,
+                                                const std::function<std::optional<float>(float, float)>& _groundAt);
+
+// Where _stance tilts and lifts a point _meters from a model's origin, along the model's own axes.
+[[nodiscard]] DirectX::XMFLOAT3 StandPoint(const Stance& _stance, const DirectX::XMFLOAT3& _meters) noexcept;
+
+// The world matrix that draws a fitted mesh where _pose and _stance put it: scaled, stood, then turned, moved and raised by
+// the pose, whose bank it does not use. It puts a point where StandPoint and then PlacePoint, at a scale of 1, put it.
+[[nodiscard]] DirectX::XMFLOAT4X4 StanceMatrix(const ModelPose& _pose, const Stance& _stance) noexcept;
+
 // Where a shot at _target leaves the model from: its gun nearest the target, on the ground. Nothing for a model with no
 // gun. It is presentation only: the server measures range from the ship's center (design §7).
 [[nodiscard]] std::optional<PlanePosition> NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,

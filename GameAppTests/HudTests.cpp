@@ -126,7 +126,12 @@ public:
                                             layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end), Outpost::Hud::Sprite::Corner,
                                             &Outpost::Hud::SpriteMark::sprite);
     Assert::AreEqual(std::ptrdiff_t{4}, corners);
-    Assert::AreEqual(size_t{0}, layout.SpritesOf(0).end, L"the HUD has none");
+    const Outpost::Hud::Span hud = layout.SpritesOf(0);
+    Assert::IsTrue(std::all_of(layout.sprites.begin() + static_cast<std::ptrdiff_t>(hud.first),
+                               layout.sprites.begin() + static_cast<std::ptrdiff_t>(hud.end),
+                               [&window](const Outpost::Hud::SpriteMark& _mark)
+                               { return !window.frame.Contains(_mark.area.left, _mark.area.top); }),
+                   L"the HUD's sprites are its own panels'");
 
     const Outpost::Hud::Span actions = layout.ActionsOf(1);
     const auto name = std::ranges::find(layout.actions.begin() + static_cast<std::ptrdiff_t>(actions.first),
@@ -254,7 +259,8 @@ public:
     const auto incomeText = [](std::int32_t _hundredths)
     {
       const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .oreIncomeHundredthsPerSecond = _hundredths}, 1920, 1080);
-      return layout.texts[2].text;
+      const auto income = std::ranges::find_if(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text.ends_with("/s"); });
+      return income != layout.texts.end() ? income->text : std::string();
     };
     Assert::AreEqual(std::string("+15/s"), incomeText(1500));
     Assert::AreEqual(std::string("+6.5/s"), incomeText(650));
@@ -909,6 +915,7 @@ public:
   }
 
   // ADR-040: an asteroid field is only in the way, so its mark is darker than an ore asteroid's, though it is the larger.
+  // ADR-043: an ore asteroid is in Ore's gold.
   TEST_METHOD(DrawsFieldsDarkerThanOreAsteroidsOnTheMinimap)
   {
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
@@ -929,7 +936,101 @@ public:
     const Outpost::Hud::Rect& ore = layout.panels[layout.panels.size() - 2];
     const Outpost::Hud::Rect& field = layout.panels.back();
     Assert::IsTrue(field.width > ore.width, L"the field's square is the larger");
-    Assert::IsTrue(field.color.x < ore.color.x && field.color.y < ore.color.y && field.color.z < ore.color.z);
+    const auto luminance = [](const DirectX::XMFLOAT4& _color)
+    { return (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z); };
+    Assert::IsTrue(luminance(field.color) < luminance(ore.color));
+    Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
+  }
+
+  // ADR-043: the HUD's panels are in the windows' look, a window's body with a bracket at each corner.
+  TEST_METHOD(LaysTheHudOutInTheWindowsLook)
+  {
+    const Outpost::Hud::Content content{.ore = 0,
+                                        .selection = {"Shipyard"},
+                                        .buttons = {{.label = "Production"}},
+                                        .research = "Researching Hull Plating, 25%",
+                                        .mapSizeMeters = 2000.0f};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Span sprites = layout.SpritesOf(0);
+    const auto corners = std::count_if(layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.first),
+                                       layout.sprites.begin() + static_cast<std::ptrdiff_t>(sprites.end),
+                                       [](const Outpost::Hud::SpriteMark& _mark) { return _mark.sprite == Outpost::Hud::Sprite::Corner; });
+    Assert::AreEqual(std::ptrdiff_t{20}, corners, L"four for each of the Ore, the research, the selection, the buttons and the minimap");
+  }
+
+  // ADR-043: Ore is written one way, as Ore's diamond and the figure grouped in thousands: the stockpile, a button's cost,
+  // and a window's Ore and its cards' costs.
+  TEST_METHOD(WritesOreOneWay)
+  {
+    Outpost::Hud::Content content{.ore = 12345,
+                                  .buttons = {{.label = "Shipyard|1500", .action = {.kind = Outpost::Hud::ActionKind::Build}}}};
+    content.production =
+      Outpost::Hud::ProductionPanel{.producer = "SHIPYARD 01",
+                                    .hasProducer = true,
+                                    .ore = 12345,
+                                    .options = {{.name = "Swarm", .cost = 2500, .action = {.kind = Outpost::Hud::ActionKind::Queue}}}};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto has = [&layout](std::string_view _text)
+    { return std::ranges::any_of(layout.texts, [_text](const Outpost::Hud::Text& _line) { return _line.text == _text; }); };
+    Assert::IsTrue(has("12,345") && has("1,500") && has("2,500"));
+    Assert::IsFalse(has("12345") || has("Ore") || has("1500"));
+    Assert::AreEqual(std::ptrdiff_t{4},
+                     std::ranges::count(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite),
+                     L"a diamond for the stockpile, the button, the window's Ore and the card");
+  }
+
+  // ADR-043: the production window's cards stay where they are as its queue grows, so that a card can be clicked again and
+  // again. The queue stands under them, a row for each job and none empty, and the window grows at its foot.
+  TEST_METHOD(KeepsTheCardsStillAsTheQueueGrows)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot();
+    Outpost::EntityView& yard = newest.entities.front();
+    const auto lay = [&newest, &yard](std::size_t _jobs)
+    {
+      yard.queue.assign(_jobs, Outpost::JobView{.design = SWARM});
+      Outpost::Hud::Content content;
+      content.production = Outpost::Hud::DescribeProduction(newest, &yard);
+      return Outpost::Hud::Lay(content, 1920, 1080);
+    };
+    const Outpost::Hud::Layout empty = lay(0);
+    const Outpost::Hud::Layout busy = lay(Outpost::QUEUE_LIMIT - 1);
+    const auto card = [](const Outpost::Hud::Layout& _layout)
+    {
+      const auto queue =
+        std::ranges::find_if(_layout.actions, [](const auto& _entry) { return _entry.second.kind == Outpost::Hud::ActionKind::Queue; });
+      return queue != _layout.actions.end() ? queue->first : Outpost::Hud::Rect{};
+    };
+    Assert::IsTrue(card(busy).width > 0.0f);
+    Assert::AreEqual(card(empty).top, card(busy).top, 0.01f);
+    Assert::AreEqual(card(empty).left, card(busy).left, 0.01f);
+
+    // The card's name, and one row for each job.
+    const auto names = [](const Outpost::Hud::Layout& _layout)
+    { return std::ranges::count(_layout.texts, std::string("Swarm"), &Outpost::Hud::Text::text); };
+    Assert::AreEqual(std::ptrdiff_t{1}, names(empty));
+    Assert::AreEqual(static_cast<std::ptrdiff_t>(Outpost::QUEUE_LIMIT), names(busy));
+    const auto lastRow = std::ranges::find_last(busy.texts, std::string("Swarm"), &Outpost::Hud::Text::text);
+    Assert::IsTrue(lastRow.begin()->top > card(busy).top + card(busy).height, L"the queue is under the cards");
+    Assert::IsTrue(busy.windows.front().frame.height > empty.windows.front().frame.height);
+    Assert::AreEqual(empty.windows.front().frame.top, busy.windows.front().frame.top, 0.01f);
+  }
+
+  // ADR-043: the selection panel is as wide as its longest line, within bounds, and stays centered.
+  TEST_METHOD(FitsTheSelectionPanelToItsLines)
+  {
+    const auto panelOf = [](std::vector<std::string> _lines)
+    {
+      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = 0, .selection = std::move(_lines)}, 1920, 1080);
+      return layout.panels[1];
+    };
+    const Outpost::Hud::Rect narrow = panelOf({"Shipyard", "Hit points 3,000 / 3,000"});
+    const Outpost::Hud::Rect wide = panelOf({"12 ships", "6 x Medium+Fusion+Missile Rack Mark II", "Hit points 9,000 / 9,000"});
+    const Outpost::Hud::Rect widest = panelOf({"40 ships", std::string(80, 'x')});
+    Assert::IsTrue(narrow.width < wide.width && wide.width < widest.width);
+    Assert::AreEqual(280.0f, narrow.width, 0.01f, L"no narrower than this");
+    Assert::AreEqual(560.0f, widest.width, 0.01f, L"no wider than it was");
+    Assert::AreEqual(960.0f, wide.left + (wide.width / 2.0f), 0.01f);
+    Assert::IsTrue(wide.height > narrow.height);
   }
 
   // ADR-024: the minimap draws the fog over its marks, a rectangle for each run of one shade along a row, and nothing
