@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); 13 of the 17 topics, the rest with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | todo |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning waits on the owner (below) |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
 | 11.1 | Ore reserves and depletion | — | H3 decided | todo |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
@@ -247,6 +247,17 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `Q2Check` gains the stages of design §7: starting, tier 1, tier 2 and tier 3, each with its components and budgets, and (d) per tier. Run it, tune the tier-2 and tier-3 numbers against it as B.1 tuned §12, and record each number that moved and why in design §5 and §6. Tier 1's numbers move only if a later tier's result requires it, and the owner decides that.
 - **Acceptance:** `Q2CheckTests.TheFullCheck` passes all four criteria at every stage, in the Linux container; `TheRecordedCountersHold` gains a counter per new component.
 - **Verify:** CI; the owner runs the check of record in Release|ARM64 on the development machine, and its time is recorded.
+- **As built so far:**
+  - **The staged check.** `RunQ2Check` plays design §7's stages: tier 1 at 2,000–12,000 Ore, the starting components at 2,000–4,500, tier 2 at 4,500–12,000 and tier 3 at 6,000–12,000, each with the components through its tier and no upgrades. (d) runs per tier: a topic of tier 1 against the starting designs at the starting budgets, as the MVP's; a topic of a later tier at its tier's budgets against every design and upgrade of the tier before, the researching side having those too. Only the designs a topic adds or changes are tested, since one the other side has with the same numbers is not the topic's. (b) reports the Pulse Drive when no design worth building uses it and does not fail on it. `CheckOptions::lastTier` limits the stages; `Tools/BattleModel.py` runs the same stages.
+  - **What it finds with the 10.2 numbers**, run in the container at 20 battles a pairing without (c):
+    - **(a) holds** at tiers 2 and 3: every design has a counter.
+    - **(b) fails on the Flak Battery**, at every budget of tiers 2 and 3. It is all or nothing: it beats every Small design 20–0 and loses 0–20 to every Medium and Large one, and a Small design is never most of the mix. Its 20 m splash also reaches nobody: the formation stands Small hulls 24 m apart (three footprint radii, ADR-010). A 26 m splash, or a hit of 12 or 14 at 60 Ore, still loses 0–20 to every Medium design and is still never worth building.
+    - **(b) fails on the Mass Driver** at tier 3 in both fire modes and at tier 2 under focus fire. This is not new: with the MVP's numbers no design with a Mass Driver was worth building under focus fire at 4,500 Ore or more, and under spread fire only S+I+MD at 7% at 12,000. Tier 1 passes (b) on it at its smaller budgets, which tiers 2 and 3 do not have.
+    - **(d) fails on Ablative Armour**: M+I+La with +45% hit points against the tier 2 designs with +30% has no answer better than 37% at 6,000 Ore under focus fire.
+  - **Waiting on the owner:**
+    1. Whether (b) at tiers 2 and 3 asks every component of the stage to be worth building, which the Mass Driver cannot do without moving tier 1's numbers, or only the components the tier adds.
+    2. What the Flak Battery is for. As design §5 has it, an answer to the swarm and nothing else, no number tried makes it worth building; it needs a role against the Medium hull, or (b) to exempt it as it does the Pulse Drive.
+  - **Not yet done:** the tuning, design §5 and §6's records of it, a counter per new component in `TheRecordedCountersHold`, and a full run with (c).
 
 ### 10.4 — The AI on tiers and new designs
 
