@@ -74,6 +74,15 @@ private:
   void Plan(const Snapshot& _snapshot, const EntityView& _station);
   // Adds the next Shipyard to the plan once the income calls for it.
   void PlanShipyards(const Snapshot& _snapshot, const EntityView& _station);
+  // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
+  void FollowOre(const Snapshot& _snapshot);
+  // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
+  void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
+  void AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig);
+  // Where the enemy's Command Stations are, or under fog of war, where the enemy's base must be.
+  [[nodiscard]] std::vector<PlanePosition> EnemyStations(const Snapshot& _snapshot) const;
+  // Whether an asteroid is nearer an enemy base than this one: that is the enemy's home.
+  [[nodiscard]] bool IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const;
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,

@@ -85,8 +85,8 @@ private:
 class AiMatch
 {
 public:
-  explicit AiMatch(std::uint64_t _seed = 3)
-    : m_map(Outpost::LoadMap(ReadRepositoryMap())),
+  explicit AiMatch(std::uint64_t _seed = 3, std::optional<Outpost::Map> _map = std::nullopt)
+    : m_map(_map.has_value() ? std::move(*_map) : Outpost::LoadMap(ReadRepositoryMap())),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = _seed}),
       m_human(m_server.Connect(HUMAN)),
       m_aiConnection(m_server.Connect(AI)),
@@ -509,6 +509,35 @@ public:
   }
 
   // The whole AI against a player who does nothing: it builds, gathers, attacks and wins.
+  // Task 11.3, Phase 1 design §13: once its home asteroids run dry the AI builds on the nearest asteroids with ore left,
+  // each with a Defence Platform beside it, and keeps the dry rigs for their trickle.
+  TEST_METHOD(FollowsTheOre)
+  {
+    Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    for (Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+    {
+      if (asteroid.yield == Outpost::OreYield::Home)
+        asteroid.reserveOre = 200;
+    }
+    AiMatch match(3, map);
+    match.Run(8.0 * 60.0);
+    const Outpost::Snapshot view = match.View(AI);
+    std::ptrdiff_t dry = 0;
+    std::ptrdiff_t mining = 0;
+    std::ptrdiff_t platforms = 0;
+    for (const Outpost::EntityView* structure : match.Structures(view, AI))
+    {
+      if (structure->structure == Outpost::StructureKind::DefensePlatform)
+        ++platforms;
+      if (structure->structure != Outpost::StructureKind::MiningRig || structure->builtPermille < Outpost::PERMILLE)
+        continue;
+      ++(structure->oreReserveHundredths.value_or(1) == 0 ? dry : mining);
+    }
+    Assert::AreEqual(std::ptrdiff_t{3}, dry, L"the home rigs, run dry, are kept");
+    Assert::AreEqual(std::ptrdiff_t{6}, mining, L"six rigs on asteroids with ore");
+    Assert::IsTrue(platforms >= 6, L"a platform beside each rig away from home, and one by the base");
+  }
+
   // Task 10.4: against a player who does nothing, the AI researches through tier 2 and opens tier 3 (Phase 1 design §13).
   TEST_METHOD(ReachesTierThree)
   {

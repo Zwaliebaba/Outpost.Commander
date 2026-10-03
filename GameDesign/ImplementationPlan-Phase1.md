@@ -37,7 +37,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
-| 11.3 | The AI follows the ore | 11.2, 10.4 | — | todo |
+| 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | todo |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | todo |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
@@ -310,6 +310,9 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `AiPlayer` and `Opponent.json`: rings rather than a fixed count of home and contested asteroids.
 - **Acceptance:** `AiPlayerTests`: an AI whose home reserves run out builds further out.
 - **Verify:** CI.
+- **As built:**
+  - **The AI keeps its rigs on ore.** `homeAsteroids` and `contestedAsteroids` now count together the rigs it keeps on asteroids with ore left. When one runs dry, it plans a rig on the nearest asteroid it knows still holds ore, not the enemy's home, with a Defence Platform beside it, as a contested one; the dry rig stays for its trickle. An asteroid it has not seen counts as holding ore.
+  - **Tests.** `AiPlayerTests.FollowsTheOre`: with its home reserves at 200 Ore, after eight minutes the AI keeps three dry rigs and six on ore, each away from home with a platform. `ReachesTierThree` depends on it: without it the AI's income fell to the trickle at minute 21 and its Shipyards took every Ore the lab waited for.
 
 ---
 

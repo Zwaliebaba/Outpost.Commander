@@ -217,6 +217,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   if (!m_planned)
     Plan(_snapshot, *station);
   PlanShipyards(_snapshot, *station);
+  FollowOre(_snapshot);
   if (_snapshot.tick >= m_nextReviewTick)
   {
     // What it has seen since the last review; with nothing seen it keeps the design it has.
@@ -301,18 +302,12 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
 
   std::vector<const EntityView*> asteroids;
-  std::vector<PlanePosition> enemyStations;
   for (const EntityView& entity : _snapshot.entities)
   {
     if (entity.kind == EntityKind::Asteroid)
       asteroids.push_back(&entity);
-    else if (IsStructure(entity, StructureKind::CommandStation) && entity.owner != m_player)
-      enemyStations.push_back(entity.position);
   }
-  // Under fog of war the enemy's base is out of sight at the start (ADR-024): the map is point-symmetric, so it is across
-  // the center from this one.
-  if (enemyStations.empty())
-    enemyStations.push_back({.xMeters = -home.xMeters, .zMeters = -home.zMeters});
+  const std::vector<PlanePosition> enemyStations = EnemyStations(_snapshot);
   std::ranges::sort(asteroids,
                     [home](const EntityView* _a, const EntityView* _b)
                     {
@@ -331,22 +326,10 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     }
     if (std::cmp_greater_equal(contestedAsteroids.size(), m_settings.contestedAsteroids))
       break;
-    // Not one nearer another player's base: that is the other player's home.
-    const float ours = Distance(asteroid->position, home);
-    if (std::ranges::none_of(enemyStations, [&](PlanePosition _enemy) { return Distance(asteroid->position, _enemy) < ours; }))
+    if (!IsEnemyHome(asteroid->position, enemyStations))
       contestedAsteroids.push_back(asteroid);
   }
 
-  const auto addRig = [&](const EntityView& _asteroid)
-  {
-    const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
-    const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
-    m_slots.push_back({.structure = StructureKind::MiningRig,
-                       .position = _asteroid.position,
-                       .radiusMeters = radius,
-                       .asteroid = _asteroid.id,
-                       .abandoned = type == nullptr || !type->buildable});
-  };
   // A structure placed as near _preferred as it can be, clear of everything and of the structures planned before it.
   const auto addStructure = [&](StructureKind _kind, const auto& _preferredFor, std::optional<size_t> _besideRig, std::int32_t _income)
   {
@@ -367,7 +350,7 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   };
 
   for (const EntityView* asteroid : homeAsteroids)
-    addRig(*asteroid);
+    AddRigSlot(_snapshot, *asteroid);
   const float stationRadius = _station.radiusMeters;
   addStructure(
     StructureKind::Shipyard, [&](float _radius) { return Along(home, acrossX, acrossZ, stationRadius + _radius + gap); }, std::nullopt, 0);
@@ -379,19 +362,102 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     std::nullopt, 0);
   for (const EntityView* asteroid : contestedAsteroids)
   {
-    addRig(*asteroid);
-    const size_t rig = m_slots.size() - 1;
-    const float toHome = std::max(Distance(asteroid->position, home), 1.0f);
-    const float towardX = (home.xMeters - asteroid->position.xMeters) / toHome;
-    const float towardZ = (home.zMeters - asteroid->position.zMeters) / toHome;
-    const float rigRadius = m_slots[rig].radiusMeters;
-    addStructure(
-      StructureKind::DefensePlatform, [&](float _radius) { return Along(asteroid->position, towardX, towardZ, rigRadius + _radius + gap); },
-      rig, 0);
+    AddRigSlot(_snapshot, *asteroid);
+    AddPlatformBesideRig(_snapshot, m_slots.size() - 1);
   }
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
   m_rally = FindPlace(rally, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, 0.0f).value_or(preferred);
+}
+
+void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
+  const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
+  m_slots.push_back({.structure = StructureKind::MiningRig,
+                     .position = _asteroid.position,
+                     .radiusMeters = radius,
+                     .asteroid = _asteroid.id,
+                     .abandoned = type == nullptr || !type->buildable});
+}
+
+void Outpost::AiPlayer::AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig)
+{
+  const PlanePosition at = m_slots[_rig].position;
+  const float rigRadius = m_slots[_rig].radiusMeters;
+  Slot slot{.structure = StructureKind::DefensePlatform, .besideRig = _rig, .minimumIncomeHundredthsPerSecond = 0};
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::DefensePlatform);
+  if (type == nullptr || !type->buildable)
+  {
+    slot.abandoned = true;
+    m_slots.push_back(slot);
+    return;
+  }
+  const float toHome = std::max(Distance(at, m_home), 1.0f);
+  const PlanePosition preferred = Along(at, (m_home.xMeters - at.xMeters) / toHome, (m_home.zMeters - at.zMeters) / toHome,
+                                        rigRadius + type->radiusMeters + static_cast<float>(m_settings.structureGapMeters));
+  slot.radiusMeters = type->radiusMeters;
+  const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters,
+                                                       static_cast<float>(m_settings.structureGapMeters));
+  slot.position = place.value_or(preferred);
+  slot.abandoned = !place.has_value();
+  m_slots.push_back(slot);
+}
+
+std::vector<Outpost::PlanePosition> Outpost::AiPlayer::EnemyStations(const Snapshot& _snapshot) const
+{
+  std::vector<PlanePosition> stations;
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (IsStructure(entity, StructureKind::CommandStation) && entity.owner != m_player)
+      stations.push_back(entity.position);
+  }
+  // Under fog of war the enemy's base is out of sight at the start (ADR-024): the map is point-symmetric, so it is across
+  // the center from this one.
+  if (stations.empty())
+    stations.push_back({.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters});
+  return stations;
+}
+
+bool Outpost::AiPlayer::IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const
+{
+  const float ours = Distance(_asteroid, m_home);
+  return std::ranges::any_of(_enemyStations, [&](PlanePosition _enemy) { return Distance(_asteroid, _enemy) < ours; });
+}
+
+void Outpost::AiPlayer::FollowOre(const Snapshot& _snapshot)
+{
+  // An asteroid it does not see now holds what it last saw, or, never seen, ore enough to go and look.
+  const auto hasOre = [&_snapshot](EntityId _asteroid)
+  {
+    const EntityView* asteroid = FindEntity(_snapshot, _asteroid);
+    return asteroid != nullptr && asteroid->oreReserveHundredths.value_or(1) > 0;
+  };
+  const auto mining = std::ranges::count_if(
+    m_slots, [&](const Slot& _slot)
+    { return _slot.structure == StructureKind::MiningRig && !_slot.abandoned && !IsBlocked(_slot, _snapshot) && hasOre(_slot.asteroid); });
+  if (mining >= m_settings.homeAsteroids + m_settings.contestedAsteroids)
+    return;
+
+  const std::vector<PlanePosition> enemyStations = EnemyStations(_snapshot);
+  const EntityView* nearest = nullptr;
+  for (const EntityView& asteroid : _snapshot.entities)
+  {
+    if (asteroid.kind != EntityKind::Asteroid || !hasOre(asteroid.id) || IsEnemyHome(asteroid.position, enemyStations) ||
+        std::ranges::find(m_slots, asteroid.id, &Slot::asteroid) != m_slots.end())
+      continue;
+    const bool taken = std::ranges::any_of(
+      _snapshot.entities, [&asteroid](const EntityView& _rig)
+      { return IsStructure(_rig, StructureKind::MiningRig) && Distance(_rig.position, asteroid.position) <= SAME_PLACE_METERS; });
+    const float distance = Distance(asteroid.position, m_home);
+    if (!taken && (nearest == nullptr || distance < Distance(nearest->position, m_home) ||
+                   (distance == Distance(nearest->position, m_home) && asteroid.id < nearest->id)))
+      nearest = &asteroid;
+  }
+  if (nearest == nullptr)
+    return;
+  AddRigSlot(_snapshot, *nearest);
+  AddPlatformBesideRig(_snapshot, m_slots.size() - 1);
 }
 
 // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times the settings' income per Shipyard,
