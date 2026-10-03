@@ -87,8 +87,9 @@ constexpr float HINT_PANEL_WIDTH = 640.0f;
 // The research line, under the Ore panel.
 constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
 constexpr float RESEARCH_PANEL_GAP = 8.0f;
-// The territory, beside the Ore panel (ADR-056).
-constexpr float TERRITORY_PANEL_WIDTH = 220.0f;
+// The territory, under the research line's place (ADR-056, ADR-057), and the room above and below its lines.
+constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
+constexpr float TERRITORY_INSET_UNITS = 10.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
@@ -1230,7 +1231,9 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
     return std::nullopt;
   const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";
   const std::uint64_t seconds = _ticksPerSecond > 0 ? _newest.matchEndedTick / _ticksPerSecond : 0;
-  return Outcome{.title = std::string(title), .detail = std::format("Match length {}", MinutesAndSeconds(seconds))};
+  // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8).
+  const std::string_view how = _newest.ending == MatchEnding::Domination ? "By domination. " : "";
+  return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 
 Hud::Layout Hud::LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
@@ -1369,6 +1372,14 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                  .maxZMeters = sector.maxZMeters,
                                  .side = side,
                                  .suppressed = sector.suppressed});
+    }
+    // Domination's tickets, which both players see (ADR-057).
+    for (const TicketsView& tickets : _newest.tickets)
+    {
+      if (tickets.player == _newest.player)
+        territory.ownTickets = tickets.tickets;
+      else
+        territory.enemyTickets = tickets.tickets;
     }
     content.territory = territory;
   }
@@ -1712,24 +1723,35 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
                     income > 0 ? NUMBERS_COLOR : WARNING_COLOR, Typeface::Figure, 13.0f * MONO_ADVANCE);
   }
 
-  // Beside the Ore: the nodes each side holds, the player's in its color and the enemy's in its (ADR-056).
+  // Under the Ore: the research under way.
+  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
+
+  // Under the research's place: the nodes each side holds, and each side's tickets, the player's in its color and the
+  // enemy's in theirs (ADR-056, ADR-057).
   if (_content.territory.has_value())
   {
     const Territory& territory = *_content.territory;
+    const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
     Painter paint =
-      frame({.xUnits = MARGIN + ORE_PANEL_WIDTH + RESEARCH_PANEL_GAP, .yUnits = MARGIN}, TERRITORY_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    const float textTop = (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f;
-    const float figureTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+      frame({.xUnits = MARGIN, .yUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP}, TERRITORY_PANEL_WIDTH, heightUnits);
     constexpr float ADVANCE = 13.0f * MONO_ADVANCE;
-    paint.Text(std::format("Nodes of {}", territory.nodes), PADDING, textTop, TEXT_COLOR, Typeface::Name);
-    const std::string enemy = std::to_string(territory.enemyNodes);
-    paint.RightText(enemy, TERRITORY_PANEL_WIDTH - PADDING, figureTop, ENEMY_COLOR, Typeface::Figure, ADVANCE);
-    paint.RightText(std::format("{} : ", territory.ownNodes), TERRITORY_PANEL_WIDTH - PADDING - (CharactersOf(enemy) * ADVANCE), figureTop,
-                    OWN_COLOR, Typeface::Figure, ADVANCE);
+    const auto row = [&](std::string _label, const std::string& _own, const std::string& _enemy, float _top)
+    {
+      paint.Text(std::move(_label), PADDING, _top, TEXT_COLOR, Typeface::Name);
+      const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+      paint.RightText(_enemy, TERRITORY_PANEL_WIDTH - PADDING, figureTop, ENEMY_COLOR, Typeface::Figure, ADVANCE);
+      paint.RightText(std::format("{} : ", _own), TERRITORY_PANEL_WIDTH - PADDING - (CharactersOf(_enemy) * ADVANCE), figureTop, OWN_COLOR,
+                      Typeface::Figure, ADVANCE);
+    };
+    row(std::format("Nodes of {}", territory.nodes), std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes),
+        TERRITORY_INSET_UNITS);
+    if (tickets)
+    {
+      row("Tickets", WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)),
+          TERRITORY_INSET_UNITS + NAME_LINE_UNITS);
+    }
   }
-
-  // Under the Ore: the research under way.
-  const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
   if (!_content.research.empty())
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, RESEARCH_PANEL_WIDTH, ORE_PANEL_HEIGHT);
