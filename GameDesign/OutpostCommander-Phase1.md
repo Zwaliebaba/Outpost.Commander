@@ -70,17 +70,25 @@ Phase 1 adds two weapons and one drive. With three hulls, three drives and five 
 
 ### The range ladder holds
 
-No new weapon reaches past the Defence gun, so **the Missile Rack is still the only weapon that outranges a Defence Platform** (MVP §6), and no research extends a range (MVP §8). The ladder becomes: Mass Driver 120 m, **Flak Battery 140 m**, Lance 220 m, **Rail Cannon 240 m**, Defence gun 250 m, Missile Rack 280 m. The default 500 m view still fits two groups trading at full range.
+No new weapon reaches past the Defence gun, so **the Missile Rack is still the only weapon that outranges a Defence Platform** (MVP §6), and no research extends a range (MVP §8). The ladder becomes: Mass Driver 120 m, **Flak Battery 200 m**, Lance 220 m, **Rail Cannon 240 m**, Defence gun 250 m, Missile Rack 280 m. The default 500 m view still fits two groups trading at full range.
 
 ### Weapons
 
 | Weapon | Tier | Damage | Interval | Range | Splash | Cost | Role |
 |---|---|---|---|---|---|---|---|
-| Flak Battery | 2 | 9 | 0.5 s | 140 m | 20 m | 70 | **Breaks the swarm.** Its small hits reach every Small hull pressed round its target, and armour blunts them to a quarter: against a Medium hull it does almost nothing. |
+| Flak Battery | 2 | 20 | 0.5 s | 200 m | 26 m | 60 | **Breaks the swarm, and holds off the brawler.** Its hits reach the next Small hull of a formation round its target, and still tell against a Medium hull's armour; the Lance line and the missiles outrange it. |
 | Rail Cannon | 3 | 320 | 6.0 s | 240 m | — | 150 | **Kills the heavy, and outranges the Lance.** Six hits break a Large+Fusion hull, where a Lance needs 21. Against a Small hull most of the hit is wasted. |
 
-- **The Flak Battery** is the second answer to the swarm, beside the brawler's armour (MVP §7), and the one that scales with the swarm's size. Splash works as the Missile Rack's does (ADR-014): every other enemy within 20 m of the target's center takes the hit, after its own armour.
-- **The Rail Cannon** gives a heavy line an answer to the Lance picket that held the MVP's heavies in check: it outranges the picket by 20 m, and so can kite it. That makes the Small+Ion+Lance picket weaker against a Rail line than it was against the MVP's heavies, which is the point of a third tier. Whether the picket keeps an answer at all is what the Q2 check decides.
+- **The Flak Battery** is the second answer to the swarm, beside the brawler's armour (MVP §7), and the one that scales with the swarm's size. Splash works as the Missile Rack's does (ADR-014): every other enemy within 26 m of the target's center takes the hit, after its own armour.
+- **The Rail Cannon** gives a heavy line an answer to the heavy Lance line: Large+Fusion+Rail beats Large+Fusion+Lance. It was meant to answer the Lance picket too, by outranging it by 20 m; in the simulation it does not, since ships stand at their own range rather than kite, and the picket still beats every heavy.
+
+### Tuned by the Q2 check (task 10.3)
+
+The numbers above are the check's, not the first guesses (gate H1). What moved and why:
+
+- **The Flak Battery: 9 → 20 a hit, 140 → 200 m, a 20 → 26 m splash, 70 → 60 Ore.** As first written it beat every Small design and lost every battle to every Medium and Large one, so it was never worth building in either tier (owner, 2026-10-03, gate H10). Its 20 m splash reached no neighbor: a formation stands Small hulls 24 m apart, three footprint radii (ADR-010), and 26 m reaches the four nearest. A splash alone, or a hit of 12 or 14, still lost every battle to a Medium design; the Lance does about 32 damage a second to a Medium hull, and the Flak Battery needed a hit that armour does not quarter and nearly the Lance's reach. With these numbers it beats the swarm, the picket, the brawler and the Medium Missile Rack, trades evenly with the Lance line under spread fire, and loses to it under focus fire and to the heavy Lance and missile lines.
+- **The Pulse Drive and the Rail Cannon** kept their first numbers.
+
 
 ### Drive
 
@@ -129,7 +137,7 @@ Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is
 | 17 | 2 | Missile Guidance | 9, 7 | Missile Rack fire rate +15% | 300 | 90 s |
 | 18 | 3 | **Precursor Vault** (gateway) | 9, 6 | Opens tier 3 | 600 | 180 s |
 | 19 | 3 | Rail Cannon | 18, 4 | Unlocks the Rail Cannon | 500 | 150 s |
-| 20 | 3 | Ablative Armour | 18, 13 | All hulls' HP +15% | 450 | 120 s |
+| 20 | 3 | Ablative Armour | 18, 13 | All hulls' HP +5% | 450 | 120 s |
 | 21 | 3 | Coilgun Mass Drivers | 18, 3 | Mass Driver fire rate +10% | 400 | 110 s |
 | 22 | 3 | Proximity Fuses | 18, 11 | Flak Battery fire rate +15% | 400 | 110 s |
 | 23 | 3 | Drive Harmonics | 18 | Every ship's speed +10% | 450 | 120 s |
@@ -137,6 +145,8 @@ Accepted (owner, 2026-10-02, gate H2). Ore and time are first guesses. Tier 1 is
 | 25 | 3 | Rapid Construction | 18 | Constructor build and repair rate +25% | 350 | 100 s |
 
 Tier 1 takes 690 s, tier 2 890 s and tier 3 1,010 s: 2,590 s, about 43 minutes. Its Ore is 1,500, 2,700 and 3,600.
+
+**Ablative Armour was tuned by the Q2 check (task 10.3): +15% → +5%.** A Medium+Ion+Lance line with every hull plating of tiers 1 and 2 holds 585 hit points, 6.7 of the picket's 87-point Lance hits. Anything above about 4% more takes it to eight hits, and then the picket, its only answer among the tier 2 designs with the same upgrades, wins under half its battles at 6,000 Ore (33% under focus fire at +15%, 45% at +10%). At +5% it still breaks in seven, and the picket wins 95–100% at every tier 3 budget. A hit-point upgrade moves the same breakpoints armour would (§6); the next one should be checked against them first.
 
 **New kinds of effect** the tuning data and the battle model have to learn: a gateway that does nothing itself, an ore reserve, structure hit points, a structure weapon's fire rate, every ship's speed, and the Constructor's rates. Drive Harmonics changes speed only, so the turn rates stay final (MVP §12).
 

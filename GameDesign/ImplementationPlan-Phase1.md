@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning the Flak Battery |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): tuned; the full check of record is running |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
 | 11.1 | Ore reserves and depletion | — | H3 decided | todo |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
@@ -238,7 +238,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The tuning data.** The Pulse drive (3), the Flak Battery (4) and the Rail Cannon (5), with design §5's numbers, and the four topics that waited for them: 10 Pulse Drive, 11 Flak Battery, 19 Rail Cannon and 22 Proximity Fuses. All 25 topics are in. Their abbreviations, **P**, **FB** and **RC**, come from their names as every component's do. The Flak Battery splashes through the Missile Rack's mechanism (ADR-014), which needed no change.
   - **The looks.** `Models.json` gives each weapon whose shot is not a tracer its look, the Lance's beam and the Rail Cannon's new slug, a white line that joins gun and target and lingers; the Flak Battery fires tracers with its splash ring. The Pulse Drive's exhaust is a provisional lime green, for the owner to pick at the run.
   - **The Q2 checks** stay on tier 1's components, the MVP's 18 designs, in both the C++ check, through `PartsThrough`, and `Tools/BattleModel.py`, until 10.3 gives tiers 2 and 3 their stages.
-  - **Tests.** `DesignTests.DerivesThePhaseOneComponents`: each one's derived stats, its lock until its topic, its name and abbreviation. `CombatTests.FlakSplashesItsSmallHits` and `ARailCannonOutrangesTheLance`, which also breaks a Pulse raider in one hit. `Q2CheckTests.FieldsTheGamesDesigns`: 45 designs, 18 through tier 1 and 36 through tier 2. `ModelCatalogTests.GivesEachWeaponItsShot` and the Pulse exhaust; `CombatEffectsTests.ASlugJoinsGunAndTargetAndLingers` and `AWeaponNotListedFiresTracers`.
+  - **Tests.** `DesignTests.DerivesThePhaseOneComponents`: each one's derived stats, its lock until its topic, its name and abbreviation. `CombatTests.FlakSplashesItsHits` and `ARailCannonOutrangesTheLance`, which also breaks a Pulse raider in one hit. `Q2CheckTests.FieldsTheGamesDesigns`: 45 designs, 18 through tier 1 and 36 through tier 2. `ModelCatalogTests.GivesEachWeaponItsShot` and the Pulse exhaust; `CombatEffectsTests.ASlugJoinsGunAndTargetAndLingers` and `AWeaponNotListedFiresTracers`.
   - **Design §6's tier 2 is 890 s, not 900 s**, by its own table, so the total is 2,590 s; still about 43 minutes. §6 now says so; the table's times are unchanged.
   - **Built and tested in CI** on Debug|x64; the container first ran the suites against a stand-in for the test framework. Not yet run.
 
@@ -257,7 +257,9 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
     - **(b) fails on the Mass Driver** at tier 3 in both fire modes and at tier 2 under focus fire. This is not new: with the MVP's numbers no design with a Mass Driver was worth building under focus fire at 4,500 Ore or more, and under spread fire only S+I+MD at 7% at 12,000. Tier 1 passes (b) on it at its smaller budgets, which tiers 2 and 3 do not have.
     - **(d) fails on Ablative Armour**: M+I+La with +45% hit points against the tier 2 designs with +30% has no answer better than 37% at 6,000 Ore under focus fire.
   - **The owner's answers** (2026-10-03): H9, (b) at tiers 2 and 3 judges only the components the tier adds, which both checks now do; H10, the Flak Battery gets a role against the Medium hull, which the tuning gives it.
-  - **Not yet done:** the tuning, design §5 and §6's records of it, a counter per new component in `TheRecordedCountersHold`, and a full run with (c).
+  - **The tuning**, recorded with its reasons in design §5 and §6: the Flak Battery to 20 a hit, 200 m, a 26 m splash and 60 Ore, and Ablative Armour to +5%. Run in the container at 12 battles a pairing without (c), (a) and (b) then hold at tiers 2 and 3, the Flak Battery and the Rail Cannon each worth building at every one of their budgets; and at +5% the picket answers the plated Lance line in 95–100% of battles at every tier 3 budget.
+  - **The recorded counters** gain one per new component, at its tier's smallest budget: Medium+Ion+Flak beats the swarm at 4,500 Ore, a Pulse picket beats the heavy brawler at 4,500, and a Rail Cannon heavy line beats the heavy Lance line at 6,000.
+  - **Not yet done:** the full check of record in the container, 60 battles a pairing with (c), which is running.
 
 ### 10.4 — The AI on tiers and new designs
 

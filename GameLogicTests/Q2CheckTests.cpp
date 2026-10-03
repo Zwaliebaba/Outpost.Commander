@@ -49,7 +49,7 @@ public:
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
     Assert::AreEqual(std::string("L+P+RC"), designs.back().code);
     Assert::AreEqual(30.0f, Named(designs, "L+F+MR").stats.splashRadiusMeters);
-    Assert::AreEqual(20.0f, Named(designs, "S+P+FB").stats.splashRadiusMeters);
+    Assert::AreEqual(26.0f, Named(designs, "S+P+FB").stats.splashRadiusMeters);
 
     // Through tier 1, the MVP's eighteen: the Pulse Drive, the Flak Battery and the Rail Cannon come with tiers 2 and 3.
     const std::vector<CheckDesign> tierOne = DesignsFrom(tuning, PartsThrough(tuning, 1));
@@ -130,6 +130,15 @@ public:
     }
     // The line beats the brawler under focus fire only: under spread fire it does not (design §12).
     Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Focus, BATTLES) >= 16);
+
+    // Phase 1 design §5, at the smallest budget of each component's tier (task 10.3): the Flak Battery breaks the swarm,
+    // a Pulse picket beats the heavy brawler, and the Rail Cannon kills the heavy Lance line.
+    for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
+    {
+      Assert::IsTrue(Wins(Named(designs, "M+I+FB"), Named(designs, "S+I+MD"), 4500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "S+P+La"), Named(designs, "L+F+MD"), 4500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "L+F+RC"), Named(designs, "L+F+La"), 6000.0, mode, BATTLES) >= 16);
+    }
   }
 
   // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release and hours in Debug, so it runs only

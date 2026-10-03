@@ -364,7 +364,8 @@ public:
     MatchArena arena;
     const Outpost::Tuning& tuning = arena.TuningData();
     const std::array<Outpost::ResearchTopicId, 3> hulls{HULL_PLATING, COMPOSITE_PLATING, ABLATIVE_ARMOR};
-    Assert::AreEqual(1.45, Outpost::UpgradesFrom(tuning, hulls).hullHitPointsFactor, 1e-12);
+    // 15% + 15% + 5% (Ablative Armour, tuned in task 10.3).
+    Assert::AreEqual(1.35, Outpost::UpgradesFrom(tuning, hulls).hullHitPointsFactor, 1e-12);
     const std::array<Outpost::ResearchTopicId, 2> massDrivers{MASS_DRIVER_CALIBRATION, COILGUN_MASS_DRIVERS};
     Assert::AreEqual(1.2, Outpost::UpgradesFrom(tuning, massDrivers).FireRateFactor(MASS_DRIVER), 1e-12);
     const std::array<Outpost::ResearchTopicId, 5> others{REINFORCED_STRUCTURES, DEFENSE_AUTOLOADER, DRIVE_HARMONICS, RAPID_CONSTRUCTION,

@@ -245,9 +245,9 @@ public:
     Assert::AreEqual(0, lost(friendly), L"no friendly fire");
   }
 
-  // Phase 1 design §5: the Flak Battery splashes as the Missile Rack does, 20 m around its target, and armor blunts its
-  // small hits to a quarter.
-  TEST_METHOD(FlakSplashesItsSmallHits)
+  // Phase 1 design §5: the Flak Battery splashes as the Missile Rack does, 26 m around its target, which reaches the next
+  // Small hull in a formation, and its hit of 20 still tells against a Medium hull's armor (gate H10).
+  TEST_METHOD(FlakSplashesItsHits)
   {
     Arena arena;
     const Outpost::EntityId battery = arena.Ship(BLUE, SMALL, ION, FLAK_BATTERY, {0.0f, 0.0f});
@@ -257,7 +257,7 @@ public:
     };
     const Outpost::EntityId target = structure({130.0f, 0.0f}, 2);
     const Outpost::EntityId beside = structure({130.0f, 18.0f}, 2);
-    const Outpost::EntityId beyond = structure({130.0f, -25.0f}, 2);
+    const Outpost::EntityId beyond = structure({130.0f, -30.0f}, 2);
     const Outpost::EntityId armored = structure({145.0f, 0.0f}, 8);
 
     std::vector<Outpost::ShotView> shots;
@@ -265,18 +265,18 @@ public:
       shots = arena.Tick();
     Assert::AreEqual(size_t{1}, shots.size());
     Assert::IsTrue(shots[0].shooter == battery && shots[0].target == target && shots[0].weapon == FLAK_BATTERY);
-    Assert::AreEqual(20.0f, shots[0].splashRadiusMeters);
+    Assert::AreEqual(26.0f, shots[0].splashRadiusMeters);
 
     const auto lost = [&arena](Outpost::EntityId _id)
     {
       const Outpost::Entity& entity = *arena.World().FindEntity(_id);
       return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
     };
-    // 9 against an armor of 2, and a quarter of it against the Medium hull's 8.
-    Assert::AreEqual(700, lost(target));
-    Assert::AreEqual(700, lost(beside), L"18 m from the target");
-    Assert::AreEqual(0, lost(beyond), L"25 m from the target");
-    Assert::AreEqual(225, lost(armored), L"15 m away, after its armor");
+    // 20 against an armor of 2, and 12 against the Medium hull's 8.
+    Assert::AreEqual(1800, lost(target));
+    Assert::AreEqual(1800, lost(beside), L"18 m from the target");
+    Assert::AreEqual(0, lost(beyond), L"30 m from the target");
+    Assert::AreEqual(1200, lost(armored), L"15 m away, after its armor");
   }
 
   // Phase 1 design §5: the Rail Cannon outranges the Lance, and one hit breaks the fragile Pulse raider.

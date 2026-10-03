@@ -91,17 +91,17 @@ public:
     constexpr Outpost::WeaponId RAIL_CANNON{5};
     const auto armorOf = [&tuning](size_t _hull) { return tuning.hulls[_hull].armor * Outpost::HUNDREDTHS; };
 
-    // The raider: the fastest and most fragile, with the swarm-breaker's small hits splashing 20 m.
+    // The raider: the fastest and most fragile, with the swarm-breaker's hits splashing 26 m.
     const Outpost::DesignStats raider = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, PULSE, FLAK_BATTERY);
-    Assert::AreEqual(142, raider.cost);
+    Assert::AreEqual(132, raider.cost);
     Assert::AreEqual(16500, raider.hitPointsHundredths);
     Assert::AreEqual(96.0f, raider.movement.speedMetersPerSecond, 1e-4f);
     Assert::AreEqual(270.0f * std::numbers::pi_v<float> / 180.0f, raider.movement.turnRateRadiansPerSecond, 1e-4f);
-    Assert::AreEqual(140.0f, raider.rangeMeters);
-    Assert::AreEqual(20.0f, raider.splashRadiusMeters);
-    // 9 a hit: 7 against a Small hull's armor of 2, and a quarter, 2.25, against a Medium hull's 8.
-    Assert::AreEqual(14.0, Outpost::DamagePerSecond(raider, armorOf(0)), 1e-9);
-    Assert::AreEqual(4.5, Outpost::DamagePerSecond(raider, armorOf(1)), 1e-9);
+    Assert::AreEqual(200.0f, raider.rangeMeters);
+    Assert::AreEqual(26.0f, raider.splashRadiusMeters);
+    // 20 a hit every half second: 18 against a Small hull's armor of 2, and 12 against a Medium hull's 8 (gate H10).
+    Assert::AreEqual(36.0, Outpost::DamagePerSecond(raider, armorOf(0)), 1e-9);
+    Assert::AreEqual(24.0, Outpost::DamagePerSecond(raider, armorOf(1)), 1e-9);
 
     // The heavy's gun: 320 a hit every 6 s, from 240 m, past the Lance's 220 m.
     const Outpost::DesignStats rail = Outpost::DesignStatsFor(tuning, Outpost::HullId{3}, Outpost::DriveId{2}, RAIL_CANNON);
