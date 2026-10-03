@@ -72,8 +72,17 @@ enum class FireMode : std::uint8_t
 
 struct CheckOptions
 {
+  // Ore a side at each stage (Phase 1 design §7): tier 1's, the MVP's every component; the starting components' and tier
+  // 1's research; and tiers 2 and 3, whose research is played at their own budgets.
   std::vector<double> budgets{2000, 3000, 4500, 6000, 9000, 12000};
   std::vector<double> earlyBudgets{2000, 3000, 4500};
+  std::vector<double> tierTwoBudgets{4500, 6000, 9000, 12000};
+  std::vector<double> tierThreeBudgets{6000, 9000, 12000};
+  // The last tier played; 1 is the MVP's check.
+  std::int32_t lastTier = Outpost::RESEARCH_TIERS;
+  // Drives whose case is speed, which a battle between two groups cannot see: (b) reports them when no design worth
+  // building uses them, and does not fail on it (Phase 1 design §5, §7; owner, 2026-10-02, gate H4).
+  std::vector<std::string> speedDrives{"Pulse"};
   std::uint32_t battles = 60;
   std::uint32_t robustBattles = 30;
   std::uint32_t maxBattles = 480;

@@ -36,15 +36,18 @@ The model is deliberately small, and each simplification is one the design docum
 Every verdict is taken with a 95% confidence interval (Wilson). A win rate whose interval straddles its threshold is
 run again with --max-seeds battles, and if it still straddles it, the verdict is UNSURE, which fails the check.
 
-The Q2 check (§3) runs at two stages: every component, at 2,000-12,000 Ore, and the starting components (those no
-research topic unlocks), at 2,000-4,500 Ore. It passes when, at every budget of both stages and in both fire modes:
+The Q2 check (§3) runs at the stages of Phase 1 design §7: the starting components (those no research topic unlocks), at
+2,000-4,500 Ore; tier 1's, the MVP's every component, at 2,000-12,000; tier 2's at 4,500-12,000; and tier 3's at
+6,000-12,000. It passes when, at every budget of every stage and in both fire modes:
   (a) every design has a counter that beats it at least 80% of the time,
   (b) the designs worth building, the support of the equilibrium mix, use every hull, drive and weapon of the stage at
       one budget of the stage or more, in each fire mode (owner, 2026-10-01): a heavy hull need not pay at the
       smallest budget, nor a medium one at the largest,
   (c) none of the counters in (a) against those designs stops winning when any single tuning number moves by 5%, and
-  (d) at the starting budgets, no research topic, taken with its prerequisites by one side only, gives that side a
-      design that none of the other side's starting designs beats at least half the time.
+  (d) no research topic, taken with its prerequisites by one side only, gives that side a design that none of the
+      other side's designs beats at least half the time. A topic of tier 1 is played at the starting budgets against
+      the starting designs; one of a later tier at its tier's budgets against every design and upgrade of the tier
+      before. (b) does not ask the Pulse Drive to be worth building: its case is speed, which no battle here sees.
 
 Usage:
   python Tools/BattleModel.py                        the Q2 check against OutpostCommander/Assets/Tuning.json
@@ -144,6 +147,9 @@ UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("we
             ("weapon", "range"): "range"}
 # Upgrades with no effect on a battle between two clumps: the economy, structures, speed, Constructors and ore. The model
 # reads them, names them, and leaves them out.
+# Drives whose case is speed, which a battle between two clumps cannot see: (b) does not ask them to be worth building
+# (Phase 1 design §5, §7; owner, 2026-10-02, gate H4).
+SPEED_DRIVES = ("Pulse",)
 ECONOMY = {("Mining Rig", "income"), ("Shipyard", "build speed"), ("All structures", "HP"), ("Structure weapon", "fire rate"),
            ("All ships", "speed"), ("Constructors", "build rate"), ("Asteroids", "ore reserve")}
 
@@ -574,8 +580,11 @@ def print_matrix(designs, matrix):
     print(f"{d.code:>10}" + "".join(f"{'-':>9}" if i == j else f"{matrix[i][j]:>9.0%}" for j in range(len(designs))))
 
 
-def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
-  """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c)."""
+def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs, speed_drives=()):
+  """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c).
+
+  (b) does not ask a drive in `speed_drives` to be worth building, since a battle cannot see speed; it is still reported.
+  """
   designs = designs_from(*parts)
   print(f"\n==== {label}: {len(designs)} designs ====")
   # (b) is judged over the stage, in each fire mode: the components used at any of its budgets.
@@ -608,9 +617,13 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs):
       if unused:
         print(f"  Not worth building at this budget: {unused}")
   for focus in (False, True):
-    unused = unused_components(parts, used_in_stage[focus], unmodelled)
+    unused = unused_components(parts, used_in_stage[focus], unmodelled + list(speed_drives))
     if unused:
       failures["b"].append(f"{label}, {'focus' if focus else 'spread'} fire: no design worth building at any budget uses the {unused}")
+    exempt = [d for d in speed_drives if d in component_names(parts)[1] and d not in used_in_stage[focus][1]]
+    if exempt:
+      print(f"\n{label}, {'focus' if focus else 'spread'} fire: no design worth building at any budget uses the "
+            f"{', '.join(exempt)} drive, which (b) does not ask of it")
 
 
 def unused_components(parts, used, unmodelled):
@@ -619,29 +632,43 @@ def unused_components(parts, used, unmodelled):
                    for name in names if name not in in_use and name not in unmodelled)
 
 
-def research_check(pool, parts, topics, budgets, args, dt, failures):
-  """(d): each topic, with its prerequisites, researched by one side only, against the other side's starting designs."""
-  answers = designs_from(*available(parts, topics, []))
-  print(f"\n==== One-sided research (d): each topic against the {len(answers)} starting designs ====")
+def research_check(pool, parts, topics, tier, budgets, args, dt, failures):
+  """(d): each topic of `tier`, with its prerequisites, researched by one side only.
+
+  The other side has every topic of the tiers before: none for tier 1, as the MVP's (d), and every design and upgrade
+  of the tier before for a later tier (Phase 1 design §7). Only the designs the topic adds or changes are tested.
+  """
+  before = [t for t in topics if t.tier < tier]
+  answers = designs_from(*upgraded(available(parts, topics, before), before))
+  by_code = {d.code: d for d in answers}
+  print(f"\n==== One-sided research (d), tier {tier}: each topic against the {len(answers)} designs of "
+        f"{'the start' if tier == 1 else f'tier {tier - 1}'} ====")
   for topic in topics:
-    # The MVP's (d), over tier 1's topics; the later tiers get theirs with their stages (Phase 1 design §7, task 10.3).
-    if topic.tier != 1:
+    if topic.tier != tier:
+      continue
+    if not (topic.unlocks or topic.stat):
+      print(f"  {topic.name}: no effect on a battle")
       continue
     if (topic.target, topic.stat) in ECONOMY:
       print(f"  {topic.name}: no effect on a battle")
       continue
-    researched = with_prerequisites(topic, topics)
+    chain = [t for t in with_prerequisites(topic, topics) if t not in before]
+    researched = before + chain
     side = upgraded(available(parts, topics, researched), researched)
     designs = designs_from(*side)
     if topic.unlocks and not any(topic.unlocks in (d.hull, d.drive, d.weapon) for d in designs):
       print(f"  {topic.name}: not modelled")
+      continue
+    designs = [d for d in designs if by_code.get(d.code) != d]
+    if not designs:
+      print(f"  {topic.name}: changes no design")
       continue
     keys = [(budget, focus, x) for budget in budgets for focus in (False, True) for x in designs]
     tasks = [(y, x, budget, focus, args.seeds, dt) for budget, focus, x in keys for y in answers]
     records = iter(pool.map(pair_record, tasks, chunksize=4))
     contests = [[(y, x, budget, focus, next(records)[0], args.seeds) for y in answers] for budget, focus, x in keys]
     settled = settle(pool, contests, ROBUST_WIN_RATE, args.seeds, args.max_seeds, dt)
-    chain = " + ".join(t.name for t in researched)
+    chain = " + ".join(t.name for t in chain)
     (y, x, budget, focus, wins, n), _ = min(settled, key=lambda r: r[0][4] / r[0][5])
     print(f"  {chain}: weakest answer is {y.code} to {x.code}* at {wins / n:.0%} of {n} "
           f"({budget:,} Ore {'focus' if focus else 'spread'})")
@@ -656,18 +683,21 @@ def run(args):
   tick_hz, parts, research, ids = read_tuning(args.tuning)
   parts = apply_overrides(parts, args.set)
   topics = read_research(research, ids)
-  # Tier 1's components, the MVP's; the later tiers get their stages with task 10.3 (Phase 1 design §7).
-  parts = through_tier(parts, topics, 1)
+  every = parts
+  last_tier = max(1, min(args.last_tier, max(t.tier for t in topics)))
+  parts = through_tier(every, topics, last_tier)
   hulls, drives, weapons = parts
   dt = 1.0 / tick_hz
   designs = designs_from(hulls, drives, weapons)
   budgets = [int(b) for b in args.budgets.split(",")]
   early = [int(b) for b in args.early_budgets.split(",")]
+  tier_budgets = [budgets] + [[int(b) for b in later.split(",")] for later in (args.tier_two_budgets, args.tier_three_budgets)]
+  research_budgets = [early] + tier_budgets[1:]
   unmodelled = []  # every hull, drive and weapon is modelled
   start = available(parts, topics, [])
 
   print(f"Numbers from {args.tuning.name}" + (f", with {', '.join(args.set)}" if args.set else "") +
-        f". {len(designs)} designs, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
+        f". {len(designs)} designs through tier {last_tier}, {args.seeds} battles per pairing (up to {args.max_seeds} when a verdict is "
         f"uncertain), a {tick_hz:g} Hz tick.")
   print("Starting components: " + ", ".join(p.name for group in start for p in group) + ".")
   print()
@@ -678,9 +708,14 @@ def run(args):
   failures = {key: [] for key in ("a", "a?", "b", "c", "c?", "d", "d?")}
   legs = set()
   with concurrent.futures.ProcessPoolExecutor(max_workers=args.jobs) as pool:
-    stage(pool, "Every component", parts, budgets, args, dt, unmodelled, failures, legs)
-    stage(pool, "Starting components", start, early, args, dt, unmodelled, failures, legs)
-    research_check(pool, parts, topics, early, args, dt, failures)
+    # The stages of Phase 1 design §7: each tier's components at the budgets that fit when they arrive, the starting
+    # components, and each tier's research against the tier before.
+    for tier in range(1, last_tier + 1):
+      stage(pool, f"Tier {tier}", through_tier(every, topics, tier), tier_budgets[tier - 1], args, dt, unmodelled, failures,
+            legs, SPEED_DRIVES)
+      if tier == 1:
+        stage(pool, "Starting components", start, early, args, dt, unmodelled, failures, legs)
+      research_check(pool, every, topics, tier, research_budgets[tier - 1], args, dt, failures)
 
     if not args.quick:
       by_code = {d.code: d for d in designs}
@@ -735,9 +770,14 @@ def main():
   parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
   parser.add_argument("--tuning", type=Path, default=TUNING_DEFAULT, help="the tuning data to read (ADR-008)")
   parser.add_argument("--budgets", default="2000,3000,4500,6000,9000,12000",
-                      help="Ore per side for every component, comma-separated")
+                      help="Ore per side for tier 1's components, the MVP's every component, comma-separated")
   parser.add_argument("--early-budgets", default="2000,3000,4500",
-                      help="Ore per side for the starting components and the research check (d)")
+                      help="Ore per side for the starting components and tier 1's research check (d)")
+  parser.add_argument("--tier-two-budgets", default="4500,6000,9000,12000",
+                      help="Ore per side for tier 2's components and research (Phase 1 design §7)")
+  parser.add_argument("--tier-three-budgets", default="6000,9000,12000",
+                      help="Ore per side for tier 3's components and research (Phase 1 design §7)")
+  parser.add_argument("--last-tier", type=int, default=3, help="the last research tier to check; 1 is the MVP's check")
   parser.add_argument("--seeds", type=int, default=60, help="battles per pairing for the matrices")
   parser.add_argument("--robust-seeds", type=int, default=30, help="battles per pairing for the robustness sweep")
   parser.add_argument("--max-seeds", type=int, default=480,
