@@ -414,12 +414,27 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
 
 void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid)
 {
+  if (const SectorView* sector = FindSector(_snapshot.sectors, _asteroid.position);
+      sector != nullptr && sector->holder != m_player &&
+      std::ranges::none_of(m_slots, [sector](const Slot& _slot)
+                           { return _slot.structure == StructureKind::Relay && _slot.position == sector->node; }))
+    AddRelaySlot(_snapshot, *sector);
   const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
   const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
   m_slots.push_back({.structure = StructureKind::MiningRig,
                      .position = _asteroid.position,
                      .radiusMeters = radius,
                      .asteroid = _asteroid.id,
+                     .abandoned = type == nullptr || !type->buildable});
+}
+
+// A Relay stands on its sector's node, which is fixed, so its place is never searched for (ADR-056).
+void Outpost::AiPlayer::AddRelaySlot(const Snapshot& _snapshot, const SectorView& _sector)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::Relay);
+  m_slots.push_back({.structure = StructureKind::Relay,
+                     .position = _sector.node,
+                     .radiusMeters = type != nullptr ? type->radiusMeters : 0.0f,
                      .abandoned = type == nullptr || !type->buildable});
 }
 
@@ -600,6 +615,13 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
     return true;
   if (_slot.besideRig.has_value())
     return IsBlocked(m_slots[*_slot.besideRig], _snapshot);
+  // A rig or Relay in a sector the enemy holds waits for the enemy to lose it.
+  if (_slot.structure == StructureKind::MiningRig || _slot.structure == StructureKind::Relay)
+  {
+    const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
+    if (sector != nullptr && sector->holder.IsValid() && sector->holder != m_player)
+      return true;
+  }
   if (_slot.structure != StructureKind::MiningRig)
     return false;
   return std::ranges::any_of(_snapshot.entities,
@@ -607,6 +629,24 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                              {
                                return IsStructure(_entity, StructureKind::MiningRig) && _entity.owner != m_player &&
                                       Distance(_entity.position, _slot.position) <= SAME_PLACE_METERS;
+                             });
+}
+
+bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) const
+{
+  if (_snapshot.sectors.empty())
+    return true;
+  const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
+  if (_slot.structure == StructureKind::MiningRig)
+    return sector != nullptr && sector->holder == m_player;
+  if (_slot.structure != StructureKind::Relay)
+    return true;
+  return sector != nullptr && !sector->holder.IsValid() &&
+         std::ranges::any_of(sector->adjacent,
+                             [&](std::int32_t _id)
+                             {
+                               const auto adjacent = std::ranges::find(_snapshot.sectors, _id, &SectorView::id);
+                               return adjacent != _snapshot.sectors.end() && adjacent->holder == m_player;
                              });
 }
 
@@ -702,7 +742,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
-    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) ||
+    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) || !IsReady(slot, _snapshot) ||
         _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
         std::ranges::any_of(m_work, [i](const Work& _work) { return _work.slot == i; }))
       continue;
@@ -714,7 +754,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
     if (ore < type->cost)
       return true;
 
-    if (slot.structure != StructureKind::MiningRig)
+    if (slot.structure != StructureKind::MiningRig && slot.structure != StructureKind::Relay)
     {
       // Something may have taken the place since it was planned.
       StructureTypeView padded = *type;

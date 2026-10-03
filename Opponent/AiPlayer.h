@@ -78,8 +78,10 @@ private:
   void PlanShipyards(const Snapshot& _snapshot);
   // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
   void FollowOre(const Snapshot& _snapshot);
-  // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
+  // The plan's rig on _asteroid, after a Relay in the asteroid's sector when the plan has none there yet (Phase 2 design §4),
+  // and a Defence Platform beside a rig of the plan, on the side of its base.
   void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
+  void AddRelaySlot(const Snapshot& _snapshot, const SectorView& _sector);
   void AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig);
   // A Defence Platform round the base, toward the map's center, built once the income reaches _minimumIncome (task 12.2).
   void AddHomePlatform(const Snapshot& _snapshot, std::int32_t _minimumIncomeHundredthsPerSecond);
@@ -89,6 +91,9 @@ private:
   [[nodiscard]] bool IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const;
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
+  // Whether a slot can be built now (ADR-056): a Relay's node must be free and next to the AI's territory, and a rig's
+  // asteroid in a sector the AI holds. One that is not waits without holding up the rest of the plan.
+  [[nodiscard]] bool IsReady(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,
   // apart from slot _skippedSlot. Called during a decision only, and good until the next call.
   [[nodiscard]] std::span<const EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot);
