@@ -5,11 +5,13 @@ namespace Neuron
 class Renderer;
 struct MeshData;
 
-// A mesh in video memory: its vertices and indices, uploaded once, and its bounds (ADR-011). The mesh pipeline draws it.
+// A mesh in video memory: its vertices and indices, uploaded once into buffers it may share with other meshes, and its
+// bounds (ADR-011, ADR-048). The mesh pipeline draws it.
 class Mesh : NonCopyable
 {
 public:
-  // Uploads _data. Throws winrt::hresult_error if the device cannot take it.
+  // Uploads _data, in the renderer's open batch of uploads if there is one. Throws winrt::hresult_error if the device cannot
+  // take it.
   Mesh(Renderer& _renderer, const MeshData& _data);
 
   [[nodiscard]] const D3D12_VERTEX_BUFFER_VIEW& VertexBufferView() const noexcept
@@ -38,8 +40,8 @@ public:
   }
 
 private:
-  winrt::com_ptr<ID3D12Resource> m_vertexBuffer;
-  winrt::com_ptr<ID3D12Resource> m_indexBuffer;
+  StaticBuffer m_vertexBuffer;
+  StaticBuffer m_indexBuffer;
   D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView{};
   D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
   UINT m_indexCount = 0;

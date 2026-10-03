@@ -29,6 +29,19 @@ constexpr DWORD FRAME_WAIT_TIMEOUT_MILLISECONDS = 1000;
 constexpr UINT TIMESTAMPS_PER_FRAME = 2;
 constexpr UINT64 NANOSECONDS_PER_SECOND = 1'000'000'000;
 
+// Static buffers are placed in default-heap buffers of this size, so that a mesh is not a heap of its own; one larger than
+// this gets a buffer to itself (ADR-048).
+constexpr UINT64 STATIC_PAGE_BYTES = UINT64{4} << 20U;
+// Every static buffer starts on this boundary, which views of vertices, indices and instances all accept.
+constexpr UINT64 STATIC_ALIGNMENT_BYTES = 256;
+// A batch writes its uploads into upload buffers of this size, or into one of its own for an upload larger than this.
+constexpr UINT64 UPLOAD_PAGE_BYTES = UINT64{4} << 20U;
+
+constexpr UINT64 AlignUp(UINT64 _value, UINT64 _alignment) noexcept
+{
+  return (_value + _alignment - 1) & ~(_alignment - 1);
+}
+
 #if defined(_DEBUG)
 // The debug layer and DRED both need the Graphics Tools optional feature. Without it the game runs undiagnosed rather
 // than not at all (ADR-006).
@@ -153,6 +166,11 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].get(), nullptr,
                                                    IID_GRAPHICS_PPV_ARGS(m_commandList)));
   winrt::check_hresult(m_commandList->Close());
+
+  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(m_uploadAllocator)));
+  winrt::check_hresult(
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_uploadAllocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(m_uploadList)));
+  winrt::check_hresult(m_uploadList->Close());
 
   winrt::check_hresult(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(m_fence)));
   m_fenceEvent.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, 0, EVENT_ALL_ACCESS)));
@@ -323,40 +341,99 @@ std::vector<std::chrono::nanoseconds> Neuron::Renderer::TakeGpuFrameTimes()
   return times;
 }
 
-winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
+void Neuron::Renderer::BeginUploads()
 {
-  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(_bytes.size());
+  if (m_uploadsOpen)
+    return;
+  // The last batch was waited for, so its allocator is free.
+  winrt::check_hresult(m_uploadAllocator->Reset());
+  winrt::check_hresult(m_uploadList->Reset(m_uploadAllocator.get(), nullptr));
+  m_uploadsOpen = true;
+}
 
-  // A buffer is created in the common state and promoted to whatever its first use needs, the copy here and reading
-  // vertices or indices after it, so no barrier is recorded.
-  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
-  winrt::com_ptr<ID3D12Resource> buffer;
-  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
-                                                         nullptr, IID_GRAPHICS_PPV_ARGS(buffer)));
+void Neuron::Renderer::EndUploads()
+{
+  if (!m_uploadsOpen)
+    return;
+  m_uploadsOpen = false;
+  winrt::check_hresult(m_uploadList->Close());
+  ID3D12CommandList* lists[] = {m_uploadList.get()};
+  m_queue->ExecuteCommandLists(1, lists);
+  // The upload buffers and the allocator must outlive the copies.
+  WaitForGpu();
+  m_uploadPages.clear();
+}
 
+Neuron::Renderer::UploadSpace Neuron::Renderer::TakeUploadSpace(UINT64 _bytes, UINT64 _alignment)
+{
+  if (!m_uploadPages.empty())
+  {
+    UploadPage& page = m_uploadPages.back();
+    const UINT64 offset = AlignUp(page.usedBytes, _alignment);
+    if (offset <= page.sizeBytes && _bytes <= page.sizeBytes - offset)
+    {
+      page.usedBytes = offset + _bytes;
+      return {.resource = page.resource.get(), .offset = offset, .mapped = page.mapped + offset};
+    }
+  }
+
+  UploadPage page{.sizeBytes = std::max(UPLOAD_PAGE_BYTES, _bytes)};
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  winrt::com_ptr<ID3D12Resource> upload;
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(page.sizeBytes);
   winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                         nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
+                                                         nullptr, IID_GRAPHICS_PPV_ARGS(page.resource)));
   void* mapped = nullptr;
   const D3D12_RANGE nothingRead{.Begin = 0, .End = 0};
-  winrt::check_hresult(upload->Map(0, &nothingRead, &mapped));
-  std::memcpy(mapped, _bytes.data(), _bytes.size());
-  upload->Unmap(0, nullptr);
+  winrt::check_hresult(page.resource->Map(0, &nothingRead, &mapped));
+  page.mapped = static_cast<std::byte*>(mapped);
+  page.usedBytes = _bytes;
+  const UploadPage& added = m_uploadPages.emplace_back(std::move(page));
+  return {.resource = added.resource.get(), .offset = 0, .mapped = added.mapped};
+}
 
-  winrt::com_ptr<ID3D12CommandAllocator> allocator;
-  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
-  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(
-    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
-  commandList->CopyBufferRegion(buffer.get(), 0, upload.get(), 0, _bytes.size());
-  winrt::check_hresult(commandList->Close());
-  ID3D12CommandList* lists[] = {commandList.get()};
-  m_queue->ExecuteCommandLists(1, lists);
+Neuron::Renderer::StaticSpace Neuron::Renderer::TakeStaticSpace(UINT64 _bytes)
+{
+  // A buffer is created in the common state and promoted to whatever its use needs, the copy and then reading vertices,
+  // indices or instances, so no barrier is recorded.
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  if (_bytes > STATIC_PAGE_BYTES)
+  {
+    const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(_bytes);
+    StaticSpace space;
+    winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
+                                                           nullptr, IID_GRAPHICS_PPV_ARGS(space.buffer.resource)));
+    space.buffer.address = space.buffer.resource->GetGPUVirtualAddress();
+    return space;
+  }
 
-  // The upload buffer and the allocator must outlive the copy.
-  WaitForGpu();
-  return buffer;
+  UINT64 offset = AlignUp(m_staticPageUsedBytes, STATIC_ALIGNMENT_BYTES);
+  if (!m_staticPage || offset > STATIC_PAGE_BYTES || _bytes > STATIC_PAGE_BYTES - offset)
+  {
+    // The rest of the last page is left unused; the buffers in it keep it alive.
+    const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Buffer(STATIC_PAGE_BYTES);
+    m_staticPage = nullptr;
+    winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COMMON,
+                                                           nullptr, IID_GRAPHICS_PPV_ARGS(m_staticPage)));
+    offset = 0;
+  }
+  m_staticPageUsedBytes = offset + _bytes;
+  return {.buffer = {.resource = m_staticPage, .address = m_staticPage->GetGPUVirtualAddress() + offset}, .offset = offset};
+}
+
+Neuron::StaticBuffer Neuron::Renderer::CreateStaticBuffer(std::span<const std::byte> _bytes)
+{
+  const bool ownBatch = !m_uploadsOpen;
+  BeginUploads();
+  StaticSpace space = TakeStaticSpace(_bytes.size());
+  if (!_bytes.empty())
+  {
+    const UploadSpace upload = TakeUploadSpace(_bytes.size(), STATIC_ALIGNMENT_BYTES);
+    std::memcpy(upload.mapped, _bytes.data(), _bytes.size());
+    m_uploadList->CopyBufferRegion(space.buffer.resource.get(), space.offset, upload.resource, upload.offset, _bytes.size());
+  }
+  if (ownBatch)
+    EndUploads();
+  return std::move(space.buffer);
 }
 
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
@@ -369,6 +446,8 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
 winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                      std::span<const std::span<const std::byte>> _levels)
 {
+  const bool ownBatch = !m_uploadsOpen;
+  BeginUploads();
   const auto levelCount = static_cast<UINT16>(_levels.size());
   const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(_format, _width, _height, 1, levelCount);
   const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
@@ -376,18 +455,8 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
   winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_COPY_DEST,
                                                          nullptr, IID_GRAPHICS_PPV_ARGS(texture)));
 
-  const UINT64 uploadBytes = GetRequiredIntermediateSize(texture.get(), 0, levelCount);
-  const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
-  const CD3DX12_RESOURCE_DESC uploadDescription = CD3DX12_RESOURCE_DESC::Buffer(uploadBytes);
-  winrt::com_ptr<ID3D12Resource> upload;
-  winrt::check_hresult(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDescription,
-                                                         D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_GRAPHICS_PPV_ARGS(upload)));
-
-  winrt::com_ptr<ID3D12CommandAllocator> allocator;
-  winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
-  winrt::com_ptr<ID3D12GraphicsCommandList> commandList;
-  winrt::check_hresult(
-    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator.get(), nullptr, IID_GRAPHICS_PPV_ARGS(commandList)));
+  const UploadSpace upload =
+    TakeUploadSpace(GetRequiredIntermediateSize(texture.get(), 0, levelCount), D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
   // d3dx12 lays the rows out at the pitch the copy needs.
   std::vector<D3D12_SUBRESOURCE_DATA> sources;
   UINT levelHeight = _height;
@@ -397,17 +466,13 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
     sources.push_back({.pData = level.data(), .RowPitch = rowBytes, .SlicePitch = static_cast<LONG_PTR>(level.size())});
     levelHeight = std::max(1u, levelHeight / 2);
   }
-  if (UpdateSubresources(commandList.get(), texture.get(), upload.get(), 0, 0, levelCount, sources.data()) == 0)
+  if (UpdateSubresources(m_uploadList.get(), texture.get(), upload.resource, upload.offset, 0, levelCount, sources.data()) == 0)
     throw winrt::hresult_error(E_FAIL, L"A texture could not be uploaded.");
   const CD3DX12_RESOURCE_BARRIER toShader =
     CD3DX12_RESOURCE_BARRIER::Transition(texture.get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-  commandList->ResourceBarrier(1, &toShader);
-  winrt::check_hresult(commandList->Close());
-  ID3D12CommandList* lists[] = {commandList.get()};
-  m_queue->ExecuteCommandLists(1, lists);
-
-  // The upload buffer and the allocator must outlive the copy.
-  WaitForGpu();
+  m_uploadList->ResourceBarrier(1, &toShader);
+  if (ownBatch)
+    EndUploads();
   return texture;
 }
 

@@ -12,12 +12,12 @@ Neuron::Mesh::Mesh(Renderer& _renderer, const MeshData& _data)
   m_indexBuffer = _renderer.CreateStaticBuffer(indexBytes);
 
   m_vertexBufferView = {
-    .BufferLocation = m_vertexBuffer->GetGPUVirtualAddress(),
+    .BufferLocation = m_vertexBuffer.address,
     .SizeInBytes = static_cast<UINT>(vertexBytes.size()),
     .StrideInBytes = sizeof(MeshVertex),
   };
   m_indexBufferView = {
-    .BufferLocation = m_indexBuffer->GetGPUVirtualAddress(),
+    .BufferLocation = m_indexBuffer.address,
     .SizeInBytes = static_cast<UINT>(indexBytes.size()),
     .Format = DXGI_FORMAT_R32_UINT,
   };

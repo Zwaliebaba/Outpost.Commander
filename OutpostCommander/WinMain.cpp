@@ -138,8 +138,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
     Neuron::Renderer renderer(window.Handle(), window.ClientWidthPixels(), window.ClientHeightPixels());
-    // Loads every model before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011).
+    // Loads every model before the first frame, so a missing or broken mesh is reported rather than skipped (ADR-011). Its
+    // uploads go to the GPU together, and are waited for once (ADR-048).
+    renderer.BeginUploads();
     Outpost::GameClient client(renderer, ticksPerSecond);
+    renderer.EndUploads();
 
     auto lastFrame = std::chrono::steady_clock::now();
     const auto startMatch = [&]

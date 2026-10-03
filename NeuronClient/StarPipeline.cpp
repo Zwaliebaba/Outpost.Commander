@@ -133,7 +133,7 @@ void Neuron::StarPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const F
   if (m_starCount == 0)
     return;
   const D3D12_VERTEX_BUFFER_VIEW instanceView{
-    .BufferLocation = m_instances->GetGPUVirtualAddress(),
+    .BufferLocation = m_instances.address,
     .SizeInBytes = static_cast<UINT>(m_starCount * sizeof(Star)),
     .StrideInBytes = sizeof(Star),
   };

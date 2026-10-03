@@ -2,6 +2,15 @@
 
 namespace Neuron
 {
+// A run of bytes in video memory that never changes, for vertices, indices or instances (ADR-048). Runs share default-heap
+// buffers, so a view of one starts at its address rather than at its resource's start; the resource is held only to keep
+// the memory alive.
+struct StaticBuffer
+{
+  winrt::com_ptr<ID3D12Resource> resource;
+  D3D12_GPU_VIRTUAL_ADDRESS address = 0;
+};
+
 // The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame is drawn into a
 // multisampled scene target with a depth buffer of its own, both the size of the back buffer, and resolved into the back
 // buffer before it is presented (ADR-011, ADR-040). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It
@@ -37,13 +46,18 @@ public:
   // Resolves the frame BeginFrame started into the back buffer, submits it and presents it.
   void EndFrame();
 
-  // A buffer in video memory holding _bytes, for vertices or indices that never change. It is uploaded before this
-  // returns, so it is only for loading, not for use while frames are being recorded.
-  [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticBuffer(std::span<const std::byte> _bytes);
+  // Opens a batch of uploads (ADR-048): CreateStaticBuffer and CreateStaticTexture record their copies into one command
+  // list, through shared upload buffers, and EndUploads submits them all and waits for them once. What they return may
+  // not be drawn with before EndUploads. Outside a batch, each call is a batch of its own and waits for its copy.
+  void BeginUploads();
+  void EndUploads();
+
+  // _bytes in video memory, for vertices, indices or instances that never change, in a buffer that holds other runs too.
+  [[nodiscard]] StaticBuffer CreateStaticBuffer(std::span<const std::byte> _bytes);
 
   // A 2D texture in video memory holding _texels, one mip level, rows of _width texels of _format packed with no gap,
-  // ready to be read by pixel shaders. Like CreateStaticBuffer, it waits for the upload and is only for loading; it may
-  // also be called between frames, since it waits for every frame in flight too.
+  // ready to be read by pixel shaders once its batch is submitted. Outside a batch it waits for the upload, which also
+  // waits for every frame in flight, so it may be called between frames.
   [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                    std::span<const std::byte> _texels);
   // The same with mip levels: _levels holds each level's texels, largest first, each level half the size of the one
@@ -77,6 +91,23 @@ public:
   }
 
 private:
+  // Space for an upload in the batch's upload buffers, _alignment bytes aligned: the buffer, the offset in it, and where
+  // to write.
+  struct UploadSpace
+  {
+    ID3D12Resource* resource = nullptr;
+    UINT64 offset = 0;
+    std::byte* mapped = nullptr;
+  };
+  [[nodiscard]] UploadSpace TakeUploadSpace(UINT64 _bytes, UINT64 _alignment);
+  // Space for a static buffer in the default heap, and its offset in its resource.
+  struct StaticSpace
+  {
+    StaticBuffer buffer;
+    UINT64 offset = 0;
+  };
+  [[nodiscard]] StaticSpace TakeStaticSpace(UINT64 _bytes);
+
   void CreateRenderTargets();
   void CreateDepthBuffer();
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE SceneTargetView() const noexcept;
@@ -101,6 +132,22 @@ private:
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;
   winrt::com_ptr<ID3D12Fence> m_fence;
+  // The batch of uploads (ADR-048): its own allocator and command list, and the upload buffers it writes into, mapped,
+  // each with how much of it is taken. They are released once the batch's copies are done.
+  struct UploadPage
+  {
+    winrt::com_ptr<ID3D12Resource> resource;
+    std::byte* mapped = nullptr;
+    UINT64 sizeBytes = 0;
+    UINT64 usedBytes = 0;
+  };
+  winrt::com_ptr<ID3D12CommandAllocator> m_uploadAllocator;
+  winrt::com_ptr<ID3D12GraphicsCommandList> m_uploadList;
+  std::vector<UploadPage> m_uploadPages;
+  bool m_uploadsOpen = false;
+  // The default-heap buffer static buffers are being placed in, and how much of it is taken.
+  winrt::com_ptr<ID3D12Resource> m_staticPage;
+  UINT64 m_staticPageUsedBytes = 0;
   // Two timestamps per frame in flight, at the start and the end of its command list, resolved into a readback buffer.
   winrt::com_ptr<ID3D12QueryHeap> m_timestampHeap;
   winrt::com_ptr<ID3D12Resource> m_timestampReadback;

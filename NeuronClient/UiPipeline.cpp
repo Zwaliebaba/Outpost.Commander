@@ -118,9 +118,8 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
   }
   const auto indexBytes = std::as_bytes(std::span(indices));
   m_indexBuffer = _renderer.CreateStaticBuffer(indexBytes);
-  m_indexBufferView = {.BufferLocation = m_indexBuffer->GetGPUVirtualAddress(),
-                       .SizeInBytes = static_cast<UINT>(indexBytes.size()),
-                       .Format = DXGI_FORMAT_R16_UINT};
+  m_indexBufferView = {
+    .BufferLocation = m_indexBuffer.address, .SizeInBytes = static_cast<UINT>(indexBytes.size()), .Format = DXGI_FORMAT_R16_UINT};
 
   const CD3DX12_HEAP_PROPERTIES uploadHeap(D3D12_HEAP_TYPE_UPLOAD);
   const CD3DX12_RESOURCE_DESC vertexDescription =
