@@ -386,7 +386,33 @@ Outpost::Upgrades Outpost::Simulation::UpgradesOf(PlayerId _player) const
 
 Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuning& _tuning, std::span<const ResearchTopicId> _researched)
 {
-  return {.upgrades = UpgradesFrom(_tuning, _researched)};
+  ResearchEffects effects{.upgrades = UpgradesFrom(_tuning, _researched)};
+  effects.hulls.reserve(_tuning.hulls.size());
+  for (const HullTuning& hull : _tuning.hulls)
+    effects.hulls.push_back(ViewOf(hull, effects.upgrades, IsAvailable(_tuning, _researched, hull.id)));
+  effects.drives.reserve(_tuning.drives.size());
+  for (const DriveTuning& drive : _tuning.drives)
+    effects.drives.push_back(ViewOf(drive, IsAvailable(_tuning, _researched, drive.id)));
+  effects.weapons.reserve(_tuning.weapons.size());
+  for (const WeaponTuning& weapon : _tuning.weapons)
+    effects.weapons.push_back(ViewOf(weapon, effects.upgrades, IsAvailable(_tuning, _researched, weapon.id)));
+  effects.topics.reserve(_tuning.research.size());
+  for (const ResearchTopicTuning& topic : _tuning.research)
+  {
+    effects.topics.push_back({.id = topic.id,
+                              .nameUtf8 = topic.name,
+                              .effectUtf8 = EffectText(_tuning, topic),
+                              .cost = topic.cost,
+                              .researchSeconds = topic.researchSeconds,
+                              .prerequisites = topic.prerequisites,
+                              .researched = std::ranges::find(_researched, topic.id) != _researched.end(),
+                              .unlocksHull = UnlockedBy<HullId>(topic),
+                              .unlocksDrive = UnlockedBy<DriveId>(topic),
+                              .unlocksWeapon = UnlockedBy<WeaponId>(topic),
+                              .tier = topic.tier,
+                              .gateway = topic.IsGateway()});
+  }
+  return effects;
 }
 
 const Outpost::Simulation::ResearchEffects& Outpost::Simulation::EffectsOf(PlayerId _player) const noexcept
@@ -732,30 +758,13 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
 
-    const std::span<const ResearchTopicId> researched = Researched(_player);
-    const Upgrades& upgrades = EffectsOf(_player).upgrades;
-    for (const HullTuning& hull : m_tuning->hulls)
-      snapshot.hulls.push_back(ViewOf(hull, upgrades, IsAvailable(*m_tuning, researched, hull.id)));
-    for (const DriveTuning& drive : m_tuning->drives)
-      snapshot.drives.push_back(ViewOf(drive, IsAvailable(*m_tuning, researched, drive.id)));
-    for (const WeaponTuning& weapon : m_tuning->weapons)
-      snapshot.weapons.push_back(ViewOf(weapon, upgrades, IsAvailable(*m_tuning, researched, weapon.id)));
-    for (const ResearchTopicTuning& topic : m_tuning->research)
-    {
-      snapshot.research.push_back({.id = topic.id,
-                                   .nameUtf8 = topic.name,
-                                   .effectUtf8 = EffectText(*m_tuning, topic),
-                                   .cost = topic.cost,
-                                   .researchSeconds = topic.researchSeconds,
-                                   .prerequisites = topic.prerequisites,
-                                   .researched = std::ranges::find(researched, topic.id) != researched.end(),
-                                   .unlocksHull = UnlockedBy<HullId>(topic),
-                                   .unlocksDrive = UnlockedBy<DriveId>(topic),
-                                   .unlocksWeapon = UnlockedBy<WeaponId>(topic),
-                                   .tier = topic.tier,
-                                   .gateway = topic.IsGateway()});
-    }
-    snapshot.shipyardBuildSpeedFactor = upgrades.shipyardBuildSpeedFactor;
+    // The components and topics as the player has them, kept from when its research or the tuning data last changed.
+    const ResearchEffects& effects = EffectsOf(_player);
+    snapshot.hulls = effects.hulls;
+    snapshot.drives = effects.drives;
+    snapshot.weapons = effects.weapons;
+    snapshot.research = effects.topics;
+    snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
   }
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;

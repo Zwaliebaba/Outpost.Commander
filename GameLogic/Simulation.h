@@ -326,12 +326,17 @@ public:
   static constexpr std::size_t SPLIT_ORDER_SHIPS = 32;
 
 private:
-  // What a player's research makes of the tuning data: its upgrades. Every tick asks for it, so it is worked out again
-  // only when the tuning data or the player's research changes (UseTuning, AddPlayer, CompleteResearch). It follows from
-  // the topics researched, which are state, so it is not state itself and compares equal whatever it holds.
+  // What a player's research makes of the tuning data: its upgrades, and the components and research topics its snapshots
+  // show. Every tick asks for it, so it is worked out again only when the tuning data or the player's research changes
+  // (UseTuning, AddPlayer, CompleteResearch). It follows from the topics researched, which are state, so it is not state
+  // itself and compares equal whatever it holds.
   struct ResearchEffects
   {
     Upgrades upgrades;
+    std::vector<HullView> hulls;
+    std::vector<DriveView> drives;
+    std::vector<WeaponView> weapons;
+    std::vector<ResearchTopicView> topics;
 
     friend bool operator==(const ResearchEffects&, const ResearchEffects&) noexcept
     {
