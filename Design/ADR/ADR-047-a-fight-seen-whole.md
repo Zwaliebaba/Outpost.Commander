@@ -1,6 +1,6 @@
 # ADR-047 — A group passes an obstacle side by side, health bars keep a least size and show on Alt, and no income is a warning
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-010](ADR-010-movement-and-pathing.md) decisions 4 and 6 in part, and [ADR-041](ADR-041-ai-plays-a-longer-match.md) decision 2 in part
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -10,11 +10,11 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
 2. **The health bars could not be read.** At that zoom they were a few pixels of green, so the player could not tell which ships were hurt.
 3. **The Ore panel wrote "+0/s" in the figures' blue**, as calmly as any other income.
 
-**The columns came from two rules of ADR-010 working together**, not from the AI. The AI sends its fleets as whole groups, 20 or more warships with one attack-move order.
+**The columns came from two rules of movement working together**, not from the AI. The AI sends its fleets as whole groups, 20 or more warships with one attack-move order.
 
-- **A group shares one route** (decision 4). Every ship whose way to its slot is blocked joins the group's route at a corner, so every ship of the group passes the obstacle through the same corner.
-- **A ship lets a corner go as soon as it sees the waypoint after it** (decision 6). Past an obstacle, a ship sees its slot as soon as the straight line to the slot clears the obstacle's edge, and then it heads straight for the slot. Every such line touches the obstacle at the same place, so even a ship given its own way round would pass the obstacle where every other ship does.
-- An attack-moving ship stands to fire once an enemy is in range. The head of a column stops, and the rest arrive one after another.
+- **A group shared one route.** Every ship whose way to its slot was blocked joined the group's route at a corner, so every ship of the group passed the obstacle through the same corner.
+- **A ship let a corner go as soon as it saw the waypoint after it.** Past an obstacle, a ship saw its slot as soon as the straight line to the slot cleared the obstacle's edge, and then it headed straight for the slot. Every such line touches the obstacle at the same place, so even a ship given its own way round would pass the obstacle where every other ship did.
+- An attack-moving ship stands to fire once an enemy is in range. The head of a column stopped, and the rest arrived one after another.
 
 **Measured** in the Linux container with a probe of 25 Small+Ion ships in a 5 × 5 block, ordered 3 km past one field 200 m in radius. It measured the group's length along its mean heading against its width across it, worst while the group moved:
 
@@ -42,7 +42,7 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
    - On a 1,920-pixel-wide screen, the least size first applies past a 960 m view. At the default 500 m view, nothing changes. At the widest 1,600 m view, a Small hull's bar goes from about 19 × 3 pixels to 32 × 5.
    - **The window ignores the keyboard's menu key.** Alt pressed and released alone would open the window's menu and hold the frame loop in the menu's own loop until it closed, so the window swallows `SC_KEYMENU`. Alt+F4 and Alt+Enter still work.
 5. **An income of nothing is written in the HUD's warning color**, the salmon of a designer name the server would refuse. Any income above nothing stays in the figures' blue.
-6. **The AI regroups for 120 seconds after it falls back, not 150** (`regroupSeconds` in `Opponent.json`). With lanes, two AIs' matches grew longer than the owner's 45–60 minutes (ADR-041). The owner chose this setting on 2026-10-03 from those measured below. Nothing else in ADR-041 changes.
+6. **The AI regroups for 120 seconds after it falls back, not 150** (`regroupSeconds` in `Opponent.json`). With lanes, two AIs' matches grew longer than the owner's 45–60 minutes (ADR-041). The owner chose this setting on 2026-10-03 from those measured below.
 
 ## Consequences
 

@@ -24,7 +24,7 @@ std::string ReadDataFile(std::string_view _fileName)
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
-// Match setup on a server just made: the map is placed, and now every player's starting fleet (task 2.5), and the load a
+// Match setup on a server just made: the map is placed, and now every player's starting base (ADR-016), and the load a
 // measurement run asks for.
 std::unique_ptr<Outpost::Server> SetUpMatch(std::unique_ptr<Outpost::InProcessServer> _server, const Outpost::ServerDesc& _desc)
 {

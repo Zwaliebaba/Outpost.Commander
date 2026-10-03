@@ -17,8 +17,8 @@ public:
   // The text's size at the reference scale.
   static constexpr float FONT_UNITS = 20.0f;
 
-  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: the HUD's text as it has
-  // been since milestone 3, and the faces of the owner's mockup for the windows of Phase 1 (Phase 1 design §11): condensed
+  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: Segoe UI, a text's default
+  // face, and the faces of the owner's mockup (Phase 1 design §11), which the windows and the HUD take (ADR-043): condensed
   // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
   // smaller size for a part card's numbers.
   enum class Typeface : std::uint8_t

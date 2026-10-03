@@ -18,7 +18,7 @@ Phase 1 design §8 gives the 5 km map four rings of ore (owner, 2026-10-02, gate
 
 - **Phase 1 reads no sector.** Everything above the data is Phase 2's to decide.
 - **The AI had to change for the bigger map**, not the rules: an attack-move ends at each ship's place in its group's formation, and round a Command Station those places can stand out of a Mass Driver's reach. On the 2 km map that cost nothing; on the 5 km map the AI's whole fleet stood idle 150 m from the station it had come for. The AI now orders the ships of its attack group within 500 m of their target structure to attack it, once each.
-- **The layout is unconfirmed** until the owner's run (task 11.2), and the camera's zoom limit on it is gate H8.
+- **The layout is unconfirmed** until the owner's run (task 11.2). Gate H8 kept G3's 1,600 m zoom limit on it (owner, 2026-10-03).
 
 ## What this forecloses
 

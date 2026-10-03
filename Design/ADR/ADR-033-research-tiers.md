@@ -1,6 +1,6 @@
 # ADR-033 — Research has tiers opened by gateways, and upgrades of one stat add
 
-Status: **accepted** · 2026-10-03 · beside ADR-017, which it changes where it says two upgrades multiply
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -16,15 +16,13 @@ Phase 1 design §6 turns the MVP's eight research topics into three tiers of 25 
    - **A structure weapon's fire rate** divides its interval when it fires, as a weapon's does.
    - **Ship speed** is in the hull's speed, so a design's stats, the designer and every warship of the design follow it; a Constructor's speed is the rule's times the factor. Turn rates do not change (Phase 1 design §6). A move under way keeps its pace until the next order.
    - **The Constructors' rate** multiplies both their build work and their repair, by their player's research.
-   - **The ore reserve** is held in `Upgrades` for the asteroids of task 11.1, which are the first to have a reserve.
+   - **The ore reserve** factor divides what its player's rigs draw from their asteroids ([ADR-035](ADR-035-ore-depletion.md) decision 3).
 5. **The snapshot** gives each topic its tier and whether it is a gateway, and the research window lists the topics tier by tier, a gateway edged in gold.
-6. **Both Q2 checks**, the C++ one and `Tools/BattleModel.py`, add percentages the same way, read the new kinds of effect, and leave out by name those a battle between two clumps cannot feel: economy, structures, speed, Constructors and ore. Their (d) stays over tier 1's topics, the MVP's, until task 10.3 gives each tier its stage.
+6. **Both Q2 checks**, the C++ one and `Tools/BattleModel.py`, add percentages the same way, read the new kinds of effect, and leave out by name those a battle between two clumps cannot feel: economy, structures, speed, Constructors and ore. Their (d) runs per tier, as Phase 1 design §7 has it.
 
 ## Consequences
 
-- **Tier 1 is unchanged**, numbers and verdicts: no tier-1 rate has two topics, and the Q2 check of record runs tier 1 only.
-- **Four of the 17 topics arrive with their components** in task 10.2: the Pulse Drive's, the Flak Battery's and the Rail Cannon's unlocks, and Proximity Fuses, which raises the Flak Battery's rate. The loader refuses a topic that names a component the data does not have, so they cannot come first.
-- **Deep Core Survey does nothing yet**: its factor waits for task 11.1's reserves, and its topic says what it will do.
+- **Tier 1 is unchanged**, numbers and verdicts: no tier-1 rate has two topics.
 - **A gateway is visible as data**, so the AI (task 10.4) and the match log read it the same way the HUD does.
 
 ## What this forecloses

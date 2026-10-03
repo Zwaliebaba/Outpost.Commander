@@ -5,7 +5,7 @@ namespace Neuron
 class Renderer;
 struct TextureData;
 
-// Draws a sky of stars at infinity (ADR-021, ADR-022). Each star is a direction, so moving the camera never moves it and
+// Draws a sky of stars at infinity (ADR-022). Each star is a direction, so moving the camera never moves it and
 // only turning the camera does. A star is a square facing the screen, sized in pixels rather than meters, and added to
 // the frame, so stars that overlap add up. Its Shape says what it looks like. The sky is drawn first, with no depth test, and everything drawn after it covers it.
 // The stars are uploaded once, and a frame draws them all in one instanced draw. It knows no game concept: the caller

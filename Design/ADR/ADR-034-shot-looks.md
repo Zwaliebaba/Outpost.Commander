@@ -1,6 +1,6 @@
 # ADR-034 — A weapon's shot look is presentation data, and the Rail Cannon fires a slug
 
-Status: **accepted** · 2026-10-03 · beside ADR-019, which put the drives' exhaust colors in `Models.json`
+Status: **accepted** · 2026-10-03
 
 ## Context
 
