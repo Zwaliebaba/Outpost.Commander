@@ -150,6 +150,17 @@ public:
     const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
     const Outpost::ModelSet& human = catalog.Set("Human");
     Assert::AreEqual(std::wstring(L"Models\\Human\\Small.nmf"), Outpost::ModelFileName(human, human.Model("Small")));
+    // ADR-045: a model that grows is drawn at its first level until the game grows it.
+    Assert::AreEqual(5, human.Model("ResearchLab").levels);
+    Assert::AreEqual(std::wstring(L"Models\\Human\\ResearchLab_L1.nmf"), Outpost::ModelFileName(human, human.Model("ResearchLab")));
+  }
+
+  TEST_METHOD(RejectsLevelsOutOfRange)
+  {
+    (void)Outpost::LoadModelCatalog(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "levels": 9 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "levels": 0 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "levels": 10 })", GOOD_COLOR));
+    ExpectRejected(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "levels": 2.5 })", GOOD_COLOR));
   }
 
   // A model's front is in its mesh since ADR-018, so the data no longer says it.

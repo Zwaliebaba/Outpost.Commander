@@ -1,6 +1,6 @@
 # ADR-018 — Meshes are baked from glTF sources into NMF files, which carry hardpoints
 
-Status: **accepted** · 2026-10-01
+Status: **accepted** · 2026-10-01 · Decision 5's layout and decision 2's refusal of every animation are superseded by [ADR-045](ADR-045-levels-and-spinning-parts.md): the NMF is version 2 and carries spinning parts, and a model may have one source a level
 
 ## Context
 

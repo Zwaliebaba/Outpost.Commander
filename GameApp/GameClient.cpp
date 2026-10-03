@@ -371,12 +371,27 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       const std::wstring fileName = ModelFileName(set, model);
       const Neuron::ByteBuffer bytes = ReadAsset(fileName);
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
-      m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
+      // The faces that stand still and each spinning part's (ADR-045), each with its creases, drawn over it as lines
+      // (ADR-027).
+      std::vector<ModelPiece> pieces;
+      const auto addPiece = [&](const Neuron::MeshData& _piece, const std::optional<Neuron::MeshPart>& _spin)
+      {
+        const Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
+        pieces.push_back(
+          {.faces = std::make_unique<Neuron::Mesh>(_renderer, _piece),
+           .edges = edges.vertices.empty() ? std::unique_ptr<Neuron::Mesh>{} : std::make_unique<Neuron::Mesh>(_renderer, edges),
+           .spin = _spin});
+      };
+      if (data.parts.empty())
+        addPiece(data, std::nullopt);
+      else
+      {
+        addPiece(Neuron::MeshPiece(data, 0, data.FixedIndexCount()), std::nullopt);
+        for (const Neuron::MeshPart& part : data.parts)
+          addPiece(Neuron::MeshPiece(data, part.firstIndex, part.indexCount), part);
+      }
+      m_modelPieces.emplace(MeshKey(set.name, model.name), std::move(pieces));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
-      // Its creases, drawn over it as lines (ADR-027).
-      const Neuron::MeshData edges = Neuron::BuildCreaseLines(data, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
-      if (!edges.vertices.empty())
-        m_modelEdges.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, edges));
       // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
       data.hardpoints.clear();
       m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
@@ -1214,13 +1229,15 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
 void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model,
                                     const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _fillShade)
 {
-  m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, _fillShade));
-  if (const auto edges = m_modelEdges.find(MeshKey(_set, _model)); edges != m_modelEdges.end())
+  const bool rock = _set == ASTEROID_SET;
+  const DirectX::XMFLOAT4 edgeColor =
+    rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
+  for (const ModelPiece& piece : ModelPieces(_set, _model))
   {
-    const bool rock = _set == ASTEROID_SET;
-    const DirectX::XMFLOAT4 color =
-      rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
-    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = color, .liftShare = LINE_LIFT_SHARE});
+    const DirectX::XMFLOAT4X4 world = PieceWorld(piece, _world);
+    m_pipeline.Draw(_commandList, *piece.faces, world, Shaded(_color, _fillShade));
+    if (piece.edges != nullptr)
+      m_lineDraws.push_back({.lines = piece.edges.get(), .world = world, .color = edgeColor, .liftShare = LINE_LIFT_SHARE});
   }
 }
 
@@ -1440,9 +1457,9 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
     {
       const ModelEntry& entry = set->Model(model->model);
       const DirectX::XMFLOAT3 standing{ghost.position.xMeters, 0.0f, ghost.position.zMeters};
-      m_pipeline.Draw(_commandList, ModelMesh(set->name, model->model),
-                      WorldMatrix(standing, 0.0f, 2.0f * type->radiusMeters / entry.lengthMeters),
-                      ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
+      const DirectX::XMFLOAT4X4 world = WorldMatrix(standing, 0.0f, 2.0f * type->radiusMeters / entry.lengthMeters);
+      for (const ModelPiece& piece : ModelPieces(set->name, model->model))
+        m_pipeline.Draw(_commandList, *piece.faces, PieceWorld(piece, world), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
     }
   }
 }
@@ -1463,10 +1480,18 @@ const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, s
   return found->second;
 }
 
-const Neuron::Mesh& Outpost::GameClient::ModelMesh(std::string_view _set, std::string_view _model) const
+const std::vector<Outpost::GameClient::ModelPiece>& Outpost::GameClient::ModelPieces(std::string_view _set, std::string_view _model) const
 {
-  const auto found = m_modelMeshes.find(MeshKey(_set, _model));
-  if (found == m_modelMeshes.end())
+  const auto found = m_modelPieces.find(MeshKey(_set, _model));
+  if (found == m_modelPieces.end())
     throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
-  return *found->second;
+  return found->second;
+}
+
+DirectX::XMFLOAT4X4 Outpost::GameClient::PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept
+{
+  if (!_piece.spin.has_value())
+    return _world;
+  // On the view's clock, as the effects are, so that a part turns with the match's time.
+  return Neuron::PartWorld(*_piece.spin, m_view.ViewTick() / m_ticksPerSecond, _world);
 }

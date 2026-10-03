@@ -84,7 +84,19 @@ private:
     }
   };
 
-  [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
+  // A model on the GPU in pieces: the faces that stand still and each spinning part's (ADR-045), each with its creases as
+  // lines (ADR-027), which are null for a piece with no creases.
+  struct ModelPiece
+  {
+    std::unique_ptr<Neuron::Mesh> faces;
+    std::unique_ptr<Neuron::Mesh> edges;
+    // How the piece spins; nothing for the faces that stand still.
+    std::optional<Neuron::MeshPart> spin;
+  };
+
+  [[nodiscard]] const std::vector<ModelPiece>& ModelPieces(std::string_view _set, std::string_view _model) const;
+  // The world matrix that draws _piece of a model drawn by _world, turned as far as its spin has gone at the view's tick.
+  [[nodiscard]] DirectX::XMFLOAT4X4 PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept;
   [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
   // A model's triangles on the CPU, for an explosion to break (ADR-026).
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
@@ -206,7 +218,7 @@ private:
   std::vector<EntityView> m_entities;
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
-  std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;
+  std::map<std::string, std::vector<ModelPiece>, std::less<>> m_modelPieces;
   std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
   std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
@@ -219,8 +231,6 @@ private:
   std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
-  // Each model's creases as a line list, keyed as m_modelMeshes; none for a mesh with no creases (ADR-027).
-  std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelEdges;
   // The lines of the models drawn this frame, drawn together after them; and the structures' rings.
   std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
   std::vector<Neuron::MeshPipeline::LineDraw> m_ringDraws;
@@ -228,7 +238,7 @@ private:
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
-  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelMeshes.
+  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelPieces.
   std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.

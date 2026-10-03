@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Bakes the meshes' glTF sources into the NMF files the game loads (ADR-018).
+"""Bakes the meshes' glTF sources into the NMF files the game loads (ADR-018, ADR-045).
 
 Each model's source is a binary glTF, Art/Models/<Set>/<Model>.glb, edited with Blender's own glTF import and export.
-This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions and normals, and
-the model's hardpoints, in the game's frame. The .nmf files are committed, and CI runs --check to prove each one is
-exactly what its source bakes to. CPython's floats are IEEE doubles with no fused operations, so a bake is the same
-bytes on every machine.
+This turns each into OutpostCommander/Assets/Models/<Set>/<Model>.nmf: one triangle list of positions and normals, the
+model's hardpoints and its spinning parts, in the game's frame. A model that grows has one source a level,
+<Model>_L1.glb to <Model>_L5.glb, and each is baked as a model of its own. The .nmf files are committed, and CI runs
+--check to prove each one is exactly what its source bakes to. CPython's floats are IEEE doubles with no fused
+operations, so a bake is the same bytes on every machine.
 
 The frames. glTF is right-handed with +y up, +z forward and -x to the right; Blender's exporter turns its own z-up
 frame into that one. The game is left-handed with +y up and +x forward (ADR-011, ADR-012). A point (x, y, z) of the
@@ -19,17 +20,29 @@ the axis Blender's Single Arrow display draws, and up is its +y. Its size is the
 Everything is baked in world space, so it does not matter whether an empty is parented to the model or a transform is
 applied.
 
+A spinning part is a node whose rotation an animation turns: a radar on its mast, say. The animation must be a steady
+spin, which is what Blender's keys for one make: linear keys, each less than half a turn from the last, all about one
+axis through the node's origin, turning at one rate, and ending a whole number of turns from the first. The part is the
+node and everything under it, baked as its first key stands, and the game turns it about the same axis at the same
+rate. A part may not hold a hardpoint or another part. The node's extras, such as a spin_period_s, are not read: the
+animation is what Blender plays.
+
 What a source may hold is narrow, and anything else is refused with the file's name rather than baked into something
-the game would draw wrongly: triangles only, a position and a normal on every vertex, no skin, morph target or
-animation, no extension the file requires (Draco or quantized meshes, say), and no sparse accessor. Materials, texture
-coordinates, cameras and lights are left in the source and not baked.
+the game would draw wrongly: triangles only, a position and a normal on every vertex, no skin or morph target, no
+animation but a part's spin, no extension the file requires (Draco or quantized meshes, say), and no sparse accessor.
+Materials, texture coordinates, cameras and lights are left in the source and not baked.
 
-The NMF layout, little-endian, version 1:
+The NMF layout, little-endian, version 2:
 
-  char magic[4] = "NMF\\0"; u32 version; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 flags = 0
+  char magic[4] = "NMF\\0"; u32 version; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
   vertexCount    x { f32 position[3]; f32 normal[3]; }
   indexCount     x u32, a multiple of 3, each below vertexCount
   hardpointCount x { u8 tagLength; char tag[tagLength]; f32 position[3]; f32 forward[3]; f32 up[3]; f32 size; }
+  partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
+
+The fixed triangles come first, then each part's, so the parts' index runs follow each other to the end. A part turns a
+whole turn each period about its pivot, the way DirectXMath's XMMatrixRotationAxis(axis, angle) turns a point as the
+angle grows: clockwise, looking along the axis toward the origin, in the game's left-handed frame.
 
 Usage:
   python Tools/BakeMeshes.py                 bake every source
@@ -53,10 +66,11 @@ SOURCE_DIRECTORY = ROOT / "Art" / "Models"
 OUTPUT_DIRECTORY = ROOT / "OutpostCommander" / "Assets" / "Models"
 
 NMF_MAGIC = b"NMF\0"
-NMF_VERSION = 1
-NMF_HEADER = struct.Struct("<4s5I")
+NMF_VERSION = 2
+NMF_HEADER = struct.Struct("<4s6I")
 NMF_VERTEX = struct.Struct("<6f")
 NMF_HARDPOINT_FLOATS = struct.Struct("<10f")
+NMF_PART = struct.Struct("<2I7f")
 MAXIMUM_TAG_LENGTH = 31
 
 GLB_MAGIC = b"glTF"
@@ -70,6 +84,11 @@ INDEX_COMPONENTS = {5121: ("B", 1), 5123: ("H", 2), 5125: ("I", 4)}
 HARDPOINT_NAME = re.compile(r"hp_([a-z][a-z0-9]*)(\.[0-9]+)?")
 # A hardpoint's scale is uniform when its axes' lengths agree to this share, which Blender's float32 easily meets.
 UNIFORM_SCALE_TOLERANCE = 1e-4
+# A spin's keys are about one axis when what lies off it is below this, and turn at one rate when each key's angle is
+# within this many radians of where the rate puts it; Blender's float32 keys meet both easily.
+SPIN_AXIS_TOLERANCE = 1e-4
+SPIN_ANGLE_TOLERANCE = 1e-3
+FULL_TURN = 2.0 * math.pi
 
 
 class BakeError(Exception):
@@ -145,6 +164,18 @@ def to_game(vector):
   return (vector[2], vector[1], vector[0])
 
 
+def dot(a, b):
+  return sum(x * y for x, y in zip(a, b))
+
+
+def quaternion_product(a, b):
+  """The rotation b then a, as glTF writes quaternions: (x, y, z, w)."""
+  ax, ay, az, aw = a
+  bx, by, bz, bw = b
+  return (aw * bx + ax * bw + ay * bz - az * by, aw * by - ax * bz + ay * bw + az * bx,
+          aw * bz + ax * by - ay * bx + az * bw, aw * bw - ax * bx - ay * by - az * bz)
+
+
 # ── Reading a .glb ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -194,7 +225,7 @@ def read_accessor(document, binary, index, component_types, item_type):
   if accessor.get("type") != item_type:
     raise BakeError(f"accessor {index} is a {accessor.get('type')}, not a {item_type}")
   count = accessor["count"]
-  width = {"SCALAR": 1, "VEC3": 3}[item_type]
+  width = {"SCALAR": 1, "VEC3": 3, "VEC4": 4}[item_type]
   code, size = (("f", 4) if component_type == FLOAT else INDEX_COMPONENTS[component_type])
   item_bytes = size * width
   if "bufferView" not in accessor:
@@ -211,14 +242,82 @@ def read_accessor(document, binary, index, component_types, item_type):
   return [item.unpack_from(binary, start + i * stride) for i in range(count)]
 
 
-def walk(document, node_index, parent, depth, visit):
+def read_spins(document, binary):
+  """Each spinning part's node index and its spin: the rotation it is baked at, its axis in its parent's frame, and the
+  seconds a turn takes."""
+  nodes = document.get("nodes", [])
+  spins = {}
+  for animation in document.get("animations", []):
+    samplers = animation.get("samplers", [])
+    for channel in animation.get("channels", []):
+      target = channel.get("target", {})
+      node_index = target.get("node")
+      if not isinstance(node_index, int) or not 0 <= node_index < len(nodes):
+        raise BakeError("an animation turns a node that does not exist")
+      name = nodes[node_index].get("name", str(node_index))
+      if target.get("path") != "rotation":
+        raise BakeError(f"node '{name}' is animated in its {target.get('path')}, and the game only spins parts")
+      if node_index in spins:
+        raise BakeError(f"node '{name}' is turned by more than one animation")
+      if "matrix" in nodes[node_index]:
+        raise BakeError(f"node '{name}' is animated and has a matrix")
+      sampler = samplers[channel["sampler"]]
+      if sampler.get("interpolation", "LINEAR") != "LINEAR":
+        raise BakeError(f"node '{name}' is animated with {sampler['interpolation']} keys, and a spin's are linear")
+      times = [item[0] for item in read_accessor(document, binary, sampler["input"], {FLOAT}, "SCALAR")]
+      keys = read_accessor(document, binary, sampler["output"], {FLOAT}, "VEC4")
+      spins[node_index] = read_spin(f"the animation of node '{name}'", times, keys)
+  return spins
+
+
+def read_spin(what, times, keys):
+  """The spin a rotation channel's keys make, or a refusal when they are not a steady spin."""
+  if len(times) < 2 or len(times) != len(keys):
+    raise BakeError(f"{what} has fewer than two keys, or not one rotation for each time")
+  if not all(math.isfinite(value) for value in times) or any(later <= earlier for earlier, later in zip(times, times[1:])):
+    raise BakeError(f"{what} has times that do not rise")
+  rotations = [normalized(key, f"a key of {what}") for key in keys]
+  first = rotations[0]
+  undo_first = (-first[0], -first[1], -first[2], first[3])
+  # Each key as a turn from the first, in the node's parent's frame: the rotation that takes the first key to it.
+  turns = [quaternion_product(rotation, undo_first) for rotation in rotations]
+  # The axis turns the second key forward from the first by less than half a turn.
+  second = turns[1] if turns[1][3] >= 0.0 else tuple(-value for value in turns[1])
+  if length(second[:3]) <= SPIN_AXIS_TOLERANCE:
+    raise BakeError(f"{what} does not turn from its first key to its second")
+  axis = normalized(second[:3], what)
+  angles = [0.0]
+  for turn in turns[1:]:
+    along = dot(turn[:3], axis)
+    if length(tuple(turn[i] - along * axis[i] for i in range(3))) > SPIN_AXIS_TOLERANCE:
+      raise BakeError(f"{what} does not turn about one axis")
+    # The same turn a whole turn on is the same rotation; it is the one within half a turn of the key before.
+    angle = 2.0 * math.atan2(along, turn[3])
+    angle += FULL_TURN * round((angles[-1] - angle) / FULL_TURN)
+    step = angle - angles[-1]
+    if step <= 0.0 or step >= math.pi - SPIN_ANGLE_TOLERANCE:
+      raise BakeError(f"{what} has keys that turn back, stand still or are half a turn or more apart")
+    angles.append(angle)
+  whole_turns = round(angles[-1] / FULL_TURN)
+  if whole_turns < 1 or abs(angles[-1] - whole_turns * FULL_TURN) > SPIN_ANGLE_TOLERANCE:
+    raise BakeError(f"{what} does not end a whole number of turns from where it starts")
+  span = times[-1] - times[0]
+  rate = whole_turns * FULL_TURN / span
+  if any(abs(angle - rate * (time - times[0])) > SPIN_ANGLE_TOLERANCE for angle, time in zip(angles, times)):
+    raise BakeError(f"{what} does not turn at one rate")
+  return {"rotation": first, "axis": axis, "period": span / whole_turns}
+
+
+def walk(document, node_index, parent, depth, visit, part):
+  """Visits a node and everything under it. visit takes the node, its parent's and its own world matrix and the part it
+  is in, and gives the part its children are in."""
   if depth > len(document.get("nodes", [])):
     raise BakeError("its nodes form a cycle")
   node = document["nodes"][node_index]
   world = multiply(parent, node_matrix(node))
-  visit(node, world)
+  part = visit(node_index, node, parent, world, part)
   for child in node.get("children", []):
-    walk(document, child, world, depth + 1, visit)
+    walk(document, child, world, depth + 1, visit, part)
 
 
 def bake(data):
@@ -228,25 +327,51 @@ def bake(data):
     raise BakeError("it is not glTF 2.0")
   if document.get("extensionsRequired"):
     raise BakeError(f"it requires the extensions {', '.join(document['extensionsRequired'])}")
-  if document.get("animations"):
-    raise BakeError("it has animations, and the game draws rigid meshes only")
   scenes = document.get("scenes", [])
   if not scenes:
     raise BakeError("it has no scene")
   scene = scenes[document.get("scene", 0)]
+  spins = read_spins(document, binary)
+  # A spinning part is baked as its first key stands, which is how glTF draws it when its animation starts.
+  for node_index, spin in spins.items():
+    document["nodes"][node_index] = dict(document["nodes"][node_index], rotation=list(spin["rotation"]))
 
   vertices = []
-  indices = []
+  # The triangles that stand still, as indices into vertices; and each part, by its node's name, with its own triangles.
+  fixed = []
+  parts = []
   hardpoints = []
 
-  def visit(node, world):
+  def visit(node_index, node, parent, world, part):
     name = node.get("name", "")
     if "skin" in node:
       raise BakeError(f"node '{name}' has a skin, and the game draws rigid meshes only")
+    if node_index in spins:
+      if part is not None:
+        raise BakeError(f"the spinning part '{name}' is in the spinning part '{part['name']}'")
+      part = add_part(node_index, name, parent, world)
     if name.startswith("hp_"):
+      if part is not None:
+        raise BakeError(f"the hardpoint '{name}' is on the spinning part '{part['name']}'")
       add_hardpoint(node, name, world)
     if "mesh" in node:
-      add_mesh(node, world)
+      add_mesh(node, world, fixed if part is None else part["indices"])
+    return part
+
+  def add_part(node_index, name, parent, world):
+    # The axis is in the parent's frame, which must not stretch it, or the turn would not be a rotation.
+    axes = [length(transform_direction(parent, axis)) for axis in ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))]
+    if axes[0] <= 0.0 or any(abs(axis - axes[0]) > UNIFORM_SCALE_TOLERANCE * axes[0] for axis in axes):
+      raise BakeError(f"the spinning part '{name}' is under a node that is not scaled uniformly")
+    axis = normalized(transform_direction(parent, spins[node_index]["axis"]), f"the axis of the spinning part '{name}'")
+    # A mirroring parent turns the spin the other way about its axis.
+    if determinant3(parent) < 0.0:
+      axis = tuple(-value for value in axis)
+    # The change of frame is a mirror too, so the game's axis is the source's, changed to the game's frame and reversed.
+    part = {"name": name, "indices": [], "pivot": to_game(transform_point(world, (0.0, 0.0, 0.0))),
+            "axis": tuple(-value for value in to_game(axis)), "period": spins[node_index]["period"]}
+    parts.append(part)
+    return part
 
   def add_hardpoint(node, name, world):
     match = HARDPOINT_NAME.fullmatch(name)
@@ -267,7 +392,7 @@ def bake(data):
     up = normalized(transform_direction(world, (0.0, 0.0, -1.0)), f"the hardpoint '{name}'")
     hardpoints.append((name, tag, to_game(position), to_game(forward), to_game(up), size))
 
-  def add_mesh(node, world):
+  def add_mesh(node, world, indices):
     meshes = document.get("meshes", [])
     if not 0 <= node["mesh"] < len(meshes):
       raise BakeError(f"node '{node.get('name', '')}' names a mesh that does not exist")
@@ -309,16 +434,24 @@ def bake(data):
         indices.extend((first + a, first + c, first + b) if reverse else (first + a, first + b, first + c))
 
   for root in scene.get("nodes", []):
-    walk(document, root, identity(), 0, visit)
+    walk(document, root, identity(), 0, visit, None)
 
-  if not indices:
-    raise BakeError("it has no triangles")
+  if not fixed:
+    raise BakeError("it has no triangles that stand still")
+  for part in parts:
+    if not part["indices"]:
+      raise BakeError(f"the spinning part '{part['name']}' has no triangles")
   if len(vertices) >= 2**32:
     raise BakeError("it has more vertices than 32-bit indices reach")
   # By name, so the order is the one the outliner shows and does not move when the file is saved again.
   hardpoints.sort(key=lambda hardpoint: hardpoint[0])
+  parts.sort(key=lambda part: part["name"])
+  indices = list(fixed)
+  for part in parts:
+    part["first"] = len(indices)
+    indices.extend(part["indices"])
 
-  output = bytearray(NMF_HEADER.pack(NMF_MAGIC, NMF_VERSION, len(vertices), len(indices), len(hardpoints), 0))
+  output = bytearray(NMF_HEADER.pack(NMF_MAGIC, NMF_VERSION, len(vertices), len(indices), len(hardpoints), len(parts), 0))
   for vertex in vertices:
     output += NMF_VERTEX.pack(*vertex)
   output += struct.pack(f"<{len(indices)}I", *indices)
@@ -326,12 +459,14 @@ def bake(data):
     encoded = tag.encode("ascii")
     output += struct.pack("<B", len(encoded)) + encoded
     output += NMF_HARDPOINT_FLOATS.pack(*position, *forward, *up, size)
+  for part in parts:
+    output += NMF_PART.pack(part["first"], len(part["indices"]), *part["pivot"], *part["axis"], part["period"])
   return bytes(output)
 
 
-def read_nmf_hardpoints(data):
-  """The hardpoints of an .nmf's bytes, for --list and the self-test."""
-  _, _, vertex_count, index_count, hardpoint_count, _ = NMF_HEADER.unpack_from(data, 0)
+def read_nmf_extras(data):
+  """The hardpoints and the parts of an .nmf's bytes, for --list and the self-test."""
+  _, _, vertex_count, index_count, hardpoint_count, part_count, _ = NMF_HEADER.unpack_from(data, 0)
   offset = NMF_HEADER.size + vertex_count * NMF_VERTEX.size + index_count * 4
   hardpoints = []
   for _ in range(hardpoint_count):
@@ -341,18 +476,29 @@ def read_nmf_hardpoints(data):
     values = NMF_HARDPOINT_FLOATS.unpack_from(data, offset)
     offset += NMF_HARDPOINT_FLOATS.size
     hardpoints.append((tag, values[0:3], values[3:6], values[6:9], values[9]))
-  return hardpoints
+  parts = []
+  for _ in range(part_count):
+    first, count, *values = NMF_PART.unpack_from(data, offset)
+    offset += NMF_PART.size
+    parts.append((first, count, tuple(values[0:3]), tuple(values[3:6]), values[6]))
+  return hardpoints, parts
+
+
+def read_nmf_hardpoints(data):
+  return read_nmf_extras(data)[0]
 
 
 # ── Writing a .glb: for the self-test's sources, and for the one-off migration from .cmo (ADR-018) ─────────────────
 
 
-def write_glb(meshes, hardpoints=(), extra=None):
+def write_glb(meshes, hardpoints=(), extra=None, animations=()):
   """A binary glTF of one node per mesh, each with its hardpoints as child nodes.
 
-  Each mesh is a dict of name, positions, normals, indices and, optionally, texcoords and a node translation and
-  rotation. Each hardpoint is a dict of parent (a mesh's position in the list), name, translation, rotation (x, y, z, w)
-  and scale. extra is merged into the document last, so a test can break it."""
+  Each mesh is a dict of name, positions, normals, indices and, optionally, texcoords, a node translation, rotation and
+  scale, and a parent (an earlier mesh's position in the list) to be the child of. Each hardpoint is a dict of parent (a
+  mesh's position in the list), name, translation, rotation (x, y, z, w) and scale. Each animation is a dict of node (a
+  mesh's position in the list), times and values, and optionally path (rotation unless given) and interpolation. extra
+  is merged into the document last, so a test can break it."""
   binary = bytearray()
   document = {"asset": {"version": "2.0", "generator": "Outpost Commander Tools/BakeMeshes.py"}, "scene": 0,
               "scenes": [{"nodes": []}], "nodes": [], "meshes": [], "accessors": [], "bufferViews": [], "buffers": []}
@@ -391,8 +537,10 @@ def write_glb(meshes, hardpoints=(), extra=None):
       if key in mesh:
         node[key] = list(mesh[key])
     document["nodes"].append(node)
-    document["scene"] = 0
-    document["scenes"][0]["nodes"].append(len(document["nodes"]) - 1)
+    if "parent" in mesh:
+      mesh_nodes[mesh["parent"]].setdefault("children", []).append(len(document["nodes"]) - 1)
+    else:
+      document["scenes"][0]["nodes"].append(len(document["nodes"]) - 1)
     mesh_nodes.append(node)
 
   for hardpoint in hardpoints:
@@ -402,6 +550,16 @@ def write_glb(meshes, hardpoints=(), extra=None):
         node[key] = [float(value) for value in hardpoint[key]]
     document["nodes"].append(node)
     mesh_nodes[hardpoint.get("parent", 0)].setdefault("children", []).append(len(document["nodes"]) - 1)
+
+  for animation in animations:
+    times = [float(time) for time in animation["times"]]
+    view = add_view(struct.pack(f"<{len(times)}f", *times), 34962)
+    document["accessors"].append({"bufferView": view, "componentType": FLOAT, "count": len(times), "type": "SCALAR",
+                                  "min": [min(times)], "max": [max(times)]})
+    sampler = {"input": len(document["accessors"]) - 1, "output": add_vec(animation["values"], False),
+               "interpolation": animation.get("interpolation", "LINEAR")}
+    target = {"node": animation["node"], "path": animation.get("path", "rotation")}
+    document.setdefault("animations", []).append({"channels": [{"sampler": 0, "target": target}], "samplers": [sampler]})
 
   while len(binary) % 4:
     binary.append(0)
@@ -476,10 +634,14 @@ def check_all():
 
 
 def list_hardpoints(path):
-  for tag, position, forward, up, size in read_nmf_hardpoints(bake_file(Path(path))):
+  hardpoints, parts = read_nmf_extras(bake_file(Path(path)))
+  for tag, position, forward, up, size in hardpoints:
     print(f"{tag:10s} at ({position[0]:9.3f}, {position[1]:9.3f}, {position[2]:9.3f})  forward "
           f"({forward[0]:6.3f}, {forward[1]:6.3f}, {forward[2]:6.3f})  up ({up[0]:6.3f}, {up[1]:6.3f}, {up[2]:6.3f})  "
           f"size {size:.3f}")
+  for first, count, pivot, axis, period in parts:
+    print(f"part       at ({pivot[0]:9.3f}, {pivot[1]:9.3f}, {pivot[2]:9.3f})  axis "
+          f"({axis[0]:6.3f}, {axis[1]:6.3f}, {axis[2]:6.3f})  a turn in {period:.3f} s  {count // 3} triangles from index {first}")
   return 0
 
 
@@ -501,8 +663,7 @@ def self_test():
   good = write_glb([triangle], [exhaust, {"name": "hp_gun", "translation": (0.0, 1.0, 0.0)}])
   baked = bake(good)
   expect(bake(good) == baked, "baking the same source twice gave different bytes")
-  magic, version, vertex_count, index_count, hardpoint_count, flags = NMF_HEADER.unpack_from(baked, 0)
-  expect((magic, version, vertex_count, index_count, hardpoint_count, flags) == (NMF_MAGIC, 1, 3, 3, 2, 0),
+  expect(NMF_HEADER.unpack_from(baked, 0) == (NMF_MAGIC, 2, 3, 3, 2, 0, 0),
          "the header of a one-triangle source with two hardpoints is wrong")
   vertices = [NMF_VERTEX.unpack_from(baked, NMF_HEADER.size + i * NMF_VERTEX.size) for i in range(3)]
   expect([vertex[:3] for vertex in vertices] == [(0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (2.0, 0.0, 0.0)],
@@ -537,9 +698,62 @@ def self_test():
   mirrored_corners = struct.unpack_from("<3I", mirrored, NMF_HEADER.size + 3 * NMF_VERTEX.size)
   expect(mirrored_corners == (0, 2, 1), "a mirrored model's triangles were reversed twice over")
 
+  # A spinning part: a triangle 4 m ahead of the model's origin, off its pivot, turned a whole turn in 8 s about glTF's +y
+  # by keys a quarter turn apart, as Blender writes a spin.
+  def spin_keys(axis, angles):
+    return [tuple(value * math.sin(angle / 2.0) for value in axis) + (math.cos(angle / 2.0),) for angle in angles]
+
+  quarters = [0.0, math.pi / 2.0, math.pi, 1.5 * math.pi, 2.0 * math.pi]
+  radar = dict(triangle, name="Radar", positions=[(1.0, 0.0, 0.0), (2.0, 0.0, 0.0), (1.0, 0.0, 1.0)], translation=(0.0, 0.0, 4.0))
+  spin = {"node": 1, "times": [0.0, 2.0, 4.0, 6.0, 8.0], "values": spin_keys((0.0, 1.0, 0.0), quarters)}
+  spinning = bake(write_glb([triangle, radar], animations=[spin]))
+  expect(NMF_HEADER.unpack_from(spinning, 0) == (NMF_MAGIC, 2, 6, 6, 0, 1, 0),
+         "the header of a source with a spinning part is wrong")
+  _, parts = read_nmf_extras(spinning)
+  first, count, pivot, axis, period = parts[0]
+  expect((first, count) == (3, 3), "the spinning part's triangles do not follow the fixed ones")
+  expect(pivot == (4.0, 0.0, 0.0) and period == 8.0, "the spinning part's pivot is not its node's origin, or its period not 8 s")
+  # Where the game puts each of the part's corners a quarter turn in is where glTF's animation puts it.
+  for corner in range(3):
+    point = NMF_VERTEX.unpack_from(spinning, NMF_HEADER.size + (3 + corner) * NMF_VERTEX.size)[:3]
+    offset = tuple(point[i] - pivot[i] for i in range(3))
+    across = (axis[1] * offset[2] - axis[2] * offset[1], axis[2] * offset[0] - axis[0] * offset[2],
+              axis[0] * offset[1] - axis[1] * offset[0])
+    # XMMatrixRotationAxis(axis, a quarter turn), as Rodrigues' formula writes it.
+    game = tuple(pivot[i] + across[i] + axis[i] * dot(axis, offset) for i in range(3))
+    keyed = node_matrix(dict(radar, rotation=spin["values"][1]))
+    source = to_game(transform_point(keyed, radar["positions"][corner]))
+    expect(all(abs(game[i] - source[i]) < 1e-5 for i in range(3)),
+           f"the game turns corner {corner} of the spinning part away from where the animation turns it")
+  spin_refusals = {
+    "an animated translation": [{"node": 1, "path": "translation", "times": [0.0, 1.0], "values": [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)]}],
+    "a spin with step keys": [dict(spin, interpolation="STEP")],
+    "a spin that stops short of a whole turn": [dict(spin, times=spin["times"][:4], values=spin["values"][:4])],
+    "a spin at two rates": [dict(spin, times=[0.0, 1.0, 4.0, 6.0, 8.0])],
+    "a spin about two axes": [dict(spin, values=spin["values"][:2] + spin_keys((1.0, 0.0, 0.0), quarters[2:]))],
+    "a spin with keys half a turn apart": [dict(spin, times=[0.0, 4.0, 8.0], values=spin_keys((0.0, 1.0, 0.0), quarters[::2]))],
+  }
+  for what, animations in spin_refusals.items():
+    try:
+      bake(write_glb([triangle, radar], animations=animations))
+    except BakeError:
+      continue
+    failures.append(f"{what} was baked rather than refused")
+  structure_refusals = {
+    "a hardpoint on a spinning part": write_glb([triangle, radar], [{"parent": 1, "name": "hp_gun"}], animations=[spin]),
+    "a spinning part in a spinning part": write_glb([triangle, radar, dict(radar, name="Dish", parent=1)],
+                                                    animations=[spin, dict(spin, node=2)]),
+    "a source whose every triangle spins": write_glb([radar], animations=[dict(spin, node=0)]),
+  }
+  for what, data in structure_refusals.items():
+    try:
+      bake(data)
+    except BakeError:
+      continue
+    failures.append(f"{what} was baked rather than refused")
+
   refusals = {
     "a Draco-compressed source": write_glb([triangle], extra={"extensionsRequired": ["KHR_draco_mesh_compression"]}),
-    "an animated source": write_glb([triangle], extra={"animations": [{"channels": [], "samplers": []}]}),
     "a hardpoint with a capital in its tag": write_glb([triangle], [{"name": "hp_Gun"}]),
     "a hardpoint with no tag": write_glb([triangle], [{"name": "hp_"}]),
     "a hardpoint scaled unevenly": write_glb([triangle], [{"name": "hp_gun", "scale": (1.0, 2.0, 1.0)}]),

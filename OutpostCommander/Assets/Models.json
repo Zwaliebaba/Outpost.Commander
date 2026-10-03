@@ -8,9 +8,9 @@
         { "name": "Medium", "lengthMeters": 35 },
         { "name": "Large", "lengthMeters": 60 },
         { "name": "Constructor", "lengthMeters": 24 },
-        { "name": "CommandStation", "lengthMeters": 60 },
-        { "name": "Shipyard", "lengthMeters": 60 },
-        { "name": "ResearchLab", "lengthMeters": 12 },
+        { "name": "CommandStation", "lengthMeters": 60, "levels": 5 },
+        { "name": "Shipyard", "lengthMeters": 60, "levels": 5 },
+        { "name": "ResearchLab", "lengthMeters": 12, "levels": 5 },
         { "name": "MiningRig", "lengthMeters": 4 },
         { "name": "DefensePlatform", "lengthMeters": 4 }
       ]
@@ -23,9 +23,9 @@
         { "name": "Medium", "lengthMeters": 35 },
         { "name": "Large", "lengthMeters": 60 },
         { "name": "Constructor", "lengthMeters": 24 },
-        { "name": "CommandStation", "lengthMeters": 60 },
-        { "name": "Shipyard", "lengthMeters": 60 },
-        { "name": "ResearchLab", "lengthMeters": 12 },
+        { "name": "CommandStation", "lengthMeters": 60, "levels": 5 },
+        { "name": "Shipyard", "lengthMeters": 60, "levels": 5 },
+        { "name": "ResearchLab", "lengthMeters": 12, "levels": 5 },
         { "name": "MiningRig", "lengthMeters": 4 },
         { "name": "DefensePlatform", "lengthMeters": 4 }
       ]

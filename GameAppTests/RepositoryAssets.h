@@ -24,7 +24,11 @@ inline std::string ReadRepositoryAssetText(std::string_view _fileName)
 // A model's converted mesh, as the game builds it from the repository's copy.
 inline Neuron::MeshData ReadRepositoryModel(const Outpost::ModelSet& _set, const Outpost::ModelEntry& _model)
 {
-  const std::string fileName = std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
+  // ModelFileName's names are ASCII, so narrowing them character by character is exact.
+  const std::wstring wideName = Outpost::ModelFileName(_set, _model);
+  std::string fileName;
+  for (const wchar_t c : wideName)
+    fileName.push_back(static_cast<char>(c));
   return Outpost::BuildModelMesh(ReadRepositoryAsset(fileName), _model, fileName);
 }
 } // namespace GameAppTests

@@ -85,7 +85,19 @@
     <None Include="Assets\Models\Asteroids\Large.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>
-    <None Include="Assets\Models\Human\CommandStation.nmf">
+    <None Include="Assets\Models\Human\CommandStation_L1.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L2.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L3.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L4.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\CommandStation_L5.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
     <None Include="Assets\Models\Human\Constructor.nmf">
@@ -103,16 +115,52 @@
     <None Include="Assets\Models\Human\MiningRig.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\ResearchLab.nmf">
+    <None Include="Assets\Models\Human\ResearchLab_L1.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Human\Shipyard.nmf">
+    <None Include="Assets\Models\Human\ResearchLab_L2.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab_L3.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab_L4.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\ResearchLab_L5.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L1.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L2.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L3.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L4.nmf">
+      <Filter>Package\Assets\Models\Human</Filter>
+    </None>
+    <None Include="Assets\Models\Human\Shipyard_L5.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
     <None Include="Assets\Models\Human\Small.nmf">
       <Filter>Package\Assets\Models\Human</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\CommandStation.nmf">
+    <None Include="Assets\Models\Tarkan\CommandStation_L1.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L2.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L3.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L4.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\CommandStation_L5.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
     <None Include="Assets\Models\Tarkan\Constructor.nmf">
@@ -130,10 +178,34 @@
     <None Include="Assets\Models\Tarkan\MiningRig.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\ResearchLab.nmf">
+    <None Include="Assets\Models\Tarkan\ResearchLab_L1.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
-    <None Include="Assets\Models\Tarkan\Shipyard.nmf">
+    <None Include="Assets\Models\Tarkan\ResearchLab_L2.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L3.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L4.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\ResearchLab_L5.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L1.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L2.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L3.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L4.nmf">
+      <Filter>Package\Assets\Models\Tarkan</Filter>
+    </None>
+    <None Include="Assets\Models\Tarkan\Shipyard_L5.nmf">
       <Filter>Package\Assets\Models\Tarkan</Filter>
     </None>
     <None Include="Assets\Models\Tarkan\Small.nmf">

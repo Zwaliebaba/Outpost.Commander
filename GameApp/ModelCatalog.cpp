@@ -33,6 +33,13 @@ Outpost::ModelEntry ReadModel(JsonObjectReader& _reader)
   Outpost::ModelEntry model;
   model.name = ReadName(_reader);
   model.lengthMeters = static_cast<float>(_reader.Number("lengthMeters", JsonBound::Positive));
+  if (_reader.Optional("levels") != nullptr)
+  {
+    model.levels = _reader.Integer("levels", 1);
+    if (model.levels > Outpost::MAXIMUM_MODEL_LEVELS)
+      Neuron::JsonFail(_reader.PathOf("levels"),
+                       std::format("a model has at most {} levels, found {}", Outpost::MAXIMUM_MODEL_LEVELS, model.levels));
+  }
   return model;
 }
 
@@ -307,7 +314,8 @@ const Outpost::BankLimits* Outpost::ModelCatalog::BankFor(const EntityView& _ent
 std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)
 {
   // The loader allows only ASCII letters and digits in names, so widening them character by character is exact.
-  const std::string name = std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
+  const std::string name = _model.levels > 0 ? std::format("Models\\{}\\{}_L{}.nmf", _set.name, _model.name, FIRST_MODEL_LEVEL)
+                                             : std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
   return {name.begin(), name.end()};
 }
 
