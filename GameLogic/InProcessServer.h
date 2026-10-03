@@ -80,10 +80,11 @@ public:
   // Match setup for a measurement run: places task 3.7's stress scene and keeps it at full size before every tick.
   void StartStressLoad();
 
-private:
-  // Builds the pathfinding graphs for every hull and the Constructor ahead of their first order.
+  // The end of match setup: builds the pathfinding graphs for every hull and the Constructor ahead of their first order,
+  // once every structure of the setup stands, since each one placed drops them (ADR-032).
   void PreparePathfinding();
 
+private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player.
   void RunTick();

@@ -211,5 +211,8 @@ std::unique_ptr<Outpost::Server> Outpost::CreateInProcessServer(const ServerDesc
     PlaceMeasurementLoad(server->World(), server->MapData(), server->TuningData());
   if (_desc.stressLoad)
     server->StartStressLoad();
+  // The bases and the loads placed structures, each of which dropped the graphs; built again now, the first order of the
+  // match does not pay for them (ADR-032).
+  server->PreparePathfinding();
   return server;
 }

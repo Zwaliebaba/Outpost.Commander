@@ -304,8 +304,12 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders;
   }
+
+  // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
+  // second (ADR-032), so that no tick plans more than about half of a large order's searches.
+  static constexpr std::size_t SPLIT_ORDER_SHIPS = 32;
 
 private:
   struct PlayerState
@@ -380,6 +384,41 @@ private:
   // structure blocks look for another.
   void UpdateObstacles();
   CommandResult OrderMove(PlayerId _player, const std::vector<EntityId>& _ships, PlanePosition _destination, ShipOrder _order);
+
+  // A group order whose ships' paths are being planned (ADR-032): what it orders, where to or whom, the routes its ships
+  // may join, and each ship's goal, its slot or the target, and its path once planned. Its ships hold, with no order, until
+  // every path is planned and the group sets off.
+  struct PlannedOrder
+  {
+    struct Member
+    {
+      EntityId ship;
+      PlanePosition goal;
+      std::optional<std::vector<PlanePosition>> path;
+
+      friend bool operator==(const Member&, const Member&) = default;
+    };
+
+    ShipOrder order = ShipOrder::Move;
+    // The order's destination, or the target's position when it was given.
+    PlanePosition destination;
+    EntityId attackTarget;
+    float widestRadiusMeters = 0.0f;
+    std::vector<GroupRoutes::Route> routes;
+    std::vector<Member> members;
+
+    friend bool operator==(const PlannedOrder&, const PlannedOrder&) = default;
+  };
+
+  // Plans the paths of _order's ships not planned yet, every _stride-th in its members' order, and keeps the routes they
+  // found.
+  void PlanPaths(PlannedOrder& _order, std::size_t _stride);
+  // Gives every ship of a fully planned _order its order and its path, and the group's pace.
+  void SetOff(const PlannedOrder& _order);
+  // Plans what is left of the orders planned in the last tick, and sets them off.
+  void FinishPlannedOrders();
+  // Plans _order now, or its first half now and the rest in the next tick, and sets it off once planned.
+  void Plan(PlannedOrder _order);
   [[nodiscard]] EntityId ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule);
   void Fight();
   void ChaseTargets();
@@ -416,6 +455,10 @@ private:
   Pathfinder m_pathfinder;
   // Who measures the tick under way, if anyone (Tick); null between ticks, so a copy never holds one, and not state.
   TickObserver* m_observer = nullptr;
+  // The group orders whose paths the next tick finishes planning (ADR-032), and whether this tick planned any paths, which
+  // leaves graph rebuilding to a quieter tick.
+  std::vector<PlannedOrder> m_plannedOrders;
+  bool m_plannedThisTick = false;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.

@@ -530,8 +530,12 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   m_destroyed.clear();
   {
     const ObservedPart part(m_observer, TickPart::Commands);
+    // The large orders of the last tick plan the rest of their paths and set off before this tick's orders, which may
+    // order their ships again (ADR-032).
+    FinishPlannedOrders();
     for (const Command& command : _commands)
     {
+      const std::size_t plannedBefore = m_plannedOrders.size();
       results.push_back(std::visit(
         [this, &command]<typename OrderType>(const OrderType& _order)
         {
@@ -542,6 +546,21 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
             return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
         },
         command.order));
+      // A ship given another order leaves the group it was planning with.
+      if (results.back() == CommandResult::Applied)
+      {
+        std::visit(
+          [this, plannedBefore]<typename OrderType>(const OrderType& _order)
+          {
+            if constexpr (requires { _order.ships; })
+            {
+              for (std::size_t index = 0; index < plannedBefore; ++index)
+                std::erase_if(m_plannedOrders[index].members, [&_order](const PlannedOrder::Member& _member)
+                              { return std::ranges::find(_order.ships, _member.ship) != _order.ships.end(); });
+            }
+          },
+          command.order);
+      }
     }
   }
 
@@ -581,6 +600,11 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     const ObservedPart part(m_observer, TickPart::Vision);
     UpdateVision();
   }
+  // A tick that planned no paths builds again one graph the obstacles' last change dropped, so that the next order finds
+  // it built (ADR-032). The graphs are a cache: when they are built changes no path.
+  if (!m_plannedThisTick)
+    (void)m_pathfinder.PrepareNext();
+  m_plannedThisTick = false;
   ++m_tick;
   return results;
 }
@@ -794,35 +818,126 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
     routes.SearchFrom(center);
   }
 
-  const ObservedPart shipPaths(m_observer, TickPart::ShipPaths);
+  // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010).
+  PlannedOrder planned{.order = _order, .destination = _destination, .widestRadiusMeters = widestRadius};
   const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
-  float slowestArrivalSeconds = 0.0f;
+  planned.members.reserve(ships.size());
   for (std::size_t index = 0; index < ships.size(); ++index)
   {
     const std::size_t row = index / columns;
     const std::size_t inRow = std::min(columns, ships.size() - row * columns);
     const float across = (static_cast<float>(index % columns) - static_cast<float>(inRow - 1) / 2.0f) * spacing;
-    const PlanePosition slot = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing);
+    planned.members.push_back(
+      {.ship = ships[index]->id, .goal = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing)});
+  }
+  planned.routes = routes.TakeRoutes();
+  Plan(std::move(planned));
+  return CommandResult::Applied;
+}
 
-    Entity& ship = *ships[index];
-    ship.order = _order;
+void Outpost::Simulation::Plan(PlannedOrder _order)
+{
+  m_plannedThisTick = true;
+  if (_order.members.size() <= SPLIT_ORDER_SHIPS)
+  {
+    PlanPaths(_order, 1);
+    SetOff(_order);
+    return;
+  }
+  // A large group plans every other ship now and the rest in the next tick, so that each tick plans as many of the ships
+  // ahead as of those behind, which search more often (ADR-032). Its ships hold until then.
+  for (const PlannedOrder::Member& member : _order.members)
+  {
+    Entity& ship = *FindMutableEntity(member.ship);
+    ship.order = ShipOrder::None;
     ship.attackTarget = {};
     ship.workTarget = {};
-    ship.destination = _destination;
-    ship.path = routes.PathFor(ship.position, slot, ship.radiusMeters);
-    ship.closestMeters = std::numeric_limits<float>::infinity();
-    ship.stalledTicks = 0;
-    if (ship.speedMetersPerSecond > 0.0f)
-      slowestArrivalSeconds = std::max(slowestArrivalSeconds, PathLength(ship.position, ship.path) / ship.speedMetersPerSecond);
+    ship.destination.reset();
+    ship.path.clear();
+  }
+  PlanPaths(_order, 2);
+  m_plannedOrders.push_back(std::move(_order));
+}
+
+void Outpost::Simulation::PlanPaths(PlannedOrder& _order, std::size_t _stride)
+{
+  const ObservedPart part(m_observer, TickPart::ShipPaths);
+  GroupRoutes routes(m_pathfinder, _order.destination, _order.widestRadiusMeters, std::move(_order.routes));
+  for (std::size_t index = 0; index < _order.members.size(); index += _stride)
+  {
+    PlannedOrder::Member& member = _order.members[index];
+    if (member.path.has_value())
+      continue;
+    // A ship destroyed while its group planned has no path to plan.
+    const Entity* ship = FindEntity(member.ship);
+    member.path = ship != nullptr ? routes.PathFor(ship->position, member.goal, ship->radiusMeters) : std::vector<PlanePosition>{};
+  }
+  _order.routes = routes.TakeRoutes();
+}
+
+void Outpost::Simulation::SetOff(const PlannedOrder& _order)
+{
+  if (_order.order == ShipOrder::Attack)
+  {
+    // A target destroyed while the group planned leaves its ships holding.
+    if (FindEntity(_order.attackTarget) == nullptr)
+      return;
+    for (const PlannedOrder::Member& member : _order.members)
+    {
+      Entity* ship = FindMutableEntity(member.ship);
+      if (ship == nullptr)
+        continue;
+      ship->order = ShipOrder::Attack;
+      ship->attackTarget = _order.attackTarget;
+      ship->workTarget = {};
+      ship->destination.reset();
+      ship->path = member.path.value_or(std::vector<PlanePosition>{});
+      ship->cruiseSpeedMetersPerSecond = ship->speedMetersPerSecond;
+      ship->closestMeters = std::numeric_limits<float>::infinity();
+      ship->stalledTicks = 0;
+      ship->chasedPosition = _order.destination;
+      ship->chaseTick = m_tick + m_ticksPerSecond;
+    }
+    return;
   }
 
-  for (Entity* ship : ships)
+  // Every ship cruises at its path's length over the time the slowest needs for its own, so that they arrive together.
+  float slowestArrivalSeconds = 0.0f;
+  for (const PlannedOrder::Member& member : _order.members)
   {
+    Entity* ship = FindMutableEntity(member.ship);
+    if (ship == nullptr)
+      continue;
+    ship->order = _order.order;
+    ship->attackTarget = {};
+    ship->workTarget = {};
+    ship->destination = _order.destination;
+    ship->path = member.path.value_or(std::vector<PlanePosition>{});
+    ship->closestMeters = std::numeric_limits<float>::infinity();
+    ship->stalledTicks = 0;
+    if (ship->speedMetersPerSecond > 0.0f)
+      slowestArrivalSeconds = std::max(slowestArrivalSeconds, PathLength(ship->position, ship->path) / ship->speedMetersPerSecond);
+  }
+  for (const PlannedOrder::Member& member : _order.members)
+  {
+    Entity* ship = FindMutableEntity(member.ship);
+    if (ship == nullptr)
+      continue;
     const float length = PathLength(ship->position, ship->path);
     ship->cruiseSpeedMetersPerSecond = slowestArrivalSeconds > 0.0f ? length / slowestArrivalSeconds : ship->speedMetersPerSecond;
   }
-  return CommandResult::Applied;
+}
+
+void Outpost::Simulation::FinishPlannedOrders()
+{
+  std::vector<PlannedOrder> planned = std::exchange(m_plannedOrders, {});
+  for (PlannedOrder& order : planned)
+  {
+    m_plannedThisTick = true;
+    PlanPaths(order, 1);
+    SetOff(order);
+  }
 }
 
 // Each ship closes on the target, along a route the group searched once, and fires at it once it is in range (design §7).
@@ -870,21 +985,13 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Attack
     routes.SearchFrom(PlanePosition{} + sum * (1.0f / static_cast<float>(attack.ships.size())));
   }
 
-  const ObservedPart shipPaths(m_observer, TickPart::ShipPaths);
+  PlannedOrder planned{
+    .order = ShipOrder::Attack, .destination = targetPosition, .attackTarget = attack.target, .widestRadiusMeters = widestRadius};
+  planned.members.reserve(attack.ships.size());
   for (const EntityId id : attack.ships)
-  {
-    Entity& ship = *FindMutableEntity(id);
-    ship.order = ShipOrder::Attack;
-    ship.attackTarget = attack.target;
-    ship.workTarget = {};
-    ship.destination.reset();
-    ship.path = routes.PathFor(ship.position, targetPosition, ship.radiusMeters);
-    ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
-    ship.closestMeters = std::numeric_limits<float>::infinity();
-    ship.stalledTicks = 0;
-    ship.chasedPosition = targetPosition;
-    ship.chaseTick = m_tick + m_ticksPerSecond;
-  }
+    planned.members.push_back({.ship = id, .goal = targetPosition});
+  planned.routes = routes.TakeRoutes();
+  Plan(std::move(planned));
   return CommandResult::Applied;
 }
 

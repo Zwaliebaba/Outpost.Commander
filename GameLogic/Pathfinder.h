@@ -43,6 +43,10 @@ public:
     (void)GraphFor(_clearanceMeters);
   }
 
+  // Builds the graph again for one clearance that had one before the obstacles last changed, the first such, and says
+  // whether there was one to build: the simulation spreads the rebuilding over quiet ticks (ADR-032).
+  bool PrepareNext() const;
+
   // Whether a ship of _clearanceMeters can travel straight from _a to _b.
   [[nodiscard]] bool IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
@@ -70,6 +74,8 @@ private:
   // searched in order rather than a map: there are only as many clearances as hulls, and moving a vector cannot throw,
   // where moving MSVC's std::map can.
   mutable std::vector<std::pair<float, Graph>> m_graphs;
+  // Every clearance a graph has been built for, in the order first built, which outlives the graphs themselves.
+  mutable std::vector<float> m_clearances;
   TickObserver* m_observer = nullptr;
 };
 
@@ -80,8 +86,19 @@ private:
 class GroupRoutes
 {
 public:
-  // _destination is moved clear of obstacles for _widestClearanceMeters, the clearance of the group's widest ship.
-  GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters);
+  // A route the group's ships may join: the corners of a path, not including its end, and the clearance it was searched
+  // with, which a ship needing more may not join.
+  struct Route
+  {
+    std::vector<PlanePosition> corners;
+    float clearanceMeters = 0.0f;
+
+    friend bool operator==(const Route&, const Route&) = default;
+  };
+
+  // _destination is moved clear of obstacles for _widestClearanceMeters, the clearance of the group's widest ship. A group
+  // whose paths are planned over two ticks (ADR-032) starts the second with the _routes it found in the first.
+  GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters, std::vector<Route> _routes = {});
 
   // Where the group is going, clear of obstacles: every slot is laid out around it.
   [[nodiscard]] PlanePosition Destination() const noexcept
@@ -96,17 +113,17 @@ public:
   // way, otherwise along a route and, when the route's end does not see the slot, through the destination.
   [[nodiscard]] std::vector<PlanePosition> PathFor(PlanePosition _start, PlanePosition _slot, float _clearanceMeters);
 
-private:
-  struct Route
+  // The routes found so far, the group's own first and then those its ships' searches made.
+  [[nodiscard]] std::vector<Route> TakeRoutes() noexcept
   {
-    // The corners of a path, not including its end.
-    std::vector<PlanePosition> corners;
-    // The clearance it was searched with; a ship needing more may not join it.
-    float clearanceMeters = 0.0f;
-  };
+    return std::move(m_routes);
+  }
 
+private:
   [[nodiscard]] std::optional<std::vector<PlanePosition>> Join(const Route& _route, PlanePosition _start, PlanePosition _goal,
                                                                float _clearanceMeters) const;
+  // The shortest any way from _start along _route to _goal can be, whatever it sees: no line test is made.
+  [[nodiscard]] static float ShortestJoinMeters(const Route& _route, PlanePosition _start, PlanePosition _goal) noexcept;
 
   const Pathfinder& m_pathfinder;
   float m_widestClearanceMeters = 0.0f;

@@ -26,7 +26,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 |---|---|---|---|---|
 | 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
-| 8.2 | Order ticks within 5 ms | 8.1 | — | todo |
+| 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run on the development machine |
 | 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet built or run |
@@ -110,6 +110,14 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: the change, superseding the parts of ADR-010 it changes.
 - **Acceptance:** `MovementTests` and `PathfinderTests` still pass, and the Q2 check's tier-1 stage still gives the MVP's report: a change to when ships start moving can change a battle, and if it does, the change is reported and the owner decides.
 - **Verify:** CI; **owner run** of `--measure --load` and Q5's measurement on the development machine. The figures go to design §10 and the MVP design's Q4 row is noted as superseded.
+- **As built:** [ADR-032](../Design/ADR/ADR-032-order-ticks.md), which records the measurement and the figures.
+  - **The measurement.** 8.1's parts, timed in a Linux build of the simulation with clang 18 and counted with callgrind, on task 2.7's load. The owner's breakdown from the development machine was not waited for: the container's order ticks are about a third of the MVP's on both the first and the later ticks, which is enough to say where the time goes. The breakdown is in ADR-032 and design §10.
+  - **The graphs** are built when match setup is over (`InProcessServer::PreparePathfinding`, now called by `CreateInProcessServer`), and again on quiet ticks, one a tick, after a structure drops them (`Pathfinder::PrepareNext`).
+  - **A large order** of more than `Simulation::SPLIT_ORDER_SHIPS`, 32, plans every other ship in its own tick and the rest in the next, and sets off then (`Simulation::PlannedOrder`, `Plan`, `PlanPaths`, `SetOff`, `FinishPlannedOrders`; `GroupRoutes` carries its routes over with `TakeRoutes`).
+  - **A search** sorts the corners the start may see 64 at a time instead of heaping them all, and a ship passes over a route that cannot come within the detour limit (`GroupRoutes::ShortestJoinMeters`). Both are checked to give the same paths: the load ends in the same state, bit for bit, with and without them.
+  - **Tests.** `MovementTests`: a large order planned over two ticks, held, then set off at one pace and arrived, a copy part-way equal to its original; a ship ordered again leaving its planning group; dropped graphs built on the quiet ticks after a structure, and an order then finding its graph built. Every `GameLogicTests` suite was also run in the container against a stand-in for the test framework: 164 passed.
+  - **The Q2 check** was run in full in the container before and after, and passes all four criteria both times. Large armies set off a tick later, so the shares of what is worth building move by a few points; ADR-032 lists the two that move more. The tier-1 stage's verdicts are the MVP's; whether its shares may move is the owner's to decide.
+  - **Not built or run on Windows in the container.** CI builds Debug|x64 and runs the suites. The owner's `--measure --load` run in Release|ARM64 is what closes the task and puts the development machine's figures in design §10.
 
 ---
 

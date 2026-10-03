@@ -24,9 +24,15 @@ constexpr float TOLERANCE_METERS = 0.01f;
 constexpr float TANGENT_TOLERANCE = 1e-3f;
 // Clear() pushes a point out of one obstacle at a time; a point wedged between two needs a few rounds.
 constexpr int CLEARING_ROUNDS = 4;
+// How many of the corners the start sees a search sorts at a time (ADR-032): about what one search takes off its queue.
+constexpr std::size_t START_BATCH = 64;
 // A ship of a group takes a shared route only when it is at most this many times the straight line to its slot. A
 // longer one is a detour, and since the group keeps the pace of its slowest ship, one ship's detour slows them all.
 constexpr float DETOUR_LIMIT = 1.5f;
+// The bound on a way along a route adds its lengths in another order than the way's own length does, so it is let past
+// the limit by this share before a route is passed over untried: a route it passes over is then always one whose way
+// would have been longer than the limit.
+constexpr float ROUNDING_ALLOWANCE = 1e-4f;
 
 float PathLength(Outpost::PlanePosition _from, const std::vector<Outpost::PlanePosition>& _path) noexcept
 {
@@ -112,6 +118,8 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
     return found->second;
 
   const ObservedPart building(m_observer, TickPart::GraphBuild);
+  if (std::ranges::find(m_clearances, _clearanceMeters) == m_clearances.end())
+    m_clearances.push_back(_clearanceMeters);
   Graph graph;
   // Each corner's outward direction, and how far from its tangent a line may turn and still touch its polygon there, as
   // a squared sine: within half the polygon's turn at a corner.
@@ -210,8 +218,10 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
   // Corners whose distance is the straight line from the start, not yet checked for an obstacle in the way.
   std::vector<bool> unchecked(nodeCount, false);
   using Entry = std::pair<float, std::uint32_t>;
-  // The start is done first: every corner gets the straight line from it, unchecked, and the queue is built from them in
-  // one go rather than a push at a time.
+  // The start is done first: every corner gets the straight line from it, unchecked. A search takes only a few dozen of
+  // those entries off the queue, so rather than heaping them all they wait in a list, of which the smallest are sorted a
+  // batch at a time; the queue holds only what relaxing pushes. The next entry is the smaller of the two fronts, which
+  // takes entries in the very order one queue would (ADR-032).
   distance[startNode] = 0.0f;
   done[startNode] = true;
   std::vector<Entry> fromStart;
@@ -223,7 +233,18 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
     unchecked[corner] = true;
     fromStart.emplace_back(distance[corner] + Distance(graph.nodes[corner], goal), corner);
   }
-  std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open(std::greater<>{}, std::move(fromStart));
+  // fromStart[next, sorted) is the sorted batch; what follows it is not sorted yet, and every entry there is larger.
+  std::size_t next = 0;
+  std::size_t sorted = 0;
+  const auto sortBatch = [&]
+  {
+    const std::size_t end = std::min(fromStart.size(), sorted + START_BATCH);
+    std::ranges::nth_element(fromStart.begin() + static_cast<std::ptrdiff_t>(sorted),
+                             fromStart.begin() + static_cast<std::ptrdiff_t>(end - 1), fromStart.end());
+    std::sort(fromStart.begin() + static_cast<std::ptrdiff_t>(sorted), fromStart.begin() + static_cast<std::ptrdiff_t>(end));
+    sorted = end;
+  };
+  std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open;
 
   auto relax = [&](std::uint32_t _from, std::uint32_t _to, float _length)
   {
@@ -235,10 +256,21 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
     }
   };
 
-  while (!open.empty())
+  while (true)
   {
-    const std::uint32_t current = open.top().second;
-    open.pop();
+    if (next == sorted && sorted < fromStart.size())
+      sortBatch();
+    const bool fromList = next < sorted && (open.empty() || fromStart[next] < open.top());
+    if (!fromList && open.empty())
+      break;
+    std::uint32_t current = 0;
+    if (fromList)
+      current = fromStart[next++].second;
+    else
+    {
+      current = open.top().second;
+      open.pop();
+    }
     if (done[current] || distance[current] == UNREACHED)
       continue;
     if (unchecked[current] && previous[current] == startNode)
@@ -282,10 +314,25 @@ std::vector<Outpost::PlanePosition> Outpost::Pathfinder::FindPath(PlanePosition 
   return path;
 }
 
-Outpost::GroupRoutes::GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters)
+bool Outpost::Pathfinder::PrepareNext() const
+{
+  for (const float clearance : m_clearances)
+  {
+    if (std::ranges::find(m_graphs, clearance, &std::pair<float, Graph>::first) == m_graphs.end())
+    {
+      (void)GraphFor(clearance);
+      return true;
+    }
+  }
+  return false;
+}
+
+Outpost::GroupRoutes::GroupRoutes(const Pathfinder& _pathfinder, PlanePosition _destination, float _widestClearanceMeters,
+                                  std::vector<Route> _routes)
   : m_pathfinder(_pathfinder),
     m_widestClearanceMeters(_widestClearanceMeters),
-    m_destination(_pathfinder.Clear(_destination, _widestClearanceMeters))
+    m_destination(_pathfinder.Clear(_destination, _widestClearanceMeters)),
+    m_routes(std::move(_routes))
 {
 }
 
@@ -313,6 +360,11 @@ std::vector<Outpost::PlanePosition> Outpost::GroupRoutes::PathFor(PlanePosition 
     {
       if (route.clearanceMeters < _clearanceMeters)
         continue;
+      // No way along a route is shorter than the straight line to one of its corners, the route from there and the
+      // straight line from its end to the slot. A route that cannot come within the limit even so is not tried: its line
+      // tests are most of what a ship's planning costs, and their answer could only be a detour (ADR-032).
+      if (ShortestJoinMeters(route, _start, goal) > limitMeters * (1.0f + ROUNDING_ALLOWANCE))
+        continue;
       if (std::optional<std::vector<PlanePosition>> path = Join(route, _start, goal, _clearanceMeters);
           path.has_value() && PathLength(_start, *path) <= limitMeters)
         return std::move(*path);
@@ -327,6 +379,19 @@ std::vector<Outpost::PlanePosition> Outpost::GroupRoutes::PathFor(PlanePosition 
   if (path.size() > 1)
     m_routes.push_back({{path.begin(), path.end() - 1}, _clearanceMeters});
   return path;
+}
+
+float Outpost::GroupRoutes::ShortestJoinMeters(const Route& _route, PlanePosition _start, PlanePosition _goal) noexcept
+{
+  float shortest = std::numeric_limits<float>::infinity();
+  float onward = 0.0f;
+  for (std::size_t corner = _route.corners.size(); corner-- > 0;)
+  {
+    if (corner + 1 < _route.corners.size())
+      onward += Distance(_route.corners[corner], _route.corners[corner + 1]);
+    shortest = std::min(shortest, Distance(_start, _route.corners[corner]) + onward);
+  }
+  return shortest + Distance(_route.corners.back(), _goal);
 }
 
 std::optional<std::vector<Outpost::PlanePosition>> Outpost::GroupRoutes::Join(const Route& _route, PlanePosition _start,
