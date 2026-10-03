@@ -178,6 +178,15 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
   };
   winrt::check_hresult(m_device->CreateDescriptorHeap(&depthHeapDescription, IID_GRAPHICS_PPV_ARGS(m_depthStencilHeap)));
 
+  const D3D12_DESCRIPTOR_HEAP_DESC shaderViewHeapDescription{
+    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+    .NumDescriptors = SHADER_VIEW_COUNT,
+    .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+    .NodeMask = 0,
+  };
+  winrt::check_hresult(m_device->CreateDescriptorHeap(&shaderViewHeapDescription, IID_GRAPHICS_PPV_ARGS(m_shaderViewHeap)));
+  m_shaderViewBytes = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
   for (auto& allocator : m_commandAllocators)
     winrt::check_hresult(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_GRAPHICS_PPV_ARGS(allocator)));
   winrt::check_hresult(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].get(), nullptr,
@@ -280,6 +289,9 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   ID3D12CommandAllocator* allocator = m_commandAllocators[m_frameIndex].get();
   winrt::check_hresult(allocator->Reset());
   winrt::check_hresult(m_commandList->Reset(allocator, nullptr));
+  // The frame's one shader-visible heap, bound before anything is drawn and never switched (ADR-051).
+  ID3D12DescriptorHeap* heaps[] = {m_shaderViewHeap.get()};
+  m_commandList->SetDescriptorHeaps(1, heaps);
   m_commandList->EndQuery(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, m_frameIndex * TIMESTAMPS_PER_FRAME);
   PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Scene");
 
@@ -349,6 +361,23 @@ void Neuron::Renderer::EndFrame()
   m_frameFenceValues[m_frameIndex] = ++m_fenceValue;
   CheckDeviceResult(m_queue->Signal(m_fence.get(), m_frameFenceValues[m_frameIndex]));
   PIXEndEvent();
+}
+
+UINT Neuron::Renderer::TakeShaderView()
+{
+  if (m_shaderViewsTaken == SHADER_VIEW_COUNT)
+    throw winrt::hresult_error(E_OUTOFMEMORY, L"The renderer's shader-visible heap has no free slot.");
+  return m_shaderViewsTaken++;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::ShaderViewCpu(UINT _slot) const noexcept
+{
+  return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_shaderViewHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(_slot), m_shaderViewBytes);
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE Neuron::Renderer::ShaderViewGpu(UINT _slot) const noexcept
+{
+  return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_shaderViewHeap->GetGPUDescriptorHandleForHeapStart(), static_cast<INT>(_slot), m_shaderViewBytes);
 }
 
 std::vector<std::chrono::nanoseconds> Neuron::Renderer::TakeGpuFrameTimes()

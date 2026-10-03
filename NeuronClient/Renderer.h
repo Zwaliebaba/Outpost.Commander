@@ -65,6 +65,15 @@ public:
   [[nodiscard]] winrt::com_ptr<ID3D12Resource> CreateStaticTexture(UINT _width, UINT _height, DXGI_FORMAT _format,
                                                                    std::span<const std::span<const std::byte>> _levels);
 
+  // Every view a shader reads lives in one shader-visible heap, which BeginFrame binds once for the whole frame, so that no
+  // pipeline switches heaps while the GPU works (ADR-051). A pipeline takes a slot for each view it keeps and writes the
+  // view there; slots are not given back.
+  static constexpr UINT SHADER_VIEW_COUNT = 32;
+  // A free slot. Throws winrt::hresult_error when every slot is taken.
+  [[nodiscard]] UINT TakeShaderView();
+  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE ShaderViewCpu(UINT _slot) const noexcept;
+  [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ShaderViewGpu(UINT _slot) const noexcept;
+
   // The GPU time of every frame whose work has finished since the last call, from the first command of its command list
   // to the last, oldest first (ADR-006). A frame's time arrives FRAME_COUNT frames after it was submitted.
   [[nodiscard]] std::vector<std::chrono::nanoseconds> TakeGpuFrameTimes();
@@ -123,6 +132,9 @@ private:
   winrt::com_ptr<IDXGISwapChain4> m_swapChain;
   winrt::com_ptr<ID3D12DescriptorHeap> m_renderTargetHeap;
   winrt::com_ptr<ID3D12DescriptorHeap> m_depthStencilHeap;
+  winrt::com_ptr<ID3D12DescriptorHeap> m_shaderViewHeap;
+  UINT m_shaderViewBytes = 0;
+  UINT m_shaderViewsTaken = 0;
   std::array<winrt::com_ptr<ID3D12Resource>, FRAME_COUNT> m_backBuffers;
   // What a frame is drawn into, SAMPLE_COUNT samples a pixel; one serves every frame in flight, since the queue runs them
   // in turn. It is resolved into m_resolvedScene, which is copied into the back buffer (ADR-040).

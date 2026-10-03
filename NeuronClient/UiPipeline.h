@@ -96,8 +96,9 @@ private:
   GlyphAtlas m_atlas;
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
-  winrt::com_ptr<ID3D12DescriptorHeap> m_descriptorHeap;
+  // The atlas, and the slot of its view in the renderer's shader-visible heap (ADR-051).
   winrt::com_ptr<ID3D12Resource> m_atlasTexture;
+  UINT m_atlasView = 0;
   StaticBuffer m_indexBuffer;
   D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
   // One slot of MAX_QUADS quads per frame in flight, mapped for the pipeline's lifetime.

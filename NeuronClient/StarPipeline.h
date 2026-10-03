@@ -61,9 +61,9 @@ private:
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;
   StaticBuffer m_instances;
-  // The sprite and the shader-visible heap with its view; both empty for Gaussian stars.
+  // The sprite, and its view in the renderer's shader-visible heap (ADR-051); empty and null for Gaussian stars.
   winrt::com_ptr<ID3D12Resource> m_sprite;
-  winrt::com_ptr<ID3D12DescriptorHeap> m_descriptorHeap;
+  D3D12_GPU_DESCRIPTOR_HANDLE m_spriteView{};
   UINT m_starCount = 0;
 };
 } // namespace Neuron

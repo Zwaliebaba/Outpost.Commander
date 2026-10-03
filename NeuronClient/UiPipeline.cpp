@@ -130,9 +130,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
-    .Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, .NumDescriptors = 1, .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, .NodeMask = 0};
-  winrt::check_hresult(device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_descriptorHeap)));
+  m_atlasView = _renderer.TakeShaderView();
 
   // Every quad is two triangles over its four corners: top-left, top-right, bottom-right, bottom-left.
   std::vector<std::uint16_t> indices;
@@ -190,7 +188,7 @@ void Neuron::UiPipeline::UseAtlas(UiAtlas _atlas)
     .ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
     .Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
     .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1, .PlaneSlice = 0, .ResourceMinLODClamp = 0.0f}};
-  m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_descriptorHeap->GetCPUDescriptorHandleForHeapStart());
+  m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_renderer.ShaderViewCpu(m_atlasView));
 }
 
 void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
@@ -288,13 +286,11 @@ void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _fram
     .StrideInBytes = sizeof(Vertex),
   };
   const std::array<float, SCREEN_CONSTANT_COUNT> screen{m_widthPixels, m_heightPixels, 0.0f, 0.0f};
-  ID3D12DescriptorHeap* heaps[] = {m_descriptorHeap.get()};
 
   _commandList->SetGraphicsRootSignature(m_rootSignature.get());
   _commandList->SetPipelineState(m_pipelineState.get());
-  _commandList->SetDescriptorHeaps(1, heaps);
   _commandList->SetGraphicsRoot32BitConstants(SCREEN_PARAMETER, SCREEN_CONSTANT_COUNT, screen.data(), 0);
-  _commandList->SetGraphicsRootDescriptorTable(ATLAS_PARAMETER, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
+  _commandList->SetGraphicsRootDescriptorTable(ATLAS_PARAMETER, m_renderer.ShaderViewGpu(m_atlasView));
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->IASetVertexBuffers(0, 1, &vertexView);
   _commandList->IASetIndexBuffer(&m_indexBufferView);
