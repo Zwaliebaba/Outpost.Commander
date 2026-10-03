@@ -47,7 +47,8 @@ The Q2 check (§3) runs at the stages of Phase 1 design §7: the starting compon
   (d) no research topic, taken with its prerequisites by one side only, gives that side a design that none of the
       other side's designs beats at least half the time. A topic of tier 1 is played at the starting budgets against
       the starting designs; one of a later tier at its tier's budgets against every design and upgrade of the tier
-      before. (b) does not ask the Pulse Drive to be worth building: its case is speed, which no battle here sees.
+      before. (b) at a later tier asks only the components the tier adds (owner, 2026-10-03, gate H9), and does not ask the
+      Pulse Drive to be worth building: its case is speed, which no battle here sees.
 
 Usage:
   python Tools/BattleModel.py                        the Q2 check against OutpostCommander/Assets/Tuning.json
@@ -580,11 +581,14 @@ def print_matrix(designs, matrix):
     print(f"{d.code:>10}" + "".join(f"{'-':>9}" if i == j else f"{matrix[i][j]:>9.0%}" for j in range(len(designs))))
 
 
-def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs, speed_drives=()):
+def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs, speed_drives=(), judged=None):
   """Runs (a) and (b) for one stage of a match, adding the counters it finds to `legs` for (c).
 
-  (b) does not ask a drive in `speed_drives` to be worth building, since a battle cannot see speed; it is still reported.
+  (b) judges the components of `judged`, by default every one of the stage: a later tier's stage asks only the
+  components the tier adds (owner, 2026-10-03, gate H9). It does not ask a drive in `speed_drives` to be worth building,
+  since a battle cannot see speed; that is still reported.
   """
+  judged = parts if judged is None else judged
   designs = designs_from(*parts)
   print(f"\n==== {label}: {len(designs)} designs ====")
   # (b) is judged over the stage, in each fire mode: the components used at any of its budgets.
@@ -617,10 +621,10 @@ def stage(pool, label, parts, budgets, args, dt, unmodelled, failures, legs, spe
       if unused:
         print(f"  Not worth building at this budget: {unused}")
   for focus in (False, True):
-    unused = unused_components(parts, used_in_stage[focus], unmodelled + list(speed_drives))
+    unused = unused_components(judged, used_in_stage[focus], unmodelled + list(speed_drives))
     if unused:
       failures["b"].append(f"{label}, {'focus' if focus else 'spread'} fire: no design worth building at any budget uses the {unused}")
-    exempt = [d for d in speed_drives if d in component_names(parts)[1] and d not in used_in_stage[focus][1]]
+    exempt = [d for d in speed_drives if d in component_names(judged)[1] and d not in used_in_stage[focus][1]]
     if exempt:
       print(f"\n{label}, {'focus' if focus else 'spread'} fire: no design worth building at any budget uses the "
             f"{', '.join(exempt)} drive, which (b) does not ask of it")
@@ -711,8 +715,10 @@ def run(args):
     # The stages of Phase 1 design §7: each tier's components at the budgets that fit when they arrive, the starting
     # components, and each tier's research against the tier before.
     for tier in range(1, last_tier + 1):
-      stage(pool, f"Tier {tier}", through_tier(every, topics, tier), tier_budgets[tier - 1], args, dt, unmodelled, failures,
-            legs, SPEED_DRIVES)
+      now = through_tier(every, topics, tier)
+      before = through_tier(every, topics, tier - 1) if tier > 1 else ([], [], [])
+      added = tuple([p for p in group if p not in old] for group, old in zip(now, before))
+      stage(pool, f"Tier {tier}", now, tier_budgets[tier - 1], args, dt, unmodelled, failures, legs, SPEED_DRIVES, added)
       if tier == 1:
         stage(pool, "Starting components", start, early, args, dt, unmodelled, failures, legs)
       research_check(pool, every, topics, tier, research_budgets[tier - 1], args, dt, failures)

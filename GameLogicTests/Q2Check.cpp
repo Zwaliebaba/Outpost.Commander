@@ -434,7 +434,23 @@ std::string UnusedComponents(const CheckParts& _parts, const std::array<std::set
   return unused;
 }
 
-void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts,
+// The parts of _now that _before does not have.
+CheckParts Added(const CheckParts& _now, const CheckParts& _before)
+{
+  CheckParts added;
+  const auto missing = [](const auto& _list, const auto& _part)
+  { return std::ranges::find(_list, _part.id, [](const auto& _each) { return _each.id; }) == _list.end(); };
+  std::ranges::copy_if(_now.hulls, std::back_inserter(added.hulls), [&](const auto& _hull) { return missing(_before.hulls, _hull); });
+  std::ranges::copy_if(_now.drives, std::back_inserter(added.drives), [&](const auto& _drive) { return missing(_before.drives, _drive); });
+  std::ranges::copy_if(_now.weapons, std::back_inserter(added.weapons),
+                       [&](const auto& _weapon) { return missing(_before.weapons, _weapon); });
+  return added;
+}
+
+// (a) and (b) over one stage. (b) judges the components of _judged: a later tier's stage asks only the components the
+// tier adds to be worth building, since the tier before judged its own at the budgets that fit them (owner, 2026-10-03,
+// gate H9).
+void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts, const CheckParts& _judged,
               const std::vector<double>& _budgets, const GameLogicTests::CheckOptions& _options, Failures& _failures, std::set<Leg>& _legs,
               std::string& _report)
 {
@@ -509,9 +525,9 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
   }
   // (b) does not ask a drive whose case is speed to be worth building, since a battle cannot see speed; what it leaves out
   // is still reported (Phase 1 design §7).
-  CheckParts required = _parts;
+  CheckParts required = _judged;
   CheckParts speedOnly;
-  for (const GameLogicTests::CheckDrive& drive : _parts.drives)
+  for (const GameLogicTests::CheckDrive& drive : _judged.drives)
   {
     if (std::ranges::find(_options.speedDrives, drive.name) != _options.speedDrives.end())
       speedOnly.drives.push_back(drive);
@@ -921,9 +937,12 @@ GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _t
   {
     const CheckParts parts = PartsThrough(_tuning, tier);
     const auto index = static_cast<size_t>(tier - 1);
-    RunStage(std::format("Tier {}", tier), DesignsFrom(_tuning, parts), parts, *tierBudgets[index], _options, failures, legs, report);
+    const CheckParts judged = tier == 1 ? parts : Added(parts, PartsThrough(_tuning, tier - 1));
+    RunStage(std::format("Tier {}", tier), DesignsFrom(_tuning, parts), parts, judged, *tierBudgets[index], _options, failures, legs,
+             report);
     if (tier == 1)
-      RunStage("Starting components", DesignsFrom(_tuning, starting), starting, _options.earlyBudgets, _options, failures, legs, report);
+      RunStage("Starting components", DesignsFrom(_tuning, starting), starting, starting, _options.earlyBudgets, _options, failures, legs,
+               report);
     RunResearchCheck(_tuning, all, tier, *researchBudgets[index], _options, failures, report);
   }
   if (!_options.quick)

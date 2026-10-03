@@ -33,7 +33,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4 decided; H9, H10 | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning waits on H9 and H10 |
+| 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): the staged check is in; tuning the Flak Battery |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | todo |
 | 11.1 | Ore reserves and depletion | — | H3 decided | todo |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
@@ -50,7 +50,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 ## Gates
 
-Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026-10-02; H6 and H8 are decided at owner runs; H9 and H10 came out of task 10.3's first runs.
+Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026-10-02; H6 and H8 are decided at owner runs; H9 and H10 came out of task 10.3's first runs and were decided on 2026-10-03.
 
 | Gate | Decision | Proposed in | Blocks |
 |---|---|---|---|
@@ -62,8 +62,8 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 | H6 | The designer's colors and sizes, from the mockup | design §11 | 9.3 (closed at its owner run) |
 | H7 | Cascadia Mono on the development machine, or Consolas. **Decided on 2026-10-02:** 9.1 checks, and falls back to Consolas. | design §11 | — |
 | H8 | The camera's zoom limit on the 5 km map | design §8 | nothing; decided after 11.2's owner run |
-| H9 | Whether Q2's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds | design §7, §15 | 10.3 |
-| H10 | What the Flak Battery is for, beyond the swarm | design §5, §15 | 10.3 |
+| H9 | Whether Q2's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds. **Decided on 2026-10-03:** only those the tier adds. | design §7, §15 | — |
+| H10 | What the Flak Battery is for, beyond the swarm. **Decided on 2026-10-03:** a role against the Medium hull too, tuned in 10.3. | design §5, §15 | — |
 
 ---
 
@@ -256,7 +256,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
     - **(b) fails on the Flak Battery**, at every budget of tiers 2 and 3. It is all or nothing: it beats every Small design 20–0 and loses 0–20 to every Medium and Large one, and a Small design is never most of the mix. Its 20 m splash also reaches nobody: the formation stands Small hulls 24 m apart (three footprint radii, ADR-010). A 26 m splash, or a hit of 12 or 14 at 60 Ore, still loses 0–20 to every Medium design and is still never worth building.
     - **(b) fails on the Mass Driver** at tier 3 in both fire modes and at tier 2 under focus fire. This is not new: with the MVP's numbers no design with a Mass Driver was worth building under focus fire at 4,500 Ore or more, and under spread fire only S+I+MD at 7% at 12,000. Tier 1 passes (b) on it at its smaller budgets, which tiers 2 and 3 do not have.
     - **(d) fails on Ablative Armour**: M+I+La with +45% hit points against the tier 2 designs with +30% has no answer better than 37% at 6,000 Ore under focus fire.
-  - **Waiting on the owner:** gates H9, whether (b) at tiers 2 and 3 asks the Mass Driver to be worth building, and H10, what the Flak Battery is for (design §15).
+  - **The owner's answers** (2026-10-03): H9, (b) at tiers 2 and 3 judges only the components the tier adds, which both checks now do; H10, the Flak Battery gets a role against the Medium hull, which the tuning gives it.
   - **Not yet done:** the tuning, design §5 and §6's records of it, a counter per new component in `TheRecordedCountersHold`, and a full run with (c).
 
 ### 10.4 — The AI on tiers and new designs

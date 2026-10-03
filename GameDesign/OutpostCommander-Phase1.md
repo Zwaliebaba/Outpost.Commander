@@ -155,10 +155,11 @@ The MVP's check plays every design against every other at each budget. With 45 d
 | Tier 2 | Adds the Pulse Drive and the Flak Battery: 36 designs | 4,500, 6,000, 9,000, 12,000 |
 | Tier 3 | Adds the Rail Cannon: 45 designs | 6,000, 9,000, 12,000 |
 
-**The criteria are the MVP's** (a)–(d), with two changes:
+**The criteria are the MVP's** (a)–(d), with three changes:
 
 - **(d) runs per tier.** A topic taken by one side only is tested at its own tier's budgets, against the designs the other side has at the tier before. The starting stage keeps the MVP's (d) for tier 1's topics.
 - **(b) and the Pulse Drive** (owner, 2026-10-02, gate H4): the Pulse Drive's case is speed, which the check cannot see (§5), so (b) does not require it to be worth building, and play judges it, as the MVP left the Ion Drive's speed to play. What a stage leaves out is still reported.
+- **(b) at a later tier judges what the tier adds** (owner, 2026-10-03, gate H9): tier 2's stage asks the Flak Battery to be worth building at one of its budgets, and tier 3's the Rail Cannon. A component of an earlier tier was judged at that tier's budgets, and need not stay worth building as the budgets grow: the Mass Driver, worth building at 2,000–4,500 Ore, is not under focus fire from 4,500 on, with the MVP's numbers.
 
 Budgets stay at or below 12,000 Ore. A battle's time grows with its ships, and at 12,000 Ore the cheapest design already fields 138 a side. A tier-3 fight is about which designs are fielded, not how many.
 
@@ -304,8 +305,6 @@ Each is a gate in the plan, and blocks the tasks that need it.
 - **H6 — The look's details** (§11): the window's colors and sizes, taken from the mockup, confirmed when the owner first runs it.
 - **H7 — Cascadia Mono** (§11): task 9.1 checks whether it is installed on the development machine, and uses Consolas if it is not (owner, 2026-10-02). The task records which.
 - **H8 — The camera's zoom on the 5 km map** (§8): whether the 1,600 m limit of gate G3 stays, after the owner's first matches on the map.
-- **H9 — (b) at the later tiers** (§7): whether every component of tiers 2 and 3's stages has to be worth building at their budgets, or only the components the tier adds. Task 10.3's first run found the Mass Driver never worth building at tier 3, and not under focus fire at tier 2. That is the MVP's numbers, not the new components: with them, no Mass Driver design was worth building under focus fire at 4,500 Ore or more, nor under spread fire at 6,000–9,000 Ore. Requiring it means moving tier 1's numbers.
-- **H10 — What the Flak Battery is for** (§5): as written, it answers the swarm and does almost nothing to a Medium hull, and the check finds exactly that: it beats every Small design and loses every battle to every Medium and Large one, and is never worth building, since a Small design is never most of the mix. Its 20 m splash also reaches no neighbor of a Small hull, which the formation stands 24 m away. A 26 m splash, a hit of 12, or a hit of 14 at 60 Ore change none of it. It needs a role against the Medium hull, or (b) to exempt it as it does the Pulse Drive.
 
 Decided on 2026-10-02, from the owner's answers: §3.
 
@@ -317,3 +316,8 @@ Decided on 2026-10-02, the gates:
 - **H4:** Q2's (b) does not require the Pulse Drive to be worth building; play judges it (§7).
 - **H5:** a lost Command Station is lost for good, and a player without one has its remaining Shipyards revealed to its opponent (§4).
 - **H7:** task 9.1 checks for Cascadia Mono, and falls back to Consolas.
+
+Decided on 2026-10-03, from task 10.3's first runs:
+
+- **H9:** Q2's (b) at tiers 2 and 3 asks only the components the tier adds to be worth building (§7). The run found the Mass Driver never worth building at tier 3, nor under focus fire at tier 2, and that is the MVP's numbers: with them no Mass Driver design was worth building under focus fire at 4,500 Ore or more. Tier 1's numbers do not move for it.
+- **H10:** the Flak Battery gets a role against the Medium hull, beside breaking the swarm, and task 10.3 tunes it to one (§5). As first written it beat every Small design and lost every battle to every Medium and Large one, and was never worth building; its 20 m splash also reached no neighbor of a Small hull, which the formation stands 24 m away.
