@@ -6,8 +6,8 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
-#include <map>
 #include <numbers>
+#include <numeric>
 #include <optional>
 #include <utility>
 
@@ -231,13 +231,18 @@ void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
 Neuron::MeshData Neuron::MeshPiece(const MeshData& _mesh, std::uint32_t _firstIndex, std::uint32_t _indexCount)
 {
   MeshData piece;
-  std::map<std::uint32_t, std::uint32_t> vertexOf;
+  // The piece's vertex for each of the mesh's, NO_VERTEX until the piece first uses it.
+  constexpr std::uint32_t NO_VERTEX = std::numeric_limits<std::uint32_t>::max();
+  std::vector<std::uint32_t> vertexOf(_mesh.vertices.size(), NO_VERTEX);
+  piece.indices.reserve(_indexCount);
   for (const std::uint32_t index : std::span(_mesh.indices).subspan(_firstIndex, _indexCount))
   {
-    const auto [found, added] = vertexOf.try_emplace(index, static_cast<std::uint32_t>(piece.vertices.size()));
-    if (added)
+    if (vertexOf[index] == NO_VERTEX)
+    {
+      vertexOf[index] = static_cast<std::uint32_t>(piece.vertices.size());
       piece.vertices.push_back(_mesh.vertices[index]);
-    piece.indices.push_back(found->second);
+    }
+    piece.indices.push_back(vertexOf[index]);
   }
   MeasureBounds(piece);
   return piece;
@@ -259,21 +264,58 @@ DirectX::XMFLOAT4X4 Neuron::PartWorld(const MeshPart& _part, double _seconds, co
 
 Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians)
 {
-  // Each corner once, by position.
-  std::map<std::array<float, 3>, std::uint32_t> cornerAt;
-  std::vector<DirectX::XMFLOAT3> corners;
-  std::vector<std::uint32_t> cornerOf(_mesh.vertices.size());
-  for (size_t i = 0; i < _mesh.vertices.size(); ++i)
+  // Each corner once, by position, numbered in the order the vertices first reach it. The vertices are sorted by position,
+  // ties kept in their order, so that each run of equal positions starts with the vertex that reaches its corner first.
+  // Positions compare as floats, so 0 and -0 are one corner; the corner keeps the first vertex's position.
+  const auto vertexCount = static_cast<std::uint32_t>(_mesh.vertices.size());
+  const auto positionLess = [&_mesh](std::uint32_t _a, std::uint32_t _b)
   {
-    const DirectX::XMFLOAT3& position = _mesh.vertices[i].position;
-    const auto [found, added] = cornerAt.try_emplace({position.x, position.y, position.z}, static_cast<std::uint32_t>(corners.size()));
-    if (added)
-      corners.push_back(position);
-    cornerOf[i] = found->second;
+    const DirectX::XMFLOAT3& a = _mesh.vertices[_a].position;
+    const DirectX::XMFLOAT3& b = _mesh.vertices[_b].position;
+    if (a.x != b.x)
+      return a.x < b.x;
+    if (a.y != b.y)
+      return a.y < b.y;
+    return a.z < b.z;
+  };
+  std::vector<std::uint32_t> byPosition(vertexCount);
+  std::iota(byPosition.begin(), byPosition.end(), 0u);
+  std::ranges::stable_sort(byPosition, positionLess);
+  // Each run's first vertex, and the run each vertex is in.
+  std::vector<std::uint32_t> runFirst;
+  std::vector<std::uint32_t> runOf(vertexCount);
+  for (std::uint32_t i = 0; i < vertexCount; ++i)
+  {
+    if (i == 0 || positionLess(byPosition[i - 1], byPosition[i]))
+      runFirst.push_back(byPosition[i]);
+    runOf[byPosition[i]] = static_cast<std::uint32_t>(runFirst.size() - 1);
   }
+  // The corners in the order their first vertices come.
+  std::vector<std::uint32_t> runsInOrder(runFirst.size());
+  std::iota(runsInOrder.begin(), runsInOrder.end(), 0u);
+  std::ranges::sort(runsInOrder, {}, [&runFirst](std::uint32_t _run) { return runFirst[_run]; });
+  std::vector<std::uint32_t> cornerOfRun(runFirst.size());
+  std::vector<DirectX::XMFLOAT3> corners(runFirst.size());
+  for (std::uint32_t corner = 0; corner < runsInOrder.size(); ++corner)
+  {
+    cornerOfRun[runsInOrder[corner]] = corner;
+    corners[corner] = _mesh.vertices[runFirst[runsInOrder[corner]]].position;
+  }
+  std::vector<std::uint32_t> cornerOf(vertexCount);
+  for (std::uint32_t i = 0; i < vertexCount; ++i)
+    cornerOf[i] = cornerOfRun[runOf[i]];
 
-  // Each edge, by its two corners in order, and the normals of the faces that have it. A triangle with no area has none.
-  std::map<std::pair<std::uint32_t, std::uint32_t>, std::vector<DirectX::XMFLOAT3>> faceNormals;
+  // Each triangle's side, by its two corners in order, with the triangle's normal. A triangle with no area has none. Sorted
+  // by corners, ties kept in the order of the triangles, the sides of one edge come together with their faces' normals in
+  // that order.
+  struct Side
+  {
+    std::uint32_t from = 0;
+    std::uint32_t to = 0;
+    DirectX::XMFLOAT3 normal{};
+  };
+  std::vector<Side> sides;
+  sides.reserve(_mesh.indices.size());
   for (size_t i = 0; i + 2 < _mesh.indices.size(); i += 3)
   {
     const std::array<std::uint32_t, 3> triangle{cornerOf[_mesh.indices[i]], cornerOf[_mesh.indices[i + 1]], cornerOf[_mesh.indices[i + 2]]};
@@ -288,32 +330,39 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
     {
       const std::uint32_t from = triangle[side];
       const std::uint32_t to = triangle[(side + 1) % 3];
-      faceNormals[{std::min(from, to), std::max(from, to)}].push_back(normal);
+      sides.push_back({.from = std::min(from, to), .to = std::max(from, to), .normal = normal});
     }
   }
+  std::ranges::stable_sort(sides, [](const Side& _a, const Side& _b) { return _a.from != _b.from ? _a.from < _b.from : _a.to < _b.to; });
 
   const float flatCosine = std::cos(_minAngleRadians);
   MeshData lines;
   lines.boundsMin = _mesh.boundsMin;
   lines.boundsMax = _mesh.boundsMax;
-  for (const auto& [edge, normals] : faceNormals)
+  for (size_t first = 0; first < sides.size();)
   {
-    if (normals.size() == 2)
+    size_t end = first + 1;
+    while (end < sides.size() && sides[end].from == sides[first].from && sides[end].to == sides[first].to)
+      ++end;
+    const std::span<const Side> edge(sides.data() + first, end - first);
+    first = end;
+    if (edge.size() == 2)
     {
       const float cosine =
-        DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&normals[0]), DirectX::XMLoadFloat3(&normals[1])));
+        DirectX::XMVectorGetX(DirectX::XMVector3Dot(DirectX::XMLoadFloat3(&edge[0].normal), DirectX::XMLoadFloat3(&edge[1].normal)));
       if (cosine >= flatCosine)
         continue;
     }
     DirectX::XMVECTOR sum = DirectX::XMVectorZero();
-    for (const DirectX::XMFLOAT3& normal : normals)
-      sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&normal));
+    for (const Side& side : edge)
+      sum = DirectX::XMVectorAdd(sum, DirectX::XMLoadFloat3(&side.normal));
     // Faces that fold right back on each other have no mean; the first face's normal stands in.
-    const DirectX::XMVECTOR mean = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(sum)) > 1e-6f ? DirectX::XMVector3Normalize(sum)
-                                                                                                  : DirectX::XMLoadFloat3(&normals.front());
+    const DirectX::XMVECTOR mean = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(sum)) > 1e-6f
+                                     ? DirectX::XMVector3Normalize(sum)
+                                     : DirectX::XMLoadFloat3(&edge.front().normal);
     MeshVertex vertex{};
     DirectX::XMStoreFloat3(&vertex.normal, mean);
-    for (const std::uint32_t corner : {edge.first, edge.second})
+    for (const std::uint32_t corner : {edge.front().from, edge.front().to})
     {
       vertex.position = corners[corner];
       lines.indices.push_back(static_cast<std::uint32_t>(lines.vertices.size()));
