@@ -42,7 +42,7 @@ The owner decided on 2026-10-03 to make the rings thin and faint, at full streng
 - **A rig can lose its ring for a frame.** The shards and the rigs' rings share the slot's 65,536 vertices a frame, and the shards are drawn first. A frame whose explosions have taken every vertex the slot holds draws its rigs without rings.
 - **The cost is not measured.** Each rig's ring takes 96 surface lookups a frame on a rock of a few hundred triangles, and each frame picks the structure under the pointer.
 - **The look is not run.** A line a pixel wide at 0.35 may be too faint on a 4K screen, or still too strong. `FOOTPRINT_RING_SHADE` is the one number to tune.
-- **This does not fix where the rig stands.** `RigLift` lowers a rig until its lowest foot reaches the rock, so every other foot sinks into it. Measured in the container, the Human rig's feet on a 45 m rock stand between 0.4 and 6.9 m up, depending on its turn, while the rock's top is 26.8 m up. The rig sits about 20 m into its rock. How it should stand is the owner's to decide.
+- **Where the rig stands is decided in [ADR-044](ADR-044-rig-stands-on-its-legs.md)**: on its legs, tilted to fit its rock. The ring lies over the rock wherever the rig stands.
 
 ## What this forecloses
 

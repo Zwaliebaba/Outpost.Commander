@@ -81,8 +81,8 @@ constexpr int RING_LINE_SEGMENTS = 96;
 
 // A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
 // within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
-// rig is lowered until every foot reaches the rock under it, so that it stands on its asteroid rather than floating over
-// the rock's slopes (owner, 2026-10-02, ADR-027).
+// rig is tilted and lifted until its legs stand on the rock under them, none in it, and its drill goes into the rock
+// (owner, 2026-10-03, ADR-044).
 constexpr float RIG_FOOT_RADIUS_SHARE = 0.5f;
 constexpr float RIG_FOOT_HEIGHT_SHARE = 0.05f;
 
@@ -1229,7 +1229,7 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   const std::optional<PlacedModel> placed = PlaceModel(_entity);
   if (!placed.has_value())
     return;
-  DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose),
+  DrawModel(_commandList, placed->set->name, *placed->model, placed->World(),
             TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE);
 }
 
@@ -1255,7 +1255,7 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
     // The same destruction always looks the same.
     const std::uint64_t seed = (std::uint64_t{destroyed.id.value} << 32U) ^ _snapshot.tick;
     const std::optional<PlacedModel> placed = PlaceModel(entity);
-    const float liftMeters = placed.has_value() ? placed->pose.liftMeters : 0.0f;
+    const float liftMeters = placed.has_value() ? placed->OriginLiftMeters() : 0.0f;
     m_particles.AddBlast({destroyed.position.xMeters, liftMeters, destroyed.position.zMeters}, destroyed.radiusMeters, destroyed.kind,
                          start, seed);
     if (placed.has_value())
@@ -1265,7 +1265,7 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
       const DirectX::XMFLOAT4 color = ModelColor(placed->set->color, placed->tint, entity.builtPermille);
       const DirectX::XMFLOAT4 faces =
         structure ? Shaded(TowardGray(color, STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE) : Shaded(color, FILL_SHADE);
-      m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose), faces, start, seed,
+      m_explosions.Add(ModelShape(placed->set->name, *placed->model), placed->World(), faces, start, seed,
                        structure ? STRUCTURE_SHARD_COPIES : 1);
     }
   }
@@ -1306,13 +1306,14 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
   const float radius = type != newest.structureTypes.end() ? type->radiusMeters : _entity.radiusMeters;
   const ModelEntry& entry = set->Model(model->model);
   const float scale = 2.0f * radius / entry.lengthMeters;
-  const float lift = _entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters
-                       ? RigLift(set->name, model->model, _entity, scale)
-                       : 0.0f;
+  std::optional<Stance> stance;
+  if (_entity.structure == StructureKind::MiningRig && radius < _entity.radiusMeters)
+    stance = RigStance(set->name, model->model, _entity, scale);
   return PlacedModel{.set = set,
                      .model = &model->model,
-                     .pose = {.position = _entity.position, .liftMeters = lift, .headingRadians = _entity.headingRadians, .scale = scale},
-                     .tint = model->tint};
+                     .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians, .scale = scale},
+                     .tint = model->tint,
+                     .stance = stance};
 }
 
 void Outpost::GameClient::UpdateBanking(float _elapsedSeconds)
@@ -1331,37 +1332,35 @@ void Outpost::GameClient::UpdateBanking(float _elapsedSeconds)
   m_banking.Update(m_bankTargets, _elapsedSeconds);
 }
 
-float Outpost::GameClient::RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const
+Outpost::Stance Outpost::GameClient::RigStance(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const
 {
   // The rig stands at its asteroid's center (design §6), so its entity's radius is the rock's.
   const float rockRadius = _rig.radiusMeters;
   const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, RockModel(rockRadius));
   // Without feet over the rock, the rig's lowest point stands on the rock's top.
-  const float onTop = (m_rockTops[RockIndex(rockRadius)] * rockRadius) - (ModelShape(_set, _model).boundsMin.y * _scale);
+  const Stance onTop{.liftMeters = (m_rockTops[RockIndex(rockRadius)] * rockRadius) - (ModelShape(_set, _model).boundsMin.y * _scale)};
   const auto feet = m_rigFeet.find(MeshKey(_set, _model));
   if (feet == m_rigFeet.end())
     return onTop;
+  std::vector<DirectX::XMFLOAT3> footMeters;
+  footMeters.reserve(feet->second.size());
+  for (const DirectX::XMFLOAT3& foot : feet->second)
+    footMeters.push_back({foot.x * _scale, foot.y * _scale, foot.z * _scale});
 
-  // The rock is turned by its asteroid's heading and the rig by its own, both as WorldMatrix turns them, so a foot lies
-  // over the rock's mesh where the rig's turn less the rock's puts it.
+  // The rock is turned by its asteroid's heading and the rig by its own, both as WorldMatrix turns them, so a point along
+  // the rig's axes lies over the rock's mesh where the rig's turn less the rock's puts it.
   const auto asteroid = std::ranges::find_if(m_entities, [&_rig](const EntityView& _entity)
                                              { return _entity.kind == EntityKind::Asteroid && _entity.position == _rig.position; });
   const float rockHeading = asteroid != m_entities.end() ? asteroid->headingRadians : 0.0f;
   const DirectX::XMMATRIX toRock = DirectX::XMMatrixRotationY(rockHeading - _rig.headingRadians);
-  // The lift that puts each foot on the rock under it; the least of them puts every foot on it or in it.
-  std::optional<float> deepest;
-  for (const DirectX::XMFLOAT3& foot : feet->second)
+  const auto rockAt = [&rock, &toRock, rockRadius](float _xMeters, float _zMeters) -> std::optional<float>
   {
     const DirectX::XMVECTOR over =
-      DirectX::XMVector3Transform(DirectX::XMVectorSet(foot.x * _scale / rockRadius, 0.0f, foot.z * _scale / rockRadius, 0.0f), toRock);
+      DirectX::XMVector3Transform(DirectX::XMVectorSet(_xMeters / rockRadius, 0.0f, _zMeters / rockRadius, 0.0f), toRock);
     const std::optional<float> surface = Neuron::SurfaceHeightAt(rock, DirectX::XMVectorGetX(over), DirectX::XMVectorGetZ(over));
-    if (!surface.has_value())
-      continue;
-    const float footLift = (*surface * rockRadius) - (foot.y * _scale);
-    if (!deepest.has_value() || footLift < *deepest)
-      deepest = footLift;
-  }
-  return deepest.value_or(onTop);
+    return surface.has_value() ? std::optional<float>(*surface * rockRadius) : std::nullopt;
+  };
+  return StandOnFeet(footMeters, rockAt).value_or(onTop);
 }
 
 std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shooter) const

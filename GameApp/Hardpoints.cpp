@@ -31,6 +31,12 @@ constexpr float PUFF_SHRINK_RADII = 0.25f;
 constexpr float PUFF_BRIGHTNESS = 0.35f;
 constexpr float PLUME_BRIGHTNESS_AT_REST = 0.3f;
 
+// How many times StandOnFeet fits the ground again as its tilt moves the feet; on the game's rocks three passes leave
+// the fit within a few centimeters of where more would (ADR-044). Feet whose fit is this flat are taken to stand in a line,
+// with no plane to tilt to.
+constexpr int STANCE_PASSES = 3;
+constexpr float IN_A_LINE_SHARE = 1e-6f;
+
 DirectX::XMFLOAT4 Scaled(const DirectX::XMFLOAT4& _color, float _brightness) noexcept
 {
   return {_color.x * _brightness, _color.y * _brightness, _color.z * _brightness, _color.w};
@@ -56,6 +62,126 @@ DirectX::XMFLOAT4X4 Outpost::PoseMatrix(const ModelPose& _pose) noexcept
   DirectX::XMFLOAT4X4 result;
   DirectX::XMStoreFloat4x4(&result, world);
   return result;
+}
+
+DirectX::XMFLOAT3 Outpost::StandPoint(const Stance& _stance, const DirectX::XMFLOAT3& _meters) noexcept
+{
+  // About the pivot, the bank lowers +z as a ship's bank does, and then the pitch raises +x. StanceMatrix does the same.
+  const DirectX::XMFLOAT3& pivot = _stance.pivotMeters;
+  const float x = _meters.x - pivot.x;
+  const float y = _meters.y - pivot.y;
+  const float z = _meters.z - pivot.z;
+  const float bankCosine = std::cos(_stance.bankRadians);
+  const float bankSine = std::sin(_stance.bankRadians);
+  const float rolledY = (y * bankCosine) - (z * bankSine);
+  const float rolledZ = (y * bankSine) + (z * bankCosine);
+  const float pitchCosine = std::cos(_stance.pitchRadians);
+  const float pitchSine = std::sin(_stance.pitchRadians);
+  return {(x * pitchCosine) - (rolledY * pitchSine) + pivot.x, (x * pitchSine) + (rolledY * pitchCosine) + pivot.y + _stance.liftMeters,
+          rolledZ + pivot.z};
+}
+
+DirectX::XMFLOAT4X4 Outpost::StanceMatrix(const ModelPose& _pose, const Stance& _stance) noexcept
+{
+  // XMMatrixRotationX lowers +z for a positive angle, as the bank does, and XMMatrixRotationZ raises +x, as the pitch does.
+  const DirectX::XMFLOAT3& pivot = _stance.pivotMeters;
+  const DirectX::XMMATRIX world =
+    DirectX::XMMatrixScaling(_pose.scale, _pose.scale, _pose.scale) * DirectX::XMMatrixTranslation(-pivot.x, -pivot.y, -pivot.z) *
+    DirectX::XMMatrixRotationX(_stance.bankRadians) * DirectX::XMMatrixRotationZ(_stance.pitchRadians) *
+    DirectX::XMMatrixTranslation(pivot.x, pivot.y + _stance.liftMeters, pivot.z) * DirectX::XMMatrixRotationY(-_pose.headingRadians) *
+    DirectX::XMMatrixTranslation(_pose.position.xMeters, _pose.liftMeters, _pose.position.zMeters);
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, world);
+  return result;
+}
+
+std::optional<Outpost::Stance> Outpost::StandOnFeet(std::span<const DirectX::XMFLOAT3> _feetMeters,
+                                                    const std::function<std::optional<float>(float, float)>& _groundAt)
+{
+  if (_feetMeters.empty())
+    return std::nullopt;
+  // The tilt turns about the middle of the feet, so that it moves them up and down and hardly across the ground.
+  Stance stance;
+  for (const DirectX::XMFLOAT3& foot : _feetMeters)
+  {
+    stance.pivotMeters.x += foot.x;
+    stance.pivotMeters.y += foot.y;
+    stance.pivotMeters.z += foot.z;
+  }
+  const auto feet = static_cast<float>(_feetMeters.size());
+  stance.pivotMeters = {stance.pivotMeters.x / feet, stance.pivotMeters.y / feet, stance.pivotMeters.z / feet};
+
+  // Each foot over the ground, where the stance puts it, and the lift that would put it on the ground.
+  struct Need
+  {
+    float xMeters;
+    float zMeters;
+    float liftMeters;
+  };
+  std::vector<Need> needs;
+  needs.reserve(_feetMeters.size());
+  const auto measure = [&]
+  {
+    needs.clear();
+    for (const DirectX::XMFLOAT3& foot : _feetMeters)
+    {
+      const DirectX::XMFLOAT3 stood = StandPoint(stance, foot);
+      if (const std::optional<float> ground = _groundAt(stood.x, stood.z))
+        needs.push_back({.xMeters = stood.x, .zMeters = stood.z, .liftMeters = *ground - stood.y});
+    }
+  };
+
+  for (int pass = 0; pass < STANCE_PASSES; ++pass)
+  {
+    measure();
+    if (needs.size() < 3)
+      break;
+    // The plane that fits the lifts best, by least squares about their middle: a foot a meter further along +x needs
+    // slopeX more lift, and one a meter further along +z slopeZ more.
+    float meanX = 0.0f;
+    float meanZ = 0.0f;
+    float meanLift = 0.0f;
+    for (const Need& need : needs)
+    {
+      meanX += need.xMeters;
+      meanZ += need.zMeters;
+      meanLift += need.liftMeters;
+    }
+    const auto count = static_cast<float>(needs.size());
+    meanX /= count;
+    meanZ /= count;
+    meanLift /= count;
+    float xx = 0.0f;
+    float xz = 0.0f;
+    float zz = 0.0f;
+    float xLift = 0.0f;
+    float zLift = 0.0f;
+    for (const Need& need : needs)
+    {
+      const float x = need.xMeters - meanX;
+      const float z = need.zMeters - meanZ;
+      const float lift = need.liftMeters - meanLift;
+      xx += x * x;
+      xz += x * z;
+      zz += z * z;
+      xLift += x * lift;
+      zLift += z * lift;
+    }
+    const float determinant = (xx * zz) - (xz * xz);
+    if (determinant <= IN_A_LINE_SHARE * xx * zz)
+      break;
+    const float slopeX = ((xLift * zz) - (zLift * xz)) / determinant;
+    const float slopeZ = ((zLift * xx) - (xLift * xz)) / determinant;
+    // Raising the front lifts the feet along +x; the bank lowers those along +z, so ground rising that way wants less.
+    stance.pitchRadians = std::clamp(stance.pitchRadians + std::atan(slopeX), -MAX_STANCE_TILT_RADIANS, MAX_STANCE_TILT_RADIANS);
+    stance.bankRadians = std::clamp(stance.bankRadians - std::atan(slopeZ), -MAX_STANCE_TILT_RADIANS, MAX_STANCE_TILT_RADIANS);
+  }
+
+  measure();
+  if (needs.empty())
+    return std::nullopt;
+  stance.liftMeters = std::ranges::max(needs, {}, &Need::liftMeters).liftMeters;
+  return stance;
 }
 
 DirectX::XMFLOAT3 Outpost::PlaceDirection(const ModelPose& _pose, const DirectX::XMFLOAT3& _direction) noexcept

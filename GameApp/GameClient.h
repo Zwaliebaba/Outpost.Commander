@@ -68,6 +68,20 @@ private:
     ModelPose pose;
     // The share of the set's color a structure is drawn in (StructureModel::tint).
     float tint = 1.0f;
+    // How it stands on its legs, for a Mining Rig on its rock (ADR-044).
+    std::optional<Stance> stance;
+
+    // The world matrix that draws it, stood when it has a stance.
+    [[nodiscard]] DirectX::XMFLOAT4X4 World() const noexcept
+    {
+      return stance.has_value() ? StanceMatrix(pose, *stance) : PoseMatrix(pose);
+    }
+
+    // How high its origin stands over the ground.
+    [[nodiscard]] float OriginLiftMeters() const noexcept
+    {
+      return pose.liftMeters + (stance.has_value() ? StandPoint(*stance, {}).y : 0.0f);
+    }
   };
 
   [[nodiscard]] const Neuron::Mesh& ModelMesh(std::string_view _set, std::string_view _model) const;
@@ -78,9 +92,9 @@ private:
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
   // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
   void UpdateBanking(float _elapsedSeconds);
-  // How high a Mining Rig, the model _set/_model drawn at _scale, stands over the ground so that every foot reaches the
-  // rock under it (ADR-027).
-  [[nodiscard]] float RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
+  // How a Mining Rig, the model _set/_model drawn at _scale, stands on its rock: tilted and lifted so that its legs stand on
+  // the rock under them, or without feet over the rock, its lowest point on the rock's top (ADR-044).
+  [[nodiscard]] Stance RigStance(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
   // The color of the shooter's beams: its side's, made lighter (ADR-028). Nothing for a shooter the view does not hold.
   [[nodiscard]] std::optional<DirectX::XMFLOAT4> BeamColor(EntityId _shooter) const;
   // The shooter's gun nearest _target where the view draws it this frame, for the combat effects (ADR-018).

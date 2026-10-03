@@ -32,7 +32,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.5 | The HUD in the windows' look, and faint rings | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD tested in the container, not yet built or run |
+| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD and stance tested in the container, not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
@@ -218,15 +218,19 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Tests.** `HudTests`: the panel's open buttons, the production window at a Shipyard, at the Command Station and with neither, the research window with a topic blocked and with no Lab, and the three windows' layout and scrolling. `ProductionTargetTests`.
   - **Not built or run in the container**: the HUD's tests ran there in a standalone build, and the two windows were drawn from `Hud::Lay`'s output with substitute fonts.
 
-### 9.5 — The HUD in the windows' look, and faint rings
+### 9.5 — The HUD in the windows' look, faint rings, and the rig on its legs
 
 - **Goal:** the owner's review of a match's screen on 2026-10-03. The HUD and the windows were two styles, Ore was written two ways, the production window cut names short and always showed five queue rows, and a thick ring under every structure was the loudest thing in a base.
 - **Owner's answers, 2026-10-03:**
   - The rings are thin and faint, at full strength under the pointer.
   - The Mining Rig gets a ring of its own.
   - The HUD fixes go in the same change.
-- **Scope:** `Hud`, `GameClient`'s rings and `MeshPipeline`. Not where a rig stands on its rock (`RigLift`), which waits for the owner's answer on whether its legs or only its drill meet the rock.
-- **ADR:** [ADR-042](../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings, [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
+  - A Mining Rig's legs should touch the rock, with only its drill going in.
+- **Scope:** `Hud`, `GameClient`'s rings and its rig, `MeshPipeline`, and the stance in `Hardpoints`.
+- **ADR:**
+  - [ADR-042](../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings.
+  - [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
+  - [ADR-044](../Design/ADR/ADR-044-rig-stands-on-its-legs.md) for the rig's stance.
 - **Acceptance:** `HudTests` for the HUD; the rings are the owner's run.
 - **Verify:** CI; **owner run.**
 - **As built:**
@@ -235,6 +239,11 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
     - It is at full strength under the pointer, and under every structure while one is placed.
     - The selection and the placement ghost keep their bands.
     - A Mining Rig's ring is its own 25 m footprint's, laid over its rock with `MeshPipeline::DrawLineList`.
+  - **The rig:**
+    - It tilts about the middle of its feet to the plane that fits the rock under them, then lifts until no foot is in the rock (`StandOnFeet`, `StanceMatrix`).
+    - The three-legged Tarkan rig stands on all three legs, within 0.6 m.
+    - The four-legged Human rig rests on two, and its others hang up to 6.2 m.
+    - On a 45 m rock the crown goes up to 10 m into the Human rig's body.
   - **The HUD:**
     - Every panel takes a window's body and corner brackets, and its faces.
     - Ore is the diamond and the figure in thousands everywhere.
@@ -244,10 +253,11 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
     - The minimap's ore asteroids are gold.
   - **Tests.**
     - `HudTests.LaysTheHudOutInTheWindowsLook`, `WritesOreOneWay`, `KeepsTheCardsStillAsTheQueueGrows` and `FitsTheSelectionPanelToItsLines`.
+    - `HardpointsTests.StandsAPointWhereTheStanceMatrixDrawsIt`, `StandsOnLevelGroundAndTiltsWithASlope`, `StandsItsLegsOnUnevenGround` and `StandsOnlyOverGround`.
     - Three tests changed with the look, as ADR-043 says.
   - **Not built or run in the container**:
     - The HUD's tests ran there in a standalone build, and the screens were drawn from `Hud::Lay`'s output with substitute fonts.
-    - `GameClient` and `MeshPipeline` were not compiled there.
+    - `GameClient` and `MeshPipeline` were not compiled there, nor were `StanceMatrix` and its test, which need DirectXMath. `StandOnFeet` and `StandPoint` were, with the tests' cases and the shipped meshes.
 
 ---
 
