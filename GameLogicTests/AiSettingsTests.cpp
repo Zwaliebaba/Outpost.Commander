@@ -49,15 +49,15 @@ TEST_CLASS(AiSettingsTests)
 public:
   // Gate G9 (owner, 2026-10-01) had the AI attack with twelve ships; task 12.2 tuned the attack so that two AIs play a
   // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, falling back after
-  // losing three in ten and regrouping for 150 seconds, behind two Defence Platforms for each Shipyard. The rest is the
-  // owner's milestone 6 answers.
+  // losing three in ten and regrouping for 120 seconds since groups keep lanes (ADR-047), behind two Defence Platforms for
+  // each Shipyard. The rest is the owner's milestone 6 answers.
   TEST_METHOD(LoadsTheRepositoryFile)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     Assert::AreEqual(20, settings.attackGroupShips);
     Assert::AreEqual(12, settings.attackGroupGrowthPerTier);
     Assert::AreEqual(0.3, settings.retreatLossShare);
-    Assert::AreEqual(150.0, settings.regroupSeconds);
+    Assert::AreEqual(120.0, settings.regroupSeconds);
     Assert::AreEqual(2, settings.homePlatformsPerShipyard);
     Assert::AreEqual(60.0, settings.reviewIntervalSeconds);
     Assert::AreEqual(4, settings.constructors);

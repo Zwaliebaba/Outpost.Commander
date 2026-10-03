@@ -2,7 +2,7 @@
   "attackGroupShips": 20,
   "attackGroupGrowthPerTier": 12,
   "retreatLossShare": 0.3,
-  "regroupSeconds": 150,
+  "regroupSeconds": 120,
   "reviewIntervalSeconds": 60,
   "constructors": 4,
   "incomePerShipyardOrePerSecond": 10,
