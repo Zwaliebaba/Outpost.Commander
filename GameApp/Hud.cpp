@@ -32,6 +32,12 @@ constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 // field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-046).
 constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.06f, 0.06f, 0.065f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
+// A sector on the minimap (ADR-056): a faint wash of its holder's color under the marks, an outline of it over the fog,
+// and stripes of it while suppressed.
+constexpr float SECTOR_WASH_ALPHA = 0.12f;
+constexpr float SECTOR_OUTLINE_ALPHA = 0.55f;
+constexpr float SECTOR_HATCH_ALPHA = 0.35f;
+constexpr float SECTOR_LINE_UNITS = 1.0f;
 
 // Everything below in reference units.
 constexpr float MARGIN = 16.0f;
@@ -81,6 +87,8 @@ constexpr float HINT_PANEL_WIDTH = 640.0f;
 // The research line, under the Ore panel.
 constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
 constexpr float RESEARCH_PANEL_GAP = 8.0f;
+// The territory, beside the Ore panel (ADR-056).
+constexpr float TERRITORY_PANEL_WIDTH = 220.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
@@ -1343,10 +1351,32 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   if (_designer != nullptr)
     content.designer = DescribeDesigner(_newest, *_designer, _hovered);
 
+  const auto sideOf = [&_newest](PlayerId _owner) {
+    return !_owner.IsValid() ? Side::Neutral : _owner == _newest.player ? Side::Own : Side::Enemy;
+  };
+  if (!_newest.sectors.empty())
+  {
+    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size())};
+    content.sectors.reserve(_newest.sectors.size());
+    for (const SectorView& sector : _newest.sectors)
+    {
+      const Side side = sideOf(sector.holder);
+      territory.ownNodes += side == Side::Own ? 1 : 0;
+      territory.enemyNodes += side == Side::Enemy ? 1 : 0;
+      content.sectors.push_back({.minXMeters = sector.minXMeters,
+                                 .maxXMeters = sector.maxXMeters,
+                                 .minZMeters = sector.minZMeters,
+                                 .maxZMeters = sector.maxZMeters,
+                                 .side = side,
+                                 .suppressed = sector.suppressed});
+    }
+    content.territory = territory;
+  }
+
   content.marks.reserve(_entities.size());
   for (const EntityView& entity : _entities)
   {
-    const Side side = !entity.owner.IsValid() ? Side::Neutral : entity.owner == _newest.player ? Side::Own : Side::Enemy;
+    const Side side = sideOf(entity.owner);
     content.marks.push_back({.position = entity.position,
                              .radiusMeters = entity.radiusMeters,
                              .side = side,
@@ -1386,6 +1416,21 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         content.selection.push_back(*structure->oreReserveHundredths > 0
                                       ? std::format("Ore left {}", WithThousands(WholePoints(*structure->oreReserveHundredths)))
                                       : std::string("Ore run out: it earns a trickle"));
+      }
+      // The sector a Relay or a rig of the player's stands in, and what its sector earns (ADR-056).
+      const SectorView* sector = FindSector(_newest.sectors, structure->position);
+      const bool ownTerritorial = structure->owner == _newest.player &&
+                                  (structure->structure == StructureKind::Relay || structure->structure == StructureKind::MiningRig);
+      if (sector != nullptr && ownTerritorial)
+      {
+        if (sector->holder != _newest.player)
+          content.selection.push_back(std::format("{}: not held, it earns nothing", sector->nameUtf8));
+        else if (sector->suppressed)
+          content.selection.push_back(std::format("{}: suppressed, it earns nothing", sector->nameUtf8));
+        else if (sector->cutOff)
+          content.selection.push_back(std::format("{}: cut off, it earns half", sector->nameUtf8));
+        else
+          content.selection.push_back(std::format("{}: held", sector->nameUtf8));
       }
       // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel offers to
       // open them, once it is the player's own and finished.
@@ -1460,7 +1505,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.buttons.reserve(_newest.structureTypes.size());
     for (const StructureTypeView& type : _newest.structureTypes)
     {
-      if (!type.buildable)
+      // A Relay holds a sector, and a map without them has none to hold (ADR-056).
+      if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
         continue;
       const bool allowed = !(type.structure == StructureKind::ResearchLab && hasLab);
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
@@ -1666,6 +1712,22 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
                     income > 0 ? NUMBERS_COLOR : WARNING_COLOR, Typeface::Figure, 13.0f * MONO_ADVANCE);
   }
 
+  // Beside the Ore: the nodes each side holds, the player's in its color and the enemy's in its (ADR-056).
+  if (_content.territory.has_value())
+  {
+    const Territory& territory = *_content.territory;
+    Painter paint =
+      frame({.xUnits = MARGIN + ORE_PANEL_WIDTH + RESEARCH_PANEL_GAP, .yUnits = MARGIN}, TERRITORY_PANEL_WIDTH, ORE_PANEL_HEIGHT);
+    const float textTop = (ORE_PANEL_HEIGHT - NAME_LINE_UNITS) / 2.0f;
+    const float figureTop = ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+    constexpr float ADVANCE = 13.0f * MONO_ADVANCE;
+    paint.Text(std::format("Nodes of {}", territory.nodes), PADDING, textTop, TEXT_COLOR, Typeface::Name);
+    const std::string enemy = std::to_string(territory.enemyNodes);
+    paint.RightText(enemy, TERRITORY_PANEL_WIDTH - PADDING, figureTop, ENEMY_COLOR, Typeface::Figure, ADVANCE);
+    paint.RightText(std::format("{} : ", territory.ownNodes), TERRITORY_PANEL_WIDTH - PADDING - (CharactersOf(enemy) * ADVANCE), figureTop,
+                    OWN_COLOR, Typeface::Figure, ADVANCE);
+  }
+
   // Under the Ore: the research under way.
   const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
   if (!_content.research.empty())
@@ -1756,6 +1818,24 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     layout.panels.push_back(layout.minimap);
 
     const float pixelsPerMeter = inner / _content.mapSizeMeters;
+    // A sector's square on the minimap, in pixels.
+    const auto sectorRect = [&layout](const SectorMark& _sector, DirectX::XMFLOAT4 _color, Fill _fill)
+    {
+      const DirectX::XMFLOAT2 low = layout.MinimapPixelOf({.xMeters = _sector.minXMeters, .zMeters = _sector.maxZMeters});
+      const DirectX::XMFLOAT2 high = layout.MinimapPixelOf({.xMeters = _sector.maxXMeters, .zMeters = _sector.minZMeters});
+      return Rect{low.x, low.y, high.x - low.x, high.y - low.y, _color, _fill};
+    };
+    const auto sideColor = [](Side _side, float _alpha)
+    {
+      DirectX::XMFLOAT4 color = _side == Side::Own ? OWN_COLOR : ENEMY_COLOR;
+      color.w = _alpha;
+      return color;
+    };
+    for (const SectorMark& sector : _content.sectors)
+    {
+      if (sector.side != Side::Neutral)
+        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_WASH_ALPHA), Fill::Solid));
+    }
     // The neutral marks first, so that a rig's shows over its asteroid's.
     std::vector<const Mark*> marks;
     marks.reserve(_content.marks.size());
@@ -1790,6 +1870,21 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     {
       layout.panels.push_back(
         {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Fog});
+    }
+
+    // Over the fog, since both sides know who holds what: each held sector's outline, and stripes over a suppressed one.
+    const float line = SECTOR_LINE_UNITS * scale;
+    for (const SectorMark& sector : _content.sectors)
+    {
+      if (sector.side == Side::Neutral)
+        continue;
+      const Rect area = sectorRect(sector, sideColor(sector.side, SECTOR_OUTLINE_ALPHA), Fill::Solid);
+      layout.panels.push_back({area.left, area.top, area.width, line, area.color});
+      layout.panels.push_back({area.left, area.top + area.height - line, area.width, line, area.color});
+      layout.panels.push_back({area.left, area.top, line, area.height, area.color});
+      layout.panels.push_back({area.left + area.width - line, area.top, line, area.height, area.color});
+      if (sector.suppressed)
+        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
     }
 
     // The view's outline, as the box around the ground the camera shows.

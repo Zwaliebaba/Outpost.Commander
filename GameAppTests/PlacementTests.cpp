@@ -19,6 +19,43 @@ Outpost::StructureTypeView Rig()
   return {.structure = Outpost::StructureKind::MiningRig, .nameUtf8 = "Mining Rig", .radiusMeters = 25.0f};
 }
 
+Outpost::StructureTypeView Relay()
+{
+  return {.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .radiusMeters = 30.0f};
+}
+
+// Three sectors in a row across the map, west to east, the player holding the west one, whose node its Command Station
+// stands on (ADR-056); the asteroid is in the east one.
+std::vector<Outpost::SectorView> Sectors()
+{
+  constexpr float HALF = MAP_SIZE_METERS / 2.0f;
+  return {{.id = 1,
+           .nameUtf8 = "West",
+           .minXMeters = -HALF,
+           .maxXMeters = -200.0f,
+           .minZMeters = -HALF,
+           .maxZMeters = HALF,
+           .node = {.xMeters = -300.0f, .zMeters = 0.0f},
+           .adjacent = {2},
+           .holder = Outpost::PlayerId{1}},
+          {.id = 2,
+           .nameUtf8 = "Middle",
+           .minXMeters = -200.0f,
+           .maxXMeters = 200.0f,
+           .minZMeters = -HALF,
+           .maxZMeters = HALF,
+           .node = {.xMeters = 0.0f, .zMeters = 500.0f},
+           .adjacent = {1, 3}},
+          {.id = 3,
+           .nameUtf8 = "East",
+           .minXMeters = 200.0f,
+           .maxXMeters = HALF,
+           .minZMeters = -HALF,
+           .maxZMeters = HALF,
+           .node = {.xMeters = 600.0f, .zMeters = 0.0f},
+           .adjacent = {2}}};
+}
+
 std::vector<Outpost::EntityView> World()
 {
   return {{.id = Outpost::EntityId{1}, .kind = Outpost::EntityKind::Asteroid, .position = ASTEROID, .radiusMeters = 45.0f},
@@ -34,6 +71,39 @@ std::vector<Outpost::EntityView> World()
 TEST_CLASS(PlacementTests)
 {
 public:
+  // ADR-056: a Relay's ghost stands on the node of the sector under the cursor, and is green only on a free node next to
+  // a sector the player holds; without sectors it is never green.
+  TEST_METHOD(ARelaySnapsToItsSectorsNode)
+  {
+    constexpr Outpost::PlayerId PLAYER{1};
+    const std::vector<Outpost::EntityView> world = World();
+    std::vector<Outpost::SectorView> sectors = Sectors();
+    const Outpost::GhostPlacement middle = Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER);
+    Assert::IsTrue(middle.position == sectors[1].node);
+    Assert::AreEqual(30.0f, middle.radiusMeters);
+    Assert::IsTrue(middle.valid);
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {700.0f, 0.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid,
+                    L"not next to its sectors");
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {-500.0f, 0.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"its own node");
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, Outpost::PlayerId{2}).valid,
+                    L"another player's territory is no step");
+    sectors[1].holder = Outpost::PlayerId{2};
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER).valid, L"a held node");
+    Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS).valid, L"no sectors, no Relay");
+  }
+
+  // Phase 2 design §4: on a map with sectors a rig's ghost is green only in a sector the player holds.
+  TEST_METHOD(ARigNeedsAHeldSector)
+  {
+    constexpr Outpost::PlayerId PLAYER{1};
+    const std::vector<Outpost::EntityView> world = World();
+    std::vector<Outpost::SectorView> sectors = Sectors();
+    Assert::IsFalse(Outpost::PlaceGhost(Rig(), ASTEROID, world, MAP_SIZE_METERS, sectors, PLAYER).valid);
+    sectors[2].holder = PLAYER;
+    Assert::IsTrue(Outpost::PlaceGhost(Rig(), ASTEROID, world, MAP_SIZE_METERS, sectors, PLAYER).valid);
+    Assert::IsTrue(Outpost::PlaceGhost(Rig(), ASTEROID, world, MAP_SIZE_METERS).valid, L"without sectors, ore anywhere");
+  }
+
   // ADR-016's rules as the ghost shows them: inside the map, and overlapping no asteroid, field or structure.
   TEST_METHOD(AStructureStandsClearOfEverything)
   {

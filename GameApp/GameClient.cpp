@@ -580,7 +580,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     // Once a snapshot: what the player sees changes no faster than the server ticks, and a cell is 20 m (ADR-052).
     if (m_fogTick != m_view.Newest().tick)
     {
-      m_fog.Update(m_entities, m_view.Newest().player);
+      m_fog.Update(m_entities, m_view.Newest().player, m_view.Newest().sectors);
       m_fogTick = m_view.Newest().tick;
     }
   }
@@ -1538,9 +1538,10 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046).
-  const GhostPlacement ghost =
-    PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities, newest.mapSizeMeters);
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046). A
+  // Relay snaps to its sector's node, and a rig needs a sector the player holds (ADR-056).
+  const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities,
+                                          newest.mapSizeMeters, newest.sectors, newest.player);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.

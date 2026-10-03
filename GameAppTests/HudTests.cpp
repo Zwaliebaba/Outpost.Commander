@@ -329,6 +329,69 @@ public:
     Assert::AreEqual(std::string("Placing Mining Rig: left-click to build, right-click to cancel"), content.hint);
   }
 
+  // ADR-056: a Constructor offers the Relay only on a map with sectors, which it holds.
+  TEST_METHOD(OffersTheRelayOnlyWithSectors)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300},
+                             {.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .buildable = true, .cost = 200}};
+    Outpost::EntityView constructor = Ship(9, {}, 30000, 30000);
+    constructor.role = Outpost::ShipRole::Constructor;
+    const std::vector<Outpost::EntityView> entities{constructor};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
+    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size());
+
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::AreEqual(size_t{2}, content.buttons.size());
+    Assert::IsTrue(content.buttons[1].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
+  }
+
+  // ADR-056: the minimap washes each held sector in its holder's color under the marks, outlines it over the fog, and
+  // stripes a suppressed one; a panel beside the Ore counts the nodes each side holds.
+  TEST_METHOD(ShowsTheTerritory)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 3000.0f;
+    newest.sectors = {
+      {.id = 1, .minXMeters = -1500.0f, .maxXMeters = -500.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f, .holder = PLAYER},
+      {.id = 2, .minXMeters = -500.0f, .maxXMeters = 500.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f},
+      {.id = 3,
+       .minXMeters = 500.0f,
+       .maxXMeters = 1500.0f,
+       .minZMeters = -1500.0f,
+       .maxZMeters = 1500.0f,
+       .holder = Outpost::PlayerId{2},
+       .suppressed = true}};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
+    Assert::IsTrue(content.territory.has_value());
+    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
+    Assert::AreEqual(1, territory.ownNodes);
+    Assert::AreEqual(1, territory.enemyNodes);
+    Assert::AreEqual(3, territory.nodes);
+    Assert::AreEqual(size_t{3}, content.sectors.size());
+    Assert::IsTrue(content.sectors[0].side == Outpost::Hud::Side::Own && content.sectors[2].side == Outpost::Hud::Side::Enemy);
+
+    content.fog = true;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
+    const auto fog =
+      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
+    const DirectX::XMFLOAT2 west = layout.MinimapPixelOf({.xMeters = -1000.0f, .zMeters = 0.0f});
+    const DirectX::XMFLOAT2 middle = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = 0.0f});
+    const auto wash = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                           { return _panel.Contains(west.x, west.y) && _panel.width > 50.0f && _panel.color.w < 0.5f; });
+    Assert::IsTrue(wash != layout.panels.end() && wash < fog, L"the player's sector is washed under the fog");
+    Assert::IsFalse(
+      std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                          { return _panel.Contains(middle.x, middle.y) && _panel.width > 50.0f && _panel.width < layout.minimap.width; }),
+      L"a free sector is not washed");
+    const auto stripes = std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel)
+                                              { return _panel.fill == Outpost::Hud::Fill::Hatched && _panel.width > 50.0f; });
+    Assert::IsTrue(stripes != layout.panels.end() && stripes > fog, L"the suppressed sector is striped over the fog");
+  }
+
   // Task 4.5, Phase 1 design §12: a selected structure shows its kind, hit points and construction; its queue and what it
   // can add to it are its windows', which its panel opens once it is the player's own and finished (owner, 2026-10-03).
   TEST_METHOD(DescribesAStructureAndOpensItsWindows)

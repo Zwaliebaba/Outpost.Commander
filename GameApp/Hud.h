@@ -317,6 +317,26 @@ public:
     bool dry = false;
   };
 
+  // One of the map's sectors on the minimap (ADR-056): tinted by whose it is, outlined in that side's color over the fog,
+  // since who holds what is known to both sides, and hatched while suppressed.
+  struct SectorMark
+  {
+    float minXMeters = 0.0f;
+    float maxXMeters = 0.0f;
+    float minZMeters = 0.0f;
+    float maxZMeters = 0.0f;
+    Side side = Side::Neutral;
+    bool suppressed = false;
+  };
+
+  // How many nodes each side holds, of how many the map has (Phase 2 design §4).
+  struct Territory
+  {
+    std::int32_t ownNodes = 0;
+    std::int32_t enemyNodes = 0;
+    std::int32_t nodes = 0;
+  };
+
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
   struct Outcome
   {
@@ -345,6 +365,9 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
+    // The map's sectors, and the nodes each side holds; none on a map without sectors.
+    std::vector<SectorMark> sectors;
+    std::optional<Territory> territory;
     // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
     // from the fog's own texture (ADR-052).
     bool fog = false;
