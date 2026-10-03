@@ -198,14 +198,14 @@ public:
   {
     TerritoryMatch match;
     (void)match.Relay(BLUE, SOUTH);
-    // Inside the south, far from the Relay's own 200 m and out of its 400 m of suppression.
-    const Outpost::EntityId far = match.Warship(RED, {.xMeters = 700.0f, .zMeters = -1000.0f});
-    // Inside Blue's home, far from its station's sight.
+    // Inside the south, beyond the Relay's own 200 m and out of its 400 m of suppression.
+    const Outpost::EntityId distant = match.Warship(RED, {.xMeters = 700.0f, .zMeters = -1000.0f});
+    // Inside Blue's home, beyond its station's sight.
     const Outpost::EntityId home = match.Warship(RED, {.xMeters = -1000.0f, .zMeters = -2400.0f});
     // Outside every sector Blue holds.
     const Outpost::EntityId away = match.Warship(RED, {.xMeters = 0.0f, .zMeters = 0.0f});
     match.Run(1);
-    Assert::IsTrue(match.Sees(BLUE, far));
+    Assert::IsTrue(match.Sees(BLUE, distant));
     Assert::IsTrue(match.Sees(BLUE, home));
     Assert::IsFalse(match.Sees(BLUE, away));
 
@@ -213,7 +213,7 @@ public:
     (void)match.Warship(RED, {.xMeters = node.xMeters + 150.0f, .zMeters = node.zMeters});
     match.Run(1);
     Assert::IsTrue(match.Sector(BLUE, SOUTH).suppressed);
-    Assert::IsFalse(match.Sees(BLUE, far), L"a suppressed sector is not seen whole");
+    Assert::IsFalse(match.Sees(BLUE, distant), L"a suppressed sector is not seen whole");
   }
 
   // A map without sectors plays Phase 1's rules: no Relay, and ore anywhere (Phase 2 plan, rule 5).
