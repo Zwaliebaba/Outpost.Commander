@@ -57,8 +57,8 @@ struct InputState
 };
 
 // The top-level window the game presents into (ADR-006). It opens borderless and full screen on the primary monitor,
-// and Alt+Enter toggles it to a resizable window and back. It knows no game concept: its title and windowed size come
-// from the caller.
+// and Alt+Enter toggles it to a resizable window and back. Alt alone does not open the window's menu, so that a game may
+// read it as a key. It knows no game concept: its title and windowed size come from the caller.
 class Window : NonCopyable
 {
 public:

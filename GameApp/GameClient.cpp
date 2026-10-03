@@ -110,10 +110,16 @@ constexpr DirectX::XMFLOAT4 DRAG_BOX_COLOR{0.25f, 0.95f, 0.35f, 1.0f};
 // A damaged ship's or structure's bar floats above it, as long as its footprint is wide and just off it toward -z: green
 // above half its hit points, then amber, then red, over a full-length bar in its side's color darkened to
 // HEALTH_BACK_SHADE, so that a bar says whose it is as well as how hurt (owner, 2026-10-02, ADR-028); dark gray for a
-// side the data does not name. The gap is small, so that the bar reads as the ship's.
+// side the data does not name. The gap is small, so that the bar reads as the ship's. Held, HEALTH_BAR_ALL_KEY shows a bar
+// over every ship and structure, whole or not (ADR-046).
 constexpr float HEALTH_BAR_HEIGHT_METERS = 10.0f;
 constexpr float HEALTH_BAR_WIDTH_METERS = 2.5f;
 constexpr float HEALTH_BAR_GAP_METERS = 1.5f;
+constexpr std::uint8_t HEALTH_BAR_ALL_KEY = VK_MENU;
+// A bar is never shorter or thinner on screen than these, in the HUD's reference units at the screen's middle: zoomed out,
+// a Small hull's own 16 m is a few pixels long and its 2.5 m is one (ADR-046).
+constexpr float HEALTH_BAR_LEAST_LENGTH_UNITS = 32.0f;
+constexpr float HEALTH_BAR_LEAST_THICKNESS_UNITS = 5.0f;
 constexpr DirectX::XMFLOAT4 HEALTH_BACK_COLOR{0.08f, 0.08f, 0.08f, 1.0f};
 constexpr float HEALTH_BACK_SHADE = 0.3f;
 constexpr DirectX::XMFLOAT4 HEALTH_GOOD_COLOR{0.2f, 0.85f, 0.3f, 1.0f};
@@ -511,6 +517,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     return;
   }
 
+  m_everyHealthBar = _input.active && _input.IsDown(HEALTH_BAR_ALL_KEY);
   m_view.Advance(_elapsedSeconds);
   m_previousEntities = std::move(m_entities);
   m_entities = m_view.Entities();
@@ -1011,34 +1018,42 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
 
 void Outpost::GameClient::DrawHealthBars(ID3D12GraphicsCommandList* _commandList)
 {
+  // How many meters of ground a reference unit of the HUD covers at the screen's middle, which sets a bar's least size.
+  const float metersPerUnit = m_camera.ViewWidthMeters() * Hud::Scale(m_viewport.widthPixels, m_viewport.heightPixels) /
+                              static_cast<float>(std::max(m_viewport.widthPixels, 1u));
+  const float thickness = std::max(HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_LEAST_THICKNESS_UNITS * metersPerUnit);
+  const float leastHalfLength = HEALTH_BAR_LEAST_LENGTH_UNITS * metersPerUnit / 2.0f;
+  // How far each bar's middle stands off the footprint: the health bar's near edge where a bar of HEALTH_BAR_WIDTH_METERS
+  // has it, and the build bar a gap beyond the health bar.
+  const float healthOffset = HEALTH_BAR_GAP_METERS - (HEALTH_BAR_WIDTH_METERS / 2.0f) + (thickness / 2.0f);
+  const float buildOffset = healthOffset + thickness + HEALTH_BAR_GAP_METERS;
   for (const EntityView& entity : m_entities)
   {
     const ModelSet* side = m_catalog.SetForPlayer(entity.owner);
     const DirectX::XMFLOAT4 back = side != nullptr ? Shaded(side->color, HEALTH_BACK_SHADE) : HEALTH_BACK_COLOR;
+    const float halfLength = std::max(entity.radiusMeters, leastHalfLength);
+    const float left = entity.position.xMeters - halfLength;
     if (entity.builtPermille < PERMILLE)
     {
-      const float left = entity.position.xMeters - entity.radiusMeters;
-      const float z = entity.position.zMeters - entity.radiusMeters - (2.0f * HEALTH_BAR_GAP_METERS) - HEALTH_BAR_WIDTH_METERS;
+      const float z = entity.position.zMeters - entity.radiusMeters - buildOffset;
       const float built = static_cast<float>(entity.builtPermille) / static_cast<float>(PERMILLE);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS, back);
-      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * entity.radiusMeters * built), .zMeters = z},
-               HEALTH_BAR_WIDTH_METERS, HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness,
+               HEALTH_BAR_HEIGHT_METERS, back);
+      DrawBand(_commandList, {.xMeters = left, .zMeters = z}, {.xMeters = left + (2.0f * halfLength * built), .zMeters = z}, thickness,
+               HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, BUILD_BAR_COLOR);
     }
-    if (entity.maxHitPointsHundredths <= 0 || entity.hitPointsHundredths >= entity.maxHitPointsHundredths)
+    if (entity.maxHitPointsHundredths <= 0 || (!m_everyHealthBar && entity.hitPointsHundredths >= entity.maxHitPointsHundredths))
       continue;
     const float share =
       std::clamp(static_cast<float>(entity.hitPointsHundredths) / static_cast<float>(entity.maxHitPointsHundredths), 0.0f, 1.0f);
-    const float left = entity.position.xMeters - entity.radiusMeters;
-    const float z = entity.position.zMeters - entity.radiusMeters - HEALTH_BAR_GAP_METERS;
+    const float z = entity.position.zMeters - entity.radiusMeters - healthOffset;
     const PlanePosition start{.xMeters = left, .zMeters = z};
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
-             HEALTH_BAR_HEIGHT_METERS, back);
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength), .zMeters = z}, thickness, HEALTH_BAR_HEIGHT_METERS, back);
     const DirectX::XMFLOAT4& color = share > HEALTH_HURT_SHARE  ? HEALTH_GOOD_COLOR
                                      : share > HEALTH_LOW_SHARE ? HEALTH_HURT_COLOR
                                                                 : HEALTH_LOW_COLOR;
     // A little higher than the dark bar, so the two do not fight over the same depth.
-    DrawBand(_commandList, start, {.xMeters = left + (2.0f * entity.radiusMeters * share), .zMeters = z}, HEALTH_BAR_WIDTH_METERS,
+    DrawBand(_commandList, start, {.xMeters = left + (2.0f * halfLength * share), .zMeters = z}, thickness,
              HEALTH_BAR_HEIGHT_METERS + OVERLAY_LIFT_METERS, color);
   }
 }

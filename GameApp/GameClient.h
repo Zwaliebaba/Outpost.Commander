@@ -138,8 +138,9 @@ private:
   // (ADR-042); false when the rig's kind is not known.
   bool DrapeRigRing(const EntityView& _rig);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
-  // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
-  // structure under construction, its length the share built (task 4.2).
+  // A bar over each damaged ship and structure, or every one while Alt is held, its length the share of hit points left
+  // (task 3.5), and one over each structure under construction, its length the share built (task 4.2). Neither is smaller
+  // on screen than a least size (ADR-046).
   void DrawHealthBars(ID3D12GraphicsCommandList* _commandList);
   void DrawEffects(ID3D12GraphicsCommandList* _commandList);
   // Every ship's exhaust, in its drive's color, brighter and longer the faster the ship goes (ADR-019), and the particles
@@ -234,6 +235,8 @@ private:
   // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelMeshes.
   std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
+  // Alt is held this frame, and every ship and structure shows its health bar.
+  bool m_everyHealthBar = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;
   // Where the cursor points on the ground this frame, for the ghost, and the structure it is on, whose ring shows at full
