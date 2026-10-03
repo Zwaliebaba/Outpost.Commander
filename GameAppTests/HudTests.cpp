@@ -964,12 +964,12 @@ public:
       Assert::IsTrue(diamond != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
       return std::array<float, 3>{diamond->area.left, figure->left, income->left};
     };
-    const std::array<float, 3> small = oreAt(5);
-    const std::array<float, 3> large = oreAt(12345678);
-    Assert::AreEqual(small[0], large[0], 0.01f, L"the diamond");
-    Assert::AreEqual(small[1], large[1], 0.01f, L"the figure");
-    Assert::AreEqual(small[2], large[2], 0.01f, L"the income");
-    Assert::IsTrue(small[0] < 40.0f, L"at the panel's left");
+    const std::array<float, 3> oneDigit = oreAt(5);
+    const std::array<float, 3> eightDigits = oreAt(12345678);
+    Assert::AreEqual(oneDigit[0], eightDigits[0], 0.01f, L"the diamond");
+    Assert::AreEqual(oneDigit[1], eightDigits[1], 0.01f, L"the figure");
+    Assert::AreEqual(oneDigit[2], eightDigits[2], 0.01f, L"the income");
+    Assert::IsTrue(oneDigit[0] < 40.0f, L"at the panel's left");
   }
 
   // ADR-045: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
