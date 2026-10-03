@@ -73,6 +73,9 @@ Outpost::TerritoryTuning ReadTerritory(ObjectReader& _reader)
   if (territory.cutOffIncomePercent > 100)
     Neuron::JsonFail(_reader.PathOf("cutOffIncomePercent"), std::format("is at most 100, found {}", territory.cutOffIncomePercent));
   territory.suppressionRadiusMeters = _reader.Number("suppressionRadiusMeters", JsonBound::Positive);
+  territory.tickets = _reader.Integer("tickets", 1);
+  territory.drainIntervalSeconds = _reader.Number("drainIntervalSeconds", JsonBound::Positive);
+  territory.drainTicketsPerNodeDifference = _reader.Integer("drainTicketsPerNodeDifference", 1);
   return territory;
 }
 

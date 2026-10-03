@@ -5,6 +5,7 @@
     <ClInclude Include="RepositoryData.h" />
     <ClInclude Include="BalanceCheck.h" />
     <ClInclude Include="MatchArena.h" />
+    <ClInclude Include="TerritoryMatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -36,5 +37,6 @@
     <ClCompile Include="AiSettingsTests.cpp" />
     <ClCompile Include="AiPlayerTests.cpp" />
     <ClCompile Include="TerritoryTests.cpp" />
+    <ClCompile Include="DominationTests.cpp" />
   </ItemGroup>
 </Project>

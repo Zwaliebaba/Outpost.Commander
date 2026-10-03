@@ -220,6 +220,23 @@ struct SectorView
   return found != _sectors.end() ? &*found : nullptr;
 }
 
+// How a match ended (Phase 2 design §8): a player lost its Command Station and every finished Shipyard (Phase 1 design
+// §4), or a player's tickets ran out because it held fewer nodes (ADR-057).
+enum class MatchEnding : std::uint8_t
+{
+  LostProduction,
+  Domination
+};
+
+// One player's tickets, whole, rounded up so that a player shows none only once it has lost by them (ADR-057).
+struct TicketsView
+{
+  PlayerId player;
+  std::int32_t tickets = 0;
+
+  friend bool operator==(const TicketsView&, const TicketsView&) = default;
+};
+
 // A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
 // at the moment it was fired (task 3.5).
 struct ShotView
@@ -279,10 +296,15 @@ struct Snapshot
   bool matchOver = false;
   PlayerId winner;
   std::uint64_t matchEndedTick = 0;
+  // How it ended, once it has.
+  MatchEnding ending = MatchEnding::LostProduction;
   // The match is played under fog of war, which the client draws (ADR-024).
   bool fogOfWar = false;
   // The map's sectors, in the map's order, and who holds each (ADR-056); none on a map without them, which plays without
-  // territory.
+  // territory. With them, every player's tickets, in player order, which both players see (ADR-057), and the tickets each
+  // started with.
   std::vector<SectorView> sectors;
+  std::vector<TicketsView> tickets;
+  std::int32_t startingTickets = 0;
 };
 } // namespace Outpost

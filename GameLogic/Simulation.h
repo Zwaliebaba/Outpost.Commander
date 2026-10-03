@@ -279,9 +279,9 @@ public:
   // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
-  // Whether a player has lost its Command Station and its last finished Shipyard, which ends the match (Phase 1 design
-  // §4); the player who still has one of them won, or nobody when both lost theirs in the same tick. Only a match whose
-  // bases were placed can end.
+  // Whether a player has lost its Command Station and its last finished Shipyard, or on a map with territory has run out
+  // of tickets, which ends the match (Phase 1 design §4, Phase 2 design §8); the player who still stands won, or nobody
+  // when both fell in the same tick. Only a match whose bases were placed can end.
   [[nodiscard]] bool MatchOver() const noexcept
   {
     return m_matchOver;
@@ -290,6 +290,14 @@ public:
   {
     return m_winner;
   }
+  [[nodiscard]] MatchEnding Ending() const noexcept
+  {
+    return m_ending;
+  }
+
+  // A player's tickets in shares of a ticket, one ticket being as many shares as the map has nodes, so that domination's
+  // drain is whole (ADR-057); zero for a player not added or without territory.
+  [[nodiscard]] std::int64_t TicketShares(PlayerId _player) const noexcept;
 
   // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
@@ -329,8 +337,8 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders &&
-           _a.m_sectors == _b.m_sectors;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
+           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_sectors == _b.m_sectors;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -374,6 +382,8 @@ private:
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
     // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
+    // Its tickets on a map with territory, in shares of a ticket (ADR-057).
+    std::int64_t ticketShares = 0;
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
@@ -523,6 +533,11 @@ private:
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();
+  // On a map with territory, every drain interval: each player that holds fewer nodes than another loses tickets, and a
+  // player out of them ends the match (Phase 2 design §8, ADR-057).
+  void Dominate();
+  // The match ends now: _standing are the players still in it, of whom the winner is the one, if one.
+  void EndMatch(const std::vector<PlayerId>& _standing, MatchEnding _ending);
   void MoveShips();
   void SeparateShips();
   void KeepShipsClear();
@@ -561,6 +576,7 @@ private:
   bool m_matchOver = false;
   PlayerId m_winner;
   std::uint64_t m_matchEndedTick = 0;
+  MatchEnding m_ending = MatchEnding::LostProduction;
   bool m_fog = false;
   // What the last tick did, for the snapshots built after it.
   std::vector<ShotView> m_shots;
