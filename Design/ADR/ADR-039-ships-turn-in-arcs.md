@@ -30,7 +30,11 @@ The turn rates are final (ADR-010 decision 8). At full speed they give every shi
 
 - **Every turn is a bank.** Task 7.1's banking leans a ship in proportion to its speed times its turn rate. A ship now turns at speed, so it banks in every corner. ADR-029's limits were set for a full-speed turn, and it reaches them.
 - **A U-turn takes a little longer, a point close abeam much less.** A single ship sent 100 m behind itself arrives in 2.05 s instead of 1.90 s as Small+Ion, and in 8.55 s instead of 7.90 s as Large+Fusion. A point 15 m abeam takes 0.75 s instead of 6.3 s, and is reached exactly instead of 2.1 m short. A route with gentle bends is flown as before. All measured in the Linux container, one ship on an open map.
-- **The battles change only in how ships close.** Weapons fire in any direction, and a ship standing to fire does not move. The balance check, re-run with arcs: not yet recorded; the full check is running in the container.
+- **The battles change only in how ships close.** Weapons fire in any direction, and a ship standing to fire does not move. The balance check was run again with arcs in the Linux container, 88 minutes on four threads that it shared with other runs:
+  - **(a), (b) and (c) pass at every stage.**
+  - **(d) is UNSURE at tier 1.** With Hull Plating on the swarm's side, at 2,000 Ore under spread fire, its best answer, the brawler, wins 53% of 480 battles, and the interval straddles one half. Before the arcs it won 55% and passed, narrowly: the same pairing of the MVP's numbers was already on the edge.
+  - Every other verdict holds.
+  - Nothing is retuned until the owner decides.
 - **Two AIs end a match a little later.** Over 140 seeds the median is 23:32, against 22:11 over 40 seeds before; P1 asks for 45–60 minutes. The seat that wins about two-thirds of the matches changed: player 2 now wins 89 of the 140, where player 1 won 30 of 40. That is a bias whose direction follows the movement rule, and its cause is not yet known (ADR-038).
 - **The stress scene's ticks did not move**: a median of 0.24 ms, and a slowest tick of 1.6–2.4 ms over three runs, against 1.5 ms before. Measured in the Linux container.
 - **An arc can graze an obstacle.** A ship that comes about near an asteroid or a structure swings up to about its loop's width outside its path. ADR-010's rule that a ship inside an obstacle leaves it by the shortest way keeps it out.
