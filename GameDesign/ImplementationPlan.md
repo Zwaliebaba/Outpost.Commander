@@ -65,6 +65,7 @@ Namespaces: the engine is `Neuron`, and the game layers (GameProtocol, GameLogic
 | 6.3 | Q1 and Q3 playtests | 6.2 | — | done, the match log in [#42](https://github.com/Zwaliebaba/Outpost.Commander/pull/42); Q1 "yes" and Q3 "yes" from the owner's matches (design §3) |
 | B.1 | §12 against the simulation's Q2 check | 5.3 | owner, 2026-10-01 | done, [#43](https://github.com/Zwaliebaba/Outpost.Commander/pull/43); the check of record passes in Release\|ARM64 on the development machine |
 | C.1 | Explosions and particles after DeepSpaceOutpost | 3.5, A.2 | owner, 2026-10-01 | in review; not yet built or run |
+| D.1 | The lines carry the shape: dark faces, multisampling, structures behind the ships | C.1 | owner, 2026-10-03 | in review; not yet built or run |
 
 ## Gates
 
@@ -700,6 +701,19 @@ The owner asked on 2026-10-01 for DeepSpaceOutpost's particle and explosion mana
 - **Also in this PR, kept by the owner (2026-10-02):** every asteroid and field rock shows its ridges as thin lit lines, an eighties vector look. The rocks are three low-poly meshes, `Small`, `Medium` and `Large` (32, 54 and 78 triangles), in place of the old 514-triangle `Asteroid`; the game picks one by a rock's radius. The owner then replaced the ships and structures with low-poly models of their own, and every model shows its lines. `Neuron::BuildCreaseLines` keeps the edges that fold by more than 10°, and `Neuron::MeshPipeline::DrawLines` draws them at twice the model's brightness, over faces at 0.65 of it, all in one pass a frame. A Mining Rig now stands on its asteroid's surface rather than half inside it. [ADR-027](../Design/ADR/ADR-027-rock-crease-lines.md).
 - **Also in this PR (owner, 2026-10-02):** to match the ridges, the grid is a line every 100 m, a pixel wide at any zoom, in a dim blue-gray, with no major lines; and the brightest 25 stars, rather than 70, are crosses of pixel-wide lines 6 to 16 pixels in radius rather than starburst sprites. [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md).
 - **Verify:** CI; **owner run**, to see whether a destruction reads from the RTS camera, and in the Q4 measurement (3.7), which now includes the shards.
+
+---
+
+## Inserted by the owner after the MVP — The lines carry the shape
+
+On 2026-10-03 the owner asked for a review of a screenshot of the Command Station, and then for every recommendation in it to be carried out, as one PR.
+
+### D.1 — Dark faces, multisampled lines, structures behind the ships
+
+- **Goal:** the scene reads by its lines, as the eighties vector look ADR-027 was after, and a side's ships stand ahead of its structures.
+- **ADR:** [ADR-029](../Design/ADR/ADR-029-lines-over-dark-faces.md), which supersedes parts of ADR-006, ADR-011, ADR-027 and ADR-028.
+- **As built:** faces at 0.3 of a model's color and lines brightened without clipping their hue, then a third of the way to white; a line pulled toward the eye by `MeshLineVS.hlsl` rather than lifted along its normal by `BuildCreaseLines`; the scene drawn into a 4-sample target and resolved in linear color; structures grayer and darker than ships, each on a faint ring in its side's color that turns green when it is selected; and asteroid fields darker than ore asteroids on the minimap. `HudTests` and `MeshDataTests` cover what runs without a GPU.
+- **Verify:** CI; **owner run**, zoomed in on a structure and zoomed out over a fight; and the Q4 measurement again (`--measure --stress`), since multisampling costs GPU time nobody has measured.
 
 ---
 

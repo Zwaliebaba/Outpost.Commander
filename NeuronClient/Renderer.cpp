@@ -17,6 +17,8 @@
 namespace
 {
 constexpr DXGI_FORMAT BACK_BUFFER_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM;
+// The scene target is cleared to black; a frame's clear color other than this still works, at some cost on some GPUs.
+constexpr std::array<float, 4> SCENE_CLEAR{0.0f, 0.0f, 0.0f, 1.0f};
 // The depth buffer is cleared to the far plane; nearer is smaller (ADR-011).
 constexpr float DEPTH_CLEAR = 1.0f;
 constexpr D3D_FEATURE_LEVEL MINIMUM_FEATURE_LEVEL = D3D_FEATURE_LEVEL_11_0;
@@ -132,12 +134,11 @@ Neuron::Renderer::Renderer(HWND _window, UINT _widthPixels, UINT _heightPixels)
 
   const D3D12_DESCRIPTOR_HEAP_DESC heapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-    .NumDescriptors = FRAME_COUNT,
+    .NumDescriptors = 1,
     .Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     .NodeMask = 0,
   };
   winrt::check_hresult(m_device->CreateDescriptorHeap(&heapDescription, IID_GRAPHICS_PPV_ARGS(m_renderTargetHeap)));
-  m_renderTargetDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
   const D3D12_DESCRIPTOR_HEAP_DESC depthHeapDescription{
     .Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
@@ -199,6 +200,8 @@ void Neuron::Renderer::Resize(UINT _widthPixels, UINT _heightPixels)
   WaitForGpu();
   for (auto& backBuffer : m_backBuffers)
     backBuffer = nullptr;
+  m_sceneTarget = nullptr;
+  m_resolvedScene = nullptr;
   CheckDeviceResult(m_swapChain->ResizeBuffers(FRAME_COUNT, _widthPixels, _heightPixels, BACK_BUFFER_FORMAT, m_swapChainFlags));
   m_widthPixels = _widthPixels;
   m_heightPixels = _heightPixels;
@@ -245,11 +248,8 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
   m_commandList->EndQuery(m_timestampHeap.get(), D3D12_QUERY_TYPE_TIMESTAMP, m_frameIndex * TIMESTAMPS_PER_FRAME);
   PIXBeginEvent(m_commandList.get(), PIX_COLOR_DEFAULT, L"Scene");
 
-  const auto toRenderTarget = CD3DX12_RESOURCE_BARRIER::Transition(m_backBuffers[m_frameIndex].get(), D3D12_RESOURCE_STATE_PRESENT,
-                                                                   D3D12_RESOURCE_STATE_RENDER_TARGET);
-  m_commandList->ResourceBarrier(1, &toRenderTarget);
-
-  const D3D12_CPU_DESCRIPTOR_HANDLE renderTarget = RenderTargetView(m_frameIndex);
+  // The scene target is left a render target by the frame before, and the back buffer is not touched until EndFrame.
+  const D3D12_CPU_DESCRIPTOR_HANDLE renderTarget = SceneTargetView();
   const D3D12_CPU_DESCRIPTOR_HANDLE depthStencil = DepthStencilView();
   m_commandList->ClearRenderTargetView(renderTarget, _clearColor.data(), 0, nullptr);
   m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH, DEPTH_CLEAR, 0, 0, nullptr);
@@ -271,8 +271,26 @@ ID3D12GraphicsCommandList* Neuron::Renderer::BeginFrame(const std::array<float, 
 
 void Neuron::Renderer::EndFrame()
 {
-  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(m_backBuffers[m_frameIndex].get(), D3D12_RESOURCE_STATE_RENDER_TARGET,
-                                                              D3D12_RESOURCE_STATE_PRESENT);
+  // The samples are averaged in the sRGB format, so in linear color, into the resolved scene. A flip-model back buffer
+  // cannot be sRGB, and a resolve cannot change the format, so the resolved scene is copied into it, which a copy within
+  // one format group may do (ADR-029).
+  ID3D12Resource* backBuffer = m_backBuffers[m_frameIndex].get();
+  const std::array toResolve{
+    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE),
+    CD3DX12_RESOURCE_BARRIER::Transition(m_resolvedScene.get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RESOLVE_DEST),
+  };
+  m_commandList->ResourceBarrier(static_cast<UINT>(toResolve.size()), toResolve.data());
+  m_commandList->ResolveSubresource(m_resolvedScene.get(), 0, m_sceneTarget.get(), 0, RENDER_TARGET_FORMAT);
+
+  const std::array toCopy{
+    CD3DX12_RESOURCE_BARRIER::Transition(m_resolvedScene.get(), D3D12_RESOURCE_STATE_RESOLVE_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE),
+    CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST),
+    CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RESOLVE_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET),
+  };
+  m_commandList->ResourceBarrier(static_cast<UINT>(toCopy.size()), toCopy.data());
+  m_commandList->CopyResource(backBuffer, m_resolvedScene.get());
+
+  const auto toPresent = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
   m_commandList->ResourceBarrier(1, &toPresent);
 
   PIXEndEvent(m_commandList.get());
@@ -395,15 +413,28 @@ winrt::com_ptr<ID3D12Resource> Neuron::Renderer::CreateStaticTexture(UINT _width
 
 void Neuron::Renderer::CreateRenderTargets()
 {
+  // The back buffers are only copied into, so they need no view.
+  for (UINT index = 0; index < FRAME_COUNT; ++index)
+    winrt::check_hresult(m_swapChain->GetBuffer(index, IID_GRAPHICS_PPV_ARGS(m_backBuffers[index])));
+
+  // Resize has already drained the GPU and released the old targets.
+  const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
+  const CD3DX12_RESOURCE_DESC sceneDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1,
+                                                                              SAMPLE_COUNT, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+  const CD3DX12_CLEAR_VALUE clearValue(RENDER_TARGET_FORMAT, SCENE_CLEAR.data());
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &sceneDescription,
+                                                         D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue,
+                                                         IID_GRAPHICS_PPV_ARGS(m_sceneTarget)));
+
   D3D12_RENDER_TARGET_VIEW_DESC viewDescription{};
   viewDescription.Format = RENDER_TARGET_FORMAT;
-  viewDescription.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+  viewDescription.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+  m_device->CreateRenderTargetView(m_sceneTarget.get(), &viewDescription, SceneTargetView());
 
-  for (UINT index = 0; index < FRAME_COUNT; ++index)
-  {
-    winrt::check_hresult(m_swapChain->GetBuffer(index, IID_GRAPHICS_PPV_ARGS(m_backBuffers[index])));
-    m_device->CreateRenderTargetView(m_backBuffers[index].get(), &viewDescription, RenderTargetView(index));
-  }
+  const CD3DX12_RESOURCE_DESC resolvedDescription = CD3DX12_RESOURCE_DESC::Tex2D(RENDER_TARGET_FORMAT, m_widthPixels, m_heightPixels, 1, 1);
+  winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &resolvedDescription,
+                                                         D3D12_RESOURCE_STATE_COPY_SOURCE, nullptr,
+                                                         IID_GRAPHICS_PPV_ARGS(m_resolvedScene)));
 }
 
 void Neuron::Renderer::CreateDepthBuffer()
@@ -411,22 +442,21 @@ void Neuron::Renderer::CreateDepthBuffer()
   // The old buffer is released first; Resize has already drained the GPU.
   m_depthBuffer = nullptr;
   const CD3DX12_HEAP_PROPERTIES defaultHeap(D3D12_HEAP_TYPE_DEFAULT);
-  const CD3DX12_RESOURCE_DESC description =
-    CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+  const CD3DX12_RESOURCE_DESC description = CD3DX12_RESOURCE_DESC::Tex2D(DEPTH_FORMAT, m_widthPixels, m_heightPixels, 1, 1, SAMPLE_COUNT, 0,
+                                                                         D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   const CD3DX12_CLEAR_VALUE clearValue(DEPTH_FORMAT, DEPTH_CLEAR, 0);
   winrt::check_hresult(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &description, D3D12_RESOURCE_STATE_DEPTH_WRITE,
                                                          &clearValue, IID_GRAPHICS_PPV_ARGS(m_depthBuffer)));
 
   D3D12_DEPTH_STENCIL_VIEW_DESC viewDescription{};
   viewDescription.Format = DEPTH_FORMAT;
-  viewDescription.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+  viewDescription.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
   m_device->CreateDepthStencilView(m_depthBuffer.get(), &viewDescription, DepthStencilView());
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::RenderTargetView(UINT _index) const noexcept
+D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::SceneTargetView() const noexcept
 {
-  return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart(), static_cast<INT>(_index),
-                                       m_renderTargetDescriptorSize);
+  return m_renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Neuron::Renderer::DepthStencilView() const noexcept

@@ -1,5 +1,7 @@
-// A mesh in the scene: each vertex placed by its object's world matrix and the frame's camera (ADR-011).
-// The two constant buffers are declared again, identically, in MeshPS.hlsl and MeshLineVS.hlsl, and must match
+// A line in the scene, placed as MeshVS.hlsl places a mesh, then pulled liftShare of the way toward the eye. A point
+// moved along its own sightline stays where it is on the screen, so the line does not stand off a silhouette as a lift
+// along the surface's normal did, yet it is nearer than the surface it lies on and wins the depth test (ADR-029).
+// The two constant buffers are declared again, identically, in MeshVS.hlsl and MeshPS.hlsl, and must match
 // MeshPipeline.cpp.
 
 cbuffer Frame : register(b0)
@@ -34,8 +36,9 @@ struct VertexOut
 VertexOut main(VertexIn input)
 {
   VertexOut output;
-  const float4 worldPosition = mul(float4(input.position, 1.0f), world);
-  output.position = mul(worldPosition, viewProjection);
+  const float3 worldPosition = mul(float4(input.position, 1.0f), world).xyz;
+  const float3 pulled = lerp(worldPosition, eyePosition, liftShare);
+  output.position = mul(float4(pulled, 1.0f), viewProjection);
   // The world matrix scales uniformly, so its upper 3x3 turns normals correctly; the pixel shader normalizes them.
   output.normal = mul(input.normal, (float3x3)world);
   return output;

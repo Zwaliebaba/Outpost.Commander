@@ -24,6 +24,9 @@ constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
+// An asteroid field is only in the way, so it is drawn darker than an ore asteroid, which is worth going to, though a
+// field's square is the larger (ADR-029).
+constexpr DirectX::XMFLOAT4 FIELD_COLOR{0.13f, 0.13f, 0.14f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 
 // Everything below in reference units.
@@ -641,7 +644,10 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       const float smallest = (mark.kind == EntityKind::Ship ? SHIP_MARK_UNITS : STRUCTURE_MARK_UNITS) * scale;
       const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
-      const DirectX::XMFLOAT4& color = mark.side == Side::Own ? OWN_COLOR : mark.side == Side::Enemy ? ENEMY_COLOR : NEUTRAL_COLOR;
+      const DirectX::XMFLOAT4& color = mark.side == Side::Own                   ? OWN_COLOR
+                                       : mark.side == Side::Enemy               ? ENEMY_COLOR
+                                       : mark.kind == EntityKind::AsteroidField ? FIELD_COLOR
+                                                                                : NEUTRAL_COLOR;
       layout.panels.push_back({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, color});
     }
 
