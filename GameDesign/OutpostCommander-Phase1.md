@@ -196,6 +196,8 @@ One map, **5,000 × 5,000 m**, point-symmetric as the MVP's, with the starts in 
 
 That is 24 ore asteroids holding 285,000 Ore. Asteroid fields stand between the rings as obstacles and chokepoints, and every passage is at least as wide as the map's minimum gap, as in the MVP. The rich corners are equally far from both starts and far from both: whoever holds one is exposed. The layout itself is written in the map task and confirmed by the owner before it is played (as MVP task 2.3).
 
+**Laid out in sectors for Phase 2** (owner, 2026-10-03). The map is divided into about nine sectors, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as [the Phase 2 draft](OutpostCommander-Phase2.md) §4 has them. Phase 1 reads none of it, and its rings, yields and reserves are unchanged; it makes this the first map Phase 2's territory is played on.
+
 **What a 5 km map costs:**
 
 - **Travel time.** From one start to the other, a Small+Ion ship takes about a minute, a Medium+Ion about 95 s and a Large+Fusion about four minutes. Heavies become a decision about where they will be needed, which is intended; the Pulse Drive is the answer to "too slow to get there".

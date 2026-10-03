@@ -2,7 +2,7 @@
 
 Status: **open** · 2026-10-02 · Derived from [the Phase 1 design](OutpostCommander-Phase1.md)
 
-The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
+The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. Phase 2, territory, is [a draft design](OutpostCommander-Phase2.md) with no plan yet; its one effect here is task 11.2's layout. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
 
 ---
 
@@ -283,7 +283,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 
 - **Gate:** H3, decided.
 - **Goal:** design §8, the map.
-- **Scope:** `Map.json` at 5,000 m with the four rings, point-symmetric, every passage at least the minimum gap. `MapTests` check both. The fog of war's grid, the minimap and the path graphs at the new size are checked against Q4: a `--measure --load` run on the new map is part of the owner run.
+- **Scope:** `Map.json` at 5,000 m with the four rings, point-symmetric, every passage at least the minimum gap. `MapTests` check both. The layout is in sectors for Phase 2 (design §8; owner, 2026-10-03): about nine, each with a node site, and the map data names them, their node sites and their adjacency, which the game reads nothing of yet. `MapTests` check that adjacency is symmetric, every asteroid lies in one sector and every sector can be reached from both starts. The fog of war's grid, the minimap and the path graphs at the new size are checked against Q4: a `--measure --load` run on the new map is part of the owner run.
 - **Acceptance:** `MapTests`; `PathfinderTests` on the new map.
 - **Verify:** CI; **owner run**: the layout confirmed by the owner, as MVP task 2.3's was, and its first matches decide H8.
 
