@@ -1873,16 +1873,16 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     }
 
     // Over the fog, since both sides know who holds what: each held sector's outline, and stripes over a suppressed one.
-    const float line = SECTOR_LINE_UNITS * scale;
+    const float sectorLine = SECTOR_LINE_UNITS * scale;
     for (const SectorMark& sector : _content.sectors)
     {
       if (sector.side == Side::Neutral)
         continue;
       const Rect area = sectorRect(sector, sideColor(sector.side, SECTOR_OUTLINE_ALPHA), Fill::Solid);
-      layout.panels.push_back({area.left, area.top, area.width, line, area.color});
-      layout.panels.push_back({area.left, area.top + area.height - line, area.width, line, area.color});
-      layout.panels.push_back({area.left, area.top, line, area.height, area.color});
-      layout.panels.push_back({area.left + area.width - line, area.top, line, area.height, area.color});
+      layout.panels.push_back({area.left, area.top, area.width, sectorLine, area.color});
+      layout.panels.push_back({area.left, area.top + area.height - sectorLine, area.width, sectorLine, area.color});
+      layout.panels.push_back({area.left, area.top, sectorLine, area.height, area.color});
+      layout.panels.push_back({area.left + area.width - sectorLine, area.top, sectorLine, area.height, area.color});
       if (sector.suppressed)
         layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
     }
