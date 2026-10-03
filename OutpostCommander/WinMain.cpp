@@ -114,7 +114,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   // is the exit code, so the game never closes without saying why (ADR-006).
   try
   {
-    const auto started = std::chrono::steady_clock::now();
+    const auto launched = std::chrono::steady_clock::now();
     wchar_t filename[MAX_PATH];
     GetModuleFileNameW(nullptr, filename, MAX_PATH);
     auto path = std::wstring(filename);
@@ -156,10 +156,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     }
 
     // Startup's stages, each at its time since wWinMain began (ADR-049).
-    const auto logStage = [&measurements, measure, started](std::string_view _stage, std::chrono::steady_clock::time_point _at)
+    const auto logStage = [&measurements, measure, launched](std::string_view _stage, std::chrono::steady_clock::time_point _at)
     {
       if (measure)
-        measurements << std::format("startup_ns {} {}\n", _stage, (_at - started).count());
+        measurements << std::format("startup_ns {} {}\n", _stage, (_at - launched).count());
     };
 
     // The first match's server with the AI's settings, the client's models, and its interface's atlas are made on threads
