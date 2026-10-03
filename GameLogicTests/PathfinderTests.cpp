@@ -173,6 +173,71 @@ public:
     Assert::AreEqual(cornerMeters, innermostMeters, 0.01f);
   }
 
+  // ADR-054: a short line's test tests only the obstacles its grid finds near the line, and answers exactly as a test of
+  // every obstacle does: over obstacles of every size, apart, touching and overlapping, for lines anywhere, short and
+  // long, grazing obstacles at their grown edge, and points, at every clearance.
+  TEST_METHOD(TheGridAnswersAsATestOfEveryObstacleDoes)
+  {
+    Neuron::Random random(54);
+    const auto meters = [&random](float _from, float _to) { return _from + (static_cast<float>(random.NextUnit()) * (_to - _from)); };
+    constexpr std::array<float, 6> CLEARANCES{0.0f, 8.0f, 10.0f, 14.0f, 24.0f, 29.0f};
+    std::size_t blocked = 0;
+    std::size_t clear = 0;
+    for (int layout = 0; layout < 40; ++layout)
+    {
+      std::vector<Outpost::Obstacle> obstacles;
+      const std::uint32_t count = 1 + random.NextBelow(160);
+      obstacles.reserve(count);
+      for (std::uint32_t i = 0; i < count; ++i)
+        obstacles.push_back({.center = {meters(-2500.0f, 2500.0f), meters(-2500.0f, 2500.0f)}, .radiusMeters = meters(0.0f, 250.0f)});
+      Outpost::Pathfinder pathfinder;
+      pathfinder.SetObstacles(obstacles, 2500.0f);
+      for (int line = 0; line < 600; ++line)
+      {
+        const float clearance =
+          random.NextBelow(4) == 0 ? meters(0.0f, 60.0f) : CLEARANCES[random.NextBelow(static_cast<std::uint32_t>(CLEARANCES.size()))];
+        Outpost::PlanePosition a{meters(-2700.0f, 2700.0f), meters(-2700.0f, 2700.0f)};
+        Outpost::PlanePosition b{meters(-2700.0f, 2700.0f), meters(-2700.0f, 2700.0f)};
+        switch (random.NextBelow(4))
+        {
+        case 0:
+          // A point.
+          b = a;
+          break;
+        case 1:
+        {
+          // A line that passes an obstacle at its grown edge, just inside or just outside it.
+          const Outpost::Obstacle& obstacle = obstacles[random.NextBelow(count)];
+          const float angle = meters(0.0f, 2.0f * std::numbers::pi_v<float>);
+          const Outpost::PlaneVector across{std::cos(angle), std::sin(angle)};
+          const Outpost::PlaneVector along = Outpost::Perpendicular(across);
+          const float edge = obstacle.radiusMeters + clearance + meters(0.48f, 0.5f);
+          const Outpost::PlanePosition passing = obstacle.center + across * edge;
+          const float halfMeters = random.NextBelow(2) == 0 ? 150.0f : 3000.0f;
+          a = passing + along * meters(0.0f, halfMeters);
+          b = passing + along * -meters(0.0f, halfMeters);
+          break;
+        }
+        case 2:
+          // A short line.
+          b = a + Outpost::PlaneVector{meters(-300.0f, 300.0f), meters(-300.0f, 300.0f)};
+          break;
+        default:
+          break;
+        }
+        const bool expected = pathfinder.IsStraightPathClearOfEveryObstacle(a, b, clearance);
+        Assert::AreEqual(expected, pathfinder.IsStraightPathClear(a, b, clearance));
+        Assert::AreEqual(pathfinder.IsStraightPathClearOfEveryObstacle(b, a, clearance), pathfinder.IsStraightPathClear(b, a, clearance));
+        if (expected)
+          ++clear;
+        else
+          ++blocked;
+      }
+    }
+    // Both answers are common, so neither was the only one tested.
+    Assert::IsTrue(blocked > 2000 && clear > 2000, (std::to_wstring(blocked) + L" blocked, " + std::to_wstring(clear) + L" clear").c_str());
+  }
+
   TEST_METHOD(FindsAWayAcrossTheRepositoryMap)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());

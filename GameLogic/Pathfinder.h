@@ -47,8 +47,13 @@ public:
   // whether there was one to build: the simulation spreads the rebuilding over quiet ticks (ADR-032).
   bool PrepareNext() const;
 
-  // Whether a ship of _clearanceMeters can travel straight from _a to _b.
+  // Whether a ship of _clearanceMeters can travel straight from _a to _b. A short line tests only the obstacles the grid
+  // over them finds near it, which gives the same answer as testing every obstacle, as a longer line does (ADR-054).
   [[nodiscard]] bool IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
+
+  // The same answer from a test of every obstacle, which is what IsStraightPathClear makes for a longer line, or where
+  // its grid cannot answer exactly, and what tests hold it to.
+  [[nodiscard]] bool IsStraightPathClearOfEveryObstacle(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
   // Tells _observer when a graph is built, as TickPart::GraphBuild (task 8.1); nullptr for no one. The simulation sets it
   // for one tick at a time.
@@ -65,11 +70,39 @@ private:
     std::vector<std::vector<std::pair<std::uint32_t, float>>> edges;
   };
 
+  // A uniform grid over the obstacles (ADR-054): each cell lists the obstacles whose circle's square overlaps it, so that
+  // a line test visits only the obstacles near its line. It has no cells when it cannot answer exactly for the
+  // obstacles, and every line test then tests every obstacle.
+  struct ObstacleGrid
+  {
+    PlanePosition origin;
+    float cellMeters = 0.0f;
+    float cellsPerMeter = 0.0f;
+    std::int32_t columns = 0;
+    std::int32_t rows = 0;
+    // Cell (column, row) holds cellObstacles from cellStarts[row * columns + column] up to the next cell's start.
+    std::vector<std::uint32_t> cellStarts;
+    std::vector<std::uint32_t> cellObstacles;
+  };
+
   [[nodiscard]] const Graph& GraphFor(float _clearanceMeters) const;
   [[nodiscard]] bool IsInsideEdge(PlanePosition _position, float _clearanceMeters) const noexcept;
+  // Whether no obstacle grown by _clearanceMeters covers _corner.
+  [[nodiscard]] bool IsUncovered(PlanePosition _corner, float _clearanceMeters) const;
+  void BuildGrid();
+  // Puts in m_near, once each, every obstacle that could block a ship of _clearanceMeters on the segment from _a to _b,
+  // or stand on it when the two are one point, and some others near it. False when the grid cannot answer exactly for
+  // these numbers: the caller then tests every obstacle.
+  [[nodiscard]] bool GatherNear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const;
 
   std::vector<Obstacle> m_obstacles;
   float m_halfSizeMeters = 0.0f;
+  ObstacleGrid m_grid;
+  // GatherNear's findings, and the pass each obstacle was last found in, so that an obstacle spanning several cells is
+  // found once with nothing cleared between passes. Scratch for the server's thread alone, as the graphs are.
+  mutable std::vector<std::uint32_t> m_near;
+  mutable std::vector<std::uint32_t> m_foundInPass;
+  mutable std::uint32_t m_pass = 0;
   // Built on first use for each clearance; a function of the obstacles alone, so it holds no state of its own. A vector
   // searched in order rather than a map: there are only as many clearances as hulls, and moving a vector cannot throw,
   // where moving MSVC's std::map can.

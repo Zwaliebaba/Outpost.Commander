@@ -37,6 +37,21 @@ constexpr float ROUNDING_ALLOWANCE = 1e-4f;
 // place in the formation, along the corner's mitre, stretched so that the lane stays as far from the route on both legs,
 // but no more than this many times, so that a sharp corner does not throw the lane far out.
 constexpr float LANE_MITRE_LIMIT = 2.0f;
+// The grid over the obstacles that line tests and corners look in (ADR-054): square cells this wide, about as wide as an
+// ore asteroid or a structure grown by a ship's clearance, fifty to a side on the 5 km map, or wider when the obstacles
+// spread over more than GRID_MOST_CELLS of them. A line that spans more than GRID_SHORT_LINE_CELLS cells along either
+// axis tests every obstacle instead: it would look in so many cells that testing every obstacle's box costs less, as
+// ADR-032 found.
+constexpr float GRID_CELL_METERS = 100.0f;
+constexpr std::int32_t GRID_MOST_CELLS = 256;
+constexpr float GRID_SHORT_LINE_CELLS = 3.0f;
+// A line test looks this much further from its line than an obstacle's clearance and margin reach, which covers the
+// rounding of every sum the lookup makes many times over: it is a few hundredths of a meter at most within the limit
+// below.
+constexpr float GRID_SLACK_METERS = 1.0f;
+// The grid answers only for obstacles and lines within this distance of the origin in either axis, far beyond any map;
+// anything further out, or not a number, is tested against every obstacle.
+constexpr float GRID_LIMIT_METERS = 65536.0f;
 
 float PathLength(Outpost::PlanePosition _from, const std::vector<Outpost::PlanePosition>& _path) noexcept
 {
@@ -49,6 +64,61 @@ float PathLength(Outpost::PlanePosition _from, const std::vector<Outpost::PlaneP
   }
   return meters;
 }
+
+// The segment a line test is made along, and the box round it.
+struct Segment
+{
+  Outpost::PlanePosition a;
+  Outpost::PlanePosition b;
+  float minX = 0.0f;
+  float maxX = 0.0f;
+  float minZ = 0.0f;
+  float maxZ = 0.0f;
+};
+
+Segment SegmentOf(Outpost::PlanePosition _a, Outpost::PlanePosition _b) noexcept
+{
+  return {.a = _a,
+          .b = _b,
+          .minX = std::min(_a.xMeters, _b.xMeters),
+          .maxX = std::max(_a.xMeters, _b.xMeters),
+          .minZ = std::min(_a.zMeters, _b.zMeters),
+          .maxZ = std::max(_a.zMeters, _b.zMeters)};
+}
+
+// Whether a ship of _clearanceMeters passes _obstacle along _segment. Every line test asks this of each obstacle it tests,
+// and the answer depends on nothing else, so a test answers the same whichever obstacles it tests (ADR-054).
+bool Passes(const Outpost::Obstacle& _obstacle, const Segment& _segment, float _clearanceMeters) noexcept
+{
+  const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
+  // Most obstacles are nowhere near the segment's box, and the box is cheaper to test.
+  const Outpost::PlanePosition center = _obstacle.center;
+  if (center.xMeters + grown < _segment.minX || center.xMeters - grown > _segment.maxX || center.zMeters + grown < _segment.minZ ||
+      center.zMeters - grown > _segment.maxZ)
+    return true;
+  return Outpost::DistanceToSegment(center, _segment.a, _segment.b) >= grown;
+}
+
+// Whether _obstacle, grown by _clearanceMeters and the margin, covers _corner, which is then no use to a path.
+bool Covers(const Outpost::Obstacle& _obstacle, Outpost::PlanePosition _corner, float _clearanceMeters) noexcept
+{
+  return Outpost::Distance(_corner, _obstacle.center) < _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
+}
+
+// Whether the grid may answer for a coordinate or a distance: false beyond its limit, and for a number that is not one.
+bool IsWithinGridLimit(float _meters) noexcept
+{
+  return std::abs(_meters) <= GRID_LIMIT_METERS;
+}
+
+// The grid's cell along one axis for a coordinate, those off the grid in its edge cells. It is the one function both
+// placing an obstacle in the grid and looking a line up in it use, and it never falls as the coordinate grows: a lookup
+// that covers a range of coordinates so covers every cell any of them is in (ADR-054). The cell is clamped to the grid
+// before it is truncated, which then rounds down as floor would.
+std::int32_t GridCell(float _meters, float _originMeters, float _cellsPerMeter, std::int32_t _cells) noexcept
+{
+  return static_cast<std::int32_t>(std::clamp((_meters - _originMeters) * _cellsPerMeter, 0.0f, static_cast<float>(_cells - 1)));
+}
 } // namespace
 
 void Outpost::Pathfinder::SetObstacles(std::vector<Obstacle> _obstacles, float _halfSizeMeters)
@@ -56,6 +126,135 @@ void Outpost::Pathfinder::SetObstacles(std::vector<Obstacle> _obstacles, float _
   m_obstacles = std::move(_obstacles);
   m_halfSizeMeters = _halfSizeMeters;
   m_graphs.clear();
+  BuildGrid();
+}
+
+void Outpost::Pathfinder::BuildGrid()
+{
+  m_grid = {};
+  m_foundInPass.assign(m_obstacles.size(), 0);
+  m_pass = 0;
+  if (m_obstacles.empty())
+    return;
+
+  // The grid covers the square round every obstacle's circle. Only obstacles within its limit, so that the rounding of
+  // every sum a lookup makes stays far within its slack: one further out, or not a number, leaves every line test to
+  // test every obstacle.
+  float minX = std::numeric_limits<float>::infinity();
+  float maxX = -std::numeric_limits<float>::infinity();
+  float minZ = std::numeric_limits<float>::infinity();
+  float maxZ = -std::numeric_limits<float>::infinity();
+  for (const Obstacle& obstacle : m_obstacles)
+  {
+    const float radius = obstacle.radiusMeters;
+    const PlanePosition center = obstacle.center;
+    if (!(radius >= 0.0f) || !IsWithinGridLimit(center.xMeters - radius) || !IsWithinGridLimit(center.xMeters + radius) ||
+        !IsWithinGridLimit(center.zMeters - radius) || !IsWithinGridLimit(center.zMeters + radius))
+      return;
+    minX = std::min(minX, center.xMeters - radius);
+    maxX = std::max(maxX, center.xMeters + radius);
+    minZ = std::min(minZ, center.zMeters - radius);
+    maxZ = std::max(maxZ, center.zMeters + radius);
+  }
+  // Wide enough that the cells cover every square without one falling past the last cell, which a lookup could miss.
+  const float widest = std::max(maxX - minX, maxZ - minZ);
+  const float cellMeters = std::max(GRID_CELL_METERS, widest / static_cast<float>(GRID_MOST_CELLS - 1));
+  const auto cellsAcross = [cellMeters](float _meters)
+  { return std::clamp(static_cast<std::int32_t>(std::ceil(_meters / cellMeters)), 1, GRID_MOST_CELLS); };
+  m_grid.origin = {minX, minZ};
+  m_grid.cellMeters = cellMeters;
+  m_grid.cellsPerMeter = 1.0f / cellMeters;
+  m_grid.columns = cellsAcross(maxX - minX);
+  m_grid.rows = cellsAcross(maxZ - minZ);
+
+  // Each obstacle in every cell its square overlaps, in the obstacles' order: counted, then placed.
+  const auto columns = static_cast<std::size_t>(m_grid.columns);
+  const auto cellCount = columns * static_cast<std::size_t>(m_grid.rows);
+  const auto forEachCell = [&](const Obstacle& _obstacle, const auto& _visit)
+  {
+    const PlanePosition center = _obstacle.center;
+    const float radius = _obstacle.radiusMeters;
+    const std::int32_t lastColumn = GridCell(center.xMeters + radius, m_grid.origin.xMeters, m_grid.cellsPerMeter, m_grid.columns);
+    const std::int32_t lastRow = GridCell(center.zMeters + radius, m_grid.origin.zMeters, m_grid.cellsPerMeter, m_grid.rows);
+    for (std::int32_t row = GridCell(center.zMeters - radius, m_grid.origin.zMeters, m_grid.cellsPerMeter, m_grid.rows); row <= lastRow;
+         ++row)
+    {
+      for (std::int32_t column = GridCell(center.xMeters - radius, m_grid.origin.xMeters, m_grid.cellsPerMeter, m_grid.columns);
+           column <= lastColumn; ++column)
+        _visit((static_cast<std::size_t>(row) * columns) + static_cast<std::size_t>(column));
+    }
+  };
+  m_grid.cellStarts.assign(cellCount + 1, 0);
+  for (const Obstacle& obstacle : m_obstacles)
+    forEachCell(obstacle, [&](std::size_t _cell) { ++m_grid.cellStarts[_cell + 1]; });
+  for (std::size_t cell = 0; cell < cellCount; ++cell)
+    m_grid.cellStarts[cell + 1] += m_grid.cellStarts[cell];
+  m_grid.cellObstacles.resize(m_grid.cellStarts[cellCount]);
+  std::vector<std::uint32_t> next(m_grid.cellStarts.begin(), m_grid.cellStarts.end() - 1);
+  for (std::uint32_t index = 0; index < m_obstacles.size(); ++index)
+    forEachCell(m_obstacles[index], [&](std::size_t _cell) { m_grid.cellObstacles[next[_cell]++] = index; });
+}
+
+bool Outpost::Pathfinder::GatherNear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const
+{
+  // An obstacle whose circle, grown by the clearance and the margin, reaches the segment has its square within reach of
+  // a point of the segment, in both axes. So this looks along the segment's longer axis, u, at every column within reach
+  // of the segment, and in each at every cell across, v, within reach of where the segment crosses that column. The
+  // slack covers the rounding, which is what lets the grid answer exactly as a test of every obstacle does (ADR-054).
+  const float reach = _clearanceMeters + MARGIN_METERS + GRID_SLACK_METERS;
+  if (m_grid.columns == 0 || !(_clearanceMeters >= 0.0f) || !IsWithinGridLimit(reach) || !IsWithinGridLimit(_a.xMeters) ||
+      !IsWithinGridLimit(_a.zMeters) || !IsWithinGridLimit(_b.xMeters) || !IsWithinGridLimit(_b.zMeters))
+    return false;
+  if (++m_pass == 0)
+  {
+    std::ranges::fill(m_foundInPass, 0U);
+    m_pass = 1;
+  }
+  m_near.clear();
+
+  const bool alongX = std::abs(_b.xMeters - _a.xMeters) >= std::abs(_b.zMeters - _a.zMeters);
+  const float aU = alongX ? _a.xMeters : _a.zMeters;
+  const float aV = alongX ? _a.zMeters : _a.xMeters;
+  const float bU = alongX ? _b.xMeters : _b.zMeters;
+  const float bV = alongX ? _b.zMeters : _b.xMeters;
+  const float originU = alongX ? m_grid.origin.xMeters : m_grid.origin.zMeters;
+  const float originV = alongX ? m_grid.origin.zMeters : m_grid.origin.xMeters;
+  const std::int32_t cellsU = alongX ? m_grid.columns : m_grid.rows;
+  const std::int32_t cellsV = alongX ? m_grid.rows : m_grid.columns;
+  // How far the segment moves across for each meter along: at most one, since along is its longer axis.
+  const float slope = bU != aU ? (bV - aV) / (bU - aU) : 0.0f;
+  const float lowU = std::min(aU, bU);
+  const float highU = std::max(aU, bU);
+  const std::int32_t lastU = GridCell(highU + reach, originU, m_grid.cellsPerMeter, cellsU);
+  for (std::int32_t u = GridCell(lowU - reach, originU, m_grid.cellsPerMeter, cellsU); u <= lastU; ++u)
+  {
+    // The part of the segment within reach of this column, and the cells across that it is within reach of there.
+    const float columnLow = originU + (static_cast<float>(u) * m_grid.cellMeters);
+    const float from = std::max(lowU, columnLow - reach);
+    const float to = std::min(highU, columnLow + m_grid.cellMeters + reach);
+    if (from > to)
+      continue;
+    const float vFrom = aV + ((from - aU) * slope);
+    const float vTo = aV + ((to - aU) * slope);
+    const std::int32_t lastV = GridCell(std::max(vFrom, vTo) + reach, originV, m_grid.cellsPerMeter, cellsV);
+    for (std::int32_t v = GridCell(std::min(vFrom, vTo) - reach, originV, m_grid.cellsPerMeter, cellsV); v <= lastV; ++v)
+    {
+      const std::int32_t column = alongX ? u : v;
+      const std::int32_t row = alongX ? v : u;
+      const std::size_t cell =
+        (static_cast<std::size_t>(row) * static_cast<std::size_t>(m_grid.columns)) + static_cast<std::size_t>(column);
+      for (std::uint32_t entry = m_grid.cellStarts[cell]; entry < m_grid.cellStarts[cell + 1]; ++entry)
+      {
+        const std::uint32_t obstacle = m_grid.cellObstacles[entry];
+        if (m_foundInPass[obstacle] != m_pass)
+        {
+          m_foundInPass[obstacle] = m_pass;
+          m_near.push_back(obstacle);
+        }
+      }
+    }
+  }
+  return true;
 }
 
 bool Outpost::Pathfinder::IsInsideEdge(PlanePosition _position, float _clearanceMeters) const noexcept
@@ -68,21 +267,26 @@ bool Outpost::Pathfinder::IsInsideEdge(PlanePosition _position, float _clearance
 
 bool Outpost::Pathfinder::IsStraightPathClear(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const
 {
-  const float minX = std::min(_a.xMeters, _b.xMeters);
-  const float maxX = std::max(_a.xMeters, _b.xMeters);
-  const float minZ = std::min(_a.zMeters, _b.zMeters);
-  const float maxZ = std::max(_a.zMeters, _b.zMeters);
-  return std::ranges::all_of(m_obstacles,
-                             [&](const Obstacle& _obstacle)
-                             {
-                               const float grown = _obstacle.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS;
-                               // Most obstacles are nowhere near the segment's box, and the box is cheaper to test.
-                               const PlanePosition center = _obstacle.center;
-                               if (center.xMeters + grown < minX || center.xMeters - grown > maxX || center.zMeters + grown < minZ ||
-                                   center.zMeters - grown > maxZ)
-                                 return true;
-                               return DistanceToSegment(center, _a, _b) >= grown;
-                             });
+  // Only a short line looks in the grid (ADR-054).
+  const float spanMeters = std::max(std::abs(_b.xMeters - _a.xMeters), std::abs(_b.zMeters - _a.zMeters));
+  if (!(spanMeters <= GRID_SHORT_LINE_CELLS * m_grid.cellMeters) || !GatherNear(_a, _b, _clearanceMeters))
+    return IsStraightPathClearOfEveryObstacle(_a, _b, _clearanceMeters);
+  const Segment segment = SegmentOf(_a, _b);
+  return std::ranges::all_of(m_near, [&](std::uint32_t _obstacle) { return Passes(m_obstacles[_obstacle], segment, _clearanceMeters); });
+}
+
+bool Outpost::Pathfinder::IsStraightPathClearOfEveryObstacle(PlanePosition _a, PlanePosition _b, float _clearanceMeters) const
+{
+  const Segment segment = SegmentOf(_a, _b);
+  return std::ranges::all_of(m_obstacles, [&](const Obstacle& _obstacle) { return Passes(_obstacle, segment, _clearanceMeters); });
+}
+
+bool Outpost::Pathfinder::IsUncovered(PlanePosition _corner, float _clearanceMeters) const
+{
+  const auto covers = [&](const Obstacle& _obstacle) { return Covers(_obstacle, _corner, _clearanceMeters); };
+  if (!GatherNear(_corner, _corner, _clearanceMeters))
+    return std::ranges::none_of(m_obstacles, covers);
+  return std::ranges::none_of(m_near, [&](std::uint32_t _obstacle) { return covers(m_obstacles[_obstacle]); });
 }
 
 Outpost::PlanePosition Outpost::Pathfinder::InsideEdge(PlanePosition _position, float _clearanceMeters) const noexcept
@@ -142,12 +346,7 @@ const Outpost::Pathfinder::Graph& Outpost::Pathfinder::GraphFor(float _clearance
       const float angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(corner) / static_cast<float>(corners);
       const PlaneVector normal{std::cos(angle), std::sin(angle)};
       const PlanePosition node = obstacle.center + normal * (grown * cornerScale);
-      const bool free =
-        IsInsideEdge(node, _clearanceMeters) &&
-        std::ranges::none_of(
-          m_obstacles, [&](const Obstacle& _other)
-          { return Distance(node, _other.center) < _other.radiusMeters + _clearanceMeters + MARGIN_METERS - TOLERANCE_METERS; });
-      if (free)
+      if (IsInsideEdge(node, _clearanceMeters) && IsUncovered(node, _clearanceMeters))
       {
         graph.nodes.push_back(node);
         normals.push_back(normal);
