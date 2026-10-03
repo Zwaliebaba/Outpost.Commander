@@ -273,9 +273,13 @@ public:
     const auto spawnGroup = [](Outpost::Simulation& _simulation, std::size_t _count)
     {
       std::vector<Outpost::EntityId> ships;
+      ships.reserve(_count);
       for (std::size_t i = 0; i < _count; ++i)
+      {
+        const std::size_t row = i / 8;
         ships.push_back(_simulation.SpawnShip(
-          BLUE, DESIGN, Movement(1, 1), {-600.0f + (static_cast<float>(i % 8) * 25.0f), -100.0f + (static_cast<float>(i / 8) * 25.0f)}));
+          BLUE, DESIGN, Movement(1, 1), {-600.0f + (static_cast<float>(i % 8) * 25.0f), -100.0f + (static_cast<float>(row) * 25.0f)}));
+      }
       return ships;
     };
     const Outpost::PlanePosition destination{600.0f, 0.0f};
@@ -335,9 +339,13 @@ public:
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
     simulation.PlaceMap(OpenMap({}));
     std::vector<Outpost::EntityId> ships;
+    ships.reserve(Outpost::Simulation::SPLIT_ORDER_SHIPS + 4);
     for (std::size_t i = 0; i < Outpost::Simulation::SPLIT_ORDER_SHIPS + 4; ++i)
+    {
+      const std::size_t row = i / 6;
       ships.push_back(
-        simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1), {static_cast<float>(i % 6) * 30.0f, static_cast<float>(i / 6) * 30.0f}));
+        simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1), {static_cast<float>(i % 6) * 30.0f, static_cast<float>(row) * 30.0f}));
+    }
     const Outpost::EntityId stopped = ships.front();
     const Outpost::EntityId elsewhere = ships.back();
     (void)simulation.Tick({Move(ships, {800.0f, 0.0f}), {.player = BLUE, .order = Outpost::StopCommand{.ships = {stopped}}}});
