@@ -130,8 +130,9 @@ private:
   void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
-  // A faint ring, one pixel wide, in its side's color under every structure that is not selected, and at full strength
-  // under the one the pointer is on and under all of them while a structure is placed (ADR-042).
+  // A faint ring, one pixel wide, in its side's color under every structure that is not selected, fading as the camera comes
+  // in, and at full strength under the one the pointer is on and under all of them while a structure is placed; a Mining
+  // Rig's only then (ADR-042, ADR-045).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   // The ring of a Mining Rig's own footprint, laid over its asteroid's rock, into m_drapedRing as a line list in the world
   // (ADR-042); false when the rig's kind is not known.
@@ -202,8 +203,10 @@ private:
   std::vector<Neuron::GlowPipeline::Glow> m_particleGlows;
   std::vector<Neuron::MeshVertex> m_shardVertices;
   std::vector<ExplosionManager::Batch> m_shardBatches;
-  // The view's entities this frame, which the controls pick from and the renderer draws.
+  // The view's entities this frame, which the renderer draws; and those the controls are given, less the asteroids in space
+  // the player has never seen (ADR-045).
   std::vector<EntityView> m_entities;
+  std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
   // Keyed by "<set>/<model>".
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelMeshes;

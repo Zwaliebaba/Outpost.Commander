@@ -41,7 +41,14 @@ public:
   // The shade of the cell that holds _point, or the never-seen shade off the map.
   [[nodiscard]] float ShadeAt(PlanePosition _point) const noexcept;
 
+  // Whether the player has ever seen any of the circle of _radiusMeters round _center: a cell whose center is in it, or
+  // the cell that holds its center. Without fog of war it has seen all of the map (ADR-045).
+  [[nodiscard]] bool HasSeen(PlanePosition _center, float _radiusMeters) const noexcept;
+
 private:
+  // The row or column an x or z falls in, clamped to the grid.
+  [[nodiscard]] int CellOf(float _meters) const noexcept;
+
   float m_halfSizeMeters = 0.0f;
   std::uint32_t m_cellsPerSide = 0;
   std::vector<bool> m_explored;

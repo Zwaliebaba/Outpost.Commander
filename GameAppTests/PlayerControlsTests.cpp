@@ -408,6 +408,30 @@ public:
     Assert::IsFalse(driver.Controls().Placing().has_value());
   }
 
+  // ADR-045: a Mining Rig is ordered only by an asteroid the controls are given, which leaves out those in space the
+  // player has never seen. A click by none orders nothing and leaves the placement armed.
+  TEST_METHOD(OrdersAMiningRigOnlyByAKnownAsteroid)
+  {
+    Driver driver;
+    AddBase(driver.WorldView());
+    const Outpost::EntityView asteroid{.id = Outpost::EntityId{90},
+                                       .kind = Outpost::EntityKind::Asteroid,
+                                       .position = {.xMeters = 150.0f, .zMeters = -40.0f},
+                                       .radiusMeters = 45.0f};
+    driver.Click(driver.WorldView()[5]);
+    driver.Controls().ArmPlacement(Outpost::StructureKind::MiningRig, driver.WorldView());
+    (void)driver.Controls().TakeCommands();
+    driver.Click(asteroid);
+    Assert::IsTrue(driver.Controls().TakeCommands().empty(), L"an asteroid the controls are not given");
+    Assert::IsTrue(driver.Controls().Placing() == Outpost::StructureKind::MiningRig, L"still armed");
+
+    driver.WorldView().push_back(asteroid);
+    driver.Click(asteroid);
+    const std::vector<Outpost::Command> commands = driver.Controls().TakeCommands();
+    Assert::IsTrue(Only<Outpost::BuildStructureCommand>(commands)->structure == Outpost::StructureKind::MiningRig);
+    Assert::IsFalse(driver.Controls().Placing().has_value());
+  }
+
   TEST_METHOD(QueuesAJobFromTheHud)
   {
     Driver driver;

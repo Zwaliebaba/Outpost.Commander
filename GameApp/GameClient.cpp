@@ -75,9 +75,14 @@ constexpr float STRUCTURE_FILL_SHADE = 0.22f;
 // Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
 // line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
 // pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
-// selection's green ring takes its place. A Mining Rig's ring is its own footprint's, laid over its rock (ADR-042).
+// selection's green ring takes its place (ADR-042). At rest it is there for the far view, where a structure is small, and
+// fades as the camera comes in: at full strength while its radius is at most RING_FULL_VIEW_SHARE of the view's width,
+// and gone from RING_GONE_VIEW_SHARE. A Mining Rig's ring, its own footprint's laid over its rock, shows only under the
+// pointer and while a structure is placed (owner, 2026-10-03, ADR-045).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;
 constexpr int RING_LINE_SEGMENTS = 96;
+constexpr float RING_FULL_VIEW_SHARE = 0.03f;
+constexpr float RING_GONE_VIEW_SHARE = 0.065f;
 
 // A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
 // within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
@@ -515,6 +520,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_fog.Reset(m_view.Newest().mapSizeMeters);
     m_fog.Update(m_entities, m_view.Newest().player);
   }
+  // What the player may order on: the view, less the asteroids in space it has never seen, which it cannot claim with a
+  // Mining Rig (ADR-045).
+  m_knownEntities.clear();
+  for (const EntityView& entity : m_entities)
+  {
+    if (entity.kind != EntityKind::Asteroid || m_fog.HasSeen(entity.position, entity.radiusMeters))
+      m_knownEntities.push_back(entity);
+  }
   UpdateBanking(_elapsedSeconds);
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(
@@ -572,7 +585,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                 });
   if (!m_view.IsEmpty())
   {
-    m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+    m_controls.Update(input, m_knownEntities, m_view.Newest().player, m_camera, m_viewport);
     const DirectX::XMFLOAT2 cursor{static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels)};
     m_hovered = m_hudLayout.Covers(cursor.x, cursor.y) ? std::nullopt
                                                        : PickEntity(m_entities, m_camera, m_viewport, cursor, [](const EntityView& _entity)
@@ -1064,19 +1077,26 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
     const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
     if (side == nullptr)
       continue;
-    const DirectX::XMFLOAT4 color = placing || m_hovered == structure.id ? EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)
-                                                                         : Shaded(side->color, FOOTPRINT_RING_SHADE);
+    const bool lit = placing || m_hovered == structure.id;
+    const DirectX::XMFLOAT4 litColor = EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
     // The rig's ring lies over the rock, so it is pulled toward the eye as a model's lines are, to show over the faces it
     // lies on. In a frame whose shards have taken every vertex DrawLineList can use, the rig goes without it.
-    if (structure.structure == StructureKind::MiningRig && DrapeRigRing(structure))
+    if (structure.structure == StructureKind::MiningRig)
     {
-      m_pipeline.DrawLineList(_commandList, m_drapedRing, color, LINE_LIFT_SHARE);
+      if (lit && DrapeRigRing(structure))
+        m_pipeline.DrawLineList(_commandList, m_drapedRing, litColor, LINE_LIFT_SHARE);
       continue;
     }
+    const float radius = structure.radiusMeters * RING_SIZE_PER_FOOTPRINT;
+    const float viewShare = radius / m_camera.ViewWidthMeters();
+    const float strength =
+      lit ? 1.0f : std::clamp((RING_GONE_VIEW_SHARE - viewShare) / (RING_GONE_VIEW_SHARE - RING_FULL_VIEW_SHARE), 0.0f, 1.0f);
+    if (strength <= 0.0f)
+      continue;
     const DirectX::XMFLOAT3 at{structure.position.xMeters, OVERLAY_LIFT_METERS, structure.position.zMeters};
     m_ringDraws.push_back({.lines = m_ringLine.get(),
-                           .world = WorldMatrix(at, 0.0f, structure.radiusMeters * RING_SIZE_PER_FOOTPRINT),
-                           .color = color,
+                           .world = WorldMatrix(at, 0.0f, radius),
+                           .color = lit ? litColor : Shaded(side->color, FOOTPRINT_RING_SHADE * strength),
                            .liftShare = 0.0f});
   }
   m_pipeline.DrawLines(_commandList, m_ringDraws);
@@ -1430,7 +1450,9 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, m_entities, newest.mapSizeMeters);
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-045).
+  const GhostPlacement ghost =
+    PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities, newest.mapSizeMeters);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.

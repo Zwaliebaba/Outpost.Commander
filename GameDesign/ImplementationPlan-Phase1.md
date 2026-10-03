@@ -32,7 +32,8 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); HUD and stance tested in the container, not yet built or run |
+| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); run by the owner on 2026-10-03 |
+| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | in review; HUD, fog and stress load tested in the container, not yet built or run |
 | 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
@@ -41,7 +42,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
 | 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | in review, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
+| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
 | 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
 | 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
 
@@ -258,6 +259,33 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Not built or run in the container**:
     - The HUD's tests ran there in a standalone build, and the screens were drawn from `Hud::Lay`'s output with substitute fonts.
     - `GameClient` and `MeshPipeline` were not compiled there, nor were `StanceMatrix` and its test, which need DirectXMath. `StandOnFeet` and `StandPoint` were, with the tests' cases and the shipped meshes.
+
+### 9.6 — The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore
+
+- **Goal:** the owner's review of a base's screen on 2026-10-03, after 9.5, and two faults the owner found playing:
+  - An asteroid never explored could be claimed with a rig.
+  - `--stress` stood rigs on open ground.
+- **Owner's answers, 2026-10-03:** do the review's seven recommendations, and fix the two faults.
+- **Scope:** `GameClient`'s rings, `Starfield`, `Hud`, `FogOfWar`, `PlayerControls` and `StressLoad`.
+- **ADR:** [ADR-045](../Design/ADR/ADR-045-second-look-at-the-screen.md).
+- **Acceptance:** `HudTests`, `FogOfWarTests`, `PlayerControlsTests`, `StarfieldTests` and `StressLoadTests` for what they cover; the rings and the crosses are the owner's run.
+- **Verify:** CI; **owner run.**
+- **As built:** as ADR-045 has it.
+  - **Rings:**
+    - A rig's ring shows only under the pointer and while placing.
+    - A resting ring fades out between 3% and 6.5% of the view's width.
+  - **The sky:** crosses are white or blue-white.
+  - **The HUD:**
+    - The Ore figure starts at the panel's left.
+    - The minimap's fields are darker, and its ore marks larger and under a rig's.
+    - The selection panel writes "×" and shows a health bar.
+    - A disabled button says why in place of its cost.
+  - **Faults fixed:**
+    - A rig is ordered only onto an asteroid the player has seen; the client enforces this, the server does not.
+    - `--stress` puts its rigs on ore asteroids.
+  - **Not built or run in the container:**
+    - `GameClient`, `PlayerControls`, `Starfield` and their tests need DirectXMath or D3D12.
+    - The HUD's, the fog's and the stress load's tests ran there.
 
 ---
 

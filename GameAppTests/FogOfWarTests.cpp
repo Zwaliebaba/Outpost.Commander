@@ -70,5 +70,20 @@ public:
     Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = 1001.0f, .zMeters = -990.0f}));
     Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = -990.0f, .zMeters = 990.0f}));
   }
+
+  // ADR-045: the player has seen an asteroid once it has seen any of it, and stays so; without fog it has seen the map.
+  TEST_METHOD(SaysWhetherAnyOfACircleWasSeen)
+  {
+    Outpost::FogOfWar fog;
+    Assert::IsTrue(fog.HasSeen({.xMeters = 700.0f}, 45.0f), L"no fog of war");
+    fog.Reset(2000.0f);
+    Assert::IsFalse(fog.HasSeen({}, 45.0f));
+    fog.Update(std::vector{Seer(PLAYER, {}, 100.0f)}, PLAYER);
+    Assert::IsTrue(fog.HasSeen({.xMeters = 60.0f}, 45.0f), L"its middle in sight");
+    Assert::IsTrue(fog.HasSeen({.xMeters = 130.0f}, 45.0f), L"its near edge in sight");
+    Assert::IsFalse(fog.HasSeen({.xMeters = 200.0f}, 45.0f), L"none of it in sight");
+    fog.Update(std::vector<Outpost::EntityView>{}, PLAYER);
+    Assert::IsTrue(fog.HasSeen({.xMeters = 60.0f}, 45.0f), L"seen before");
+  }
 };
 } // namespace GameAppTests
