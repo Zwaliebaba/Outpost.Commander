@@ -986,10 +986,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   m_pipeline.DrawLines(_commandList, *m_grid, identity, GRID_COLOR, 0.0f);
   // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
-  {
-    DrawHud(_commandList, _renderer.FrameIndex());
     return;
-  }
   m_lineDraws.clear();
   for (const EntityView& entity : m_entities)
     DrawEntity(_commandList, entity);
@@ -1003,7 +1000,11 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawEffects(_commandList);
   DrawGlows(_renderer, _commandList);
   DrawFog(_renderer, _commandList);
-  DrawHud(_commandList, _renderer.FrameIndex());
+}
+
+void Outpost::GameClient::RenderInterface(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
+{
+  DrawHud(_commandList, _frameIndex);
 }
 
 void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)

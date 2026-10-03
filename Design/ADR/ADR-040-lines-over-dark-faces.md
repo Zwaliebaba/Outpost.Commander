@@ -1,6 +1,6 @@
 # ADR-040 — The lines carry the shape: dark faces, multisampled lines pulled toward the eye, and structures behind the ships
 
-Status: **accepted** · 2026-10-03 · Supersedes [ADR-027](ADR-027-rock-crease-lines.md) decisions 2 and 4 and its consequence on antialiasing, [ADR-028](ADR-028-vector-grid-and-crosses.md) decision 4 in what it says of the faces, [ADR-011](ADR-011-meshes-and-shading.md) decision 3 for structures, and [ADR-006](ADR-006-renderer-shape.md) decision 4 in where the scene is drawn
+Status: **accepted** · 2026-10-03 · Supersedes [ADR-027](ADR-027-rock-crease-lines.md) decisions 2 and 4 and its consequence on antialiasing, [ADR-028](ADR-028-vector-grid-and-crosses.md) decision 4 in what it says of the faces, [ADR-011](ADR-011-meshes-and-shading.md) decision 3 for structures, and [ADR-006](ADR-006-renderer-shape.md) decision 4 in where the scene is drawn · Decision 3's resolve, copy and HUD in the scene target are superseded by [ADR-050](ADR-050-shader-resolve.md)
 
 ## Context
 

@@ -183,6 +183,24 @@
       <ObjectFileOutput />
       <TreatWarningAsError>true</TreatWarningAsError>
     </FXCompile>
+    <FXCompile Include="Shader\ResolveVS.hlsl">
+      <ShaderType>Vertex</ShaderType>
+      <ShaderModel>5.1</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <VariableName>g_%(Filename)</VariableName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <ObjectFileOutput />
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXCompile>
+    <FXCompile Include="Shader\ResolvePS.hlsl">
+      <ShaderType>Pixel</ShaderType>
+      <ShaderModel>5.1</ShaderModel>
+      <EntryPointName>main</EntryPointName>
+      <VariableName>g_%(Filename)</VariableName>
+      <HeaderFileOutput>$(ProjectDir)CompiledShader\%(Filename).h</HeaderFileOutput>
+      <ObjectFileOutput />
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </FXCompile>
     <FXCompile Include="Shader\StarVS.hlsl">
       <ShaderType>Vertex</ShaderType>
       <ShaderModel>5.1</ShaderModel>

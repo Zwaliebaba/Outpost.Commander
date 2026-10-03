@@ -1,6 +1,6 @@
 # ADR-006 — The renderer's shape: borderless full screen with a windowed toggle, two frames in flight, fatal device loss
 
-Status: **accepted** · 2026-09-30 · Decision 4 is superseded in part by [ADR-040](ADR-040-lines-over-dark-faces.md): the scene is drawn into a multisampled sRGB target and resolved into the back buffer, which is no longer drawn into
+Status: **accepted** · 2026-09-30 · Decision 4 is superseded in part by [ADR-040](ADR-040-lines-over-dark-faces.md): the scene is drawn into a multisampled sRGB target and resolved into the back buffer, which is no longer drawn into · and by [ADR-050](ADR-050-shader-resolve.md): a shader resolves the scene through the back buffer's sRGB view, and the interface is drawn into the back buffer after it
 
 ## Context
 

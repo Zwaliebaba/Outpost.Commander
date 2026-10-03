@@ -18,7 +18,8 @@ struct UiAtlas
 [[nodiscard]] UiAtlas RasterizeUiAtlas(const std::vector<FontDesc>& _fonts, const std::vector<SpriteDesc>& _sprites, float _scale);
 
 // Draws the interface over the scene (ADR-015, ADR-030): solid and hatched rectangles, sprites and lines of text in
-// several fonts, as textured quads from one glyph atlas, alpha-blended, with no depth. Everything is in back-buffer
+// several fonts, as textured quads from one glyph atlas, alpha-blended, with no depth. It draws after
+// Renderer::BeginInterface, into the back buffer at one sample (ADR-050). Everything is in back-buffer
 // pixels from the top-left corner; laying out in reference units and scaling (ADR-006) is the caller's. It knows no game
 // concept: fonts and sprites are named by their index in the lists it was built with.
 class UiPipeline : NonCopyable

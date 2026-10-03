@@ -88,6 +88,9 @@ public:
   // Draws the world into the frame the renderer has begun.
   void Render(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList);
 
+  // Draws the HUD, the windows or the menu over the world, after Renderer::BeginInterface (ADR-050).
+  void RenderInterface(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex);
+
   // Task 2.7's order-to-response probe. When the frame just drawn is the first to show a ship of the last move order
   // visibly respond, its center or nose moved by a pixel or more, this returns when the order's input was read, once. The caller takes the time after presenting
   // the frame and has the latency. An order given to ships already moving is not measured: their motion would not be

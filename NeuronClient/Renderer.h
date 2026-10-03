@@ -11,10 +11,11 @@ struct StaticBuffer
   D3D12_GPU_VIRTUAL_ADDRESS address = 0;
 };
 
-// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame is drawn into a
-// multisampled scene target with a depth buffer of its own, both the size of the back buffer, and resolved into the back
-// buffer before it is presented (ADR-011, ADR-040). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It
-// knows no game concept: a frame is cleared, whoever holds the command list draws into it, and it is presented.
+// The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame's scene is drawn
+// into a multisampled scene target with a depth buffer of its own, both the size of the back buffer (ADR-011, ADR-040).
+// BeginInterface resolves it into the back buffer through an sRGB view, and the interface is drawn over that at one
+// sample (ADR-050). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It knows no game concept: a frame is
+// cleared, whoever holds the command list draws into it, and it is presented.
 class Renderer : NonCopyable
 {
 public:
@@ -43,7 +44,12 @@ public:
   // a viewport over the whole of them. The command list it returns is open until EndFrame.
   [[nodiscard]] ID3D12GraphicsCommandList* BeginFrame(const std::array<float, 4>& _clearColor);
 
-  // Resolves the frame BeginFrame started into the back buffer, submits it and presents it.
+  // Resolves the scene BeginFrame started into the back buffer, and binds the back buffer through an sRGB view, at one
+  // sample and with no depth buffer, for the interface to be drawn over it (ADR-050). Pipelines that draw after it are
+  // built for RENDER_TARGET_FORMAT, one sample and no depth format. Once a frame; EndFrame calls it if nothing did.
+  void BeginInterface();
+
+  // Finishes the frame, submits it and presents it.
   void EndFrame();
 
   // Opens a batch of uploads (ADR-048): CreateStaticBuffer and CreateStaticTexture record their copies into one command
@@ -120,6 +126,8 @@ private:
   void CreateRenderTargets();
   void CreateDepthBuffer();
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE SceneTargetView() const noexcept;
+  // The render target view of back buffer _index, sRGB, after the scene's in the same heap.
+  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE BackBufferView(UINT _index) const noexcept;
   [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const noexcept;
   void WaitForGpu();
 
@@ -136,10 +144,12 @@ private:
   UINT m_shaderViewBytes = 0;
   UINT m_shaderViewsTaken = 0;
   std::array<winrt::com_ptr<ID3D12Resource>, FRAME_COUNT> m_backBuffers;
-  // What a frame is drawn into, SAMPLE_COUNT samples a pixel; one serves every frame in flight, since the queue runs them
-  // in turn. It is resolved into m_resolvedScene, which is copied into the back buffer (ADR-040).
+  // What a frame's scene is drawn into, SAMPLE_COUNT samples a pixel; one serves every frame in flight, since the queue
+  // runs them in turn. The resolve reads it through its view in the shader-visible heap (ADR-050).
   winrt::com_ptr<ID3D12Resource> m_sceneTarget;
-  winrt::com_ptr<ID3D12Resource> m_resolvedScene;
+  UINT m_sceneView = 0;
+  winrt::com_ptr<ID3D12RootSignature> m_resolveRootSignature;
+  winrt::com_ptr<ID3D12PipelineState> m_resolveState;
   winrt::com_ptr<ID3D12Resource> m_depthBuffer;
   std::array<winrt::com_ptr<ID3D12CommandAllocator>, FRAME_COUNT> m_commandAllocators;
   winrt::com_ptr<ID3D12GraphicsCommandList> m_commandList;
@@ -183,5 +193,7 @@ private:
   bool m_vsync = true;
   // True once a frame has been presented and not yet waited for; the waitable object is signaled once per present.
   bool m_frameWaitPending = true;
+  // True once BeginInterface has resolved the frame being recorded.
+  bool m_interfaceBegun = false;
 };
 } // namespace Neuron

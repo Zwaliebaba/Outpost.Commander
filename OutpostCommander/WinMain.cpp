@@ -326,6 +326,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       }
       ID3D12GraphicsCommandList* commandList = renderer.BeginFrame(CLEAR_COLOR);
       client.Render(renderer, commandList);
+      // The scene is resolved into the back buffer, and the interface drawn over it (ADR-050).
+      renderer.BeginInterface();
+      client.RenderInterface(commandList, renderer.FrameIndex());
       renderer.EndFrame();
       if (!firstFramePresented)
       {
