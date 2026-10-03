@@ -310,7 +310,8 @@ public:
     return m_entities;
   }
 
-  // Equal when the state is: the pathfinder's cache of graphs is not state, and nor is what the last tick reported.
+  // Equal when the state is: the pathfinder's cache of graphs is not state, and nor is what the last tick reported, nor
+  // what each player's research makes of the tuning data, which follows from the topics researched.
   friend bool operator==(const Simulation& _a, const Simulation& _b) noexcept
   {
     return _a.m_tick == _b.m_tick && _a.m_entities == _b.m_entities && _a.m_lastEntityId == _b.m_lastEntityId &&
@@ -325,6 +326,19 @@ public:
   static constexpr std::size_t SPLIT_ORDER_SHIPS = 32;
 
 private:
+  // What a player's research makes of the tuning data: its upgrades. Every tick asks for it, so it is worked out again
+  // only when the tuning data or the player's research changes (UseTuning, AddPlayer, CompleteResearch). It follows from
+  // the topics researched, which are state, so it is not state itself and compares equal whatever it holds.
+  struct ResearchEffects
+  {
+    Upgrades upgrades;
+
+    friend bool operator==(const ResearchEffects&, const ResearchEffects&) noexcept
+    {
+      return true;
+    }
+  };
+
   struct PlayerState
   {
     PlayerId id;
@@ -343,6 +357,7 @@ private:
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
     // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
+    ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
   };
@@ -369,6 +384,10 @@ private:
   Entity* FindMutableEntity(EntityId _id) noexcept;
   PlayerState* FindPlayer(PlayerId _player) noexcept;
   [[nodiscard]] const PlayerState* FindPlayer(PlayerId _player) const noexcept;
+  // What a player who has researched _researched has of _tuning.
+  [[nodiscard]] static ResearchEffects EffectsFrom(const Tuning& _tuning, std::span<const ResearchTopicId> _researched);
+  // _player's research effects as last worked out; for a player not added, those of no research.
+  [[nodiscard]] const ResearchEffects& EffectsOf(PlayerId _player) const noexcept;
   [[nodiscard]] std::optional<Armament> ArmamentOf(const Entity& _entity) const noexcept;
   [[nodiscard]] std::vector<Observer> ObserversOf(PlayerId _player) const;
   // Whether a circle at _position is within sight of any of _observers.
@@ -492,6 +511,8 @@ private:
   float m_mapHalfSizeMeters = 0.0f;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.
   std::shared_ptr<const Tuning> m_tuning;
+  // What the tuning data gives a player who has researched nothing, as a player not added has; none before UseTuning.
+  ResearchEffects m_unresearched;
   // The players whose bases PlaceStartingBases placed, and how the match stands.
   std::vector<PlayerId> m_basePlayers;
   bool m_matchOver = false;
