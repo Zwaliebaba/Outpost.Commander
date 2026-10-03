@@ -91,7 +91,8 @@ private:
   // them, and then a snapshot for every connected player.
   void RunTick();
 
-  // The started server's thread: it sleeps until the next tick is due, runs the ticks that are, and stops when asked.
+  // The started server's thread: it sleeps on a timer until the next tick is due (ADR-055), runs the ticks that are, and
+  // stops when asked.
   void Run(const std::stop_token& _stop);
 
   struct Connection

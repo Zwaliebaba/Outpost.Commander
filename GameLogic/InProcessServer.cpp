@@ -9,6 +9,8 @@ namespace
 // Ticks run by one Advance at most: 250 ms of simulation at 20 Hz. After a longer stall the simulation drops the rest
 // and resumes at its own pace (ADR-009).
 constexpr std::uint32_t MAX_TICKS_PER_ADVANCE = 5;
+// A waitable timer's due time is counted in hundreds of nanoseconds.
+using HundredNanoseconds = std::chrono::duration<std::int64_t, std::ratio<1, 10'000'000>>;
 // Where the server finds its data, under the package's Assets folder (ADR-008).
 constexpr std::string_view TUNING_FILE = "Tuning.json";
 constexpr std::string_view MAP_FILE = "Map.json";
@@ -131,17 +133,34 @@ void Outpost::InProcessServer::Start()
 
 void Outpost::InProcessServer::Run(const std::stop_token& _stop)
 {
-  std::mutex sleeping;
-  std::condition_variable_any wake;
   auto last = std::chrono::steady_clock::now();
   try
   {
+    // The thread sleeps on a waitable timer set for the next tick, and on an event that a request to stop signals, which
+    // nothing else does (ADR-055). A high-resolution timer ends the wait when the tick is due, where a plain one, like
+    // any other timed wait, ends on the system timer's next tick, 15.6 ms apart by default. Windows before 10 1803 makes
+    // no high-resolution timer, and a plain one serves there.
+    winrt::handle timer{CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS)};
+    if (!timer)
+      timer.attach(winrt::check_pointer(CreateWaitableTimerExW(nullptr, nullptr, 0, TIMER_ALL_ACCESS)));
+    winrt::handle stopped;
+    stopped.attach(winrt::check_pointer(CreateEventExW(nullptr, nullptr, CREATE_EVENT_MANUAL_RESET, EVENT_ALL_ACCESS)));
+    // Declared after the event, so that it is gone before the event is.
+    const std::stop_callback wake(_stop, [&stopped]() noexcept { (void)SetEvent(stopped.get()); });
+    const std::array<HANDLE, 2> waits{stopped.get(), timer.get()};
     while (true)
     {
+      // What is left of the wait for the next tick, rounded up to the timer's hundreds of nanoseconds. A due time that
+      // has passed already is not waited for, as a timed wait would not wait for it.
+      const auto remaining = std::chrono::ceil<HundredNanoseconds>(last + m_tickHost.UntilNextTick() - std::chrono::steady_clock::now());
+      if (remaining.count() > 0)
       {
-        // Nothing wakes it early but a request to stop.
-        std::unique_lock lock(sleeping);
-        (void)wake.wait_until(lock, _stop, last + m_tickHost.UntilNextTick(), [] { return false; });
+        // A negative due time is relative to now.
+        LARGE_INTEGER due{};
+        due.QuadPart = -remaining.count();
+        winrt::check_bool(SetWaitableTimer(timer.get(), &due, 0, nullptr, nullptr, FALSE));
+        if (WaitForMultipleObjects(static_cast<DWORD>(waits.size()), waits.data(), FALSE, INFINITE) == WAIT_FAILED)
+          winrt::throw_last_error();
       }
       if (_stop.stop_requested())
         return;
