@@ -14,6 +14,10 @@ namespace
 // The root signature's parameters, in order: the screen's size at b0, the atlas at t0.
 constexpr UINT SCREEN_PARAMETER = 0;
 constexpr UINT ATLAS_PARAMETER = 1;
+// The image DrawImage draws from at t1. Its quads carry u past this, which tells the pixel shader to sample the image at u
+// less this rather than the atlas (Shader/UiPS.hlsl).
+constexpr UINT IMAGE_PARAMETER = 2;
+constexpr float IMAGE_U_OFFSET = 2.0f;
 constexpr UINT SCREEN_CONSTANT_COUNT = 4;
 
 constexpr UINT VERTICES_PER_QUAD = 4;
@@ -30,9 +34,13 @@ float PixelSize(float _units, float _scale) noexcept
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
   const CD3DX12_DESCRIPTOR_RANGE1 atlasRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
-  std::array<CD3DX12_ROOT_PARAMETER1, 2> parameters{};
+  // The image may be written earlier in the frame's own command list, as the fog is (ADR-052).
+  const CD3DX12_DESCRIPTOR_RANGE1 imageRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0,
+                                             D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE);
+  std::array<CD3DX12_ROOT_PARAMETER1, 3> parameters{};
   parameters[SCREEN_PARAMETER].InitAsConstants(SCREEN_CONSTANT_COUNT, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
   parameters[ATLAS_PARAMETER].InitAsDescriptorTable(1, &atlasRange, D3D12_SHADER_VISIBILITY_PIXEL);
+  parameters[IMAGE_PARAMETER].InitAsDescriptorTable(1, &imageRange, D3D12_SHADER_VISIBILITY_PIXEL);
   // Texels map one to one onto pixels, so filtering only matters at a glyph's edge; clamping keeps it inside the atlas.
   const CD3DX12_STATIC_SAMPLER_DESC sampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                             D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
@@ -272,6 +280,19 @@ void Neuron::UiPipeline::DrawSprite(std::size_t _sprite, float _left, float _top
   AddQuad(std::round(_left), std::round(_top), std::round(_left + _width), std::round(_top + _height), u0, v0, u1, v1, _color);
 }
 
+void Neuron::UiPipeline::SetImage(D3D12_GPU_DESCRIPTOR_HANDLE _view) noexcept
+{
+  m_imageView = _view;
+}
+
+void Neuron::UiPipeline::DrawImage(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _u0,
+                                   float _v0, float _u1, float _v1)
+{
+  if (m_imageView.ptr == 0)
+    return;
+  AddQuad(_left, _top, _left + _width, _top + _height, _u0 + IMAGE_U_OFFSET, _v0, _u1 + IMAGE_U_OFFSET, _v1, _color);
+}
+
 void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
 {
   if (m_frameVertices.empty())
@@ -292,6 +313,8 @@ void Neuron::UiPipeline::End(ID3D12GraphicsCommandList* _commandList, UINT _fram
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->SetGraphicsRoot32BitConstants(SCREEN_PARAMETER, SCREEN_CONSTANT_COUNT, screen.data(), 0);
   _commandList->SetGraphicsRootDescriptorTable(ATLAS_PARAMETER, m_renderer.ShaderViewGpu(m_atlasView));
+  // A table that is never sampled is still bound to a view, the atlas's, while no image is set.
+  _commandList->SetGraphicsRootDescriptorTable(IMAGE_PARAMETER, m_imageView.ptr != 0 ? m_imageView : m_renderer.ShaderViewGpu(m_atlasView));
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   _commandList->IASetVertexBuffers(0, 1, &vertexView);
   _commandList->IASetIndexBuffer(&m_indexBufferView);

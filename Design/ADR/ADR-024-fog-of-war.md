@@ -1,6 +1,6 @@
 # ADR-024 — Fog of war: each side sees what its ships and structures see, remembers enemy structures, and sees a shooter that hits it
 
-Status: **accepted** · 2026-10-02 · Supersedes [ADR-002](ADR-002-authoritative-server.md) decision 4's "every player sees everything", and [ADR-020](ADR-020-ai-and-match-flow.md) decision 3 and the parts of decisions 5 and 8 named below
+Status: **accepted** · 2026-10-02 · Supersedes [ADR-002](ADR-002-authoritative-server.md) decision 4's "every player sees everything", and [ADR-020](ADR-020-ai-and-match-flow.md) decision 3 and the parts of decisions 5 and 8 named below · How the client updates and draws the fog, in the world and on the minimap, is superseded by [ADR-052](ADR-052-fog-texture.md)
 
 ## Context
 

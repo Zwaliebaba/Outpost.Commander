@@ -251,8 +251,11 @@ private:
   SnapshotInterpolator m_view;
   PlayerControls m_controls;
   Designer m_designer;
-  // What the player has seen of the map, when the match is played under fog of war (ADR-024).
+  // What the player has seen of the map, when the match is played under fog of war (ADR-024); the newest snapshot's tick it
+  // was brought up to date at, and the revision of it the ground mask's texture holds (ADR-052).
   FogOfWar m_fog;
+  std::optional<std::uint64_t> m_fogTick;
+  std::optional<std::uint64_t> m_fogRevisionShown;
   // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
   // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
   WindowManager m_windows;

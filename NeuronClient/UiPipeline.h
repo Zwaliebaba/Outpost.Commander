@@ -53,6 +53,15 @@ public:
   void DrawSprite(std::size_t _sprite, float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
                   bool _mirrorX = false, bool _mirrorY = false);
 
+  // The image DrawImage draws from: a single-channel texture's view in the renderer's shader-visible heap, whose red is
+  // taken as coverage, as the atlas's is (ADR-052). It stays set until set again.
+  void SetImage(D3D12_GPU_DESCRIPTOR_HANDLE _view) noexcept;
+
+  // The part of the image from (_u0, _v0) to (_u1, _v1), sampled smoothly, drawn into this rectangle in _color with the
+  // image as its coverage: (_u0, _v0) at the top-left corner. Nothing is drawn while no image is set.
+  void DrawImage(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _u0, float _v0, float _u1,
+                 float _v1);
+
   [[nodiscard]] float TextWidth(std::size_t _font, std::string_view _text, float _trackingPixels = 0.0f) const noexcept
   {
     return m_atlas.fonts[_font].Width(_text, _trackingPixels);
@@ -100,6 +109,8 @@ private:
   // The atlas, and the slot of its view in the renderer's shader-visible heap (ADR-051).
   winrt::com_ptr<ID3D12Resource> m_atlasTexture;
   UINT m_atlasView = 0;
+  // The image's view, null until SetImage.
+  D3D12_GPU_DESCRIPTOR_HANDLE m_imageView{};
   StaticBuffer m_indexBuffer;
   D3D12_INDEX_BUFFER_VIEW m_indexBufferView{};
   // One slot of MAX_QUADS quads per frame in flight, mapped for the pipeline's lifetime.

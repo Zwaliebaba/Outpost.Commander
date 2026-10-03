@@ -1112,32 +1112,28 @@ public:
     Assert::IsTrue(wide.height > narrow.height);
   }
 
-  // ADR-024: the minimap draws the fog over its marks, a rectangle for each run of one shade along a row, and nothing
-  // where the player sees.
+  // ADR-024, ADR-052: under fog of war the minimap draws the fog over its marks, as one panel over the whole minimap that the
+  // client fills from the fog's texture, after the marks; without fog there is no such panel.
   TEST_METHOD(ShadesTheMinimapUnderFog)
   {
-    Outpost::FogOfWar fog;
-    fog.Reset(2000.0f);
-    fog.Update(
-      std::vector{Outpost::EntityView{.owner = PLAYER, .position = {.xMeters = -900.0f, .zMeters = -900.0f}, .sightMeters = 150.0f}},
-      PLAYER);
     Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
-    const size_t plain = Outpost::Hud::Lay(content, 1920, 1080).panels.size();
-    content.fogShades.assign(fog.Shades().begin(), fog.Shades().end());
-    content.fogCellsPerSide = fog.CellsPerSide();
-    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    content.marks.push_back({.position = {}, .radiusMeters = 8.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Ship});
+    const auto isFog = [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; };
+    Assert::IsFalse(std::ranges::any_of(Outpost::Hud::Lay(content, 1920, 1080).panels, isFog), L"no fog without fog of war");
 
-    std::vector<Outpost::Hud::Rect> shades(layout.panels.begin() + static_cast<std::ptrdiff_t>(plain), layout.panels.end());
-    Assert::IsTrue(shades.size() > 100 && shades.size() < 300, L"runs along each row, not a rectangle per cell");
-    const auto shadeAt = [&](Outpost::PlanePosition _point)
-    {
-      const DirectX::XMFLOAT2 pixel = layout.MinimapPixelOf(_point);
-      const auto over = std::ranges::find_if(shades, [&](const Outpost::Hud::Rect& _rect) { return _rect.Contains(pixel.x, pixel.y); });
-      return over != shades.end() ? over->color.w : 0.0f;
-    };
-    Assert::AreEqual(0.0f, shadeAt({.xMeters = -900.0f, .zMeters = -900.0f}), L"seen: clear");
-    Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, shadeAt({.xMeters = 900.0f, .zMeters = 900.0f}));
-    Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, shadeAt({.xMeters = -900.0f, .zMeters = 900.0f}), L"the rows run up the minimap");
+    content.fog = true;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{1}, static_cast<size_t>(std::ranges::count_if(layout.panels, isFog)));
+    const auto fog = std::ranges::find_if(layout.panels, isFog);
+    Assert::AreEqual(layout.minimap.left, fog->left);
+    Assert::AreEqual(layout.minimap.top, fog->top);
+    Assert::AreEqual(layout.minimap.width, fog->width);
+    Assert::AreEqual(layout.minimap.height, fog->height);
+    Assert::AreEqual(1.0f, fog->color.w, L"each point as opaque as its shade");
+    const DirectX::XMFLOAT2 mark = layout.MinimapPixelOf({});
+    const auto markPanel = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                                { return !isFog(_panel) && _panel.width < 20.0f && _panel.Contains(mark.x, mark.y); });
+    Assert::IsTrue(markPanel != layout.panels.end() && markPanel < fog, L"the fog is drawn over the marks");
   }
 
   // A press on a panel belongs to the HUD.

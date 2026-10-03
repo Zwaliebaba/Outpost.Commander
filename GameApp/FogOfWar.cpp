@@ -11,13 +11,15 @@ void Outpost::FogOfWar::Reset(float _mapSizeMeters)
   const size_t cells = size_t{m_cellsPerSide} * m_cellsPerSide;
   m_explored.assign(cells, false);
   m_shades.assign(cells, NEVER_SEEN_SHADE);
+  ++m_revision;
 }
 
 void Outpost::FogOfWar::Update(std::span<const EntityView> _entities, PlayerId _player)
 {
   if (m_cellsPerSide == 0)
     return;
-  std::vector<bool> inSight(m_explored.size(), false);
+  std::vector<bool>& inSight = m_inSight;
+  inSight.assign(m_explored.size(), false);
   for (const EntityView& entity : _entities)
   {
     if (entity.owner != _player || entity.sightMeters <= 0.0f)
@@ -34,12 +36,17 @@ void Outpost::FogOfWar::Update(std::span<const EntityView> _entities, PlayerId _
       }
     }
   }
+  bool changed = false;
   for (size_t cell = 0; cell < m_shades.size(); ++cell)
   {
     if (inSight[cell])
       m_explored[cell] = true;
-    m_shades[cell] = inSight[cell] ? SEEN_SHADE : m_explored[cell] ? SEEN_BEFORE_SHADE : NEVER_SEEN_SHADE;
+    const float shade = inSight[cell] ? SEEN_SHADE : m_explored[cell] ? SEEN_BEFORE_SHADE : NEVER_SEEN_SHADE;
+    changed = changed || shade != m_shades[cell];
+    m_shades[cell] = shade;
   }
+  if (changed)
+    ++m_revision;
 }
 
 float Outpost::FogOfWar::ShadeAt(PlanePosition _point) const noexcept

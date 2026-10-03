@@ -461,6 +461,8 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   m_sky = std::make_unique<Neuron::StarPipeline>(_renderer, _assets.sky.points);
   m_bursts = std::make_unique<Neuron::StarPipeline>(_renderer, _assets.sky.bursts, Neuron::StarPipeline::Shape::Cross);
   m_particleSprites = std::make_unique<Neuron::GlowPipeline>(_renderer, &_assets.particleSprite);
+  // The minimap's fog is the ground's own (ADR-052).
+  m_ui.SetImage(m_groundMask.ShadesView());
 }
 
 void Outpost::GameClient::StartMatch()
@@ -488,6 +490,8 @@ void Outpost::GameClient::ClearMatch()
   m_hovered.reset();
   m_designer = Designer();
   m_fog = FogOfWar();
+  m_fogTick.reset();
+  m_fogRevisionShown.reset();
   m_banking.Clear();
   m_windows.CloseAll();
   m_soleSelected = EntityId{};
@@ -567,7 +571,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   {
     if (m_fog.CellsPerSide() == 0)
       m_fog.Reset(m_view.Newest().mapSizeMeters);
-    m_fog.Update(m_entities, m_view.Newest().player);
+    // Once a snapshot: what the player sees changes no faster than the server ticks, and a cell is 20 m (ADR-052).
+    if (m_fogTick != m_view.Newest().tick)
+    {
+      m_fog.Update(m_entities, m_view.Newest().player);
+      m_fogTick = m_view.Newest().tick;
+    }
   }
   // What the player may order on: the view, less the asteroids in space it has never seen, which it cannot claim with a
   // Mining Rig (ADR-046).
@@ -657,8 +666,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       m_hudLayout.ActionAt(static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels));
     Hud::Content content =
       Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr, hovered);
-    content.fogShades.assign(m_fog.Shades().begin(), m_fog.Shades().end());
-    content.fogCellsPerSide = m_fog.CellsPerSide();
+    content.fog = m_fog.CellsPerSide() > 0;
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
     if (m_windows.IsOpen(WindowKind::Production))
       content.production = Hud::DescribeProduction(m_view.Newest(), m_production.Target(m_view.Newest()));
@@ -1018,7 +1026,13 @@ void Outpost::GameClient::DrawFog(const Neuron::Renderer& _renderer, ID3D12Graph
                                                              .originZMeters = origin.zMeters,
                                                              .cellMeters = FogOfWar::CELL_METERS,
                                                              .cellsPerSide = m_fog.CellsPerSide()};
-  m_groundMask.Draw(_commandList, _renderer.FrameIndex(), constants, m_fog.Shades());
+  // The shades go to the GPU only when they change; the minimap samples the same texture (ADR-052).
+  if (m_fogRevisionShown != m_fog.Revision())
+  {
+    m_groundMask.SetShades(_commandList, _renderer.FrameIndex(), m_fog.Shades(), m_fog.CellsPerSide());
+    m_fogRevisionShown = m_fog.Revision();
+  }
+  m_groundMask.Draw(_commandList, constants);
 }
 
 void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT _frameIndex)
@@ -1039,6 +1053,13 @@ void Outpost::GameClient::DrawHud(ID3D12GraphicsCommandList* _commandList, UINT 
       if (panel.fill == Hud::Fill::Hatched)
         m_ui.FillHatched(panel.left, panel.top, panel.width, panel.height, panel.color, Hud::HATCH_PERIOD_UNITS * scale,
                          Hud::HATCH_STRIPE_UNITS * scale);
+      else if (panel.fill == Hud::Fill::Fog)
+      {
+        // The fog's texture holds the grid in its corner, cell (x, z) at texel (x, z), and the minimap's top is the map's
+        // far edge in z (ADR-052).
+        const float extent = static_cast<float>(m_fog.CellsPerSide()) / static_cast<float>(Neuron::GroundMaskPipeline::TEXTURE_SIDE);
+        m_ui.DrawImage(panel.left, panel.top, panel.width, panel.height, panel.color, 0.0f, extent, extent, 0.0f);
+      }
       else
         m_ui.FillRect(panel.left, panel.top, panel.width, panel.height, panel.color);
     }

@@ -345,10 +345,9 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
-    // Under fog of war, the shade of each cell of the map as FogOfWar gives it, drawn over the marks, and its cells per
-    // side; empty without fog (ADR-024).
-    std::vector<float> fogShades;
-    std::uint32_t fogCellsPerSide = 0;
+    // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
+    // from the fog's own texture (ADR-052).
+    bool fog = false;
     // Once the match is over, a banner with a button back to the menu; the world runs on behind it (owner, 2026-10-01).
     std::optional<Outcome> outcome;
   };
@@ -357,7 +356,9 @@ public:
   enum class Fill : std::uint8_t
   {
     Solid,
-    Hatched
+    Hatched,
+    // The fog's shades over the minimap: the color, as opaque as each point's shade (ADR-052).
+    Fog
   };
 
   // A hatched panel's stripes: this wide, this far apart, in reference units.
