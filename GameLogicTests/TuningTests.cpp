@@ -88,7 +88,7 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 // A small file that loads, for the error cases to break one thing at a time.
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
-             "miningRigOrePerSecondContested": 8 },
+             "miningRigOrePerSecondContested": 8, "exhaustedYieldPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
@@ -176,7 +176,8 @@ public:
                 {"startingOre", Number(rules.startingOre)},
                 {"startingConstructors", Number(rules.startingConstructors)},
                 {"miningRigOrePerSecondHome", rules.miningRigOrePerSecondHome},
-                {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested}},
+                {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
+                {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)}},
                "rules");
     ExpectSame(*json.Find("sight"),
                {{"weaponMarginMeters", tuning.sight.weaponMarginMeters},
@@ -349,6 +350,7 @@ public:
     ExpectLoadError(Replace("\"armor\": 2,", "\"armor\": \"2\","), "hulls[0].armor");
     ExpectLoadError(Replace("\"speedFactor\": 1.3,", "\"speedFactor\": 0,"), "drives[0].speedFactor");
     ExpectLoadError(Replace("\"tickHz\": 20,", "\"tickHz\": 0,"), "rules.tickHz");
+    ExpectLoadError(Replace("\"exhaustedYieldPercent\": 20", "\"exhaustedYieldPercent\": 101"), "rules.exhaustedYieldPercent");
     ExpectLoadError(Replace("\"weaponMarginMeters\": 50,", "\"weaponMarginMeters\": 0,"), "sight.weaponMarginMeters");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 1e10,"), "hulls[0].hitPoints");
   }

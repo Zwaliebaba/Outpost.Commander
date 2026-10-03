@@ -30,6 +30,7 @@ Outpost::OreAsteroidPlacement ReadOreAsteroid(JsonObjectReader& _reader)
     asteroid.yield = Outpost::OreYield::Contested;
   else
     Neuron::JsonFail(_reader.PathOf("yield"), std::format("\"{}\" is not \"home\" or \"contested\"", yield));
+  asteroid.reserveOre = _reader.Integer("reserve", 1);
   return asteroid;
 }
 

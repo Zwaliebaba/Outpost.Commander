@@ -89,6 +89,9 @@ struct EntityView
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;
+  // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
+  // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
+  std::optional<std::int64_t> oreReserveHundredths;
 
   friend bool operator==(const EntityView&, const EntityView&) = default;
 };

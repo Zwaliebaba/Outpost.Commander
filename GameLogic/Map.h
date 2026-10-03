@@ -15,6 +15,9 @@ struct OreAsteroidPlacement
   PlanePosition position;
   float radiusMeters = 0.0f;
   OreYield yield = OreYield::Home;
+  // The Ore it holds before its rig earns only the trickle (Phase 1 design §8). Every asteroid of the map data has one;
+  // one placed without, as a test may, never runs out.
+  std::optional<std::int32_t> reserveOre;
 };
 
 // A non-mineable asteroid field: a circular obstacle, and with its neighbors a chokepoint (design §4).
@@ -38,7 +41,7 @@ struct Map
 };
 
 // Reads the text of OutpostCommander/Assets/Map.json. Throws Neuron::Exception on the first problem, naming where it is,
-// such as "oreAsteroids[3].radiusMeters". Besides types and ranges it checks that there are two starts, and that every
-// obstacle, the edge and every start keep the minimum gap from each other.
+// such as "oreAsteroids[3].radiusMeters". Every ore asteroid states its reserve. Besides types and ranges it checks that
+// there are two starts, and that every obstacle, the edge and every start keep the minimum gap from each other.
 [[nodiscard]] Map LoadMap(std::string_view _json);
 } // namespace Outpost

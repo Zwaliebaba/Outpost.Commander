@@ -310,6 +310,8 @@ public:
     float radiusMeters = 0.0f;
     Side side = Side::Neutral;
     EntityKind kind = EntityKind::Ship;
+    // An ore asteroid that has run out, as far as the player knows: drawn darker (Phase 1 design §8).
+    bool dry = false;
   };
 
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.

@@ -25,6 +25,8 @@ constexpr DirectX::XMFLOAT4 MAP_COLOR{0.02f, 0.04f, 0.07f, 0.95f};
 constexpr DirectX::XMFLOAT4 OWN_COLOR{0.35f, 0.65f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 ENEMY_COLOR{1.0f, 0.38f, 0.25f, 1.0f};
 constexpr DirectX::XMFLOAT4 NEUTRAL_COLOR{0.45f, 0.42f, 0.4f, 1.0f};
+// An ore asteroid that has run out: the neutral gray, darkened and warmed toward rust.
+constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 
 // Everything below in reference units.
@@ -1265,7 +1267,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   for (const EntityView& entity : _entities)
   {
     const Side side = !entity.owner.IsValid() ? Side::Neutral : entity.owner == _newest.player ? Side::Own : Side::Enemy;
-    content.marks.push_back({.position = entity.position, .radiusMeters = entity.radiusMeters, .side = side, .kind = entity.kind});
+    content.marks.push_back({.position = entity.position,
+                             .radiusMeters = entity.radiusMeters,
+                             .side = side,
+                             .kind = entity.kind,
+                             .dry = entity.kind == EntityKind::Asteroid && entity.oreReserveHundredths == 0});
   }
 
   const auto typeOf = [&_newest](StructureKind _kind) -> const StructureTypeView*
@@ -1293,6 +1299,13 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         content.selection.push_back(std::format("Under construction, {}%", structure->builtPermille / 10));
       content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(structure->hitPointsHundredths)),
                                               WithThousands(WholePoints(structure->maxHitPointsHundredths))));
+      // A Mining Rig's asteroid's Ore left, as far as the player knows it (Phase 1 design §8).
+      if (structure->structure == StructureKind::MiningRig && structure->oreReserveHundredths.has_value())
+      {
+        content.selection.push_back(*structure->oreReserveHundredths > 0
+                                      ? std::format("Ore left {}", WithThousands(WholePoints(*structure->oreReserveHundredths)))
+                                      : std::string("Ore run out: it earns a trickle"));
+      }
       // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel offers to
       // open them, once it is the player's own and finished.
       if (structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
@@ -1638,7 +1651,10 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       const float smallest = (mark.kind == EntityKind::Ship ? SHIP_MARK_UNITS : STRUCTURE_MARK_UNITS) * scale;
       const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
-      const DirectX::XMFLOAT4& color = mark.side == Side::Own ? OWN_COLOR : mark.side == Side::Enemy ? ENEMY_COLOR : NEUTRAL_COLOR;
+      const DirectX::XMFLOAT4& color = mark.dry                   ? DRY_COLOR
+                                       : mark.side == Side::Own   ? OWN_COLOR
+                                       : mark.side == Side::Enemy ? ENEMY_COLOR
+                                                                  : NEUTRAL_COLOR;
       layout.panels.push_back({at.x - (side / 2.0f), at.y - (side / 2.0f), side, side, color});
     }
 

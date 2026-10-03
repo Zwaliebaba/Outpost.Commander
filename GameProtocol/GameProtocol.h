@@ -12,6 +12,7 @@
 #include <cmath>
 #include <compare>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <variant>
 

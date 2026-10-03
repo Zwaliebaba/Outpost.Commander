@@ -18,7 +18,7 @@ struct Upgrades
   std::vector<std::pair<StructureWeaponId, double>> structureWeaponFireRateFactors;
   double shipSpeedFactor = 1.0;
   double constructorRateFactor = 1.0;
-  // Read by the ore asteroids once they hold a reserve (task 11.1).
+  // Divides what a rig of the player's draws from its asteroid's reserve for the Ore it earns (Phase 1 design §8).
   double oreReserveFactor = 1.0;
 
   [[nodiscard]] double FireRateFactor(WeaponId _weapon) const noexcept;

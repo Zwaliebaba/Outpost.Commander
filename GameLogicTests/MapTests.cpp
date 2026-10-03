@@ -129,8 +129,8 @@ constexpr std::string_view MINIMAL_MAP = R"({
   "sizeMeters": 1000,
   "minimumGapMeters": 50,
   "starts": [ { "xMeters": -300, "zMeters": -300 }, { "xMeters": 300, "zMeters": 300 } ],
-  "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home" },
-                    { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested" } ],
+  "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home", "reserve": 7500 },
+                    { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested", "reserve": 12000 } ],
   "asteroidFields": [ { "xMeters": 0, "zMeters": 0, "radiusMeters": 100 } ]
 })";
 
@@ -187,7 +187,6 @@ public:
     Assert::AreEqual(6, contested);
     Assert::IsFalse(map.asteroidFields.empty());
   }
-
   // Neither start is favored: turning the map half a turn about its center gives the same map, with the starts swapped.
   TEST_METHOD(TheRepositoryMapIsPointSymmetric)
   {
@@ -201,7 +200,8 @@ public:
                                          [&](const Outpost::OreAsteroidPlacement& _other)
                                          {
                                            return _other.position == mirrored(asteroid.position) &&
-                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield;
+                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield &&
+                                                  _other.reserveOre == asteroid.reserveOre;
                                          }));
     }
     for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
@@ -234,6 +234,8 @@ public:
     Assert::AreEqual(50.0f, map.minimumGapMeters);
     Assert::IsTrue(map.starts[1] == Outpost::PlanePosition{.xMeters = 300.0f, .zMeters = 300.0f});
     Assert::IsTrue(map.oreAsteroids[1].yield == Outpost::OreYield::Contested);
+    // Phase 1 design §8: every ore asteroid holds a reserve.
+    Assert::AreEqual(12000, map.oreAsteroids[1].reserveOre.value_or(0));
     Assert::AreEqual(100.0f, map.asteroidFields[0].radiusMeters);
   }
 
@@ -248,6 +250,8 @@ public:
                             "{ \"xMeters\": 300, \"zMeters\": 300 }, { \"xMeters\": 0, \"zMeters\": -300 } ]"),
                     "starts: has 3 starts");
     ExpectLoadError(Replace("\"yield\": \"home\"", "\"yield\": \"rich\""), "oreAsteroids[0].yield");
+    ExpectLoadError(Replace("\"reserve\": 7500", "\"reserve\": 0"), "oreAsteroids[0].reserve");
+    ExpectLoadError(Replace(", \"reserve\": 7500", ""), "oreAsteroids[0]: has no \"reserve\"");
     ExpectLoadError(Replace("\"sizeMeters\": 1000,", "\"sizeMeters\": 1000, \"sizeMetres\": 1000,"), "sizeMetres");
     ExpectLoadError(Replace("\"minimumGapMeters\": 50,", ""), "the file: has no \"minimumGapMeters\"");
   }

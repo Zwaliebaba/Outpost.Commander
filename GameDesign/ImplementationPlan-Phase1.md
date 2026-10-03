@@ -35,7 +35,7 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 | 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
 | 10.3 | The Q2 check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in progress, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49): tuned; the full check of record is running |
 | 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
-| 11.1 | Ore reserves and depletion | — | H3 decided | todo |
+| 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
 | 11.2 | The 5 km map | 11.1 | H3 decided | todo |
 | 11.3 | The AI follows the ore | 11.2, 10.4 | — | todo |
 | 12.1 | Losing all production | — | H5 decided | todo |
@@ -284,6 +284,11 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: depletion and what the snapshot carries of it.
 - **Acceptance:** `EconomyTests` cover a reserve running out to the trickle, both upgrades, and the fog's remembered figure.
 - **Verify:** CI; **owner run** of the panel and the minimap.
+- **As built:** [ADR-035](../Design/ADR/ADR-035-ore-depletion.md).
+  - **Data.** `Map.json`'s ore asteroids each state a `"reserve"`, required: 7,500 Ore at home and 12,000 contested on today's map, as design §8's rings. `Tuning.json`'s rules give the trickle, `"exhaustedYieldPercent": 20`.
+  - **The draw.** A built rig draws from its asteroid what it earns, divided by its owner's reserve factor, carried in hundredths as income is; a dry asteroid's rig earns a fifth of its rate and draws nothing. An asteroid placed without a reserve, as tests place them, never runs out.
+  - **What a player sees.** Under fog of war each player keeps every asteroid's reserve as it last saw it; the snapshot gives it on the asteroid and on the rig standing on it. A rig's panel reads "Ore left 3,420", or "Ore run out: it earns a trickle", and the minimap draws a dry asteroid in a dark rust.
+  - **Tests.** `EconomyTests.AnAsteroidRunsDryToATrickle`, `ResearchChangesHowFastAReserveDrains` and `RemembersTheReserveItLastSaw`; `MapTests` and `TuningTests` for the new members; `HudTests.ShowsTheOreLeft`.
 
 ### 11.2 — The 5 km map
 

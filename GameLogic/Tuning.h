@@ -18,6 +18,8 @@ struct RulesTuning
   std::int32_t startingConstructors = 0;
   double miningRigOrePerSecondHome = 0.0;
   double miningRigOrePerSecondContested = 0.0;
+  // What a rig earns of its asteroid's rate once the asteroid's reserve has run out, in percent (Phase 1 design §8).
+  std::int32_t exhaustedYieldPercent = 0;
 };
 
 // How far each side sees under fog of war (ADR-024). An armed ship or structure sees its weapon's range and the margin

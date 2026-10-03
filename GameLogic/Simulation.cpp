@@ -131,7 +131,10 @@ void Outpost::Simulation::PlaceMap(const Map& _map)
                           .kind = EntityKind::Asteroid,
                           .position = asteroid.position,
                           .radiusMeters = asteroid.radiusMeters,
-                          .oreYield = asteroid.yield});
+                          .oreYield = asteroid.yield,
+                          .oreReserveHundredths = asteroid.reserveOre.has_value()
+                                                    ? std::optional<std::int64_t>(std::int64_t{*asteroid.reserveOre} * HUNDREDTHS)
+                                                    : std::nullopt});
     obstacles.push_back({asteroid.position, asteroid.radiusMeters});
   }
   for (const AsteroidFieldPlacement& field : _map.asteroidFields)
@@ -233,6 +236,18 @@ void Outpost::Simulation::UpdateVision()
         *known = std::move(view);
       else
         player.remembered.push_back(std::move(view));
+    }
+    // The Ore left in each ore asteroid in sight, which the player remembers once it is out of sight (Phase 1 design §8).
+    for (const Entity& asteroid : m_entities)
+    {
+      if (asteroid.kind != EntityKind::Asteroid || !asteroid.oreReserveHundredths.has_value() ||
+          !InSight(observers, asteroid.position, asteroid.radiusMeters))
+        continue;
+      const auto known = std::ranges::find(player.knownReserves, asteroid.id, &std::pair<EntityId, std::int64_t>::first);
+      if (known != player.knownReserves.end())
+        known->second = *asteroid.oreReserveHundredths;
+      else
+        player.knownReserves.emplace_back(asteroid.id, *asteroid.oreReserveHundredths);
     }
     // A remembered structure whose place is in sight but that is not seen there is gone.
     std::erase_if(player.remembered,
@@ -710,6 +725,11 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     }
     if (m_fog && entity.owner == _player)
       view.sightMeters = SightMetersOf(entity);
+    // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
+    if (entity.kind == EntityKind::Asteroid)
+      view.oreReserveHundredths = ReserveKnownTo(_player, entity.id);
+    else if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::MiningRig && entity.site.IsValid())
+      view.oreReserveHundredths = ReserveKnownTo(_player, entity.site);
   }
   // The enemy structures it remembers and does not see now, as it last saw them, in identifier order with the rest, as a
   // client pairs two snapshots' entities by it (SnapshotInterpolator).
@@ -1791,16 +1811,38 @@ void Outpost::Simulation::Produce()
 std::int64_t Outpost::Simulation::IncomeHundredthsPerSecond(PlayerId _player) const
 {
   const double factor = UpgradesOf(_player).miningIncomeFactor;
-  const std::int64_t home = std::llround(m_tuning->rules.miningRigOrePerSecondHome * HUNDREDTHS * factor);
-  const std::int64_t contested = std::llround(m_tuning->rules.miningRigOrePerSecondContested * HUNDREDTHS * factor);
   std::int64_t income = 0;
   for (const Entity& rig : m_entities)
   {
     if (rig.kind == EntityKind::Structure && rig.structure == StructureKind::MiningRig && rig.owner == _player && rig.site.IsValid() &&
         rig.IsBuilt())
-      income += rig.oreYield == OreYield::Home ? home : contested;
+      income += RigIncomeHundredthsPerSecond(rig, factor);
   }
   return income;
+}
+
+std::int64_t Outpost::Simulation::RigIncomeHundredthsPerSecond(const Entity& _rig, double _incomeFactor) const
+{
+  const double rate =
+    _rig.oreYield == OreYield::Home ? m_tuning->rules.miningRigOrePerSecondHome : m_tuning->rules.miningRigOrePerSecondContested;
+  const Entity* asteroid = FindEntity(_rig.site);
+  const bool dry = asteroid != nullptr && asteroid->oreReserveHundredths == 0;
+  const double share = dry ? m_tuning->rules.exhaustedYieldPercent / 100.0 : 1.0;
+  return std::llround(rate * HUNDREDTHS * _incomeFactor * share);
+}
+
+std::optional<std::int64_t> Outpost::Simulation::ReserveKnownTo(PlayerId _player, EntityId _asteroid) const
+{
+  const Entity* asteroid = FindEntity(_asteroid);
+  if (asteroid == nullptr || !asteroid->oreReserveHundredths.has_value())
+    return std::nullopt;
+  if (!m_fog)
+    return asteroid->oreReserveHundredths;
+  const PlayerState* state = FindPlayer(_player);
+  if (state == nullptr)
+    return std::nullopt;
+  const auto known = std::ranges::find(state->knownReserves, _asteroid, &std::pair<EntityId, std::int64_t>::first);
+  return known != state->knownReserves.end() ? std::optional<std::int64_t>(known->second) : std::nullopt;
 }
 
 void Outpost::Simulation::Mine()
@@ -1810,6 +1852,23 @@ void Outpost::Simulation::Mine()
     player.oreRemainder += IncomeHundredthsPerSecond(player.id);
     player.oreHundredths += player.oreRemainder / m_ticksPerSecond;
     player.oreRemainder %= m_ticksPerSecond;
+  }
+
+  // Each built rig draws what it earns from its asteroid's reserve, so Improved Extraction drains it faster, and a player
+  // with Deep Core Survey draws less for the same Ore (Phase 1 design §8). The trickle of a dry asteroid draws nothing,
+  // and the last tick's draw takes what was left.
+  for (Entity& rig : m_entities)
+  {
+    if (rig.kind != EntityKind::Structure || rig.structure != StructureKind::MiningRig || !rig.site.IsValid() || !rig.IsBuilt())
+      continue;
+    Entity* asteroid = FindMutableEntity(rig.site);
+    if (asteroid == nullptr || !asteroid->oreReserveHundredths.has_value() || *asteroid->oreReserveHundredths == 0)
+      continue;
+    const Upgrades upgrades = UpgradesOf(rig.owner);
+    rig.reserveRemainder +=
+      std::llround(static_cast<double>(RigIncomeHundredthsPerSecond(rig, upgrades.miningIncomeFactor)) / upgrades.oreReserveFactor);
+    asteroid->oreReserveHundredths = std::max<std::int64_t>(0, *asteroid->oreReserveHundredths - (rig.reserveRemainder / m_ticksPerSecond));
+    rig.reserveRemainder %= m_ticksPerSecond;
   }
 }
 

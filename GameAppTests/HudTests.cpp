@@ -416,6 +416,54 @@ public:
     Assert::IsTrue(layout.Covers(area.left + 5.0f, area.top + 5.0f));
   }
 
+  // Phase 1 design §8: a Mining Rig's panel says how much Ore is left in its asteroid, as far as the player knows, and the
+  // minimap draws an asteroid that has run out darker than one that has not.
+  TEST_METHOD(ShowsTheOreLeft)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 2000.0f;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::MiningRig, .nameUtf8 = "Mining Rig", .buildable = true, .cost = 50}};
+    Outpost::EntityView rig{.id = Outpost::EntityId{30},
+                            .kind = Outpost::EntityKind::Structure,
+                            .owner = PLAYER,
+                            .structure = Outpost::StructureKind::MiningRig,
+                            .hitPointsHundredths = 80000,
+                            .maxHitPointsHundredths = 80000,
+                            .oreReserveHundredths = 342000};
+    const std::vector<Outpost::EntityId> selected{rig.id};
+    std::vector<std::string> expected{"Mining Rig", "Hit points 800 / 800", "Ore left 3,420"};
+    Assert::IsTrue(Outpost::Hud::Describe(newest, std::vector{rig}, selected).selection == expected);
+    rig.oreReserveHundredths = 0;
+    expected.back() = "Ore run out: it earns a trickle";
+    Assert::IsTrue(Outpost::Hud::Describe(newest, std::vector{rig}, selected).selection == expected);
+    rig.oreReserveHundredths.reset();
+    expected.pop_back();
+    Assert::IsTrue(Outpost::Hud::Describe(newest, std::vector{rig}, selected).selection == expected, L"one it has not seen");
+
+    const Outpost::EntityView full{.id = Outpost::EntityId{1},
+                                   .kind = Outpost::EntityKind::Asteroid,
+                                   .position = {-500.0f, 0.0f},
+                                   .radiusMeters = 45.0f,
+                                   .oreReserveHundredths = 100};
+    Outpost::EntityView dry = full;
+    dry.id = Outpost::EntityId{2};
+    dry.position = {500.0f, 0.0f};
+    dry.oreReserveHundredths = 0;
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{full, dry}, {});
+    Assert::IsFalse(content.marks[0].dry);
+    Assert::IsTrue(content.marks[1].dry);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto colorAt = [&layout](Outpost::PlanePosition _position)
+    {
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(_position);
+      const auto panel = std::ranges::find_if(layout.panels, [&at](const Outpost::Hud::Rect& _rect)
+                                              { return _rect.Contains(at.x, at.y) && _rect.width < 40.0f; });
+      Assert::IsTrue(panel != layout.panels.end());
+      return panel->color;
+    };
+    Assert::IsTrue(colorAt(dry.position).x < colorAt(full.position).x, L"darker");
+  }
+
   // Task 4.5: the minimap shows the map's square, +x to the right and +z up, and a point on it is a point on the map.
   TEST_METHOD(MapsTheMinimapToTheMap)
   {

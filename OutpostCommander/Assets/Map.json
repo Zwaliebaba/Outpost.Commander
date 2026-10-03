@@ -6,18 +6,18 @@
     { "xMeters": 750, "zMeters": 750 }
   ],
   "oreAsteroids": [
-    { "xMeters": -750, "zMeters": -490, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": -490, "zMeters": -750, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": -560, "zMeters": -560, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": 750, "zMeters": 490, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": 490, "zMeters": 750, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": 560, "zMeters": 560, "radiusMeters": 45, "yield": "home" },
-    { "xMeters": 290, "zMeters": 78, "radiusMeters": 45, "yield": "contested" },
-    { "xMeters": 78, "zMeters": 290, "radiusMeters": 45, "yield": "contested" },
-    { "xMeters": -212, "zMeters": 212, "radiusMeters": 45, "yield": "contested" },
-    { "xMeters": -290, "zMeters": -78, "radiusMeters": 45, "yield": "contested" },
-    { "xMeters": -78, "zMeters": -290, "radiusMeters": 45, "yield": "contested" },
-    { "xMeters": 212, "zMeters": -212, "radiusMeters": 45, "yield": "contested" }
+    { "xMeters": -750, "zMeters": -490, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": -490, "zMeters": -750, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": -560, "zMeters": -560, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": 750, "zMeters": 490, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": 490, "zMeters": 750, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": 560, "zMeters": 560, "radiusMeters": 45, "yield": "home", "reserve": 7500 },
+    { "xMeters": 290, "zMeters": 78, "radiusMeters": 45, "yield": "contested", "reserve": 12000 },
+    { "xMeters": 78, "zMeters": 290, "radiusMeters": 45, "yield": "contested", "reserve": 12000 },
+    { "xMeters": -212, "zMeters": 212, "radiusMeters": 45, "yield": "contested", "reserve": 12000 },
+    { "xMeters": -290, "zMeters": -78, "radiusMeters": 45, "yield": "contested", "reserve": 12000 },
+    { "xMeters": -78, "zMeters": -290, "radiusMeters": 45, "yield": "contested", "reserve": 12000 },
+    { "xMeters": 212, "zMeters": -212, "radiusMeters": 45, "yield": "contested", "reserve": 12000 }
   ],
   "asteroidFields": [
     { "xMeters": 0, "zMeters": 0, "radiusMeters": 120 },

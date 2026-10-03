@@ -6,7 +6,7 @@ namespace GameLogicTests
 {
 // Milestone 4's tests: two players on open ground with the repository's tuning data, a home ore asteroid north of the
 // origin and a contested one east of it, the starting Ore and the starting designs, and nothing else until a test
-// places it.
+// places it. The asteroids never run out unless a test gives them a reserve (Phase 1 design §8).
 class MatchArena
 {
 public:
@@ -17,15 +17,15 @@ public:
   static constexpr Outpost::PlanePosition CONTESTED_ASTEROID{.xMeters = 900.0f, .zMeters = 0.0f};
   static constexpr float ASTEROID_RADIUS_METERS = 45.0f;
 
-  MatchArena()
+  explicit MatchArena(std::optional<std::int32_t> _reserveOre = std::nullopt)
     : m_tuning(Outpost::LoadTuning(ReadRepositoryTuning())),
       m_simulation(11, TICKS_PER_SECOND)
   {
     m_simulation.PlaceMap({.sizeMeters = 4000.0f,
                            .minimumGapMeters = 60.0f,
                            .starts = {},
-                           .oreAsteroids = {{HOME_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Home},
-                                            {CONTESTED_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Contested}},
+                           .oreAsteroids = {{HOME_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Home, _reserveOre},
+                                            {CONTESTED_ASTEROID, ASTEROID_RADIUS_METERS, Outpost::OreYield::Contested, _reserveOre}},
                            .asteroidFields = {}});
     m_simulation.UseTuning(m_tuning);
     for (const Outpost::PlayerId player : {BLUE, RED})

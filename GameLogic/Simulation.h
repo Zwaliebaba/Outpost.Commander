@@ -46,6 +46,12 @@ struct Entity
   float radiusMeters = 0.0f;
   // Meaningful for an ore asteroid, and for the Mining Rig on one.
   OreYield oreYield = OreYield::Home;
+  // An ore asteroid's Ore left, in hundredths, which its rig draws down (Phase 1 design §8); none for one that never runs
+  // out.
+  std::optional<std::int64_t> oreReserveHundredths;
+  // A Mining Rig's draw on its asteroid's reserve not yet whole hundredths, in hundredths times ticks a second, as a
+  // player's Ore is paid (ADR-017).
+  std::int64_t reserveRemainder = 0;
   // A Mining Rig's asteroid.
   EntityId site;
   // Meaningful for a ship only; its radius is radiusMeters above.
@@ -331,6 +337,8 @@ private:
     std::vector<EntityId> seen;
     std::vector<EntityView> remembered;
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
+    // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
+    std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
   };
@@ -434,6 +442,12 @@ private:
   void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
+  // What one built rig earns each second, in hundredths, with its owner's income factor: its asteroid's rate, or the
+  // trickle once the asteroid has run dry (Phase 1 design §8).
+  [[nodiscard]] std::int64_t RigIncomeHundredthsPerSecond(const Entity& _rig, double _incomeFactor) const;
+  // The Ore left in an ore asteroid as _player knows it: what it holds without fog of war, and what the player last saw
+  // under it. None for one never seen, or one that never runs out.
+  [[nodiscard]] std::optional<std::int64_t> ReserveKnownTo(PlayerId _player, EntityId _asteroid) const;
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();
