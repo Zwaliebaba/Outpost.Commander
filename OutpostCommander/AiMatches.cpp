@@ -2,6 +2,7 @@
 #include "AiMatches.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <mutex>
 #include <sstream>
@@ -16,29 +17,25 @@ constexpr std::uint32_t SECONDS_PER_MINUTE = 60;
 bool PlayOne(Outpost::Server& _server, const Outpost::AiSettings& _settings, std::uint64_t _seed, std::uint64_t _limitTicks,
              std::ostream& _log)
 {
-  struct Seat
-  {
-    std::unique_ptr<Outpost::Transport> connection;
-    Outpost::AiPlayer ai;
-  };
+  // Both are made in place: an AiPlayer is never moved, since moving its maps may allocate.
   const std::uint32_t ticksPerSecond = _server.TicksPerSecond();
-  std::vector<Seat> seats;
-  for (const Outpost::PlayerId player : {Outpost::PlayerId{1}, Outpost::PlayerId{2}})
-    seats.push_back({.connection = _server.Connect(player), .ai = Outpost::AiPlayer(_settings, ticksPerSecond)});
+  const std::array<std::unique_ptr<Outpost::Transport>, 2> connections{_server.Connect(Outpost::PlayerId{1}),
+                                                                       _server.Connect(Outpost::PlayerId{2})};
+  std::array<Outpost::AiPlayer, 2> ais{Outpost::AiPlayer(_settings, ticksPerSecond), Outpost::AiPlayer(_settings, ticksPerSecond)};
 
   Outpost::MatchLog log(_log, _seed, ticksPerSecond);
   bool ended = false;
   for (std::uint64_t tick = 0; tick < _limitTicks && !ended; ++tick)
   {
     _server.Step();
-    for (Seat& seat : seats)
+    for (size_t seat = 0; seat < connections.size(); ++seat)
     {
-      for (const Outpost::Snapshot& snapshot : seat.connection->Receive())
+      for (const Outpost::Snapshot& snapshot : connections[seat]->Receive())
       {
         log.Record(snapshot);
         ended = ended || snapshot.matchOver;
-        for (Outpost::Command& command : seat.ai.Update(snapshot))
-          seat.connection->Send(std::move(command));
+        for (Outpost::Command& command : ais[seat].Update(snapshot))
+          connections[seat]->Send(std::move(command));
       }
     }
   }
