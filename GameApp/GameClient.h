@@ -116,8 +116,12 @@ private:
   void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
-  // A faint ring in its side's color under every structure that is not selected (ADR-040).
+  // A faint ring, one pixel wide, in its side's color under every structure that is not selected, and at full strength
+  // under the one the pointer is on and under all of them while a structure is placed (ADR-042).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
+  // The ring of a Mining Rig's own footprint, laid over its asteroid's rock, into m_drapedRing as a line list in the world
+  // (ADR-042); false when the rig's kind is not known.
+  bool DrapeRigRing(const EntityView& _rig);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
   // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
   // structure under construction, its length the share built (task 4.2).
@@ -195,14 +199,19 @@ private:
   float m_frameSeconds = 0.0f;
   // The ground's grid, as lines.
   std::unique_ptr<Neuron::Mesh> m_grid;
-  // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn.
+  // A ring and a disc of radius 1 and a strip 1 long and 1 wide, all flat on the ground, scaled where they are drawn; and
+  // the ring as a line, a structure's footprint (ADR-042).
   std::unique_ptr<Neuron::Mesh> m_ring;
+  std::unique_ptr<Neuron::Mesh> m_ringLine;
   std::unique_ptr<Neuron::Mesh> m_disc;
   std::unique_ptr<Neuron::Mesh> m_strip;
   // Each model's creases as a line list, keyed as m_modelMeshes; none for a mesh with no creases (ADR-027).
   std::map<std::string, std::unique_ptr<Neuron::Mesh>, std::less<>> m_modelEdges;
-  // The lines of the models drawn this frame, drawn together after them.
+  // The lines of the models drawn this frame, drawn together after them; and the structures' rings.
   std::vector<Neuron::MeshPipeline::LineDraw> m_lineDraws;
+  std::vector<Neuron::MeshPipeline::LineDraw> m_ringDraws;
+  // A Mining Rig's ring over its rock, made afresh for each rig as it is drawn.
+  std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
   // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelMeshes.
@@ -210,8 +219,10 @@ private:
   bool m_cameraPlaced = false;
   // The left button went down on the minimap and is still held.
   bool m_minimapDragging = false;
-  // Where the cursor points on the ground this frame, for the ghost.
+  // Where the cursor points on the ground this frame, for the ghost, and the structure it is on, whose ring shows at full
+  // strength.
   std::optional<PlanePosition> m_cursorGround;
+  std::optional<EntityId> m_hovered;
 
   // The move order being watched: its ships as the view showed them when it was given.
   struct ResponseProbe

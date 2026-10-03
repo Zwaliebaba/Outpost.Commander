@@ -27,7 +27,7 @@ struct ObjectConstants
 
 constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
 
-// DrawTriangles' vertices are in the world already.
+// DrawTriangles' and DrawLineList's vertices are in the world already.
 constexpr DirectX::XMFLOAT4X4 IDENTITY{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
@@ -162,6 +162,23 @@ void Neuron::MeshPipeline::DrawObject(ID3D12GraphicsCommandList* _commandList, c
 bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices,
                                          const DirectX::XMFLOAT4& _color)
 {
+  return DrawFrameVertices(_commandList, _vertices, _color, 0.0f);
+}
+
+bool Neuron::MeshPipeline::DrawLineList(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices,
+                                        const DirectX::XMFLOAT4& _color, float _liftShare)
+{
+  _commandList->SetPipelineState(m_lineState.get());
+  _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+  const bool drawn = DrawFrameVertices(_commandList, _vertices, _color, _liftShare);
+  _commandList->SetPipelineState(m_pipelineState.get());
+  _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  return drawn;
+}
+
+bool Neuron::MeshPipeline::DrawFrameVertices(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices,
+                                             const DirectX::XMFLOAT4& _color, float _liftShare)
+{
   if (_vertices.empty())
     return true;
   if (_vertices.size() > MAX_FRAME_VERTICES - m_frameVerticesUsed)
@@ -178,7 +195,8 @@ bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList
     .SizeInBytes = static_cast<UINT>(_vertices.size_bytes()),
     .StrideInBytes = sizeof(MeshVertex),
   };
-  const ObjectConstants constants{.world = IDENTITY, .color = _color, .liftShare = 0.0f, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
+  const ObjectConstants constants{
+    .world = IDENTITY, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
   _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
   _commandList->IASetVertexBuffers(0, 1, &view);
   _commandList->DrawInstanced(count, 1, 0, 0);

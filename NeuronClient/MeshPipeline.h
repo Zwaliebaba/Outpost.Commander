@@ -50,6 +50,13 @@ public:
   void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color, float _liftShare) const;
 
+  // Draws a line list made on the CPU this frame, already in the world, as DrawLines draws a mesh's lines: geometry that
+  // follows what it lies on, such as a ring laid over a rock. Its vertices take DrawTriangles' slot, so a call that would
+  // take the frame past MAX_FRAME_VERTICES draws nothing and returns false. The pipeline is back on Draw's state and
+  // topology when it returns. Only after BeginDrawing.
+  bool DrawLineList(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color,
+                    float _liftShare);
+
   // One line list to draw, as DrawLines takes it.
   struct LineDraw
   {
@@ -65,6 +72,10 @@ public:
 private:
   void DrawObject(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
                   const DirectX::XMFLOAT4& _color, float _liftShare) const;
+  // Copies _vertices into this frame's slot and draws them as the bound state and topology take them, in the world as they
+  // are; false, drawing nothing, when the slot has no room for them.
+  bool DrawFrameVertices(ID3D12GraphicsCommandList* _commandList, std::span<const MeshVertex> _vertices, const DirectX::XMFLOAT4& _color,
+                         float _liftShare);
 
   // The frame's constants rounded up to the size a constant buffer view needs.
   static constexpr UINT FRAME_CONSTANTS_BYTES =

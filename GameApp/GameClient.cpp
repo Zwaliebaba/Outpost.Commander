@@ -72,9 +72,12 @@ constexpr float LINE_LIFT_SHARE = 0.002f;
 // as light as it, and its faces STRUCTURE_FILL_SHADE of that rather than FILL_SHADE (ADR-040).
 constexpr float STRUCTURE_GRAY_SHARE = 0.35f;
 constexpr float STRUCTURE_FILL_SHADE = 0.22f;
-// Every structure stands on a faint ring the size of its selection ring, in its side's color at FOOTPRINT_RING_SHADE,
-// which puts it on the ground and says its size; selected, the selection's green ring takes its place (ADR-040).
+// Every structure stands on a faint ring the size of its selection ring, which puts it on the ground and says its size: a
+// line one pixel wide at any zoom, RING_LINE_SEGMENTS long, in its side's color at FOOTPRINT_RING_SHADE. Under the
+// pointer, and under every structure while one is placed, it takes the color of the structure's own lines. Selected, the
+// selection's green ring takes its place. A Mining Rig's ring is its own footprint's, laid over its rock (ADR-042).
 constexpr float FOOTPRINT_RING_SHADE = 0.35f;
+constexpr int RING_LINE_SEGMENTS = 96;
 
 // A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
 // within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
@@ -202,6 +205,23 @@ Neuron::MeshData BuildRing()
   }
   ring.boundsMin = {-RING_OUTER_RADIUS, 0.0f, -RING_OUTER_RADIUS};
   ring.boundsMax = {RING_OUTER_RADIUS, 0.0f, RING_OUTER_RADIUS};
+  return ring;
+}
+
+// A ring of radius 1 on the ground as a line list for MeshPipeline::DrawLines, lit as the ground facing up.
+Neuron::MeshData BuildRingLine()
+{
+  Neuron::MeshData ring;
+  constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
+  for (int i = 0; i < RING_LINE_SEGMENTS; ++i)
+  {
+    const float angle = static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / RING_LINE_SEGMENTS;
+    ring.vertices.push_back({{std::cos(angle), 0.0f, std::sin(angle)}, UP});
+    ring.indices.push_back(static_cast<std::uint32_t>(i));
+    ring.indices.push_back(static_cast<std::uint32_t>((i + 1) % RING_LINE_SEGMENTS));
+  }
+  ring.boundsMin = {-1.0f, 0.0f, -1.0f};
+  ring.boundsMax = {1.0f, 0.0f, 1.0f};
   return ring;
 }
 
@@ -364,6 +384,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   }
   m_grid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid());
   m_ring = std::make_unique<Neuron::Mesh>(_renderer, BuildRing());
+  m_ringLine = std::make_unique<Neuron::Mesh>(_renderer, BuildRingLine());
   m_disc = std::make_unique<Neuron::Mesh>(_renderer, BuildDisc());
   m_strip = std::make_unique<Neuron::Mesh>(_renderer, BuildStrip());
   // How high each rock reaches over its center, for a Mining Rig to stand there; the top of its bounds if the line down
@@ -411,6 +432,7 @@ void Outpost::GameClient::ClearMatch()
   m_shardVertices.clear();
   m_shardBatches.clear();
   m_controls = PlayerControls();
+  m_hovered.reset();
   m_designer = Designer();
   m_fog = FogOfWar();
   m_banking.Clear();
@@ -551,6 +573,10 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   if (!m_view.IsEmpty())
   {
     m_controls.Update(input, m_entities, m_view.Newest().player, m_camera, m_viewport);
+    const DirectX::XMFLOAT2 cursor{static_cast<float>(input.cursorXPixels), static_cast<float>(input.cursorYPixels)};
+    m_hovered = m_hudLayout.Covers(cursor.x, cursor.y) ? std::nullopt
+                                                       : PickEntity(m_entities, m_camera, m_viewport, cursor, [](const EntityView& _entity)
+                                                                    { return _entity.kind == EntityKind::Structure; });
     const std::vector<PlanePosition> view = ViewOnGround();
     // Selecting a Shipyard while the designer is open aims it there, and a producer while the production window is open
     // shows it (Phase 1 design §11, §12).
@@ -1028,6 +1054,9 @@ void Outpost::GameClient::DrawEffects(ID3D12GraphicsCommandList* _commandList)
 void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList)
 {
   const std::vector<EntityId>& selected = m_controls.Selected();
+  // Placing a structure, the player is choosing where it stands among the others, so every ring is at full strength.
+  const bool placing = m_controls.Placing().has_value();
+  m_ringDraws.clear();
   for (const EntityView& structure : m_entities)
   {
     if (structure.kind != EntityKind::Structure || std::ranges::find(selected, structure.id) != selected.end())
@@ -1035,10 +1064,61 @@ void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList
     const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
     if (side == nullptr)
       continue;
+    const DirectX::XMFLOAT4 color = placing || m_hovered == structure.id ? EdgeColor(side->color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE)
+                                                                         : Shaded(side->color, FOOTPRINT_RING_SHADE);
+    // The rig's ring lies over the rock, so it is pulled toward the eye as a model's lines are, to show over the faces it
+    // lies on. In a frame whose shards have taken every vertex DrawLineList can use, the rig goes without it.
+    if (structure.structure == StructureKind::MiningRig && DrapeRigRing(structure))
+    {
+      m_pipeline.DrawLineList(_commandList, m_drapedRing, color, LINE_LIFT_SHARE);
+      continue;
+    }
     const DirectX::XMFLOAT3 at{structure.position.xMeters, OVERLAY_LIFT_METERS, structure.position.zMeters};
-    m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, structure.radiusMeters * RING_SIZE_PER_FOOTPRINT),
-                    Shaded(side->color, FOOTPRINT_RING_SHADE));
+    m_ringDraws.push_back({.lines = m_ringLine.get(),
+                           .world = WorldMatrix(at, 0.0f, structure.radiusMeters * RING_SIZE_PER_FOOTPRINT),
+                           .color = color,
+                           .liftShare = 0.0f});
   }
+  m_pipeline.DrawLines(_commandList, m_ringDraws);
+}
+
+bool Outpost::GameClient::DrapeRigRing(const EntityView& _rig)
+{
+  if (m_view.IsEmpty())
+    return false;
+  const Snapshot& newest = m_view.Newest();
+  const auto type = std::ranges::find(newest.structureTypes, StructureKind::MiningRig, &StructureTypeView::structure);
+  if (type == newest.structureTypes.end())
+    return false;
+  // The rig stands at its asteroid's center, and its entity's radius is the rock's (design §6). Its ring is its own
+  // footprint's, as every structure's is.
+  const float radius = type->radiusMeters * RING_SIZE_PER_FOOTPRINT;
+  const float rockRadius = _rig.radiusMeters;
+  const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, RockModel(rockRadius));
+  const auto asteroid = std::ranges::find_if(m_entities, [&_rig](const EntityView& _entity)
+                                             { return _entity.kind == EntityKind::Asteroid && _entity.position == _rig.position; });
+  // A point of the ring lies over the rock's mesh where its asteroid's turn, as WorldMatrix turns it, takes it back to.
+  const DirectX::XMMATRIX toRock = DirectX::XMMatrixRotationY(asteroid != m_entities.end() ? asteroid->headingRadians : 0.0f);
+  constexpr DirectX::XMFLOAT3 UP{0.0f, 1.0f, 0.0f};
+  std::array<DirectX::XMFLOAT3, static_cast<size_t>(RING_LINE_SEGMENTS)> points{};
+  for (int i = 0; i < RING_LINE_SEGMENTS; ++i)
+  {
+    const float angle = static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / RING_LINE_SEGMENTS;
+    const float x = radius * std::cos(angle);
+    const float z = radius * std::sin(angle);
+    const DirectX::XMVECTOR over = DirectX::XMVector3Transform(DirectX::XMVectorSet(x / rockRadius, 0.0f, z / rockRadius, 0.0f), toRock);
+    // On the rock's surface where it is over the rock, and on the ground past its edge.
+    const std::optional<float> surface = Neuron::SurfaceHeightAt(rock, DirectX::XMVectorGetX(over), DirectX::XMVectorGetZ(over));
+    const float height = std::max(surface.value_or(0.0f) * rockRadius, 0.0f) + OVERLAY_LIFT_METERS;
+    points[static_cast<size_t>(i)] = {_rig.position.xMeters + x, height, _rig.position.zMeters + z};
+  }
+  m_drapedRing.clear();
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    m_drapedRing.push_back({points[i], UP});
+    m_drapedRing.push_back({points[(i + 1) % points.size()], UP});
+  }
+  return true;
 }
 
 void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
