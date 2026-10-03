@@ -97,6 +97,9 @@ struct CheckResult
 // The hulls, drives and weapons of the tuning data, as the check moves them.
 [[nodiscard]] CheckParts PartsFrom(const Outpost::Tuning& _tuning);
 
+// The parts of PartsFrom that no research topic unlocks, or that a topic of _tier or an earlier one unlocks.
+[[nodiscard]] CheckParts PartsThrough(const Outpost::Tuning& _tuning, std::int32_t _tier);
+
 // Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (task 5.3).
 [[nodiscard]] std::vector<CheckDesign> DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts);
 

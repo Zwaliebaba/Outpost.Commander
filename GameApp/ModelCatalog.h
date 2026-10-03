@@ -66,6 +66,22 @@ struct DriveExhaust
   DirectX::XMFLOAT4 color{};
 };
 
+// How a weapon's shot is drawn (ADR-034), so that a weapon reads on sight: a tracer that crosses to its target, a beam
+// in its shooter's side's color (ADR-028), or a slug, a white line that joins the gun and the target at once and lingers.
+// Presentation: the server reports only which weapon fired.
+enum class ShotLook : std::uint8_t
+{
+  Tracer,
+  Beam,
+  Slug
+};
+
+struct WeaponShot
+{
+  WeaponId weapon;
+  ShotLook look = ShotLook::Tracer;
+};
+
 // Every model the game can draw, from OutpostCommander/Assets/Models.json.
 struct ModelCatalog
 {
@@ -78,6 +94,8 @@ struct ModelCatalog
   // One per drive the data names, and the Constructor's, which has no drive (design §7).
   std::vector<DriveExhaust> exhausts;
   DirectX::XMFLOAT4 constructorExhaust{};
+  // One per weapon whose shot is not a tracer; a weapon not listed fires tracers.
+  std::vector<WeaponShot> shots;
   // How the Constructor banks, which has no hull (design §7).
   BankLimits constructorBank;
 
@@ -92,6 +110,8 @@ struct ModelCatalog
   // The color a ship's exhaust glows in: its drive's, or the Constructor's; nullptr for a drive the data does not name,
   // or anything that is not a ship.
   [[nodiscard]] const DirectX::XMFLOAT4* ExhaustColor(const EntityView& _entity) const noexcept;
+  // How a weapon's shot is drawn: its entry's look, or a tracer.
+  [[nodiscard]] ShotLook ShotLookOf(WeaponId _weapon) const noexcept;
   // How a ship banks: its hull's, or the Constructor's; nullptr for a hull the data does not name, or anything that is
   // not a ship.
   [[nodiscard]] const BankLimits* BankFor(const EntityView& _entity) const noexcept;
@@ -99,7 +119,7 @@ struct ModelCatalog
 
 // Reads the text of OutpostCommander/Assets/Models.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "sets[1].models[4].lengthMeters". Besides types and ranges it checks that set names are unique, and model
-// names within a set, that each player, hull, drive and kind of structure is listed once and every kind is, and that
+// names within a set, that each player, hull, drive, weapon's shot and kind of structure is listed once and every kind is, and that
 // every hull's, structure's and the Constructor's model is in every player's set. A hull's "bank" and the
 // "constructorBank" are optional; without one, those ships fly level.
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);

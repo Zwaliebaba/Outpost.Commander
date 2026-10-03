@@ -2,8 +2,8 @@
 
 namespace Outpost
 {
-// The minimum that makes combat readable (design §11, task 3.5): a muzzle flash where a shot leaves, a tracer or a beam
-// to where it lands, a spark there, and a blast ring as wide as its splash for a splash weapon (task 5.3). A ship or
+// The minimum that makes combat readable (design §11, task 3.5): a muzzle flash where a shot leaves, a tracer, a beam or
+// a slug to where it lands, as its weapon's look has it (ADR-034), a spark there, and a blast ring as wide as its splash for a splash weapon (task 5.3). A ship or
 // structure destroyed is the ParticleSystem's and the ExplosionManager's (ADR-026). Hits are instant on the server
 // (design §7); everything here is presentation, played from the shots the snapshots report, at the moment the view
 // reaches them. It keeps no GPU state: it says which flat shapes to draw, and GameClient draws them.
@@ -44,7 +44,8 @@ public:
   // the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
   using BeamTint = std::function<std::optional<DirectX::XMFLOAT4>(EntityId)>;
 
-  explicit CombatEffects(std::uint32_t _ticksPerSecond);
+  // _shots gives each weapon's look; a weapon not listed fires tracers.
+  explicit CombatEffects(std::uint32_t _ticksPerSecond, std::vector<WeaponShot> _shots = {});
 
   // Takes the shots of a snapshot. Each plays from one tick before the snapshot's own: the shot was fired from where the
   // ships stood at the start of that tick, and the view shows the snapshot's world a tick late (ADR-013).
@@ -62,15 +63,9 @@ public:
   }
 
 private:
-  enum class Kind : std::uint8_t
-  {
-    Tracer,
-    Beam
-  };
-
   struct Effect
   {
-    Kind kind = Kind::Tracer;
+    ShotLook look = ShotLook::Tracer;
     double startTick = 0.0;
     EntityId shooter;
     PlanePosition from;
@@ -87,6 +82,7 @@ private:
   }
 
   double m_ticksPerSecond = 0.0;
+  std::vector<WeaponShot> m_shots;
   std::vector<Effect> m_effects;
 };
 } // namespace Outpost

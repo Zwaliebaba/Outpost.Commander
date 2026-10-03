@@ -18,7 +18,8 @@ constexpr std::string_view STRUCTURES = R"("structures": [ { "structure": "Comma
   { "structure": "Shipyard", "model": "Small", "tint": 0.5 }, { "structure": "ResearchLab", "model": "Small" },
   { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" } ], "constructor": "Small",
   "exhausts": [ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ],
-  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 })";
+  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 },
+  "shots": [ { "weapon": 2, "look": "beam" } ])";
 
 // A catalog of one set of one model, with one member replaced, for the loader's error cases.
 std::string OneModel(std::string_view _setName, std::string_view _model, std::string_view _color)
@@ -152,7 +153,9 @@ public:
     const DirectX::XMFLOAT4* ion = catalog.ExhaustColor(ship);
     ship.drive = Outpost::DriveId{2};
     const DirectX::XMFLOAT4* fusion = catalog.ExhaustColor(ship);
-    Assert::IsTrue(ion != nullptr && fusion != nullptr && ion != fusion);
+    ship.drive = Outpost::DriveId{3};
+    const DirectX::XMFLOAT4* pulse = catalog.ExhaustColor(ship);
+    Assert::IsTrue(ion != nullptr && fusion != nullptr && pulse != nullptr && ion != fusion && pulse != ion && pulse != fusion);
     ship.drive = Outpost::DriveId{9};
     Assert::IsNull(catalog.ExhaustColor(ship));
     ship.role = Outpost::ShipRole::Constructor;
@@ -165,6 +168,30 @@ public:
       json.find(one), one.size(),
       R"([ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } }, { "drive": 1, "color": { "red": 1, "green": 0, "blue": 0 } } ])");
     ExpectRejected(json);
+  }
+
+  // ADR-034: the Lance fires a beam and the Rail Cannon a slug; every other weapon fires tracers. A look the file does
+  // not know, or a weapon listed twice, is refused.
+  TEST_METHOD(GivesEachWeaponItsShot)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{1}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{2}) == Outpost::ShotLook::Beam);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{3}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{4}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{5}) == Outpost::ShotLook::Slug);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{9}) == Outpost::ShotLook::Tracer);
+
+    const std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+    const std::string_view one = R"([ { "weapon": 2, "look": "beam" } ])";
+    Assert::IsTrue(Outpost::LoadModelCatalog(json).ShotLookOf(Outpost::WeaponId{2}) == Outpost::ShotLook::Beam);
+    for (const std::string_view shots :
+         {R"([ { "weapon": 2, "look": "laser" } ])", R"([ { "weapon": 2, "look": "beam" }, { "weapon": 2, "look": "slug" } ])"})
+    {
+      std::string broken = json;
+      broken.replace(broken.find(one), one.size(), shots);
+      ExpectRejected(broken);
+    }
   }
 
   // ADR-029: every hull and the Constructor bank, a Small hull harder and faster than a Large one; anything that is not

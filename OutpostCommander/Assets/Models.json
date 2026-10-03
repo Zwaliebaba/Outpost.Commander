@@ -60,7 +60,12 @@
   "constructorBank": { "maxDegrees": 15, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.3 },
   "exhausts": [
     { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1.0 } },
-    { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } }
+    { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } },
+    { "drive": 3, "color": { "red": 0.55, "green": 1.0, "blue": 0.3 } }
   ],
-  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.75 }
+  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.75 },
+  "shots": [
+    { "weapon": 2, "look": "beam" },
+    { "weapon": 5, "look": "slug" }
+  ]
 }

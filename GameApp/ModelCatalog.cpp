@@ -103,6 +103,23 @@ Outpost::DriveExhaust ReadExhaust(JsonObjectReader& _reader)
   return {.drive = _reader.Identifier<Outpost::DriveId>("drive"), .color = ReadColor(_reader, "color")};
 }
 
+// The file spells a look as its enumerator does, in lower case.
+constexpr std::array<std::pair<std::string_view, Outpost::ShotLook>, 3> SHOT_LOOKS = {{
+  {"tracer", Outpost::ShotLook::Tracer},
+  {"beam", Outpost::ShotLook::Beam},
+  {"slug", Outpost::ShotLook::Slug},
+}};
+
+Outpost::WeaponShot ReadShot(JsonObjectReader& _reader)
+{
+  const Outpost::WeaponId weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
+  const std::string look = _reader.String("look");
+  const auto found = std::ranges::find(SHOT_LOOKS, look, &std::pair<std::string_view, Outpost::ShotLook>::first);
+  if (found == SHOT_LOOKS.end())
+    Neuron::JsonFail(_reader.PathOf("look"), std::format("\"{}\" is not a look: tracer, beam or slug", look));
+  return {.weapon = weapon, .look = found->second};
+}
+
 // The file spells a kind as its enumerator, as the tuning data does.
 constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
   {"CommandStation", Outpost::StructureKind::CommandStation},
@@ -171,6 +188,7 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   catalog.constructor = reader.String("constructor");
   catalog.exhausts = Neuron::ReadJsonList<DriveExhaust>(reader, "exhausts", ReadExhaust);
   catalog.constructorExhaust = ReadColor(reader, "constructorExhaust");
+  catalog.shots = Neuron::ReadJsonList<WeaponShot>(reader, "shots", ReadShot);
   catalog.constructorBank = ReadBank(reader, "constructorBank");
   reader.Finish();
 
@@ -206,6 +224,11 @@ Outpost::ModelCatalog Outpost::LoadModelCatalog(std::string_view _json)
   {
     if (FirstWithSameKey(catalog.exhausts, i, &DriveExhaust::drive) != i)
       Neuron::JsonFail(Neuron::JsonElementPath("exhausts", i), std::format("drive {} is listed twice", catalog.exhausts[i].drive.value));
+  }
+  for (size_t i = 0; i < catalog.shots.size(); ++i)
+  {
+    if (FirstWithSameKey(catalog.shots, i, &WeaponShot::weapon) != i)
+      Neuron::JsonFail(Neuron::JsonElementPath("shots", i), std::format("weapon {} is listed twice", catalog.shots[i].weapon.value));
   }
 
   // A model every player's set must have, for drawing whichever player owns it.
@@ -263,6 +286,12 @@ const DirectX::XMFLOAT4* Outpost::ModelCatalog::ExhaustColor(const EntityView& _
     return &constructorExhaust;
   const auto found = std::ranges::find(exhausts, _entity.drive, &DriveExhaust::drive);
   return found == exhausts.end() ? nullptr : &found->color;
+}
+
+Outpost::ShotLook Outpost::ModelCatalog::ShotLookOf(WeaponId _weapon) const noexcept
+{
+  const auto found = std::ranges::find(shots, _weapon, &WeaponShot::weapon);
+  return found == shots.end() ? ShotLook::Tracer : found->look;
 }
 
 const Outpost::BankLimits* Outpost::ModelCatalog::BankFor(const EntityView& _entity) const noexcept

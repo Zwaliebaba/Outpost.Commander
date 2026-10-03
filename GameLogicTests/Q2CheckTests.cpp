@@ -38,8 +38,8 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
-    // Eighteen: three hulls, two drives and three weapons.
-    Assert::AreEqual(size_t{18}, designs.size());
+    // Forty-five: three hulls, three drives and five weapons (Phase 1 design §5).
+    Assert::AreEqual(size_t{45}, designs.size());
     for (const CheckDesign& design : designs)
     {
       const Outpost::DesignStats stats =
@@ -47,8 +47,16 @@ public:
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
-    Assert::AreEqual(std::string("L+F+MR"), designs.back().code);
-    Assert::AreEqual(30.0f, designs.back().stats.splashRadiusMeters);
+    Assert::AreEqual(std::string("L+P+RC"), designs.back().code);
+    Assert::AreEqual(30.0f, Named(designs, "L+F+MR").stats.splashRadiusMeters);
+    Assert::AreEqual(20.0f, Named(designs, "S+P+FB").stats.splashRadiusMeters);
+
+    // Through tier 1, the MVP's eighteen: the Pulse Drive, the Flak Battery and the Rail Cannon come with tiers 2 and 3.
+    const std::vector<CheckDesign> tierOne = DesignsFrom(tuning, PartsThrough(tuning, 1));
+    Assert::AreEqual(size_t{18}, tierOne.size());
+    Assert::AreEqual(std::string("L+F+MR"), tierOne.back().code);
+    Assert::AreEqual(size_t{36}, DesignsFrom(tuning, PartsThrough(tuning, 2)).size());
+    Assert::AreEqual(size_t{45}, DesignsFrom(tuning, PartsThrough(tuning, 3)).size());
   }
 
   // A battle replays: the same battle of the same pairing has the same outcome.

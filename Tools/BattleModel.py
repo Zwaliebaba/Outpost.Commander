@@ -268,6 +268,12 @@ def available(parts, topics, researched):
   return tuple([p for p in group if p.name not in locked] for group in parts)
 
 
+def through_tier(parts, topics, tier):
+  """The hulls, drives and weapons that no topic unlocks, or that a topic of `tier` or an earlier one unlocks."""
+  later = {t.unlocks for t in topics if t.unlocks and t.tier > tier}
+  return tuple([p for p in group if p.name not in later] for group in parts)
+
+
 def upgraded(parts, researched):
   """The parts with every upgrade in `researched` applied. Upgrades of one stat add their percentages (ADR-033)."""
   hulls, drives, weapons = (list(group) for group in parts)
@@ -650,6 +656,8 @@ def run(args):
   tick_hz, parts, research, ids = read_tuning(args.tuning)
   parts = apply_overrides(parts, args.set)
   topics = read_research(research, ids)
+  # Tier 1's components, the MVP's; the later tiers get their stages with task 10.3 (Phase 1 design §7).
+  parts = through_tier(parts, topics, 1)
   hulls, drives, weapons = parts
   dt = 1.0 / tick_hz
   designs = designs_from(hulls, drives, weapons)

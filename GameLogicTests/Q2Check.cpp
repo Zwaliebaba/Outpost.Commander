@@ -708,6 +708,20 @@ CheckParts GameLogicTests::PartsFrom(const Outpost::Tuning& _tuning)
   return parts;
 }
 
+CheckParts GameLogicTests::PartsThrough(const Outpost::Tuning& _tuning, std::int32_t _tier)
+{
+  const auto inTier = [&_tuning, _tier](auto _id)
+  {
+    return std::ranges::none_of(_tuning.research, [_id, _tier](const Outpost::ResearchTopicTuning& _topic)
+                                { return _topic.tier > _tier && Unlocks(_topic, _id); });
+  };
+  CheckParts parts = PartsFrom(_tuning);
+  std::erase_if(parts.hulls, [&](const CheckHull& _hull) { return !inTier(_hull.id); });
+  std::erase_if(parts.drives, [&](const CheckDrive& _drive) { return !inTier(_drive.id); });
+  std::erase_if(parts.weapons, [&](const CheckWeapon& _weapon) { return !inTier(_weapon.id); });
+  return parts;
+}
+
 std::vector<CheckDesign> GameLogicTests::DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts)
 {
   std::vector<CheckDesign> designs;
@@ -841,7 +855,8 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
 
 GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options)
 {
-  const CheckParts parts = PartsFrom(_tuning);
+  // Tier 1's components, the MVP's; the later tiers get their stages with task 10.3 (Phase 1 design §7).
+  const CheckParts parts = PartsThrough(_tuning, 1);
   const CheckParts starting = Researched(parts, _tuning, {});
   const std::vector<CheckDesign> every = DesignsFrom(_tuning, parts);
   const std::vector<CheckDesign> early = DesignsFrom(_tuning, starting);

@@ -305,7 +305,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
     m_groundMask(_renderer),
     m_ui(_renderer, Hud::Typefaces(), Hud::Sprites(), Hud::Scale(_renderer.WidthPixels(), _renderer.HeightPixels())),
     m_view(_ticksPerSecond),
-    m_effects(_ticksPerSecond),
+    m_effects(_ticksPerSecond, m_catalog.shots),
     m_particles(_ticksPerSecond),
     m_explosions(_ticksPerSecond)
 {
@@ -371,7 +371,7 @@ void Outpost::GameClient::ShowMenu()
 void Outpost::GameClient::ClearMatch()
 {
   m_view = SnapshotInterpolator(m_ticksPerSecond);
-  m_effects = CombatEffects(m_ticksPerSecond);
+  m_effects = CombatEffects(m_ticksPerSecond, m_catalog.shots);
   m_particles = ParticleSystem(m_ticksPerSecond);
   m_explosions = ExplosionManager(m_ticksPerSecond);
   m_particleGlows.clear();
