@@ -29,8 +29,8 @@ constexpr DirectX::XMFLOAT4 ORE_ASTEROID_COLOR{0.42f, 0.23f, 0.02f, 1.0f};
 // An ore asteroid that has run out: dark, and warmed toward rust.
 constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 // An asteroid field is only in the way, so it is drawn darker than an ore asteroid, which is worth going to, though a
-// field's square is the larger (ADR-040).
-constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.13f, 0.13f, 0.14f, 1.0f};
+// field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-045).
+constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.06f, 0.06f, 0.065f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
 
 // Everything below in reference units.
@@ -42,17 +42,22 @@ constexpr float NAME_LINE_UNITS = 22.0f;
 constexpr float FIGURE_LINE_UNITS = 16.0f;
 
 // The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's diamond and the figure in the
-// title face, ending at ORE_FIGURE_RIGHT so that it does not move as it changes, then the income.
+// title face from the panel's left, so that the diamond stays put as the figure changes, and the income at its right
+// (ADR-045).
 constexpr float ORE_PANEL_WIDTH = 260.0f;
 constexpr float ORE_PANEL_HEIGHT = 44.0f;
-constexpr float ORE_FIGURE_RIGHT = 150.0f;
-constexpr float ORE_INCOME_LEFT = 166.0f;
 
 // The selection panel, anchored to the bottom edge's middle, as wide as its longest line within these (ADR-043).
 constexpr float SELECTION_PANEL_MIN_WIDTH = 280.0f;
 constexpr float SELECTION_PANEL_WIDTH = 560.0f;
 // Lines of designs before the rest are counted together.
 constexpr size_t SELECTION_DESIGN_LINES = 5;
+// The selection's hit points as a bar under its lines: green above half, then amber, then red, as a bar over a damaged
+// ship is (ADR-045).
+constexpr float HEALTH_BAR_UNITS = 6.0f;
+constexpr float HEALTH_BAR_GAP_UNITS = 8.0f;
+constexpr float HEALTH_HURT_SHARE = 0.5f;
+constexpr float HEALTH_LOW_SHARE = 0.25f;
 
 // The buttons, stacked in a panel anchored to the bottom-right corner; a button's label and cost stand this far in.
 constexpr float BUTTON_PANEL_WIDTH = 380.0f;
@@ -63,9 +68,11 @@ constexpr float BUTTON_INSET = 12.0f;
 // The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding.
 constexpr float MINIMAP_SIZE = 260.0f;
 constexpr float MINIMAP_PADDING = 8.0f;
-// The smallest a mark is drawn, and how wide the view's outline is, so that both stay visible.
+// The smallest a mark is drawn, and how wide the view's outline is, so that both stay visible. An ore asteroid's is the
+// largest, since it is what the player looks for on the map; a rig's mark is drawn over its asteroid's (ADR-045).
 constexpr float SHIP_MARK_UNITS = 3.0f;
 constexpr float STRUCTURE_MARK_UNITS = 6.0f;
+constexpr float ORE_MARK_UNITS = 8.0f;
 constexpr float VIEW_LINE_UNITS = 1.5f;
 
 // The hint, anchored to the top edge's middle.
@@ -87,6 +94,12 @@ constexpr std::string_view CONSTRUCTOR_NAME = "Constructor";
 std::int64_t WholePoints(std::int64_t _hundredths)
 {
   return (_hundredths + Outpost::HUNDREDTHS - 1) / Outpost::HUNDREDTHS;
+}
+
+// The share of its hit points something has left; none for what has no hit points at all.
+float HealthShare(std::int64_t _hundredths, std::int64_t _maxHundredths) noexcept
+{
+  return _maxHundredths > 0 ? static_cast<float>(_hundredths) / static_cast<float>(_maxHundredths) : 0.0f;
 }
 
 // A number as a whole when it is one, and to a tenth otherwise: 78, 32.5.
@@ -537,6 +550,9 @@ constexpr float CONDENSED_ADVANCE = 0.52f;
 // The name face's letters, capitals and small letters together, are about half its size. The title and name faces' sizes
 // are those Hud::Typefaces gives them.
 constexpr float NAME_ADVANCE = 0.5f;
+// Ore's diamond beside a figure: this share of the figure's size, and this far from it.
+constexpr float ORE_MARK_SHARE = 0.6f;
+constexpr float ORE_MARK_GAP_UNITS = 5.0f;
 constexpr float TITLE_FACE_UNITS = 22.0f;
 constexpr float NAME_FACE_UNITS = 16.0f;
 
@@ -702,11 +718,19 @@ public:
   // An amount of Ore that ends at _right: Ore's diamond, then the figure, in _face at _sizeUnits.
   void DiamondAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, float _sizeUnits, const DirectX::XMFLOAT4& _color)
   {
-    const std::string figure = Outpost::WithThousands(_ore);
-    const float width = CharactersOf(figure) * _sizeUnits * (_face == Hud::Typeface::Title ? CONDENSED_ADVANCE : MONO_ADVANCE);
-    const float mark = std::round(_sizeUnits * 0.6f);
-    Sprite(Hud::Sprite::OreMark, _right - width - mark - 5.0f, _top + ((_sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
-    Text(figure, _right - width, _top, _color, _face);
+    const float advance = _face == Hud::Typeface::Title ? CONDENSED_ADVANCE : MONO_ADVANCE;
+    const float width = CharactersOf(Outpost::WithThousands(_ore)) * _sizeUnits * advance;
+    const float left = _right - width - std::round(_sizeUnits * ORE_MARK_SHARE) - ORE_MARK_GAP_UNITS;
+    DiamondAndFigureFrom(_ore, left, _top, _face, _sizeUnits, _color);
+  }
+
+  // An amount of Ore that starts at _left: Ore's diamond, then the figure, in _face at _sizeUnits.
+  void DiamondAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, float _sizeUnits,
+                            const DirectX::XMFLOAT4& _color)
+  {
+    const float mark = std::round(_sizeUnits * ORE_MARK_SHARE);
+    Sprite(Hud::Sprite::OreMark, _left, _top + ((_sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
+    Text(Outpost::WithThousands(_ore), _left + mark + ORE_MARK_GAP_UNITS, _top, _color, _face);
   }
 
   // The hatched band under the title bar that a window's header runs on into, to _bottomUnits, and its edge.
@@ -752,6 +776,13 @@ void AddButton(Hud::Layout& _layout, float _scale, const Hud::Rect& _area, const
              _button.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Name);
   if (split == std::string::npos)
     return;
+  // A note is in capitals, which set wider than the condensed face's figures, so it is placed by the monospaced advance.
+  if (!_button.enabled && !_button.note.empty())
+  {
+    paint.RightText(_button.note, width - BUTTON_INSET, (height - FIGURE_LINE_UNITS) / 2.0f, LABEL_COLOR, Hud::Typeface::Label,
+                    12.0f * MONO_ADVANCE);
+    return;
+  }
   const std::string figure = _button.label.substr(split + 1);
   std::int32_t cost = 0;
   if (std::from_chars(figure.data(), figure.data() + figure.size(), cost).ec != std::errc{})
@@ -1348,6 +1379,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         content.selection.push_back(std::format("Under construction, {}%", structure->builtPermille / 10));
       content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(structure->hitPointsHundredths)),
                                               WithThousands(WholePoints(structure->maxHitPointsHundredths))));
+      content.selectionHealth = HealthShare(structure->hitPointsHundredths, structure->maxHitPointsHundredths);
       // A Mining Rig's asteroid's Ore left, as far as the player knows it (Phase 1 design §8).
       if (structure->structure == StructureKind::MiningRig && structure->oreReserveHundredths.has_value())
       {
@@ -1409,12 +1441,13 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.selection.reserve(byDesign.size() + 3);
     content.selection.push_back(std::format("{} ships", ships));
     for (size_t i = 0; i < byDesign.size() && i < SELECTION_DESIGN_LINES; ++i)
-      content.selection.push_back(std::format("{} x {}", byDesign[i].second, nameOf(byDesign[i].first)));
+      content.selection.push_back(std::format("{} {} {}", byDesign[i].second, TIMES, nameOf(byDesign[i].first)));
     if (byDesign.size() > SELECTION_DESIGN_LINES)
       content.selection.push_back(std::format("and {} more designs", byDesign.size() - SELECTION_DESIGN_LINES));
   }
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
+  content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
 
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
@@ -1432,7 +1465,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       const bool allowed = !(type.structure == StructureKind::ResearchLab && hasLab);
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
                                  .action = {.kind = ActionKind::Build, .structure = type.structure},
-                                 .enabled = allowed && _newest.ore >= type.cost});
+                                 .enabled = allowed && _newest.ore >= type.cost,
+                                 .note = allowed ? std::string() : std::string("ONE PER PLAYER")});
     }
   }
   return content;
@@ -1622,12 +1656,13 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
   // Top-left anchor: the Ore, as the windows write it, and what the rigs earn each second.
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    paint.DiamondAndFigure(_content.ore, ORE_FIGURE_RIGHT, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, TITLE_FACE_UNITS,
-                           GOLD_COLOR);
+    paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, TITLE_FACE_UNITS,
+                               GOLD_COLOR);
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
-    paint.Text(incomeText, ORE_INCOME_LEFT, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR, Typeface::Figure);
+    paint.RightText(incomeText, ORE_PANEL_WIDTH - PADDING, ((ORE_PANEL_HEIGHT - FIGURE_LINE_UNITS) / 2.0f) + 2.0f, NUMBERS_COLOR,
+                    Typeface::Figure, 13.0f * MONO_ADVANCE);
   }
 
   // Under the Ore: the research under way.
@@ -1665,7 +1700,9 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     for (size_t line = 1; line < _content.selection.size(); ++line)
       textUnits = std::max(textUnits, CharactersOf(_content.selection[line]) * NAME_FACE_UNITS * NAME_ADVANCE);
     const float widthUnits = std::clamp(textUnits + (2.0f * PADDING), SELECTION_PANEL_MIN_WIDTH, SELECTION_PANEL_WIDTH);
-    const float heightUnits = (2.0f * PADDING) + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
+    const float linesUnits = TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(_content.selection.size() - 1));
+    const float barUnits = _content.selectionHealth.has_value() ? HEALTH_BAR_GAP_UNITS + HEALTH_BAR_UNITS : 0.0f;
+    const float heightUnits = (2.0f * PADDING) + linesUnits + barUnits;
     Painter paint = frame({.xUnits = (screenWidthUnits - widthUnits) / 2.0f, .yUnits = screenHeightUnits - MARGIN - heightUnits},
                           widthUnits, heightUnits);
     paint.Text(_content.selection.front(), PADDING, PADDING, TEXT_COLOR, Typeface::Title);
@@ -1673,6 +1710,20 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     {
       paint.Text(_content.selection[line], PADDING, PADDING + TITLE_LINE_UNITS + (NAME_LINE_UNITS * static_cast<float>(line - 1)),
                  NUMBERS_COLOR, Typeface::Name);
+    }
+    if (_content.selectionHealth.has_value())
+    {
+      const float share = std::clamp(*_content.selectionHealth, 0.0f, 1.0f);
+      const float barTop = PADDING + linesUnits + HEALTH_BAR_GAP_UNITS;
+      const float barWidth = widthUnits - (2.0f * PADDING);
+      paint.Panel(PADDING, barTop, barWidth, HEALTH_BAR_UNITS, BAR_TRACK_COLOR);
+      if (share > 0.0f)
+      {
+        paint.Panel(PADDING, barTop, barWidth * share, HEALTH_BAR_UNITS,
+                    share > HEALTH_HURT_SHARE  ? GOOD_COLOR
+                    : share > HEALTH_LOW_SHARE ? FAIR_COLOR
+                                               : POOR_COLOR);
+      }
     }
   }
 
@@ -1704,9 +1755,24 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
     layout.panels.push_back(layout.minimap);
 
     const float pixelsPerMeter = inner / _content.mapSizeMeters;
-    for (const Mark& mark : _content.marks)
+    // The neutral marks first, so that a rig's shows over its asteroid's.
+    std::vector<const Mark*> marks;
+    marks.reserve(_content.marks.size());
+    for (const bool sided : {false, true})
     {
-      const float smallest = (mark.kind == EntityKind::Ship ? SHIP_MARK_UNITS : STRUCTURE_MARK_UNITS) * scale;
+      for (const Mark& mark : _content.marks)
+      {
+        if ((mark.side != Side::Neutral) == sided)
+          marks.push_back(&mark);
+      }
+    }
+    for (const Mark* marked : marks)
+    {
+      const Mark& mark = *marked;
+      const float smallest = (mark.kind == EntityKind::Ship       ? SHIP_MARK_UNITS
+                              : mark.kind == EntityKind::Asteroid ? ORE_MARK_UNITS
+                                                                  : STRUCTURE_MARK_UNITS) *
+                             scale;
       const float side = std::max(smallest, 2.0f * mark.radiusMeters * pixelsPerMeter);
       const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(mark.position);
       const DirectX::XMFLOAT4& color = mark.dry                                 ? DRY_COLOR

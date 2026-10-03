@@ -221,6 +221,7 @@ public:
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
     const std::vector<std::string> expected{"Medium+Ion+Lance", "Hit points 450 / 450"};
     Assert::IsTrue(content.selection == expected);
+    Assert::AreEqual(44950.0f / 45000.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
   }
 
   // Several ships: how many, how many of each design, most first, and their hit points together.
@@ -230,8 +231,11 @@ public:
                                                     Ship(4, SWARM, 19800, 19800)};
     const std::vector<Outpost::EntityId> selected{Outpost::EntityId{1}, Outpost::EntityId{2}, Outpost::EntityId{3}, Outpost::EntityId{4}};
     const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, selected);
-    const std::vector<std::string> expected{"4 ships", "3 x Small+Ion+Mass Driver", "1 x Medium+Ion+Lance", "Hit points 946 / 1,044"};
+    // ADR-045: the count and the design between a multiplication sign.
+    const std::vector<std::string> expected{"4 ships", "3 \xC3\x97 Small+Ion+Mass Driver", "1 \xC3\x97 Medium+Ion+Lance",
+                                            "Hit points 946 / 1,044"};
     Assert::IsTrue(content.selection == expected);
+    Assert::AreEqual(94600.0f / 104400.0f, content.selectionHealth.value_or(-1.0f), 1e-6f);
   }
 
   // ADR-006: one uniform scale, the largest at which the whole 1920x1080 frame fits, and anchors that keep the panels at
@@ -297,6 +301,12 @@ public:
                         .structure = Outpost::StructureKind::ResearchLab});
     content = Outpost::Hud::Describe(newest, entities, selected);
     Assert::IsFalse(content.buttons[1].enabled, L"one Research Lab a player");
+    // ADR-045: the button says so in place of its cost; a button the player only cannot afford says nothing more.
+    Assert::AreEqual(std::string("ONE PER PLAYER"), content.buttons[1].note);
+    Assert::IsTrue(content.buttons[0].note.empty());
+    const Outpost::Hud::Layout noted = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "ONE PER PLAYER"; }));
+    Assert::IsFalse(std::ranges::any_of(noted.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "200"; }));
 
     // While a placement is armed, a hint says what a click does.
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::MiningRig);
@@ -940,6 +950,59 @@ public:
     { return (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z); };
     Assert::IsTrue(luminance(field.color) < luminance(ore.color));
     Assert::IsTrue(ore.color.x > ore.color.y && ore.color.y > ore.color.z, L"gold");
+  }
+
+  // ADR-045: the Ore's diamond and figure start at the panel's left whatever the figure, and the income keeps to its right.
+  TEST_METHOD(KeepsTheOreDiamondStillAsTheFigureChanges)
+  {
+    const auto oreAt = [](std::int32_t _ore)
+    {
+      const Outpost::Hud::Layout layout = Outpost::Hud::Lay({.ore = _ore, .oreIncomeHundredthsPerSecond = 2700}, 1920, 1080);
+      const auto diamond = std::ranges::find(layout.sprites, Outpost::Hud::Sprite::OreMark, &Outpost::Hud::SpriteMark::sprite);
+      const auto figure = std::ranges::find(layout.texts, Outpost::WithThousands(_ore), &Outpost::Hud::Text::text);
+      const auto income = std::ranges::find(layout.texts, std::string("+27/s"), &Outpost::Hud::Text::text);
+      Assert::IsTrue(diamond != layout.sprites.end() && figure != layout.texts.end() && income != layout.texts.end());
+      return std::array<float, 3>{diamond->area.left, figure->left, income->left};
+    };
+    const std::array<float, 3> small = oreAt(5);
+    const std::array<float, 3> large = oreAt(12345678);
+    Assert::AreEqual(small[0], large[0], 0.01f, L"the diamond");
+    Assert::AreEqual(small[1], large[1], 0.01f, L"the figure");
+    Assert::AreEqual(small[2], large[2], 0.01f, L"the income");
+    Assert::IsTrue(small[0] < 40.0f, L"at the panel's left");
+  }
+
+  // ADR-045: the selection's hit points show as a bar under its lines, as long as the share left, red when low.
+  TEST_METHOD(DrawsTheSelectionsHealthAsABar)
+  {
+    const Outpost::Hud::Content healthy{.ore = 0, .selection = {"Shipyard", "Hit points 3,000 / 3,000"}};
+    Outpost::Hud::Content hurt = healthy;
+    hurt.selectionHealth = 0.2f;
+    const Outpost::Hud::Layout without = Outpost::Hud::Lay(healthy, 1920, 1080);
+    const Outpost::Hud::Layout with = Outpost::Hud::Lay(hurt, 1920, 1080);
+    const Outpost::Hud::Rect& panel = with.panels[1];
+    Assert::IsTrue(panel.height > without.panels[1].height, L"the bar is under the lines");
+    Assert::AreEqual(without.panels[1].top + without.panels[1].height, panel.top + panel.height, 0.01f, L"anchored to the bottom");
+    const Outpost::Hud::Rect& track = with.panels[2];
+    const Outpost::Hud::Rect& bar = with.panels[3];
+    Assert::AreEqual(0.2f * track.width, bar.width, 0.01f);
+    Assert::IsTrue(bar.color.x > bar.color.y, L"red");
+    Assert::IsTrue(track.top > panel.top + (panel.height / 2.0f) && track.top + track.height < panel.top + panel.height);
+  }
+
+  // ADR-045: an ore asteroid's mark is the largest of the minimap's smallest marks, and a rig's own mark shows over it.
+  TEST_METHOD(DrawsARigsMarkOverItsAsteroid)
+  {
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 5000.0f};
+    const Outpost::PlanePosition at{.xMeters = 400.0f, .zMeters = 400.0f};
+    content.marks = {{.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Own, .kind = Outpost::EntityKind::Structure},
+                     {.position = at, .radiusMeters = 45.0f, .side = Outpost::Hud::Side::Neutral, .kind = Outpost::EntityKind::Asteroid}};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const Outpost::Hud::Rect& ore = layout.panels[layout.panels.size() - 2];
+    const Outpost::Hud::Rect& rig = layout.panels.back();
+    Assert::IsTrue(ore.color.x > ore.color.z && rig.color.z > rig.color.x, L"the gold ore first, the blue rig over it");
+    Assert::AreEqual(8.0f, ore.width, 0.01f);
+    Assert::IsTrue(rig.width < ore.width, L"the asteroid's gold shows round the rig");
   }
 
   // ADR-043: the HUD's panels are in the windows' look, a window's body with a bracket at each corner.
