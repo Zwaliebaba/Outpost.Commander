@@ -26,6 +26,10 @@ constexpr int SEARCH_RINGS = 20;
 constexpr float RALLY_RADIUS_METERS = 40.0f;
 // A reserve warship is sent again only when where it should be has moved this far.
 constexpr float RESEND_METERS = 50.0f;
+// An attack-move ends at each ship's place in the group's formation round the target, which for a large group or a
+// large structure can be out of the ship's range; a ship of the attack group this close to its target structure is
+// ordered to attack it, which closes it into range.
+constexpr float CLOSE_IN_METERS = 500.0f;
 
 float Distance(PlanePosition _a, PlanePosition _b) noexcept
 {
@@ -51,6 +55,15 @@ bool IsStructure(const EntityView& _entity, StructureKind _kind) noexcept
 bool IsBuilt(const EntityView& _entity) noexcept
 {
   return _entity.builtPermille >= Outpost::PERMILLE;
+}
+
+// The attack group goes for production first: Shipyards, then the Command Station, then anything else (Phase 1 design
+// §4, §13). A lower rank comes first.
+int AttackRank(const EntityView& _structure) noexcept
+{
+  if (_structure.structure == StructureKind::Shipyard)
+    return 0;
+  return _structure.structure == StructureKind::CommandStation ? 1 : 2;
 }
 
 const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureKind _kind) noexcept
@@ -208,11 +221,17 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 {
   const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
-  if (station == _snapshot.entities.end())
-    return;
+  const bool hasStation = station != _snapshot.entities.end();
+  // A lost Command Station is lost for good, and the AI plays on without it, building no more Constructors (Phase 1
+  // design §4).
   if (!m_planned)
+  {
+    if (!hasStation)
+      return;
     Plan(_snapshot, *station);
-  PlanShipyards(_snapshot, *station);
+  }
+  PlanShipyards(_snapshot);
+  FollowOre(_snapshot);
   if (_snapshot.tick >= m_nextReviewTick)
   {
     // What it has seen since the last review; with nothing seen it keeps the design it has.
@@ -232,9 +251,12 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   const auto constructors = std::ranges::count_if(
     _snapshot.entities, [this](const EntityView& _entity)
     { return _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Constructor && _entity.owner == m_player; });
-  const auto queued = std::ranges::count(station->queue, ShipRole::Constructor, &JobView::role);
-  if (constructors + queued < m_settings.constructors && station->queue.size() < QUEUE_LIMIT)
-    _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = station->id, .design = {}}));
+  if (hasStation)
+  {
+    const auto queued = std::ranges::count(station->queue, ShipRole::Constructor, &JobView::role);
+    if (constructors + queued < m_settings.constructors && station->queue.size() < QUEUE_LIMIT)
+      _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = station->id, .design = {}}));
+  }
 
   // Research, one topic at a time, in its order.
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
@@ -288,6 +310,7 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   m_planned = true;
   const PlanePosition home = _station.position;
   m_home = home;
+  m_homeRadiusMeters = _station.radiusMeters;
   const float fromCenter = std::hypot(home.xMeters, home.zMeters);
   // Toward the map's center, and across that to the right seen from above.
   const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
@@ -297,18 +320,12 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
 
   std::vector<const EntityView*> asteroids;
-  std::vector<PlanePosition> enemyStations;
   for (const EntityView& entity : _snapshot.entities)
   {
     if (entity.kind == EntityKind::Asteroid)
       asteroids.push_back(&entity);
-    else if (IsStructure(entity, StructureKind::CommandStation) && entity.owner != m_player)
-      enemyStations.push_back(entity.position);
   }
-  // Under fog of war the enemy's base is out of sight at the start (ADR-024): the map is point-symmetric, so it is across
-  // the center from this one.
-  if (enemyStations.empty())
-    enemyStations.push_back({.xMeters = -home.xMeters, .zMeters = -home.zMeters});
+  const std::vector<PlanePosition> enemyStations = EnemyStations(_snapshot);
   std::ranges::sort(asteroids,
                     [home](const EntityView* _a, const EntityView* _b)
                     {
@@ -327,22 +344,10 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     }
     if (std::cmp_greater_equal(contestedAsteroids.size(), m_settings.contestedAsteroids))
       break;
-    // Not one nearer another player's base: that is the other player's home.
-    const float ours = Distance(asteroid->position, home);
-    if (std::ranges::none_of(enemyStations, [&](PlanePosition _enemy) { return Distance(asteroid->position, _enemy) < ours; }))
+    if (!IsEnemyHome(asteroid->position, enemyStations))
       contestedAsteroids.push_back(asteroid);
   }
 
-  const auto addRig = [&](const EntityView& _asteroid)
-  {
-    const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
-    const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
-    m_slots.push_back({.structure = StructureKind::MiningRig,
-                       .position = _asteroid.position,
-                       .radiusMeters = radius,
-                       .asteroid = _asteroid.id,
-                       .abandoned = type == nullptr || !type->buildable});
-  };
   // A structure placed as near _preferred as it can be, clear of everything and of the structures planned before it.
   const auto addStructure = [&](StructureKind _kind, const auto& _preferredFor, std::optional<size_t> _besideRig, std::int32_t _income)
   {
@@ -363,7 +368,7 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
   };
 
   for (const EntityView* asteroid : homeAsteroids)
-    addRig(*asteroid);
+    AddRigSlot(_snapshot, *asteroid);
   const float stationRadius = _station.radiusMeters;
   addStructure(
     StructureKind::Shipyard, [&](float _radius) { return Along(home, acrossX, acrossZ, stationRadius + _radius + gap); }, std::nullopt, 0);
@@ -375,26 +380,109 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
     std::nullopt, 0);
   for (const EntityView* asteroid : contestedAsteroids)
   {
-    addRig(*asteroid);
-    const size_t rig = m_slots.size() - 1;
-    const float toHome = std::max(Distance(asteroid->position, home), 1.0f);
-    const float towardX = (home.xMeters - asteroid->position.xMeters) / toHome;
-    const float towardZ = (home.zMeters - asteroid->position.zMeters) / toHome;
-    const float rigRadius = m_slots[rig].radiusMeters;
-    addStructure(
-      StructureKind::DefensePlatform, [&](float _radius) { return Along(asteroid->position, towardX, towardZ, rigRadius + _radius + gap); },
-      rig, 0);
+    AddRigSlot(_snapshot, *asteroid);
+    AddPlatformBesideRig(_snapshot, m_slots.size() - 1);
   }
   const StructureTypeView rally{.structure = StructureKind::Shipyard, .radiusMeters = RALLY_RADIUS_METERS};
   const PlanePosition preferred = Along(home, forwardX, forwardZ, static_cast<float>(m_settings.rallyDistanceMeters));
   m_rally = FindPlace(rally, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters, 0.0f).value_or(preferred);
 }
 
+void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
+  const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
+  m_slots.push_back({.structure = StructureKind::MiningRig,
+                     .position = _asteroid.position,
+                     .radiusMeters = radius,
+                     .asteroid = _asteroid.id,
+                     .abandoned = type == nullptr || !type->buildable});
+}
+
+void Outpost::AiPlayer::AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig)
+{
+  const PlanePosition at = m_slots[_rig].position;
+  const float rigRadius = m_slots[_rig].radiusMeters;
+  Slot slot{.structure = StructureKind::DefensePlatform, .besideRig = _rig, .minimumIncomeHundredthsPerSecond = 0};
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::DefensePlatform);
+  if (type == nullptr || !type->buildable)
+  {
+    slot.abandoned = true;
+    m_slots.push_back(slot);
+    return;
+  }
+  const float toHome = std::max(Distance(at, m_home), 1.0f);
+  const PlanePosition preferred = Along(at, (m_home.xMeters - at.xMeters) / toHome, (m_home.zMeters - at.zMeters) / toHome,
+                                        rigRadius + type->radiusMeters + static_cast<float>(m_settings.structureGapMeters));
+  slot.radiusMeters = type->radiusMeters;
+  const std::optional<PlanePosition> place = FindPlace(*type, preferred, Blockers(_snapshot, std::nullopt), _snapshot.mapSizeMeters,
+                                                       static_cast<float>(m_settings.structureGapMeters));
+  slot.position = place.value_or(preferred);
+  slot.abandoned = !place.has_value();
+  m_slots.push_back(slot);
+}
+
+std::vector<Outpost::PlanePosition> Outpost::AiPlayer::EnemyStations(const Snapshot& _snapshot) const
+{
+  std::vector<PlanePosition> stations;
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (IsStructure(entity, StructureKind::CommandStation) && entity.owner != m_player)
+      stations.push_back(entity.position);
+  }
+  // Under fog of war the enemy's base is out of sight at the start (ADR-024): the map is point-symmetric, so it is across
+  // the center from this one.
+  if (stations.empty())
+    stations.push_back({.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters});
+  return stations;
+}
+
+bool Outpost::AiPlayer::IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const
+{
+  const float ours = Distance(_asteroid, m_home);
+  return std::ranges::any_of(_enemyStations, [&](PlanePosition _enemy) { return Distance(_asteroid, _enemy) < ours; });
+}
+
+void Outpost::AiPlayer::FollowOre(const Snapshot& _snapshot)
+{
+  // An asteroid it does not see now holds what it last saw, or, never seen, ore enough to go and look.
+  const auto hasOre = [&_snapshot](EntityId _asteroid)
+  {
+    const EntityView* asteroid = FindEntity(_snapshot, _asteroid);
+    return asteroid != nullptr && asteroid->oreReserveHundredths.value_or(1) > 0;
+  };
+  const auto mining = std::ranges::count_if(
+    m_slots, [&](const Slot& _slot)
+    { return _slot.structure == StructureKind::MiningRig && !_slot.abandoned && !IsBlocked(_slot, _snapshot) && hasOre(_slot.asteroid); });
+  if (mining >= m_settings.homeAsteroids + m_settings.contestedAsteroids)
+    return;
+
+  const std::vector<PlanePosition> enemyStations = EnemyStations(_snapshot);
+  const EntityView* nearest = nullptr;
+  for (const EntityView& asteroid : _snapshot.entities)
+  {
+    if (asteroid.kind != EntityKind::Asteroid || !hasOre(asteroid.id) || IsEnemyHome(asteroid.position, enemyStations) ||
+        std::ranges::find(m_slots, asteroid.id, &Slot::asteroid) != m_slots.end())
+      continue;
+    const bool taken = std::ranges::any_of(
+      _snapshot.entities, [&asteroid](const EntityView& _rig)
+      { return IsStructure(_rig, StructureKind::MiningRig) && Distance(_rig.position, asteroid.position) <= SAME_PLACE_METERS; });
+    const float distance = Distance(asteroid.position, m_home);
+    if (!taken && (nearest == nullptr || distance < Distance(nearest->position, m_home) ||
+                   (distance == Distance(nearest->position, m_home) && asteroid.id < nearest->id)))
+      nearest = &asteroid;
+  }
+  if (nearest == nullptr)
+    return;
+  AddRigSlot(_snapshot, *nearest);
+  AddPlatformBesideRig(_snapshot, m_slots.size() - 1);
+}
+
 // Owner, 2026-10-01: the AI builds its N-th Shipyard once its income reaches N times the settings' income per Shipyard,
 // since one Shipyard spends about as much as that. A Shipyard joins the plan once, and keeps waiting for the income if
 // the income drops again, as when a rig is lost. They stand behind the Command Station, then behind it to either side,
 // each round of three farther out; the search finds the nearest clear place to each.
-void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityView& _station)
+void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot)
 {
   const auto shipyards = std::ranges::count(m_slots, StructureKind::Shipyard, &Slot::structure);
   const auto income = static_cast<std::int64_t>(std::llround(m_settings.incomePerShipyardOrePerSecond * HUNDREDTHS)) * (shipyards + 1);
@@ -416,7 +504,7 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityVie
   constexpr std::array<float, 3> TURNS_RADIANS{std::numbers::pi_v<float>, 0.75f * std::numbers::pi_v<float>,
                                                -0.75f * std::numbers::pi_v<float>};
   const auto extra = static_cast<size_t>(shipyards - 1);
-  const PlanePosition home = _station.position;
+  const PlanePosition home = m_home;
   const float fromCenter = std::hypot(home.xMeters, home.zMeters);
   const float forwardX = fromCenter > 0.0f ? -home.xMeters / fromCenter : 1.0f;
   const float forwardZ = fromCenter > 0.0f ? -home.zMeters / fromCenter : 0.0f;
@@ -426,7 +514,7 @@ void Outpost::AiPlayer::PlanShipyards(const Snapshot& _snapshot, const EntityVie
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
   const size_t roundIndex = extra / TURNS_RADIANS.size();
   const auto round = static_cast<float>(roundIndex);
-  const float meters = _station.radiusMeters + type->radiusMeters + gap + (round * ((2.0f * type->radiusMeters) + gap));
+  const float meters = m_homeRadiusMeters + type->radiusMeters + gap + (round * ((2.0f * type->radiusMeters) + gap));
   const PlanePosition preferred = Along(home, directionX, directionZ, meters);
 
   slot.radiusMeters = type->radiusMeters;
@@ -629,7 +717,7 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 }
 
 // The reserve gathers at the rally, or goes to where the base is under fire; once it is large enough it joins the attack
-// group, which attack-moves on the nearest enemy structure and then the next.
+// group, which attack-moves on the enemy's production first, the nearest of it, and then on the next structure.
 void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
   std::vector<const EntityView*> warships;
@@ -665,7 +753,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
       _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(joined), .destination = target->position}));
   }
 
-  if (!m_attackGroup.empty() && target == nullptr)
+  if (!m_attackGroup.empty())
   {
     float sumX = 0.0f;
     float sumZ = 0.0f;
@@ -677,21 +765,46 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     }
     const auto count = static_cast<float>(m_attackGroup.size());
     const PlanePosition center{.xMeters = sumX / count, .zMeters = sumZ / count};
-    const EntityView* nearest = nullptr;
+    const EntityView* best = nullptr;
     for (const EntityView& entity : _snapshot.entities)
     {
       if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player)
         continue;
-      if (nearest == nullptr || Distance(entity.position, center) < Distance(nearest->position, center))
-        nearest = &entity;
+      if (best == nullptr || AttackRank(entity) < AttackRank(*best) ||
+          (AttackRank(entity) == AttackRank(*best) && Distance(entity.position, center) < Distance(best->position, center)))
+        best = &entity;
     }
-    m_attackTarget = nearest != nullptr ? nearest->id : EntityId{};
-    if (nearest != nullptr)
-      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = nearest->position}));
-    else if (!m_searching || grown)
-      _orders.push_back(MakeCommand(
-        m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
-    m_searching = nearest == nullptr;
+    // A target is kept until it is gone, or until production comes to light ahead of it.
+    if (target == nullptr || (best != nullptr && AttackRank(*best) < AttackRank(*target)))
+    {
+      m_attackTarget = best != nullptr ? best->id : EntityId{};
+      m_closingIn.clear();
+      if (best != nullptr)
+        _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = best->position}));
+      else if (!m_searching || grown)
+        _orders.push_back(MakeCommand(
+          m_player, AttackMoveCommand{.ships = m_attackGroup, .destination = {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters}}));
+      m_searching = best == nullptr;
+    }
+  }
+
+  // The attack group's ships near their target attack it, so that none stands idle out of range of it.
+  if (const EntityView* attacked = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget))
+  {
+    std::erase_if(m_closingIn, [this](EntityId _id) { return std::ranges::find(m_attackGroup, _id) == m_attackGroup.end(); });
+    std::vector<EntityId> closing;
+    for (const EntityId id : m_attackGroup)
+    {
+      const EntityView* ship = FindEntity(_snapshot, id);
+      if (ship != nullptr && std::ranges::find(m_closingIn, id) == m_closingIn.end() &&
+          Distance(ship->position, attacked->position) <= CLOSE_IN_METERS + attacked->radiusMeters)
+        closing.push_back(id);
+    }
+    if (!closing.empty())
+    {
+      m_closingIn.insert(m_closingIn.end(), closing.begin(), closing.end());
+      _orders.push_back(MakeCommand(m_player, AttackCommand{.ships = std::move(closing), .target = attacked->id}));
+    }
   }
 
   const bool defending =

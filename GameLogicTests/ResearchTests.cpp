@@ -24,6 +24,17 @@ constexpr Outpost::ResearchTopicId LANCE_FOCUSING{4};
 constexpr Outpost::ResearchTopicId FUSION_DRIVE{5};
 constexpr Outpost::ResearchTopicId LARGE_HULL{6};
 constexpr Outpost::ResearchTopicId AUTOMATED_SHIPYARDS{8};
+// Phase 1's tiers (Phase 1 design §6).
+constexpr Outpost::ResearchTopicId RELAY_ARCHIVES{9};
+constexpr Outpost::ResearchTopicId DEEP_CORE_SURVEY{12};
+constexpr Outpost::ResearchTopicId COMPOSITE_PLATING{13};
+constexpr Outpost::ResearchTopicId REINFORCED_STRUCTURES{14};
+constexpr Outpost::ResearchTopicId DEFENSE_AUTOLOADER{15};
+constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
+constexpr Outpost::ResearchTopicId ABLATIVE_ARMOR{20};
+constexpr Outpost::ResearchTopicId COILGUN_MASS_DRIVERS{21};
+constexpr Outpost::ResearchTopicId DRIVE_HARMONICS{23};
+constexpr Outpost::ResearchTopicId RAPID_CONSTRUCTION{25};
 
 Outpost::Command Research(Outpost::PlayerId _player, Outpost::EntityId _lab, Outpost::ResearchTopicId _topic)
 {
@@ -249,6 +260,20 @@ public:
 
   // Design §7, §8: the Large hull is no one's until a player researches it, and then only that player's; a design of it can
   // be saved once it is unlocked.
+  // Phase 1 design §11: each topic names the component it unlocks, for the designer to show on it while it is locked;
+  // an upgrade unlocks none.
+  TEST_METHOD(EachTopicNamesTheComponentItUnlocks)
+  {
+    MatchArena arena;
+    const std::vector<Outpost::ResearchTopicView> topics = arena.World().BuildSnapshot(BLUE).research;
+    const auto topic = [&topics](Outpost::ResearchTopicId _id) { return *std::ranges::find(topics, _id, &Outpost::ResearchTopicView::id); };
+    Assert::IsTrue(topic(LARGE_HULL).unlocksHull == LARGE);
+    Assert::IsFalse(topic(LARGE_HULL).unlocksDrive.IsValid() || topic(LARGE_HULL).unlocksWeapon.IsValid());
+    Assert::IsTrue(topic(FUSION_DRIVE).unlocksDrive == Outpost::DriveId{2});
+    Assert::IsFalse(topic(HULL_PLATING).unlocksHull.IsValid() || topic(HULL_PLATING).unlocksDrive.IsValid() ||
+                    topic(HULL_PLATING).unlocksWeapon.IsValid());
+  }
+
   TEST_METHOD(AnUnlockLetsThePlayerBuildTheComponent)
   {
     MatchArena arena;
@@ -330,6 +355,134 @@ public:
     const Outpost::EntityId rebuilt = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {600.0f, 600.0f});
     Assert::IsTrue(arena.Tick({Research(BLUE, rebuilt, HULL_PLATING)})[0] == Outpost::CommandResult::Applied);
     Assert::AreEqual(paid - (std::int64_t{Topic(arena, HULL_PLATING).cost} * Outpost::HUNDREDTHS), arena.World().OreHundredths(BLUE));
+  }
+
+  // ADR-033: upgrades of one stat add their percentages, so three +15% hull topics make +45%, and two Mass Driver topics
+  // +20%; each of Phase 1's new rates is its topics' sum.
+  TEST_METHOD(UpgradesOfOneStatAdd)
+  {
+    MatchArena arena;
+    const Outpost::Tuning& tuning = arena.TuningData();
+    const std::array<Outpost::ResearchTopicId, 3> hulls{HULL_PLATING, COMPOSITE_PLATING, ABLATIVE_ARMOR};
+    // 15% + 15% + 5% (Ablative Armour, tuned in task 10.3).
+    Assert::AreEqual(1.35, Outpost::UpgradesFrom(tuning, hulls).hullHitPointsFactor, 1e-12);
+    const std::array<Outpost::ResearchTopicId, 2> massDrivers{MASS_DRIVER_CALIBRATION, COILGUN_MASS_DRIVERS};
+    Assert::AreEqual(1.2, Outpost::UpgradesFrom(tuning, massDrivers).FireRateFactor(MASS_DRIVER), 1e-12);
+    const std::array<Outpost::ResearchTopicId, 5> others{REINFORCED_STRUCTURES, DEFENSE_AUTOLOADER, DRIVE_HARMONICS, RAPID_CONSTRUCTION,
+                                                         DEEP_CORE_SURVEY};
+    const Outpost::Upgrades upgrades = Outpost::UpgradesFrom(tuning, others);
+    Assert::AreEqual(1.25, upgrades.structureHitPointsFactor, 1e-12);
+    Assert::AreEqual(1.2, upgrades.FireRateFactor(Outpost::StructureWeaponId{1}), 1e-12);
+    Assert::AreEqual(1.0, upgrades.FireRateFactor(Outpost::StructureWeaponId{2}), 1e-12, L"a gun no topic names");
+    Assert::AreEqual(1.1, upgrades.shipSpeedFactor, 1e-12);
+    Assert::AreEqual(1.25, upgrades.constructorRateFactor, 1e-12);
+    Assert::AreEqual(1.3, upgrades.oreReserveFactor, 1e-12);
+    Assert::AreEqual(1.0, upgrades.hullHitPointsFactor, 1e-12);
+  }
+
+  // Phase 1 design §6: a tier's topics wait for its gateway, which does nothing itself; the lab may queue the gateway and
+  // a topic of its tier one after the other, and researches them in that order.
+  TEST_METHOD(AGatewayOpensItsTier)
+  {
+    MatchArena arena;
+    const Outpost::EntityId lab = ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, HULL_PLATING});
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::PrerequisiteMissing);
+    const Outpost::Upgrades before = arena.World().UpgradesOf(BLUE);
+    const auto results = arena.Tick({Research(BLUE, lab, RELAY_ARCHIVES), Research(BLUE, lab, REINFORCED_STRUCTURES)});
+    Assert::IsTrue(results[0] == Outpost::CommandResult::Applied && results[1] == Outpost::CommandResult::Applied, L"queued across tiers");
+    arena.Run(ResearchTicks(arena, RELAY_ARCHIVES));
+    Assert::IsTrue(HasResearched(arena, BLUE, RELAY_ARCHIVES));
+    Assert::IsFalse(HasResearched(arena, BLUE, REINFORCED_STRUCTURES));
+    Assert::IsTrue(arena.World().UpgradesOf(BLUE) == before, L"a gateway changes no rate");
+    arena.Run(ResearchTicks(arena, REINFORCED_STRUCTURES));
+    Assert::IsTrue(HasResearched(arena, BLUE, REINFORCED_STRUCTURES));
+
+    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const auto view = [&snapshot](Outpost::ResearchTopicId _id)
+    { return *std::ranges::find(snapshot.research, _id, &Outpost::ResearchTopicView::id); };
+    Assert::IsTrue(view(RELAY_ARCHIVES).gateway && view(RELAY_ARCHIVES).tier == 2);
+    Assert::AreEqual(std::string("Opens tier 2"), view(RELAY_ARCHIVES).effectUtf8);
+    Assert::IsTrue(!view(PRECURSOR_VAULT).gateway || view(PRECURSOR_VAULT).tier == 3);
+    Assert::IsTrue(!view(HULL_PLATING).gateway && view(HULL_PLATING).tier == 1);
+  }
+
+  // Phase 1 design §6: Reinforced Structures raises every structure's hit points, those standing and those placed after;
+  // a structure placed with numbers of its own keeps them, and the other side's are not raised.
+  TEST_METHOD(ReinforcedStructuresRaiseStructures)
+  {
+    MatchArena arena;
+    const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, {300.0f, -600.0f});
+    const Outpost::EntityId odd = arena.World().SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {600.0f, -600.0f}, 40.0f, 12345, 0);
+    const Outpost::EntityId theirs = arena.Structure(RED, Outpost::StructureKind::Shipyard, {300.0f, 600.0f});
+    const Outpost::StructureTuning& yardTuning = arena.StructureData(Outpost::StructureKind::Shipyard);
+    const std::int32_t full = yardTuning.hitPoints * Outpost::HUNDREDTHS;
+    (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, HULL_PLATING, RELAY_ARCHIVES, REINFORCED_STRUCTURES});
+    Assert::AreEqual(full * 5 / 4, arena.Get(yard).maxHitPointsHundredths);
+    Assert::AreEqual(full * 5 / 4, arena.Get(yard).hitPointsHundredths, L"undamaged, it gains the whole upgrade");
+    Assert::AreEqual(12345, arena.Get(odd).maxHitPointsHundredths);
+    Assert::AreEqual(full, arena.Get(theirs).maxHitPointsHundredths);
+    Assert::AreEqual(full * 5 / 4, arena.World().StructureHitPoints(BLUE, yardTuning), L"a new one is built to it");
+    Assert::AreEqual(full, arena.World().StructureHitPoints(RED, yardTuning));
+  }
+
+  // Phase 1 design §6: Drive Harmonics speeds every ship of the player's, warships and Constructors, standing and new;
+  // Rapid Construction builds in four fifths of the time; the Defence Autoloader raises the Defence gun's fire rate.
+  TEST_METHOD(TierThreeRatesApply)
+  {
+    const auto buildTicks = [](bool _rapid)
+    {
+      MatchArena arena;
+      const Outpost::EntityId ship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {0.0f, 0.0f});
+      const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, 0.0f});
+      const float shipSpeed = arena.Get(ship).speedMetersPerSecond;
+      const float constructorSpeed = arena.Get(constructor).speedMetersPerSecond;
+      std::vector<Outpost::ResearchTopicId> topics{IMPROVED_EXTRACTION, HULL_PLATING, RELAY_ARCHIVES, LARGE_HULL, PRECURSOR_VAULT};
+      if (_rapid)
+        topics.insert(topics.end(), {DRIVE_HARMONICS, RAPID_CONSTRUCTION, DEFENSE_AUTOLOADER});
+      // Eight topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come.
+      (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
+      const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
+      for (const Outpost::ResearchTopicId topic : topics)
+      {
+        Assert::IsTrue(arena.Tick({Research(BLUE, lab, topic)})[0] == Outpost::CommandResult::Applied);
+        for (int tick = 0; tick < 3600 * 20 && !HasResearched(arena, BLUE, topic); ++tick)
+          arena.Run(1);
+        Assert::IsTrue(HasResearched(arena, BLUE, topic));
+      }
+      if (_rapid)
+      {
+        Assert::AreEqual(shipSpeed * 1.1f, arena.Get(ship).speedMetersPerSecond, 1e-3f);
+        Assert::AreEqual(constructorSpeed * 1.1f, arena.Get(constructor).speedMetersPerSecond, 1e-3f);
+        const Outpost::EntityId later = arena.World().SpawnConstructor(BLUE, {-300.0f, 80.0f});
+        Assert::AreEqual(constructorSpeed * 1.1f, arena.Get(later).speedMetersPerSecond, 1e-3f, L"one built after");
+        const Outpost::EntityId laterShip = arena.Ship(BLUE, SMALL, MASS_DRIVER, {0.0f, 80.0f});
+        Assert::AreEqual(shipSpeed * 1.1f, arena.Get(laterShip).speedMetersPerSecond, 1e-3f);
+        Assert::AreEqual(1.2, arena.World().UpgradesOf(BLUE).FireRateFactor(Outpost::StructureWeaponId{1}), 1e-12);
+      }
+      const Outpost::PlanePosition site{-300.0f, 120.0f};
+      Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
+                                                                            .structure = Outpost::StructureKind::DefensePlatform,
+                                                                            .position = site})})[0] == Outpost::CommandResult::Applied);
+      const Outpost::Entity* platform = nullptr;
+      for (const Outpost::Entity& entity : arena.World().Entities())
+      {
+        if (entity.kind == Outpost::EntityKind::Structure && entity.structure == Outpost::StructureKind::DefensePlatform)
+          platform = &entity;
+      }
+      Assert::IsNotNull(platform);
+      const Outpost::EntityId id = platform->id;
+      std::uint32_t ticks = 0;
+      while (!arena.Get(id).IsBuilt() && ticks < 10000)
+      {
+        arena.Run(1);
+        ++ticks;
+      }
+      return ticks;
+    };
+    const std::uint32_t plain = buildTicks(false);
+    const std::uint32_t rapid = buildTicks(true);
+    // The Constructor's walk to the site is the same length; the building is a fifth shorter.
+    Assert::IsTrue(rapid < plain && rapid > plain * 3 / 4, std::format(L"{} against {}", rapid, plain).c_str());
   }
 
   // The same seed and orders give the same research, upgrades included (ADR-009).

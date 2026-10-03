@@ -273,7 +273,7 @@ void Neuron::Renderer::EndFrame()
 {
   // The samples are averaged in the sRGB format, so in linear color, into the resolved scene. A flip-model back buffer
   // cannot be sRGB, and a resolve cannot change the format, so the resolved scene is copied into it, which a copy within
-  // one format group may do (ADR-029).
+  // one format group may do (ADR-040).
   ID3D12Resource* backBuffer = m_backBuffers[m_frameIndex].get();
   const std::array toResolve{
     CD3DX12_RESOURCE_BARRIER::Transition(m_sceneTarget.get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_RESOLVE_SOURCE),

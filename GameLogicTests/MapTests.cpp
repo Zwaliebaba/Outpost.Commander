@@ -129,8 +129,8 @@ constexpr std::string_view MINIMAL_MAP = R"({
   "sizeMeters": 1000,
   "minimumGapMeters": 50,
   "starts": [ { "xMeters": -300, "zMeters": -300 }, { "xMeters": 300, "zMeters": 300 } ],
-  "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home" },
-                    { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested" } ],
+  "oreAsteroids": [ { "xMeters": -300, "zMeters": -100, "radiusMeters": 40, "yield": "home", "reserve": 7500 },
+                    { "xMeters": 0, "zMeters": 200, "radiusMeters": 40, "yield": "contested", "reserve": 12000 } ],
   "asteroidFields": [ { "xMeters": 0, "zMeters": 0, "radiusMeters": 100 } ]
 })";
 
@@ -163,29 +163,110 @@ void ExpectLoadError(const std::string& _text, std::string_view _where)
 TEST_CLASS(MapTests)
 {
 public:
-  TEST_METHOD(TheRepositoryMapHasDesignSectionFoursShape)
+  // Phase 1 design §8: 5 km a side, the starts in opposite corners about 750 m in from the edges, and four rings of ore,
+  // each richer and further out than the last, 285,000 Ore in all.
+  TEST_METHOD(TheRepositoryMapHasPhaseOnesShape)
   {
     const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
-    Assert::AreEqual(2000.0f, map.sizeMeters);
+    Assert::AreEqual(5000.0f, map.sizeMeters);
     Assert::AreEqual(size_t{2}, map.starts.size());
+    Assert::AreEqual(-1750.0f, map.starts[0].xMeters);
+    Assert::AreEqual(-1750.0f, map.starts[0].zMeters);
 
-    // Three home asteroids by each start, six contested ones in the middle (design §4).
-    std::array<int, 2> homeByStart{};
-    int contested = 0;
+    // Each ring's count, by the start it is nearer, and its reserve.
+    struct Ring
+    {
+      Outpost::OreYield yield;
+      int nearFirst = 0;
+      int nearSecond = 0;
+      int reserveOre = 0;
+    };
+    std::array<Ring, 4> rings{{{Outpost::OreYield::Home, 3, 3, 7500},
+                               {Outpost::OreYield::Near, 4, 4, 9000},
+                               {Outpost::OreYield::Contested, 3, 3, 12000},
+                               {Outpost::OreYield::Rich, 2, 2, 24000}}};
+    std::int64_t total = 0;
     for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
     {
-      if (asteroid.yield == Outpost::OreYield::Contested)
+      Ring& ring = *std::ranges::find(rings, asteroid.yield, &Ring::yield);
+      Assert::AreEqual(ring.reserveOre, asteroid.reserveOre.value_or(0));
+      total += asteroid.reserveOre.value_or(0);
+      const float first = Distance(asteroid.position, map.starts[0]);
+      const float second = Distance(asteroid.position, map.starts[1]);
+      // A contested or rich asteroid as far from one start as from the other counts for neither.
+      if (first < second - 1.0f)
+        --ring.nearFirst;
+      else if (second < first - 1.0f)
+        --ring.nearSecond;
+      else
       {
-        ++contested;
-        continue;
+        --ring.nearFirst;
+        --ring.nearSecond;
       }
-      const bool nearerFirst = Distance(asteroid.position, map.starts[0]) < Distance(asteroid.position, map.starts[1]);
-      ++homeByStart[nearerFirst ? 0 : 1];
     }
-    Assert::AreEqual(3, homeByStart[0]);
-    Assert::AreEqual(3, homeByStart[1]);
-    Assert::AreEqual(6, contested);
+    for (const Ring& ring : rings)
+    {
+      Assert::AreEqual(0, ring.nearFirst);
+      Assert::AreEqual(0, ring.nearSecond);
+    }
+    Assert::AreEqual(std::int64_t{285000}, total);
     Assert::IsFalse(map.asteroidFields.empty());
+  }
+
+  // Phase 1 design §8, owner 2026-10-03: the map is laid out in sectors for Phase 2's territory. They tile the map, each
+  // holds its node, every asteroid and start lies in one, two are adjacent exactly when they share a border, and every
+  // sector can be reached from both starts' sectors.
+  TEST_METHOD(TheRepositoryMapIsLaidOutInSectors)
+  {
+    const Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    Assert::AreEqual(size_t{9}, map.sectors.size());
+    double area = 0.0;
+    for (const Outpost::SectorPlacement& sector : map.sectors)
+      area += static_cast<double>(sector.maxXMeters - sector.minXMeters) * (sector.maxZMeters - sector.minZMeters);
+    Assert::AreEqual(static_cast<double>(map.sizeMeters) * map.sizeMeters, area, 1.0, L"the sectors cover the map");
+
+    const auto inside = [&map](Outpost::PlanePosition _position)
+    {
+      return std::ranges::count_if(map.sectors,
+                                   [_position](const Outpost::SectorPlacement& _sector) { return _sector.Contains(_position); });
+    };
+    for (const Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+      Assert::AreEqual(std::ptrdiff_t{1}, inside(asteroid.position));
+    for (const Outpost::PlanePosition start : map.starts)
+      Assert::AreEqual(std::ptrdiff_t{1}, inside(start));
+
+    for (const Outpost::SectorPlacement& sector : map.sectors)
+    {
+      for (const Outpost::SectorPlacement& other : map.sectors)
+      {
+        if (&other == &sector)
+          continue;
+        const bool overlapX = sector.minXMeters < other.maxXMeters && other.minXMeters < sector.maxXMeters;
+        const bool overlapZ = sector.minZMeters < other.maxZMeters && other.minZMeters < sector.maxZMeters;
+        Assert::IsFalse(overlapX && overlapZ, L"two sectors overlap");
+        const bool shareX = (sector.maxXMeters == other.minXMeters || other.maxXMeters == sector.minXMeters) && overlapZ;
+        const bool shareZ = (sector.maxZMeters == other.minZMeters || other.maxZMeters == sector.minZMeters) && overlapX;
+        Assert::AreEqual(shareX || shareZ, std::ranges::find(sector.adjacent, other.id) != sector.adjacent.end(),
+                         L"adjacency is sharing a border");
+      }
+    }
+
+    for (const Outpost::PlanePosition start : map.starts)
+    {
+      const auto home =
+        std::ranges::find_if(map.sectors, [start](const Outpost::SectorPlacement& _sector) { return _sector.Contains(start); });
+      std::vector<std::int32_t> reached{home->id};
+      for (size_t next = 0; next < reached.size(); ++next)
+      {
+        const auto sector = std::ranges::find(map.sectors, reached[next], &Outpost::SectorPlacement::id);
+        for (const std::int32_t other : sector->adjacent)
+        {
+          if (std::ranges::find(reached, other) == reached.end())
+            reached.push_back(other);
+        }
+      }
+      Assert::AreEqual(map.sectors.size(), reached.size());
+    }
   }
 
   // Neither start is favored: turning the map half a turn about its center gives the same map, with the starts swapped.
@@ -201,7 +282,8 @@ public:
                                          [&](const Outpost::OreAsteroidPlacement& _other)
                                          {
                                            return _other.position == mirrored(asteroid.position) &&
-                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield;
+                                                  _other.radiusMeters == asteroid.radiusMeters && _other.yield == asteroid.yield &&
+                                                  _other.reserveOre == asteroid.reserveOre;
                                          }));
     }
     for (const Outpost::AsteroidFieldPlacement& field : map.asteroidFields)
@@ -234,6 +316,8 @@ public:
     Assert::AreEqual(50.0f, map.minimumGapMeters);
     Assert::IsTrue(map.starts[1] == Outpost::PlanePosition{.xMeters = 300.0f, .zMeters = 300.0f});
     Assert::IsTrue(map.oreAsteroids[1].yield == Outpost::OreYield::Contested);
+    // Phase 1 design §8: every ore asteroid holds a reserve.
+    Assert::AreEqual(12000, map.oreAsteroids[1].reserveOre.value_or(0));
     Assert::AreEqual(100.0f, map.asteroidFields[0].radiusMeters);
   }
 
@@ -247,9 +331,39 @@ public:
     ExpectLoadError(Replace("{ \"xMeters\": 300, \"zMeters\": 300 } ]",
                             "{ \"xMeters\": 300, \"zMeters\": 300 }, { \"xMeters\": 0, \"zMeters\": -300 } ]"),
                     "starts: has 3 starts");
-    ExpectLoadError(Replace("\"yield\": \"home\"", "\"yield\": \"rich\""), "oreAsteroids[0].yield");
+    ExpectLoadError(Replace("\"yield\": \"home\"", "\"yield\": \"poor\""), "oreAsteroids[0].yield");
+    ExpectLoadError(Replace("\"reserve\": 7500", "\"reserve\": 0"), "oreAsteroids[0].reserve");
+    ExpectLoadError(Replace(", \"reserve\": 7500", ""), "oreAsteroids[0]: has no \"reserve\"");
     ExpectLoadError(Replace("\"sizeMeters\": 1000,", "\"sizeMeters\": 1000, \"sizeMetres\": 1000,"), "sizeMetres");
     ExpectLoadError(Replace("\"minimumGapMeters\": 50,", ""), "the file: has no \"minimumGapMeters\"");
+  }
+
+  // The loader's checks of the sectors (Phase 1 design §8).
+  TEST_METHOD(RejectsBrokenSectors)
+  {
+    constexpr std::string_view SECTORS = R"(], "sectors": [
+      { "id": 1, "name": "West", "minXMeters": -500, "maxXMeters": 0, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": -300, "zMeters": 300 }, "adjacent": [2] },
+      { "id": 2, "name": "East", "minXMeters": 0, "maxXMeters": 500, "minZMeters": -500, "maxZMeters": 500,
+        "node": { "xMeters": 300, "zMeters": -300 }, "adjacent": [1] } ] })";
+    std::string text(MINIMAL_MAP);
+    text.replace(text.rfind(']'), std::string::npos, SECTORS);
+    const Outpost::Map map = Outpost::LoadMap(text);
+    Assert::AreEqual(size_t{2}, map.sectors.size());
+    Assert::IsTrue(map.sectors[1].adjacent == std::vector<std::int32_t>{1});
+
+    const auto broken = [&text](std::string_view _from, std::string_view _to)
+    {
+      std::string changed = text;
+      changed.replace(changed.find(_from), _from.size(), _to);
+      return changed;
+    };
+    ExpectLoadError(broken("\"id\": 2", "\"id\": 1"), "sectors[1].id");
+    ExpectLoadError(broken("\"xMeters\": 300, \"zMeters\": -300", "\"xMeters\": -300, \"zMeters\": -300"), "sectors[1].node: is outside");
+    ExpectLoadError(broken("\"xMeters\": -300, \"zMeters\": 300", "\"xMeters\": -120, \"zMeters\": 0"), "sectors[0].node: is closer");
+    ExpectLoadError(broken("\"adjacent\": [1]", "\"adjacent\": []"), "sectors[0].adjacent");
+    ExpectLoadError(broken("\"adjacent\": [2]", "\"adjacent\": [3]"), "sectors[0].adjacent");
+    ExpectLoadError(broken("\"maxXMeters\": 500", "\"maxXMeters\": 600"), "sectors[1]: is not a rectangle");
   }
 
   TEST_METHOD(ThePlacedMapIsInTheSnapshot)

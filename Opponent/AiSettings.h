@@ -28,6 +28,9 @@ struct AiSettings
   std::int32_t homeAsteroids = 0;
   // Ore asteroids beyond those that it takes too, nearest first, each with a Defence Platform beside it.
   std::int32_t contestedAsteroids = 0;
+  // Together, how many of its rigs it keeps on asteroids with ore left: when one runs dry, it takes the nearest asteroid
+  // it knows still holds ore, with a platform beside it as a contested one (Phase 1 design §13). A dry rig stays for its
+  // trickle.
   // Jobs it keeps in each Shipyard's queue.
   std::int32_t shipyardQueueJobs = 0;
   // How long its reserve stays where an attack on its base came from after the last shot there.

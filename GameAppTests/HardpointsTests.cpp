@@ -78,6 +78,27 @@ public:
     Assert::AreEqual(1.0f, front.z, TOLERANCE);
   }
 
+  // ADR-029: a banked hardpoint lands where PoseMatrix, which draws the mesh, puts the point, and a positive bank lowers
+  // the left side, +z, which is into a counterclockwise turn. The exhaust and the guns roll with the hull.
+  TEST_METHOD(RollsAPointWithTheBank)
+  {
+    const Outpost::ModelPose pose{
+      .position = {.xMeters = -30.0f, .zMeters = 12.0f}, .liftMeters = 2.0f, .headingRadians = 1.1f, .bankRadians = 0.4f, .scale = 1.5f};
+    const DirectX::XMFLOAT3 point{4.0f, 1.5f, -2.0f};
+    const DirectX::XMFLOAT4X4 matrix = Outpost::PoseMatrix(pose);
+    DirectX::XMFLOAT3 expected;
+    DirectX::XMStoreFloat3(&expected, DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&point), DirectX::XMLoadFloat4x4(&matrix)));
+    const DirectX::XMFLOAT3 placed = Outpost::PlacePoint(pose, point);
+    Assert::AreEqual(expected.x, placed.x, TOLERANCE);
+    Assert::AreEqual(expected.y, placed.y, TOLERANCE);
+    Assert::AreEqual(expected.z, placed.z, TOLERANCE);
+
+    const DirectX::XMFLOAT3 left = Outpost::PlaceDirection({.bankRadians = 0.4f}, {0.0f, 0.0f, 1.0f});
+    Assert::AreEqual(-std::sin(0.4f), left.y, TOLERANCE);
+    const DirectX::XMFLOAT3 front = Outpost::PlaceDirection({.bankRadians = 0.4f}, {1.0f, 0.0f, 0.0f});
+    Assert::AreEqual(1.0f, front.x, TOLERANCE, L"the bank rolls about the front, which stays where it was");
+  }
+
   // A shot leaves from the gun nearest what it fires at, and an exhaust is never a gun.
   TEST_METHOD(AShotLeavesFromTheNearestGun)
   {

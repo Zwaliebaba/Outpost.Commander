@@ -46,12 +46,29 @@ std::optional<Outpost::HardpointKind> Outpost::HardpointKindOf(std::string_view 
   return std::nullopt;
 }
 
+DirectX::XMFLOAT4X4 Outpost::PoseMatrix(const ModelPose& _pose) noexcept
+{
+  // XMMatrixRotationX lowers +z for a positive angle, which is the bank's sense. XMMatrixRotationY turns +x toward -z for
+  // a positive angle, which is clockwise seen from above, so the heading goes in negated.
+  const DirectX::XMMATRIX world = DirectX::XMMatrixScaling(_pose.scale, _pose.scale, _pose.scale) *
+                                  DirectX::XMMatrixRotationX(_pose.bankRadians) * DirectX::XMMatrixRotationY(-_pose.headingRadians) *
+                                  DirectX::XMMatrixTranslation(_pose.position.xMeters, _pose.liftMeters, _pose.position.zMeters);
+  DirectX::XMFLOAT4X4 result;
+  DirectX::XMStoreFloat4x4(&result, world);
+  return result;
+}
+
 DirectX::XMFLOAT3 Outpost::PlaceDirection(const ModelPose& _pose, const DirectX::XMFLOAT3& _direction) noexcept
 {
-  // The heading turns +x toward +z, counterclockwise seen from above, as GameClient's world matrix does.
+  // The bank rolls about the front, +x, lowering +z; then the heading turns +x toward +z, counterclockwise seen from
+  // above. PoseMatrix does the same.
+  const float bankCosine = std::cos(_pose.bankRadians);
+  const float bankSine = std::sin(_pose.bankRadians);
+  const float rolledY = (_direction.y * bankCosine) - (_direction.z * bankSine);
+  const float rolledZ = (_direction.y * bankSine) + (_direction.z * bankCosine);
   const float cosine = std::cos(_pose.headingRadians);
   const float sine = std::sin(_pose.headingRadians);
-  return {(_direction.x * cosine) - (_direction.z * sine), _direction.y, (_direction.x * sine) + (_direction.z * cosine)};
+  return {(_direction.x * cosine) - (rolledZ * sine), rolledY, (_direction.x * sine) + (rolledZ * cosine)};
 }
 
 DirectX::XMFLOAT3 Outpost::PlacePoint(const ModelPose& _pose, const DirectX::XMFLOAT3& _point) noexcept

@@ -5,7 +5,7 @@
   "pitchAtMinimumDegrees": 40,
   "pitchAtMaximumDegrees": 70,
   "verticalFieldOfViewDegrees": 45,
-  "focusLimitMeters": 1000,
+  "focusLimitMeters": 2500,
   "panViewWidthsPerSecond": 0.8,
   "edgeScrollMarginPixels": 4,
   "zoomFactorPerNotch": 1.15,

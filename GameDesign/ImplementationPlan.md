@@ -711,7 +711,7 @@ On 2026-10-03 the owner asked for a review of a screenshot of the Command Statio
 ### D.1 — Dark faces, multisampled lines, structures behind the ships
 
 - **Goal:** the scene reads by its lines, as the eighties vector look ADR-027 was after, and a side's ships stand ahead of its structures.
-- **ADR:** [ADR-029](../Design/ADR/ADR-029-lines-over-dark-faces.md), which supersedes parts of ADR-006, ADR-011, ADR-027 and ADR-028.
+- **ADR:** [ADR-040](../Design/ADR/ADR-040-lines-over-dark-faces.md), which supersedes parts of ADR-006, ADR-011, ADR-027 and ADR-028.
 - **As built:** faces at 0.3 of a model's color and lines brightened without clipping their hue, then a third of the way to white; a line pulled toward the eye by `MeshLineVS.hlsl` rather than lifted along its normal by `BuildCreaseLines`; the scene drawn into a 4-sample target and resolved in linear color; structures grayer and darker than ships, each on a faint ring in its side's color that turns green when it is selected; and asteroid fields darker than ore asteroids on the minimap. `HudTests` and `MeshDataTests` cover what runs without a GPU.
 - **Verify:** CI; **owner run**, zoomed in on a structure and zoomed out over a fight; and the Q4 measurement again (`--measure --stress`), since multisampling costs GPU time nobody has measured.
 

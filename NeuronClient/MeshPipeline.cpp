@@ -95,7 +95,7 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
   // Lines: the same pixel shader, so a line is lit as the surface it lies on, rasterized as a line list. They are tested
   // against the depth of what is drawn but write none, so the line drawn last never hides another. Direct3D gives a
   // line no depth bias, so a line that must show over a surface is pulled toward the eye by its own vertex shader
-  // (ADR-029). Multisampling on, a line is a quadrilateral a pixel wide that the samples smooth.
+  // (ADR-040). Multisampling on, a line is a quadrilateral a pixel wide that the samples smooth.
   CD3DX12_DEPTH_STENCIL_DESC lineDepth(D3D12_DEFAULT);
   lineDepth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
   lineDepth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;

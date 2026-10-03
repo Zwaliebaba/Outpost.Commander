@@ -41,35 +41,86 @@ double Outpost::Upgrades::FireRateFactor(WeaponId _weapon) const noexcept
   return found != weaponFireRateFactors.end() ? found->second : 1.0;
 }
 
+double Outpost::Upgrades::FireRateFactor(StructureWeaponId _weapon) const noexcept
+{
+  const auto found = std::ranges::find(structureWeaponFireRateFactors, _weapon, &std::pair<StructureWeaponId, double>::first);
+  return found != structureWeaponFireRateFactors.end() ? found->second : 1.0;
+}
+
 Outpost::Upgrades Outpost::UpgradesFrom(const Tuning& _tuning, std::span<const ResearchTopicId> _researched)
 {
-  Upgrades upgrades;
+  // Each rate's percentages are added first, and made a factor once, so that two topics on one rate add (ADR-033).
+  struct Percents
+  {
+    std::int32_t hullHitPoints = 0;
+    std::vector<std::pair<WeaponId, std::int32_t>> weaponFireRates;
+    std::int32_t miningIncome = 0;
+    std::int32_t shipyardBuildSpeed = 0;
+    std::int32_t structureHitPoints = 0;
+    std::vector<std::pair<StructureWeaponId, std::int32_t>> structureWeaponFireRates;
+    std::int32_t shipSpeed = 0;
+    std::int32_t constructorRate = 0;
+    std::int32_t oreReserve = 0;
+  };
+  const auto addTo = []<typename IdType>(std::vector<std::pair<IdType, std::int32_t>>& _list, IdType _id, std::int32_t _percent)
+  {
+    if (const auto found = std::ranges::find(_list, _id, &std::pair<IdType, std::int32_t>::first); found != _list.end())
+      found->second += _percent;
+    else
+      _list.emplace_back(_id, _percent);
+  };
+  Percents percents;
   for (const ResearchTopicId id : _researched)
   {
     const auto* upgrade = std::get_if<UpgradeEffect>(&FindTopic(_tuning, id).effect);
     if (upgrade == nullptr)
       continue;
-    const double factor = 1.0 + (upgrade->percent / 100.0);
     switch (upgrade->target)
     {
     case UpgradeTarget::MiningRig:
-      upgrades.miningIncomeFactor *= factor;
+      percents.miningIncome += upgrade->percent;
       break;
     case UpgradeTarget::AllHulls:
-      upgrades.hullHitPointsFactor *= factor;
+      percents.hullHitPoints += upgrade->percent;
       break;
     case UpgradeTarget::Weapon:
-      if (const auto found = std::ranges::find(upgrades.weaponFireRateFactors, upgrade->weapon, &std::pair<WeaponId, double>::first);
-          found != upgrades.weaponFireRateFactors.end())
-        found->second *= factor;
-      else
-        upgrades.weaponFireRateFactors.emplace_back(upgrade->weapon, factor);
+      addTo(percents.weaponFireRates, upgrade->weapon, upgrade->percent);
       break;
     case UpgradeTarget::Shipyards:
-      upgrades.shipyardBuildSpeedFactor *= factor;
+      percents.shipyardBuildSpeed += upgrade->percent;
+      break;
+    case UpgradeTarget::AllStructures:
+      percents.structureHitPoints += upgrade->percent;
+      break;
+    case UpgradeTarget::StructureWeapon:
+      addTo(percents.structureWeaponFireRates, upgrade->structureWeapon, upgrade->percent);
+      break;
+    case UpgradeTarget::AllShips:
+      percents.shipSpeed += upgrade->percent;
+      break;
+    case UpgradeTarget::Constructors:
+      percents.constructorRate += upgrade->percent;
+      break;
+    case UpgradeTarget::Asteroids:
+      percents.oreReserve += upgrade->percent;
       break;
     }
   }
+
+  const auto factor = [](std::int32_t _percent) { return 1.0 + (_percent / 100.0); };
+  Upgrades upgrades{.hullHitPointsFactor = factor(percents.hullHitPoints),
+                    .miningIncomeFactor = factor(percents.miningIncome),
+                    .shipyardBuildSpeedFactor = factor(percents.shipyardBuildSpeed),
+                    .structureHitPointsFactor = factor(percents.structureHitPoints),
+                    .shipSpeedFactor = factor(percents.shipSpeed),
+                    .constructorRateFactor = factor(percents.constructorRate),
+                    .oreReserveFactor = factor(percents.oreReserve)};
+  upgrades.weaponFireRateFactors.reserve(percents.weaponFireRates.size());
+  for (const auto& [weapon, percent] : percents.weaponFireRates)
+    upgrades.weaponFireRateFactors.emplace_back(weapon, factor(percent));
+  upgrades.structureWeaponFireRateFactors.reserve(percents.structureWeaponFireRates.size());
+  for (const auto& [weapon, percent] : percents.structureWeaponFireRates)
+    upgrades.structureWeaponFireRateFactors.emplace_back(weapon, factor(percent));
   return upgrades;
 }
 
@@ -105,9 +156,21 @@ std::string Outpost::EffectText(const Tuning& _tuning, const ResearchTopicTuning
           return std::format("{} fire rate +{}%", NameOf(_tuning.weapons, _effect.weapon), _effect.percent);
         case UpgradeTarget::Shipyards:
           return std::format("Shipyard build speed +{}%", _effect.percent);
+        case UpgradeTarget::AllStructures:
+          return std::format("Structure hit points +{}%", _effect.percent);
+        case UpgradeTarget::StructureWeapon:
+          return std::format("{} fire rate +{}%", NameOf(_tuning.structureWeapons, _effect.structureWeapon), _effect.percent);
+        case UpgradeTarget::AllShips:
+          return std::format("Ship speed +{}%", _effect.percent);
+        case UpgradeTarget::Constructors:
+          return std::format("Constructor build and repair rate +{}%", _effect.percent);
+        case UpgradeTarget::Asteroids:
+          return std::format("Asteroid ore reserves +{}%", _effect.percent);
         }
         return {};
       }
+      else if constexpr (std::is_same_v<Effect, GatewayEffect>)
+        return std::format("Opens tier {}", _effect.tier);
       else if constexpr (std::is_same_v<Effect, HullId>)
         return std::format("Unlocks the {} hull", NameOf(_tuning.hulls, _effect));
       else if constexpr (std::is_same_v<Effect, DriveId>)

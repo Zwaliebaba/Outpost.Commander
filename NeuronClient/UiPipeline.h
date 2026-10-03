@@ -4,36 +4,55 @@ namespace Neuron
 {
 class Renderer;
 
-// Draws the interface over the scene (ADR-015): solid rectangles and lines of text, as textured quads from one glyph
-// atlas, alpha-blended, with no depth. Everything is in back-buffer pixels from the top-left corner; laying out in
-// reference units and scaling (ADR-006) is the caller's. It knows no game concept.
+// Draws the interface over the scene (ADR-015, ADR-030): solid and hatched rectangles, sprites and lines of text in
+// several fonts, as textured quads from one glyph atlas, alpha-blended, with no depth. Everything is in back-buffer
+// pixels from the top-left corner; laying out in reference units and scaling (ADR-006) is the caller's. It knows no game
+// concept: fonts and sprites are named by their index in the lists it was built with.
 class UiPipeline : NonCopyable
 {
 public:
   // Quads one frame can draw.
   static constexpr UINT MAX_QUADS = 8192;
 
-  // Builds the pipeline for the renderer's formats and rasterizes _fontFamily at _fontPixels. Throws
-  // winrt::hresult_error on failure.
-  UiPipeline(Renderer& _renderer, std::wstring_view _fontFamily, float _fontPixels);
+  // Builds the pipeline for the renderer's formats and rasterizes _fonts and _sprites at _scale pixels to a reference
+  // unit. Throws Neuron::Exception when a font is not installed, and winrt::hresult_error on any other failure.
+  UiPipeline(Renderer& _renderer, std::vector<FontDesc> _fonts, std::vector<SpriteDesc> _sprites, float _scale);
 
-  // Starts a frame's interface on a back buffer of this size. When _fontPixels differs from the atlas's size by a whole
-  // pixel, the font is rasterized again first; that waits for the GPU, so it belongs to a resize, not to every frame.
-  void Begin(UINT _widthPixels, UINT _heightPixels, float _fontPixels);
+  // Starts a frame's interface on a back buffer of this size, at _scale pixels to a reference unit. When the scale moves
+  // a font or a sprite by a whole pixel, the atlas is rasterized again first; that waits for the GPU, so it belongs to a
+  // resize, not to every frame.
+  void Begin(UINT _widthPixels, UINT _heightPixels, float _scale);
 
   void FillRect(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color);
 
-  // One line of text with its top-left corner here; characters the atlas does not hold show as its fallback.
-  void DrawText(std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color);
+  // A rectangle of diagonal stripes rising to the right, _stripePixels wide every _periodPixels, laid on the screen's
+  // pixels so that neighboring hatched rectangles line up.
+  void FillHatched(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color, float _periodPixels,
+                   float _stripePixels);
 
-  [[nodiscard]] float TextWidth(std::string_view _text) const noexcept
+  // One line of text in font _font, in UTF-8, with its top-left corner here and _trackingPixels more between each two
+  // characters; characters the atlas does not hold show as its fallback.
+  void DrawText(std::size_t _font, std::string_view _text, float _left, float _top, const DirectX::XMFLOAT4& _color,
+                float _trackingPixels = 0.0f);
+
+  // Sprite _sprite drawn into this rectangle, mirrored left to right or top to bottom when asked.
+  void DrawSprite(std::size_t _sprite, float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color,
+                  bool _mirrorX = false, bool _mirrorY = false);
+
+  [[nodiscard]] float TextWidth(std::size_t _font, std::string_view _text, float _trackingPixels = 0.0f) const noexcept
   {
-    return m_atlas.Width(_text);
+    return m_atlas.fonts[_font].Width(_text, _trackingPixels);
   }
 
-  [[nodiscard]] float LineHeight() const noexcept
+  [[nodiscard]] float LineHeight(std::size_t _font) const noexcept
   {
-    return m_atlas.lineHeight;
+    return m_atlas.fonts[_font].lineHeight;
+  }
+
+  // The family font _font found among those it named.
+  [[nodiscard]] const std::wstring& FamilyOf(std::size_t _font) const noexcept
+  {
+    return m_atlas.fonts[_font].family;
   }
 
   // Draws what Begin collected into the frame's command list. Quads past MAX_QUADS are dropped.
@@ -48,13 +67,17 @@ private:
     DirectX::XMFLOAT4 color;
   };
 
-  void Rasterize(float _fontPixels);
+  // Every font's and sprite's size in whole pixels at _scale.
+  [[nodiscard]] std::vector<float> PixelSizes(float _scale) const;
+  void Rasterize(float _scale);
   void AddQuad(float _left, float _top, float _right, float _bottom, float _u0, float _v0, float _u1, float _v1,
                const DirectX::XMFLOAT4& _color);
 
   Renderer& m_renderer;
-  std::wstring m_fontFamily;
-  float m_fontPixels = 0.0f;
+  std::vector<FontDesc> m_fonts;
+  std::vector<SpriteDesc> m_sprites;
+  // The sizes the atlas was rasterized at, as PixelSizes gives them.
+  std::vector<float> m_pixelSizes;
   GlyphAtlas m_atlas;
   winrt::com_ptr<ID3D12RootSignature> m_rootSignature;
   winrt::com_ptr<ID3D12PipelineState> m_pipelineState;

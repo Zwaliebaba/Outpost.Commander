@@ -14,6 +14,10 @@ constexpr Outpost::DesignComponents BRAWLER{Outpost::HullId{2}, Outpost::DriveId
 constexpr Outpost::DesignComponents LINE{Outpost::HullId{2}, Outpost::DriveId{1}, Outpost::WeaponId{2}};
 constexpr Outpost::DesignComponents PICKET{Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}};
 constexpr Outpost::DesignComponents HEAVY_LANCE{Outpost::HullId{3}, Outpost::DriveId{2}, Outpost::WeaponId{2}};
+constexpr Outpost::WeaponId MISSILE_RACK{3};
+constexpr Outpost::DriveId PULSE{3};
+constexpr Outpost::WeaponId FLAK_BATTERY{4};
+constexpr Outpost::WeaponId RAIL_CANNON{5};
 
 Outpost::AiSettings RepositorySettings()
 {
@@ -30,10 +34,13 @@ public:
     m_snapshot.hulls = {{.id = Outpost::HullId{1}, .available = true},
                         {.id = Outpost::HullId{2}, .available = true},
                         {.id = Outpost::HullId{3}, .available = false}};
-    m_snapshot.drives = {{.id = Outpost::DriveId{1}, .available = true}, {.id = Outpost::DriveId{2}, .available = false}};
+    m_snapshot.drives = {
+      {.id = Outpost::DriveId{1}, .available = true}, {.id = Outpost::DriveId{2}, .available = false}, {.id = PULSE, .available = false}};
     m_snapshot.weapons = {{.id = Outpost::WeaponId{1}, .available = true},
                           {.id = Outpost::WeaponId{2}, .available = true},
-                          {.id = Outpost::WeaponId{3}, .available = false}};
+                          {.id = MISSILE_RACK, .available = false},
+                          {.id = FLAK_BATTERY, .available = false},
+                          {.id = RAIL_CANNON, .available = false}};
   }
 
   FleetSnapshot& Add(Outpost::PlayerId _owner, const Outpost::DesignComponents& _design, int _ships)
@@ -58,6 +65,12 @@ public:
     return *this;
   }
 
+  FleetSnapshot& Unlock(Outpost::WeaponId _weapon)
+  {
+    std::ranges::find(m_snapshot.weapons, _weapon, &Outpost::WeaponView::id)->available = true;
+    return *this;
+  }
+
   [[nodiscard]] const Outpost::Snapshot& Get() const noexcept
   {
     return m_snapshot;
@@ -72,8 +85,8 @@ private:
 class AiMatch
 {
 public:
-  explicit AiMatch(std::uint64_t _seed = 3)
-    : m_map(Outpost::LoadMap(ReadRepositoryMap())),
+  explicit AiMatch(std::uint64_t _seed = 3, std::optional<Outpost::Map> _map = std::nullopt)
+    : m_map(_map.has_value() ? std::move(*_map) : Outpost::LoadMap(ReadRepositoryMap())),
       m_server(Outpost::LoadTuning(ReadRepositoryTuning()), m_map, {.seed = _seed}),
       m_human(m_server.Connect(HUMAN)),
       m_aiConnection(m_server.Connect(AI)),
@@ -215,6 +228,31 @@ public:
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(BRAWLER, 5).Get()) == HEAVY_LANCE);
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(LINE, 5).Get()) == SWARM);
     Assert::IsTrue(Outpost::ChooseAnswer(settings, unlocked(HEAVY_LANCE, 5).Get()) == PICKET);
+  }
+
+  // Task 10.4, from the balance check of task 10.3: the Flak Battery answers the swarm, the brawler, the picket and the
+  // Pulse raiders once unlocked; the Rail Cannon answers the heavies; missiles answer the Small Flak Battery, and the
+  // picket the Rail Cannon. Before an answer is unlocked, the MVP's answer or the default stands.
+  TEST_METHOD(AnswersThePhaseOneDesigns)
+  {
+    const Outpost::AiSettings settings = RepositorySettings();
+    const Outpost::DesignComponents mediumFlak{Outpost::HullId{2}, Outpost::DriveId{1}, FLAK_BATTERY};
+    const Outpost::DesignComponents smallFlak{Outpost::HullId{1}, Outpost::DriveId{1}, FLAK_BATTERY};
+    const Outpost::DesignComponents mediumMissiles{Outpost::HullId{2}, Outpost::DriveId{1}, MISSILE_RACK};
+    const Outpost::DesignComponents heavyRail{Outpost::HullId{3}, Outpost::DriveId{2}, RAIL_CANNON};
+    const Outpost::DesignComponents pulsePicket{Outpost::HullId{1}, PULSE, Outpost::WeaponId{2}};
+
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, SWARM, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, PICKET, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, pulsePicket, 5).Unlock(FLAK_BATTERY).Get()) == mediumFlak);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, pulsePicket, 5).Get()) == BRAWLER, L"the default");
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, smallFlak, 5).Unlock(MISSILE_RACK).Get()) == mediumMissiles);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, heavyRail, 5).Get()) == PICKET);
+    Assert::IsTrue(
+      Outpost::ChooseAnswer(
+        settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Unlock(Outpost::HullId{3}, Outpost::DriveId{2}).Unlock(RAIL_CANNON).Get()) ==
+      heavyRail);
+    Assert::IsTrue(Outpost::ChooseAnswer(settings, FleetSnapshot().Add(HUMAN, HEAVY_LANCE, 5).Get()) == PICKET);
   }
 
   // The enemy's most common design is the one answered; its own ships are not the enemy's.
@@ -383,7 +421,8 @@ public:
     Assert::AreEqual(std::ptrdiff_t{1}, shipyards(), L"the first Shipyard is in the build order whatever the income");
 
     match.Run(140.0);
-    Assert::AreEqual(4875, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
+    // Phase 1 design §8's map: three home rigs at 5 Ore a second and three on the near ring at 6, raised by a quarter.
+    Assert::AreEqual(4125, match.View(AI).oreIncomeHundredthsPerSecond, L"six rigs and Improved Extraction at 3:20");
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards());
     match.Run(60.0);
     Assert::AreEqual(std::ptrdiff_t{4}, shipyards(), L"no fifth Shipyard below 50 Ore/s");
@@ -450,17 +489,99 @@ public:
     Assert::IsTrue(MeanDistance(match.View(AI), ships, enemy) < waiting - 300.0f, L"the attack group is not on its way");
   }
 
+  // Phase 1 design §4, §13: the attack group goes for the enemy's Shipyards first, then its Command Station, then
+  // anything else, nearest first in each; it keeps its target until it is gone, or until a Shipyard comes to light.
+  TEST_METHOD(AttacksProductionFirst)
+  {
+    AiMatch match;
+    const std::vector<Outpost::EntityId> group = match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
+    Outpost::Snapshot snapshot = match.View(AI);
+    const auto enemy = [&snapshot](std::uint32_t _id, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
+    {
+      snapshot.entities.push_back({.id = Outpost::EntityId{_id},
+                                   .kind = Outpost::EntityKind::Structure,
+                                   .owner = HUMAN,
+                                   .structure = _kind,
+                                   .position = _position,
+                                   .radiusMeters = 30.0f,
+                                   .builtPermille = Outpost::PERMILLE});
+      return _position;
+    };
+    // Nearest the group a Defence Platform, then the Command Station, and the Shipyard farthest.
+    (void)enemy(9001, Outpost::StructureKind::DefensePlatform, {0.0f, 0.0f});
+    const Outpost::PlanePosition station = enemy(9002, Outpost::StructureKind::CommandStation, {-700.0f, -700.0f});
+    const Outpost::PlanePosition yard = enemy(9003, Outpost::StructureKind::Shipyard, {-1200.0f, -1000.0f});
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    const auto sentTo = [&ai, &snapshot, &group]() -> std::optional<Outpost::PlanePosition>
+    {
+      for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)))
+      {
+        if (std::ranges::is_permutation(order.ships, group))
+          return order.destination;
+      }
+      return std::nullopt;
+    };
+
+    std::optional<Outpost::PlanePosition> destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"the twelve were not sent");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), yard), 0.01f, L"not the Shipyard first");
+
+    std::erase_if(snapshot.entities, [](const Outpost::EntityView& _entity) { return _entity.id == Outpost::EntityId{9003}; });
+    snapshot.tick += 20;
+    destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"the group was not sent on once the Shipyard was gone");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), station), 0.01f,
+                     L"not the Command Station next");
+
+    snapshot.tick += 20;
+    Assert::IsFalse(sentTo().has_value(), L"the group was sent again with nothing changed");
+
+    const Outpost::PlanePosition another = enemy(9004, Outpost::StructureKind::Shipyard, {-300.0f, -1100.0f});
+    snapshot.tick += 20;
+    destination = sentTo();
+    Assert::IsTrue(destination.has_value(), L"a Shipyard came to light and the group stayed on the station");
+    Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), another), 0.01f);
+  }
+
+  // Phase 1 design §4: once its Command Station has fallen, the AI plays on with its Shipyards, and queues no more
+  // Constructors.
+  TEST_METHOD(PlaysOnWithoutItsStation)
+  {
+    AiMatch match;
+    Outpost::Snapshot snapshot = match.View(AI);
+    Outpost::AiPlayer ai(RepositorySettings(), 20);
+    (void)ai.Update(snapshot);
+
+    std::erase_if(snapshot.entities,
+                  [](const Outpost::EntityView& _entity) { return _entity.owner == AI && _entity.kind == Outpost::EntityKind::Structure; });
+    const Outpost::PlanePosition home = match.Start(AI);
+    snapshot.entities.push_back({.id = Outpost::EntityId{9001},
+                                 .kind = Outpost::EntityKind::Structure,
+                                 .owner = AI,
+                                 .structure = Outpost::StructureKind::Shipyard,
+                                 .position = {home.xMeters + 150.0f, home.zMeters + 150.0f},
+                                 .radiusMeters = 40.0f,
+                                 .builtPermille = Outpost::PERMILLE});
+    snapshot.tick += 20;
+    const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(ai.Update(snapshot));
+    Assert::IsFalse(queued.empty(), L"its Shipyard was given no work");
+    Assert::IsTrue(std::ranges::all_of(queued, [](const Outpost::QueueShipCommand& _queue)
+                                       { return _queue.producer == Outpost::EntityId{9001} && _queue.design.IsValid(); }),
+                   L"something other than a warship was queued");
+  }
+
   // A structure under fire draws the reserve to it, and the reserve goes back once the shooting has stopped.
   TEST_METHOD(DefendsAStructureUnderFire)
   {
     AiMatch match;
-    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 4, {700.0f, 600.0f});
+    const Outpost::PlanePosition home = match.Start(AI);
+    const std::vector<Outpost::EntityId> reserve = match.Spawn(AI, BRAWLER, 4, {home.xMeters - 50.0f, home.zMeters - 150.0f});
     match.Run(3.0);
     // An outpost of the AI's, far from its base, and a raider beside it.
-    const Outpost::PlanePosition outpost{-100.0f, 700.0f};
+    const Outpost::PlanePosition outpost{home.xMeters - 650.0f, home.zMeters - 600.0f};
     const Outpost::EntityId platform =
       match.World().SpawnStructure(AI, Outpost::StructureKind::DefensePlatform, outpost, 20.0f, 150000, 1000);
-    const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {-100.0f, 900.0f});
+    const std::vector<Outpost::EntityId> raider = match.Spawn(HUMAN, LINE, 1, {outpost.xMeters, outpost.zMeters + 200.0f});
     match.Human().Send({.player = HUMAN, .order = Outpost::AttackCommand{.ships = raider, .target = platform}});
     const float before = MeanDistance(match.View(AI), reserve, outpost);
     match.Run(12.0);
@@ -469,6 +590,52 @@ public:
   }
 
   // The whole AI against a player who does nothing: it builds, gathers, attacks and wins.
+  // Task 11.3, Phase 1 design §13: once its home asteroids run dry the AI builds on the nearest asteroids with ore left,
+  // each with a Defence Platform beside it, and keeps the dry rigs for their trickle.
+  TEST_METHOD(FollowsTheOre)
+  {
+    Outpost::Map map = Outpost::LoadMap(ReadRepositoryMap());
+    for (Outpost::OreAsteroidPlacement& asteroid : map.oreAsteroids)
+    {
+      if (asteroid.yield == Outpost::OreYield::Home)
+        asteroid.reserveOre = 200;
+    }
+    AiMatch match(3, map);
+    match.Run(8.0 * 60.0);
+    const Outpost::Snapshot view = match.View(AI);
+    std::ptrdiff_t dry = 0;
+    std::ptrdiff_t mining = 0;
+    std::ptrdiff_t platforms = 0;
+    for (const Outpost::EntityView* structure : match.Structures(view, AI))
+    {
+      if (structure->structure == Outpost::StructureKind::DefensePlatform)
+        ++platforms;
+      if (structure->structure != Outpost::StructureKind::MiningRig || structure->builtPermille < Outpost::PERMILLE)
+        continue;
+      ++(structure->oreReserveHundredths.value_or(1) == 0 ? dry : mining);
+    }
+    Assert::AreEqual(std::ptrdiff_t{3}, dry, L"the home rigs, run dry, are kept");
+    Assert::AreEqual(std::ptrdiff_t{6}, mining, L"six rigs on asteroids with ore");
+    Assert::IsTrue(platforms >= 6, L"a platform beside each rig away from home, and one by the base");
+  }
+
+  // Task 10.4: against a player who does nothing, the AI researches through tier 2 and opens tier 3 (Phase 1 design §13).
+  TEST_METHOD(ReachesTierThree)
+  {
+    AiMatch match;
+    constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
+    const auto researched = [&match](Outpost::ResearchTopicId _topic)
+    {
+      const Outpost::Snapshot view = match.View(AI);
+      const auto topic = std::ranges::find(view.research, _topic, &Outpost::ResearchTopicView::id);
+      return topic != view.research.end() && topic->researched;
+    };
+    for (int minute = 0; minute < 45 && !researched(PRECURSOR_VAULT); ++minute)
+      match.Run(60.0);
+    Assert::IsTrue(researched(PRECURSOR_VAULT), L"the AI has not opened tier 3 in 45 minutes");
+    Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.World().CurrentTick()).c_str());
+  }
+
   TEST_METHOD(BeatsAPlayerWhoDoesNothing)
   {
     AiMatch match;

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Q2Check.h"
+#include "BalanceCheck.h"
 
 #include <atomic>
 #include <cmath>
@@ -336,36 +336,45 @@ CheckParts Researched(const CheckParts& _parts, const Outpost::Tuning& _tuning,
   std::ranges::copy_if(_parts.weapons, std::back_inserter(parts.weapons),
                        [&](const GameLogicTests::CheckWeapon& _weapon) { return !locked(_weapon.id); });
 
+  // Upgrades of one stat add their percentages (ADR-033). Those a clump's battle cannot feel, its economy, its structures,
+  // its speed and its Constructors, change nothing here; a gateway does nothing at all.
+  std::int32_t hullPercent = 0;
+  std::vector<std::pair<Outpost::WeaponId, std::int32_t>> weaponPercents;
   for (const Outpost::ResearchTopicTuning* topic : _researched)
   {
     const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&topic->effect);
     if (upgrade == nullptr)
       continue;
-    const double factor = 1.0 + (upgrade->percent / 100.0);
     if (upgrade->target == Outpost::UpgradeTarget::AllHulls && upgrade->stat == Outpost::UpgradeStat::HitPoints)
-    {
-      for (GameLogicTests::CheckHull& hull : parts.hulls)
-        hull.hitPoints *= factor;
-    }
+      hullPercent += upgrade->percent;
     else if (upgrade->target == Outpost::UpgradeTarget::Weapon && upgrade->stat == Outpost::UpgradeStat::FireRate)
     {
-      for (GameLogicTests::CheckWeapon& weapon : parts.weapons)
-      {
-        if (weapon.id == upgrade->weapon)
-          weapon.fireIntervalSeconds /= factor;
-      }
+      const auto found = std::ranges::find(weaponPercents, upgrade->weapon, &std::pair<Outpost::WeaponId, std::int32_t>::first);
+      if (found != weaponPercents.end())
+        found->second += upgrade->percent;
+      else
+        weaponPercents.emplace_back(upgrade->weapon, upgrade->percent);
     }
-    else if (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target != Outpost::UpgradeTarget::Shipyards)
-      throw Neuron::Exception(std::format("The Q2 check cannot apply research topic {}'s upgrade.", topic->name));
+  }
+  for (GameLogicTests::CheckHull& hull : parts.hulls)
+    hull.hitPoints *= 1.0 + (hullPercent / 100.0);
+  for (const auto& [id, percent] : weaponPercents)
+  {
+    for (GameLogicTests::CheckWeapon& weapon : parts.weapons)
+    {
+      if (weapon.id == id)
+        weapon.fireIntervalSeconds /= 1.0 + (percent / 100.0);
+    }
   }
   return parts;
 }
 
 bool AffectsBattles(const Outpost::ResearchTopicTuning& _topic)
 {
+  if (_topic.IsGateway())
+    return false;
   const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&_topic.effect);
-  return upgrade == nullptr ||
-         (upgrade->target != Outpost::UpgradeTarget::MiningRig && upgrade->target != Outpost::UpgradeTarget::Shipyards);
+  return upgrade == nullptr || upgrade->target == Outpost::UpgradeTarget::AllHulls || upgrade->target == Outpost::UpgradeTarget::Weapon;
 }
 
 // ---- The check ---------------------------------------------------------------------------------------------------------
@@ -425,7 +434,23 @@ std::string UnusedComponents(const CheckParts& _parts, const std::array<std::set
   return unused;
 }
 
-void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts,
+// The parts of _now that _before does not have.
+CheckParts Added(const CheckParts& _now, const CheckParts& _before)
+{
+  CheckParts added;
+  const auto missing = [](const auto& _list, const auto& _part)
+  { return std::ranges::find(_list, _part.id, [](const auto& _each) { return _each.id; }) == _list.end(); };
+  std::ranges::copy_if(_now.hulls, std::back_inserter(added.hulls), [&](const auto& _hull) { return missing(_before.hulls, _hull); });
+  std::ranges::copy_if(_now.drives, std::back_inserter(added.drives), [&](const auto& _drive) { return missing(_before.drives, _drive); });
+  std::ranges::copy_if(_now.weapons, std::back_inserter(added.weapons),
+                       [&](const auto& _weapon) { return missing(_before.weapons, _weapon); });
+  return added;
+}
+
+// (a) and (b) over one stage. (b) judges the components of _judged: a later tier's stage asks only the components the
+// tier adds to be worth building, since the tier before judged its own at the budgets that fit them (owner, 2026-10-03,
+// gate H9).
+void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs, const CheckParts& _parts, const CheckParts& _judged,
               const std::vector<double>& _budgets, const GameLogicTests::CheckOptions& _options, Failures& _failures, std::set<Leg>& _legs,
               std::string& _report)
 {
@@ -498,37 +523,72 @@ void RunStage(std::string_view _label, const std::vector<CheckDesign>& _designs,
         _report += std::format("  Not worth building at this budget: {}\n", unused);
     }
   }
+  // (b) does not ask a drive whose case is speed to be worth building, since a battle cannot see speed; what it leaves out
+  // is still reported (Phase 1 design §7).
+  CheckParts required = _judged;
+  CheckParts speedOnly;
+  for (const GameLogicTests::CheckDrive& drive : _judged.drives)
+  {
+    if (std::ranges::find(_options.speedDrives, drive.name) != _options.speedDrives.end())
+      speedOnly.drives.push_back(drive);
+  }
+  std::erase_if(required.drives, [&](const GameLogicTests::CheckDrive& _drive)
+                { return std::ranges::find(_options.speedDrives, _drive.name) != _options.speedDrives.end(); });
   for (const auto& [mode, used] : usedInStage)
   {
-    const std::string unused = UnusedComponents(_parts, used);
+    const std::string unused = UnusedComponents(required, used);
     if (!unused.empty())
       _failures.lines["b"].push_back(
         std::format("{}, {} fire: no design worth building at any budget uses the {}", _label, ModeName(mode), unused));
+    const std::string exempt = UnusedComponents(speedOnly, used);
+    if (!exempt.empty())
+      _report += std::format("\n{}, {} fire: no design worth building at any budget uses the {}, which (b) does not ask of it\n", _label,
+                             ModeName(mode), exempt);
   }
 }
 
-void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, const GameLogicTests::CheckOptions& _options,
-                      Failures& _failures, std::string& _report)
+void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, std::int32_t _tier, const std::vector<double>& _budgets,
+                      const GameLogicTests::CheckOptions& _options, Failures& _failures, std::string& _report)
 {
-  const std::vector<CheckDesign> answers = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, {}));
-  _report += std::format("\n==== One-sided research (d): each topic against the {} starting designs ====\n", answers.size());
+  // The other side has every topic of the tiers before: the start for tier 1, as the MVP's (d), and every design and
+  // upgrade of the tier before for a later tier (Phase 1 design §7).
+  std::vector<const Outpost::ResearchTopicTuning*> before;
   for (const Outpost::ResearchTopicTuning& topic : _tuning.research)
   {
+    if (topic.tier < _tier)
+      before.push_back(&topic);
+  }
+  const std::vector<CheckDesign> answers = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, before));
+  _report += std::format("\n==== One-sided research (d), tier {}: each topic against the {} designs of {} ====\n", _tier, answers.size(),
+                         _tier == 1 ? std::string("the start") : std::format("tier {}", _tier - 1));
+  for (const Outpost::ResearchTopicTuning& topic : _tuning.research)
+  {
+    if (topic.tier != _tier)
+      continue;
     if (!AffectsBattles(topic))
     {
       _report += std::format("  {}: no effect on a battle\n", topic.name);
       continue;
     }
-    const std::vector<const Outpost::ResearchTopicTuning*> researched = WithPrerequisites(topic, _tuning.research);
-    const std::vector<CheckDesign> designs = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, researched));
-    const bool unlocksUnmodelled = std::visit(
-      [&designs]<typename Effect>([[maybe_unused]] const Effect& _effect)
+    std::vector<const Outpost::ResearchTopicTuning*> researched = before;
+    std::vector<const Outpost::ResearchTopicTuning*> chainOnly;
+    for (const Outpost::ResearchTopicTuning* step : WithPrerequisites(topic, _tuning.research))
+    {
+      if (std::ranges::find(researched, step) == researched.end())
       {
-        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect>)
+        researched.push_back(step);
+        chainOnly.push_back(step);
+      }
+    }
+    const std::vector<CheckDesign> available = GameLogicTests::DesignsFrom(_tuning, Researched(_parts, _tuning, researched));
+    const bool unlocksUnmodelled = std::visit(
+      [&available]<typename Effect>([[maybe_unused]] const Effect& _effect)
+      {
+        if constexpr (std::is_same_v<Effect, Outpost::UpgradeEffect> || std::is_same_v<Effect, Outpost::GatewayEffect>)
           return false;
         else
         {
-          return std::ranges::none_of(designs,
+          return std::ranges::none_of(available,
                                       [&_effect](const CheckDesign& _design)
                                       {
                                         if constexpr (std::is_same_v<Effect, Outpost::HullId>)
@@ -546,9 +606,17 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
       _report += std::format("  {}: not modelled\n", topic.name);
       continue;
     }
+    // Only the designs the topic adds or changes: one the other side has too, with the same numbers, is not the topic's.
+    std::vector<CheckDesign> designs;
+    std::ranges::copy_if(available, std::back_inserter(designs),
+                         [&answers](const CheckDesign& _design)
+                         {
+                           const auto same = std::ranges::find(answers, _design.code, &CheckDesign::code);
+                           return same == answers.end() || !(same->stats == _design.stats) || same->cost != _design.cost;
+                         });
 
     std::vector<Pairing> pairings;
-    for (const double budget : _options.earlyBudgets)
+    for (const double budget : _budgets)
     {
       for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
       {
@@ -570,8 +638,13 @@ void RunResearchCheck(const Outpost::Tuning& _tuning, const CheckParts& _parts, 
     }
     const std::vector<Settled> settled = Settle(contests, ROBUST_WIN_RATE, _options);
 
+    if (designs.empty())
+    {
+      _report += std::format("  {}: changes no design\n", topic.name);
+      continue;
+    }
     std::string chain;
-    for (const Outpost::ResearchTopicTuning* step : researched)
+    for (const Outpost::ResearchTopicTuning* step : chainOnly)
       chain += std::format("{}{}", chain.empty() ? "" : " + ", step->name);
     const Settled& weakest = *std::ranges::min_element(settled, {}, [](const Settled& _settled) { return _settled.best.Rate(); });
     _report += std::format("  {}: weakest answer is {} to {}* at {} ({} Ore {})\n", chain, weakest.best.pairing.a->code,
@@ -693,6 +766,20 @@ CheckParts GameLogicTests::PartsFrom(const Outpost::Tuning& _tuning)
     parts.weapons.push_back({weapon.id, weapon.name, static_cast<double>(weapon.damage), weapon.fireIntervalSeconds, weapon.rangeMeters,
                              static_cast<double>(weapon.cost), weapon.splashRadiusMeters});
   }
+  return parts;
+}
+
+CheckParts GameLogicTests::PartsThrough(const Outpost::Tuning& _tuning, std::int32_t _tier)
+{
+  const auto inTier = [&_tuning, _tier](auto _id)
+  {
+    return std::ranges::none_of(_tuning.research, [_id, _tier](const Outpost::ResearchTopicTuning& _topic)
+                                { return _topic.tier > _tier && Unlocks(_topic, _id); });
+  };
+  CheckParts parts = PartsFrom(_tuning);
+  std::erase_if(parts.hulls, [&](const CheckHull& _hull) { return !inTier(_hull.id); });
+  std::erase_if(parts.drives, [&](const CheckDrive& _drive) { return !inTier(_drive.id); });
+  std::erase_if(parts.weapons, [&](const CheckWeapon& _weapon) { return !inTier(_weapon.id); });
   return parts;
 }
 
@@ -827,27 +914,41 @@ int GameLogicTests::Fight(const CheckDesign& _a, const CheckDesign& _b, double _
   return (alive[0] > 0 ? 1 : 0) - (alive[1] > 0 ? 1 : 0);
 }
 
-GameLogicTests::CheckResult GameLogicTests::RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options)
+GameLogicTests::CheckResult GameLogicTests::RunBalanceCheck(const Outpost::Tuning& _tuning, const CheckOptions& _options)
 {
-  const CheckParts parts = PartsFrom(_tuning);
-  const CheckParts starting = Researched(parts, _tuning, {});
-  const std::vector<CheckDesign> every = DesignsFrom(_tuning, parts);
-  const std::vector<CheckDesign> early = DesignsFrom(_tuning, starting);
+  // The stages of Phase 1 design §7: the starting components, then each tier's, each at the budgets that fit when its
+  // components arrive, and each tier's research against the tier before.
+  const CheckParts all = PartsFrom(_tuning);
+  const CheckParts starting = Researched(all, _tuning, {});
+  const std::array<const std::vector<double>*, 3> tierBudgets{&_options.budgets, &_options.tierTwoBudgets, &_options.tierThreeBudgets};
+  const std::array<const std::vector<double>*, 3> researchBudgets{&_options.earlyBudgets, &_options.tierTwoBudgets,
+                                                                  &_options.tierThreeBudgets};
+  const std::int32_t lastTier = std::clamp(_options.lastTier, 1, Outpost::RESEARCH_TIERS);
+  const CheckParts last = PartsThrough(_tuning, lastTier);
 
   CheckResult result;
   std::string& report = result.report;
-  report += std::format("{} designs, {} battles per pairing (up to {} when a verdict is uncertain), a {} Hz tick.\n", every.size(),
-                        _options.battles, _options.maxBattles, TICKS_PER_SECOND);
+  report += std::format("{} designs through tier {}, {} battles per pairing (up to {} when a verdict is uncertain), a {} Hz tick.\n",
+                        DesignsFrom(_tuning, last).size(), lastTier, _options.battles, _options.maxBattles, TICKS_PER_SECOND);
 
   Failures failures;
   std::set<Leg> legs;
-  RunStage("Every component", every, parts, _options.budgets, _options, failures, legs, report);
-  RunStage("Starting components", early, starting, _options.earlyBudgets, _options, failures, legs, report);
-  RunResearchCheck(_tuning, parts, _options, failures, report);
+  for (std::int32_t tier = 1; tier <= lastTier; ++tier)
+  {
+    const CheckParts parts = PartsThrough(_tuning, tier);
+    const auto index = static_cast<size_t>(tier - 1);
+    const CheckParts judged = tier == 1 ? parts : Added(parts, PartsThrough(_tuning, tier - 1));
+    RunStage(std::format("Tier {}", tier), DesignsFrom(_tuning, parts), parts, judged, *tierBudgets[index], _options, failures, legs,
+             report);
+    if (tier == 1)
+      RunStage("Starting components", DesignsFrom(_tuning, starting), starting, starting, _options.earlyBudgets, _options, failures, legs,
+               report);
+    RunResearchCheck(_tuning, all, tier, *researchBudgets[index], _options, failures, report);
+  }
   if (!_options.quick)
-    RunRobustness(_tuning, parts, legs, _options, failures, report);
+    RunRobustness(_tuning, last, legs, _options, failures, report);
 
-  report += "\nQ2 check (design §3):\n";
+  report += "\nBalance check (design §3):\n";
   const std::array<std::pair<std::string, std::string>, 4> criteria{{
     {"a", "every design has a counter that wins at least 80%"},
     {"b", "the designs worth building use every hull, drive and weapon over each stage's budgets"},

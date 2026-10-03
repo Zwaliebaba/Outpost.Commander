@@ -76,6 +76,8 @@ private:
   [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
+  // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
+  void UpdateBanking(float _elapsedSeconds);
   // How high a Mining Rig, the model _set/_model drawn at _scale, stands over the ground so that every foot reaches the
   // rock under it (ADR-027).
   [[nodiscard]] float RigLift(std::string_view _set, std::string_view _model, const EntityView& _rig, float _scale) const;
@@ -90,16 +92,19 @@ private:
   // The shards of every explosion, as ExplosionManager gives them for the view's tick.
   void DrawShards(ID3D12GraphicsCommandList* _commandList);
   // The model _set/_model placed by _world: its faces _color at _fillShade now, and its creases over them as lines,
-  // lighter, queued for the frame's one pass of lines (ADR-027, ADR-029).
+  // lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
   void DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color, float _fillShade);
-  // A structure drawn to its footprint, grayer and darker than a ship (ADR-029), and darker still while it is built
+  // A structure drawn to its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
   // (task 4.2).
   void DrawStructure(ID3D12GraphicsCommandList* _commandList, const EntityView& _entity);
   // The structure being placed, at the cursor, green where it may stand and red where it may not.
   void DrawGhost(ID3D12GraphicsCommandList* _commandList);
   // Presses on the HUD's buttons and minimap, which the controls never see; and a drag on the minimap moves the camera.
+  // A press on a window brings it to the front: on its close box it closes it, and on its title bar it drags it.
   void HandleHudInput(const Neuron::InputState& _input);
+  // A point on the back buffer in the HUD's reference units.
+  [[nodiscard]] WindowManager::Point ToUnits(float _xPixels, float _yPixels) const noexcept;
   // What a HUD button does: arms a placement, queues a job or a topic, or works the designer.
   void HandleHudAction(const Hud::Action& _action);
   // Forgets the match being shown.
@@ -107,9 +112,11 @@ private:
   // While the designer's name takes typing, the keyboard is the designer's: _input loses its keys, so no order, control
   // group or camera key reads them.
   void HandleTyping(Neuron::InputState& _input);
+  // Opens a window, aimed at the structure selected on its own if it shows one, or closes it.
+  void ToggleWindow(WindowKind _window);
   // The ground the camera shows, its corners in order, for the minimap; empty when a corner sees past the horizon.
   [[nodiscard]] std::vector<PlanePosition> ViewOnGround() const;
-  // A faint ring in its side's color under every structure that is not selected (ADR-029).
+  // A faint ring in its side's color under every structure that is not selected (ADR-040).
   void DrawFootprints(ID3D12GraphicsCommandList* _commandList);
   void DrawSelection(ID3D12GraphicsCommandList* _commandList);
   // A bar over each damaged ship and structure, its length the share of hit points left (task 3.5), and one over each
@@ -156,6 +163,17 @@ private:
   Designer m_designer;
   // What the player has seen of the map, when the match is played under fog of war (ADR-024).
   FogOfWar m_fog;
+  // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own
+  // last frame, so that selecting a Shipyard aims the open designer at it once and the arrows can step on from there.
+  WindowManager m_windows;
+  EntityId m_soleSelected;
+  // The producer the production window shows, and the first topic the research window shows (Phase 1 design §12).
+  ProductionTarget m_production;
+  std::size_t m_firstTopic = 0;
+  // How far each ship leans into its turn as it is drawn, and this frame's targets, kept so that their storage is not
+  // allocated every frame (ADR-029).
+  ShipBanking m_banking;
+  std::vector<ShipBanking::Target> m_bankTargets;
   CombatEffects m_effects;
   // What blew up: its blast, as particles, and its shards (ADR-026).
   ParticleSystem m_particles;

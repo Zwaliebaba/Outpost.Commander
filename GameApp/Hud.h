@@ -3,12 +3,12 @@
 namespace Outpost
 {
 // The HUD (tasks 3.6 and 4.5, design §9): the Ore stockpile and income, a panel describing the selection with a
-// structure's construction and queue, the buttons that build structures and queue ships, and the minimap. It is laid
-// out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer by
-// one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
-// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore and in the Research Lab's
-// panel (task 5.1), and the ship designer beside a selected Shipyard (task 5.2). The main menu, and the banner that says
-// how a match ended, are laid out the same way (task 6.2).
+// structure's construction, the buttons that build structures and open a structure's windows, and the minimap. It is
+// laid out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer
+// by one uniform factor (ADR-006). It keeps no GPU state: it says what to draw, in pixels, and GameClient draws it through
+// the UI pipeline (ADR-015). Clicks on it do not reach the world. Research shows under the Ore (task 5.1). Over it float
+// the designer, the production queue and the research as windows (ADR-031, Phase 1 design §11, §12). The main menu, and
+// the banner that says how a match ended, are laid out the same way (task 6.2).
 class Hud
 {
 public:
@@ -16,6 +16,34 @@ public:
   static constexpr float REFERENCE_HEIGHT_UNITS = 1080.0f;
   // The text's size at the reference scale.
   static constexpr float FONT_UNITS = 20.0f;
+
+  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: the HUD's text as it has
+  // been since milestone 3, and the faces of the owner's mockup for the windows of Phase 1 (Phase 1 design §11): condensed
+  // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
+  // smaller size for a part card's numbers.
+  enum class Typeface : std::uint8_t
+  {
+    Body,
+    Title,
+    Label,
+    Name,
+    Figure,
+    LargeFigure,
+    Detail
+  };
+
+  [[nodiscard]] static std::vector<Neuron::FontDesc> Typefaces();
+
+  // The interface's sprites (ADR-030), in the order GameClient builds the UI pipeline with them: Ore's diamond, the box of
+  // a part research has yet to unlock, and a window's corner bracket.
+  enum class Sprite : std::uint8_t
+  {
+    OreMark,
+    Checkbox,
+    Corner
+  };
+
+  [[nodiscard]] static std::vector<Neuron::SpriteDesc> Sprites();
 
   // What a button does when it is pressed.
   enum class ActionKind : std::uint8_t
@@ -37,7 +65,25 @@ public:
     // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
     StartSkirmish,
     Quit,
-    BackToMenu
+    BackToMenu,
+    // The designer's window (Phase 1 design §11): open it aimed at a Shipyard, step its target Shipyard, ask for fewer or
+    // more ships, load a saved design, and scroll the saved designs.
+    OpenDesigner,
+    PreviousShipyard,
+    NextShipyard,
+    FewerShips,
+    MoreShips,
+    LoadDesign,
+    PreviousDesigns,
+    NextDesigns,
+    // The production and research windows (Phase 1 design §12): open them, step the production window's producer, and
+    // scroll the research window's topics.
+    OpenProduction,
+    OpenResearch,
+    PreviousProducer,
+    NextProducer,
+    PreviousTopics,
+    NextTopics
   };
 
   struct Action
@@ -51,6 +97,8 @@ public:
     HullId hull;
     DriveId drive;
     WeaponId weapon;
+    // How many ships a Queue asks for (Phase 1 design §11).
+    std::uint32_t count = 1;
 
     friend bool operator==(const Action&, const Action&) = default;
   };
@@ -65,25 +113,187 @@ public:
     bool selected = false;
   };
 
-  // The designer beside a selected Shipyard (task 5.2).
+  // A component as the designer shows it on its card (Phase 1 design §11): its name, cost and numbers, a note under them,
+  // such as a weapon's splash, whether it is the pick, and while research has yet to unlock it, the line that names the
+  // topic that does, "RESEARCH · LARGE HULL". A locked card takes no click.
+  struct PartCard
+  {
+    std::string name;
+    std::int32_t cost = 0;
+    std::string numbers;
+    std::string note;
+    bool picked = false;
+    std::string lockedBy;
+    Action action;
+
+    [[nodiscard]] bool IsLocked() const noexcept
+    {
+      return !lockedBy.empty();
+    }
+  };
+
+  // One slot of the design: its label, its pick's name, and a card for each component.
+  struct SlotRow
+  {
+    std::string label;
+    std::string picked;
+    std::vector<PartCard> cards;
+  };
+
+  // How a hovered part's design compares to the picked one on a number: better, no different, or worse. Lower is better
+  // for cost and build time.
+  enum class Change : std::uint8_t
+  {
+    Worse,
+    Same,
+    Better
+  };
+
+  // One of the picked design's numbers and its bar, measured against the best any design in the game reaches, locked
+  // components included, so that the scale holds as research unlocks parts. With a part hovered, the design it would make.
+  struct StatBar
+  {
+    std::string label;
+    std::string value;
+    std::string unit;
+    float share = 0.0f;
+    std::optional<float> previewShare;
+    std::string previewValue;
+    Change change = Change::Same;
+  };
+
+  // How a design's damage against one hull compares to the best any design does to it: from two thirds up, a third up,
+  // and below.
+  enum class Rating : std::uint8_t
+  {
+    Poor,
+    Fair,
+    Good
+  };
+
+  // Damage per second after armor against one hull (design §9), per ship and per 100 Ore: the hovered part's design while
+  // one is hovered, and how it compares to the picked one.
+  struct DamageCard
+  {
+    std::string hull;
+    std::string armor;
+    std::string perShip;
+    std::string perOre;
+    float share = 0.0f;
+    Rating rating = Rating::Poor;
+    Change change = Change::Same;
+  };
+
+  // A saved design's chip: its name, its components' initials, whether it is the one shown, and loading it.
+  struct DesignChip
+  {
+    std::string name;
+    std::string code;
+    bool shown = false;
+    Action action;
+  };
+
+  // The designer's window, after the owner's mockup (Phase 1 design §11, GameDesign/Mockups/ShipDesigner.png).
   struct DesignerPanel
   {
+    // The target Shipyard, such as "SHIPYARD 01", or "NO SHIPYARD"; its queue's length, the ships it has built, and the
+    // player's Ore.
+    std::string shipyard;
+    bool hasShipyard = false;
+    std::uint32_t queued = 0;
+    std::uint32_t built = 0;
+    std::int32_t ore = 0;
     std::string name;
     bool editing = false;
     // Whether the server takes the name (IsValidDesignName); it is drawn as a warning when not.
     bool nameValid = true;
-    // A button for each component of each slot, the pick lit and a locked component dim.
-    std::vector<Button> hulls;
-    std::vector<Button> drives;
-    std::vector<Button> weapons;
-    // The picked design's hit points, armor and speed, then its range, cost and build time.
-    std::vector<std::string> summary;
-    // A row naming each hull, then damage per second after armor against it, per ship and per 100 Ore (design §9). The
-    // first cell of a row is its label.
-    std::vector<std::vector<std::string>> table;
-    // Save or rename, and queue.
-    std::vector<Button> actions;
+    // SAVE for a new design, SAVED when the name and the parts are a saved design; RENAME for a saved design's new name.
+    Button save;
+    Button rename;
+    // The saved designs, and the first shown of those that do not all fit.
+    std::vector<DesignChip> chips;
+    std::size_t firstChip = 0;
+    std::array<SlotRow, 3> slots;
+    std::vector<StatBar> bars;
+    std::vector<DamageCard> damage;
+    // What the bars and the cards preview while a part is hovered; the help line otherwise.
+    std::string hint;
+    // How many ships Queue asks for, and whether it can ask for fewer or more.
+    std::uint32_t count = 1;
+    bool canFewer = false;
+    bool canMore = false;
+    // Queue: its cost for every ship asked for, and the build time of one.
+    Button queue;
+    std::int32_t queueCost = 0;
+    std::string queueDetail;
   };
+
+  // One job of a queue as a window shows it: its name, and for the front job how far it has come, or that it waits for
+  // Ore.
+  struct QueueLine
+  {
+    std::string name;
+    bool front = false;
+    std::int32_t permille = 0;
+    bool waiting = false;
+  };
+
+  // A button of a window that adds to a queue: what it adds, a line under the name, such as a design's abbreviation, its
+  // cost, and whether it can be pressed now.
+  struct QueueOption
+  {
+    std::string name;
+    std::string detail;
+    std::int32_t cost = 0;
+    Action action;
+    bool enabled = true;
+  };
+
+  // The production window (Phase 1 design §12; owner, 2026-10-03): the producer it shows, such as "COMMAND STATION" or
+  // "SHIPYARD 02", whether there are others to step to, its queue, and a button for each thing it builds: a Constructor
+  // at the Command Station, each saved design at a Shipyard. With no producer, a line saying how to get one.
+  struct ProductionPanel
+  {
+    std::string producer;
+    bool hasProducer = false;
+    bool canStep = false;
+    std::int32_t ore = 0;
+    std::vector<QueueLine> queue;
+    std::vector<QueueOption> options;
+    std::string hint;
+  };
+
+  // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost,
+  // its tier and time, whether it is the gateway that opens its tier (Phase 1 design §6), and while a prerequisite is
+  // neither researched nor queued, the line naming it; such a topic is dim.
+  struct TopicCard
+  {
+    std::string name;
+    std::string effect;
+    std::int32_t cost = 0;
+    std::string time;
+    std::string needs;
+    Action action;
+    bool enabled = true;
+    std::int32_t tier = 1;
+    bool gateway = false;
+  };
+
+  // The research window (Phase 1 design §12): the player's Research Lab, such as "RESEARCH LAB" or "NO RESEARCH LAB", its
+  // queue, and the topics, tier by tier, of which TOPICS_SHOWN are shown from firstTopic.
+  struct ResearchPanel
+  {
+    std::string lab;
+    bool hasLab = false;
+    std::int32_t ore = 0;
+    std::vector<QueueLine> queue;
+    std::vector<TopicCard> topics;
+    std::size_t firstTopic = 0;
+  };
+
+  // How many topic cards the research window shows at once, in rows of TOPIC_COLUMNS; it scrolls by a row.
+  static constexpr std::size_t TOPIC_COLUMNS = 2;
+  static constexpr std::size_t TOPICS_SHOWN = 10;
 
   // Whose a minimap mark is, which sets its color.
   enum class Side : std::uint8_t
@@ -100,6 +310,8 @@ public:
     float radiusMeters = 0.0f;
     Side side = Side::Neutral;
     EntityKind kind = EntityKind::Ship;
+    // An ore asteroid that has run out, as far as the player knows: drawn darker (Phase 1 design §8).
+    bool dry = false;
   };
 
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
@@ -122,6 +334,9 @@ public:
     // A line under the Ore while the player's Research Lab has a topic (task 5.1).
     std::string research;
     std::optional<DesignerPanel> designer;
+    // The production and research windows' content, while they are open; GameClient fills them.
+    std::optional<ProductionPanel> production;
+    std::optional<ResearchPanel> laboratory;
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
@@ -133,6 +348,22 @@ public:
     std::optional<Outcome> outcome;
   };
 
+  // How a panel is filled: solid, or with diagonal stripes, as a window's title bar is (ADR-030).
+  enum class Fill : std::uint8_t
+  {
+    Solid,
+    Hatched
+  };
+
+  // A hatched panel's stripes: this wide, this far apart, in reference units.
+  static constexpr float HATCH_STRIPE_UNITS = 2.0f;
+  static constexpr float HATCH_PERIOD_UNITS = 7.0f;
+
+  // A window's title bar, which it is dragged by, and its close box at the bar's right end; and how much of a window's
+  // width stays on the screen however far it is dragged, so that its title bar can always be taken hold of again.
+  static constexpr float TITLE_BAR_UNITS = 36.0f;
+  static constexpr float WINDOW_KEPT_ON_SCREEN_UNITS = 120.0f;
+
   struct Rect
   {
     float left = 0.0f;
@@ -140,6 +371,7 @@ public:
     float width = 0.0f;
     float height = 0.0f;
     DirectX::XMFLOAT4 color{};
+    Fill fill = Fill::Solid;
 
     [[nodiscard]] bool Contains(float _xPixels, float _yPixels) const noexcept
     {
@@ -147,15 +379,51 @@ public:
     }
   };
 
+  // A line of text, in UTF-8, in a typeface and with extra space between its letters.
   struct Text
   {
     std::string text;
     float left = 0.0f;
     float top = 0.0f;
     DirectX::XMFLOAT4 color{};
+    Typeface typeface = Typeface::Body;
+    float trackingPixels = 0.0f;
   };
 
-  // The HUD on a back buffer of one size, in its pixels.
+  // A sprite drawn into a rectangle, in the rectangle's color, mirrored when asked (ADR-030).
+  struct SpriteMark
+  {
+    Sprite sprite = Sprite::OreMark;
+    Rect area;
+    bool mirrorX = false;
+    bool mirrorY = false;
+  };
+
+  // A floating window as laid out (ADR-031): its kind; where it stands, its title bar and its close box, in pixels; its
+  // top-left corner in reference units, as WindowManager::Grab takes it; and where its panels, texts, sprites and
+  // buttons start in the layout's lists. Each runs to where the next window's starts, or to the list's end.
+  struct Window
+  {
+    WindowKind kind = WindowKind::Designer;
+    Rect frame;
+    Rect titleBar;
+    Rect closeBox;
+    WindowManager::Point corner;
+    std::size_t firstPanel = 0;
+    std::size_t firstText = 0;
+    std::size_t firstSprite = 0;
+    std::size_t firstAction = 0;
+  };
+
+  // A layer's share of one of the layout's lists, from first up to end.
+  struct Span
+  {
+    std::size_t first = 0;
+    std::size_t end = 0;
+  };
+
+  // The HUD on a back buffer of one size, in its pixels. It is drawn in layers: the HUD, then each window back to front,
+  // each layer's panels, then its sprites, then its texts. A click belongs to the front layer under it.
   struct Layout
   {
     float fontPixels = 0.0f;
@@ -166,10 +434,27 @@ public:
     // The minimap's drawing area, the map's square; empty when there is no minimap.
     Rect minimap;
     float mapSizeMeters = 0.0f;
+    std::vector<SpriteMark> sprites;
+    // Back to front, the order they are drawn in.
+    std::vector<Window> windows;
+
+    // Layer 0 is the HUD and layer i + 1 the window windows[i]; there are windows.size() + 1.
+    [[nodiscard]] std::size_t LayerCount() const noexcept
+    {
+      return windows.size() + 1;
+    }
+    // The front layer under a point: the front window's that holds it, or the HUD's.
+    [[nodiscard]] std::size_t LayerAt(float _xPixels, float _yPixels) const noexcept;
+    [[nodiscard]] Span PanelsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span TextsOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span SpritesOf(std::size_t _layer) const noexcept;
+    [[nodiscard]] Span ActionsOf(std::size_t _layer) const noexcept;
+    // The front window under a point, if any.
+    [[nodiscard]] const Window* WindowAt(float _xPixels, float _yPixels) const noexcept;
 
     // Whether a point in back-buffer pixels is on a panel, where a click belongs to the HUD.
     [[nodiscard]] bool Covers(float _xPixels, float _yPixels) const noexcept;
-    // The enabled button under a point, if any.
+    // The enabled button of the front layer under a point, if any: a button of the HUD under a window takes no click.
     [[nodiscard]] std::optional<Action> ActionAt(float _xPixels, float _yPixels) const noexcept;
     // The point on the map under a point on the minimap, if it is on the minimap.
     [[nodiscard]] std::optional<PlanePosition> MapPointAt(float _xPixels, float _yPixels) const noexcept;
@@ -179,9 +464,24 @@ public:
 
   // The content for _player: its Ore and income from the newest snapshot, its research, a description of _selected, by
   // design name from the snapshot's designs, the buttons the selection offers, and the minimap's marks. _placing is the
-  // structure being placed, if any. With a _designer, a selected built Shipyard of the player's shows it.
+  // structure being placed, if any. With a _designer, which GameClient gives while its window is open, the designer;
+  // _hovered is the button under the pointer, and a part's previews the design it would make.
   [[nodiscard]] static Content Describe(const Snapshot& _newest, std::span<const EntityView> _entities, std::span<const EntityId> _selected,
-                                        std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr);
+                                        std::optional<StructureKind> _placing = std::nullopt, const Designer* _designer = nullptr,
+                                        std::optional<Action> _hovered = std::nullopt);
+
+  // The production window's content for _producer, one of the player's finished producers, or nullptr while it has none
+  // (Phase 1 design §12).
+  [[nodiscard]] static ProductionPanel DescribeProduction(const Snapshot& _newest, const EntityView* _producer);
+
+  // The research window's content: the player's Research Lab among _entities, its queue, and the topics from _firstTopic
+  // (Phase 1 design §12).
+  [[nodiscard]] static ResearchPanel DescribeResearch(const Snapshot& _newest, std::span<const EntityView> _entities,
+                                                      std::size_t _firstTopic = 0);
+
+  // The first topic shown after scrolling a row forward, or back with a negative _step, among _topics: never before the
+  // first, nor past where the last row is shown.
+  [[nodiscard]] static std::size_t StepTopics(std::size_t _firstTopic, int _step, std::size_t _topics) noexcept;
 
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
@@ -191,9 +491,16 @@ public:
   [[nodiscard]] static Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
   // Where everything goes on a back buffer of this size. _view is the ground the camera shows, its corners in order,
-  // outlined on the minimap; empty when the camera sees past the horizon.
+  // outlined on the minimap; empty when the camera sees past the horizon. The floating windows (ADR-031) are those
+  // _windows has open, in its order and where it left them; without a manager, every window the content has, at its
+  // default place.
   [[nodiscard]] static Layout Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                  std::span<const PlanePosition> _view = {});
+                                  std::span<const PlanePosition> _view = {}, const WindowManager* _windows = nullptr);
+
+  // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
+  // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.
+  [[nodiscard]] static WindowManager::Point KeepOnScreen(WindowManager::Point _corner, float _widthUnits, float _screenWidthUnits,
+                                                         float _screenHeightUnits) noexcept;
 
   // The scale from reference units to pixels: the largest at which the whole reference frame fits (ADR-006).
   [[nodiscard]] static float Scale(std::uint32_t _widthPixels, std::uint32_t _heightPixels) noexcept;

@@ -45,7 +45,7 @@ public:
   // Draws _lines, a line list such as BuildCreaseLines makes, placed by _world, as one-pixel lines lit as a mesh is, in a
   // linear color. They are tested against the depth of what is drawn but write none, so the far side of a mesh hides its
   // own lines. Each vertex is pulled _liftShare of its distance toward the eye, which moves it nowhere on the screen but
-  // puts it in front of the surface it lies on: Direct3D gives a line no depth bias (ADR-029). The pipeline is back on
+  // puts it in front of the surface it lies on: Direct3D gives a line no depth bias (ADR-040). The pipeline is back on
   // Draw's state and topology when it returns.
   void DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
                  const DirectX::XMFLOAT4& _color, float _liftShare) const;

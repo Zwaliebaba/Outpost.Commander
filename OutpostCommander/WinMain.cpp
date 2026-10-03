@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "AiMatches.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -15,8 +16,8 @@ constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
 constexpr Outpost::PlayerId RIVAL_PLAYER{2};
 
-// Task 2.7's switches. --measure logs every tick's duration and every move order's time to its first visible response
-// to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
+// Task 2.7's switches. --measure logs every tick's duration, and since task 8.1 each of its parts, and every move order's
+// time to its first visible response to MEASUREMENT_LOG in the temporary folder; --load adds the load of 200 ships and 40 structures, and keeps both fleets
 // moving. Times are on std::chrono::steady_clock, which counts QueryPerformanceCounter, so a script injecting input
 // can line its own timestamps up with the game's.
 constexpr std::wstring_view MEASURE_SWITCH = L"--measure";
@@ -28,6 +29,11 @@ constexpr std::wstring_view STRESS_SWITCH = L"--stress";
 constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
 // Plan task 6.3: every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py.
 constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
+// Phase 1 plan task 13.1's switch: ten seeded AI-against-AI matches on the real server, played headlessly as fast as it
+// ticks, into this log in the temporary folder, for P1's repeatable figure. No window opens; a message says when they
+// are done, and Tools/MatchLog.py --ai-matches summarizes them.
+constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
+constexpr auto AI_MATCH_LOG = L"OutpostCommander-ai-matches.log";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -90,6 +96,20 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     Neuron::FileSys::SetHomeDirectory(path);
 
     const std::wstring_view commandLine = _cmdLine != nullptr ? std::wstring_view(_cmdLine) : std::wstring_view();
+    if (commandLine.find(AI_MATCHES_SWITCH) != std::wstring_view::npos)
+    {
+      const std::filesystem::path logPath = std::filesystem::temp_directory_path() / AI_MATCH_LOG;
+      std::ofstream log(logPath, std::ios::trunc);
+      const Outpost::AiMatchesDesc desc;
+      const auto started = std::chrono::steady_clock::now();
+      const std::uint32_t ended = Outpost::PlayAiMatches(log, Outpost::LoadPackagedAiSettings(), desc);
+      const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - started).count();
+      const std::wstring message = std::format(L"Played {} AI-against-AI matches in {} seconds: {} ended within {} minutes.\n\n"
+                                               L"The log is {}.\nTools\\MatchLog.py --ai-matches summarizes them.",
+                                               desc.matches, seconds, ended, desc.limitMinutes, logPath.wstring());
+      MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONINFORMATION);
+      return EXIT_SUCCESS;
+    }
     const bool measure = commandLine.find(MEASURE_SWITCH) != std::wstring_view::npos;
     const bool stress = commandLine.find(STRESS_SWITCH) != std::wstring_view::npos;
     const bool load = !stress && commandLine.find(LOAD_SWITCH) != std::wstring_view::npos;
@@ -101,6 +121,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     {
       measurements.open(std::filesystem::temp_directory_path() / MEASUREMENT_LOG, std::ios::trunc);
       measurements << std::format("seed {} load {} stress {}\n", seed, load ? 1 : 0, stress ? 1 : 0);
+      // The names of the parts each tick_parts_ns line gives, in its order (task 8.1).
+      measurements << "tick_part_names";
+      for (std::size_t part = 0; part < Outpost::TICK_PART_COUNT; ++part)
+        measurements << ' ' << Outpost::TickPartName(static_cast<Outpost::TickPart>(part));
+      measurements << '\n';
     }
 
     // The next match's server is made while the menu shows, and the first before the window opens, so that bad tuning
@@ -162,10 +187,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       {
         // Taken every frame, logged or not, so that they do not pile up. This is also where a failure on the server's thread
         // reaches this one.
-        for (const std::chrono::nanoseconds tick : match->server->TakeTickDurations())
+        for (const Outpost::TickTiming& tick : match->server->TakeTickTimings())
         {
-          if (measure)
-            measurements << std::format("tick_ns {}\n", tick.count());
+          if (!measure)
+            continue;
+          measurements << std::format("tick_ns {}\ntick_parts_ns", tick.total.count());
+          for (const std::chrono::nanoseconds part : tick.parts)
+            measurements << ' ' << part.count();
+          measurements << '\n';
         }
 
         std::vector<Outpost::Snapshot> snapshots = match->player->Receive();

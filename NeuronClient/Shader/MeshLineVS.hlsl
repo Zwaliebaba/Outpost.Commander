@@ -1,6 +1,6 @@
 // A line in the scene, placed as MeshVS.hlsl places a mesh, then pulled liftShare of the way toward the eye. A point
 // moved along its own sightline stays where it is on the screen, so the line does not stand off a silhouette as a lift
-// along the surface's normal did, yet it is nearer than the surface it lies on and wins the depth test (ADR-029).
+// along the surface's normal did, yet it is nearer than the surface it lies on and wins the depth test (ADR-040).
 // The two constant buffers are declared again, identically, in MeshVS.hlsl and MeshPS.hlsl, and must match
 // MeshPipeline.cpp.
 

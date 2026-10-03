@@ -73,7 +73,16 @@ private:
   void Decide(const Snapshot& _snapshot, std::vector<Command>& _orders);
   void Plan(const Snapshot& _snapshot, const EntityView& _station);
   // Adds the next Shipyard to the plan once the income calls for it.
-  void PlanShipyards(const Snapshot& _snapshot, const EntityView& _station);
+  void PlanShipyards(const Snapshot& _snapshot);
+  // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
+  void FollowOre(const Snapshot& _snapshot);
+  // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
+  void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
+  void AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig);
+  // Where the enemy's Command Stations are, or under fog of war, where the enemy's base must be.
+  [[nodiscard]] std::vector<PlanePosition> EnemyStations(const Snapshot& _snapshot) const;
+  // Whether an asteroid is nearer an enemy base than this one: that is the enemy's home.
+  [[nodiscard]] bool IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const;
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,
@@ -95,8 +104,10 @@ private:
   std::vector<Slot> m_slots;
   std::vector<Work> m_work;
   PlanePosition m_rally;
-  // Its Command Station's place, across the map's center from the enemy's.
+  // Its Command Station's place, across the map's center from the enemy's, and its footprint: the base's center, which
+  // the Shipyards stand around, still once the station is lost.
   PlanePosition m_home;
+  float m_homeRadiusMeters = 0.0f;
 
   DesignComponents m_productionDesign;
   // The enemy warships it has seen since its last review, and what each is.
@@ -108,6 +119,8 @@ private:
   std::vector<EntityId> m_attackGroup;
   EntityId m_attackTarget;
   bool m_searching = false;
+  // The ships of the attack group already ordered to attack its target from close by, once each.
+  std::vector<EntityId> m_closingIn;
   // Where each reserve warship was last sent, so that it is sent again only when that changes.
   std::map<EntityId, PlanePosition> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.

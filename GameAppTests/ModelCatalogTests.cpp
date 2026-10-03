@@ -2,6 +2,8 @@
 #include "RepositoryAssets.h"
 
 #include <algorithm>
+#include <limits>
+#include <numbers>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -17,7 +19,8 @@ constexpr std::string_view STRUCTURES = R"("structures": [ { "structure": "Comma
   { "structure": "Shipyard", "model": "Small", "tint": 0.5 }, { "structure": "ResearchLab", "model": "Small" },
   { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" } ], "constructor": "Small",
   "exhausts": [ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ],
-  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 })";
+  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 },
+  "shots": [ { "weapon": 2, "look": "beam" } ])";
 
 // A catalog of one set of one model, with one member replaced, for the loader's error cases.
 std::string OneModel(std::string_view _setName, std::string_view _model, std::string_view _color)
@@ -121,9 +124,21 @@ public:
       {
         const Outpost::ModelEntry& model = set.Model(hull);
         const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
-        // Its length is along +x, its front (ADR-018), and it is the length the data asks for.
+        // Its length is along +x, its front (ADR-018), and it is the length the data asks for. Its front is where its guns
+        // are: every gun stands ahead of every exhaust. A hull may be wider than it is long, as the Human Small's wings
+        // make it.
         Assert::AreEqual(model.lengthMeters, mesh.Extents().x, TOLERANCE);
-        Assert::IsTrue(mesh.Extents().x > mesh.Extents().z);
+        float rearmostGun = std::numeric_limits<float>::infinity();
+        float foremostExhaust = -std::numeric_limits<float>::infinity();
+        for (const Neuron::MeshHardpoint& hardpoint : mesh.hardpoints)
+        {
+          const std::optional<Outpost::HardpointKind> kind = Outpost::HardpointKindOf(hardpoint.tag);
+          if (kind == Outpost::HardpointKind::Gun)
+            rearmostGun = std::min(rearmostGun, hardpoint.position.x);
+          else if (kind == Outpost::HardpointKind::Exhaust)
+            foremostExhaust = std::max(foremostExhaust, hardpoint.position.x);
+        }
+        Assert::IsTrue(rearmostGun > foremostExhaust, L"a gun stands behind an exhaust: the model's front is not +x");
         Assert::IsTrue(mesh.Extents().x > previousLength);
         previousLength = mesh.Extents().x;
       }
@@ -151,7 +166,9 @@ public:
     const DirectX::XMFLOAT4* ion = catalog.ExhaustColor(ship);
     ship.drive = Outpost::DriveId{2};
     const DirectX::XMFLOAT4* fusion = catalog.ExhaustColor(ship);
-    Assert::IsTrue(ion != nullptr && fusion != nullptr && ion != fusion);
+    ship.drive = Outpost::DriveId{3};
+    const DirectX::XMFLOAT4* pulse = catalog.ExhaustColor(ship);
+    Assert::IsTrue(ion != nullptr && fusion != nullptr && pulse != nullptr && ion != fusion && pulse != ion && pulse != fusion);
     ship.drive = Outpost::DriveId{9};
     Assert::IsNull(catalog.ExhaustColor(ship));
     ship.role = Outpost::ShipRole::Constructor;
@@ -164,6 +181,74 @@ public:
       json.find(one), one.size(),
       R"([ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } }, { "drive": 1, "color": { "red": 1, "green": 0, "blue": 0 } } ])");
     ExpectRejected(json);
+  }
+
+  // ADR-034: the Lance fires a beam and the Rail Cannon a slug; every other weapon fires tracers. A look the file does
+  // not know, or a weapon listed twice, is refused.
+  TEST_METHOD(GivesEachWeaponItsShot)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{1}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{2}) == Outpost::ShotLook::Beam);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{3}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{4}) == Outpost::ShotLook::Tracer);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{5}) == Outpost::ShotLook::Slug);
+    Assert::IsTrue(catalog.ShotLookOf(Outpost::WeaponId{9}) == Outpost::ShotLook::Tracer);
+
+    const std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+    const std::string_view one = R"([ { "weapon": 2, "look": "beam" } ])";
+    Assert::IsTrue(Outpost::LoadModelCatalog(json).ShotLookOf(Outpost::WeaponId{2}) == Outpost::ShotLook::Beam);
+    for (const std::string_view shots :
+         {R"([ { "weapon": 2, "look": "laser" } ])", R"([ { "weapon": 2, "look": "beam" }, { "weapon": 2, "look": "slug" } ])"})
+    {
+      std::string broken = json;
+      broken.replace(broken.find(one), one.size(), shots);
+      ExpectRejected(broken);
+    }
+  }
+
+  // ADR-029: every hull and the Constructor bank, a Small hull harder and faster than a Large one; anything that is not
+  // a ship does not.
+  TEST_METHOD(GivesEveryShipABank)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    Outpost::EntityView ship{.kind = Outpost::EntityKind::Ship, .hull = Outpost::HullId{1}};
+    const Outpost::BankLimits* smallHull = catalog.BankFor(ship);
+    ship.hull = Outpost::HullId{3};
+    const Outpost::BankLimits* largeHull = catalog.BankFor(ship);
+    Assert::IsTrue(smallHull != nullptr && largeHull != nullptr);
+    Assert::IsTrue(smallHull->maxBankRadians > largeHull->maxBankRadians);
+    Assert::IsTrue(smallHull->settleSeconds < largeHull->settleSeconds);
+    for (const Outpost::HullModel& hull : catalog.hulls)
+      Assert::IsTrue(hull.bank.maxBankRadians > 0.0f && hull.bank.fullBankMetersPerSecondSquared > 0.0f && hull.bank.settleSeconds > 0.0f);
+    ship.role = Outpost::ShipRole::Constructor;
+    Assert::IsTrue(catalog.BankFor(ship) == &catalog.constructorBank);
+    Assert::IsTrue(catalog.constructorBank.maxBankRadians > 0.0f);
+    Assert::IsNull(catalog.BankFor({.kind = Outpost::EntityKind::Structure}));
+  }
+
+  // A bank is optional, and a ship without one flies level; one too steep, or missing a member, is refused.
+  TEST_METHOD(ReadsAnOptionalBank)
+  {
+    const Outpost::ModelCatalog level = Outpost::LoadModelCatalog(OneModel("Human", GOOD_MODEL, GOOD_COLOR));
+    Assert::AreEqual(0.0f, level.constructorBank.maxBankRadians);
+
+    const auto withBank = [](std::string_view _bank)
+    {
+      std::string json = OneModel("Human", GOOD_MODEL, GOOD_COLOR);
+      const std::string_view constructor = R"("constructor": "Small",)";
+      json.replace(json.find(constructor), constructor.size(), std::format(R"("constructor": "Small", "constructorBank": {},)", _bank));
+      return json;
+    };
+    const Outpost::ModelCatalog banked =
+      Outpost::LoadModelCatalog(withBank(R"({ "maxDegrees": 30, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0.2 })"));
+    Assert::AreEqual(std::numbers::pi_v<float> / 6.0f, banked.constructorBank.maxBankRadians, TOLERANCE);
+    Assert::AreEqual(100.0f, banked.constructorBank.fullBankMetersPerSecondSquared);
+    Assert::AreEqual(0.2f, banked.constructorBank.settleSeconds);
+
+    ExpectRejected(withBank(R"({ "maxDegrees": 75, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0.2 })"));
+    ExpectRejected(withBank(R"({ "maxDegrees": 30, "settleSeconds": 0.2 })"));
+    ExpectRejected(withBank(R"({ "maxDegrees": 30, "fullAtMetersPerSecondSquared": 100, "settleSeconds": 0 })"));
   }
 
   TEST_METHOD(RejectsANameThatIsNotAFileName)

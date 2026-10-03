@@ -18,7 +18,7 @@ enum class ShipOrder : std::uint8_t
   Work
 };
 
-// How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the Q2 check's two
+// How a ship picks what to fire at. Nearest is the game's rule (design §7). The other two are the balance check's two
 // extremes, forced by its headless battles (task 3.4) and by nothing in a match.
 enum class TargetRule : std::uint8_t
 {
@@ -46,6 +46,12 @@ struct Entity
   float radiusMeters = 0.0f;
   // Meaningful for an ore asteroid, and for the Mining Rig on one.
   OreYield oreYield = OreYield::Home;
+  // An ore asteroid's Ore left, in hundredths, which its rig draws down (Phase 1 design §8); none for one that never runs
+  // out.
+  std::optional<std::int64_t> oreReserveHundredths;
+  // A Mining Rig's draw on its asteroid's reserve not yet whole hundredths, in hundredths times ticks a second, as a
+  // player's Ore is paid (ADR-017).
+  std::int64_t reserveRemainder = 0;
   // A Mining Rig's asteroid.
   EntityId site;
   // Meaningful for a ship only; its radius is radiusMeters above.
@@ -95,6 +101,10 @@ struct Entity
   std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
+  // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built (Phase 1 design
+  // §11).
+  std::uint32_t shipyardNumber = 0;
+  std::uint32_t shipsBuilt = 0;
 
   [[nodiscard]] bool IsBuilt() const noexcept
   {
@@ -213,6 +223,9 @@ public:
 
   // What the player's research has done to its rates; none before UseTuning.
   [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
+  // A structure's full hit points, in hundredths, and a Constructor's speed, with _owner's research (Phase 1 design §6).
+  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const;
+  [[nodiscard]] float ConstructorSpeed(PlayerId _owner) const;
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
   // command (task 5.2).
@@ -248,12 +261,13 @@ public:
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
   // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would
-  // overlap an obstacle or cross the map's edge. From then on a player that loses its last Command Station loses the
-  // match (task 6.2).
+  // overlap an obstacle or cross the map's edge. From then on a player left with neither a Command Station nor a
+  // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
-  // Whether a player has lost its Command Station, which ends the match (design §6); the player who still has one won,
-  // or nobody when both fell in the same tick. Only a match whose bases were placed can end.
+  // Whether a player has lost its Command Station and its last finished Shipyard, which ends the match (Phase 1 design
+  // §4); the player who still has one of them won, or nobody when both lost theirs in the same tick. Only a match whose
+  // bases were placed can end.
   [[nodiscard]] bool MatchOver() const noexcept
   {
     return m_matchOver;
@@ -263,14 +277,16 @@ public:
     return m_winner;
   }
 
-  // How every ship picks its target. Only the Q2 check's headless battles change it (task 3.4).
+  // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
   {
     m_targetRule = _rule;
   }
 
   // Runs one tick: applies _commands in order at its start, then advances the world. Returns one result per command.
-  [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands);
+  // _observer, when there is one, is told where each part of the tick begins and ends, for measurement (task 8.1). The
+  // simulation reads no clock itself (ADR-009), and nothing the observer learns reaches the state.
+  [[nodiscard]] std::vector<CommandResult> Tick(const std::vector<Command>& _commands, TickObserver* _observer = nullptr);
 
   // The ticks run so far. A snapshot built now is stamped with it.
   [[nodiscard]] std::uint64_t CurrentTick() const noexcept
@@ -298,8 +314,12 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders;
   }
+
+  // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
+  // second (ADR-032), so that no tick plans more than about half of a large order's searches.
+  static constexpr std::size_t SPLIT_ORDER_SHIPS = 32;
 
 private:
   struct PlayerState
@@ -311,11 +331,15 @@ private:
     // not a whole number of hundredths a tick is still paid in full (ADR-017).
     std::int64_t oreRemainder = 0;
     std::vector<ResearchTopicId> researched;
+    // The Shipyards it has finished, which numbers the next.
+    std::uint32_t shipyardsFinished = 0;
     // Under fog of war (ADR-024): the enemy entities the player sees, in identifier order; the enemy structures it has
     // seen, as it last saw them; and the enemy shooters it sees because they hit it, until the tick each fades on.
     std::vector<EntityId> seen;
     std::vector<EntityView> remembered;
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
+    // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
+    std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
   };
@@ -351,6 +375,8 @@ private:
   // At the end of each tick under fog of war: what each player sees and remembers, and attack orders on ships that went
   // out of sight end.
   void UpdateVision();
+  // The players whose base was placed and whose Command Station has fallen.
+  [[nodiscard]] std::vector<PlayerId> PlayersWithoutStation() const;
   // Under fog of war, the side a shot hits sees its shooter for the tuning data's time.
   void RevealShooter(PlayerId _hitPlayer, EntityId _shooter);
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;
@@ -372,6 +398,41 @@ private:
   // structure blocks look for another.
   void UpdateObstacles();
   CommandResult OrderMove(PlayerId _player, const std::vector<EntityId>& _ships, PlanePosition _destination, ShipOrder _order);
+
+  // A group order whose ships' paths are being planned (ADR-032): what it orders, where to or whom, the routes its ships
+  // may join, and each ship's goal, its slot or the target, and its path once planned. Its ships hold, with no order, until
+  // every path is planned and the group sets off.
+  struct PlannedOrder
+  {
+    struct Member
+    {
+      EntityId ship;
+      PlanePosition goal;
+      std::optional<std::vector<PlanePosition>> path;
+
+      friend bool operator==(const Member&, const Member&) = default;
+    };
+
+    ShipOrder order = ShipOrder::Move;
+    // The order's destination, or the target's position when it was given.
+    PlanePosition destination;
+    EntityId attackTarget;
+    float widestRadiusMeters = 0.0f;
+    std::vector<GroupRoutes::Route> routes;
+    std::vector<Member> members;
+
+    friend bool operator==(const PlannedOrder&, const PlannedOrder&) = default;
+  };
+
+  // Plans the paths of _order's ships not planned yet, every _stride-th in its members' order, and keeps the routes they
+  // found.
+  void PlanPaths(PlannedOrder& _order, std::size_t _stride);
+  // Gives every ship of a fully planned _order its order and its path, and the group's pace.
+  void SetOff(const PlannedOrder& _order);
+  // Plans what is left of the orders planned in the last tick, and sets them off.
+  void FinishPlannedOrders();
+  // Plans _order now, or its first half now and the rest in the next tick, and sets it off once planned.
+  void Plan(PlannedOrder _order);
   [[nodiscard]] EntityId ChooseTarget(const Entity& _ship, float _rangeMeters, TargetRule _rule);
   void Fight();
   void ChaseTargets();
@@ -384,6 +445,12 @@ private:
   void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
+  // What one built rig earns each second, in hundredths, with its owner's income factor: its asteroid's rate, or the
+  // trickle once the asteroid has run dry (Phase 1 design §8).
+  [[nodiscard]] std::int64_t RigIncomeHundredthsPerSecond(const Entity& _rig, double _incomeFactor) const;
+  // The Ore left in an ore asteroid as _player knows it: what it holds without fog of war, and what the player last saw
+  // under it. None for one never seen, or one that never runs out.
+  [[nodiscard]] std::optional<std::int64_t> ReserveKnownTo(PlayerId _player, EntityId _asteroid) const;
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();
@@ -406,6 +473,12 @@ private:
   Neuron::Random m_random;
   // The map's obstacles and edge, and the structures that block.
   Pathfinder m_pathfinder;
+  // Who measures the tick under way, if anyone (Tick); null between ticks, so a copy never holds one, and not state.
+  TickObserver* m_observer = nullptr;
+  // The group orders whose paths the next tick finishes planning (ADR-032), and whether this tick planned any paths, which
+  // leaves graph rebuilding to a quieter tick.
+  std::vector<PlannedOrder> m_plannedOrders;
+  bool m_plannedThisTick = false;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.

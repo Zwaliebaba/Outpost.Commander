@@ -1,32 +1,43 @@
-"""Summarizes the matches the game logged against the AI, for the Q1 and Q3 playtests (plan task 6.3, design section 3).
+"""Summarizes the matches the game logged, for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3, design section
+3) and Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10).
 
-The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder. Each line is one
-record, every time in ticks:
+The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder, and its --ai-matches
+switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.log there. Each line is one record,
+every time in ticks:
 
   match seed <seed> ticks_per_second <rate>                       a match starts
   research <tick> player <player> topic <id> <name>               a player finished a research topic
+  tier <tick> player <player> tier <tier>                         a player finished the gateway that opens a tier
   built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared
+  fleet <tick> player <player> warships <count>                   a player's warships, every 30 seconds
+  dry <tick> asteroid <id>                                        an ore asteroid ran dry
+  peak <tick> player <player> warships <count>                    the most warships a player had at once
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
 
-Player 1 is the human and player 2 the AI. For each match this prints its length and outcome (Q1 asks for 15 to 25
-minutes), each player's research with the time it finished, and each player's warships by design in windows of the
-match (Q3 asks whether research choices change what gets built in the mid-game).
+For each match this prints its length and outcome (P1 asks for 45 to 60 minutes), the asteroids that ran dry, and for
+each player its research with the time it finished, the times it opened each tier, its peak warship count (P4), its
+warships by design in each tier (P2 asks whether each tier changes what gets built), and its warships by design in
+windows of the match. With more than one match it ends with their lengths' median and spread, P1's repeatable figure.
 
-Usage: python Tools/MatchLog.py [log] [--all] [--window-minutes N]
+Usage: python Tools/MatchLog.py [log] [--all] [--ai-matches] [--window-minutes N]
 
-The log defaults to the one in the temporary folder. Only the last match is shown unless --all is given. The windows
+The log defaults to the matches against the AI in the temporary folder; --ai-matches reads the AI-against-AI log
+instead, names both players AI, and shows every match. Only the last match is shown unless --all is given. The windows
 are 5 minutes long by default.
 """
 
 import argparse
 import os
+import statistics
 import sys
 import tempfile
 
 LOG_NAME = "OutpostCommander-matches.log"
+AI_MATCHES_LOG_NAME = "OutpostCommander-ai-matches.log"
 PLAYER_NAMES = {1: "Player", 2: "AI"}
-Q1_MINUTES = (15, 25)
+AI_MATCHES_PLAYER_NAMES = {1: "AI 1", 2: "AI 2"}
+P1_MINUTES = (45, 60)
 
 
 class Match:
@@ -34,7 +45,11 @@ class Match:
     self.seed = seed
     self.ticks_per_second = ticks_per_second
     self.research = []
+    self.tiers = []
     self.built = []
+    self.fleets = []
+    self.dry = []
+    self.peaks = {}
     self.end_tick = None
     self.winner = None
     self.left_tick = None
@@ -43,11 +58,15 @@ class Match:
     return tick / self.ticks_per_second
 
   def last_tick(self):
-    ticks = [tick for tick, _, _ in self.research] + [tick for tick, _, _ in self.built]
+    ticks = [record[0] for records in (self.research, self.tiers, self.built, self.fleets, self.dry) for record in records]
     for tick in (self.end_tick, self.left_tick):
       if tick is not None:
         ticks.append(tick)
     return max(ticks, default=0)
+
+  def tier_at(self, player, tick):
+    """The highest tier the player had opened by the tick: 1 until its first gateway."""
+    return max((tier for at, owner, tier in self.tiers if owner == player and at <= tick), default=1)
 
 
 def clock(seconds):
@@ -74,8 +93,16 @@ def read_matches(path):
         match = matches[-1]
         if words[0] == "research":
           match.research.append((int(words[1]), int(words[3]), " ".join(words[6:])))
+        elif words[0] == "tier":
+          match.tiers.append((int(words[1]), int(words[3]), int(words[5])))
         elif words[0] == "built":
           match.built.append((int(words[1]), int(words[3]), " ".join(words[10:])))
+        elif words[0] == "fleet":
+          match.fleets.append((int(words[1]), int(words[3]), int(words[5])))
+        elif words[0] == "dry":
+          match.dry.append((int(words[1]), int(words[3])))
+        elif words[0] == "peak":
+          match.peaks[int(words[3])] = (int(words[1]), int(words[5]))
         elif words[0] == "end":
           match.end_tick = int(words[1])
           match.winner = int(words[3])
@@ -88,66 +115,132 @@ def read_matches(path):
   return matches
 
 
-def describe(match, window_minutes):
+def peak_of(match, player):
+  """The player's peak warship count and its tick: the peak record, or the largest 30-second count without one."""
+  if player in match.peaks:
+    tick, count = match.peaks[player]
+    return count, tick
+  counts = [(count, tick) for tick, owner, count in match.fleets if owner == player]
+  if not counts:
+    return None
+  return max(counts, key=lambda item: (item[0], -item[1]))
+
+
+def counted(designs):
+  counts = {}
+  for design in designs:
+    counts[design] = counts.get(design, 0) + 1
+  return ", ".join(f"{count} {design}" for design, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+
+def describe(match, window_minutes, names):
   lines = [f"Match with seed {match.seed}"]
   if match.end_tick is not None:
     length = match.seconds(match.end_tick)
-    outcome = "a draw" if match.winner == 0 else f"won by {PLAYER_NAMES.get(match.winner, f'player {match.winner}')}"
-    low, high = Q1_MINUTES
+    outcome = "a draw" if match.winner == 0 else f"won by {names.get(match.winner, f'player {match.winner}')}"
+    low, high = P1_MINUTES
     within = "within" if low * 60 <= length <= high * 60 else "outside"
-    lines.append(f"  Ended at {clock(length)}, {outcome}; {within} Q1's {low} to {high} minutes")
+    lines.append(f"  Ended at {clock(length)}, {outcome}; {within} P1's {low} to {high} minutes")
   elif match.left_tick is not None:
     lines.append(f"  Left at {clock(match.seconds(match.left_tick))}, before it ended")
   else:
     lines.append(f"  Still running, or the game stopped, at {clock(match.seconds(match.last_tick()))}")
+  if match.dry:
+    times = ", ".join(clock(match.seconds(tick)) for tick, _ in sorted(match.dry))
+    lines.append(f"  Asteroids run dry: {len(match.dry)}, at {times}")
+  else:
+    lines.append("  Asteroids run dry: none")
 
-  players = sorted({player for _, player, _ in match.research} | {player for _, player, _ in match.built})
+  players = sorted({player for _, player, _ in match.research} | {player for _, player, _ in match.built} |
+                   {player for _, player, _ in match.fleets})
   window_seconds = window_minutes * 60
   for player in players:
-    name = PLAYER_NAMES.get(player, f"Player {player}")
+    name = names.get(player, f"Player {player}")
     lines.append(f"  {name}")
     research = [(tick, topic) for tick, owner, topic in match.research if owner == player]
     if research:
       lines.append("    Research: " + ", ".join(f"{topic} {clock(match.seconds(tick))}" for tick, topic in research))
     else:
       lines.append("    Research: none")
+    tiers = sorted((tier, tick) for tick, owner, tier in match.tiers if owner == player)
+    if tiers:
+      lines.append("    Tiers opened: " + ", ".join(f"{tier} at {clock(match.seconds(tick))}" for tier, tick in tiers))
+    else:
+      lines.append("    Tiers opened: none past tier 1")
+    peak = peak_of(match, player)
+    if peak is not None:
+      lines.append(f"    Peak warships: {peak[0]}, at {clock(match.seconds(peak[1]))}")
 
     built = [(tick, design) for tick, owner, design in match.built if owner == player]
     if not built:
       lines.append("    Warships built: none")
       continue
-    lines.append(f"    Warships built, {len(built)} in all, by {window_minutes}-minute window:")
+    lines.append(f"    Warships built, {len(built)} in all, by the tier it had opened:")
+    by_tier = {}
+    for tick, design in built:
+      by_tier.setdefault(match.tier_at(player, tick), []).append(design)
+    for tier in sorted(by_tier):
+      lines.append(f"      Tier {tier}: {counted(by_tier[tier])}")
+    lines.append(f"    and by {window_minutes}-minute window:")
     windows = {}
     for tick, design in built:
-      window = int(match.seconds(tick) // window_seconds)
-      windows.setdefault(window, {})
-      windows[window][design] = windows[window].get(design, 0) + 1
+      windows.setdefault(int(match.seconds(tick) // window_seconds), []).append(design)
     for window in sorted(windows):
       start = clock(window * window_seconds)
       stop = clock((window + 1) * window_seconds)
-      counts = ", ".join(f"{count} {design}" for design, count in sorted(windows[window].items(), key=lambda item: (-item[1], item[0])))
-      lines.append(f"      {start}-{stop}: {counts}")
+      lines.append(f"      {start}-{stop}: {counted(windows[window])}")
+  return "\n".join(lines)
+
+
+def summarize(matches):
+  """P1's repeatable figure: the median length of the matches that ended, with the spread."""
+  lengths = sorted(match.seconds(match.end_tick) for match in matches if match.end_tick is not None)
+  unfinished = len(matches) - len(lengths)
+  lines = [f"{len(matches)} matches, {len(lengths)} ended"]
+  if lengths:
+    low, high = P1_MINUTES
+    within = sum(1 for length in lengths if low * 60 <= length <= high * 60)
+    lines.append(f"  Length: median {clock(statistics.median(lengths))}, from {clock(lengths[0])} to {clock(lengths[-1])}; "
+                 f"{within} within P1's {low} to {high} minutes")
+  if unfinished:
+    stops = ", ".join(clock(match.seconds(match.last_tick())) for match in matches if match.end_tick is None)
+    lines.append(f"  Not ended: {unfinished}, stopped at {stops}")
+  peaks = []
+  for match in matches:
+    for player in sorted(set(match.peaks) | {owner for _, owner, _ in match.fleets}):
+      peak = peak_of(match, player)
+      if peak is not None:
+        peaks.append(peak[0])
+  if peaks:
+    lines.append(f"  Peak warships of a side: median {statistics.median(peaks):g}, from {min(peaks)} to {max(peaks)}")
   return "\n".join(lines)
 
 
 def main():
-  parser = argparse.ArgumentParser(description="Summarizes the matches the game logged against the AI.")
-  parser.add_argument("log", nargs="?", default=os.path.join(tempfile.gettempdir(), LOG_NAME))
+  parser = argparse.ArgumentParser(description="Summarizes the matches the game logged.")
+  parser.add_argument("log", nargs="?", help="the log to read; by default the game's, in the temporary folder")
   parser.add_argument("--all", action="store_true", help="every match in the log, not only the last")
+  parser.add_argument("--ai-matches", action="store_true", help="the AI-against-AI matches of the --ai-matches switch")
   parser.add_argument("--window-minutes", type=int, default=5)
   arguments = parser.parse_args()
   if arguments.window_minutes <= 0:
     parser.error("--window-minutes must be at least 1")
 
-  if not os.path.isfile(arguments.log):
-    print(f"No match log at {arguments.log}: play a match against the AI first.", file=sys.stderr)
+  default_name = AI_MATCHES_LOG_NAME if arguments.ai_matches else LOG_NAME
+  path = arguments.log or os.path.join(tempfile.gettempdir(), default_name)
+  if not os.path.isfile(path):
+    what = "run the game with --ai-matches" if arguments.ai_matches else "play a match against the AI"
+    print(f"No match log at {path}: {what} first.", file=sys.stderr)
     return 1
-  matches = read_matches(arguments.log)
+  matches = read_matches(path)
   if not matches:
-    print(f"{arguments.log} holds no match.", file=sys.stderr)
+    print(f"{path} holds no match.", file=sys.stderr)
     return 1
-  shown = matches if arguments.all else matches[-1:]
-  print("\n\n".join(describe(match, arguments.window_minutes) for match in shown))
+  names = AI_MATCHES_PLAYER_NAMES if arguments.ai_matches else PLAYER_NAMES
+  shown = matches if arguments.all or arguments.ai_matches else matches[-1:]
+  print("\n\n".join(describe(match, arguments.window_minutes, names) for match in shown))
+  if len(shown) > 1:
+    print("\n" + summarize(shown))
   return 0
 
 

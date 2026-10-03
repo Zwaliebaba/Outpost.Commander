@@ -2,9 +2,10 @@
 
 namespace Outpost
 {
-// The ship designer in the Shipyard panel (task 5.2, design §9): a pick for each slot, a name the player may type, and
-// the live stats of the picked design, derived from the snapshot's components with the function the server uses
-// (ADR-017). It is client state and pauses nothing. The HUD draws it; this holds what it shows and what saving sends.
+// The ship designer (task 5.2, design §9; Phase 1 design §11): a pick for each slot, a name the player may type, the live
+// stats of the picked design, derived from the snapshot's components with the function the server uses (ADR-017), the
+// Shipyard its queue goes to, and how many ships one Queue asks for. It is client state and pauses nothing. The HUD
+// draws it in its window (ADR-031); this holds what it shows and what saving and queuing send.
 //
 // The picked components either match one of the player's saved designs or they do not. A match shows that design's name
 // and can be renamed or queued; anything else shows a name made of its components, and can be saved as a new design once
@@ -13,8 +14,30 @@ class Designer
 {
 public:
   // Keeps every pick on an available component of the newest snapshot: a slot with no pick, or with one the snapshot no
-  // longer lists as available, takes the first available component.
+  // longer lists as available, takes the first available component. Keeps the target on one of the player's finished
+  // Shipyards: one that is gone gives way to the lowest numbered.
   void Update(const Snapshot& _newest);
+
+  // The Shipyard the queue goes to: one of the player's finished Shipyards in _newest, or nullptr while it has none.
+  [[nodiscard]] const EntityView* Target(const Snapshot& _newest) const;
+  // Aims the queue at _shipyard, when it is one of the player's finished Shipyards.
+  void SetTarget(EntityId _shipyard, const Snapshot& _newest);
+  // Steps the target to the next Shipyard by number, or the previous with a negative _step, round the end.
+  void StepTarget(int _step, const Snapshot& _newest);
+
+  // How many ships one Queue asks for: from 1 up to the free slots of the target's queue (owner, 2026-10-02).
+  [[nodiscard]] std::uint32_t Count(const Snapshot& _newest) const;
+  void StepCount(int _step, const Snapshot& _newest);
+
+  // Picks the components of a saved design, and lets the name follow it.
+  void Load(const DesignView& _design) noexcept;
+
+  // The first saved design's chip shown, when they do not all fit, and stepping it across _chips of them.
+  [[nodiscard]] std::size_t FirstChip() const noexcept
+  {
+    return m_firstChip;
+  }
+  void StepChips(int _step, std::size_t _chips) noexcept;
 
   void PickHull(HullId _hull) noexcept
   {
@@ -72,9 +95,10 @@ public:
   // a second.
   static constexpr std::uint64_t SAVE_WAIT_TICKS = 40;
 
-  // Queue on picks that are no saved design yet (ADR-023): a queue at _producer waits for the design, and this returns
-  // the save to send, unless one for the same picks is already on its way. Nothing when SaveCommand has no new design.
-  [[nodiscard]] std::optional<SaveDesignCommand> SaveAndQueue(EntityId _producer, const Snapshot& _newest);
+  // Queue on picks that are no saved design yet (ADR-023): _count queues at _producer wait for the design, and this
+  // returns the save to send, unless one for the same picks is already on its way. Nothing when SaveCommand has no new
+  // design.
+  [[nodiscard]] std::optional<SaveDesignCommand> SaveAndQueue(EntityId _producer, const Snapshot& _newest, std::uint32_t _count = 1);
 
   // The waiting queues whose design _newest holds, now that the server has saved it. A queue whose design is not in a
   // snapshot within SAVE_WAIT_TICKS of its save was refused, and is dropped.
@@ -88,9 +112,15 @@ private:
     std::uint64_t savedTick = 0;
   };
 
+  // The player's finished Shipyards in _newest, the lowest number first.
+  [[nodiscard]] static std::vector<const EntityView*> Shipyards(const Snapshot& _newest);
+
   HullId m_hull;
   DriveId m_drive;
   WeaponId m_weapon;
+  EntityId m_target;
+  std::uint32_t m_count = 1;
+  std::size_t m_firstChip = 0;
   std::optional<std::string> m_typed;
   bool m_editing = false;
   std::vector<WaitingQueue> m_waiting;

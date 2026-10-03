@@ -41,7 +41,7 @@ Outpost::HullView Outpost::ViewOf(const HullTuning& _hull, const Upgrades& _upgr
           .nameUtf8 = _hull.name,
           .hitPointsHundredths = static_cast<std::int32_t>(std::llround(_hull.hitPoints * HUNDREDTHS * _upgrades.hullHitPointsFactor)),
           .armorHundredths = _hull.armor * HUNDREDTHS,
-          .speedMetersPerSecond = _hull.speedMetersPerSecond,
+          .speedMetersPerSecond = _hull.speedMetersPerSecond * _upgrades.shipSpeedFactor,
           .turnRateDegreesPerSecond = _hull.turnRateDegreesPerSecond,
           .footprintRadiusMeters = _hull.footprintRadiusMeters,
           .cost = _hull.cost,

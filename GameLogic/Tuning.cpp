@@ -48,7 +48,12 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   rules.startingOre = _reader.Integer("startingOre", 0);
   rules.startingConstructors = _reader.Integer("startingConstructors", 0);
   rules.miningRigOrePerSecondHome = _reader.Number("miningRigOrePerSecondHome", JsonBound::NotNegative);
+  rules.miningRigOrePerSecondNear = _reader.Number("miningRigOrePerSecondNear", JsonBound::NotNegative);
   rules.miningRigOrePerSecondContested = _reader.Number("miningRigOrePerSecondContested", JsonBound::NotNegative);
+  rules.miningRigOrePerSecondRich = _reader.Number("miningRigOrePerSecondRich", JsonBound::NotNegative);
+  rules.exhaustedYieldPercent = _reader.Integer("exhaustedYieldPercent", 0);
+  if (rules.exhaustedYieldPercent > 100)
+    Neuron::JsonFail(_reader.PathOf("exhaustedYieldPercent"), std::format("is at most 100, found {}", rules.exhaustedYieldPercent));
   return rules;
 }
 
@@ -167,18 +172,40 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
   return structure;
 }
 
-constexpr std::array<std::pair<std::string_view, Outpost::UpgradeTarget>, 4> UPGRADE_TARGETS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::UpgradeTarget>, 9> UPGRADE_TARGETS = {{
   {"miningRig", Outpost::UpgradeTarget::MiningRig},
   {"allHulls", Outpost::UpgradeTarget::AllHulls},
   {"weapon", Outpost::UpgradeTarget::Weapon},
   {"shipyards", Outpost::UpgradeTarget::Shipyards},
+  {"allStructures", Outpost::UpgradeTarget::AllStructures},
+  {"structureWeapon", Outpost::UpgradeTarget::StructureWeapon},
+  {"allShips", Outpost::UpgradeTarget::AllShips},
+  {"constructors", Outpost::UpgradeTarget::Constructors},
+  {"asteroids", Outpost::UpgradeTarget::Asteroids},
 }};
 
-constexpr std::array<std::pair<std::string_view, Outpost::UpgradeStat>, 4> UPGRADE_STATS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::UpgradeStat>, 7> UPGRADE_STATS = {{
   {"income", Outpost::UpgradeStat::Income},
   {"hitPoints", Outpost::UpgradeStat::HitPoints},
   {"fireRate", Outpost::UpgradeStat::FireRate},
   {"buildSpeed", Outpost::UpgradeStat::BuildSpeed},
+  {"speed", Outpost::UpgradeStat::Speed},
+  {"buildRate", Outpost::UpgradeStat::BuildRate},
+  {"oreReserve", Outpost::UpgradeStat::OreReserve},
+}};
+
+// Each target has the one rate the game raises (design §8, Phase 1 design §6): upgrades change rates, never the size of a
+// hit or a range.
+constexpr std::array<std::pair<Outpost::UpgradeTarget, Outpost::UpgradeStat>, 9> UPGRADE_PAIRS = {{
+  {Outpost::UpgradeTarget::MiningRig, Outpost::UpgradeStat::Income},
+  {Outpost::UpgradeTarget::AllHulls, Outpost::UpgradeStat::HitPoints},
+  {Outpost::UpgradeTarget::Weapon, Outpost::UpgradeStat::FireRate},
+  {Outpost::UpgradeTarget::Shipyards, Outpost::UpgradeStat::BuildSpeed},
+  {Outpost::UpgradeTarget::AllStructures, Outpost::UpgradeStat::HitPoints},
+  {Outpost::UpgradeTarget::StructureWeapon, Outpost::UpgradeStat::FireRate},
+  {Outpost::UpgradeTarget::AllShips, Outpost::UpgradeStat::Speed},
+  {Outpost::UpgradeTarget::Constructors, Outpost::UpgradeStat::BuildRate},
+  {Outpost::UpgradeTarget::Asteroids, Outpost::UpgradeStat::OreReserve},
 }};
 
 template <typename Value, size_t Count>
@@ -199,15 +226,14 @@ Outpost::ResearchEffect ReadEffect(ObjectReader& _reader)
     upgrade.target = ReadName(_reader, "upgrade", UPGRADE_TARGETS);
     if (upgrade.target == Outpost::UpgradeTarget::Weapon)
       upgrade.weapon = _reader.Identifier<Outpost::WeaponId>("weapon");
+    if (upgrade.target == Outpost::UpgradeTarget::StructureWeapon)
+      upgrade.structureWeapon = _reader.Identifier<Outpost::StructureWeaponId>("structureWeapon");
     upgrade.stat = ReadName(_reader, "stat", UPGRADE_STATS);
-    // Each target has the one rate the game raises (design §8): upgrades change rates, never the size of a hit.
-    const bool pairs = (upgrade.target == Outpost::UpgradeTarget::MiningRig && upgrade.stat == Outpost::UpgradeStat::Income) ||
-                       (upgrade.target == Outpost::UpgradeTarget::AllHulls && upgrade.stat == Outpost::UpgradeStat::HitPoints) ||
-                       (upgrade.target == Outpost::UpgradeTarget::Weapon && upgrade.stat == Outpost::UpgradeStat::FireRate) ||
-                       (upgrade.target == Outpost::UpgradeTarget::Shipyards && upgrade.stat == Outpost::UpgradeStat::BuildSpeed);
-    if (!pairs)
+    if (std::ranges::find(UPGRADE_PAIRS, std::pair{upgrade.target, upgrade.stat}) == UPGRADE_PAIRS.end())
       Neuron::JsonFail(_reader.PathOf("stat"), "is not the rate this upgrade's target has: a Mining Rig's income, all hulls' "
-                                               "hitPoints, a weapon's fireRate or the shipyards' buildSpeed");
+                                               "hitPoints, a weapon's fireRate, the shipyards' buildSpeed, all structures' "
+                                               "hitPoints, a structure weapon's fireRate, all ships' speed, the constructors' "
+                                               "buildRate or the asteroids' oreReserve");
     upgrade.percent = _reader.Integer("percent", 1);
     return upgrade;
   }
@@ -217,7 +243,9 @@ Outpost::ResearchEffect ReadEffect(ObjectReader& _reader)
     return _reader.Identifier<Outpost::DriveId>("unlockDrive");
   if (_reader.Optional("unlockWeapon") != nullptr)
     return _reader.Identifier<Outpost::WeaponId>("unlockWeapon");
-  Neuron::JsonFail(_reader.Path(), "needs \"upgrade\", \"unlockHull\", \"unlockDrive\" or \"unlockWeapon\"");
+  if (_reader.Optional("opensTier") != nullptr)
+    return Outpost::GatewayEffect{.tier = _reader.Integer("opensTier", 2)};
+  Neuron::JsonFail(_reader.Path(), "needs \"upgrade\", \"unlockHull\", \"unlockDrive\", \"unlockWeapon\" or \"opensTier\"");
 }
 
 Outpost::ResearchTopicTuning ReadResearchTopic(ObjectReader& _reader)
@@ -225,6 +253,9 @@ Outpost::ResearchTopicTuning ReadResearchTopic(ObjectReader& _reader)
   Outpost::ResearchTopicTuning topic;
   topic.id = _reader.Identifier<Outpost::ResearchTopicId>("id");
   topic.name = _reader.String("name");
+  topic.tier = _reader.Integer("tier", 1);
+  if (topic.tier > Outpost::RESEARCH_TIERS)
+    Neuron::JsonFail(_reader.PathOf("tier"), std::format("is past the last tier, {}", Outpost::RESEARCH_TIERS));
   topic.cost = _reader.Integer("cost", 0);
   topic.researchSeconds = _reader.Number("researchSeconds", JsonBound::Positive);
 
@@ -267,6 +298,8 @@ void CheckReferences(const Outpost::Tuning& _tuning)
     const std::string effectPath = std::format("{}.effect", path);
     if (const auto* upgrade = std::get_if<Outpost::UpgradeEffect>(&topic.effect); upgrade != nullptr && upgrade->weapon.IsValid())
       CheckExists(_tuning.weapons, upgrade->weapon, std::format("{}.weapon", effectPath), "weapon");
+    else if (upgrade != nullptr && upgrade->structureWeapon.IsValid())
+      CheckExists(_tuning.structureWeapons, upgrade->structureWeapon, std::format("{}.structureWeapon", effectPath), "structure weapon");
     else if (const auto* hull = std::get_if<Outpost::HullId>(&topic.effect))
       CheckExists(_tuning.hulls, *hull, std::format("{}.unlockHull", effectPath), "hull");
     else if (const auto* drive = std::get_if<Outpost::DriveId>(&topic.effect))
@@ -278,6 +311,44 @@ void CheckReferences(const Outpost::Tuning& _tuning)
 
 // Every topic must be reachable: repeatedly mark the topics whose prerequisites are all marked, and any left over
 // require themselves through a cycle.
+// The tiers (Phase 1 design §6, ADR-033): a topic requires none of a later tier; each tier after the first that has topics
+// has one gateway, which opens its own tier; and every other topic of that tier requires its gateway.
+void CheckTiers(const std::vector<Outpost::ResearchTopicTuning>& _research)
+{
+  const auto gatewayOf = [&_research](std::int32_t _tier) -> const Outpost::ResearchTopicTuning*
+  {
+    const auto gateway = std::ranges::find_if(_research, [_tier](const Outpost::ResearchTopicTuning& _topic)
+                                              { return _topic.IsGateway() && _topic.tier == _tier; });
+    return gateway != _research.end() ? &*gateway : nullptr;
+  };
+  for (size_t i = 0; i < _research.size(); ++i)
+  {
+    const Outpost::ResearchTopicTuning& topic = _research[i];
+    const std::string path = Neuron::JsonElementPath("research", i);
+    for (size_t j = 0; j < topic.prerequisites.size(); ++j)
+    {
+      const auto prerequisite = std::ranges::find(_research, topic.prerequisites[j], &Outpost::ResearchTopicTuning::id);
+      if (prerequisite->tier > topic.tier)
+        Neuron::JsonFail(Neuron::JsonElementPath(std::format("{}.requires", path), j), "is a topic of a later tier");
+    }
+    if (const auto* gateway = std::get_if<Outpost::GatewayEffect>(&topic.effect))
+    {
+      if (gateway->tier != topic.tier)
+        Neuron::JsonFail(std::format("{}.effect.opensTier", path), "is not the gateway's own tier");
+      if (gatewayOf(topic.tier) != &topic)
+        Neuron::JsonFail(std::format("{}.effect.opensTier", path), "opens a tier that has another gateway");
+      continue;
+    }
+    if (topic.tier == 1)
+      continue;
+    const Outpost::ResearchTopicTuning* gateway = gatewayOf(topic.tier);
+    if (gateway == nullptr)
+      Neuron::JsonFail(std::format("{}.tier", path), "names a tier with no gateway");
+    if (std::ranges::find(topic.prerequisites, gateway->id) == topic.prerequisites.end())
+      Neuron::JsonFail(std::format("{}.requires", path), std::format("does not require its tier's gateway, {}", gateway->name));
+  }
+}
+
 void CheckResearchIsAcyclic(const std::vector<Outpost::ResearchTopicTuning>& _research)
 {
   std::vector<Outpost::ResearchTopicId> reachable;
@@ -335,6 +406,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckUniqueIds(tuning.research, "research");
   CheckReferences(tuning);
   CheckResearchIsAcyclic(tuning.research);
+  CheckTiers(tuning.research);
   return tuning;
 }
 } // namespace

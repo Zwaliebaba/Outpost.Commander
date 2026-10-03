@@ -72,6 +72,10 @@ struct EntityView
   // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
   // construction does nothing but stand there and block (design §6).
   std::int32_t builtPermille = PERMILLE;
+  // A finished Shipyard's number among its owner's, 1 for the first finished, never reused; and how many ships it has
+  // built this match (Phase 1 design §11). The owner's only; zero for anything else.
+  std::uint32_t shipyardNumber = 0;
+  std::uint32_t shipsBuilt = 0;
   // A Shipyard's or the Command Station's jobs, front first, and how far the front one has come in thousandths: zero
   // while it waits for the Ore to start (design §5).
   std::vector<JobView> queue;
@@ -85,6 +89,9 @@ struct EntityView
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;
+  // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
+  // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
+  std::optional<std::int64_t> oreReserveHundredths;
 
   friend bool operator==(const EntityView&, const EntityView&) = default;
 };
@@ -141,6 +148,14 @@ struct ResearchTopicView
   double researchSeconds = 0.0;
   std::vector<ResearchTopicId> prerequisites;
   bool researched = false;
+  // The component the topic unlocks, if it unlocks one, which the designer names on the component while it is locked
+  // (Phase 1 design §11).
+  HullId unlocksHull;
+  DriveId unlocksDrive;
+  WeaponId unlocksWeapon;
+  // Its tier, and whether it is the gateway that opens it (Phase 1 design §6).
+  std::int32_t tier = 1;
+  bool gateway = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
@@ -219,8 +234,9 @@ struct Snapshot
   std::vector<WeaponView> weapons;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
-  // The match is over once a player has lost its Command Station (design §6): the winner is the player who still has
-  // one, and no player when both fell in the same tick. The world runs on after it (owner, 2026-10-01).
+  // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
+  // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
+  // (owner, 2026-10-01).
   bool matchOver = false;
   PlayerId winner;
   std::uint64_t matchEndedTick = 0;

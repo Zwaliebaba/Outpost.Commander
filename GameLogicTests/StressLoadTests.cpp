@@ -75,8 +75,8 @@ public:
         destroyed += snapshot.destroyed.size();
         shots += snapshot.shots.size();
       }
-      for (const std::chrono::nanoseconds tick : server.TakeTickDurations())
-        ticks.push_back(tick);
+      for (const Outpost::TickTiming& tick : server.TakeTickTimings())
+        ticks.push_back(tick.total);
       census = Count(server.World());
       // Losses in the last tick are made good before the next.
       Assert::IsTrue(census.ships[0] > Outpost::STRESS_SHIPS_PER_PLAYER - 20 && census.ships[1] > Outpost::STRESS_SHIPS_PER_PLAYER - 20,

@@ -50,6 +50,19 @@ public:
     Assert::IsTrue(redSnapshots[2].player == RED);
   }
 
+  // Task 13.1: a headless run steps the server a tick at a time, with no wall time between ticks.
+  TEST_METHOD(StepsOneTickAtOnce)
+  {
+    Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
+    const std::unique_ptr<Outpost::Transport> blue = server.Connect(BLUE);
+    server.Step();
+    server.Step();
+    const std::vector<Outpost::Snapshot> snapshots = blue->Receive();
+    Assert::AreEqual(size_t{2}, snapshots.size());
+    Assert::AreEqual(std::uint64_t{2}, snapshots[1].tick);
+    Assert::AreEqual(std::uint64_t{2}, server.World().CurrentTick());
+  }
+
   TEST_METHOD(AppliesACommandAtTheNextTickAsTheConnectionsPlayer)
   {
     Outpost::InProcessServer server(RepositoryTuning(), RepositoryMap(), {.seed = 1});
@@ -85,6 +98,7 @@ public:
     server->Start();
     Assert::ExpectException<Neuron::Exception>([&server] { (void)server->Connect(RED); });
     Assert::ExpectException<Neuron::Exception>([&server] { server->Advance(50ms); });
+    Assert::ExpectException<Neuron::Exception>([&server] { server->Step(); });
     Assert::ExpectException<Neuron::Exception>([&server] { server->Start(); });
 
     // Orders sent while the server ticks, a few to each tick, the last of them sending the ship on its way.
@@ -109,7 +123,7 @@ public:
       Assert::AreEqual(snapshots[i - 1].tick + 1, snapshots[i].tick, L"a snapshot for every tick, in order");
     const auto moved = std::ranges::find(snapshots.back().entities, ship, &Outpost::EntityView::id);
     Assert::IsTrue(moved != snapshots.back().entities.end() && moved->position.xMeters > 0.0f, L"the order reached the server");
-    Assert::IsTrue(server->TakeTickDurations().size() >= 10);
+    Assert::IsTrue(server->TakeTickTimings().size() >= 10);
 
     server.reset();
     (void)blue->Receive();

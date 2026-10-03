@@ -26,10 +26,15 @@ Outpost::OreAsteroidPlacement ReadOreAsteroid(JsonObjectReader& _reader)
   const std::string yield = _reader.String("yield");
   if (yield == "home")
     asteroid.yield = Outpost::OreYield::Home;
+  else if (yield == "near")
+    asteroid.yield = Outpost::OreYield::Near;
   else if (yield == "contested")
     asteroid.yield = Outpost::OreYield::Contested;
+  else if (yield == "rich")
+    asteroid.yield = Outpost::OreYield::Rich;
   else
-    Neuron::JsonFail(_reader.PathOf("yield"), std::format("\"{}\" is not \"home\" or \"contested\"", yield));
+    Neuron::JsonFail(_reader.PathOf("yield"), std::format("\"{}\" is not \"home\", \"near\", \"contested\" or \"rich\"", yield));
+  asteroid.reserveOre = _reader.Integer("reserve", 1);
   return asteroid;
 }
 
@@ -39,6 +44,25 @@ Outpost::AsteroidFieldPlacement ReadAsteroidField(JsonObjectReader& _reader)
   field.position = ReadPosition(_reader);
   field.radiusMeters = static_cast<float>(_reader.Number("radiusMeters", JsonBound::Positive));
   return field;
+}
+
+Outpost::SectorPlacement ReadSector(JsonObjectReader& _reader)
+{
+  Outpost::SectorPlacement sector;
+  sector.id = _reader.Integer("id", 1);
+  sector.name = _reader.String("name");
+  sector.minXMeters = static_cast<float>(_reader.Number("minXMeters", JsonBound::Any));
+  sector.maxXMeters = static_cast<float>(_reader.Number("maxXMeters", JsonBound::Any));
+  sector.minZMeters = static_cast<float>(_reader.Number("minZMeters", JsonBound::Any));
+  sector.maxZMeters = static_cast<float>(_reader.Number("maxZMeters", JsonBound::Any));
+  JsonObjectReader node(_reader.Required("node"), _reader.PathOf("node"));
+  sector.node = ReadPosition(node);
+  node.Finish();
+  const std::string adjacentPath = _reader.PathOf("adjacent");
+  const Neuron::JsonValue::Array& adjacent = Neuron::ReadJsonArray(_reader.Required("adjacent"), adjacentPath);
+  for (size_t i = 0; i < adjacent.size(); ++i)
+    sector.adjacent.push_back(Neuron::ReadJsonInteger(adjacent[i], Neuron::JsonElementPath(adjacentPath, i), 1));
+  return sector;
 }
 
 // An obstacle, with where it came from for the error message.
@@ -93,6 +117,49 @@ void CheckGaps(const Outpost::Map& _map)
   }
 }
 
+void CheckSectors(const Outpost::Map& _map)
+{
+  for (size_t i = 0; i < _map.sectors.size(); ++i)
+  {
+    for (size_t j = 0; j < i; ++j)
+    {
+      if (_map.sectors[j].id == _map.sectors[i].id)
+        Neuron::JsonFail(Neuron::JsonElementPath("sectors", i) + ".id", std::format("sector {} is listed twice", _map.sectors[i].id));
+    }
+  }
+  const double half = _map.sizeMeters / 2.0;
+  for (size_t i = 0; i < _map.sectors.size(); ++i)
+  {
+    const Outpost::SectorPlacement& sector = _map.sectors[i];
+    const std::string path = Neuron::JsonElementPath("sectors", i);
+    if (sector.minXMeters >= sector.maxXMeters || sector.minZMeters >= sector.maxZMeters || sector.minXMeters < -half ||
+        sector.maxXMeters > half || sector.minZMeters < -half || sector.maxZMeters > half)
+      Neuron::JsonFail(path, "is not a rectangle on the map");
+    if (!sector.Contains(sector.node))
+      Neuron::JsonFail(path + ".node", "is outside its sector");
+    const auto blocks = [&sector, &_map](Outpost::PlanePosition _position, float _radiusMeters)
+    { return Distance(sector.node, _position) - _radiusMeters < _map.minimumGapMeters; };
+    for (const Outpost::OreAsteroidPlacement& asteroid : _map.oreAsteroids)
+    {
+      if (blocks(asteroid.position, asteroid.radiusMeters))
+        Neuron::JsonFail(path + ".node", std::format("is closer than {} m to an ore asteroid", _map.minimumGapMeters));
+    }
+    for (const Outpost::AsteroidFieldPlacement& field : _map.asteroidFields)
+    {
+      if (blocks(field.position, field.radiusMeters))
+        Neuron::JsonFail(path + ".node", std::format("is closer than {} m to an asteroid field", _map.minimumGapMeters));
+    }
+    for (const std::int32_t other : sector.adjacent)
+    {
+      const auto found = std::ranges::find(_map.sectors, other, &Outpost::SectorPlacement::id);
+      if (other == sector.id || found == _map.sectors.end())
+        Neuron::JsonFail(path + ".adjacent", std::format("names {}, which is not another sector", other));
+      if (std::ranges::count(sector.adjacent, other) != 1 || std::ranges::find(found->adjacent, sector.id) == found->adjacent.end())
+        Neuron::JsonFail(path + ".adjacent", std::format("names {} once, and {} must name it back", other, other));
+    }
+  }
+}
+
 Outpost::Map ReadMap(std::string_view _json)
 {
   const Neuron::JsonValue document = Neuron::ParseJson(_json);
@@ -104,11 +171,14 @@ Outpost::Map ReadMap(std::string_view _json)
   map.starts = Neuron::ReadJsonList<Outpost::PlanePosition>(root, "starts", ReadPosition);
   map.oreAsteroids = Neuron::ReadJsonList<Outpost::OreAsteroidPlacement>(root, "oreAsteroids", ReadOreAsteroid);
   map.asteroidFields = Neuron::ReadJsonList<Outpost::AsteroidFieldPlacement>(root, "asteroidFields", ReadAsteroidField);
+  if (root.Optional("sectors") != nullptr)
+    map.sectors = Neuron::ReadJsonList<Outpost::SectorPlacement>(root, "sectors", ReadSector);
   root.Finish();
 
   if (map.starts.size() != PLAYER_COUNT)
     Neuron::JsonFail("starts", std::format("has {} starts; the MVP has {} players", map.starts.size(), PLAYER_COUNT));
   CheckGaps(map);
+  CheckSectors(map);
   return map;
 }
 } // namespace

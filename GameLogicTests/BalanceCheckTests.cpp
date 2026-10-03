@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "RepositoryData.h"
-#include "Q2Check.h"
+#include "BalanceCheck.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -30,7 +30,7 @@ int Wins(const CheckDesign& _a, const CheckDesign& _b, double _budgetOre, FireMo
 }
 } // namespace
 
-TEST_CLASS(Q2CheckTests)
+TEST_CLASS(BalanceCheckTests)
 {
 public:
   // The check's designs are the game's: the same stats DesignStatsFor derives, and the model's short codes.
@@ -38,8 +38,8 @@ public:
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
     const std::vector<CheckDesign> designs = RepositoryDesigns(tuning);
-    // Eighteen: three hulls, two drives and three weapons.
-    Assert::AreEqual(size_t{18}, designs.size());
+    // Forty-five: three hulls, three drives and five weapons (Phase 1 design §5).
+    Assert::AreEqual(size_t{45}, designs.size());
     for (const CheckDesign& design : designs)
     {
       const Outpost::DesignStats stats =
@@ -47,8 +47,16 @@ public:
       Assert::IsTrue(design.stats == stats, std::wstring(design.code.begin(), design.code.end()).c_str());
     }
     Assert::AreEqual(std::string("S+I+MD"), designs.front().code);
-    Assert::AreEqual(std::string("L+F+MR"), designs.back().code);
-    Assert::AreEqual(30.0f, designs.back().stats.splashRadiusMeters);
+    Assert::AreEqual(std::string("L+P+RC"), designs.back().code);
+    Assert::AreEqual(30.0f, Named(designs, "L+F+MR").stats.splashRadiusMeters);
+    Assert::AreEqual(26.0f, Named(designs, "S+P+FB").stats.splashRadiusMeters);
+
+    // Through tier 1, the MVP's eighteen: the Pulse Drive, the Flak Battery and the Rail Cannon come with tiers 2 and 3.
+    const std::vector<CheckDesign> tierOne = DesignsFrom(tuning, PartsThrough(tuning, 1));
+    Assert::AreEqual(size_t{18}, tierOne.size());
+    Assert::AreEqual(std::string("L+F+MR"), tierOne.back().code);
+    Assert::AreEqual(size_t{36}, DesignsFrom(tuning, PartsThrough(tuning, 2)).size());
+    Assert::AreEqual(size_t{45}, DesignsFrom(tuning, PartsThrough(tuning, 3)).size());
   }
 
   // A battle replays: the same battle of the same pairing has the same outcome.
@@ -122,28 +130,38 @@ public:
     }
     // The line beats the brawler under focus fire only: under spread fire it does not (design §12).
     Assert::IsTrue(Wins(Named(designs, "M+I+La"), Named(designs, "M+I+MD"), 2000.0, FireMode::Focus, BATTLES) >= 16);
+
+    // Phase 1 design §5, at the smallest budget of each component's tier (task 10.3): the Flak Battery breaks the swarm,
+    // a Pulse picket beats the heavy brawler, and the Rail Cannon kills the heavy Lance line.
+    for (const FireMode mode : {FireMode::Spread, FireMode::Focus})
+    {
+      Assert::IsTrue(Wins(Named(designs, "M+I+FB"), Named(designs, "S+I+MD"), 4500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "S+P+La"), Named(designs, "L+F+MD"), 4500.0, mode, BATTLES) >= 16);
+      Assert::IsTrue(Wins(Named(designs, "L+F+RC"), Named(designs, "L+F+La"), 6000.0, mode, BATTLES) >= 16);
+    }
   }
 
-  // Task 3.4: the whole Q2 check against the simulation. It takes minutes in Release and hours in Debug, so it runs only
-  // when OUTPOST_Q2_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in Release:
-  //   set OUTPOST_Q2_FULL=1
+  // Task 3.4: the whole balance check against the simulation. It takes minutes in Release and hours in Debug, so it runs
+  // only when OUTPOST_BALANCE_FULL is set, and otherwise says that it did not. CI never sets it; the owner runs it in
+  // Release:
+  //   set OUTPOST_BALANCE_FULL=1
   //   vstest.console.exe x64\Release\GameLogicTests.dll
   // The switch is in the test rather than a vstest filter because the native test adapter ignores a filter on its
-  // TestCategory trait. The report goes to the test's output and to Q2Check-report.txt in the temporary folder. The
-  // verdicts are recorded in design §12.
-  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck) TEST_METHOD_ATTRIBUTE(L"TestCategory", L"Q2Full") END_TEST_METHOD_ATTRIBUTE()
-  TEST_METHOD(TheFullCheck)
+  // TestCategory trait. The report goes to the test's output and to BalanceCheck-report.txt in the temporary folder.
+  // The verdicts are recorded in design §12.
+  BEGIN_TEST_METHOD_ATTRIBUTE(TheFullCheck)
+  TEST_METHOD_ATTRIBUTE(L"TestCategory", L"BalanceFull") END_TEST_METHOD_ATTRIBUTE() TEST_METHOD(TheFullCheck)
   {
-    if (GetEnvironmentVariableW(L"OUTPOST_Q2_FULL", nullptr, 0) == 0)
+    if (GetEnvironmentVariableW(L"OUTPOST_BALANCE_FULL", nullptr, 0) == 0)
     {
-      Logger::WriteMessage("Not run: set OUTPOST_Q2_FULL to run the full Q2 check.");
+      Logger::WriteMessage("Not run: set OUTPOST_BALANCE_FULL to run the full balance check.");
       return;
     }
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    const CheckResult result = RunQ2Check(tuning, {});
-    std::ofstream(std::filesystem::temp_directory_path() / "Q2Check-report.txt") << result.report;
+    const CheckResult result = RunBalanceCheck(tuning, {});
+    std::ofstream(std::filesystem::temp_directory_path() / "BalanceCheck-report.txt") << result.report;
     Logger::WriteMessage(result.report.c_str());
-    Assert::IsTrue(result.Passed(), L"The Q2 check does not pass; the report says where.");
+    Assert::IsTrue(result.Passed(), L"The balance check does not pass; the report says where.");
   }
 };
 } // namespace GameLogicTests

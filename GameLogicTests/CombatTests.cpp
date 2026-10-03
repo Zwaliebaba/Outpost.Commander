@@ -15,9 +15,12 @@ constexpr Outpost::HullId MEDIUM{2};
 constexpr Outpost::HullId LARGE{3};
 constexpr Outpost::DriveId ION{1};
 constexpr Outpost::DriveId FUSION{2};
+constexpr Outpost::DriveId PULSE{3};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::WeaponId LANCE{2};
 constexpr Outpost::WeaponId MISSILE_RACK{3};
+constexpr Outpost::WeaponId FLAK_BATTERY{4};
+constexpr Outpost::WeaponId RAIL_CANNON{5};
 
 // A simulation on open ground, with the repository's tuning data to make designs from.
 class Arena
@@ -240,6 +243,60 @@ public:
     Assert::AreEqual(0, lost(beyond), L"40 m from the target");
     Assert::AreEqual(2000, lost(armored), L"a structure 25 m away, after its armor");
     Assert::AreEqual(0, lost(friendly), L"no friendly fire");
+  }
+
+  // Phase 1 design §5: the Flak Battery splashes as the Missile Rack does, 26 m around its target, which reaches the next
+  // Small hull in a formation, and its hit of 20 still tells against a Medium hull's armor (gate H10).
+  TEST_METHOD(FlakSplashesItsHits)
+  {
+    Arena arena;
+    const Outpost::EntityId battery = arena.Ship(BLUE, SMALL, ION, FLAK_BATTERY, {0.0f, 0.0f});
+    // Structures with small footprints and no guns, so that nothing moves or fires back.
+    const auto structure = [&arena](Outpost::PlanePosition _position, std::int32_t _armor) {
+      return arena.World().SpawnStructure(RED, Outpost::StructureKind::Shipyard, _position, 3.0f, 1'000'000, _armor * Outpost::HUNDREDTHS);
+    };
+    const Outpost::EntityId target = structure({130.0f, 0.0f}, 2);
+    const Outpost::EntityId beside = structure({130.0f, 18.0f}, 2);
+    const Outpost::EntityId beyond = structure({130.0f, -30.0f}, 2);
+    const Outpost::EntityId armored = structure({145.0f, 0.0f}, 8);
+
+    std::vector<Outpost::ShotView> shots;
+    for (int tick = 0; tick < static_cast<int>(TICKS_PER_SECOND) && shots.empty(); ++tick)
+      shots = arena.Tick();
+    Assert::AreEqual(size_t{1}, shots.size());
+    Assert::IsTrue(shots[0].shooter == battery && shots[0].target == target && shots[0].weapon == FLAK_BATTERY);
+    Assert::AreEqual(26.0f, shots[0].splashRadiusMeters);
+
+    const auto lost = [&arena](Outpost::EntityId _id)
+    {
+      const Outpost::Entity& entity = *arena.World().FindEntity(_id);
+      return entity.maxHitPointsHundredths - entity.hitPointsHundredths;
+    };
+    // 20 against an armor of 2, and 12 against the Medium hull's 8.
+    Assert::AreEqual(1800, lost(target));
+    Assert::AreEqual(1800, lost(beside), L"18 m from the target");
+    Assert::AreEqual(0, lost(beyond), L"30 m from the target");
+    Assert::AreEqual(1200, lost(armored), L"15 m away, after its armor");
+  }
+
+  // Phase 1 design §5: the Rail Cannon outranges the Lance, and one hit breaks the fragile Pulse raider.
+  TEST_METHOD(ARailCannonOutrangesTheLance)
+  {
+    Arena arena;
+    const Outpost::EntityId rail = arena.Ship(BLUE, SMALL, ION, RAIL_CANNON, {0.0f, 0.0f});
+    const Outpost::EntityId picket = arena.Ship(RED, SMALL, PULSE, LANCE, {230.0f, 0.0f});
+    Assert::AreEqual(16500, arena.World().FindEntity(picket)->maxHitPointsHundredths);
+
+    std::vector<Outpost::ShotView> fired;
+    // The first shot comes within one interval, 6 s.
+    for (int tick = 0; tick <= 6 * static_cast<int>(TICKS_PER_SECOND) && arena.World().FindEntity(picket) != nullptr; ++tick)
+    {
+      const std::vector<Outpost::ShotView> shots = arena.Tick();
+      fired.insert(fired.end(), shots.begin(), shots.end());
+    }
+    Assert::AreEqual(size_t{1}, fired.size(), L"the Lance at 230 m never fires");
+    Assert::IsTrue(fired[0].shooter == rail && fired[0].weapon == RAIL_CANNON);
+    Assert::IsNull(arena.World().FindEntity(picket), L"a 318 hit breaks a raider of 165");
   }
 
   // Task 3.3: weapons are turrets, so a ship fires while it moves.

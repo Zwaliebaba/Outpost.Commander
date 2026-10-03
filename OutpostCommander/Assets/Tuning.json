@@ -4,7 +4,10 @@
     "startingOre": 1000,
     "startingConstructors": 2,
     "miningRigOrePerSecondHome": 5,
-    "miningRigOrePerSecondContested": 8
+    "miningRigOrePerSecondNear": 6,
+    "miningRigOrePerSecondContested": 8,
+    "miningRigOrePerSecondRich": 10,
+    "exhaustedYieldPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "hulls": [
@@ -14,12 +17,15 @@
   ],
   "drives": [
     { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 },
-    { "id": 2, "name": "Fusion", "speedFactor": 0.8, "hitPointsFactor": 1.4, "turnRateFactor": 0.8, "cost": 80 }
+    { "id": 2, "name": "Fusion", "speedFactor": 0.8, "hitPointsFactor": 1.4, "turnRateFactor": 0.8, "cost": 80 },
+    { "id": 3, "name": "Pulse", "speedFactor": 1.6, "hitPointsFactor": 0.75, "turnRateFactor": 1.5, "cost": 40 }
   ],
   "weapons": [
     { "id": 1, "name": "Mass Driver", "damage": 14, "fireIntervalSeconds": 0.4, "rangeMeters": 120, "splashRadiusMeters": 0, "cost": 35 },
     { "id": 2, "name": "Lance", "damage": 95, "fireIntervalSeconds": 2.7, "rangeMeters": 220, "splashRadiusMeters": 0, "cost": 85 },
-    { "id": 3, "name": "Missile Rack", "damage": 30, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 130 }
+    { "id": 3, "name": "Missile Rack", "damage": 30, "fireIntervalSeconds": 2.0, "rangeMeters": 280, "splashRadiusMeters": 30, "cost": 130 },
+    { "id": 4, "name": "Flak Battery", "damage": 20, "fireIntervalSeconds": 0.5, "rangeMeters": 200, "splashRadiusMeters": 26, "cost": 60 },
+    { "id": 5, "name": "Rail Cannon", "damage": 320, "fireIntervalSeconds": 6.0, "rangeMeters": 240, "splashRadiusMeters": 0, "cost": 150 }
   ],
   "constructor": { "hitPoints": 300, "armor": 2, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15, "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5, "repairPercentPerSecond": 2 },
   "structureWeapons": [
@@ -33,21 +39,55 @@
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 }
   ],
   "research": [
-    { "id": 1, "name": "Improved Extraction", "cost": 150, "researchSeconds": 60, "requires": [],
+    { "id": 1, "name": "Improved Extraction", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
       "effect": { "upgrade": "miningRig", "stat": "income", "percent": 25 } },
-    { "id": 2, "name": "Hull Plating", "cost": 150, "researchSeconds": 60, "requires": [],
+    { "id": 2, "name": "Hull Plating", "tier": 1, "cost": 150, "researchSeconds": 60, "requires": [],
       "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 15 } },
-    { "id": 3, "name": "Mass Driver Calibration", "cost": 150, "researchSeconds": 75, "requires": [],
+    { "id": 3, "name": "Mass Driver Calibration", "tier": 1, "cost": 150, "researchSeconds": 75, "requires": [],
       "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 10 } },
-    { "id": 4, "name": "Lance Focusing", "cost": 150, "researchSeconds": 75, "requires": [],
+    { "id": 4, "name": "Lance Focusing", "tier": 1, "cost": 150, "researchSeconds": 75, "requires": [],
       "effect": { "upgrade": "weapon", "weapon": 2, "stat": "fireRate", "percent": 15 } },
-    { "id": 5, "name": "Fusion Drive", "cost": 200, "researchSeconds": 90, "requires": [2],
+    { "id": 5, "name": "Fusion Drive", "tier": 1, "cost": 200, "researchSeconds": 90, "requires": [2],
       "effect": { "unlockDrive": 2 } },
-    { "id": 6, "name": "Large Hull", "cost": 250, "researchSeconds": 120, "requires": [2],
+    { "id": 6, "name": "Large Hull", "tier": 1, "cost": 250, "researchSeconds": 120, "requires": [2],
       "effect": { "unlockHull": 3 } },
-    { "id": 7, "name": "Missile Rack", "cost": 250, "researchSeconds": 120, "requires": [3],
+    { "id": 7, "name": "Missile Rack", "tier": 1, "cost": 250, "researchSeconds": 120, "requires": [3],
       "effect": { "unlockWeapon": 3 } },
-    { "id": 8, "name": "Automated Shipyards", "cost": 200, "researchSeconds": 90, "requires": [1],
-      "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } }
+    { "id": 8, "name": "Automated Shipyards", "tier": 1, "cost": 200, "researchSeconds": 90, "requires": [1],
+      "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } },
+    { "id": 9, "name": "Relay Archives", "tier": 2, "cost": 400, "researchSeconds": 150, "requires": [1, 2],
+      "effect": { "opensTier": 2 } },
+    { "id": 10, "name": "Pulse Drive", "tier": 2, "cost": 300, "researchSeconds": 100, "requires": [9],
+      "effect": { "unlockDrive": 3 } },
+    { "id": 11, "name": "Flak Battery", "tier": 2, "cost": 300, "researchSeconds": 100, "requires": [9, 3],
+      "effect": { "unlockWeapon": 4 } },
+    { "id": 12, "name": "Deep Core Survey", "tier": 2, "cost": 300, "researchSeconds": 90, "requires": [9, 1],
+      "effect": { "upgrade": "asteroids", "stat": "oreReserve", "percent": 30 } },
+    { "id": 13, "name": "Composite Plating", "tier": 2, "cost": 300, "researchSeconds": 90, "requires": [9, 2],
+      "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 15 } },
+    { "id": 14, "name": "Reinforced Structures", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [9],
+      "effect": { "upgrade": "allStructures", "stat": "hitPoints", "percent": 25 } },
+    { "id": 15, "name": "Defence Autoloader", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [9],
+      "effect": { "upgrade": "structureWeapon", "structureWeapon": 1, "stat": "fireRate", "percent": 20 } },
+    { "id": 16, "name": "Lance Capacitors", "tier": 2, "cost": 300, "researchSeconds": 90, "requires": [9, 4],
+      "effect": { "upgrade": "weapon", "weapon": 2, "stat": "fireRate", "percent": 10 } },
+    { "id": 17, "name": "Missile Guidance", "tier": 2, "cost": 300, "researchSeconds": 90, "requires": [9, 7],
+      "effect": { "upgrade": "weapon", "weapon": 3, "stat": "fireRate", "percent": 15 } },
+    { "id": 18, "name": "Precursor Vault", "tier": 3, "cost": 600, "researchSeconds": 180, "requires": [9, 6],
+      "effect": { "opensTier": 3 } },
+    { "id": 19, "name": "Rail Cannon", "tier": 3, "cost": 500, "researchSeconds": 150, "requires": [18, 4],
+      "effect": { "unlockWeapon": 5 } },
+    { "id": 20, "name": "Ablative Armour", "tier": 3, "cost": 450, "researchSeconds": 120, "requires": [18, 13],
+      "effect": { "upgrade": "allHulls", "stat": "hitPoints", "percent": 5 } },
+    { "id": 21, "name": "Coilgun Mass Drivers", "tier": 3, "cost": 400, "researchSeconds": 110, "requires": [18, 3],
+      "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 10 } },
+    { "id": 22, "name": "Proximity Fuses", "tier": 3, "cost": 400, "researchSeconds": 110, "requires": [18, 11],
+      "effect": { "upgrade": "weapon", "weapon": 4, "stat": "fireRate", "percent": 15 } },
+    { "id": 23, "name": "Drive Harmonics", "tier": 3, "cost": 450, "researchSeconds": 120, "requires": [18],
+      "effect": { "upgrade": "allShips", "stat": "speed", "percent": 10 } },
+    { "id": 24, "name": "Fleet Automation", "tier": 3, "cost": 450, "researchSeconds": 120, "requires": [18, 8],
+      "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } },
+    { "id": 25, "name": "Rapid Construction", "tier": 3, "cost": 350, "researchSeconds": 100, "requires": [18],
+      "effect": { "upgrade": "constructors", "stat": "buildRate", "percent": 25 } }
   ]
 }

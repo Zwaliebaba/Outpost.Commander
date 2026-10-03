@@ -11,9 +11,6 @@ using Outpost::CombatEffects;
 // Placeholder looks, chosen to read clearly from the RTS camera (design §11). Presentation, not tuning, so they live
 // here rather than in the tuning data.
 
-// Which weapon draws a beam, by the tuning data's numbering: the Lance. Every other weapon fires tracers.
-constexpr Outpost::WeaponId BEAM_WEAPON{2};
-
 // Effects sit above the ships they belong to, so the ships do not hide them.
 constexpr float EFFECT_HEIGHT_METERS = 6.0f;
 
@@ -33,6 +30,13 @@ constexpr DirectX::XMFLOAT4 TRACER_COLOR{1.0f, 0.85f, 0.35f, 1.0f};
 constexpr double BEAM_SECONDS = 0.25;
 constexpr float BEAM_WIDTH_METERS = 4.0f;
 constexpr DirectX::XMFLOAT4 BEAM_COLOR{0.55f, 0.9f, 1.0f, 1.0f};
+
+// A slug joins the gun and the target at once, a thin white line that fades where it stands, with a wide flash at both
+// ends: a heavy hit, rarely.
+constexpr double SLUG_SECONDS = 0.4;
+constexpr float SLUG_WIDTH_METERS = 1.5f;
+constexpr float SLUG_FLASH_RADIUS_METERS = 7.0f;
+constexpr DirectX::XMFLOAT4 SLUG_COLOR{0.9f, 0.95f, 1.0f, 1.0f};
 
 constexpr double SPARK_SECONDS = 0.12;
 // A splash weapon's hit also throws a ring that runs out to its splash radius, so the player sees what it reached.
@@ -65,8 +69,9 @@ CombatEffects::Draw Disc(Outpost::PlanePosition _at, float _radiusMeters, float 
 }
 } // namespace
 
-CombatEffects::CombatEffects(std::uint32_t _ticksPerSecond)
-  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond))
+CombatEffects::CombatEffects(std::uint32_t _ticksPerSecond, std::vector<WeaponShot> _shots)
+  : m_ticksPerSecond(static_cast<double>(_ticksPerSecond)),
+    m_shots(std::move(_shots))
 {
 }
 
@@ -75,7 +80,8 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
   const double start = static_cast<double>(_snapshot.tick) - 1.0;
   for (const ShotView& shot : _snapshot.shots)
   {
-    m_effects.push_back({.kind = shot.weapon == BEAM_WEAPON ? Kind::Beam : Kind::Tracer,
+    const auto look = std::ranges::find(m_shots, shot.weapon, &WeaponShot::weapon);
+    m_effects.push_back({.look = look != m_shots.end() ? look->look : ShotLook::Tracer,
                          .startTick = start,
                          .shooter = shot.shooter,
                          .from = shot.from,
@@ -86,18 +92,15 @@ void CombatEffects::Receive(const Snapshot& _snapshot)
 
 std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const MuzzleLocator& _muzzle, const BeamTint& _tint)
 {
-  const auto lifetime = [](Kind _kind)
+  const auto lifetime = [](ShotLook _look)
   {
-    switch (_kind)
-    {
-    case Kind::Beam:
+    if (_look == ShotLook::Beam)
       return std::max(BEAM_SECONDS, SPARK_SECONDS);
-    case Kind::Tracer:
-    default:
-      return TRACER_FLIGHT_SECONDS + std::max(SPARK_SECONDS, BLAST_SECONDS);
-    }
+    if (_look == ShotLook::Slug)
+      return std::max({SLUG_SECONDS, SPARK_SECONDS, BLAST_SECONDS});
+    return TRACER_FLIGHT_SECONDS + std::max(SPARK_SECONDS, BLAST_SECONDS);
   };
-  std::erase_if(m_effects, [&](const Effect& _effect) { return Seconds(_viewTick - _effect.startTick) > lifetime(_effect.kind); });
+  std::erase_if(m_effects, [&](const Effect& _effect) { return Seconds(_viewTick - _effect.startTick) > lifetime(_effect.look); });
 
   std::vector<Draw> draws;
   for (const Effect& effect : m_effects)
@@ -107,7 +110,7 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const Muzzl
     Effect shot = effect;
     if (_muzzle)
       shot.from = _muzzle(effect.shooter, effect.to).value_or(effect.from);
-    const DirectX::XMFLOAT4 beamColor = shot.kind == Kind::Beam && _tint ? _tint(shot.shooter).value_or(BEAM_COLOR) : BEAM_COLOR;
+    const DirectX::XMFLOAT4 beamColor = shot.look == ShotLook::Beam && _tint ? _tint(shot.shooter).value_or(BEAM_COLOR) : BEAM_COLOR;
     AddShot(shot, _viewTick, beamColor, draws);
   }
   return draws;
@@ -116,16 +119,30 @@ std::vector<CombatEffects::Draw> CombatEffects::At(double _viewTick, const Muzzl
 void CombatEffects::AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const
 {
   const double elapsed = Seconds(_tick - _effect.startTick);
-  const bool beam = _effect.kind == Kind::Beam;
+  const float flashRadiusMeters = _effect.look == ShotLook::Beam   ? BEAM_FLASH_RADIUS_METERS
+                                  : _effect.look == ShotLook::Slug ? SLUG_FLASH_RADIUS_METERS
+                                                                   : TRACER_FLASH_RADIUS_METERS;
   if (elapsed < FLASH_SECONDS)
-  {
-    _draws.push_back(Disc(_effect.from, beam ? BEAM_FLASH_RADIUS_METERS : TRACER_FLASH_RADIUS_METERS, EFFECT_HEIGHT_METERS,
-                          Faded(FLASH_COLOR, elapsed / FLASH_SECONDS)));
-  }
+    _draws.push_back(Disc(_effect.from, flashRadiusMeters, EFFECT_HEIGHT_METERS, Faded(FLASH_COLOR, elapsed / FLASH_SECONDS)));
 
   const float lengthMeters = std::hypot(_effect.to.xMeters - _effect.from.xMeters, _effect.to.zMeters - _effect.from.zMeters);
   double sparkStart = 0.0;
-  if (beam)
+  if (_effect.look == ShotLook::Slug)
+  {
+    if (elapsed < SLUG_SECONDS)
+    {
+      const double progress = elapsed / SLUG_SECONDS;
+      _draws.push_back({.shape = Shape::Band,
+                        .from = _effect.from,
+                        .to = _effect.to,
+                        .widthMeters = SLUG_WIDTH_METERS,
+                        .heightMeters = EFFECT_HEIGHT_METERS,
+                        .color = Faded(SLUG_COLOR, progress)});
+    }
+    if (elapsed < FLASH_SECONDS)
+      _draws.push_back(Disc(_effect.to, SLUG_FLASH_RADIUS_METERS, EFFECT_HEIGHT_METERS, Faded(FLASH_COLOR, elapsed / FLASH_SECONDS)));
+  }
+  else if (_effect.look == ShotLook::Beam)
   {
     if (elapsed < BEAM_SECONDS)
     {

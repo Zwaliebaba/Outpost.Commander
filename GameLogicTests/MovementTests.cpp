@@ -35,6 +35,47 @@ bool Arrived(const Outpost::Simulation& _simulation, Outpost::EntityId _ship)
 {
   return !_simulation.FindEntity(_ship)->destination.has_value();
 }
+
+// Writes down every part a tick tells it of, where it begins and where it ends (task 8.1). An observer may not throw, so
+// it keeps them in room set aside beforehand, and Take spells them "+name" and "-name".
+class PartRecorder final : public Outpost::TickObserver
+{
+public:
+  void Begin(Outpost::TickPart _part) noexcept override
+  {
+    Record(true, _part);
+  }
+
+  void End(Outpost::TickPart _part) noexcept override
+  {
+    Record(false, _part);
+  }
+
+  [[nodiscard]] std::string Take()
+  {
+    std::string parts;
+    for (std::size_t i = 0; i < m_count; ++i)
+      parts += std::format("{}{} ", m_marks[i].begins ? '+' : '-', Outpost::TickPartName(m_marks[i].part));
+    m_count = 0;
+    return parts;
+  }
+
+private:
+  struct Mark
+  {
+    bool begins = false;
+    Outpost::TickPart part = Outpost::TickPart::Commands;
+  };
+
+  void Record(bool _begins, Outpost::TickPart _part) noexcept
+  {
+    if (m_count < m_marks.size())
+      m_marks[m_count++] = {.begins = _begins, .part = _part};
+  }
+
+  std::array<Mark, 64> m_marks{};
+  std::size_t m_count = 0;
+};
 } // namespace
 
 TEST_CLASS(MovementTests)
@@ -48,6 +89,32 @@ public:
     // 180 degrees a second, times the Ion drive's 1.25.
     Assert::IsTrue(std::abs(smallIon.turnRateRadiansPerSecond - 3.9269908f) < 1e-5f);
     Assert::AreEqual(20.0f, Movement(3, 2).speedMetersPerSecond);
+  }
+
+  // Task 8.1: the simulation tells its observer where each part of a tick begins and ends, nested, in the order it runs
+  // them; a graph built for an order is inside the order. It reads no clock itself (ADR-009), and it tells only the tick
+  // it was given the observer for.
+  TEST_METHOD(TellsItsObserverEachPartOfATick)
+  {
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {}, .radiusMeters = 150.0f}}));
+    const Outpost::ShipMovement movement = Movement(1, 1);
+    const Outpost::EntityId first = simulation.SpawnShip(BLUE, DESIGN, movement, {-400.0f, 10.0f});
+    const Outpost::EntityId second = simulation.SpawnShip(BLUE, DESIGN, movement, {-400.0f, 40.0f});
+    PartRecorder recorder;
+
+    (void)simulation.Tick({Move({first, second}, {400.0f, 0.0f})}, &recorder);
+    Assert::AreEqual(std::string("+commands +group_route +graph_build -graph_build -group_route +ship_paths -ship_paths -commands "
+                                 "+fight -fight +targets -targets +move -move +separate -separate "),
+                     recorder.Take());
+    (void)simulation.Tick({}, &recorder);
+    Assert::AreEqual(std::string("+commands -commands +fight -fight +targets -targets +move -move +separate -separate "), recorder.Take());
+
+    // Neither a tick without it, nor a copy made after one with it, tells it anything.
+    (void)simulation.Tick({});
+    Outpost::Simulation copy = simulation;
+    (void)copy.Tick({});
+    Assert::AreEqual(std::string(), recorder.Take());
   }
 
   // Plan task 2.4: a ship reaches a target behind an obstacle, and never passes through it on the way.
@@ -177,6 +244,60 @@ public:
     Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, {}) >= 108.0f - 0.01f);
   }
 
+  // Task 7.2, ADR-039: a ship turns in an arc, as an aircraft does. Sent to a point behind it, it never stands to turn:
+  // it moves every tick, turns no faster than its turn rate, comes about in a loop to one side at half its cruise speed
+  // or less, and arrives on the point.
+  TEST_METHOD(AShipComesAboutInALoop)
+  {
+    for (const Outpost::ShipMovement movement : {Movement(1, 1), Movement(3, 2)})
+    {
+      Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+      simulation.PlaceMap(OpenMap({}));
+      const Outpost::EntityId ship = simulation.SpawnShip(BLUE, DESIGN, movement, {});
+      const Outpost::PlanePosition goal{-150.0f, 0.0f};
+      (void)simulation.Tick({Move({ship}, goal)});
+      float widestMeters = 0.0f;
+      for (int tick = 0; tick < 60 * TICKS_PER_SECOND && !Arrived(simulation, ship); ++tick)
+      {
+        const Outpost::Entity before = *simulation.FindEntity(ship);
+        (void)simulation.Tick({});
+        const Outpost::Entity& after = *simulation.FindEntity(ship);
+        const float stepMeters = Outpost::Distance(before.position, after.position);
+        Assert::IsTrue(stepMeters > 0.0f, L"the ship stood to turn");
+        const float turned = std::abs(std::remainder(after.headingRadians - before.headingRadians, 2.0f * std::numbers::pi_v<float>));
+        Assert::IsTrue(turned <= (movement.turnRateRadiansPerSecond * SECONDS_PER_TICK) + 1e-4f, L"it turned faster than it can");
+        if (std::abs(std::remainder(before.headingRadians, 2.0f * std::numbers::pi_v<float>)) < std::numbers::pi_v<float> / 2.0f)
+          Assert::IsTrue(stepMeters <= (movement.speedMetersPerSecond * SECONDS_PER_TICK / 2.0f) + 1e-3f,
+                         L"it came about faster than half its cruise speed");
+        widestMeters = std::max(widestMeters, std::abs(after.position.zMeters));
+      }
+      Assert::IsTrue(Arrived(simulation, ship), L"the ship never arrived");
+      Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, goal) < 0.01f);
+      // A loop to one side, about twice its turn radius at half speed across.
+      const float halfSpeedRadiusMeters = movement.speedMetersPerSecond / 2.0f / movement.turnRateRadiansPerSecond;
+      Assert::IsTrue(widestMeters > halfSpeedRadiusMeters && widestMeters < 3.0f * halfSpeedRadiusMeters);
+    }
+  }
+
+  // Task 7.2, ADR-039: a point inside the circle a ship turns at full speed, 15 m abeam of a ship whose turn at full speed
+  // is 20 m across, is reached on a tighter arc, flown slower, and not circled.
+  TEST_METHOD(AShipReachesAPointInsideItsTurn)
+  {
+    const Outpost::ShipMovement movement = Movement(1, 1);
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({}));
+    const Outpost::EntityId ship = simulation.SpawnShip(BLUE, DESIGN, movement, {});
+    const Outpost::PlanePosition goal{0.0f, 15.0f};
+    (void)simulation.Tick({Move({ship}, goal)});
+    int ticks = 1;
+    for (; ticks < 10 * TICKS_PER_SECOND && !Arrived(simulation, ship); ++ticks)
+      (void)simulation.Tick({});
+    Assert::IsTrue(Arrived(simulation, ship), L"the ship never arrived");
+    Assert::IsTrue(Outpost::Distance(simulation.FindEntity(ship)->position, goal) < 0.01f, L"it gave up short of the point");
+    // A quarter turn takes 0.4 s at its 225 degrees a second; circling the point would take seconds.
+    Assert::IsTrue(ticks <= TICKS_PER_SECOND, L"it circled the point");
+  }
+
   TEST_METHOD(StopHaltsAMovingShip)
   {
     Outpost::Simulation simulation(1, TICKS_PER_SECOND);
@@ -196,6 +317,121 @@ public:
     tuning.hulls.back().footprintRadiusMeters = 31.0;
     Assert::ExpectException<Neuron::Exception>(
       [&tuning] { Outpost::InProcessServer server(tuning, Outpost::LoadMap(ReadRepositoryMap()), {.seed = 1}); });
+  }
+
+  // ADR-032: an order for more than SPLIT_ORDER_SHIPS ships plans half its paths in its tick and the rest in the next. Its
+  // ships hold, with no order, until the group sets off together in the second tick, and then all arrive. An order of
+  // SPLIT_ORDER_SHIPS sets off in its own tick, as every order did before.
+  TEST_METHOD(PlansALargeOrderOverTwoTicks)
+  {
+    const auto spawnGroup = [](Outpost::Simulation& _simulation, std::size_t _count)
+    {
+      std::vector<Outpost::EntityId> ships;
+      ships.reserve(_count);
+      for (std::size_t i = 0; i < _count; ++i)
+      {
+        const std::size_t row = i / 8;
+        ships.push_back(_simulation.SpawnShip(
+          BLUE, DESIGN, Movement(1, 1), {-600.0f + (static_cast<float>(i % 8) * 25.0f), -100.0f + (static_cast<float>(row) * 25.0f)}));
+      }
+      return ships;
+    };
+    const Outpost::PlanePosition destination{600.0f, 0.0f};
+
+    Outpost::Simulation atLimit(1, TICKS_PER_SECOND);
+    atLimit.PlaceMap(OpenMap({{.position = {0.0f, 0.0f}, .radiusMeters = 150.0f}}));
+    const std::vector<Outpost::EntityId> fleet = spawnGroup(atLimit, Outpost::Simulation::SPLIT_ORDER_SHIPS);
+    (void)atLimit.Tick({Move(fleet, destination)});
+    Assert::IsTrue(std::ranges::all_of(fleet, [&](Outpost::EntityId _id) { return !atLimit.FindEntity(_id)->path.empty(); }),
+                   L"a group of the limit sets off at once");
+
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {0.0f, 0.0f}, .radiusMeters = 150.0f}}));
+    const std::vector<Outpost::EntityId> ships = spawnGroup(simulation, Outpost::Simulation::SPLIT_ORDER_SHIPS + 8);
+    (void)simulation.Tick({Move(ships, destination)});
+    for (const Outpost::EntityId id : ships)
+    {
+      const Outpost::Entity& ship = *simulation.FindEntity(id);
+      Assert::IsTrue(ship.path.empty() && ship.order == Outpost::ShipOrder::None, L"holding while the group plans");
+    }
+    // A copy part-way through planning is the same simulation, and plans the same.
+    Outpost::Simulation copy = simulation;
+    Assert::IsTrue(copy == simulation);
+
+    (void)simulation.Tick({});
+    (void)copy.Tick({});
+    Assert::IsTrue(copy == simulation);
+    float slowestSeconds = 0.0f;
+    for (const Outpost::EntityId id : ships)
+    {
+      const Outpost::Entity& ship = *simulation.FindEntity(id);
+      Assert::IsTrue(!ship.path.empty() && ship.order == Outpost::ShipOrder::Move, L"set off together");
+      Assert::IsTrue(ship.destination == destination);
+      float meters = Outpost::Distance(ship.position, ship.path.front());
+      for (std::size_t i = 1; i < ship.path.size(); ++i)
+        meters += Outpost::Distance(ship.path[i - 1], ship.path[i]);
+      slowestSeconds = std::max(slowestSeconds, meters / ship.cruiseSpeedMetersPerSecond);
+    }
+    // At one pace: every ship's path takes the slowest's time.
+    for (const Outpost::EntityId id : ships)
+    {
+      const Outpost::Entity& ship = *simulation.FindEntity(id);
+      float meters = Outpost::Distance(ship.position, ship.path.front());
+      for (std::size_t i = 1; i < ship.path.size(); ++i)
+        meters += Outpost::Distance(ship.path[i - 1], ship.path[i]);
+      Assert::AreEqual(slowestSeconds, meters / ship.cruiseSpeedMetersPerSecond, slowestSeconds * 1e-3f);
+    }
+
+    for (int tick = 0; tick < 60 * TICKS_PER_SECOND; ++tick)
+      (void)simulation.Tick({});
+    Assert::IsTrue(std::ranges::all_of(ships, [&](Outpost::EntityId _id) { return Arrived(simulation, _id); }));
+  }
+
+  // ADR-032: a ship ordered again while its group plans leaves the group; the rest set off without it.
+  TEST_METHOD(AShipOrderedAgainLeavesItsPlanningGroup)
+  {
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({}));
+    std::vector<Outpost::EntityId> ships;
+    ships.reserve(Outpost::Simulation::SPLIT_ORDER_SHIPS + 4);
+    for (std::size_t i = 0; i < Outpost::Simulation::SPLIT_ORDER_SHIPS + 4; ++i)
+    {
+      const std::size_t row = i / 6;
+      ships.push_back(
+        simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1), {static_cast<float>(i % 6) * 30.0f, static_cast<float>(row) * 30.0f}));
+    }
+    const Outpost::EntityId stopped = ships.front();
+    const Outpost::EntityId elsewhere = ships.back();
+    (void)simulation.Tick({Move(ships, {800.0f, 0.0f}), {.player = BLUE, .order = Outpost::StopCommand{.ships = {stopped}}}});
+    (void)simulation.Tick({Move({elsewhere}, {-800.0f, 0.0f})});
+    Assert::IsTrue(simulation.FindEntity(stopped)->path.empty() && simulation.FindEntity(stopped)->order == Outpost::ShipOrder::None);
+    Assert::IsTrue(simulation.FindEntity(elsewhere)->destination == Outpost::PlanePosition{-800.0f, 0.0f}, L"its own order stands");
+    Assert::IsTrue(simulation.FindEntity(ships[1])->destination == Outpost::PlanePosition{800.0f, 0.0f});
+  }
+
+  // ADR-032: a structure placed drops the path graphs, and the quiet ticks after it build them again, one a tick, so that
+  // the next order finds them built; a tick that plans paths builds none of its own accord.
+  TEST_METHOD(RebuildsDroppedGraphsOnQuietTicks)
+  {
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {0.0f, 0.0f}, .radiusMeters = 150.0f}}));
+    simulation.PreparePathfinding(8.0f);
+    simulation.PreparePathfinding(14.0f);
+    (void)simulation.SpawnStructure(BLUE, Outpost::StructureKind::Shipyard, {400.0f, 400.0f}, 40.0f);
+    PartRecorder recorder;
+    (void)simulation.Tick({}, &recorder);
+    Assert::AreEqual(std::string("+commands -commands +fight -fight +targets -targets +move -move +separate -separate +graph_build "
+                                 "-graph_build "),
+                     recorder.Take());
+    (void)simulation.Tick({}, &recorder);
+    Assert::IsTrue(recorder.Take().ends_with("+graph_build -graph_build "), L"the second graph");
+    (void)simulation.Tick({}, &recorder);
+    Assert::IsFalse(recorder.Take().contains("graph_build"), L"both are built");
+
+    // A ship's order finds its graph built.
+    const Outpost::EntityId ship = simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1), {-600.0f, 0.0f});
+    (void)simulation.Tick({Move({ship}, {600.0f, 0.0f})}, &recorder);
+    Assert::IsFalse(recorder.Take().contains("graph_build"));
   }
 };
 } // namespace GameLogicTests

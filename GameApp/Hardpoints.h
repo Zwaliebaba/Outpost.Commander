@@ -15,19 +15,25 @@ enum class HardpointKind : std::uint8_t
 // The kind a tag names, or nothing for a tag the game does not know.
 [[nodiscard]] std::optional<HardpointKind> HardpointKindOf(std::string_view _tag) noexcept;
 
-// Where a model stands: a point on the ground, raised by liftMeters, turned to a heading counterclockwise from +x seen
-// from above, and scaled uniformly from the size its mesh was fitted to. GameClient draws the model the same way.
+// Where a model stands: a point on the ground, raised by liftMeters, rolled about its front by bankRadians, turned to a
+// heading counterclockwise from +x seen from above, and scaled uniformly from the size its mesh was fitted to. A
+// positive bank lowers the model's left side, its +z, which is into a counterclockwise turn (ADR-029). GameClient draws
+// the model by PoseMatrix, which places it as PlacePoint does.
 struct ModelPose
 {
   PlanePosition position;
   float liftMeters = 0.0f;
   float headingRadians = 0.0f;
+  float bankRadians = 0.0f;
   float scale = 1.0f;
 };
 
+// The world matrix that draws a fitted mesh where _pose puts it.
+[[nodiscard]] DirectX::XMFLOAT4X4 PoseMatrix(const ModelPose& _pose) noexcept;
+
 // A point of the fitted mesh, where the pose puts it in the world.
 [[nodiscard]] DirectX::XMFLOAT3 PlacePoint(const ModelPose& _pose, const DirectX::XMFLOAT3& _point) noexcept;
-// A direction of the fitted mesh, where the pose turns it.
+// A direction of the fitted mesh, where the pose rolls and turns it.
 [[nodiscard]] DirectX::XMFLOAT3 PlaceDirection(const ModelPose& _pose, const DirectX::XMFLOAT3& _direction) noexcept;
 
 // Where a shot at _target leaves the model from: its gun nearest the target, on the ground. Nothing for a model with no

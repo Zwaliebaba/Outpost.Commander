@@ -20,6 +20,22 @@ struct ShipMovement
   return std::max(_damageHundredths / 4, _damageHundredths - _armorHundredths);
 }
 
+// A component's abbreviation, as the designer's saved-design chips and the match log write it (Phase 1 design §5, §11):
+// the capital initial of each word of its name, "S" for Small and "MD" for Mass Driver.
+[[nodiscard]] inline std::string Abbreviation(std::string_view _name)
+{
+  std::string abbreviation;
+  bool wordStart = true;
+  for (const char character : _name)
+  {
+    const bool letter = (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z');
+    if (letter && wordStart)
+      abbreviation += character >= 'a' ? static_cast<char>(character - 'a' + 'A') : character;
+    wordStart = character == ' ';
+  }
+  return abbreviation;
+}
+
 // One hull, drive and weapon.
 struct DesignComponents
 {

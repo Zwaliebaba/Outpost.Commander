@@ -2,9 +2,10 @@
 
 namespace GameLogicTests
 {
-// Design §3's Q2 check, played by the real simulation instead of Tools/BattleModel.py's abstract clumps (task 3.4). It
-// follows the model's method: the same stages, budgets, fire modes, criteria (a)-(d) and confidence intervals. Two things
-// differ, and both are what the simulation is.
+// The balance check of design §3, played by the real simulation instead of Tools/BattleModel.py's abstract clumps (task
+// 3.4). The MVP's documents and the ADRs call it the Q2 check, after the MVP's question it answers: does ship design
+// matter? It follows the model's method: the same stages, budgets, fire modes, criteria (a)-(d) and confidence
+// intervals. Two things differ, and both are what the simulation is.
 //   - Armies are whole ships. The model fields the Ore left over as a fractional ship; the simulation cannot. Battle k
 //     of n spends the budget at the center of the k-th of n equal slices of the ±15% window, and buys as many whole
 //     ships as that affords. The Ore left over is not fielded.
@@ -72,8 +73,17 @@ enum class FireMode : std::uint8_t
 
 struct CheckOptions
 {
+  // Ore a side at each stage (Phase 1 design §7): tier 1's, the MVP's every component; the starting components' and tier
+  // 1's research; and tiers 2 and 3, whose research is played at their own budgets.
   std::vector<double> budgets{2000, 3000, 4500, 6000, 9000, 12000};
   std::vector<double> earlyBudgets{2000, 3000, 4500};
+  std::vector<double> tierTwoBudgets{4500, 6000, 9000, 12000};
+  std::vector<double> tierThreeBudgets{6000, 9000, 12000};
+  // The last tier played; 1 is the MVP's check.
+  std::int32_t lastTier = Outpost::RESEARCH_TIERS;
+  // Drives whose case is speed, which a battle between two groups cannot see: (b) reports them when no design worth
+  // building uses them, and does not fail on it (Phase 1 design §5, §7; owner, 2026-10-02, gate H4).
+  std::vector<std::string> speedDrives{"Pulse"};
   std::uint32_t battles = 60;
   std::uint32_t robustBattles = 30;
   std::uint32_t maxBattles = 480;
@@ -97,6 +107,9 @@ struct CheckResult
 // The hulls, drives and weapons of the tuning data, as the check moves them.
 [[nodiscard]] CheckParts PartsFrom(const Outpost::Tuning& _tuning);
 
+// The parts of PartsFrom that no research topic unlocks, or that a topic of _tier or an earlier one unlocks.
+[[nodiscard]] CheckParts PartsThrough(const Outpost::Tuning& _tuning, std::int32_t _tier);
+
 // Every design of the parts: every hull, drive and weapon, the Missile Rack's splash included (task 5.3).
 [[nodiscard]] std::vector<CheckDesign> DesignsFrom(const Outpost::Tuning& _tuning, const CheckParts& _parts);
 
@@ -107,5 +120,5 @@ struct CheckResult
                         std::uint32_t _battles, const std::optional<Outpost::SightTuning>& _fog = std::nullopt);
 
 // The check, against _tuning.
-[[nodiscard]] CheckResult RunQ2Check(const Outpost::Tuning& _tuning, const CheckOptions& _options);
+[[nodiscard]] CheckResult RunBalanceCheck(const Outpost::Tuning& _tuning, const CheckOptions& _options);
 } // namespace GameLogicTests

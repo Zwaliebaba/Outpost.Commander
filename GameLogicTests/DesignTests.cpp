@@ -81,6 +81,55 @@ public:
     }
   }
 
+  // Phase 1 design §5: the Pulse Drive, the Flak Battery and the Rail Cannon, each locked until its topic is researched,
+  // and each with its abbreviation.
+  TEST_METHOD(DerivesThePhaseOneComponents)
+  {
+    const Outpost::Tuning tuning = RepositoryTuning();
+    constexpr Outpost::DriveId PULSE{3};
+    constexpr Outpost::WeaponId FLAK_BATTERY{4};
+    constexpr Outpost::WeaponId RAIL_CANNON{5};
+    const auto armorOf = [&tuning](size_t _hull) { return tuning.hulls[_hull].armor * Outpost::HUNDREDTHS; };
+
+    // The raider: the fastest and most fragile, with the swarm-breaker's hits splashing 26 m.
+    const Outpost::DesignStats raider = Outpost::DesignStatsFor(tuning, Outpost::HullId{1}, PULSE, FLAK_BATTERY);
+    Assert::AreEqual(132, raider.cost);
+    Assert::AreEqual(16500, raider.hitPointsHundredths);
+    Assert::AreEqual(96.0f, raider.movement.speedMetersPerSecond, 1e-4f);
+    Assert::AreEqual(270.0f * std::numbers::pi_v<float> / 180.0f, raider.movement.turnRateRadiansPerSecond, 1e-4f);
+    Assert::AreEqual(200.0f, raider.rangeMeters);
+    Assert::AreEqual(26.0f, raider.splashRadiusMeters);
+    // 20 a hit every half second: 18 against a Small hull's armor of 2, and 12 against a Medium hull's 8 (gate H10).
+    Assert::AreEqual(36.0, Outpost::DamagePerSecond(raider, armorOf(0)), 1e-9);
+    Assert::AreEqual(24.0, Outpost::DamagePerSecond(raider, armorOf(1)), 1e-9);
+
+    // The heavy's gun: 320 a hit every 6 s, from 240 m, past the Lance's 220 m.
+    const Outpost::DesignStats rail = Outpost::DesignStatsFor(tuning, Outpost::HullId{3}, Outpost::DriveId{2}, RAIL_CANNON);
+    Assert::AreEqual(530, rail.cost);
+    Assert::AreEqual(240.0f, rail.rangeMeters);
+    Assert::AreEqual(0.0f, rail.splashRadiusMeters);
+    Assert::AreEqual(306.0 / 6.0, Outpost::DamagePerSecond(rail, armorOf(2)), 1e-9);
+    // Six hits break a Large+Fusion hull of 1,680.
+    Assert::AreEqual(6, (rail.hitPointsHundredths + Outpost::HitHundredths(rail.damageHundredths, armorOf(2)) - 1) /
+                          Outpost::HitHundredths(rail.damageHundredths, armorOf(2)));
+
+    const std::array<Outpost::ResearchTopicId, 1> pulseDrive{Outpost::ResearchTopicId{10}};
+    const std::array<Outpost::ResearchTopicId, 1> flakBattery{Outpost::ResearchTopicId{11}};
+    const std::array<Outpost::ResearchTopicId, 1> railCannon{Outpost::ResearchTopicId{19}};
+    Assert::IsFalse(Outpost::IsAvailable(tuning, {}, PULSE));
+    Assert::IsFalse(Outpost::IsAvailable(tuning, {}, FLAK_BATTERY));
+    Assert::IsFalse(Outpost::IsAvailable(tuning, {}, RAIL_CANNON));
+    Assert::IsTrue(Outpost::IsAvailable(tuning, pulseDrive, PULSE));
+    Assert::IsTrue(Outpost::IsAvailable(tuning, flakBattery, FLAK_BATTERY));
+    Assert::IsTrue(Outpost::IsAvailable(tuning, railCannon, RAIL_CANNON));
+    Assert::IsFalse(Outpost::IsAvailable(tuning, railCannon, FLAK_BATTERY));
+
+    Assert::AreEqual(std::string("Small+Pulse+Flak Battery"), Outpost::DesignName(tuning, {Outpost::HullId{1}, PULSE, FLAK_BATTERY}));
+    Assert::AreEqual(std::string("P"), Outpost::Abbreviation(tuning.drives[2].name));
+    Assert::AreEqual(std::string("FB"), Outpost::Abbreviation(tuning.weapons[3].name));
+    Assert::AreEqual(std::string("RC"), Outpost::Abbreviation(tuning.weapons[4].name));
+  }
+
   // Design §7: max(damage × 0.25, damage − armor), in hundredths.
   TEST_METHOD(ArmorTakesItsShareOfAHit)
   {
@@ -90,7 +139,7 @@ public:
     Assert::AreEqual(400, Outpost::HitHundredths(1400, 1000));
     Assert::AreEqual(9300, Outpost::HitHundredths(9500, 200));
     Assert::AreEqual(1400, Outpost::HitHundredths(1400, 0));
-    // Fractional armor and damage, as the Q2 check's robustness sweep makes them.
+    // Fractional armor and damage, as the balance check's robustness sweep makes them.
     Assert::AreEqual(630, Outpost::HitHundredths(1470, 840));
   }
 

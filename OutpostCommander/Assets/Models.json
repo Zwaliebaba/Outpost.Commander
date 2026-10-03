@@ -45,9 +45,9 @@
     { "player": 2, "set": "Tarkan" }
   ],
   "hulls": [
-    { "hull": 1, "model": "Small" },
-    { "hull": 2, "model": "Medium" },
-    { "hull": 3, "model": "Large" }
+    { "hull": 1, "model": "Small", "bank": { "maxDegrees": 50, "fullAtMetersPerSecondSquared": 60, "settleSeconds": 0.25 } },
+    { "hull": 2, "model": "Medium", "bank": { "maxDegrees": 45, "fullAtMetersPerSecondSquared": 26, "settleSeconds": 0.3 } },
+    { "hull": 3, "model": "Large", "bank": { "maxDegrees": 35, "fullAtMetersPerSecondSquared": 8, "settleSeconds": 0.4 } }
   ],
   "structures": [
     { "structure": "CommandStation", "model": "CommandStation" },
@@ -57,9 +57,15 @@
     { "structure": "DefensePlatform", "model": "DefensePlatform" }
   ],
   "constructor": "Constructor",
+  "constructorBank": { "maxDegrees": 30, "fullAtMetersPerSecondSquared": 55, "settleSeconds": 0.3 },
   "exhausts": [
     { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1.0 } },
-    { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } }
+    { "drive": 2, "color": { "red": 1.0, "green": 0.35, "blue": 0.85 } },
+    { "drive": 3, "color": { "red": 0.55, "green": 1.0, "blue": 0.3 } }
   ],
-  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.75 }
+  "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.75 },
+  "shots": [
+    { "weapon": 2, "look": "beam" },
+    { "weapon": 5, "look": "slug" }
+  ]
 }

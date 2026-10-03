@@ -2,9 +2,11 @@
 
 namespace Outpost
 {
-// What a player's finished research does to its rates (design §8), as factors on the base numbers of the tuning data.
-// Upgrades change rates, never the size of a hit or a range: hull hit points, a weapon's fire rate, a Mining Rig's income
-// and a Shipyard's build speed. Two topics on one rate multiply, as the Q2 model applies them.
+// What a player's finished research does to its rates (design §8, Phase 1 design §6), as factors on the base numbers of
+// the tuning data. Upgrades change rates, never the size of a hit or a range: hull and structure hit points, a weapon's
+// and a structure weapon's fire rate, a Mining Rig's income, a Shipyard's build speed, every ship's speed, the
+// Constructors' build and repair rate, and how much ore an asteroid holds. Two topics on one rate add their percentages
+// (ADR-033): +15% and +15% make +30%.
 struct Upgrades
 {
   double hullHitPointsFactor = 1.0;
@@ -12,8 +14,15 @@ struct Upgrades
   std::vector<std::pair<WeaponId, double>> weaponFireRateFactors;
   double miningIncomeFactor = 1.0;
   double shipyardBuildSpeedFactor = 1.0;
+  double structureHitPointsFactor = 1.0;
+  std::vector<std::pair<StructureWeaponId, double>> structureWeaponFireRateFactors;
+  double shipSpeedFactor = 1.0;
+  double constructorRateFactor = 1.0;
+  // Divides what a rig of the player's draws from its asteroid's reserve for the Ore it earns (Phase 1 design §8).
+  double oreReserveFactor = 1.0;
 
   [[nodiscard]] double FireRateFactor(WeaponId _weapon) const noexcept;
+  [[nodiscard]] double FireRateFactor(StructureWeaponId _weapon) const noexcept;
 
   friend bool operator==(const Upgrades&, const Upgrades&) = default;
 };

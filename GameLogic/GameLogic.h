@@ -13,10 +13,12 @@
 #include <span>
 #include <stop_token>
 #include <thread>
+#include <utility>
 
 #include "Tuning.h"
 #include "Map.h"
 #include "PlaneVector.h"
+#include "TickObserver.h"
 #include "Pathfinder.h"
 #include "Research.h"
 #include "ShipDesign.h"

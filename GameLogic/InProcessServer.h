@@ -36,7 +36,7 @@ struct LoggedCommand
 
 // The server inside the client (ADR-002). Started, it runs its ticks on a thread of its own (ADR-025); a test may instead
 // step it by hand with Advance, on the test's thread. Match setup, World and the command log belong to whichever thread
-// steps it, so a started server is touched only through its connections and TakeTickDurations.
+// steps it, so a started server is touched only through its connections and TakeTickTimings.
 class InProcessServer final : public Server
 {
 public:
@@ -48,8 +48,9 @@ public:
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
   // Throws Neuron::Exception when it has started already.
   void Start() override;
+  void Step() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
-  [[nodiscard]] std::vector<std::chrono::nanoseconds> TakeTickDurations() override;
+  [[nodiscard]] std::vector<TickTiming> TakeTickTimings() override;
 
   // Steps a server that has not started, for tests: runs the ticks due after _elapsedWallTime more wall time, applying the
   // commands that have arrived and sending each connected player a snapshot per tick. This and the started server's
@@ -80,10 +81,11 @@ public:
   // Match setup for a measurement run: places task 3.7's stress scene and keeps it at full size before every tick.
   void StartStressLoad();
 
-private:
-  // Builds the pathfinding graphs for every hull and the Constructor ahead of their first order.
+  // The end of match setup: builds the pathfinding graphs for every hull and the Constructor ahead of their first order,
+  // once every structure of the setup stands, since each one placed drops them (ADR-032).
   void PreparePathfinding();
 
+private:
   // Runs one tick: the commands that arrived since the last, in connection order and then in the order each client sent
   // them, and then a snapshot for every connected player.
   void RunTick();
@@ -104,9 +106,12 @@ private:
   std::vector<Connection> m_connections;
   std::vector<LoggedCommand> m_commandLog;
   std::optional<StressLoad> m_stressLoad;
-  // Guards the tick durations and the failure, which the started server's thread writes and TakeTickDurations reads.
+  // Times the parts of each tick on the thread that runs them (task 8.1): the simulation tells it where each begins and
+  // ends, and the server times its snapshots.
+  TickProfiler m_profiler;
+  // Guards the tick timings and the failure, which the started server's thread writes and TakeTickTimings reads.
   std::mutex m_reportMutex;
-  std::vector<std::chrono::nanoseconds> m_tickDurations;
+  std::vector<TickTiming> m_tickTimings;
   std::exception_ptr m_failure;
   // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
   std::jthread m_thread;

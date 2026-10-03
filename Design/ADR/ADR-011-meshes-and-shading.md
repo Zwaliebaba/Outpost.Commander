@@ -1,6 +1,6 @@
 # ADR-011 — Meshes are sized by data and drawn flat-lit in a team color
 
-Status: **accepted** · 2026-09-30 · Decision 3 is superseded in part by [ADR-029](ADR-029-lines-over-dark-faces.md): a structure's color is its side's taken toward gray, and its faces are darker than a ship's
+Status: **accepted** · 2026-09-30 · Decision 3 is superseded in part by [ADR-040](ADR-040-lines-over-dark-faces.md): a structure's color is its side's taken toward gray, and its faces are darker than a ship's
 
 ## Context
 

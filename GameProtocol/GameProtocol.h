@@ -7,10 +7,12 @@
 #include "NeuronCore.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <compare>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <variant>
 

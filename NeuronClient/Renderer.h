@@ -4,7 +4,7 @@ namespace Neuron
 {
 // The Direct3D 12 device, its direct queue and a flip-model swap chain on one window (ADR-006). A frame is drawn into a
 // multisampled scene target with a depth buffer of its own, both the size of the back buffer, and resolved into the back
-// buffer before it is presented (ADR-011, ADR-029). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It
+// buffer before it is presented (ADR-011, ADR-040). It uses d3dx12's helpers for barriers and descriptors (ADR-007). It
 // knows no game concept: a frame is cleared, whoever holds the command list draws into it, and it is presented.
 class Renderer : NonCopyable
 {
@@ -13,7 +13,7 @@ public:
   static constexpr UINT FRAME_COUNT = 2;
   static constexpr DXGI_FORMAT RENDER_TARGET_FORMAT = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
   static constexpr DXGI_FORMAT DEPTH_FORMAT = DXGI_FORMAT_D32_FLOAT;
-  // Samples per pixel of the scene target and its depth buffer, which every pipeline state draws with (ADR-029). Feature
+  // Samples per pixel of the scene target and its depth buffer, which every pipeline state draws with (ADR-040). Feature
   // level 11_0 guarantees four for both formats.
   static constexpr UINT SAMPLE_COUNT = 4;
 
@@ -94,7 +94,7 @@ private:
   winrt::com_ptr<ID3D12DescriptorHeap> m_depthStencilHeap;
   std::array<winrt::com_ptr<ID3D12Resource>, FRAME_COUNT> m_backBuffers;
   // What a frame is drawn into, SAMPLE_COUNT samples a pixel; one serves every frame in flight, since the queue runs them
-  // in turn. It is resolved into m_resolvedScene, which is copied into the back buffer (ADR-029).
+  // in turn. It is resolved into m_resolvedScene, which is copied into the back buffer (ADR-040).
   winrt::com_ptr<ID3D12Resource> m_sceneTarget;
   winrt::com_ptr<ID3D12Resource> m_resolvedScene;
   winrt::com_ptr<ID3D12Resource> m_depthBuffer;

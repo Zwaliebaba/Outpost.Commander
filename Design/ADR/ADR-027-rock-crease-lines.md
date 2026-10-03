@@ -1,6 +1,6 @@
 # ADR-027 — Every model is low-poly and shows its ridges as thin lit lines
 
-Status: **accepted** · 2026-10-02 · Decisions 2 and 4, and the consequence on antialiasing, are superseded by [ADR-029](ADR-029-lines-over-dark-faces.md): lines lie on the edges and are pulled toward the eye, faces are at 0.3, lines keep their hue, and the scene is multisampled
+Status: **accepted** · 2026-10-02 · Decisions 2 and 4, and the consequence on antialiasing, are superseded by [ADR-040](ADR-040-lines-over-dark-faces.md): lines lie on the edges and are pulled toward the eye, faces are at 0.3, lines keep their hue, and the scene is multisampled
 
 ## Context
 

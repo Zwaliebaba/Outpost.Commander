@@ -304,7 +304,7 @@ public:
   }
 
   // A line is lit along the mean of its faces' normals, and lies on the edge: DrawLines, not the mesh, keeps it in front
-  // of the surface (ADR-029).
+  // of the surface (ADR-040).
   TEST_METHOD(CreaseLinesAreLitAlongTheMeanNormalAndLieOnTheEdge)
   {
     const Neuron::MeshData lines = Neuron::BuildCreaseLines(Hinge(90.0f), Degrees(30.0f));

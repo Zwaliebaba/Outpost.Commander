@@ -53,7 +53,7 @@ void FitMesh(MeshData& _mesh, float _lengthMeters);
 // has, as a line list: two vertices an edge, with indices counting up from zero. Corners are matched by position, since a
 // flat-shaded mesh repeats a corner once for each triangle at it. Each vertex's normal is the mean of the normals of the
 // faces that meet at the edge, so that the line is lit as the surface beside it is. The lines lie on the surface; what
-// keeps them in front of it is MeshPipeline::DrawLines (ADR-029). The bounds are the mesh's. A mesh with no such edge
+// keeps them in front of it is MeshPipeline::DrawLines (ADR-040). The bounds are the mesh's. A mesh with no such edge
 // gives no vertices.
 [[nodiscard]] MeshData BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians);
 
