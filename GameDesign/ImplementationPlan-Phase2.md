@@ -34,7 +34,7 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 17.1 | Alerts | 14.3 | J5 decided | in review: owner run |
 | 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | in review: owner run |
 | 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | done, not yet built on Windows |
-| 19.1 | The match log for Phase 2 | 15.1 | — | todo |
+| 19.1 | The match log for Phase 2 | 15.1 | — | done, not yet built on Windows |
 | 19.2 | S1–S5 | 18.1, 19.1 | — | todo |
 
 ### Milestone order
@@ -212,6 +212,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** ADR-038, edited in place.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
+- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. An engagement is both sides firing in one sector within 10 seconds of each other, and another there counts after 30 seconds without a shot. `--ai-matches` ends with S1–S3 over the matches beside their lengths.
 
 ### 19.2 — S1–S5
 
