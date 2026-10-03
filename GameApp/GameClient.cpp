@@ -49,16 +49,28 @@ constexpr float FIELD_SHADE = 0.7f;
 // Every model, rock, ship and structure, also shows its edges as thin lines, for a vector look from the eighties (owner,
 // 2026-10-02, ADR-027). Only the edges where its surface bends by more than CREASE_DEGREES are drawn: on low-poly
 // models that is nearly every edge between two facets, and two triangles that lie almost flat read as one facet. The
-// lines are lit as the model is, in its color made EDGE_BRIGHTNESS brighter, and the faces are drawn FILL_SHADE darker,
-// so the lines stand out from the faces beside them on the lit side and the dark side alike. They are lifted
-// EDGE_LIFT_SHARE of the mesh's size off the surface so that it does not hide them. The rocks are terrain, so their lines
-// are only ROCK_EDGE_BRIGHTNESS brighter: near white at EDGE_BRIGHTNESS, they outshone both fleets (owner, 2026-10-02,
-// ADR-028).
+// faces are dark, FILL_SHADE of the model's color, and the lines, lit as the model is, carry its shape (ADR-029). A ship's
+// or structure's lines are its color made up to EDGE_BRIGHTNESS brighter, but no further than its brightest channel
+// reaching 1, so that its hue holds rather than clipping toward cyan or orange, and then EDGE_WHITE_SHARE of the way to
+// white: about 4:1 above the faces beside them on the lit side and nearly 3:1 on the dark side. The rocks are terrain,
+// so their lines are only ROCK_EDGE_BRIGHTNESS brighter and keep their gray: near white, they outshone both fleets
+// (owner, 2026-10-02, ADR-028).
 constexpr float CREASE_DEGREES = 10.0f;
 constexpr float EDGE_BRIGHTNESS = 2.0f;
+constexpr float EDGE_WHITE_SHARE = 0.35f;
 constexpr float ROCK_EDGE_BRIGHTNESS = 1.35f;
-constexpr float FILL_SHADE = 0.65f;
-constexpr float EDGE_LIFT_SHARE = 0.005f;
+constexpr float FILL_SHADE = 0.3f;
+// A model's lines are pulled this share of their distance toward the eye: about two and a half pixels of depth at the
+// camera's 45 degree field of view on a 1080-pixel screen. They show over the faces they lie on and move nowhere on the
+// screen, so they no longer stand off a silhouette as a lift along the normal did (ADR-029).
+constexpr float LINE_LIFT_SHARE = 0.002f;
+// A structure stands back from the ships, which are what take orders: its color STRUCTURE_GRAY_SHARE of the way to a gray
+// as light as it, and its faces STRUCTURE_FILL_SHADE of that rather than FILL_SHADE (ADR-029).
+constexpr float STRUCTURE_GRAY_SHARE = 0.35f;
+constexpr float STRUCTURE_FILL_SHADE = 0.22f;
+// Every structure stands on a faint ring the size of its selection ring, in its side's color at FOOTPRINT_RING_SHADE,
+// which puts it on the ground and says its size; selected, the selection's green ring takes its place (ADR-029).
+constexpr float FOOTPRINT_RING_SHADE = 0.35f;
 
 // A Mining Rig's feet are its lowest points out toward its rim, past this share of its half length from its middle, and
 // within this share of its height of the lowest of them: its legs' tips, and not a drill hanging under its middle. The
@@ -287,6 +299,27 @@ DirectX::XMFLOAT4 Shaded(const DirectX::XMFLOAT4& _color, float _scale) noexcept
   return {std::min(1.0f, _color.x * _scale), std::min(1.0f, _color.y * _scale), std::min(1.0f, _color.z * _scale), _color.w};
 }
 
+// A model's lines in its _color: made up to _brightness brighter, but no further than its brightest channel reaching 1,
+// so that the hue holds, then _whiteShare of the way to a white as bright as that channel. A darker color, such as a
+// structure's while it is built, gives darker lines.
+DirectX::XMFLOAT4 EdgeColor(const DirectX::XMFLOAT4& _color, float _brightness, float _whiteShare) noexcept
+{
+  const float brightest = std::max({_color.x, _color.y, _color.z});
+  if (brightest <= 0.0f)
+    return _color;
+  const float gain = std::min(_brightness, 1.0f / brightest);
+  const float peak = brightest * gain;
+  const auto channel = [gain, peak, _whiteShare](float _channel) { return std::lerp(_channel * gain, peak, _whiteShare); };
+  return {channel(_color.x), channel(_color.y), channel(_color.z), _color.w};
+}
+
+// _color _share of the way to a gray as light as it is, by the luminance weights of linear sRGB.
+DirectX::XMFLOAT4 TowardGray(const DirectX::XMFLOAT4& _color, float _share) noexcept
+{
+  const float lightness = (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z);
+  return {std::lerp(_color.x, lightness, _share), std::lerp(_color.y, lightness, _share), std::lerp(_color.z, lightness, _share), _color.w};
+}
+
 // The color a model is drawn in: its set's, times its tint, and darker while it is built (task 4.2). A ship has no tint
 // and is always built, so it is its set's color.
 DirectX::XMFLOAT4 ModelColor(const DirectX::XMFLOAT4& _setColor, float _tint, std::int32_t _builtPermille) noexcept
@@ -320,7 +353,7 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       m_modelMeshes.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, data));
       m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
       // Its creases, drawn over it as lines (ADR-027).
-      const Neuron::MeshData edges = Neuron::BuildCreaseLines(data, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f, EDGE_LIFT_SHARE);
+      const Neuron::MeshData edges = Neuron::BuildCreaseLines(data, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
       if (!edges.vertices.empty())
         m_modelEdges.emplace(MeshKey(set.name, model.name), std::make_unique<Neuron::Mesh>(_renderer, edges));
       // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
@@ -709,6 +742,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   constants.viewProjection = m_camera.ViewProjection(aspectRatio);
   DirectX::XMStoreFloat3(&constants.directionToLight, DirectX::XMVector3Normalize(DirectX::XMLoadFloat3(&TOWARD_LIGHT)));
   constants.ambient = AMBIENT;
+  constants.eyePosition = m_camera.EyePosition(aspectRatio);
 
   // The sky first, under everything. Its stars are sized on the reference frame, so they keep their look at any
   // resolution (ADR-006, ADR-022).
@@ -726,7 +760,8 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   m_pipeline.BeginDrawing(_commandList, _renderer.FrameIndex(), constants);
 
   const DirectX::XMFLOAT4X4 identity = WorldMatrix({}, 0.0f, 1.0f);
-  m_pipeline.DrawLines(_commandList, *m_grid, identity, GRID_COLOR);
+  // The grid is not pulled toward the eye: nothing lies on it, and pulled, it would show through the hulls it cuts.
+  m_pipeline.DrawLines(_commandList, *m_grid, identity, GRID_COLOR, 0.0f);
   // The menu shows over the empty grid and the sky.
   if (m_screen == Screen::Menu)
   {
@@ -739,6 +774,7 @@ void Outpost::GameClient::Render(const Neuron::Renderer& _renderer, ID3D12Graphi
   DrawShards(_commandList);
   // Every model's lines at once, after every face they may lie behind.
   m_pipeline.DrawLines(_commandList, m_lineDraws);
+  DrawFootprints(_commandList);
   DrawSelection(_commandList);
   DrawGhost(_commandList);
   DrawHealthBars(_commandList);
@@ -830,6 +866,22 @@ void Outpost::GameClient::DrawEffects(ID3D12GraphicsCommandList* _commandList)
   }
 }
 
+void Outpost::GameClient::DrawFootprints(ID3D12GraphicsCommandList* _commandList)
+{
+  const std::vector<EntityId>& selected = m_controls.Selected();
+  for (const EntityView& structure : m_entities)
+  {
+    if (structure.kind != EntityKind::Structure || std::ranges::find(selected, structure.id) != selected.end())
+      continue;
+    const ModelSet* side = m_catalog.SetForPlayer(structure.owner);
+    if (side == nullptr)
+      continue;
+    const DirectX::XMFLOAT3 at{structure.position.xMeters, OVERLAY_LIFT_METERS, structure.position.zMeters};
+    m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, structure.radiusMeters * RING_SIZE_PER_FOOTPRINT),
+                    Shaded(side->color, FOOTPRINT_RING_SHADE));
+  }
+}
+
 void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
 {
   const DirectX::XMFLOAT4& ringColor = m_controls.IsAttackMoveArmed() ? ATTACK_MOVE_COLOR : SELECTION_COLOR;
@@ -886,14 +938,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
     if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
-      DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color);
+      DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE);
     break;
   }
   case EntityKind::Asteroid:
   {
     const ModelSet& set = m_catalog.Set(ASTEROID_SET);
     DrawModel(_commandList, ASTEROID_SET, RockModel(_entity.radiusMeters),
-              WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color);
+              WorldMatrix(position, _entity.headingRadians, _entity.radiusMeters), set.color, FILL_SHADE);
     break;
   }
   case EntityKind::AsteroidField:
@@ -902,14 +954,14 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
     const DirectX::XMFLOAT4 color{set.color.x * FIELD_SHADE, set.color.y * FIELD_SHADE, set.color.z * FIELD_SHADE, set.color.w};
     const float radius = _entity.radiusMeters;
     const float centerRock = radius * FIELD_CENTER_ROCK_SHARE;
-    DrawModel(_commandList, ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color);
+    DrawModel(_commandList, ASTEROID_SET, RockModel(centerRock), WorldMatrix(position, 0.0f, centerRock), color, FILL_SHADE);
     const float ringRock = radius * FIELD_RING_ROCK_SHARE;
     for (int i = 0; i < FIELD_RING_ROCKS; ++i)
     {
       const float angle = FIELD_RING_START_RADIANS + (static_cast<float>(i) * 2.0f * std::numbers::pi_v<float> / FIELD_RING_ROCKS);
       const float distance = radius * FIELD_RING_DISTANCE_SHARE;
       const DirectX::XMFLOAT3 at{position.x + (distance * std::cos(angle)), 0.0f, position.z + (distance * std::sin(angle))};
-      DrawModel(_commandList, ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color);
+      DrawModel(_commandList, ASTEROID_SET, RockModel(ringRock), WorldMatrix(at, angle * 2.0f, ringRock), color, FILL_SHADE);
     }
     break;
   }
@@ -921,13 +973,15 @@ void Outpost::GameClient::DrawEntity(ID3D12GraphicsCommandList* _commandList, co
 }
 
 void Outpost::GameClient::DrawModel(ID3D12GraphicsCommandList* _commandList, std::string_view _set, std::string_view _model,
-                                    const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color)
+                                    const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color, float _fillShade)
 {
-  m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, FILL_SHADE));
+  m_pipeline.Draw(_commandList, ModelMesh(_set, _model), _world, Shaded(_color, _fillShade));
   if (const auto edges = m_modelEdges.find(MeshKey(_set, _model)); edges != m_modelEdges.end())
   {
-    const float brightness = _set == ASTEROID_SET ? ROCK_EDGE_BRIGHTNESS : EDGE_BRIGHTNESS;
-    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = Shaded(_color, brightness)});
+    const bool rock = _set == ASTEROID_SET;
+    const DirectX::XMFLOAT4 color =
+      rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
+    m_lineDraws.push_back({.lines = edges->second.get(), .world = _world, .color = color, .liftShare = LINE_LIFT_SHARE});
   }
 }
 
@@ -937,7 +991,7 @@ void Outpost::GameClient::DrawStructure(ID3D12GraphicsCommandList* _commandList,
   if (!placed.has_value())
     return;
   DrawModel(_commandList, placed->set->name, *placed->model, PoseMatrix(placed->pose),
-            ModelColor(placed->set->color, placed->tint, _entity.builtPermille));
+            TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE);
 }
 
 void Outpost::GameClient::Explode(const Snapshot& _snapshot)
@@ -967,10 +1021,13 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
                          start, seed);
     if (placed.has_value())
     {
-      // The shards are the faces' color, which is the model's darkened (ADR-027).
-      m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose),
-                       Shaded(ModelColor(placed->set->color, placed->tint, entity.builtPermille), FILL_SHADE), start, seed,
-                       destroyed.kind == EntityKind::Structure ? STRUCTURE_SHARD_COPIES : 1);
+      // The shards are the faces' color, which is the model's darkened (ADR-027), and a structure's grayer (ADR-029).
+      const bool structure = destroyed.kind == EntityKind::Structure;
+      const DirectX::XMFLOAT4 color = ModelColor(placed->set->color, placed->tint, entity.builtPermille);
+      const DirectX::XMFLOAT4 faces =
+        structure ? Shaded(TowardGray(color, STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE) : Shaded(color, FILL_SHADE);
+      m_explosions.Add(ModelShape(placed->set->name, *placed->model), PoseMatrix(placed->pose), faces, start, seed,
+                       structure ? STRUCTURE_SHARD_COPIES : 1);
     }
   }
 }

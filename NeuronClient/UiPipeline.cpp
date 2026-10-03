@@ -96,7 +96,7 @@ Neuron::UiPipeline::UiPipeline(Renderer& _renderer, std::wstring_view _fontFamil
     .NumRenderTargets = 1,
     .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
     .DSVFormat = Renderer::DEPTH_FORMAT,
-    .SampleDesc = {.Count = 1, .Quality = 0},
+    .SampleDesc = {.Count = Renderer::SAMPLE_COUNT, .Quality = 0},
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 

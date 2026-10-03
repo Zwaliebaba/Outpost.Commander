@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MeshPipeline.h"
 
+#include "CompiledShader/MeshLineVS.h"
 #include "CompiledShader/MeshPS.h"
 #include "CompiledShader/MeshVS.h"
 
@@ -12,11 +13,16 @@ namespace
 constexpr UINT FRAME_PARAMETER = 0;
 constexpr UINT OBJECT_PARAMETER = 1;
 
-// cbuffer Object in the shaders: the world matrix, then the color.
+// cbuffer Object in the shaders: the world matrix, the color, and how far a line is pulled toward the eye. Whole
+// float4s, so that the root constants cover the cbuffer as the shader compiler sizes it.
 struct ObjectConstants
 {
   DirectX::XMFLOAT4X4 world;
   DirectX::XMFLOAT4 color;
+  float liftShare;
+  float unused0;
+  float unused1;
+  float unused2;
 };
 
 constexpr UINT OBJECT_CONSTANT_COUNT = sizeof(ObjectConstants) / sizeof(UINT);
@@ -82,17 +88,22 @@ Neuron::MeshPipeline::MeshPipeline(Renderer& _renderer)
     .NumRenderTargets = 1,
     .RTVFormats = {Renderer::RENDER_TARGET_FORMAT},
     .DSVFormat = Renderer::DEPTH_FORMAT,
-    .SampleDesc = {.Count = 1, .Quality = 0},
+    .SampleDesc = {.Count = Renderer::SAMPLE_COUNT, .Quality = 0},
   };
   winrt::check_hresult(device->CreateGraphicsPipelineState(&description, IID_GRAPHICS_PPV_ARGS(m_pipelineState)));
 
-  // Lines: the same shaders, so a line is lit as the surface it lies on, rasterized as a line list. They are tested
+  // Lines: the same pixel shader, so a line is lit as the surface it lies on, rasterized as a line list. They are tested
   // against the depth of what is drawn but write none, so the line drawn last never hides another. Direct3D gives a
-  // line no depth bias, so a line that must show over a surface is lifted off it (BuildCreaseLines).
+  // line no depth bias, so a line that must show over a surface is pulled toward the eye by its own vertex shader
+  // (ADR-029). Multisampling on, a line is a quadrilateral a pixel wide that the samples smooth.
   CD3DX12_DEPTH_STENCIL_DESC lineDepth(D3D12_DEFAULT);
   lineDepth.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
   lineDepth.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+  CD3DX12_RASTERIZER_DESC lineRasterizer(D3D12_DEFAULT);
+  lineRasterizer.MultisampleEnable = TRUE;
   D3D12_GRAPHICS_PIPELINE_STATE_DESC lineDescription = description;
+  lineDescription.VS = CD3DX12_SHADER_BYTECODE(g_MeshLineVS, sizeof(g_MeshLineVS));
+  lineDescription.RasterizerState = lineRasterizer;
   lineDescription.DepthStencilState = lineDepth;
   lineDescription.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
   winrt::check_hresult(device->CreateGraphicsPipelineState(&lineDescription, IID_GRAPHICS_PPV_ARGS(m_lineState)));
@@ -134,7 +145,14 @@ void Neuron::MeshPipeline::BeginDrawing(ID3D12GraphicsCommandList* _commandList,
 void Neuron::MeshPipeline::Draw(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
                                 const DirectX::XMFLOAT4& _color) const
 {
-  const ObjectConstants constants{.world = _world, .color = _color};
+  DrawObject(_commandList, _mesh, _world, _color, 0.0f);
+}
+
+void Neuron::MeshPipeline::DrawObject(ID3D12GraphicsCommandList* _commandList, const Mesh& _mesh, const DirectX::XMFLOAT4X4& _world,
+                                      const DirectX::XMFLOAT4& _color, float _liftShare) const
+{
+  const ObjectConstants constants{
+    .world = _world, .color = _color, .liftShare = _liftShare, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
   _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
   _commandList->IASetVertexBuffers(0, 1, &_mesh.VertexBufferView());
   _commandList->IASetIndexBuffer(&_mesh.IndexBufferView());
@@ -160,7 +178,7 @@ bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList
     .SizeInBytes = static_cast<UINT>(_vertices.size_bytes()),
     .StrideInBytes = sizeof(MeshVertex),
   };
-  const ObjectConstants constants{.world = IDENTITY, .color = _color};
+  const ObjectConstants constants{.world = IDENTITY, .color = _color, .liftShare = 0.0f, .unused0 = 0.0f, .unused1 = 0.0f, .unused2 = 0.0f};
   _commandList->SetGraphicsRoot32BitConstants(OBJECT_PARAMETER, OBJECT_CONSTANT_COUNT, &constants, 0);
   _commandList->IASetVertexBuffers(0, 1, &view);
   _commandList->DrawInstanced(count, 1, 0, 0);
@@ -168,11 +186,11 @@ bool Neuron::MeshPipeline::DrawTriangles(ID3D12GraphicsCommandList* _commandList
 }
 
 void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, const Mesh& _lines, const DirectX::XMFLOAT4X4& _world,
-                                     const DirectX::XMFLOAT4& _color) const
+                                     const DirectX::XMFLOAT4& _color, float _liftShare) const
 {
   // The root signature and the frame's constants stay as BeginDrawing set them; the state and the topology change, and
   // change back.
-  const LineDraw draw{.lines = &_lines, .world = _world, .color = _color};
+  const LineDraw draw{.lines = &_lines, .world = _world, .color = _color, .liftShare = _liftShare};
   DrawLines(_commandList, std::span(&draw, 1));
 }
 
@@ -183,7 +201,7 @@ void Neuron::MeshPipeline::DrawLines(ID3D12GraphicsCommandList* _commandList, st
   _commandList->SetPipelineState(m_lineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
   for (const LineDraw& draw : _draws)
-    Draw(_commandList, *draw.lines, draw.world, draw.color);
+    DrawObject(_commandList, *draw.lines, draw.world, draw.color, draw.liftShare);
   _commandList->SetPipelineState(m_pipelineState.get());
   _commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }

@@ -198,7 +198,7 @@ void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
   MeasureBounds(_mesh);
 }
 
-Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians, float _liftShare)
+Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngleRadians)
 {
   // Each corner once, by position.
   std::map<std::array<float, 3>, std::uint32_t> cornerAt;
@@ -233,8 +233,6 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
     }
   }
 
-  const DirectX::XMFLOAT3 extents = _mesh.Extents();
-  const float lift = _liftShare * std::max({extents.x, extents.y, extents.z});
   const float flatCosine = std::cos(_minAngleRadians);
   MeshData lines;
   lines.boundsMin = _mesh.boundsMin;
@@ -258,8 +256,7 @@ Neuron::MeshData Neuron::BuildCreaseLines(const MeshData& _mesh, float _minAngle
     DirectX::XMStoreFloat3(&vertex.normal, mean);
     for (const std::uint32_t corner : {edge.first, edge.second})
     {
-      DirectX::XMStoreFloat3(&vertex.position,
-                             DirectX::XMVectorAdd(DirectX::XMLoadFloat3(&corners[corner]), DirectX::XMVectorScale(mean, lift)));
+      vertex.position = corners[corner];
       lines.indices.push_back(static_cast<std::uint32_t>(lines.vertices.size()));
       lines.vertices.push_back(vertex);
     }
