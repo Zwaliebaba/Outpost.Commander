@@ -2,6 +2,7 @@
 #include "RepositoryAssets.h"
 
 #include <algorithm>
+#include <limits>
 #include <numbers>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -123,9 +124,21 @@ public:
       {
         const Outpost::ModelEntry& model = set.Model(hull);
         const Neuron::MeshData mesh = ReadRepositoryModel(set, model);
-        // Its length is along +x, its front (ADR-018), and it is the length the data asks for.
+        // Its length is along +x, its front (ADR-018), and it is the length the data asks for. Its front is where its guns
+        // are: every gun stands ahead of every exhaust. A hull may be wider than it is long, as the Human Small's wings
+        // make it.
         Assert::AreEqual(model.lengthMeters, mesh.Extents().x, TOLERANCE);
-        Assert::IsTrue(mesh.Extents().x > mesh.Extents().z);
+        float rearmostGun = std::numeric_limits<float>::infinity();
+        float foremostExhaust = -std::numeric_limits<float>::infinity();
+        for (const Neuron::MeshHardpoint& hardpoint : mesh.hardpoints)
+        {
+          const std::optional<Outpost::HardpointKind> kind = Outpost::HardpointKindOf(hardpoint.tag);
+          if (kind == Outpost::HardpointKind::Gun)
+            rearmostGun = std::min(rearmostGun, hardpoint.position.x);
+          else if (kind == Outpost::HardpointKind::Exhaust)
+            foremostExhaust = std::max(foremostExhaust, hardpoint.position.x);
+        }
+        Assert::IsTrue(rearmostGun > foremostExhaust, L"a gun stands behind an exhaust: the model's front is not +x");
         Assert::IsTrue(mesh.Extents().x > previousLength);
         previousLength = mesh.Extents().x;
       }
