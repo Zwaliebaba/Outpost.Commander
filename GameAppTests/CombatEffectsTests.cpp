@@ -125,15 +125,17 @@ public:
       const auto band = std::ranges::find(draws, Outpost::CombatEffects::Shape::Band, &Outpost::CombatEffects::Draw::shape);
       return band != draws.end() ? std::optional(*band) : std::nullopt;
     };
-    const std::optional<Outpost::CombatEffects::Draw> fresh = slug(0.01);
-    Assert::IsTrue(fresh.has_value() && fresh->from == GUN && fresh->to == TARGET);
-    Assert::IsTrue(fresh->color.y > 0.5f && fresh->color.z > 0.5f, L"white, not its side's color");
+    Assert::IsTrue(slug(0.01).has_value());
+    const Outpost::CombatEffects::Draw fresh = slug(0.01).value_or(Outpost::CombatEffects::Draw{});
+    Assert::IsTrue(fresh.from == GUN && fresh.to == TARGET);
+    Assert::IsTrue(fresh.color.y > 0.5f && fresh.color.z > 0.5f, L"white, not its side's color");
     const std::vector<Outpost::CombatEffects::Draw> flashes = effects.At(After(10, 0.01));
     Assert::IsTrue(std::ranges::any_of(flashes, [](const Outpost::CombatEffects::Draw& _draw)
                                        { return _draw.shape == Outpost::CombatEffects::Shape::Disc && _draw.from == TARGET; }),
                    L"a flash where it lands");
-    const std::optional<Outpost::CombatEffects::Draw> late = slug(0.3);
-    Assert::IsTrue(late.has_value() && late->widthMeters == fresh->widthMeters && late->color.x < fresh->color.x);
+    Assert::IsTrue(slug(0.3).has_value());
+    const Outpost::CombatEffects::Draw late = slug(0.3).value_or(Outpost::CombatEffects::Draw{});
+    Assert::IsTrue(late.widthMeters == fresh.widthMeters && late.color.x < fresh.color.x);
     Assert::IsFalse(slug(0.45).has_value());
   }
 
