@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 1 Design
 
-Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-02, from the owner's answers of that day; gates H1–H5 and H7 decided the same day
+Status: **Phase 1 done** · Owner: Stefan Zwaal · Started 2026-10-02, from the owner's answers of that day; gates H1–H5 and H7 decided the same day · Closed on 2026-10-03 with P1–P5 recorded in §2
 
 This document says what Phase 1 builds on top of the finished MVP. It **amends** [the MVP design](OutpostCommander-MVP.md) rather than replacing it: everything the MVP design says still holds unless this document changes it, and where the two differ, this one is the authority. AGENTS.md still says how the code is written, `Design/ADR/` records the engineering decisions, and [the Phase 1 plan](ImplementationPlan-Phase1.md) gives the order of the work.
 
@@ -31,6 +31,14 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 | P3 | Does ship design still matter? | The balance check, restructured per tier (§7), passes all four criteria at every tier. |
 | P4 | Does the engine hold at Phase 1's scale? | The order ticks that missed Q4 meet 5 ms at 200 ships. Frame and tick times are recorded on the 5 km map at the ship counts a 60-minute match actually reaches, which the match log records (§10). |
 | P5 | Does the presentation read? | The owner judges the designer against the mockup, the floating windows, and the banking, in play. |
+
+**Where they stand on 2026-10-03, when Phase 1 closed** (owner, 2026-10-03): P5 is "yes". P1–P4 are recorded as the container measured them; what only the owner's play or the development machine could add was not measured.
+
+- **P1, the match's length: answered for two AIs, not for the owner.** Two AIs on the real server end a match in a median of 47.5 minutes over seeds 1–40, and 51.1 over seeds 41–80 (ADR-047). The owner's own matches against the AI were not measured.
+- **P2, each tier: not answered.** 78 of 80 AI-against-AI matches reach tier 2, and only 2 reach tier 3: an AI at war seldom affords the 600-Ore gateway (ADR-041). Whether what each side builds changes after a gateway was not checked in the match log.
+- **P3, ship design: yes, in the container.** The balance check passes all four criteria at every tier, in its run of record there (task 10.3). The run in Release|ARM64 on the development machine was not made.
+- **P4, the engine at scale: not answered.** The worst order tick falls from 2.58 ms to 1.24 ms in the container, about 4.2 ms on the development machine by that ratio (ADR-032, §10). Neither the development machine's `--measure --load` nor the frame and tick times on the 5 km map at a 60-minute match's peak ship count were measured.
+- **P5, the presentation: yes** (owner, 2026-10-03): the designer, the floating windows and the banking read in play.
 
 ---
 
@@ -210,7 +218,7 @@ One map, **5,000 × 5,000 m**, point-symmetric as the MVP's, with the starts in 
 
 That is 24 ore asteroids holding 285,000 Ore. Asteroid fields stand between the rings as obstacles and chokepoints, and every passage is at least as wide as the map's minimum gap, as in the MVP. The rich corners are equally far from both starts and far from both: whoever holds one is exposed. The layout itself is written in the map task and confirmed by the owner before it is played (as MVP task 2.3).
 
-**Laid out in sectors for Phase 2** (owner, 2026-10-03). The map is divided into about nine sectors, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as [the Phase 2 draft](OutpostCommander-Phase2.md) §4 has them. Phase 1 reads none of it, and its rings, yields and reserves are unchanged; it makes this the first map Phase 2's territory is played on.
+**Laid out in sectors for Phase 2** (owner, 2026-10-03). The map is divided into about nine sectors, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as [the Phase 2 draft](../OutpostCommander-Phase2.md) §4 has them. Phase 1 reads none of it, and its rings, yields and reserves are unchanged; it makes this the first map Phase 2's territory is played on.
 
 **What a 5 km map costs:**
 
@@ -251,7 +259,7 @@ The MVP recorded Q4's tick half as missed when 200 ships are ordered at once: 5.
 
 ## 11. The ship designer
 
-The designer becomes the owner's mockup, [`Mockups/ShipDesigner.png`](Mockups/ShipDesigner.png): a window of its own rather than a panel beside a selected Shipyard (MVP §9). What the MVP decided about designs stands: a saved design is renamed, never changed; Queue on components that are not yet a saved design saves them first (ADR-023); a name is up to 32 characters.
+The designer becomes the owner's mockup, [`Mockups/ShipDesigner.png`](../Mockups/ShipDesigner.png): a window of its own rather than a panel beside a selected Shipyard (MVP §9). What the MVP decided about designs stands: a saved design is renamed, never changed; Queue on components that are not yet a saved design saves them first (ADR-023); a name is up to 32 characters.
 
 ### One window, a Shipyard picked in it
 
@@ -326,11 +334,7 @@ Everything the MVP put out of scope (MVP §13) stays out, apart from asteroid de
 
 ## 15. Open questions
 
-Each is a gate in the plan, and blocks the tasks that need it.
-
-- **H6 — The look's details** (§11): the window's colors and sizes, taken from the mockup, confirmed when the owner first runs it.
-- **H7 — Cascadia Mono** (§11): task 9.1 checks whether it is installed on the development machine, and uses Consolas if it is not (owner, 2026-10-02). The task records which.
-- **H8 — The camera's zoom on the 5 km map** (§8): whether the 1,600 m limit of gate G3 stays, after the owner's first matches on the map.
+None is left open: Phase 1 closed on 2026-10-03.
 
 Decided on 2026-10-02, from the owner's answers: §3.
 
@@ -342,6 +346,11 @@ Decided on 2026-10-02, the gates:
 - **H4:** the balance check's (b) does not require the Pulse Drive to be worth building; play judges it (§7).
 - **H5:** a lost Command Station is lost for good, and a player without one has its remaining Shipyards revealed to its opponent (§4).
 - **H7:** task 9.1 checks for Cascadia Mono, and falls back to Consolas.
+
+Decided on 2026-10-03, when Phase 1 closed (owner, 2026-10-03):
+
+- **H6:** the designer's colors and sizes as built from the mockup (task 9.3).
+- **H8:** the camera keeps gate G3's 1,600 m zoom limit on the 5 km map.
 
 Decided on 2026-10-03, from task 10.3's first runs:
 

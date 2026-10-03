@@ -2,7 +2,7 @@
 
 Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day
 
-This document says what Phase 2 builds on top of Phase 1. It is a **draft**: the owner's decisions of 2026-10-03 (§3) are settled, and everything else is a proposal for the owner to review, gated in §13 as Phase 1's were. Until it is accepted it binds nothing, and [the Phase 1 design](OutpostCommander-Phase1.md) and [the MVP design](OutpostCommander-MVP.md) stay the authority for what is built. Its one effect on Phase 1 is that Phase 1's 5 km map is laid out so that Phase 2 can be played on it (§11).
+This document says what Phase 2 builds on top of Phase 1. It is a **draft**: the owner's decisions of 2026-10-03 (§3) are settled, and everything else is a proposal for the owner to review, gated in §13 as Phase 1's were. Until it is accepted it binds nothing, and [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) stay the authority for what is built. Its one effect on Phase 1 is that Phase 1's 5 km map is laid out so that Phase 2 can be played on it (§11).
 
 ---
 
@@ -122,6 +122,8 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result.
 ## 11. What Phase 1 does now
 
 Phase 1's 5 km map (Phase 1 §8, task 11.2) is laid out in sectors: about nine, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as §4 has them. Phase 1 reads none of it; its rules, rings, yields and reserves are unchanged. It makes the 5 km map the first one Phase 2 plays, and lets Phase 2's lattice be tried on a map the owner has already played.
+
+**Carried over from Phase 1** (owner, 2026-10-03), for Phase 2's plan: task 7.3, a group given an Attack order on one enemy keeps its lanes round an obstacle, as a group given a Move or an attack-move order does since task 9.7 (ADR-047).
 
 ---
 

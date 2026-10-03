@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Equal-Ore battle model for the balance check of the MVP design.
 
-The balance check asks whether ship design matters (GameDesign/OutpostCommander-MVP.md §3), the MVP's question Q2,
+The balance check asks whether ship design matters (GameDesign/Archive/OutpostCommander-MVP.md §3), the MVP's question Q2,
 after which the MVP's documents and the ADRs call it the Q2 check. This model answers the first-order version of that
 question: a fast first guess at what a change does. The scripted headless battles in GameLogicTests decide, and the
 tuning numbers are tuned against them (§12). The model is not taught the simulation's geometry, so it

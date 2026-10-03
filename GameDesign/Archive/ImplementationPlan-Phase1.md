@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 1 Implementation Plan
 
-Status: **open** · 2026-10-02 · Derived from [the Phase 1 design](OutpostCommander-Phase1.md)
+Status: **closed** · 2026-10-03, when Phase 1 was done; task 7.3 is carried over to Phase 2 · Derived from [the Phase 1 design](OutpostCommander-Phase1.md)
 
-The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. Phase 2, territory, is [a draft design](OutpostCommander-Phase2.md) with no plan yet; its one effect here is task 11.2's layout. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
+The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. Phase 2, territory, is [a draft design](../OutpostCommander-Phase2.md) with no plan yet; its one effect here is task 11.2's layout. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
 
 ---
 
@@ -24,29 +24,29 @@ Task numbers continue the MVP plan's milestones, so that a number names one task
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 7.1 | Ships bank in their turns | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 7.2 | Ships turn in arcs | 7.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 7.3 | An attacking group keeps its lanes | 9.7 | — | todo |
-| 8.1 | Measure where an order tick's time goes | — | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 8.2 | Order ticks within 5 ms | 8.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run on the development machine |
-| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.2 | Floating windows | 9.1 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.3 | The designer window after the mockup | 9.2 | H6 | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.4 | Research and production as windows | 9.2 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); run by the owner on 2026-10-03 |
-| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | in review, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); HUD, fog and stress load tested in the container, not yet built or run |
-| 9.7 | The owner's look at a fight: lanes round obstacles, health bars, no income | 9.6 | — | in review, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); movement, AI matches and HUD tested in the container; the client's bars and Alt not yet run |
-| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run; its last four topics came with 10.2 |
-| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); built and tested in CI (Debug|x64), not yet run |
-| 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the check passes in the container, not yet on the development machine |
-| 10.4 | The AI on tiers and new designs | 10.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
-| 11.1 | Ore reserves and depletion | — | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 11.2 | The 5 km map | 11.1 | H3 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the layout awaits the owner run |
-| 11.3 | The AI follows the ore | 11.2, 10.4 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49) |
-| 12.1 | Losing all production | — | H5 decided | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); not yet run |
-| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | merged, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); measured in the container, not yet run against the owner |
-| 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | in review, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); the switch has not run on Windows |
-| 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | todo |
+| 7.1 | Ships bank in their turns | — | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 7.2 | Ships turn in arcs | 7.1 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 7.3 | An attacking group keeps its lanes | 9.7 | — | carried over to Phase 2 (owner, 2026-10-03) |
+| 8.1 | Measure where an order tick's time goes | — | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 8.2 | Order ticks within 5 ms | 8.1 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run on the development machine |
+| 9.1 | Typography: two faces, several sizes, sprites | — | H7 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 9.2 | Floating windows | 9.1 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 9.3 | The designer window after the mockup | 9.2 | H6 | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 9.4 | Research and production as windows | 9.2 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 9.5 | The HUD in the windows' look, faint rings, and the rig on its legs | 9.4 | — | done, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); accepted as built (owner, 2026-10-03) |
+| 9.6 | The owner's second look: rings by zoom, white crosses, the HUD, rigs on explored ore | 9.5 | — | done, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); accepted as built (owner, 2026-10-03) |
+| 9.7 | The owner's look at a fight: lanes round obstacles, health bars, no income | 9.6 | — | done, [#52](https://github.com/Zwaliebaba/Outpost.Commander/pull/52); accepted as built (owner, 2026-10-03) |
+| 10.1 | Research tiers: the schema and the 17 topics | — | H2 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run; its last four topics came with 10.2 |
+| 10.2 | The Pulse Drive, the Flak Battery and the Rail Cannon | 10.1 | H1 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |x64), not yet run |
+| 10.3 | The balance check per tier, and tuning against it | 10.2 | H4, H9, H10 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 10.4 | The AI on tiers and new designs | 10.3 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 11.1 | Ore reserves and depletion | — | H3 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 11.2 | The 5 km map | 11.1 | H3 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 11.3 | The AI follows the ore | 11.2, 10.4 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 12.1 | Losing all production | — | H5 decided | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 12.2 | The AI plays a 45–60 minute match | 12.1, 13.1 | — | done, [#51](https://github.com/Zwaliebaba/Outpost.Commander/pull/51); accepted as built (owner, 2026-10-03) |
+| 13.1 | The match log for Phase 1 | 12.1, 11.3 | — | done, [#49](https://github.com/Zwaliebaba/Outpost.Commander/pull/49); accepted as built (owner, 2026-10-03) |
+| 13.2 | P1–P5 | 13.1, 9.3, 9.4, 8.2 | — | done; recorded in design §2 on 2026-10-03 |
 
 ### Milestone order
 
@@ -65,9 +65,9 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 | H3 | The 5 km map's rings, yields, reserves, and the 20% trickle. **Decided on 2026-10-02:** as proposed; the layout is confirmed in 11.2. | design §8 | — |
 | H4 | Whether the balance check's (b) exempts the Pulse Drive. **Decided on 2026-10-02:** it does, and play judges it. | design §7 | — |
 | H5 | A lost Command Station stays lost; the last Shipyards are revealed. **Decided on 2026-10-02:** both, as proposed. | design §4 | — |
-| H6 | The designer's colors and sizes, from the mockup | design §11 | 9.3 (closed at its owner run) |
+| H6 | The designer's colors and sizes, from the mockup. **Decided on 2026-10-03:** as built. | design §11 | — |
 | H7 | Cascadia Mono on the development machine, or Consolas. **Decided on 2026-10-02:** 9.1 checks, and falls back to Consolas. | design §11 | — |
-| H8 | The camera's zoom limit on the 5 km map | design §8 | nothing; decided after 11.2's owner run |
+| H8 | The camera's zoom limit on the 5 km map. **Decided on 2026-10-03:** G3's 1,600 m stays. | design §8 | — |
 | H9 | Whether the balance check's (b) at tiers 2 and 3 asks every component to be worth building, or only those the tier adds. **Decided on 2026-10-03:** only those the tier adds. | design §7, §15 | — |
 | H10 | What the Flak Battery is for, beyond the swarm. **Decided on 2026-10-03:** a role against the Medium hull too, tuned in 10.3. | design §5, §15 | — |
 
@@ -83,10 +83,10 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **The data.** Each hull's and the Constructor's maximum bank and response time in `OutpostCommander/Assets/Models.json`, beside its length (ADR-011, ADR-018). The design's starting values: Small about 35°, Medium about 22°, Large about 12°, the Constructor about 15°, each settling in about a quarter of a second.
   - **What rolls.** The ship's world transform, and so its faces and crease lines (ADR-027); the gun and exhaust hardpoints (ADR-019, `Hardpoints.cpp`); and the starting pose of an explosion's shards (ADR-026). Not the footprint, the selection ring, the health bar or picking.
   - **No change** to `GameProtocol`, `GameLogic` or the snapshot.
-- **ADR:** [ADR-029](../Design/ADR/ADR-029-ship-banking.md): how the bank is derived and smoothed, and that the simulation knows nothing of it.
+- **ADR:** [ADR-029](../../Design/ADR/ADR-029-ship-banking.md): how the bank is derived and smoothed, and that the simulation knows nothing of it.
 - **Acceptance:** `GameAppTests` cover the angle without a GPU: none flying straight, none turning on the spot, into the turn on both sides, clamped, smoothed, the same at 30 and 120 frames a second, and a hardpoint rolled with its hull.
 - **Verify:** CI; **owner run**: whether the bank reads from the RTS camera at the default view, and that the exhaust stays on the hull.
-- **As built:** [ADR-029](../Design/ADR/ADR-029-ship-banking.md).
+- **As built:** [ADR-029](../../Design/ADR/ADR-029-ship-banking.md).
   - **The motion.** `SnapshotInterpolator::Motions` gives each entity's speed and turn rate between the two snapshots around the view.
   - **The bank.** `Outpost::TargetBankRadians` and `Outpost::ShipBanking` in `ShipBanking.h`, a critically damped spring solved exactly over each frame. `GameClient::UpdateBanking` runs it each frame, and `PlaceModel` puts the bank in a ship's pose.
   - **The pose.** `ModelPose::bankRadians`, and `Outpost::PoseMatrix` moved to `Hardpoints.h` from `GameClient.cpp`, so that the hull, its crease lines, its hardpoints and its shards are placed by one rule.
@@ -102,7 +102,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one, superseding ADR-010's decision 5.
 - **Acceptance:** `MovementTests`: a ship sent behind itself comes about in a loop, never standing to turn; a point inside its full-speed turn is reached, not circled; every other suite still passes. The full balance check is run again.
 - **Verify:** CI; the balance check in the container; **owner run.**
-- **As built:** [ADR-039](../Design/ADR/ADR-039-ships-turn-in-arcs.md), which supersedes ADR-010's decision 5 and the stall rule's exemption in its decision 6.
+- **As built:** [ADR-039](../../Design/ADR/ADR-039-ships-turn-in-arcs.md), which supersedes ADR-010's decision 5 and the stall rule's exemption in its decision 6.
   - **The steering.** A ship always moves forward, at its cruise speed times ½ + ½·cos of its bearing to the waypoint: full speed on course, half with the waypoint abeam or behind. It also flies no faster than lets it reach the waypoint on the arc that leaves along its heading, so it never circles a point inside its turn. Only a tick it heads within 45° of its waypoint and gets no closer counts toward a stall.
   - **What it changes**, measured in the Linux container. A U-turn takes about 8% longer: a Large+Fusion ship sent 100 m behind itself arrives in 8.55 s against 7.90 s. A point 15 m abeam, which the old rule circled for seconds and gave up 2 m short of, is now reached exactly in 0.75–3.6 s, depending on the hull. Two AIs end a match at a median of 23:32 over 140 seeds, against 22:11 before. The balance check, run again with arcs: (a), (b) and (c) pass at every stage. (d) is UNSURE at tier 1: with Hull Plating, the plated swarm's best answer at 2,000 Ore under spread fire wins 53% of 480 battles, where it won 55% before. Nothing is retuned until the owner decides.
   - **Tests.** `MovementTests.AShipComesAboutInALoop` and `AShipReachesAPointInsideItsTurn`, both of which fail under the old rule; the other 185 GameLogic tests pass unchanged.
@@ -114,6 +114,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Why it is apart from 9.7:** each ship of an Attack order paths again alone, once a second, as its target moves (`ChaseTargets`), so a lane laid at the order is lost at the first new path. The group has to path again together, with its band, whenever its target moves (owner, 2026-10-03, ADR-047).
 - **Acceptance:** a `MovementTests` case as `AGroupPassesAnObstacleSideBySide`, with an Attack order on a moving target; the order ticks measured as ADR-032 measures them.
 - **Verify:** CI; the AI matches of seeds 1 to 40 again, since the AI's counter-attack is an Attack order.
+- **Carried over to Phase 2** (owner, 2026-10-03), unbuilt: Phase 1 closed without it, and an Attack order on one enemy keeps the shared route.
 
 ---
 
@@ -139,7 +140,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: the change, superseding the parts of ADR-010 it changes.
 - **Acceptance:** `MovementTests` and `PathfinderTests` still pass, and the balance check's tier-1 stage still gives the MVP's report: a change to when ships start moving can change a battle, and if it does, the change is reported and the owner decides.
 - **Verify:** CI; **owner run** of `--measure --load` and Q5's measurement on the development machine. The figures go to design §10 and the MVP design's Q4 row is noted as superseded.
-- **As built:** [ADR-032](../Design/ADR/ADR-032-order-ticks.md), which records the measurement and the figures.
+- **As built:** [ADR-032](../../Design/ADR/ADR-032-order-ticks.md), which records the measurement and the figures.
   - **The measurement.** 8.1's parts, timed in a Linux build of the simulation with clang 18 and counted with callgrind, on task 2.7's load. The owner's breakdown from the development machine was not waited for: the container's order ticks are about a third of the MVP's on both the first and the later ticks, which is enough to say where the time goes. The breakdown is in ADR-032 and design §10.
   - **The graphs** are built when match setup is over (`InProcessServer::PreparePathfinding`, now called by `CreateInProcessServer`), and again on quiet ticks, one a tick, after a structure drops them (`Pathfinder::PrepareNext`).
   - **A large order** of more than `Simulation::SPLIT_ORDER_SHIPS`, 32, plans every other ship in its own tick and the rest in the next, and sets off then (`Simulation::PlannedOrder`, `Plan`, `PlanPaths`, `SetOff`, `FinishPlannedOrders`; `GroupRoutes` carries its routes over with `TakeRoutes`).
@@ -162,10 +163,10 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - **Tracking.** A text run can be laid out with extra space between letters, for the spaced capitals.
   - **Sprites.** The ◆, a checkbox, a hatching tile that repeats, and a corner bracket, drawn into the atlas at start-up, so they scale with the rest. A panel can be filled with the hatching.
   - **A missing face fails loudly.** A font that is not installed is reported, not silently replaced.
-- **ADR:** [ADR-030](../Design/ADR/ADR-030-typography-and-sprites.md), superseding ADR-015's one size and ASCII-only text. It keeps ADR-015's atlas, quads, one draw call, and no shipped font.
+- **ADR:** [ADR-030](../../Design/ADR/ADR-030-typography-and-sprites.md), superseding ADR-015's one size and ASCII-only text. It keeps ADR-015's atlas, quads, one draw call, and no shipped font.
 - **Acceptance:** `GlyphAtlasTests` cover several faces and sizes in one atlas, the two non-ASCII characters, tracking, and the sprites.
 - **Verify:** CI; **owner run**: every existing panel still reads, and text is sharp at 1920×1080 and 2880×1920.
-- **As built:** [ADR-030](../Design/ADR/ADR-030-typography-and-sprites.md).
+- **As built:** [ADR-030](../../Design/ADR/ADR-030-typography-and-sprites.md).
   - **The atlas.** `Neuron::RasterizeFont`, `Neuron::DrawSprite` and `Neuron::PackGlyphs` make one texture of every font and sprite; `NextCodePoint` reads UTF-8. `UiPipeline` takes a list of fonts and sprites and a scale, and draws text in a font with tracking, sprites mirrored or not, and hatched rectangles, which the pixel shader stripes.
   - **The game's.** `Hud::Typefaces` and `Hud::Sprites`; `Hud::Text` names its typeface and tracking, Body by default, so the HUD draws as it did. In Debug the game writes to the debugger which face the figures found (H7).
   - **Hatching is a shader branch, not an atlas tile**, as this plan first said: a tile is a quad per tile, and the sampler clamps.
@@ -176,10 +177,10 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 
 - **Goal:** design §12.
 - **Scope:** in `GameApp`, a window manager the HUD lays out through: windows with a title bar, a front-to-back order, dragging by the title bar, clamping to the screen with the title bar always reachable, bringing to the front on a click, closing with × and Esc, and each window's position kept in memory for as long as the process lives. Input focus tests the windows front to back, then the anchored HUD, then the world (ADR-015's rectangle test). Positions are held in reference units and clamped again when the screen's size changes.
-- **ADR:** [ADR-031](../Design/ADR/ADR-031-floating-windows.md): the window manager and its focus order.
+- **ADR:** [ADR-031](../../Design/ADR/ADR-031-floating-windows.md): the window manager and its focus order.
 - **Acceptance:** `HudTests` cover dragging, clamping after a resize, the order of focus, Esc closing the front window, and a window reopening where it was closed.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-031](../Design/ADR/ADR-031-floating-windows.md).
+- **As built:** [ADR-031](../../Design/ADR/ADR-031-floating-windows.md).
   - **The state.** `Outpost::WindowManager`: open windows front to back, where each was left, and the drag.
   - **The layout.** `Hud::Lay` takes the manager and lays each open window out last, back to front, kept on the screen by `Hud::KeepOnScreen`; the layout is drawn and clicked in layers, so a window covers what is behind it and a HUD button under one takes no click.
   - **The designer is the first window**, laid out as before inside a frame with a hatched title bar, a close box and corner brackets. Until 9.3 adds its button and key, selecting a built Shipyard opens it once.
@@ -190,7 +191,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 ### 9.3 — The designer window after the mockup
 
 - **Gate:** H6, closed at this task's owner run.
-- **Goal:** design §11, laid out as [`Mockups/ShipDesigner.png`](Mockups/ShipDesigner.png).
+- **Goal:** design §11, laid out as [`Mockups/ShipDesigner.png`](../Mockups/ShipDesigner.png).
 - **Scope:**
   - **The window.** One designer, opened from a selected Shipyard's panel and from a key; its target Shipyard, stepped through with arrows or set by selecting a Shipyard in the world; Shipyard numbers in the order they were finished, carried in the snapshot.
   - **The header:** the target's five queue slots, the count it has built this match, and the Ore.
@@ -238,9 +239,9 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - A Mining Rig's legs should touch the rock, with only its drill going in.
 - **Scope:** `Hud`, `GameClient`'s rings and its rig, `MeshPipeline`, and the stance in `Hardpoints`.
 - **ADR:**
-  - [ADR-042](../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings.
-  - [ADR-043](../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
-  - [ADR-044](../Design/ADR/ADR-044-rig-stands-on-its-legs.md) for the rig's stance.
+  - [ADR-042](../../Design/ADR/ADR-042-faint-footprint-lines.md) for the rings.
+  - [ADR-043](../../Design/ADR/ADR-043-hud-in-the-windows-look.md) for the HUD.
+  - [ADR-044](../../Design/ADR/ADR-044-rig-stands-on-its-legs.md) for the rig's stance.
 - **Acceptance:** `HudTests` for the HUD; the rings are the owner's run.
 - **Verify:** CI; **owner run.**
 - **As built:**
@@ -276,7 +277,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - `--stress` stood rigs on open ground.
 - **Owner's answers, 2026-10-03:** do the review's seven recommendations, and fix the two faults.
 - **Scope:** `GameClient`'s rings, `Starfield`, `Hud`, `FogOfWar`, `PlayerControls` and `StressLoad`.
-- **ADR:** [ADR-046](../Design/ADR/ADR-046-second-look-at-the-screen.md).
+- **ADR:** [ADR-046](../../Design/ADR/ADR-046-second-look-at-the-screen.md).
 - **Acceptance:** `HudTests`, `FogOfWarTests`, `PlayerControlsTests`, `StarfieldTests` and `StressLoadTests` for what they cover; the rings and the crosses are the owner's run.
 - **Verify:** CI; **owner run.**
 - **As built:** as ADR-046 has it.
@@ -307,7 +308,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
   - The AI regroups for 120 seconds, not 150, so that its matches stay within 45–60 minutes with lanes.
   - An Attack order on one enemy keeps the shared route for now; its group keeping lanes is task 7.3.
 - **Scope:** `GroupRoutes` and `Simulation`'s group orders and corners, `Opponent.json`, `GameClient`'s health bars, `Window`'s menu key and `Hud`'s income.
-- **ADR:** [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md).
+- **ADR:** [ADR-047](../../Design/ADR/ADR-047-a-fight-seen-whole.md).
 - **Acceptance:**
   - `MovementTests.AGroupPassesAnObstacleSideBySide`, `PathfinderTests.ShipsOfAGroupKeepTheirLanesRoundAnObstacle` and `HudTests.WarnsOfNoIncome`.
   - The AI matches of seeds 1 to 40 still end in a median of 45–60 minutes (ADR-041).
@@ -335,7 +336,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: the tiers, gateways and the stacking of upgrades, beside ADR-017.
 - **Acceptance:** `ResearchTests` and `TuningTests` cover each new effect, stacking, a gateway gating its tier, and a lab's queue across tiers.
 - **Verify:** CI.
-- **As built:** [ADR-033](../Design/ADR/ADR-033-research-tiers.md).
+- **As built:** [ADR-033](../../Design/ADR/ADR-033-research-tiers.md).
   - **The schema.** A topic's `"tier"`, required; a gateway's `"effect": { "opensTier": n }`, read as `GatewayEffect`; and five targets with their one rate each: `allStructures` hit points, `structureWeapon` fire rate, `allShips` speed, `constructors` build rate and `asteroids` ore reserve. The loader checks the tiers: a gateway opens its own tier, a tier has one, every other topic of a later tier requires it, and no topic requires one of a later tier.
   - **Stacking.** `UpgradesFrom` adds each rate's percentages; the MVP's topics never stack, so tier 1 is unchanged.
   - **The simulation.** Structures are placed with their owner's hit points and raised, keeping their share, when the topic finishes; a structure weapon fires at its owner's rate; a design's speed and every ship's follow the speed upgrade; the Constructors build and repair at their owner's rate. The ore reserve waits in `Upgrades` for task 11.1.
@@ -352,7 +353,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** the three components in `Tuning.json` with their abbreviations; the Flak Battery's splash through the Missile Rack's (ADR-014); their exhaust color (the Pulse Drive's) and their shots, as presentation data (ADR-019). The Pulse Drive's exhaust color is the owner's to pick at the run.
 - **Acceptance:** `CombatTests` and `DesignTests` cover each.
 - **Verify:** CI; **owner run**: whether the Pulse Drive's exhaust and the two weapons' shots read.
-- **As built:** [ADR-034](../Design/ADR/ADR-034-shot-looks.md).
+- **As built:** [ADR-034](../../Design/ADR/ADR-034-shot-looks.md).
   - **The tuning data.** The Pulse drive (3), the Flak Battery (4) and the Rail Cannon (5), with design §5's numbers, and the four topics that waited for them: 10 Pulse Drive, 11 Flak Battery, 19 Rail Cannon and 22 Proximity Fuses. All 25 topics are in. Their abbreviations, **P**, **FB** and **RC**, come from their names as every component's do. The Flak Battery splashes through the Missile Rack's mechanism (ADR-014), which needed no change.
   - **The looks.** `Models.json` gives each weapon whose shot is not a tracer its look, the Lance's beam and the Rail Cannon's new slug, a white line that joins gun and target and lingers; the Flak Battery fires tracers with its splash ring. The Pulse Drive's exhaust is a provisional lime green, for the owner to pick at the run.
   - **The balance checks** stay on tier 1's components, the MVP's 18 designs, in both the C++ check, through `PartsThrough`, and `Tools/BattleModel.py`, until 10.3 gives tiers 2 and 3 their stages.
@@ -402,7 +403,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one: depletion and what the snapshot carries of it.
 - **Acceptance:** `EconomyTests` cover a reserve running out to the trickle, both upgrades, and the fog's remembered figure.
 - **Verify:** CI; **owner run** of the panel and the minimap.
-- **As built:** [ADR-035](../Design/ADR/ADR-035-ore-depletion.md).
+- **As built:** [ADR-035](../../Design/ADR/ADR-035-ore-depletion.md).
   - **Data.** `Map.json`'s ore asteroids each state a `"reserve"`, required: 7,500 Ore at home and 12,000 contested on today's map, as design §8's rings. `Tuning.json`'s rules give the trickle, `"exhaustedYieldPercent": 20`.
   - **The draw.** A built rig draws from its asteroid what it earns, divided by its owner's reserve factor, carried in hundredths as income is; a dry asteroid's rig earns a fifth of its rate and draws nothing. An asteroid placed without a reserve, as tests place them, never runs out.
   - **What a player sees.** Under fog of war each player keeps every asteroid's reserve as it last saw it; the snapshot gives it on the asteroid and on the rig standing on it. A rig's panel reads "Ore left 3,420", or "Ore run out: it earns a trickle", and the minimap draws a dry asteroid in a dark rust.
@@ -415,7 +416,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `Map.json` at 5,000 m with the four rings, point-symmetric, every passage at least the minimum gap. `MapTests` check both. The layout is in sectors for Phase 2 (design §8; owner, 2026-10-03): about nine, each with a node site, and the map data names them, their node sites and their adjacency, which the game reads nothing of yet. `MapTests` check that adjacency is symmetric, every asteroid lies in one sector and every sector can be reached from both starts. The fog of war's grid, the minimap and the path graphs at the new size are checked against Q4: a `--measure --load` run on the new map is part of the owner run.
 - **Acceptance:** `MapTests`; `PathfinderTests` on the new map.
 - **Verify:** CI; **owner run**: the layout confirmed by the owner, as MVP task 2.3's was, and its first matches decide H8.
-- **As built:** [ADR-036](../Design/ADR/ADR-036-map-sectors.md).
+- **As built:** [ADR-036](../../Design/ADR/ADR-036-map-sectors.md).
   - **The map.** 5,000 m, the starts at (−1,750, −1,750) and (1,750, 1,750), 4.95 km apart. Nine sectors on a grid of thirds: each home in its corner with its three home asteroids; each player's flanks with its four near ones, two in each; the six contested round the center; two rich in each empty corner, one nearer each start. 22 asteroid fields stand on the sector borders and at their junctions. 24 asteroids, 285,000 Ore, as design §8.
   - **Rings and sectors in the data.** The yields `"near"` and `"rich"` join `"home"` and `"contested"`, with their rates in `Tuning.json`. `"sectors"` names each sector's rectangle, node and adjacency, which the loader checks and Phase 1 does not read.
   - **The client** lets the camera's focus go 2,500 m out instead of 1,000, and draws the ground's grid over 5 km.
@@ -444,7 +445,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one, superseding ADR-020's decision 8.
 - **Acceptance:** `MatchOutcomeTests`: losing the Command Station alone does not end the match; losing it and the last finished Shipyard does; a Shipyard under construction does not count; the reveal. `AiPlayerTests`: the attack group goes for a Shipyard first.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-037](../Design/ADR/ADR-037-losing-all-production.md). It supersedes ADR-020's decision 9, the match's end, which this entry named as decision 8, and the attack in ADR-024's decision 8.
+- **As built:** [ADR-037](../../Design/ADR/ADR-037-losing-all-production.md). It supersedes ADR-020's decision 9, the match's end, which this entry named as decision 8, and the attack in ADR-024's decision 8.
   - **The rule.** A player whose base was placed loses when it has neither a Command Station nor a finished Shipyard. A lost Command Station needed no change to stay lost: the tuning data gives it no cost, so no Constructor can build one.
   - **The reveal.** Under fog of war, each finished Shipyard of a player without a Command Station is kept among its opponents' remembered structures, refreshed every tick, so they see it and can order an attack on it.
   - **The AI.** Its attack group goes for Shipyards, then the Command Station, then the rest, nearest first in each, and turns to a Shipyard that comes to light. Without its Command Station it plays on, apart from queuing Constructors. It still beats a player who does nothing at 7.8 minutes, and one who holds the middle at 9.0.
@@ -458,7 +459,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **ADR:** a new one; gate G9's 12 ships are superseded.
 - **Acceptance:** the median of `--ai-matches`' seeds 1–40 in the container; `AiPlayerTests` and `AiSettingsTests` for the new behavior.
 - **Verify:** the AI matches in the container; CI; **owner run.**
-- **As built:** [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md).
+- **As built:** [ADR-041](../../Design/ADR/ADR-041-ai-plays-a-longer-match.md).
   - **The behavior.**
     - An attack group of 20 warships, and 12 more for each tier opened.
     - Falling back to the rally once an attack has lost 30% of its ships, then 150 seconds before the next.
@@ -483,7 +484,7 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Scope:** `MatchLog` records each gateway topic as it finishes, each side's warship count every 30 s and its peak, and each asteroid as it runs dry. `Tools/MatchLog.py` reports the match's length against 45–60 minutes, the designs built in each tier, and the peak ship count. A switch runs 10 seeded AI-against-AI matches on the real server headlessly and summarizes their lengths.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
-- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md).
+- **As built:** [ADR-038](../../Design/ADR/ADR-038-phase-one-match-log.md).
   - **The log** adds a `tier` record after each gateway, each player's `fleet` every 30 seconds from its own snapshots, a `dry` record as each asteroid runs out, and each player's `peak` as the match ends or is left.
   - **The switch** is the executable's `--ai-matches`, since only the executable may include both the AI and the log. It steps the server a tick at a time through a new `Server::Step`, so each match reproduces from its seed, plays seeds 1 to 10 on every core to their end or 120 minutes, and writes `OutpostCommander-ai-matches.log` in the temporary folder. `Tools/MatchLog.py --ai-matches` gives each match and their lengths' median and spread; for every log it gives the tiers, the peak, and the warships built in each tier.
   - **What it found in the container**, for 13.2 to weigh: two AIs end a match in 22 minutes, the median of 40 seeds, from 19:37 to 32:18, and none in P1's 45 to 60. They open tier 2 at 15:04 and never reach tier 3. Player 1 wins 30 of the 40 with the same AI in both seats; the cause is not the order the server applies their commands, and is not yet known.
@@ -494,3 +495,4 @@ Each is an owner decision, from design §15. H1–H5 and H7 were decided on 2026
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the owner plays matches without rushing the AI; the AI-against-AI run; the Q4 measurement on the 5 km map at the peak ship count 13.1 reports; the owner's judgement of the designer, the windows and the banking.
 - **Verify:** **owner run.** The answers decide whether and how Phase 2 goes on to two hours (design §1).
+- **As recorded** (owner, 2026-10-03), in design §2: P5 is "yes". P1–P4 are recorded as the container measured them, and the owner's matches and the development machine's runs were not made. P1 has two AIs at a median of 47.5 minutes; P2 is not answered, with tier 3 reached in 2 matches of 80; P3 passes in the container; P4 is not answered on the development machine or the 5 km map.

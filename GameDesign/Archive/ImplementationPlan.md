@@ -75,15 +75,15 @@ Each gate is an owner decision, and all of them are decided. G2 and G3 were the 
 
 | Gate | Decision | Where it is recorded | Blocks |
 |---|---|---|---|
-| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../Design/ADR/ADR-006-renderer-shape.md) | — |
-| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. **Revised on 2026-10-01:** the meshes are glTF sources baked into the game's own `.nmf` format, which carries hardpoints, and the current meshes are placeholders to be replaced, so their provenance matters only for one that ships. **Closed for the MVP on 2026-10-01:** the placeholders stay through the MVP and none ships, so provenance comes with their replacements, after the MVP. | [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md), [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md); design §11, §15 | — |
-| G3 | The camera's zoom range around the 500 m default view (design §4, §15). **Decided on 2026-10-01: a view 150 m to 1,600 m wide, the provisional limits 1.5 has held as data since milestone 1.** | `OutpostCommander/Assets/Camera.json`; [ADR-012](../Design/ADR/ADR-012-rts-camera.md); design §4, §15 | — |
+| G1 | The renderer's shape: frames in flight, vsync and tearing, window style (windowed, borderless), resize behaviour, device-removed handling, and which failed `HRESULT`s the renderer handles instead of letting `winrt::check_hresult` throw (R12). Exclusive full screen is not ruled out by ADR-001, but it needs a reason. **Decided on 2026-09-30:** borderless full screen with an Alt+Enter window, two frames in flight, vsync, a native back buffer with the UI in 1920×1080 reference units, fatal device loss. | [ADR-006](../../Design/ADR/ADR-006-renderer-shape.md) | — |
+| G2 | How meshes reach the game, how they get into the MSIX package, and the art's provenance (design §11, §15) before the meshes ship in a package. **Decided on 2026-09-30: a loader for DirectX's `.cmo` format in the game; the owner converts the meshes.** The converted Human and Tarkan sets and the asteroid are in `OutpostCommander/Assets/Models/` and packaged under `Assets\Models\`. **Revised on 2026-10-01:** the meshes are glTF sources baked into the game's own `.nmf` format, which carries hardpoints, and the current meshes are placeholders to be replaced, so their provenance matters only for one that ships. **Closed for the MVP on 2026-10-01:** the placeholders stay through the MVP and none ships, so provenance comes with their replacements, after the MVP. | [ADR-011](../../Design/ADR/ADR-011-meshes-and-shading.md), [ADR-018](../../Design/ADR/ADR-018-nmf-and-hardpoints.md); design §11, §15 | — |
+| G3 | The camera's zoom range around the 500 m default view (design §4, §15). **Decided on 2026-10-01: a view 150 m to 1,600 m wide, the provisional limits 1.5 has held as data since milestone 1.** | `OutpostCommander/Assets/Camera.json`; [ADR-012](../../Design/ADR/ADR-012-rts-camera.md); design §4, §15 | — |
 | G4 | The namespace for the game layers. **Decided on 2026-09-30: `Outpost`.** | AGENTS.md §1, R9 | — |
 | G5 | Ship sizes in metres: footprint radii for movement and formation, and the spacing the Missile Rack's splash depends on (design §11, §12, §15). 2.4 can start with provisional radii held as data. 5.3 cannot start without them. **Decided on 2026-10-01: the hulls' radii they had moved with are final, Small 8 m, Medium 14 m, Large 24 m. The Constructor's and the structures' footprints, and every turn rate, were made final too, as they were (owner, 2026-10-01).** | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
-| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
-| G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) | — |
+| G6 | The format of the tuning data that replaces design §12 as the source of numbers, and whether §12 keeps a copy. **Decided on 2026-09-30: JSON, and §12 keeps no copy.** It covers the map (2.3) and the provisional radii and turn rates (2.4) too. | [ADR-008](../../Design/ADR/ADR-008-tuning-data.md); design §12 | — |
+| G7 | How the game draws its UI: text, panels, input focus (ADR-001, design §9, §15). R14 rules out the usual libraries, so it is DirectWrite or GDI text from the Windows SDK, or a bitmap font drawn by D3D12. **Decided on 2026-10-01: a DirectWrite glyph atlas drawn as quads by D3D12.** | [ADR-015](../../Design/ADR/ADR-015-ui-drawing.md) | — |
 | G8 | The Constructor's HP, speed, cost and build time, and the build and repair rates (design §7, §12, §15). **Decided on 2026-10-01, as a baseline, and made final as it was the same day:** The Constructor: 300 HP, armor 2, 45 m/s, 60 Ore, 15 s at the Command Station, no weapon. Building: one Constructor takes the structure's build time, and each further Constructor on the site adds half of one more. Repair: 2% of the structure's or ship's maximum hit points per second per Constructor, free. 4.2 puts them in the tuning data. | `OutpostCommander/Assets/Tuning.json`; the reasons in design §12 | — |
-| G9 | The AI's attack-group threshold (design §10, §15). **Decided on 2026-10-01: 12 ships.** It is the AI's own number, so it is in the AI's settings file rather than the tuning data. | `OutpostCommander/Assets/Opponent.json`; [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md); design §10 | — |
+| G9 | The AI's attack-group threshold (design §10, §15). **Decided on 2026-10-01: 12 ships.** It is the AI's own number, so it is in the AI's settings file rather than the tuning data. | `OutpostCommander/Assets/Opponent.json`; [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md); design §10 | — |
 
 Turn rates did not gate anything: weapons are turrets and hits are instant, so turn rates only shape movement. 2.4 used provisional values held as data, made final as they were on 2026-10-01.
 
@@ -174,7 +174,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 
 ### 1.2 — D3D12 device and flip-model swap chain
 
-- **Gate:** G1, decided. **ADR:** [ADR-006](../Design/ADR/ADR-006-renderer-shape.md), the renderer's shape.
+- **Gate:** G1, decided. **ADR:** [ADR-006](../../Design/ADR/ADR-006-renderer-shape.md), the renderer's shape.
 - **Goal:** clear the window to a colour every frame, through `CreateSwapChainForHwnd` and `DXGI_SWAP_EFFECT_FLIP_DISCARD`.
 - **Scope:** in `NeuronClient`:
   - device and adapter selection;
@@ -199,7 +199,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
   - A mesh that fails to load is reported, not silently skipped.
 - **Acceptance:** CI green. A test or tool check shows that `Small`, `Medium` and `Large` load at their intended relative sizes in both sets, and that each hull is the same size in the Human and Tarkan sets. The design notes that the Tarkan `Medium` is larger than its `Large` before scaling.
 - **Verify:** **owner run:** one Human and one Tarkan hull on screen, each facing along its forward axis.
-- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::ParseCmo` and `Neuron::OrientMesh` in `NeuronClient`; `OutpostCommander/Assets/Models.json` gives each set its color and each model its `forwardAxis` and `lengthMeters`, read by `Outpost::LoadModelCatalog` in `GameApp`. The scale is the model's length divided by its mesh's extent along its forward axis. Hull lengths are provisional with G5: Small 20 m, Medium 35 m, Large 60 m. The Human set faces −z; the Tarkan hulls are set to +x, and several of them are close to symmetric end to end; the owner's run confirmed which end is the front. `GameAppTests`, a new test project, checks that every shipped model parses, that the hulls load in size order in both sets and at the same length in both, and that orienting keeps the winding. Every model loads at start, and one that fails stops the game with the file's name.
+- **As built:** [ADR-011](../../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::ParseCmo` and `Neuron::OrientMesh` in `NeuronClient`; `OutpostCommander/Assets/Models.json` gives each set its color and each model its `forwardAxis` and `lengthMeters`, read by `Outpost::LoadModelCatalog` in `GameApp`. The scale is the model's length divided by its mesh's extent along its forward axis. Hull lengths are provisional with G5: Small 20 m, Medium 35 m, Large 60 m. The Human set faces −z; the Tarkan hulls are set to +x, and several of them are close to symmetric end to end; the owner's run confirmed which end is the front. `GameAppTests`, a new test project, checks that every shipped model parses, that the hulls load in size order in both sets and at the same length in both, and that orienting keeps the winding. Every model loads at start, and one that fails stops the game with the file's name.
 
 ### 1.4 — Flat-lit, team-coloured shading
 
@@ -207,7 +207,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Scope:** `NeuronClient/Shader/<Name>VS.hlsl` and `PS.hlsl`, compiled by `FXCompile` into `CompiledShader/` and included only by the `.cpp` that builds the pipeline state (AGENTS.md §2). Include a root signature, a pipeline state, a per-frame constant buffer and per-object colour.
 - **Acceptance:** CI green, with the compiled headers generated and not committed.
 - **Verify:** **owner run:** the hull reads clearly in two team colours.
-- **As built:** [ADR-011](../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::MeshPipeline` with `Shader/MeshVS.hlsl` and `MeshPS.hlsl`, shader model 5.1; a root constant buffer view per frame and 20 root constants per object; Lambert lighting from one light over an ambient floor of 0.3. The renderer gained a depth buffer and a `BeginFrame`/`EndFrame` pair in place of `RenderFrame`. The team colors are blue for the player and orange-red for the Tarkan, provisional until the owner made them final on 2026-10-01 (design §15).
+- **As built:** [ADR-011](../../Design/ADR/ADR-011-meshes-and-shading.md). `Neuron::MeshPipeline` with `Shader/MeshVS.hlsl` and `MeshPS.hlsl`, shader model 5.1; a root constant buffer view per frame and 20 root constants per object; Lambert lighting from one light over an ambient floor of 0.3. The renderer gained a depth buffer and a `BeginFrame`/`EndFrame` pair in place of `RenderFrame`. The team colors are blue for the player and orange-red for the Tarkan, provisional until the owner made them final on 2026-10-01 (design §15).
 
 ### 1.5 — The RTS camera
 
@@ -216,7 +216,7 @@ Design §14: *the Win32 window with a D3D12 flip-model swap chain, a mesh loaded
 - **Scope:** camera state and input in `GameApp`, since camera state is client state (ADR-002), over the view and projection math in `NeuronClient` (`DirectXMath`). A test grid on the y = 0 plane shows scale. Decide, and record, whether the cursor is clipped to the window while the game is active and what edge scroll does in a window (ADR-006).
 - **Acceptance:** CI green. The camera math has unit tests where it is pure: the width at default zoom, and the pitch at each zoom limit.
 - **Verify:** **owner run.**
-- **As built:** [ADR-012](../Design/ADR/ADR-012-rts-camera.md). `Outpost::Camera` in `GameApp` over DirectXMath; the numbers in `OutpostCommander/Assets/Camera.json`, whose zoom limits G3 made final on 2026-10-01. Input comes from `Neuron::Window::ReadInput`. The cursor is held inside the window while the game is full screen and in the foreground, and edge scroll works only then; in a window, WASD and middle-drag pan. The scene is milestone 1's placeholder until 2.5: the Small, Medium and Large hulls of each set side by side, facing +x, an asteroid at a home asteroid's size, and a grid with a line every 100 m and a brighter one every 500 m.
+- **As built:** [ADR-012](../../Design/ADR/ADR-012-rts-camera.md). `Outpost::Camera` in `GameApp` over DirectXMath; the numbers in `OutpostCommander/Assets/Camera.json`, whose zoom limits G3 made final on 2026-10-01. Input comes from `Neuron::Window::ReadInput`. The cursor is held inside the window while the game is full screen and in the foreground, and edge scroll works only then; in a window, WASD and middle-drag pan. The scene is milestone 1's placeholder until 2.5: the Small, Medium and Large hulls of each set side by side, facing +x, an asteroid at a home asteroid's size, and a grid with a line every 100 m and a brighter one every 500 m.
 
 ### 1.6 — Milestone 1 review
 
@@ -248,7 +248,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 
 ### 2.2 — Tick host, seeded PRNG, in-process server
 
-- **ADR:** [ADR-009](../Design/ADR/ADR-009-deterministic-core.md), the deterministic core (R16). The owner decided on 2026-09-30 that a replay promises the same build on the same platform, and that the server ticks on the frame loop's thread.
+- **ADR:** [ADR-009](../../Design/ADR/ADR-009-deterministic-core.md), the deterministic core (R16). The owner decided on 2026-09-30 that a replay promises the same build on the same platform, and that the server ticks on the frame loop's thread.
 - **Goal:** the authoritative server running inside the client (ADR-002 decisions 1, 3, 5 and 8).
 - **Scope:**
   - A fixed-rate tick host in `NeuronServer`, 20 Hz from the tuning data that 3.1 loads (design §12). Wall time becomes ticks at this one seam.
@@ -281,7 +281,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
   - a mixed group arrives together at its slowest member's speed;
   - no two ships' footprints overlap by more than a stated tolerance after settling.
 - **Verify:** CI.
-- **As built:** [ADR-010](../Design/ADR/ADR-010-movement-and-pathing.md). Hulls carry provisional `footprintRadiusMeters` (8, 14 and 24 m) and `turnRateDegreesPerSecond` (180, 120 and 60), and drives a `turnRateFactor` (Ion 1.25, Fusion 0.8), until G5. The tolerance is 0.5 m. A 200-ship order costs about one Q4 tick budget, which 2.7 measures on the development machine.
+- **As built:** [ADR-010](../../Design/ADR/ADR-010-movement-and-pathing.md). Hulls carry provisional `footprintRadiusMeters` (8, 14 and 24 m) and `turnRateDegreesPerSecond` (180, 120 and 60), and drives a `turnRateFactor` (Ion 1.25, Fusion 0.8), until G5. The tolerance is 0.5 m. A 200-ship order costs about one Q4 tick budget, which 2.7 measures on the development machine.
 
 ### 2.5 — Rendering from interpolated snapshots
 
@@ -289,7 +289,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Scope:** `GameApp` keeps the snapshot history and hands draw lists to `NeuronClient`.
 - **Acceptance:** CI green. A test covers the interpolation math.
 - **Verify:** **owner run:** smooth motion at 60 fps from a 20 Hz tick.
-- **As built:** [ADR-013](../Design/ADR/ADR-013-client-view-and-controls.md). Started before 1.6's owner run, at the owner's choice. `SnapshotInterpolator` in `GameApp` shows the world one tick behind the newest snapshot, on a clock pulled gently toward it, and never extrapolates. `EntityView` carries the ship's `HullId`, and `Models.json` maps players to sets and hulls to models. `Server::TicksPerSecond()` gives the client the rate. The server places a provisional starting fleet from `Map.json` at each start (the owner's decision), so there is something to draw: four Small and two Medium ships per player, facing the map's center. Ore asteroids are drawn with the asteroid mesh at their radius, and a field as a ring of rocks. The milestone 1 lineup is gone. A test drives the view at 60 fps from 20 Hz snapshots and checks that every frame steps forward by close to the same distance. Ships move only once 2.6 gives orders, so the owner's run of 2.5 happens together with 2.6's.
+- **As built:** [ADR-013](../../Design/ADR/ADR-013-client-view-and-controls.md). Started before 1.6's owner run, at the owner's choice. `SnapshotInterpolator` in `GameApp` shows the world one tick behind the newest snapshot, on a clock pulled gently toward it, and never extrapolates. `EntityView` carries the ship's `HullId`, and `Models.json` maps players to sets and hulls to models. `Server::TicksPerSecond()` gives the client the rate. The server places a provisional starting fleet from `Map.json` at each start (the owner's decision), so there is something to draw: four Small and two Medium ships per player, facing the map's center. Ore asteroids are drawn with the asteroid mesh at their radius, and a field as a ring of rocks. The milestone 1 lineup is gone. A test drives the view at 60 fps from 20 Hz snapshots and checks that every frame steps forward by close to the same distance. Ships move only once 2.6 gives orders, so the owner's run of 2.5 happens together with 2.6's.
 
 ### 2.6 — Selection, orders and control groups
 
@@ -300,7 +300,7 @@ Design §14: *the in-process server ticking, selection, move commands, pathing a
 - **Scope:** selection and control groups are client state in `GameApp`. Orders become `Command`s through the transport.
 - **Acceptance:** CI green. Tests cover picking and box selection where they are pure math.
 - **Verify:** **owner run.**
-- **As built:** [ADR-013](../Design/ADR/ADR-013-client-view-and-controls.md). The window records presses and releases as events. `PlayerControls` turns them into selection, control groups and `Command`s, which `WinMain` sends at once. The selection shows as green rings on the ground, amber while attack-move waits for its click, and a drag box as its outline on the ground until the HUD exists (G7). The arrow keys pan and A and S are orders, decided by the owner on 2026-09-30. The server rejects attack and attack-move until 3.3. Double-click compares hulls until designs exist (3.2).
+- **As built:** [ADR-013](../../Design/ADR/ADR-013-client-view-and-controls.md). The window records presses and releases as events. `PlayerControls` turns them into selection, control groups and `Command`s, which `WinMain` sends at once. The selection shows as green rings on the ground, amber while attack-move waits for its click, and a drag box as its outline on the ground until the HUD exists (G7). The arrow keys pan and A and S are orders, decided by the owner on 2026-09-30. The server rejects attack and attack-move until 3.3. Double-click compares hulls until designs exist (3.2).
 
 ### 2.7 — Measure Q5 and the tick half of Q4
 
@@ -326,7 +326,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 
 ### 3.1 — Tuning data file, loaded by the game and the model
 
-- **Gate:** G6, decided. **ADR:** [ADR-008](../Design/ADR/ADR-008-tuning-data.md). It runs before 2.2, which takes its tick rate from this file; the number stays 3.1 so that links to it hold.
+- **Gate:** G6, decided. **ADR:** [ADR-008](../../Design/ADR/ADR-008-tuning-data.md). It runs before 2.2, which takes its tick rate from this file; the number stays 3.1 so that links to it hold.
 - **Goal:** design §12's numbers become data that the game loads and `Tools/BattleModel.py` reads, so that neither can disagree with the other.
 - **Scope:**
   - The data file, and its loader in `GameLogic`.
@@ -343,7 +343,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Acceptance:** a test compares every design's derived stats with the table `BattleModel.py` prints: cost, HP, armour, speed, range, and damage per second after armour against each hull.
 - **Verify:** CI.
 
-- **As built:** [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md). `Outpost::DesignStatsFor` derives every stat from the tuning data, and `ShipDesign` holds a saved design. Hit points, armor and damage count in integer hundredths. Every player starts with the four starting designs saved, and the provisional starting fleet carries all four (owner, 2026-10-01). `DesignTests` compares every design with the model's table and the armor rule.
+- **As built:** [ADR-014](../../Design/ADR/ADR-014-designs-and-combat.md). `Outpost::DesignStatsFor` derives every stat from the tuning data, and `ShipDesign` holds a saved design. Hit points, armor and damage count in integer hundredths. Every player starts with the four starting designs saved, and the provisional starting fleet carries all four (owner, 2026-10-01). `DesignTests` compares every design with the model's table and the armor rule.
 
 ### 3.3 — Combat rules
 
@@ -360,7 +360,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
   - a ship can fire while moving.
 - **Verify:** CI.
 
-- **As built:** [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md) and [ADR-010](../Design/ADR/ADR-010-movement-and-pathing.md) decision 7. Attack, attack-move and stop are applied. A weapon reloads in thousandths of a tick, and a cold weapon's first shot comes at a random moment within its interval. Shots are chosen from where everything stands at the start of a tick and land together at its end; snapshots carry the tick's shots and the destroyed. Ships part rather than collide, and a ship standing to fire gives way only sideways round its target, so a group spreads into an arc at its range (owner, 2026-10-01). `CombatTests` covers the interval and damage, target choice and stickiness, attack-move stopping at range, a group keeping its stand-off, firing on the move, the attack order and replays.
+- **As built:** [ADR-014](../../Design/ADR/ADR-014-designs-and-combat.md) and [ADR-010](../../Design/ADR/ADR-010-movement-and-pathing.md) decision 7. Attack, attack-move and stop are applied. A weapon reloads in thousandths of a tick, and a cold weapon's first shot comes at a random moment within its interval. Shots are chosen from where everything stands at the start of a tick and land together at its end; snapshots carry the tick's shots and the destroyed. Ships part rather than collide, and a ship standing to fire gives way only sideways round its target, so a group spreads into an arc at its range (owner, 2026-10-01). `CombatTests` covers the interval and damage, target choice and stickiness, attack-move stopping at range, a group keeping its stand-off, firing on the move, the attack order and replays.
 
 ### 3.4 — The Q2 check as headless battles
 
@@ -388,7 +388,7 @@ Design §14: *weapons, damage and destruction, with designs as data from §12. A
 - **Scope:** UI rendering in `NeuronClient`. HUD state in `GameApp`.
 - **Verify:** **owner run.**
 
-- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md). `Neuron::RasterizeGlyphs` and `PackGlyphs` build the atlas, and `Neuron::UiPipeline` draws panels and text in one draw call with `UiVS.hlsl` and `UiPS.hlsl`. `Outpost::Hud` lays out the Ore stockpile in the top-left corner and, for a selection, a panel at the bottom middle with the ship count, the count of each design by name, and their hit points, in reference units. A button press on a HUD panel does not reach the player's controls. `HudTests` and `GlyphAtlasTests` run without a GPU; rasterizing a system font needs Windows. The owner's run on 2026-10-01 found the text sharp at the native resolution.
+- **As built:** [ADR-015](../../Design/ADR/ADR-015-ui-drawing.md). `Neuron::RasterizeGlyphs` and `PackGlyphs` build the atlas, and `Neuron::UiPipeline` draws panels and text in one draw call with `UiVS.hlsl` and `UiPS.hlsl`. `Outpost::Hud` lays out the Ore stockpile in the top-left corner and, for a selection, a panel at the bottom middle with the ship count, the count of each design by name, and their hit points, in reference units. A button press on a HUD panel does not reach the player's controls. `HudTests` and `GlyphAtlasTests` run without a GPU; rasterizing a system font needs Windows. The owner's run on 2026-10-01 found the text sharp at the native resolution.
 
 ### 3.7 — Q4 stress scene and measurement
 
@@ -426,7 +426,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - Costs are paid when a job starts, with no refund. The starting stockpile comes from the tuning data.
 - **Acceptance:** tests of income per tick, payment at the start, no refund, and one rig per asteroid.
 - **Verify:** CI.
-- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). A player's Ore is an integer of hundredths, and a built rig adds 25 or 40 a tick at 20 Hz. Every job is paid when it starts: a structure when it is ordered, a queued ship when it reaches the front. A refused order costs nothing. Snapshots carry the income. `EconomyTests` covers income per tick, payment, no refund, a refused job, one rig per asteroid, and a rig earning nothing until built.
+- **As built:** [ADR-016](../../Design/ADR/ADR-016-base-building.md). A player's Ore is an integer of hundredths, and a built rig adds 25 or 40 a tick at 20 Hz. Every job is paid when it starts: a structure when it is ordered, a queued ship when it reaches the front. A refused order costs nothing. Snapshots carry the income. `EconomyTests` covers income per tick, payment, no refund, a refused job, one rig per asteroid, and a rig earning nothing until built.
 
 ### 4.2 — Structures, placement and Constructors
 
@@ -439,7 +439,7 @@ Design §14: *Constructors built at the Command Station, structures with the Def
   - Players start with two Constructors, and the Command Station is placed before the match starts.
 - **Acceptance:** tests of placement legality, snapping, build progress with one and with two Constructors, and repair.
 - **Verify:** CI; **owner run** for the ghost and the build menu.
-- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md), gate G8.
+- **As built:** [ADR-016](../../Design/ADR/ADR-016-base-building.md), gate G8.
   - The Constructor is a `constructor` entry in the tuning data, and every structure has a footprint. Both were provisional, set by this task, and are final since 2026-10-01.
   - A match starts with the Command Station on each start and two Constructors in front of it. The provisional fleet and the map's `startingFleet` are gone.
   - A site is placed and paid for when ordered, starts at a tenth of its hit points, and blocks movement at once. Constructors in reach build it, each extra one adding half of one.
@@ -457,20 +457,20 @@ Design §14: *Constructors built at the Command Station, structures with the Def
 - **Goal:** the Shipyard builds ships from designs and the Command Station builds Constructors, each with a queue of up to 5 (design §6). Build times come from the tuning data.
 - **Acceptance:** tests of queue limits, build times and payment at the start.
 - **Verify:** CI.
-- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). The queue holds `QUEUE_LIMIT` jobs, a protocol constant. The front job waits for the Ore, then pays and runs for its design's build time, or the Constructor's. The ship appears beside the producer, toward the map's center. Snapshots carry each queue and the front job's progress. `ProductionTests` covers the limit, the build time, payment at the start, waiting for Ore, Constructors from the Command Station, and refusals.
+- **As built:** [ADR-016](../../Design/ADR/ADR-016-base-building.md). The queue holds `QUEUE_LIMIT` jobs, a protocol constant. The front job waits for the Ore, then pays and runs for its design's build time, or the Constructor's. The ship appears beside the producer, toward the map's center. Snapshots carry each queue and the front job's progress. `ProductionTests` covers the limit, the build time, payment at the start, waiting for Ore, Constructors from the Command Station, and refusals.
 
 ### 4.4 — The Defence gun and structure armour
 
 - **Goal:** the Defence Platform and the Command Station carry the Defence gun: 30 damage every 1.0 s, at 250 m. Both have armour 10; every other structure has none (design §6, §12). Auto-targeting uses the same rules as ships.
 - **Acceptance:** tests: the gun outranges the Lance and not the Missile Rack, and armour cuts a Mass Driver hit from 14 to 4.
 - **Verify:** CI.
-- **As built:** [ADR-016](../Design/ADR/ADR-016-base-building.md). Built Command Stations and Defence Platforms fire the tuning data's gun under ADR-014's rules: targeting, cold first shot, hits at the end of the tick. Armor comes from the tuning data. `DefenseTests` covers the range ladder against a Lance ship, armor's 14-to-4 cut, and that only built armed structures fire.
+- **As built:** [ADR-016](../../Design/ADR/ADR-016-base-building.md). Built Command Stations and Defence Platforms fire the tuning data's gun under ADR-014's rules: targeting, cold first shot, hits at the end of the tick. Armor comes from the tuning data. `DefenseTests` covers the range ladder against a Lance ship, armor's 14-to-4 cut, and that only built armed structures fire.
 
 ### 4.5 — The full HUD and the minimap
 
 - **Goal:** design §9's HUD: the Ore stockpile and income, the selection panel, build and research queues, and a minimap.
 - **Verify:** **owner run.**
-- **As built:** [ADR-015](../Design/ADR/ADR-015-ui-drawing.md) decision 4.
+- **As built:** [ADR-015](../../Design/ADR/ADR-015-ui-drawing.md) decision 4.
   - At the top: the Ore and its income, and a placement hint while one is armed.
   - At the bottom: the selection panel, which covers a structure's construction, hit points and queue; the buttons, which build and queue, show costs and are dim when unaffordable; and the minimap, which shows every entity and the camera's view. A left press or drag on the minimap moves the camera, and a right press sends the selected ships.
   - The research queue waits for task 5.1.
@@ -504,7 +504,7 @@ Milestone 4 merged as [#38](https://github.com/Zwaliebaba/Outpost.Commander/pull
 
 Design §14: *the designer in the Shipyard panel, components and the research tree.* Design §7, §8 and §9 are the specification.
 
-The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows once G5 sets ship sizes. Before 5.1 the owner also decided the details design §8 leaves open: a Research Lab queues up to five topics, each paid when it starts; Hull Plating keeps a damaged ship's share of its hit points; and a lab destroyed mid-topic loses the topic and its Ore. They are recorded in design §8 and [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows once G5 sets ship sizes. Before 5.1 the owner also decided the details design §8 leaves open: a Research Lab queues up to five topics, each paid when it starts; Hull Plating keeps a damaged ship's share of its hit points; and a lab destroyed mid-topic loses the topic and its Ore. They are recorded in design §8 and [ADR-017](../../Design/ADR/ADR-017-research-and-the-designer.md).
 
 ### 5.1 — Research
 
@@ -515,7 +515,7 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
   - Some topics unlock the Large hull, the Fusion Drive or the Missile Rack.
 - **Acceptance:** tests of prerequisites, the one-lab limit, upgrades applying to units that already exist, and unlocks.
 - **Verify:** CI.
-- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+- **As built:** [ADR-017](../../Design/ADR/ADR-017-research-and-the-designer.md).
   - `StartResearchCommand` queues a topic at the player's built lab, up to `QUEUE_LIMIT`. A prerequisite may be ahead of the topic in the queue. The front topic waits for its Ore, is paid when it starts, and finishes in its `researchSeconds`.
   - `Outpost::UpgradesFrom` turns a player's finished topics into factors, and `IsAvailable` says which components they unlock.
   - When a topic finishes, the player's designs take their new stats. Its warships keep their share of hit points under Hull Plating. Rigs earn the raised income, and Shipyards build faster, the job under way included.
@@ -537,7 +537,7 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
 
   "Save design" is a command. The live stats need the component numbers on the client, which cannot include `GameLogic`'s loader (ADR-008): this task decides whether the tuning types move to `GameProtocol` or the server sends the numbers.
 - **Verify:** CI for the stats math, which should match `BattleModel.py`; **owner run** for the panel.
-- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md).
+- **As built:** [ADR-017](../../Design/ADR/ADR-017-research-and-the-designer.md).
   - **The server sends the numbers.** Snapshots carry every hull, drive and weapon as the player has them, research applied and locked or not.
   - **One derivation.** `DesignStatsOf`, with `HitHundredths` and `DamagePerSecond`, moved to `GameProtocol/DesignStats.h`, and the server derives its designs with it too. The tuning types stay in `GameLogic`.
   - **Saving.** `SaveDesignCommand` saves a new design of unlocked components the player has no design of, or renames one of the player's designs. A design's components never change. Names are 1–32 printable ASCII characters (`IsValidDesignName`).
@@ -556,7 +556,7 @@ The owner split it on 2026-10-01: 5.1 and 5.2 land together, and 5.3 follows onc
 - **Goal:** splash damage with a 30 m radius, and the 280 m range, in both the simulation and `Tools/BattleModel.py`. This means the model's clumps get the spacing that ship sizes imply. Rerun the Q2 check, since it cannot be "yes" until the Missile Rack is in (design §3, §12).
 - **Acceptance:** Q2's standing is recorded in design §12, with the model and the simulation both including the Missile Rack.
 - **Verify:** CI; run the model locally.
-- **As built:** gate G5 decided by the owner on 2026-10-01, and [ADR-014](../Design/ADR/ADR-014-designs-and-combat.md) decision 12.
+- **As built:** gate G5 decided by the owner on 2026-10-01, and [ADR-014](../../Design/ADR/ADR-014-designs-and-combat.md) decision 12.
   - **The splash rule** (owner, 2026-10-01). A missile also hits every other enemy ship and structure whose center is within 30 m of its target's, as hard as the target, after each one's armor. There is no falloff and no friendly fire.
   - **The game.** `DesignStats`, `WeaponView` and `ShotView` carry the splash radius. The designer shows it. The client throws a ring out to the radius where a missile lands.
   - **The model.** Each clump stands in a grid three footprint radii apart, the game's formation spacing, a second copy of a constant in `Simulation.cpp`.
@@ -581,7 +581,7 @@ The owner added this work on 2026-10-01, alongside milestone 5, and it lands as 
 
 ### A.1 — Meshes as NMF from glTF sources, with hardpoints
 
-- **ADR:** [ADR-018](../Design/ADR/ADR-018-nmf-and-hardpoints.md), and ADR-011 edited in place.
+- **ADR:** [ADR-018](../../Design/ADR/ADR-018-nmf-and-hardpoints.md), and ADR-011 edited in place.
 - **Goal:** meshes and their hardpoints edited in Blender and baked into a format the game reads strictly, drawn as Blender shows them.
 - **As built:**
   - **The baker.** `Tools/BakeMeshes.py` bakes `Art/Models/<Set>/<Model>.glb` into `OutpostCommander/Assets/Models/<Set>/<Model>.nmf`, and a new Linux CI job runs its `--check` and `--self-test`.
@@ -592,7 +592,7 @@ The owner added this work on 2026-10-01, alongside milestone 5, and it lands as 
 
 ### A.2 — Exhaust in its drive's color, and shots from the guns
 
-- **ADR:** [ADR-019](../Design/ADR/ADR-019-glows-and-exhaust.md).
+- **ADR:** [ADR-019](../../Design/ADR/ADR-019-glows-and-exhaust.md).
 - **Goal:** every ship's exhaust in its drive's color, growing with speed, and every shot leaving from a gun (design §11).
 - **As built:**
   - **The glow pass.** `Neuron::GlowPipeline` draws additive glows, facing the camera, as one instanced draw.
@@ -628,7 +628,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
   7. It does not kite.
 - **Acceptance:** tests in which scripted snapshots produce the expected commands: the build order, the counter choice after a review, the defence response.
 - **Verify:** CI; **owner run.**
-- **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base, and a Shipyard for each 10 Ore/s of income), and [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md).
+- **As built:** the owner's decisions of 2026-10-01 (gate G9 at 12 ships, the research order, the counters, the base, and a Shipyard for each 10 Ore/s of income), and [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md).
   - **The AI.** `Outpost::AiPlayer` decides once a second from its snapshot: its base plan in order, its Shipyards by income, 4 Constructors, research in its order, the counter at each 60 s review, 2 jobs in each Shipyard, the reserve and the attack group, and the defence of its structures.
   - **Its settings.** `OutpostCommander/Assets/Opponent.json`, read by `LoadAiSettings`. The review interval moved there from `Tuning.json`.
   - **What it needed from the protocol.** Every warship's drive and weapon in the snapshot, and `PlaceGhost` moved into `GameProtocol` so that the AI places by the client's rule.
@@ -639,7 +639,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 
 - **Goal:** losing your Command Station loses the match. The menu offers Start skirmish and Quit, and nothing else (design §6, §9).
 - **Verify:** CI for the rule; **owner run.**
-- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decisions 8 and 9.
+- **As built:** [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md) decisions 8 and 9.
   - **The rule.** A player whose base was placed and who has no Command Station has lost. Every snapshot says whether the match is over, who won (no one in a draw), and on which tick. The world runs on (owner, 2026-10-01). `MatchOutcomeTests` covers it.
   - **The menu and the banner.** The game opens on the menu. A match that ends shows Victory, Defeat or Draw with its length, and a button back to the menu. `HudTests` covers both layouts and the outcome's words.
   - **The flow.** Each match has its own server and seed, made while the menu shows. The AI connects as player 2. The measurement switches skip the menu.
@@ -651,7 +651,7 @@ Design §14: *the AI player and the win/lose condition.* This answers **Q1** and
 - **Scope:** the owner plays. The agent's part is a match log: its length, the research order and timing, and the designs built over time. It writes the log to a file, and adds a summary tool under `Tools/`.
 - **Acceptance:** the answers to Q1 and Q3, "no" included, are recorded in design §3. A failed answer is still a result (design §3).
 - **Verify:** **owner run.**
-- **As built (the agent's part):** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
+- **As built (the agent's part):** [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md) decision 10.
   - **The log.** `Outpost::MatchLog` adds each match against the AI to `OutpostCommander-matches.log` in the temporary folder. It records the seed, each player's research as it finishes, each warship as it first appears, and the end. `MatchLogTests` covers it.
   - **The summary.** `python Tools/MatchLog.py` prints the last match, or every match with `--all`: its length against Q1's 15 to 25 minutes, the research times, and each side's designs in 5-minute windows.
   - **A first look, not an answer.** Two AIs on the real server end a match in 8 to 15 minutes with §12 as retuned, and the designs they build shift with each review and with the heavies from 6:35. Only the owner's matches answer Q1 and Q3.
@@ -696,10 +696,10 @@ The owner asked on 2026-10-01 for DeepSpaceOutpost's particle and explosion mana
 
 - **Goal:** a ship or structure destroyed breaks into its own triangles, which tumble apart, in a blast of fireball, debris and smoke, as in DeepSpaceOutpost. It replaces task 3.5's disc and ring.
 - **Owner decisions of 2026-10-01:** one PR. Particles were analytic glows first, with no texture; on 2026-10-02, once it was clear that `Particle.dds` is DeepSpaceOutpost's flat square with a rim and not a soft dot, the owner asked for it. Shards darken and shrink rather than fade with transparency.
-- **ADR:** [ADR-026](../Design/ADR/ADR-026-explosions-and-particles.md); the rocks' lines, [ADR-027](../Design/ADR/ADR-027-rock-crease-lines.md).
+- **ADR:** [ADR-026](../../Design/ADR/ADR-026-explosions-and-particles.md); the rocks' lines, [ADR-027](../../Design/ADR/ADR-027-rock-crease-lines.md).
 - **As built:** `Outpost::ParticleSystem` and `Outpost::ExplosionManager` in `GameApp`, seeded by `Outpost::EffectRandom`, and `Neuron::MeshPipeline::DrawTriangles` for the shards. `GameClient` keeps each model's triangles on the CPU and starts both from each snapshot's destroyed. `ParticleSystemTests` and `ExplosionManagerTests` cover them without a GPU.
-- **Also in this PR, kept by the owner (2026-10-02):** every asteroid and field rock shows its ridges as thin lit lines, an eighties vector look. The rocks are three low-poly meshes, `Small`, `Medium` and `Large` (32, 54 and 78 triangles), in place of the old 514-triangle `Asteroid`; the game picks one by a rock's radius. The owner then replaced the ships and structures with low-poly models of their own, and every model shows its lines. `Neuron::BuildCreaseLines` keeps the edges that fold by more than 10°, and `Neuron::MeshPipeline::DrawLines` draws them at twice the model's brightness, over faces at 0.65 of it, all in one pass a frame. A Mining Rig now stands on its asteroid's surface rather than half inside it. [ADR-027](../Design/ADR/ADR-027-rock-crease-lines.md).
-- **Also in this PR (owner, 2026-10-02):** to match the ridges, the grid is a line every 100 m, a pixel wide at any zoom, in a dim blue-gray, with no major lines; and the brightest 25 stars, rather than 70, are crosses of pixel-wide lines 6 to 16 pixels in radius rather than starburst sprites. [ADR-028](../Design/ADR/ADR-028-vector-grid-and-crosses.md).
+- **Also in this PR, kept by the owner (2026-10-02):** every asteroid and field rock shows its ridges as thin lit lines, an eighties vector look. The rocks are three low-poly meshes, `Small`, `Medium` and `Large` (32, 54 and 78 triangles), in place of the old 514-triangle `Asteroid`; the game picks one by a rock's radius. The owner then replaced the ships and structures with low-poly models of their own, and every model shows its lines. `Neuron::BuildCreaseLines` keeps the edges that fold by more than 10°, and `Neuron::MeshPipeline::DrawLines` draws them at twice the model's brightness, over faces at 0.65 of it, all in one pass a frame. A Mining Rig now stands on its asteroid's surface rather than half inside it. [ADR-027](../../Design/ADR/ADR-027-rock-crease-lines.md).
+- **Also in this PR (owner, 2026-10-02):** to match the ridges, the grid is a line every 100 m, a pixel wide at any zoom, in a dim blue-gray, with no major lines; and the brightest 25 stars, rather than 70, are crosses of pixel-wide lines 6 to 16 pixels in radius rather than starburst sprites. [ADR-028](../../Design/ADR/ADR-028-vector-grid-and-crosses.md).
 - **Verify:** CI; **owner run**, to see whether a destruction reads from the RTS camera, and in the Q4 measurement (3.7), which now includes the shards.
 
 ---
@@ -711,7 +711,7 @@ On 2026-10-03 the owner asked for a review of a screenshot of the Command Statio
 ### D.1 — Dark faces, multisampled lines, structures behind the ships
 
 - **Goal:** the scene reads by its lines, as the eighties vector look ADR-027 was after, and a side's ships stand ahead of its structures.
-- **ADR:** [ADR-040](../Design/ADR/ADR-040-lines-over-dark-faces.md), which supersedes parts of ADR-006, ADR-011, ADR-027 and ADR-028.
+- **ADR:** [ADR-040](../../Design/ADR/ADR-040-lines-over-dark-faces.md), which supersedes parts of ADR-006, ADR-011, ADR-027 and ADR-028.
 - **As built:** faces at 0.3 of a model's color and lines brightened without clipping their hue, then a third of the way to white; a line pulled toward the eye by `MeshLineVS.hlsl` rather than lifted along its normal by `BuildCreaseLines`; the scene drawn into a 4-sample target and resolved in linear color; structures grayer and darker than ships, each on a faint ring in its side's color that turns green when it is selected; and asteroid fields darker than ore asteroids on the minimap. `HudTests` and `MeshDataTests` cover what runs without a GPU.
 - **Verify:** CI; **owner run**, zoomed in on a structure and zoomed out over a fight; and the Q4 measurement again (`--measure --stress`), since multisampling costs GPU time nobody has measured.
 
