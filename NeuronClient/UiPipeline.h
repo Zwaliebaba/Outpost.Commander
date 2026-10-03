@@ -67,8 +67,10 @@ private:
     DirectX::XMFLOAT4 color;
   };
 
-  // Every font's and sprite's size in whole pixels at _scale.
+  // Every font's and sprite's size in whole pixels at _scale; and whether the atlas was rasterized at those sizes, asked
+  // every frame without building the list.
   [[nodiscard]] std::vector<float> PixelSizes(float _scale) const;
+  [[nodiscard]] bool IsRasterizedAt(float _scale) const noexcept;
   void Rasterize(float _scale);
   void AddQuad(float _left, float _top, float _right, float _bottom, float _u0, float _v0, float _u1, float _v1,
                const DirectX::XMFLOAT4& _color);

@@ -94,6 +94,23 @@ private:
     std::optional<Neuron::MeshPart> spin;
   };
 
+  // A model as the client holds it: its pieces on the GPU, its hardpoints (ADR-018), its triangles on the CPU for an
+  // explosion to break (ADR-026), and for a side's Mining Rig, the feet it stands on (ADR-044).
+  struct LoadedModel
+  {
+    std::vector<ModelPiece> pieces;
+    std::vector<Neuron::MeshHardpoint> hardpoints;
+    Neuron::MeshData shape;
+    std::optional<std::vector<DirectX::XMFLOAT3>> feet;
+  };
+
+  // Where the model _set/_model is in m_models, found by name in the catalog with no key built, since it is asked for
+  // every model drawn. Throws Neuron::Exception for a model that is not loaded.
+  [[nodiscard]] std::size_t ModelIndex(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const LoadedModel& LoadedModelOf(std::string_view _set, std::string_view _model) const
+  {
+    return m_models[ModelIndex(_set, _model)];
+  }
   [[nodiscard]] const std::vector<ModelPiece>& ModelPieces(std::string_view _set, std::string_view _model) const;
   // The world matrix that draws _piece of a model drawn by _world, turned as far as its spin has gone at the view's tick.
   [[nodiscard]] DirectX::XMFLOAT4X4 PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept;
@@ -221,10 +238,8 @@ private:
   std::vector<EntityView> m_entities;
   std::vector<EntityView> m_knownEntities;
   Viewport m_viewport;
-  // Keyed by "<set>/<model>".
-  std::map<std::string, std::vector<ModelPiece>, std::less<>> m_modelPieces;
-  std::map<std::string, std::vector<Neuron::MeshHardpoint>, std::less<>> m_modelHardpoints;
-  std::map<std::string, Neuron::MeshData, std::less<>> m_modelShapes;
+  // Every set's models in the catalog's order, each set's after the one before.
+  std::vector<LoadedModel> m_models;
   // How long the frame being drawn took to come, which a ship's speed is measured over.
   float m_frameSeconds = 0.0f;
   // The ground's grid, as lines.
@@ -242,8 +257,6 @@ private:
   std::vector<Neuron::MeshVertex> m_drapedRing;
   // How high each of the rock meshes reaches over its center, at a radius of 1, for a Mining Rig to stand on.
   std::array<float, 3> m_rockTops{};
-  // Each side's Mining Rig mesh's feet, fitted, keyed as m_modelPieces.
-  std::map<std::string, std::vector<DirectX::XMFLOAT3>, std::less<>> m_rigFeet;
   bool m_cameraPlaced = false;
   // Alt is held this frame, and every ship and structure shows its health bar.
   bool m_everyHealthBar = false;
@@ -262,6 +275,8 @@ private:
   };
 
   void WatchForResponse();
+  // The last frame's entities, in identifier order like m_entities. The two trade storage each frame, so that neither is
+  // allocated again.
   std::vector<EntityView> m_previousEntities;
   std::optional<ResponseProbe> m_probe;
   std::optional<std::chrono::steady_clock::time_point> m_responseShown;

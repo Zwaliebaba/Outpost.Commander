@@ -283,9 +283,12 @@ DirectX::XMFLOAT4X4 WorldMatrix(const DirectX::XMFLOAT3& _position, float _headi
   return result;
 }
 
-std::string MeshKey(std::string_view _set, std::string_view _model)
+// The entity of _entities with this identifier, or nullptr. Every snapshot lists its entities in identifier order, and the
+// view keeps that order (SnapshotInterpolator::Entities), so this is a binary search.
+const Outpost::EntityView* FindById(std::span<const Outpost::EntityView> _entities, Outpost::EntityId _id) noexcept
 {
-  return std::format("{}/{}", _set, _model);
+  const auto found = std::ranges::lower_bound(_entities, _id, {}, &Outpost::EntityView::id);
+  return found != _entities.end() && found->id == _id ? &*found : nullptr;
 }
 
 // Which of ROCK_MODELS a rock of _radiusMeters is drawn with.
@@ -383,12 +386,12 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
       const Neuron::ByteBuffer bytes = ReadAsset(fileName);
       Neuron::MeshData data = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
       // The faces that stand still and each spinning part's (ADR-045), each with its creases, drawn over it as lines
-      // (ADR-027).
-      std::vector<ModelPiece> pieces;
+      // (ADR-027). The models are kept in the catalog's order, which ModelIndex counts on.
+      LoadedModel& loaded = m_models.emplace_back();
       const auto addPiece = [&](const Neuron::MeshData& _piece, const std::optional<Neuron::MeshPart>& _spin)
       {
         const Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
-        pieces.push_back(
+        loaded.pieces.push_back(
           {.faces = std::make_unique<Neuron::Mesh>(_renderer, _piece),
            .edges = edges.vertices.empty() ? std::unique_ptr<Neuron::Mesh>{} : std::make_unique<Neuron::Mesh>(_renderer, edges),
            .spin = _spin});
@@ -401,11 +404,10 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
         for (const Neuron::MeshPart& part : data.parts)
           addPiece(Neuron::MeshPiece(data, part.firstIndex, part.indexCount), part);
       }
-      m_modelPieces.emplace(MeshKey(set.name, model.name), std::move(pieces));
-      m_modelHardpoints.emplace(MeshKey(set.name, model.name), std::move(data.hardpoints));
+      loaded.hardpoints = std::move(data.hardpoints);
       // Kept on the CPU too, for an explosion to break into its triangles (ADR-026).
       data.hardpoints.clear();
-      m_modelShapes.emplace(MeshKey(set.name, model.name), std::move(data));
+      loaded.shape = std::move(data);
     }
   }
   m_grid = std::make_unique<Neuron::Mesh>(_renderer, BuildGrid());
@@ -423,7 +425,10 @@ Outpost::GameClient::GameClient(Neuron::Renderer& _renderer, std::uint32_t _tick
   if (const StructureModel* rig = m_catalog.ModelForStructure(StructureKind::MiningRig))
   {
     for (const PlayerModels& player : m_catalog.players)
-      m_rigFeet.emplace(MeshKey(player.set, rig->model), RigFeet(ModelShape(player.set, rig->model)));
+    {
+      LoadedModel& loaded = m_models[ModelIndex(player.set, rig->model)];
+      loaded.feet = RigFeet(loaded.shape);
+    }
   }
 
   const Starfield sky = BuildStarfield();
@@ -534,8 +539,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
 
   m_everyHealthBar = _input.active && _input.IsDown(HEALTH_BAR_ALL_KEY);
   m_view.Advance(_elapsedSeconds);
-  m_previousEntities = std::move(m_entities);
-  m_entities = m_view.Entities();
+  std::swap(m_previousEntities, m_entities);
+  m_view.Entities(m_entities);
   if (!m_view.IsEmpty() && m_view.Newest().fogOfWar)
   {
     if (m_fog.CellsPerSide() == 0)
@@ -1176,8 +1181,8 @@ void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
   const DirectX::XMFLOAT4& ringColor = m_controls.IsAttackMoveArmed() ? ATTACK_MOVE_COLOR : SELECTION_COLOR;
   for (const EntityId id : m_controls.Selected())
   {
-    const auto ship = std::ranges::find(m_entities, id, &EntityView::id);
-    if (ship == m_entities.end())
+    const EntityView* ship = FindById(m_entities, id);
+    if (ship == nullptr)
       continue;
     const DirectX::XMFLOAT3 at{ship->position.xMeters, OVERLAY_LIFT_METERS, ship->position.zMeters};
     m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ship->radiusMeters * RING_SIZE_PER_FOOTPRINT), ringColor);
@@ -1296,8 +1301,7 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
     EntityView entity{.id = destroyed.id, .kind = destroyed.kind, .owner = destroyed.owner, .hull = destroyed.hull};
     if (!m_view.IsEmpty())
     {
-      const std::vector<EntityView>& last = m_view.Newest().entities;
-      if (const auto found = std::ranges::find(last, destroyed.id, &EntityView::id); found != last.end())
+      if (const EntityView* found = FindById(m_view.Newest().entities, destroyed.id))
         entity = *found;
     }
     entity.position = destroyed.position;
@@ -1390,13 +1394,13 @@ Outpost::Stance Outpost::GameClient::RigStance(std::string_view _set, std::strin
   const float rockRadius = _rig.radiusMeters;
   const Neuron::MeshData& rock = ModelShape(ASTEROID_SET, RockModel(rockRadius));
   // Without feet over the rock, the rig's lowest point stands on the rock's top.
-  const Stance onTop{.liftMeters = (m_rockTops[RockIndex(rockRadius)] * rockRadius) - (ModelShape(_set, _model).boundsMin.y * _scale)};
-  const auto feet = m_rigFeet.find(MeshKey(_set, _model));
-  if (feet == m_rigFeet.end())
+  const LoadedModel& rig = LoadedModelOf(_set, _model);
+  const Stance onTop{.liftMeters = (m_rockTops[RockIndex(rockRadius)] * rockRadius) - (rig.shape.boundsMin.y * _scale)};
+  if (!rig.feet.has_value())
     return onTop;
   std::vector<DirectX::XMFLOAT3> footMeters;
-  footMeters.reserve(feet->second.size());
-  for (const DirectX::XMFLOAT3& foot : feet->second)
+  footMeters.reserve(rig.feet->size());
+  for (const DirectX::XMFLOAT3& foot : *rig.feet)
     footMeters.push_back({foot.x * _scale, foot.y * _scale, foot.z * _scale});
 
   // The rock is turned by its asteroid's heading and the rig by its own, both as WorldMatrix turns them, so a point along
@@ -1417,8 +1421,8 @@ Outpost::Stance Outpost::GameClient::RigStance(std::string_view _set, std::strin
 
 std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shooter) const
 {
-  const auto shooter = std::ranges::find(m_entities, _shooter, &EntityView::id);
-  if (shooter == m_entities.end())
+  const EntityView* shooter = FindById(m_entities, _shooter);
+  if (shooter == nullptr)
     return std::nullopt;
   const ModelSet* set = m_catalog.SetForPlayer(shooter->owner);
   if (set == nullptr)
@@ -1429,8 +1433,8 @@ std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shoote
 
 std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const
 {
-  const auto shooter = std::ranges::find(m_entities, _shooter, &EntityView::id);
-  if (shooter == m_entities.end())
+  const EntityView* shooter = FindById(m_entities, _shooter);
+  if (shooter == nullptr)
     return std::nullopt;
   const std::optional<PlacedModel> placed = PlaceModel(*shooter);
   if (!placed.has_value())
@@ -1449,8 +1453,8 @@ void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12Gra
       continue;
     // How fast the view shows the ship going, from where the last frame drew it.
     float speedShare = 0.0f;
-    const auto before = std::ranges::find(m_previousEntities, ship.id, &EntityView::id);
-    if (before != m_previousEntities.end() && m_frameSeconds > 0.0f)
+    const EntityView* before = FindById(m_previousEntities, ship.id);
+    if (before != nullptr && m_frameSeconds > 0.0f)
     {
       const float meters = std::hypot(ship.position.xMeters - before->position.xMeters, ship.position.zMeters - before->position.zMeters);
       speedShare = meters / m_frameSeconds / EXHAUST_FULL_SPEED_METERS_PER_SECOND;
@@ -1501,28 +1505,36 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   }
 }
 
+std::size_t Outpost::GameClient::ModelIndex(std::string_view _set, std::string_view _model) const
+{
+  std::size_t first = 0;
+  for (const ModelSet& set : m_catalog.sets)
+  {
+    if (set.name == _set)
+    {
+      const auto found = std::ranges::find(set.models, _model, &ModelEntry::name);
+      if (found != set.models.end())
+        return first + static_cast<std::size_t>(found - set.models.begin());
+      break;
+    }
+    first += set.models.size();
+  }
+  throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
+}
+
 const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(std::string_view _set, std::string_view _model) const
 {
-  const auto found = m_modelHardpoints.find(MeshKey(_set, _model));
-  if (found == m_modelHardpoints.end())
-    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
-  return found->second;
+  return LoadedModelOf(_set, _model).hardpoints;
 }
 
 const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, std::string_view _model) const
 {
-  const auto found = m_modelShapes.find(MeshKey(_set, _model));
-  if (found == m_modelShapes.end())
-    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
-  return found->second;
+  return LoadedModelOf(_set, _model).shape;
 }
 
 const std::vector<Outpost::GameClient::ModelPiece>& Outpost::GameClient::ModelPieces(std::string_view _set, std::string_view _model) const
 {
-  const auto found = m_modelPieces.find(MeshKey(_set, _model));
-  if (found == m_modelPieces.end())
-    throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
-  return found->second;
+  return LoadedModelOf(_set, _model).pieces;
 }
 
 DirectX::XMFLOAT4X4 Outpost::GameClient::PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept

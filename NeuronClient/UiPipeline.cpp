@@ -21,6 +21,12 @@ constexpr UINT INDICES_PER_QUAD = 6;
 // Two triangles over a quad's corners, clockwise: top-left, top-right, bottom-right, bottom-left.
 constexpr std::array<std::uint16_t, INDICES_PER_QUAD> QUAD_CORNERS{0, 1, 2, 0, 2, 3};
 
+// A font's or a sprite's size in whole pixels, at least one, at _scale pixels to a reference unit.
+float PixelSize(float _units, float _scale) noexcept
+{
+  return std::max(1.0f, std::round(_units * _scale));
+}
+
 winrt::com_ptr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* _device)
 {
   const CD3DX12_DESCRIPTOR_RANGE1 atlasRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
@@ -139,10 +145,27 @@ std::vector<float> Neuron::UiPipeline::PixelSizes(float _scale) const
   std::vector<float> sizes;
   sizes.reserve(m_fonts.size() + m_sprites.size());
   for (const FontDesc& font : m_fonts)
-    sizes.push_back(std::max(1.0f, std::round(font.emUnits * _scale)));
+    sizes.push_back(PixelSize(font.emUnits, _scale));
   for (const SpriteDesc& sprite : m_sprites)
-    sizes.push_back(std::max(1.0f, std::round(sprite.sizeUnits * _scale)));
+    sizes.push_back(PixelSize(sprite.sizeUnits, _scale));
   return sizes;
+}
+
+bool Neuron::UiPipeline::IsRasterizedAt(float _scale) const noexcept
+{
+  if (m_pixelSizes.size() != m_fonts.size() + m_sprites.size())
+    return false;
+  for (size_t i = 0; i < m_fonts.size(); ++i)
+  {
+    if (m_pixelSizes[i] != PixelSize(m_fonts[i].emUnits, _scale))
+      return false;
+  }
+  for (size_t i = 0; i < m_sprites.size(); ++i)
+  {
+    if (m_pixelSizes[m_fonts.size() + i] != PixelSize(m_sprites[i].sizeUnits, _scale))
+      return false;
+  }
+  return true;
 }
 
 void Neuron::UiPipeline::Rasterize(float _scale)
@@ -170,7 +193,7 @@ void Neuron::UiPipeline::Rasterize(float _scale)
 
 void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
 {
-  if (PixelSizes(_scale) != m_pixelSizes)
+  if (!IsRasterizedAt(_scale))
     Rasterize(_scale);
   m_widthPixels = static_cast<float>(_widthPixels);
   m_heightPixels = static_cast<float>(_heightPixels);

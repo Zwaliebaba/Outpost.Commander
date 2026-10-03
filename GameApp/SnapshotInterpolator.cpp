@@ -47,21 +47,35 @@ void Outpost::SnapshotInterpolator::Advance(float _elapsedSeconds) noexcept
 
 std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
 {
+  std::vector<EntityView> entities;
+  Entities(entities);
+  return entities;
+}
+
+void Outpost::SnapshotInterpolator::Entities(std::vector<EntityView>& _into) const
+{
   if (m_history.empty())
-    return {};
+  {
+    _into.clear();
+    return;
+  }
 
   // The newer of the two snapshots around the view's tick: the first one past it, or the newest.
   const auto newer = NewerThanView();
   if (newer == m_history.end() || newer == m_history.begin())
-    return (newer == m_history.end() ? m_history.back() : m_history.front()).entities;
+  {
+    const std::vector<EntityView>& only = (newer == m_history.end() ? m_history.back() : m_history.front()).entities;
+    _into.assign(only.begin(), only.end());
+    return;
+  }
   const Snapshot& to = *newer;
   const Snapshot& from = *std::prev(newer);
   const auto fraction = static_cast<float>((m_viewTick - static_cast<double>(from.tick)) / static_cast<double>(to.tick - from.tick));
 
   // Both snapshots list their entities in identifier order (Simulation::BuildSnapshot), so one pass pairs them.
-  std::vector<EntityView> entities = to.entities;
+  _into.assign(to.entities.begin(), to.entities.end());
   auto previous = from.entities.begin();
-  for (EntityView& entity : entities)
+  for (EntityView& entity : _into)
   {
     previous =
       std::lower_bound(previous, from.entities.end(), entity.id, [](const EntityView& _view, EntityId _id) { return _view.id < _id; });
@@ -71,7 +85,6 @@ std::vector<Outpost::EntityView> Outpost::SnapshotInterpolator::Entities() const
                        .zMeters = std::lerp(previous->position.zMeters, entity.position.zMeters, fraction)};
     entity.headingRadians = InterpolateHeading(previous->headingRadians, entity.headingRadians, fraction);
   }
-  return entities;
 }
 
 std::vector<Outpost::EntityMotion> Outpost::SnapshotInterpolator::Motions() const
