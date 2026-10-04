@@ -23,8 +23,8 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | todo |
-| 20.2 | The client shows levels and upgrades | 20.1 | — | todo |
+| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | done, in PR |
+| 20.2 | The client shows levels and upgrades | 20.1 | — | in review: owner run |
 | 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | todo |
 | 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | todo |
 | 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | todo |
@@ -87,6 +87,11 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** a new one, ADR-064: the upgrade, its order, its refusals, its hit points and what the snapshot shows. ADR-016 is edited in place where the Constructors' work is shared with an upgrade. ADR-045 is edited in place: the level is in the simulation and the snapshot.
 - **Acceptance:** `UpgradeTests` cover an upgrade paid and refused for each reason, Constructors sharing it, the structure working throughout, the level landing with its hit points, a structure destroyed during an upgrade, a rebuilt structure at level 1, and a kind without levels refusing. `TuningTests` cover the `levels` list. `WireFormatTests` cover the level and the upgrade in the snapshot. `FogTests` cover a remembered level.
 - **Verify:** CI.
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decisions 1–6; ADR-016 and ADR-045 edited in place.
+  - **`levelHitPointsPercent` is in `rules`**, and the loader allows levels on the three kinds with art for them, up to level 5, rather than to each kind's design top: the tuning data holds K3's tops.
+  - **Refusals:** `NotUpgradable`, `UnderConstruction`, `AlreadyUpgrading` and `TopLevel`, besides `UnknownEntity`, `NotEnoughOre` and the Constructors' own. The order may name no Constructors, as the HUD sends it, and `RepairCommand` joins them to a level as to a site.
+  - **The remembered level** is tested in `UpgradeTests.RemembersTheLevelLastSeen`, beside the rest of the upgrade, rather than in `FogTests`. The protocol's version is 2.
+  - **Run in the container** on a Linux harness that stands in for the Windows headers, the test framework, MsQuic and DirectWrite: 245 `GameLogicTests` pass, 0 fail.
 
 ### 20.2 — The client shows levels and upgrades
 
@@ -98,6 +103,10 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions; ADR-045 edited in place for the fitted levels.
 - **Acceptance:** `HudTests` for the panel's level, the button and each dim reason. `ModelCatalogTests` for a level's mesh, fitted to level 1's length.
 - **Verify:** CI; **owner run.** T5 starts here.
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decisions 7 and 8.
+  - **Each level after the first is fitted within level 1's ground**, the wider of its length and depth set to level 1's, not to the model's length: fitted by length, the Human Command Station would stand 57% deeper than its footprint at levels 2 and 3, measured from the baked meshes (`Neuron::FitMeshAcross`).
+  - **The panel** reads "Shipyard 01 · L2", "Upgrading to L3, 41%", "L3: 3,500 hit points" and "Top level"; the button "Upgrade to L3 · 1:00" with its cost, dim with UPGRADING while a level is built.
+  - **`GameClient`** loads every level's mesh and draws the snapshot's; it is CI's first build, and the owner's run its first look. 223 `GameAppTests` pass in the container, `GameClient` aside.
 
 ---
 

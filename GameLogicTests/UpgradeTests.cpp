@@ -75,7 +75,7 @@ public:
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     const Outpost::EntityId platform = arena.Structure(BLUE, Outpost::StructureKind::DefensePlatform, {.xMeters = 300.0f, .zMeters = 0.0f});
-    const Outpost::EntityId rig = arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
+    const Outpost::EntityId relay = arena.Structure(BLUE, Outpost::StructureKind::Relay, {.xMeters = 300.0f, .zMeters = -300.0f});
     const Outpost::EntityId enemy = arena.Structure(RED, Outpost::StructureKind::Shipyard, {.xMeters = 0.0f, .zMeters = -600.0f});
     const Outpost::EntityId warship = arena.Ship(BLUE, SMALL, MASS_DRIVER, {.xMeters = -300.0f, .zMeters = 300.0f});
     const Outpost::EntityId builder = arena.World().SpawnConstructor(BLUE, {.xMeters = -600.0f, .zMeters = 0.0f});
@@ -94,7 +94,7 @@ public:
     Assert::IsTrue(result(Upgrade(BLUE, yard, {warship})) == Outpost::CommandResult::NotAConstructor);
     // A kind that does not grow is at its top level from the start.
     Assert::IsTrue(result(Upgrade(BLUE, platform)) == Outpost::CommandResult::TopLevel);
-    Assert::IsTrue(result(Upgrade(BLUE, rig)) == Outpost::CommandResult::TopLevel);
+    Assert::IsTrue(result(Upgrade(BLUE, relay)) == Outpost::CommandResult::TopLevel);
     Assert::AreEqual(before, OreOf(arena, BLUE), L"a refusal costs nothing");
 
     const std::int32_t cost = arena.StructureData(Outpost::StructureKind::Shipyard).levels[0].cost;

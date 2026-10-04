@@ -414,7 +414,7 @@ public:
 
   TEST_METHOD(RejectsABrokenStructureList)
   {
-    ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
+    ExpectLoadError(Replace("\"kind\": \"ResearchLab\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
     // Phase 2 design §5: the Relay is a structure kind like the others, which the file must have.
     ExpectLoadError(Replace("\"kind\": \"Relay\"", "\"kind\": \"Shipyard\""), "structures[5].kind");
