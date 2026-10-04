@@ -285,6 +285,12 @@
     <None Include="Assets\Opponent.json">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="Assets\OpponentEasy.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Assets\OpponentHard.json">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Assets\Models\Asteroids\Small.nmf">
       <DeploymentContent>true</DeploymentContent>
     </None>

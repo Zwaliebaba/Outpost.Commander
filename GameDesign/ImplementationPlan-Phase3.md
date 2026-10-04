@@ -248,3 +248,14 @@ The design left these open, or contradicted itself on them. The owner answered e
   - **The upgrade numbers are unchanged.** A cheaper level 2 and a cap one higher were measured and dropped; ADR-041 and design §2 give their figures.
   - **The difficulties of 26.1** are measured again against the tuned Normal: see 26.1.
 
+---
+
+## Owner requests
+
+### 26.1 — The AI's difficulty
+
+- **Asked:** the owner found the AI too strong to beat in play: it outproduced the player early and took nodes faster than the player could hold them (owner, 2026-10-04). The owner chose difficulty levels on the menu over one weaker AI.
+- **Scope:** Easy, Normal and Hard, each a settings file, picked on the menu. Normal stays `Opponent.json`, the AI that T1–T4 measure.
+- **ADR:** ADR-065; ADR-020 edited in place for the menu.
+- **Acceptance:** `AiSettingsTests.LoadsEachDifficulty`, `HudTests.LaysOutTheMenu`.
+- **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run.**

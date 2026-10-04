@@ -107,10 +107,22 @@ Outpost::AiSettings Outpost::LoadAiSettings(std::string_view _json)
   }
 }
 
-Outpost::AiSettings Outpost::LoadPackagedAiSettings()
+Outpost::AiSettings Outpost::LoadPackagedAiSettings(std::wstring_view _fileName)
 {
-  const Neuron::ByteBuffer bytes = Neuron::BinaryFile::ReadFile(L"Opponent.json");
+  // The packaged names are ASCII, so each character narrows as it is.
+  std::string name;
+  name.reserve(_fileName.size());
+  for (const wchar_t character : _fileName)
+    name.push_back(static_cast<char>(character));
+  const Neuron::ByteBuffer bytes = Neuron::BinaryFile::ReadFile(std::wstring(_fileName));
   if (bytes.empty())
-    throw Neuron::Exception("The game data file Assets\\Opponent.json is missing or cannot be read.");
-  return LoadAiSettings({reinterpret_cast<const char*>(bytes.data()), bytes.size()});
+    throw Neuron::Exception(std::format("The game data file Assets\\{} is missing or cannot be read.", name));
+  try
+  {
+    return LoadAiSettings({reinterpret_cast<const char*>(bytes.data()), bytes.size()});
+  }
+  catch (const Neuron::Exception& error)
+  {
+    throw Neuron::Exception(std::format("{}: {}", name, error.what()));
+  }
 }
