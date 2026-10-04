@@ -511,7 +511,7 @@ public:
     for (int tick = 0; tick < 300 * 20 && !HasResearched(arena, BLUE, LARGE_HULL); ++tick)
       arena.Run(1);
     // Level 3's 600 Ore, which the rig has paid by now.
-    for (int tick = 0; tick < 300 * 20 && arena.World().OreHundredths(BLUE) < 600 * Outpost::HUNDREDTHS; ++tick)
+    for (int tick = 0; tick < 300 * 20 && arena.World().OreHundredths(BLUE) < std::int64_t{600} * Outpost::HUNDREDTHS; ++tick)
       arena.Run(1);
     Assert::IsTrue(upgrade() == Outpost::CommandResult::Applied);
     toLevel(3);
