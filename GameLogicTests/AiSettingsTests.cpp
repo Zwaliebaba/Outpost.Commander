@@ -91,6 +91,15 @@ public:
     Assert::AreEqual(1, settings.claimSectors);
   }
 
+  // Task 24.1: structure levels' play (Phase 3 design §8). The Lab's second slot once tier 3 is open, and a level worth
+  // 500 m when choosing what to attack.
+  TEST_METHOD(LoadsTheLevelsPlay)
+  {
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(3, settings.secondSlotTier);
+    Assert::AreEqual(500.0, settings.attackLevelMeters);
+  }
+
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
   // component and topic it names exists, and every topic comes after its prerequisites.
   TEST_METHOD(NamesOnlyWhatTheTuningDataHas)

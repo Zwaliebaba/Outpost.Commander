@@ -71,6 +71,12 @@ struct AiSettings
   std::int32_t frontPlatforms = 0;
   // Free sectors it claims at most, beyond those its rigs take it to.
   std::int32_t claimSectors = 0;
+
+  // Structure levels (Phase 3 design §8). It upgrades its Research Lab to the level that gives a second research slot
+  // once its open tier has reached this one. Choosing what to attack, a structure counts as this many meters nearer for
+  // each level it has above the first, among structures of one rank.
+  std::int32_t secondSlotTier = 0;
+  double attackLevelMeters = 0.0;
 };
 
 // Reads the text of OutpostCommander/Assets/Opponent.json. Throws Neuron::Exception on the first problem, naming where it

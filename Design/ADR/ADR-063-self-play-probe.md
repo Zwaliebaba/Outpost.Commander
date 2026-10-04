@@ -28,7 +28,7 @@ The `--ai-matches` switch of [ADR-038](ADR-038-phase-one-match-log.md) gave both
    - The command line is split by `CommandLineToArgvW`, so a quoted path with spaces is one argument.
 2. **`--quiet` shows no message box.** The exit code says how the run went, and a failure's message goes to standard error, where the script that ran the game reads it. It covers a failure in reading the options too.
 3. **`Tools/SelfPlay.py` searches the AI's numbers with a separable CMA-ES.**
-   - It moves the 22 numbers of `Opponent.json`, each within a range that holds its packaged value, whole numbers kept whole. It moves the research order as one key per topic, researched in the order of the keys. The AI researches the first topic in its order whose prerequisites are done, so every order is a valid one.
+   - It moves the 24 numbers of `Opponent.json`, each within a range that holds its packaged value, whole numbers kept whole. It moves the research order as one key per topic, researched in the order of the keys. The AI researches the first topic in its order whose prerequisites are done, so every order is a valid one.
    - The counters, the default design and the scout's design stay the packaged ones.
    - The diagonal variant, after Ros and Hansen (2008), learns a step for each number but not how numbers move together. With 47 dimensions and about a hundred generations, a full covariance matrix would still be learning.
    - Like every other tool in `Tools/`, it uses the Python standard library and nothing else.

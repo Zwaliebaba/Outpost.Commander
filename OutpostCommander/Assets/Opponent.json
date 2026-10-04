@@ -49,5 +49,7 @@
   "attackNodeLead": 1,
   "attackWithoutLeadShare": 1.5,
   "frontPlatforms": 1,
-  "claimSectors": 1
+  "claimSectors": 1,
+  "secondSlotTier": 3,
+  "attackLevelMeters": 500
 }
