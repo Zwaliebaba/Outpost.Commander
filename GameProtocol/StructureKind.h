@@ -9,7 +9,9 @@ enum class StructureKind : std::uint8_t
   Shipyard,
   ResearchLab,
   MiningRig,
-  DefensePlatform
+  DefensePlatform,
+  // Holds the sector whose node it stands on (Phase 2 design §5, ADR-056).
+  Relay
 };
 
 // A Mining Rig ordered onto an ore asteroid, or within this of its edge, snaps to the asteroid's center (design §6). The

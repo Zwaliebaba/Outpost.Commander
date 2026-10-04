@@ -17,9 +17,10 @@ public:
   // Starts over on a map of this side, centered on the origin, none of it seen; empty while the side is zero.
   void Reset(float _mapSizeMeters);
 
-  // What _player's entities among _entities see now: those cells become seen, now and for the rest of the match, and
-  // Shades says so. A cell is in sight when its center is within an entity's sight.
-  void Update(std::span<const EntityView> _entities, PlayerId _player);
+  // What _player's entities among _entities see now, and the sectors it holds that are not suppressed, which it sees whole
+  // (ADR-056): those cells become seen, now and for the rest of the match, and Shades says so. A cell is in sight when its
+  // center is within an entity's sight or inside such a sector.
+  void Update(std::span<const EntityView> _entities, PlayerId _player, std::span<const SectorView> _sectors = {});
 
   [[nodiscard]] std::uint32_t CellsPerSide() const noexcept
   {

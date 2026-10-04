@@ -35,6 +35,14 @@ struct SightTuning
   double shotRevealSeconds = 0.0;
 };
 
+// How territory plays on a map with sectors (Phase 2 design §5, §6, ADR-056): what share of its income a sector cut off
+// from its holder's home sector earns, in percent, and how near an enemy warship has to be to suppress a Relay.
+struct TerritoryTuning
+{
+  std::int32_t cutOffIncomePercent = 0;
+  double suppressionRadiusMeters = 0.0;
+};
+
 struct HullTuning
 {
   HullId id;
@@ -188,6 +196,7 @@ struct Tuning
 {
   RulesTuning rules;
   SightTuning sight;
+  TerritoryTuning territory;
   std::vector<HullTuning> hulls;
   std::vector<DriveTuning> drives;
   std::vector<WeaponTuning> weapons;

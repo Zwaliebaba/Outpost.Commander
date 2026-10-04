@@ -14,12 +14,27 @@ void Outpost::FogOfWar::Reset(float _mapSizeMeters)
   ++m_revision;
 }
 
-void Outpost::FogOfWar::Update(std::span<const EntityView> _entities, PlayerId _player)
+void Outpost::FogOfWar::Update(std::span<const EntityView> _entities, PlayerId _player, std::span<const SectorView> _sectors)
 {
   if (m_cellsPerSide == 0)
     return;
   std::vector<bool>& inSight = m_inSight;
   inSight.assign(m_explored.size(), false);
+  for (const SectorView& sector : _sectors)
+  {
+    if (sector.holder != _player || sector.suppressed)
+      continue;
+    for (int row = CellOf(sector.minZMeters); row <= CellOf(sector.maxZMeters); ++row)
+    {
+      const float z = -m_halfSizeMeters + ((static_cast<float>(row) + 0.5f) * CELL_METERS);
+      for (int column = CellOf(sector.minXMeters); column <= CellOf(sector.maxXMeters); ++column)
+      {
+        const float x = -m_halfSizeMeters + ((static_cast<float>(column) + 0.5f) * CELL_METERS);
+        if (sector.Contains({.xMeters = x, .zMeters = z}))
+          inSight[(static_cast<size_t>(row) * m_cellsPerSide) + static_cast<size_t>(column)] = true;
+      }
+    }
+  }
   for (const EntityView& entity : _entities)
   {
     if (entity.owner != _player || entity.sightMeters <= 0.0f)

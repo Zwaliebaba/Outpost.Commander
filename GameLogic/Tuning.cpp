@@ -66,6 +66,16 @@ Outpost::SightTuning ReadSight(ObjectReader& _reader)
   return sight;
 }
 
+Outpost::TerritoryTuning ReadTerritory(ObjectReader& _reader)
+{
+  Outpost::TerritoryTuning territory;
+  territory.cutOffIncomePercent = _reader.Integer("cutOffIncomePercent", 0);
+  if (territory.cutOffIncomePercent > 100)
+    Neuron::JsonFail(_reader.PathOf("cutOffIncomePercent"), std::format("is at most 100, found {}", territory.cutOffIncomePercent));
+  territory.suppressionRadiusMeters = _reader.Number("suppressionRadiusMeters", JsonBound::Positive);
+  return territory;
+}
+
 Outpost::HullTuning ReadHull(ObjectReader& _reader)
 {
   Outpost::HullTuning hull;
@@ -133,12 +143,13 @@ Outpost::StructureWeaponTuning ReadStructureWeapon(ObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STRUCTURE_KINDS = {{
   {"CommandStation", Outpost::StructureKind::CommandStation},
   {"Shipyard", Outpost::StructureKind::Shipyard},
   {"ResearchLab", Outpost::StructureKind::ResearchLab},
   {"MiningRig", Outpost::StructureKind::MiningRig},
   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
+  {"Relay", Outpost::StructureKind::Relay},
 }};
 
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
@@ -387,6 +398,9 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   ObjectReader sight(root.Required("sight"), "sight");
   tuning.sight = ReadSight(sight);
   sight.Finish();
+  ObjectReader territory(root.Required("territory"), "territory");
+  tuning.territory = ReadTerritory(territory);
+  territory.Finish();
 
   tuning.hulls = Neuron::ReadJsonList<Outpost::HullTuning>(root, "hulls", ReadHull);
   tuning.drives = Neuron::ReadJsonList<Outpost::DriveTuning>(root, "drives", ReadDrive);

@@ -172,6 +172,10 @@ enum class CommandResult : std::uint8_t
   ComponentsFixed,
   // An attack's target is an enemy the player neither sees nor, for a structure, remembers (ADR-024).
   NotVisible,
+  // A Relay ordered in a sector that is not adjacent to one the player holds (Phase 2 design §6).
+  NotAdjacent,
+  // A Mining Rig ordered onto an ore asteroid in a sector the player does not hold (Phase 2 design §4).
+  SectorNotHeld,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -187,8 +191,15 @@ public:
   Simulation(std::uint64_t _seed, std::uint32_t _ticksPerSecond);
 
   // Match setup, before the first tick: places the map's ore asteroids and then its fields, in the file's order, as
-  // entities with no owner (task 2.3).
+  // entities with no owner (task 2.3), and keeps its sectors (ADR-036).
   void PlaceMap(const Map& _map);
+
+  // Whether the match is played for territory: the map has sectors and the simulation has the tuning data's rules for
+  // them (Phase 2 design §4, ADR-056). Without, a Relay cannot be built and ore belongs to no sector, as in Phase 1.
+  [[nodiscard]] bool HasTerritory() const noexcept
+  {
+    return m_tuning != nullptr && !m_sectors.empty();
+  }
 
   // Match setup: builds the pathfinding graph for ships of this footprint radius ahead of their first order.
   void PreparePathfinding(float _radiusMeters) const
@@ -318,7 +329,8 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders &&
+           _a.m_sectors == _b.m_sectors;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -374,6 +386,20 @@ private:
     float sightMeters = 0.0f;
   };
 
+  // One of the map's sectors, and who holds it as of the end of the last tick (ADR-056). Who holds it, whether it is
+  // suppressed and whether it is cut off follow from where the structures and warships stand.
+  struct Sector
+  {
+    SectorPlacement placement;
+    PlayerId holder;
+    // Its holder's Command Station stands on its node.
+    bool home = false;
+    bool suppressed = false;
+    bool cutOff = false;
+
+    friend bool operator==(const Sector&, const Sector&) = default;
+  };
+
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
   struct Armament
   {
@@ -409,8 +435,18 @@ private:
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;
   CommandResult ValidateShips(PlayerId _player, const std::vector<EntityId>& _ships) const noexcept;
   CommandResult ValidateConstructors(PlayerId _player, const std::vector<EntityId>& _constructors) const noexcept;
-  // Moves a Mining Rig's _position onto its asteroid.
-  [[nodiscard]] CommandResult CheckPlacement(StructureKind _kind, float _radiusMeters, PlanePosition& _position) const;
+  // Moves a Mining Rig's _position onto its asteroid, and a Relay's onto its sector's node.
+  [[nodiscard]] CommandResult CheckPlacement(PlayerId _player, StructureKind _kind, float _radiusMeters, PlanePosition& _position) const;
+  // The first sector that holds _position, or the one with this identifier; nullptr when there is none.
+  [[nodiscard]] const Sector* SectorAt(PlanePosition _position) const noexcept;
+  [[nodiscard]] const Sector* SectorById(std::int32_t _id) const noexcept;
+  // Works out again who holds each sector, which Relays are suppressed and which sectors are cut off (ADR-056).
+  void UpdateTerritory();
+  // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
+  // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
+  [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;
+  // Whether _position is in a sector _player holds and that is not suppressed, all of which it sees (ADR-056).
+  [[nodiscard]] bool InSectorSight(PlayerId _player, PlanePosition _position) const noexcept;
   CommandResult Apply(PlayerId _player, const MoveCommand& _move);
   CommandResult Apply(PlayerId _player, const AttackMoveCommand& _attackMove);
   CommandResult Apply(PlayerId _player, const AttackCommand& _attack);
@@ -514,6 +550,8 @@ private:
   bool m_plannedThisTick = false;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
+  // The map's sectors, in its order; none on a map without them.
+  std::vector<Sector> m_sectors;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.
   std::shared_ptr<const Tuning> m_tuning;
   // What the tuning data gives a player who has researched nothing, as a player not added has; none before UseTuning.

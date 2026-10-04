@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 2 Design: Territory
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review · Accepted 2026-10-03, with every gate decided (§13)
 
-This document says what Phase 2 builds on top of Phase 1. It is a **draft**: the owner's decisions of 2026-10-03 (§3) are settled, and everything else is a proposal for the owner to review, gated in §13 as Phase 1's were. Until it is accepted it binds nothing, and [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) stay the authority for what is built. Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
+This document says what Phase 2 builds on top of Phase 1, and amends [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner accepted it on 2026-10-03 and decided its gates (§13); the order of the work is [the Phase 2 plan](ImplementationPlan-Phase2.md). Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
 
 ---
 
@@ -52,7 +52,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 
 ## 4. Sectors and nodes
 
-*The map is decided (§3, ADR-036); the cut-off rule is a proposal (gate J1).*
+*Decided (§3, ADR-036, gate J1).*
 
 - **The map is Phase 1's**: 5 km a side in nine sectors on a grid of thirds, each about 1.7 km across, bounded by asteroid fields with passages (ADR-036). Each sector has **one node site** at its center, where a Relay can stand; each home's is at its start.
 - **Two sectors are adjacent when they share a border**, as `Map.json` and `MapTests` already have it.
@@ -64,18 +64,18 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 
 ## 5. Relays: claiming and contesting a node
 
-*The rule is decided (§3); the numbers are proposals (gate J2).*
+*Decided (§3, gate J2): the numbers are starting values.*
 
 - **A Relay is a structure a Constructor builds on a free node site** of a sector adjacent to one its player holds (§6). About 200 Ore and 40 s of a Constructor's work; 3,000 hit points, armor 10, unarmed. That is tougher than a Shipyard, on purpose: a raid suppresses a Relay rather than destroys it, and destroying one takes a force. A Defence Platform beside it is how a player fortifies a node.
 - **While its Relay stands, a player holds the sector**: its rigs there earn (§4), and it sees the whole sector.
 - **A Relay is suppressed** while an enemy warship is within 400 m of it and none of its owner's is. A suppressed Relay's sector earns nothing, and the Relay sees only as a structure does, so raiders hurt a sector without destroying anything, and a defender has to come and fight. Suppression lasts as long as the enemy stays. A suppressed Relay is still held (§3).
-- **A destroyed Relay frees its node**, and the sector's rigs stop earning until their player holds it again. Whether its wreck is worth part of its cost to whoever collects it is gate J7's proposal.
+- **A destroyed Relay frees its node**, and the sector's rigs stop earning until their player holds it again. It leaves no salvage (gate J7).
 
 ---
 
 ## 6. The lattice
 
-*The adjacency rule is decided (§3); the cut-off penalty is a proposal (gate J1).*
+*Decided (§3, gate J1).*
 
 - **A Relay can only be built on a node adjacent to one its player holds.** A suppressed Relay counts. Territory therefore grows outward from the home sector and is taken back along a front, not leapfrogged.
 - **A Relay can be attacked anywhere.** A fast group can still raid deep, suppress a sector or destroy its Relay, which is a skirmish worth having, but it cannot claim the node unless the sector is next to its own.
@@ -96,7 +96,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 
 ## 8. Winning
 
-*The rule is decided (§3); the numbers are proposals (gate J4).*
+*Decided (§3, gate J4): the numbers are starting values.*
 
 - **Losing the base** is Phase 1's condition, unchanged: a player with neither a Command Station nor a finished Shipyard loses.
 - **Domination, in proportion to the share held** (owner, 2026-10-03). Each player starts with 1,000 tickets. Every 10 seconds, the player who holds fewer nodes loses 30 × the difference ÷ the number of nodes on the map. A player whose tickets reach zero loses. A node nobody holds counts for no one.
@@ -107,7 +107,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 
 ## 9. Commanding at this scale
 
-*Proposals (gate J5).* Without these, a front of nine sectors is losses nobody saw.
+*Decided (gate J5): alerts and standing orders are Phase 2's, and the strategic view is not.* Without these, a front of nine sectors is losses nobody saw.
 
 - **Alerts.** A short message and a mark on the minimap when a Relay is suppressed or attacked, a rig is lost, or an enemy group enters a held sector; a key jumps the camera to the latest.
 - **A strategic view.** Zooming out beyond the RTS camera's 1,600 m limit (Phase 1's gate H8) to a map of sectors: who holds what, what is suppressed, where groups are.
@@ -118,7 +118,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 
 ## 10. Modules
 
-*The slot is decided (§3); the numbers are proposals (gate J6).*
+*Decided (§3, gate J6): the numbers are starting values.*
 
 - **A design has an optional fourth slot, the module**, empty by default, beside hull, drive and weapon. The designer window from Phase 1's mockup gains a fourth row, a saved design gains a field, and a design's abbreviation gains its module's initials when it has one.
 - **The first module is the Sensor Array**: the ship sees 700 m, whatever its weapon; costs 40 Ore; and slows its ship by 10%. On a Small+Ion hull it is the minute-3 scout; on a heavy it is a spotter for the Rail Cannon.
@@ -147,16 +147,16 @@ The node graph is what an AI can reason about: the threat in each sector, the we
 
 ---
 
-## 13. Open questions
+## 13. Gates
 
-Each is a gate for Phase 2's plan.
+Each was a gate for Phase 2's plan. The owner decided all of them on 2026-10-03, when the design was accepted.
 
-- **J1 — The cut-off penalty** (§6): a cut-off sector earning half.
-- **J2 — The Relay's numbers and suppression** (§5): 200 Ore and 40 s, 3,000 hit points and armor 10, and the 400 m suppression radius.
-- **J3 — The world** moved to Phase 3 (§7) on 2026-10-03.
-- **J4 — Domination's numbers** (§8): 1,000 tickets, and 30 × the node difference ÷ the map's nodes every 10 s.
-- **J5 — Commanding at scale** (§9): which of alerts, the strategic view and standing orders are in Phase 2.
-- **J6 — Modules** (§10): the Sensor Array's sight, cost and penalty, and which modules follow it.
-- **J7 — Salvage** (§5): whether a destroyed Relay, rig or platform leaves a wreck worth part of its cost, and how much, so that a raid pays. Too much makes the first raid decide the match.
+- **J1 — The cut-off penalty** (§6): a cut-off sector earns half. **Decided:** as proposed.
+- **J2 — The Relay's numbers and suppression** (§5): 200 Ore and 40 s, 3,000 hit points and armor 10, and the 400 m suppression radius. **Decided:** as proposed, as starting values.
+- **J3 — The world** moved to Phase 3 (§7). **Decided.**
+- **J4 — Domination's numbers** (§8): 1,000 tickets, and 30 × the node difference ÷ the map's nodes every 10 s. **Decided:** as proposed, as starting values.
+- **J5 — Commanding at scale** (§9). **Decided:** alerts and standing orders are in Phase 2; the strategic view is not.
+- **J6 — Modules** (§10): the Sensor Array's 700 m sight, 40 Ore and 10% speed. **Decided:** as proposed, as starting values; no other module follows it in Phase 2.
+- **J7 — Salvage** (§5). **Decided:** none. A destroyed Relay, rig or platform leaves nothing.
 
-Decided on 2026-10-03, from the owner's review of this draft: territory on Phase 1's map and the world in Phase 3; the 45–60 minute target; a home sector never suppressed; rigs only in held sectors, flanks included; a suppressed Relay still held; no repair by Relays; domination in proportion to the share held; and AI-against-AI figures for S1 and S2. With them, J1's sectors, nodes and adjacency are settled, and only its cut-off penalty is open.
+Decided earlier on 2026-10-03, from the owner's review of the draft: territory on Phase 1's map and the world in Phase 3; the 45–60 minute target; a home sector never suppressed; rigs only in held sectors, flanks included; a suppressed Relay still held; no repair by Relays; domination in proportion to the share held; and AI-against-AI figures for S1 and S2.

@@ -17,7 +17,8 @@ constexpr std::array<const char*, 3> HULLS{"Small", "Medium", "Large"};
 // Every kind of structure drawn with the one model, Small, for the catalogs below.
 constexpr std::string_view STRUCTURES = R"("structures": [ { "structure": "CommandStation", "model": "Small" },
   { "structure": "Shipyard", "model": "Small", "tint": 0.5 }, { "structure": "ResearchLab", "model": "Small" },
-  { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" } ], "constructor": "Small",
+  { "structure": "MiningRig", "model": "Small" }, { "structure": "DefensePlatform", "model": "Small" },
+  { "structure": "Relay", "model": "Small" } ], "constructor": "Small",
   "exhausts": [ { "drive": 1, "color": { "red": 0.3, "green": 0.85, "blue": 1 } } ],
   "constructorExhaust": { "red": 0.8, "green": 0.8, "blue": 0.8 },
   "shots": [ { "weapon": 2, "look": "beam" } ])";

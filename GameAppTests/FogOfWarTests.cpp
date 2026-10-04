@@ -19,6 +19,24 @@ Outpost::EntityView Seer(Outpost::PlayerId _owner, Outpost::PlanePosition _posit
 TEST_CLASS(FogOfWarTests)
 {
 public:
+  // ADR-056: a sector the player holds is in its sight whole, unless it is suppressed; another's is not.
+  TEST_METHOD(SeesAHeldSectorWhole)
+  {
+    Outpost::FogOfWar fog;
+    fog.Reset(2000.0f);
+    std::vector<Outpost::SectorView> sectors{
+      {.id = 1, .minXMeters = -1000.0f, .maxXMeters = 0.0f, .minZMeters = -1000.0f, .maxZMeters = 1000.0f, .holder = PLAYER},
+      {.id = 2, .minXMeters = 0.0f, .maxXMeters = 1000.0f, .minZMeters = -1000.0f, .maxZMeters = 1000.0f, .holder = ENEMY}};
+    fog.Update({}, PLAYER, sectors);
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = -990.0f, .zMeters = 990.0f}));
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_SHADE, fog.ShadeAt({.xMeters = -10.0f, .zMeters = -990.0f}));
+    Assert::AreEqual(Outpost::FogOfWar::NEVER_SEEN_SHADE, fog.ShadeAt({.xMeters = 10.0f, .zMeters = 0.0f}));
+
+    sectors[0].suppressed = true;
+    fog.Update({}, PLAYER, sectors);
+    Assert::AreEqual(Outpost::FogOfWar::SEEN_BEFORE_SHADE, fog.ShadeAt({.xMeters = -500.0f, .zMeters = 0.0f}));
+  }
+
   TEST_METHOD(StartsWithNothingSeen)
   {
     Outpost::FogOfWar fog;

@@ -35,7 +35,7 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
 2. **A ship keeps its lane's corners.** It lets one go at sight of the next waypoint only once it is within three of its footprint radii of it, which is one place in the formation. It still lets a corner go within its own radius, and still gives up a corner after a second without progress.
    - Every other waypoint is let go at sight as before. That includes the group's destination, which a ship passes through when the route's end does not see its slot.
    - A ship knows its lane by the lane's last waypoint, kept with its path. The rule holds only while that waypoint is still in the path, so a path that replaces it ends the rule.
-3. **An Attack order keeps today's shared route.** Its ships have no slots, and each re-paths alone, once a second, as its target moves (`ChaseTargets`). A lane would be lost at the first re-path. So a group ordered onto one enemy still passes an obstacle in file. The owner decided on 2026-10-03 that the group re-pathing together is a task of its own, task 7.3.
+3. **An Attack order keeps lanes too** (Phase 2 plan task 14.4, carried over from Phase 1's task 7.3). Its ships have no slots: each takes a lane at its place across a grid of the group's size, as a moving group's ships do, and the band leads to the target. When the target has moved 40 m from where they last pathed to, at most once a second, the ships of one player that path again to it in the same tick path again together, along a fresh route in a band, instead of each alone (`ChaseTargets`). A lone ship paths as before.
 4. **Health bars:**
    - **Held, Alt shows a bar over every ship and structure**, whole or not. Released, only damaged ones show, as before.
    - **A bar is never less than 32 × 5 of the HUD's reference units on screen**, measured as the camera's view width falls across the screen's middle. Below that it stays as long as its footprint and 2.5 m thick.
@@ -54,6 +54,7 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
   | Field 150 m off the line | 4.1 | 1.2 |
   | Open space | 1.0 | 1.0 |
   | Two fields with a gap narrower than the band | 4.1 | 2.4 |
+  | Field across the way, an Attack order on a target moving 5 m/s beyond it (task 14.4) | 6.2 | 2.5 |
 
   - Every case arrives in the same time as before, 38 to 40 seconds.
   - Through a gap narrower than the band, the ships still close up to pass it.
