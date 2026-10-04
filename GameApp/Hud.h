@@ -2,6 +2,14 @@
 
 namespace Outpost
 {
+// How strong an AI the player meets, picked on the main menu (ADR-065): each is a settings file of the AI's own.
+enum class Difficulty : std::uint8_t
+{
+  Easy,
+  Normal,
+  Hard
+};
+
 // The HUD (tasks 3.6 and 4.5, design §9): the Ore stockpile and income, a panel describing the selection with a
 // structure's construction, the buttons that build structures and open a structure's windows, and the minimap. It is
 // laid out once in 1920×1080 reference units, each element anchored to a corner or an edge, and scaled to the back buffer
@@ -102,7 +110,8 @@ public:
     SaveDesign,
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
     SaveAndQueue,
-    // The main menu's and the match end's (task 6.2): start a match against the AI, leave the game, or leave the match.
+    // The main menu's and the match end's (task 6.2): start a match against the AI at a difficulty (ADR-065), leave the
+    // game, or leave the match.
     StartSkirmish,
     Quit,
     BackToMenu,
@@ -143,6 +152,8 @@ public:
     ModuleId module;
     // How many ships a Queue asks for (Phase 1 design §11).
     std::uint32_t count = 1;
+    // The AI a skirmish is against (ADR-065).
+    Difficulty difficulty = Difficulty::Normal;
 
     friend bool operator==(const Action&, const Action&) = default;
   };

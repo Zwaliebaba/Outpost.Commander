@@ -1770,20 +1770,29 @@ public:
     Assert::IsFalse(layout.Covers(960.0f, 540.0f), L"the middle of the screen stays on the world");
   }
 
-  // Task 6.2: the main menu starts a skirmish or quits, from the middle of the screen at any size.
+  // Task 6.2: the main menu starts a skirmish, at each difficulty from the easiest down (ADR-065), or quits, from the middle
+  // of the screen at any size.
   TEST_METHOD(LaysOutTheMenu)
   {
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
       const Outpost::Hud::Layout layout = LayMenu(width, height);
-      Assert::AreEqual(size_t{2}, layout.actions.size());
-      Assert::IsTrue(layout.actions[0].second.kind == Outpost::Hud::ActionKind::StartSkirmish);
-      Assert::IsTrue(layout.actions[1].second.kind == Outpost::Hud::ActionKind::Quit);
+      Assert::AreEqual(size_t{4}, layout.actions.size());
+      const std::array<Outpost::Difficulty, 3> difficulties{Outpost::Difficulty::Easy, Outpost::Difficulty::Normal,
+                                                            Outpost::Difficulty::Hard};
+      for (std::size_t i = 0; i < difficulties.size(); ++i)
+      {
+        Assert::IsTrue(layout.actions[i].second ==
+                       Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish, .difficulty = difficulties[i]});
+        if (i > 0)
+          Assert::IsTrue(layout.actions[i].first.top > layout.actions[i - 1].first.top, L"each under the last");
+      }
+      Assert::IsTrue(layout.actions[3].second.kind == Outpost::Hud::ActionKind::Quit);
       const Outpost::Hud::Rect& start = layout.actions[0].first;
       Assert::IsTrue(start.left < static_cast<float>(width) / 2.0f && start.left + start.width > static_cast<float>(width) / 2.0f);
-      Assert::IsTrue(layout.actions[1].first.top > start.top + start.height, L"Quit under Start skirmish");
+      Assert::IsTrue(layout.actions[3].first.top > layout.actions[2].first.top, L"Quit last");
       Assert::IsTrue(layout.ActionAt(start.left + 5.0f, start.top + 5.0f) ==
-                     Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish});
+                     Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::StartSkirmish, .difficulty = Outpost::Difficulty::Easy});
       Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Outpost Commander"; }));
       Assert::IsFalse(layout.minimap.width > 0.0f);
     }

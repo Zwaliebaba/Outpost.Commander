@@ -100,6 +100,23 @@ public:
     Assert::AreEqual(500.0, settings.attackLevelMeters);
   }
 
+  // ADR-065: the Easy and Hard AIs' files load, and differ from the Normal one where their difficulty says: Easy builds a
+  // smaller economy, fewer Shipyards, never raids or claims beyond its rigs, and attacks later; Hard the other way.
+  TEST_METHOD(LoadsEachDifficulty)
+  {
+    const Outpost::AiSettings normal = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    const Outpost::AiSettings easy = Outpost::LoadAiSettings(ReadRepositoryData("OpponentEasy.json"));
+    const Outpost::AiSettings hard = Outpost::LoadAiSettings(ReadRepositoryData("OpponentHard.json"));
+    Assert::IsTrue(easy.constructors < normal.constructors && normal.constructors < hard.constructors);
+    Assert::IsTrue(easy.contestedAsteroids < normal.contestedAsteroids && normal.contestedAsteroids < hard.contestedAsteroids);
+    Assert::IsTrue(easy.incomePerShipyardOrePerSecond > normal.incomePerShipyardOrePerSecond &&
+                   normal.incomePerShipyardOrePerSecond > hard.incomePerShipyardOrePerSecond);
+    Assert::IsTrue(easy.shipyardQueueJobs < normal.shipyardQueueJobs && normal.shipyardQueueJobs < hard.shipyardQueueJobs);
+    Assert::IsTrue(easy.raidShips == 0 && easy.claimSectors == 0, L"Easy leaves the player's nodes to the player");
+    Assert::IsTrue(easy.attackGroupShips > normal.attackGroupShips && easy.attackWithoutLeadShare > normal.attackWithoutLeadShare);
+    Assert::IsTrue(hard.raidShips > normal.raidShips && hard.claimSectors > normal.claimSectors);
+  }
+
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
   // component and topic it names exists, and every topic comes after its prerequisites.
   TEST_METHOD(NamesOnlyWhatTheTuningDataHas)
