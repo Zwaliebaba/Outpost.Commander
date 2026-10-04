@@ -134,6 +134,8 @@ struct StructureLevelTuning
 {
   std::int32_t cost = 0;
   double buildConstructorSeconds = 0.0;
+  // A Shipyard's: the hulls it builds from this level on (Phase 3 design §5).
+  std::vector<HullId> hulls;
 };
 
 // The most levels a structure has: the owner's models have five (ADR-045).
@@ -155,6 +157,9 @@ struct StructureTuning
   StructureWeaponId structureWeapon;
   // The levels it is upgraded to, level 2 first; none for a kind that does not grow (Phase 3 design §4).
   std::vector<StructureLevelTuning> levels;
+  // A Shipyard's: the hulls it builds at level 1. A Shipyard that names no hull at any level builds every hull at level 1
+  // (Phase 3 design §5).
+  std::vector<HullId> hulls;
 
   // The highest level it reaches.
   [[nodiscard]] std::int32_t TopLevel() const noexcept
@@ -247,12 +252,17 @@ struct Tuning
   std::vector<ResearchTopicTuning> research;
 };
 
+// The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1
+// when no level does.
+[[nodiscard]] std::int32_t ShipyardLevelFor(const Tuning& _tuning, HullId _hull) noexcept;
+
 // Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
 // itself, even through others. And the tiers hold: a topic requires none of a later tier, each tier after the first has
 // one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). Only the Command Station, the
-// Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064). A member the loader does not know is
+// Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064), and a Shipyard that names the hulls
+// it builds names each once, at level 1 or at one of its levels. A member the loader does not know is
 // an error too, so that a misspelled optional member is not ignored.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

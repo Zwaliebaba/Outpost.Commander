@@ -128,6 +128,8 @@ private:
   // Orders the next structures of the plan, and says whether the next one waits for Ore.
   [[nodiscard]] bool Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   void Produce(const Snapshot& _snapshot, bool _structureWaiting, std::vector<Command>& _orders);
+  // Upgrades a Shipyard below the level its production design needs (Phase 3 design §5).
+  void UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
 
   AiSettings m_settings;

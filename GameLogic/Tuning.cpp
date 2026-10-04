@@ -167,6 +167,23 @@ constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STR
   {"Relay", Outpost::StructureKind::Relay},
 }};
 
+// The hulls a Shipyard, or one of its levels, builds: an optional list, which no other kind has (Phase 3 design §5).
+std::vector<Outpost::HullId> ReadHulls(ObjectReader& _reader, const Outpost::StructureTuning& _structure)
+{
+  const JsonValue* hulls = _reader.Optional("hulls");
+  if (hulls == nullptr)
+    return {};
+  const std::string path = _reader.PathOf("hulls");
+  if (_structure.kind != Outpost::StructureKind::Shipyard)
+    Neuron::JsonFail(path, std::format("are a Shipyard's, not a {}'s", _structure.name));
+  const JsonValue::Array& elements = Neuron::ReadJsonArray(*hulls, path);
+  std::vector<Outpost::HullId> ids;
+  ids.reserve(elements.size());
+  for (size_t i = 0; i < elements.size(); ++i)
+    ids.push_back(ReadId<Outpost::HullId>(elements[i], Neuron::JsonElementPath(path, i)));
+  return ids;
+}
+
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
 {
   Outpost::StructureTuning structure;
@@ -212,9 +229,11 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
       ObjectReader level(elements[i], Neuron::JsonElementPath(path, i));
       structure.levels.push_back(
         {.cost = level.Integer("cost", 0), .buildConstructorSeconds = level.Number("buildConstructorSeconds", JsonBound::Positive)});
+      structure.levels.back().hulls = ReadHulls(level, structure);
       level.Finish();
     }
   }
+  structure.hulls = ReadHulls(_reader, structure);
   return structure;
 }
 
@@ -327,6 +346,31 @@ void CheckReferences(const Outpost::Tuning& _tuning)
       Neuron::JsonFail(std::format("{}.kind", path), "a structure kind appears twice");
     if (structure.structureWeapon.IsValid())
       CheckExists(_tuning.structureWeapons, structure.structureWeapon, std::format("{}.structureWeapon", path), "structure weapon");
+
+    // A Shipyard that names its hulls names each hull once, so that every hull is built at one level (Phase 3 design §5).
+    std::vector<Outpost::HullId> named;
+    const auto check = [&](const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
+    {
+      for (size_t j = 0; j < _hulls.size(); ++j)
+      {
+        const std::string hullPath = Neuron::JsonElementPath(_path, j);
+        CheckExists(_tuning.hulls, _hulls[j], hullPath, "hull");
+        if (std::ranges::find(named, _hulls[j]) != named.end())
+          Neuron::JsonFail(hullPath, std::format("names hull {} again", _hulls[j].value));
+        named.push_back(_hulls[j]);
+      }
+    };
+    check(structure.hulls, std::format("{}.hulls", path));
+    for (size_t level = 0; level < structure.levels.size(); ++level)
+      check(structure.levels[level].hulls, std::format("{}.levels[{}].hulls", path, level));
+    if (!named.empty())
+    {
+      for (const Outpost::HullTuning& hull : _tuning.hulls)
+      {
+        if (std::ranges::find(named, hull.id) == named.end())
+          Neuron::JsonFail(std::format("{}.hulls", path), std::format("names no level for hull {}, {}", hull.id.value, hull.name));
+      }
+    }
   }
   for (const auto& [name, kind] : STRUCTURE_KINDS)
   {
@@ -461,6 +505,19 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   return tuning;
 }
 } // namespace
+
+std::int32_t Outpost::ShipyardLevelFor(const Tuning& _tuning, HullId _hull) noexcept
+{
+  const auto shipyard = std::ranges::find(_tuning.structures, StructureKind::Shipyard, &StructureTuning::kind);
+  if (shipyard == _tuning.structures.end())
+    return 1;
+  for (size_t level = 0; level < shipyard->levels.size(); ++level)
+  {
+    if (std::ranges::find(shipyard->levels[level].hulls, _hull) != shipyard->levels[level].hulls.end())
+      return static_cast<std::int32_t>(level) + 2;
+  }
+  return 1;
+}
 
 Outpost::Tuning Outpost::LoadTuning(std::string_view _json)
 {

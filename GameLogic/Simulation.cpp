@@ -443,7 +443,10 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
   ResearchEffects effects{.upgrades = UpgradesFrom(_tuning, _researched)};
   effects.hulls.reserve(_tuning.hulls.size());
   for (const HullTuning& hull : _tuning.hulls)
+  {
     effects.hulls.push_back(ViewOf(hull, effects.upgrades, IsAvailable(_tuning, _researched, hull.id)));
+    effects.hulls.back().shipyardLevel = ShipyardLevelFor(_tuning, hull.id);
+  }
   effects.drives.reserve(_tuning.drives.size());
   for (const DriveTuning& drive : _tuning.drives)
     effects.drives.push_back(ViewOf(drive, IsAvailable(_tuning, _researched, drive.id)));
@@ -1850,6 +1853,9 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const QueueS
     const ShipDesign* design = FindDesign(_queue.design);
     if (design == nullptr || design->owner != _player)
       return CommandResult::UnknownDesign;
+    // A Shipyard builds the hulls of its level and below (Phase 3 design §5).
+    if (producer->level < ShipyardLevelFor(*m_tuning, design->components.hull))
+      return CommandResult::LevelTooLow;
     job = {.role = ShipRole::Warship, .design = _queue.design};
   }
   if (producer->queue.size() >= QUEUE_LIMIT)
