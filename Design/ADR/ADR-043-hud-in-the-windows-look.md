@@ -29,7 +29,7 @@ The owner asked on 2026-10-03 for these to be fixed in the same change as the ri
    - A button that cannot be pressed is dim on the field's color. One that cannot be pressed for a reason other than its cost says why in place of the cost (ADR-046).
 5. **The selection panel is as wide as its longest line**, between 280 and 560 units, and stays centered.
 6. **The production and research windows have their cards first and their queue under them.**
-   - Both windows are 560 units wide, so a design's name is cut short only where it would run past its card, as its font measures it ([ADR-061](ADR-061-measured-text.md)).
+   - Research is 560 units wide. Production is as wide as leaves both windows side by side, clear of the designer, at the reference width: 478 units ([ADR-062](ADR-062-type-scale-and-contrast.md)). A design's name is cut short only where it would run past its card, as its font measures it ([ADR-061](ADR-061-measured-text.md)).
    - The cards stay where they are as the queue grows, so a card can be clicked again and again.
    - The queue shows a row for each job and no empty ones. Its label still counts the jobs against the limit, "QUEUE · 2 / 5".
    - The window grows at its foot.

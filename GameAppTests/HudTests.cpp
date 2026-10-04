@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -127,8 +128,8 @@ std::string LongestName(char _last)
 // one of them loaded in the designer of five weapons, every part locked or every part unlocked; a full queue at a
 // Shipyard and at the Lab; a page of topics, among them Relay Archives with both its prerequisites to do; a placement's
 // hint, the research line, the alerts, the territory and the banner. The Ore is five figures, more than any match in the
-// review banked.
-Outpost::Hud::Content LongestContent(bool _unlocked)
+// review banked. With _hovered, the designer previews the part under the pointer.
+Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud::Action> _hovered = std::nullopt)
 {
   Outpost::Snapshot newest = DesignerSnapshot(_unlocked, true);
   newest.ore = 99999;
@@ -149,7 +150,7 @@ Outpost::Hud::Content LongestContent(bool _unlocked)
   designer.Update(newest);
   designer.Load(newest.designs.back());
   Outpost::Hud::Content content =
-    Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, std::nullopt);
+    Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
   content.research = "Researching Mass Driver Calibration, 99%";
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
   content.territory = Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .ownTickets = 10000, .enemyTickets = 10000};
@@ -185,13 +186,16 @@ Outpost::Hud::Content LongestContent(bool _unlocked)
   return content;
 }
 
-// What 14.1's tests lay out: the menu, and the longest content with its parts locked and unlocked.
+// What 14.1's and 14.2's tests lay out: the menu, and the longest content with its parts locked and unlocked, and with the
+// Small hull previewed in place of the loaded design's Medium, which makes some figures better and some worse.
 std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> LongestLayouts(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
+  const Outpost::Hud::Action smallHull{.kind = Outpost::Hud::ActionKind::PickHull, .hull = Outpost::HullId{1}};
   std::vector<std::pair<std::wstring, Outpost::Hud::Layout>> layouts;
   layouts.emplace_back(L"the menu", LayMenu(_widthPixels, _heightPixels));
   layouts.emplace_back(L"locked", Lay(LongestContent(false), _widthPixels, _heightPixels));
   layouts.emplace_back(L"unlocked", Lay(LongestContent(true), _widthPixels, _heightPixels));
+  layouts.emplace_back(L"previewing", Lay(LongestContent(true, smallHull), _widthPixels, _heightPixels));
   return layouts;
 }
 
@@ -206,6 +210,50 @@ Outpost::Hud::Rect LineBoxOf(const Outpost::Hud::Text& _text, std::span<const Ne
           .height = font.lineHeight};
 }
 
+// WCAG's relative luminance of a linear color, which the render target encodes to sRGB, as the review computed it.
+float LuminanceOf(const DirectX::XMFLOAT3& _color) noexcept
+{
+  return (0.2126f * _color.x) + (0.7152f * _color.y) + (0.0722f * _color.z);
+}
+
+// WCAG's contrast ratio between two linear colors.
+float ContrastOf(const DirectX::XMFLOAT3& _first, const DirectX::XMFLOAT3& _second) noexcept
+{
+  const float first = LuminanceOf(_first) + 0.05f;
+  const float second = LuminanceOf(_second) + 0.05f;
+  return std::max(first, second) / std::min(first, second);
+}
+
+// What a text can stand on: the panels of its layer under its first pixel, laid over each other in the order they are
+// drawn, at their alpha, over black. A hatched panel covers some pixels and not others, so it is taken both ways.
+std::vector<DirectX::XMFLOAT3> GroundsOf(const Outpost::Hud::Layout& _layout, std::size_t _layer, const Outpost::Hud::Text& _text)
+{
+  const Outpost::Hud::Span panels = _layout.PanelsOf(_layer);
+  const float x = std::round(_text.left) + 0.5f;
+  const float y = std::round(_text.top) + 0.5f;
+  std::vector<DirectX::XMFLOAT3> grounds{{0.0f, 0.0f, 0.0f}};
+  for (std::size_t p = panels.first; p < panels.end; ++p)
+  {
+    const Outpost::Hud::Rect& panel = _layout.panels[p];
+    if (!panel.Contains(x, y))
+      continue;
+    const float alpha = panel.color.w;
+    const std::size_t count = grounds.size();
+    for (std::size_t g = 0; g < count; ++g)
+    {
+      const DirectX::XMFLOAT3 under = grounds[g];
+      const DirectX::XMFLOAT3 covered{(panel.color.x * alpha) + (under.x * (1.0f - alpha)),
+                                      (panel.color.y * alpha) + (under.y * (1.0f - alpha)),
+                                      (panel.color.z * alpha) + (under.z * (1.0f - alpha))};
+      if (panel.fill == Outpost::Hud::Fill::Solid)
+        grounds[g] = covered;
+      else
+        grounds.push_back(covered);
+    }
+  }
+  return grounds;
+}
+
 // A text named for a failure: its layout, the back buffer's width and what it says.
 std::wstring Named(const std::wstring& _layout, std::uint32_t _widthPixels, const Outpost::Hud::Text& _text)
 {
@@ -218,18 +266,34 @@ TEST_CLASS(HudTests)
 public:
   // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The default face is
   // Segoe UI at the text's size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
+  // ADR-062: the type scale, set in FaceUnits alone: labels and details at 13 units, figures at 14 in semibold, and the
+  // name, title and large figures as the mockup has them.
   TEST_METHOD(NamesItsTypefacesAndSprites)
   {
-    const std::vector<Neuron::FontDesc> typefaces = Outpost::Hud::Typefaces();
-    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Typeface::Detail) + 1, typefaces.size());
-    const Neuron::FontDesc& body = typefaces[static_cast<std::size_t>(Outpost::Hud::Typeface::Body)];
+    using Hud = Outpost::Hud;
+    const std::vector<Neuron::FontDesc> typefaces = Hud::Typefaces();
+    Assert::AreEqual(static_cast<std::size_t>(Hud::Typeface::Detail) + 1, typefaces.size());
+    const Neuron::FontDesc& body = typefaces[static_cast<std::size_t>(Hud::Typeface::Body)];
     Assert::IsTrue(body.families == std::vector<std::wstring>{L"Segoe UI"});
-    Assert::AreEqual(Outpost::Hud::FONT_UNITS, body.emUnits);
-    const Neuron::FontDesc& figure = typefaces[static_cast<std::size_t>(Outpost::Hud::Typeface::Figure)];
+    Assert::AreEqual(Hud::FONT_UNITS, body.emUnits);
+    const Neuron::FontDesc& figure = typefaces[static_cast<std::size_t>(Hud::Typeface::Figure)];
     Assert::IsTrue(figure.families == std::vector<std::wstring>{L"Cascadia Mono", L"Consolas"});
+    Assert::AreEqual(600, static_cast<int>(figure.weight), L"semibold");
     for (const Neuron::FontDesc& typeface : typefaces)
       Assert::IsTrue(!typeface.families.empty() && typeface.emUnits > 0.0f);
-    Assert::AreEqual(static_cast<std::size_t>(Outpost::Hud::Sprite::Corner) + 1, Outpost::Hud::Sprites().size());
+    const std::array<std::pair<Hud::Typeface, float>, 7> sizes{{{Hud::Typeface::Body, 20.0f},
+                                                                {Hud::Typeface::Title, 22.0f},
+                                                                {Hud::Typeface::Label, 13.0f},
+                                                                {Hud::Typeface::Name, 16.0f},
+                                                                {Hud::Typeface::Figure, 14.0f},
+                                                                {Hud::Typeface::LargeFigure, 28.0f},
+                                                                {Hud::Typeface::Detail, 13.0f}}};
+    for (const auto& [face, units] : sizes)
+    {
+      Assert::AreEqual(units, Hud::FaceUnits(face));
+      Assert::AreEqual(units, typefaces[static_cast<std::size_t>(face)].emUnits);
+    }
+    Assert::AreEqual(static_cast<std::size_t>(Hud::Sprite::Corner) + 1, Hud::Sprites().size());
   }
 
   // ADR-031: the designer is a window: at first in the top-right corner, its title bar left of its close box, a bracket at
@@ -243,7 +307,7 @@ public:
     Assert::AreEqual(size_t{1}, layout.windows.size());
     const Outpost::Hud::Window& window = layout.windows.front();
     Assert::IsTrue(window.kind == Outpost::WindowKind::Designer);
-    Assert::IsTrue(window.frame.left > 1920.0f - 760.0f && window.frame.top < 30.0f, L"top right");
+    Assert::IsTrue(window.frame.left > 1920.0f - 850.0f && window.frame.top < 30.0f, L"top right");
     Assert::IsTrue(window.titleBar.Contains(window.frame.left + 10.0f, window.frame.top + 10.0f));
     Assert::IsTrue(window.closeBox.left >= window.titleBar.left + window.titleBar.width);
     Assert::IsTrue(window.titleBar.fill == Outpost::Hud::Fill::Hatched);
@@ -975,9 +1039,9 @@ public:
     Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.options[1].detail);
   }
 
-  // Phase 1 design §11, after the mockup: a window 728 units wide; the Shipyard's arrows in its title bar, pressed rather
-  // than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the weapons wrap to a
-  // second line of cards once there are more than three; and Queue at the bottom.
+  // Phase 1 design §11, after the mockup at ADR-062's sizes: a window 818 units wide; the Shipyard's arrows in its title bar,
+  // pressed rather than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the
+  // weapons wrap to a second line of cards once there are more than three; and Queue at the bottom.
   // Phase 2 design §10: the designer's fourth row holds no module and each module; a design's chip names its module's
   // initials; a Sensors bar shows how far a module lets the ship see; and the window still fits a 1080-line screen.
   TEST_METHOD(OffersTheModulesInAFourthRow)
@@ -1046,15 +1110,15 @@ public:
 
     const Outpost::Hud::Layout mockup = layOut(DesignerSnapshot());
     const Outpost::Hud::Window& window = mockup.windows.front();
-    Assert::AreEqual(728.0f, window.frame.width, 0.01f);
-    Assert::AreEqual(1920.0f - 16.0f - 728.0f, window.frame.left, 0.01f, L"top right");
+    Assert::AreEqual(818.0f, window.frame.width, 0.01f);
+    Assert::AreEqual(1920.0f - 16.0f - 818.0f, window.frame.left, 0.01f, L"top right");
     Assert::AreEqual(size_t{2}, count(mockup, Outpost::Hud::ActionKind::PickHull), L"the Large hull is locked");
     Assert::AreEqual(size_t{1}, count(mockup, Outpost::Hud::ActionKind::PickDrive));
     Assert::AreEqual(size_t{2}, count(mockup, Outpost::Hud::ActionKind::PickWeapon));
     Assert::AreEqual(size_t{1}, count(mockup, Outpost::Hud::ActionKind::LoadDesign));
     Assert::AreEqual(size_t{0}, count(mockup, Outpost::Hud::ActionKind::NextDesigns), L"one chip fits");
     Assert::IsTrue(std::ranges::any_of(mockup.panels, [](const Outpost::Hud::Rect& _panel)
-                                       { return _panel.fill == Outpost::Hud::Fill::Hatched && _panel.width < 200.0f; }),
+                                       { return _panel.fill == Outpost::Hud::Fill::Hatched && _panel.width < 250.0f; }),
                    L"a locked card is hatched");
 
     const Outpost::Hud::Rect previous = areaOf(mockup, Outpost::Hud::ActionKind::PreviousShipyard);
@@ -1577,6 +1641,34 @@ public:
               }
             }
           }
+        }
+      }
+    }
+    Assert::IsTrue(offenders.empty(), offenders.c_str());
+  }
+
+  // Task 14.2: every text stands at 4.5:1 or more against what it is drawn on, the panels under its first pixel with a
+  // hatched panel's stripes and the gaps between them both, as the review computed contrast. K1 exempts no text (ADR-062).
+  // Every offender is named, at the least contrast it meets.
+  TEST_METHOD(SetsEveryTextAtFourAndAHalfToOne)
+  {
+    std::wstring offenders;
+    for (const auto& [name, layout] : LongestLayouts(1920, 1080))
+    {
+      for (std::size_t layer = 0; layer < layout.LayerCount(); ++layer)
+      {
+        const Outpost::Hud::Span texts = layout.TextsOf(layer);
+        for (std::size_t t = texts.first; t < texts.end; ++t)
+        {
+          const Outpost::Hud::Text& text = layout.texts[t];
+          if (text.text.empty())
+            continue;
+          const DirectX::XMFLOAT3 ink{text.color.x, text.color.y, text.color.z};
+          float least = std::numeric_limits<float>::max();
+          for (const DirectX::XMFLOAT3& ground : GroundsOf(layout, layer, text))
+            least = std::min(least, ContrastOf(ink, ground));
+          if (least < 4.5f)
+            offenders += std::format(L"{} stands at {:.2f}:1\n", Named(name, 1920, text), least);
         }
       }
     }

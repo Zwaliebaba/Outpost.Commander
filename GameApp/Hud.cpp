@@ -42,10 +42,10 @@ constexpr float SECTOR_LINE_UNITS = 1.0f;
 // Everything below in reference units.
 constexpr float MARGIN = 16.0f;
 constexpr float PADDING = 12.0f;
-// A line of text in the title face, and in the name face, as the HUD's panels set them; a figure's line.
+// A line of text in the title face, and in the name face, as the HUD's panels set them; a figure's line (ADR-062).
 constexpr float TITLE_LINE_UNITS = 30.0f;
 constexpr float NAME_LINE_UNITS = 22.0f;
-constexpr float FIGURE_LINE_UNITS = 16.0f;
+constexpr float FIGURE_LINE_UNITS = 17.0f;
 
 // The Ore panel, anchored to the top-left corner: the stockpile as the windows write it, Ore's diamond and the figure in the
 // title face from the panel's left, so that the diamond stays put as the figure changes, and the income at its right
@@ -575,7 +575,8 @@ Hud::Rect Frame(Hud::Layout& _layout, float _left, float _top, float _width, flo
 
 // The designer's window (Phase 1 design §11), laid out as the owner's mockup, GameDesign/Mockups/ShipDesigner.png, which is
 // drawn at the reference scale: every place below is in reference units from the window's top-left corner.
-constexpr float DESIGNER_WIDTH = 728.0f;
+// Three part cards from CARDS_LEFT, and the mockup's room right of them (ADR-062).
+constexpr float DESIGNER_WIDTH = 818.0f;
 constexpr float DESIGNER_INSET = 24.0f;
 // The hatched header runs on below the title bar, which the window is dragged by, to hold the title and the Shipyard.
 constexpr float DESIGNER_HEADER = 72.0f;
@@ -584,21 +585,21 @@ constexpr float NAME_ROW_HEIGHT = 38.0f;
 constexpr float CHIP_ROW_TOP = 132.0f;
 constexpr float CHIP_HEIGHT = 26.0f;
 constexpr float CHIPS_LEFT = 70.0f;
-constexpr float CHIP_WIDTH = 190.0f;
+constexpr float CHIP_WIDTH = 220.0f;
 constexpr float SLOTS_TOP = 168.0f;
 constexpr float SLOT_GAP = 10.0f;
 constexpr float SLOT_DIVIDER_LEFT = 108.0f;
 constexpr float CARDS_LEFT = 118.0f;
-constexpr float CARD_WIDTH = 190.0f;
+constexpr float CARD_WIDTH = 220.0f;
 constexpr float CARD_HEIGHT = 80.0f;
 constexpr float CARD_GAP = 7.0f;
 constexpr std::size_t CARDS_PER_LINE = 3;
 // A part card's lines under its name: its numbers, any note, such as a weapon's splash, and at its foot the research that
 // unlocks it. A row whose cards have notes is taller, so that a note and that line never meet (ADR-061).
 constexpr float CARD_NUMBERS_TOP = 34.0f;
-constexpr float CARD_NOTE_TOP = 50.0f;
-constexpr float CARD_NOTE_ROOM = 14.0f;
-constexpr float CARD_LOCK_FROM_FOOT = 19.0f;
+constexpr float CARD_NOTE_TOP = 52.0f;
+constexpr float CARD_NOTE_ROOM = 16.0f;
+constexpr float CARD_LOCK_FROM_FOOT = 20.0f;
 constexpr float SECTION_GAP = 20.0f;
 constexpr float SECTION_LABEL_HEIGHT = 26.0f;
 constexpr float BAR_ROW_HEIGHT = 25.0f;
@@ -616,20 +617,19 @@ constexpr float LABEL_TRACKING_UNITS = 2.0f;
 // Ore's diamond beside a figure: this share of the figure's size, and this far from it.
 constexpr float ORE_MARK_SHARE = 0.6f;
 constexpr float ORE_MARK_GAP_UNITS = 5.0f;
-// The title face's size, which Hud::Typefaces gives it, for the diamond beside a figure in it.
-constexpr float TITLE_FACE_UNITS = 22.0f;
 // The room a line cut short to fit keeps from what stands beside it, such as a cost (ADR-061).
 constexpr float FIT_GAP_UNITS = 6.0f;
 // The box a window's header holds the player's Ore in.
 constexpr float ORE_BOX_WIDTH = 116.0f;
 
 // The mockup's colors (gate H6, confirmed at the owner's run), sampled from it and made linear, as the render target
-// encodes them to sRGB.
+// encodes them to sRGB. Those raised so that every text stands at 4.5:1 or more against its panel say so (ADR-062).
 constexpr DirectX::XMFLOAT4 LABEL_COLOR{0.22f, 0.29f, 0.42f, 1.0f};
 constexpr DirectX::XMFLOAT4 ROW_LABEL_COLOR{0.41f, 0.49f, 0.61f, 1.0f};
+// A label on a window's hatched title bar, lighter than other labels to stand at 4.5:1 on its stripes (ADR-062).
+constexpr DirectX::XMFLOAT4 HEADER_LABEL_COLOR = ROW_LABEL_COLOR;
 constexpr DirectX::XMFLOAT4 NUMBERS_COLOR{0.65f, 0.77f, 0.93f, 1.0f};
 constexpr DirectX::XMFLOAT4 SOFT_COLOR{0.29f, 0.37f, 0.5f, 1.0f};
-constexpr DirectX::XMFLOAT4 FAINT_COLOR{0.12f, 0.15f, 0.21f, 1.0f};
 constexpr DirectX::XMFLOAT4 CODE_COLOR{0.18f, 0.3f, 0.53f, 1.0f};
 constexpr DirectX::XMFLOAT4 ACCENT_COLOR{0.4f, 0.63f, 1.0f, 1.0f};
 constexpr DirectX::XMFLOAT4 GOLD_COLOR{0.93f, 0.5f, 0.045f, 1.0f};
@@ -640,15 +640,20 @@ constexpr DirectX::XMFLOAT4 PICKED_COLOR{0.033f, 0.063f, 0.136f, 1.0f};
 constexpr DirectX::XMFLOAT4 PICKED_EDGE_COLOR{0.35f, 0.56f, 0.9f, 1.0f};
 constexpr DirectX::XMFLOAT4 LOCKED_COLOR{0.007f, 0.01f, 0.016f, 1.0f};
 constexpr DirectX::XMFLOAT4 LOCKED_HATCH_COLOR{0.012f, 0.016f, 0.024f, 1.0f};
-constexpr DirectX::XMFLOAT4 LOCKED_TEXT_COLOR{0.15f, 0.19f, 0.26f, 1.0f};
+// Raised from the mockup's (0.15, 0.19, 0.26) to 4.6:1 on a locked card's hatching, and still under a third of live
+// text's luminance (ADR-062).
+constexpr DirectX::XMFLOAT4 LOCKED_TEXT_COLOR{0.2f, 0.26f, 0.35f, 1.0f};
 constexpr DirectX::XMFLOAT4 AMBER_COLOR{0.62f, 0.34f, 0.09f, 1.0f};
 constexpr DirectX::XMFLOAT4 GOOD_COLOR{0.15f, 0.9f, 0.075f, 1.0f};
 constexpr DirectX::XMFLOAT4 FAIR_COLOR{0.9f, 0.46f, 0.026f, 1.0f};
-constexpr DirectX::XMFLOAT4 POOR_COLOR{0.75f, 0.08f, 0.044f, 1.0f};
+// A touch brighter than the mockup's (0.75, 0.08, 0.044), so that a worse figure stands at 4.5:1 on a window (ADR-062).
+constexpr DirectX::XMFLOAT4 POOR_COLOR{0.8f, 0.09f, 0.05f, 1.0f};
 constexpr DirectX::XMFLOAT4 BAR_TRACK_COLOR{0.004f, 0.005f, 0.009f, 1.0f};
 constexpr DirectX::XMFLOAT4 BAR_FILL_COLOR{0.17f, 0.3f, 0.58f, 1.0f};
-constexpr DirectX::XMFLOAT4 QUEUE_COLOR{0.037f, 0.125f, 0.048f, 1.0f};
-constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.053f, 0.153f, 0.067f, 1.0f};
+// The Queue button's face and stripes, at 0.65 of the mockup's, so that the gold of its cost stands at 4.5:1 on them
+// (ADR-062).
+constexpr DirectX::XMFLOAT4 QUEUE_COLOR{0.024f, 0.081f, 0.031f, 1.0f};
+constexpr DirectX::XMFLOAT4 QUEUE_HATCH_COLOR{0.034f, 0.099f, 0.044f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_EDGE_COLOR{0.09f, 0.29f, 0.12f, 1.0f};
 constexpr DirectX::XMFLOAT4 QUEUE_TEXT_COLOR{0.85f, 1.0f, 0.86f, 1.0f};
 constexpr DirectX::XMFLOAT4 SLOT_FILLED_COLOR{0.15f, 0.25f, 0.45f, 1.0f};
@@ -794,24 +799,24 @@ public:
     Text(std::move(_mark), _left + 5.0f, _top + 1.0f, _enabled ? TEXT_COLOR : DIM_TEXT_COLOR, Hud::Typeface::Label);
   }
 
-  // How wide an amount of Ore is set, its diamond and its figure, in _face at _sizeUnits.
-  [[nodiscard]] float DiamondAndFigureWidth(std::int32_t _ore, Hud::Typeface _face, float _sizeUnits) const
+  // How wide an amount of Ore is set, its diamond and its figure, in _face.
+  [[nodiscard]] float DiamondAndFigureWidth(std::int32_t _ore, Hud::Typeface _face) const
   {
-    return std::round(_sizeUnits * ORE_MARK_SHARE) + ORE_MARK_GAP_UNITS + Width(Outpost::WithThousands(_ore), _face);
+    return std::round(Hud::FaceUnits(_face) * ORE_MARK_SHARE) + ORE_MARK_GAP_UNITS + Width(Outpost::WithThousands(_ore), _face);
   }
 
-  // An amount of Ore that ends at _right: Ore's diamond, then the figure, in _face at _sizeUnits.
-  void DiamondAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, float _sizeUnits, const DirectX::XMFLOAT4& _color)
+  // An amount of Ore that ends at _right: Ore's diamond, then the figure, in _face.
+  void DiamondAndFigure(std::int32_t _ore, float _right, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
   {
-    DiamondAndFigureFrom(_ore, _right - DiamondAndFigureWidth(_ore, _face, _sizeUnits), _top, _face, _sizeUnits, _color);
+    DiamondAndFigureFrom(_ore, _right - DiamondAndFigureWidth(_ore, _face), _top, _face, _color);
   }
 
-  // An amount of Ore that starts at _left: Ore's diamond, then the figure, in _face at _sizeUnits.
-  void DiamondAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, float _sizeUnits,
-                            const DirectX::XMFLOAT4& _color)
+  // An amount of Ore that starts at _left: Ore's diamond, sized by the face, then the figure, in _face.
+  void DiamondAndFigureFrom(std::int32_t _ore, float _left, float _top, Hud::Typeface _face, const DirectX::XMFLOAT4& _color)
   {
-    const float mark = std::round(_sizeUnits * ORE_MARK_SHARE);
-    Sprite(Hud::Sprite::OreMark, _left, _top + ((_sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
+    const float sizeUnits = Hud::FaceUnits(_face);
+    const float mark = std::round(sizeUnits * ORE_MARK_SHARE);
+    Sprite(Hud::Sprite::OreMark, _left, _top + ((sizeUnits * 1.25f) - mark) / 2.0f, mark, _color);
     Text(Outpost::WithThousands(_ore), _left + mark + ORE_MARK_GAP_UNITS, _top, _color, _face);
   }
 
@@ -827,7 +832,7 @@ public:
   {
     Panel(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, FIELD_COLOR);
     Outline(_right - ORE_BOX_WIDTH, 38.0f, ORE_BOX_WIDTH, 30.0f, EDGE_COLOR);
-    DiamondAndFigure(_ore, _right - 10.0f, 39.0f, Hud::Typeface::Title, TITLE_FACE_UNITS, GOLD_COLOR);
+    DiamondAndFigure(_ore, _right - 10.0f, 39.0f, Hud::Typeface::Title, GOLD_COLOR);
   }
 
 private:
@@ -874,11 +879,10 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
     paint.Text(paint.Fit(label, Hud::Typeface::Name, room), BUTTON_INSET, labelTop, labelColor, Hud::Typeface::Name);
     return;
   }
-  const float costWidth = paint.DiamondAndFigureWidth(cost, Hud::Typeface::Figure, 13.0f);
+  const float costWidth = paint.DiamondAndFigureWidth(cost, Hud::Typeface::Figure);
   paint.Text(paint.Fit(label, Hud::Typeface::Name, room - costWidth - FIT_GAP_UNITS), BUTTON_INSET, labelTop, labelColor,
              Hud::Typeface::Name);
-  paint.DiamondAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, 13.0f,
-                         _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
+  paint.DiamondAndFigure(cost, width - BUTTON_INSET, figureTop, Hud::Typeface::Figure, _button.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
 }
 
 void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::DesignerPanel& _panel,
@@ -894,21 +898,26 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   paint.HeaderBand(DESIGNER_WIDTH, DESIGNER_HEADER);
   paint.SmallButton("<", DESIGNER_INSET, 9.0f, _panel.hasShipyard, {.kind = Hud::ActionKind::PreviousShipyard});
   paint.SmallButton(">", DESIGNER_INSET + SMALL_BUTTON_UNITS + 4.0f, 9.0f, _panel.hasShipyard, {.kind = Hud::ActionKind::NextShipyard});
-  paint.Text(std::format("{}{}DESIGNER", _panel.shipyard, DOT), DESIGNER_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f, LABEL_COLOR,
-             Hud::Typeface::Label, tracking);
+  paint.Text(std::format("{}{}DESIGNER", _panel.shipyard, DOT), DESIGNER_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f,
+             HEADER_LABEL_COLOR, Hud::Typeface::Label, tracking);
   paint.Text("SHIP DESIGN", DESIGNER_INSET, 40.0f, TEXT_COLOR, Hud::Typeface::Title);
-  constexpr float SLOTS_LEFT = 412.0f;
+  // The queue's slots, ending a little short of the Ore's box.
   constexpr float SLOT_SIZE = 30.0f;
-  paint.Text(std::format("QUEUE{}{} BUILT", DOT, _panel.built), SLOTS_LEFT, 12.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+  constexpr float SLOT_SPACING = 3.0f;
+  constexpr float SLOTS_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - ORE_BOX_WIDTH - 14.0f -
+                               (static_cast<float>(Outpost::QUEUE_LIMIT) * (SLOT_SIZE + SLOT_SPACING)) + SLOT_SPACING;
+  paint.Text(std::format("QUEUE{}{} BUILT", DOT, _panel.built), SLOTS_LEFT, 12.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, tracking);
   for (std::size_t slot = 0; slot < Outpost::QUEUE_LIMIT; ++slot)
   {
-    paint.Panel(SLOTS_LEFT + (static_cast<float>(slot) * (SLOT_SIZE + 3.0f)), 40.0f, SLOT_SIZE, 24.0f,
+    paint.Panel(SLOTS_LEFT + (static_cast<float>(slot) * (SLOT_SIZE + SLOT_SPACING)), 40.0f, SLOT_SIZE, 24.0f,
                 slot < _panel.queued ? SLOT_FILLED_COLOR : FIELD_COLOR);
   }
   paint.OreBox(_panel.ore, DESIGNER_WIDTH - DESIGNER_INSET);
 
-  // The name, its count against the limit, and Save.
-  const float fieldWidth = 604.0f;
+  // The name, its count against the limit, and Save at the row's right end.
+  constexpr float SAVE_WIDTH = 68.0f;
+  constexpr float SAVE_LEFT = DESIGNER_WIDTH - DESIGNER_INSET - SAVE_WIDTH;
+  const float fieldWidth = SAVE_LEFT - DESIGNER_INSET - 8.0f;
   const Hud::Rect field = paint.Panel(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, FIELD_COLOR);
   paint.Press(field, {.kind = Hud::ActionKind::EditName});
   paint.Outline(DESIGNER_INSET, NAME_ROW_TOP, fieldWidth, NAME_ROW_HEIGHT, _panel.editing ? PICKED_EDGE_COLOR : EDGE_COLOR);
@@ -917,10 +926,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
   const float nameRoom = fieldWidth - 66.0f - 12.0f - paint.Width(count, Hud::Typeface::Figure) - FIT_GAP_UNITS;
   paint.Text(paint.Fit(_panel.editing ? _panel.name + "_" : _panel.name, Hud::Typeface::Name, nameRoom), DESIGNER_INSET + 66.0f,
              NAME_ROW_TOP + 9.0f, _panel.nameValid ? TEXT_COLOR : WARNING_COLOR, Hud::Typeface::Name);
-  paint.RightText(count, DESIGNER_INSET + fieldWidth - 12.0f, NAME_ROW_TOP + 12.0f, FAINT_COLOR, Hud::Typeface::Figure);
+  paint.RightText(count, DESIGNER_INSET + fieldWidth - 12.0f, NAME_ROW_TOP + 12.0f, LABEL_COLOR, Hud::Typeface::Figure);
   {
-    constexpr float SAVE_LEFT = 636.0f;
-    constexpr float SAVE_WIDTH = 68.0f;
     const Hud::Button& save = _panel.save;
     const Hud::Rect face = paint.Panel(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.enabled ? CARD_COLOR : FIELD_COLOR);
     paint.Outline(SAVE_LEFT, NAME_ROW_TOP, SAVE_WIDTH, NAME_ROW_HEIGHT, save.selected ? QUEUE_EDGE_COLOR : EDGE_COLOR);
@@ -944,7 +951,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     const float chipNameRoom = CHIP_WIDTH - 16.0f - paint.Width(chip.code, Hud::Typeface::Detail) - FIT_GAP_UNITS;
     paint.Text(paint.Fit(chip.name, Hud::Typeface::Label, chipNameRoom), left + 8.0f, CHIP_ROW_TOP + 6.0f, TEXT_COLOR,
                Hud::Typeface::Label);
-    paint.RightText(chip.code, left + CHIP_WIDTH - 8.0f, CHIP_ROW_TOP + 7.0f, CODE_COLOR, Hud::Typeface::Detail);
+    paint.RightText(chip.code, left + CHIP_WIDTH - 8.0f, CHIP_ROW_TOP + 7.0f, chip.shown ? ACCENT_COLOR : CODE_COLOR,
+                    Hud::Typeface::Detail);
   }
   if (_panel.chips.size() > CHIPS_SHOWN)
   {
@@ -983,11 +991,11 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
         paint.Press(face, card.action);
       paint.Outline(left, cardTop, CARD_WIDTH, cardHeight, card.picked ? PICKED_EDGE_COLOR : EDGE_COLOR);
       const float inner = CARD_WIDTH - 24.0f;
-      const float costWidth = paint.DiamondAndFigureWidth(card.cost, Hud::Typeface::Figure, 13.0f);
+      const float costWidth = paint.DiamondAndFigureWidth(card.cost, Hud::Typeface::Figure);
       const DirectX::XMFLOAT4& nameColor = locked ? LOCKED_TEXT_COLOR : TEXT_COLOR;
       paint.Text(paint.Fit(card.name, Hud::Typeface::Name, inner - costWidth - FIT_GAP_UNITS), left + 12.0f, cardTop + 8.0f, nameColor,
                  Hud::Typeface::Name);
-      paint.DiamondAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure, 13.0f,
+      paint.DiamondAndFigure(card.cost, left + CARD_WIDTH - 12.0f, cardTop + 11.0f, Hud::Typeface::Figure,
                              locked ? LOCKED_TEXT_COLOR : GOLD_COLOR);
       const DirectX::XMFLOAT4& numbersColor = locked ? LOCKED_TEXT_COLOR : NUMBERS_COLOR;
       paint.Text(paint.Fit(card.numbers, Hud::Typeface::Detail, inner), left + 12.0f, cardTop + CARD_NUMBERS_TOP, numbersColor,
@@ -1099,7 +1107,7 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     // The label's line, up to 27 units in the title face, ends above the detail's at either scale's rounding (ADR-061).
     paint.Text(queue.label, QUEUE_LEFT + 18.0f, footer + 2.0f, color, Hud::Typeface::Title, tracking);
     paint.Text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 31.0f, color, Hud::Typeface::Detail);
-    paint.DiamondAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title, 22.0f,
+    paint.DiamondAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title,
                            queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
   }
 }
@@ -1107,8 +1115,10 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
 // The production and research windows (Phase 1 design §12), in the designer's look, in reference units from the window's
 // top-left corner: a hatched header with the window's subject and the Ore, the cards that add to the queue, and under them
 // the queue, a row for each job. The cards stay where they are as the queue grows, so that one can be clicked again and
-// again, and the window grows at its foot (ADR-043). Both windows are as wide, so that a design's name fits its card.
-constexpr float QUEUE_WINDOW_WIDTH = 560.0f;
+// again, and the window grows at its foot (ADR-043). Research is wide enough that a topic's name fits its card, and
+// production as wide as leaves both windows clear of the designer, side by side at the reference width (ADR-062).
+constexpr float RESEARCH_WINDOW_WIDTH = 560.0f;
+constexpr float PRODUCTION_WINDOW_WIDTH = Hud::REFERENCE_WIDTH_UNITS - (4.0f * MARGIN) - DESIGNER_WIDTH - RESEARCH_WINDOW_WIDTH;
 constexpr float WINDOW_INSET = 24.0f;
 // A section's label, and how far under it what it labels starts.
 constexpr float SECTION_TOP = 84.0f;
@@ -1120,7 +1130,7 @@ constexpr float OPTION_HEIGHT = 48.0f;
 // A topic card: its name, then a line for each line of its effect and for each prerequisite neither researched nor queued,
 // or one for its tier and time. Every card is as tall as the most lines any topic needs, and two at least (ADR-061).
 constexpr float TOPIC_LINES_TOP = 28.0f;
-constexpr float TOPIC_LINE_UNITS = 16.0f;
+constexpr float TOPIC_LINE_UNITS = 18.0f;
 constexpr float TOPIC_FOOT_UNITS = 4.0f;
 constexpr std::size_t TOPIC_LEAST_LINES = 2;
 constexpr float CARD_SPACING = 8.0f;
@@ -1207,16 +1217,17 @@ float ProductionHeight(const Hud::ProductionPanel& _panel) noexcept
 void LayProduction(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const Hud::ProductionPanel& _panel,
                    Outpost::WindowManager::Point _corner, float _scale)
 {
-  (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, QUEUE_WINDOW_WIDTH,
+  (void)OpenWindow(_layout, Outpost::WindowKind::Production, std::string(), _corner, PRODUCTION_WINDOW_WIDTH,
                    ProductionHeight(_panel) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _metrics, _corner, _scale);
   paint.SmallButton("<", WINDOW_INSET, 9.0f, _panel.canStep, {.kind = Hud::ActionKind::PreviousProducer});
   paint.SmallButton(">", WINDOW_INSET + SMALL_BUTTON_UNITS + 4.0f, 9.0f, _panel.canStep, {.kind = Hud::ActionKind::NextProducer});
-  paint.Text("PRODUCTION", WINDOW_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.producer, _panel.ore, QUEUE_WINDOW_WIDTH);
+  paint.Text("PRODUCTION", WINDOW_INSET + (2.0f * SMALL_BUTTON_UNITS) + 12.0f, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label,
+             paint.Tracking());
+  Header(paint, _panel.producer, _panel.ore, PRODUCTION_WINDOW_WIDTH);
 
   paint.Text("BUILD", WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  const float width = (QUEUE_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - CARD_SPACING) / 2.0f;
+  const float width = (PRODUCTION_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - CARD_SPACING) / 2.0f;
   const float inner = width - (2.0f * CARD_INSET);
   for (std::size_t i = 0; i < _panel.options.size(); ++i)
   {
@@ -1232,18 +1243,18 @@ void LayProduction(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const
     // A design's name is cut short only where it would run past its card, and its abbreviation where it would meet the cost.
     paint.Text(paint.Fit(option.name, Hud::Typeface::Name, inner), left + CARD_INSET, cardTop + 6.0f,
                option.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Name);
-    const float costWidth = paint.DiamondAndFigureWidth(option.cost, Hud::Typeface::Figure, 13.0f);
+    const float costWidth = paint.DiamondAndFigureWidth(option.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(option.detail, Hud::Typeface::Detail, inner - costWidth - FIT_GAP_UNITS), left + CARD_INSET, cardTop + 28.0f,
                option.enabled ? CODE_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
-    paint.DiamondAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure, 13.0f,
+    paint.DiamondAndFigure(option.cost, left + width - CARD_INSET, cardTop + 28.0f, Hud::Typeface::Figure,
                            option.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
   }
   if (!_panel.hint.empty())
   {
-    paint.Text(paint.Fit(_panel.hint, Hud::Typeface::Detail, QUEUE_WINDOW_WIDTH - (2.0f * WINDOW_INSET)), WINDOW_INSET, CARDS_TOP + 16.0f,
-               LABEL_COLOR, Hud::Typeface::Detail);
+    paint.Text(paint.Fit(_panel.hint, Hud::Typeface::Detail, PRODUCTION_WINDOW_WIDTH - (2.0f * WINDOW_INSET)), WINDOW_INSET,
+               CARDS_TOP + 16.0f, LABEL_COLOR, Hud::Typeface::Detail);
   }
-  QueueRows(paint, _panel.queue, QUEUE_WINDOW_WIDTH, QueueTop(CardsBottom(OptionLines(_panel), OPTION_HEIGHT)));
+  QueueRows(paint, _panel.queue, PRODUCTION_WINDOW_WIDTH, QueueTop(CardsBottom(OptionLines(_panel), OPTION_HEIGHT)));
 }
 
 std::size_t TopicLines(const Hud::ResearchPanel& _panel) noexcept
@@ -1256,7 +1267,7 @@ std::size_t TopicLines(const Hud::ResearchPanel& _panel) noexcept
 float TopicWidth() noexcept
 {
   const auto columns = static_cast<float>(Hud::TOPIC_COLUMNS);
-  return (QUEUE_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
+  return (RESEARCH_WINDOW_WIDTH - (2.0f * WINDOW_INSET) - ((columns - 1.0f) * CARD_SPACING)) / columns;
 }
 
 // A topic's effect as its card sets it, broken into lines that fit the card.
@@ -1282,16 +1293,16 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
 {
   const float topicHeight = TopicHeight(_panel, _metrics);
   const float cardsBottom = CardsBottom(TopicLines(_panel), topicHeight);
-  (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, QUEUE_WINDOW_WIDTH,
+  (void)OpenWindow(_layout, Outpost::WindowKind::Research, std::string(), _corner, RESEARCH_WINDOW_WIDTH,
                    QueueWindowHeight(cardsBottom, _panel.queue.size()) - Hud::TITLE_BAR_UNITS, _scale);
   Painter paint(_layout, _metrics, _corner, _scale);
-  paint.Text("RESEARCH", WINDOW_INSET, 11.0f, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
-  Header(paint, _panel.lab, _panel.ore, QUEUE_WINDOW_WIDTH);
+  paint.Text("RESEARCH", WINDOW_INSET, 11.0f, HEADER_LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
+  Header(paint, _panel.lab, _panel.ore, RESEARCH_WINDOW_WIDTH);
 
   paint.Text("TOPICS", WINDOW_INSET, SECTION_TOP, LABEL_COLOR, Hud::Typeface::Label, paint.Tracking());
   if (_panel.topics.size() > Hud::TOPICS_SHOWN)
   {
-    const float arrowsLeft = QUEUE_WINDOW_WIDTH - WINDOW_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
+    const float arrowsLeft = RESEARCH_WINDOW_WIDTH - WINDOW_INSET - (2.0f * SMALL_BUTTON_UNITS) - 4.0f;
     const float arrowsTop = SECTION_TOP - 4.0f;
     paint.SmallButton("<", arrowsLeft, arrowsTop, _panel.firstTopic > 0, {.kind = Hud::ActionKind::PreviousTopics});
     paint.SmallButton(">", arrowsLeft + SMALL_BUTTON_UNITS + 4.0f, arrowsTop, _panel.firstTopic + Hud::TOPICS_SHOWN < _panel.topics.size(),
@@ -1317,10 +1328,10 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     // A gateway, which opens its tier, is edged in gold.
     paint.Outline(left, cardTop, width, topicHeight, topic.gateway ? GOLD_COLOR : EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
-    const float costWidth = paint.DiamondAndFigureWidth(topic.cost, Hud::Typeface::Figure, 13.0f);
+    const float costWidth = paint.DiamondAndFigureWidth(topic.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(topic.name, Hud::Typeface::Name, width - (2.0f * CARD_INSET) - costWidth - FIT_GAP_UNITS), left + CARD_INSET,
                cardTop + 6.0f, color, Hud::Typeface::Name);
-    paint.DiamondAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure, 13.0f,
+    paint.DiamondAndFigure(topic.cost, left + width - CARD_INSET, cardTop + 9.0f, Hud::Typeface::Figure,
                            topic.enabled ? GOLD_COLOR : LOCKED_TEXT_COLOR);
     float lineTop = cardTop + TOPIC_LINES_TOP;
     for (std::string& effect : EffectLines(topic, _metrics))
@@ -1340,7 +1351,7 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     if (!blocked)
       paint.Text(topic.time, left + CARD_INSET, lineTop, topic.enabled ? LABEL_COLOR : LOCKED_TEXT_COLOR, Hud::Typeface::Detail);
   }
-  QueueRows(paint, _panel.queue, QUEUE_WINDOW_WIDTH, QueueTop(cardsBottom));
+  QueueRows(paint, _panel.queue, RESEARCH_WINDOW_WIDTH, QueueTop(cardsBottom));
 }
 
 // Where a layer's share of a list starts: the window's first, for a window, or the list's end, past the last window.
@@ -1872,19 +1883,22 @@ std::size_t Hud::StepTopics(std::size_t _firstTopic, int _step, std::size_t _top
   return static_cast<std::size_t>(std::clamp<std::ptrdiff_t>(row, 0, lastFirstRow)) * TOPIC_COLUMNS;
 }
 
+static_assert(Hud::FACE_UNITS.size() == static_cast<std::size_t>(Hud::Typeface::Detail) + 1, "a size for every typeface");
+
 std::vector<Neuron::FontDesc> Hud::Typefaces()
 {
-  // Weights as DirectWrite counts them: 600 is semibold, 700 bold. Sizes are the mockup's, in reference units.
+  // Weights as DirectWrite counts them: 600 is semibold, 700 bold; Consolas, which has no semibold, meets 600 with its bold.
+  // Sizes are FaceUnits' (ADR-062).
   const std::vector<std::wstring> condensed{L"Bahnschrift"};
   const std::vector<std::wstring> figures{L"Cascadia Mono", L"Consolas"};
   return {
-    {.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FONT_UNITS},
-    {.families = condensed, .weight = 700, .stretch = Neuron::FontStretch::SemiCondensed, .emUnits = 22.0f},
-    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 12.0f},
-    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = 16.0f},
-    {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = 13.0f},
-    {.families = figures, .weight = 700, .stretch = Neuron::FontStretch::Normal, .emUnits = 28.0f},
-    {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = 11.0f},
+    {.families = {L"Segoe UI"}, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Body)},
+    {.families = condensed, .weight = 700, .stretch = Neuron::FontStretch::SemiCondensed, .emUnits = FaceUnits(Typeface::Title)},
+    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Label)},
+    {.families = condensed, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Name)},
+    {.families = figures, .weight = 600, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Figure)},
+    {.families = figures, .weight = 700, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::LargeFigure)},
+    {.families = figures, .weight = 400, .stretch = Neuron::FontStretch::Normal, .emUnits = FaceUnits(Typeface::Detail)},
   };
 }
 
@@ -1926,8 +1940,7 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
   // earn nothing, since then nothing the player spends comes back.
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = MARGIN}, ORE_PANEL_WIDTH, ORE_PANEL_HEIGHT);
-    paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, TITLE_FACE_UNITS,
-                               GOLD_COLOR);
+    paint.DiamondAndFigureFrom(_content.ore, PADDING, (ORE_PANEL_HEIGHT - TITLE_LINE_UNITS) / 2.0f, Typeface::Title, GOLD_COLOR);
     const std::int32_t income = _content.oreIncomeHundredthsPerSecond;
     const std::string incomeText = income % HUNDREDTHS == 0 ? std::format("+{}/s", income / HUNDREDTHS)
                                                             : std::format("+{:.1f}/s", static_cast<double>(income) / HUNDREDTHS);
@@ -2199,13 +2212,13 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     // Production and research, at first side by side under the Ore and the research line, clear of the designer.
     else if (kind == WindowKind::Production && _content.production.has_value())
     {
-      LayProduction(layout, _metrics, *_content.production, place(kind, {.xUnits = MARGIN, .yUnits = WINDOWS_TOP}, QUEUE_WINDOW_WIDTH),
+      LayProduction(layout, _metrics, *_content.production, place(kind, {.xUnits = MARGIN, .yUnits = WINDOWS_TOP}, PRODUCTION_WINDOW_WIDTH),
                     scale);
     }
     else if (kind == WindowKind::Research && _content.laboratory.has_value())
     {
       const WindowManager::Point corner =
-        place(kind, {.xUnits = (2.0f * MARGIN) + QUEUE_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, QUEUE_WINDOW_WIDTH);
+        place(kind, {.xUnits = (2.0f * MARGIN) + PRODUCTION_WINDOW_WIDTH, .yUnits = WINDOWS_TOP}, RESEARCH_WINDOW_WIDTH);
       LayResearch(layout, _metrics, *_content.laboratory, corner, scale);
     }
   }
