@@ -70,6 +70,9 @@ constexpr float BUTTON_PANEL_WIDTH = 380.0f;
 constexpr float BUTTON_HEIGHT = 34.0f;
 constexpr float BUTTON_GAP = 6.0f;
 constexpr float BUTTON_INSET = 12.0f;
+// The bar along a button's foot that shows the work it started, and its inset from the button's edges.
+constexpr float BUTTON_BAR_UNITS = 3.0f;
+constexpr float BUTTON_BAR_INSET = 2.0f;
 
 // The minimap, a square anchored to the bottom-left corner, with the map drawn inside its padding.
 constexpr float MINIMAP_SIZE = 260.0f;
@@ -851,7 +854,8 @@ private:
 
 // A button of the HUD, in pixels, in the look of a window's card (ADR-043): its face and edge, its label in the name face,
 // any cost after a '|' as Ore's diamond and the figure at its right, and its place among the actions when it does
-// something. The label is cut short only where it would meet the cost or the note.
+// something. The label is cut short only where it would meet the cost or the note. Work it started that is under way runs
+// as a bar along its foot, under the label, from left to right.
 void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _scale, const Hud::Rect& _area, const Hud::Button& _button)
 {
   Painter paint(_layout, _metrics, {.xUnits = _area.left / _scale, .yUnits = _area.top / _scale}, _scale);
@@ -864,6 +868,16 @@ void AddButton(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, float _sc
   if (_button.enabled)
     paint.Press(face, _button.action);
   paint.Outline(0.0f, 0.0f, width, height, _button.selected ? PICKED_EDGE_COLOR : EDGE_COLOR);
+  if (_button.progressPermille.has_value())
+  {
+    const float barWidth = width - (2.0f * BUTTON_BAR_INSET);
+    const float barTop = height - BUTTON_BAR_INSET - BUTTON_BAR_UNITS;
+    paint.Panel(BUTTON_BAR_INSET, barTop, barWidth, BUTTON_BAR_UNITS, BAR_TRACK_COLOR);
+    paint.Panel(BUTTON_BAR_INSET, barTop,
+                barWidth * static_cast<float>(std::clamp(*_button.progressPermille, 0, Outpost::PERMILLE)) /
+                  static_cast<float>(Outpost::PERMILLE),
+                BUTTON_BAR_UNITS, BAR_FILL_COLOR);
+  }
   const size_t split = _button.label.find('|');
   const std::string label = _button.label.substr(0, split);
   const DirectX::XMFLOAT4& labelColor = _button.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
@@ -1747,9 +1761,10 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                   MinutesAndSeconds(static_cast<std::uint64_t>(std::llround(level.buildSeconds))), level.cost),
              .action = {.kind = ActionKind::Upgrade, .producer = structure->id},
              .enabled = !upgrading && missing.empty() && _newest.ore >= level.cost,
-             .note = upgrading         ? std::string("UPGRADING")
+             .note = upgrading         ? std::format("UPGRADING{}{}%", DOT, *structure->upgradePermille / 10)
                      : missing.empty() ? std::string()
-                                       : std::string("NEEDS RESEARCH")});
+                                       : std::string("NEEDS RESEARCH"),
+             .progressPermille = structure->upgradePermille});
         }
         else if (grows)
           content.selection.emplace_back("Top level");

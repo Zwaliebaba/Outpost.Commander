@@ -113,8 +113,8 @@ template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, UpgradeStructureCommand>
 auto Fields(Self& _value)
 {
-  auto& [structure, constructors] = _value;
-  return std::tie(structure, constructors);
+  auto& [structure] = _value;
+  return std::tie(structure);
 }
 
 template <typename Self>

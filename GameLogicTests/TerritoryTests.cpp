@@ -264,8 +264,8 @@ public:
                                                                     _entity.kind == Outpost::EntityKind::Structure;
                                                            })
                                         ->id;
-    // The second Constructor builds the level, while the first builds the Relay in the west.
-    const Outpost::UpgradeStructureCommand upgrade{.structure = station, .constructors = {match.Constructors(BLUE).back()}};
+    // The level builds itself, while the Constructor builds the Relay in the west.
+    const Outpost::UpgradeStructureCommand upgrade{.structure = station};
     Assert::IsTrue(match.World().Tick({{.player = BLUE, .order = upgrade}}).front() == Outpost::CommandResult::Applied);
     for (int tick = 0; tick < 120 * 20 && match.World().FindEntity(station)->level < 2; ++tick)
       match.Run(1);

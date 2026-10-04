@@ -169,6 +169,9 @@ public:
     // Why a button that is not enabled may not be pressed, when the reason is not its cost, shown in place of the cost
     // (ADR-046).
     std::string note;
+    // How far the work the button started has come, in thousandths, drawn as a bar along its foot from left to right; none
+    // while no such work is under way.
+    std::optional<std::int32_t> progressPermille;
   };
 
   // A component as the designer shows it on its card (Phase 1 design §11): its name, cost and numbers, a note under them,

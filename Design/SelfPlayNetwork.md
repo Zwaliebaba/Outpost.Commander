@@ -114,7 +114,7 @@ Six heads, 109 choices on today's map. A head is consulted only when its decisio
 
 - **Research** queues the topic in a free slot of the Lab, as the order's walk does today.
 - **Production** becomes the design the Shipyards keep queued. The body saves the design when the player does not have it, as it does today. A Shipyard whose level is below the design's hull keeps the last design it could build.
-- **Investment** adds a slot to the base plan, placed as the scripted AI places one today. A Shipyard is planned whatever the income. A level is ordered as Phase 3 §4 has it: the Ore paid when ordered and Constructors assigned as for a build. The Shipyard upgraded is the one of lowest level, nearest the Command Station.
+- **Investment** adds a slot to the base plan, placed as the scripted AI places one today. A Shipyard is planned whatever the income. A level is ordered as Phase 3 §4 has it: the Ore paid when ordered, and the level building itself. The Shipyard upgraded is the one of lowest level, nearest the Command Station.
 - **Territory** plans the Relay and the rigs of the chosen sector, as the claim rule plans the nearest.
 - **Posture.** *Attack sector s* sends the reserve to join the attack group. It attack-moves the group on the best structure it knows in that sector, production first (ADR-037) and the highest level first (Phase 3 §8), or on the sector's node when it knows none. *Hold the front* and *hold home* send the reserve to hold that sector with a standing order (ADR-059). A hold chosen while an attack is under way calls the attack group back to the rally, so a fall-back is a hold.
 - **Raid** sends that many of the reserve's smallest hulls on the sector, and the body runs the raid as it runs one today, closing on the Relay.

@@ -129,11 +129,11 @@ struct StructureWeaponTuning
 };
 
 // One level above the first that a structure is upgraded to (Phase 3 design §4, ADR-064): its Ore, paid when the upgrade is
-// ordered, and the time one Constructor takes to build it.
+// ordered, and the time it takes to build itself, which no Constructor shortens (owner, 2026-10-04).
 struct StructureLevelTuning
 {
   std::int32_t cost = 0;
-  double buildConstructorSeconds = 0.0;
+  double buildSeconds = 0.0;
   // A Shipyard's: the hulls it builds from this level on (Phase 3 design §5).
   std::vector<HullId> hulls;
   // A Research Lab's (Phase 3 design §6): the research tier this level opens, or 0; the topics that must be researched

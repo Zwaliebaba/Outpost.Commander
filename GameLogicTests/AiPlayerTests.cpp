@@ -865,15 +865,6 @@ public:
                                    .radiusMeters = 30.0f,
                                    .builtPermille = Outpost::PERMILLE,
                                    .level = 3});
-      // Constructors enough for the whole plan, and the Lab besides.
-      for (std::uint32_t i = 0; i < 40; ++i)
-      {
-        snapshot.entities.push_back({.id = Outpost::EntityId{9100 + i},
-                                     .kind = Outpost::EntityKind::Ship,
-                                     .owner = AI,
-                                     .role = Outpost::ShipRole::Constructor,
-                                     .position = {start.xMeters + 100.0f, start.zMeters}});
-      }
       Outpost::AiSettings settings = RepositorySettings();
       settings.secondSlotTier = _secondSlotTier;
       Outpost::AiPlayer ai(settings, 20);
@@ -975,6 +966,7 @@ public:
   }
 
   // Task 12.2: the AI fortifies its base with the settings' Defence Platforms for each Shipyard, toward the map's center.
+  // Each Shipyard's platforms are counted once placed, since its Constructors build them in the half minute after it.
   TEST_METHOD(FortifiesItsBaseForEachShipyard)
   {
     Outpost::AiSettings settings = RepositorySettings();
@@ -989,8 +981,7 @@ public:
     {
       if (structure->structure == Outpost::StructureKind::Shipyard)
         ++shipyards;
-      if (structure->structure == Outpost::StructureKind::DefensePlatform && Outpost::Distance(structure->position, home) < 500.0f &&
-          structure->builtPermille >= Outpost::PERMILLE)
+      if (structure->structure == Outpost::StructureKind::DefensePlatform && Outpost::Distance(structure->position, home) < 500.0f)
         ++homePlatforms;
     }
     Assert::IsTrue(shipyards >= 2, L"fewer Shipyards than five minutes bring");

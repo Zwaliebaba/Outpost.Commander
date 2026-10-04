@@ -73,6 +73,14 @@ private:
     bool abandoned = false;
   };
 
+  // What the plan's structures leave of the Ore at a decision: whether the next one waits for Ore, and the Ore left,
+  // below zero if need be, once what was ordered is paid for and a structure waiting for a Constructor is set aside.
+  struct PlanOre
+  {
+    bool waiting = false;
+    std::int32_t left = 0;
+  };
+
   // Constructors the AI has sent to one structure: a site it has ordered and is waiting to see, or one it can.
   struct Work
   {
@@ -127,18 +135,18 @@ private:
   // apart from slot _skippedSlot. Called during a decision only, and good until the next call.
   [[nodiscard]] std::span<const EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot);
   void TendWork(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
-  // Orders the next structures of the plan, and says whether the next one waits for Ore.
-  [[nodiscard]] bool Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  // Orders the next structures of the plan, and says what they leave of the Ore.
+  [[nodiscard]] PlanOre Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   void Produce(const Snapshot& _snapshot, bool _structureWaiting, std::vector<Command>& _orders);
   // Upgrades a Shipyard below the level its production design needs (Phase 3 design §5), and the Research Lab when its
-  // research order reaches a tier the Lab has not opened (§6). Each says whether one waits for Ore.
-  [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
-  [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  // research order reaches a tier the Lab has not opened (§6), paying from _ore. Each says whether one waits for Ore.
+  [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
+  [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders);
   // Its Command Station, when it can be upgraded now; nullptr otherwise. Build upgrades it in place of a Relay its cap holds
   // back (§7).
   [[nodiscard]] const EntityView* UpgradableStation(const Snapshot& _snapshot) const;
-  // Sends the nearest idle Constructors, two at most, to upgrade _structure by a level.
-  void OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  // Orders _structure's next level, which builds itself (Phase 3 design §4).
+  void OrderUpgrade(const EntityView& _structure, std::vector<Command>& _orders) const;
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
 
   AiSettings m_settings;

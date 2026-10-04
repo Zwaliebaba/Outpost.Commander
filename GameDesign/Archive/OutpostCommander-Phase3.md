@@ -12,7 +12,7 @@ On 2026-10-03 the owner gave the Command Station, the Shipyard and the Research 
 
 **Why it serves the game.** Phase 2 gave the map something to fight over between the bases: territory. Phase 3 gives the base the same thing. Today a Shipyard is 300 Ore, wherever it stands and however long it has stood, so losing one costs little more than the time to rebuild it. Once a Shipyard at level 3 is the only place a Large hull comes from, it is a target worth a raid, and defending it is worth a fleet. Upgrades also add a choice to every minute of a match: Ore spent on a level is Ore not spent on ships or Relays.
 
-**What could go wrong.** A hard cap on sectors (§7) is a second brake on territory, beside the lattice and the Relay's cost, and domination only decides a match while the two sides hold different numbers of nodes. Gating hulls and tiers behind Constructor work could also slow a match beyond 45–60 minutes, or push tier 3 further out of reach: in Phase 1, only 2 of 80 AI-against-AI matches reached it (Phase 1 P2). §2 measures each of these.
+**What could go wrong.** A hard cap on sectors (§7) is a second brake on territory, beside the lattice and the Relay's cost, and domination only decides a match while the two sides hold different numbers of nodes. Gating hulls and tiers behind upgrades could also slow a match beyond 45–60 minutes, or push tier 3 further out of reach: in Phase 1, only 2 of 80 AI-against-AI matches reached it (Phase 1 P2). §2 measures each of these.
 
 **The question Phase 3 answers: does a base that grows add decisions and targets, without undoing what Phase 2 showed?**
 
@@ -44,7 +44,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 - **Phase 3 is upgrades, on Phase 2's 5 km map.** The 10 km world, forward Shipyards, relay jumps and pathing by sector, which Phase 2 §7 kept for Phase 3, wait on **the horizon** (below). Phase 3 is measured against the same map and the same S1–S4 as Phase 2, so a change in the figures can be traced to it.
 - **The long-term direction is [the horizon](../OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
-- **Constructors upgrade a structure, and it keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
+- **A structure builds its own next level, and keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).
 - **The Large Hull research topic stays.** A Large hull needs both the topic and a Shipyard at level 3 (§5).
@@ -56,10 +56,10 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 *Decided (gates K5, K6).*
 
-- **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and assigns Constructors to the work as for any other build. Several Constructors share the work, as they share a build (ADR-016). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
+- **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and the level then builds itself over its time: no Constructor is needed, and none shortens it (owner, 2026-10-04). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
 - **The structure keeps working** while it is upgraded (§3). The work under way is shown as construction is. If the structure is destroyed during the upgrade, the Ore is lost.
 - **Each level adds 20% of the kind's base hit points**, and never armor (Phase 1 §6). The level's percent adds to research's, so a level 3 Lab with Reinforced Structures has 1 + 0.40 + 0.25 times its base hit points (owner, 2026-10-04). A structure being upgraded keeps its share of its hit points, as it does when Reinforced Structures is researched.
-- **A Constructor on a structure that is both damaged and being upgraded** builds the level first, since its Ore is paid, and repairs it once the level is in (owner, 2026-10-04).
+- **A Constructor repairs a damaged structure while it is upgraded**, as it repairs any other; the level is no work of its (owner, 2026-10-04).
 - **A destroyed structure is rebuilt at level 1.** Its levels are lost with it, which is what makes an upgraded structure a target.
 - **The snapshot carries each structure's level**, and the client draws that level's mesh (ADR-045). The upgrade under way is in the snapshot as construction is. Under fog of war, a player remembers an enemy structure at the level it last saw, and an upgrade made out of its sight is not shown until it sees the structure again (owner, 2026-10-04).
 - **Every level is drawn at level 1's size** (gate K5). The footprint, and so placement, collision and pathing, are unchanged by an upgrade, and each level's mesh is fitted to the kind's length as level 1's is (ADR-045). At level 1's scale the baked meshes would grow up to 2.6 times in their longest dimension, and the Human Shipyard 5 times in depth (measured from the baked `.nmf` files on 2026-10-04); fitted, a higher level shows as more detail, not more size. This forgoes a level that reads by its size alone, which T5 judges.
@@ -98,7 +98,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **Every topic of tier 2 or 3 requires the Lab's level** in place of its gateway. The other prerequisites are unchanged.
 - **The Lab keeps researching while it is upgraded** (§3).
 - **A destroyed Lab** loses its levels. Research already finished stays finished, and a rebuilt Lab starts at level 1, so it can queue only tier 1 topics until it is upgraded again.
-- **What the tree becomes.** 23 topics, in 2,260 s of research, about 38 minutes with one Lab. The 330 s the gateways took moves to Constructors, as 150 s of upgrade work. The S4 match length is measured again with this in place (T1).
+- **What the tree becomes.** 23 topics, in 2,260 s of research, about 38 minutes with one Lab. The 330 s the gateways took becomes 150 s of the Lab's upgrades, which build themselves. The S4 match length is measured again with this in place (T1).
 - **Level 4 researches two topics at once** (gate K3). The Lab's queue stays five topics long, and its front two run side by side, each paid when it starts (ADR-017). A topic whose prerequisite is still being researched waits for it, so the second slot never runs a topic before what it requires. This brings in, as a level, what the second Research Lab that Phase 1 kept out of scope would have given, but in one building: destroying the Lab loses both slots and every level with it.
 - **What the second slot does to the tree.** Every topic still takes its own time, and the slot shortens the tree's wall-clock time by what runs in parallel. Tier 3's topics, 830 s without its gateway, take about 7 minutes at best with two slots, where prerequisites allow. T1 measures what it does to the match's length, and T3 whether tier 3 is reached.
 - **The Lab stops at level 4** (gate K3). A third slot at level 5 would empty the tiers, and level 5's art waits for content that needs it.
@@ -141,7 +141,7 @@ Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
 
 ## 9. The client
 
-- **The selected structure's panel** names its level, "SHIPYARD 01 · L2", and has an Upgrade button showing the next level's cost, its time, and what it gives. When the server would refuse the upgrade, the button is dim and gives the reason: a requirement not met, or too little Ore. Every level keeps level 1's footprint (§4), so no upgrade is refused for room (owner, 2026-10-04).
+- **The selected structure's panel** names its level, "SHIPYARD 01 · L2", and has an Upgrade button showing the next level's cost, its time, and what it gives. When the server would refuse the upgrade, the button is dim and gives the reason: a requirement not met, or too little Ore. While a level is being built, the button shows how far it has come, as a bar that fills from left to right along its foot and a percentage (owner, 2026-10-04). Every level keeps level 1's footprint (§4), so no upgrade is refused for room (owner, 2026-10-04).
 - **The territory line** shows nodes held against the cap, "4 / 5".
 - **The designer** dims Queue for a design the target Shipyard cannot build, and says why (§5).
 - **The world** draws each structure at its level, with its own creases and spinning parts (ADR-045).

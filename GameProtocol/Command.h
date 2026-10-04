@@ -113,13 +113,12 @@ struct PatrolCommand
   PlanePosition destination;
 };
 
-// Upgrades one of the player's own finished structures by one level (Phase 3 design §4, ADR-064). Its Ore is paid when the
-// order is given, and the structure keeps working while Constructors build the level, as they build a site. The
-// Constructors named here, which may be none, are sent to the work; others join it as they join a site, by RepairCommand.
+// Upgrades one of the player's own finished structures by one level (Phase 3 design §4, ADR-064). Its Ore is paid when
+// the order is given, and the level then builds itself over its time, with no Constructor, while the structure keeps
+// working (owner, 2026-10-04).
 struct UpgradeStructureCommand
 {
   EntityId structure;
-  std::vector<EntityId> constructors;
 };
 
 using Order =

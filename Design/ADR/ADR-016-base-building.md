@@ -25,7 +25,7 @@ Milestone 4 gives each player a base (design §5, §6, §14): Ore from Mining Ri
    - **Building.** Each tick, one Constructor on a site does a tick of work, and each further one adds `extraConstructorBuildShare` of a tick: two build in two thirds of the time, three in half. Work is counted in thousandths of a tick (ADR-014). The site's hit points rise with the work, from a tenth to full, so damage taken while it is built stays taken.
    - **Repair.** Each Constructor restores `repairPercentPerSecond` of the target's maximum hit points each second, for nothing.
    - **Research.** Its player's research raises the building and the repair rates alike ([ADR-033](ADR-033-research-tiers.md) decision 4).
-   - **`RepairCommand`** is the new order a right-click on a damaged friendly gives (design §9). It is also how further Constructors join a site under construction, or a structure's next level ([ADR-064](ADR-064-structure-upgrades.md) decision 3).
+   - **`RepairCommand`** is the new order a right-click on a damaged friendly gives (design §9). It is also how further Constructors join a site under construction. A structure's next level is no Constructor's work ([ADR-064](ADR-064-structure-upgrades.md) decision 3).
    - **The end of the order.** It ends when the target is built and whole, and when the target is destroyed.
    - **What a structure does while it is built.** A structure under construction does nothing but stand, block and take damage. It does not produce, fire or earn.
 6. **Queues pay at the start.** A built Shipyard queues ships of its player's saved designs, and the Command Station queues Constructors, up to five jobs each.

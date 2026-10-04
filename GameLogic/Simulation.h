@@ -107,8 +107,8 @@ struct Entity
   // A Command Station's further Defence guns, which its level gives, each with its reload as the first's is
   // (Phase 3 design §7).
   std::vector<std::int32_t> extraGunReloadMilliticks;
-  // A structure's level, from 1, and the next level's construction while it is upgraded, counted as a site's is: both are
-  // zero while no upgrade is under way (Phase 3 design §4, ADR-064).
+  // A structure's level, from 1, and the next level's construction while it is upgraded, in thousandths of a tick of
+  // the level's time: both are zero while no upgrade is under way (Phase 3 design §4, ADR-064).
   std::int32_t level = 1;
   std::int32_t upgradeWorkDone = 0;
   std::int32_t upgradeWorkNeeded = 0;
@@ -571,6 +571,7 @@ private:
   void ChaseTargets();
   void ApproachWork();
   void Work();
+  void BuildLevels();
   void Produce();
   void Research();
   // The player gains the topic's upgrade or unlock at once: its designs take their new stats, and its ships keep the

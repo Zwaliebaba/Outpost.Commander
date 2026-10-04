@@ -741,9 +741,9 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   }
 
   // The world advances: ships and armed structures fire from where they stand, and the destroyed leave; ships on attack
-  // and work orders head for their targets, and Constructors in reach build and repair; queues produce, labs research and
-  // Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any obstacle they were
-  // pushed into. Each part is told to the observer, if there is one (task 8.1).
+  // and work orders head for their targets, and Constructors in reach build and repair; levels build, queues produce,
+  // labs research and Mining Rigs earn; ships steer along their paths, then make room for each other, then leave any
+  // obstacle they were pushed into. Each part is told to the observer, if there is one (task 8.1).
   {
     const ObservedPart part(m_observer, TickPart::Fight);
     Fight();
@@ -759,6 +759,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     const ObservedPart part(m_observer, TickPart::Economy);
     Work();
+    BuildLevels();
     Produce();
     Research();
     Mine();
@@ -852,7 +853,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
       {
         const StructureLevelTuning& tuning = structure.levels[static_cast<size_t>(level - 2)];
         type.levels.push_back({.cost = tuning.cost,
-                               .buildSeconds = tuning.buildConstructorSeconds,
+                               .buildSeconds = tuning.buildSeconds,
                                .maxHitPointsHundredths = StructureHitPoints(_player, structure, level),
                                .opensTier = tuning.opensTier,
                                .researchSlots = tuning.researchSlots,
@@ -1866,7 +1867,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Repair
   const Entity* target = FindEntity(_repair.target);
   if (target == nullptr)
     return CommandResult::UnknownTarget;
-  const bool needsWork = !target->IsBuilt() || target->IsUpgrading() || target->hitPointsHundredths < target->maxHitPointsHundredths;
+  const bool needsWork = !target->IsBuilt() || target->hitPointsHundredths < target->maxHitPointsHundredths;
   const bool own = target->owner == _player && (target->kind == EntityKind::Ship || target->kind == EntityKind::Structure);
   if (!own || target->maxHitPointsHundredths <= 0 || !needsWork ||
       std::ranges::find(_repair.constructors, _repair.target) != _repair.constructors.end())
@@ -1901,15 +1902,10 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const QueueS
   return CommandResult::Applied;
 }
 
-// The upgrade is paid for now and built by Constructors, as a site is; the structure keeps working meanwhile (Phase 3
-// design §4, ADR-064).
+// The upgrade is paid for now and builds itself over the level's time (BuildLevels); the structure keeps working
+// meanwhile (Phase 3 design §4, ADR-064).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade)
 {
-  if (!_upgrade.constructors.empty())
-  {
-    if (const CommandResult result = ValidateConstructors(_player, _upgrade.constructors); result != CommandResult::Applied)
-      return result;
-  }
   Entity* structure = FindMutableEntity(_upgrade.structure);
   if (structure == nullptr)
     return CommandResult::UnknownEntity;
@@ -1935,9 +1931,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Upgrad
   player->oreHundredths -= cost;
   structure->upgradeWorkDone = 0;
   structure->upgradeWorkNeeded =
-    std::max(1, static_cast<std::int32_t>(std::llround(next.buildConstructorSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
-  if (!_upgrade.constructors.empty())
-    OrderWork(_upgrade.constructors, _upgrade.structure);
+    std::max(1, static_cast<std::int32_t>(std::llround(next.buildSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
   return CommandResult::Applied;
 }
 
@@ -2054,12 +2048,11 @@ void Outpost::Simulation::ApproachWork()
   }
 }
 
-// Constructors in reach of their target build it while it is under construction, build its next level while it is being
-// upgraded, and repair it once neither is left (design §6, gate G8, Phase 3 design §4). Building: one Constructor does a
-// tick's work each tick, and each further one adds the tuning data's share of one more; a site's hit points rise with its
-// progress from a tenth to full, and a level's land whole when it is in, the structure keeping its share of them. Repair:
-// each Constructor restores the tuning data's percentage of the target's maximum each second, for nothing. A finished job
-// ends the order.
+// Constructors in reach of their target build it while it is under construction, and repair it once it is built (design
+// §6, gate G8). Building: one Constructor does a tick's work each tick, and each further one adds the tuning data's
+// share of one more; a site's hit points rise with its progress from a tenth to full. Repair: each Constructor restores
+// the tuning data's percentage of the target's maximum each second, for nothing. A finished job ends the order. A level
+// being built is no work of theirs (BuildLevels).
 void Outpost::Simulation::Work()
 {
   std::vector<std::pair<EntityId, std::int32_t>> crews;
@@ -2097,21 +2090,6 @@ void Outpost::Simulation::Work()
         finished.push_back(id);
       continue;
     }
-    // The level first, since its Ore is paid, and then any repair (owner, 2026-10-04).
-    if (target.IsUpgrading())
-    {
-      target.upgradeWorkDone = std::min(target.upgradeWorkNeeded, target.upgradeWorkDone + work);
-      if (target.upgradeWorkDone < target.upgradeWorkNeeded)
-        continue;
-      target.upgradeWorkDone = 0;
-      target.upgradeWorkNeeded = 0;
-      ++target.level;
-      if (const StructureTuning* structure = StructureTuningFor(target.structure))
-        RescaleHitPoints(target, StructureHitPoints(target.owner, *structure, target.level));
-      if (target.hitPointsHundredths >= target.maxHitPointsHundredths)
-        finished.push_back(id);
-      continue;
-    }
     const auto perConstructor = static_cast<std::int32_t>(
       std::llround(static_cast<double>(target.maxHitPointsHundredths) * tuning.repairPercentPerSecond / 100.0 / m_ticksPerSecond * rate));
     target.hitPointsHundredths = std::min(target.maxHitPointsHundredths, target.hitPointsHundredths + (perConstructor * constructors));
@@ -2126,6 +2104,26 @@ void Outpost::Simulation::Work()
       ship.workTarget = {};
       ship.path.clear();
     }
+  }
+}
+
+// A structure being upgraded builds its next level itself, a tick of the level's time each tick, which no Constructor
+// and no research shortens (owner, 2026-10-04). The level lands whole when it is in, and the structure keeps the share
+// of its hit points it had (Phase 3 design §4).
+void Outpost::Simulation::BuildLevels()
+{
+  for (Entity& structure : m_entities)
+  {
+    if (!structure.IsUpgrading())
+      continue;
+    structure.upgradeWorkDone = std::min(structure.upgradeWorkNeeded, structure.upgradeWorkDone + MILLITICKS_PER_TICK);
+    if (structure.upgradeWorkDone < structure.upgradeWorkNeeded)
+      continue;
+    structure.upgradeWorkDone = 0;
+    structure.upgradeWorkNeeded = 0;
+    ++structure.level;
+    if (const StructureTuning* tuning = StructureTuningFor(structure.structure))
+      RescaleHitPoints(structure, StructureHitPoints(structure.owner, *tuning, structure.level));
   }
 }
 
