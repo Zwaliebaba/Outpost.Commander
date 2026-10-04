@@ -104,6 +104,11 @@ struct Entity
   // are zero for a structure placed whole (ADR-016).
   std::int32_t buildWorkDone = 0;
   std::int32_t buildWorkNeeded = 0;
+  // A structure's level, from 1, and the next level's construction while it is upgraded, counted as a site's is: both are
+  // zero while no upgrade is under way (Phase 3 design §4, ADR-064).
+  std::int32_t level = 1;
+  std::int32_t upgradeWorkDone = 0;
+  std::int32_t upgradeWorkNeeded = 0;
   // The Defence gun a built structure carries, if any (design §6).
   StructureWeaponId structureWeapon;
   // A Shipyard's or the Command Station's jobs, front first, and the front job's progress in thousandths of a tick. The
@@ -121,6 +126,11 @@ struct Entity
   [[nodiscard]] bool IsBuilt() const noexcept
   {
     return buildWorkDone >= buildWorkNeeded;
+  }
+
+  [[nodiscard]] bool IsUpgrading() const noexcept
+  {
+    return upgradeWorkNeeded > 0;
   }
 
   friend bool operator==(const Entity&, const Entity&) = default;
@@ -187,6 +197,13 @@ enum class CommandResult : std::uint8_t
   SectorNotHeld,
   // A hold names a point in no sector, or the map has no territory (ADR-059).
   NoSector,
+  // An upgrade names something that is not one of the player's own structures (ADR-064).
+  NotUpgradable,
+  // An upgrade names a structure still being built, or one already being upgraded.
+  UnderConstruction,
+  AlreadyUpgrading,
+  // An upgrade names a structure at its kind's highest level, which for a kind that does not grow is its first.
+  TopLevel,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -248,8 +265,9 @@ public:
 
   // What the player's research has done to its rates; none before UseTuning.
   [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
-  // A structure's full hit points, in hundredths, and a Constructor's speed, with _owner's research (Phase 1 design §6).
-  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const;
+  // A structure's full hit points at _level, in hundredths, and a Constructor's speed, with _owner's research (Phase 1
+  // design §6). A level's percent adds to research's (Phase 3 design §4).
+  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning, std::int32_t _level = 1) const;
   [[nodiscard]] float ConstructorSpeed(PlayerId _owner) const;
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
@@ -480,6 +498,7 @@ private:
   CommandResult Apply(PlayerId _player, const SaveDesignCommand& _save);
   CommandResult Apply(PlayerId _player, const HoldSectorCommand& _hold);
   CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
+  CommandResult Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade);
   // The warships among _ships, each once; validated by the caller.
   [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
   // Once a second, every group on a standing order moves as its order says (ADR-059).
@@ -540,6 +559,10 @@ private:
   // The player gains the topic's upgrade or unlock at once: its designs take their new stats, and its ships keep the
   // share of their hit points they had (design §8).
   void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
+  // A structure's full hit points at _level with this factor from research, as StructureHitPoints gives them.
+  [[nodiscard]] std::int32_t StructureHitPointsAt(const StructureTuning& _tuning, double _researchFactor, std::int32_t _level) const;
+  // _entity's full hit points become _after, and it keeps the share of them it had (owner, 2026-10-01).
+  static void RescaleHitPoints(Entity& _entity, std::int64_t _after) noexcept;
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
   // What one built rig earns each second, in hundredths, with its owner's income factor: its asteroid's rate, or the

@@ -1,0 +1,42 @@
+# ADR-064 — A structure is upgraded a level at a time, by Constructors, and drawn at its level within level 1's ground
+
+Status: **accepted** · 2026-10-04
+
+## Context
+
+Phase 3 design §4 lets the Command Station, the Shipyard and the Research Lab grow: the player orders the next level, pays for it at once, and Constructors build it while the structure keeps working. Each level adds 20% of the kind's base hit points (gate K6). A destroyed structure comes back at level 1. The snapshot carries the level, and the client draws that level's mesh (ADR-045) at level 1's size (gate K5). The owner answered the design's four open points on 2026-10-04: a level's percent adds to research's (Q1); no upgrade is refused for room, since the footprint never changes (Q2); a player remembers an enemy structure at the level it last saw (Q3); and a Constructor builds a paid level before it repairs (Q4).
+
+What the design leaves open: how the order and its refusals reach the protocol, how a level's work is counted, where the levels' numbers live, what the client is told of them, and how "level 1's size" is measured for a mesh whose shape changes from level to level. This milestone gives every level its cost, time and hit points. What a level does besides, its hulls, tiers, slot, node cap and guns, is the work of plan tasks 21.1, 22.1, 22.2 and 23.1, and each adds its decision here.
+
+## Decision
+
+1. **The levels are tuning data.** In `Tuning.json` a structure may have `levels`: the levels above the first, level 2 first, each with its `cost` in Ore and its `buildConstructorSeconds`. `rules.levelHitPointsPercent` is 20. The loader allows levels only on the Command Station, the Shipyard and the Research Lab, whose art has them (ADR-045), and at most up to level 5 (`MAXIMUM_STRUCTURE_LEVEL`), the art's last. The repository's numbers are the design's: the Command Station 300, 500, 700 and 900 Ore over 45, 60, 75 and 90 s; the Shipyard 150 and 300 Ore over 30 and 60 s; and the Lab 400, 600 and 800 Ore over 60, 90 and 120 s. A kind's top level is one more than its list's length.
+2. **`UpgradeStructureCommand` names a structure and, optionally, Constructors.** The server takes the next level's Ore when the order is given and refunds nothing. It refuses, at no cost:
+   - `UnknownEntity` for an identifier that names nothing;
+   - `NotUpgradable` for anything that is not one of the player's own structures;
+   - `UnderConstruction` for a site still being built;
+   - `AlreadyUpgrading` for a structure whose next level is under way;
+   - `TopLevel` for a structure at its kind's top, which for a kind without levels is level 1;
+   - `NotEnoughOre`, and the Constructors' own refusals, as a build's.
+
+   The HUD's Upgrade button sends it with no Constructors, and the player then sends them as to any site. A right-click with Constructors on a structure being upgraded is a `RepairCommand`, which now accepts one.
+3. **A level is built as a site is** (ADR-016 decision 5). The structure keeps `level`, from 1, and the next level's work done and needed, in thousandths of a tick of one Constructor's work. Each tick, one Constructor in reach does a tick of work, each further one adds `extraConstructorBuildShare` of one more, and research's build rate applies. The structure keeps producing, researching and firing all the while.
+4. **A level lands whole.** Unlike a site's, whose hit points rise with its work, a level adds its hit points when it is in, and the structure keeps the share of them it had, as a research upgrade does (owner, 2026-10-01). The hit points are base × (research's factor + 20% × (level − 1)), so a level's percent adds to research's: a level 3 Lab with Reinforced Structures has 1.65 times its base (owner, 2026-10-04). A Constructor on a structure that is both damaged and being upgraded builds the level first, since its Ore is paid, and repairs it after (owner, 2026-10-04). Its order ends when the level is in and the structure whole.
+5. **A destroyed structure takes its levels and the upgrade's Ore with it.** One built where it stood is a new structure, at level 1.
+6. **The snapshot carries the level.** `EntityView` gains `level`, 1 for anything that does not grow, and `upgradePermille` while a level is being built, which whoever sees the structure sees, as construction. An enemy structure out of sight is remembered as its view was last seen (ADR-024), level and all, so an upgrade made out of the player's sight shows only once it sees the structure again. `StructureTypeView` gains `levels`: each level's cost, one Constructor's time and the structure's full hit points at it with the player's research. The protocol's version is 2.
+7. **The selection panel names the level and offers the next.** A structure that grows is named "Shipyard 01 · L2", and while a level is being built the panel says "Upgrading to L3, 41%". The player's own finished structure has a line for what the next level gives, "L3: 3,500 hit points", and an Upgrade button with the next level's time and cost, "Upgrade to L3 · 1:00". The button is dim while a level is under way, with the note UPGRADING, and dim on its cost while the Ore is short. At the top level the panel says "Top level" and has no button.
+8. **Every level is drawn within level 1's ground** (gate K5). The client loads every level's mesh. Level 1 is fitted to the model's length along its front, as before (ADR-018). Each later level is fitted so that the wider of its length and depth is the wider of level 1's (`Neuron::FitMeshAcross`), and so stands within level 1's square. A structure is drawn at its own level, as far as its model has levels (`DrawnLevel`), and its hardpoints and explosion are its level's. The placement ghost shows level 1.
+
+## Consequences
+
+- **Why the width and not the length.** Fitted by its length alone, as design §4 first put it, a level whose depth grows more than its length overhangs its footprint. The baked meshes' extents, read from every `_L<n>.nmf` vertex by a script on 2026-10-04, put the Human Command Station's depth at 1.57 times its length at levels 2 and 3, and 1.13 and 1.14 at levels 4 and 5, where level 1 is square. Fitted by length, it would stand 57% deeper than its footprint. Fitted by width, it stands within level 1's square at every level, and its length shrinks to 64% of level 1's at level 2. Every other level of both sets is no deeper than it is long, apart from three level 1s and the Human Lab's level 5, each within 6% of square. So for them the two fits differ by at most those 6%, and a later level reads as more detail, not more size, as K5 intends.
+- **More meshes at startup.** Both sets' three growing models load four more levels each, 24 meshes beyond the 45 of ADR-045's count, in the parallel startup of ADR-049.
+- **What a level does is only its hit points, until tasks 21.1–23.1.** Until they land, a level 2 Lab is a sturdier Lab and nothing more, and the AI does not upgrade.
+- **Tests.** `UpgradeTests` covers the order and every refusal, the payment, Constructors sharing the work at gate G8's rates, a climb to the top level, a Shipyard building during its upgrade, a level built before a repair, a level's percent adding to research's, a structure destroyed during an upgrade and rebuilt at level 1, the snapshot's levels and progress, and an enemy's level remembered under fog. `TuningTests` covers the levels' loading and refusals, `WireFormatTests` the new fields and the command. `HudTests.NamesALevelAndOffersTheNext` covers the panel, and `ModelCatalogTests.FitsEveryLevelOnTheFirstLevelsGround` the fitting of every repository level and `DrawnLevel`.
+
+## What this forecloses
+
+- A level that changes a structure's footprint, its placement or its pathing, without a new decision (gate K5).
+- Cancelling an upgrade, or a refund when one is lost, as with every other job (ADR-016).
+- Levels for the Relay, the Defence Platform or the Mining Rig, until their art has them.
+- Skipping a level: each is ordered and built on its own.

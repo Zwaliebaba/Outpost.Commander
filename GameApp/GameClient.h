@@ -25,7 +25,8 @@ struct ClientAssets
 
   ModelCatalog catalog;
   CameraSettings camera;
-  // In the catalog's order: each set's models after the set before.
+  // In the catalog's order: each set's models after the set before, and a model that grows once for each of its levels,
+  // first to last (ADR-045, ADR-064).
   std::vector<Model> models;
   Starfield sky;
   Neuron::TextureData particleSprite;
@@ -106,6 +107,8 @@ private:
   {
     const ModelSet* set = nullptr;
     const std::string* model = nullptr;
+    // The model's level that draws it: a structure's own, as far as its model grows (ADR-064).
+    int level = FIRST_MODEL_LEVEL;
     ModelPose pose;
     // The share of the set's color a structure is drawn in (StructureModel::tint).
     float tint = 1.0f;
@@ -145,19 +148,21 @@ private:
     std::optional<std::vector<DirectX::XMFLOAT3>> feet;
   };
 
-  // Where the model _set/_model is in m_models, found by name in the catalog with no key built, since it is asked for
-  // every model drawn. Throws Neuron::Exception for a model that is not loaded.
-  [[nodiscard]] std::size_t ModelIndex(std::string_view _set, std::string_view _model) const;
-  [[nodiscard]] const LoadedModel& LoadedModelOf(std::string_view _set, std::string_view _model) const
+  // Where _level of the model _set/_model is in m_models, found by name in the catalog with no key built, since it is asked
+  // for every model drawn. Throws Neuron::Exception for a model that is not loaded.
+  [[nodiscard]] std::size_t ModelIndex(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const;
+  [[nodiscard]] const LoadedModel& LoadedModelOf(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const
   {
-    return m_models[ModelIndex(_set, _model)];
+    return m_models[ModelIndex(_set, _model, _level)];
   }
-  [[nodiscard]] const std::vector<ModelPiece>& ModelPieces(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const std::vector<ModelPiece>& ModelPieces(std::string_view _set, std::string_view _model,
+                                                           int _level = FIRST_MODEL_LEVEL) const;
   // The world matrix that draws _piece of a model drawn by _world, turned as far as its spin has gone at the view's tick.
   [[nodiscard]] DirectX::XMFLOAT4X4 PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept;
-  [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const std::vector<Neuron::MeshHardpoint>& ModelHardpoints(std::string_view _set, std::string_view _model,
+                                                                          int _level = FIRST_MODEL_LEVEL) const;
   // A model's triangles on the CPU, for an explosion to break (ADR-026).
-  [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model) const;
+  [[nodiscard]] const Neuron::MeshData& ModelShape(std::string_view _set, std::string_view _model, int _level = FIRST_MODEL_LEVEL) const;
   // Nothing for what is not a ship or a structure, or what the data does not map to a model.
   [[nodiscard]] std::optional<PlacedModel> PlaceModel(const EntityView& _entity) const;
   // Leans each ship of the view into its turn, by its bank limits, for a frame of _elapsedSeconds (ADR-029).
@@ -179,7 +184,7 @@ private:
   // The model _set/_model placed by _world: its faces _color at _fillShade, queued for the frame's batch of faces
   // (ADR-053), and its creases over them as lines, lighter, queued for the frame's one pass of lines (ADR-027, ADR-040).
   void QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world, const DirectX::XMFLOAT4& _color,
-                  float _fillShade);
+                  float _fillShade, int _level = FIRST_MODEL_LEVEL);
   // A structure queued at its footprint, grayer and darker than a ship (ADR-040), and darker still while it is built
   // (task 4.2).
   void QueueStructure(const EntityView& _entity);

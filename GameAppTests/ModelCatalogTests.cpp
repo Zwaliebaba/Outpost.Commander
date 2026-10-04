@@ -156,6 +156,40 @@ public:
     Assert::AreEqual(std::wstring(L"Models\\Human\\ResearchLab_L1.nmf"), Outpost::ModelFileName(human, human.Model("ResearchLab")));
   }
 
+  // Phase 3 design §4, gate K5: every level of a structure's model is drawn at level 1's size. A level after the first
+  // stands within the wider of level 1's length and depth, whatever its own shape, and a structure is drawn at its own
+  // level as far as its model has levels (ADR-064).
+  TEST_METHOD(FitsEveryLevelOnTheFirstLevelsGround)
+  {
+    const Outpost::ModelCatalog catalog = Outpost::LoadModelCatalog(ReadRepositoryAssetText("Models.json"));
+    for (const std::string_view setName : {"Human", "Tarkan"})
+    {
+      const Outpost::ModelSet& set = catalog.Set(setName);
+      for (const std::string_view modelName : {"CommandStation", "Shipyard", "ResearchLab"})
+      {
+        const Outpost::ModelEntry& model = set.Model(modelName);
+        Assert::AreEqual(5, Outpost::ModelLevels(model));
+        const Neuron::MeshData first = ReadRepositoryModel(set, model);
+        Assert::AreEqual(model.lengthMeters, first.Extents().x, TOLERANCE);
+        const float widest = std::max(first.Extents().x, first.Extents().z);
+        for (int level = 2; level <= Outpost::ModelLevels(model); ++level)
+        {
+          const Neuron::MeshData mesh = ReadRepositoryModel(set, model, level, widest);
+          const std::string narrow = std::format("{} {} level {}", setName, modelName, level);
+          const std::wstring where(narrow.begin(), narrow.end());
+          Assert::AreEqual(widest, std::max(mesh.Extents().x, mesh.Extents().z), TOLERANCE, where.c_str());
+        }
+      }
+    }
+    const Outpost::ModelSet& human = catalog.Set("Human");
+    Assert::AreEqual(std::wstring(L"Models\\Human\\Shipyard_L3.nmf"), Outpost::ModelFileName(human, human.Model("Shipyard"), 3));
+    Assert::AreEqual(std::wstring(L"Models\\Human\\Small.nmf"), Outpost::ModelFileName(human, human.Model("Small"), 3), L"no levels");
+    Assert::AreEqual(3, Outpost::DrawnLevel(human.Model("Shipyard"), 3));
+    Assert::AreEqual(5, Outpost::DrawnLevel(human.Model("Shipyard"), 7));
+    Assert::AreEqual(1, Outpost::DrawnLevel(human.Model("Shipyard"), 0));
+    Assert::AreEqual(1, Outpost::DrawnLevel(human.Model("Small"), 3));
+  }
+
   TEST_METHOD(RejectsLevelsOutOfRange)
   {
     (void)Outpost::LoadModelCatalog(OneModel("Human", R"({ "name": "Small", "lengthMeters": 20, "levels": 9 })", GOOD_COLOR));

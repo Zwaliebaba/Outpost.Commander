@@ -110,6 +110,14 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, UpgradeStructureCommand>
+auto Fields(Self& _value)
+{
+  auto& [structure, constructors] = _value;
+  return std::tie(structure, constructors);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, Command>
 auto Fields(Self& _value)
 {
@@ -130,11 +138,11 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters, hitPointsHundredths,
-         maxHitPointsHundredths, builtPermille, shipyardNumber, shipsBuilt, queue, research, jobPermille, remembered, sightMeters, standing,
-         oreReserveHundredths] = _value;
+         maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
+         remembered, sightMeters, standing, oreReserveHundredths] = _value;
   return std::tie(id, kind, owner, design, hull, drive, weapon, module, role, structure, position, headingRadians, radiusMeters,
-                  hitPointsHundredths, maxHitPointsHundredths, builtPermille, shipyardNumber, shipsBuilt, queue, research, jobPermille,
-                  remembered, sightMeters, standing, oreReserveHundredths);
+                  hitPointsHundredths, maxHitPointsHundredths, builtPermille, level, upgradePermille, shipyardNumber, shipsBuilt, queue,
+                  research, jobPermille, remembered, sightMeters, standing, oreReserveHundredths);
 }
 
 template <typename Self>
@@ -190,11 +198,19 @@ auto Fields(Self& _value)
 }
 
 template <typename Self>
+  requires std::same_as<std::remove_const_t<Self>, StructureLevelView>
+auto Fields(Self& _value)
+{
+  auto& [cost, buildSeconds, maxHitPointsHundredths] = _value;
+  return std::tie(cost, buildSeconds, maxHitPointsHundredths);
+}
+
+template <typename Self>
   requires std::same_as<std::remove_const_t<Self>, StructureTypeView>
 auto Fields(Self& _value)
 {
-  auto& [structure, nameUtf8, radiusMeters, buildable, cost] = _value;
-  return std::tie(structure, nameUtf8, radiusMeters, buildable, cost);
+  auto& [structure, nameUtf8, radiusMeters, buildable, cost, levels] = _value;
+  return std::tie(structure, nameUtf8, radiusMeters, buildable, cost, levels);
 }
 
 template <typename Self>

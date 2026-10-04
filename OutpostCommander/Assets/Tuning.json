@@ -7,7 +7,8 @@
     "miningRigOrePerSecondNear": 6,
     "miningRigOrePerSecondContested": 8,
     "miningRigOrePerSecondRich": 10,
-    "exhaustedYieldPercent": 20
+    "exhaustedYieldPercent": 20,
+    "levelHitPointsPercent": 20
   },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10, "drainTicketsPerNodeDifference": 30 },
@@ -36,9 +37,24 @@
     { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 }
   ],
   "structures": [
-    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1 },
-    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40 },
-    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30 },
+    { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1,
+      "levels": [
+        { "cost": 300, "buildConstructorSeconds": 45 },
+        { "cost": 500, "buildConstructorSeconds": 60 },
+        { "cost": 700, "buildConstructorSeconds": 75 },
+        { "cost": 900, "buildConstructorSeconds": 90 }
+      ] },
+    { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
+      "levels": [
+        { "cost": 150, "buildConstructorSeconds": 30 },
+        { "cost": 300, "buildConstructorSeconds": 60 }
+      ] },
+    { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30,
+      "levels": [
+        { "cost": 400, "buildConstructorSeconds": 60 },
+        { "cost": 600, "buildConstructorSeconds": 90 },
+        { "cost": 800, "buildConstructorSeconds": 120 }
+      ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
     { "kind": "Relay", "name": "Relay", "hitPoints": 3000, "armor": 10, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 40 }

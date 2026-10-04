@@ -81,6 +81,12 @@ struct EntityView
   // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
   // construction does nothing but stand there and block (design §6).
   std::int32_t builtPermille = PERMILLE;
+  // A structure's level, from 1 (Phase 3 design §4, ADR-064); 1 for anything else. An enemy structure the player remembers
+  // keeps the level it was last seen at.
+  std::int32_t level = 1;
+  // The next level's construction, in thousandths, while a finished structure is being upgraded; none otherwise. It is
+  // shown as construction is, to whoever sees the structure.
+  std::optional<std::int32_t> upgradePermille;
   // A finished Shipyard's number among its owner's, 1 for the first finished, never reused; and how many ships it has
   // built this match (Phase 1 design §11). The owner's only; zero for anything else.
   std::uint32_t shipyardNumber = 0;
@@ -197,6 +203,18 @@ struct DesignView
 };
 
 // What the client needs to know of a kind of structure to name it, draw it and place it (design §6).
+// One level above the first that a kind of structure is upgraded to (Phase 3 design §4, ADR-064): what the upgrade costs,
+// how long one Constructor takes to build it, and the structure's full hit points once it is in, with the player's
+// research.
+struct StructureLevelView
+{
+  std::int32_t cost = 0;
+  double buildSeconds = 0.0;
+  std::int32_t maxHitPointsHundredths = 0;
+
+  friend bool operator==(const StructureLevelView&, const StructureLevelView&) = default;
+};
+
 struct StructureTypeView
 {
   StructureKind structure = StructureKind::CommandStation;
@@ -205,6 +223,8 @@ struct StructureTypeView
   // Whether a Constructor builds it, and for how much Ore; the Command Station is not built.
   bool buildable = false;
   std::int32_t cost = 0;
+  // The levels it is upgraded to, level 2 first; none for a kind that does not grow.
+  std::vector<StructureLevelView> levels;
 };
 
 // One of the map's sectors and who holds it (Phase 2 design §4–§6, ADR-056). Every player sees every sector's holder,

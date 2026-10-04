@@ -21,10 +21,12 @@ std::wstring Widen(std::string_view _text)
   return {_text.begin(), _text.end()};
 }
 
-// Every loaded field equals the file's member of that name, and the file has no member the loader did not load.
-void ExpectSame(const Neuron::JsonValue& _json, const std::vector<LoadedField>& _loaded, std::string_view _path)
+// Every loaded field equals the file's member of that name, and the file has no member the loader did not load, besides
+// the _checkedElsewhere members the caller compares itself.
+void ExpectSame(const Neuron::JsonValue& _json, const std::vector<LoadedField>& _loaded, std::string_view _path,
+                size_t _checkedElsewhere = 0)
 {
-  Assert::AreEqual(_json.AsObject().size(), _loaded.size(), Widen(std::format("{}: member count", _path)).c_str());
+  Assert::AreEqual(_json.AsObject().size(), _loaded.size() + _checkedElsewhere, Widen(std::format("{}: member count", _path)).c_str());
   for (const LoadedField& field : _loaded)
   {
     const std::wstring where = Widen(std::format("{}.{}", _path, field.name));
@@ -91,7 +93,7 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
              "miningRigOrePerSecondNear": 6, "miningRigOrePerSecondContested": 8, "miningRigOrePerSecondRich": 10,
-             "exhaustedYieldPercent": 20 },
+             "exhaustedYieldPercent": 20, "levelHitPointsPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10,
                  "drainTicketsPerNodeDifference": 30 },
@@ -109,7 +111,8 @@ constexpr std::string_view MINIMAL_TUNING = R"({
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45,
       "structureWeapon": 1 },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300,
-      "buildConstructorSeconds": 40 },
+      "buildConstructorSeconds": 40,
+      "levels": [ { "cost": 150, "buildConstructorSeconds": 30 } ] },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200,
       "buildConstructorSeconds": 30 },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50,
@@ -187,7 +190,8 @@ public:
                 {"miningRigOrePerSecondNear", rules.miningRigOrePerSecondNear},
                 {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
                 {"miningRigOrePerSecondRich", rules.miningRigOrePerSecondRich},
-                {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)}},
+                {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)},
+                {"levelHitPointsPercent", Number(rules.levelHitPointsPercent)}},
                "rules");
     ExpectSame(*json.Find("sight"),
                {{"weaponMarginMeters", tuning.sight.weaponMarginMeters},
@@ -308,7 +312,21 @@ public:
         fields.push_back({"buildConstructorSeconds", *structure.buildConstructorSeconds});
       if (structure.structureWeapon.IsValid())
         fields.push_back({"structureWeapon", Number(structure.structureWeapon.value)});
-      ExpectSame(structures[i], fields, std::format("structures[{}]", i));
+      const std::string path = std::format("structures[{}]", i);
+      size_t elsewhere = 0;
+      if (!structure.levels.empty())
+      {
+        ++elsewhere;
+        const Neuron::JsonValue::Array& levels = structures[i].Find("levels")->AsArray();
+        Assert::AreEqual(levels.size(), structure.levels.size(), Widen(path).c_str());
+        for (size_t j = 0; j < levels.size(); ++j)
+        {
+          ExpectSame(levels[j],
+                     {{"cost", Number(structure.levels[j].cost)}, {"buildConstructorSeconds", structure.levels[j].buildConstructorSeconds}},
+                     std::format("{}.levels[{}]", path, j));
+        }
+      }
+      ExpectSame(structures[i], fields, path, elsewhere);
     }
 
     const Neuron::JsonValue::Array& research = json.Find("research")->AsArray();
@@ -405,6 +423,49 @@ public:
                     "structures[0].structureWeapon");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 20,", ""), "structures[4]: has no \"footprintRadiusMeters\"");
     ExpectLoadError(Replace(", \"cost\": 300,\n      \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
+  }
+
+  // Phase 3 design §4, ADR-064: the levels above the first, which only three kinds have, up to the fifth.
+  TEST_METHOD(LoadsStructureLevels)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
+    Assert::AreEqual(20, tuning.rules.levelHitPointsPercent);
+    const Outpost::StructureTuning& shipyard = tuning.structures[1];
+    Assert::AreEqual(size_t{1}, shipyard.levels.size());
+    Assert::AreEqual(150, shipyard.levels[0].cost);
+    Assert::AreEqual(30.0, shipyard.levels[0].buildConstructorSeconds);
+    Assert::AreEqual(2, shipyard.TopLevel());
+    Assert::AreEqual(1, tuning.structures[5].TopLevel());
+
+    // The repository's: the Command Station to 5, the Shipyard to 3 and the Lab to 4 (gate K3).
+    const Outpost::Tuning repository = Outpost::LoadTuning(ReadRepositoryTuning());
+    const auto top = [&repository](Outpost::StructureKind _kind)
+    { return std::ranges::find(repository.structures, _kind, &Outpost::StructureTuning::kind)->TopLevel(); };
+    Assert::AreEqual(5, top(Outpost::StructureKind::CommandStation));
+    Assert::AreEqual(3, top(Outpost::StructureKind::Shipyard));
+    Assert::AreEqual(4, top(Outpost::StructureKind::ResearchLab));
+    Assert::AreEqual(1, top(Outpost::StructureKind::Relay));
+  }
+
+  TEST_METHOD(RejectsBrokenLevels)
+  {
+    ExpectLoadError(Replace("\"exhaustedYieldPercent\": 20, \"levelHitPointsPercent\": 20", "\"exhaustedYieldPercent\": 20"),
+                    "rules: has no \"levelHitPointsPercent\"");
+    ExpectLoadError(Replace("\"levelHitPointsPercent\": 20", "\"levelHitPointsPercent\": -5"), "rules.levelHitPointsPercent");
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"buildConstructorSeconds\": 30 }"),
+                    "structures[1].levels[0]: has no \"cost\"");
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"cost\": 150, \"buildConstructorSeconds\": 0 }"),
+                    "structures[1].levels[0].buildConstructorSeconds");
+    ExpectLoadError(
+      Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+              "\"levels\": [ { \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
+              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
+              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 } ]"),
+      "structures[1].levels");
+    // A kind the owner gave no levels to (Phase 3 design §11).
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
+                            "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),
+                    "structures[5].levels");
   }
 
   TEST_METHOD(RejectsABrokenResearchTree)

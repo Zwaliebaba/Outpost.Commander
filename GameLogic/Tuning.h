@@ -23,6 +23,9 @@ struct RulesTuning
   double miningRigOrePerSecondRich = 0.0;
   // What a rig earns of its asteroid's rate once the asteroid's reserve has run out, in percent (Phase 1 design §8).
   std::int32_t exhaustedYieldPercent = 0;
+  // What each level above the first adds to a structure's hit points, in percent of its kind's base hit points (Phase 3
+  // design §4, gate K6). It adds to research's percents (ADR-064).
+  std::int32_t levelHitPointsPercent = 0;
 };
 
 // How far each side sees under fog of war (ADR-024). An armed ship or structure sees its weapon's range and the margin
@@ -125,6 +128,17 @@ struct StructureWeaponTuning
   double rangeMeters = 0.0;
 };
 
+// One level above the first that a structure is upgraded to (Phase 3 design §4, ADR-064): its Ore, paid when the upgrade is
+// ordered, and the time one Constructor takes to build it.
+struct StructureLevelTuning
+{
+  std::int32_t cost = 0;
+  double buildConstructorSeconds = 0.0;
+};
+
+// The most levels a structure has: the owner's models have five (ADR-045).
+inline constexpr std::int32_t MAXIMUM_STRUCTURE_LEVEL = 5;
+
 struct StructureTuning
 {
   StructureKind kind = StructureKind::CommandStation;
@@ -139,6 +153,14 @@ struct StructureTuning
   std::optional<double> buildConstructorSeconds;
   // Not valid when the structure has no weapon.
   StructureWeaponId structureWeapon;
+  // The levels it is upgraded to, level 2 first; none for a kind that does not grow (Phase 3 design §4).
+  std::vector<StructureLevelTuning> levels;
+
+  // The highest level it reaches.
+  [[nodiscard]] std::int32_t TopLevel() const noexcept
+  {
+    return 1 + static_cast<std::int32_t>(levels.size());
+  }
 };
 
 // What a research upgrade applies to, and which of its rates it raises (design §8: upgrades change rates, never the size
@@ -229,7 +251,8 @@ struct Tuning
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
 // itself, even through others. And the tiers hold: a topic requires none of a later tier, each tier after the first has
-// one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). A member the loader does not know is an error too, so that a misspelled optional member
-// is not ignored.
+// one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). Only the Command Station, the
+// Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064). A member the loader does not know is
+// an error too, so that a misspelled optional member is not ignored.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

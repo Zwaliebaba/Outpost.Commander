@@ -123,7 +123,9 @@ public:
     PreviousProducer,
     NextProducer,
     PreviousTopics,
-    NextTopics
+    NextTopics,
+    // Upgrades the selected structure by one level (Phase 3 design §4, §9).
+    Upgrade
   };
 
   struct Action

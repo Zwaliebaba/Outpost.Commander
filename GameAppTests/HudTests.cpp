@@ -633,6 +633,73 @@ public:
     Assert::IsTrue(content.buttons.empty());
   }
 
+  // Phase 3 design §9: a structure that grows names its level, says what the next one gives, and offers it with its time
+  // and cost, dim while a level is being built or the Ore is short; at the top there is no button.
+  TEST_METHOD(NamesALevelAndOffersTheNext)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 200;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard,
+                              .nameUtf8 = "Shipyard",
+                              .buildable = true,
+                              .cost = 300,
+                              .levels = {{.cost = 150, .buildSeconds = 30.0, .maxHitPointsHundredths = 300000},
+                                         {.cost = 300, .buildSeconds = 60.0, .maxHitPointsHundredths = 350000}}},
+                             {.structure = Outpost::StructureKind::DefensePlatform, .nameUtf8 = "Defence Platform", .buildable = true}};
+    Outpost::EntityView yard{.id = Outpost::EntityId{30},
+                             .kind = Outpost::EntityKind::Structure,
+                             .owner = PLAYER,
+                             .structure = Outpost::StructureKind::Shipyard,
+                             .hitPointsHundredths = 250000,
+                             .maxHitPointsHundredths = 250000,
+                             .shipyardNumber = 1};
+    const std::vector<Outpost::EntityId> selected{yard.id};
+    const auto describe = [&](const Outpost::EntityView& _entity)
+    { return Outpost::Hud::Describe(newest, std::vector{_entity}, selected); };
+    const Outpost::Hud::Action upgrade{.kind = Outpost::Hud::ActionKind::Upgrade, .producer = yard.id};
+
+    Outpost::Hud::Content content = describe(yard);
+    std::vector<std::string> expected{"Shipyard 01 \xC2\xB7 L1", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    Assert::IsTrue(content.selection == expected);
+    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::AreEqual(std::string("Upgrade to L2 \xC2\xB7 0:30|150"), content.buttons[2].label);
+    Assert::IsTrue(content.buttons[2].action == upgrade && content.buttons[2].enabled);
+
+    // Building the level: how far it has come, and the button dim with the reason.
+    yard.upgradePermille = 417;
+    content = describe(yard);
+    expected = {"Shipyard 01 \xC2\xB7 L1", "Upgrading to L2, 41%", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    Assert::IsTrue(content.selection == expected);
+    Assert::IsFalse(content.buttons[2].enabled);
+    Assert::AreEqual(std::string("UPGRADING"), content.buttons[2].note);
+
+    // Short of Ore: dim, and the cost says why.
+    yard.upgradePermille.reset();
+    yard.level = 2;
+    content = describe(yard);
+    Assert::AreEqual(std::string("Upgrade to L3 \xC2\xB7 1:00|300"), content.buttons[2].label);
+    Assert::IsFalse(content.buttons[2].enabled);
+    Assert::IsTrue(content.buttons[2].note.empty());
+
+    yard.level = 3;
+    content = describe(yard);
+    Assert::AreEqual(std::string("Top level"), content.selection.back());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"no level left to buy");
+
+    // The enemy's names its level and offers nothing; a kind that does not grow names none.
+    Outpost::EntityView theirs = yard;
+    theirs.owner = Outpost::PlayerId{2};
+    theirs.shipyardNumber = 0;
+    content = describe(theirs);
+    Assert::AreEqual(std::string("Shipyard \xC2\xB7 L3"), content.selection.front());
+    Assert::IsTrue(content.buttons.empty());
+    Outpost::EntityView platform = yard;
+    platform.structure = Outpost::StructureKind::DefensePlatform;
+    platform.shipyardNumber = 0;
+    platform.level = 1;
+    Assert::AreEqual(std::string("Defence Platform"), describe(platform).selection.front());
+  }
+
   // Phase 1 design §12: the production window shows one producer: the Command Station's Constructor or a Shipyard's saved
   // designs, each with its abbreviation, dim once the queue is full or the Ore is short; the queue with the front job's
   // progress or its wait for Ore; and with no producer, or no design, how to get one.

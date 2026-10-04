@@ -27,6 +27,8 @@ Outpost::Snapshot FullSnapshot()
      .hitPointsHundredths = -21,
      .maxHitPointsHundredths = 22,
      .builtPermille = 23,
+     .level = 3,
+     .upgradePermille = 417,
      .shipyardNumber = 24,
      .shipsBuilt = 25,
      .queue = {{.role = Outpost::ShipRole::Warship, .design = Outpost::DesignId{26}}, {.role = Outpost::ShipRole::Constructor}},
@@ -65,7 +67,8 @@ Outpost::Snapshot FullSnapshot()
                                      .nameUtf8 = "Defense Platform",
                                      .radiusMeters = 53.0f,
                                      .buildable = true,
-                                     .cost = 54});
+                                     .cost = 54,
+                                     .levels = {{.cost = 150, .buildSeconds = 30.5, .maxHitPointsHundredths = 300'000}}});
   snapshot.constructorCost = 55;
   snapshot.hulls.push_back({.id = Outpost::HullId{56},
                             .nameUtf8 = "Small",
@@ -161,7 +164,8 @@ public:
                                  .weapon = Outpost::WeaponId{16},
                                  .module = Outpost::ModuleId{17}},
       Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = 18.0f}},
-      Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}}};
+      Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}},
+      Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}, .constructors = ships}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {
@@ -189,6 +193,9 @@ public:
     Assert::IsTrue(expected.tickets == snapshot.tickets);
     Assert::IsTrue(snapshot.entities[0].oreReserveHundredths == std::optional<std::int64_t>{-31'000'000'000ll});
     Assert::IsFalse(snapshot.entities[1].oreReserveHundredths.has_value());
+    Assert::IsTrue(snapshot.entities[0].upgradePermille == std::optional<std::int32_t>{417});
+    Assert::IsFalse(snapshot.entities[1].upgradePermille.has_value());
+    Assert::IsTrue(expected.structureTypes[0].levels == snapshot.structureTypes[0].levels, L"a kind's levels");
     Assert::AreEqual(std::string("Unlocks the Fusion drive."), snapshot.research[0].effectUtf8);
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);
