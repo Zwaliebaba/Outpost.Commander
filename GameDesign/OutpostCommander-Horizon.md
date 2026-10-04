@@ -130,7 +130,7 @@ Whether a front stays interesting for weeks with a few friends and their deputie
 - **O5 — Where triggers are evaluated** (§5): the server or the deputy.
 - **O6 — Diplomacy.** A free-for-all among friends and AI empires grows alliances by itself, and with them a player who decides the winner between the others. Accepted as it comes, or designed for.
 - **O7 — Reach.** A check-in needs the PC. The server can post "40 ships inbound to Kessler-3, arriving 21:40" to the friends' group chat through WinHTTP, which is in the Windows SDK, so R14 is not touched, though a dependency on a service deserves an ADR. A web view of the galaxy would reopen ADR-001 and R14.
-- **O8 — Phase 4.** Phase 3 §3 moved the 10 km world, relay jumps, forward Shipyards and pathing by sector to Phase 4. A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems, so the proposal is to hold Phase 4 until this horizon is decided. Phase 3 is not affected.
+- **O8 — The world beyond one map.** A galaxy grows by systems, not by kilometers, and a relay jump becomes travel between systems. So the 10 km world, relay jumps, forward Shipyards and pathing by sector, which Phase 3's draft had moved to a Phase 4, now wait on this horizon, and Phase 3 §3 says so (owner, 2026-10-04); Phase 3's rules are unchanged. Open: which of them a galaxy of systems still needs inside a system.
 - **O9 — Seasons of months** (§7): the versioned save format, the galaxy's arc over a season, and how a season ends.
 
 ---
