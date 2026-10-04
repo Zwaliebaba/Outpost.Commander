@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](../OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
 
-This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
+This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](OutpostCommander-Phase1.md) and [the MVP design](OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
 
 ---
 
@@ -43,7 +43,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 ## 3. Decided by the owner on 2026-10-04
 
 - **Phase 3 is upgrades, on Phase 2's 5 km map.** The 10 km world, forward Shipyards, relay jumps and pathing by sector, which Phase 2 §7 kept for Phase 3, wait on **the horizon** (below). Phase 3 is measured against the same map and the same S1–S4 as Phase 2, so a change in the figures can be traced to it.
-- **The long-term direction is [the horizon](OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
+- **The long-term direction is [the horizon](../OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
 - **Constructors upgrade a structure, and it keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).

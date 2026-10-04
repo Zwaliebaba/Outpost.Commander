@@ -2,7 +2,7 @@
 
 Status: **closed** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft · Opened the same day, when the owner had run Phase 2 and accepted the design (gate K7), and answered Q1–Q4 · Every milestone built and merged on 2026-10-04, #67 to #73 · The owner's runs done on 2026-10-04: the client tasks work, T5 reads, and Easy is beatable · Derived from the Phase 3 design
 
-The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](Archive/ImplementationPlan-Phase2.md) is closed.
+The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](ImplementationPlan-Phase2.md) is closed.
 
 ---
 
@@ -13,7 +13,7 @@ The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, a
 3. **ADRs are edited in place** (AGENTS.md §6), and new ones take the next free number, ADR-064 onward.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and the match log build and run there against a stand-in for the Windows headers and the test framework, as Phase 2's did. The renderer and the window do not. Tasks marked *Owner run* stay `in review` until the owner has run them.
 5. **The AI keeps playing at every milestone.** Each rule that would stop the AI's plan, such as a level 1 Shipyard refusing a Medium hull or a Lab without the level for tier 2, comes with the least AI change that keeps `AiPlayerTests` passing, as Phase 2's 14.5 did for territory. Milestone 24 then makes the AI play upgrades well.
-6. **The gates are the design's, K1 to K7** (design §12). The [Interface plan](ImplementationPlan-Interface.md) also letters its gates K1 to K7. In this plan, a K gate always means the Phase 3 design's.
+6. **The gates are the design's, K1 to K7** (design §12). The [Interface plan](../ImplementationPlan-Interface.md) also letters its gates K1 to K7. In this plan, a K gate always means the Phase 3 design's.
 
 Task numbers continue the Phase 2 plan's milestones, so that a number names one task across the game's phase plans. The Interface plan's milestones 14 to 17 are a separate series.
 
@@ -42,7 +42,7 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 
 ### What else waits on this plan
 
-- **The self-play plan.** [SP1.4](ImplementationPlan-SelfPlay.md) waits on "Phase 3's AI", which is 24.1. SP2.2 waits on "Phase 3 built", which is 25.2.
+- **The self-play plan.** [SP1.4](../ImplementationPlan-SelfPlay.md) waits on "Phase 3's AI", which is 24.1. SP2.2 waits on "Phase 3 built", which is 25.2.
 - **The Interface plan.** Its 16.1 no longer marks the gateway topics, which 22.1 removes (owner, 2026-10-04). Its 15.1 adds a line to a producer's and the Lab's selection panel, and its 16.3 adds to a production card. Both are laid out to leave room for what 20.2 and 21.2 add. Whichever lands second fits around the first.
 
 ---
@@ -87,7 +87,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** a new one, ADR-064: the upgrade, its order, its refusals, its hit points and what the snapshot shows. ADR-016 is edited in place where the Constructors' work is shared with an upgrade. ADR-045 is edited in place: the level is in the simulation and the snapshot.
 - **Acceptance:** `UpgradeTests` cover an upgrade paid and refused for each reason, Constructors sharing it, the structure working throughout, the level landing with its hit points, a structure destroyed during an upgrade, a rebuilt structure at level 1, and a kind without levels refusing. `TuningTests` cover the `levels` list. `WireFormatTests` cover the level and the upgrade in the snapshot. `FogTests` cover a remembered level.
 - **Verify:** CI.
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decisions 1–6; ADR-016 and ADR-045 edited in place.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decisions 1–6; ADR-016 and ADR-045 edited in place.
   - **`levelHitPointsPercent` is in `rules`**, and the loader allows levels on the three kinds with art for them, up to level 5, rather than to each kind's design top: the tuning data holds K3's tops.
   - **Refusals:** `NotUpgradable`, `UnderConstruction`, `AlreadyUpgrading` and `TopLevel`, besides `UnknownEntity`, `NotEnoughOre` and the Constructors' own. The order may name no Constructors, as the HUD sends it, and `RepairCommand` joins them to a level as to a site.
   - **The remembered level** is tested in `UpgradeTests.RemembersTheLevelLastSeen`, beside the rest of the upgrade, rather than in `FogTests`. The protocol's version is 2.
@@ -103,7 +103,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions; ADR-045 edited in place for the fitted levels.
 - **Acceptance:** `HudTests` for the panel's level, the button and each dim reason. `ModelCatalogTests` for a level's mesh, fitted to level 1's length.
 - **Verify:** CI; **owner run.** T5 starts here.
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decisions 7 and 8.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decisions 7 and 8.
   - **Each level after the first is fitted within level 1's ground**, the wider of its length and depth set to level 1's, not to the model's length: fitted by length, the Human Command Station would stand 57% deeper than its footprint at levels 2 and 3, measured from the baked meshes (`Neuron::FitMeshAcross`).
   - **The panel** reads "Shipyard 01 · L2", "Upgrading to L3, 41%", "L3: 3,500 hit points" and "Top level"; the button "Upgrade to L3 · 1:00" with its cost, dim with UPGRADING while a level is built.
   - **`GameClient`** loads every level's mesh and draws the snapshot's; it is CI's first build, and the owner's run its first look. 223 `GameAppTests` pass in the container, `GameClient` aside.
@@ -120,7 +120,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064, its Shipyard decision.
 - **Acceptance:** `ProductionTests` cover each hull at each level, and a Large hull needing both the topic and level 3. `AiPlayerTests` pass on the repository map.
 - **Verify:** CI; the AI-against-AI matches in the container, with S1's first contact reported against Phase 2's.
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 9, and ADR-020 decision 7 edited in place.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 9, and ADR-020 decision 7 edited in place.
   - **The Shipyard names its hulls** in `Tuning.json`, `"hulls"` at level 1 and on each level, and each `HullView` carries the `shipyardLevel` it needs. The refusal is `LevelTooLow`.
   - **The AI** upgrades a Shipyard below its production design's hull with its two nearest idle Constructors once nothing in its plan waits for Ore, and queues that design only where it can be built. Its Constructors stay until the level is in.
   - **Tests.** `ProductionTests.BuildsTheHullsOfItsLevel`; `ProductionTests.AJobWaitsForTheOre` waits on a Small design, which a level 1 Shipyard builds; `AiPlayerTests.PlaysOnWithoutItsStation` hands the AI a level 3 Shipyard. 246 `GameLogicTests` pass in the container.
@@ -132,7 +132,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions.
 - **Acceptance:** `DesignerTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 9. The designer's line under Queue reads "Needs Shipyard L2" in place of the build time; the production window's code is followed by "NEEDS L2". The next level's hulls are named on the panel's line of what it gives, "L2: Medium hulls, 3,000 hit points", rather than on the button, whose label holds the time and cost. `HudTests.SaysWhatAShipyardCannotBuild`; no change was needed in `Designer`, so `DesignerTests` is unchanged. 224 `GameAppTests` pass in the container.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 9. The designer's line under Queue reads "Needs Shipyard L2" in place of the build time; the production window's code is followed by "NEEDS L2". The next level's hulls are named on the panel's line of what it gives, "L2: Medium hulls, 3,000 hit points", rather than on the button, whose label holds the time and cost. `HudTests.SaysWhatAShipyardCannotBuild`; no change was needed in `Designer`, so `DesignerTests` is unchanged. 224 `GameAppTests` pass in the container.
 
 ---
 
@@ -151,7 +151,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-033, edited in place: a tier is opened by the Lab's level, and `GatewayEffect` is removed. ADR-017, edited in place where it names the gateways.
 - **Acceptance:** `ResearchTests` replace `AGatewayOpensItsTier` with a tier opened by the Lab's level, a topic refused below its tier, a rebuilt Lab at level 1, and research kept through a lost Lab. `TuningTests` cover the levels' tiers and requirements and the loader's refusals. `WireFormatTests` cover the topic view without its gateway. `AiPlayerTests.ReachesTierThree` passes.
 - **Verify:** CI; the AI-against-AI matches in the container, with tier 3 reached reported against Phase 1's 2 in 80.
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 10; ADR-033, ADR-038 and ADR-041 edited in place.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 10; ADR-033, ADR-038 and ADR-041 edited in place.
   - **The Lab's levels carry `opensTier`, `requires` and `researchSlots`**, and the snapshot carries the player's open tier, `researchTier`, which the AI, the match log and the research window read. A Lab upgrade whose topics are not researched is refused with `PrerequisiteMissing`.
   - **`Simulation::SpawnStructure` takes a level**, as it takes hit points, so that tests place a Lab that has opened a tier; `MatchArena::Structure` gives it the level's hit points.
   - **The AI** researches only its open tier and upgrades its Lab when its order reaches the next. An upgrade it cannot pay for yet holds back new production, as a waiting structure does. Without that, no AI of seeds 1–10 opened tier 3; with it, 5 of the 20 seats do, as many as with the gateway on `main`.
@@ -165,7 +165,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-017, edited in place for the second slot.
 - **Acceptance:** `ResearchTests` cover two topics researched at once, each paid at its start, a topic waiting for its prerequisite in the other slot, and both slots lost with the Lab. `WireFormatTests` cover both topics' progress.
 - **Verify:** CI.
-- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md) decision 1, edited in place. The second topic starts only once the first has started, so that a front topic waiting for Ore keeps its place, and once its own prerequisites are researched. `ResearchTests.ALevelFourLabResearchesTwoAtOnce`; both slots lost with the Lab are the Lab's queue lost with it, which `ALostLabLosesItsTopic` covers. The AI keeps its Lab's slots full.
+- **As built:** [ADR-017](../../Design/ADR/ADR-017-research-and-the-designer.md) decision 1, edited in place. The second topic starts only once the first has started, so that a front topic waiting for Ore keeps its place, and once its own prerequisites are researched. `ResearchTests.ALevelFourLabResearchesTwoAtOnce`; both slots lost with the Lab are the Lab's queue lost with it, which `ALostLabLosesItsTopic` covers. The AI keeps its Lab's slots full.
 
 ### 22.3 — The research window follows the Lab's level
 
@@ -173,7 +173,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions.
 - **Acceptance:** `HudTests`; 14.1's tests of the Interface plan, which keep text inside its card.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 10. A locked topic's first need reads "RESEARCH LAB L2". What the next level gives, and the topics it still needs, are lines on the Lab's panel, "L2: tier 2, 1,800 hit points" and "L2 needs Improved Extraction", and its button is dim with NEEDS RESEARCH, rather than on the button. The gateway's gold edge is gone. `HudTests.ListsTheTopicsTierByTier` and `ShowsTheLabsLevels`; 225 `GameAppTests` pass in the container.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 10. A locked topic's first need reads "RESEARCH LAB L2". What the next level gives, and the topics it still needs, are lines on the Lab's panel, "L2: tier 2, 1,800 hit points" and "L2 needs Improved Extraction", and its button is dim with NEEDS RESEARCH, rather than on the button. The gateway's gold edge is gone. `HudTests.ListsTheTopicsTierByTier` and `ShowsTheLabsLevels`; 225 `GameAppTests` pass in the container.
 
 ---
 
@@ -191,7 +191,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-056, edited in place for the cap. ADR-064, its Command Station decision, for the guns.
 - **Acceptance:** `TerritoryTests` cover the cap at each level, a site counting toward it, no node lost to it, and level 1's cap without a station. `DefenseTests` cover each gun firing on its own target. `WireFormatTests` cover the cap.
 - **Verify:** CI; the AI-against-AI matches in the container.
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 edited in place.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 edited in place.
   - **The numbers** are the station's `nodes` and `guns`, and its levels', in `Tuning.json`. The refusal is `CapReached`, the snapshot's `nodeCap` is zero without territory, and the protocol's version is 4.
   - **Each further gun** keeps its own reload and fires at the station's target, chosen by the same rule. With the nearest-target rule that is one enemy for every gun, which is what "aiming on its own" comes to when each aims by one rule. `DefenseTests.AStationsLevelGivesItsGuns` covers the guns at each level, each firing on its own rhythm.
   - **The cap** is covered at levels 1 and 2 in `TerritoryTests.TheStationCapsTheNodesHeld`, and at every level by `TuningTests`' `NodeCap`.
@@ -205,7 +205,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-056's client decision, edited in place.
 - **Acceptance:** `HudTests`, `PlacementTests`, `HardpointsTests`.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 decision 11 edited in place. The reason for a red Relay ghost is the placing hint, "Relay: at the node cap; upgrade the Command Station to claim more", and the Constructor's Relay button is dim with NODE CAP. A shot of gun *n* leaves from the *n*-th nearest gun hardpoint to its target, wrapping round (`NearestMuzzle`). `HudTests.ShowsTheStationsCap` and `ShowsTheTerritory`, `PlacementTests.ARelayWaitsAtTheNodeCap`, `HardpointsTests.AFurtherGunFiresFromTheNextNearest` and `CombatEffectsTests.TheViewIsToldWhichGunFired`; 229 `GameAppTests` pass in the container, `GameClient` aside.
+- **As built:** [ADR-064](../../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 decision 11 edited in place. The reason for a red Relay ghost is the placing hint, "Relay: at the node cap; upgrade the Command Station to claim more", and the Constructor's Relay button is dim with NODE CAP. A shot of gun *n* leaves from the *n*-th nearest gun hardpoint to its target, wrapping round (`NearestMuzzle`). `HudTests.ShowsTheStationsCap` and `ShowsTheTerritory`, `PlacementTests.ARelayWaitsAtTheNodeCap`, `HardpointsTests.AFurtherGunFiresFromTheNextNearest` and `CombatEffectsTests.TheViewIsToldWhichGunFired`; 229 `GameAppTests` pass in the container, `GameClient` aside.
 
 ---
 
@@ -218,7 +218,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-020 and ADR-041, edited in place.
 - **Acceptance:** `AiPlayerTests`, `AiSettingsTests`.
 - **Verify:** CI; the AI-against-AI matches.
-- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 14; ADR-037, ADR-041 and ADR-064 edited in place.
+- **As built:** [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md) decision 14; ADR-037, ADR-041 and ADR-064 edited in place.
   - **The claim.** The AI spent its one `claimSectors` claim on a flank its rigs were taking it to, so it never wanted a fourth node and never upgraded its station. A sector its plan already has a Relay for is no claim now: it upgrades to level 2 at about 3:30 and holds four nodes by 6:00, and goes no higher with no claim left (`AiPlayerTests.UpgradesItsStationBeforeItsFirstClaim`).
   - **The Lab** goes to level 4 once its open tier reaches `secondSlotTier`, 3, while two topics of its order are left (`UpgradesItsLabForASecondSlot`). **What it attacks** counts each level above the first as `attackLevelMeters`, 500, nearer (`CountsAShipyardsLevel`). The Shipyards needed nothing new: 21.1 already upgrades them to the production design's hull. `Tools/SelfPlay.py` moves the two new numbers.
   - **AI against AI, seeds 1–10**, against 23.1's tree: a median of 30:07 against 52:25, 1 within 45–60 minutes against 6, 2 by domination and 8 by production against 8 and 2, S2 met in 5 of 10 against 10, tier 3 in 1 of 20 seats against 8. Without the claim fix it is 52:50 and 8 by domination; without the levels in what it attacks nothing moves. **The owner kept the claim and left the retuning to 25.2** (owner, 2026-10-04).
@@ -235,14 +235,14 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-038, edited in place.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
-- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. The records are `upgrade`, `attacked` and `stall`; an attack is written once for each structure and level, and the stall as one total with the peaks. `MatchLog.py` reports T2–T4 per match and over the matches, and T3's tier 3 beside its levels. `MatchLogTests.RecordsUpgradesAttacksAndTheStall`; 230 `GameAppTests` pass in the container.
+- **As built:** [ADR-038](../../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. The records are `upgrade`, `attacked` and `stall`; an attack is written once for each structure and level, and the stall as one total with the peaks. `MatchLog.py` reports T2–T4 per match and over the matches, and T3's tier 3 beside its levels. `MatchLogTests.RecordsUpgradesAttacksAndTheStall`; 230 `GameAppTests` pass in the container.
 
 ### 25.2 — T1–T5
 
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the AI-against-AI run over seeds 1–40, tuned against T1–T4 where the AI's own settings and the upgrade numbers can reach them. The owner's matches and judgement for T5.
 - **Verify:** **owner run.**
-- **As built:** design §2 records T1–T4; [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) has every candidate's figures, and ADR-020 the claims.
+- **As built:** design §2 records T1–T4; [ADR-041](../../Design/ADR/ADR-041-ai-plays-a-longer-match.md) has every candidate's figures, and ADR-020 the claims.
   - **`Opponent.json`**: 2 claims beyond its rigs, an attack group of 25, falling back after losing 15%. Seeds 1–40: T1 and T4 met, T2 missed at 9:28, T3 missed on the Research Lab, 11 of 40, with tier 3 opened in 33.
   - **T2 and T3 are kept as misses** (owner, 2026-10-04). No AI setting moved the stall, and the cap changes tried cost T1 and T3.
   - **The upgrade numbers are unchanged.** A cheaper level 2 and a cap one higher were measured and dropped; ADR-041 and design §2 give their figures.
@@ -259,4 +259,4 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-065; ADR-020 edited in place for the menu.
 - **Acceptance:** `AiSettingsTests.LoadsEachDifficulty`, `HudTests.LaysOutTheMenu`.
 - **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run**: Easy is beatable (owner, 2026-10-04).
-- **As built:** [ADR-065](../Design/ADR/ADR-065-ai-difficulty.md). On seeds 1–20, each difficulty in both seats, Normal beats Easy in all 20 and Hard beats Normal in all 20, before 25.2's tuning and after it. A larger economy alone made Hard weaker; its edge is territory.
+- **As built:** [ADR-065](../../Design/ADR/ADR-065-ai-difficulty.md). On seeds 1–20, each difficulty in both seats, Normal beats Easy in all 20 and Hard beats Normal in all 20, before 25.2's tuning and after it. A larger economy alone made Hard weaker; its edge is territory.
