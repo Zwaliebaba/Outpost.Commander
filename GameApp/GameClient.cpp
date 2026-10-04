@@ -556,10 +556,14 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
                                  std::uint32_t _viewportHeightPixels)
 {
   m_viewport = {.widthPixels = _viewportWidthPixels, .heightPixels = _viewportHeightPixels};
+  // The text is laid out with the fonts the frame draws it in, at this size (ADR-061).
+  const float scale = Hud::Scale(_viewportWidthPixels, _viewportHeightPixels);
+  m_ui.UseScale(scale);
+  const Hud::TextMetrics metrics(m_ui.Fonts(), scale);
   if (m_screen == Screen::Menu)
   {
     // The menu is all there is: a press on its buttons, and nothing for the camera or the controls.
-    m_hudLayout = Hud::LayMenu(_viewportWidthPixels, _viewportHeightPixels);
+    m_hudLayout = Hud::LayMenu(metrics, _viewportWidthPixels, _viewportHeightPixels);
     if (!_input.active)
       return;
     for (const Neuron::InputEvent& event : _input.events)
@@ -693,7 +697,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       content.laboratory = Hud::DescribeResearch(m_view.Newest(), m_entities, m_firstTopic);
       m_firstTopic = content.laboratory->firstTopic;
     }
-    m_hudLayout = Hud::Lay(content, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
+    m_hudLayout = Hud::Lay(content, metrics, _viewportWidthPixels, _viewportHeightPixels, view, &m_windows);
     for (const Hud::Window& window : m_hudLayout.windows)
       m_windows.Settle(window.kind, window.corner);
   }
