@@ -635,6 +635,16 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
       (void)SpawnConstructor(owner, start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
     }
   }
+  // On a map with territory every player starts with its tickets, counted in shares of a ticket, as many to a ticket as the
+  // map has nodes (ADR-057).
+  if (HasTerritory())
+  {
+    for (const PlayerId owner : m_basePlayers)
+    {
+      if (PlayerState* player = FindPlayer(owner))
+        player->ticketShares = std::int64_t{m_tuning->territory.tickets} * static_cast<std::int64_t>(m_sectors.size());
+    }
+  }
 }
 
 std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<Command>& _commands, TickObserver* _observer)
@@ -732,8 +742,10 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     SeparateShips();
     KeepShipsClear();
   }
-  // Who holds what, once every structure built this tick stands and every ship is where the tick leaves it (ADR-056).
+  // Who holds what, once every structure built this tick stands and every ship is where the tick leaves it (ADR-056), and
+  // what holding it costs the other side (ADR-057).
   UpdateTerritory();
+  Dominate();
   if (m_fog)
   {
     const ObservedPart part(m_observer, TickPart::Vision);
@@ -818,6 +830,14 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
+  snapshot.ending = m_ending;
+  if (HasTerritory() && !m_basePlayers.empty())
+  {
+    const auto nodes = static_cast<std::int64_t>(m_sectors.size());
+    snapshot.startingTickets = m_tuning->territory.tickets;
+    for (const PlayerId player : m_basePlayers)
+      snapshot.tickets.push_back({.player = player, .tickets = static_cast<std::int32_t>((TicketShares(player) + nodes - 1) / nodes)});
+  }
   snapshot.fogOfWar = m_fog;
   snapshot.sectors.reserve(m_sectors.size());
   for (const Sector& sector : m_sectors)
@@ -2400,9 +2420,53 @@ void Outpost::Simulation::DecideMatch()
     if (producing)
       standing.push_back(player);
   }
-  if (standing.size() == m_basePlayers.size())
+  if (standing.size() < m_basePlayers.size())
+    EndMatch(standing, MatchEnding::LostProduction);
+}
+
+// Phase 2 design §8: every drain interval, a player that holds fewer nodes than the most any player holds loses the
+// tuning data's tickets for each node it is behind, divided by the map's nodes; a suppressed Relay counts for its owner,
+// and a free node for no one. Tickets are kept in shares, as many to a ticket as the map has nodes, so the drain is whole
+// and a lead of one node on nine drains a side in exactly 50 minutes (ADR-057). A player out of tickets loses.
+void Outpost::Simulation::Dominate()
+{
+  if (m_matchOver || m_basePlayers.empty() || !HasTerritory())
     return;
+  const auto interval =
+    std::max<std::uint64_t>(1, static_cast<std::uint64_t>(std::llround(m_tuning->territory.drainIntervalSeconds * m_ticksPerSecond)));
+  if ((m_tick + 1) % interval != 0)
+    return;
+  std::vector<std::int64_t> nodes;
+  nodes.reserve(m_basePlayers.size());
+  for (const PlayerId player : m_basePlayers)
+    nodes.push_back(std::ranges::count(m_sectors, player, &Sector::holder));
+  const std::int64_t most = std::ranges::max(nodes);
+  std::vector<PlayerId> standing;
+  for (size_t index = 0; index < m_basePlayers.size(); ++index)
+  {
+    PlayerState* player = FindPlayer(m_basePlayers[index]);
+    if (player != nullptr)
+    {
+      const std::int64_t drain = std::int64_t{m_tuning->territory.drainTicketsPerNodeDifference} * (most - nodes[index]);
+      player->ticketShares = std::max<std::int64_t>(0, player->ticketShares - drain);
+    }
+    if (player == nullptr || player->ticketShares > 0)
+      standing.push_back(m_basePlayers[index]);
+  }
+  if (standing.size() < m_basePlayers.size())
+    EndMatch(standing, MatchEnding::Domination);
+}
+
+void Outpost::Simulation::EndMatch(const std::vector<PlayerId>& _standing, MatchEnding _ending)
+{
   m_matchOver = true;
-  m_winner = standing.size() == 1 ? standing.front() : PlayerId{};
+  m_winner = _standing.size() == 1 ? _standing.front() : PlayerId{};
   m_matchEndedTick = m_tick + 1;
+  m_ending = _ending;
+}
+
+std::int64_t Outpost::Simulation::TicketShares(PlayerId _player) const noexcept
+{
+  const PlayerState* player = FindPlayer(_player);
+  return player != nullptr ? player->ticketShares : 0;
 }

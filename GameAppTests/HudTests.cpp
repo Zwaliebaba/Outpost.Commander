@@ -376,6 +376,8 @@ public:
     content.fog = true;
     const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
+    Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
+                    L"no tickets without them");
     const auto fog =
       std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
     const DirectX::XMFLOAT2 west = layout.MinimapPixelOf({.xMeters = -1000.0f, .zMeters = 0.0f});
@@ -1232,6 +1234,29 @@ public:
     Assert::AreEqual(std::string("Defeat"), outcome().title);
     newest.winner = {};
     Assert::AreEqual(std::string("Draw"), outcome().title);
+
+    // Phase 2 design §8: a domination says so.
+    newest.winner = PLAYER;
+    newest.ending = Outpost::MatchEnding::Domination;
+    Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
+  }
+
+  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.
+  TEST_METHOD(ShowsTheTickets)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = Outpost::PlayerId{2}, .tickets = 870}};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
+    Assert::IsTrue(content.territory.has_value());
+    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
+    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 870);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto text = [&layout](std::string_view _text) { return std::ranges::find(layout.texts, _text, &Outpost::Hud::Text::text); };
+    Assert::IsTrue(text("Tickets") != layout.texts.end());
+    Assert::IsTrue(text("1,000 : ") != layout.texts.end() && text("870") != layout.texts.end());
+    Assert::IsTrue(text("870")->left > text("1,000 : ")->left, L"the enemy's figure stands at the right");
+    Assert::IsTrue(text("Tickets")->top > text("Nodes of 1")->top);
   }
 
   // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.

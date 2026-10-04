@@ -329,12 +329,14 @@ public:
     bool suppressed = false;
   };
 
-  // How many nodes each side holds, of how many the map has (Phase 2 design §4).
+  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8).
   struct Territory
   {
     std::int32_t ownNodes = 0;
     std::int32_t enemyNodes = 0;
     std::int32_t nodes = 0;
+    std::optional<std::int32_t> ownTickets;
+    std::optional<std::int32_t> enemyTickets;
   };
 
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.

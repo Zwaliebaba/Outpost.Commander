@@ -114,6 +114,7 @@ public:
     const Outpost::Snapshot red = match.World().BuildSnapshot(RED);
     Assert::IsTrue(blue.matchOver && red.matchOver);
     Assert::IsTrue(blue.winner == RED && red.winner == RED);
+    Assert::IsTrue(blue.ending == Outpost::MatchEnding::LostProduction);
     Assert::AreEqual(match.World().CurrentTick(), blue.matchEndedTick, L"it ended on the tick the station fell");
   }
 

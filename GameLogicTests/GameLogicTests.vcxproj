@@ -89,6 +89,7 @@
     <ClInclude Include="RepositoryData.h" />
     <ClInclude Include="BalanceCheck.h" />
     <ClInclude Include="MatchArena.h" />
+    <ClInclude Include="TerritoryMatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -122,6 +123,7 @@
     <ClCompile Include="FogTests.cpp" />
     <ClCompile Include="HandCheckTests.cpp" />
     <ClCompile Include="TerritoryTests.cpp" />
+    <ClCompile Include="DominationTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

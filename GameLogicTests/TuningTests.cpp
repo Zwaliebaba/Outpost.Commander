@@ -93,7 +93,8 @@ constexpr std::string_view MINIMAL_TUNING = R"({
              "miningRigOrePerSecondNear": 6, "miningRigOrePerSecondContested": 8, "miningRigOrePerSecondRich": 10,
              "exhaustedYieldPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
-  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400 },
+  "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10,
+                 "drainTicketsPerNodeDifference": 30 },
   "hulls": [ { "id": 1, "name": "Small", "hitPoints": 220, "armor": 2, "speedMetersPerSecond": 60, "cost": 32, "buildSeconds": 10,
                "footprintRadiusMeters": 8, "turnRateDegreesPerSecond": 180 } ],
   "drives": [ { "id": 1, "name": "Ion", "speedFactor": 1.3, "hitPointsFactor": 0.9, "turnRateFactor": 1.25, "cost": 20 } ],
@@ -194,7 +195,10 @@ public:
                "sight");
     ExpectSame(*json.Find("territory"),
                {{"cutOffIncomePercent", Number(tuning.territory.cutOffIncomePercent)},
-                {"suppressionRadiusMeters", tuning.territory.suppressionRadiusMeters}},
+                {"suppressionRadiusMeters", tuning.territory.suppressionRadiusMeters},
+                {"tickets", Number(tuning.territory.tickets)},
+                {"drainIntervalSeconds", tuning.territory.drainIntervalSeconds},
+                {"drainTicketsPerNodeDifference", Number(tuning.territory.drainTicketsPerNodeDifference)}},
                "territory");
 
     const Neuron::JsonValue::Array& hulls = json.Find("hulls")->AsArray();
@@ -351,6 +355,7 @@ public:
     ExpectLoadError(Replace("\"tickHz\": 20,", ""), "rules: has no \"tickHz\"");
     ExpectLoadError(Replace("\"unarmedMeters\": 200, ", ""), "sight: has no \"unarmedMeters\"");
     ExpectLoadError(Replace(", \"suppressionRadiusMeters\": 400", ""), "territory: has no \"suppressionRadiusMeters\"");
+    ExpectLoadError(Replace("\"tickets\": 1000, ", ""), "territory: has no \"tickets\"");
     ExpectLoadError(Replace("\"repairPercentPerSecond\": 2 },", "\"repairPercentPerSecond\": 0 },"), "constructor.repairPercentPerSecond");
     ExpectLoadError(Replace("\"turnRateDegreesPerSecond\": 150, ", ""), "constructor: has no \"turnRateDegreesPerSecond\"");
     ExpectLoadError(Replace("\"splashRadiusMeters\": 0,", "\"splashRadiusMeters\": 0, \"splashRadius\": 5,"), "weapons[0].splashRadius");
@@ -367,6 +372,8 @@ public:
     ExpectLoadError(Replace("\"weaponMarginMeters\": 50,", "\"weaponMarginMeters\": 0,"), "sight.weaponMarginMeters");
     ExpectLoadError(Replace("\"cutOffIncomePercent\": 50,", "\"cutOffIncomePercent\": 101,"), "territory.cutOffIncomePercent");
     ExpectLoadError(Replace("\"suppressionRadiusMeters\": 400", "\"suppressionRadiusMeters\": 0"), "territory.suppressionRadiusMeters");
+    ExpectLoadError(Replace("\"tickets\": 1000", "\"tickets\": 0"), "territory.tickets");
+    ExpectLoadError(Replace("\"drainIntervalSeconds\": 10", "\"drainIntervalSeconds\": 0"), "territory.drainIntervalSeconds");
     ExpectLoadError(Replace("\"hitPoints\": 220,", "\"hitPoints\": 1e10,"), "hulls[0].hitPoints");
   }
 
@@ -441,7 +448,7 @@ public:
 
   TEST_METHOD(RejectsText)
   {
-    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 9");
+    ExpectLoadError(Replace("\"cost\": 20 } ],", "\"cost\": 20, } ],"), "JSON line 10");
     ExpectLoadError("[]", "the file");
   }
 };
