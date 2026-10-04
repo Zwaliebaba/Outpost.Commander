@@ -26,8 +26,8 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| SP1.1 | `--ai-matches` plays any two settings | — | — | in review |
-| SP1.2 | The search over the AI's numbers | SP1.1 | — | in review |
+| SP1.1 | `--ai-matches` plays any two settings | — | — | in review, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
+| SP1.2 | The search over the AI's numbers | SP1.1 | — | in review, [#64](https://github.com/Zwaliebaba/Outpost.Commander/pull/64) |
 | SP1.3 | The first search, and what it found | SP1.2 | — | todo: owner run |
 | SP2.1 | The network's shape, as an ADR | SP1.3 | N1–N5 decided | todo |
 | SP2.2 | The network plays | SP2.1 | — | todo |
