@@ -45,7 +45,8 @@ Outpost::Snapshot FullSnapshot()
                             .weapon = Outpost::WeaponId{35},
                             .from = {.xMeters = 36.0f},
                             .to = {.zMeters = 37.0f},
-                            .splashRadiusMeters = 38.0f});
+                            .splashRadiusMeters = 38.0f,
+                            .gun = 2});
   snapshot.destroyed.push_back({.id = Outpost::EntityId{39},
                                 .kind = Outpost::EntityKind::Structure,
                                 .structure = Outpost::StructureKind::MiningRig,
@@ -74,7 +75,9 @@ Outpost::Snapshot FullSnapshot()
                                                  .maxHitPointsHundredths = 300'000,
                                                  .opensTier = 2,
                                                  .researchSlots = 2,
-                                                 .prerequisites = {Outpost::ResearchTopicId{6}}}}});
+                                                 .prerequisites = {Outpost::ResearchTopicId{6}},
+                                                 .nodes = 6,
+                                                 .guns = 2}}});
   snapshot.constructorCost = 55;
   snapshot.hulls.push_back({.id = Outpost::HullId{56},
                             .nameUtf8 = "Small",
@@ -116,6 +119,7 @@ Outpost::Snapshot FullSnapshot()
                                .tier = 3});
   snapshot.shipyardBuildSpeedFactor = 1.25;
   snapshot.researchTier = 2;
+  snapshot.nodeCap = 5;
   snapshot.matchOver = true;
   snapshot.winner = Outpost::PlayerId{1};
   snapshot.matchEndedTick = 85;
@@ -203,6 +207,8 @@ public:
     Assert::IsFalse(snapshot.entities[1].upgradePermille.has_value());
     Assert::IsTrue(expected.structureTypes[0].levels == snapshot.structureTypes[0].levels, L"a kind's levels");
     Assert::AreEqual(2, snapshot.researchTier);
+    Assert::AreEqual(5, snapshot.nodeCap);
+    Assert::AreEqual(2, static_cast<int>(snapshot.shots[0].gun), L"the gun that fired");
     Assert::AreEqual(std::string("Unlocks the Fusion drive."), snapshot.research[0].effectUtf8);
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);

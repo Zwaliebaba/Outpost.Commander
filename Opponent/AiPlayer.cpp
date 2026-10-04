@@ -694,6 +694,13 @@ bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) co
     return sector != nullptr && sector->holder == m_player;
   if (_slot.structure != StructureKind::Relay)
     return true;
+  // A Relay past its Command Station's cap waits for the station's next level (Phase 3 design §7).
+  return IsClaimable(_slot, _snapshot) && !AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
+}
+
+bool Outpost::AiPlayer::IsClaimable(const Slot& _slot, const Snapshot& _snapshot) const
+{
+  const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
   return sector != nullptr && !sector->holder.IsValid() &&
          std::ranges::any_of(sector->adjacent,
                              [&](std::int32_t _id)
@@ -796,6 +803,24 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
+    // A Relay its Command Station's cap holds back has the station's next level take its place in the plan's order (Phase 3
+    // design §7, plan task 23.1). Plan task 24.1 makes this play.
+    const bool capped =
+      slot.structure == StructureKind::Relay && AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
+    if (capped && !slot.abandoned && !IsBlocked(slot, _snapshot) && !IsDone(slot, _snapshot) && IsClaimable(slot, _snapshot))
+    {
+      if (const EntityView* station = UpgradableStation(_snapshot))
+      {
+        const std::int32_t cost = FindType(_snapshot, StructureKind::CommandStation)->levels[static_cast<size_t>(station->level - 1)].cost;
+        if (_idle.empty())
+          return false;
+        if (ore < cost)
+          return true;
+        OrderUpgrade(_snapshot, *station, _idle, _orders);
+        ore -= cost;
+      }
+      continue;
+    }
     if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) || !IsReady(slot, _snapshot) ||
         _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
         std::ranges::any_of(m_work, [i](const Work& _work) { return _work.slot == i; }))
@@ -966,6 +991,20 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Entity
     return true;
   OrderUpgrade(_snapshot, *lab, _idle, _orders);
   return false;
+}
+
+// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, below its top level, and with no
+// Constructors of the AI's already on it (Phase 3 design §7).
+const Outpost::EntityView* Outpost::AiPlayer::UpgradableStation(const Snapshot& _snapshot) const
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::CommandStation);
+  const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
+                                            { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
+  if (type == nullptr || station == _snapshot.entities.end() || !IsBuilt(*station) || station->upgradePermille.has_value() ||
+      std::cmp_greater_equal(station->level - 1, type->levels.size()) ||
+      std::ranges::any_of(m_work, [&station](const Work& _work) { return _work.target == station->id; }))
+    return nullptr;
+  return &*station;
 }
 
 void Outpost::AiPlayer::OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle,

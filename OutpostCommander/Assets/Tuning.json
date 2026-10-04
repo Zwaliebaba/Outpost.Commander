@@ -38,11 +38,12 @@
   ],
   "structures": [
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1,
+      "nodes": 3, "guns": 1,
       "levels": [
-        { "cost": 300, "buildConstructorSeconds": 45 },
-        { "cost": 500, "buildConstructorSeconds": 60 },
-        { "cost": 700, "buildConstructorSeconds": 75 },
-        { "cost": 900, "buildConstructorSeconds": 90 }
+        { "cost": 300, "buildConstructorSeconds": 45, "nodes": 4 },
+        { "cost": 500, "buildConstructorSeconds": 60, "nodes": 5, "guns": 2 },
+        { "cost": 700, "buildConstructorSeconds": 75, "nodes": 6 },
+        { "cost": 900, "buildConstructorSeconds": 90, "nodes": 7, "guns": 3 }
       ] },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
       "hulls": [1],

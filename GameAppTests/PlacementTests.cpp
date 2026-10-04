@@ -92,6 +92,33 @@ public:
     Assert::IsFalse(Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS).valid, L"no sectors, no Relay");
   }
 
+  // Phase 3 design §7: a Relay's ghost is red while the player has taken its Command Station's cap of nodes, and a Relay
+  // still under construction has taken its node.
+  TEST_METHOD(ARelayWaitsAtTheNodeCap)
+  {
+    constexpr Outpost::PlayerId PLAYER{1};
+    std::vector<Outpost::EntityView> world = World();
+    const std::vector<Outpost::SectorView> sectors = Sectors();
+    const auto valid = [&](std::int32_t _cap)
+    { return Outpost::PlaceGhost(Relay(), {100.0f, -700.0f}, world, MAP_SIZE_METERS, sectors, PLAYER, _cap).valid; };
+    Assert::IsTrue(valid(0), L"no cap");
+    Assert::IsTrue(valid(2), L"one node of two");
+    Assert::IsFalse(valid(1), L"its home is its one node");
+    Assert::AreEqual(1, Outpost::NodesTaken(sectors, world, PLAYER));
+
+    world.push_back({.id = Outpost::EntityId{3},
+                     .kind = Outpost::EntityKind::Structure,
+                     .owner = PLAYER,
+                     .structure = Outpost::StructureKind::Relay,
+                     .position = {.xMeters = 600.0f, .zMeters = 0.0f},
+                     .radiusMeters = 30.0f,
+                     .builtPermille = 400});
+    Assert::AreEqual(2, Outpost::NodesTaken(sectors, world, PLAYER), L"a site takes its node");
+    Assert::IsFalse(valid(2));
+    Assert::IsTrue(Outpost::AtNodeCap(sectors, world, PLAYER, 2));
+    Assert::IsFalse(Outpost::AtNodeCap(sectors, world, Outpost::PlayerId{2}, 2), L"another player's");
+  }
+
   // Phase 2 design §4: on a map with sectors a rig's ghost is green only in a sector the player holds.
   TEST_METHOD(ARigNeedsAHeldSector)
   {

@@ -241,5 +241,62 @@ public:
     Assert::IsTrue(build(Outpost::StructureKind::MiningRig, SOUTH_ASTEROID) == Outpost::CommandResult::Applied);
     Assert::IsTrue(server.World().BuildSnapshot(BLUE).sectors.empty());
   }
+
+  // Phase 3 design §7, gate K4: a Command Station at level 1 lets its player hold 3 nodes, home included, and each level
+  // one more; a Relay under construction counts, as it takes its node; and the cap refuses claims but takes no node away,
+  // even once the station is gone and its player is back to level 1's cap.
+  TEST_METHOD(TheStationCapsTheNodesHeld)
+  {
+    TerritoryMatch match;
+    match.Run(1);
+    Assert::AreEqual(3, match.World().BuildSnapshot(BLUE).nodeCap);
+    (void)match.Relay(BLUE, SOUTH);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(WEST).node) == Outpost::CommandResult::Applied);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(CENTER).node) == Outpost::CommandResult::CapReached,
+                   L"the site in the west takes the third node");
+
+    // Level 2: four nodes.
+    const Outpost::EntityId station = std::ranges::find_if(match.World().Entities(),
+                                                           [](const Outpost::Entity& _entity)
+                                                           {
+                                                             return _entity.owner == BLUE &&
+                                                                    _entity.structure == Outpost::StructureKind::CommandStation &&
+                                                                    _entity.kind == Outpost::EntityKind::Structure;
+                                                           })
+                                        ->id;
+    // The second Constructor builds the level, while the first builds the Relay in the west.
+    const Outpost::UpgradeStructureCommand upgrade{.structure = station, .constructors = {match.Constructors(BLUE).back()}};
+    Assert::IsTrue(match.World().Tick({{.player = BLUE, .order = upgrade}}).front() == Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 120 * 20 && match.World().FindEntity(station)->level < 2; ++tick)
+      match.Run(1);
+    Assert::AreEqual(4, match.World().BuildSnapshot(BLUE).nodeCap);
+    for (int tick = 0; tick < 180 * 20 && match.Sector(BLUE, WEST).holder != BLUE; ++tick)
+      match.Run(1);
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(CENTER).node) == Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 120 * 20 && match.Sector(BLUE, CENTER).holder != BLUE; ++tick)
+      match.Run(1);
+    Assert::IsTrue(match.Sector(BLUE, WEST).holder == BLUE && match.Sector(BLUE, CENTER).holder == BLUE);
+
+    // Without its station, Blue has level 1's cap, 3, and keeps the three sectors its Relays hold.
+    const Outpost::PlanePosition home = match.Placement(SOUTHWEST).node;
+    const Outpost::DesignId lance = match.World().FindDesign(RED, {Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{2}})->id;
+    std::vector<Outpost::EntityId> lances;
+    lances.reserve(30);
+    for (int i = 0; i < 30; ++i)
+      lances.push_back(match.World().SpawnShip(RED, lance,
+                                               {.xMeters = home.xMeters + 150.0f + (15.0f * static_cast<float>(i % 6)),
+                                                .zMeters = home.zMeters + 150.0f + (15.0f * static_cast<float>(i / 6))}));
+    match.Run(1);
+    Assert::IsTrue(match.World().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = lances, .target = station}}}).front() ==
+                   Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 120 * 20 && match.World().FindEntity(station) != nullptr; ++tick)
+      match.Run(1);
+    Assert::IsNull(match.World().FindEntity(station), L"the lances destroyed the station");
+    match.Run(1);
+    Assert::AreEqual(3, match.World().BuildSnapshot(BLUE).nodeCap);
+    for (const std::int32_t sector : {SOUTH, WEST, CENTER})
+      Assert::IsTrue(match.Sector(BLUE, sector).holder == BLUE, L"no node is taken away");
+    Assert::IsTrue(match.Build(BLUE, Outpost::StructureKind::Relay, match.Placement(NORTHWEST).node) == Outpost::CommandResult::CapReached);
+  }
 };
 } // namespace GameLogicTests

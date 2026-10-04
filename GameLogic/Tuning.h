@@ -142,6 +142,10 @@ struct StructureLevelTuning
   std::int32_t opensTier = 0;
   std::vector<ResearchTopicId> prerequisites;
   std::int32_t researchSlots = 0;
+  // A Command Station's (Phase 3 design §7): the nodes its player may hold from this level on, home included, and the
+  // Defence guns it carries; 0 where the level does not change them.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
 };
 
 // The most levels a structure has: the owner's models have five (ADR-045).
@@ -166,6 +170,10 @@ struct StructureTuning
   // A Shipyard's: the hulls it builds at level 1. A Shipyard that names no hull at any level builds every hull at level 1
   // (Phase 3 design §5).
   std::vector<HullId> hulls;
+  // A Command Station's at level 1 (Phase 3 design §7): the nodes its player may hold, home included, 0 for no cap; and
+  // the Defence guns it carries, 1 when it names none.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
 
   // The highest level it reaches.
   [[nodiscard]] std::int32_t TopLevel() const noexcept
@@ -258,6 +266,14 @@ struct Tuning
 // 1 at least (Phase 3 design §6).
 [[nodiscard]] std::int32_t OpenTier(const Tuning& _tuning, std::int32_t _level) noexcept;
 [[nodiscard]] std::int32_t ResearchSlots(const Tuning& _tuning, std::int32_t _level) noexcept;
+
+// The nodes a player whose Command Station is at _level may hold, home included (Phase 3 design §7, gate K4); level 1's
+// for a player without a station. Zero when the data sets no cap.
+[[nodiscard]] std::int32_t NodeCap(const Tuning& _tuning, std::int32_t _level) noexcept;
+
+// The Defence guns a structure of _kind carries at _level (Phase 3 design §7, gate K6): a Command Station's from its
+// levels, and one for any other armed structure.
+[[nodiscard]] std::int32_t StationGuns(const Tuning& _tuning, StructureKind _kind, std::int32_t _level) noexcept;
 
 // Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference

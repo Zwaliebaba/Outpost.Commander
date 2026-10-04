@@ -214,6 +214,22 @@ public:
     Assert::IsFalse(Outpost::NearestMuzzle(exhaustOnly, pose, {}).has_value());
   }
 
+  // Phase 3 design §7: a Command Station's further guns fire from the next nearest hardpoints, and wrap round a model with
+  // fewer guns than that.
+  TEST_METHOD(AFurtherGunFiresFromTheNextNearest)
+  {
+    const std::vector<Neuron::MeshHardpoint> hardpoints = TwoGunsAndAnExhaust();
+    const Outpost::ModelPose pose{.position = {.xMeters = 50.0f, .zMeters = 0.0f}};
+    const auto muzzleX = [&](std::uint8_t _gun) {
+      return Outpost::NearestMuzzle(hardpoints, pose, {.xMeters = 300.0f, .zMeters = 0.0f}, _gun)
+        .value_or(Outpost::PlanePosition{})
+        .xMeters;
+    };
+    Assert::AreEqual(58.0f, muzzleX(0), TOLERANCE, L"the first from the nearest");
+    Assert::AreEqual(44.0f, muzzleX(1), TOLERANCE, L"the second from the next");
+    Assert::AreEqual(58.0f, muzzleX(2), TOLERANCE, L"the third round again");
+  }
+
   // ADR-019: the exhaust streams out behind the ship, in its drive's color, and longer and brighter at speed.
   TEST_METHOD(AnExhaustStreamsBehindAndGrowsWithSpeed)
   {

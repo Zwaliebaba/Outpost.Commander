@@ -104,6 +104,9 @@ struct Entity
   // are zero for a structure placed whole (ADR-016).
   std::int32_t buildWorkDone = 0;
   std::int32_t buildWorkNeeded = 0;
+  // A Command Station's further Defence guns, which its level gives, each with its reload as the first's is
+  // (Phase 3 design §7).
+  std::vector<std::int32_t> extraGunReloadMilliticks;
   // A structure's level, from 1, and the next level's construction while it is upgraded, counted as a site's is: both are
   // zero while no upgrade is under way (Phase 3 design §4, ADR-064).
   std::int32_t level = 1;
@@ -212,6 +215,8 @@ enum class CommandResult : std::uint8_t
   // A Shipyard's job names a hull above its level, or a Research Lab's a topic of a tier its level has not opened (Phase 3
   // design §5, §6).
   LevelTooLow,
+  // A Relay would take the player past the nodes its Command Station's level lets it hold (Phase 3 design §7).
+  CapReached,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -490,6 +495,10 @@ private:
   [[nodiscard]] const Sector* SectorById(std::int32_t _id) const noexcept;
   // Works out again who holds each sector, which Relays are suppressed and which sectors are cut off (ADR-056).
   void UpdateTerritory();
+  // The nodes _player may hold (Phase 3 design §7): its Command Station's level's, or level 1's without one; zero for no
+  // cap. And the nodes it holds or has taken with a Relay under construction.
+  [[nodiscard]] std::int32_t NodeCapOf(PlayerId _player) const noexcept;
+  [[nodiscard]] std::int32_t NodesTaken(PlayerId _player) const noexcept;
   // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
   // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
   [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;

@@ -30,8 +30,8 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 | 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | done, in PR |
 | 22.2 | The Lab's second research slot | 22.1 | K3 decided | done, in PR |
 | 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | in review: owner run |
-| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | todo |
-| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | todo |
+| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done, in PR |
+| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | in review: owner run |
 | 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | todo |
 | 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | todo |
 | 25.2 | T1–T5 | 24.1, 25.1 | — | todo |
@@ -191,6 +191,12 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-056, edited in place for the cap. ADR-064, its Command Station decision, for the guns.
 - **Acceptance:** `TerritoryTests` cover the cap at each level, a site counting toward it, no node lost to it, and level 1's cap without a station. `DefenseTests` cover each gun firing on its own target. `WireFormatTests` cover the cap.
 - **Verify:** CI; the AI-against-AI matches in the container.
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 edited in place.
+  - **The numbers** are the station's `nodes` and `guns`, and its levels', in `Tuning.json`. The refusal is `CapReached`, the snapshot's `nodeCap` is zero without territory, and the protocol's version is 4.
+  - **Each further gun** keeps its own reload and fires at the station's target, chosen by the same rule. With the nearest-target rule that is one enemy for every gun, which is what "aiming on its own" comes to when each aims by one rule. `DefenseTests.AStationsLevelGivesItsGuns` covers the guns at each level, each firing on its own rhythm.
+  - **The cap** is covered at levels 1 and 2 in `TerritoryTests.TheStationCapsTheNodesHeld`, and at every level by `TuningTests`' `NodeCap`.
+  - **The AI** orders the station's next level in place of a Relay that the cap holds back, with one Constructor, so that the other keeps building. `AiPlayerTests.FollowsTheOre` gets 9 minutes rather than 6, since the AI's third claim now waits for the upgrade.
+  - **Run in the container:** 249 `GameLogicTests` pass, 0 fail.
 
 ### 23.2 — The client shows the cap and spreads the station's guns
 
@@ -198,6 +204,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-056's client decision, edited in place.
 - **Acceptance:** `HudTests`, `PlacementTests`, `HardpointsTests`.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 11; ADR-056 decision 11 edited in place. The reason for a red Relay ghost is the placing hint, "Relay: at the node cap; upgrade the Command Station to claim more", and the Constructor's Relay button is dim with NODE CAP. A shot of gun *n* leaves from the *n*-th nearest gun hardpoint to its target, wrapping round (`NearestMuzzle`). `HudTests.ShowsTheStationsCap` and `ShowsTheTerritory`, `PlacementTests.ARelayWaitsAtTheNodeCap`, `HardpointsTests.AFurtherGunFiresFromTheNextNearest` and `CombatEffectsTests.TheViewIsToldWhichGunFired`; 229 `GameAppTests` pass in the container, `GameClient` aside.
 
 ---
 

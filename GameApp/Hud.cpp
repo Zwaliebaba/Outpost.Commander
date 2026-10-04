@@ -1587,7 +1587,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   };
   if (!_newest.sectors.empty())
   {
-    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size())};
+    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size()), .cap = _newest.nodeCap};
     content.sectors.reserve(_newest.sectors.size());
     for (const SectorView& sector : _newest.sectors)
     {
@@ -1628,10 +1628,14 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     const auto type = std::ranges::find(_newest.structureTypes, _kind, &StructureTypeView::structure);
     return type != _newest.structureTypes.end() ? &*type : nullptr;
   };
+  const bool capReached = AtNodeCap(_newest.sectors, _newest.entities, _newest.player, _newest.nodeCap);
   if (_placing.has_value())
   {
     const StructureTypeView* type = typeOf(*_placing);
     content.hint = std::format("Placing {}: left-click to build, right-click to cancel", type != nullptr ? type->nameUtf8 : "a structure");
+    // The reason a Relay's ghost is red everywhere (Phase 3 design §7).
+    if (*_placing == StructureKind::Relay && capReached)
+      content.hint = "Relay: at the node cap; upgrade the Command Station to claim more";
   }
 
   const auto nameOf = [&_newest](DesignId _design) { return DesignNameOf(_newest, _design); };
@@ -1701,9 +1705,13 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         {
           const StructureLevelView& level = type->levels[next];
           const bool upgrading = structure->upgradePermille.has_value();
-          // A Shipyard's next level names the hulls it adds, and a Research Lab's the tier or the slot it gives (Phase 3 design
-          // §5, §6).
+          // A Shipyard's next level names the hulls it adds, a Research Lab's the tier or the slot it gives, and a Command
+          // Station's the nodes it lets the player hold and the Defence guns it adds (Phase 3 design §5–§7).
           std::string gives;
+          if (level.nodes > 0)
+            gives = std::format("{} nodes, ", level.nodes);
+          if (level.guns > 0)
+            gives += std::format("{} Defence guns, ", level.guns);
           if (level.opensTier > 0)
             gives = std::format("tier {}, ", level.opensTier);
           else if (level.researchSlots > 1)
@@ -1812,11 +1820,15 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       // A Relay holds a sector, and a map without them has none to hold (ADR-056).
       if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
         continue;
-      const bool allowed = !(type.structure == StructureKind::ResearchLab && hasLab);
+      const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
+      // A Relay past the Command Station's cap waits for the station's next level (Phase 3 design §7).
+      const bool capped = type.structure == StructureKind::Relay && capReached;
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
                                  .action = {.kind = ActionKind::Build, .structure = type.structure},
-                                 .enabled = allowed && _newest.ore >= type.cost,
-                                 .note = allowed ? std::string() : std::string("ONE PER PLAYER")});
+                                 .enabled = !secondLab && !capped && _newest.ore >= type.cost,
+                                 .note = secondLab ? std::string("ONE PER PLAYER")
+                                         : capped  ? std::string("NODE CAP")
+                                                   : std::string()});
     }
   }
   return content;
@@ -2056,8 +2068,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       paint.RightText(_enemy, right, figureTop, ENEMY_COLOR, Typeface::Figure);
       paint.RightText(std::move(own), ownRight, figureTop, OWN_COLOR, Typeface::Figure);
     };
-    row(std::format("Nodes of {}", territory.nodes), std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes),
-        TERRITORY_INSET_UNITS);
+    // The player's own against its Command Station's cap, "4 / 5" (Phase 3 design §7).
+    const std::string own =
+      territory.cap > 0 ? std::format("{} / {}", territory.ownNodes, territory.cap) : std::to_string(territory.ownNodes);
+    row(std::format("Nodes of {}", territory.nodes), own, std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
     if (tickets)
     {
       row("Tickets", WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)),

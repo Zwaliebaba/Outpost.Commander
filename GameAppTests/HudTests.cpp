@@ -153,7 +153,8 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
     Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
   content.research = "Researching Mass Driver Calibration, 99%";
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
-  content.territory = Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .ownTickets = 10000, .enemyTickets = 10000};
+  content.territory =
+    Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .cap = 12, .ownTickets = 10000, .enemyTickets = 10000};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
@@ -554,18 +555,22 @@ public:
        .maxZMeters = 1500.0f,
        .holder = Outpost::PlayerId{2},
        .suppressed = true}};
+    newest.nodeCap = 3;
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
     Assert::IsTrue(content.territory.has_value());
     const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
     Assert::AreEqual(1, territory.ownNodes);
     Assert::AreEqual(1, territory.enemyNodes);
     Assert::AreEqual(3, territory.nodes);
+    Assert::AreEqual(3, territory.cap);
     Assert::AreEqual(size_t{3}, content.sectors.size());
     Assert::IsTrue(content.sectors[0].side == Outpost::Hud::Side::Own && content.sectors[2].side == Outpost::Hud::Side::Enemy);
 
     content.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "1 / 3 : "; }),
+                   L"the player's own against its station's cap");
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
     const auto fog =
@@ -698,6 +703,51 @@ public:
     platform.shipyardNumber = 0;
     platform.level = 1;
     Assert::AreEqual(std::string("Defence Platform"), describe(platform).selection.front());
+  }
+
+  // Phase 3 design §7: a Command Station's next level names the nodes it lets the player hold and the Defence guns it adds;
+  // at the cap, a Constructor's Relay is dim with the reason, and so is placing one.
+  TEST_METHOD(ShowsTheStationsCap)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 1000;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::CommandStation,
+                              .nameUtf8 = "Command Station",
+                              .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4},
+                                         {.cost = 500, .buildSeconds = 60.0, .maxHitPointsHundredths = 700000, .nodes = 5, .guns = 2}}},
+                             {.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .buildable = true, .cost = 200}};
+    Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                .kind = Outpost::EntityKind::Structure,
+                                .owner = PLAYER,
+                                .structure = Outpost::StructureKind::CommandStation,
+                                .hitPointsHundredths = 500000,
+                                .maxHitPointsHundredths = 500000};
+    const auto levelLine = [&](const std::string& _line)
+    {
+      const std::vector<std::string> selection = Outpost::Hud::Describe(newest, std::vector{station}, std::vector{station.id}).selection;
+      return std::ranges::find(selection, _line) != selection.end();
+    };
+    Assert::IsTrue(levelLine("L2: 4 nodes, 6,000 hit points"));
+    station.level = 2;
+    Assert::IsTrue(levelLine("L3: 5 nodes, 2 Defence guns, 7,000 hit points"));
+
+    // The player holds its home and has a cap of one: the Relay waits for the station's next level.
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    newest.nodeCap = 1;
+    Outpost::EntityView constructor = Ship(9, {}, 30000, 30000);
+    constructor.role = Outpost::ShipRole::Constructor;
+    const std::vector<Outpost::EntityView> entities{constructor};
+    const std::vector<Outpost::EntityId> selected{constructor.id};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::IsFalse(content.buttons[0].enabled);
+    Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
+    content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
+    Assert::AreEqual(std::string("Relay: at the node cap; upgrade the Command Station to claim more"), content.hint);
+
+    newest.nodeCap = 2;
+    content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::IsTrue(content.buttons[0].enabled && content.buttons[0].note.empty(), L"below the cap");
   }
 
   // Phase 1 design §12: the production window shows one producer: the Command Station's Constructor or a Shipyard's saved

@@ -37,8 +37,8 @@ public:
   // Where a shooter's gun is in the view, given the point it fires at (ADR-018): GameClient finds it from the shooter's
   // model and where the view draws the ship. Nothing when it cannot, and the shot then leaves from where the server
   // says the ship stood when it fired.
-  // It takes the shooter and the point it fires at.
-  using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition)>;
+  // It takes the shooter, the point it fires at and which of the shooter's guns fired (ShotView::gun).
+  using MuzzleLocator = std::function<std::optional<PlanePosition>(EntityId, PlanePosition, std::uint8_t)>;
 
   // The color a shooter's beam is drawn in, so that the player sees whose fire it is (ADR-028): GameClient gives one from
   // the shooter's side. Nothing when it cannot, and the beam is then a neutral pale blue.
@@ -72,6 +72,7 @@ private:
     PlanePosition to;
     // The shot's splash; zero for a shot without splash.
     float radiusMeters = 0.0f;
+    std::uint8_t gun = 0;
   };
 
   void AddShot(const Effect& _effect, double _tick, const DirectX::XMFLOAT4& _beamColor, std::vector<Draw>& _draws) const;
