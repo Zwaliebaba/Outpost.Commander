@@ -47,8 +47,8 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, in PR #65 with 14.2; awaiting CI and the owner's run |
-| 14.2 | A type scale that reads | 14.1 | K1 | built, in PR #65; awaiting CI and the owner's run |
+| 14.1 | Text measured with its fonts, and kept inside its card | — | — | built, in PR #65 with 14.2, CI green; awaiting the owner's run |
+| 14.2 | A type scale that reads | 14.1 | K1 | built, in PR #65, CI green; awaiting the owner's run |
 | 15.1 | What production and research are doing, on the HUD | 14.2 | K2 | todo |
 | 15.2 | Keys on the buttons | 14.2 | — | todo |
 | 15.3 | The designer's preview in figures | 14.2 | — | todo |
@@ -117,7 +117,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 - **ADR:** a new one: the type scale, the locked text's color, and the room they take. Gate H6 accepted the mockup's sizes and colors as built, and they live in `Hud.cpp` rather than an ADR, so the new ADR records what changes from what H6 accepted.
 - **Acceptance:** `HudTests.NamesItsTypefacesAndSprites` with the new sizes; 14.1's tests; and `SetsEveryTextAtFourAndAHalfToOne`, which computes each text's contrast against the panel it starts in, as the review did, and lists the texts K1 exempts.
 - **Verify:** CI; run, the designer beside the mockup; **owner run**, which closes K1's sizes.
-- **As built (2026-10-04):** [ADR-062](../Design/ADR/ADR-062-type-scale-and-contrast.md), which rewrote ADR-043's window widths in place. The sizes and the locked text are as proposed, set in `Hud::FaceUnits`. The name's count takes the labels' color and the title bar's labels the row labels'; nothing is named decorative, and the contrast test exempts no text. The owner's answers of 2026-10-04 raised a shown chip's code, the worse figure's red and the Queue button's cost, and narrowed production to 478. The part cards are 220 wide and the designer 818, but a card stays 80 units tall: measured, the larger faces need only 2 units more in a row with notes, not about 12. The designer is 818 × 810 with three weapons and 818 × 913 with five and the module row; K1's 840 predates the module row. Topic lines are 18 units apart. Not yet seen on screen.
+- **As built (2026-10-04):** [ADR-062](../Design/ADR/ADR-062-type-scale-and-contrast.md), which rewrote ADR-043's window widths in place. The sizes and the locked text are as proposed, set in `Hud::FaceUnits`. The name's count takes the labels' color and the title bar's labels the row labels'; nothing is named decorative, and the contrast test exempts no text. The owner's answers of 2026-10-04 raised a shown chip's code, the worse figure's red and the Queue button's cost, and narrowed production to 478. The part cards are 220 wide and the designer 818, but a card stays 80 units tall: measured, the larger faces need only 2 units more in a row with notes, not about 12. The designer is 818 × 810 with three weapons and 818 × 913 with five and the module row; K1's 840 predates the module row. Topic lines are 18 units apart, and a slot row's label and pick 18 units apart, which `OverlapsNoTwoTexts` found meeting at 1280×720 on the module row. CI green on 2026-10-04. Not yet seen on screen.
 
 ---
 
