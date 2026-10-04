@@ -24,14 +24,14 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
 | 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | done, in PR |
-| 20.2 | The client shows levels and upgrades | 20.1 | — | in review: owner run |
+| 20.2 | The client shows levels and upgrades | 20.1 | — | done: owner run on 2026-10-04 |
 | 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | done, in PR |
-| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | in review: owner run |
+| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | done: owner run on 2026-10-04 |
 | 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | done, in PR |
 | 22.2 | The Lab's second research slot | 22.1 | K3 decided | done, in PR |
-| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | in review: owner run |
+| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | done: owner run on 2026-10-04 |
 | 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done, in PR |
-| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | in review: owner run |
+| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | done: owner run on 2026-10-04 |
 | 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | done, in PR |
 | 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | todo |
 | 25.2 | T1–T5 | 24.1, 25.1 | — | todo |
