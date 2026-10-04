@@ -830,6 +830,25 @@ public:
     Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
   }
 
+  // Phase 2 design §10: the production window shows a design's module after its components' initials, as the designer's
+  // chips do, so that a scout reads apart from the plain design of its hull, drive and weapon.
+  TEST_METHOD(NamesAModuleInTheProductionWindow)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot();
+    newest.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40}};
+    newest.designs.push_back({.id = Outpost::DesignId{2},
+                              .nameUtf8 = "Scout",
+                              .hull = Outpost::HullId{1},
+                              .drive = Outpost::DriveId{1},
+                              .weapon = Outpost::WeaponId{1},
+                              .module = Outpost::ModuleId{1},
+                              .cost = 127});
+    const Outpost::Hud::ProductionPanel panel = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Assert::AreEqual(size_t{2}, panel.options.size());
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD"), panel.options[0].detail);
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.options[1].detail);
+  }
+
   // Phase 1 design §11, after the mockup: a window 728 units wide; the Shipyard's arrows in its title bar, pressed rather
   // than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the weapons wrap to a
   // second line of cards once there are more than three; and Queue at the bottom.

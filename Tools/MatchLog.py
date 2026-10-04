@@ -9,7 +9,7 @@ every time in ticks:
   match seed <seed> ticks_per_second <rate>                       a match starts
   research <tick> player <player> topic <id> <name>               a player finished a research topic
   tier <tick> player <player> tier <tier>                         a player finished the gateway that opens a tier
-  built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared
+  built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared; a module ends its name
   fleet <tick> player <player> warships <count>                   a player's warships, every 30 seconds
   dry <tick> asteroid <id>                                        an ore asteroid ran dry
   peak <tick> player <player> warships <count>                    the most warships a player had at once

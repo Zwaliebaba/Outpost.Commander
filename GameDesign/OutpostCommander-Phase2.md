@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 2 Design: Territory
 
-Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review · Accepted 2026-10-03, with every gate decided (§13)
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review · Accepted 2026-10-03, with every gate decided (§13) · Built and merged on 2026-10-04, with S1–S4 recorded for two AIs in §2; the owner's runs and S5 are open
 
 This document says what Phase 2 builds on top of Phase 1, and amends [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner accepted it on 2026-10-03 and decided its gates (§13); the order of the work is [the Phase 2 plan](ImplementationPlan-Phase2.md). Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
 
@@ -10,7 +10,7 @@ This document says what Phase 2 builds on top of Phase 1, and amends [the Phase 
 
 The owner's question of 2026-10-03: **today a match is two players building ships and, in the end, one siege of the enemy's base. There are no real skirmishes along the way.** The owner wants the fights of Warzone 2100, where a scout meets a scout in the first five minutes and a small enemy outpost is a target halfway through, and, beyond that, a much bigger world with fights over big areas of space to control, as in PlanetSide.
 
-**Why the game sieges today.** It is not a missing feature; the rules make a siege the right play:
+**Why the game sieges today.** It is not a missing feature; the rules make a siege the right play. *This is the game as it stood when Phase 2 began, on 2026-10-03; §2 says what Phase 2 changed of the AI's numbers.*
 
 - **Nothing in between is worth fighting for.** The home asteroids stand 260 m from the Command Station, under one Defence Platform's cover. The rings pay 5 Ore a second at home, 6 near, 8 contested and 10 rich (ADR-036), and Phase 1's depletion (Phase 1 §8) only begins to push a player outward.
 - **A small fight is a bad trade.** Battles between clumps follow Lanchester's square law, so concentration wins; the armed Command Station beats seven raiders and a Defence Platform five. A raid of three ships feeds the defender.
@@ -32,9 +32,9 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 | S2 | Are there skirmishes before the decisive battle? | The match log records each engagement: ships of both sides firing within one sector. Before minute 20 there are at least five, in at least three sectors, in the owner's match and in the median of the 10 AI-against-AI matches. |
 | S3 | Does territory decide matches? | Over the same 10 matches, both endings happen at least once: domination, and losing the Command Station and every Shipyard (§8). |
 | S4 | Does a match still last 45–60 minutes? | The median of the 10 AI-against-AI matches is 45–60 minutes, as Phase 1's P1 (owner, 2026-10-03). |
-| S5 | Can one commander follow it? | The owner judges the alerts, the strategic view and the standing orders (§9) in play. |
+| S5 | Can one commander follow it? | The owner judges the alerts and the standing orders (§9) in play. The strategic view is not in Phase 2 (gate J5). |
 
-**Where they stand on 2026-10-03, after plan task 19.2.** The AI-against-AI figures are recorded as the Linux container measured them, with the match log of ADR-038 and the AI of ADR-020 decision 13 and ADR-041. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently. The owner's own match and S5 are not yet measured.
+**Where they stand on 2026-10-04, after plan task 19.2.** The AI-against-AI figures are recorded as the Linux container measured them, with the match log of ADR-038 and the AI of ADR-020 decision 13 and ADR-041. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently. The owner's own match and S5 are not yet measured.
 
 - **S1, contact: answered for two AIs.** All 10 of seeds 1–10 have a shot by minute 5, and all 40 of seeds 1–40.
 - **S2, skirmishes: answered for two AIs.** Before minute 20, seeds 1–10 have a median of 16.5 engagements in 6 sectors, and every one of the 40 has at least five in three sectors.
@@ -118,7 +118,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 *Decided (gate J5): alerts and standing orders are Phase 2's, and the strategic view is not.* Without these, a front of nine sectors is losses nobody saw.
 
 - **Alerts.** A short message and a mark on the minimap when a Relay is suppressed or attacked, a rig is lost, or an enemy group enters a held sector; a key jumps the camera to the latest.
-- **A strategic view.** Zooming out beyond the RTS camera's 1,600 m limit (Phase 1's gate H8) to a map of sectors: who holds what, what is suppressed, where groups are.
+- **A strategic view, not in Phase 2** (gate J5). Zooming out beyond the RTS camera's 1,600 m limit (Phase 1's gate H8) to a map of sectors: who holds what, what is suppressed, where groups are.
 - **Standing orders.** "Hold this sector": a group returns to the sector's Relay after it chases, and answers any enemy in the sector. "Patrol": between two points, attacking what it meets.
 - **Relay jumps** are Phase 3's, with the larger map that needs them (§7).
 
@@ -151,6 +151,7 @@ The node graph is what an AI can reason about: the threat in each sector, the we
 - sends a scout with a Sensor Array in the first two minutes;
 - claims nodes adjacent to its territory, and fortifies the ones on the front with a Defence Platform;
 - raids a sector it sees weakly held with a few fast ships, suppressing it, and pulls back when it loses;
+- holds its sectors with standing orders;
 - masses for a main attack only when it has a lead in nodes or the enemy's front has thinned.
 
 ---

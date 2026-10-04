@@ -148,9 +148,11 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
       ++warships;
     if (!m_built.insert(entity.id).second)
       continue;
-    *m_out << std::format("built {} player {} hull {} drive {} weapon {} {}+{}+{}\n", _snapshot.tick, entity.owner.value, entity.hull.value,
-                          entity.drive.value, entity.weapon.value, nameOf(_snapshot.hulls, entity.hull),
-                          nameOf(_snapshot.drives, entity.drive), nameOf(_snapshot.weapons, entity.weapon));
+    // A module joins the name when the ship has one (Phase 2 design §10), so a scout reads apart from its plain design.
+    const std::string module = entity.module.IsValid() ? std::format("+{}", nameOf(_snapshot.modules, entity.module)) : std::string();
+    *m_out << std::format("built {} player {} hull {} drive {} weapon {} {}+{}+{}{}\n", _snapshot.tick, entity.owner.value,
+                          entity.hull.value, entity.drive.value, entity.weapon.value, nameOf(_snapshot.hulls, entity.hull),
+                          nameOf(_snapshot.drives, entity.drive), nameOf(_snapshot.weapons, entity.weapon), module);
   }
 
   auto fleet = std::ranges::find(m_fleets, _snapshot.player, &Fleet::player);
