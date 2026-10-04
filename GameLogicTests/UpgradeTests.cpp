@@ -202,6 +202,7 @@ public:
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     // Lances wear it down until it is about half, and then go.
     std::vector<Outpost::EntityId> lances;
+    lances.reserve(4);
     for (int i = 0; i < 4; ++i)
       lances.push_back(arena.Ship(RED, SMALL, LANCE, {.xMeters = 150.0f, .zMeters = -30.0f + (20.0f * static_cast<float>(i))}));
     (void)arena.Tick({Order(RED, Outpost::AttackCommand{.ships = lances, .target = yard})});
@@ -273,6 +274,7 @@ public:
     const std::int32_t ore = OreOf(arena, BLUE);
 
     std::vector<Outpost::EntityId> lances;
+    lances.reserve(10);
     for (int i = 0; i < 10; ++i)
       lances.push_back(arena.Ship(RED, SMALL, LANCE, {.xMeters = 150.0f, .zMeters = -90.0f + (20.0f * static_cast<float>(i))}));
     (void)arena.Tick({Order(RED, Outpost::AttackCommand{.ships = lances, .target = yard})});
@@ -317,7 +319,9 @@ public:
 
     (void)arena.Tick({Upgrade(BLUE, yard, {constructor})});
     arena.Run((LevelTicks(arena, Outpost::StructureKind::Shipyard, 1) / 2) - 1);
-    const Outpost::EntityView* half = FindView(arena.World().BuildSnapshot(BLUE), yard);
+    // The snapshot is kept, since the view points into it.
+    const Outpost::Snapshot halfway = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* half = FindView(halfway, yard);
     Assert::IsTrue(half->upgradePermille.has_value() && *half->upgradePermille == 500,
                    std::to_wstring(half->upgradePermille.value_or(-1)).c_str());
     Assert::AreEqual(1, half->level);
@@ -340,7 +344,8 @@ public:
     (void)arena.Tick({Order(BLUE, Outpost::MoveCommand{.ships = {scout}, .destination = {.xMeters = -1500.0f, .zMeters = 200.0f}}),
                       Upgrade(RED, yard, {constructor})});
     Assert::IsTrue(TicksToLevel(arena, yard, 2, 2 * LevelTicks(arena, Outpost::StructureKind::Shipyard, 1)) > 0);
-    const Outpost::EntityView* remembered = FindView(arena.World().BuildSnapshot(BLUE), yard);
+    const Outpost::Snapshot memory = arena.World().BuildSnapshot(BLUE);
+    const Outpost::EntityView* remembered = FindView(memory, yard);
     Assert::IsTrue(remembered != nullptr && remembered->remembered);
     Assert::AreEqual(1, remembered->level, L"the upgrade was out of sight");
 
