@@ -72,7 +72,7 @@ std::vector<std::wstring> CommandLineArguments()
   {
     void operator()(LPWSTR* _arguments) const noexcept
     {
-      (void)LocalFree(_arguments);
+      (void)LocalFree(static_cast<HLOCAL>(_arguments));
     }
   };
 
