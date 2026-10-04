@@ -4,6 +4,7 @@
 
 #include "AiMatches.h"
 
+#include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -110,7 +111,8 @@ std::uint64_t NewSeed()
 struct ServerStart
 {
   std::unique_ptr<Outpost::Server> server;
-  Outpost::AiSettings ai;
+  // The AI's settings at each difficulty, in Outpost::Difficulty's order (ADR-065).
+  std::array<Outpost::AiSettings, 3> ai;
 };
 
 // Something made on another thread, and when it was done.
@@ -218,7 +220,13 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // A match's players connect to its server over QUIC, as they will to a server of its own (ADR-060).
     const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true};
     auto serverLoad = PrepareAsync(
-      [serverDesc] { return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc), .ai = Outpost::LoadPackagedAiSettings()}; });
+      [serverDesc]
+      {
+        return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc),
+                           .ai = {Outpost::LoadPackagedAiSettings(Outpost::EASY_AI_SETTINGS),
+                                  Outpost::LoadPackagedAiSettings(Outpost::NORMAL_AI_SETTINGS),
+                                  Outpost::LoadPackagedAiSettings(Outpost::HARD_AI_SETTINGS)}};
+      });
     auto assetsLoad = PrepareAsync(Outpost::LoadClientAssets);
 
     Neuron::Window window({.title = GAME_TITLE, .windowedClientWidthPixels = 1280, .windowedClientHeightPixels = 720});
@@ -232,7 +240,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     logStage("server", serverStart.ready);
     std::unique_ptr<Outpost::Server> nextServer = std::move(serverStart.value.server);
     const std::uint32_t ticksPerSecond = nextServer->TicksPerSecond();
-    const Outpost::AiSettings aiSettings = std::move(serverStart.value.ai);
+    const std::array<Outpost::AiSettings, 3> aiSettings = std::move(serverStart.value.ai);
     std::optional<Match> match;
     Prepared<Outpost::ClientAssets> assets = assetsLoad.get();
     logStage("assets", assets.ready);
@@ -260,7 +268,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
       match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER), RIVAL_PLAYER);
       if (!load && !stress)
       {
-        match->ai.emplace(aiSettings, ticksPerSecond);
+        match->ai.emplace(aiSettings[static_cast<std::size_t>(client.RequestedDifficulty())], ticksPerSecond);
         match->logFile.open(std::filesystem::temp_directory_path() / MATCH_LOG, std::ios::app);
         match->log.emplace(match->logFile, seed, ticksPerSecond);
       }

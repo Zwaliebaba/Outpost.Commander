@@ -1,6 +1,6 @@
 # The Self-Play Network — Blueprint
 
-Status: **proposal** · 2026-10-04, revised that day for [Phase 3's draft](../GameDesign/OutpostCommander-Phase3.md) and [the horizon](../GameDesign/OutpostCommander-Horizon.md) · The blueprint of milestone SP2 of [the self-play plan](../GameDesign/ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR. Six questions are the owner's, gates N1 to N6 (§15).
+Status: **proposal** · 2026-10-04, revised that day for [Phase 3's draft](../GameDesign/Archive/OutpostCommander-Phase3.md) and [the horizon](../GameDesign/OutpostCommander-Horizon.md) · The blueprint of milestone SP2 of [the self-play plan](../GameDesign/ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR. Six questions are the owner's, gates N1 to N6 (§15).
 
 This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-063](ADR/ADR-063-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first. The network targets Phase 3's rules, because it will be built after them, and §16 records what the horizon would change.
 

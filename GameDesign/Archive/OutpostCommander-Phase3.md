@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](../OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
 
-This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
+This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](OutpostCommander-Phase1.md) and [the MVP design](OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
 
 ---
 
@@ -30,12 +30,20 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 | T4 | Are upgraded structures fought over? | The match log records each structure above level 1 that is attacked. In the median match, at least one is attacked before the match ends. |
 | T5 | Does it read? | The owner judges, in play, whether a structure's level is visible at a glance and whether what the next level gives is clear before buying it. |
 
+**Where they stand on 2026-10-04, after plan task 25.2.** The AI-against-AI figures are over seeds 1–40, as the Linux container measured them with the match log of ADR-038 and the AI of ADR-020 and ADR-041 tuned by 25.2. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently.
+
+- **T1, Phase 2 holds: yes.** All 40 end, at a median of 52:45, 28 of them within 45–60 minutes (S4; Phase 2 had 47:55 and 25). S1 is met in all 40, S2 in 39, and S3 sees both endings, 29 by domination and 11 by production. Player 1 wins 28 of the 40, a seat bias not chased here.
+- **T2, the cap's stall: missed, and kept** (owner, 2026-10-04). Both players sit at their caps with equal nodes for a median of 9:28 a match, from 6:14 to 10:33, against the 5 minutes asked. Most of it is the opening: both reach level 1's three nodes at about 2:25 and wait for level 2, then sit at four each until one reaches level 3. No setting of the AI's moved it. A level 2 of 150 Ore and 30 s gave 8:40, and a cap one node higher at every level 5:10 but a median match of 25:08 that never needed level 3, so the numbers of §7 stay. The stall does not stall the match: most end by domination.
+- **T3, the levels reached: missed on the Research Lab, and kept** (owner, 2026-10-04). Each side reaches level 3 of the Command Station and of a Shipyard in all 40, and of the Research Lab in 11, so all three in 11 of the 40. Tier 3 is opened in 33 of the 40 matches and by 44 of the 80 players, against Phase 1's 2 in 80.
+- **T4, upgraded structures fought over: yes.** A median of 4 structures above level 1 is attacked a match, from 0 to 12.
+- **T5, does it read: yes.** The owner's judgement in play, on 2026-10-04: a structure's level reads at a glance, and what the next level gives is clear before buying it.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-04
 
 - **Phase 3 is upgrades, on Phase 2's 5 km map.** The 10 km world, forward Shipyards, relay jumps and pathing by sector, which Phase 2 §7 kept for Phase 3, wait on **the horizon** (below). Phase 3 is measured against the same map and the same S1–S4 as Phase 2, so a change in the figures can be traced to it.
-- **The long-term direction is [the horizon](OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
+- **The long-term direction is [the horizon](../OutpostCommander-Horizon.md)**: a galaxy that keeps running, played by a circle of friends in seasons of weeks and later of months. There the world grows by star systems, each a map like this one, rather than into one 10 km map, and a relay jump becomes travel between systems (Horizon O8). Phase 3's rules are unchanged by it. What Phase 3 builds is what the horizon builds on: an upgraded structure is a target worth a raid, as a vault system would be worth a fleet (Horizon §6.1), and the Command Station's cap on nodes is the pattern for a bound on fleets (Horizon §6.2).
 - **A structure builds its own next level, and keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).

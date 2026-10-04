@@ -78,7 +78,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 | K2 | The HUD says what production and research are doing, as 15.1 proposes: a status panel under the Ore, and a line on a producer's or the Lab's selection panel, which Phase 1 §12 keeps to its name, hit points, construction and window buttons. **Decided on 2026-10-03:** as proposed. | 15.1 | — |
 | K3 | The selection ring a fixed width on the screen, about 3 px at 1080p at any zoom, in place of the band ADR-042 decision 3 keeps. **Decided on 2026-10-03:** as proposed. | 15.5 | — |
 | K4 | How the keys with no button are taught: a Controls window on F1, and whether the main menu says so, which MVP §9 keeps to Start skirmish and Quit. **Decided on 2026-10-03:** as proposed; whether the menu gains its line is 16.4's to propose at the owner's run. | 16.4 | — |
-| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. **On 2026-10-04** the gateway's stripe lapsed: [Phase 3](OutpostCommander-Phase3.md) removes the gateway topics (its §6), and the owner chose Phase 3 over 16.1. | 16.2, 16.3, 16.6 | — |
+| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. **On 2026-10-04** the gateway's stripe lapsed: [Phase 3](Archive/OutpostCommander-Phase3.md) removes the gateway topics (its §6), and the owner chose Phase 3 over 16.1. | 16.2, 16.3, 16.6 | — |
 | K6 | Short names for the four starting designs, as 16.5 proposes from the MVP design's own nicknames (§7). **Decided on 2026-10-03:** as proposed; Line or Lancer is 16.5's to put to the owner. | 16.5 | — |
 | K7 | Whether the player can scale the interface beyond the screen's fit (ADR-006), how and how far, or not now. **Decided on 2026-10-03:** as proposed, Ctrl+= and Ctrl+- as far as the windows fit. | 17.1 | — |
 
@@ -136,7 +136,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
   - **A line on the selection panel** of the player's own finished producer or Lab: "Building Small+Ion+Mass Driver · 62% · +2 queued", "Waiting for Ore", or "Idle". An enemy structure's queue stays unshown (task 9.4).
   - The windows' default top moves down if the panel needs the room.
   - Phase 2's alerts (J5) are messages about events. This panel shows a standing state, and stays when they come.
-  - [Phase 3](OutpostCommander-Phase3.md) §9 gives the same selection panel the structure's level and an Upgrade button ([its plan](ImplementationPlan-Phase3.md)'s 20.2). The line is laid out to leave room for both, and whichever lands second fits around the first.
+  - [Phase 3](Archive/OutpostCommander-Phase3.md) §9 gives the same selection panel the structure's level and an Upgrade button ([its plan](Archive/ImplementationPlan-Phase3.md)'s 20.2). The line is laid out to leave room for both, and whichever lands second fits around the first.
 - **ADR:** a new one: what the HUD reports of production, and what it adds to Phase 1 §12's selection panel.
 - **Acceptance:** `HudTests`: the panel with no Lab and no Shipyard; a Lab researching, waiting for Ore and idle; Shipyards building and idle; a click on each line; the selection panel's line for a Shipyard building, waiting and idle, and none on an enemy's.
 - **Verify:** CI; run; **owner run.**
@@ -195,7 +195,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
   - **Arrows flank what they step:** "< SHIPYARD 05 >". The production window's move from beside its "PRODUCTION" label to either side of the producer's name, and the designer's to either side of the Shipyard's. They grow from 18 units square to 24 (`SMALL_BUTTON_UNITS`), and the research window's scroll arrows with them.
   - **Research says where its page is:** "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030).
   - **A window's body is opaque:** `WINDOW_COLOR`'s alpha 0.97 → 1.
-  - **The gateway's mark is left as it is.** [Phase 3](OutpostCommander-Phase3.md) removes the gateway topics (its §6, [its plan](ImplementationPlan-Phase3.md)'s 22.1), and their gold outline goes with them (owner, 2026-10-04).
+  - **The gateway's mark is left as it is.** [Phase 3](Archive/OutpostCommander-Phase3.md) removes the gateway topics (its §6, [its plan](Archive/ImplementationPlan-Phase3.md)'s 22.1), and their gold outline goes with them (owner, 2026-10-04).
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the headers; the arrows' places and size; the page line on the first, a middle and the last page.
 - **Verify:** CI; run; **owner run.**
@@ -214,7 +214,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 ### 16.3 — What a production card says
 
 - **Gate:** K5.
-- **Scope:** a Shipyard's card adds its design's build time, and three short bars marked S, M and L for how it does against each hull. A bar's length follows the designer's rating against that hull, three segments for Good, two for Fair and one for Poor, so that the bars read without their colors. The Constructor's card adds its build time. [Phase 3](OutpostCommander-Phase3.md) dims a card whose hull is above the Shipyard's level, with the reason ([its plan](ImplementationPlan-Phase3.md)'s 21.2); the card is laid out to leave room for it.
+- **Scope:** a Shipyard's card adds its design's build time, and three short bars marked S, M and L for how it does against each hull. A bar's length follows the designer's rating against that hull, three segments for Good, two for Fair and one for Poor, so that the bars read without their colors. The Constructor's card adds its build time. [Phase 3](Archive/OutpostCommander-Phase3.md) dims a card whose hull is above the Shipyard's level, with the reason ([its plan](Archive/ImplementationPlan-Phase3.md)'s 21.2); the card is laid out to leave room for it.
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the time and the bars of two designs that differ; 14.1's tests.
 - **Verify:** CI; run; **owner run.**

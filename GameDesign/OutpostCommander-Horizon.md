@@ -2,7 +2,7 @@
 
 Status: **horizon, not a phase** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Nothing here is planned or accepted; a phase design that takes part of it up decides it there
 
-This document records where the owner wants the game to go in the long run, and what follows from it. It amends nothing. The [MVP](Archive/OutpostCommander-MVP.md), [Phase 1](Archive/OutpostCommander-Phase1.md), [Phase 2](Archive/OutpostCommander-Phase2.md) and [Phase 3](OutpostCommander-Phase3.md) designs say what is built and what comes next, and this document is not among the design authorities AGENTS.md names. A phase design that takes something from here becomes the authority for it, and this document is edited in place to say so.
+This document records where the owner wants the game to go in the long run, and what follows from it. It amends nothing. The [MVP](Archive/OutpostCommander-MVP.md), [Phase 1](Archive/OutpostCommander-Phase1.md), [Phase 2](Archive/OutpostCommander-Phase2.md) and [Phase 3](Archive/OutpostCommander-Phase3.md) designs say what is built and what comes next, and this document is not among the design authorities AGENTS.md names. A phase design that takes something from here becomes the authority for it, and this document is edited in place to say so.
 
 ---
 

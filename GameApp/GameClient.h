@@ -68,6 +68,12 @@ public:
   void ShowMenu();
 
   // What the player asked for since the last call, if anything.
+  // The difficulty of the last skirmish the player asked for (ADR-065).
+  [[nodiscard]] Difficulty RequestedDifficulty() const noexcept
+  {
+    return m_difficulty;
+  }
+
   [[nodiscard]] std::optional<Request> TakeRequest()
   {
     return std::exchange(m_request, std::nullopt);
@@ -239,6 +245,7 @@ private:
 
   Screen m_screen = Screen::Menu;
   std::optional<Request> m_request;
+  Difficulty m_difficulty = Difficulty::Normal;
   std::uint32_t m_ticksPerSecond = 0;
   ModelCatalog m_catalog;
   Camera m_camera;

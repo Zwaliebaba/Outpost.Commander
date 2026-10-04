@@ -1482,8 +1482,12 @@ Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels
 {
   const float scale = Scale(_widthPixels, _heightPixels);
   Layout layout{.fontPixels = FONT_UNITS * scale, .panels = {}, .texts = {}, .actions = {}, .minimap = {}, .mapSizeMeters = 0.0f};
-  const std::array<Button, 2> buttons{
-    {{.label = "Start skirmish", .action = {.kind = ActionKind::StartSkirmish}}, {.label = "Quit", .action = {.kind = ActionKind::Quit}}}};
+  // A skirmish at each difficulty (ADR-065), then Quit.
+  const std::array<Button, 4> buttons{
+    {{.label = "Easy skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Easy}},
+     {.label = "Normal skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Normal}},
+     {.label = "Hard skirmish", .action = {.kind = ActionKind::StartSkirmish, .difficulty = Difficulty::Hard}},
+     {.label = "Quit", .action = {.kind = ActionKind::Quit}}}};
   const auto count = static_cast<float>(buttons.size());
   const float heightUnits =
     (2.0f * PADDING) + TITLE_LINE_UNITS + NAME_LINE_UNITS + BUTTON_GAP + (count * BUTTON_HEIGHT) + ((count - 1.0f) * BUTTON_GAP);

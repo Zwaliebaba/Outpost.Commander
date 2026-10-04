@@ -795,6 +795,7 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::StartSkirmish:
     m_request = Request::StartSkirmish;
+    m_difficulty = _action.difficulty;
     break;
   case Hud::ActionKind::Quit:
     m_request = Request::Quit;

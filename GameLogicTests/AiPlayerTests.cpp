@@ -780,11 +780,13 @@ public:
   }
 
   // Phase 3 design §8: its home and the two flanks its rigs take it to are level 1's cap, so it upgrades its Command
-  // Station to level 2 before its claim beyond them, which is its fourth node; and at that cap, wanting no more, it
-  // upgrades no further.
+  // Station to level 2 before its claim beyond them, which is its fourth node; and at that cap, with one claim in its
+  // settings and so wanting no more, it upgrades no further.
   TEST_METHOD(UpgradesItsStationBeforeItsFirstClaim)
   {
-    AiMatch match;
+    Outpost::AiSettings settings = RepositorySettings();
+    settings.claimSectors = 1;
+    AiMatch match(3, std::nullopt, settings);
     std::optional<std::int32_t> levelAtFourth;
     std::int32_t level = 0;
     for (int step = 0; step < 16 && !levelAtFourth.has_value(); ++step)

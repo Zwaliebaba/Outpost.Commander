@@ -84,7 +84,10 @@ struct AiSettings
 // reads; an identifier the match does not have is a design the AI never sees and never builds.
 [[nodiscard]] AiSettings LoadAiSettings(std::string_view _json);
 
-// Reads Opponent.json from the package's Assets folder (ADR-008). Throws Neuron::Exception naming the file when it is
-// missing or invalid.
-[[nodiscard]] AiSettings LoadPackagedAiSettings();
+// Reads an AI's settings from the package's Assets folder (ADR-008): Opponent.json, the Normal AI, or the Easy or Hard
+// one's file (ADR-065). Throws Neuron::Exception naming the file when it is missing or invalid.
+inline constexpr std::wstring_view NORMAL_AI_SETTINGS = L"Opponent.json";
+inline constexpr std::wstring_view EASY_AI_SETTINGS = L"OpponentEasy.json";
+inline constexpr std::wstring_view HARD_AI_SETTINGS = L"OpponentHard.json";
+[[nodiscard]] AiSettings LoadPackagedAiSettings(std::wstring_view _fileName = NORMAL_AI_SETTINGS);
 } // namespace Outpost
