@@ -72,6 +72,26 @@ Outpost::WeaponView Outpost::ViewOf(const WeaponTuning& _weapon, const Upgrades&
           .available = _available};
 }
 
+Outpost::ModuleView Outpost::ViewOf(const ModuleTuning& _module)
+{
+  return {.id = _module.id,
+          .nameUtf8 = _module.name,
+          .sightMeters = _module.sightMeters,
+          .speedFactor = _module.speedFactor,
+          .cost = _module.cost,
+          .available = true};
+}
+
+Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, const DesignComponents& _components, const Upgrades& _upgrades)
+{
+  if (!_components.module.IsValid())
+    return DesignStatsFor(_tuning, _components.hull, _components.drive, _components.weapon, _upgrades);
+  const ModuleView module = ViewOf(Find(_tuning.modules, _components.module, "module"));
+  return DesignStatsOf(ViewOf(Find(_tuning.hulls, _components.hull, "hull"), _upgrades, true),
+                       ViewOf(Find(_tuning.drives, _components.drive, "drive"), true),
+                       ViewOf(Find(_tuning.weapons, _components.weapon, "weapon"), _upgrades, true), &module);
+}
+
 Outpost::DesignStats Outpost::DesignStatsFor(const Tuning& _tuning, HullId _hull, DriveId _drive, WeaponId _weapon,
                                              const Upgrades& _upgrades)
 {
@@ -99,6 +119,10 @@ std::vector<Outpost::DesignComponents> Outpost::StartingDesigns(const Tuning& _t
 
 std::string Outpost::DesignName(const Tuning& _tuning, const DesignComponents& _components)
 {
-  return std::format("{}+{}+{}", Find(_tuning.hulls, _components.hull, "hull").name, Find(_tuning.drives, _components.drive, "drive").name,
-                     Find(_tuning.weapons, _components.weapon, "weapon").name);
+  std::string name =
+    std::format("{}+{}+{}", Find(_tuning.hulls, _components.hull, "hull").name, Find(_tuning.drives, _components.drive, "drive").name,
+                Find(_tuning.weapons, _components.weapon, "weapon").name);
+  if (_components.module.IsValid())
+    name += std::format("+{}", Find(_tuning.modules, _components.module, "module").name);
+  return name;
 }

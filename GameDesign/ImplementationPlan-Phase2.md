@@ -29,8 +29,8 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 14.5 | The AI claims its flanks | 14.1 | — | done, not yet built on Windows |
 | 15.1 | Domination | 14.1 | J4 decided | done, not yet built on Windows |
 | 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | in review: owner run |
-| 16.1 | The module slot and the Sensor Array | — | J6 decided | todo |
-| 16.2 | The designer's module row | 16.1 | — | todo |
+| 16.1 | The module slot and the Sensor Array | — | J6 decided | done, not yet built on Windows |
+| 16.2 | The designer's module row | 16.1 | — | in review: owner run |
 | 17.1 | Alerts | 14.3 | J5 decided | todo |
 | 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | todo |
 | 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | todo |
@@ -157,12 +157,14 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one.
 - **Acceptance:** `DesignTests` and `SaveDesignTests` for a design with a module, `FogTests` for its sight, `TuningTests` for the list.
 - **Verify:** CI.
+- **As built:** [ADR-058](../Design/ADR/ADR-058-modules.md), decisions 1–6 and 8. No research unlocks a module. The ship's sight is tested in `SaveDesignTests.SavesADesignWithASensorArray`, with the rest of the module, rather than in `FogTests`. 214 `GameLogicTests` pass in the container.
 
 ### 16.2 — The designer's module row
 
 - **Scope:** a fourth row of cards under the weapon, with an empty card for no module; the bars show sight.
 - **Acceptance:** `DesignerTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-058](../Design/ADR/ADR-058-modules.md) decision 7. A module's design is named by its module's initials where its whole name would pass 32 characters, "Small+Ion+Mass Driver+SA".
 
 ---
 

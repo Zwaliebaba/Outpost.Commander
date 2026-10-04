@@ -747,6 +747,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
   case Hud::ActionKind::PickWeapon:
     m_designer.PickWeapon(_action.weapon);
     break;
+  case Hud::ActionKind::PickModule:
+    m_designer.PickModule(_action.module);
+    break;
   case Hud::ActionKind::EditName:
     m_designer.BeginEditing(m_view.Newest());
     break;

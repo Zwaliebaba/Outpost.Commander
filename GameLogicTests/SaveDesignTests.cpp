@@ -38,6 +38,45 @@ const Outpost::DesignView* ViewOf(const Outpost::Snapshot& _snapshot, Outpost::D
 TEST_CLASS(SaveDesignTests)
 {
 public:
+  // Phase 2 design §10, ADR-058: a design may carry a module, the Sensor Array, from the start. It adds 40 Ore, slows the
+  // ship by a tenth and lets it see 700 m whatever its weapon; the same components without it are another design.
+  TEST_METHOD(SavesADesignWithASensorArray)
+  {
+    constexpr Outpost::ModuleId SENSOR_ARRAY{1};
+    MatchArena arena;
+    Outpost::Command save = Save(BLUE, SMALL, ION, MASS_DRIVER, "Scout");
+    std::get<Outpost::SaveDesignCommand>(save.order).module = SENSOR_ARRAY;
+    Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::Applied);
+    Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::DuplicateDesign);
+    const Outpost::ShipDesign* scout = arena.World().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER, SENSOR_ARRAY});
+    const Outpost::ShipDesign* plain = arena.World().FindDesign(BLUE, {SMALL, ION, MASS_DRIVER});
+    Assert::IsNotNull(scout);
+    Assert::IsNotNull(plain);
+    Assert::IsTrue(scout != plain);
+    Assert::AreEqual(plain->stats.cost + 40, scout->stats.cost);
+    Assert::AreEqual(plain->stats.movement.speedMetersPerSecond * 0.9f, scout->stats.movement.speedMetersPerSecond, 1e-4f);
+    Assert::AreEqual(700.0f, scout->stats.moduleSightMeters);
+
+    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    const Outpost::DesignView* view = ViewOf(snapshot, scout->id);
+    Assert::IsNotNull(view);
+    Assert::IsTrue(view->module == SENSOR_ARRAY);
+    Assert::AreEqual(scout->stats.cost, view->cost);
+    Assert::AreEqual(size_t{1}, snapshot.modules.size());
+    Assert::IsTrue(snapshot.modules[0].available && snapshot.modules[0].nameUtf8 == "Sensor Array");
+
+    // A ship of it sees 700 m, and the snapshot names its module.
+    arena.World().UseFog();
+    const Outpost::EntityId ship = arena.World().SpawnShip(BLUE, scout->id, {0.0f, -600.0f});
+    Assert::AreEqual(700.0f, arena.World().SightMetersOf(*arena.World().FindEntity(ship)));
+    const Outpost::Snapshot seen = arena.World().BuildSnapshot(BLUE);
+    const auto entity = std::ranges::find(seen.entities, ship, &Outpost::EntityView::id);
+    Assert::IsTrue(entity != seen.entities.end() && entity->module == SENSOR_ARRAY && entity->sightMeters == 700.0f);
+
+    std::get<Outpost::SaveDesignCommand>(save.order).module = Outpost::ModuleId{9};
+    Assert::IsTrue(Result(arena, save) == Outpost::CommandResult::UnknownComponent);
+  }
+
   // Design §7, §9: the designer saves a design of components the player has, under a name the HUD can show, and the
   // server numbers it; a saved design is renamed under its identifier.
   TEST_METHOD(SavesAndRenamesADesign)

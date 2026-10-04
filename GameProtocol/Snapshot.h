@@ -50,12 +50,13 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
-  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), and its
-  // weapon; none for anything else. A player sees the components of every ship it sees, so the AI can answer the designs
-  // it meets (design §10, ADR-020, ADR-024).
+  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), its
+  // weapon and its module, if it has one (Phase 2 design §10); none for anything else. A player sees the components of
+  // every ship it sees, so the AI can answer the designs it meets (design §10, ADR-020, ADR-024).
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  ModuleId module;
   // Meaningful for a ship only.
   ShipRole role = ShipRole::Warship;
   // Meaningful for a structure only.
@@ -137,6 +138,19 @@ struct WeaponView
   bool available = false;
 };
 
+// A module (Phase 2 design §10, ADR-058): what it does to a ship of a design that carries it. The Sensor Array is the
+// first: it sees sightMeters, whatever its weapon, and is slowed by its speed factor.
+struct ModuleView
+{
+  ModuleId id;
+  std::string nameUtf8;
+  // How far a ship with it sees under fog of war, when that is further than its weapon lets it; zero for none.
+  double sightMeters = 0.0;
+  double speedFactor = 1.0;
+  std::int32_t cost = 0;
+  bool available = false;
+};
+
 // A research topic (design §8): what it does in words, what it costs, what it needs first, and whether the player has
 // it.
 struct ResearchTopicView
@@ -166,6 +180,8 @@ struct DesignView
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  // None for a design without a module (Phase 2 design §10).
+  ModuleId module;
   // In whole Ore, paid when a Shipyard starts building one (design §5).
   std::int32_t cost = 0;
 };
@@ -288,6 +304,7 @@ struct Snapshot
   std::vector<HullView> hulls;
   std::vector<DriveView> drives;
   std::vector<WeaponView> weapons;
+  std::vector<ModuleView> modules;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner

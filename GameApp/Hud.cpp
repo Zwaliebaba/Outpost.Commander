@@ -184,6 +184,7 @@ struct Best
   double armor = 0.0;
   double speed = 0.0;
   double range = 0.0;
+  double sensor = 0.0;
   double cost = 0.0;
   double build = 0.0;
   // Damage per second after armor against each hull, in the snapshot's order.
@@ -212,6 +213,14 @@ Best BestOfAll(const Outpost::Snapshot& _newest)
       }
     }
   }
+  // A module adds its cost and its sight to any design (Phase 2 design §10).
+  double moduleCost = 0.0;
+  for (const Outpost::ModuleView& module : _newest.modules)
+  {
+    moduleCost = std::max(moduleCost, static_cast<double>(module.cost));
+    best.sensor = std::max(best.sensor, module.sightMeters);
+  }
+  best.cost += moduleCost;
   return best;
 }
 
@@ -271,10 +280,13 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       const auto view = std::ranges::find(_views, _id, &View::id);
       return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
     };
+    // A design's module joins its initials when it has one (Phase 2 design §10).
+    const std::string module =
+      design.module.IsValid() ? std::format("{}{}", DOT.substr(1, 2), initials(_newest.modules, design.module)) : std::string();
     panel.chips.push_back(
       {.name = design.nameUtf8,
-       .code = std::format("{}{}{}{}{}", initials(_newest.hulls, design.hull), DOT.substr(1, 2), initials(_newest.drives, design.drive),
-                           DOT.substr(1, 2), initials(_newest.weapons, design.weapon)),
+       .code = std::format("{}{}{}{}{}{}", initials(_newest.hulls, design.hull), DOT.substr(1, 2), initials(_newest.drives, design.drive),
+                           DOT.substr(1, 2), initials(_newest.weapons, design.weapon), module),
        .shown = match != nullptr && match->id == design.id,
        .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
   }
@@ -291,6 +303,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       preview.drive = _hovered->drive;
     else if (_hovered->kind == Hud::ActionKind::PickWeapon && _hovered->weapon != preview.weapon)
       preview.weapon = _hovered->weapon;
+    else if (_hovered->kind == Hud::ActionKind::PickModule && _hovered->module != preview.module)
+      preview.module = _hovered->module;
   }
 
   const Outpost::DesignComponents picked = _designer.Picked();
@@ -349,6 +363,32 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
        .lockedBy = weapon.available ? std::string() : LockedBy(_newest, weapon.id, &Outpost::ResearchTopicView::unlocksWeapon),
        .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id}});
   }
+  // The module row: no module first, which every design starts with, then each module (Phase 2 design §10).
+  Hud::SlotRow& modules = panel.slots[3];
+  modules.label = "MODULE";
+  modules.cards.reserve(_newest.modules.size() + 1);
+  modules.picked = "None";
+  modules.cards.push_back({.name = "None",
+                           .cost = 0,
+                           .numbers = "No module",
+                           .picked = !picked.module.IsValid(),
+                           .action = {.kind = Hud::ActionKind::PickModule}});
+  if (!preview.module.IsValid() && picked.module.IsValid())
+    previewing = "no module";
+  for (const Outpost::ModuleView& module : _newest.modules)
+  {
+    if (module.id == picked.module)
+      modules.picked = module.nameUtf8;
+    if (module.id == preview.module && preview.module != picked.module)
+      previewing = module.nameUtf8;
+    modules.cards.push_back(
+      {.name = module.nameUtf8,
+       .cost = module.cost,
+       .numbers = std::format("SIGHT {}m{}SPD {}{}", Tenths(module.sightMeters), DOT, TIMES, Tenths(module.speedFactor)),
+       .picked = module.id == picked.module,
+       .lockedBy = module.available ? std::string() : std::string("RESEARCH"),
+       .action = {.kind = Hud::ActionKind::PickModule, .module = module.id}});
+  }
 
   const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest);
   std::optional<Outpost::DesignStats> previewStats;
@@ -358,6 +398,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     previewer.PickHull(preview.hull);
     previewer.PickDrive(preview.drive);
     previewer.PickWeapon(preview.weapon);
+    previewer.PickModule(preview.module);
     previewStats = previewer.Stats(_newest);
   }
   panel.hint =
@@ -381,7 +422,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       }
       panel.bars.push_back(std::move(row));
     };
-    panel.bars.reserve(6);
+    panel.bars.reserve(7);
     bar(
       "Hit points", "", best.hitPoints, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.hitPointsHundredths); },
       [](const Outpost::DesignStats& _s) { return Outpost::WithThousands(WholePoints(_s.hitPointsHundredths)); });
@@ -394,6 +435,13 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     bar(
       "Range", "m", best.range, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.rangeMeters); },
       [](const Outpost::DesignStats& _s) { return Tenths(_s.rangeMeters); });
+    // How far a module lets the ship see; none without one, when its weapon sets its sight (Phase 2 design §10).
+    if (best.sensor > 0.0)
+    {
+      bar(
+        "Sensors", "m", best.sensor, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.moduleSightMeters); },
+        [](const Outpost::DesignStats& _s) { return _s.moduleSightMeters > 0.0f ? Tenths(_s.moduleSightMeters) : std::string("-"); });
+    }
     bar(
       "Cost", "ore", best.cost, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.cost); },
       [](const Outpost::DesignStats& _s) { return std::to_string(_s.cost); }, true);
@@ -622,7 +670,7 @@ const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
 struct DesignerExtent
 {
   // Where each slot's row starts, and where the rows end.
-  std::array<float, 3> slotTops{};
+  std::array<float, std::tuple_size_v<decltype(Hud::DesignerPanel::slots)>> slotTops{};
   float slotsEnd = 0.0f;
   float sectionsTop = 0.0f;
   float footerTop = 0.0f;

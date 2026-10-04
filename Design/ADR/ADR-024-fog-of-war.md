@@ -6,7 +6,7 @@ Status: **accepted** · 2026-10-02
 
 Design §4 and §13 named fog of war the first feature after the MVP, and ADR-002 decision 4 shaped the server for it: a snapshot is built per player, so fog is added on the server alone. The owner asked for it on 2026-10-02 and made these choices:
 
-- **Sight is the weapon's range and a margin.** An armed ship or structure sees its weapon's range plus 50 m. Anything without a weapon sees 200 m.
+- **Sight is the weapon's range and a margin.** An armed ship or structure sees its weapon's range plus 50 m. Anything without a weapon sees 200 m. A ship with a module that sees further, the Sensor Array, sees as far as the module does ([ADR-058](ADR-058-modules.md)).
 - **Warzone-style memory.** Ground never seen is dark, and ground seen before is dimmed. Enemy structures show where they were last seen, and enemy ships only while in sight.
 - **A shooter is revealed to the side it hits**, for a while after each hit. Without this, a design with a longer weapon sees and shoots a shorter-ranged one from outside that one's sight: the Lance line hits the swarm from 220 m, and the swarm sees 170 m.
 - **The AI plays under fog.** It counters what it has seen, and builds its default design until it has seen anything.

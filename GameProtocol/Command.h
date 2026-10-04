@@ -93,6 +93,8 @@ struct SaveDesignCommand
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  // None for a design without a module (Phase 2 design §10).
+  ModuleId module;
 };
 
 using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,

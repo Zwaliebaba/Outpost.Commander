@@ -36,12 +36,13 @@ struct ShipMovement
   return abbreviation;
 }
 
-// One hull, drive and weapon.
+// One hull, drive and weapon, and a module or none (Phase 2 design §10).
 struct DesignComponents
 {
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  ModuleId module;
 
   friend constexpr bool operator==(const DesignComponents&, const DesignComponents&) = default;
 };
@@ -64,26 +65,33 @@ struct DesignStats
   // Every other enemy whose center is this close to the target's takes the same hit, after its own armor; zero for a
   // weapon without splash (design §7, ADR-014).
   float splashRadiusMeters = 0.0f;
+  // How far the ship sees because of its module, whatever its weapon; zero without one, when the weapon sets its sight
+  // (Phase 2 design §10, ADR-024).
+  float moduleSightMeters = 0.0f;
 
   friend bool operator==(const DesignStats&, const DesignStats&) = default;
 };
 
-// The stats of a ship of this hull, drive and weapon, from the numbers as the player has them (design §7).
-[[nodiscard]] inline DesignStats DesignStatsOf(const HullView& _hull, const DriveView& _drive, const WeaponView& _weapon) noexcept
+// The stats of a ship of this hull, drive and weapon, and module if any, from the numbers as the player has them (design
+// §7, Phase 2 design §10): a module's cost is added, its speed factor slows the ship, and its sight is the ship's own.
+[[nodiscard]] inline DesignStats DesignStatsOf(const HullView& _hull, const DriveView& _drive, const WeaponView& _weapon,
+                                               const ModuleView* _module = nullptr) noexcept
 {
   constexpr double RADIANS_PER_DEGREE = std::numbers::pi / 180.0;
-  return {.movement = {.speedMetersPerSecond = static_cast<float>(_hull.speedMetersPerSecond * _drive.speedFactor),
+  const double moduleSpeed = _module != nullptr ? _module->speedFactor : 1.0;
+  return {.movement = {.speedMetersPerSecond = static_cast<float>(_hull.speedMetersPerSecond * _drive.speedFactor * moduleSpeed),
                        .turnRateRadiansPerSecond =
                          static_cast<float>(_hull.turnRateDegreesPerSecond * _drive.turnRateFactor * RADIANS_PER_DEGREE),
                        .radiusMeters = static_cast<float>(_hull.footprintRadiusMeters)},
           .hitPointsHundredths = static_cast<std::int32_t>(std::llround(_hull.hitPointsHundredths * _drive.hitPointsFactor)),
           .armorHundredths = _hull.armorHundredths,
-          .cost = _hull.cost + _drive.cost + _weapon.cost,
+          .cost = _hull.cost + _drive.cost + _weapon.cost + (_module != nullptr ? _module->cost : 0),
           .buildSeconds = _hull.buildSeconds,
           .damageHundredths = _weapon.damageHundredths,
           .fireIntervalSeconds = _weapon.fireIntervalSeconds,
           .rangeMeters = static_cast<float>(_weapon.rangeMeters),
-          .splashRadiusMeters = static_cast<float>(_weapon.splashRadiusMeters)};
+          .splashRadiusMeters = static_cast<float>(_weapon.splashRadiusMeters),
+          .moduleSightMeters = _module != nullptr ? static_cast<float>(_module->sightMeters) : 0.0f};
 }
 
 // Damage per second against a target of _armorHundredths, after armor (design §9: what the designer shows).

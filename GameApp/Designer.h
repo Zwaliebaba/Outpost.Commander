@@ -14,8 +14,8 @@ class Designer
 {
 public:
   // Keeps every pick on an available component of the newest snapshot: a slot with no pick, or with one the snapshot no
-  // longer lists as available, takes the first available component. Keeps the target on one of the player's finished
-  // Shipyards: one that is gone gives way to the lowest numbered.
+  // longer lists as available, takes the first available component, but for the module, which is left empty. Keeps the
+  // target on one of the player's finished Shipyards: one that is gone gives way to the lowest numbered.
   void Update(const Snapshot& _newest);
 
   // The Shipyard the queue goes to: one of the player's finished Shipyards in _newest, or nullptr while it has none.
@@ -51,16 +51,21 @@ public:
   {
     m_weapon = _weapon;
   }
+  // A module, or none (Phase 2 design §10): the slot may stay empty, and is empty until the player picks one.
+  void PickModule(ModuleId _module) noexcept
+  {
+    m_module = _module;
+  }
   [[nodiscard]] DesignComponents Picked() const noexcept
   {
-    return {m_hull, m_drive, m_weapon};
+    return {m_hull, m_drive, m_weapon, m_module};
   }
 
   // The player's saved design of the picked components, if there is one.
   [[nodiscard]] const DesignView* Match(const Snapshot& _newest) const noexcept;
 
   // The name as typed, or else the matching design's, or else the components' names as design §7 writes them, such as
-  // "Small+Ion+Mass Driver".
+  // "Small+Ion+Mass Driver", and the module's after them, or its initials where the whole would be too long a name.
   [[nodiscard]] std::string Name(const Snapshot& _newest) const;
 
   // The picked design's stats, or none while a pick names nothing in the snapshot.
@@ -118,6 +123,7 @@ private:
   HullId m_hull;
   DriveId m_drive;
   WeaponId m_weapon;
+  ModuleId m_module;
   EntityId m_target;
   std::uint32_t m_count = 1;
   std::size_t m_firstChip = 0;
