@@ -55,7 +55,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
     - **Its Command Station** is upgraded whenever a Relay of its plan waits on the cap, in that Relay's place in the plan's order. Its home and the two flanks its rigs take it to are level 1's cap, so its first claim beyond them waits for level 2 and its second for level 3, and it goes no higher while it wants no further node.
     - **Its Shipyards** are upgraded to the level its production design's hull needs, one at a time: level 2 from the start, since its default design is a Medium hull, and level 3 once it answers with a Large one.
     - **Its Research Lab** is upgraded when the next topic of its research order is of a tier the Lab has not opened, and to the level that gives a second slot once its open tier is `secondSlotTier`, 3, while two topics of its order are left.
-    - **An upgrade it cannot yet pay for holds back new production**, as a structure waiting for Ore does, so that the Ore gathers for it.
+    - **An upgrade it cannot yet pay for holds back new production**, as a structure waiting for Ore does, so that the Ore gathers for it. A level needs no Constructor, so an upgrade never takes the Ore of a structure of its plan that waits for a Constructor to free up: without that, its upgrades spent the Ore its next Shipyard was due, and its fourth Shipyard came later than income-by-Shipyard has it (`AiPlayerTests.BuildsShipyardsByIncome`).
     - **What it attacks.** Within a rank of [ADR-037](ADR-037-losing-all-production.md) decision 4, each level a structure has above the first counts as `attackLevelMeters`, 500, nearer the group: a Shipyard at level 3 1,000 m farther off goes first.
 
 ## Consequences

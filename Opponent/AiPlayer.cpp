@@ -344,11 +344,17 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 
   std::vector<EntityId> idle;
   TendWork(_snapshot, idle, _orders);
-  const bool structureWaiting = Build(_snapshot, idle, _orders);
-  // An upgrade it wants and cannot yet pay for holds production back, as a structure does, so that the Ore gathers for it.
+  const PlanOre plan = Build(_snapshot, idle, _orders);
+  const bool structureWaiting = plan.waiting;
+  // An upgrade it wants and cannot yet pay for holds production back, as a structure does, so that the Ore gathers for
+  // it. It never takes the Ore of a structure of the plan waiting for a Constructor, since it needs no Constructor
+  // itself and would otherwise spend what that structure is due.
   bool upgradeWaiting = false;
   if (!structureWaiting)
-    upgradeWaiting = UpgradeShipyards(_snapshot, _orders) || UpgradeLab(_snapshot, _orders);
+  {
+    std::int32_t ore = plan.left;
+    upgradeWaiting = UpgradeShipyards(_snapshot, ore, _orders) || UpgradeLab(_snapshot, ore, _orders);
+  }
 
   // Constructors left over repair what is damaged, one each.
   for (const EntityView& structure : _snapshot.entities)
@@ -795,7 +801,7 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
   }
 }
 
-bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+Outpost::AiPlayer::PlanOre Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
 {
   std::int32_t ore = _snapshot.ore;
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
@@ -814,7 +820,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
       {
         const std::int32_t cost = FindType(_snapshot, StructureKind::CommandStation)->levels[static_cast<size_t>(station->level - 1)].cost;
         if (ore < cost)
-          return true;
+          return {.waiting = true, .left = ore};
         OrderUpgrade(*station, _orders);
         ore -= cost;
         stationOrdered = true;
@@ -829,9 +835,9 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
     if (type == nullptr)
       continue;
     if (_idle.empty())
-      return false;
+      return {.waiting = false, .left = ore - type->cost};
     if (ore < type->cost)
-      return true;
+      return {.waiting = true, .left = ore};
 
     if (slot.structure != StructureKind::MiningRig && slot.structure != StructureKind::Relay)
     {
@@ -867,7 +873,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
     m_work.push_back(std::move(work));
     ore -= type->cost;
   }
-  return false;
+  return {.waiting = false, .left = ore};
 }
 
 // Keeps every built Shipyard's queue at the settings' length with the chosen design, saving the design first if the AI
@@ -940,7 +946,7 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 
 // A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, once
 // the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this play.
-bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<Command>& _orders)
+bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
   const std::int32_t needed = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
@@ -951,9 +957,11 @@ bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<
     if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.upgradePermille.has_value() ||
         yard.level >= needed || std::cmp_greater_equal(yard.level - 1, type->levels.size()))
       continue;
-    if (_snapshot.ore < type->levels[static_cast<size_t>(yard.level - 1)].cost)
+    const std::int32_t cost = type->levels[static_cast<size_t>(yard.level - 1)].cost;
+    if (_ore < cost)
       return true;
     OrderUpgrade(yard, _orders);
+    _ore -= cost;
     return false;
   }
   return false;
@@ -961,7 +969,7 @@ bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<
 
 // The Research Lab is upgraded when the next topic of its research order is of a tier it has not opened, once what the
 // level requires is researched and the Ore is there (Phase 3 design §6, plan task 22.1). Plan task 24.1 makes this play.
-bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Command>& _orders)
+bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::int32_t& _ore, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::ResearchLab);
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
@@ -991,9 +999,10 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Comman
   const bool addsSlot = level.researchSlots > 1 && _snapshot.researchTier >= m_settings.secondSlotTier && left >= 2;
   if ((!opensTier && !addsSlot) || !std::ranges::all_of(level.prerequisites, researched))
     return false;
-  if (_snapshot.ore < level.cost)
+  if (_ore < level.cost)
     return true;
   OrderUpgrade(*lab, _orders);
+  _ore -= level.cost;
   return false;
 }
 
