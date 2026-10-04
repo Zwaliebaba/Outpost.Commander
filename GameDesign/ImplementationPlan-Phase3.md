@@ -2,7 +2,7 @@
 
 Status: **open** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft · Opened the same day, when the owner had run Phase 2 and accepted the design (gate K7), and answered Q1–Q4 · Derived from the Phase 3 design
 
-The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](ImplementationPlan-Phase2.md) is closed.
+The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](Archive/ImplementationPlan-Phase2.md) is closed.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Status: **open** · accepted by the owner on 2026-10-03, with K1–K7 as proposed · From a UI/UX review of six screenshots of a match, made on 2026-10-03 against [the Phase 1 design](Archive/OutpostCommander-Phase1.md)
 
-The Phase 1 design says what the interface is (§11, §12), AGENTS.md says how code is written, and `Design/ADR/` records the engineering decisions. This plan puts the review's recommendations in order, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](Archive/ImplementationPlan-Phase1.md) is closed, and [Phase 2](OutpostCommander-Phase2.md) is a draft with no plan yet; two of its proposals meet this plan, the designer's fourth row (J6) and alerts (J5), and the milestone order says how.
+The Phase 1 design says what the interface is (§11, §12), AGENTS.md says how code is written, and `Design/ADR/` records the engineering decisions. This plan puts the review's recommendations in order, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](Archive/ImplementationPlan-Phase1.md) is closed, and [Phase 2](Archive/OutpostCommander-Phase2.md) is a draft with no plan yet; two of its proposals meet this plan, the designer's fourth row (J6) and alerts (J5), and the milestone order says how.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
 
-This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
+This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](Archive/OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
 
 ---
 

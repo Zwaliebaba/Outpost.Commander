@@ -2,7 +2,7 @@
 
 Status: **open** · Started 2026-10-04, when the owner opened self-play as a side project and answered its first questions · Revised that day for Phase 3's draft and the horizon · Derived from [ADR-063](../Design/ADR/ADR-063-self-play-probe.md) and [the network's blueprint](../Design/SelfPlayNetwork.md)
 
-Self-play is a side project beside the game's phases. AIs fight each other, and a search keeps what wins. It is a probe of the match's rules, and it changes nothing a player sees. [The Phase 2 plan](ImplementationPlan-Phase2.md) stays the game's open plan. This plan says **in what order** the side project is built, as a queue of tasks. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed. [The horizon](OutpostCommander-Horizon.md), the owner's long-term direction, amends nothing here; the blueprint's §16 says what it changes for the network.
+Self-play is a side project beside the game's phases. AIs fight each other, and a search keeps what wins. It is a probe of the match's rules, and it changes nothing a player sees. [The Phase 2 plan](Archive/ImplementationPlan-Phase2.md) stays the game's open plan. This plan says **in what order** the side project is built, as a queue of tasks. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed. [The horizon](OutpostCommander-Horizon.md), the owner's long-term direction, amends nothing here; the blueprint's §16 says what it changes for the network.
 
 ---
 

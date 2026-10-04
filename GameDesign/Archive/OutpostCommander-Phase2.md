@@ -2,7 +2,7 @@
 
 Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-03, from the owner's answers of that day · Revised 2026-10-03 after the owner's review · Accepted 2026-10-03, with every gate decided (§13) · Built and merged on 2026-10-04, with S1–S4 recorded for two AIs in §2 · Run by the owner on 2026-10-04, and S5 answered
 
-This document says what Phase 2 builds on top of Phase 1, and amends [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner accepted it on 2026-10-03 and decided its gates (§13); the order of the work is [the Phase 2 plan](ImplementationPlan-Phase2.md). Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
+This document says what Phase 2 builds on top of Phase 1, and amends [the Phase 1 design](OutpostCommander-Phase1.md) and [the MVP design](OutpostCommander-MVP.md) where they differ. The owner accepted it on 2026-10-03 and decided its gates (§13); the order of the work is [the Phase 2 plan](ImplementationPlan-Phase2.md). Its one effect on Phase 1 was that Phase 1's 5 km map is laid out in sectors, so that Phase 2 is played on it (§11).
 
 ---
 

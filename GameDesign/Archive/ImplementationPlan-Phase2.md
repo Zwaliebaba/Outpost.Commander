@@ -2,7 +2,7 @@
 
 Status: **closed** · Started 2026-10-03, when the owner accepted the Phase 2 design and decided its gates · Every milestone built and merged on 2026-10-04, #55 to #60 · The owner's runs done on 2026-10-04: "Phase 2 works fine" · Derived from [the Phase 2 design](OutpostCommander-Phase2.md)
 
-The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](Archive/ImplementationPlan-Phase1.md) and [the MVP plan](Archive/ImplementationPlan.md) are closed, and so is this one: [the Phase 3 plan](ImplementationPlan-Phase3.md) is the open one.
+The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](ImplementationPlan-Phase1.md) and [the MVP plan](ImplementationPlan.md) are closed, and so is this one: [the Phase 3 plan](../ImplementationPlan-Phase3.md) is the open one.
 
 ---
 
@@ -74,7 +74,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one: the Relay, holding, the lattice, sector ore and what the snapshot shows.
 - **Acceptance:** `TerritoryTests` cover holding by station and by Relay, a site holding nothing, the adjacency rule, the node taken, rigs refused outside held sectors, a rig earning nothing once its sector is lost, the cut-off half, and a map without sectors playing as before.
 - **Verify:** CI.
-- **As built:** [ADR-056](../Design/ADR/ADR-056-territory.md), decisions 1–8 and 10.
+- **As built:** [ADR-056](../../Design/ADR/ADR-056-territory.md), decisions 1–8 and 10.
   - **Territory is worked out at the end of every tick** from what stands on the nodes (`Simulation::UpdateTerritory`), and a rig's income is its rate times its sector's share (`TerritoryShare`).
   - **New refusals:** `NotAdjacent` for a Relay and `SectorNotHeld` for a rig.
   - **Tests.** `TerritoryTests`, on the repository map, and `TuningTests` for the new object and kind. Every `GameLogicTests` suite was run in the container against a stand-in for the test framework, as in Phase 1: 207 pass, and `InProcessServerTests.RunsItsTicksOnItsOwnThread` cannot run without Windows.
@@ -87,7 +87,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** the one 14.1 writes.
 - **Acceptance:** `TerritoryTests` cover suppression starting and ending, a defender lifting it, a Constructor not suppressing, the Command Station never suppressed, no income while suppressed, the lattice and adjacency unchanged by it, and `FogTests` the sector's sight.
 - **Verify:** CI.
-- **As built:** [ADR-056](../Design/ADR/ADR-056-territory.md), decisions 6 and 9. The sector's sight is tested in `TerritoryTests.AHeldSectorIsSeenWhole`, beside the rest of territory, rather than in `FogTests`.
+- **As built:** [ADR-056](../../Design/ADR/ADR-056-territory.md), decisions 6 and 9. The sector's sight is tested in `TerritoryTests.AHeldSectorIsSeenWhole`, beside the rest of territory, rather than in `FogTests`.
 
 ### 14.3 — The client shows territory, and builds Relays
 
@@ -96,7 +96,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** the one 14.1 writes.
 - **Acceptance:** `PlacementTests` for the Relay's ghost; `HudTests` for the build button, the minimap's sectors and the line.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-056](../Design/ADR/ADR-056-territory.md) decision 11.
+- **As built:** [ADR-056](../../Design/ADR/ADR-056-territory.md) decision 11.
   - **The fog** clears the sectors the player holds too (`FogOfWar::Update`), as the server's sight does; `FogOfWarTests.SeesAHeldSectorWhole`.
   - **The Relay borrows the Research Lab's model**, brighter, until the owner adds one.
   - **Built and run in the container** against DirectXMath and stand-ins for the Windows headers: every `GameAppTests` suite but `GlyphAtlasTests`, whose fonts are DirectWrite's. 190 pass; the 12 that fail there read the shipped meshes and textures by Windows paths. `GameClient`, which draws, is CI's first build, and the owner's run is its first look.
@@ -108,7 +108,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** ADR-047, edited in place.
 - **Acceptance:** a `MovementTests` case as `AGroupPassesAnObstacleSideBySide`, with an Attack order on a moving target.
 - **Verify:** CI.
-- **As built:** [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 3, edited in place.
+- **As built:** [ADR-047](../../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 3, edited in place.
   - **An Attack order lays lanes** at its ships' places across a grid of the group's size, and **`ChaseTargets` paths the ships of one player that path again to one target in the same tick as a group**, along a fresh route in a band; a lone ship paths as before. The formation's order and lanes are shared with a move's (`SortForFormation`, `FormationColumns`, `FormationAcross`), which a move gives bit for bit as before.
   - **`MovementTests.AnAttackingGroupPassesAnObstacleSideBySide`**: 25 ships attack a target moving away beyond a 200 m field. The group is at most 2.5 times as long as wide, 1.5 while it passes the field; with the old pathing grafted back in, it was 6.2. The bound is looser than a move's 2.0 because the ships close on one point past the field.
 
@@ -118,7 +118,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **Scope:** the minimum to keep the AI's economy: Relays on its plan's sectors, nearest first, each when one of its sectors is adjacent. 18.1 makes it play territory.
 - **Acceptance:** `AiPlayerTests` pass on the repository map with territory.
 - **Verify:** CI; the AI-against-AI matches in the container.
-- **As built:** [ADR-056](../Design/ADR/ADR-056-territory.md) decision 12 and ADR-020 decision 5. `AiPlayerTests` pass unchanged, `ReachesTierThree` included. Seeds 1 to 10 all end, at a median of 45:48.
+- **As built:** [ADR-056](../../Design/ADR/ADR-056-territory.md) decision 12 and ADR-020 decision 5. `AiPlayerTests` pass unchanged, `ReachesTierThree` included. Seeds 1 to 10 all end, at a median of 45:48.
 
 ---
 
@@ -132,7 +132,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one, with the tickets' units.
 - **Acceptance:** `DominationTests`: a drain of the design's size and interval, none at equal nodes, a lead of one draining a side in 50 minutes, the end at zero, and the end reason.
 - **Verify:** CI.
-- **As built:** [ADR-057](../Design/ADR/ADR-057-domination.md).
+- **As built:** [ADR-057](../../Design/ADR/ADR-057-domination.md).
   - **Tickets are kept in shares, as many to a ticket as the map has nodes**, so 30 × the difference ÷ 9 is whole and a lead of one ends a match in exactly 50 minutes; the snapshot shows whole tickets, rounded up.
   - **`MatchEnding`** says how a match ended, in the simulation and the snapshot; `Simulation::EndMatch` ends it for either reason.
   - **Tests.** `DominationTests`, on a fixture shared with `TerritoryTests` (`TerritoryMatch.h`); 212 `GameLogicTests` pass in the container.
@@ -143,7 +143,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **Scope:** both sides' tickets in the HUD beside the nodes; the banner names a domination.
 - **Acceptance:** `HudTests`.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-057](../Design/ADR/ADR-057-domination.md) decision 8. The territory panel moved under the research line's place, where its second row fits; `HudTests.ShowsTheTickets` and `DescribesHowTheMatchEnded`.
+- **As built:** [ADR-057](../../Design/ADR/ADR-057-domination.md) decision 8. The territory panel moved under the research line's place, where its second row fits; `HudTests.ShowsTheTickets` and `DescribesHowTheMatchEnded`.
 
 ---
 
@@ -157,14 +157,14 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one.
 - **Acceptance:** `DesignTests` and `SaveDesignTests` for a design with a module, `FogTests` for its sight, `TuningTests` for the list.
 - **Verify:** CI.
-- **As built:** [ADR-058](../Design/ADR/ADR-058-modules.md), decisions 1–6 and 8. No research unlocks a module. The ship's sight is tested in `SaveDesignTests.SavesADesignWithASensorArray`, with the rest of the module, rather than in `FogTests`. 214 `GameLogicTests` pass in the container.
+- **As built:** [ADR-058](../../Design/ADR/ADR-058-modules.md), decisions 1–6 and 8. No research unlocks a module. The ship's sight is tested in `SaveDesignTests.SavesADesignWithASensorArray`, with the rest of the module, rather than in `FogTests`. 214 `GameLogicTests` pass in the container.
 
 ### 16.2 — The designer's module row
 
 - **Scope:** a fourth row of cards under the weapon, with an empty card for no module; the bars show sight.
 - **Acceptance:** `DesignerTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-058](../Design/ADR/ADR-058-modules.md) decision 7. A module's design is named by its module's initials where its whole name would pass 32 characters, "Small+Ion+Mass Driver+SA".
+- **As built:** [ADR-058](../../Design/ADR/ADR-058-modules.md) decision 7. A module's design is named by its module's initials where its whole name would pass 32 characters, "Small+Ion+Mass Driver+SA".
 
 ---
 
@@ -177,7 +177,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** a new one, with the alerts' rules and the key.
 - **Acceptance:** `AlertsTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-059](../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 1 and 2. Space moves the camera to the newest alert; `DestroyedView` carries a structure's kind, for a lost rig.
+- **As built:** [ADR-059](../../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 1 and 2. Space moves the camera to the newest alert; `DestroyedView` carries a structure's kind, for a lost rig.
 
 ### 17.2 — Standing orders: hold a sector, patrol
 
@@ -186,7 +186,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** the one 17.1 writes.
 - **Acceptance:** `StandingOrderTests`; `PlayerControlsTests` for the keys.
 - **Verify:** CI; **owner run.**
-- **As built:** [ADR-059](../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 3–7. H and T arm them, since P opens the production window. 217 `GameLogicTests` pass in the container.
+- **As built:** [ADR-059](../../Design/ADR/ADR-059-alerts-and-standing-orders.md) decisions 3–7. H and T arm them, since P opens the production window. 217 `GameLogicTests` pass in the container.
 
 ---
 
@@ -199,7 +199,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** ADR-020 and ADR-041, edited in place.
 - **Acceptance:** `AiPlayerTests`.
 - **Verify:** CI; the AI-against-AI matches.
-- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 13 and [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 5, edited in place. Its numbers are starting values in `Opponent.json`: one scout, raids of two every three minutes, one claim beyond the ore's, a platform by each front Relay, and a lead of one node or half as many ships again. "When the enemy's front has thinned" is read as a reserve half as large again as the attack group, since the AI sees only part of the enemy's front. AI-against-AI matches are shorter with territory's play; 19.2 tunes against that. 34 `AiPlayerTests` and `AiSettingsTests` pass in the container.
+- **As built:** [ADR-020](../../Design/ADR/ADR-020-ai-and-match-flow.md) decision 13 and [ADR-041](../../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 5, edited in place. Its numbers are starting values in `Opponent.json`: one scout, raids of two every three minutes, one claim beyond the ore's, a platform by each front Relay, and a lead of one node or half as many ships again. "When the enemy's front has thinned" is read as a reserve half as large again as the attack group, since the AI sees only part of the enemy's front. AI-against-AI matches are shorter with territory's play; 19.2 tunes against that. 34 `AiPlayerTests` and `AiSettingsTests` pass in the container.
 
 ---
 
@@ -212,11 +212,11 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** ADR-038, edited in place.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
-- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. An engagement is both sides firing in one sector within 10 seconds of each other, and another there counts after 30 seconds without a shot. `--ai-matches` ends with S1–S3 over the matches beside their lengths.
+- **As built:** [ADR-038](../../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. An engagement is both sides firing in one sector within 10 seconds of each other, and another there counts after 30 seconds without a shot. `--ai-matches` ends with S1–S3 over the matches beside their lengths.
 
 ### 19.2 — S1–S5
 
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the AI-against-AI run, tuned against S1–S4 where the AI's own settings can reach them; the owner's matches and judgement for S5.
 - **Verify:** **owner run.**
-- **As built:** recorded in design §2. S1–S3 are met by two AIs. S4 is met over seeds 1–40, at 47:55, and 10 seconds short over seeds 1–10, after the AI's fall-back was tuned to 10% and 240 s ([ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 2, [ADR-047](../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 6, edited in place). The owner's match for S1, S2 and S4, and S5, are the owner's run.
+- **As built:** recorded in design §2. S1–S3 are met by two AIs. S4 is met over seeds 1–40, at 47:55, and 10 seconds short over seeds 1–10, after the AI's fall-back was tuned to 10% and 240 s ([ADR-041](../../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 2, [ADR-047](../../Design/ADR/ADR-047-a-fight-seen-whole.md) decision 6, edited in place). The owner's match for S1, S2 and S4, and S5, are the owner's run.

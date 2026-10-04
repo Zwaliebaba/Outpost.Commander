@@ -40,7 +40,7 @@ These play the part the MVP's Q1–Q5 played. A failed answer is still a result.
 - **P4, the engine at scale: not answered.** The worst order tick falls from 2.58 ms to 1.24 ms in the container, about 4.2 ms on the development machine by that ratio (ADR-032, §10). Neither the development machine's `--measure --load` nor the frame and tick times on the 5 km map at a 60-minute match's peak ship count were measured.
 - **P5, the presentation: yes** (owner, 2026-10-03): the designer, the floating windows and the banking read in play.
 
-**Two hours, which §1 left for after P1** (owner, 2026-10-03): not yet. Phase 2 keeps the 45–60 minute target and makes those minutes busier with territory, on this phase's 5 km map; the larger world is Phase 3's ([the Phase 2 draft](../OutpostCommander-Phase2.md), §3 and §7).
+**Two hours, which §1 left for after P1** (owner, 2026-10-03): not yet. Phase 2 keeps the 45–60 minute target and makes those minutes busier with territory, on this phase's 5 km map; the larger world is Phase 3's ([the Phase 2 draft](OutpostCommander-Phase2.md), §3 and §7).
 
 ---
 
@@ -220,7 +220,7 @@ One map, **5,000 × 5,000 m**, point-symmetric as the MVP's, with the starts in 
 
 That is 24 ore asteroids holding 285,000 Ore. Asteroid fields stand between the rings as obstacles and chokepoints, and every passage is at least as wide as the map's minimum gap, as in the MVP. The rich corners are equally far from both starts and far from both: whoever holds one is exposed. The layout itself is written in the map task and confirmed by the owner before it is played (as MVP task 2.3).
 
-**Laid out in sectors for Phase 2** (owner, 2026-10-03). The map is divided into about nine sectors, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as [the Phase 2 draft](../OutpostCommander-Phase2.md) §4 has them. Phase 1 reads none of it, and its rings, yields and reserves are unchanged; it makes this the first map Phase 2's territory is played on.
+**Laid out in sectors for Phase 2** (owner, 2026-10-03). The map is divided into about nine sectors, each with a node site among its asteroids, and the map data names the sectors, their node sites and their adjacency, as [the Phase 2 draft](OutpostCommander-Phase2.md) §4 has them. Phase 1 reads none of it, and its rings, yields and reserves are unchanged; it makes this the first map Phase 2's territory is played on.
 
 **What a 5 km map costs:**
 

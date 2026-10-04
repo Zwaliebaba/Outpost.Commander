@@ -2,7 +2,7 @@
 
 Status: **closed** · 2026-10-03, when Phase 1 was done; task 7.3 is carried over to Phase 2 · Derived from [the Phase 1 design](OutpostCommander-Phase1.md)
 
-The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. Phase 2, territory, is [a draft design](../OutpostCommander-Phase2.md) with no plan yet; its one effect here is task 11.2's layout. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
+The Phase 1 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. Phase 2, territory, is [a draft design](OutpostCommander-Phase2.md) with no plan yet; its one effect here is task 11.2's layout. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The MVP plan](ImplementationPlan.md) is closed, and its rules for how an agent works carry over unchanged.
 
 ---
 
