@@ -1,6 +1,6 @@
 """Summarizes the matches the game logged, for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3, design section
-3), Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10) and Phase 2's S1 to S4 (Phase 2
-plan task 19.1, Phase 2 design section 2).
+3), Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10), Phase 2's S1 to S4 (Phase 2
+plan task 19.1, Phase 2 design section 2) and Phase 3's T1 to T4 (Phase 3 plan task 25.1, Phase 3 design section 2).
 
 The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder, and its --ai-matches
 switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.log there. Each line is one record,
@@ -17,6 +17,10 @@ every time in ticks:
   engagement <tick> sector <id>                                   both sides fired in one sector
   sector <tick> sector <id> holder <player or 0>                  a sector's holder changed
   tickets <tick> player <player> tickets <count>                  a player's tickets, every 30 seconds
+  upgrade <tick> player <player> structure <id> <kind> level <level> <started, finished or lost>
+                                                                  a structure's level, from its owner's snapshots
+  attacked <tick> player <owner> structure <id> <kind> level <level>   a structure above level 1 first shot at
+  stall <tick> ticks <count>                                      the ticks both players sat at their caps with equal nodes
   ending <tick> <production or domination>                        how the match ended
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
@@ -25,8 +29,10 @@ For each match this prints its length and outcome (P1 and S4 ask for 45 to 60 mi
 shot (S1 asks for one by minute 5), its engagements before minute 20 and the sectors they were in (S2 asks for at least
 five, in at least three sectors), the asteroids that ran dry, and for each player its research with the time it
 finished, the times it opened each tier, its peak warship count (P4), its warships by design in each tier (P2 asks
-whether each tier changes what gets built), and its warships by design in windows of the match. With more than one match
-it ends with their lengths' median and spread, P1's and S4's repeatable figure, and S1's to S3's.
+whether each tier changes what gets built), and its warships by design in windows of the match. On a map with territory it
+adds Phase 3's: how long the caps stalled the nodes (T2), each player's highest level of the Command Station, a Shipyard
+and the Research Lab (T3), and the structures above level 1 attacked (T4). With more than one match it ends with their
+lengths' median and spread, P1's and S4's repeatable figure, S1's to S3's, and T2's to T4's.
 
 Usage: python Tools/MatchLog.py [log] [--all] [--ai-matches] [--window-minutes N]
 
@@ -52,6 +58,13 @@ S1_MINUTES = 5
 S2_MINUTES = 20
 S2_ENGAGEMENTS = 5
 S2_SECTORS = 3
+# Phase 3 design section 2: the caps stall the nodes for under 5 minutes in the median match (T2); each side reaches level 3
+# of the Command Station, a Shipyard and the Research Lab, and tier 3 is opened, in at least half the matches (T3); and in
+# the median match at least one structure above level 1 is attacked (T4).
+T2_MINUTES = 5
+T3_LEVEL = 3
+T3_KINDS = ("station", "shipyard", "lab")
+T4_ATTACKS = 1
 
 
 class Match:
@@ -68,6 +81,9 @@ class Match:
     self.engagements = []
     self.holders = []
     self.tickets = []
+    self.upgrades = []
+    self.attacked = []
+    self.stall_ticks = None
     self.ending = None
     self.end_tick = None
     self.winner = None
@@ -99,6 +115,24 @@ class Match:
   def s2(self):
     count, sectors = self.early_engagements()
     return count >= S2_ENGAGEMENTS and sectors >= S2_SECTORS
+
+  def players(self):
+    return sorted({player for _, player, _ in self.research} | {player for _, player, _ in self.built} |
+                  {player for _, player, _ in self.fleets})
+
+  def top_level(self, player, kind):
+    """The highest level the player finished of a structure of the kind; 1 when it finished none."""
+    return max((level for _, owner, _, what, level, how in self.upgrades if owner == player and what == kind and how == "finished"),
+               default=1)
+
+  def t3(self):
+    """Each side reached level 3 of the Command Station, a Shipyard and the Research Lab."""
+    players = self.players()
+    return len(players) >= 2 and all(self.top_level(player, kind) >= T3_LEVEL for player in players for kind in T3_KINDS)
+
+  def tier_three(self):
+    """The players that opened tier 3."""
+    return sorted({owner for _, owner, tier in self.tiers if tier >= 3})
 
 
 def clock(seconds):
@@ -143,6 +177,12 @@ def read_matches(path):
           match.holders.append((int(words[1]), int(words[3]), int(words[5])))
         elif words[0] == "tickets":
           match.tickets.append((int(words[1]), int(words[3]), int(words[5])))
+        elif words[0] == "upgrade":
+          match.upgrades.append((int(words[1]), int(words[3]), int(words[5]), words[6], int(words[8]), words[9]))
+        elif words[0] == "attacked":
+          match.attacked.append((int(words[1]), int(words[3]), int(words[5]), words[6], int(words[8])))
+        elif words[0] == "stall":
+          match.stall_ticks = int(words[3])
         elif words[0] == "ending":
           match.ending = words[2]
         elif words[0] == "end":
@@ -214,8 +254,16 @@ def describe(match, window_minutes, names):
   else:
     lines.append("  Asteroids run dry: none")
 
-  players = sorted({player for _, player, _ in match.research} | {player for _, player, _ in match.built} |
-                   {player for _, player, _ in match.fleets})
+  if match.stall_ticks is not None:
+    stall = match.seconds(match.stall_ticks)
+    verdict = "under" if stall < T2_MINUTES * 60 else "not under"
+    lines.append(f"  Both at their caps with equal nodes: {clock(stall)}; {verdict} T2's {T2_MINUTES} minutes")
+  if match.upgrades or match.attacked:
+    attacked = ", ".join(f"{what} L{level} of player {owner} at {clock(match.seconds(tick))}"
+                         for tick, owner, _, what, level in match.attacked)
+    lines.append(f"  Structures above level 1 attacked: {len(match.attacked)}" + (f": {attacked}" if attacked else ""))
+
+  players = match.players()
   window_seconds = window_minutes * 60
   for player in players:
     name = names.get(player, f"Player {player}")
@@ -233,6 +281,12 @@ def describe(match, window_minutes, names):
     peak = peak_of(match, player)
     if peak is not None:
       lines.append(f"    Peak warships: {peak[0]}, at {clock(match.seconds(peak[1]))}")
+    finished = [(tick, what, level) for tick, owner, _, what, level, how in match.upgrades if owner == player and how == "finished"]
+    if finished:
+      lines.append("    Levels: " + ", ".join(f"{what} L{level} at {clock(match.seconds(tick))}" for tick, what, level in finished))
+    lost = sum(1 for _, owner, _, _, _, how in match.upgrades if owner == player and how == "lost")
+    if lost:
+      lines.append(f"    Upgrades lost with their structure: {lost}")
 
     built = [(tick, design) for tick, owner, design in match.built if owner == player]
     if not built:
@@ -291,6 +345,28 @@ def summarize(matches):
         endings[match.ending] = endings.get(match.ending, 0) + 1
     if endings:
       lines.append("  S3, endings: " + ", ".join(f"{count} by {ending}" for ending, count in sorted(endings.items())))
+  stalls = sorted(match.seconds(match.stall_ticks) for match in matches if match.stall_ticks is not None)
+  if stalls:
+    verdict = "meets" if statistics.median(stalls) < T2_MINUTES * 60 else "misses"
+    lines.append(f"  T2, both at their caps with equal nodes: median {clock(statistics.median(stalls))}, from {clock(stalls[0])} "
+                 f"to {clock(stalls[-1])}; {verdict} T2's under {T2_MINUTES} minutes")
+  graded = [match for match in matches if match.upgrades or match.stall_ticks is not None]
+  if graded:
+    half = len(graded) / 2
+    levels = sum(1 for match in graded if match.t3())
+    either = sum(1 for match in graded if match.tier_three())
+    both = sum(1 for match in graded if len(match.tier_three()) >= 2)
+    seats = sum(len(match.tier_three()) for match in graded)
+    per_kind = ", ".join(
+      f"{kind} {sum(1 for match in graded if all(match.top_level(p, kind) >= T3_LEVEL for p in match.players()))}"
+      for kind in T3_KINDS)
+    lines.append(f"  T3, each side at level {T3_LEVEL} of all three: {levels} of {len(graded)} ({per_kind}); tier 3 opened in "
+                 f"{either}, by both sides in {both}, {seats} of {2 * len(graded)} seats; "
+                 f"{'meets' if levels >= half and either >= half else 'misses'} T3's half")
+    attacks = sorted(len(match.attacked) for match in graded)
+    verdict = "meets" if statistics.median(attacks) >= T4_ATTACKS else "misses"
+    lines.append(f"  T4, structures above level 1 attacked: median {statistics.median(attacks):g}, from {attacks[0]} to "
+                 f"{attacks[-1]}; {verdict} T4's {T4_ATTACKS}")
   return "\n".join(lines)
 
 
