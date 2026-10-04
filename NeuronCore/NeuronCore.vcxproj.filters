@@ -16,12 +16,24 @@
     <ClInclude Include="JsonReader.h" />
     <ClInclude Include="NeuronCore.h" />
     <ClInclude Include="NeuronHelper.h" />
+    <ClInclude Include="QuicChannel.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerCertificate.h">
+      <Filter>Network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="FileSys.cpp" />
     <ClCompile Include="Json.cpp" />
     <ClCompile Include="JsonReader.cpp" />
+    <ClCompile Include="QuicChannel.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerCertificate.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\packages\Microsoft.Native.Quic.MsQuic.Schannel.2.6.1\build\native\bin\$(Platform)\msquic.dll">

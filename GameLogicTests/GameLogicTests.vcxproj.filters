@@ -16,6 +16,8 @@
     <ClCompile Include="RandomTests.cpp" />
     <ClCompile Include="SimulationTests.cpp" />
     <ClCompile Include="InProcessServerTests.cpp" />
+    <ClCompile Include="QuicTransportTests.cpp" />
+    <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="MapTests.cpp" />
     <ClCompile Include="MeasurementLoadTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />

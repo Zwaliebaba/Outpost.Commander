@@ -36,7 +36,8 @@ struct LoggedCommand
 
 // The server inside the client (ADR-002). Started, it runs its ticks on a thread of its own (ADR-025); a test may instead
 // step it by hand with Advance, on the test's thread. Match setup, World and the command log belong to whichever thread
-// steps it, so a started server is touched only through its connections and TakeTickTimings.
+// steps it, so a started server is touched only through its connections and TakeTickTimings. Made to, it also takes
+// players over QUIC on the loopback address, each into a seat opened for it (ADR-060).
 class InProcessServer final : public Server
 {
 public:
@@ -47,7 +48,8 @@ public:
 
   // Throws Neuron::Exception once the server has started.
   [[nodiscard]] std::unique_ptr<Transport> Connect(PlayerId _player) override;
-  // Throws Neuron::Exception when it has started already.
+  [[nodiscard]] ServerAddress OpenSeat(PlayerId _player) override;
+  // Throws Neuron::Exception when it has started already, or when a seat has not been taken.
   void Start() override;
   void Step() override;
   [[nodiscard]] std::uint32_t TicksPerSecond() const noexcept override;
@@ -95,11 +97,27 @@ private:
   // stops when asked.
   void Run(const std::stop_token& _stop);
 
+  // One player's connection. Its commands arrive in the channel's queue whichever way the player connected. A player who
+  // connected over the loopback finds its snapshots in the channel too; a seat sends them over QUIC once it is taken.
   struct Connection
   {
     PlayerId player;
     std::shared_ptr<LoopbackChannel> channel;
+    bool seat = false;
+    // Guarded by m_seatMutex: MsQuic's thread sets it when the player's hello takes the seat.
+    std::shared_ptr<Neuron::QuicChannel> quic;
   };
+
+  // Adds a connection for _player, unless the server has started or the player has one already.
+  std::shared_ptr<LoopbackChannel> AddConnection(PlayerId _player, bool _seat);
+
+  // What the listener does with a client that has connected over QUIC: its first message is a hello that takes a seat,
+  // and every message after it a command (ADR-060). Called on MsQuic's thread.
+  [[nodiscard]] Neuron::QuicChannel::Receiver Admit(const std::shared_ptr<Neuron::QuicChannel>& _channel);
+
+  // Gives _player's open seat to _channel, and returns where the seat's commands go; none when there is no such seat, it
+  // is taken, or the server has started. Called on MsQuic's thread.
+  [[nodiscard]] std::shared_ptr<LoopbackChannel> TakeSeat(PlayerId _player, std::shared_ptr<Neuron::QuicChannel> _channel);
 
   Tuning m_tuning;
   Map m_map;
@@ -115,6 +133,13 @@ private:
   std::mutex m_reportMutex;
   std::vector<TickTiming> m_tickTimings;
   std::exception_ptr m_failure;
+  // Guards the connections while they can still change: until the server starts, MsQuic's threads seat players as the
+  // shell's thread adds them. Each connection's QUIC channel stays guarded after it.
+  std::mutex m_seatMutex;
+  bool m_started = false;
+  // Where players connect over QUIC, when the server takes them (ServerDesc::quic). Destroyed after the thread and before
+  // the connections, so that no callback of MsQuic's outlives what it touches.
+  std::unique_ptr<Neuron::QuicListener> m_listener;
   // Last, so that it is destroyed first: the thread stops and is joined before anything it uses goes.
   std::jthread m_thread;
 };

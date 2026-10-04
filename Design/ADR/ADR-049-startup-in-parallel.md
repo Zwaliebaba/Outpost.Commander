@@ -40,7 +40,7 @@ Nothing here was measured on Windows. `--measure` could time frames, ticks and r
    `GameClient` is then built from what they made, inside one batch of uploads. A task's exception reaches the main thread when its result is taken, and is reported as before.
 3. **The window is created hidden and shown once everything is loaded**, just before the first frame. A failure while loading is still reported before the screen goes full screen, which is why the server used to be made before the window. A hidden window cannot be marked "Not Responding" while the main thread is busy.
 4. **DirectWrite's factory is the shared one.** Its objects may be used from any thread, so the atlas can be made on another one.
-5. **Render targets and depth buffers are created with `D3D12_HEAP_FLAG_CREATE_NOT_ZEROED`.** This applies at startup and on every resize. The OS may still zero memory that comes from another process. A runtime older than Windows 10 version 2004, which the package's minimum of 1809 allows, refuses the flag, and the target is created again without it. On such a runtime the debug layer reports the refused call once per target.
+5. **Render targets and depth buffers are created with `D3D12_HEAP_FLAG_CREATE_NOT_ZEROED`.** This applies at startup and on every resize. The OS may still zero memory that comes from another process. A runtime older than Windows 10 version 2004 refuses the flag, and the target is created again without it, and the debug layer reports the refused call once per target. The package's minimum is Windows 11 since ADR-060, so no runtime it installs on refuses the flag, and the second attempt is not reached.
 
 ## Consequences
 
