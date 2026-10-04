@@ -1047,7 +1047,8 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     paint.Text(paint.Fit(card.hull, Hud::Typeface::Name, cardWidth - 18.0f - armorWidth - FIT_GAP_UNITS), left + 10.0f, cardsTop + 8.0f,
                TEXT_COLOR, Hud::Typeface::Name);
     paint.RightText(card.armor, left + cardWidth - 8.0f, cardsTop + 11.0f, LABEL_COLOR, Hud::Typeface::Label);
-    paint.Text(card.perShip, left + 10.0f, cardsTop + 28.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
+    // Clear of the hull's line, which the name face sets about 19 units tall, at every scale's rounding.
+    paint.Text(card.perShip, left + 10.0f, cardsTop + 30.0f, ChangeColor(card.change, TEXT_COLOR), Hud::Typeface::LargeFigure);
     paint.Panel(left + 10.0f, cardsTop + 66.0f, cardWidth - 20.0f, 4.0f, BAR_TRACK_COLOR);
     paint.Panel(left + 10.0f, cardsTop + 66.0f, (cardWidth - 20.0f) * card.share, 4.0f, RatingColor(card.rating));
     paint.Text(paint.Fit(card.perOre, Hud::Typeface::Detail, cardWidth - 20.0f), left + 10.0f, cardsTop + 76.0f, SOFT_COLOR,
