@@ -73,6 +73,14 @@ struct MeshData
 // change.
 void FitMesh(MeshData& _mesh, float _lengthMeters);
 
+// Puts a mesh at its size in the game as FitMesh does, but scaled so that the wider of its length along x and its depth
+// along z is _widestMeters: it stands within a square that wide on the ground.
+void FitMeshAcross(MeshData& _mesh, float _widestMeters);
+
+// The center of a mesh's bounds moved to the origin, and the mesh scaled uniformly about it by _scale, its hardpoints and
+// its parts' pivots with it, and its bounds measured again.
+void CenterAndScale(MeshData& _mesh, float _scale);
+
 // The triangles of _indexCount of _mesh's indices from _firstIndex, as a mesh of their own: the vertices they use, in the
 // order they first use them, and their bounds. It has no hardpoints and no parts.
 [[nodiscard]] MeshData MeshPiece(const MeshData& _mesh, std::uint32_t _firstIndex, std::uint32_t _indexCount);

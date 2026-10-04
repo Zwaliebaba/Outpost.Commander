@@ -42,6 +42,8 @@ public:
   void Queue(EntityId _producer, DesignId _design);
   // From the HUD: a topic for the Research Lab's queue (task 5.1).
   void Research(EntityId _lab, ResearchTopicId _topic);
+  // From the HUD: the structure's next level, which Constructors then build (Phase 3 design §4).
+  void Upgrade(EntityId _structure);
   // From the designer: a new design, or a new name for a saved one (task 5.2).
   void SaveDesign(SaveDesignCommand _save);
   // From the minimap: the selected ships move to a point.

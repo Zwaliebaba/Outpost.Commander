@@ -33,7 +33,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | The research window opens at its slot beside production's, mid-screen, even when production is closed. | P1 | 15.4 |
 | The selection ring is a band 15% of its radius wide: about 15 px of saturated green under a Shipyard, in a scene of lines a pixel wide. | P1 | 15.5 |
 | "QUEUE · 0 BUILT" reads as one statement. The production window's arrows sit by its small label and change the big title below it. Research gives no page position. A window's body is 97% opaque, so bright shapes show through its near-black. | P2 | 16.1 |
-| The gateway topic's gold edge reads as a pick or a hover. | P2 | 16.1 |
+| The gateway topic's gold edge reads as a pick or a hover. | P2 | — (Phase 3 removes the gateways) |
 | On the minimap, enemy marks and ore are both warm and differ only by brightness and size. Fields stand at 1.3:1 against the map and dry asteroids at 2.5:1, and the minimap is 260 units for a 5 km map. | P2 | 16.2 |
 | A production card shows a name, a code and a cost: not the build time, nor what the design is good against. | P2 | 16.3 |
 | The starting designs' names repeat their codes, "Small+Ion+Mass Driver" beside "S·I·MD", and are cut short in the chips. | P2 | 16.5 |
@@ -54,7 +54,7 @@ Task numbers continue Phase 1's milestones, so that a number names one task acro
 | 15.3 | The designer's preview in figures | 14.2 | — | todo |
 | 15.4 | Windows open where there is room | — | — | todo |
 | 15.5 | The selection ring at a fixed width | — | K3 | todo |
-| 16.1 | The windows' headers, bodies and gateways | 14.2 | K5, for the gateway | todo |
+| 16.1 | The windows' headers and bodies | 14.2 | — | todo |
 | 16.2 | The minimap's marks and size | — | K5 | todo |
 | 16.3 | What a production card says | 14.2 | K5 | todo |
 | 16.4 | A controls window | 15.2 | K4 | todo |
@@ -78,7 +78,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 | K2 | The HUD says what production and research are doing, as 15.1 proposes: a status panel under the Ore, and a line on a producer's or the Lab's selection panel, which Phase 1 §12 keeps to its name, hit points, construction and window buttons. **Decided on 2026-10-03:** as proposed. | 15.1 | — |
 | K3 | The selection ring a fixed width on the screen, about 3 px at 1080p at any zoom, in place of the band ADR-042 decision 3 keeps. **Decided on 2026-10-03:** as proposed. | 15.5 | — |
 | K4 | How the keys with no button are taught: a Controls window on F1, and whether the main menu says so, which MVP §9 keeps to Start skirmish and Quit. **Decided on 2026-10-03:** as proposed; whether the menu gains its line is 16.4's to propose at the owner's run. | 16.4 | — |
-| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. | 16.1, 16.2, 16.3, 16.6 | — |
+| K5 | The review's smaller looks, each yes or no: the gateway's gold stripe (16.1); the minimap's outlined ore, lighter fields and 300 units (16.2); a production card's build time and strength against each hull (16.3); the brightest stars kept as ADR-028's crosses, shortened, or drawn as dots (16.6). **Decided on 2026-10-03:** yes to each, as proposed; 16.6's choice among its three is made at the owner's run. **On 2026-10-04** the gateway's stripe lapsed: [Phase 3](OutpostCommander-Phase3.md) removes the gateway topics (its §6), and the owner chose Phase 3 over 16.1. | 16.2, 16.3, 16.6 | — |
 | K6 | Short names for the four starting designs, as 16.5 proposes from the MVP design's own nicknames (§7). **Decided on 2026-10-03:** as proposed; Line or Lancer is 16.5's to put to the owner. | 16.5 | — |
 | K7 | Whether the player can scale the interface beyond the screen's fit (ADR-006), how and how far, or not now. **Decided on 2026-10-03:** as proposed, Ctrl+= and Ctrl+- as far as the windows fit. | 17.1 | — |
 
@@ -136,6 +136,7 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
   - **A line on the selection panel** of the player's own finished producer or Lab: "Building Small+Ion+Mass Driver · 62% · +2 queued", "Waiting for Ore", or "Idle". An enemy structure's queue stays unshown (task 9.4).
   - The windows' default top moves down if the panel needs the room.
   - Phase 2's alerts (J5) are messages about events. This panel shows a standing state, and stays when they come.
+  - [Phase 3](OutpostCommander-Phase3.md) §9 gives the same selection panel the structure's level and an Upgrade button ([its plan](ImplementationPlan-Phase3.md)'s 20.2). The line is laid out to leave room for both, and whichever lands second fits around the first.
 - **ADR:** a new one: what the HUD reports of production, and what it adds to Phase 1 §12's selection panel.
 - **Acceptance:** `HudTests`: the panel with no Lab and no Shipyard; a Lab researching, waiting for Ore and idle; Shipyards building and idle; a click on each line; the selection panel's line for a Shipyard building, waiting and idle, and none on an enemy's.
 - **Verify:** CI; run; **owner run.**
@@ -186,17 +187,17 @@ Each is an owner decision, proposed in the task it gates. All seven were decided
 
 The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recommendations shared ADR-046. Task 16.5 changes the tuning data and has its own.
 
-### 16.1 — The windows' headers, bodies and gateways
+### 16.1 — The windows' headers and bodies
 
-- **Gate:** K5, for the gateway; the rest needs none.
+- **Gate:** none.
 - **Scope:**
   - **The designer's header** reads "QUEUE 0 / 5" over its slots and "BUILT 0" apart, as the other windows write a queue (`QueueRows`).
   - **Arrows flank what they step:** "< SHIPYARD 05 >". The production window's move from beside its "PRODUCTION" label to either side of the producer's name, and the designer's to either side of the Shipyard's. They grow from 18 units square to 24 (`SMALL_BUTTON_UNITS`), and the research window's scroll arrows with them.
   - **Research says where its page is:** "TOPICS · 1-10 OF 21", with an ASCII hyphen (ADR-030).
   - **A window's body is opaque:** `WINDOW_COLOR`'s alpha 0.97 → 1.
-  - **A gateway is marked by a gold stripe down its card's left edge**, not a gold outline, so that it reads as a kind of topic rather than a pick or a hover. Its effect line already says "Opens tier 2".
+  - **The gateway's mark is left as it is.** [Phase 3](OutpostCommander-Phase3.md) removes the gateway topics (its §6, [its plan](ImplementationPlan-Phase3.md)'s 22.1), and their gold outline goes with them (owner, 2026-10-04).
 - **ADR:** the milestone's.
-- **Acceptance:** `HudTests`: the headers; the arrows' places and size; the page line on the first, a middle and the last page; the gateway's stripe.
+- **Acceptance:** `HudTests`: the headers; the arrows' places and size; the page line on the first, a middle and the last page.
 - **Verify:** CI; run; **owner run.**
 
 ### 16.2 — The minimap's marks and size
@@ -213,7 +214,7 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 ### 16.3 — What a production card says
 
 - **Gate:** K5.
-- **Scope:** a Shipyard's card adds its design's build time, and three short bars marked S, M and L for how it does against each hull. A bar's length follows the designer's rating against that hull, three segments for Good, two for Fair and one for Poor, so that the bars read without their colors. The Constructor's card adds its build time.
+- **Scope:** a Shipyard's card adds its design's build time, and three short bars marked S, M and L for how it does against each hull. A bar's length follows the designer's rating against that hull, three segments for Good, two for Fair and one for Poor, so that the bars read without their colors. The Constructor's card adds its build time. [Phase 3](OutpostCommander-Phase3.md) dims a card whose hull is above the Shipyard's level, with the reason ([its plan](ImplementationPlan-Phase3.md)'s 21.2); the card is laid out to leave room for it.
 - **ADR:** the milestone's.
 - **Acceptance:** `HudTests`: the time and the bars of two designs that differ; 14.1's tests.
 - **Verify:** CI; run; **owner run.**
@@ -269,5 +270,5 @@ The milestone's looks, 16.1–16.4 and 16.6, share one ADR, as task 9.6's recomm
 - **What the enemy's fleet is armed with.** The review asked whether a player can tell from a battle. That is what scouting shows, which is Phase 2's (its §10, the Sensor Array), not the HUD's.
 - **Previewing a locked part.** Task 9.3 left it undone: a locked card takes no click, so hovering it previews nothing. It would show what a topic buys before it is researched. It was not in the review, and the owner decides whether it joins 15.3.
 - **Flashes and motion.** Stills cannot show them. A battle at the peak ship counts, watched for flashing, belongs in an owner run, and what it finds becomes a task.
-- **The rest of the warm colors.** Gold, amber, the Fair rating, hurt health and the attack-move ring are all warm, but each is used consistently; only the gateway's edge misled, and 16.1 changes it.
+- **The rest of the warm colors.** Gold, amber, the Fair rating, hurt health and the attack-move ring are all warm, but each is used consistently; only the gateway's edge misled, and Phase 3 removes the gateways.
 - **Keys for building.** No Build button has a key. Giving them keys is a design question, not a finding of the review.

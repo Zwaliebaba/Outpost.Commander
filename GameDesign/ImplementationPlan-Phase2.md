@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 2 Implementation Plan
 
-Status: **open** · Started 2026-10-03, when the owner accepted the Phase 2 design and decided its gates · Every milestone built and merged on 2026-10-04, #55 to #60; the owner's runs are open · Derived from [the Phase 2 design](OutpostCommander-Phase2.md)
+Status: **closed** · Started 2026-10-03, when the owner accepted the Phase 2 design and decided its gates · Every milestone built and merged on 2026-10-04, #55 to #60 · The owner's runs done on 2026-10-04: "Phase 2 works fine" · Derived from [the Phase 2 design](OutpostCommander-Phase2.md)
 
-The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](Archive/ImplementationPlan-Phase1.md) and [the MVP plan](Archive/ImplementationPlan.md) are closed.
+The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](Archive/ImplementationPlan-Phase1.md) and [the MVP plan](Archive/ImplementationPlan.md) are closed, and so is this one: [the Phase 3 plan](ImplementationPlan-Phase3.md) is the open one.
 
 ---
 
@@ -24,18 +24,18 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 |---|---|---|---|---|
 | 14.1 | Sectors held: the Relay, the lattice and sector ore | — | J1, J2 decided | done, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
 | 14.2 | Suppression, and the Relay's sight | 14.1 | J2 decided | done, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
-| 14.3 | The client shows territory, and builds Relays | 14.2 | — | in review: owner run, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
+| 14.3 | The client shows territory, and builds Relays | 14.2 | — | done, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
 | 14.4 | An attacking group keeps its lanes (Phase 1's 7.3) | — | — | done, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
 | 14.5 | The AI claims its flanks | 14.1 | — | done, [#55](https://github.com/Zwaliebaba/Outpost.Commander/pull/55) |
 | 15.1 | Domination | 14.1 | J4 decided | done, [#56](https://github.com/Zwaliebaba/Outpost.Commander/pull/56) |
-| 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | in review: owner run, [#56](https://github.com/Zwaliebaba/Outpost.Commander/pull/56) |
+| 15.2 | The client shows the tickets and how a match ended | 15.1, 14.3 | — | done, [#56](https://github.com/Zwaliebaba/Outpost.Commander/pull/56) |
 | 16.1 | The module slot and the Sensor Array | — | J6 decided | done, [#57](https://github.com/Zwaliebaba/Outpost.Commander/pull/57) |
-| 16.2 | The designer's module row | 16.1 | — | in review: owner run, [#57](https://github.com/Zwaliebaba/Outpost.Commander/pull/57) |
-| 17.1 | Alerts | 14.3 | J5 decided | in review: owner run, [#58](https://github.com/Zwaliebaba/Outpost.Commander/pull/58) |
-| 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | in review: owner run, [#58](https://github.com/Zwaliebaba/Outpost.Commander/pull/58) |
+| 16.2 | The designer's module row | 16.1 | — | done, [#57](https://github.com/Zwaliebaba/Outpost.Commander/pull/57) |
+| 17.1 | Alerts | 14.3 | J5 decided | done, [#58](https://github.com/Zwaliebaba/Outpost.Commander/pull/58) |
+| 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | done, [#58](https://github.com/Zwaliebaba/Outpost.Commander/pull/58) |
 | 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | done, [#59](https://github.com/Zwaliebaba/Outpost.Commander/pull/59) |
 | 19.1 | The match log for Phase 2 | 15.1 | — | done, [#60](https://github.com/Zwaliebaba/Outpost.Commander/pull/60) |
-| 19.2 | S1–S5 | 18.1, 19.1 | — | in review: owner run, [#60](https://github.com/Zwaliebaba/Outpost.Commander/pull/60) |
+| 19.2 | S1–S5 | 18.1, 19.1 | — | done, [#60](https://github.com/Zwaliebaba/Outpost.Commander/pull/60) |
 
 ### Milestone order
 

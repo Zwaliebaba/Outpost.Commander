@@ -4,7 +4,7 @@ Status: **accepted** · 2026-10-03
 
 ## Context
 
-On 2026-10-03 the owner replaced the `CommandStation`, `Shipyard` and `ResearchLab` sources of both sets with five levels each, `<Model>_L1.glb` to `<Model>_L5.glb`, to be used later as the structures grow. Until then the game draws level 1.
+On 2026-10-03 the owner replaced the `CommandStation`, `Shipyard` and `ResearchLab` sources of both sets with five levels each, `<Model>_L1.glb` to `<Model>_L5.glb`, to be used as the structures grow. Phase 3 grows them ([ADR-064](ADR-064-structure-upgrades.md)).
 
 The owner's `ResearchLab` sources also have a moving part. Each is a node named `*_pivot`, and a glTF animation turns its rotation. Blender wrote each spin as five linear keys a quarter turn apart, ending a whole turn from where it starts. A script read every source on 2026-10-03:
 
@@ -16,7 +16,7 @@ The baker refused every animation, so none of these sources could be baked.
 
 ## Decision
 
-1. **A model that grows has one source a level**, `Art/Models/<Set>/<Model>_L<n>.glb`. `Tools/BakeMeshes.py` bakes each into an `.nmf` of the same name, as it bakes any other source. In `Models.json` a model has an optional `"levels"`, from 1 to 9. A model with levels is loaded from `Models\<Set>\<Model>_L1.nmf` (`FIRST_MODEL_LEVEL`), and a model without them from `Models\<Set>\<Model>.nmf`. Every level's `.nmf` is in the package.
+1. **A model that grows has one source a level**, `Art/Models/<Set>/<Model>_L<n>.glb`. `Tools/BakeMeshes.py` bakes each into an `.nmf` of the same name, as it bakes any other source. In `Models.json` a model has an optional `"levels"`, from 1 to 9. A model with levels is loaded from `Models\<Set>\<Model>_L<n>.nmf`, every level of it, and a model without them from `Models\<Set>\<Model>.nmf`. Every level's `.nmf` is in the package. The simulation and the snapshot carry a structure's level, and the client draws that level's mesh, each later level fitted within level 1's ground ([ADR-064](ADR-064-structure-upgrades.md) decisions 6 and 8).
 2. **A spinning part is a node whose rotation an animation turns in a steady spin.** The baker reads the spin from the animation, because that is what Blender plays. It does not read extras such as `spin_period_s`. A steady spin means:
    - linear keys, each less than half a turn from the last;
    - every key about one axis through the node's origin, in its parent's frame;
@@ -57,4 +57,4 @@ The baker refused every animation, so none of these sources could be baked.
 
 - A part that moves in any way but a steady spin about a fixed axis, such as a hinge, a sweep or a slide, until the format has a version for it.
 - A hardpoint on a moving part, as before (ADR-018).
-- A level chosen by the data. The level is the game's to set, and it is level 1 until structures grow.
+- A level chosen by the data. The level is the game's to set: the simulation's, which the snapshot carries ([ADR-064](ADR-064-structure-upgrades.md)).

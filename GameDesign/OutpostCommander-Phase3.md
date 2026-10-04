@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
+Status: **accepted** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Revised on 2026-10-04 for [the horizon](OutpostCommander-Horizon.md) · Accepted on 2026-10-04, after the owner's run of Phase 2 (gate K7) · The order of the work is [the Phase 3 plan](ImplementationPlan-Phase3.md)
 
-This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. It is accepted after the owner has run Phase 2 (gate K7).
+This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. The owner accepted it the same day, after running Phase 2 (gate K7).
 
 ---
 
@@ -50,9 +50,10 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 - **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and assigns Constructors to the work as for any other build. Several Constructors share the work, as they share a build (ADR-016). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
 - **The structure keeps working** while it is upgraded (§3). The work under way is shown as construction is. If the structure is destroyed during the upgrade, the Ore is lost.
-- **Each level adds 20% of the kind's base hit points**, and never armor (Phase 1 §6). A structure being upgraded keeps its share of its hit points, as it does when Reinforced Structures is researched.
+- **Each level adds 20% of the kind's base hit points**, and never armor (Phase 1 §6). The level's percent adds to research's, so a level 3 Lab with Reinforced Structures has 1 + 0.40 + 0.25 times its base hit points (owner, 2026-10-04). A structure being upgraded keeps its share of its hit points, as it does when Reinforced Structures is researched.
+- **A Constructor on a structure that is both damaged and being upgraded** builds the level first, since its Ore is paid, and repairs it once the level is in (owner, 2026-10-04).
 - **A destroyed structure is rebuilt at level 1.** Its levels are lost with it, which is what makes an upgraded structure a target.
-- **The snapshot carries each structure's level**, and the client draws that level's mesh (ADR-045). The upgrade under way is in the snapshot as construction is.
+- **The snapshot carries each structure's level**, and the client draws that level's mesh (ADR-045). The upgrade under way is in the snapshot as construction is. Under fog of war, a player remembers an enemy structure at the level it last saw, and an upgrade made out of its sight is not shown until it sees the structure again (owner, 2026-10-04).
 - **Every level is drawn at level 1's size** (gate K5). The footprint, and so placement, collision and pathing, are unchanged by an upgrade, and each level's mesh is fitted to the kind's length as level 1's is (ADR-045). At level 1's scale the baked meshes would grow up to 2.6 times in their longest dimension, and the Human Shipyard 5 times in depth (measured from the baked `.nmf` files on 2026-10-04); fitted, a higher level shows as more detail, not more size. This forgoes a level that reads by its size alone, which T5 judges.
 
 ---
@@ -132,7 +133,7 @@ Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
 
 ## 9. The client
 
-- **The selected structure's panel** names its level, "SHIPYARD 01 · L2", and has an Upgrade button showing the next level's cost, its time, and what it gives. When the server would refuse the upgrade, the button is dim and gives the reason: a requirement not met, too little Ore, or no room for the larger footprint.
+- **The selected structure's panel** names its level, "SHIPYARD 01 · L2", and has an Upgrade button showing the next level's cost, its time, and what it gives. When the server would refuse the upgrade, the button is dim and gives the reason: a requirement not met, or too little Ore. Every level keeps level 1's footprint (§4), so no upgrade is refused for room (owner, 2026-10-04).
 - **The territory line** shows nodes held against the cap, "4 / 5".
 - **The designer** dims Queue for a design the target Shipyard cannot build, and says why (§5).
 - **The world** draws each structure at its level, with its own creases and spinning parts (ADR-045).
@@ -164,4 +165,4 @@ Each is an owner decision, and each blocks the plan's tasks that depend on it.
 - **K4 — The Command Station's cap** (§7). **Decided on 2026-10-04:** 3 to 7 nodes, upgrades of 300, 500, 700 and 900 Ore, and level 1's cap without a station.
 - **K5 — The footprint** (§4). **Decided on 2026-10-04:** every level fitted to level 1's size; placement unchanged.
 - **K6 — Hit points and guns** (§4, §7). **Decided on 2026-10-04:** +20% of base hit points a level, and 1, 1, 2, 2 and 3 Defence guns on the Command Station at levels 1 to 5.
-- **K7 — When Phase 3 is accepted.** **Decided on 2026-10-04:** after the owner has run Phase 2's open tasks (14.3, 15.2, 16.2, 17.1, 17.2, 19.2) and answered S5, so that Phase 3 starts on a Phase 2 that has been played and not only built.
+- **K7 — When Phase 3 is accepted.** **Decided on 2026-10-04:** after the owner has run Phase 2's open tasks (14.3, 15.2, 16.2, 17.1, 17.2, 19.2) and answered S5, so that Phase 3 starts on a Phase 2 that has been played and not only built. **Met on 2026-10-04:** the owner ran Phase 2, answered S5 yes, and accepted Phase 3.

@@ -312,15 +312,16 @@ const Outpost::BankLimits* Outpost::ModelCatalog::BankFor(const EntityView& _ent
   return found == hulls.end() ? nullptr : &found->bank;
 }
 
-std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model)
+std::wstring Outpost::ModelFileName(const ModelSet& _set, const ModelEntry& _model, int _level)
 {
   // The loader allows only ASCII letters and digits in names, so widening them character by character is exact.
-  const std::string name = _model.levels > 0 ? std::format("Models\\{}\\{}_L{}.nmf", _set.name, _model.name, FIRST_MODEL_LEVEL)
+  const std::string name = _model.levels > 0 ? std::format("Models\\{}\\{}_L{}.nmf", _set.name, _model.name, _level)
                                              : std::format("Models\\{}\\{}.nmf", _set.name, _model.name);
   return {name.begin(), name.end()};
 }
 
-Neuron::MeshData Outpost::BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model, std::string_view _fileName)
+Neuron::MeshData Outpost::BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model, std::string_view _fileName,
+                                         std::optional<float> _firstLevelWidestMeters)
 {
   Neuron::MeshData mesh = Neuron::ParseNmf(_nmfBytes, _fileName);
   for (const Neuron::MeshHardpoint& hardpoint : mesh.hardpoints)
@@ -329,6 +330,9 @@ Neuron::MeshData Outpost::BuildModelMesh(std::span<const std::uint8_t> _nmfBytes
       throw Neuron::Exception(
         std::format("The mesh {} has a hardpoint tagged \"{}\", which the game does not know.", _fileName, hardpoint.tag));
   }
-  Neuron::FitMesh(mesh, _model.lengthMeters);
+  if (_firstLevelWidestMeters.has_value())
+    Neuron::FitMeshAcross(mesh, *_firstLevelWidestMeters);
+  else
+    Neuron::FitMesh(mesh, _model.lengthMeters);
   return mesh;
 }

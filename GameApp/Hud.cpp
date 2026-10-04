@@ -1638,9 +1638,18 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (structure != _entities.end() && structure->kind == EntityKind::Structure)
     {
       const StructureTypeView* type = typeOf(structure->structure);
-      content.selection.push_back(type != nullptr ? type->nameUtf8 : std::string("Structure"));
+      // A kind that grows names its level, "Shipyard 01 · L2" (Phase 3 design §9).
+      const bool grows = type != nullptr && !type->levels.empty();
+      std::string name = type != nullptr ? type->nameUtf8 : std::string("Structure");
+      if (structure->shipyardNumber > 0)
+        name += std::format(" {:02}", structure->shipyardNumber);
+      if (grows)
+        name += std::format("{}L{}", DOT, structure->level);
+      content.selection.push_back(std::move(name));
       if (structure->builtPermille < PERMILLE)
         content.selection.push_back(std::format("Under construction, {}%", structure->builtPermille / 10));
+      if (structure->upgradePermille.has_value())
+        content.selection.push_back(std::format("Upgrading to L{}, {}%", structure->level + 1, *structure->upgradePermille / 10));
       content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(structure->hitPointsHundredths)),
                                               WithThousands(WholePoints(structure->maxHitPointsHundredths))));
       content.selectionHealth = HealthShare(structure->hitPointsHundredths, structure->maxHitPointsHundredths);
@@ -1680,6 +1689,24 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         }
         else if (structure->structure == StructureKind::ResearchLab)
           content.buttons.push_back({.label = "Research", .action = {.kind = ActionKind::OpenResearch, .producer = structure->id}});
+        // The next level: what it gives, and a button with its time and cost, dim while one is being built or the Ore is
+        // short (Phase 3 design §9).
+        const auto next = static_cast<std::size_t>(std::max(0, structure->level - 1));
+        if (grows && next < type->levels.size())
+        {
+          const StructureLevelView& level = type->levels[next];
+          const bool upgrading = structure->upgradePermille.has_value();
+          content.selection.push_back(
+            std::format("L{}: {} hit points", structure->level + 1, WithThousands(WholePoints(level.maxHitPointsHundredths))));
+          content.buttons.push_back(
+            {.label = std::format("Upgrade to L{}{}{}|{}", structure->level + 1, DOT,
+                                  MinutesAndSeconds(static_cast<std::uint64_t>(std::llround(level.buildSeconds))), level.cost),
+             .action = {.kind = ActionKind::Upgrade, .producer = structure->id},
+             .enabled = !upgrading && _newest.ore >= level.cost,
+             .note = upgrading ? std::string("UPGRADING") : std::string()});
+        }
+        else if (grows)
+          content.selection.emplace_back("Top level");
       }
       return content;
     }

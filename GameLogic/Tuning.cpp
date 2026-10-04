@@ -54,6 +54,7 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   rules.exhaustedYieldPercent = _reader.Integer("exhaustedYieldPercent", 0);
   if (rules.exhaustedYieldPercent > 100)
     Neuron::JsonFail(_reader.PathOf("exhaustedYieldPercent"), std::format("is at most 100, found {}", rules.exhaustedYieldPercent));
+  rules.levelHitPointsPercent = _reader.Integer("levelHitPointsPercent", 0);
   return rules;
 }
 
@@ -194,6 +195,26 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
 
   if (const JsonValue* weapon = _reader.Optional("structureWeapon"))
     structure.structureWeapon = ReadId<Outpost::StructureWeaponId>(*weapon, _reader.PathOf("structureWeapon"));
+
+  // Levels are art the owner gave three kinds (ADR-045); the others have none to draw (Phase 3 design §11).
+  if (const JsonValue* levels = _reader.Optional("levels"))
+  {
+    const std::string path = _reader.PathOf("levels");
+    const bool grows = structure.kind == Outpost::StructureKind::CommandStation || structure.kind == Outpost::StructureKind::Shipyard ||
+                       structure.kind == Outpost::StructureKind::ResearchLab;
+    if (!grows)
+      Neuron::JsonFail(path, std::format("are not for a {}", structure.name));
+    const JsonValue::Array& elements = Neuron::ReadJsonArray(*levels, path);
+    if (elements.size() + 1 > static_cast<size_t>(Outpost::MAXIMUM_STRUCTURE_LEVEL))
+      Neuron::JsonFail(path, std::format("reach level {}, past the last, {}", elements.size() + 1, Outpost::MAXIMUM_STRUCTURE_LEVEL));
+    for (size_t i = 0; i < elements.size(); ++i)
+    {
+      ObjectReader level(elements[i], Neuron::JsonElementPath(path, i));
+      structure.levels.push_back(
+        {.cost = level.Integer("cost", 0), .buildConstructorSeconds = level.Number("buildConstructorSeconds", JsonBound::Positive)});
+      level.Finish();
+    }
+  }
   return structure;
 }
 
