@@ -38,7 +38,7 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
 11. **Every match against the AI is added to `OutpostCommander-matches.log` in the temporary folder**, by `Outpost::MatchLog` in `GameApp`. It records:
     - the seed,
     - each player's research as it finishes,
-    - each warship as it first appears, by its components,
+    - each warship as it first appears, by its components and its module,
     - how the match ended, or that it was left.
 
     [ADR-038](ADR-038-phase-one-match-log.md) decision 1 adds four more records. `Tools/MatchLog.py` prints, for each match, the research times and the designs each side built in 5-minute windows, with the figures of [ADR-038](ADR-038-phase-one-match-log.md) decision 4, the match's length among them.

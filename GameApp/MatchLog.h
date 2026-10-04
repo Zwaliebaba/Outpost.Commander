@@ -4,16 +4,16 @@ namespace Outpost
 {
 // The record of one match for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3), and Phase 1's P1, P2 and P4
 // (Phase 1 plan task 13.1). It holds how long the match ran and how it ended; when each player finished each research
-// topic, and each gateway that opened a tier; every warship as it first appeared, by its components; each player's
-// warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. It reads only snapshots, as any
-// client does. Tools/MatchLog.py summarizes it.
+// topic, and each gateway that opened a tier; every warship as it first appeared, by its components and its module;
+// each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. It reads only
+// snapshots, as any client does. Tools/MatchLog.py summarizes it.
 //
 // One line a record, every time in ticks:
 //
 //   match seed <seed> ticks_per_second <rate>
 //   research <tick> player <player> topic <id> <name>
 //   tier <tick> player <player> tier <tier>          the player finished the gateway that opens the tier
-//   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>
+//   built <tick> player <player> hull <id> drive <id> weapon <id> <hull name>+<drive name>+<weapon name>[+<module name>]
 //   fleet <tick> player <player> warships <count>    every 30 seconds, from the player's own snapshots
 //   dry <tick> asteroid <id>                         the asteroid's reserve ran out (Phase 1 design §8)
 //   peak <tick> player <player> warships <count>     the most warships the player had at once, and when it first had

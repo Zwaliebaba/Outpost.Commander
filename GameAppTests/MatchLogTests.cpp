@@ -78,6 +78,24 @@ public:
                      out.str());
   }
 
+  // Phase 2 design §10: a warship with a module is recorded with the module's name after its components', so that a
+  // scout reads apart from a plain ship of its hull, drive and weapon.
+  TEST_METHOD(RecordsAShipsModule)
+  {
+    std::ostringstream out;
+    Outpost::MatchLog log(out, 7, 20);
+    Outpost::Snapshot ai = SnapshotOf(AI, 100);
+    ai.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array"}};
+    Outpost::EntityView scout = Swarm(7, AI);
+    scout.module = Outpost::ModuleId{1};
+    ai.entities = {scout, Swarm(8, AI)};
+    log.Record(ai);
+    const std::string text = out.str();
+    Assert::IsTrue(text.find("built 100 player 2 hull 1 drive 1 weapon 1 Small+Ion+Mass Driver+Sensor Array\n") != std::string::npos,
+                   L"the scout's module");
+    Assert::IsTrue(text.find("built 100 player 2 hull 1 drive 1 weapon 1 Small+Ion+Mass Driver\n") != std::string::npos, L"the plain ship");
+  }
+
   // A match the player leaves before it ends says so, at the last tick it saw, once, after the peaks.
   TEST_METHOD(RecordsAMatchLeftEarly)
   {
