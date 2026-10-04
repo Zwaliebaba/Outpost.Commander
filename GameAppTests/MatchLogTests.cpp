@@ -180,14 +180,14 @@ public:
                      out.str());
   }
 
-  // Phase 1 plan task 13.1: the gateway that opens a tier, the player's own warships every 30 seconds and at their peak,
-  // and an asteroid as it runs dry, once.
+  // Phase 1 plan task 13.1: each tier the player's Research Lab opens (Phase 3 design §6), the player's own warships every
+  // 30 seconds and at their peak, and an asteroid as it runs dry, once.
   TEST_METHOD(RecordsTiersFleetsAndDryAsteroids)
   {
     std::ostringstream out;
     Outpost::MatchLog log(out, 3, 20);
     Outpost::Snapshot ai = SnapshotOf(AI, 1);
-    ai.research.push_back({.id = Outpost::ResearchTopicId{9}, .nameUtf8 = "Relay Archives", .tier = 2, .gateway = true});
+    ai.research.push_back({.id = Outpost::ResearchTopicId{14}, .nameUtf8 = "Reinforced Structures", .tier = 2});
     const Outpost::EntityView asteroid{
       .id = Outpost::EntityId{50}, .kind = Outpost::EntityKind::Asteroid, .oreReserveHundredths = std::int64_t{100}};
     ai.entities = {asteroid, Swarm(7, AI), Swarm(8, HUMAN)};
@@ -199,10 +199,11 @@ public:
     ai.entities.push_back(Swarm(10, AI));
     log.Record(ai);
 
-    // Thirty seconds in, one lost, the gateway done and the asteroid dry.
+    // Thirty seconds in, one lost, tier 2 opened and a topic of it done, and the asteroid dry.
     ai.tick = 600;
     ai.entities.pop_back();
     ai.research.back().researched = true;
+    ai.researchTier = 2;
     ai.entities.front().oreReserveHundredths = 0;
     log.Record(ai);
     ai.tick = 601;
@@ -215,7 +216,7 @@ public:
                                  "fleet 1 player 2 warships 1\n"
                                  "built 200 player 2 hull 1 drive 1 weapon 1 Small+Ion+Mass Driver\n"
                                  "built 200 player 2 hull 1 drive 1 weapon 1 Small+Ion+Mass Driver\n"
-                                 "research 600 player 2 topic 9 Relay Archives\n"
+                                 "research 600 player 2 topic 14 Reinforced Structures\n"
                                  "tier 600 player 2 tier 2\n"
                                  "dry 600 asteroid 50\n"
                                  "fleet 600 player 2 warships 2\n"

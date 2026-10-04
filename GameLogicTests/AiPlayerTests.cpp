@@ -854,11 +854,8 @@ public:
     AiMatch match;
     (void)match.Spawn(AI, BRAWLER, 20, {700.0f, 600.0f});
     Outpost::Snapshot snapshot = match.View(AI);
-    for (Outpost::ResearchTopicView& topic : snapshot.research)
-    {
-      if (topic.gateway && topic.tier == 2)
-        topic.researched = true;
-    }
+    // Its Research Lab has opened tier 2 (Phase 3 design §6).
+    snapshot.researchTier = 2;
     Outpost::AiSettings settings = AttackSettings();
     settings.attackGroupGrowthPerTier = 12;
     Outpost::AiPlayer ai(settings, 20);
@@ -866,7 +863,7 @@ public:
     Assert::AreEqual(size_t{0}, ai.AttackGroupShips(), L"twenty attacked, where tier 2 asks for twenty-four");
     (void)match.Spawn(AI, BRAWLER, 4, {700.0f, 650.0f});
     Outpost::Snapshot more = match.View(AI);
-    more.research = snapshot.research;
+    more.researchTier = snapshot.researchTier;
     more.tick = snapshot.tick + 20;
     (void)ai.Update(more);
     Assert::AreEqual(size_t{24}, ai.AttackGroupShips());
@@ -956,16 +953,11 @@ public:
       return;
     }
     AiMatch match;
-    constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
-    const auto researched = [&match](Outpost::ResearchTopicId _topic)
-    {
-      const Outpost::Snapshot view = match.View(AI);
-      const auto topic = std::ranges::find(view.research, _topic, &Outpost::ResearchTopicView::id);
-      return topic != view.research.end() && topic->researched;
-    };
-    for (int minute = 0; minute < 45 && !researched(PRECURSOR_VAULT); ++minute)
+    // Its Research Lab's level opens tier 3 (Phase 3 design §6).
+    const auto opened = [&match] { return match.View(AI).researchTier >= 3; };
+    for (int minute = 0; minute < 45 && !opened(); ++minute)
       match.Run(60.0);
-    Assert::IsTrue(researched(PRECURSOR_VAULT), L"the AI has not opened tier 3 in 45 minutes");
+    Assert::IsTrue(opened(), L"the AI has not opened tier 3 in 45 minutes");
     Logger::WriteMessage(std::format("The AI opened tier 3 at tick {}.\n", match.World().CurrentTick()).c_str());
   }
 

@@ -142,7 +142,7 @@ class Topic:
   target: str  # what an upgrade changes: "All hulls", a weapon, or a target no battle feels, such as "Mining Rig"
   stat: str  # the stat an upgrade changes, or ""
   factor: float  # 1 + the upgrade's percentage
-  tier: int = 1  # its research tier (Phase 1 design §6); a gateway has no target, stat or unlock
+  tier: int = 1  # its research tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6)
 
 
 UPGRADES = {("All hulls", "HP"): "hp", ("weapon", "fire rate"): "interval", ("weapon", "damage"): "damage",
@@ -221,9 +221,6 @@ def read_research(research, ids):
       sys.exit(f"{where}: 'requires' must be a list of topic ids.")
     effect = field(entry, "effect", where)
     tier = int(entry.get("tier", 1))
-    if "opensTier" in effect:
-      topics.append(Topic(number_, field(entry, "name", where), tuple(requires), "", "", "", 1.0, tier))
-      continue
     unlocks = [(kind, effect[f"unlock{kind[:-1].capitalize()}"]) for kind in ("hulls", "drives", "weapons")
                if f"unlock{kind[:-1].capitalize()}" in effect]
     if unlocks:

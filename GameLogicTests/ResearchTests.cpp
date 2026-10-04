@@ -27,13 +27,11 @@ constexpr Outpost::ResearchTopicId LANCE_FOCUSING{4};
 constexpr Outpost::ResearchTopicId FUSION_DRIVE{5};
 constexpr Outpost::ResearchTopicId LARGE_HULL{6};
 constexpr Outpost::ResearchTopicId AUTOMATED_SHIPYARDS{8};
-// Phase 1's tiers (Phase 1 design §6).
-constexpr Outpost::ResearchTopicId RELAY_ARCHIVES{9};
+// Phase 1's tiers (Phase 1 design §6), which the Research Lab's levels open (Phase 3 design §6).
 constexpr Outpost::ResearchTopicId DEEP_CORE_SURVEY{12};
 constexpr Outpost::ResearchTopicId COMPOSITE_PLATING{13};
 constexpr Outpost::ResearchTopicId REINFORCED_STRUCTURES{14};
 constexpr Outpost::ResearchTopicId DEFENSE_AUTOLOADER{15};
-constexpr Outpost::ResearchTopicId PRECURSOR_VAULT{18};
 constexpr Outpost::ResearchTopicId ABLATIVE_ARMOR{20};
 constexpr Outpost::ResearchTopicId COILGUN_MASS_DRIVERS{21};
 constexpr Outpost::ResearchTopicId DRIVE_HARMONICS{23};
@@ -60,11 +58,12 @@ bool HasResearched(MatchArena& _arena, Outpost::PlayerId _player, Outpost::Resea
   return std::ranges::find(researched, _topic) != researched.end();
 }
 
-// Researches the topics one after another at a new lab of _player's, from the order to the tick the last one is done.
+// Researches the topics one after another at a new lab of _player's, from the order to the tick the last one is done. The
+// lab stands at level 3, which has opened every tier and researches one topic at a time (Phase 3 design §6).
 Outpost::EntityId ResearchAll(MatchArena& _arena, Outpost::PlayerId _player, std::initializer_list<Outpost::ResearchTopicId> _topics)
 {
   const Outpost::EntityId lab =
-    _arena.Structure(_player, Outpost::StructureKind::ResearchLab, _player == BLUE ? LAB : Outpost::PlanePosition{600.0f, 600.0f});
+    _arena.Structure(_player, Outpost::StructureKind::ResearchLab, _player == BLUE ? LAB : Outpost::PlanePosition{600.0f, 600.0f}, 3);
   for (const Outpost::ResearchTopicId topic : _topics)
   {
     Assert::IsTrue(_arena.Tick({Research(_player, lab, topic)})[0] == Outpost::CommandResult::Applied);
@@ -150,7 +149,7 @@ void ExpectAsWorkedOutAfresh(const Outpost::Tuning& _tuning, const Outpost::Simu
         actual.cost == topic.cost && actual.researchSeconds == topic.researchSeconds && actual.prerequisites == topic.prerequisites &&
         actual.researched == (std::ranges::find(researched, topic.id) != researched.end()) &&
         actual.unlocksHull == UnlockedBy<Outpost::HullId>(topic) && actual.unlocksDrive == UnlockedBy<Outpost::DriveId>(topic) &&
-        actual.unlocksWeapon == UnlockedBy<Outpost::WeaponId>(topic) && actual.tier == topic.tier && actual.gateway == topic.IsGateway(),
+        actual.unlocksWeapon == UnlockedBy<Outpost::WeaponId>(topic) && actual.tier == topic.tier,
       L"a research topic");
   }
 
@@ -468,30 +467,99 @@ public:
     Assert::AreEqual(1.0, upgrades.hullHitPointsFactor, 1e-12);
   }
 
-  // Phase 1 design §6: a tier's topics wait for its gateway, which does nothing itself; the lab may queue the gateway and
-  // a topic of its tier one after the other, and researches them in that order.
-  TEST_METHOD(AGatewayOpensItsTier)
+  // Phase 3 design §6, gate K2: a tier's topics wait for the Research Lab's level that opens it. Level 2 opens tier 2 once
+  // Improved Extraction and Hull Plating are researched, and level 3 tier 3 once Large Hull is; a topic queued at the
+  // right level stays queued, and the snapshot says which tier is open.
+  TEST_METHOD(ALabsLevelOpensItsTier)
   {
     MatchArena arena;
-    const Outpost::EntityId lab = ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, HULL_PLATING});
-    Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::PrerequisiteMissing);
-    const Outpost::Upgrades before = arena.World().UpgradesOf(BLUE);
-    const auto results = arena.Tick({Research(BLUE, lab, RELAY_ARCHIVES), Research(BLUE, lab, REINFORCED_STRUCTURES)});
-    Assert::IsTrue(results[0] == Outpost::CommandResult::Applied && results[1] == Outpost::CommandResult::Applied, L"queued across tiers");
-    arena.Run(ResearchTicks(arena, RELAY_ARCHIVES));
-    Assert::IsTrue(HasResearched(arena, BLUE, RELAY_ARCHIVES));
-    Assert::IsFalse(HasResearched(arena, BLUE, REINFORCED_STRUCTURES));
-    Assert::IsTrue(arena.World().UpgradesOf(BLUE) == before, L"a gateway changes no rate");
-    arena.Run(ResearchTicks(arena, REINFORCED_STRUCTURES));
+    // A rig pays for the levels.
+    (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
+    const Outpost::StructureTuning& labTuning = arena.StructureData(Outpost::StructureKind::ResearchLab);
+    const Outpost::EntityId constructor = arena.World().SpawnConstructor(
+      BLUE, {.xMeters = LAB.xMeters - static_cast<float>(labTuning.footprintRadiusMeters) - 25.0f, .zMeters = LAB.zMeters});
+    const auto upgrade = [&]
+    { return arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = lab, .constructors = {constructor}})})[0]; };
+    const auto toLevel = [&](std::int32_t _level)
+    {
+      for (int tick = 0; tick < 600 * 20 && arena.Get(lab).level < _level; ++tick)
+        arena.Run(1);
+      Assert::AreEqual(_level, arena.Get(lab).level);
+    };
+    Assert::AreEqual(1, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::LevelTooLow);
+    Assert::IsTrue(upgrade() == Outpost::CommandResult::PrerequisiteMissing, L"level 2 needs Improved Extraction and Hull Plating");
+
+    for (const Outpost::ResearchTopicId topic : {IMPROVED_EXTRACTION, HULL_PLATING})
+    {
+      Assert::IsTrue(arena.Tick({Research(BLUE, lab, topic)})[0] == Outpost::CommandResult::Applied);
+      for (int tick = 0; tick < 300 * 20 && !HasResearched(arena, BLUE, topic); ++tick)
+        arena.Run(1);
+    }
+    Assert::IsTrue(upgrade() == Outpost::CommandResult::Applied);
+    toLevel(2);
+    Assert::AreEqual(2, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, DRIVE_HARMONICS)})[0] == Outpost::CommandResult::LevelTooLow, L"tier 3");
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, REINFORCED_STRUCTURES)})[0] == Outpost::CommandResult::Applied);
+    Assert::IsTrue(upgrade() == Outpost::CommandResult::PrerequisiteMissing, L"level 3 needs Large Hull");
+    for (int tick = 0; tick < 300 * 20 && !HasResearched(arena, BLUE, REINFORCED_STRUCTURES); ++tick)
+      arena.Run(1);
     Assert::IsTrue(HasResearched(arena, BLUE, REINFORCED_STRUCTURES));
+
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, LARGE_HULL)})[0] == Outpost::CommandResult::Applied);
+    for (int tick = 0; tick < 300 * 20 && !HasResearched(arena, BLUE, LARGE_HULL); ++tick)
+      arena.Run(1);
+    // Level 3's 600 Ore, which the rig has paid by now.
+    for (int tick = 0; tick < 300 * 20 && arena.World().OreHundredths(BLUE) < 600 * Outpost::HUNDREDTHS; ++tick)
+      arena.Run(1);
+    Assert::IsTrue(upgrade() == Outpost::CommandResult::Applied);
+    toLevel(3);
+    Assert::AreEqual(3, arena.World().BuildSnapshot(BLUE).researchTier);
+    Assert::IsTrue(arena.Tick({Research(BLUE, lab, DRIVE_HARMONICS)})[0] == Outpost::CommandResult::Applied);
 
     const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
     const auto view = [&snapshot](Outpost::ResearchTopicId _id)
     { return *std::ranges::find(snapshot.research, _id, &Outpost::ResearchTopicView::id); };
-    Assert::IsTrue(view(RELAY_ARCHIVES).gateway && view(RELAY_ARCHIVES).tier == 2);
-    Assert::AreEqual(std::string("Opens tier 2"), view(RELAY_ARCHIVES).effectUtf8);
-    Assert::IsTrue(!view(PRECURSOR_VAULT).gateway || view(PRECURSOR_VAULT).tier == 3);
-    Assert::IsTrue(!view(HULL_PLATING).gateway && view(HULL_PLATING).tier == 1);
+    Assert::AreEqual(2, view(REINFORCED_STRUCTURES).tier);
+    Assert::AreEqual(3, view(DRIVE_HARMONICS).tier);
+    Assert::AreEqual(size_t{23}, snapshot.research.size(), L"the two gateways are gone");
+  }
+
+  // Phase 3 design §6, gate K3: at level 4 the Lab researches its front two topics at once, each paid for when it starts;
+  // one that requires the other waits for it to finish; and the second's progress moves to the front when the first ends.
+  TEST_METHOD(ALevelFourLabResearchesTwoAtOnce)
+  {
+    MatchArena arena;
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 4);
+    const std::int32_t ore = static_cast<std::int32_t>(arena.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS);
+    // Hull Plating and Mass Driver Calibration together; Fusion Drive requires Hull Plating, so it waits behind it.
+    const std::vector<Outpost::CommandResult> results =
+      arena.Tick({Research(BLUE, lab, HULL_PLATING), Research(BLUE, lab, MASS_DRIVER_CALIBRATION), Research(BLUE, lab, FUSION_DRIVE)});
+    Assert::IsTrue(std::ranges::all_of(results, [](Outpost::CommandResult _result) { return _result == Outpost::CommandResult::Applied; }));
+    const std::int32_t paid = Topic(arena, HULL_PLATING).cost + Topic(arena, MASS_DRIVER_CALIBRATION).cost;
+    Assert::AreEqual(ore - paid, static_cast<std::int32_t>(arena.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS), L"both started");
+    arena.Run(20);
+    const Outpost::Snapshot started = arena.World().BuildSnapshot(BLUE);
+    const auto labView = std::ranges::find(started.entities, lab, &Outpost::EntityView::id);
+    Assert::IsTrue(labView->jobPermille > 0 && labView->secondJobPermille > 0, L"both show their progress");
+
+    // Hull Plating, 60 s, ends first; Mass Driver Calibration, 75 s, moves to the front, and Fusion Drive starts beside it.
+    arena.Run(ResearchTicks(arena, HULL_PLATING) - 20);
+    Assert::IsTrue(HasResearched(arena, BLUE, HULL_PLATING));
+    Assert::IsFalse(HasResearched(arena, BLUE, MASS_DRIVER_CALIBRATION));
+    Assert::IsTrue(arena.Get(lab).researchQueue.front() == MASS_DRIVER_CALIBRATION);
+    Assert::IsTrue(arena.Get(lab).secondJobWorkNeeded > 0, L"Fusion Drive started once Hull Plating was in");
+    arena.Run(ResearchTicks(arena, MASS_DRIVER_CALIBRATION) - ResearchTicks(arena, HULL_PLATING));
+    Assert::IsTrue(HasResearched(arena, BLUE, MASS_DRIVER_CALIBRATION), L"in its own time, alongside the first");
+
+    // At level 3 the same queue researches one topic at a time.
+    MatchArena single;
+    const Outpost::EntityId one = single.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 3);
+    (void)single.Tick({Research(BLUE, one, HULL_PLATING), Research(BLUE, one, MASS_DRIVER_CALIBRATION)});
+    Assert::AreEqual(0, single.Get(one).secondJobWorkNeeded);
+    Assert::AreEqual(ore - Topic(single, HULL_PLATING).cost,
+                     static_cast<std::int32_t>(single.World().OreHundredths(BLUE) / Outpost::HUNDREDTHS));
   }
 
   // Phase 1 design §6: Reinforced Structures raises every structure's hit points, those standing and those placed after;
@@ -504,7 +572,7 @@ public:
     const Outpost::EntityId theirs = arena.Structure(RED, Outpost::StructureKind::Shipyard, {300.0f, 600.0f});
     const Outpost::StructureTuning& yardTuning = arena.StructureData(Outpost::StructureKind::Shipyard);
     const std::int32_t full = yardTuning.hitPoints * Outpost::HUNDREDTHS;
-    (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, HULL_PLATING, RELAY_ARCHIVES, REINFORCED_STRUCTURES});
+    (void)ResearchAll(arena, BLUE, {IMPROVED_EXTRACTION, HULL_PLATING, REINFORCED_STRUCTURES});
     Assert::AreEqual(full * 5 / 4, arena.Get(yard).maxHitPointsHundredths);
     Assert::AreEqual(full * 5 / 4, arena.Get(yard).hitPointsHundredths, L"undamaged, it gains the whole upgrade");
     Assert::AreEqual(12345, arena.Get(odd).maxHitPointsHundredths);
@@ -524,12 +592,13 @@ public:
       const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {-300.0f, 0.0f});
       const float shipSpeed = arena.Get(ship).speedMetersPerSecond;
       const float constructorSpeed = arena.Get(constructor).speedMetersPerSecond;
-      std::vector<Outpost::ResearchTopicId> topics{IMPROVED_EXTRACTION, HULL_PLATING, RELAY_ARCHIVES, LARGE_HULL, PRECURSOR_VAULT};
+      std::vector<Outpost::ResearchTopicId> topics{IMPROVED_EXTRACTION, HULL_PLATING, LARGE_HULL};
       if (_rapid)
         topics.insert(topics.end(), {DRIVE_HARMONICS, RAPID_CONSTRUCTION, DEFENSE_AUTOLOADER});
-      // Eight topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come.
+      // Six topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come. The Lab has
+      // opened tier 3 (Phase 3 design §6).
       (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-      const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
+      const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 3);
       for (const Outpost::ResearchTopicId topic : topics)
       {
         Assert::IsTrue(arena.Tick({Research(BLUE, lab, topic)})[0] == Outpost::CommandResult::Applied);
@@ -590,10 +659,10 @@ public:
 
     // Some topics cost more than the starting Ore: a rig on the home asteroid pays for them as they come.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
-    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB, 2);
     std::optional<Outpost::Simulation> copy;
-    for (const Outpost::ResearchTopicId topic : {HULL_PLATING, MASS_DRIVER_CALIBRATION, FUSION_DRIVE, IMPROVED_EXTRACTION,
-                                                 AUTOMATED_SHIPYARDS, RELAY_ARCHIVES, DEFENSE_AUTOLOADER})
+    for (const Outpost::ResearchTopicId topic :
+         {HULL_PLATING, MASS_DRIVER_CALIBRATION, FUSION_DRIVE, IMPROVED_EXTRACTION, AUTOMATED_SHIPYARDS, DEFENSE_AUTOLOADER})
     {
       Assert::IsTrue(arena.Tick({Research(BLUE, lab, topic)})[0] == Outpost::CommandResult::Applied);
       for (int tick = 0; tick < 3600 * 20 && !HasResearched(arena, BLUE, topic); ++tick)
@@ -616,7 +685,7 @@ public:
     if (!copy.has_value())
       return;
     expectAll(*copy);
-    Assert::IsFalse(std::ranges::find(copy->Researched(BLUE), RELAY_ARCHIVES) != copy->Researched(BLUE).end());
+    Assert::IsFalse(std::ranges::find(copy->Researched(BLUE), DEFENSE_AUTOLOADER) != copy->Researched(BLUE).end());
     for (int tick = 0; tick < 20 * 60; ++tick)
       (void)copy->Tick({});
     expectAll(*copy);

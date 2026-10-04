@@ -17,7 +17,7 @@ Three things stand in the way:
 ## Decision
 
 1. **The log gains four records**, and keeps every record it had, so an older log still reads:
-   - `tier <tick> player <player> tier <tier>`: after the research line of a gateway topic.
+   - `tier <tick> player <player> tier <tier>`: the first snapshot in which the player's Research Lab has opened the tier by its level (Phase 3 design §6).
    - `fleet <tick> player <player> warships <count>`: every 30 seconds, from the player's own snapshots.
    - `dry <tick> asteroid <id>`: once, when a snapshot first shows the asteroid's reserve at zero.
    - `peak <tick> player <player> warships <count>`: the most warships the player had at once, and when it first had them. Written for each player just before `end`, or before `left` when the match is left.

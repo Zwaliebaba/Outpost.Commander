@@ -13,7 +13,6 @@ constexpr Outpost::HullId SMALL{1};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::ResearchTopicId IMPROVED_EXTRACTION{1};
 constexpr Outpost::ResearchTopicId HULL_PLATING{2};
-constexpr Outpost::ResearchTopicId RELAY_ARCHIVES{9};
 constexpr Outpost::ResearchTopicId DEEP_CORE_SURVEY{12};
 
 Outpost::BuildStructureCommand Build(Outpost::EntityId _constructor, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
@@ -120,7 +119,8 @@ public:
     MatchArena arena(5000);
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     (void)arena.Structure(RED, Outpost::StructureKind::MiningRig, MatchArena::CONTESTED_ASTEROID);
-    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {-600.0f, -600.0f});
+    // At level 2, which has opened Deep Core Survey's tier (Phase 3 design §6).
+    const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, {-600.0f, -600.0f}, 2);
     // What each asteroid loses in a second.
     const auto drain = [&arena](Outpost::PlanePosition _asteroid)
     {
@@ -134,7 +134,7 @@ public:
     Assert::AreEqual(std::int64_t{625}, drain(MatchArena::HOME_ASTEROID), L"6.25 Ore a second");
     Assert::AreEqual(std::int64_t{800}, drain(MatchArena::CONTESTED_ASTEROID), L"Red's rig, without research");
 
-    ResearchAll(arena, BLUE, lab, {HULL_PLATING, RELAY_ARCHIVES, DEEP_CORE_SURVEY});
+    ResearchAll(arena, BLUE, lab, {HULL_PLATING, DEEP_CORE_SURVEY});
     const std::int64_t ore = arena.World().OreHundredths(BLUE);
     Assert::AreEqual(std::int64_t{481}, drain(MatchArena::HOME_ASTEROID), L"6.25 Ore a second over 1.3");
     Assert::AreEqual(ore + 625, arena.World().OreHundredths(BLUE), L"the income is the same");

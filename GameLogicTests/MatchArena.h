@@ -50,12 +50,14 @@ public:
     return *std::ranges::find(m_tuning.structures, _kind, &Outpost::StructureTuning::kind);
   }
 
-  // A built structure of the tuning data's footprint, hit points, armor and gun.
-  Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::StructureKind _kind, Outpost::PlanePosition _position)
+  // A built structure of the tuning data's footprint, hit points, armor and gun, at _level with its hit points (Phase 3
+  // design §4).
+  Outpost::EntityId Structure(Outpost::PlayerId _owner, Outpost::StructureKind _kind, Outpost::PlanePosition _position,
+                              std::int32_t _level = 1)
   {
     const Outpost::StructureTuning& tuning = StructureData(_kind);
     return m_simulation.SpawnStructure(_owner, _kind, _position, static_cast<float>(tuning.footprintRadiusMeters),
-                                       tuning.hitPoints * Outpost::HUNDREDTHS, tuning.armor * Outpost::HUNDREDTHS);
+                                       m_simulation.StructureHitPoints(_owner, tuning, _level), tuning.armor * Outpost::HUNDREDTHS, _level);
   }
 
   // A warship of _owner's starting design of these components.

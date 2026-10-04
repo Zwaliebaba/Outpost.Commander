@@ -98,6 +98,9 @@ struct EntityView
   // of war a player sees only its own queues (ADR-024).
   std::vector<ResearchTopicId> research;
   std::int32_t jobPermille = 0;
+  // A Research Lab with a second slot: how far the second topic of its queue has come, in thousandths, while it is
+  // researched beside the first (Phase 3 design §6); zero otherwise.
+  std::int32_t secondJobPermille = 0;
   // An enemy structure out of the player's sight, as the player last saw it there (ADR-024). It may have changed, or be
   // gone: the player learns which once it sees the place again.
   bool remembered = false;
@@ -185,9 +188,8 @@ struct ResearchTopicView
   HullId unlocksHull;
   DriveId unlocksDrive;
   WeaponId unlocksWeapon;
-  // Its tier, and whether it is the gateway that opens it (Phase 1 design §6).
+  // Its tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6).
   std::int32_t tier = 1;
-  bool gateway = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
@@ -213,6 +215,11 @@ struct StructureLevelView
   std::int32_t cost = 0;
   double buildSeconds = 0.0;
   std::int32_t maxHitPointsHundredths = 0;
+  // A Research Lab's level (Phase 3 design §6): the tier it opens, or 0; how many topics the Lab researches at once from
+  // it on, or 0 where it does not change that; and the topics that must be researched before it is ordered.
+  std::int32_t opensTier = 0;
+  std::int32_t researchSlots = 0;
+  std::vector<ResearchTopicId> prerequisites;
 
   friend bool operator==(const StructureLevelView&, const StructureLevelView&) = default;
 };
@@ -341,6 +348,9 @@ struct Snapshot
   std::vector<ModuleView> modules;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
+  // The highest research tier the player's finished Research Lab has opened by its level, and 1 without one (Phase 3
+  // design §6).
+  std::int32_t researchTier = 1;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
   // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
   // (owner, 2026-10-01).

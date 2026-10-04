@@ -1270,18 +1270,23 @@ public:
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
-  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier, and marks a gateway.
+  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier. A topic of a tier the
+  // Research Lab has not opened is dim, and names the level that opens it (Phase 3 design §6).
   TEST_METHOD(ListsTheTopicsTierByTier)
   {
     Outpost::Snapshot newest = Newest();
     newest.ore = 1000;
-    newest.research = {{.id = Outpost::ResearchTopicId{9},
-                        .nameUtf8 = "Relay Archives",
-                        .effectUtf8 = "Opens tier 2",
-                        .cost = 400,
-                        .researchSeconds = 150.0,
-                        .tier = 2,
-                        .gateway = true},
+    newest.structureTypes = {{.structure = Outpost::StructureKind::ResearchLab,
+                              .nameUtf8 = "Research Lab",
+                              .buildable = true,
+                              .cost = 200,
+                              .levels = {{.cost = 400, .buildSeconds = 60.0, .opensTier = 2}}}};
+    newest.research = {{.id = Outpost::ResearchTopicId{10},
+                        .nameUtf8 = "Pulse Drive",
+                        .effectUtf8 = "Unlocks the Pulse drive",
+                        .cost = 300,
+                        .researchSeconds = 100.0,
+                        .tier = 2},
                        {.id = Outpost::ResearchTopicId{2},
                         .nameUtf8 = "Hull Plating",
                         .effectUtf8 = "Hull hit points +15%",
@@ -1292,29 +1297,81 @@ public:
                         .effectUtf8 = "Structure hit points +25%",
                         .cost = 250,
                         .researchSeconds = 90.0,
-                        .prerequisites = {Outpost::ResearchTopicId{9}},
+                        .prerequisites = {Outpost::ResearchTopicId{2}},
                         .tier = 2}};
     const Outpost::EntityView lab{.id = Outpost::EntityId{40},
                                   .kind = Outpost::EntityKind::Structure,
                                   .owner = PLAYER,
                                   .structure = Outpost::StructureKind::ResearchLab};
-    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
     Assert::AreEqual(size_t{3}, panel.topics.size());
     Assert::AreEqual(std::string("Hull Plating"), panel.topics[0].name, L"tier 1 first");
     Assert::AreEqual(std::string("TIER 1 \xC2\xB7 60 s"), panel.topics[0].time);
-    Assert::IsTrue(panel.topics[1].gateway && panel.topics[1].tier == 2);
-    Assert::AreEqual(std::string("TIER 2 \xC2\xB7 150 s"), panel.topics[1].time);
-    Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"RELAY ARCHIVES"}, L"its tier waits for the gateway");
-    Assert::IsFalse(panel.topics[2].gateway);
+    Assert::IsTrue(panel.topics[0].enabled);
+    Assert::AreEqual(2, panel.topics[1].tier);
+    Assert::AreEqual(std::string("TIER 2 \xC2\xB7 100 s"), panel.topics[1].time);
+    Assert::IsTrue(panel.topics[1].needs == std::vector<std::string>{"RESEARCH LAB L2"}, L"its tier waits for the Lab's level");
+    Assert::IsFalse(panel.topics[1].enabled);
+    Assert::IsTrue(panel.topics[2].needs == (std::vector<std::string>{"RESEARCH LAB L2", "HULL PLATING"}));
 
-    Outpost::Hud::Content content;
-    content.laboratory = panel;
-    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    const Outpost::Hud::Span panels = layout.PanelsOf(1);
-    const auto gold = std::count_if(layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.first),
-                                    layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.end),
-                                    [](const Outpost::Hud::Rect& _rect) { return _rect.color.x > 0.9f && _rect.color.y > 0.45f; });
-    Assert::IsTrue(gold >= 4, L"the gateway's card is edged in gold");
+    // Once the Lab has opened tier 2, only the prerequisite is left.
+    newest.researchTier = 2;
+    panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::IsTrue(panel.topics[1].needs.empty() && panel.topics[1].enabled);
+    Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"HULL PLATING"});
+  }
+
+  // Phase 3 design §6: a level 4 Research Lab shows how far each of its two running topics has come, and a Lab's panel
+  // names the tier its next level opens and the research it needs, its button dim until that is done.
+  TEST_METHOD(ShowsTheLabsLevels)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 1000;
+    newest.research = {{.id = Outpost::ResearchTopicId{1}, .nameUtf8 = "Improved Extraction", .researched = false},
+                       {.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating", .researched = true},
+                       {.id = Outpost::ResearchTopicId{3}, .nameUtf8 = "Mass Driver Calibration"}};
+    newest.structureTypes = {{.structure = Outpost::StructureKind::ResearchLab,
+                              .nameUtf8 = "Research Lab",
+                              .buildable = true,
+                              .cost = 200,
+                              .levels = {{.cost = 400,
+                                          .buildSeconds = 60.0,
+                                          .maxHitPointsHundredths = 180000,
+                                          .opensTier = 2,
+                                          .prerequisites = {Outpost::ResearchTopicId{1}, Outpost::ResearchTopicId{2}}},
+                                         {.cost = 600, .buildSeconds = 90.0, .maxHitPointsHundredths = 210000, .opensTier = 3},
+                                         {.cost = 800, .buildSeconds = 120.0, .maxHitPointsHundredths = 240000, .researchSlots = 2}}}};
+    Outpost::EntityView lab{.id = Outpost::EntityId{40},
+                            .kind = Outpost::EntityKind::Structure,
+                            .owner = PLAYER,
+                            .structure = Outpost::StructureKind::ResearchLab,
+                            .hitPointsHundredths = 150000,
+                            .maxHitPointsHundredths = 150000};
+    const std::vector<Outpost::EntityId> selected{lab.id};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2: tier 2, 1,800 hit points")) != content.selection.end());
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2 needs Improved Extraction")) != content.selection.end());
+    Assert::IsFalse(content.buttons.back().enabled);
+    Assert::AreEqual(std::string("NEEDS RESEARCH"), content.buttons.back().note);
+
+    newest.research[0].researched = true;
+    content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(content.buttons.back().enabled);
+
+    lab.level = 3;
+    content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L4: a second research slot, 2,400 hit points")) !=
+                   content.selection.end());
+
+    // Two topics running at once.
+    lab.level = 4;
+    lab.research = {Outpost::ResearchTopicId{3}, Outpost::ResearchTopicId{1}};
+    lab.jobPermille = 300;
+    lab.secondJobPermille = 120;
+    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::AreEqual(size_t{2}, panel.queue.size());
+    Assert::IsTrue(panel.queue[0].front && panel.queue[0].permille == 300);
+    Assert::IsTrue(panel.queue[1].front && panel.queue[1].permille == 120 && !panel.queue[1].waiting);
   }
 
   // Phase 1 design §12: the production and research windows are laid out side by side under the Ore, clear of the

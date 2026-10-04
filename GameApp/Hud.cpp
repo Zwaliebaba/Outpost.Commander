@@ -1333,8 +1333,7 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
       paint.Panel(left, cardTop, width, topicHeight, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
     if (topic.enabled)
       paint.Press(face, topic.action);
-    // A gateway, which opens its tier, is edged in gold.
-    paint.Outline(left, cardTop, width, topicHeight, topic.gateway ? GOLD_COLOR : EDGE_COLOR);
+    paint.Outline(left, cardTop, width, topicHeight, EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
     const float costWidth = paint.DiamondAndFigureWidth(topic.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(topic.name, Hud::Typeface::Name, width - (2.0f * CARD_INSET) - costWidth - FIT_GAP_UNITS), left + CARD_INSET,
@@ -1702,8 +1701,13 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         {
           const StructureLevelView& level = type->levels[next];
           const bool upgrading = structure->upgradePermille.has_value();
-          // A Shipyard's next level names the hulls it adds (Phase 3 design §5).
+          // A Shipyard's next level names the hulls it adds, and a Research Lab's the tier or the slot it gives (Phase 3 design
+          // §5, §6).
           std::string gives;
+          if (level.opensTier > 0)
+            gives = std::format("tier {}, ", level.opensTier);
+          else if (level.researchSlots > 1)
+            gives = "a second research slot, ";
           if (structure->structure == StructureKind::Shipyard)
           {
             for (const HullView& hull : _newest.hulls)
@@ -1716,12 +1720,24 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
           }
           content.selection.push_back(
             std::format("L{}: {}{} hit points", structure->level + 1, gives, WithThousands(WholePoints(level.maxHitPointsHundredths))));
+          // The topics a Research Lab's next level needs that the player has not researched (Phase 3 design §6).
+          std::string missing;
+          for (const ResearchTopicId required : level.prerequisites)
+          {
+            const auto topic = std::ranges::find(_newest.research, required, &ResearchTopicView::id);
+            if (topic != _newest.research.end() && !topic->researched)
+              missing += std::format("{}{}", missing.empty() ? "" : " and ", topic->nameUtf8);
+          }
+          if (!missing.empty())
+            content.selection.push_back(std::format("L{} needs {}", structure->level + 1, missing));
           content.buttons.push_back(
             {.label = std::format("Upgrade to L{}{}{}|{}", structure->level + 1, DOT,
                                   MinutesAndSeconds(static_cast<std::uint64_t>(std::llround(level.buildSeconds))), level.cost),
              .action = {.kind = ActionKind::Upgrade, .producer = structure->id},
-             .enabled = !upgrading && _newest.ore >= level.cost,
-             .note = upgrading ? std::string("UPGRADING") : std::string()});
+             .enabled = !upgrading && missing.empty() && _newest.ore >= level.cost,
+             .note = upgrading         ? std::string("UPGRADING")
+                     : missing.empty() ? std::string()
+                                       : std::string("NEEDS RESEARCH")});
         }
         else if (grows)
           content.selection.emplace_back("Top level");
@@ -1885,9 +1901,25 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       names.push_back(view != nullptr ? view->nameUtf8 : std::string("Unknown topic"));
     }
     panel.queue = QueueLinesOf(std::move(names), found->jobPermille);
+    // A second topic researched beside the first shows how far it has come too (Phase 3 design §6).
+    if (found->secondJobPermille > 0 && panel.queue.size() > 1)
+      panel.queue[1] = {.name = std::move(panel.queue[1].name), .front = true, .permille = found->secondJobPermille};
   }
 
-  // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither is dim (design §8).
+  // The level of the Research Lab that opens each tier (Phase 3 design §6).
+  const auto labType = std::ranges::find(_newest.structureTypes, StructureKind::ResearchLab, &StructureTypeView::structure);
+  const auto levelFor = [&](std::int32_t _tier)
+  {
+    for (std::size_t level = 0; labType != _newest.structureTypes.end() && level < labType->levels.size(); ++level)
+    {
+      if (labType->levels[level].opensTier == _tier)
+        return static_cast<std::int32_t>(level) + 2;
+    }
+    return 1;
+  };
+
+  // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither, or of a tier the Lab
+  // has not opened, is dim, and says what it needs (design §8, Phase 3 design §6).
   const auto known = [&](ResearchTopicId _topic)
   {
     const ResearchTopicView* topic = topicOf(_topic);
@@ -1907,6 +1939,8 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       const ResearchTopicView* view = topicOf(prerequisite);
       needs.push_back(view != nullptr ? Capitals(view->nameUtf8) : std::string("?"));
     }
+    if (topic.tier > _newest.researchTier)
+      needs.insert(needs.begin(), std::format("RESEARCH LAB L{}", levelFor(topic.tier)));
     const bool enabled = canResearch && needs.empty() && _newest.ore >= topic.cost;
     panel.topics.push_back(
       {.name = topic.nameUtf8,
@@ -1916,8 +1950,7 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
        .needs = std::move(needs),
        .action = {.kind = ActionKind::Research, .producer = found != nullptr ? found->id : EntityId{}, .topic = topic.id},
        .enabled = enabled,
-       .tier = topic.tier,
-       .gateway = topic.gateway});
+       .tier = topic.tier});
   }
   // Tier by tier, each in the tuning data's order (Phase 1 design §6).
   std::ranges::stable_sort(panel.topics, {}, &TopicCard::tier);

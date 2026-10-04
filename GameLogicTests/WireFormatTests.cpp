@@ -34,6 +34,7 @@ Outpost::Snapshot FullSnapshot()
      .queue = {{.role = Outpost::ShipRole::Warship, .design = Outpost::DesignId{26}}, {.role = Outpost::ShipRole::Constructor}},
      .research = {Outpost::ResearchTopicId{27}, Outpost::ResearchTopicId{28}},
      .jobPermille = 29,
+     .secondJobPermille = 291,
      .remembered = true,
      .sightMeters = 30.5f,
      .standing = Outpost::StandingOrder::Patrol,
@@ -68,7 +69,12 @@ Outpost::Snapshot FullSnapshot()
                                      .radiusMeters = 53.0f,
                                      .buildable = true,
                                      .cost = 54,
-                                     .levels = {{.cost = 150, .buildSeconds = 30.5, .maxHitPointsHundredths = 300'000}}});
+                                     .levels = {{.cost = 150,
+                                                 .buildSeconds = 30.5,
+                                                 .maxHitPointsHundredths = 300'000,
+                                                 .opensTier = 2,
+                                                 .researchSlots = 2,
+                                                 .prerequisites = {Outpost::ResearchTopicId{6}}}}});
   snapshot.constructorCost = 55;
   snapshot.hulls.push_back({.id = Outpost::HullId{56},
                             .nameUtf8 = "Small",
@@ -107,9 +113,9 @@ Outpost::Snapshot FullSnapshot()
                                .unlocksHull = Outpost::HullId{82},
                                .unlocksDrive = Outpost::DriveId{83},
                                .unlocksWeapon = Outpost::WeaponId{84},
-                               .tier = 3,
-                               .gateway = true});
+                               .tier = 3});
   snapshot.shipyardBuildSpeedFactor = 1.25;
+  snapshot.researchTier = 2;
   snapshot.matchOver = true;
   snapshot.winner = Outpost::PlayerId{1};
   snapshot.matchEndedTick = 85;
@@ -196,6 +202,7 @@ public:
     Assert::IsTrue(snapshot.entities[0].upgradePermille == std::optional<std::int32_t>{417});
     Assert::IsFalse(snapshot.entities[1].upgradePermille.has_value());
     Assert::IsTrue(expected.structureTypes[0].levels == snapshot.structureTypes[0].levels, L"a kind's levels");
+    Assert::AreEqual(2, snapshot.researchTier);
     Assert::AreEqual(std::string("Unlocks the Fusion drive."), snapshot.research[0].effectUtf8);
     Assert::AreEqual(0.75, snapshot.modules[0].speedFactor);
     Assert::IsTrue(snapshot.ending == Outpost::MatchEnding::Domination);

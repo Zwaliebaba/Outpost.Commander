@@ -27,9 +27,9 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 | 20.2 | The client shows levels and upgrades | 20.1 | — | in review: owner run |
 | 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | done, in PR |
 | 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | in review: owner run |
-| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | todo |
-| 22.2 | The Lab's second research slot | 22.1 | K3 decided | todo |
-| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | todo |
+| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | done, in PR |
+| 22.2 | The Lab's second research slot | 22.1 | K3 decided | done, in PR |
+| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | in review: owner run |
 | 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | todo |
 | 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | todo |
 | 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | todo |
@@ -151,6 +151,12 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-033, edited in place: a tier is opened by the Lab's level, and `GatewayEffect` is removed. ADR-017, edited in place where it names the gateways.
 - **Acceptance:** `ResearchTests` replace `AGatewayOpensItsTier` with a tier opened by the Lab's level, a topic refused below its tier, a rebuilt Lab at level 1, and research kept through a lost Lab. `TuningTests` cover the levels' tiers and requirements and the loader's refusals. `WireFormatTests` cover the topic view without its gateway. `AiPlayerTests.ReachesTierThree` passes.
 - **Verify:** CI; the AI-against-AI matches in the container, with tier 3 reached reported against Phase 1's 2 in 80.
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 10; ADR-033, ADR-038 and ADR-041 edited in place.
+  - **The Lab's levels carry `opensTier`, `requires` and `researchSlots`**, and the snapshot carries the player's open tier, `researchTier`, which the AI, the match log and the research window read. A Lab upgrade whose topics are not researched is refused with `PrerequisiteMissing`.
+  - **`Simulation::SpawnStructure` takes a level**, as it takes hit points, so that tests place a Lab that has opened a tier; `MatchArena::Structure` gives it the level's hit points.
+  - **The AI** researches only its open tier and upgrades its Lab when its order reaches the next. An upgrade it cannot pay for yet holds back new production, as a waiting structure does. Without that, no AI of seeds 1–10 opened tier 3; with it, 5 of the 20 seats do, as many as with the gateway on `main`.
+  - **Tests.** `ResearchTests.ALabsLevelOpensItsTier` covers the tiers, the requirements and the refusals through two upgrades. A rebuilt Lab at level 1 and research kept through a lost Lab are covered by `UpgradeTests.ADestroyedStructureLosesItsLevels` and `ResearchTests.ALostLabLosesItsTopic`, which already cover them. 247 `GameLogicTests` pass in the container.
+  - **Seeds 1–10 against `main`:** every match ends, at a median of 48:45 against 44:50; S1 10 of 10; S2 a median of 11 engagements in 4 sectors, every match meeting it; 7 dominations to 3; tier 3 opened in 5 of 20 seats, as on `main`, against Phase 1's 2 of 80 matches.
 
 ### 22.2 — The Lab's second research slot
 
@@ -159,6 +165,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-017, edited in place for the second slot.
 - **Acceptance:** `ResearchTests` cover two topics researched at once, each paid at its start, a topic waiting for its prerequisite in the other slot, and both slots lost with the Lab. `WireFormatTests` cover both topics' progress.
 - **Verify:** CI.
+- **As built:** [ADR-017](../Design/ADR/ADR-017-research-and-the-designer.md) decision 1, edited in place. The second topic starts only once the first has started, so that a front topic waiting for Ore keeps its place, and once its own prerequisites are researched. `ResearchTests.ALevelFourLabResearchesTwoAtOnce`; both slots lost with the Lab are the Lab's queue lost with it, which `ALostLabLosesItsTopic` covers. The AI keeps its Lab's slots full.
 
 ### 22.3 — The research window follows the Lab's level
 
@@ -166,6 +173,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions.
 - **Acceptance:** `HudTests`; 14.1's tests of the Interface plan, which keep text inside its card.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 10. A locked topic's first need reads "RESEARCH LAB L2". What the next level gives, and the topics it still needs, are lines on the Lab's panel, "L2: tier 2, 1,800 hit points" and "L2 needs Improved Extraction", and its button is dim with NEEDS RESEARCH, rather than on the button. The gateway's gold edge is gone. `HudTests.ListsTheTopicsTierByTier` and `ShowsTheLabsLevels`; 225 `GameAppTests` pass in the container.
 
 ---
 

@@ -3,7 +3,7 @@
 namespace Outpost
 {
 // The version of the messages below. A server refuses a client that speaks another (ADR-060).
-inline constexpr std::uint32_t PROTOCOL_VERSION = 2;
+inline constexpr std::uint32_t PROTOCOL_VERSION = 3;
 
 // The application protocol a QUIC connection to the server negotiates (ADR-060).
 inline constexpr std::string_view QUIC_APPLICATION_PROTOCOL = "outpost-commander/1";
