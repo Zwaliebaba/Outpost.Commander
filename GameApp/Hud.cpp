@@ -941,8 +941,9 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     const float left = CHIPS_LEFT + (static_cast<float>(column) * (CHIP_WIDTH + 6.0f));
     paint.Press(paint.Panel(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_COLOR : CARD_COLOR), chip.action);
     paint.Outline(left, CHIP_ROW_TOP, CHIP_WIDTH, CHIP_HEIGHT, chip.shown ? PICKED_EDGE_COLOR : EDGE_COLOR);
-    const float nameRoom = CHIP_WIDTH - 16.0f - paint.Width(chip.code, Hud::Typeface::Detail) - FIT_GAP_UNITS;
-    paint.Text(paint.Fit(chip.name, Hud::Typeface::Label, nameRoom), left + 8.0f, CHIP_ROW_TOP + 6.0f, TEXT_COLOR, Hud::Typeface::Label);
+    const float chipNameRoom = CHIP_WIDTH - 16.0f - paint.Width(chip.code, Hud::Typeface::Detail) - FIT_GAP_UNITS;
+    paint.Text(paint.Fit(chip.name, Hud::Typeface::Label, chipNameRoom), left + 8.0f, CHIP_ROW_TOP + 6.0f, TEXT_COLOR,
+               Hud::Typeface::Label);
     paint.RightText(chip.code, left + CHIP_WIDTH - 8.0f, CHIP_ROW_TOP + 7.0f, CODE_COLOR, Hud::Typeface::Detail);
   }
   if (_panel.chips.size() > CHIPS_SHOWN)
