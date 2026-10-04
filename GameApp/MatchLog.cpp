@@ -11,6 +11,27 @@ constexpr std::uint64_t FLEET_SAMPLE_SECONDS = 30;
 // the gap (Phase 2 design §2, S2).
 constexpr std::uint64_t ENGAGEMENT_WINDOW_SECONDS = 10;
 constexpr std::uint64_t ENGAGEMENT_GAP_SECONDS = 30;
+
+// A structure kind as the log writes it, one word.
+std::string_view KindWord(Outpost::StructureKind _kind) noexcept
+{
+  switch (_kind)
+  {
+  case Outpost::StructureKind::CommandStation:
+    return "station";
+  case Outpost::StructureKind::Shipyard:
+    return "shipyard";
+  case Outpost::StructureKind::ResearchLab:
+    return "lab";
+  case Outpost::StructureKind::MiningRig:
+    return "rig";
+  case Outpost::StructureKind::DefensePlatform:
+    return "platform";
+  case Outpost::StructureKind::Relay:
+    return "relay";
+  }
+  return "structure";
+}
 } // namespace
 
 Outpost::MatchLog::MatchLog(std::ostream& _out, std::uint64_t _seed, std::uint32_t _ticksPerSecond)
@@ -26,18 +47,81 @@ void Outpost::MatchLog::Finish()
 {
   if (!m_ended)
   {
-    WritePeaks();
+    WriteTotals();
     *m_out << std::format("left {}\n", m_lastTick);
   }
   m_ended = true;
   m_out->flush();
 }
 
-void Outpost::MatchLog::WritePeaks()
+void Outpost::MatchLog::WriteTotals()
 {
   std::ranges::sort(m_fleets, {}, [](const Fleet& _fleet) { return _fleet.player.value; });
   for (const Fleet& fleet : m_fleets)
     *m_out << std::format("peak {} player {} warships {}\n", fleet.peakTick, fleet.player.value, fleet.peakWarships);
+  if (m_territory)
+    *m_out << std::format("stall {} ticks {}\n", m_lastTick, m_stallTicks);
+}
+
+// From the player's own snapshots, which show its structures' levels and the work under way (ADR-064).
+void Outpost::MatchLog::RecordUpgrades(const Snapshot& _snapshot)
+{
+  const auto write = [&](const Growth& _growth, std::int32_t _level, std::string_view _what)
+  {
+    *m_out << std::format("upgrade {} player {} structure {} {} level {} {}\n", _snapshot.tick, _snapshot.player.value, _growth.id.value,
+                          KindWord(_growth.kind), _level, _what);
+  };
+  for (const EntityView& entity : _snapshot.entities)
+  {
+    if (entity.kind != EntityKind::Structure || entity.owner != _snapshot.player || entity.remembered)
+      continue;
+    auto growth = std::ranges::find(m_growth, entity.id, &Growth::id);
+    if (growth == m_growth.end())
+      growth = m_growth.insert(m_growth.end(), Growth{.id = entity.id, .kind = entity.structure, .level = entity.level});
+    if (entity.level > growth->level)
+    {
+      growth->level = entity.level;
+      growth->upgrading = false;
+      write(*growth, growth->level, "finished");
+    }
+    if (entity.upgradePermille.has_value() && !growth->upgrading)
+    {
+      growth->upgrading = true;
+      write(*growth, growth->level + 1, "started");
+    }
+  }
+  for (const DestroyedView& destroyed : _snapshot.destroyed)
+  {
+    const auto growth = std::ranges::find(m_growth, destroyed.id, &Growth::id);
+    if (destroyed.owner != _snapshot.player || growth == m_growth.end())
+      continue;
+    if (growth->upgrading)
+      write(*growth, growth->level + 1, "lost");
+    m_growth.erase(growth);
+  }
+}
+
+// Both players' snapshots of a tick carry their own caps, and the holders both see (ADR-056); the tick counts once both
+// are in.
+void Outpost::MatchLog::RecordStall(const Snapshot& _snapshot)
+{
+  if (_snapshot.nodeCap <= 0)
+    return;
+  m_territory = true;
+  auto state = std::ranges::find(m_caps, _snapshot.player, &CapState::player);
+  if (state == m_caps.end())
+    state = m_caps.insert(m_caps.end(), CapState{.player = _snapshot.player});
+  state->tick = _snapshot.tick;
+  state->atCap = AtNodeCap(_snapshot.sectors, _snapshot.entities, _snapshot.player, _snapshot.nodeCap);
+  state->held = std::ranges::count(_snapshot.sectors, _snapshot.player, &SectorView::holder);
+  if (m_caps.size() < 2 || m_stallCountedTick == _snapshot.tick ||
+      !std::ranges::all_of(m_caps, [&](const CapState& _cap) { return _cap.tick == _snapshot.tick; }))
+    return;
+  m_stallCountedTick = _snapshot.tick;
+  const bool stalled = std::ranges::all_of(m_caps, [](const CapState& _cap) { return _cap.atCap; }) &&
+                       std::ranges::all_of(m_caps, [&](const CapState& _cap) { return _cap.held == m_caps.front().held; });
+  if (stalled)
+    ++m_stallTicks;
 }
 
 // A shot is shown to each player who sees its shooter or its target (ADR-024), so a tick's shots arrive in both players'
@@ -69,6 +153,14 @@ void Outpost::MatchLog::RecordShots(const Snapshot& _snapshot)
       const PlayerId target = ownerOf(shot.target);
       if (target.value == 1 || target.value == 2)
         side = PlayerId{3 - target.value};
+    }
+    // A structure above level 1 under fire, once a structure and level (Phase 3 T4).
+    if (const auto target = std::ranges::find(_snapshot.entities, shot.target, &EntityView::id);
+        target != _snapshot.entities.end() && target->kind == EntityKind::Structure && target->level > 1 &&
+        m_attacked.insert({target->id, target->level}).second)
+    {
+      *m_out << std::format("attacked {} player {} structure {} {} level {}\n", _snapshot.tick, target->owner.value, target->id.value,
+                            KindWord(target->structure), target->level);
     }
     const SectorView* sector = FindSector(_snapshot.sectors, shot.from);
     const std::int32_t sectorId = sector != nullptr ? sector->id : 0;
@@ -106,6 +198,8 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
 {
   m_lastTick = std::max(m_lastTick, _snapshot.tick);
   RecordShots(_snapshot);
+  RecordUpgrades(_snapshot);
+  RecordStall(_snapshot);
 
   // Who holds each sector, which both players see alike (ADR-056).
   for (const SectorView& sector : _snapshot.sectors)
@@ -179,7 +273,7 @@ void Outpost::MatchLog::Record(const Snapshot& _snapshot)
   if (_snapshot.matchOver && !m_ended)
   {
     m_ended = true;
-    WritePeaks();
+    WriteTotals();
     *m_out << std::format("ending {} {}\n", _snapshot.matchEndedTick,
                           _snapshot.ending == MatchEnding::Domination ? "domination" : "production");
     *m_out << std::format("end {} winner {}\n", _snapshot.matchEndedTick, _snapshot.winner.value);

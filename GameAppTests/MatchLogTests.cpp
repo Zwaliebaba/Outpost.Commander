@@ -224,5 +224,74 @@ public:
                                  "left 601\n"),
                      out.str());
   }
+
+  // Phase 3 plan task 25.1: each upgrade started, finished or lost, from its owner's snapshots; a structure above level 1
+  // the first time it is shot at that level (T4); and the ticks both players sat at their caps with as many nodes (T2).
+  TEST_METHOD(RecordsUpgradesAttacksAndTheStall)
+  {
+    std::ostringstream out;
+    Outpost::MatchLog log(out, 5, 20);
+    const auto structure = [](std::uint32_t _id, Outpost::PlayerId _owner, Outpost::StructureKind _kind, std::int32_t _level)
+    {
+      return Outpost::EntityView{
+        .id = Outpost::EntityId{_id}, .kind = Outpost::EntityKind::Structure, .owner = _owner, .structure = _kind, .level = _level};
+    };
+    // Three nodes each, both at a cap of 3.
+    std::vector<Outpost::SectorView> sectors;
+    for (std::int32_t id = 1; id <= 6; ++id)
+      sectors.push_back({.id = id, .holder = id <= 3 ? HUMAN : AI});
+    Outpost::Snapshot human = SnapshotOf(HUMAN, 100);
+    Outpost::Snapshot ai = SnapshotOf(AI, 100);
+    human.sectors = ai.sectors = sectors;
+    human.nodeCap = ai.nodeCap = 3;
+    human.entities = {structure(1, HUMAN, Outpost::StructureKind::CommandStation, 1)};
+    ai.entities = {structure(2, AI, Outpost::StructureKind::CommandStation, 1), structure(3, AI, Outpost::StructureKind::ResearchLab, 1)};
+    log.Record(human);
+    log.Record(ai);
+
+    // The human's station starts level 2, and both are still stalled.
+    human.tick = ai.tick = 101;
+    human.entities[0].upgradePermille = 100;
+    log.Record(human);
+    log.Record(ai);
+
+    // It finishes, which lifts its cap; the AI shoots at it, twice, and starts its Lab's level 2.
+    human.tick = ai.tick = 102;
+    human.entities[0].upgradePermille.reset();
+    human.entities[0].level = 2;
+    human.nodeCap = 4;
+    ai.entities.push_back(human.entities[0]);
+    ai.entities[1].upgradePermille = 10;
+    ai.shots = {{.shooter = Outpost::EntityId{2}, .target = Outpost::EntityId{1}}};
+    log.Record(human);
+    log.Record(ai);
+    human.tick = ai.tick = 103;
+    log.Record(human);
+    log.Record(ai);
+
+    // The Lab is destroyed with its level under way.
+    human.tick = ai.tick = 104;
+    ai.shots.clear();
+    ai.entities.erase(ai.entities.begin() + 1);
+    ai.destroyed = {{.id = Outpost::EntityId{3}, .kind = Outpost::EntityKind::Structure, .owner = AI}};
+    log.Record(human);
+    log.Record(ai);
+    log.Finish();
+
+    std::istringstream lines(out.str());
+    std::string phaseThree;
+    for (std::string line; std::getline(lines, line);)
+    {
+      if (line.starts_with("upgrade ") || line.starts_with("attacked ") || line.starts_with("stall "))
+        phaseThree += line + "\n";
+    }
+    Assert::AreEqual(std::string("upgrade 101 player 1 structure 1 station level 2 started\n"
+                                 "upgrade 102 player 1 structure 1 station level 2 finished\n"
+                                 "attacked 102 player 1 structure 1 station level 2\n"
+                                 "upgrade 102 player 2 structure 3 lab level 2 started\n"
+                                 "upgrade 104 player 2 structure 3 lab level 2 lost\n"
+                                 "stall 104 ticks 2\n"),
+                     phaseThree);
+  }
 };
 } // namespace GameAppTests

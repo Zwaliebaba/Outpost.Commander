@@ -5,8 +5,10 @@ namespace Outpost
 // The record of one match for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3), and Phase 1's P1, P2 and P4
 // (Phase 1 plan task 13.1). It holds how long the match ran and how it ended; when each player finished each research
 // topic, and each research tier its Research Lab opened; every warship as it first appeared, by its components and its module;
-// each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. It reads only
-// snapshots, as any client does. Tools/MatchLog.py summarizes it.
+// each player's warship count every 30 seconds, and its peak; and each ore asteroid as it ran dry. For Phase 3's T2 to T4
+// (Phase 3 plan task 25.1) it holds each upgrade, each structure above level 1 that is attacked, and how long both
+// players sat at their node caps with equal nodes. It reads only snapshots, as any client does. Tools/MatchLog.py
+// summarizes it.
 //
 // One line a record, every time in ticks:
 //
@@ -24,6 +26,14 @@ namespace Outpost
 //                                                    (Phase 2 S2). A sector of 0 is none.
 //   sector <tick> sector <id> holder <player or 0>   a sector's holder changed, the homes' included at the start
 //   tickets <tick> player <player> tickets <count>   every 30 seconds with its fleet, on a map with territory
+//   upgrade <tick> player <player> structure <id> <kind> level <level> <started, finished or lost>
+//                                                    a player's structure began, finished or lost the work on a level,
+//                                                    from its own snapshots; <kind> is station, shipyard or lab
+//   attacked <tick> player <owner> structure <id> <kind> level <level>
+//                                                    a shot first hit a structure at a level above 1 (Phase 3 T4)
+//   stall <tick> ticks <count>                       the ticks during which both players were at their node caps and held
+//                                                    as many nodes as each other (Phase 3 T2); written with the peaks, on
+//                                                    a map with territory
 //   ending <tick> <production or domination>         how the match ended, just before its end (Phase 2 S3)
 //   end <tick> winner <player, or 0 for a draw>
 //   left <tick>                                      the match was left before it ended (Finish)
@@ -51,7 +61,12 @@ private:
     std::uint64_t peakTick = 0;
   };
 
-  void WritePeaks();
+  // The peaks, and on a map with territory the stall: what is written once, as the match ends or is left.
+  void WriteTotals();
+  // A player's structures with levels, the upgrades started and finished, and those lost with their structure.
+  void RecordUpgrades(const Snapshot& _snapshot);
+  // Whether both players are at their caps with equal nodes in the tick of _snapshot, once both players' snapshots of it are in.
+  void RecordStall(const Snapshot& _snapshot);
 
   std::ostream* m_out = nullptr;
   std::uint64_t m_sampleTicks = 0;
@@ -83,5 +98,29 @@ private:
   // The tick whose shots were last read, and the shots of it already counted, by shooter and target.
   std::uint64_t m_shotTick = 0;
   std::vector<std::pair<EntityId, EntityId>> m_shotsCounted;
+
+  // A structure of the player's own that grows, at the level its owner last saw, and whether a level was under way.
+  struct Growth
+  {
+    EntityId id;
+    StructureKind kind = StructureKind::CommandStation;
+    std::int32_t level = 1;
+    bool upgrading = false;
+  };
+  std::vector<Growth> m_growth;
+  // Each structure, and the level, of the shots on structures above level 1 already written.
+  std::set<std::pair<EntityId, std::int32_t>> m_attacked;
+  // Each player's last tick seen at its cap or not, with the nodes it held; and the stall's ticks so far.
+  struct CapState
+  {
+    PlayerId player;
+    std::uint64_t tick = 0;
+    bool atCap = false;
+    std::int64_t held = 0;
+  };
+  std::vector<CapState> m_caps;
+  bool m_territory = false;
+  std::uint64_t m_stallTicks = 0;
+  std::optional<std::uint64_t> m_stallCountedTick;
 };
 } // namespace Outpost
