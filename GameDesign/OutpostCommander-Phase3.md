@@ -1,8 +1,8 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Gates K1 and K3–K7 decided on 2026-10-04; K2 is open · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
+Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Every gate decided on 2026-10-04 (§12) · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
 
-This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The names, numbers and layouts here are proposals for the owner to review, as Phase 1's and Phase 2's were first written; what the owner has decided is in §3, and what is still open is in §12.
+This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The owner decided its gates on 2026-10-04 (§3, §12); the numbers are starting values, as Phase 2's were. It is accepted after the owner has run Phase 2 (gate K7).
 
 ---
 
@@ -39,7 +39,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).
 - **The Large Hull research topic stays.** A Large hull needs both the topic and a Shipyard at level 3 (§5).
-- **The gates of §12**, all but K2: a level 1 Shipyard builds Small hulls only (K1); the Lab gains a second research slot at level 4, and the Shipyard stops at level 3 and the Lab at level 4 (K3); the Command Station's cap and upgrade costs as §7 has them (K4); every level fitted to level 1's size (K5); +20% hit points a level, and more guns on the Command Station (K6); and Phase 3 accepted after Phase 2's owner run (K7).
+- **The gates of §12**: a level 1 Shipyard builds Small hulls only (K1); the Lab's levels 2 and 3 replace the gateways, at their Ore and prerequisites (K2); the Lab gains a second research slot at level 4, and the Shipyard stops at level 3 and the Lab at level 4 (K3); the Command Station's cap and upgrade costs as §7 has them (K4); every level fitted to level 1's size (K5); +20% hit points a level, and more guns on the Command Station (K6); and Phase 3 accepted after Phase 2's owner run (K7).
 
 ---
 
@@ -75,7 +75,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 ## 6. Research Lab levels: research tiers
 
-*Levels 1–3 proposed (gate K2); level 4 decided (gate K3), its cost a starting value.*
+*Decided (gates K2, K3): the numbers are starting values.*
 
 | Level | Opens | Upgrade from the level below | Requires |
 |---|---|---|---|
@@ -158,7 +158,7 @@ Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipya
 Each is an owner decision, and each blocks the plan's tasks that depend on it.
 
 - **K1 — The Shipyard's levels** (§5). **Decided on 2026-10-04:** Small at level 1, Medium at level 2 and Large at level 3, with the Large Hull topic kept; the upgrade costs are starting values.
-- **K2 — The Lab's levels 1 to 3** (§6): the gateways replaced by levels 2 and 3, their Ore and prerequisites carried over, the upgrade times, and a rebuilt Lab back at level 1. **Open.**
+- **K2 — The Lab's levels 1 to 3** (§6): the gateways replaced by levels 2 and 3, their Ore and prerequisites carried over, the upgrade times, and a rebuilt Lab back at level 1. **Decided on 2026-10-04:** as proposed, the upgrade times as starting values.
 - **K3 — The top levels** (§5, §6). **Decided on 2026-10-04:** the Lab's level 4 is a second research slot, at 800 Ore and 120 s as starting values; the Shipyard stops at level 3 and the Lab at level 4.
 - **K4 — The Command Station's cap** (§7). **Decided on 2026-10-04:** 3 to 7 nodes, upgrades of 300, 500, 700 and 900 Ore, and level 1's cap without a station.
 - **K5 — The footprint** (§4). **Decided on 2026-10-04:** every level fitted to level 1's size; placement unchanged.
