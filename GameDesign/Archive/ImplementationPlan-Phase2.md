@@ -2,7 +2,7 @@
 
 Status: **closed** · Started 2026-10-03, when the owner accepted the Phase 2 design and decided its gates · Every milestone built and merged on 2026-10-04, #55 to #60 · The owner's runs done on 2026-10-04: "Phase 2 works fine" · Derived from [the Phase 2 design](OutpostCommander-Phase2.md)
 
-The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](ImplementationPlan-Phase1.md) and [the MVP plan](ImplementationPlan.md) are closed, and so is this one: [the Phase 3 plan](../ImplementationPlan-Phase3.md) is the open one.
+The Phase 2 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 1 plan](ImplementationPlan-Phase1.md) and [the MVP plan](ImplementationPlan.md) are closed, and so is this one, as is [the Phase 3 plan](ImplementationPlan-Phase3.md) after it.
 
 ---
 
