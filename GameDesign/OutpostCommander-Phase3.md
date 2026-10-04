@@ -38,6 +38,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **Constructors upgrade a structure, and it keeps working** (§4). A Shipyard keeps building, a Lab keeps researching and a Command Station keeps firing while its next level is built.
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).
+- **The Large Hull research topic stays.** A Large hull needs both the topic and a Shipyard at level 3 (§5).
 
 ---
 
@@ -65,7 +66,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 | 3 | Small, Medium and Large | 300 Ore, 60 s |
 
 - **A Shipyard refuses a job whose hull is above its level.** The designer still designs and saves every hull the player has; its Queue is dim, with the reason, for a design the target Shipyard cannot build.
-- **The Large Hull topic is removed** (Phase 1 §6, topic 6). Researching a hull and then upgrading a Shipyard for it would charge twice for the same thing. A Shipyard at level 3 is how a player gets Large hulls.
+- **The Large Hull topic stays** (Phase 1 §6, topic 6; owner, 2026-10-04). Researching it lets the player design and save Large hulls; a Shipyard at level 3 is where one is built. A player needs both.
 - **This changes the opening.** Medium is available from the first second today; under this proposal it waits for a Shipyard at level 2. A scout is a Small hull, so S1 should not move, but T1 checks it.
 - **Levels 4 and 5 are not built in Phase 3** (gate K3). There is no fourth hull for them to unlock, and filling them with hit points and build speed would be levels for the sake of the art. The art gives the Human Shipyard two hardpoints from level 4, which would suit an armed Shipyard if the owner wants one.
 
@@ -79,13 +80,13 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 |---|---|---|---|
 | 1 | Tier 1 | (200 Ore, as a Lab today) | — |
 | 2 | Tier 2 | 400 Ore, 60 s | Improved Extraction and Hull Plating researched |
-| 3 | Tier 3 | 600 Ore, 90 s | A Shipyard at level 3 |
+| 3 | Tier 3 | 600 Ore, 90 s | Large Hull researched |
 
-- **The two gateway topics are removed**: Relay Archives (topic 9) and Precursor Vault (topic 18). Their Ore carries over to the upgrade, and their prerequisites carry over to its requirements. Precursor Vault required the Large Hull topic, which §5 removes, so level 3 requires a Shipyard at level 3 in its place.
+- **The two gateway topics are removed**: Relay Archives (topic 9) and Precursor Vault (topic 18). Their Ore carries over to the upgrade, and their prerequisites carry over to its requirements: Relay Archives required Improved Extraction and Hull Plating, and Precursor Vault required Large Hull, besides the gateway before it.
 - **Every topic of tier 2 or 3 requires the Lab's level** in place of its gateway. The other prerequisites are unchanged.
 - **The Lab keeps researching while it is upgraded** (§3).
 - **A destroyed Lab** loses its levels. Research already finished stays finished, and a rebuilt Lab starts at level 1, so it can queue only tier 1 topics until it is upgraded again.
-- **What the tree becomes.** 22 topics, in 2,140 s of research, about 36 minutes with one Lab. The 330 s the gateways took moves to Constructors, as 150 s of upgrade work. The S4 match length is measured again with this in place (T1).
+- **What the tree becomes.** 23 topics, in 2,260 s of research, about 38 minutes with one Lab. The 330 s the gateways took moves to Constructors, as 150 s of upgrade work. The S4 match length is measured again with this in place (T1).
 - **Levels 4 and 5 are not built in Phase 3** (gate K3). A second research slot would suit level 4, but it is the second Research Lab that Phase 1 kept out of scope, under another name.
 
 ---
@@ -135,7 +136,7 @@ Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
 
 ## 10. What changes elsewhere
 
-- **Phase 1 §6:** the research tree loses topics 6, 9 and 18 (§5, §6). The balance check is unchanged: it checks battles at each tier's components, not when they become available.
+- **Phase 1 §6:** the research tree loses topics 9 and 18, the gateways (§6). The balance check is unchanged: it checks battles at each tier's components, not when they become available.
 - **The match log** records each upgrade started, finished or lost with its structure, each attack on a structure above level 1 (T4), and the time both sides spend at their cap with equal nodes (T2).
 - **ADR-033** is edited in place: a tier is opened by the Research Lab's level, and `GatewayEffect` is removed. **ADR-045** is edited in place: the level is in the simulation and the snapshot, and its footprint is the tuning data's. **ADR-056** is edited in place for the cap. A new ADR records the upgrade itself.
 - **Phase 2 §7** names Phase 4, not Phase 3, as the place for the world.
@@ -152,8 +153,8 @@ Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipya
 
 Each is an owner decision, and each blocks the plan's tasks that depend on it.
 
-- **K1 — The Shipyard's levels** (§5): Small, Medium and Large at levels 1 to 3, the upgrade costs, and the Large Hull topic removed. The alternative, levels 1 and 2 only, with Small and Medium at level 1, keeps today's opening.
-- **K2 — The Lab's levels** (§6): the gateways replaced, the upgrade costs, level 3 requiring a Shipyard at level 3, and a rebuilt Lab back at level 1.
+- **K1 — The Shipyard's levels** (§5): Small, Medium and Large at levels 1 to 3, and the upgrade costs. The Large Hull topic stays (§3). The alternative, levels 1 and 2 only, with Small and Medium at level 1, keeps today's opening.
+- **K2 — The Lab's levels** (§6): the gateways replaced, the upgrade costs, the gateways' prerequisites carried over, and a rebuilt Lab back at level 1.
 - **K3 — Levels 4 and 5 of the Shipyard and the Lab** (§5, §6). Proposed: not built in Phase 3. Alternatives: an armed Shipyard at level 4, as the Human art suggests; a second research slot at Lab level 4.
 - **K4 — The Command Station's cap** (§7): 3 to 7 nodes, the upgrade costs, and level 1's cap without a station.
 - **K5 — The footprint** (§4). Proposed: it grows with the level, and an upgrade with no room is refused. The alternative is to fit every level to level 1's footprint, which keeps the placement rules as they are but draws the structure no bigger.
