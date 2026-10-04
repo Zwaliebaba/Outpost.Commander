@@ -73,7 +73,7 @@ Every action keeps today's pace (§2), so nothing stretches over a season of two
 - **Research:** Phase 3's tree is 23 topics and 2,260 s, about 38 minutes with one Lab (Phase 3 §6).
 - **Ore:** every reserve lasts 25–40 minutes at its yield, and then pays a 20% trickle for good (Phase 1 §8). Within a day of being taken, a system is on its trickle for the rest of the season.
 - **Ships:** a Small hull builds in 10 s (`Tuning.json`), so one Shipyard working around the clock under its deputy makes thousands a day. Q4 was measured at 200 ships (MVP §3).
-- **Structure levels:** Phase 3's upgrades take 30–120 s of Constructor work.
+- **Structure levels:** Phase 3's upgrades build themselves in 30–120 s.
 
 The limits and the progression of a season must therefore come from the world, not from timers. Three proposals, each open (§10):
 
