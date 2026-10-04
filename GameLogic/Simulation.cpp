@@ -1395,15 +1395,16 @@ void Outpost::Simulation::Fight()
     if (!chosen.IsValid())
       chosen = ChooseTarget(ship, armament->rangeMeters, TargetRule::Nearest);
     ship.target = chosen;
-    fire(ship, *armament, ship.target, ship.reloadMilliticks, 0);
+    const Armament& gun = *armament;
+    fire(ship, gun, ship.target, ship.reloadMilliticks, 0);
 
     // A Command Station's further Defence guns, which its level gives (Phase 3 design §7), each the gun it carries, at the
     // target the station keeps, on a rhythm of its own.
     if (ship.kind == EntityKind::Structure)
     {
       ship.extraGunReloadMilliticks.resize(static_cast<std::size_t>(std::max(0, StationGuns(*m_tuning, ship.structure, ship.level) - 1)));
-      for (std::size_t gun = 0; gun < ship.extraGunReloadMilliticks.size(); ++gun)
-        fire(ship, *armament, ship.target, ship.extraGunReloadMilliticks[gun], static_cast<std::uint8_t>(gun + 1));
+      for (std::size_t extra = 0; extra < ship.extraGunReloadMilliticks.size(); ++extra)
+        fire(ship, gun, ship.target, ship.extraGunReloadMilliticks[extra], static_cast<std::uint8_t>(extra + 1));
     }
   }
 

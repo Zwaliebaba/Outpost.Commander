@@ -283,9 +283,13 @@ public:
     std::vector<Outpost::EntityId> lances;
     lances.reserve(30);
     for (int i = 0; i < 30; ++i)
+    {
+      const int column = i % 6;
+      const int row = i / 6;
       lances.push_back(match.World().SpawnShip(RED, lance,
-                                               {.xMeters = home.xMeters + 150.0f + (15.0f * static_cast<float>(i % 6)),
-                                                .zMeters = home.zMeters + 150.0f + (15.0f * static_cast<float>(i / 6))}));
+                                               {.xMeters = home.xMeters + 150.0f + (15.0f * static_cast<float>(column)),
+                                                .zMeters = home.zMeters + 150.0f + (15.0f * static_cast<float>(row))}));
+    }
     match.Run(1);
     Assert::IsTrue(match.World().Tick({{.player = RED, .order = Outpost::AttackCommand{.ships = lances, .target = station}}}).front() ==
                    Outpost::CommandResult::Applied);
