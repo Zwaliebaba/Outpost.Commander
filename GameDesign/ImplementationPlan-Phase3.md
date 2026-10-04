@@ -196,6 +196,7 @@ The design left these open, or contradicted itself on them. The owner answered e
   - **Each further gun** keeps its own reload and fires at the station's target, chosen by the same rule. With the nearest-target rule that is one enemy for every gun, which is what "aiming on its own" comes to when each aims by one rule. `DefenseTests.AStationsLevelGivesItsGuns` covers the guns at each level, each firing on its own rhythm.
   - **The cap** is covered at levels 1 and 2 in `TerritoryTests.TheStationCapsTheNodesHeld`, and at every level by `TuningTests`' `NodeCap`.
   - **The AI** orders the station's next level in place of a Relay that the cap holds back, with one Constructor, so that the other keeps building. `AiPlayerTests.FollowsTheOre` gets 9 minutes rather than 6, since the AI's third claim now waits for the upgrade.
+  - **AI against AI, seeds 1–10**, on the container's harness, against milestone 22 built the same way: all 10 end; the median length is 52:25 against 48:45, from 36:56 to 1:17:40, 6 of them within P1's 45 to 60 minutes against 7; S1 10 of 10; S2 a median of 11 engagements in 4 sectors, all 10 meeting it; S3 8 by domination and 2 by production, against 7 and 3; tier 3 opened in 8 of the 20 seats, against 5. The longest match is the cap's cost to watch in 25.2's T2.
   - **Run in the container:** 249 `GameLogicTests` pass, 0 fail.
 
 ### 23.2 — The client shows the cap and spreads the station's guns
