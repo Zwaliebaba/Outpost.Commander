@@ -969,8 +969,10 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     const float top = extent.slotTops[slot];
     const float lines = CardLinesOf(row);
     const float cardHeight = CardHeightOf(row);
-    paint.Text(row.label, DESIGNER_INSET, top + 22.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
-    paint.Text(paint.Fit(row.picked, Hud::Typeface::Name, SLOT_DIVIDER_LEFT - DESIGNER_INSET - FIT_GAP_UNITS), DESIGNER_INSET, top + 38.0f,
+    // The label and the pick, 18 units apart so that the label's line clears the pick's at 1280x720's rounding, and centered
+    // on a line of cards together (ADR-062).
+    paint.Text(row.label, DESIGNER_INSET, top + 21.0f, LABEL_COLOR, Hud::Typeface::Label, tracking);
+    paint.Text(paint.Fit(row.picked, Hud::Typeface::Name, SLOT_DIVIDER_LEFT - DESIGNER_INSET - FIT_GAP_UNITS), DESIGNER_INSET, top + 39.0f,
                ACCENT_COLOR, Hud::Typeface::Name);
     paint.Panel(SLOT_DIVIDER_LEFT, top + 6.0f, LINE_UNITS, (lines * cardHeight) + ((lines - 1.0f) * CARD_GAP) - 12.0f, EDGE_COLOR);
     for (std::size_t i = 0; i < row.cards.size(); ++i)

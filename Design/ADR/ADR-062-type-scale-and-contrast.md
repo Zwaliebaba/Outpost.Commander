@@ -31,6 +31,7 @@ The owner decided gate K1 on 2026-10-03 as the plan proposed. On 2026-10-04 the 
 5. **Lines get room at every scale's rounding**, as [ADR-061](ADR-061-measured-text.md) spaces them.
    - A topic card's lines go from 16 units apart to 18.
    - A figure's line goes from 16 units to 17.
+   - The designer's slot rows set their label and pick 18 units apart, at 21 and 39, which were 22 and 38. At 1280×720 the label face, rasterized at 9 px, has a line about 11 px tall, and 16 units rounded to 10 px on the module row.
 6. **Production narrows to 478 units, and research stays 560** (owner, 2026-10-04). Both still stand side by side under the Ore, clear of the designer, at the reference width: 16 + 478 + 16 + 560 + 16 + 818 + 16 = 1920. Production's width is computed from that sum. A wider designer narrows production, and does not push research under the designer. [ADR-043](ADR-043-hud-in-the-windows-look.md) is rewritten for it.
 
 ## Consequences
