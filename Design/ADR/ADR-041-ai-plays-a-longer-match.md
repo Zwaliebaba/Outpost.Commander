@@ -25,16 +25,16 @@ This goes beyond design §13, which had the AI change only as far as Phase 1's r
 ## Decision
 
 1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** `attackGroupShips`, gate G9's value, is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest gateway the AI has researched.
-2. **An attack that has lost 30% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 120 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.3, `regroupSeconds` 120, [ADR-047](ADR-047-a-fight-seen-whole.md) decision 6). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it.
+2. **An attack that has lost 10% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 240 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.1, `regroupSeconds` 240). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it. Phase 2's task 19.2 set both against S4 on the map with territory, and the owner kept the 240 seconds over Phase 1's 120 on 2026-10-04; on Phase 1's map they were 30% and 120 seconds ([ADR-047](ADR-047-a-fight-seen-whole.md) decision 6).
 3. **It plans 2 Defence Platforms round its base for each Shipyard** (`homePlatformsPerShipyard` 2). They stand toward the map's center, 260 m from the Command Station, at turns of 0 and ±0.5 and ±1 radian, then a ring 70 m further out. Each is built once the income reaches its Shipyard's share. An attack on a base that has grown so costs the attacker more than it costs the base.
 4. **Nothing else in its play changes here.** It still goes for production first (ADR-037), defends its structures, counters what it has seen, and follows the ore. On a map with territory it also plays for territory ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
 5. **On a map with territory the main attack waits for a lead in nodes** (Phase 2 design §12, plan task 18.1). The reserve joins the attack group once it holds the group's size and the AI holds `attackNodeLead`, 1, node more than the enemy, or once the reserve holds `attackWithoutLeadShare`, 1.5, times the group's size. A free node counts for neither side. Both players see who holds each node ([ADR-056](ADR-056-territory.md) decision 10), so the AI counts them from its snapshot.
 
 ## Consequences
 
-All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code against the real server and data, with `regroupSeconds` at 150 and before a group kept lanes round obstacles. [ADR-047](ADR-047-a-fight-seen-whole.md) measures today's 120 seconds with lanes.
+All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code against the real server and data. The first bullets are Phase 1's, with a 30% fall-back, `regroupSeconds` at 150 and before a group kept lanes round obstacles; [ADR-047](ADR-047-a-fight-seen-whole.md) measures 120 seconds with lanes. The last ones are Phase 2's, on the map with territory.
 
-- **The target is met.**
+- **Phase 1's target was met.**
   - Seeds 1 to 40 give a median of 53.9 minutes, the middle half from 43.0 to 74.0, every match ended.
   - Seeds 41 to 80, run as a check after the numbers were chosen, give 50.8 minutes, counting the 3 matches that had not ended at 150 minutes as the longest.
   - The switch's own seeds 1 to 10 give 56.3.
@@ -50,6 +50,17 @@ All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code aga
   - The starting values, one claim and raids of 2 every 180 seconds, give a median of 20:23, from 11:11 to 35:49, none within 45–60 minutes, every match ended and all by production. Every match has a shot by minute 5 and five engagements in three sectors before minute 20. Player 2 won 14.
   - Measured before ties were mirrored ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13), when player 1 won 16 of the 20 with the starting values: without claims or raids the median was 40:34; with one claim and no raids, 26:32; with raids and no claim, 28:44; and waiting for a lead of 2 nodes or twice the group, 11:31, every match by production.
   - These numbers keep what the design asks of the AI and are where 19.2's tuning starts.
+- **Task 19.2 tuned the fall-back against S4** (Phase 2 design §2), with territory's play at its starting values. Seeds 1 to 40 are the measure, as for Phase 1's P1 above; seeds 1 to 10 are the ten that `--ai-matches` plays, which S4 names.
+
+  | Falls back after losing | Regroups for | Seeds 1–40 | Within 45–60 | Seeds 1–10 |
+  |---|---|---|---|---|
+  | 30% | 120 s | 20:23 over seeds 1–20 | none of 20 | — |
+  | 10% | 180 s | 45:05 | 17 | 42:34 |
+  | 15% | 240 s | 44:30 | 19 | 45:15 |
+  | **10%** | **240 s** | **47:55** | **25** | **44:50** |
+
+  - With the chosen numbers every match of the 40 ends, from 25:48 to 1:23:00. Every one has a shot by minute 5 and five engagements in three sectors before minute 20, a median of 16 in 6 sectors. 27 end by domination and 13 by production. Player 1 wins 16 and player 2 24. A side's peak is a median of 175.5 warships, from 72 to 347.
+  - Seeds 1 to 10 alone give 44:50, 10 seconds short of S4's band. The numbers were not tuned to those ten: 15% and 240 s gives 45:15 there, but 44:30 over the 40.
 - **What it does to a human's match is not measured.** The AI attacks later and in bigger waves, falls back sooner, and fortifies, so a player who does not rush it meets fewer, larger attacks. The owner's runs are the measure.
 - **`AiPlayerTests` check the behavior with the numbers set in the test**: falling back after losing half and regrouping, the group growing with the tier, the base fortified for each Shipyard, and the attack waiting for a lead in nodes or a larger reserve. `AiSettingsTests` checks the file's values and refuses a share of 1 or more.
 
