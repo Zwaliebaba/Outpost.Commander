@@ -1285,6 +1285,34 @@ public:
     Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
   }
 
+  // ADR-059: a selection on a standing order says so.
+  TEST_METHOD(SaysWhenTheSelectionStands)
+  {
+    Outpost::EntityView holding = Ship(9, SWARM, 30000, 30000);
+    holding.standing = Outpost::StandingOrder::HoldSector;
+    const std::vector<Outpost::EntityView> entities{holding};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, std::vector<Outpost::EntityId>{Outpost::EntityId{9}});
+    Assert::AreEqual(std::string("Holding a sector"), content.selection.back());
+  }
+
+  // ADR-059: the alerts under the territory, the newest in the warning's color, and a mark at each on the minimap.
+  TEST_METHOD(ListsTheAlerts)
+  {
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
+    content.alerts = {{"Relay suppressed: South", {.xMeters = 0.0f, .zMeters = -500.0f}}, {"Enemy ships in West", {}}};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto newest = std::ranges::find(layout.texts, std::string("Relay suppressed: South"), &Outpost::Hud::Text::text);
+    const auto older = std::ranges::find(layout.texts, std::string("Enemy ships in West"), &Outpost::Hud::Text::text);
+    Assert::IsTrue(newest != layout.texts.end() && older != layout.texts.end());
+    Assert::IsTrue(newest->top < older->top, L"newest first");
+    Assert::IsTrue(newest->color.x > older->color.x && newest->color.z < older->color.z, L"the newest in the warning's color");
+    const DirectX::XMFLOAT2 at = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = -500.0f});
+    Assert::IsTrue(
+      std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                          { return _panel.left < at.x && _panel.left + _panel.width > at.x && _panel.top < at.y && _panel.height < 3.0f; }),
+      L"a mark round the alert's place");
+  }
+
   // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.
   TEST_METHOD(ShowsTheTickets)
   {

@@ -38,5 +38,6 @@
     <ClCompile Include="AiPlayerTests.cpp" />
     <ClCompile Include="TerritoryTests.cpp" />
     <ClCompile Include="DominationTests.cpp" />
+    <ClCompile Include="StandingOrderTests.cpp" />
   </ItemGroup>
 </Project>

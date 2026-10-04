@@ -28,6 +28,7 @@
 #include "ExplosionManager.h"
 #include "Starfield.h"
 #include "FogOfWar.h"
+#include "Alerts.h"
 #include "Designer.h"
 #include "ProductionTarget.h"
 #include "WindowManager.h"

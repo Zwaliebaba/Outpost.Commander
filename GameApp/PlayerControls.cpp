@@ -8,6 +8,9 @@ namespace
 {
 constexpr std::uint8_t KEY_ATTACK_MOVE = 'A';
 constexpr std::uint8_t KEY_STOP = 'S';
+// The standing orders (ADR-059): hold a sector, and patrol.
+constexpr std::uint8_t KEY_HOLD_SECTOR = 'H';
+constexpr std::uint8_t KEY_PATROL = 'T';
 
 // Whether _later follows _earlier closely enough to be a double click or a double tap. The millisecond clock wraps,
 // and unsigned subtraction wraps with it.
@@ -79,6 +82,7 @@ std::vector<Outpost::Command> Outpost::PlayerControls::TakeCommands()
 void Outpost::PlayerControls::ArmPlacement(StructureKind _structure, std::span<const EntityView> _entities)
 {
   m_attackMoveArmed = false;
+  m_standingArmed.reset();
   m_placing.reset();
   if (!SelectedConstructors(_entities).empty())
     m_placing = _structure;
@@ -146,6 +150,22 @@ void Outpost::PlayerControls::OnLeftDown(const Neuron::InputEvent& _event, const
     std::vector<EntityId> ships = SelectedShips(_frame.entities);
     if (destination.has_value() && !ships.empty())
       Give(AttackMoveCommand{.ships = std::move(ships), .destination = *destination});
+    return;
+  }
+  // So does a standing order (ADR-059): a hold names the sector the click is in, and the server finds it.
+  if (m_standingArmed.has_value())
+  {
+    const StandingOrder standing = *m_standingArmed;
+    m_standingArmed.reset();
+    const std::optional<PlanePosition> point =
+      _frame.camera.GroundPointAtPixel(static_cast<float>(_event.xPixels), static_cast<float>(_event.yPixels), _frame.viewport);
+    std::vector<EntityId> ships = SelectedShips(_frame.entities);
+    if (!point.has_value() || ships.empty())
+      return;
+    if (standing == StandingOrder::HoldSector)
+      Give(HoldSectorCommand{.ships = std::move(ships), .position = *point});
+    else
+      Give(PatrolCommand{.ships = std::move(ships), .destination = *point});
     return;
   }
   // So does a structure's placement, which the server checks and a Mining Rig's snaps (ADR-016). Shift keeps it armed. A
@@ -233,6 +253,7 @@ void Outpost::PlayerControls::OnLeftUp(const Neuron::InputEvent& _event, const F
 void Outpost::PlayerControls::OnRightDown(const Neuron::InputEvent& _event, const Frame& _frame)
 {
   m_attackMoveArmed = false;
+  m_standingArmed.reset();
   // Right-click cancels a placement rather than ordering.
   if (m_placing.has_value())
   {
@@ -294,13 +315,24 @@ void Outpost::PlayerControls::OnKey(const Neuron::InputEvent& _event, const Fram
   if (_event.key == VK_ESCAPE)
   {
     m_attackMoveArmed = false;
+    m_standingArmed.reset();
     m_placing.reset();
     return;
   }
   if (_event.key == KEY_ATTACK_MOVE && !_event.control)
   {
     m_placing.reset();
+    m_standingArmed.reset();
     m_attackMoveArmed = !SelectedShips(_frame.entities).empty();
+    return;
+  }
+  if ((_event.key == KEY_HOLD_SECTOR || _event.key == KEY_PATROL) && !_event.control)
+  {
+    m_placing.reset();
+    m_attackMoveArmed = false;
+    m_standingArmed.reset();
+    if (!SelectedShips(_frame.entities).empty())
+      m_standingArmed = _event.key == KEY_HOLD_SECTOR ? StandingOrder::HoldSector : StandingOrder::Patrol;
     return;
   }
   if (_event.key == KEY_STOP && !_event.control)

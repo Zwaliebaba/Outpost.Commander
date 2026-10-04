@@ -97,8 +97,24 @@ struct SaveDesignCommand
   ModuleId module;
 };
 
+// A standing order (Phase 2 design §9, ADR-059): the warships hold the sector that holds the point, answering any enemy
+// ship they see in it and going back to its node once none is left, until given another order.
+struct HoldSectorCommand
+{
+  std::vector<EntityId> ships;
+  PlanePosition position;
+};
+
+// A standing order (Phase 2 design §9, ADR-059): the warships attack-move to the point, then back to where they were
+// ordered from, and so on, until given another order.
+struct PatrolCommand
+{
+  std::vector<EntityId> ships;
+  PlanePosition destination;
+};
+
 using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
-                           QueueShipCommand, StartResearchCommand, SaveDesignCommand>;
+                           QueueShipCommand, StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

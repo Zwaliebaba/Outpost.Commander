@@ -9,7 +9,8 @@ namespace Outpost
 //   Shift adds, and a double-click selects every visible ship of that design. Right-click moves the selected ships, or
 //   attacks an enemy ship or structure under the cursor; selected Constructors right-clicked on one of the player's own
 //   ships or structures that is damaged or under construction repair or build it (task 4.2). A, then a left-click,
-//   attack-moves; Escape cancels it. S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
+//   attack-moves; Escape cancels it. H, then a left-click, holds the sector clicked in, and T, then a left-click, patrols
+//   to the point clicked (Phase 2 design §9, ADR-059). S stops. Ctrl+0-9 assigns a control group, 0-9 recalls it, and a second tap
 //   centers the camera on it. The HUD arms a structure's placement, which the next left-click on the ground orders the
 //   selected Constructors to build, and which right-click or Escape cancels; Shift keeps it armed for another.
 class PlayerControls
@@ -57,6 +58,12 @@ public:
     return m_attackMoveArmed;
   }
 
+  // The standing order the next left click gives, if H or T armed one (ADR-059).
+  [[nodiscard]] std::optional<StandingOrder> ArmedStanding() const noexcept
+  {
+    return m_standingArmed;
+  }
+
   // The box being dragged, while the left button is held past DRAG_PIXELS.
   [[nodiscard]] std::optional<ScreenRect> DragBox() const noexcept;
 
@@ -98,6 +105,7 @@ private:
   std::vector<Command> m_commands;
   std::optional<MoveOrder> m_lastMove;
   bool m_attackMoveArmed = false;
+  std::optional<StandingOrder> m_standingArmed;
   std::optional<StructureKind> m_placing;
 
   // The left press being held, where it went down and whether it has become a drag.

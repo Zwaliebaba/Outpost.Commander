@@ -64,6 +64,10 @@ constexpr std::int32_t MILLITICKS_PER_TICK = 1000;
 // A ship on an attack order paths to its target again when the target has moved this far since it last did, at most once
 // a second.
 constexpr float CHASE_REPATH_METERS = 40.0f;
+// A group holding a sector is sent at an enemy again once the enemy is this far from where it was sent, and goes back to
+// its sector's node once no enemy is left and it stands further than this from the node (ADR-059).
+constexpr float STANDING_RESEND_METERS = 150.0f;
+constexpr float HOLD_RETURN_METERS = 200.0f;
 
 // A Constructor works on what it is ordered to once its footprint comes this close to the target's (ADR-016).
 constexpr float WORK_REACH_METERS = 20.0f;
@@ -693,7 +697,8 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
         [this, &command]<typename OrderType>(const OrderType& _order)
         {
           if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
-                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand> ||
+                        std::is_same_v<OrderType, HoldSectorCommand> || std::is_same_v<OrderType, PatrolCommand>)
             return Apply(command.player, _order);
           else
             return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
@@ -710,6 +715,16 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
               for (std::size_t index = 0; index < plannedBefore; ++index)
                 std::erase_if(m_plannedOrders[index].members, [&_order](const PlannedOrder::Member& _member)
                               { return std::ranges::find(_order.ships, _member.ship) != _order.ships.end(); });
+            }
+            // Any other order a player gives a ship ends its standing order (ADR-059).
+            if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
+                          std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+            {
+              for (const EntityId id : _order.ships)
+              {
+                if (Entity* ship = FindMutableEntity(id))
+                  ship->standing = StandingOrder::None;
+              }
             }
           },
           command.order);
@@ -728,6 +743,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     const ObservedPart part(m_observer, TickPart::Targets);
     DecideMatch();
+    KeepStandingOrders();
     ChaseTargets();
     ApproachWork();
   }
@@ -877,6 +893,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     }
     if (m_fog && entity.owner == _player)
       view.sightMeters = SightMetersOf(entity);
+    if (entity.owner == _player)
+      view.standing = entity.standing;
     // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
     if (entity.kind == EntityKind::Asteroid)
       view.oreReserveHundredths = ReserveKnownTo(_player, entity.id);
@@ -1360,6 +1378,7 @@ void Outpost::Simulation::Fight()
     {
       m_destroyed.push_back({.id = entity.id,
                              .kind = entity.kind,
+                             .structure = entity.structure,
                              .owner = entity.owner,
                              .hull = entity.hull,
                              .position = entity.position,
@@ -2372,6 +2391,154 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartR
     return CommandResult::QueueFull;
   lab->researchQueue.push_back(topic->id);
   return CommandResult::Applied;
+}
+
+std::vector<Outpost::EntityId> Outpost::Simulation::WarshipsOf(const std::vector<EntityId>& _ships) const
+{
+  std::vector<EntityId> warships;
+  for (const EntityId id : _ships)
+  {
+    if (FindEntity(id)->role == ShipRole::Warship && std::ranges::find(warships, id) == warships.end())
+      warships.push_back(id);
+  }
+  return warships;
+}
+
+// Phase 2 design §9: the warships hold the sector that holds the point. They go to its node, answer any enemy ship they
+// see in the sector, and go back to the node once none is left (KeepStandingOrders, ADR-059).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const HoldSectorCommand& _hold)
+{
+  if (const CommandResult result = ValidateShips(_player, _hold.ships); result != CommandResult::Applied)
+    return result;
+  if (!IsFinite(_hold.position))
+    return CommandResult::InvalidPosition;
+  const std::vector<EntityId> warships = WarshipsOf(_hold.ships);
+  if (warships.empty())
+    return CommandResult::NoShips;
+  const Sector* sector = HasTerritory() ? SectorAt(_hold.position) : nullptr;
+  if (sector == nullptr)
+    return CommandResult::NoSector;
+  const std::uint32_t group = ++m_lastStandingGroup;
+  for (const EntityId id : warships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    ship.standing = StandingOrder::HoldSector;
+    ship.standingGroup = group;
+    ship.holdSector = sector->placement.id;
+    ship.standingFrom = sector->placement.node;
+  }
+  return OrderMove(_player, warships, sector->placement.node, ShipOrder::AttackMove);
+}
+
+// Phase 2 design §9: the warships attack-move to the point, then back to the middle of where they were ordered from, and
+// so on (KeepStandingOrders, ADR-059).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const PatrolCommand& _patrol)
+{
+  if (const CommandResult result = ValidateShips(_player, _patrol.ships); result != CommandResult::Applied)
+    return result;
+  if (!IsFinite(_patrol.destination))
+    return CommandResult::InvalidPosition;
+  const std::vector<EntityId> warships = WarshipsOf(_patrol.ships);
+  if (warships.empty())
+    return CommandResult::NoShips;
+  PlaneVector sum{};
+  for (const EntityId id : warships)
+    sum = sum + (FindEntity(id)->position - PlanePosition{});
+  const PlanePosition from = PlanePosition{} + sum * (1.0f / static_cast<float>(warships.size()));
+  const std::uint32_t group = ++m_lastStandingGroup;
+  for (const EntityId id : warships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    ship.standing = StandingOrder::Patrol;
+    ship.standingGroup = group;
+    ship.standingFrom = from;
+    ship.standingTo = _patrol.destination;
+    ship.standingOutward = true;
+  }
+  return OrderMove(_player, warships, _patrol.destination, ShipOrder::AttackMove);
+}
+
+// Once a second, each group on a standing order, in the order it was given, acts as one (ADR-059). A group holding a
+// sector attack-moves on the nearest enemy ship its player sees in the sector, unless it is already headed there or
+// firing, and once none is left and it stands idle away from the sector's node, attack-moves back to it. A patrolling
+// group, once all of it stands idle at one end, attack-moves to the other. A group still planning its paths waits.
+void Outpost::Simulation::KeepStandingOrders()
+{
+  if (m_tick % m_ticksPerSecond != 0)
+    return;
+  std::vector<std::uint32_t> groups;
+  for (const Entity& ship : m_entities)
+  {
+    if (ship.standing != StandingOrder::None && std::ranges::find(groups, ship.standingGroup) == groups.end())
+      groups.push_back(ship.standingGroup);
+  }
+  std::ranges::sort(groups);
+  const auto planning = [this](EntityId _ship)
+  {
+    return std::ranges::any_of(m_plannedOrders, [_ship](const PlannedOrder& _order)
+                               { return std::ranges::find(_order.members, _ship, &PlannedOrder::Member::ship) != _order.members.end(); });
+  };
+  for (const std::uint32_t group : groups)
+  {
+    std::vector<EntityId> ships;
+    PlaneVector sum{};
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.standing != StandingOrder::None && ship.standingGroup == group)
+      {
+        ships.push_back(ship.id);
+        sum = sum + (ship.position - PlanePosition{});
+      }
+    }
+    if (std::ranges::any_of(ships, planning))
+      continue;
+    const Entity& first = *FindEntity(ships.front());
+    const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
+    const bool idle = std::ranges::all_of(ships,
+                                          [this](EntityId _id)
+                                          {
+                                            const Entity& ship = *FindEntity(_id);
+                                            return ship.order == ShipOrder::None && ship.path.empty();
+                                          });
+    if (first.standing == StandingOrder::Patrol)
+    {
+      if (!idle)
+        continue;
+      const bool outward = !first.standingOutward;
+      for (const EntityId id : ships)
+        FindMutableEntity(id)->standingOutward = outward;
+      (void)OrderMove(first.owner, ships, outward ? first.standingTo : first.standingFrom, ShipOrder::AttackMove);
+      continue;
+    }
+
+    const Sector* sector = SectorById(first.holdSector);
+    if (sector == nullptr)
+      continue;
+    const Entity* enemy = nullptr;
+    for (const Entity& other : m_entities)
+    {
+      if (other.kind != EntityKind::Ship || !other.owner.IsValid() || other.owner == first.owner || other.maxHitPointsHundredths <= 0 ||
+          !sector->placement.Contains(other.position) || !Sees(first.owner, other))
+        continue;
+      if (enemy == nullptr || Distance(other.position, center) < Distance(enemy->position, center))
+        enemy = &other;
+    }
+    if (enemy != nullptr)
+    {
+      const bool engaged =
+        std::ranges::any_of(ships,
+                            [&](EntityId _id)
+                            {
+                              const Entity& ship = *FindEntity(_id);
+                              return ship.target.IsValid() || (ship.order == ShipOrder::AttackMove && ship.destination.has_value() &&
+                                                               Distance(*ship.destination, enemy->position) <= STANDING_RESEND_METERS);
+                            });
+      if (!engaged)
+        (void)OrderMove(first.owner, ships, enemy->position, ShipOrder::AttackMove);
+    }
+    else if (idle && Distance(center, sector->placement.node) > HOLD_RETURN_METERS)
+      (void)OrderMove(first.owner, ships, sector->placement.node, ShipOrder::AttackMove);
+  }
 }
 
 // A new design is of components the player has, and is not one it already has; a saved one is renamed (ADR-017).

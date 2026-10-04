@@ -90,6 +90,9 @@ constexpr float RESEARCH_PANEL_GAP = 8.0f;
 // The territory, under the research line's place (ADR-056, ADR-057), and the room above and below its lines.
 constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
 constexpr float TERRITORY_INSET_UNITS = 10.0f;
+// The alerts, under the territory (ADR-059), and how large an alert's mark is on the minimap.
+constexpr float ALERT_PANEL_WIDTH = 380.0f;
+constexpr float ALERT_MARK_UNITS = 14.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
@@ -1515,12 +1518,16 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   std::int64_t hitPoints = 0;
   std::int64_t maxHitPoints = 0;
   bool constructors = false;
+  bool holding = false;
+  bool patrolling = false;
   for (const EntityId id : _selected)
   {
     const auto ship = std::ranges::find(_entities, id, &EntityView::id);
     if (ship == _entities.end() || ship->kind != EntityKind::Ship)
       continue;
     constructors = constructors || ship->role == ShipRole::Constructor;
+    holding = holding || ship->standing == StandingOrder::HoldSector;
+    patrolling = patrolling || ship->standing == StandingOrder::Patrol;
     hitPoints += ship->hitPointsHundredths;
     maxHitPoints += ship->maxHitPointsHundredths;
     const auto counted = std::ranges::find(byDesign, ship->design, &std::pair<DesignId, size_t>::first);
@@ -1552,6 +1559,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
   content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
+  // A standing order the selection keeps (ADR-059).
+  if (holding)
+    content.selection.emplace_back("Holding a sector");
+  if (patrolling)
+    content.selection.emplace_back("On patrol");
 
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
@@ -1800,6 +1812,23 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
           TERRITORY_INSET_UNITS + NAME_LINE_UNITS);
     }
   }
+
+  // Under the territory: the alerts, newest first, in the warning's color (ADR-059).
+  if (!_content.alerts.empty())
+  {
+    const bool tickets = _content.territory.has_value() && _content.territory->ownTickets.has_value();
+    const float territoryUnits = _content.territory.has_value()
+                                   ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + RESEARCH_PANEL_GAP
+                                   : 0.0f;
+    const float topUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP + territoryUnits;
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
+    for (size_t line = 0; line < _content.alerts.size(); ++line)
+    {
+      paint.Text(_content.alerts[line].first, PADDING, TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS),
+                 line == 0 ? WARNING_COLOR : TEXT_COLOR, Typeface::Name);
+    }
+  }
   if (!_content.research.empty())
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, RESEARCH_PANEL_WIDTH, ORE_PANEL_HEIGHT);
@@ -1955,6 +1984,18 @@ Hud::Layout Hud::Lay(const Content& _content, std::uint32_t _widthPixels, std::u
       layout.panels.push_back({area.left + area.width - sectorLine, area.top, sectorLine, area.height, area.color});
       if (sector.suppressed)
         layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
+    }
+
+    // Each alert's place, as an outlined square over everything else (ADR-059).
+    for (const auto& [text, position] : _content.alerts)
+    {
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(position);
+      const float half = ALERT_MARK_UNITS * scale / 2.0f;
+      const float side = 2.0f * half;
+      layout.panels.push_back({at.x - half, at.y - half, side, sectorLine, WARNING_COLOR});
+      layout.panels.push_back({at.x - half, at.y + half - sectorLine, side, sectorLine, WARNING_COLOR});
+      layout.panels.push_back({at.x - half, at.y - half, sectorLine, side, WARNING_COLOR});
+      layout.panels.push_back({at.x + half - sectorLine, at.y - half, sectorLine, side, WARNING_COLOR});
     }
 
     // The view's outline, as the box around the ground the camera shows.

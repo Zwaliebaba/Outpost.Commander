@@ -90,6 +90,15 @@ struct Entity
   std::uint64_t chaseTick = 0;
   // A Constructor's work order's target, while the order lasts.
   EntityId workTarget;
+  // A warship's standing order, kept until it is given another (Phase 2 design §9, ADR-059): the group it was given to,
+  // which acts as one; for a hold, the sector's identifier and its node; for a patrol, its two ends and whether the ship
+  // heads for the second.
+  StandingOrder standing = StandingOrder::None;
+  std::uint32_t standingGroup = 0;
+  std::int32_t holdSector = 0;
+  PlanePosition standingFrom;
+  PlanePosition standingTo;
+  bool standingOutward = true;
 
   // A structure's construction, in thousandths of a tick of one Constructor's work: built once the two are equal. Both
   // are zero for a structure placed whole (ADR-016).
@@ -176,6 +185,8 @@ enum class CommandResult : std::uint8_t
   NotAdjacent,
   // A Mining Rig ordered onto an ore asteroid in a sector the player does not hold (Phase 2 design §4).
   SectorNotHeld,
+  // A hold names a point in no sector, or the map has no territory (ADR-059).
+  NoSector,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -338,7 +349,7 @@ public:
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
            _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
-           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_sectors == _b.m_sectors;
+           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -467,6 +478,12 @@ private:
   CommandResult Apply(PlayerId _player, const QueueShipCommand& _queue);
   CommandResult Apply(PlayerId _player, const StartResearchCommand& _research);
   CommandResult Apply(PlayerId _player, const SaveDesignCommand& _save);
+  CommandResult Apply(PlayerId _player, const HoldSectorCommand& _hold);
+  CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
+  // The warships among _ships, each once; validated by the caller.
+  [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
+  // Once a second, every group on a standing order moves as its order says (ADR-059).
+  void KeepStandingOrders();
   void OrderWork(const std::vector<EntityId>& _constructors, EntityId _target);
   // The map's obstacles and every structure but the Mining Rigs, which stand on asteroids; and ships whose way a new
   // structure blocks look for another.
@@ -564,6 +581,8 @@ private:
   // leaves graph rebuilding to a quieter tick.
   std::vector<PlannedOrder> m_plannedOrders;
   bool m_plannedThisTick = false;
+  // The last group a standing order was given to (ADR-059).
+  std::uint32_t m_lastStandingGroup = 0;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
   // The map's sectors, in its order; none on a map without them.
