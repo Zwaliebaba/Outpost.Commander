@@ -29,7 +29,7 @@ Three things stand in the way:
    - `tickets <tick> player <player> tickets <count>`: with each `fleet` record, on a map with territory.
    - `ending <tick> <production or domination>`: how the match ended (ADR-057 decision 6), just before `end`.
 2. **`Server::Step` runs one tick now, on the caller's thread.** It applies the commands that have arrived and sends each player its snapshot. A started server refuses it. A headless run steps the server instead of starting it, so no wall time enters it at all; the tick stays the clock (ADR-009).
-3. **The executable's `--ai-matches` switch plays seeds 1 to 10.** Both seats are the AI with the packaged settings.
+3. **The executable's `--ai-matches` switch plays seeds 1 to 10.** Both seats are the AI with the packaged settings. Its options name other seeds, each AI's settings and the log, and `--quiet` runs it for a script without a message ([ADR-061](ADR-061-self-play-probe.md)).
    - Each match is stepped a tick at a time until it ends or reaches 120 minutes. Both AIs get each tick's snapshot, and their commands apply at the next tick, so a match reproduces from its seed.
    - The matches run on as many threads as the machine has, each into a buffer of its own. They are written in seed order to `OutpostCommander-ai-matches.log` in the temporary folder, which each run replaces.
    - No window opens, and a message says when the run is done.
