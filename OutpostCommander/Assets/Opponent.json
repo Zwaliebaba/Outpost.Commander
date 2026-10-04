@@ -1,7 +1,7 @@
 {
-  "attackGroupShips": 20,
+  "attackGroupShips": 25,
   "attackGroupGrowthPerTier": 12,
-  "retreatLossShare": 0.1,
+  "retreatLossShare": 0.15,
   "regroupSeconds": 240,
   "reviewIntervalSeconds": 60,
   "constructors": 4,
@@ -49,7 +49,7 @@
   "attackNodeLead": 1,
   "attackWithoutLeadShare": 1.5,
   "frontPlatforms": 1,
-  "claimSectors": 1,
+  "claimSectors": 2,
   "secondSlotTier": 3,
   "attackLevelMeters": 500
 }

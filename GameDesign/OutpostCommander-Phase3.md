@@ -30,6 +30,14 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 | T4 | Are upgraded structures fought over? | The match log records each structure above level 1 that is attacked. In the median match, at least one is attacked before the match ends. |
 | T5 | Does it read? | The owner judges, in play, whether a structure's level is visible at a glance and whether what the next level gives is clear before buying it. |
 
+**Where they stand on 2026-10-04, after plan task 25.2.** The AI-against-AI figures are over seeds 1–40, as the Linux container measured them with the match log of ADR-038 and the AI of ADR-020 and ADR-041 tuned by 25.2. Floats replay only on the same build (ADR-009), so MSVC's build may play the same seeds differently.
+
+- **T1, Phase 2 holds: yes.** All 40 end, at a median of 52:45, 28 of them within 45–60 minutes (S4; Phase 2 had 47:55 and 25). S1 is met in all 40, S2 in 39, and S3 sees both endings, 29 by domination and 11 by production. Player 1 wins 28 of the 40, a seat bias not chased here.
+- **T2, the cap's stall: missed, and kept** (owner, 2026-10-04). Both players sit at their caps with equal nodes for a median of 9:28 a match, from 6:14 to 10:33, against the 5 minutes asked. Most of it is the opening: both reach level 1's three nodes at about 2:25 and wait for level 2, then sit at four each until one reaches level 3. No setting of the AI's moved it. A level 2 of 150 Ore and 30 s gave 8:40, and a cap one node higher at every level 5:10 but a median match of 25:08 that never needed level 3, so the numbers of §7 stay. The stall does not stall the match: most end by domination.
+- **T3, the levels reached: missed on the Research Lab, and kept** (owner, 2026-10-04). Each side reaches level 3 of the Command Station and of a Shipyard in all 40, and of the Research Lab in 11, so all three in 11 of the 40. Tier 3 is opened in 33 of the 40 matches and by 44 of the 80 players, against Phase 1's 2 in 80.
+- **T4, upgraded structures fought over: yes.** A median of 4 structures above level 1 is attacked a match, from 0 to 12.
+- **T5, does it read:** the owner's judgement in play, still to come.
+
 ---
 
 ## 3. Decided by the owner on 2026-10-04

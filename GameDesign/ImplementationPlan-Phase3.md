@@ -33,8 +33,8 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 | 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done, in PR |
 | 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | in review: owner run |
 | 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | done, in PR |
-| 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | todo |
-| 25.2 | T1–T5 | 24.1, 25.1 | — | todo |
+| 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | done, in PR |
+| 25.2 | T1–T5 | 24.1, 25.1 | — | T1–T4 answered, in PR; T5: owner run |
 
 ### Milestone order
 
@@ -235,9 +235,16 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-038, edited in place.
 - **Acceptance:** `MatchLogTests`.
 - **Verify:** CI.
+- **As built:** [ADR-038](../Design/ADR/ADR-038-phase-one-match-log.md) decisions 1 and 4. The records are `upgrade`, `attacked` and `stall`; an attack is written once for each structure and level, and the stall as one total with the peaks. `MatchLog.py` reports T2–T4 per match and over the matches, and T3's tier 3 beside its levels. `MatchLogTests.RecordsUpgradesAttacksAndTheStall`; 230 `GameAppTests` pass in the container.
 
 ### 25.2 — T1–T5
 
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the AI-against-AI run over seeds 1–40, tuned against T1–T4 where the AI's own settings and the upgrade numbers can reach them. The owner's matches and judgement for T5.
 - **Verify:** **owner run.**
+- **As built:** design §2 records T1–T4; [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) has every candidate's figures, and ADR-020 the claims.
+  - **`Opponent.json`**: 2 claims beyond its rigs, an attack group of 25, falling back after losing 15%. Seeds 1–40: T1 and T4 met, T2 missed at 9:28, T3 missed on the Research Lab, 11 of 40, with tier 3 opened in 33.
+  - **T2 and T3 are kept as misses** (owner, 2026-10-04). No AI setting moved the stall, and the cap changes tried cost T1 and T3.
+  - **The upgrade numbers are unchanged.** A cheaper level 2 and a cap one higher were measured and dropped; ADR-041 and design §2 give their figures.
+  - **The difficulties of 26.1** are measured again against the tuned Normal: see 26.1.
+
