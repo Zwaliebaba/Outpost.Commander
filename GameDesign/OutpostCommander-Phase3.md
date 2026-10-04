@@ -1,6 +1,6 @@
 # Outpost Commander — Phase 3 Design: Structures That Grow
 
-Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Not accepted: the gates in §12 are open, and acceptance waits on Phase 2's owner run (gate K7)
+Status: **draft** · Owner: Stefan Zwaal · Started 2026-10-04, from the owner's answers of that day · Gates K1 and K3–K7 decided on 2026-10-04; K2 is open · Not accepted: acceptance waits on Phase 2's owner run (gate K7)
 
 This document says what Phase 3 builds on top of Phase 2, and amends [the Phase 2 design](OutpostCommander-Phase2.md), [the Phase 1 design](Archive/OutpostCommander-Phase1.md) and [the MVP design](Archive/OutpostCommander-MVP.md) where they differ. The names, numbers and layouts here are proposals for the owner to review, as Phase 1's and Phase 2's were first written; what the owner has decided is in §3, and what is still open is in §12.
 
@@ -39,25 +39,26 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 - **The Research Lab's level opens research tiers** (§6), in place of the gateway topics. Research is tied to the Lab and not to the Command Station, because a lost Command Station is lost for good (Phase 1 gate H5), and losing it would otherwise end a player's research for the rest of the match.
 - **The Command Station's level is a hard cap on the nodes a player holds** (§7).
 - **The Large Hull research topic stays.** A Large hull needs both the topic and a Shipyard at level 3 (§5).
+- **The gates of §12**, all but K2: a level 1 Shipyard builds Small hulls only (K1); the Lab gains a second research slot at level 4, and the Shipyard stops at level 3 and the Lab at level 4 (K3); the Command Station's cap and upgrade costs as §7 has them (K4); every level fitted to level 1's size (K5); +20% hit points a level, and more guns on the Command Station (K6); and Phase 3 accepted after Phase 2's owner run (K7).
 
 ---
 
 ## 4. Upgrading a structure
 
-*Proposed (gates K5, K6).*
+*Decided (gates K5, K6).*
 
 - **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and assigns Constructors to the work as for any other build. Several Constructors share the work, as they share a build (ADR-016). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
 - **The structure keeps working** while it is upgraded (§3). The work under way is shown as construction is. If the structure is destroyed during the upgrade, the Ore is lost.
 - **Each level adds 20% of the kind's base hit points**, and never armor (Phase 1 §6). A structure being upgraded keeps its share of its hit points, as it does when Reinforced Structures is researched.
 - **A destroyed structure is rebuilt at level 1.** Its levels are lost with it, which is what makes an upgraded structure a target.
 - **The snapshot carries each structure's level**, and the client draws that level's mesh (ADR-045). The upgrade under way is in the snapshot as construction is.
-- **The footprint grows with the level** (gate K5). At level 1's scale, the baked meshes grow from level 1 to level 5: the Human Command Station about 2.4 times in its longest dimension, the Human Shipyard about 1.8 times in length and 5 times in depth, the Human Research Lab about 2.6 times (measured from the baked `.nmf` files on 2026-10-04). Proposed: each level has its own footprint radius in the tuning data, and an upgrade whose larger footprint would overlap another structure or an asteroid is refused, as a placement is.
+- **Every level is drawn at level 1's size** (gate K5). The footprint, and so placement, collision and pathing, are unchanged by an upgrade, and each level's mesh is fitted to the kind's length as level 1's is (ADR-045). At level 1's scale the baked meshes would grow up to 2.6 times in their longest dimension, and the Human Shipyard 5 times in depth (measured from the baked `.nmf` files on 2026-10-04); fitted, a higher level shows as more detail, not more size. This forgoes a level that reads by its size alone, which T5 judges.
 
 ---
 
 ## 5. Shipyard levels: bigger hulls
 
-*Proposed (gates K1, K3).*
+*Decided (gates K1, K3); the costs are starting values.*
 
 | Level | Builds | Upgrade from the level below |
 |---|---|---|
@@ -67,48 +68,51 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 - **A Shipyard refuses a job whose hull is above its level.** The designer still designs and saves every hull the player has; its Queue is dim, with the reason, for a design the target Shipyard cannot build.
 - **The Large Hull topic stays** (Phase 1 §6, topic 6; owner, 2026-10-04). Researching it lets the player design and save Large hulls; a Shipyard at level 3 is where one is built. A player needs both.
-- **This changes the opening.** Medium is available from the first second today; under this proposal it waits for a Shipyard at level 2. A scout is a Small hull, so S1 should not move, but T1 checks it.
-- **Levels 4 and 5 are not built in Phase 3** (gate K3). There is no fourth hull for them to unlock, and filling them with hit points and build speed would be levels for the sake of the art. The art gives the Human Shipyard two hardpoints from level 4, which would suit an armed Shipyard if the owner wants one.
+- **This changes the opening** (owner, 2026-10-04). Medium is available from the first second today; in Phase 3 it waits for a Shipyard at level 2. A scout is a Small hull, so S1 should not move, but T1 checks it.
+- **The Shipyard stops at level 3** (gate K3). There is no fourth hull for levels 4 and 5 to unlock, and their art waits for content that needs it.
 
 ---
 
 ## 6. Research Lab levels: research tiers
 
-*Proposed (gates K2, K3).*
+*Levels 1–3 proposed (gate K2); level 4 decided (gate K3), its cost a starting value.*
 
 | Level | Opens | Upgrade from the level below | Requires |
 |---|---|---|---|
 | 1 | Tier 1 | (200 Ore, as a Lab today) | — |
 | 2 | Tier 2 | 400 Ore, 60 s | Improved Extraction and Hull Plating researched |
 | 3 | Tier 3 | 600 Ore, 90 s | Large Hull researched |
+| 4 | A second research slot | 800 Ore, 120 s | — |
 
 - **The two gateway topics are removed**: Relay Archives (topic 9) and Precursor Vault (topic 18). Their Ore carries over to the upgrade, and their prerequisites carry over to its requirements: Relay Archives required Improved Extraction and Hull Plating, and Precursor Vault required Large Hull, besides the gateway before it.
 - **Every topic of tier 2 or 3 requires the Lab's level** in place of its gateway. The other prerequisites are unchanged.
 - **The Lab keeps researching while it is upgraded** (§3).
 - **A destroyed Lab** loses its levels. Research already finished stays finished, and a rebuilt Lab starts at level 1, so it can queue only tier 1 topics until it is upgraded again.
 - **What the tree becomes.** 23 topics, in 2,260 s of research, about 38 minutes with one Lab. The 330 s the gateways took moves to Constructors, as 150 s of upgrade work. The S4 match length is measured again with this in place (T1).
-- **Levels 4 and 5 are not built in Phase 3** (gate K3). A second research slot would suit level 4, but it is the second Research Lab that Phase 1 kept out of scope, under another name.
+- **Level 4 researches two topics at once** (gate K3). The Lab's queue stays five topics long, and its front two run side by side, each paid when it starts (ADR-017). A topic whose prerequisite is still being researched waits for it, so the second slot never runs a topic before what it requires. This brings in, as a level, what the second Research Lab that Phase 1 kept out of scope would have given, but in one building: destroying the Lab loses both slots and every level with it.
+- **What the second slot does to the tree.** Every topic still takes its own time, and the slot shortens the tree's wall-clock time by what runs in parallel. Tier 3's topics, 830 s without its gateway, take about 7 minutes at best with two slots, where prerequisites allow. T1 measures what it does to the match's length, and T3 whether tier 3 is reached.
+- **The Lab stops at level 4** (gate K3). A third slot at level 5 would empty the tiers, and level 5's art waits for content that needs it.
 
 ---
 
 ## 7. Command Station levels: the nodes a player may hold
 
-*Proposed (gate K4). The owner chose a hard cap (§3).*
+*Decided (gates K4, K6): the numbers are starting values.*
 
-| Level | Nodes held, home included | Upgrade from the level below |
-|---|---|---|
-| 1 | 3 | — |
-| 2 | 4 | 300 Ore, 45 s |
-| 3 | 5 | 500 Ore, 60 s |
-| 4 | 6 | 700 Ore, 75 s |
-| 5 | 7 | 900 Ore, 90 s |
+| Level | Nodes held, home included | Defence guns | Upgrade from the level below |
+|---|---|---|---|
+| 1 | 3 | 1 | — |
+| 2 | 4 | 1 | 300 Ore, 45 s |
+| 3 | 5 | 2 | 500 Ore, 60 s |
+| 4 | 6 | 2 | 700 Ore, 75 s |
+| 5 | 7 | 3 | 900 Ore, 90 s |
 
 - **A Relay beyond the cap is refused.** A Relay under construction counts toward the cap, as it takes its node (ADR-056).
 - **The cap refuses new claims; it never takes a node away.** Nodes already held stay held, whatever happens to the Command Station.
 - **A player without a Command Station** has level 1's cap, 3 nodes. It keeps every Relay it has, and builds no new one while it holds 3 or more.
 - **Why these numbers.** Domination drains only while the two sides hold different numbers of nodes (Phase 2 §8). Two players at the same cap hold equal numbers, and nothing drains: that is the stall T2 measures. On nine nodes, two players at level 1 can each hold their home and both flanks, which is today's opening, and the first player to reach level 2 can go ahead by one node. From level 3, two caps of 5 add up to more than the map's nine nodes, so both sides cannot be at their cap at once: the nodes are contested, and domination decides as it does today.
 - **On Phase 4's 25 nodes**, these caps have to be scaled to the map's size. That is Phase 4's to decide.
-- **The station's gun** is unchanged by its level, unless gate K6 decides otherwise. The art gives the Human Command Station 4 hardpoints at level 1 and 12 at level 5, and the Tarkan's 3 and 6.
+- **The station's guns** (gate K6). A second Defence gun at level 3 and a third at level 5, each the gun the station carries today, aiming and firing on its own. The simulation gives both sides the same guns; the art does not, with the Human Command Station's 4 hardpoints at level 1 and 12 at level 5 and the Tarkan's 3 and 6, so the client spreads each gun's shots over its set's hardpoints. Three guns and +80% hit points make a level 5 home much harder to raid than today's: the siege that ends a match by the base takes a larger fleet, and T1 checks that S3 still sees it happen.
 
 ---
 
@@ -118,7 +122,7 @@ The AI must play by every rule above, and it plays these as a player would:
 
 - it upgrades its Command Station to level 2 before its first claim beyond its two flanks, and further whenever it is at its cap and has a node it wants to claim;
 - it upgrades a Shipyard to level 2 early, and to level 3 when it wants Large hulls;
-- it upgrades its Lab where it would have researched a gateway topic;
+- it upgrades its Lab where it would have researched a gateway topic, and to level 4 once tier 3 is open;
 - it counts an enemy structure's level when it chooses what to attack: a Shipyard at level 3 is worth more than one at level 1.
 
 Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
@@ -138,14 +142,14 @@ Its numbers are starting values in `Opponent.json`, tuned against T1–T3.
 
 - **Phase 1 §6:** the research tree loses topics 9 and 18, the gateways (§6). The balance check is unchanged: it checks battles at each tier's components, not when they become available.
 - **The match log** records each upgrade started, finished or lost with its structure, each attack on a structure above level 1 (T4), and the time both sides spend at their cap with equal nodes (T2).
-- **ADR-033** is edited in place: a tier is opened by the Research Lab's level, and `GatewayEffect` is removed. **ADR-045** is edited in place: the level is in the simulation and the snapshot, and its footprint is the tuning data's. **ADR-056** is edited in place for the cap. A new ADR records the upgrade itself.
+- **ADR-033** is edited in place: a tier is opened by the Research Lab's level, and `GatewayEffect` is removed. **ADR-045** is edited in place: the level is in the simulation and the snapshot, and every level is fitted to level 1's size. **ADR-017** is edited in place for the second research slot. **ADR-056** is edited in place for the cap. A new ADR records the upgrade itself.
 - **Phase 2 §7** names Phase 4, not Phase 3, as the place for the world.
 
 ---
 
 ## 11. Out of scope for Phase 3
 
-Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipyards, relay jumps and pathing by sector (Phase 4); levels for the Relay, the Defence Platform and the Mining Rig, which have no art for them; levels 4 and 5 of the Shipyard and the Lab, unless gate K3 decides otherwise; new hulls.
+Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipyards, relay jumps and pathing by sector (Phase 4); levels for the Relay, the Defence Platform and the Mining Rig, which have no art for them; levels 4 and 5 of the Shipyard and level 5 of the Lab (gate K3); new hulls.
 
 ---
 
@@ -153,10 +157,10 @@ Everything Phase 2 kept out stays out. Also out: the 10 km world, forward Shipya
 
 Each is an owner decision, and each blocks the plan's tasks that depend on it.
 
-- **K1 — The Shipyard's levels** (§5): Small, Medium and Large at levels 1 to 3, and the upgrade costs. The Large Hull topic stays (§3). The alternative, levels 1 and 2 only, with Small and Medium at level 1, keeps today's opening.
-- **K2 — The Lab's levels** (§6): the gateways replaced, the upgrade costs, the gateways' prerequisites carried over, and a rebuilt Lab back at level 1.
-- **K3 — Levels 4 and 5 of the Shipyard and the Lab** (§5, §6). Proposed: not built in Phase 3. Alternatives: an armed Shipyard at level 4, as the Human art suggests; a second research slot at Lab level 4.
-- **K4 — The Command Station's cap** (§7): 3 to 7 nodes, the upgrade costs, and level 1's cap without a station.
-- **K5 — The footprint** (§4). Proposed: it grows with the level, and an upgrade with no room is refused. The alternative is to fit every level to level 1's footprint, which keeps the placement rules as they are but draws the structure no bigger.
-- **K6 — Hit points and guns** (§4, §7). Proposed: +20% of base hit points a level, and the station's gun unchanged. The alternative uses the art's added hardpoints for more guns at higher levels.
-- **K7 — When Phase 3 is accepted.** Proposed: after the owner has run Phase 2's open tasks (14.3, 15.2, 16.2, 17.1, 17.2, 19.2) and answered S5, so that Phase 3 starts on a Phase 2 that has been played and not only built.
+- **K1 — The Shipyard's levels** (§5). **Decided on 2026-10-04:** Small at level 1, Medium at level 2 and Large at level 3, with the Large Hull topic kept; the upgrade costs are starting values.
+- **K2 — The Lab's levels 1 to 3** (§6): the gateways replaced by levels 2 and 3, their Ore and prerequisites carried over, the upgrade times, and a rebuilt Lab back at level 1. **Open.**
+- **K3 — The top levels** (§5, §6). **Decided on 2026-10-04:** the Lab's level 4 is a second research slot, at 800 Ore and 120 s as starting values; the Shipyard stops at level 3 and the Lab at level 4.
+- **K4 — The Command Station's cap** (§7). **Decided on 2026-10-04:** 3 to 7 nodes, upgrades of 300, 500, 700 and 900 Ore, and level 1's cap without a station.
+- **K5 — The footprint** (§4). **Decided on 2026-10-04:** every level fitted to level 1's size; placement unchanged.
+- **K6 — Hit points and guns** (§4, §7). **Decided on 2026-10-04:** +20% of base hit points a level, and 1, 1, 2, 2 and 3 Defence guns on the Command Station at levels 1 to 5.
+- **K7 — When Phase 3 is accepted.** **Decided on 2026-10-04:** after the owner has run Phase 2's open tasks (14.3, 15.2, 16.2, 17.1, 17.2, 19.2) and answered S5, so that Phase 3 starts on a Phase 2 that has been played and not only built.
