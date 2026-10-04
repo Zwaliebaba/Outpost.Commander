@@ -75,7 +75,7 @@ Neuron::ServerCertificate::ServerCertificate()
   signature.pszObjId = signatureAlgorithm.data();
   // Valid from now for a year, the default, which outlasts any server.
   state.certificate =
-    winrt::check_pointer(CertCreateSelfSignedCertificate(state.key, &subject, 0, &keyInfo, &signature, nullptr, nullptr, nullptr));
+    winrt::check_pointer(CertCreateSelfSignCertificate(state.key, &subject, 0, &keyInfo, &signature, nullptr, nullptr, nullptr));
 
   state.hash = HashCertificate({state.certificate->pbCertEncoded, state.certificate->cbCertEncoded});
 }
