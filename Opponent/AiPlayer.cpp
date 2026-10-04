@@ -985,7 +985,14 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Entity
     return false;
   const auto topic = std::ranges::find(_snapshot.research, *next, &ResearchTopicView::id);
   const StructureLevelView& level = type->levels[static_cast<size_t>(lab->level - 1)];
-  if (topic->tier <= _snapshot.researchTier || !std::ranges::all_of(level.prerequisites, researched))
+  // A level that opens the tier of its next topic, or once its open tier is the settings', the one that gives a second
+  // slot while two topics of its order are left (Phase 3 design §8).
+  const auto left =
+    std::ranges::count_if(m_settings.researchOrder, [&](ResearchTopicId _id)
+                          { return std::ranges::contains(_snapshot.research, _id, &ResearchTopicView::id) && !researched(_id); });
+  const bool opensTier = level.opensTier > 0 && topic->tier > _snapshot.researchTier;
+  const bool addsSlot = level.researchSlots > 1 && _snapshot.researchTier >= m_settings.secondSlotTier && left >= 2;
+  if ((!opensTier && !addsSlot) || !std::ranges::all_of(level.prerequisites, researched))
     return false;
   if (_snapshot.ore < level.cost)
     return true;
@@ -1051,7 +1058,10 @@ void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
   const SectorView* claimed = nullptr;
   for (const SectorView& sector : _snapshot.sectors)
   {
-    if (sector.holder.IsValid() || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
+    // A sector its plan already takes, by a rig's Relay, is no claim: the claims are beyond those (Phase 3 design §8).
+    const bool planned = std::ranges::any_of(m_slots, [&sector](const Slot& _slot)
+                                             { return _slot.structure == StructureKind::Relay && _slot.position == sector.node; });
+    if (sector.holder.IsValid() || planned || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
       continue;
     const bool adjacent = std::ranges::any_of(sector.adjacent,
                                               [&](std::int32_t _id)
@@ -1301,8 +1311,15 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     {
       if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player)
         continue;
+      // Within a rank, a structure's levels bring it nearer: a Shipyard at level 3 is worth more than one at level 1
+      // (Phase 3 design §8).
+      const auto worthMeters = [&](const EntityView& _structure)
+      {
+        return Distance(_structure.position, center) -
+               (static_cast<float>(m_settings.attackLevelMeters) * static_cast<float>(std::max(0, _structure.level - 1)));
+      };
       if (best == nullptr || AttackRank(entity) < AttackRank(*best) ||
-          (AttackRank(entity) == AttackRank(*best) && Distance(entity.position, center) < Distance(best->position, center)))
+          (AttackRank(entity) == AttackRank(*best) && worthMeters(entity) < worthMeters(*best)))
         best = &entity;
     }
     // A target is kept until it is gone, or until production comes to light ahead of it.

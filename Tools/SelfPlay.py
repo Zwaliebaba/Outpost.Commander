@@ -8,7 +8,7 @@ scripted AI plays them. The packaged settings are not changed by this; that is t
 The AI's body stays the scripted one: where it builds, how its Constructors work, how its fleet moves. The search
 moves only its numbers, the knobs below, which are what the scripted AI decides with:
 
-  - the 22 numbers of Opponent.json, each in a range of its own (KNOBS), whole numbers kept whole;
+  - the 24 numbers of Opponent.json, each in a range of its own (KNOBS), whole numbers kept whole;
   - its research order, as one key per topic: the topics are researched in the order of their keys.
 
 The counters, the default design and the scout's design stay the packaged ones.
@@ -134,6 +134,8 @@ KNOBS = (
   Knob("attackWithoutLeadShare", 1.0, 3.0, False),
   Knob("frontPlatforms", 0, 3, True),
   Knob("claimSectors", 0, 4, True),
+  Knob("secondSlotTier", 1, 3, True),
+  Knob("attackLevelMeters", 0.0, 1500.0, False),
 )
 # The research keys start this much closer together than the knobs, relative to the step size: a key one step away
 # moves a topic several places in the order.

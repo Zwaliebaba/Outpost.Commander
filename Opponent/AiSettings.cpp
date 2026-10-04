@@ -76,6 +76,8 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
   settings.attackWithoutLeadShare = root.Number("attackWithoutLeadShare", JsonBound::Positive);
   settings.frontPlatforms = root.Integer("frontPlatforms", 0);
   settings.claimSectors = root.Integer("claimSectors", 0);
+  settings.secondSlotTier = root.Integer("secondSlotTier", 1);
+  settings.attackLevelMeters = root.Number("attackLevelMeters", JsonBound::NotNegative);
   root.Finish();
 
   for (size_t i = 0; i < settings.counters.size(); ++i)

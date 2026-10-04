@@ -32,7 +32,7 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 | 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | in review: owner run |
 | 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | done, in PR |
 | 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | in review: owner run |
-| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | todo |
+| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | done, in PR |
 | 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | todo |
 | 25.2 | T1–T5 | 24.1, 25.1 | — | todo |
 
@@ -218,6 +218,11 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-020 and ADR-041, edited in place.
 - **Acceptance:** `AiPlayerTests`, `AiSettingsTests`.
 - **Verify:** CI; the AI-against-AI matches.
+- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 14; ADR-037, ADR-041 and ADR-064 edited in place.
+  - **The claim.** The AI spent its one `claimSectors` claim on a flank its rigs were taking it to, so it never wanted a fourth node and never upgraded its station. A sector its plan already has a Relay for is no claim now: it upgrades to level 2 at about 3:30 and holds four nodes by 6:00, and goes no higher with no claim left (`AiPlayerTests.UpgradesItsStationBeforeItsFirstClaim`).
+  - **The Lab** goes to level 4 once its open tier reaches `secondSlotTier`, 3, while two topics of its order are left (`UpgradesItsLabForASecondSlot`). **What it attacks** counts each level above the first as `attackLevelMeters`, 500, nearer (`CountsAShipyardsLevel`). The Shipyards needed nothing new: 21.1 already upgrades them to the production design's hull. `Tools/SelfPlay.py` moves the two new numbers.
+  - **AI against AI, seeds 1–10**, against 23.1's tree: a median of 30:07 against 52:25, 1 within 45–60 minutes against 6, 2 by domination and 8 by production against 8 and 2, S2 met in 5 of 10 against 10, tier 3 in 1 of 20 seats against 8. Without the claim fix it is 52:50 and 8 by domination; without the levels in what it attacks nothing moves. **The owner kept the claim and left the retuning to 25.2** (owner, 2026-10-04).
+  - **Run in the container:** 253 `GameLogicTests` pass, 0 fail; clang-tidy 22.1.8 clean on the changed files.
 
 ---
 

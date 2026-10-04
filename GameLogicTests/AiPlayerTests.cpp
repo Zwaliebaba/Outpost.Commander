@@ -779,6 +779,108 @@ public:
     Assert::AreEqual(0.0f, Outpost::Distance(destination.value_or(Outpost::PlanePosition{}), another), 0.01f);
   }
 
+  // Phase 3 design §8: its home and the two flanks its rigs take it to are level 1's cap, so it upgrades its Command
+  // Station to level 2 before its claim beyond them, which is its fourth node; and at that cap, wanting no more, it
+  // upgrades no further.
+  TEST_METHOD(UpgradesItsStationBeforeItsFirstClaim)
+  {
+    AiMatch match;
+    std::optional<std::int32_t> levelAtFourth;
+    std::int32_t level = 0;
+    for (int step = 0; step < 16 && !levelAtFourth.has_value(); ++step)
+    {
+      match.Run(30.0);
+      const Outpost::Snapshot view = match.View(AI);
+      for (const Outpost::EntityView* structure : match.Structures(view, AI))
+      {
+        if (structure->structure == Outpost::StructureKind::CommandStation)
+          level = structure->level;
+      }
+      if (Outpost::NodesTaken(view.sectors, view.entities, AI) >= 4)
+        levelAtFourth = level;
+    }
+    Assert::IsTrue(levelAtFourth.has_value(), L"no fourth node in eight minutes");
+    Assert::AreEqual(2, levelAtFourth.value_or(0), L"the fourth node before the station's level 2");
+    match.Run(180.0);
+    const Outpost::Snapshot view = match.View(AI);
+    Assert::AreEqual(4, view.nodeCap, L"an upgrade past level 2 with no claim left");
+  }
+
+  // Phase 3 design §8: choosing what to attack it counts a structure's level, so that a Shipyard at level 3 a little
+  // farther off goes before one at level 1.
+  TEST_METHOD(CountsAShipyardsLevel)
+  {
+    const auto target = [](double _levelMeters)
+    {
+      AiMatch match;
+      const std::vector<Outpost::EntityId> group = match.Spawn(AI, BRAWLER, 12, {700.0f, 600.0f});
+      Outpost::Snapshot snapshot = match.View(AI);
+      const auto shipyard = [&snapshot](std::uint32_t _id, Outpost::PlanePosition _position, std::int32_t _level)
+      {
+        snapshot.entities.push_back({.id = Outpost::EntityId{_id},
+                                     .kind = Outpost::EntityKind::Structure,
+                                     .owner = HUMAN,
+                                     .structure = Outpost::StructureKind::Shipyard,
+                                     .position = _position,
+                                     .radiusMeters = 30.0f,
+                                     .builtPermille = Outpost::PERMILLE,
+                                     .level = _level});
+      };
+      // About 500 m from the group at level 1, and about 1,400 m at level 3.
+      shipyard(9001, {300.0f, 300.0f}, 1);
+      shipyard(9002, {-300.0f, -400.0f}, 3);
+      Outpost::AiSettings settings = AttackSettings();
+      settings.attackLevelMeters = _levelMeters;
+      Outpost::AiPlayer ai(settings, 20);
+      for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)))
+      {
+        if (std::ranges::is_permutation(order.ships, group))
+          return order.destination;
+      }
+      Assert::Fail(L"the twelve were not sent");
+      return Outpost::PlanePosition{};
+    };
+    Assert::AreEqual(0.0f, Outpost::Distance(target(500.0), {-300.0f, -400.0f}), 0.01f, L"the level 3 Shipyard first");
+    Assert::AreEqual(0.0f, Outpost::Distance(target(0.0), {300.0f, 300.0f}), 0.01f, L"the nearest, without the levels counted");
+  }
+
+  // Phase 3 design §8: once tier 3 is open it upgrades its Research Lab to level 4 for a second research slot.
+  TEST_METHOD(UpgradesItsLabForASecondSlot)
+  {
+    const auto upgradesLab = [](std::int32_t _secondSlotTier)
+    {
+      AiMatch match;
+      Outpost::Snapshot snapshot = match.View(AI);
+      snapshot.ore = 100000;
+      snapshot.researchTier = 3;
+      const Outpost::PlanePosition start = match.Start(AI);
+      snapshot.entities.push_back({.id = Outpost::EntityId{9001},
+                                   .kind = Outpost::EntityKind::Structure,
+                                   .owner = AI,
+                                   .structure = Outpost::StructureKind::ResearchLab,
+                                   .position = {start.xMeters, start.zMeters + 200.0f},
+                                   .radiusMeters = 30.0f,
+                                   .builtPermille = Outpost::PERMILLE,
+                                   .level = 3});
+      // Constructors enough for the whole plan, and the Lab besides.
+      for (std::uint32_t i = 0; i < 40; ++i)
+      {
+        snapshot.entities.push_back({.id = Outpost::EntityId{9100 + i},
+                                     .kind = Outpost::EntityKind::Ship,
+                                     .owner = AI,
+                                     .role = Outpost::ShipRole::Constructor,
+                                     .position = {start.xMeters + 100.0f, start.zMeters}});
+      }
+      Outpost::AiSettings settings = RepositorySettings();
+      settings.secondSlotTier = _secondSlotTier;
+      Outpost::AiPlayer ai(settings, 20);
+      const std::vector<Outpost::UpgradeStructureCommand> upgrades = OrdersOf<Outpost::UpgradeStructureCommand>(ai.Update(snapshot));
+      return std::ranges::contains(upgrades, Outpost::EntityId{9001}, &Outpost::UpgradeStructureCommand::structure);
+    };
+    Assert::IsTrue(upgradesLab(3), L"tier 3 is open");
+    Assert::IsFalse(upgradesLab(4), L"before the settings' tier");
+  }
+
   // Phase 1 design §4: once its Command Station has fallen, the AI plays on with its Shipyards, and queues no more
   // Constructors.
   TEST_METHOD(PlaysOnWithoutItsStation)
