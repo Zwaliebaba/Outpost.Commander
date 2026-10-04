@@ -476,11 +476,7 @@ public:
     // A rig pays for the levels.
     (void)arena.Structure(BLUE, Outpost::StructureKind::MiningRig, MatchArena::HOME_ASTEROID);
     const Outpost::EntityId lab = arena.Structure(BLUE, Outpost::StructureKind::ResearchLab, LAB);
-    const Outpost::StructureTuning& labTuning = arena.StructureData(Outpost::StructureKind::ResearchLab);
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(
-      BLUE, {.xMeters = LAB.xMeters - static_cast<float>(labTuning.footprintRadiusMeters) - 25.0f, .zMeters = LAB.zMeters});
-    const auto upgrade = [&]
-    { return arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = lab, .constructors = {constructor}})})[0]; };
+    const auto upgrade = [&] { return arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = lab})})[0]; };
     const auto toLevel = [&](std::int32_t _level)
     {
       for (int tick = 0; tick < 600 * 20 && arena.Get(lab).level < _level; ++tick)

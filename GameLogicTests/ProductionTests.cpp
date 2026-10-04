@@ -112,7 +112,6 @@ public:
   {
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
-    const Outpost::StructureTuning& tuning = arena.StructureData(Outpost::StructureKind::Shipyard);
     const Outpost::DesignComponents large{.hull = LARGE, .drive = ION, .weapon = MASS_DRIVER};
     const std::array<Outpost::DesignId, 3> designs{
       arena.Design(BLUE, SMALL, MASS_DRIVER), arena.Design(BLUE, MEDIUM, MASS_DRIVER),
@@ -121,8 +120,6 @@ public:
     Assert::AreEqual(2, Outpost::ShipyardLevelFor(arena.TuningData(), MEDIUM));
     Assert::AreEqual(3, Outpost::ShipyardLevelFor(arena.TuningData(), LARGE));
 
-    const Outpost::EntityId constructor = arena.World().SpawnConstructor(
-      BLUE, {.xMeters = YARD.xMeters - static_cast<float>(tuning.footprintRadiusMeters) - 25.0f, .zMeters = YARD.zMeters});
     for (std::int32_t level = 1; level <= 3; ++level)
     {
       Assert::AreEqual(level, arena.Get(yard).level);
@@ -136,8 +133,7 @@ public:
       if (level == 3)
         break;
       // The next level, during which the jobs queued so far are built; the starting Ore pays for both levels and them.
-      Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = yard, .constructors = {constructor}})})[0] ==
-                     Outpost::CommandResult::Applied);
+      Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = yard})})[0] == Outpost::CommandResult::Applied);
       for (int tick = 0; tick < 300 * 20 && arena.Get(yard).level == level; ++tick)
         arena.Run(1);
     }

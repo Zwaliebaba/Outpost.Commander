@@ -132,13 +132,13 @@ private:
   void Produce(const Snapshot& _snapshot, bool _structureWaiting, std::vector<Command>& _orders);
   // Upgrades a Shipyard below the level its production design needs (Phase 3 design §5), and the Research Lab when its
   // research order reaches a tier the Lab has not opened (§6). Each says whether one waits for Ore.
-  [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
-  [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  [[nodiscard]] bool UpgradeShipyards(const Snapshot& _snapshot, std::vector<Command>& _orders);
+  [[nodiscard]] bool UpgradeLab(const Snapshot& _snapshot, std::vector<Command>& _orders);
   // Its Command Station, when it can be upgraded now; nullptr otherwise. Build upgrades it in place of a Relay its cap holds
   // back (§7).
   [[nodiscard]] const EntityView* UpgradableStation(const Snapshot& _snapshot) const;
-  // Sends the nearest idle Constructors, two at most, to upgrade _structure by a level.
-  void OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
+  // Orders _structure's next level, which builds itself (Phase 3 design §4).
+  void OrderUpgrade(const EntityView& _structure, std::vector<Command>& _orders) const;
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
 
   AiSettings m_settings;

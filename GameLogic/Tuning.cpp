@@ -274,8 +274,7 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
     for (size_t i = 0; i < elements.size(); ++i)
     {
       ObjectReader level(elements[i], Neuron::JsonElementPath(path, i));
-      structure.levels.push_back(
-        {.cost = level.Integer("cost", 0), .buildConstructorSeconds = level.Number("buildConstructorSeconds", JsonBound::Positive)});
+      structure.levels.push_back({.cost = level.Integer("cost", 0), .buildSeconds = level.Number("buildSeconds", JsonBound::Positive)});
       structure.levels.back().hulls = ReadHulls(level, structure);
       ReadLabLevel(level, structure, structure.levels.back());
       ReadStationNumbers(level, structure, structure.levels.back().nodes, structure.levels.back().guns);

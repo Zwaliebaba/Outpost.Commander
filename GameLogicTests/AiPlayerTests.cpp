@@ -863,15 +863,6 @@ public:
                                    .radiusMeters = 30.0f,
                                    .builtPermille = Outpost::PERMILLE,
                                    .level = 3});
-      // Constructors enough for the whole plan, and the Lab besides.
-      for (std::uint32_t i = 0; i < 40; ++i)
-      {
-        snapshot.entities.push_back({.id = Outpost::EntityId{9100 + i},
-                                     .kind = Outpost::EntityKind::Ship,
-                                     .owner = AI,
-                                     .role = Outpost::ShipRole::Constructor,
-                                     .position = {start.xMeters + 100.0f, start.zMeters}});
-      }
       Outpost::AiSettings settings = RepositorySettings();
       settings.secondSlotTier = _secondSlotTier;
       Outpost::AiPlayer ai(settings, 20);

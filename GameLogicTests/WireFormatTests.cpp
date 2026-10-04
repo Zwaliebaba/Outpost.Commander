@@ -175,7 +175,7 @@ public:
                                  .module = Outpost::ModuleId{17}},
       Outpost::HoldSectorCommand{.ships = ships, .position = {.xMeters = 18.0f}},
       Outpost::PatrolCommand{.ships = ships, .destination = {.zMeters = 19.0f}},
-      Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}, .constructors = ships}};
+      Outpost::UpgradeStructureCommand{.structure = Outpost::EntityId{21}}};
     Assert::AreEqual(std::variant_size_v<Outpost::Order>, orders.size(), L"every alternative once");
     for (size_t i = 0; i < orders.size(); ++i)
     {

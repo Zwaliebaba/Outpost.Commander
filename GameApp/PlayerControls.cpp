@@ -32,11 +32,11 @@ const Outpost::EntityView* Find(std::span<const Outpost::EntityView> _entities, 
   return found == _entities.end() ? nullptr : &*found;
 }
 
-// Whether a Constructor has work to do on _entity: building it, building its next level, or repairing it.
+// Whether a Constructor has work to do on _entity: building it, or repairing it.
 bool NeedsWork(const Outpost::EntityView& _entity) noexcept
 {
-  return _entity.maxHitPointsHundredths > 0 && (_entity.builtPermille < Outpost::PERMILLE || _entity.upgradePermille.has_value() ||
-                                                _entity.hitPointsHundredths < _entity.maxHitPointsHundredths);
+  return _entity.maxHitPointsHundredths > 0 &&
+         (_entity.builtPermille < Outpost::PERMILLE || _entity.hitPointsHundredths < _entity.maxHitPointsHundredths);
 }
 } // namespace
 
@@ -100,7 +100,7 @@ void Outpost::PlayerControls::Research(EntityId _lab, ResearchTopicId _topic)
 
 void Outpost::PlayerControls::Upgrade(EntityId _structure)
 {
-  Give(UpgradeStructureCommand{.structure = _structure, .constructors = {}});
+  Give(UpgradeStructureCommand{.structure = _structure});
 }
 
 void Outpost::PlayerControls::SaveDesign(SaveDesignCommand _save)

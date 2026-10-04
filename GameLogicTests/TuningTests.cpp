@@ -110,11 +110,11 @@ constexpr std::string_view MINIMAL_TUNING = R"({
       "structureWeapon": 1 },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300,
       "buildConstructorSeconds": 40,
-      "levels": [ { "cost": 150, "buildConstructorSeconds": 30 } ] },
+      "levels": [ { "cost": 150, "buildSeconds": 30 } ] },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200,
       "buildConstructorSeconds": 30,
-      "levels": [ { "cost": 400, "buildConstructorSeconds": 60, "opensTier": 2, "requires": [1] },
-                  { "cost": 800, "buildConstructorSeconds": 120, "researchSlots": 2 } ] },
+      "levels": [ { "cost": 400, "buildSeconds": 60, "opensTier": 2, "requires": [1] },
+                  { "cost": 800, "buildSeconds": 120, "researchSlots": 2 } ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50,
       "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20,
@@ -336,8 +336,7 @@ public:
         {
           const std::string levelPath = std::format("{}.levels[{}]", path, j);
           const Outpost::StructureLevelTuning& loaded = structure.levels[j];
-          std::vector<LoadedField> levelFields = {{"cost", Number(loaded.cost)},
-                                                  {"buildConstructorSeconds", loaded.buildConstructorSeconds}};
+          std::vector<LoadedField> levelFields = {{"cost", Number(loaded.cost)}, {"buildSeconds", loaded.buildSeconds}};
           if (loaded.opensTier > 0)
             levelFields.push_back({"opensTier", Number(loaded.opensTier)});
           if (loaded.researchSlots > 0)
@@ -464,7 +463,7 @@ public:
     const Outpost::StructureTuning& shipyard = tuning.structures[1];
     Assert::AreEqual(size_t{1}, shipyard.levels.size());
     Assert::AreEqual(150, shipyard.levels[0].cost);
-    Assert::AreEqual(30.0, shipyard.levels[0].buildConstructorSeconds);
+    Assert::AreEqual(30.0, shipyard.levels[0].buildSeconds);
     Assert::AreEqual(2, shipyard.TopLevel());
     Assert::AreEqual(1, tuning.structures[5].TopLevel());
 
@@ -491,31 +490,30 @@ public:
     ExpectLoadError(Replace("\"exhaustedYieldPercent\": 20, \"levelHitPointsPercent\": 20", "\"exhaustedYieldPercent\": 20"),
                     "rules: has no \"levelHitPointsPercent\"");
     ExpectLoadError(Replace("\"levelHitPointsPercent\": 20", "\"levelHitPointsPercent\": -5"), "rules.levelHitPointsPercent");
-    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"buildConstructorSeconds\": 30 }"),
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildSeconds\": 30 }", "{ \"buildSeconds\": 30 }"),
                     "structures[1].levels[0]: has no \"cost\"");
-    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"cost\": 150, \"buildConstructorSeconds\": 0 }"),
-                    "structures[1].levels[0].buildConstructorSeconds");
-    ExpectLoadError(
-      Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-              "\"levels\": [ { \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
-              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
-              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 } ]"),
-      "structures[1].levels");
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildSeconds\": 30 }", "{ \"cost\": 150, \"buildSeconds\": 0 }"),
+                    "structures[1].levels[0].buildSeconds");
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 1, \"buildSeconds\": 1 }, { \"cost\": 1, \"buildSeconds\": 1 }, "
+                            "{ \"cost\": 1, \"buildSeconds\": 1 }, { \"cost\": 1, \"buildSeconds\": 1 }, "
+                            "{ \"cost\": 1, \"buildSeconds\": 1 } ]"),
+                    "structures[1].levels");
     // A Shipyard's hulls (Phase 3 design §5): only a Shipyard names them, each hull exists, and none is named twice.
-    (void)Outpost::LoadTuning(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-                                      "\"hulls\": [], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"));
-    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-                            "\"hulls\": [1], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"),
+    (void)Outpost::LoadTuning(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                                      "\"hulls\": [], \"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"hulls\": [1] } ]"));
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"hulls\": [1], \"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"hulls\": [1] } ]"),
                     "structures[1].levels[0].hulls[0]");
-    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-                            "\"hulls\": [2], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]"),
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"hulls\": [2], \"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]"),
                     "structures[1].hulls[0]");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30,",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30, \"hulls\": [1],"),
                     "structures[2].hulls");
     // A Command Station's cap and guns (Phase 3 design §7), which no other kind has, and at least one of each.
-    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-                            "\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"nodes\": 4 } ]"),
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"nodes\": 4 } ]"),
                     "structures[1].levels[0].nodes");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
                             "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"guns\": 0 },"),
@@ -557,8 +555,8 @@ public:
     ExpectLoadError(Replace("\"opensTier\": 2, ", ""), "research[4].tier");
     ExpectLoadError(Replace("\"opensTier\": 2, \"requires\": [1]", "\"opensTier\": 2, \"requires\": [99]"),
                     "structures[2].levels[0].requires[0]");
-    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
-                            "\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"opensTier\": 2 } ]"),
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildSeconds\": 30, \"opensTier\": 2 } ]"),
                     "structures[1].levels[0].opensTier");
     ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [2]",
                             "\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [5]"),

@@ -348,7 +348,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   // An upgrade it wants and cannot yet pay for holds production back, as a structure does, so that the Ore gathers for it.
   bool upgradeWaiting = false;
   if (!structureWaiting)
-    upgradeWaiting = UpgradeShipyards(_snapshot, idle, _orders) || UpgradeLab(_snapshot, idle, _orders);
+    upgradeWaiting = UpgradeShipyards(_snapshot, _orders) || UpgradeLab(_snapshot, _orders);
 
   // Constructors left over repair what is damaged, one each.
   for (const EntityView& structure : _snapshot.entities)
@@ -764,8 +764,7 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
                     _work.target = site->id;
                   }
                   const EntityView* target = FindEntity(_snapshot, _work.target);
-                  return target == nullptr || (IsBuilt(*target) && !target->upgradePermille.has_value() &&
-                                               target->hitPointsHundredths >= target->maxHitPointsHundredths);
+                  return target == nullptr || (IsBuilt(*target) && target->hitPointsHundredths >= target->maxHitPointsHundredths);
                 });
 
   for (const EntityView& ship : _snapshot.entities)
@@ -800,6 +799,8 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
 {
   std::int32_t ore = _snapshot.ore;
   const auto gap = static_cast<float>(m_settings.structureGapMeters);
+  // The station's next level is ordered once a decision, however many Relays the cap holds back.
+  bool stationOrdered = false;
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
@@ -809,15 +810,14 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
       slot.structure == StructureKind::Relay && AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
     if (capped && !slot.abandoned && !IsBlocked(slot, _snapshot) && !IsDone(slot, _snapshot) && IsClaimable(slot, _snapshot))
     {
-      if (const EntityView* station = UpgradableStation(_snapshot))
+      if (const EntityView* station = stationOrdered ? nullptr : UpgradableStation(_snapshot))
       {
         const std::int32_t cost = FindType(_snapshot, StructureKind::CommandStation)->levels[static_cast<size_t>(station->level - 1)].cost;
-        if (_idle.empty())
-          return false;
         if (ore < cost)
           return true;
-        OrderUpgrade(_snapshot, *station, _idle, _orders);
+        OrderUpgrade(*station, _orders);
         ore -= cost;
+        stationOrdered = true;
       }
       continue;
     }
@@ -938,24 +938,22 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
   }
 }
 
-// A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, by
-// the nearest idle Constructors, once the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this
-// play.
-bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+// A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, once
+// the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this play.
+bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
   const std::int32_t needed = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
-  if (type == nullptr || _idle.empty())
+  if (type == nullptr)
     return false;
   for (const EntityView& yard : _snapshot.entities)
   {
     if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.upgradePermille.has_value() ||
-        yard.level >= needed || std::cmp_greater_equal(yard.level - 1, type->levels.size()) ||
-        std::ranges::any_of(m_work, [&yard](const Work& _work) { return _work.target == yard.id; }))
+        yard.level >= needed || std::cmp_greater_equal(yard.level - 1, type->levels.size()))
       continue;
     if (_snapshot.ore < type->levels[static_cast<size_t>(yard.level - 1)].cost)
       return true;
-    OrderUpgrade(_snapshot, yard, _idle, _orders);
+    OrderUpgrade(yard, _orders);
     return false;
   }
   return false;
@@ -963,14 +961,13 @@ bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<
 
 // The Research Lab is upgraded when the next topic of its research order is of a tier it has not opened, once what the
 // level requires is researched and the Ore is there (Phase 3 design §6, plan task 22.1). Plan task 24.1 makes this play.
-bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::ResearchLab);
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                         { return IsStructure(_entity, StructureKind::ResearchLab) && _entity.owner == m_player; });
-  if (type == nullptr || _idle.empty() || lab == _snapshot.entities.end() || !IsBuilt(*lab) || lab->upgradePermille.has_value() ||
-      std::cmp_greater_equal(lab->level - 1, type->levels.size()) ||
-      std::ranges::any_of(m_work, [&lab](const Work& _work) { return _work.target == lab->id; }))
+  if (type == nullptr || lab == _snapshot.entities.end() || !IsBuilt(*lab) || lab->upgradePermille.has_value() ||
+      std::cmp_greater_equal(lab->level - 1, type->levels.size()))
     return false;
   const auto researched = [&_snapshot](ResearchTopicId _id)
   {
@@ -996,40 +993,26 @@ bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<Entity
     return false;
   if (_snapshot.ore < level.cost)
     return true;
-  OrderUpgrade(_snapshot, *lab, _idle, _orders);
+  OrderUpgrade(*lab, _orders);
   return false;
 }
 
-// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, below its top level, and with no
-// Constructors of the AI's already on it (Phase 3 design §7).
+// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, and below its top level (Phase 3
+// design §7).
 const Outpost::EntityView* Outpost::AiPlayer::UpgradableStation(const Snapshot& _snapshot) const
 {
   const StructureTypeView* type = FindType(_snapshot, StructureKind::CommandStation);
   const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                             { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
   if (type == nullptr || station == _snapshot.entities.end() || !IsBuilt(*station) || station->upgradePermille.has_value() ||
-      std::cmp_greater_equal(station->level - 1, type->levels.size()) ||
-      std::ranges::any_of(m_work, [&station](const Work& _work) { return _work.target == station->id; }))
+      std::cmp_greater_equal(station->level - 1, type->levels.size()))
     return nullptr;
   return &*station;
 }
 
-void Outpost::AiPlayer::OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle,
-                                     std::vector<Command>& _orders)
+void Outpost::AiPlayer::OrderUpgrade(const EntityView& _structure, std::vector<Command>& _orders) const
 {
-  std::ranges::sort(_idle,
-                    [&](EntityId _a, EntityId _b)
-                    {
-                      const float a = Distance(FindEntity(_snapshot, _a)->position, _structure.position);
-                      const float b = Distance(FindEntity(_snapshot, _b)->position, _structure.position);
-                      return a != b ? a < b : _a < _b;
-                    });
-  const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_BUILD, _idle.size()));
-  Work work{
-    .constructors = {_idle.begin(), _idle.begin() + crew}, .target = _structure.id, .slot = std::nullopt, .orderedTick = _snapshot.tick};
-  _idle.erase(_idle.begin(), _idle.begin() + crew);
-  _orders.push_back(MakeCommand(m_player, UpgradeStructureCommand{.structure = _structure.id, .constructors = work.constructors}));
-  m_work.push_back(std::move(work));
+  _orders.push_back(MakeCommand(m_player, UpgradeStructureCommand{.structure = _structure.id}));
 }
 
 bool Outpost::AiPlayer::IsScout(const EntityView& _ship) const noexcept

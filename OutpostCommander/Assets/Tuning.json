@@ -40,22 +40,22 @@
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45, "structureWeapon": 1,
       "nodes": 3, "guns": 1,
       "levels": [
-        { "cost": 300, "buildConstructorSeconds": 45, "nodes": 4 },
-        { "cost": 500, "buildConstructorSeconds": 60, "nodes": 5, "guns": 2 },
-        { "cost": 700, "buildConstructorSeconds": 75, "nodes": 6 },
-        { "cost": 900, "buildConstructorSeconds": 90, "nodes": 7, "guns": 3 }
+        { "cost": 300, "buildSeconds": 45, "nodes": 4 },
+        { "cost": 500, "buildSeconds": 60, "nodes": 5, "guns": 2 },
+        { "cost": 700, "buildSeconds": 75, "nodes": 6 },
+        { "cost": 900, "buildSeconds": 90, "nodes": 7, "guns": 3 }
       ] },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
       "hulls": [1],
       "levels": [
-        { "cost": 150, "buildConstructorSeconds": 30, "hulls": [2] },
-        { "cost": 300, "buildConstructorSeconds": 60, "hulls": [3] }
+        { "cost": 150, "buildSeconds": 30, "hulls": [2] },
+        { "cost": 300, "buildSeconds": 60, "hulls": [3] }
       ] },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30,
       "levels": [
-        { "cost": 400, "buildConstructorSeconds": 60, "opensTier": 2, "requires": [1, 2] },
-        { "cost": 600, "buildConstructorSeconds": 90, "opensTier": 3, "requires": [6] },
-        { "cost": 800, "buildConstructorSeconds": 120, "researchSlots": 2 }
+        { "cost": 400, "buildSeconds": 60, "opensTier": 2, "requires": [1, 2] },
+        { "cost": 600, "buildSeconds": 90, "opensTier": 3, "requires": [6] },
+        { "cost": 800, "buildSeconds": 120, "researchSlots": 2 }
       ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50, "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20, "cost": 150, "buildConstructorSeconds": 20, "structureWeapon": 1 },
