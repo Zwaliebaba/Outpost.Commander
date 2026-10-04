@@ -1087,6 +1087,47 @@ public:
     Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
   }
 
+  // Phase 3 design §5, §9: a Shipyard below a hull's level cannot build it. The designer still saves the design, and its
+  // Queue is dim with the level the hull needs; the production window dims the design and says so; and the Shipyard's
+  // panel names the hulls its next level adds.
+  TEST_METHOD(SaysWhatAShipyardCannotBuild)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot(true);
+    for (Outpost::HullView& hull : newest.hulls)
+      hull.shipyardLevel = static_cast<std::int32_t>(hull.id.value);
+    Outpost::Designer designer;
+    designer.Update(newest);
+    designer.PickHull(Outpost::HullId{3});
+    Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    Assert::IsFalse(panel.queue.enabled, L"Shipyard 01 is at level 1");
+    Assert::AreEqual(std::string("Needs Shipyard L3"), panel.queueDetail);
+    Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
+    newest.entities.front().level = 3;
+    panel = DesignerOf(newest, designer);
+    Assert::IsTrue(panel.queue.enabled);
+    Assert::AreNotEqual(std::string("Needs Shipyard L3"), panel.queueDetail);
+
+    // The production window: a Small design builds at level 1, a Medium one waits for level 2.
+    newest.entities.front().level = 1;
+    newest.designs = {{.id = SWARM, .nameUtf8 = "Small+Ion+Mass Driver", .hull = Outpost::HullId{1}, .cost = 87},
+                      {.id = LINE, .nameUtf8 = "Medium+Ion+Lance", .hull = Outpost::HullId{2}, .cost = 215}};
+    const Outpost::Hud::ProductionPanel production = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Assert::IsTrue(production.options[0].enabled);
+    Assert::IsFalse(production.options[1].enabled);
+    Assert::IsTrue(production.options[1].detail.ends_with("NEEDS L2"), L"says the level it needs");
+
+    // The panel names the next level's hulls.
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard,
+                              .nameUtf8 = "Shipyard",
+                              .buildable = true,
+                              .cost = 300,
+                              .levels = {{.cost = 150, .buildSeconds = 30.0, .maxHitPointsHundredths = 300000},
+                                         {.cost = 300, .buildSeconds = 60.0, .maxHitPointsHundredths = 350000}}}};
+    const std::vector<Outpost::EntityId> selected{newest.entities.front().id};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, newest.entities, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2: Medium hulls, 3,000 hit points")) != content.selection.end());
+  }
+
   // Phase 2 design §10: the production window shows a design's module after its components' initials, as the designer's
   // chips do, so that a scout reads apart from the plain design of its hull, drive and weapon.
   TEST_METHOD(NamesAModuleInTheProductionWindow)

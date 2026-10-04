@@ -11,6 +11,8 @@ constexpr Outpost::PlayerId BLUE = MatchArena::BLUE;
 constexpr Outpost::PlayerId RED = MatchArena::RED;
 constexpr Outpost::HullId SMALL{1};
 constexpr Outpost::HullId MEDIUM{2};
+constexpr Outpost::HullId LARGE{3};
+constexpr Outpost::DriveId ION{1};
 constexpr Outpost::WeaponId MASS_DRIVER{1};
 constexpr Outpost::PlanePosition YARD{.xMeters = -400.0f, .zMeters = 0.0f};
 
@@ -104,15 +106,60 @@ public:
     Assert::AreEqual(0u, viewOf(RED, second).shipsBuilt);
   }
 
+  // Phase 3 design §5, gate K1: a Shipyard builds Small hulls at level 1, Medium too at level 2, and Large too at level 3;
+  // a job above its level is refused. A Large hull also needs its research, which saving the design checks.
+  TEST_METHOD(BuildsTheHullsOfItsLevel)
+  {
+    MatchArena arena;
+    const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
+    const Outpost::StructureTuning& tuning = arena.StructureData(Outpost::StructureKind::Shipyard);
+    const Outpost::DesignComponents large{.hull = LARGE, .drive = ION, .weapon = MASS_DRIVER};
+    const std::array<Outpost::DesignId, 3> designs{
+      arena.Design(BLUE, SMALL, MASS_DRIVER), arena.Design(BLUE, MEDIUM, MASS_DRIVER),
+      arena.World().SaveDesign(BLUE, "Large", large, Outpost::DesignStatsFor(arena.TuningData(), large))};
+    Assert::AreEqual(1, Outpost::ShipyardLevelFor(arena.TuningData(), SMALL));
+    Assert::AreEqual(2, Outpost::ShipyardLevelFor(arena.TuningData(), MEDIUM));
+    Assert::AreEqual(3, Outpost::ShipyardLevelFor(arena.TuningData(), LARGE));
+
+    const Outpost::EntityId constructor = arena.World().SpawnConstructor(
+      BLUE, {.xMeters = YARD.xMeters - static_cast<float>(tuning.footprintRadiusMeters) - 25.0f, .zMeters = YARD.zMeters});
+    for (std::int32_t level = 1; level <= 3; ++level)
+    {
+      Assert::AreEqual(level, arena.Get(yard).level);
+      for (std::size_t hull = 0; hull < designs.size(); ++hull)
+      {
+        const Outpost::CommandResult result = arena.Tick({Queue(BLUE, yard, designs[hull])})[0];
+        const bool builds = std::cmp_less(hull, level);
+        Assert::IsTrue(result == (builds ? Outpost::CommandResult::Applied : Outpost::CommandResult::LevelTooLow),
+                       std::format(L"level {}, hull {}", level, hull + 1).c_str());
+      }
+      if (level == 3)
+        break;
+      // The next level, during which the jobs queued so far are built; the starting Ore pays for both levels and them.
+      Assert::IsTrue(arena.Tick({Order(BLUE, Outpost::UpgradeStructureCommand{.structure = yard, .constructors = {constructor}})})[0] ==
+                     Outpost::CommandResult::Applied);
+      for (int tick = 0; tick < 300 * 20 && arena.Get(yard).level == level; ++tick)
+        arena.Run(1);
+    }
+    const Outpost::Snapshot snapshot = arena.World().BuildSnapshot(BLUE);
+    Assert::AreEqual(2, std::ranges::find(snapshot.hulls, MEDIUM, &Outpost::HullView::id)->shipyardLevel,
+                     L"the client knows each hull's level");
+  }
+
   // Design §5: a job that cannot be paid for waits at the front of the queue until it can.
   TEST_METHOD(AJobWaitsForTheOre)
   {
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
-    const Outpost::DesignId medium = arena.Design(BLUE, MEDIUM, MASS_DRIVER);
-    const std::int32_t cost = arena.World().FindDesign(medium)->stats.cost;
-    // Spend the Ore down to less than one Medium ship, on Shipyards elsewhere.
+    // A Small ship, which a level 1 Shipyard builds (Phase 3 design §5).
+    const Outpost::DesignId small = arena.Design(BLUE, SMALL, MASS_DRIVER);
+    const std::int32_t cost = arena.World().FindDesign(small)->stats.cost;
+    // Spend the Ore down to less than one Small ship, on a rig site and Shipyards elsewhere, which the Constructor leaves
+    // unfinished as it goes from one order to the next.
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {600.0f, -600.0f});
+    (void)arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
+                                                                 .structure = Outpost::StructureKind::MiningRig,
+                                                                 .position = MatchArena::CONTESTED_ASTEROID})});
     for (int i = 0; i < 3; ++i)
     {
       (void)arena.Tick({Order(BLUE, Outpost::BuildStructureCommand{.constructors = {constructor},
@@ -121,7 +168,7 @@ public:
     }
     Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
 
-    (void)arena.Tick({Queue(BLUE, yard, medium)});
+    (void)arena.Tick({Queue(BLUE, yard, small)});
     arena.Run(40 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(size_t{0}, Warships(arena, BLUE));
     Assert::AreEqual(0, arena.World().BuildSnapshot(BLUE).entities[arena.Get(yard).id.value - 1].jobPermille, L"waiting");

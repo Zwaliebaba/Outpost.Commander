@@ -97,6 +97,13 @@ int AttackRank(const EntityView& _structure) noexcept
   return _structure.structure == StructureKind::CommandStation ? 1 : 2;
 }
 
+// The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5); 1 for a hull the snapshot does not list.
+std::int32_t ShipyardLevelFor(const Snapshot& _snapshot, Outpost::HullId _hull) noexcept
+{
+  const auto hull = std::ranges::find(_snapshot.hulls, _hull, &Outpost::HullView::id);
+  return hull != _snapshot.hulls.end() ? hull->shipyardLevel : 1;
+}
+
 const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureKind _kind) noexcept
 {
   const auto found = std::ranges::find(_snapshot.structureTypes, _kind, &Outpost::StructureTypeView::structure);
@@ -332,6 +339,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   std::vector<EntityId> idle;
   TendWork(_snapshot, idle, _orders);
   const bool structureWaiting = Build(_snapshot, idle, _orders);
+  if (!structureWaiting)
+    UpgradeShipyards(_snapshot, idle, _orders);
 
   // Constructors left over repair what is damaged, one each.
   for (const EntityView& structure : _snapshot.entities)
@@ -740,7 +749,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
                     _work.target = site->id;
                   }
                   const EntityView* target = FindEntity(_snapshot, _work.target);
-                  return target == nullptr || (IsBuilt(*target) && target->hitPointsHundredths >= target->maxHitPointsHundredths);
+                  return target == nullptr || (IsBuilt(*target) && !target->upgradePermille.has_value() &&
+                                               target->hitPointsHundredths >= target->maxHitPointsHundredths);
                 });
 
   for (const EntityView& ship : _snapshot.entities)
@@ -884,12 +894,48 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
     }
     return;
   }
+  const std::int32_t level = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
   for (const EntityView& yard : _snapshot.entities)
   {
-    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard))
+    // A Shipyard below the design's level is upgraded first (UpgradeShipyards).
+    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.level < level)
       continue;
     for (size_t jobs = yard.queue.size(); std::cmp_less(jobs, m_settings.shipyardQueueJobs); ++jobs)
       _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = yard.id, .design = design->id}));
+  }
+}
+
+// A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, by
+// the nearest idle Constructors, once the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this
+// play.
+void Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
+  const std::int32_t needed = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
+  if (type == nullptr || _idle.empty())
+    return;
+  for (const EntityView& yard : _snapshot.entities)
+  {
+    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.upgradePermille.has_value() ||
+        yard.level >= needed || std::cmp_greater_equal(yard.level - 1, type->levels.size()) ||
+        std::ranges::any_of(m_work, [&yard](const Work& _work) { return _work.target == yard.id; }))
+      continue;
+    if (_snapshot.ore < type->levels[static_cast<size_t>(yard.level - 1)].cost)
+      return;
+    std::ranges::sort(_idle,
+                      [&](EntityId _a, EntityId _b)
+                      {
+                        const float a = Distance(FindEntity(_snapshot, _a)->position, yard.position);
+                        const float b = Distance(FindEntity(_snapshot, _b)->position, yard.position);
+                        return a != b ? a < b : _a < _b;
+                      });
+    const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_BUILD, _idle.size()));
+    Work work{
+      .constructors = {_idle.begin(), _idle.begin() + crew}, .target = yard.id, .slot = std::nullopt, .orderedTick = _snapshot.tick};
+    _idle.erase(_idle.begin(), _idle.begin() + crew);
+    _orders.push_back(MakeCommand(m_player, UpgradeStructureCommand{.structure = yard.id, .constructors = work.constructors}));
+    m_work.push_back(std::move(work));
+    return;
   }
 }
 

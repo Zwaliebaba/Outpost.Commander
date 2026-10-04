@@ -204,6 +204,8 @@ enum class CommandResult : std::uint8_t
   AlreadyUpgrading,
   // An upgrade names a structure at its kind's highest level, which for a kind that does not grow is its first.
   TopLevel,
+  // A Shipyard's job names a hull above its level (Phase 3 design §5).
+  LevelTooLow,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };

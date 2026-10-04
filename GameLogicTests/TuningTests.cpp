@@ -313,7 +313,16 @@ public:
       if (structure.structureWeapon.IsValid())
         fields.push_back({"structureWeapon", Number(structure.structureWeapon.value)});
       const std::string path = std::format("structures[{}]", i);
-      size_t elsewhere = 0;
+      // A list of hulls, or none, as the file holds it.
+      const auto expectHulls = [](const Neuron::JsonValue& _json, const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
+      {
+        const Neuron::JsonValue* member = _json.Find("hulls");
+        Assert::AreEqual(member != nullptr ? member->AsArray().size() : size_t{0}, _hulls.size(), Widen(_path).c_str());
+        for (size_t j = 0; j < _hulls.size(); ++j)
+          Assert::IsTrue(member->AsArray()[j].AsNumber() == Number(_hulls[j].value), Widen(_path).c_str());
+        return member != nullptr ? size_t{1} : size_t{0};
+      };
+      size_t elsewhere = expectHulls(structures[i], structure.hulls, path + ".hulls");
       if (!structure.levels.empty())
       {
         ++elsewhere;
@@ -321,9 +330,10 @@ public:
         Assert::AreEqual(levels.size(), structure.levels.size(), Widen(path).c_str());
         for (size_t j = 0; j < levels.size(); ++j)
         {
+          const std::string levelPath = std::format("{}.levels[{}]", path, j);
           ExpectSame(levels[j],
                      {{"cost", Number(structure.levels[j].cost)}, {"buildConstructorSeconds", structure.levels[j].buildConstructorSeconds}},
-                     std::format("{}.levels[{}]", path, j));
+                     levelPath, expectHulls(levels[j], structure.levels[j].hulls, levelPath + ".hulls"));
         }
       }
       ExpectSame(structures[i], fields, path, elsewhere);
@@ -462,6 +472,18 @@ public:
               "{ \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
               "{ \"cost\": 1, \"buildConstructorSeconds\": 1 } ]"),
       "structures[1].levels");
+    // A Shipyard's hulls (Phase 3 design §5): only a Shipyard names them, each hull exists, and none is named twice.
+    (void)Outpost::LoadTuning(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                                      "\"hulls\": [], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"));
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"hulls\": [1], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"),
+                    "structures[1].levels[0].hulls[0]");
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"hulls\": [2], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]"),
+                    "structures[1].hulls[0]");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30 }",
+                            "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30, \"hulls\": [1] }"),
+                    "structures[2].hulls");
     // A kind the owner gave no levels to (Phase 3 design §11).
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
                             "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),

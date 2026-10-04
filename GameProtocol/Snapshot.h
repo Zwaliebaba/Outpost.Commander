@@ -128,6 +128,8 @@ struct HullView
   double buildSeconds = 0.0;
   // False until research unlocks it.
   bool available = false;
+  // The level a Shipyard must be at to build it (Phase 3 design §5).
+  std::int32_t shipyardLevel = 1;
 };
 
 struct DriveView

@@ -45,9 +45,10 @@
         { "cost": 900, "buildConstructorSeconds": 90 }
       ] },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300, "buildConstructorSeconds": 40,
+      "hulls": [1],
       "levels": [
-        { "cost": 150, "buildConstructorSeconds": 30 },
-        { "cost": 300, "buildConstructorSeconds": 60 }
+        { "cost": 150, "buildConstructorSeconds": 30, "hulls": [2] },
+        { "cost": 300, "buildConstructorSeconds": 60, "hulls": [3] }
       ] },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200, "buildConstructorSeconds": 30,
       "levels": [

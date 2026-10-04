@@ -490,15 +490,21 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   const std::int32_t cost = match != nullptr ? match->cost : stats.has_value() ? stats->cost : 0;
   panel.queueCost = cost * static_cast<std::int32_t>(panel.count);
   panel.queueDetail = stats.has_value() ? std::format("{} s each", Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)) : "";
+  // A Shipyard builds the hulls of its level (Phase 3 design §5): above it, Queue is dim and says the level the hull needs.
+  // The design is still saved.
+  const auto pickedHull = std::ranges::find(_newest.hulls, picked.hull, &Outpost::HullView::id);
+  const bool leveled = target == nullptr || pickedHull == _newest.hulls.end() || target->level >= pickedHull->shipyardLevel;
+  if (!leveled)
+    panel.queueDetail = std::format("Needs Shipyard L{}", pickedHull->shipyardLevel);
   const Outpost::EntityId producer = target != nullptr ? target->id : Outpost::EntityId{};
   if (match != nullptr)
     panel.queue = {.label = "QUEUE",
                    .action = {.kind = Hud::ActionKind::Queue, .producer = producer, .design = match->id, .count = panel.count},
-                   .enabled = free > 0 && _newest.ore >= cost};
+                   .enabled = leveled && free > 0 && _newest.ore >= cost};
   else
     panel.queue = {.label = "QUEUE",
                    .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = producer, .count = panel.count},
-                   .enabled = savesNew && free > 0 && stats.has_value() && _newest.ore >= cost};
+                   .enabled = leveled && savesNew && free > 0 && stats.has_value() && _newest.ore >= cost};
   return panel;
 }
 
@@ -1696,8 +1702,20 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         {
           const StructureLevelView& level = type->levels[next];
           const bool upgrading = structure->upgradePermille.has_value();
+          // A Shipyard's next level names the hulls it adds (Phase 3 design §5).
+          std::string gives;
+          if (structure->structure == StructureKind::Shipyard)
+          {
+            for (const HullView& hull : _newest.hulls)
+            {
+              if (hull.shipyardLevel == structure->level + 1)
+                gives += std::format("{}{}", gives.empty() ? "" : " and ", hull.nameUtf8);
+            }
+            if (!gives.empty())
+              gives += " hulls, ";
+          }
           content.selection.push_back(
-            std::format("L{}: {} hit points", structure->level + 1, WithThousands(WholePoints(level.maxHitPointsHundredths))));
+            std::format("L{}: {}{} hit points", structure->level + 1, gives, WithThousands(WholePoints(level.maxHitPointsHundredths))));
           content.buttons.push_back(
             {.label = std::format("Upgrade to L{}{}{}|{}", structure->level + 1, DOT,
                                   MinutesAndSeconds(static_cast<std::uint64_t>(std::llround(level.buildSeconds))), level.cost),
@@ -1818,11 +1836,16 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
   panel.options.reserve(_newest.designs.size());
   for (const DesignView& design : _newest.designs)
   {
-    panel.options.push_back({.name = design.nameUtf8,
-                             .detail = DesignCodeOf(_newest, design),
-                             .cost = design.cost,
-                             .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
-                             .enabled = room && _newest.ore >= design.cost});
+    // A design whose hull is above the Shipyard's level is dim, and says the level it needs (Phase 3 design §5).
+    const auto hull = std::ranges::find(_newest.hulls, design.hull, &HullView::id);
+    const std::int32_t level = hull != _newest.hulls.end() ? hull->shipyardLevel : 1;
+    const bool leveled = _producer->level >= level;
+    panel.options.push_back(
+      {.name = design.nameUtf8,
+       .detail = leveled ? DesignCodeOf(_newest, design) : std::format("{}{}NEEDS L{}", DesignCodeOf(_newest, design), DOT, level),
+       .cost = design.cost,
+       .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
+       .enabled = leveled && room && _newest.ore >= design.cost});
   }
   if (panel.options.empty())
     panel.hint = "Save a design in the ship designer to build it here.";

@@ -150,9 +150,9 @@ template <typename Self>
 auto Fields(Self& _value)
 {
   auto& [id, nameUtf8, hitPointsHundredths, armorHundredths, speedMetersPerSecond, turnRateDegreesPerSecond, footprintRadiusMeters, cost,
-         buildSeconds, available] = _value;
+         buildSeconds, available, shipyardLevel] = _value;
   return std::tie(id, nameUtf8, hitPointsHundredths, armorHundredths, speedMetersPerSecond, turnRateDegreesPerSecond, footprintRadiusMeters,
-                  cost, buildSeconds, available);
+                  cost, buildSeconds, available, shipyardLevel);
 }
 
 template <typename Self>

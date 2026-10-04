@@ -797,7 +797,9 @@ public:
                                  .structure = Outpost::StructureKind::Shipyard,
                                  .position = {home.xMeters + 150.0f, home.zMeters + 150.0f},
                                  .radiusMeters = 40.0f,
-                                 .builtPermille = Outpost::PERMILLE});
+                                 .builtPermille = Outpost::PERMILLE,
+                                 // At its top level, so that it builds whatever hull the AI chose (Phase 3 design §5).
+                                 .level = 3});
     snapshot.tick += 20;
     const std::vector<Outpost::QueueShipCommand> queued = OrdersOf<Outpost::QueueShipCommand>(ai.Update(snapshot));
     Assert::IsFalse(queued.empty(), L"its Shipyard was given no work");
