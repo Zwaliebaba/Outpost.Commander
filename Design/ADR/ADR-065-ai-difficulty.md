@@ -16,7 +16,7 @@ The owner, playing the AI of Phase 3's milestone 24, found it too strong to beat
 
 ## Consequences
 
-- **What Easy and Hard do is measured only against Normal**, AI against AI, on seeds 1 to 20, each with the difficulty in seat 1 for seeds 1 to 10 and seat 2 for 11 to 20: FIGURES. What they do against a human is the owner's run.
+- **What Easy and Hard do is measured only against Normal**, AI against AI, on seeds 1 to 20, each with the difficulty in seat 1 for seeds 1 to 10 and seat 2 for 11 to 20. The first run of those is under way, and its figures come here when it ends. What they do against a human is the owner's run.
 - **Normal's tuning (Phase 3 plan task 25.2) moves Normal, and Easy and Hard with it only where they share a number.** A number tuned in `Opponent.json` is left in the other two as it is until it is tuned there.
 - **`AiSettingsTests.LoadsEachDifficulty`** loads all three files and checks that Easy and Hard lie either side of Normal on each number this ADR names. `HudTests.LaysOutTheMenu` checks the menu's four buttons and the difficulty each carries.
 - **Neither file is packaged unchecked:** each is in the executable's project and filters as content, as `Opponent.json` is.
