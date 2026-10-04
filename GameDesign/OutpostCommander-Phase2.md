@@ -39,7 +39,7 @@ These play the part of Phase 1's P1–P5. A failed answer is still a result. Eac
 - **S1, contact: answered for two AIs.** All 10 of seeds 1–10 have a shot by minute 5, and all 40 of seeds 1–40.
 - **S2, skirmishes: answered for two AIs.** Before minute 20, seeds 1–10 have a median of 16.5 engagements in 6 sectors, and every one of the 40 has at least five in three sectors.
 - **S3, territory decides: yes.** Of seeds 1–10, 6 end by domination and 4 by production; of seeds 1–40, 27 and 13.
-- **S4, the length: met over seeds 1–40, 10 seconds short over seeds 1–10.** Seeds 1–40 end at a median of 47:55, 25 of them within 45–60 minutes, every one ended (ADR-041). Seeds 1–10 alone give 44:50. Phase 1's P1 was measured over seeds 1–40 (ADR-041), and with S4 asking for the same, 19.2 tuned against the 40 rather than the ten. It took the AI's fall-back from 30% losses and 120 s to 10% and 240 s, its own settings: with territory's play at its starting values two AIs ended a match in a median of 20:23.
+- **S4, the length: met over seeds 1–40, 10 seconds short over seeds 1–10.** Seeds 1–40 end at a median of 47:55, 25 of them within 45–60 minutes, every one ended (ADR-041). Seeds 1–10 alone give 44:50. Phase 1's P1 was measured over seeds 1–40 (ADR-041), and with S4 asking for the same, 19.2 tuned against the 40 rather than the ten. It took the AI's fall-back from 30% losses and 120 s to 10% and 240 s, its own settings, and the owner kept the 240 s on 2026-10-04: with territory's play at its starting values two AIs ended a match in a median of 20:23.
 - **S5, one commander: not answered.** It is the owner's judgement in play.
 
 ---

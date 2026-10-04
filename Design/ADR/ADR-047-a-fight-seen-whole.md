@@ -42,7 +42,7 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
    - On a 1,920-pixel-wide screen, the least size first applies past a 960 m view. At the default 500 m view, nothing changes. At the widest 1,600 m view, a Small hull's bar goes from about 19 × 3 pixels to 32 × 5.
    - **The window ignores the keyboard's menu key.** Alt pressed and released alone would open the window's menu and hold the frame loop in the menu's own loop until it closed, so the window swallows `SC_KEYMENU`. Alt+F4 and Alt+Enter still work.
 5. **An income of nothing is written in the HUD's warning color**, the salmon of a designer name the server would refuse. Any income above nothing stays in the figures' blue.
-6. **The AI's regroup after a fall-back is [ADR-041](ADR-041-ai-plays-a-longer-match.md) decision 2's** (`regroupSeconds` in `Opponent.json`), 240 seconds since Phase 2's tuning with territory. On Phase 1's map with lanes it was 120 seconds, not 150: two AIs' matches had grown longer than the owner's 45–60 minutes, and the owner chose 120 on 2026-10-03 from the settings measured below.
+6. **The AI's regroup after a fall-back is [ADR-041](ADR-041-ai-plays-a-longer-match.md) decision 2's** (`regroupSeconds` in `Opponent.json`), 240 seconds since Phase 2's tuning with territory, which the owner kept on 2026-10-04. On Phase 1's map with lanes it was 120 seconds, not 150: two AIs' matches had grown longer than the owner's 45–60 minutes, and the owner chose 120 on 2026-10-03 from the settings measured below.
 
 ## Consequences
 
