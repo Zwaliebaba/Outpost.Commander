@@ -45,6 +45,34 @@ public:
 
   [[nodiscard]] static std::vector<Neuron::SpriteDesc> Sprites();
 
+  // How wide the interface's text is set, as the atlas it is drawn from sets it (ADR-056): the fonts Typefaces names, in
+  // its order, rasterized for a back buffer at _scale pixels to a reference unit. The layout measures every line it places
+  // with it, so that a line is cut short, wrapped or given room by what it takes on the screen. It reads the fonts where
+  // they are, so they must outlive it.
+  class TextMetrics
+  {
+  public:
+    TextMetrics(std::span<const Neuron::GlyphAtlas::Font> _fonts, float _scale) noexcept
+      : m_fonts(_fonts),
+        m_scale(_scale)
+    {
+    }
+
+    // How wide _text is set in _face, with _trackingUnits more between each two characters, in reference units, as
+    // Neuron::UiPipeline::DrawText sets it: each character at its whole-pixel advance, and the tracking at a whole pixel.
+    [[nodiscard]] float Width(Typeface _face, std::string_view _text, float _trackingUnits = 0.0f) const noexcept;
+
+    // _text as _face sets it within _widthUnits: whole when it fits, and otherwise cut short with three dots.
+    [[nodiscard]] std::string Fit(Typeface _face, std::string_view _text, float _widthUnits, float _trackingUnits = 0.0f) const;
+
+    // _text broken between its words into lines that _face sets within _widthUnits; a word wider than that is cut short.
+    [[nodiscard]] std::vector<std::string> Wrap(Typeface _face, std::string_view _text, float _widthUnits) const;
+
+  private:
+    std::span<const Neuron::GlyphAtlas::Font> m_fonts;
+    float m_scale = 1.0f;
+  };
+
   // What a button does when it is pressed.
   enum class ActionKind : std::uint8_t
   {
@@ -267,15 +295,15 @@ public:
   };
 
   // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost,
-  // its tier and time, whether it is the gateway that opens its tier (Phase 1 design §6), and while a prerequisite is
-  // neither researched nor queued, the line naming it; such a topic is dim.
+  // its tier and time, whether it is the gateway that opens its tier (Phase 1 design §6), and the name, in capitals, of
+  // each prerequisite neither researched nor queued; a topic with any is dim.
   struct TopicCard
   {
     std::string name;
     std::string effect;
     std::int32_t cost = 0;
     std::string time;
-    std::string needs;
+    std::vector<std::string> needs;
     Action action;
     bool enabled = true;
     std::int32_t tier = 1;
@@ -492,16 +520,17 @@ public:
   // How the match in _newest ended for its player, the length counted at _ticksPerSecond; nothing while it runs.
   [[nodiscard]] static std::optional<Outcome> DescribeOutcome(const Snapshot& _newest, std::uint32_t _ticksPerSecond);
 
-  // The main menu on a back buffer of this size: the game's name, and buttons to start a skirmish against the AI and to
-  // quit (task 6.2).
-  [[nodiscard]] static Layout LayMenu(std::uint32_t _widthPixels, std::uint32_t _heightPixels);
+  // The main menu on a back buffer of this size, its text measured with _metrics: the game's name, and buttons to start a
+  // skirmish against the AI and to quit (task 6.2).
+  [[nodiscard]] static Layout LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels);
 
-  // Where everything goes on a back buffer of this size. _view is the ground the camera shows, its corners in order,
-  // outlined on the minimap; empty when the camera sees past the horizon. The floating windows (ADR-031) are those
-  // _windows has open, in its order and where it left them; without a manager, every window the content has, at its
-  // default place.
-  [[nodiscard]] static Layout Lay(const Content& _content, std::uint32_t _widthPixels, std::uint32_t _heightPixels,
-                                  std::span<const PlanePosition> _view = {}, const WindowManager* _windows = nullptr);
+  // Where everything goes on a back buffer of this size, its text measured with _metrics, which are the fonts at this
+  // size's scale. _view is the ground the camera shows, its corners in order, outlined on the minimap; empty when the
+  // camera sees past the horizon. The floating windows (ADR-031) are those _windows has open, in its order and where it
+  // left them; without a manager, every window the content has, at its default place.
+  [[nodiscard]] static Layout Lay(const Content& _content, const TextMetrics& _metrics, std::uint32_t _widthPixels,
+                                  std::uint32_t _heightPixels, std::span<const PlanePosition> _view = {},
+                                  const WindowManager* _windows = nullptr);
 
   // Where a window _widthUnits wide may stand with its top-left corner at _corner on a screen of this size, in reference
   // units: moved only as far as keeps its title bar on the screen, and WINDOW_KEPT_ON_SCREEN_UNITS of its width.
