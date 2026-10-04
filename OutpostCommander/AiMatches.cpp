@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <charconv>
+#include <fstream>
+#include <iterator>
+#include <limits>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -11,17 +15,65 @@
 namespace
 {
 constexpr std::uint32_t SECONDS_PER_MINUTE = 60;
+// The log when the options name none: in the temporary folder, replaced by each run (ADR-038).
+constexpr auto DEFAULT_LOG = L"OutpostCommander-ai-matches.log";
+// The switch's options (ADR-063). Each takes a value.
+constexpr std::wstring_view FIRST_SEED_OPTION = L"--first-seed";
+constexpr std::wstring_view MATCHES_OPTION = L"--matches";
+constexpr std::wstring_view LIMIT_MINUTES_OPTION = L"--limit-minutes";
+constexpr std::wstring_view AI1_OPTION = L"--ai1";
+constexpr std::wstring_view AI2_OPTION = L"--ai2";
+constexpr std::wstring_view LOG_OPTION = L"--log";
+constexpr std::array<std::wstring_view, 6> OPTIONS{FIRST_SEED_OPTION, MATCHES_OPTION, LIMIT_MINUTES_OPTION,
+                                                   AI1_OPTION,        AI2_OPTION,     LOG_OPTION};
 
-// Plays one match until it ends or _limitTicks have run, both players the AI, and logs both players' snapshots. Returns
-// whether it ended.
-bool PlayOne(Outpost::Server& _server, const Outpost::AiSettings& _settings, std::uint64_t _seed, std::uint64_t _limitTicks,
+// A whole number at least _minimum and at most _maximum, written in decimal digits and nothing else.
+std::uint64_t ReadNumber(std::wstring_view _option, std::wstring_view _value, std::uint64_t _minimum, std::uint64_t _maximum)
+{
+  // Every digit is ASCII, so narrowing them one by one is exact; anything else is refused below.
+  std::string digits;
+  for (const wchar_t character : _value)
+    digits.push_back(character >= L'0' && character <= L'9' ? static_cast<char>(character) : '?');
+  std::uint64_t number = 0;
+  const auto [end, error] = std::from_chars(digits.data(), digits.data() + digits.size(), number);
+  if (digits.empty() || error != std::errc{} || end != digits.data() + digits.size() || number < _minimum || number > _maximum)
+  {
+    throw Neuron::Exception(std::format("--ai-matches: {} takes a whole number from {} to {}, not '{}'.", winrt::to_string(_option),
+                                        _minimum, _maximum, winrt::to_string(_value)));
+  }
+  return number;
+}
+
+// Reads an AI's settings from a file in Opponent.json's format, as LoadPackagedAiSettings reads the packaged one.
+Outpost::AiSettings LoadAiSettingsFile(const std::filesystem::path& _path)
+{
+  const std::string name = winrt::to_string(_path.wstring());
+  std::ifstream file(_path, std::ios::binary);
+  if (!file)
+    throw Neuron::Exception(std::format("The AI settings file {} is missing or cannot be read.", name));
+  const std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+  if (file.bad())
+    throw Neuron::Exception(std::format("The AI settings file {} cannot be read.", name));
+  try
+  {
+    return Outpost::LoadAiSettings(text);
+  }
+  catch (const Neuron::Exception& error)
+  {
+    throw Neuron::Exception(std::format("{}: {}", name, error.what()));
+  }
+}
+
+// Plays one match until it ends or _limitTicks have run, both players an AI, player 1 of _settings[0] and player 2 of
+// _settings[1], and logs both players' snapshots. Returns whether it ended.
+bool PlayOne(Outpost::Server& _server, const std::array<Outpost::AiSettings, 2>& _settings, std::uint64_t _seed, std::uint64_t _limitTicks,
              std::ostream& _log)
 {
   // Both are made in place: an AiPlayer is never moved, since moving its maps may allocate.
   const std::uint32_t ticksPerSecond = _server.TicksPerSecond();
   const std::array<std::unique_ptr<Outpost::Transport>, 2> connections{_server.Connect(Outpost::PlayerId{1}),
                                                                        _server.Connect(Outpost::PlayerId{2})};
-  std::array<Outpost::AiPlayer, 2> ais{Outpost::AiPlayer(_settings, ticksPerSecond), Outpost::AiPlayer(_settings, ticksPerSecond)};
+  std::array<Outpost::AiPlayer, 2> ais{Outpost::AiPlayer(_settings[0], ticksPerSecond), Outpost::AiPlayer(_settings[1], ticksPerSecond)};
 
   Outpost::MatchLog log(_log, _seed, ticksPerSecond);
   bool ended = false;
@@ -47,10 +99,62 @@ bool PlayOne(Outpost::Server& _server, const Outpost::AiSettings& _settings, std
 }
 } // namespace
 
+Outpost::AiMatchesOptions Outpost::ReadAiMatchesOptions(std::span<const std::wstring> _arguments)
+{
+  AiMatchesOptions options;
+  std::vector<std::wstring_view> given;
+  for (size_t i = 0; i < _arguments.size(); i += 2)
+  {
+    const std::wstring_view option = _arguments[i];
+    if (std::ranges::find(OPTIONS, option) == OPTIONS.end())
+      throw Neuron::Exception(std::format("--ai-matches: {} is not an option it takes.", winrt::to_string(option)));
+    if (std::ranges::find(given, option) != given.end())
+      throw Neuron::Exception(std::format("--ai-matches: {} is given twice.", winrt::to_string(option)));
+    given.push_back(option);
+    // The value follows its option, and is neither empty nor another option.
+    if (i + 1 == _arguments.size() || _arguments[i + 1].empty() || _arguments[i + 1].starts_with(L"--"))
+      throw Neuron::Exception(std::format("--ai-matches: {} needs a value.", winrt::to_string(option)));
+    const std::wstring_view value = _arguments[i + 1];
+    if (option == FIRST_SEED_OPTION)
+      options.desc.firstSeed = ReadNumber(option, value, 0, std::numeric_limits<std::uint64_t>::max());
+    else if (option == MATCHES_OPTION)
+      options.desc.matches = static_cast<std::uint32_t>(ReadNumber(option, value, 1, std::numeric_limits<std::uint32_t>::max()));
+    else if (option == LIMIT_MINUTES_OPTION)
+      options.desc.limitMinutes = static_cast<std::uint32_t>(ReadNumber(option, value, 1, std::numeric_limits<std::uint32_t>::max()));
+    else if (option == AI1_OPTION)
+      options.settings[0] = value;
+    else if (option == AI2_OPTION)
+      options.settings[1] = value;
+    else if (option == LOG_OPTION)
+      options.log = value;
+  }
+  if (options.log.empty())
+    options.log = std::filesystem::temp_directory_path() / DEFAULT_LOG;
+  return options;
+}
+
+std::uint32_t Outpost::PlayAiMatches(const AiMatchesOptions& _options)
+{
+  std::array<AiSettings, 2> settings;
+  for (size_t player = 0; player < settings.size(); ++player)
+  {
+    const std::filesystem::path& path = _options.settings[player];
+    settings[player] = path.empty() ? LoadPackagedAiSettings() : LoadAiSettingsFile(path);
+  }
+  const std::string name = winrt::to_string(_options.log.wstring());
+  std::ofstream log(_options.log, std::ios::trunc);
+  if (!log)
+    throw Neuron::Exception(std::format("The log {} cannot be written.", name));
+  const std::uint32_t ended = PlayAiMatches(log, settings, _options.desc);
+  if (!log)
+    throw Neuron::Exception(std::format("The log {} could not be written in full.", name));
+  return ended;
+}
+
 // The game data is read from the package and checked once, before any match starts. The matches then play on as many
 // threads as the machine has, each on a server of its own made from a copy of that data by the thread that plays it, and
 // each into a log of its own; the logs are written out in seed order.
-std::uint32_t Outpost::PlayAiMatches(std::ostream& _log, const AiSettings& _settings, const AiMatchesDesc& _desc)
+std::uint32_t Outpost::PlayAiMatches(std::ostream& _log, const std::array<AiSettings, 2>& _settings, const AiMatchesDesc& _desc)
 {
   const ServerFactory createServer = InProcessServerFactory();
 
