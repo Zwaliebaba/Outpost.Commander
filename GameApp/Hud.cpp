@@ -171,6 +171,23 @@ constexpr std::size_t CHIPS_SHOWN = 3;
 constexpr float GOOD_SHARE = 2.0f / 3.0f;
 constexpr float FAIR_SHARE = 1.0f / 3.0f;
 
+// A design's code, its components' initials joined by middle dots, "S·I·MD", with its module's after them when it has
+// one, "S·I·MD·SA" (Phase 1 design §5, Phase 2 design §10). The designer's chips and the production window both show it.
+std::string DesignCodeOf(const Outpost::Snapshot& _newest, const Outpost::DesignView& _design)
+{
+  const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
+  {
+    const auto view = std::ranges::find(_views, _id, &View::id);
+    return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
+  };
+  const std::string_view dot = DOT.substr(1, 2);
+  std::string code = std::format("{}{}{}{}{}", initials(_newest.hulls, _design.hull), dot, initials(_newest.drives, _design.drive), dot,
+                                 initials(_newest.weapons, _design.weapon));
+  if (_design.module.IsValid())
+    code += std::format("{}{}", dot, initials(_newest.modules, _design.module));
+  return code;
+}
+
 std::string Capitals(std::string_view _text)
 {
   std::string capitals(_text);
@@ -278,20 +295,10 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   panel.chips.reserve(_newest.designs.size());
   for (const Outpost::DesignView& design : _newest.designs)
   {
-    const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
-    {
-      const auto view = std::ranges::find(_views, _id, &View::id);
-      return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
-    };
-    // A design's module joins its initials when it has one (Phase 2 design §10).
-    const std::string module =
-      design.module.IsValid() ? std::format("{}{}", DOT.substr(1, 2), initials(_newest.modules, design.module)) : std::string();
-    panel.chips.push_back(
-      {.name = design.nameUtf8,
-       .code = std::format("{}{}{}{}{}{}", initials(_newest.hulls, design.hull), DOT.substr(1, 2), initials(_newest.drives, design.drive),
-                           DOT.substr(1, 2), initials(_newest.weapons, design.weapon), module),
-       .shown = match != nullptr && match->id == design.id,
-       .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
+    panel.chips.push_back({.name = design.nameUtf8,
+                           .code = DesignCodeOf(_newest, design),
+                           .shown = match != nullptr && match->id == design.id,
+                           .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
   }
   panel.firstChip = std::min(_designer.FirstChip(), panel.chips.empty() ? 0 : panel.chips.size() - 1);
 
@@ -1616,22 +1623,14 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
                              .enabled = room && _newest.ore >= _newest.constructorCost});
     return panel;
   }
-  const auto abbreviationOf = []<typename View>(const std::vector<View>& _views, auto _id)
-  {
-    const auto view = std::ranges::find(_views, _id, &View::id);
-    return view != _views.end() ? Abbreviation(view->nameUtf8) : std::string("?");
-  };
-  const std::string_view dot = DOT.substr(1, 2);
   panel.options.reserve(_newest.designs.size());
   for (const DesignView& design : _newest.designs)
   {
-    panel.options.push_back(
-      {.name = design.nameUtf8,
-       .detail = std::format("{}{}{}{}{}", abbreviationOf(_newest.hulls, design.hull), dot, abbreviationOf(_newest.drives, design.drive),
-                             dot, abbreviationOf(_newest.weapons, design.weapon)),
-       .cost = design.cost,
-       .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
-       .enabled = room && _newest.ore >= design.cost});
+    panel.options.push_back({.name = design.nameUtf8,
+                             .detail = DesignCodeOf(_newest, design),
+                             .cost = design.cost,
+                             .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
+                             .enabled = room && _newest.ore >= design.cost});
   }
   if (panel.options.empty())
     panel.hint = "Save a design in the ship designer to build it here.";
