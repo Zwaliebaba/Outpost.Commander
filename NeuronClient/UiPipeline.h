@@ -37,6 +37,10 @@ public:
   // resize, not to every frame.
   void Begin(UINT _widthPixels, UINT _heightPixels, float _scale);
 
+  // Rasterizes the atlas again when _scale moves a font or a sprite by a whole pixel, as Begin does, so that text can be
+  // measured at a new size before the frame that draws it. It waits for the GPU when it rasterizes.
+  void UseScale(float _scale);
+
   void FillRect(float _left, float _top, float _width, float _height, const DirectX::XMFLOAT4& _color);
 
   // A rectangle of diagonal stripes rising to the right, _stripePixels wide every _periodPixels, laid on the screen's
@@ -65,6 +69,12 @@ public:
   [[nodiscard]] float TextWidth(std::size_t _font, std::string_view _text, float _trackingPixels = 0.0f) const noexcept
   {
     return m_atlas.fonts[_font].Width(_text, _trackingPixels);
+  }
+
+  // Every font of the atlas, in the order the pipeline was built with, as DrawText sets them.
+  [[nodiscard]] std::span<const GlyphAtlas::Font> Fonts() const noexcept
+  {
+    return m_atlas.fonts;
   }
 
   [[nodiscard]] float LineHeight(std::size_t _font) const noexcept

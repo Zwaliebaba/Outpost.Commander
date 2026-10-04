@@ -200,10 +200,15 @@ void Neuron::UiPipeline::UseAtlas(UiAtlas _atlas)
   m_renderer.Device()->CreateShaderResourceView(m_atlasTexture.get(), &view, m_renderer.ShaderViewCpu(m_atlasView));
 }
 
-void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
+void Neuron::UiPipeline::UseScale(float _scale)
 {
   if (!IsRasterizedAt(_scale))
     UseAtlas(RasterizeUiAtlas(m_fonts, m_sprites, _scale));
+}
+
+void Neuron::UiPipeline::Begin(UINT _widthPixels, UINT _heightPixels, float _scale)
+{
+  UseScale(_scale);
   m_widthPixels = static_cast<float>(_widthPixels);
   m_heightPixels = static_cast<float>(_heightPixels);
   m_frameVertices.clear();
