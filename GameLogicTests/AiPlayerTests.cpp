@@ -832,13 +832,14 @@ public:
       Outpost::AiSettings settings = AttackSettings();
       settings.attackLevelMeters = _levelMeters;
       Outpost::AiPlayer ai(settings, 20);
+      std::optional<Outpost::PlanePosition> destination;
       for (const Outpost::AttackMoveCommand& order : OrdersOf<Outpost::AttackMoveCommand>(ai.Update(snapshot)))
       {
         if (std::ranges::is_permutation(order.ships, group))
-          return order.destination;
+          destination = order.destination;
       }
-      Assert::Fail(L"the twelve were not sent");
-      return Outpost::PlanePosition{};
+      Assert::IsTrue(destination.has_value(), L"the twelve were not sent");
+      return destination.value_or(Outpost::PlanePosition{});
     };
     Assert::AreEqual(0.0f, Outpost::Distance(target(500.0), {-300.0f, -400.0f}), 0.01f, L"the level 3 Shipyard first");
     Assert::AreEqual(0.0f, Outpost::Distance(target(0.0), {300.0f, 300.0f}), 0.01f, L"the nearest, without the levels counted");
