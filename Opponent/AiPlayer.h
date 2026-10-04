@@ -137,7 +137,7 @@ private:
   // Its Command Station, when it can be upgraded now; nullptr otherwise. Build upgrades it in place of a Relay its cap holds
   // back (§7).
   [[nodiscard]] const EntityView* UpgradableStation(const Snapshot& _snapshot) const;
-  // Sends the nearest idle Constructors, two at most, to upgrade _structure by a level.
+  // Sends the nearest idle Constructor to upgrade _structure by a level.
   void OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle, std::vector<Command>& _orders);
   void CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders);
 

@@ -13,6 +13,8 @@ using Outpost::StructureKind;
 
 // A build order takes at most this many idle Constructors, and leaves the rest for the next order.
 constexpr size_t CONSTRUCTORS_PER_BUILD = 2;
+// An upgrade takes one: a further Constructor builds a level no faster (owner, 2026-10-04).
+constexpr size_t CONSTRUCTORS_PER_UPGRADE = 1;
 // How long the AI waits to see a site it ordered before it takes the order as refused: the server says nothing of a
 // refusal (ADR-002), but a site it places is in the next snapshot.
 constexpr std::uint64_t SITE_WAIT_SECONDS = 3;
@@ -939,7 +941,7 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
 }
 
 // A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, by
-// the nearest idle Constructors, once the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this
+// the nearest idle Constructor, once the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this
 // play.
 bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
 {
@@ -1024,7 +1026,7 @@ void Outpost::AiPlayer::OrderUpgrade(const Snapshot& _snapshot, const EntityView
                       const float b = Distance(FindEntity(_snapshot, _b)->position, _structure.position);
                       return a != b ? a < b : _a < _b;
                     });
-  const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_BUILD, _idle.size()));
+  const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_UPGRADE, _idle.size()));
   Work work{
     .constructors = {_idle.begin(), _idle.begin() + crew}, .target = _structure.id, .slot = std::nullopt, .orderedTick = _snapshot.tick};
   _idle.erase(_idle.begin(), _idle.begin() + crew);

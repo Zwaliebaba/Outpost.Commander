@@ -2056,10 +2056,10 @@ void Outpost::Simulation::ApproachWork()
 
 // Constructors in reach of their target build it while it is under construction, build its next level while it is being
 // upgraded, and repair it once neither is left (design §6, gate G8, Phase 3 design §4). Building: one Constructor does a
-// tick's work each tick, and each further one adds the tuning data's share of one more; a site's hit points rise with its
-// progress from a tenth to full, and a level's land whole when it is in, the structure keeping its share of them. Repair:
-// each Constructor restores the tuning data's percentage of the target's maximum each second, for nothing. A finished job
-// ends the order.
+// tick's work each tick, and each further one adds the tuning data's share of one more, a site's or a level's; a site's hit
+// points rise with its progress from a tenth to full, and a level's land whole when it is in, the structure keeping its
+// share of them. Repair: each Constructor restores the tuning data's percentage of the target's maximum each second, for
+// nothing. A finished job ends the order.
 void Outpost::Simulation::Work()
 {
   std::vector<std::pair<EntityId, std::int32_t>> crews;
@@ -2081,10 +2081,12 @@ void Outpost::Simulation::Work()
   for (const auto& [id, constructors] : crews)
   {
     Entity& target = *FindMutableEntity(id);
-    // A player's Constructors build and repair only its own, so the target's owner's research sets their rate.
+    // A player's Constructors build and repair only its own, so the target's owner's research sets their rate. A crew
+    // shares a level's work at a rate of its own (owner, 2026-10-04).
     const double rate = EffectsOf(target.owner).upgrades.constructorRateFactor;
-    const auto work = static_cast<std::int32_t>(
-      std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1))) * rate));
+    const double share = target.IsBuilt() && target.IsUpgrading() ? tuning.extraConstructorUpgradeShare : tuning.extraConstructorBuildShare;
+    const auto work =
+      static_cast<std::int32_t>(std::llround(MILLITICKS_PER_TICK * (1.0 + (share * static_cast<double>(constructors - 1))) * rate));
     if (!target.IsBuilt())
     {
       const std::int64_t maximum = target.maxHitPointsHundredths;

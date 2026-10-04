@@ -142,6 +142,7 @@ Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
   constructor.footprintRadiusMeters = _reader.Number("footprintRadiusMeters", JsonBound::Positive);
   constructor.turnRateDegreesPerSecond = _reader.Number("turnRateDegreesPerSecond", JsonBound::Positive);
   constructor.extraConstructorBuildShare = _reader.Number("extraConstructorBuildShare", JsonBound::NotNegative);
+  constructor.extraConstructorUpgradeShare = _reader.Number("extraConstructorUpgradeShare", JsonBound::NotNegative);
   constructor.repairPercentPerSecond = _reader.Number("repairPercentPerSecond", JsonBound::Positive);
   return constructor;
 }

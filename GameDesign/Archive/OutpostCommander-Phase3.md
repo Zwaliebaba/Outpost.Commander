@@ -56,7 +56,7 @@ These play the part of Phase 2's S1–S5. A failed answer is still a result. Eac
 
 *Decided (gates K5, K6).*
 
-- **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and assigns Constructors to the work as for any other build. Several Constructors share the work, as they share a build (ADR-016). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
+- **A structure upgrades one level at a time**, from level 1 to the highest level its kind has in Phase 3 (§5–§7). The player orders it from the structure's panel or its production window, and assigns Constructors to the work as for any other build. One Constructor builds a level in its time, and further Constructors do not make it faster (owner, 2026-10-04, ADR-064 decision 3), where they share a build (ADR-016). Its Ore is paid when the order is given, as a structure's is, and nothing is refunded (ADR-016).
 - **The structure keeps working** while it is upgraded (§3). The work under way is shown as construction is. If the structure is destroyed during the upgrade, the Ore is lost.
 - **Each level adds 20% of the kind's base hit points**, and never armor (Phase 1 §6). The level's percent adds to research's, so a level 3 Lab with Reinforced Structures has 1 + 0.40 + 0.25 times its base hit points (owner, 2026-10-04). A structure being upgraded keeps its share of its hit points, as it does when Reinforced Structures is researched.
 - **A Constructor on a structure that is both damaged and being upgraded** builds the level first, since its Ore is paid, and repairs it once the level is in (owner, 2026-10-04).

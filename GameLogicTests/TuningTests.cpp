@@ -104,7 +104,7 @@ constexpr std::string_view MINIMAL_TUNING = R"({
   "structureWeapons": [ { "id": 1, "name": "Defence gun", "damage": 30, "fireIntervalSeconds": 1.0, "rangeMeters": 250 } ],
   "constructor": { "hitPoints": 300, "armor": 3, "speedMetersPerSecond": 45, "cost": 60, "buildSeconds": 15,
                    "footprintRadiusMeters": 10, "turnRateDegreesPerSecond": 150, "extraConstructorBuildShare": 0.5,
-                   "repairPercentPerSecond": 2 },
+                   "extraConstructorUpgradeShare": 0.25, "repairPercentPerSecond": 2 },
   "structures": [
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45,
       "structureWeapon": 1 },
@@ -279,6 +279,7 @@ public:
                 {"footprintRadiusMeters", constructor.footprintRadiusMeters},
                 {"turnRateDegreesPerSecond", constructor.turnRateDegreesPerSecond},
                 {"extraConstructorBuildShare", constructor.extraConstructorBuildShare},
+                {"extraConstructorUpgradeShare", constructor.extraConstructorUpgradeShare},
                 {"repairPercentPerSecond", constructor.repairPercentPerSecond}},
                "constructor");
 
@@ -397,6 +398,7 @@ public:
     Assert::AreEqual(20, tuning.rules.tickHz);
     Assert::AreEqual(2, tuning.rules.startingConstructors);
     Assert::AreEqual(0.5, tuning.constructor.extraConstructorBuildShare);
+    Assert::AreEqual(0.25, tuning.constructor.extraConstructorUpgradeShare);
     Assert::AreEqual(45.0, tuning.structures[0].footprintRadiusMeters);
     Assert::AreEqual(size_t{6}, tuning.structures.size());
     Assert::IsFalse(tuning.structures[0].cost.has_value());

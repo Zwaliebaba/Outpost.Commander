@@ -114,13 +114,16 @@ public:
     Assert::AreEqual(50, OreOf(arena, POOR));
   }
 
-  // Gate G8's rates build a level as they build a site: one Constructor in the level's time, two in two thirds of it. The
-  // level lands whole with its 20% of the kind's base hit points, and the order ends.
-  TEST_METHOD(ConstructorsShareTheWork)
+  // One Constructor builds a level in the level's time, and each further one adds the tuning data's upgrade share of one
+  // more, whose repository value of 0 has two build it no faster than one (owner, 2026-10-04). The level lands whole with
+  // its 20% of the kind's base hit points, and the order ends.
+  TEST_METHOD(ConstructorsShareTheWorkAtTheUpgradeShare)
   {
     const MatchArena reference;
     const Outpost::StructureTuning& tuning = reference.StructureData(Outpost::StructureKind::Shipyard);
     const std::uint32_t levelTicks = LevelTicks(reference, Outpost::StructureKind::Shipyard, 1);
+    const double upgradeShare = reference.TuningData().constructor.extraConstructorUpgradeShare;
+    Assert::AreEqual(0.0, upgradeShare, L"the repository's crew builds a level no faster than one Constructor");
     const auto radius = static_cast<float>(tuning.footprintRadiusMeters);
     for (const std::uint32_t crew : {1u, 2u})
     {
@@ -135,7 +138,8 @@ public:
 
       // The order's tick already did a tick's work.
       const std::uint32_t ticks = 1 + TicksToLevel(arena, yard, 2, levelTicks * 2);
-      const std::uint32_t expected = crew == 1 ? levelTicks : (levelTicks * 2 + 2) / 3;
+      const double crewFactor = 1.0 + (upgradeShare * static_cast<double>(crew - 1));
+      const auto expected = static_cast<std::uint32_t>(std::ceil(static_cast<double>(levelTicks) / crewFactor));
       Assert::IsTrue(ticks >= expected && ticks <= expected + 1, std::to_wstring(ticks).c_str());
       const Outpost::Entity& upgraded = arena.Get(yard);
       Assert::AreEqual(2, upgraded.level);

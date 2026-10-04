@@ -115,6 +115,9 @@ struct ConstructorTuning
   // One Constructor builds a structure in its buildConstructorSeconds; each further one on the site adds this share of
   // one more.
   double extraConstructorBuildShare = 0.0;
+  // The same for a structure's next level, from one Constructor's buildConstructorSeconds of it. The repository's 0 has a
+  // crew build a level no faster than one Constructor (owner, 2026-10-04).
+  double extraConstructorUpgradeShare = 0.0;
   // Hit points one Constructor restores each second, as a percentage of the target's maximum.
   double repairPercentPerSecond = 0.0;
 };
