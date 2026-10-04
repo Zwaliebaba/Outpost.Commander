@@ -259,3 +259,4 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-065; ADR-020 edited in place for the menu.
 - **Acceptance:** `AiSettingsTests.LoadsEachDifficulty`, `HudTests.LaysOutTheMenu`.
 - **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run.**
+- **As built:** [ADR-065](../Design/ADR/ADR-065-ai-difficulty.md). On seeds 1–20, each difficulty in both seats, Normal beats Easy in all 20 and Hard beats Normal in all 20, before 25.2's tuning and after it. A larger economy alone made Hard weaker; its edge is territory.
