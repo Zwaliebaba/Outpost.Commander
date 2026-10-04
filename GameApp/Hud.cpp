@@ -1096,8 +1096,9 @@ void LayDesigner(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
     }
     paint.Outline(QUEUE_LEFT, footer, queueWidth, FOOTER_HEIGHT, queue.enabled ? QUEUE_EDGE_COLOR : EDGE_COLOR);
     const DirectX::XMFLOAT4& color = queue.enabled ? QUEUE_TEXT_COLOR : DIM_TEXT_COLOR;
-    paint.Text(queue.label, QUEUE_LEFT + 18.0f, footer + 3.0f, color, Hud::Typeface::Title, tracking);
-    paint.Text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 30.0f, color, Hud::Typeface::Detail);
+    // The label's line, up to 27 units in the title face, ends above the detail's at either scale's rounding (ADR-061).
+    paint.Text(queue.label, QUEUE_LEFT + 18.0f, footer + 2.0f, color, Hud::Typeface::Title, tracking);
+    paint.Text(_panel.queueDetail, QUEUE_LEFT + 18.0f, footer + 31.0f, color, Hud::Typeface::Detail);
     paint.DiamondAndFigure(_panel.queueCost, QUEUE_LEFT + queueWidth - 16.0f, footer + 10.0f, Hud::Typeface::Title, 22.0f,
                            queue.enabled ? GOLD_COLOR : DIM_TEXT_COLOR);
   }

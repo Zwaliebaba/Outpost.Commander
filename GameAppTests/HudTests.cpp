@@ -13,12 +13,11 @@ constexpr Outpost::PlayerId PLAYER{1};
 constexpr Outpost::DesignId SWARM{1};
 constexpr Outpost::DesignId LINE{2};
 
-// The HUD's fonts as the game rasterizes them for a back buffer of each size, kept for the run, since a TextMetrics reads
+// The HUD's fonts as the game rasterizes them for a back buffer of this size, kept for the run, since a TextMetrics reads
 // them where they are (ADR-061). A font that is not installed throws, as ADR-030 has it: the tests never guess a width.
-std::map<float, std::vector<Neuron::GlyphAtlas::Font>> g_fontsByScale;
-
 std::span<const Neuron::GlyphAtlas::Font> FontsFor(std::uint32_t _widthPixels, std::uint32_t _heightPixels)
 {
+  static std::map<float, std::vector<Neuron::GlyphAtlas::Font>> g_fontsByScale;
   const float scale = Outpost::Hud::Scale(_widthPixels, _heightPixels);
   auto found = g_fontsByScale.find(scale);
   if (found == g_fontsByScale.end())
@@ -1511,9 +1510,10 @@ public:
     }
   }
   // Task 14.1: at either size, with the longest content, every text ends inside the smallest panel it starts in, measured
-  // with the fonts it is drawn in.
+  // with the fonts it is drawn in. Every offender is named, not only the first.
   TEST_METHOD(KeepsEveryTextInsideItsPanel)
   {
+    std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
@@ -1537,20 +1537,22 @@ public:
                   (smallest == nullptr || panel.width * panel.height < smallest->width * smallest->height))
                 smallest = &panel;
             }
-            const std::wstring what = Named(name, width, text);
-            Assert::IsNotNull(smallest, std::format(L"{} starts in no panel", what).c_str());
-            Assert::IsTrue(
-              box.left + box.width <= smallest->left + smallest->width + 0.5f,
-              std::format(L"{} runs {} px past its panel", what, box.left + box.width - smallest->left - smallest->width).c_str());
+            if (smallest == nullptr)
+              offenders += std::format(L"{} starts in no panel\n", Named(name, width, text));
+            else if (const float past = box.left + box.width - smallest->left - smallest->width; past > 0.5f)
+              offenders += std::format(L"{} runs {} px past its panel\n", Named(name, width, text), past);
           }
         }
       }
     }
+    Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
 
-  // Task 14.1: at either size, with the longest content, no two texts' line boxes meet within a layer.
+  // Task 14.1: at either size, with the longest content, no two texts' line boxes meet within a layer. Every pair that
+  // meets is named, not only the first.
   TEST_METHOD(OverlapsNoTwoTexts)
   {
+    std::wstring offenders;
     for (const auto& [width, height] : std::array<std::pair<std::uint32_t, std::uint32_t>, 2>{{{1920, 1080}, {1280, 720}}})
     {
       const std::span<const Neuron::GlyphAtlas::Font> fonts = FontsFor(width, height);
@@ -1568,14 +1570,17 @@ public:
               const bool meet = first.width > 0.0f && second.width > 0.0f && first.left < second.left + second.width &&
                                 second.left < first.left + first.width && first.top < second.top + second.height &&
                                 second.top < first.top + first.height;
-              Assert::IsFalse(meet, std::format(L"{} meets \"{}\"", Named(name, width, layout.texts[a]),
-                                                std::wstring(winrt::to_hstring(layout.texts[b].text)))
-                                      .c_str());
+              if (meet)
+              {
+                offenders += std::format(L"{} meets \"{}\"\n", Named(name, width, layout.texts[a]),
+                                         std::wstring(winrt::to_hstring(layout.texts[b].text)));
+              }
             }
           }
         }
       }
     }
+    Assert::IsTrue(offenders.empty(), offenders.c_str());
   }
 };
 } // namespace GameAppTests
