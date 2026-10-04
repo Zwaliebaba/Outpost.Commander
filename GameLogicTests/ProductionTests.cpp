@@ -152,8 +152,8 @@ public:
     MatchArena arena;
     const Outpost::EntityId yard = arena.Structure(BLUE, Outpost::StructureKind::Shipyard, YARD);
     // A Small ship, which a level 1 Shipyard builds (Phase 3 design §5).
-    const Outpost::DesignId small = arena.Design(BLUE, SMALL, MASS_DRIVER);
-    const std::int32_t cost = arena.World().FindDesign(small)->stats.cost;
+    const Outpost::DesignId swarm = arena.Design(BLUE, SMALL, MASS_DRIVER);
+    const std::int32_t cost = arena.World().FindDesign(swarm)->stats.cost;
     // Spend the Ore down to less than one Small ship, on a rig site and Shipyards elsewhere, which the Constructor leaves
     // unfinished as it goes from one order to the next.
     const Outpost::EntityId constructor = arena.World().SpawnConstructor(BLUE, {600.0f, -600.0f});
@@ -168,7 +168,7 @@ public:
     }
     Assert::IsTrue(arena.World().OreHundredths(BLUE) < std::int64_t{cost} * Outpost::HUNDREDTHS);
 
-    (void)arena.Tick({Queue(BLUE, yard, small)});
+    (void)arena.Tick({Queue(BLUE, yard, swarm)});
     arena.Run(40 * MatchArena::TICKS_PER_SECOND);
     Assert::AreEqual(size_t{0}, Warships(arena, BLUE));
     Assert::AreEqual(0, arena.World().BuildSnapshot(BLUE).entities[arena.Get(yard).id.value - 1].jobPermille, L"waiting");
