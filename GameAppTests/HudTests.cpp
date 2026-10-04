@@ -90,8 +90,8 @@ Outpost::EntityView Ship(std::uint32_t _id, Outpost::DesignId _design, std::int3
 TEST_CLASS(HudTests)
 {
 public:
-  // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The HUD's text stays
-  // in Segoe UI at its size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
+  // ADR-030: the HUD names a font for every typeface and a sprite for every sprite, in their order. The default face is
+  // Segoe UI at the text's size; the figures take Cascadia Mono, or Consolas where it is not installed (gate H7).
   TEST_METHOD(NamesItsTypefacesAndSprites)
   {
     const std::vector<Neuron::FontDesc> typefaces = Outpost::Hud::Typefaces();
@@ -327,6 +327,71 @@ public:
     // While a placement is armed, a hint says what a click does.
     content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::MiningRig);
     Assert::AreEqual(std::string("Placing Mining Rig: left-click to build, right-click to cancel"), content.hint);
+  }
+
+  // ADR-056: a Constructor offers the Relay only on a map with sectors, which it holds.
+  TEST_METHOD(OffersTheRelayOnlyWithSectors)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard, .nameUtf8 = "Shipyard", .buildable = true, .cost = 300},
+                             {.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .buildable = true, .cost = 200}};
+    Outpost::EntityView constructor = Ship(9, {}, 30000, 30000);
+    constructor.role = Outpost::ShipRole::Constructor;
+    const std::vector<Outpost::EntityView> entities{constructor};
+    const std::vector<Outpost::EntityId> selected{Outpost::EntityId{9}};
+    Assert::AreEqual(size_t{1}, Outpost::Hud::Describe(newest, entities, selected).buttons.size());
+
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::AreEqual(size_t{2}, content.buttons.size());
+    Assert::IsTrue(content.buttons[1].action ==
+                   Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::Build, .structure = Outpost::StructureKind::Relay});
+  }
+
+  // ADR-056: the minimap washes each held sector in its holder's color under the marks, outlines it over the fog, and
+  // stripes a suppressed one; a panel beside the Ore counts the nodes each side holds.
+  TEST_METHOD(ShowsTheTerritory)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.mapSizeMeters = 3000.0f;
+    newest.sectors = {
+      {.id = 1, .minXMeters = -1500.0f, .maxXMeters = -500.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f, .holder = PLAYER},
+      {.id = 2, .minXMeters = -500.0f, .maxXMeters = 500.0f, .minZMeters = -1500.0f, .maxZMeters = 1500.0f},
+      {.id = 3,
+       .minXMeters = 500.0f,
+       .maxXMeters = 1500.0f,
+       .minZMeters = -1500.0f,
+       .maxZMeters = 1500.0f,
+       .holder = Outpost::PlayerId{2},
+       .suppressed = true}};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
+    Assert::IsTrue(content.territory.has_value());
+    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
+    Assert::AreEqual(1, territory.ownNodes);
+    Assert::AreEqual(1, territory.enemyNodes);
+    Assert::AreEqual(3, territory.nodes);
+    Assert::AreEqual(size_t{3}, content.sectors.size());
+    Assert::IsTrue(content.sectors[0].side == Outpost::Hud::Side::Own && content.sectors[2].side == Outpost::Hud::Side::Enemy);
+
+    content.fog = true;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
+    Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
+                    L"no tickets without them");
+    const auto fog =
+      std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel) { return _panel.fill == Outpost::Hud::Fill::Fog; });
+    const DirectX::XMFLOAT2 west = layout.MinimapPixelOf({.xMeters = -1000.0f, .zMeters = 0.0f});
+    const DirectX::XMFLOAT2 middle = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = 0.0f});
+    const auto wash = std::ranges::find_if(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                                           { return _panel.Contains(west.x, west.y) && _panel.width > 50.0f && _panel.color.w < 0.5f; });
+    Assert::IsTrue(wash != layout.panels.end() && wash < fog, L"the player's sector is washed under the fog");
+    Assert::IsFalse(
+      std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                          { return _panel.Contains(middle.x, middle.y) && _panel.width > 50.0f && _panel.width < layout.minimap.width; }),
+      L"a free sector is not washed");
+    const auto stripes = std::ranges::find_if(layout.panels, [](const Outpost::Hud::Rect& _panel)
+                                              { return _panel.fill == Outpost::Hud::Fill::Hatched && _panel.width > 50.0f; });
+    Assert::IsTrue(stripes != layout.panels.end() && stripes > fog, L"the suppressed sector is striped over the fog");
   }
 
   // Task 4.5, Phase 1 design §12: a selected structure shows its kind, hit points and construction; its queue and what it
@@ -765,9 +830,72 @@ public:
     Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
   }
 
+  // Phase 2 design §10: the production window shows a design's module after its components' initials, as the designer's
+  // chips do, so that a scout reads apart from the plain design of its hull, drive and weapon.
+  TEST_METHOD(NamesAModuleInTheProductionWindow)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot();
+    newest.modules = {{.id = Outpost::ModuleId{1}, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40}};
+    newest.designs.push_back({.id = Outpost::DesignId{2},
+                              .nameUtf8 = "Scout",
+                              .hull = Outpost::HullId{1},
+                              .drive = Outpost::DriveId{1},
+                              .weapon = Outpost::WeaponId{1},
+                              .module = Outpost::ModuleId{1},
+                              .cost = 127});
+    const Outpost::Hud::ProductionPanel panel = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Assert::AreEqual(size_t{2}, panel.options.size());
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD"), panel.options[0].detail);
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.options[1].detail);
+  }
+
   // Phase 1 design §11, after the mockup: a window 728 units wide; the Shipyard's arrows in its title bar, pressed rather
   // than grabbed; a card for each unlocked part to click and none for a locked one, which is hatched; the weapons wrap to a
   // second line of cards once there are more than three; and Queue at the bottom.
+  // Phase 2 design §10: the designer's fourth row holds no module and each module; a design's chip names its module's
+  // initials; a Sensors bar shows how far a module lets the ship see; and the window still fits a 1080-line screen.
+  TEST_METHOD(OffersTheModulesInAFourthRow)
+  {
+    constexpr Outpost::ModuleId SENSOR_ARRAY{1};
+    Outpost::Snapshot newest = DesignerSnapshot(false, true);
+    newest.modules = {
+      {.id = SENSOR_ARRAY, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40, .available = true}};
+    newest.designs.push_back({.id = Outpost::DesignId{2},
+                              .nameUtf8 = "Scout",
+                              .hull = Outpost::HullId{1},
+                              .drive = Outpost::DriveId{1},
+                              .weapon = Outpost::WeaponId{1},
+                              .module = SENSOR_ARRAY,
+                              .cost = 127});
+    Outpost::Designer designer;
+    designer.Update(newest);
+    Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    const Outpost::Hud::SlotRow& modules = panel.slots[3];
+    Assert::AreEqual(std::string("MODULE"), modules.label);
+    Assert::AreEqual(std::string("None"), modules.picked);
+    Assert::AreEqual(size_t{2}, modules.cards.size());
+    Assert::IsTrue(modules.cards[0].picked && !modules.cards[1].picked);
+    Assert::IsTrue(modules.cards[1].action == Outpost::Hud::Action{.kind = Outpost::Hud::ActionKind::PickModule, .module = SENSOR_ARRAY});
+    Assert::AreEqual(40, modules.cards[1].cost);
+    Assert::AreEqual(std::string("S\xC2\xB7I\xC2\xB7MD\xC2\xB7SA"), panel.chips[1].code);
+    const auto sensors = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
+    Assert::IsTrue(sensors != panel.bars.end());
+    Assert::AreEqual(std::string("-"), sensors->value);
+
+    // Hovering the module previews the design it would make.
+    panel = DesignerOf(newest, designer, modules.cards[1].action);
+    Assert::AreEqual(std::string("Preview: with Sensor Array instead"), panel.hint);
+    const auto previewed = std::ranges::find(panel.bars, std::string("Sensors"), &Outpost::Hud::StatBar::label);
+    Assert::AreEqual(std::string("700"), previewed->previewValue);
+
+    Outpost::Hud::Content content;
+    content.designer = panel;
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    Assert::AreEqual(size_t{1}, layout.windows.size());
+    const Outpost::Hud::Rect& frame = layout.windows.front().frame;
+    Assert::IsTrue(frame.top >= 0.0f && frame.top + frame.height <= 1080.0f, std::to_wstring(frame.top + frame.height).c_str());
+  }
+
   TEST_METHOD(LaysTheDesignerOutAfterTheMockup)
   {
     const auto layOut = [](const Outpost::Snapshot& _newest)
@@ -1169,6 +1297,57 @@ public:
     Assert::AreEqual(std::string("Defeat"), outcome().title);
     newest.winner = {};
     Assert::AreEqual(std::string("Draw"), outcome().title);
+
+    // Phase 2 design §8: a domination says so.
+    newest.winner = PLAYER;
+    newest.ending = Outpost::MatchEnding::Domination;
+    Assert::AreEqual(std::string("By domination. Match length 6:13"), outcome().detail);
+  }
+
+  // ADR-059: a selection on a standing order says so.
+  TEST_METHOD(SaysWhenTheSelectionStands)
+  {
+    Outpost::EntityView holding = Ship(9, SWARM, 30000, 30000);
+    holding.standing = Outpost::StandingOrder::HoldSector;
+    const std::vector<Outpost::EntityView> entities{holding};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(Newest(), entities, std::vector<Outpost::EntityId>{Outpost::EntityId{9}});
+    Assert::AreEqual(std::string("Holding a sector"), content.selection.back());
+  }
+
+  // ADR-059: the alerts under the territory, the newest in the warning's color, and a mark at each on the minimap.
+  TEST_METHOD(ListsTheAlerts)
+  {
+    Outpost::Hud::Content content{.ore = 0, .selection = {}, .mapSizeMeters = 2000.0f};
+    content.alerts = {{"Relay suppressed: South", {.xMeters = 0.0f, .zMeters = -500.0f}}, {"Enemy ships in West", {}}};
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto newest = std::ranges::find(layout.texts, std::string("Relay suppressed: South"), &Outpost::Hud::Text::text);
+    const auto older = std::ranges::find(layout.texts, std::string("Enemy ships in West"), &Outpost::Hud::Text::text);
+    Assert::IsTrue(newest != layout.texts.end() && older != layout.texts.end());
+    Assert::IsTrue(newest->top < older->top, L"newest first");
+    Assert::IsTrue(newest->color.x > older->color.x && newest->color.z < older->color.z, L"the newest in the warning's color");
+    const DirectX::XMFLOAT2 at = layout.MinimapPixelOf({.xMeters = 0.0f, .zMeters = -500.0f});
+    Assert::IsTrue(
+      std::ranges::any_of(layout.panels, [&](const Outpost::Hud::Rect& _panel)
+                          { return _panel.left < at.x && _panel.left + _panel.width > at.x && _panel.top < at.y && _panel.height < 3.0f; }),
+      L"a mark round the alert's place");
+  }
+
+  // ADR-057: under the nodes, each side's tickets, the player's in its color and the enemy's in theirs.
+  TEST_METHOD(ShowsTheTickets)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.sectors = {{.id = 1, .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    newest.tickets = {{.player = PLAYER, .tickets = 1000}, {.player = Outpost::PlayerId{2}, .tickets = 870}};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
+    Assert::IsTrue(content.territory.has_value());
+    const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
+    Assert::IsTrue(territory.ownTickets == 1000 && territory.enemyTickets == 870);
+    const Outpost::Hud::Layout layout = Outpost::Hud::Lay(content, 1920, 1080);
+    const auto text = [&layout](std::string_view _text) { return std::ranges::find(layout.texts, _text, &Outpost::Hud::Text::text); };
+    Assert::IsTrue(text("Tickets") != layout.texts.end());
+    Assert::IsTrue(text("1,000 : ") != layout.texts.end() && text("870") != layout.texts.end());
+    Assert::IsTrue(text("870")->left > text("1,000 : ")->left, L"the enemy's figure stands at the right");
+    Assert::IsTrue(text("Tickets")->top > text("Nodes of 1")->top);
   }
 
   // The banner sits at the top, over the world that runs on, and its button takes the player back to the menu.

@@ -13,7 +13,7 @@ The owner wants the game's screens to float as windows rather than sit in one pl
 3. **A window is a frame, a hatched title bar, a close box and four corner brackets** (ADR-030), opened by `OpenWindow`, which records where in the layout's lists of panels, texts, sprites and buttons the window starts.
 4. **The layout is drawn and clicked in layers.** Layer 0 is the HUD and layer i + 1 is the i-th window back to front; each layer's panels, then its sprites, then its texts, so that a window covers the text of the window behind it. `Layout::LayerAt` finds the front layer under a point, and `ActionAt` looks for a button only in that layer, so a HUD button under a window takes no click. A press on any window is the HUD's, not the world's, as before (ADR-015).
 5. **Input.** A press on a window brings it to the front; on its close box it closes it, and on its title bar it starts a drag that follows the pointer until the button is released. Esc closes the front window and goes no further; while the designer's name takes typing, the designer has Esc first, as before (ADR-017).
-6. **Until task 9.3, selecting a built Shipyard opens the designer**, once: closed, it stays closed until a Shipyard is selected again. Task 9.3 adds the button and the key that open it (Phase 1 design §12).
+6. **A window opens from a button on its structure's selection panel, and from its key**: D for the designer, P for production and R for research, each of which also closes its window (Phase 1 design §12).
 
 ## Consequences
 

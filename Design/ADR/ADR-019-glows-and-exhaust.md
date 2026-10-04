@@ -4,7 +4,7 @@ Status: **accepted** · 2026-10-01
 
 ## Context
 
-The owner put exhaust into the MVP on 2026-10-01, colored by drive. A drive has no mesh (design §7), so until now only a ship's speed told an Ion design from a Fusion one, and countering the enemy means reading its designs (design §10). An exhaust is light, so it brightens what is behind it. The mesh pipeline is opaque, and an effect there fades by darkening (ADR-011, task 3.5). ADR-006 leaves passes to the task that needs one. Q4 counts every draw: 200 ships and 40 structures already cost a draw call each.
+The owner put exhaust into the MVP on 2026-10-01, colored by drive. A drive has no mesh (design §7), so until now only a ship's speed told an Ion design from a Fusion one, and countering the enemy means reading its designs (design §10). An exhaust is light, so it brightens what is behind it. The mesh pipeline is opaque, and an effect there fades by darkening (ADR-011, task 3.5). ADR-006 leaves passes to the task that needs one. Q4 counts every draw: 200 ships and 40 structures then cost a draw call each.
 
 ## Decision
 
@@ -14,7 +14,7 @@ The owner put exhaust into the MVP on 2026-10-01, colored by drive. A drive has 
    - three puffs streaming the way the hardpoint points, each further out, smaller and dimmer.
 
    The plume lengthens from 0.4 to 1.6 times its full spacing, and the glows brighten, as the ship's speed rises from rest to 50 m/s, an Ion Medium's cruise. The speed is how far the view moved the ship since the last frame, so it is presentation and needs nothing from the server but positions. These looks are constants in `Hardpoints.cpp`, as task 3.5's are in `CombatEffects.cpp`.
-3. **An exhaust's color is its drive's, and `Models.json` holds it.** Each entry of `exhausts` gives a drive's identifier and a linear color. `constructorExhaust` is for the Constructor, which has no drive. The colors are Ion cyan, Fusion magenta and the Constructor a pale gray, final with the team colors (owner, 2026-10-01). Neither is the blue or the orange-red of a side, so drive and side read apart.
+3. **An exhaust's color is its drive's, and `Models.json` holds it.** Each entry of `exhausts` gives a drive's identifier and a linear color. `constructorExhaust` is for the Constructor, which has no drive. The colors are Ion cyan, Fusion magenta and the Constructor a pale gray, final with the team colors (owner, 2026-10-01); the Pulse Drive's is [ADR-034](ADR-034-shot-looks.md)'s. None is the blue or the orange-red of a side, so drive and side read apart.
 4. **`EntityView` carries a warship's drive.** The server fills it from the ship's design for every player's snapshot, as it does the hull. The client needs it for the enemy's ships, whose designs a snapshot does not list.
 5. **A shot leaves from its shooter's gun.** `CombatEffects` asks `GameClient`, through a `MuzzleLocator`, for the shooter's `gun` hardpoint nearest the target, where the view draws the ship in that frame. So a beam stays on a ship that moves while it fires: an Ion Small at 78 m/s moved about 20 m during a 0.25 s beam. When the ship is gone or has no gun, the shot leaves from where the server says it was fired. A gun sets where a shot starts across the ground, not how high: effects keep task 3.5's fixed height, which keeps them above the ships.
 

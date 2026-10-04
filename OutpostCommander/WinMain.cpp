@@ -8,10 +8,11 @@
 
 namespace
 {
-// Linear color; the render target view encodes it to sRGB (ADR-006). Black: the stars are all the sky has (ADR-021).
+// Linear color; the render target view encodes it to sRGB (ADR-006). Black: the stars are all the sky has (ADR-022).
 constexpr std::array<float, 4> CLEAR_COLOR{0.0f, 0.0f, 0.0f, 1.0f};
 constexpr auto GAME_TITLE = L"Outpost Commander";
-// Minimized there is no frame to wait for, so the loop wakes this often to let the simulation run on (ADR-009).
+// Minimized there is no frame to wait for, so the loop wakes this often for its clients to keep taking their snapshots
+// (ADR-009, ADR-025).
 constexpr DWORD MINIMIZED_WAKE_MILLISECONDS = 16;
 // The human player, and the other: the AI in a skirmish (task 6.1), or a load driver in a measurement run.
 constexpr Outpost::PlayerId HUMAN_PLAYER{1};
@@ -166,7 +167,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     // of their own while the window and the device are created (ADR-049). The window stays hidden until all of them are
     // in, so that bad tuning, map or model data is still reported before the screen goes full screen. The next match's
     // server is made while the menu shows.
-    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress};
+    // A match's players connect to its server over QUIC, as they will to a server of its own (ADR-060).
+    const Outpost::ServerDesc serverDesc{.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true};
     auto serverLoad = PrepareAsync(
       [serverDesc] { return ServerStart{.server = Outpost::CreateInProcessServer(serverDesc), .ai = Outpost::LoadPackagedAiSettings()}; });
     auto assetsLoad = PrepareAsync(Outpost::LoadClientAssets);
@@ -203,10 +205,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     {
       match.emplace();
       match->server = std::move(nextServer);
-      match->player = match->server->Connect(HUMAN_PLAYER);
+      // Each player takes a seat over QUIC, and the server welcomes it before the match starts (ADR-060).
+      match->player = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(HUMAN_PLAYER), HUMAN_PLAYER);
       // The rival always connects, so that the server builds both players' snapshots as in a match against the AI. Under
       // load the rival's ships are kept moving through it; the stress scene orders its own; otherwise it is the AI.
-      match->rival = match->server->Connect(RIVAL_PLAYER);
+      match->rival = std::make_unique<Outpost::QuicTransport>(match->server->OpenSeat(RIVAL_PLAYER), RIVAL_PLAYER);
       if (!load && !stress)
       {
         match->ai.emplace(aiSettings, ticksPerSecond);
@@ -225,7 +228,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     bool firstFramePresented = false;
     for (;;)
     {
-      // Minimized, there is nothing to show, so the loop sleeps until a message arrives or the simulation is due to run.
+      // Minimized, there is nothing to show, so the loop sleeps until a message arrives or the snapshots are due again.
       // Otherwise it waits until the swap chain can take a frame, and reads input right after, so the frame shows the
       // freshest input it can (ADR-006).
       if (window.IsMinimized())
@@ -317,7 +320,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
           match.reset();
           client.ShowMenu();
           seed = NewSeed();
-          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress});
+          nextServer = Outpost::CreateInProcessServer({.seed = seed, .measurementLoad = load, .stressLoad = stress, .quic = true});
           break;
         case Outpost::GameClient::Request::Quit:
           PostQuitMessage(0);

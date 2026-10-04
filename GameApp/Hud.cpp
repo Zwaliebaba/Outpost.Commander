@@ -32,6 +32,12 @@ constexpr DirectX::XMFLOAT4 DRY_COLOR{0.24f, 0.15f, 0.11f, 1.0f};
 // field's square is the larger (ADR-040); dark enough that the fields stand back from the ore (ADR-046).
 constexpr DirectX::XMFLOAT4 ASTEROID_FIELD_COLOR{0.06f, 0.06f, 0.065f, 1.0f};
 constexpr DirectX::XMFLOAT4 VIEW_COLOR{0.85f, 0.9f, 1.0f, 0.8f};
+// A sector on the minimap (ADR-056): a faint wash of its holder's color under the marks, an outline of it over the fog,
+// and stripes of it while suppressed.
+constexpr float SECTOR_WASH_ALPHA = 0.12f;
+constexpr float SECTOR_OUTLINE_ALPHA = 0.55f;
+constexpr float SECTOR_HATCH_ALPHA = 0.35f;
+constexpr float SECTOR_LINE_UNITS = 1.0f;
 
 // Everything below in reference units.
 constexpr float MARGIN = 16.0f;
@@ -81,6 +87,12 @@ constexpr float HINT_PANEL_WIDTH = 640.0f;
 // The research line, under the Ore panel.
 constexpr float RESEARCH_PANEL_WIDTH = 560.0f;
 constexpr float RESEARCH_PANEL_GAP = 8.0f;
+// The territory, under the research line's place (ADR-056, ADR-057), and the room above and below its lines.
+constexpr float TERRITORY_PANEL_WIDTH = 260.0f;
+constexpr float TERRITORY_INSET_UNITS = 10.0f;
+// The alerts, under the territory (ADR-059), and how large an alert's mark is on the minimap.
+constexpr float ALERT_PANEL_WIDTH = 380.0f;
+constexpr float ALERT_MARK_UNITS = 14.0f;
 
 // The match's end, anchored to the top edge's middle under the hint: the outcome, its length, and the way back.
 constexpr float BANNER_WIDTH = 520.0f;
@@ -159,6 +171,23 @@ constexpr std::size_t CHIPS_SHOWN = 3;
 constexpr float GOOD_SHARE = 2.0f / 3.0f;
 constexpr float FAIR_SHARE = 1.0f / 3.0f;
 
+// A design's code, its components' initials joined by middle dots, "S·I·MD", with its module's after them when it has
+// one, "S·I·MD·SA" (Phase 1 design §5, Phase 2 design §10). The designer's chips and the production window both show it.
+std::string DesignCodeOf(const Outpost::Snapshot& _newest, const Outpost::DesignView& _design)
+{
+  const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
+  {
+    const auto view = std::ranges::find(_views, _id, &View::id);
+    return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
+  };
+  const std::string_view dot = DOT.substr(1, 2);
+  std::string code = std::format("{}{}{}{}{}", initials(_newest.hulls, _design.hull), dot, initials(_newest.drives, _design.drive), dot,
+                                 initials(_newest.weapons, _design.weapon));
+  if (_design.module.IsValid())
+    code += std::format("{}{}", dot, initials(_newest.modules, _design.module));
+  return code;
+}
+
 std::string Capitals(std::string_view _text)
 {
   std::string capitals(_text);
@@ -175,6 +204,7 @@ struct Best
   double armor = 0.0;
   double speed = 0.0;
   double range = 0.0;
+  double sensor = 0.0;
   double cost = 0.0;
   double build = 0.0;
   // Damage per second after armor against each hull, in the snapshot's order.
@@ -203,6 +233,14 @@ Best BestOfAll(const Outpost::Snapshot& _newest)
       }
     }
   }
+  // A module adds its cost and its sight to any design (Phase 2 design §10).
+  double moduleCost = 0.0;
+  for (const Outpost::ModuleView& module : _newest.modules)
+  {
+    moduleCost = std::max(moduleCost, static_cast<double>(module.cost));
+    best.sensor = std::max(best.sensor, module.sightMeters);
+  }
+  best.cost += moduleCost;
   return best;
 }
 
@@ -257,17 +295,10 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   panel.chips.reserve(_newest.designs.size());
   for (const Outpost::DesignView& design : _newest.designs)
   {
-    const auto initials = []<typename View>(const std::vector<View>& _views, auto _id)
-    {
-      const auto view = std::ranges::find(_views, _id, &View::id);
-      return view != _views.end() ? Outpost::Abbreviation(view->nameUtf8) : std::string("?");
-    };
-    panel.chips.push_back(
-      {.name = design.nameUtf8,
-       .code = std::format("{}{}{}{}{}", initials(_newest.hulls, design.hull), DOT.substr(1, 2), initials(_newest.drives, design.drive),
-                           DOT.substr(1, 2), initials(_newest.weapons, design.weapon)),
-       .shown = match != nullptr && match->id == design.id,
-       .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
+    panel.chips.push_back({.name = design.nameUtf8,
+                           .code = DesignCodeOf(_newest, design),
+                           .shown = match != nullptr && match->id == design.id,
+                           .action = {.kind = Hud::ActionKind::LoadDesign, .design = design.id}});
   }
   panel.firstChip = std::min(_designer.FirstChip(), panel.chips.empty() ? 0 : panel.chips.size() - 1);
 
@@ -282,6 +313,8 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       preview.drive = _hovered->drive;
     else if (_hovered->kind == Hud::ActionKind::PickWeapon && _hovered->weapon != preview.weapon)
       preview.weapon = _hovered->weapon;
+    else if (_hovered->kind == Hud::ActionKind::PickModule && _hovered->module != preview.module)
+      preview.module = _hovered->module;
   }
 
   const Outpost::DesignComponents picked = _designer.Picked();
@@ -340,6 +373,32 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
        .lockedBy = weapon.available ? std::string() : LockedBy(_newest, weapon.id, &Outpost::ResearchTopicView::unlocksWeapon),
        .action = {.kind = Hud::ActionKind::PickWeapon, .weapon = weapon.id}});
   }
+  // The module row: no module first, which every design starts with, then each module (Phase 2 design §10).
+  Hud::SlotRow& modules = panel.slots[3];
+  modules.label = "MODULE";
+  modules.cards.reserve(_newest.modules.size() + 1);
+  modules.picked = "None";
+  modules.cards.push_back({.name = "None",
+                           .cost = 0,
+                           .numbers = "No module",
+                           .picked = !picked.module.IsValid(),
+                           .action = {.kind = Hud::ActionKind::PickModule}});
+  if (!preview.module.IsValid() && picked.module.IsValid())
+    previewing = "no module";
+  for (const Outpost::ModuleView& module : _newest.modules)
+  {
+    if (module.id == picked.module)
+      modules.picked = module.nameUtf8;
+    if (module.id == preview.module && preview.module != picked.module)
+      previewing = module.nameUtf8;
+    modules.cards.push_back(
+      {.name = module.nameUtf8,
+       .cost = module.cost,
+       .numbers = std::format("SIGHT {}m{}SPD {}{}", Tenths(module.sightMeters), DOT, TIMES, Tenths(module.speedFactor)),
+       .picked = module.id == picked.module,
+       .lockedBy = module.available ? std::string() : std::string("RESEARCH"),
+       .action = {.kind = Hud::ActionKind::PickModule, .module = module.id}});
+  }
 
   const std::optional<Outpost::DesignStats> stats = _designer.Stats(_newest);
   std::optional<Outpost::DesignStats> previewStats;
@@ -349,6 +408,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     previewer.PickHull(preview.hull);
     previewer.PickDrive(preview.drive);
     previewer.PickWeapon(preview.weapon);
+    previewer.PickModule(preview.module);
     previewStats = previewer.Stats(_newest);
   }
   panel.hint =
@@ -372,7 +432,7 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
       }
       panel.bars.push_back(std::move(row));
     };
-    panel.bars.reserve(6);
+    panel.bars.reserve(7);
     bar(
       "Hit points", "", best.hitPoints, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.hitPointsHundredths); },
       [](const Outpost::DesignStats& _s) { return Outpost::WithThousands(WholePoints(_s.hitPointsHundredths)); });
@@ -385,6 +445,13 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
     bar(
       "Range", "m", best.range, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.rangeMeters); },
       [](const Outpost::DesignStats& _s) { return Tenths(_s.rangeMeters); });
+    // How far a module lets the ship see; none without one, when its weapon sets its sight (Phase 2 design §10).
+    if (best.sensor > 0.0)
+    {
+      bar(
+        "Sensors", "m", best.sensor, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.moduleSightMeters); },
+        [](const Outpost::DesignStats& _s) { return _s.moduleSightMeters > 0.0f ? Tenths(_s.moduleSightMeters) : std::string("-"); });
+    }
     bar(
       "Cost", "ore", best.cost, [](const Outpost::DesignStats& _s) { return static_cast<double>(_s.cost); },
       [](const Outpost::DesignStats& _s) { return std::to_string(_s.cost); }, true);
@@ -601,7 +668,7 @@ const DirectX::XMFLOAT4& RatingColor(Hud::Rating _rating) noexcept
 struct DesignerExtent
 {
   // Where each slot's row starts, and where the rows end.
-  std::array<float, 3> slotTops{};
+  std::array<float, std::tuple_size_v<decltype(Hud::DesignerPanel::slots)>> slotTops{};
   float slotsEnd = 0.0f;
   float sectionsTop = 0.0f;
   float footerTop = 0.0f;
@@ -1311,7 +1378,9 @@ std::optional<Hud::Outcome> Hud::DescribeOutcome(const Snapshot& _newest, std::u
     return std::nullopt;
   const std::string_view title = !_newest.winner.IsValid() ? "Draw" : _newest.winner == _newest.player ? "Victory" : "Defeat";
   const std::uint64_t seconds = _ticksPerSecond > 0 ? _newest.matchEndedTick / _ticksPerSecond : 0;
-  return Outcome{.title = std::string(title), .detail = std::format("Match length {}", MinutesAndSeconds(seconds))};
+  // A domination says so: the side that ran out of tickets held less of the map (Phase 2 design §8).
+  const std::string_view how = _newest.ending == MatchEnding::Domination ? "By domination. " : "";
+  return Outcome{.title = std::string(title), .detail = std::format("{}Match length {}", how, MinutesAndSeconds(seconds))};
 }
 
 Hud::Layout Hud::LayMenu(const TextMetrics& _metrics, std::uint32_t _widthPixels, std::uint32_t _heightPixels)
@@ -1432,10 +1501,40 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   if (_designer != nullptr)
     content.designer = DescribeDesigner(_newest, *_designer, _hovered);
 
+  const auto sideOf = [&_newest](PlayerId _owner) {
+    return !_owner.IsValid() ? Side::Neutral : _owner == _newest.player ? Side::Own : Side::Enemy;
+  };
+  if (!_newest.sectors.empty())
+  {
+    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size())};
+    content.sectors.reserve(_newest.sectors.size());
+    for (const SectorView& sector : _newest.sectors)
+    {
+      const Side side = sideOf(sector.holder);
+      territory.ownNodes += side == Side::Own ? 1 : 0;
+      territory.enemyNodes += side == Side::Enemy ? 1 : 0;
+      content.sectors.push_back({.minXMeters = sector.minXMeters,
+                                 .maxXMeters = sector.maxXMeters,
+                                 .minZMeters = sector.minZMeters,
+                                 .maxZMeters = sector.maxZMeters,
+                                 .side = side,
+                                 .suppressed = sector.suppressed});
+    }
+    // Domination's tickets, which both players see (ADR-057).
+    for (const TicketsView& tickets : _newest.tickets)
+    {
+      if (tickets.player == _newest.player)
+        territory.ownTickets = tickets.tickets;
+      else
+        territory.enemyTickets = tickets.tickets;
+    }
+    content.territory = territory;
+  }
+
   content.marks.reserve(_entities.size());
   for (const EntityView& entity : _entities)
   {
-    const Side side = !entity.owner.IsValid() ? Side::Neutral : entity.owner == _newest.player ? Side::Own : Side::Enemy;
+    const Side side = sideOf(entity.owner);
     content.marks.push_back({.position = entity.position,
                              .radiusMeters = entity.radiusMeters,
                              .side = side,
@@ -1476,6 +1575,21 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
                                       ? std::format("Ore left {}", WithThousands(WholePoints(*structure->oreReserveHundredths)))
                                       : std::string("Ore run out: it earns a trickle"));
       }
+      // The sector a Relay or a rig of the player's stands in, and what its sector earns (ADR-056).
+      const SectorView* sector = FindSector(_newest.sectors, structure->position);
+      const bool ownTerritorial = structure->owner == _newest.player &&
+                                  (structure->structure == StructureKind::Relay || structure->structure == StructureKind::MiningRig);
+      if (sector != nullptr && ownTerritorial)
+      {
+        if (sector->holder != _newest.player)
+          content.selection.push_back(std::format("{}: not held, it earns nothing", sector->nameUtf8));
+        else if (sector->suppressed)
+          content.selection.push_back(std::format("{}: suppressed, it earns nothing", sector->nameUtf8));
+        else if (sector->cutOff)
+          content.selection.push_back(std::format("{}: cut off, it earns half", sector->nameUtf8));
+        else
+          content.selection.push_back(std::format("{}: held", sector->nameUtf8));
+      }
       // Its queue and what it can add to it are its windows' (Phase 1 design §12; owner, 2026-10-03): its panel offers to
       // open them, once it is the player's own and finished.
       if (structure->owner == _newest.player && structure->builtPermille >= PERMILLE)
@@ -1500,12 +1614,16 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   std::int64_t hitPoints = 0;
   std::int64_t maxHitPoints = 0;
   bool constructors = false;
+  bool holding = false;
+  bool patrolling = false;
   for (const EntityId id : _selected)
   {
     const auto ship = std::ranges::find(_entities, id, &EntityView::id);
     if (ship == _entities.end() || ship->kind != EntityKind::Ship)
       continue;
     constructors = constructors || ship->role == ShipRole::Constructor;
+    holding = holding || ship->standing == StandingOrder::HoldSector;
+    patrolling = patrolling || ship->standing == StandingOrder::Patrol;
     hitPoints += ship->hitPointsHundredths;
     maxHitPoints += ship->maxHitPointsHundredths;
     const auto counted = std::ranges::find(byDesign, ship->design, &std::pair<DesignId, size_t>::first);
@@ -1537,6 +1655,11 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   content.selection.push_back(
     std::format("Hit points {} / {}", WithThousands(WholePoints(hitPoints)), WithThousands(WholePoints(maxHitPoints))));
   content.selectionHealth = HealthShare(hitPoints, maxHitPoints);
+  // A standing order the selection keeps (ADR-059).
+  if (holding)
+    content.selection.emplace_back("Holding a sector");
+  if (patrolling)
+    content.selection.emplace_back("On patrol");
 
   // Constructors offer every structure they build (design §6); one Research Lab a player.
   if (constructors)
@@ -1549,7 +1672,8 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     content.buttons.reserve(_newest.structureTypes.size());
     for (const StructureTypeView& type : _newest.structureTypes)
     {
-      if (!type.buildable)
+      // A Relay holds a sector, and a map without them has none to hold (ADR-056).
+      if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
         continue;
       const bool allowed = !(type.structure == StructureKind::ResearchLab && hasLab);
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
@@ -1588,22 +1712,14 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
                              .enabled = room && _newest.ore >= _newest.constructorCost});
     return panel;
   }
-  const auto abbreviationOf = []<typename View>(const std::vector<View>& _views, auto _id)
-  {
-    const auto view = std::ranges::find(_views, _id, &View::id);
-    return view != _views.end() ? Abbreviation(view->nameUtf8) : std::string("?");
-  };
-  const std::string_view dot = DOT.substr(1, 2);
   panel.options.reserve(_newest.designs.size());
   for (const DesignView& design : _newest.designs)
   {
-    panel.options.push_back(
-      {.name = design.nameUtf8,
-       .detail = std::format("{}{}{}{}{}", abbreviationOf(_newest.hulls, design.hull), dot, abbreviationOf(_newest.drives, design.drive),
-                             dot, abbreviationOf(_newest.weapons, design.weapon)),
-       .cost = design.cost,
-       .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
-       .enabled = room && _newest.ore >= design.cost});
+    panel.options.push_back({.name = design.nameUtf8,
+                             .detail = DesignCodeOf(_newest, design),
+                             .cost = design.cost,
+                             .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
+                             .enabled = room && _newest.ore >= design.cost});
   }
   if (panel.options.empty())
     panel.hint = "Save a design in the ship designer to build it here.";
@@ -1758,6 +1874,50 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
 
   // Under the Ore: the research under way.
   const float underOreUnits = MARGIN + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP;
+
+  // Under the research's place: the nodes each side holds, and each side's tickets, the player's in its color and the
+  // enemy's in theirs (ADR-056, ADR-057).
+  if (_content.territory.has_value())
+  {
+    const Territory& territory = *_content.territory;
+    const bool tickets = territory.ownTickets.has_value() && territory.enemyTickets.has_value();
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS;
+    Painter paint =
+      frame({.xUnits = MARGIN, .yUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP}, TERRITORY_PANEL_WIDTH, heightUnits);
+    constexpr float ADVANCE = 13.0f * MONO_ADVANCE;
+    const auto row = [&](std::string _label, const std::string& _own, const std::string& _enemy, float _top)
+    {
+      paint.Text(std::move(_label), PADDING, _top, TEXT_COLOR, Typeface::Name);
+      const float figureTop = _top + ((NAME_LINE_UNITS - FIGURE_LINE_UNITS) / 2.0f) + 2.0f;
+      paint.RightText(_enemy, TERRITORY_PANEL_WIDTH - PADDING, figureTop, ENEMY_COLOR, Typeface::Figure, ADVANCE);
+      paint.RightText(std::format("{} : ", _own), TERRITORY_PANEL_WIDTH - PADDING - (CharactersOf(_enemy) * ADVANCE), figureTop, OWN_COLOR,
+                      Typeface::Figure, ADVANCE);
+    };
+    row(std::format("Nodes of {}", territory.nodes), std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes),
+        TERRITORY_INSET_UNITS);
+    if (tickets)
+    {
+      row("Tickets", WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)),
+          TERRITORY_INSET_UNITS + NAME_LINE_UNITS);
+    }
+  }
+
+  // Under the territory: the alerts, newest first, in the warning's color (ADR-059).
+  if (!_content.alerts.empty())
+  {
+    const bool tickets = _content.territory.has_value() && _content.territory->ownTickets.has_value();
+    const float territoryUnits = _content.territory.has_value()
+                                   ? (2.0f * TERRITORY_INSET_UNITS) + ((tickets ? 2.0f : 1.0f) * NAME_LINE_UNITS) + RESEARCH_PANEL_GAP
+                                   : 0.0f;
+    const float topUnits = underOreUnits + ORE_PANEL_HEIGHT + RESEARCH_PANEL_GAP + territoryUnits;
+    const float heightUnits = (2.0f * TERRITORY_INSET_UNITS) + (static_cast<float>(_content.alerts.size()) * NAME_LINE_UNITS);
+    Painter paint = frame({.xUnits = MARGIN, .yUnits = topUnits}, ALERT_PANEL_WIDTH, heightUnits);
+    for (size_t line = 0; line < _content.alerts.size(); ++line)
+    {
+      paint.Text(_content.alerts[line].first, PADDING, TERRITORY_INSET_UNITS + (static_cast<float>(line) * NAME_LINE_UNITS),
+                 line == 0 ? WARNING_COLOR : TEXT_COLOR, Typeface::Name);
+    }
+  }
   if (!_content.research.empty())
   {
     Painter paint = frame({.xUnits = MARGIN, .yUnits = underOreUnits}, RESEARCH_PANEL_WIDTH, ORE_PANEL_HEIGHT);
@@ -1851,6 +2011,24 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     layout.panels.push_back(layout.minimap);
 
     const float pixelsPerMeter = inner / _content.mapSizeMeters;
+    // A sector's square on the minimap, in pixels.
+    const auto sectorRect = [&layout](const SectorMark& _sector, DirectX::XMFLOAT4 _color, Fill _fill)
+    {
+      const DirectX::XMFLOAT2 low = layout.MinimapPixelOf({.xMeters = _sector.minXMeters, .zMeters = _sector.maxZMeters});
+      const DirectX::XMFLOAT2 high = layout.MinimapPixelOf({.xMeters = _sector.maxXMeters, .zMeters = _sector.minZMeters});
+      return Rect{low.x, low.y, high.x - low.x, high.y - low.y, _color, _fill};
+    };
+    const auto sideColor = [](Side _side, float _alpha)
+    {
+      DirectX::XMFLOAT4 color = _side == Side::Own ? OWN_COLOR : ENEMY_COLOR;
+      color.w = _alpha;
+      return color;
+    };
+    for (const SectorMark& sector : _content.sectors)
+    {
+      if (sector.side != Side::Neutral)
+        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_WASH_ALPHA), Fill::Solid));
+    }
     // The neutral marks first, so that a rig's shows over its asteroid's.
     std::vector<const Mark*> marks;
     marks.reserve(_content.marks.size());
@@ -1885,6 +2063,33 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
     {
       layout.panels.push_back(
         {layout.minimap.left, layout.minimap.top, layout.minimap.width, layout.minimap.height, {0.0f, 0.0f, 0.0f, 1.0f}, Fill::Fog});
+    }
+
+    // Over the fog, since both sides know who holds what: each held sector's outline, and stripes over a suppressed one.
+    const float sectorLine = SECTOR_LINE_UNITS * scale;
+    for (const SectorMark& sector : _content.sectors)
+    {
+      if (sector.side == Side::Neutral)
+        continue;
+      const Rect area = sectorRect(sector, sideColor(sector.side, SECTOR_OUTLINE_ALPHA), Fill::Solid);
+      layout.panels.push_back({area.left, area.top, area.width, sectorLine, area.color});
+      layout.panels.push_back({area.left, area.top + area.height - sectorLine, area.width, sectorLine, area.color});
+      layout.panels.push_back({area.left, area.top, sectorLine, area.height, area.color});
+      layout.panels.push_back({area.left + area.width - sectorLine, area.top, sectorLine, area.height, area.color});
+      if (sector.suppressed)
+        layout.panels.push_back(sectorRect(sector, sideColor(sector.side, SECTOR_HATCH_ALPHA), Fill::Hatched));
+    }
+
+    // Each alert's place, as an outlined square over everything else (ADR-059).
+    for (const auto& [text, position] : _content.alerts)
+    {
+      const DirectX::XMFLOAT2 at = layout.MinimapPixelOf(position);
+      const float half = ALERT_MARK_UNITS * scale / 2.0f;
+      const float side = 2.0f * half;
+      layout.panels.push_back({at.x - half, at.y - half, side, sectorLine, WARNING_COLOR});
+      layout.panels.push_back({at.x - half, at.y + half - sectorLine, side, sectorLine, WARNING_COLOR});
+      layout.panels.push_back({at.x - half, at.y - half, sectorLine, side, WARNING_COLOR});
+      layout.panels.push_back({at.x + half - sectorLine, at.y - half, sectorLine, side, WARNING_COLOR});
     }
 
     // The view's outline, as the box around the ground the camera shows.

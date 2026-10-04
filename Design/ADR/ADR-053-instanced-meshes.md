@@ -1,10 +1,10 @@
 # ADR-053 — Every mesh drawn is an instance, and a batch draws each mesh's copies at once
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-011](ADR-011-meshes-and-shading.md) decision 6's root constants per object
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-011 decision 6 gave each drawn object 20 root constants, its world matrix and its color, later 24 with a line's lift (ADR-040). Every object was one `DrawIndexedInstanced` of one instance, with its own root constants, vertex buffer and index buffer set before it.
+Each drawn object used to be one draw with 20 root constants, its world matrix and its color, later 24 with a line's lift (ADR-040). Every object was one `DrawIndexedInstanced` of one instance, with its own root constants, vertex buffer and index buffer set before it.
 
 A frame draws the same few meshes many times. Under `--stress` that is 200 ships of three hulls in two sets, 40 structures and every rock of the fields, each as faces and as crease lines, so roughly a thousand draws of a few dozen meshes. These figures are counted from the code and the data, not measured. Each draw costs command-list recording on the CPU and front-end work on the GPU, whatever its size.
 

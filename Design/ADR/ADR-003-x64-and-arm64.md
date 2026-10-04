@@ -23,7 +23,7 @@ R16 requires the instruction set to be stated in every project. `/arch:AVX2` is 
 ## Consequences
 
 - Build output lands in `ARM64/` beside `x64/`. Both are ignored.
-- The same float code may give different results on the two platforms: the two instruction sets differ, and so do the compiler's choices about contracting `a*b+c` into an FMA. ADR-002 already requires no cross-machine determinism, because only the server simulates. A replay from a seed and command log (ADR-002 §8) reproduces on the same build for the same platform, not across platforms.
+- The same float code may give different results on the two platforms wherever it reaches the standard library's math functions or DirectXMath, which are implemented separately for each. Neither platform contracts `a*b+c` into an FMA: `/fp:precise` generates no contractions, and no project passes `/fp:contract` (R16). ADR-002 already requires no cross-machine determinism, because only the server simulates. A replay from a seed and command log (ADR-002 §8) reproduces on the same build for the same platform, not across platforms.
 - An ARM64-only defect cannot be caught by CI. The owner builds ARM64 natively on the development machine, which covers this in practice. If ARM64 starts breaking unnoticed, the fix is an ARM64 CI job, not a guard.
 - A package the game links has to ship ARM64 binaries as well as x64 ones. Both of the game's linked packages do: MsQuic (ADR-004) and the PIX event runtime (ADR-005). In the Debug|x64 and Debug|ARM64 builds of 2026-09-30, `dumpbin /headers` reads `8664` and `AA64` for each DLL the builds copied. ADR-001's packaging tools run only at build time, and the game links nothing from them.
 

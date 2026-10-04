@@ -41,6 +41,14 @@ inline constexpr size_t QUEUE_LIMIT = 5;
 // How far a structure's construction or a queue's front job has come, in thousandths.
 inline constexpr std::int32_t PERMILLE = 1000;
 
+// A standing order a warship keeps until given another (Phase 2 design §9, ADR-059).
+enum class StandingOrder : std::uint8_t
+{
+  None,
+  HoldSector,
+  Patrol
+};
+
 // What one player may see of one entity. It carries what the client draws and selects.
 struct EntityView
 {
@@ -50,12 +58,13 @@ struct EntityView
   PlayerId owner;
   // A ship's design; no design for anything else.
   DesignId design;
-  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), and its
-  // weapon; none for anything else. A player sees the components of every ship it sees, so the AI can answer the designs
-  // it meets (design §10, ADR-020, ADR-024).
+  // A warship's hull, which the client draws it by, its drive, which the client colors its exhaust by (ADR-019), its
+  // weapon and its module, if it has one (Phase 2 design §10); none for anything else. A player sees the components of
+  // every ship it sees, so the AI can answer the designs it meets (design §10, ADR-020, ADR-024).
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  ModuleId module;
   // Meaningful for a ship only.
   ShipRole role = ShipRole::Warship;
   // Meaningful for a structure only.
@@ -89,6 +98,8 @@ struct EntityView
   // How far the entity sees under fog of war, which the client draws the fog by; the owner's only, and zero without fog
   // (ADR-024).
   float sightMeters = 0.0f;
+  // A ship's standing order, which only its owner sees (ADR-059).
+  StandingOrder standing = StandingOrder::None;
   // An ore asteroid's Ore left, in hundredths, and a Mining Rig's asteroid's, as the player knows it: under fog of war,
   // as it last saw it. None for one it has never seen, or that never runs out (Phase 1 design §8).
   std::optional<std::int64_t> oreReserveHundredths;
@@ -137,6 +148,19 @@ struct WeaponView
   bool available = false;
 };
 
+// A module (Phase 2 design §10, ADR-058): what it does to a ship of a design that carries it. The Sensor Array is the
+// first: it sees sightMeters, whatever its weapon, and is slowed by its speed factor.
+struct ModuleView
+{
+  ModuleId id;
+  std::string nameUtf8;
+  // How far a ship with it sees under fog of war, when that is further than its weapon lets it; zero for none.
+  double sightMeters = 0.0;
+  double speedFactor = 1.0;
+  std::int32_t cost = 0;
+  bool available = false;
+};
+
 // A research topic (design §8): what it does in words, what it costs, what it needs first, and whether the player has
 // it.
 struct ResearchTopicView
@@ -166,6 +190,8 @@ struct DesignView
   HullId hull;
   DriveId drive;
   WeaponId weapon;
+  // None for a design without a module (Phase 2 design §10).
+  ModuleId module;
   // In whole Ore, paid when a Shipyard starts building one (design §5).
   std::int32_t cost = 0;
 };
@@ -179,6 +205,62 @@ struct StructureTypeView
   // Whether a Constructor builds it, and for how much Ore; the Command Station is not built.
   bool buildable = false;
   std::int32_t cost = 0;
+};
+
+// One of the map's sectors and who holds it (Phase 2 design §4–§6, ADR-056). Every player sees every sector's holder,
+// fog of war or not: the territory is the map both sides play for.
+struct SectorView
+{
+  std::int32_t id = 0;
+  std::string nameUtf8;
+  float minXMeters = 0.0f;
+  float maxXMeters = 0.0f;
+  float minZMeters = 0.0f;
+  float maxZMeters = 0.0f;
+  // Its node site, where a Relay stands, or the Command Station in a home sector.
+  PlanePosition node;
+  std::vector<std::int32_t> adjacent;
+  // The owner of the finished Relay or the Command Station on its node; no player while the node is free.
+  PlayerId holder;
+  // Its Relay has an enemy warship within the suppression radius and none of its holder's: it earns nothing and the Relay
+  // sees only as a structure does, but the sector is still held.
+  bool suppressed = false;
+  // It is held but no longer linked to its holder's home sector through the sectors its holder holds: it earns the
+  // tuning data's share.
+  bool cutOff = false;
+
+  // Whether _position is in the sector, its borders included, as the map's sector is.
+  [[nodiscard]] bool Contains(PlanePosition _position) const noexcept
+  {
+    return _position.xMeters >= minXMeters && _position.xMeters <= maxXMeters && _position.zMeters >= minZMeters &&
+           _position.zMeters <= maxZMeters;
+  }
+
+  friend bool operator==(const SectorView&, const SectorView&) = default;
+};
+
+// The first of _sectors that holds _position, or nullptr.
+[[nodiscard]] inline const SectorView* FindSector(std::span<const SectorView> _sectors, PlanePosition _position) noexcept
+{
+  const auto found = std::ranges::find_if(_sectors, [_position](const SectorView& _sector) { return _sector.Contains(_position); });
+  return found != _sectors.end() ? &*found : nullptr;
+}
+
+// How a match ended (Phase 2 design §8): a player lost its Command Station and every finished Shipyard (Phase 1 design
+// §4), or a player's tickets ran out because it held fewer nodes (ADR-057).
+enum class MatchEnding : std::uint8_t
+{
+  LostProduction,
+  Domination
+};
+
+// One player's tickets, whole, rounded up so that a player shows none only once it has lost by them (ADR-057).
+struct TicketsView
+{
+  PlayerId player;
+  std::int32_t tickets = 0;
+
+  friend bool operator==(const TicketsView&, const TicketsView&) = default;
 };
 
 // A shot fired in the tick. Hits are instant (design §7), so this is presentation only: where the shot went from and to,
@@ -199,6 +281,8 @@ struct DestroyedView
 {
   EntityId id;
   EntityKind kind = EntityKind::Ship;
+  // Meaningful for a structure only, such as a Mining Rig, which the client alerts its player to (ADR-059).
+  StructureKind structure = StructureKind::CommandStation;
   PlayerId owner;
   HullId hull;
   PlanePosition position;
@@ -232,6 +316,7 @@ struct Snapshot
   std::vector<HullView> hulls;
   std::vector<DriveView> drives;
   std::vector<WeaponView> weapons;
+  std::vector<ModuleView> modules;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
@@ -240,7 +325,15 @@ struct Snapshot
   bool matchOver = false;
   PlayerId winner;
   std::uint64_t matchEndedTick = 0;
+  // How it ended, once it has.
+  MatchEnding ending = MatchEnding::LostProduction;
   // The match is played under fog of war, which the client draws (ADR-024).
   bool fogOfWar = false;
+  // The map's sectors, in the map's order, and who holds each (ADR-056); none on a map without them, which plays without
+  // territory. With them, every player's tickets, in player order, which both players see (ADR-057), and the tickets each
+  // started with.
+  std::vector<SectorView> sectors;
+  std::vector<TicketsView> tickets;
+  std::int32_t startingTickets = 0;
 };
 } // namespace Outpost

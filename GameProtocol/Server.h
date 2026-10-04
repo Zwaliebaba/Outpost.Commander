@@ -11,6 +11,8 @@ struct ServerDesc
   bool measurementLoad = false;
   // A measurement run, not a match: task 3.7's stress scene, 200 ships and 40 structures in combat, kept at full size.
   bool stressLoad = false;
+  // The server also takes players over QUIC, on the loopback address, through OpenSeat (ADR-060).
+  bool quic = false;
 };
 
 // The parts of a tick the server times for measurement (task 8.1, Phase 1 design §10). They nest: Commands holds each
@@ -63,9 +65,14 @@ public:
   // A connection for one player, the human or the AI. The server keeps the other end.
   [[nodiscard]] virtual std::unique_ptr<Transport> Connect(PlayerId _player) = 0;
 
+  // A seat for one player, which a QuicTransport takes at the address returned (ADR-060). Every seat is taken before the
+  // server starts. Throws Neuron::Exception when the server was not made to listen over QUIC (ServerDesc::quic), once it
+  // has started, or when the player already has a connection or a seat.
+  [[nodiscard]] virtual ServerAddress OpenSeat(PlayerId _player) = 0;
+
   // Starts the server's ticks on a thread of its own, at its fixed rate whatever the client's frame rate (ADR-025). Each
   // tick applies the commands that have arrived and sends each connected player a snapshot. Connect every player first.
-  // The thread stops when the server is destroyed.
+  // The thread stops when the server is destroyed. Throws Neuron::Exception when a seat has not been taken.
   virtual void Start() = 0;
 
   // Runs one tick now, on the caller's thread, applying the commands that have arrived and sending each connected player

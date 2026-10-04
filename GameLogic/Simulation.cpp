@@ -64,6 +64,10 @@ constexpr std::int32_t MILLITICKS_PER_TICK = 1000;
 // A ship on an attack order paths to its target again when the target has moved this far since it last did, at most once
 // a second.
 constexpr float CHASE_REPATH_METERS = 40.0f;
+// A group holding a sector is sent at an enemy again once the enemy is this far from where it was sent, and goes back to
+// its sector's node once no enemy is left and it stands further than this from the node (ADR-059).
+constexpr float STANDING_RESEND_METERS = 150.0f;
+constexpr float HOLD_RETURN_METERS = 200.0f;
 
 // A Constructor works on what it is ordered to once its footprint comes this close to the target's (ADR-016).
 constexpr float WORK_REACH_METERS = 20.0f;
@@ -71,6 +75,9 @@ constexpr float WORK_REACH_METERS = 20.0f;
 constexpr std::int32_t SITE_STARTING_HIT_POINTS_DIVISOR = 10;
 // A new ship appears this far beyond its producer's footprint, on the side facing the map's center.
 constexpr float SPAWN_GAP_METERS = 5.0f;
+// A Command Station or Relay this close to a sector's node stands on it: a Relay is placed on the node and a station on
+// its start, which is its home sector's node (ADR-036, ADR-056); this allows for float rounding.
+constexpr float NODE_REACH_METERS = 1.0f;
 // The starting Constructors stand in a row this far in front of the Command Station's footprint, this far apart.
 constexpr float BASE_ROW_GAP_METERS = 25.0f;
 constexpr float BASE_ROW_SPACING_METERS = 10.0f;
@@ -101,6 +108,41 @@ bool IsInRange(const Outpost::Entity& _ship, const Outpost::Entity& _target, flo
 {
   const PlaneVector between = _target.position - _ship.position;
   return Outpost::Dot(between, between) <= _rangeMeters * _rangeMeters;
+}
+
+// A group ordered as one keeps a loose formation (design §9, ADR-010): the ships ahead now take its front rows, each row
+// from one side to the other, so that few paths cross. The group keeps the formation's width as a band of lanes along its
+// route (ADR-047).
+void SortForFormation(std::vector<Outpost::Entity*>& _ships, PlanePosition _center, PlaneVector _forward)
+{
+  const PlaneVector side = Outpost::Perpendicular(_forward);
+  std::ranges::sort(_ships,
+                    [&](const Outpost::Entity* _a, const Outpost::Entity* _b)
+                    {
+                      const float aheadA = Outpost::Dot(_a->position - _center, _forward);
+                      const float aheadB = Outpost::Dot(_b->position - _center, _forward);
+                      if (aheadA != aheadB)
+                        return aheadA > aheadB;
+                      const float sideA = Outpost::Dot(_a->position - _center, side);
+                      const float sideB = Outpost::Dot(_b->position - _center, side);
+                      if (sideA != sideB)
+                        return sideA < sideB;
+                      return _a->id < _b->id;
+                    });
+}
+
+// The rows of a formation of _ships are this many wide.
+std::size_t FormationColumns(std::size_t _ships) noexcept
+{
+  return static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(_ships))));
+}
+
+// How far across the formation the _index-th of _ships keeps, in formation order: its row is centered.
+float FormationAcross(std::size_t _index, std::size_t _ships, std::size_t _columns, float _spacing) noexcept
+{
+  const std::size_t row = _index / _columns;
+  const std::size_t inRow = std::min(_columns, _ships - (row * _columns));
+  return (static_cast<float>(_index % _columns) - (static_cast<float>(inRow - 1) / 2.0f)) * _spacing;
 }
 
 float PathLength(PlanePosition _from, const std::vector<PlanePosition>& _path) noexcept
@@ -152,6 +194,9 @@ void Outpost::Simulation::PlaceMap(const Map& _map)
   }
   m_mapObstacles = std::move(obstacles);
   m_mapHalfSizeMeters = _map.sizeMeters / 2.0f;
+  m_sectors.clear();
+  for (const SectorPlacement& sector : _map.sectors)
+    m_sectors.push_back({.placement = sector});
   UpdateObstacles();
 }
 
@@ -192,9 +237,12 @@ float Outpost::Simulation::SightMetersOf(const Entity& _entity) const noexcept
 {
   if (!m_tuning)
     return 0.0f;
+  // A ship with a module that sees further sees that far, whatever its weapon (Phase 2 design §10, ADR-058).
+  const ShipDesign* design = _entity.kind == EntityKind::Ship ? FindDesign(_entity.design) : nullptr;
+  const float moduleSight = design != nullptr ? design->stats.moduleSightMeters : 0.0f;
   if (const std::optional<Armament> armament = ArmamentOf(_entity))
-    return armament->rangeMeters + static_cast<float>(m_tuning->sight.weaponMarginMeters);
-  return static_cast<float>(m_tuning->sight.unarmedMeters);
+    return std::max(moduleSight, armament->rangeMeters + static_cast<float>(m_tuning->sight.weaponMarginMeters));
+  return std::max(moduleSight, static_cast<float>(m_tuning->sight.unarmedMeters));
 }
 
 std::vector<Outpost::Simulation::Observer> Outpost::Simulation::ObserversOf(PlayerId _player) const
@@ -237,7 +285,7 @@ void Outpost::Simulation::UpdateVision()
         continue;
       const bool revealed =
         std::ranges::find(player.revealedUntil, entity.id, &std::pair<EntityId, std::uint64_t>::first) != player.revealedUntil.end();
-      if (!revealed && !InSight(observers, entity.position, entity.radiusMeters))
+      if (!revealed && !InSight(observers, entity.position, entity.radiusMeters) && !InSectorSight(player.id, entity.position))
         continue;
       player.seen.push_back(entity.id);
       if (entity.kind != EntityKind::Structure)
@@ -266,7 +314,7 @@ void Outpost::Simulation::UpdateVision()
     for (const Entity& asteroid : m_entities)
     {
       if (asteroid.kind != EntityKind::Asteroid || !asteroid.oreReserveHundredths.has_value() ||
-          !InSight(observers, asteroid.position, asteroid.radiusMeters))
+          (!InSight(observers, asteroid.position, asteroid.radiusMeters) && !InSectorSight(player.id, asteroid.position)))
         continue;
       const auto known = std::ranges::find(player.knownReserves, asteroid.id, &std::pair<EntityId, std::int64_t>::first);
       if (known != player.knownReserves.end())
@@ -276,8 +324,10 @@ void Outpost::Simulation::UpdateVision()
     }
     // A remembered structure whose place is in sight but that is not seen there is gone.
     std::erase_if(player.remembered,
-                  [&](const EntityView& _known) {
-                    return !std::ranges::binary_search(player.seen, _known.id) && InSight(observers, _known.position, _known.radiusMeters);
+                  [&](const EntityView& _known)
+                  {
+                    return !std::ranges::binary_search(player.seen, _known.id) &&
+                           (InSight(observers, _known.position, _known.radiusMeters) || InSectorSight(player.id, _known.position));
                   });
 
     // An attack on a ship ends once the ship is out of sight; a structure stays where it was seen.
@@ -343,6 +393,7 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   {
     view.drive = design->components.drive;
     view.weapon = design->components.weapon;
+    view.module = design->components.module;
   }
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
@@ -396,6 +447,9 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
   effects.weapons.reserve(_tuning.weapons.size());
   for (const WeaponTuning& weapon : _tuning.weapons)
     effects.weapons.push_back(ViewOf(weapon, effects.upgrades, IsAvailable(_tuning, _researched, weapon.id)));
+  effects.modules.reserve(_tuning.modules.size());
+  for (const ModuleTuning& module : _tuning.modules)
+    effects.modules.push_back(ViewOf(module));
   effects.topics.reserve(_tuning.research.size());
   for (const ResearchTopicTuning& topic : _tuning.research)
   {
@@ -446,8 +500,7 @@ void Outpost::Simulation::SaveStartingDesigns(PlayerId _owner, const Tuning& _tu
   {
     if (FindDesign(_owner, components) == nullptr)
     {
-      (void)SaveDesign(_owner, DesignName(_tuning, components), components,
-                       DesignStatsFor(_tuning, components.hull, components.drive, components.weapon));
+      (void)SaveDesign(_owner, DesignName(_tuning, components), components, DesignStatsFor(_tuning, components));
     }
   }
 }
@@ -548,6 +601,9 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
   }
   else
     UpdateObstacles();
+  // A Command Station or a Relay placed whole holds its sector at once.
+  if (_kind == StructureKind::CommandStation || _kind == StructureKind::Relay)
+    UpdateTerritory();
   return id;
 }
 
@@ -587,6 +643,16 @@ void Outpost::Simulation::PlaceStartingBases(const Map& _map)
       const float offset =
         (static_cast<float>(i) - (static_cast<float>(constructors - 1) / 2.0f)) * ((2.0f * constructorRadius) + BASE_ROW_SPACING_METERS);
       (void)SpawnConstructor(owner, start + forward * (stationRadius + BASE_ROW_GAP_METERS + constructorRadius) + across * offset, heading);
+    }
+  }
+  // On a map with territory every player starts with its tickets, counted in shares of a ticket, as many to a ticket as the
+  // map has nodes (ADR-057).
+  if (HasTerritory())
+  {
+    for (const PlayerId owner : m_basePlayers)
+    {
+      if (PlayerState* player = FindPlayer(owner))
+        player->ticketShares = std::int64_t{m_tuning->territory.tickets} * static_cast<std::int64_t>(m_sectors.size());
     }
   }
 }
@@ -631,7 +697,8 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
         [this, &command]<typename OrderType>(const OrderType& _order)
         {
           if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
-                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+                        std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand> ||
+                        std::is_same_v<OrderType, HoldSectorCommand> || std::is_same_v<OrderType, PatrolCommand>)
             return Apply(command.player, _order);
           else
             return m_tuning ? Apply(command.player, _order) : CommandResult::NotYetSupported;
@@ -648,6 +715,16 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
               for (std::size_t index = 0; index < plannedBefore; ++index)
                 std::erase_if(m_plannedOrders[index].members, [&_order](const PlannedOrder::Member& _member)
                               { return std::ranges::find(_order.ships, _member.ship) != _order.ships.end(); });
+            }
+            // Any other order a player gives a ship ends its standing order (ADR-059).
+            if constexpr (std::is_same_v<OrderType, MoveCommand> || std::is_same_v<OrderType, AttackMoveCommand> ||
+                          std::is_same_v<OrderType, AttackCommand> || std::is_same_v<OrderType, StopCommand>)
+            {
+              for (const EntityId id : _order.ships)
+              {
+                if (Entity* ship = FindMutableEntity(id))
+                  ship->standing = StandingOrder::None;
+              }
             }
           },
           command.order);
@@ -666,6 +743,7 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
   {
     const ObservedPart part(m_observer, TickPart::Targets);
     DecideMatch();
+    KeepStandingOrders();
     ChaseTargets();
     ApproachWork();
   }
@@ -686,6 +764,10 @@ std::vector<Outpost::CommandResult> Outpost::Simulation::Tick(const std::vector<
     SeparateShips();
     KeepShipsClear();
   }
+  // Who holds what, once every structure built this tick stands and every ship is where the tick leaves it (ADR-056), and
+  // what holding it costs the other side (ADR-057).
+  UpdateTerritory();
+  Dominate();
   if (m_fog)
   {
     const ObservedPart part(m_observer, TickPart::Vision);
@@ -709,7 +791,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     const std::vector<Observer> observers = ObserversOf(_player);
     for (const DestroyedView& destroyed : m_destroyed)
     {
-      if (!destroyed.owner.IsValid() || destroyed.owner == _player || InSight(observers, destroyed.position, destroyed.radiusMeters))
+      if (!destroyed.owner.IsValid() || destroyed.owner == _player || InSight(observers, destroyed.position, destroyed.radiusMeters) ||
+          InSectorSight(_player, destroyed.position))
         snapshot.destroyed.push_back(destroyed);
     }
     const auto shown = [&](EntityId _id)
@@ -742,6 +825,7 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
                                   .hull = design.components.hull,
                                   .drive = design.components.drive,
                                   .weapon = design.components.weapon,
+                                  .module = design.components.module,
                                   .cost = design.stats.cost});
     }
   }
@@ -763,13 +847,38 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.hulls = effects.hulls;
     snapshot.drives = effects.drives;
     snapshot.weapons = effects.weapons;
+    snapshot.modules = effects.modules;
     snapshot.research = effects.topics;
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
   }
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
+  snapshot.ending = m_ending;
+  if (HasTerritory() && !m_basePlayers.empty())
+  {
+    const auto nodes = static_cast<std::int64_t>(m_sectors.size());
+    snapshot.startingTickets = m_tuning->territory.tickets;
+    for (const PlayerId player : m_basePlayers)
+      snapshot.tickets.push_back({.player = player, .tickets = static_cast<std::int32_t>((TicketShares(player) + nodes - 1) / nodes)});
+  }
   snapshot.fogOfWar = m_fog;
+  snapshot.sectors.reserve(m_sectors.size());
+  for (const Sector& sector : m_sectors)
+  {
+    const SectorPlacement& placement = sector.placement;
+    snapshot.sectors.push_back({.id = placement.id,
+                                .nameUtf8 = placement.name,
+                                .minXMeters = placement.minXMeters,
+                                .maxXMeters = placement.maxXMeters,
+                                .minZMeters = placement.minZMeters,
+                                .maxZMeters = placement.maxZMeters,
+                                .node = placement.node,
+                                .adjacent = placement.adjacent,
+                                .holder = sector.holder,
+                                .suppressed = sector.suppressed,
+                                .cutOff = sector.cutOff});
+  }
   snapshot.entities.reserve(m_entities.size());
   for (const Entity& entity : m_entities)
   {
@@ -784,6 +893,8 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     }
     if (m_fog && entity.owner == _player)
       view.sightMeters = SightMetersOf(entity);
+    if (entity.owner == _player)
+      view.standing = entity.standing;
     // An ore asteroid's Ore left, and a rig's asteroid's, as far as the player knows it (Phase 1 design §8).
     if (entity.kind == EntityKind::Asteroid)
       view.oreReserveHundredths = ReserveKnownTo(_player, entity.id);
@@ -877,24 +988,11 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
   const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
   const PlaneVector forward = Normalized(_destination - center, {1.0f, 0.0f});
   const PlaneVector side = Perpendicular(forward);
-
-  std::ranges::sort(ships,
-                    [&](const Entity* _a, const Entity* _b)
-                    {
-                      const float aheadA = Dot(_a->position - center, forward);
-                      const float aheadB = Dot(_b->position - center, forward);
-                      if (aheadA != aheadB)
-                        return aheadA > aheadB;
-                      const float sideA = Dot(_a->position - center, side);
-                      const float sideB = Dot(_b->position - center, side);
-                      if (sideA != sideB)
-                        return sideA < sideB;
-                      return _a->id < _b->id;
-                    });
+  SortForFormation(ships, center, forward);
 
   // A grid of slots round the destination, facing the way the group travels, the ships ahead in front (ADR-010). The
   // group keeps the grid's width as a band of lanes along its route (ADR-047).
-  const auto columns = static_cast<std::size_t>(std::ceil(std::sqrt(static_cast<float>(ships.size()))));
+  const std::size_t columns = FormationColumns(ships.size());
   const float spacing = FORMATION_SPACING_RADII * widestRadius;
   const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
 
@@ -911,8 +1009,7 @@ Outpost::CommandResult Outpost::Simulation::OrderMove(PlayerId _player, const st
   for (std::size_t index = 0; index < ships.size(); ++index)
   {
     const std::size_t row = index / columns;
-    const std::size_t inRow = std::min(columns, ships.size() - row * columns);
-    const float across = (static_cast<float>(index % columns) - static_cast<float>(inRow - 1) / 2.0f) * spacing;
+    const float across = FormationAcross(index, ships.size(), columns, spacing);
     planned.members.push_back({.ship = ships[index]->id,
                                .goal = routes.Destination() + side * across - forward * (static_cast<float>(row) * spacing),
                                .laneMeters = across});
@@ -1036,7 +1133,8 @@ void Outpost::Simulation::FinishPlannedOrders()
 }
 
 // Each ship closes on the target, along a route the group searched once, and fires at it once it is in range (design §7).
-// Each goes at its own top speed: a chase is not a formation.
+// Each goes at its own top speed: a chase is not a formation, but the group keeps a band of lanes round obstacles as a
+// moving group does, and paths again as a group when its target moves (ADR-047).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const AttackCommand& _order)
 {
   if (const CommandResult result = ValidateShips(_player, _order.ships); result != CommandResult::Applied)
@@ -1065,26 +1163,43 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Attack
   }
   const PlanePosition targetPosition = target->position;
 
-  PlaneVector sum{};
-  float widestRadius = 0.0f;
+  std::vector<Entity*> ships;
   for (const EntityId id : attack.ships)
   {
-    const Entity* ship = FindEntity(id);
+    Entity* ship = FindMutableEntity(id);
+    if (std::ranges::find(ships, ship) == ships.end())
+      ships.push_back(ship);
+  }
+  PlaneVector sum{};
+  float widestRadius = 0.0f;
+  for (const Entity* ship : ships)
+  {
     sum = sum + (ship->position - PlanePosition{});
     widestRadius = std::max(widestRadius, ship->radiusMeters);
   }
-  GroupRoutes routes(m_pathfinder, targetPosition, widestRadius);
-  if (attack.ships.size() > 1)
+  const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
+  SortForFormation(ships, center, Normalized(targetPosition - center, {1.0f, 0.0f}));
+  const std::size_t columns = FormationColumns(ships.size());
+  const float spacing = FORMATION_SPACING_RADII * widestRadius;
+  const float bandHalfWidth = static_cast<float>(columns - 1) * spacing / 2.0f;
+  GroupRoutes routes(m_pathfinder, targetPosition, widestRadius, bandHalfWidth);
+  if (ships.size() > 1)
   {
     const ObservedPart part(m_observer, TickPart::GroupRoute);
-    routes.SearchFrom(PlanePosition{} + sum * (1.0f / static_cast<float>(attack.ships.size())));
+    routes.SearchFrom(center);
   }
 
-  PlannedOrder planned{
-    .order = ShipOrder::Attack, .destination = targetPosition, .attackTarget = attack.target, .widestRadiusMeters = widestRadius};
-  planned.members.reserve(attack.ships.size());
-  for (const EntityId id : attack.ships)
-    planned.members.push_back({.ship = id, .goal = targetPosition});
+  PlannedOrder planned{.order = ShipOrder::Attack,
+                       .destination = targetPosition,
+                       .attackTarget = attack.target,
+                       .widestRadiusMeters = widestRadius,
+                       .bandHalfWidthMeters = bandHalfWidth};
+  planned.members.reserve(ships.size());
+  for (std::size_t index = 0; index < ships.size(); ++index)
+  {
+    planned.members.push_back(
+      {.ship = ships[index]->id, .goal = targetPosition, .laneMeters = FormationAcross(index, ships.size(), columns, spacing)});
+  }
   planned.routes = routes.TakeRoutes();
   Plan(std::move(planned));
   return CommandResult::Applied;
@@ -1263,6 +1378,7 @@ void Outpost::Simulation::Fight()
     {
       m_destroyed.push_back({.id = entity.id,
                              .kind = entity.kind,
+                             .structure = entity.structure,
                              .owner = entity.owner,
                              .hull = entity.hull,
                              .position = entity.position,
@@ -1292,9 +1408,18 @@ void Outpost::Simulation::Fight()
 }
 
 // A ship on an attack order stands while its target is in range, and otherwise heads for it, pathing again when the
-// target has moved away from where it last pathed to, at most once a second.
+// target has moved away from where it last pathed to, at most once a second. The ships of one player that path again to
+// one target in the same tick path as a group, along one route in a band of lanes, as they set out (ADR-047).
 void Outpost::Simulation::ChaseTargets()
 {
+  // The ships to path again, by their owner and target, in the order their groups' first ships come.
+  struct Chase
+  {
+    PlayerId owner;
+    EntityId target;
+    std::vector<Entity*> ships;
+  };
+  std::vector<Chase> chases;
   for (Entity& ship : m_entities)
   {
     if (ship.order != ShipOrder::Attack)
@@ -1309,20 +1434,66 @@ void Outpost::Simulation::ChaseTargets()
     const bool moved = Distance(target.position, ship.chasedPosition) > CHASE_REPATH_METERS && m_tick >= ship.chaseTick;
     if (!ship.path.empty() && !moved)
       continue;
-    ship.path = m_pathfinder.IsStraightPathClear(ship.position, target.position, ship.radiusMeters)
-                  ? std::vector<PlanePosition>{target.position}
-                  : m_pathfinder.FindPath(ship.position, target.position, ship.radiusMeters);
-    ship.laneEnd.reset();
-    ship.cruiseSpeedMetersPerSecond = ship.speedMetersPerSecond;
-    ship.closestMeters = std::numeric_limits<float>::infinity();
-    ship.stalledTicks = 0;
-    ship.chasedPosition = target.position;
-    ship.chaseTick = m_tick + m_ticksPerSecond;
+    const auto chase = std::ranges::find_if(chases, [&ship](const Chase& _chase)
+                                            { return _chase.owner == ship.owner && _chase.target == ship.attackTarget; });
+    if (chase != chases.end())
+      chase->ships.push_back(&ship);
+    else
+      chases.push_back({.owner = ship.owner, .target = ship.attackTarget, .ships = {&ship}});
+  }
+
+  for (Chase& chase : chases)
+  {
+    const PlanePosition target = FindEntity(chase.target)->position;
+    if (chase.ships.size() == 1)
+    {
+      Entity& ship = *chase.ships.front();
+      ship.path = m_pathfinder.IsStraightPathClear(ship.position, target, ship.radiusMeters)
+                    ? std::vector<PlanePosition>{target}
+                    : m_pathfinder.FindPath(ship.position, target, ship.radiusMeters);
+      ship.laneEnd.reset();
+    }
+    else
+    {
+      PlaneVector sum{};
+      float widestRadius = 0.0f;
+      for (const Entity* ship : chase.ships)
+      {
+        sum = sum + (ship->position - PlanePosition{});
+        widestRadius = std::max(widestRadius, ship->radiusMeters);
+      }
+      const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(chase.ships.size()));
+      SortForFormation(chase.ships, center, Normalized(target - center, {1.0f, 0.0f}));
+      const std::size_t columns = FormationColumns(chase.ships.size());
+      const float spacing = FORMATION_SPACING_RADII * widestRadius;
+      GroupRoutes routes(m_pathfinder, target, widestRadius, static_cast<float>(columns - 1) * spacing / 2.0f);
+      {
+        const ObservedPart part(m_observer, TickPart::GroupRoute);
+        routes.SearchFrom(center);
+      }
+      const ObservedPart part(m_observer, TickPart::ShipPaths);
+      for (std::size_t index = 0; index < chase.ships.size(); ++index)
+      {
+        Entity& ship = *chase.ships[index];
+        GroupRoutes::Way way =
+          routes.PathFor(ship.position, target, ship.radiusMeters, FormationAcross(index, chase.ships.size(), columns, spacing));
+        ship.path = std::move(way.waypoints);
+        ship.laneEnd = way.laneEnd;
+      }
+    }
+    for (Entity* ship : chase.ships)
+    {
+      ship->cruiseSpeedMetersPerSecond = ship->speedMetersPerSecond;
+      ship->closestMeters = std::numeric_limits<float>::infinity();
+      ship->stalledTicks = 0;
+      ship->chasedPosition = target;
+      ship->chaseTick = m_tick + m_ticksPerSecond;
+    }
   }
 }
 
-// A ship turns toward its next waypoint at its turn rate and moves the way it faces, slower the further it is from facing
-// the waypoint and not at all while it faces away, so it turns before it sets off rather than circling.
+// A ship turns toward its next waypoint at its turn rate as it flies the way it faces, and never on the spot: slower the
+// further it is from facing the waypoint, down to half speed, and never too fast to reach it on an arc (ADR-039).
 //
 // A corner of the path is only a way round an obstacle, so a ship lets it go as soon as it is within its own radius of it,
 // or can see the waypoint after it: ships crowding round the same corner then do not have to queue for its exact point.
@@ -1528,11 +1699,22 @@ Outpost::CommandResult Outpost::Simulation::ValidateConstructors(PlayerId _playe
 }
 
 // A structure stands on the plane with a circular footprint that overlaps nothing and stays inside the map's edge. A
-// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center (design §6).
-Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, float _radiusMeters, PlanePosition& _position) const
+// Mining Rig instead snaps to the free ore asteroid it was placed on or beside, and stands at its center (design §6); on
+// a map with territory the asteroid must be in a sector the player holds. A Relay snaps to the node of the sector it was
+// placed in, which must be free and adjacent to a sector the player holds (Phase 2 design §4–§6, ADR-056).
+Outpost::CommandResult Outpost::Simulation::CheckPlacement(PlayerId _player, StructureKind _kind, float _radiusMeters,
+                                                           PlanePosition& _position) const
 {
   if (!IsFinite(_position))
     return CommandResult::InvalidPosition;
+  const Sector* relaySector = nullptr;
+  if (_kind == StructureKind::Relay)
+  {
+    relaySector = SectorAt(_position);
+    if (relaySector == nullptr)
+      return CommandResult::InvalidPlacement;
+    _position = relaySector->placement.node;
+  }
   if (_kind == StructureKind::MiningRig)
   {
     const Entity* nearest = nullptr;
@@ -1555,6 +1737,12 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, 
       { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::MiningRig && _entity.site == nearest->id; });
     if (taken)
       return CommandResult::InvalidPlacement;
+    if (HasTerritory())
+    {
+      const Sector* sector = SectorAt(nearest->position);
+      if (sector == nullptr || sector->holder != _player)
+        return CommandResult::SectorNotHeld;
+    }
     _position = nearest->position;
     return CommandResult::Applied;
   }
@@ -1569,6 +1757,14 @@ Outpost::CommandResult Outpost::Simulation::CheckPlacement(StructureKind _kind, 
     if (blocks && Distance(other.position, _position) < other.radiusMeters + _radiusMeters)
       return CommandResult::InvalidPlacement;
   }
+  // A Relay's node is free now, since nothing stands on it; it must be next to the player's territory (Phase 2 design §6).
+  if (relaySector != nullptr && std::ranges::none_of(relaySector->placement.adjacent,
+                                                     [this, _player](std::int32_t _id)
+                                                     {
+                                                       const Sector* adjacent = SectorById(_id);
+                                                       return adjacent != nullptr && adjacent->holder == _player;
+                                                     }))
+    return CommandResult::NotAdjacent;
   return CommandResult::Applied;
 }
 
@@ -1589,9 +1785,13 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
         { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::ResearchLab && _entity.owner == _player; }))
     return CommandResult::LimitReached;
 
+  // A Relay holds a sector, and a map without them has none to hold (ADR-056).
+  if (_build.structure == StructureKind::Relay && !HasTerritory())
+    return CommandResult::NotBuildable;
+
   const auto radius = static_cast<float>(tuning->footprintRadiusMeters);
   PlanePosition position = _build.position;
-  if (const CommandResult result = CheckPlacement(_build.structure, radius, position); result != CommandResult::Applied)
+  if (const CommandResult result = CheckPlacement(_player, _build.structure, radius, position); result != CommandResult::Applied)
     return result;
   PlayerState* player = FindPlayer(_player);
   const std::int64_t cost = std::int64_t{costOre} * HUNDREDTHS;
@@ -1925,7 +2125,111 @@ std::int64_t Outpost::Simulation::RigIncomeHundredthsPerSecond(const Entity& _ri
   const Entity* asteroid = FindEntity(_rig.site);
   const bool dry = asteroid != nullptr && asteroid->oreReserveHundredths == 0;
   const double share = dry ? m_tuning->rules.exhaustedYieldPercent / 100.0 : 1.0;
-  return std::llround(rate * HUNDREDTHS * _incomeFactor * share);
+  return std::llround(rate * HUNDREDTHS * _incomeFactor * share * TerritoryShare(_rig));
+}
+
+const Outpost::Simulation::Sector* Outpost::Simulation::SectorAt(PlanePosition _position) const noexcept
+{
+  const auto found = std::ranges::find_if(m_sectors, [_position](const Sector& _sector) { return _sector.placement.Contains(_position); });
+  return found != m_sectors.end() ? &*found : nullptr;
+}
+
+const Outpost::Simulation::Sector* Outpost::Simulation::SectorById(std::int32_t _id) const noexcept
+{
+  const auto found = std::ranges::find_if(m_sectors, [_id](const Sector& _sector) { return _sector.placement.id == _id; });
+  return found != m_sectors.end() ? &*found : nullptr;
+}
+
+// A sector is held by the owner of the finished Relay or the Command Station on its node; a site under construction holds
+// nothing yet. A Relay is suppressed while an enemy warship is within the tuning data's radius of it and none of its
+// owner's is; a Command Station never is. A held sector is linked when its holder holds a path of adjacent sectors to one
+// of its home sectors, the ones its Command Station holds, suppressed ones included; one that is not is cut off (Phase 2
+// design §4–§6, ADR-056).
+void Outpost::Simulation::UpdateTerritory()
+{
+  if (!HasTerritory())
+    return;
+  const auto suppressionRadius = static_cast<float>(m_tuning->territory.suppressionRadiusMeters);
+  for (Sector& sector : m_sectors)
+  {
+    sector.holder = {};
+    sector.home = false;
+    sector.suppressed = false;
+    sector.cutOff = false;
+    const auto onNode = std::ranges::find_if(m_entities,
+                                             [&sector](const Entity& _entity)
+                                             {
+                                               const bool holds = _entity.structure == StructureKind::CommandStation ||
+                                                                  _entity.structure == StructureKind::Relay;
+                                               return _entity.kind == EntityKind::Structure && holds && _entity.owner.IsValid() &&
+                                                      _entity.IsBuilt() &&
+                                                      Distance(_entity.position, sector.placement.node) <= NODE_REACH_METERS;
+                                             });
+    if (onNode == m_entities.end())
+      continue;
+    sector.holder = onNode->owner;
+    sector.home = onNode->structure == StructureKind::CommandStation;
+    if (sector.home)
+      continue;
+    bool enemyNear = false;
+    bool ownNear = false;
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.kind != EntityKind::Ship || ship.role != ShipRole::Warship || ship.maxHitPointsHundredths <= 0 || !ship.owner.IsValid() ||
+          !IsInRange(ship, *onNode, suppressionRadius))
+        continue;
+      (ship.owner == sector.holder ? ownNear : enemyNear) = true;
+    }
+    sector.suppressed = enemyNear && !ownNear;
+  }
+
+  // Outward from each home sector through the sectors its holder holds.
+  std::vector<std::uint8_t> linked(m_sectors.size(), 0);
+  std::vector<size_t> frontier;
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+  {
+    if (m_sectors[index].home)
+    {
+      linked[index] = 1;
+      frontier.push_back(index);
+    }
+  }
+  while (!frontier.empty())
+  {
+    const size_t from = frontier.back();
+    frontier.pop_back();
+    for (const std::int32_t id : m_sectors[from].placement.adjacent)
+    {
+      const auto next = std::ranges::find_if(m_sectors, [id](const Sector& _sector) { return _sector.placement.id == id; });
+      if (next == m_sectors.end())
+        continue;
+      const auto index = static_cast<size_t>(next - m_sectors.begin());
+      if (linked[index] != 0 || next->holder != m_sectors[from].holder)
+        continue;
+      linked[index] = 1;
+      frontier.push_back(index);
+    }
+  }
+  for (size_t index = 0; index < m_sectors.size(); ++index)
+    m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
+}
+
+double Outpost::Simulation::TerritoryShare(const Entity& _rig) const noexcept
+{
+  if (!HasTerritory())
+    return 1.0;
+  const Sector* sector = SectorAt(_rig.position);
+  if (sector == nullptr || sector->holder != _rig.owner || sector->suppressed)
+    return 0.0;
+  return sector->cutOff ? m_tuning->territory.cutOffIncomePercent / 100.0 : 1.0;
+}
+
+bool Outpost::Simulation::InSectorSight(PlayerId _player, PlanePosition _position) const noexcept
+{
+  if (!HasTerritory())
+    return false;
+  const Sector* sector = SectorAt(_position);
+  return sector != nullptr && sector->holder == _player && !sector->suppressed;
 }
 
 std::optional<std::int64_t> Outpost::Simulation::ReserveKnownTo(PlayerId _player, EntityId _asteroid) const
@@ -2014,7 +2318,7 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
   for (ShipDesign& design : m_designs)
   {
     if (design.owner == _player.id)
-      design.stats = DesignStatsFor(*m_tuning, design.components.hull, design.components.drive, design.components.weapon, upgrades);
+      design.stats = DesignStatsFor(*m_tuning, design.components, upgrades);
   }
   // A ship or structure keeps the share of its hit points it had, so an undamaged one gains the whole upgrade (owner,
   // 2026-10-01). A ship's speed follows its design's, and a Constructor's the rule's; a move under way keeps its pace.
@@ -2089,15 +2393,165 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartR
   return CommandResult::Applied;
 }
 
+std::vector<Outpost::EntityId> Outpost::Simulation::WarshipsOf(const std::vector<EntityId>& _ships) const
+{
+  std::vector<EntityId> warships;
+  for (const EntityId id : _ships)
+  {
+    if (FindEntity(id)->role == ShipRole::Warship && std::ranges::find(warships, id) == warships.end())
+      warships.push_back(id);
+  }
+  return warships;
+}
+
+// Phase 2 design §9: the warships hold the sector that holds the point. They go to its node, answer any enemy ship they
+// see in the sector, and go back to the node once none is left (KeepStandingOrders, ADR-059).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const HoldSectorCommand& _hold)
+{
+  if (const CommandResult result = ValidateShips(_player, _hold.ships); result != CommandResult::Applied)
+    return result;
+  if (!IsFinite(_hold.position))
+    return CommandResult::InvalidPosition;
+  const std::vector<EntityId> warships = WarshipsOf(_hold.ships);
+  if (warships.empty())
+    return CommandResult::NoShips;
+  const Sector* sector = HasTerritory() ? SectorAt(_hold.position) : nullptr;
+  if (sector == nullptr)
+    return CommandResult::NoSector;
+  const std::uint32_t group = ++m_lastStandingGroup;
+  for (const EntityId id : warships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    ship.standing = StandingOrder::HoldSector;
+    ship.standingGroup = group;
+    ship.holdSector = sector->placement.id;
+    ship.standingFrom = sector->placement.node;
+  }
+  return OrderMove(_player, warships, sector->placement.node, ShipOrder::AttackMove);
+}
+
+// Phase 2 design §9: the warships attack-move to the point, then back to the middle of where they were ordered from, and
+// so on (KeepStandingOrders, ADR-059).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const PatrolCommand& _patrol)
+{
+  if (const CommandResult result = ValidateShips(_player, _patrol.ships); result != CommandResult::Applied)
+    return result;
+  if (!IsFinite(_patrol.destination))
+    return CommandResult::InvalidPosition;
+  const std::vector<EntityId> warships = WarshipsOf(_patrol.ships);
+  if (warships.empty())
+    return CommandResult::NoShips;
+  PlaneVector sum{};
+  for (const EntityId id : warships)
+    sum = sum + (FindEntity(id)->position - PlanePosition{});
+  const PlanePosition from = PlanePosition{} + sum * (1.0f / static_cast<float>(warships.size()));
+  const std::uint32_t group = ++m_lastStandingGroup;
+  for (const EntityId id : warships)
+  {
+    Entity& ship = *FindMutableEntity(id);
+    ship.standing = StandingOrder::Patrol;
+    ship.standingGroup = group;
+    ship.standingFrom = from;
+    ship.standingTo = _patrol.destination;
+    ship.standingOutward = true;
+  }
+  return OrderMove(_player, warships, _patrol.destination, ShipOrder::AttackMove);
+}
+
+// Once a second, each group on a standing order, in the order it was given, acts as one (ADR-059). A group holding a
+// sector attack-moves on the nearest enemy ship its player sees in the sector, unless it is already headed there or
+// firing, and once none is left and it stands idle away from the sector's node, attack-moves back to it. A patrolling
+// group, once all of it stands idle at one end, attack-moves to the other. A group still planning its paths waits.
+void Outpost::Simulation::KeepStandingOrders()
+{
+  if (m_tick % m_ticksPerSecond != 0)
+    return;
+  std::vector<std::uint32_t> groups;
+  for (const Entity& ship : m_entities)
+  {
+    if (ship.standing != StandingOrder::None && std::ranges::find(groups, ship.standingGroup) == groups.end())
+      groups.push_back(ship.standingGroup);
+  }
+  std::ranges::sort(groups);
+  const auto planning = [this](EntityId _ship)
+  {
+    return std::ranges::any_of(m_plannedOrders, [_ship](const PlannedOrder& _order)
+                               { return std::ranges::find(_order.members, _ship, &PlannedOrder::Member::ship) != _order.members.end(); });
+  };
+  for (const std::uint32_t group : groups)
+  {
+    std::vector<EntityId> ships;
+    PlaneVector sum{};
+    for (const Entity& ship : m_entities)
+    {
+      if (ship.standing != StandingOrder::None && ship.standingGroup == group)
+      {
+        ships.push_back(ship.id);
+        sum = sum + (ship.position - PlanePosition{});
+      }
+    }
+    if (std::ranges::any_of(ships, planning))
+      continue;
+    const Entity& first = *FindEntity(ships.front());
+    const PlanePosition center = PlanePosition{} + sum * (1.0f / static_cast<float>(ships.size()));
+    const bool idle = std::ranges::all_of(ships,
+                                          [this](EntityId _id)
+                                          {
+                                            const Entity& ship = *FindEntity(_id);
+                                            return ship.order == ShipOrder::None && ship.path.empty();
+                                          });
+    if (first.standing == StandingOrder::Patrol)
+    {
+      if (!idle)
+        continue;
+      const bool outward = !first.standingOutward;
+      for (const EntityId id : ships)
+        FindMutableEntity(id)->standingOutward = outward;
+      (void)OrderMove(first.owner, ships, outward ? first.standingTo : first.standingFrom, ShipOrder::AttackMove);
+      continue;
+    }
+
+    const Sector* sector = SectorById(first.holdSector);
+    if (sector == nullptr)
+      continue;
+    const Entity* enemy = nullptr;
+    for (const Entity& other : m_entities)
+    {
+      if (other.kind != EntityKind::Ship || !other.owner.IsValid() || other.owner == first.owner || other.maxHitPointsHundredths <= 0 ||
+          !sector->placement.Contains(other.position) || !Sees(first.owner, other))
+        continue;
+      if (enemy == nullptr || Distance(other.position, center) < Distance(enemy->position, center))
+        enemy = &other;
+    }
+    if (enemy != nullptr)
+    {
+      const bool engaged =
+        std::ranges::any_of(ships,
+                            [&](EntityId _id)
+                            {
+                              const Entity& ship = *FindEntity(_id);
+                              return ship.target.IsValid() || (ship.order == ShipOrder::AttackMove && ship.destination.has_value() &&
+                                                               Distance(*ship.destination, enemy->position) <= STANDING_RESEND_METERS);
+                            });
+      if (!engaged)
+        (void)OrderMove(first.owner, ships, enemy->position, ShipOrder::AttackMove);
+    }
+    else if (idle && Distance(center, sector->placement.node) > HOLD_RETURN_METERS)
+      (void)OrderMove(first.owner, ships, sector->placement.node, ShipOrder::AttackMove);
+  }
+}
+
 // A new design is of components the player has, and is not one it already has; a saved one is renamed (ADR-017).
 Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDesignCommand& _save)
 {
   if (!IsValidDesignName(_save.nameUtf8))
     return CommandResult::InvalidName;
-  const DesignComponents components{_save.hull, _save.drive, _save.weapon};
-  const bool known = std::ranges::find(m_tuning->hulls, components.hull, &HullTuning::id) != m_tuning->hulls.end() &&
-                     std::ranges::find(m_tuning->drives, components.drive, &DriveTuning::id) != m_tuning->drives.end() &&
-                     std::ranges::find(m_tuning->weapons, components.weapon, &WeaponTuning::id) != m_tuning->weapons.end();
+  const DesignComponents components{_save.hull, _save.drive, _save.weapon, _save.module};
+  const bool known =
+    std::ranges::find(m_tuning->hulls, components.hull, &HullTuning::id) != m_tuning->hulls.end() &&
+    std::ranges::find(m_tuning->drives, components.drive, &DriveTuning::id) != m_tuning->drives.end() &&
+    std::ranges::find(m_tuning->weapons, components.weapon, &WeaponTuning::id) != m_tuning->weapons.end() &&
+    (!components.module.IsValid() || std::ranges::find(m_tuning->modules, components.module, &ModuleTuning::id) != m_tuning->modules.end());
   if (!known)
     return CommandResult::UnknownComponent;
 
@@ -2118,8 +2572,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const SaveDe
     return CommandResult::ComponentLocked;
   if (FindDesign(_player, components) != nullptr)
     return CommandResult::DuplicateDesign;
-  (void)SaveDesign(_player, _save.nameUtf8, components,
-                   DesignStatsFor(*m_tuning, components.hull, components.drive, components.weapon, EffectsOf(_player).upgrades));
+  (void)SaveDesign(_player, _save.nameUtf8, components, DesignStatsFor(*m_tuning, components, EffectsOf(_player).upgrades));
   return CommandResult::Applied;
 }
 
@@ -2143,9 +2596,53 @@ void Outpost::Simulation::DecideMatch()
     if (producing)
       standing.push_back(player);
   }
-  if (standing.size() == m_basePlayers.size())
+  if (standing.size() < m_basePlayers.size())
+    EndMatch(standing, MatchEnding::LostProduction);
+}
+
+// Phase 2 design §8: every drain interval, a player that holds fewer nodes than the most any player holds loses the
+// tuning data's tickets for each node it is behind, divided by the map's nodes; a suppressed Relay counts for its owner,
+// and a free node for no one. Tickets are kept in shares, as many to a ticket as the map has nodes, so the drain is whole
+// and a lead of one node on nine drains a side in exactly 50 minutes (ADR-057). A player out of tickets loses.
+void Outpost::Simulation::Dominate()
+{
+  if (m_matchOver || m_basePlayers.empty() || !HasTerritory())
     return;
+  const auto interval =
+    std::max<std::uint64_t>(1, static_cast<std::uint64_t>(std::llround(m_tuning->territory.drainIntervalSeconds * m_ticksPerSecond)));
+  if ((m_tick + 1) % interval != 0)
+    return;
+  std::vector<std::int64_t> nodes;
+  nodes.reserve(m_basePlayers.size());
+  for (const PlayerId player : m_basePlayers)
+    nodes.push_back(std::ranges::count(m_sectors, player, &Sector::holder));
+  const std::int64_t most = std::ranges::max(nodes);
+  std::vector<PlayerId> standing;
+  for (size_t index = 0; index < m_basePlayers.size(); ++index)
+  {
+    PlayerState* player = FindPlayer(m_basePlayers[index]);
+    if (player != nullptr)
+    {
+      const std::int64_t drain = std::int64_t{m_tuning->territory.drainTicketsPerNodeDifference} * (most - nodes[index]);
+      player->ticketShares = std::max<std::int64_t>(0, player->ticketShares - drain);
+    }
+    if (player == nullptr || player->ticketShares > 0)
+      standing.push_back(m_basePlayers[index]);
+  }
+  if (standing.size() < m_basePlayers.size())
+    EndMatch(standing, MatchEnding::Domination);
+}
+
+void Outpost::Simulation::EndMatch(const std::vector<PlayerId>& _standing, MatchEnding _ending)
+{
   m_matchOver = true;
-  m_winner = standing.size() == 1 ? standing.front() : PlayerId{};
+  m_winner = _standing.size() == 1 ? _standing.front() : PlayerId{};
   m_matchEndedTick = m_tick + 1;
+  m_ending = _ending;
+}
+
+std::int64_t Outpost::Simulation::TicketShares(PlayerId _player) const noexcept
+{
+  const PlayerState* player = FindPlayer(_player);
+  return player != nullptr ? player->ticketShares : 0;
 }

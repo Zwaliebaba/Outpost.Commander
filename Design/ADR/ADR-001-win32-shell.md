@@ -14,7 +14,7 @@ The project started from the WinUI 3 template. The owner has chosen Win32.
 ## Decision
 
 1. **The game executable is a plain Win32 application.** It owns an `HWND`, and D3D12 presents to it through a flip-model swap chain (`CreateSwapChainForHwnd`, `DXGI_SWAP_EFFECT_FLIP_DISCARD`). There is no XAML and no WinRT API anywhere in the tree. The one C++/WinRT header in use is `<winrt/base.h>`, for `winrt::com_ptr` and `winrt::check_hresult` on classic COM such as D3D12 (AGENTS.md R12). It comes with the Windows SDK, not in a package, and it brings in no `Windows.*` namespace, no `.idl` and no `cppwinrt.exe`.
-2. **The UI is drawn by the game**, over the D3D12 scene: the HUD, the ship designer, menus and text. How it is drawn is gate G7's decision, recorded in its own ADR with task 3.6; ADR-006 fixes the reference frame it is laid out in.
+2. **The UI is drawn by the game**, over the D3D12 scene: the HUD, the ship designer, menus and text. How it is drawn is gate G7's decision, recorded in [ADR-015](ADR-015-ui-drawing.md); ADR-006 fixes the reference frame it is laid out in.
 3. **The executable is MSIX-packaged** (`AppxPackage`, `EnableMsixTooling`) for day-to-day development, so it runs as it ships, with package identity.
 4. **The packaging tools are one of R14's exceptions.** This table is the complete list of them:
 
@@ -29,7 +29,7 @@ The project started from the WinUI 3 template. The owner has chosen Win32.
 ## Consequences
 
 - **The UI is ours to build.** The MVP's HUD and ship designer are in-game panels (design §9). This is the largest cost of the decision.
-- **No composition frame.** A flip-model swap chain on an `HWND` can present without DWM composition's extra frame, by independent flip when the window covers the output. Nothing is measured yet: the design's Q4 and Q5 measure frame pacing and order-to-response latency on this shell.
+- **No composition frame.** A flip-model swap chain on an `HWND` can present without DWM composition's extra frame, by independent flip when the window covers the output. The design's Q4 and Q5 measure frame pacing and order-to-response latency on this shell, and MVP design §3 records them.
 - **A packaged app is registered before it runs.** Visual Studio's F5 registers the layout, and so does `Add-AppxPackage -Register <layout>\AppxManifest.xml`. The edit–run loop is slower than an unpackaged executable's. CI builds the executable but does not register or run it.
 - **CI restores `packages.config`** in a step of its own before the Windows build. A clean clone does not build without it.
 - **R14's Direct3D list is unchanged apart from `d3dx12.h`,** vendored under ADR-007: no Agility SDK, no DirectXTK.
@@ -41,4 +41,4 @@ The project started from the WinUI 3 template. The owner has chosen Win32.
 - **XAML, and WinRT APIs in general.** Input, audio and windowing use the Win32 and DirectX APIs the Windows SDK ships, such as XInput. A WinRT-only API, for example `Windows.Gaming.Input`, needs this ADR changed.
 - **`Microsoft::WRL::ComPtr`, and the C++/WinRT package.** COM uses the SDK's `<winrt/base.h>` (AGENTS.md R12).
 - **An unpackaged build** for day-to-day development, and any packaging tool beyond the two above, without changing this ADR. Any other package needs an ADR of its own, as ADR-004 and ADR-005 are.
-- **Windows before 10 1809** (`10.0.17763`), the package's minimum version.
+- **Windows before 11** (`10.0.22000`), the package's minimum version, which QUIC's TLS 1.3 sets ([ADR-060](ADR-060-quic-in-process.md)).

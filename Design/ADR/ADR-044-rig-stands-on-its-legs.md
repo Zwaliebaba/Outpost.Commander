@@ -1,10 +1,10 @@
 # ADR-044 — A Mining Rig stands on its legs, tilted to fit its rock
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-027](ADR-027-rock-crease-lines.md) decision 5
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-Under ADR-027 decision 5, a Mining Rig is lowered until its lowest foot reaches the rock, so every other foot goes into it. With the owner's rig meshes the rig sinks deep into its rock, measured in the Linux container with the shipped meshes. On a 45 m rock, whose top is 26.8 m up, the Human rig's feet stood between 0.4 m and 6.9 m up, depending on its turn, so the rig sat about 20 m into the rock (ADR-042).
+A Mining Rig used to be lowered until its lowest foot reached the rock, so every other foot went into it. With the owner's rig meshes the rig sank deep into its rock, measured in the Linux container with the shipped meshes. On a 45 m rock, whose top is 26.8 m up, the Human rig's feet stood between 0.4 m and 6.9 m up, depending on its turn, so the rig sat about 20 m into the rock (ADR-042).
 
 The owner decided on 2026-10-03 that the legs should touch the rock, with only the drill going in.
 
@@ -18,14 +18,14 @@ A rig is rigid, so the legs can only all touch the rock if the rig tilts. These 
 
 ## Decision
 
-1. **A rig tilts to fit its rock, then lifts until no foot is in it.** `Outpost::StandOnFeet` takes the feet in meters along the rig's own axes, and the rock's height under a point given the same way.
+1. **A rig tilts to fit its rock, then lifts until no foot is in it.** `Outpost::StandOnFeet` takes the feet in meters along the rig's own axes, and the rock's height under a point given the same way: `Neuron::SurfaceHeightAt` on the rock mesh, turned by its asteroid's heading and drawn at its radius.
    - It tilts the rig about the middle of its feet, by a bank and then a pitch, to the plane that fits the rock under the feet best by least squares.
    - It fits again as the tilt moves the feet, three times in all.
    - Then it lifts the rig until no foot is under the rock.
    - A rig on three legs then stands on all three. A rig on four rests on those the rock lets it, and none is in the rock.
 2. **The tilt is at most 0.5 radians either way**, about 29°. The game's rocks need up to 18°.
 3. **Where it is drawn:** `Stance` holds the pivot, the bank, the pitch and the lift. `StanceMatrix` draws a mesh where a pose and a stance put it, and `StandPoint` puts a point where the matrix does. The rig and its explosion's shards are drawn with them.
-4. **Only a Mining Rig stands this way.** Its feet are found as ADR-027 found them, its legs' tips and not its drill. A rig without feet over the rock still stands its lowest point on the rock's top.
+4. **Only a Mining Rig stands this way.** Its feet are its lowest points out past half its radius: its legs' tips, not a drill under its middle. A rig without feet over the rock stands its lowest point on the rock's top.
 
 ## Consequences
 

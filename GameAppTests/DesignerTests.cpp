@@ -82,6 +82,44 @@ Neuron::InputEvent Character(std::uint32_t _character)
 TEST_CLASS(DesignerTests)
 {
 public:
+  // Phase 2 design §10: the module slot starts empty and stays so until the player picks one; a module's cost and speed
+  // join the design's, its name follows the weapon's, by its initials where the whole is too long a name, and saving and
+  // loading carry it.
+  TEST_METHOD(PicksAModuleOrNone)
+  {
+    constexpr Outpost::ModuleId SENSOR_ARRAY{1};
+    Outpost::Snapshot newest = Components();
+    newest.modules = {
+      {.id = SENSOR_ARRAY, .nameUtf8 = "Sensor Array", .sightMeters = 700.0, .speedFactor = 0.9, .cost = 40, .available = true}};
+    Outpost::Designer designer = Picking(SMALL, ION, MASS_DRIVER);
+    designer.Update(newest);
+    Assert::IsFalse(designer.Picked().module.IsValid(), L"no module until one is picked");
+    Assert::IsNotNull(designer.Match(newest));
+
+    designer.PickModule(SENSOR_ARRAY);
+    designer.Update(newest);
+    Assert::IsTrue(designer.Picked().module == SENSOR_ARRAY);
+    Assert::IsNull(designer.Match(newest), L"the Swarm has no module");
+    Assert::AreEqual(std::string("Small+Ion+Mass Driver+SA"), designer.Name(newest), L"the whole name is too long");
+    const std::optional<Outpost::DesignStats> stats = designer.Stats(newest);
+    Assert::IsTrue(stats.has_value());
+    Assert::AreEqual(87 + 40, stats.value_or(Outpost::DesignStats{}).cost);
+    Assert::AreEqual(78.0f * 0.9f, stats.value_or(Outpost::DesignStats{}).movement.speedMetersPerSecond, 1e-3f);
+    Assert::AreEqual(700.0f, stats.value_or(Outpost::DesignStats{}).moduleSightMeters);
+    const std::optional<Outpost::SaveDesignCommand> save = designer.SaveCommand(newest);
+    Assert::IsTrue(save.has_value() && save->module == SENSOR_ARRAY && !save->design.IsValid());
+
+    designer.PickModule({});
+    Assert::IsNotNull(designer.Match(newest));
+    designer.Load(
+      {.id = Outpost::DesignId{2}, .nameUtf8 = "Scout", .hull = SMALL, .drive = ION, .weapon = MASS_DRIVER, .module = SENSOR_ARRAY});
+    Assert::IsTrue(designer.Picked().module == SENSOR_ARRAY);
+
+    newest.modules.clear();
+    designer.Update(newest);
+    Assert::IsFalse(designer.Picked().module.IsValid(), L"a module the snapshot no longer lists is dropped");
+  }
+
   // Every slot holds an available component: the first, until the player picks another, and the first again when the
   // picked one is locked.
   TEST_METHOD(PicksAvailableComponents)

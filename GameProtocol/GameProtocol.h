@@ -25,4 +25,6 @@
 #include "DesignStats.h"
 #include "Placement.h"
 #include "Transport.h"
+#include "WireFormat.h"
+#include "QuicTransport.h"
 #include "Server.h"

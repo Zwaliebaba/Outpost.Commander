@@ -1,6 +1,6 @@
 # ADR-045 — A model may grow through levels, and its parts may spin
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-018](ADR-018-nmf-and-hardpoints.md) decision 5's layout and its refusal of every animation
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -12,7 +12,7 @@ The owner's `ResearchLab` sources also have a moving part. Each is a node named 
 - **Tarkan**: the `tilted_ring_pivot` turns once in 12 s at every level. Levels 3 to 5 add a `counter_ring_pivot`, which turns the other way once in 9 s.
 - **No other source** is animated, and no animated node holds a hardpoint.
 
-ADR-018 refused every animation, so none of these sources could be baked.
+The baker refused every animation, so none of these sources could be baked.
 
 ## Decision
 
@@ -30,7 +30,17 @@ ADR-018 refused every animation, so none of these sources could be baked.
    - a hardpoint on a part;
    - a part with no triangles;
    - a model whose every triangle spins.
-3. **The NMF layout is version 2.** The header gains a `u32 partCount` before `flags`. After the hardpoints, each part is `{ u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }`. The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 2, and every `.nmf` is baked again. It refuses:
+3. **The NMF layout is version 2, little-endian:**
+
+   ```
+   char magic[4] = "NMF\0"; u32 version = 2; u32 vertexCount; u32 indexCount; u32 hardpointCount; u32 partCount; u32 flags = 0
+   vertexCount    x { f32 position[3]; f32 normal[3]; }      24 bytes, Neuron::MeshVertex
+   indexCount     x u32, a multiple of 3, each below vertexCount
+   hardpointCount x { u8 tagLength; char tag[tagLength]; f32 position[3]; f32 forward[3]; f32 up[3]; f32 size; }
+   partCount      x { u32 firstIndex; u32 indexCount; f32 pivot[3]; f32 axis[3]; f32 periodSeconds; }
+   ```
+
+   The triangles that stand still come first. The parts' runs of indices follow, one after another, to the end, each sorted by its node's name. A part turns once each period about its pivot, as `XMMatrixRotationAxis(axis, angle)` turns a point as the angle grows. The change of frame mirrors the source, so the baker reverses the source's axis. `Neuron::ParseNmf` reads only version 2, as strictly as ADR-018 decision 5 says, and every `.nmf` is baked again. It also refuses:
    - a part's axis that is not a unit vector;
    - a period that is not positive;
    - runs that leave no triangle standing still, are not whole triangles, overlap or leave a gap, or do not reach the last index.

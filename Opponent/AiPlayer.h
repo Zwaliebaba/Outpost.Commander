@@ -23,6 +23,12 @@ namespace Outpost
 // production first, then the next structure (ADR-037). Under fog of war it may know none (ADR-024): the attack then goes
 // across the map's center from its own base, where the point-symmetric map puts the enemy's. An attack that has lost too
 // many ships falls back and regroups, and the AI fortifies its base as its Shipyards grow (ADR-041).
+//
+// On a map with territory (Phase 2 design §12, ADR-020 decision 13) it builds a Relay before its rigs in another sector,
+// claims free sectors next to its territory one at a time once its first Shipyard stands, and puts a Defence Platform by
+// each Relay on its front. It keeps a scout with a Sensor Array touring the enemy's flank sectors, raids an enemy sector
+// it sees no warship guarding with a few warships, holds its front with its reserve's standing order, and attacks in
+// force only with a lead in nodes or a larger reserve (ADR-041).
 class AiPlayer
 {
 public:
@@ -42,6 +48,12 @@ public:
   [[nodiscard]] size_t AttackGroupShips() const noexcept
   {
     return m_attackGroup.size();
+  }
+
+  // The warships it has sent on a raid and that still live (ADR-020 decision 13).
+  [[nodiscard]] size_t RaidShips() const noexcept
+  {
+    return m_raidGroup.size();
   }
 
 private:
@@ -78,9 +90,26 @@ private:
   void PlanShipyards(const Snapshot& _snapshot);
   // Adds a rig on the nearest asteroid with ore left once one of its rigs' asteroids has run dry (Phase 1 design §13).
   void FollowOre(const Snapshot& _snapshot);
-  // The plan's rig on _asteroid, and a Defence Platform beside a rig of the plan, on the side of its base.
+  // The plan's rig on _asteroid, after a Relay in the asteroid's sector when the plan has none there yet (Phase 2 design §4),
+  // and a Defence Platform beside a rig of the plan, on the side of its base.
   void AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid);
+  void AddRelaySlot(const Snapshot& _snapshot, const SectorView& _sector);
   void AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig);
+  // A Defence Platform beside the structure of _radiusMeters at _at, on the side of the AI's base.
+  void AddPlatformBeside(const Snapshot& _snapshot, PlanePosition _at, float _radiusMeters, std::optional<size_t> _besideRig);
+  // Plans the next free sector next to its territory, nearest its base first, once every Relay it planned stands, up to
+  // the settings' count (ADR-020 decision 13).
+  void ClaimTerritory(const Snapshot& _snapshot);
+  // Plans the Defence Platforms by each Relay of its on the front (ADR-020 decision 13).
+  void FortifyFront(const Snapshot& _snapshot);
+  // Sends its scouts round the enemy's flank sectors (ADR-020 decision 13).
+  void CommandScouts(const Snapshot& _snapshot, std::vector<Command>& _orders);
+  // The sector its reserve holds: the one it holds next to the enemy's nearest its rally, or else the rally's own.
+  [[nodiscard]] const SectorView* FrontSector(const Snapshot& _snapshot) const;
+  // Whether _a is nearer _from than _b, or as near and first in an order both seats share (ADR-020 decision 13).
+  [[nodiscard]] bool IsNearer(PlanePosition _a, PlanePosition _b, PlanePosition _from) const noexcept;
+  // Whether a ship is one of its scouts: of the scout design's module.
+  [[nodiscard]] bool IsScout(const EntityView& _ship) const noexcept;
   // A Defence Platform round the base, toward the map's center, built once the income reaches _minimumIncome (task 12.2).
   void AddHomePlatform(const Snapshot& _snapshot, std::int32_t _minimumIncomeHundredthsPerSecond);
   // Where the enemy's Command Stations are, or under fog of war, where the enemy's base must be.
@@ -89,6 +118,9 @@ private:
   [[nodiscard]] bool IsEnemyHome(PlanePosition _asteroid, const std::vector<PlanePosition>& _enemyStations) const;
   [[nodiscard]] bool IsDone(const Slot& _slot, const Snapshot& _snapshot) const;
   [[nodiscard]] bool IsBlocked(const Slot& _slot, const Snapshot& _snapshot) const;
+  // Whether a slot can be built now (ADR-056): a Relay's node must be free and next to the AI's territory, and a rig's
+  // asteroid in a sector the AI holds. One that is not waits without holding up the rest of the plan.
+  [[nodiscard]] bool IsReady(const Slot& _slot, const Snapshot& _snapshot) const;
   // What a structure the AI plans must keep clear of: what blocks in _snapshot, and the planned structures not yet placed,
   // apart from slot _skippedSlot. Called during a decision only, and good until the next call.
   [[nodiscard]] std::span<const EntityView> Blockers(const Snapshot& _snapshot, std::optional<size_t> _skippedSlot);
@@ -117,6 +149,18 @@ private:
   // The enemy warships it has seen since its last review, and what each is.
   std::map<EntityId, DesignComponents> m_seenWarships;
   std::optional<std::uint64_t> m_designSaveTick;
+  std::optional<std::uint64_t> m_scoutSaveTick;
+
+  // Territory (ADR-020 decision 13): the sectors it has claimed and fortified, each scout's next waypoint, and the raid
+  // under way: its ships, the sector it is sent at, the ships it set out with, and when the next may set out.
+  std::vector<std::int32_t> m_claimed;
+  std::vector<std::int32_t> m_fortified;
+  std::map<EntityId, size_t> m_scoutWaypoints;
+  std::vector<EntityId> m_raidGroup;
+  std::int32_t m_raidSector = 0;
+  size_t m_raidLaunch = 0;
+  std::uint64_t m_nextRaidTick = 0;
+  std::vector<EntityId> m_raidClosing;
 
   // Warships committed to the attack, and the enemy structure they are sent at; or, knowing none, whether they were sent
   // across the map to look for one.
@@ -136,8 +180,15 @@ private:
   std::vector<EntityView> m_blockers;
   size_t m_snapshotBlockers = 0;
   bool m_blockersGathered = false;
-  // Where each reserve warship was last sent, so that it is sent again only when that changes.
-  std::map<EntityId, PlanePosition> m_reserveDestinations;
+  // Where each reserve warship was last sent, and whether to hold the sector there, so that it is sent again only when
+  // that changes.
+  struct ReserveOrder
+  {
+    PlanePosition destination;
+    bool holds = false;
+  };
+
+  std::map<EntityId, ReserveOrder> m_reserveDestinations;
   // Its structures in the last snapshot, and where they stand.
   std::vector<std::pair<EntityId, PlanePosition>> m_structures;
   // The last of them that came under fire, where it stands, and when.

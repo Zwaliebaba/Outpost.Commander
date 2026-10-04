@@ -7,6 +7,7 @@ using Outpost::EntityId;
 using Outpost::EntityKind;
 using Outpost::EntityView;
 using Outpost::PlanePosition;
+using Outpost::SectorView;
 using Outpost::Snapshot;
 using Outpost::StructureKind;
 
@@ -36,6 +37,10 @@ constexpr float CLOSE_IN_METERS = 500.0f;
 constexpr float HOME_PLATFORM_RING_METERS = 260.0f;
 constexpr float HOME_PLATFORM_RING_STEP_METERS = 70.0f;
 constexpr std::array<float, 5> HOME_PLATFORM_TURNS_RADIANS{0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
+// A scout this close to its waypoint goes on to the next (ADR-020 decision 13).
+constexpr float SCOUT_ARRIVED_METERS = 150.0f;
+// An enemy sector is raided only when the AI sees no enemy warship this close to its node (ADR-020 decision 13).
+constexpr float RAID_GUARD_METERS = 600.0f;
 
 float Distance(PlanePosition _a, PlanePosition _b) noexcept
 {
@@ -53,6 +58,12 @@ const EntityView* FindEntity(const Snapshot& _snapshot, EntityId _id) noexcept
 {
   const auto found = std::ranges::lower_bound(_snapshot.entities, _id, {}, &EntityView::id);
   return found != _snapshot.entities.end() && found->id == _id ? &*found : nullptr;
+}
+
+const SectorView* FindSectorById(const Snapshot& _snapshot, std::int32_t _id) noexcept
+{
+  const auto found = std::ranges::find(_snapshot.sectors, _id, &SectorView::id);
+  return found != _snapshot.sectors.end() ? &*found : nullptr;
 }
 
 bool IsStructure(const EntityView& _entity, StructureKind _kind) noexcept
@@ -128,19 +139,35 @@ bool IsAvailable(const Snapshot& _snapshot, const Outpost::DesignComponents& _de
          weapon != _snapshot.weapons.end() && weapon->available;
 }
 
-// "Medium+Ion+Mass Driver", as the starting designs are named, or the identifiers when that is not a valid name.
+// "Medium+Ion+Mass Driver", as the starting designs are named, with a module's name or else its initials after it, or the
+// identifiers when that is not a valid name.
 std::string DesignName(const Snapshot& _snapshot, const Outpost::DesignComponents& _design)
 {
   const auto hull = std::ranges::find(_snapshot.hulls, _design.hull, &Outpost::HullView::id);
   const auto drive = std::ranges::find(_snapshot.drives, _design.drive, &Outpost::DriveView::id);
   const auto weapon = std::ranges::find(_snapshot.weapons, _design.weapon, &Outpost::WeaponView::id);
+  const auto module = std::ranges::find(_snapshot.modules, _design.module, &Outpost::ModuleView::id);
   if (hull != _snapshot.hulls.end() && drive != _snapshot.drives.end() && weapon != _snapshot.weapons.end())
   {
     std::string name = std::format("{}+{}+{}", hull->nameUtf8, drive->nameUtf8, weapon->nameUtf8);
+    if (module != _snapshot.modules.end())
+    {
+      const std::string whole = std::format("{}+{}", name, module->nameUtf8);
+      name = Outpost::IsValidDesignName(whole) ? whole : std::format("{}+{}", name, Outpost::Abbreviation(module->nameUtf8));
+    }
     if (Outpost::IsValidDesignName(name))
       return name;
   }
-  return std::format("Design {}-{}-{}", _design.hull.value, _design.drive.value, _design.weapon.value);
+  return std::format("Design {}-{}-{}-{}", _design.hull.value, _design.drive.value, _design.weapon.value, _design.module.value);
+}
+
+// The player's saved design of these components, module included, or nullptr.
+const Outpost::DesignView* FindDesignOf(const Snapshot& _snapshot, const Outpost::DesignComponents& _design)
+{
+  const auto found =
+    std::ranges::find_if(_snapshot.designs, [&_design](const Outpost::DesignView& _view)
+                         { return Outpost::DesignComponents{_view.hull, _view.drive, _view.weapon, _view.module} == _design; });
+  return found != _snapshot.designs.end() ? &*found : nullptr;
 }
 
 auto ComponentOrder(const Outpost::DesignComponents& _design) noexcept
@@ -254,6 +281,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   }
   PlanShipyards(_snapshot);
   FollowOre(_snapshot);
+  ClaimTerritory(_snapshot);
+  FortifyFront(_snapshot);
   if (_snapshot.tick >= m_nextReviewTick)
   {
     // What it has seen since the last review; with nothing seen it keeps the design it has.
@@ -321,6 +350,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
 
   Produce(_snapshot, structureWaiting, _orders);
   CommandFleet(_snapshot, _orders);
+  CommandScouts(_snapshot, _orders);
 }
 
 // The plan of the base (owner, 2026-10-01): rigs on the home asteroids; a Shipyard, a Research Lab and a Defence Platform
@@ -414,6 +444,11 @@ void Outpost::AiPlayer::Plan(const Snapshot& _snapshot, const EntityView& _stati
 
 void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& _asteroid)
 {
+  if (const SectorView* sector = FindSector(_snapshot.sectors, _asteroid.position);
+      sector != nullptr && sector->holder != m_player &&
+      std::ranges::none_of(m_slots, [sector](const Slot& _slot)
+                           { return _slot.structure == StructureKind::Relay && _slot.position == sector->node; }))
+    AddRelaySlot(_snapshot, *sector);
   const StructureTypeView* type = FindType(_snapshot, StructureKind::MiningRig);
   const float radius = type != nullptr ? std::max(type->radiusMeters, _asteroid.radiusMeters) : _asteroid.radiusMeters;
   m_slots.push_back({.structure = StructureKind::MiningRig,
@@ -423,11 +458,27 @@ void Outpost::AiPlayer::AddRigSlot(const Snapshot& _snapshot, const EntityView& 
                      .abandoned = type == nullptr || !type->buildable});
 }
 
+// A Relay stands on its sector's node, which is fixed, so its place is never searched for (ADR-056).
+void Outpost::AiPlayer::AddRelaySlot(const Snapshot& _snapshot, const SectorView& _sector)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::Relay);
+  m_slots.push_back({.structure = StructureKind::Relay,
+                     .position = _sector.node,
+                     .radiusMeters = type != nullptr ? type->radiusMeters : 0.0f,
+                     .abandoned = type == nullptr || !type->buildable});
+}
+
 void Outpost::AiPlayer::AddPlatformBesideRig(const Snapshot& _snapshot, size_t _rig)
 {
-  const PlanePosition at = m_slots[_rig].position;
-  const float rigRadius = m_slots[_rig].radiusMeters;
-  Slot slot{.structure = StructureKind::DefensePlatform, .besideRig = _rig, .minimumIncomeHundredthsPerSecond = 0};
+  AddPlatformBeside(_snapshot, m_slots[_rig].position, m_slots[_rig].radiusMeters, _rig);
+}
+
+void Outpost::AiPlayer::AddPlatformBeside(const Snapshot& _snapshot, PlanePosition _at, float _radiusMeters,
+                                          std::optional<size_t> _besideRig)
+{
+  const PlanePosition at = _at;
+  const float rigRadius = _radiusMeters;
+  Slot slot{.structure = StructureKind::DefensePlatform, .besideRig = _besideRig, .minimumIncomeHundredthsPerSecond = 0};
   const StructureTypeView* type = FindType(_snapshot, StructureKind::DefensePlatform);
   if (type == nullptr || !type->buildable)
   {
@@ -600,6 +651,13 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
     return true;
   if (_slot.besideRig.has_value())
     return IsBlocked(m_slots[*_slot.besideRig], _snapshot);
+  // A rig or Relay in a sector the enemy holds waits for the enemy to lose it.
+  if (_slot.structure == StructureKind::MiningRig || _slot.structure == StructureKind::Relay)
+  {
+    const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
+    if (sector != nullptr && sector->holder.IsValid() && sector->holder != m_player)
+      return true;
+  }
   if (_slot.structure != StructureKind::MiningRig)
     return false;
   return std::ranges::any_of(_snapshot.entities,
@@ -607,6 +665,24 @@ bool Outpost::AiPlayer::IsBlocked(const Slot& _slot, const Snapshot& _snapshot) 
                              {
                                return IsStructure(_entity, StructureKind::MiningRig) && _entity.owner != m_player &&
                                       Distance(_entity.position, _slot.position) <= SAME_PLACE_METERS;
+                             });
+}
+
+bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) const
+{
+  if (_snapshot.sectors.empty())
+    return true;
+  const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
+  if (_slot.structure == StructureKind::MiningRig)
+    return sector != nullptr && sector->holder == m_player;
+  if (_slot.structure != StructureKind::Relay)
+    return true;
+  return sector != nullptr && !sector->holder.IsValid() &&
+         std::ranges::any_of(sector->adjacent,
+                             [&](std::int32_t _id)
+                             {
+                               const SectorView* adjacent = FindSectorById(_snapshot, _id);
+                               return adjacent != nullptr && adjacent->holder == m_player;
                              });
 }
 
@@ -702,7 +778,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
-    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) ||
+    if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) || !IsReady(slot, _snapshot) ||
         _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
         std::ranges::any_of(m_work, [i](const Work& _work) { return _work.slot == i; }))
       continue;
@@ -714,7 +790,7 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
     if (ore < type->cost)
       return true;
 
-    if (slot.structure != StructureKind::MiningRig)
+    if (slot.structure != StructureKind::MiningRig && slot.structure != StructureKind::Relay)
     {
       // Something may have taken the place since it was planned.
       StructureTypeView padded = *type;
@@ -755,10 +831,46 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
 // does not have it. Not while a structure waits for Ore, since a ship is paid for when it starts and would take it.
 void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaiting, std::vector<Command>& _orders)
 {
+  // Its scouts come first, ahead of a structure waiting for Ore, as they must set out in the first minutes (ADR-020
+  // decision 13).
+  if (m_settings.scouts > 0 && !_snapshot.sectors.empty())
+  {
+    const DesignView* scout = FindDesignOf(_snapshot, m_settings.scoutDesign);
+    std::int32_t scouts = 0;
+    for (const EntityView& entity : _snapshot.entities)
+    {
+      if (entity.owner != m_player)
+        continue;
+      if (entity.kind == EntityKind::Ship && IsScout(entity))
+        ++scouts;
+      else if (scout != nullptr && IsStructure(entity, StructureKind::Shipyard))
+        scouts += static_cast<std::int32_t>(std::ranges::count(entity.queue, scout->id, &JobView::design));
+    }
+    const auto yard =
+      std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
+                           { return IsStructure(_entity, StructureKind::Shipyard) && _entity.owner == m_player && IsBuilt(_entity); });
+    if (scouts < m_settings.scouts && yard != _snapshot.entities.end() && yard->queue.size() < QUEUE_LIMIT)
+    {
+      if (scout != nullptr)
+        _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = yard->id, .design = scout->id}));
+      else if (!m_scoutSaveTick.has_value() || _snapshot.tick >= *m_scoutSaveTick + (DESIGN_WAIT_SECONDS * m_ticksPerSecond))
+      {
+        const DesignComponents& design = m_settings.scoutDesign;
+        _orders.push_back(MakeCommand(m_player, SaveDesignCommand{.design = {},
+                                                                  .nameUtf8 = DesignName(_snapshot, design),
+                                                                  .hull = design.hull,
+                                                                  .drive = design.drive,
+                                                                  .weapon = design.weapon,
+                                                                  .module = design.module}));
+        m_scoutSaveTick = _snapshot.tick;
+      }
+    }
+  }
   if (_structureWaiting)
     return;
-  const auto design = std::ranges::find_if(_snapshot.designs, [this](const DesignView& _design)
-                                           { return DesignComponents{_design.hull, _design.drive, _design.weapon} == m_productionDesign; });
+  const auto design =
+    std::ranges::find_if(_snapshot.designs, [this](const DesignView& _design)
+                         { return DesignComponents{_design.hull, _design.drive, _design.weapon, _design.module} == m_productionDesign; });
   if (design == _snapshot.designs.end())
   {
     if (!m_designSaveTick.has_value() || _snapshot.tick >= *m_designSaveTick + (DESIGN_WAIT_SECONDS * m_ticksPerSecond))
@@ -781,17 +893,172 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
   }
 }
 
+bool Outpost::AiPlayer::IsScout(const EntityView& _ship) const noexcept
+{
+  return m_settings.scoutDesign.module.IsValid() && _ship.kind == EntityKind::Ship && _ship.role == ShipRole::Warship &&
+         _ship.module == m_settings.scoutDesign.module;
+}
+
+// Once its first Shipyard stands, and every Relay it has planned stands or is blocked, it claims the free sector next to
+// its territory nearest its base: a rig on each of its asteroids, each after the sector's Relay, or the Relay alone in a
+// sector without ore (ADR-020 decision 13).
+void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
+{
+  if (_snapshot.sectors.empty())
+    return;
+  const bool shipyard =
+    std::ranges::any_of(_snapshot.entities, [this](const EntityView& _entity)
+                        { return IsStructure(_entity, StructureKind::Shipyard) && _entity.owner == m_player && IsBuilt(_entity); });
+  if (!shipyard)
+    return;
+  const bool claiming =
+    std::ranges::any_of(m_slots, [&](const Slot& _slot)
+                        { return _slot.structure == StructureKind::Relay && !IsDone(_slot, _snapshot) && !IsBlocked(_slot, _snapshot); });
+  if (claiming || std::cmp_greater_equal(m_claimed.size(), m_settings.claimSectors))
+    return;
+  const SectorView* claimed = nullptr;
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (sector.holder.IsValid() || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
+      continue;
+    const bool adjacent = std::ranges::any_of(sector.adjacent,
+                                              [&](std::int32_t _id)
+                                              {
+                                                const SectorView* other = FindSectorById(_snapshot, _id);
+                                                return other != nullptr && other->holder == m_player;
+                                              });
+    if (adjacent && (claimed == nullptr || IsNearer(sector.node, claimed->node, m_home)))
+      claimed = &sector;
+  }
+  if (claimed == nullptr)
+    return;
+  m_claimed.push_back(claimed->id);
+  std::vector<const EntityView*> asteroids;
+  for (const EntityView& asteroid : _snapshot.entities)
+  {
+    if (asteroid.kind == EntityKind::Asteroid && claimed->Contains(asteroid.position) &&
+        std::ranges::find(m_slots, asteroid.id, &Slot::asteroid) == m_slots.end())
+      asteroids.push_back(&asteroid);
+  }
+  std::ranges::sort(asteroids, [this](const EntityView* _a, const EntityView* _b) { return IsNearer(_a->position, _b->position, m_home); });
+  for (const EntityView* asteroid : asteroids)
+    AddRigSlot(_snapshot, *asteroid);
+  if (std::ranges::none_of(m_slots, [claimed](const Slot& _slot)
+                           { return _slot.structure == StructureKind::Relay && _slot.position == claimed->node; }))
+    AddRelaySlot(_snapshot, *claimed);
+}
+
+// A sector it holds next to one the enemy holds is its front: its Relay gets the settings' Defence Platforms, once.
+void Outpost::AiPlayer::FortifyFront(const Snapshot& _snapshot)
+{
+  const StructureTypeView* relay = FindType(_snapshot, StructureKind::Relay);
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (sector.holder != m_player || sector.Contains(m_home) || std::ranges::find(m_fortified, sector.id) != m_fortified.end())
+      continue;
+    const bool front = std::ranges::any_of(sector.adjacent,
+                                           [&](std::int32_t _id)
+                                           {
+                                             const SectorView* other = FindSectorById(_snapshot, _id);
+                                             return other != nullptr && other->holder.IsValid() && other->holder != m_player;
+                                           });
+    if (!front)
+      continue;
+    m_fortified.push_back(sector.id);
+    for (std::int32_t platform = 0; platform < m_settings.frontPlatforms; ++platform)
+      AddPlatformBeside(_snapshot, sector.node, relay != nullptr ? relay->radiusMeters : 0.0f, std::nullopt);
+  }
+}
+
+// Each scout goes from one of the sectors next to the enemy's home to the next, attack-moving, so that it meets what is
+// there and suppresses its Relay while it lives (ADR-020 decision 13). The enemy's home is across the map's center from
+// its own.
+void Outpost::AiPlayer::CommandScouts(const Snapshot& _snapshot, std::vector<Command>& _orders)
+{
+  const SectorView* enemyHome = FindSector(_snapshot.sectors, {.xMeters = -m_home.xMeters, .zMeters = -m_home.zMeters});
+  if (enemyHome == nullptr || enemyHome->adjacent.empty())
+    return;
+  std::vector<PlanePosition> waypoints;
+  for (const std::int32_t id : enemyHome->adjacent)
+  {
+    if (const SectorView* sector = FindSectorById(_snapshot, id))
+      waypoints.push_back(sector->node);
+  }
+  std::ranges::sort(waypoints, [this](PlanePosition _a, PlanePosition _b) { return IsNearer(_a, _b, m_home); });
+  std::erase_if(m_scoutWaypoints, [&_snapshot](const auto& _entry) { return FindEntity(_snapshot, _entry.first) == nullptr; });
+  for (const EntityView& ship : _snapshot.entities)
+  {
+    if (ship.owner != m_player || !IsScout(ship))
+      continue;
+    const auto known = m_scoutWaypoints.find(ship.id);
+    size_t next = known != m_scoutWaypoints.end() ? known->second : 0;
+    const bool arrived =
+      known != m_scoutWaypoints.end() && Distance(ship.position, waypoints[next % waypoints.size()]) <= SCOUT_ARRIVED_METERS;
+    if (known != m_scoutWaypoints.end() && !arrived)
+      continue;
+    if (arrived)
+      next = (next + 1) % waypoints.size();
+    m_scoutWaypoints[ship.id] = next;
+    _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = {ship.id}, .destination = waypoints[next % waypoints.size()]}));
+  }
+}
+
 // The reserve gathers at the rally, or goes to where the base is under fire; once it is large enough it joins the attack
 // group, which attack-moves on the enemy's production first, the nearest of it, and then on the next structure.
 void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Command>& _orders)
 {
+  // Its scouts go their own way (CommandScouts).
   std::vector<const EntityView*> warships;
   for (const EntityView& ship : _snapshot.entities)
   {
-    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner == m_player)
+    if (ship.kind == EntityKind::Ship && ship.role == ShipRole::Warship && ship.owner == m_player && !IsScout(ship))
       warships.push_back(&ship);
   }
   std::erase_if(m_attackGroup, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+
+  // A raid ends once its sector is no longer the enemy's, or once it has lost the settings' share of its ships; its ships
+  // then rejoin the reserve, and the next raid waits (ADR-020 decision 13).
+  std::erase_if(m_raidGroup, [&_snapshot](EntityId _id) { return FindEntity(_snapshot, _id) == nullptr; });
+  if (!m_raidGroup.empty())
+  {
+    const SectorView* sector = FindSectorById(_snapshot, m_raidSector);
+    const bool held = sector != nullptr && sector->holder.IsValid() && sector->holder != m_player;
+    const bool lost = m_settings.raidLossShare > 0.0 &&
+                      static_cast<double>(m_raidGroup.size()) <= static_cast<double>(m_raidLaunch) * (1.0 - m_settings.raidLossShare);
+    if (!held || lost)
+    {
+      m_raidGroup.clear();
+      m_raidClosing.clear();
+      m_nextRaidTick = _snapshot.tick + static_cast<std::uint64_t>(std::llround(m_settings.raidIntervalSeconds * m_ticksPerSecond));
+    }
+    else
+    {
+      // Its ships near the Relay attack it, once each, so that none stands idle out of its range.
+      const auto relay = std::ranges::find_if(_snapshot.entities,
+                                              [&](const EntityView& _entity)
+                                              {
+                                                return IsStructure(_entity, StructureKind::Relay) && _entity.owner != m_player &&
+                                                       Distance(_entity.position, sector->node) <= SAME_PLACE_METERS;
+                                              });
+      if (relay != _snapshot.entities.end())
+      {
+        std::vector<EntityId> closing;
+        for (const EntityId id : m_raidGroup)
+        {
+          const EntityView* ship = FindEntity(_snapshot, id);
+          if (ship != nullptr && std::ranges::find(m_raidClosing, id) == m_raidClosing.end() &&
+              Distance(ship->position, relay->position) <= CLOSE_IN_METERS)
+            closing.push_back(id);
+        }
+        if (!closing.empty())
+        {
+          m_raidClosing.insert(m_raidClosing.end(), closing.begin(), closing.end());
+          _orders.push_back(MakeCommand(m_player, AttackCommand{.ships = std::move(closing), .target = relay->id}));
+        }
+      }
+    }
+  }
+  std::erase_if(warships, [this](const EntityView* _ship) { return std::ranges::find(m_raidGroup, _ship->id) != m_raidGroup.end(); });
   // An attack that has lost the settings' share of the ships it set out with falls back to the rally, out of the fight,
   // and rejoins the reserve, which waits before it attacks again (task 12.2): a lost battle costs part of a fleet, not
   // all of it.
@@ -802,7 +1069,7 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
   {
     _orders.push_back(MakeCommand(m_player, MoveCommand{.ships = m_attackGroup, .destination = m_rally}));
     for (const EntityId id : m_attackGroup)
-      m_reserveDestinations[id] = m_rally;
+      m_reserveDestinations[id] = {.destination = m_rally};
     m_attackGroup.clear();
     m_attackTarget = {};
     m_closingIn.clear();
@@ -819,10 +1086,57 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
   std::erase_if(m_reserveDestinations, [&reserve](const auto& _entry)
                 { return std::ranges::none_of(reserve, [&_entry](const EntityView* _ship) { return _ship->id == _entry.first; }); });
 
+  // A raid: a few of the reserve at the nearest enemy sector it sees no enemy warship guarding, not the enemy's home,
+  // while the reserve holds at least twice as many (ADR-020 decision 13).
+  if (m_raidGroup.empty() && m_settings.raidShips > 0 && _snapshot.tick >= m_nextRaidTick &&
+      std::cmp_greater_equal(reserve.size(), 2 * m_settings.raidShips))
+  {
+    const SectorView* raided = nullptr;
+    for (const SectorView& sector : _snapshot.sectors)
+    {
+      if (!sector.holder.IsValid() || sector.holder == m_player || sector.Contains(EnemyStations(_snapshot).front()))
+        continue;
+      const bool guarded = std::ranges::any_of(_snapshot.entities,
+                                               [&](const EntityView& _entity)
+                                               {
+                                                 return _entity.kind == EntityKind::Ship && _entity.role == ShipRole::Warship &&
+                                                        _entity.owner.IsValid() && _entity.owner != m_player &&
+                                                        Distance(_entity.position, sector.node) <= RAID_GUARD_METERS;
+                                               });
+      if (!guarded && (raided == nullptr || IsNearer(sector.node, raided->node, m_home)))
+        raided = &sector;
+    }
+    if (raided != nullptr)
+    {
+      // The smallest hulls, which are the fastest, go.
+      std::vector<const EntityView*> fastest = reserve;
+      std::ranges::sort(fastest, [](const EntityView* _a, const EntityView* _b)
+                        { return _a->hull != _b->hull ? _a->hull < _b->hull : _a->id < _b->id; });
+      fastest.resize(static_cast<size_t>(m_settings.raidShips));
+      for (const EntityView* ship : fastest)
+      {
+        m_raidGroup.push_back(ship->id);
+        m_reserveDestinations.erase(ship->id);
+      }
+      std::erase_if(reserve, [this](const EntityView* _ship) { return std::ranges::find(m_raidGroup, _ship->id) != m_raidGroup.end(); });
+      m_raidSector = raided->id;
+      m_raidLaunch = m_raidGroup.size();
+      m_raidClosing.clear();
+      _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = m_raidGroup, .destination = raided->node}));
+    }
+  }
+
   const EntityView* target = m_attackGroup.empty() ? nullptr : FindEntity(_snapshot, m_attackTarget);
   bool grown = false;
   const std::int32_t groupShips = m_settings.attackGroupShips + ((OpenedTier(_snapshot) - 1) * m_settings.attackGroupGrowthPerTier);
-  if (std::cmp_greater_equal(reserve.size(), groupShips) && _snapshot.tick >= m_regroupUntilTick)
+  // On a map with territory the main attack waits for a lead in nodes, or for a larger reserve (ADR-041 decision 5).
+  std::int32_t nodeLead = 0;
+  for (const SectorView& sector : _snapshot.sectors)
+    nodeLead += sector.holder == m_player ? 1 : sector.holder.IsValid() ? -1 : 0;
+  const bool lead = _snapshot.sectors.empty() || nodeLead >= m_settings.attackNodeLead;
+  const auto withoutLead = static_cast<std::int64_t>(std::ceil(groupShips * m_settings.attackWithoutLeadShare));
+  if (std::cmp_greater_equal(reserve.size(), groupShips) && _snapshot.tick >= m_regroupUntilTick &&
+      (lead || std::cmp_greater_equal(reserve.size(), withoutLead)))
   {
     grown = true;
     std::vector<EntityId> joined;
@@ -895,16 +1209,59 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
   const bool defending =
     m_lastDefenseShotTick.has_value() &&
     _snapshot.tick < *m_lastDefenseShotTick + static_cast<std::uint64_t>(std::llround(m_settings.defenseHoldSeconds * m_ticksPerSecond));
-  const PlanePosition destination = defending ? m_defensePosition : m_rally;
+  // On a map with territory the reserve holds its front with a standing order: the sector it holds next to the enemy's,
+  // nearest the rally, or the rally's own sector while it has no front (ADR-020 decision 13).
+  const SectorView* held = defending ? nullptr : FrontSector(_snapshot);
+  const PlanePosition destination = defending ? m_defensePosition : held != nullptr ? held->node : m_rally;
   std::vector<EntityId> sent;
   for (const EntityView* ship : reserve)
   {
     const auto last = m_reserveDestinations.find(ship->id);
-    if (last != m_reserveDestinations.end() && Distance(last->second, destination) <= RESEND_METERS)
+    if (last != m_reserveDestinations.end() && last->second.holds == (held != nullptr) &&
+        Distance(last->second.destination, destination) <= RESEND_METERS)
       continue;
     sent.push_back(ship->id);
-    m_reserveDestinations[ship->id] = destination;
+    m_reserveDestinations[ship->id] = {.destination = destination, .holds = held != nullptr};
   }
-  if (!sent.empty())
+  if (sent.empty())
+    return;
+  if (held != nullptr)
+    _orders.push_back(MakeCommand(m_player, HoldSectorCommand{.ships = std::move(sent), .position = held->node}));
+  else
     _orders.push_back(MakeCommand(m_player, AttackMoveCommand{.ships = std::move(sent), .destination = destination}));
+}
+
+// Two places as near are told apart by the side of the line from its base to the map's center each lies on, the same
+// side for either seat of the point-symmetric map, so that both seats choose mirrored places where a sector's or an
+// entity's identifier would have them choose differently (ADR-020 decision 13).
+bool Outpost::AiPlayer::IsNearer(PlanePosition _a, PlanePosition _b, PlanePosition _from) const noexcept
+{
+  const float a = Distance(_a, _from);
+  const float b = Distance(_b, _from);
+  if (a != b)
+    return a < b;
+  const auto side = [this](PlanePosition _at) { return (m_home.zMeters * _at.xMeters) - (m_home.xMeters * _at.zMeters); };
+  return side(_a) < side(_b);
+}
+
+const Outpost::SectorView* Outpost::AiPlayer::FrontSector(const Snapshot& _snapshot) const
+{
+  const SectorView* front = nullptr;
+  for (const SectorView& sector : _snapshot.sectors)
+  {
+    if (sector.holder != m_player)
+      continue;
+    const bool facing = std::ranges::any_of(sector.adjacent,
+                                            [&](std::int32_t _id)
+                                            {
+                                              const SectorView* other = FindSectorById(_snapshot, _id);
+                                              return other != nullptr && other->holder.IsValid() && other->holder != m_player;
+                                            });
+    if (facing && (front == nullptr || IsNearer(sector.node, front->node, m_rally)))
+      front = &sector;
+  }
+  if (front != nullptr)
+    return front;
+  const SectorView* rally = FindSector(_snapshot.sectors, m_rally);
+  return rally != nullptr && rally->holder == m_player ? rally : nullptr;
 }

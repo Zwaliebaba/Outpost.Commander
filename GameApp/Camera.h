@@ -2,8 +2,7 @@
 
 namespace Outpost
 {
-// The camera's numbers, from OutpostCommander/Assets/Camera.json (design §4, ADR-012). The zoom limits are provisional
-// until gate G3.
+// The camera's numbers, from OutpostCommander/Assets/Camera.json (design §4, ADR-012). The zoom limits are gate G3's.
 struct CameraSettings
 {
   // How wide the ground is across the middle of the screen, at the focus point.

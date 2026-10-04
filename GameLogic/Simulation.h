@@ -90,6 +90,15 @@ struct Entity
   std::uint64_t chaseTick = 0;
   // A Constructor's work order's target, while the order lasts.
   EntityId workTarget;
+  // A warship's standing order, kept until it is given another (Phase 2 design §9, ADR-059): the group it was given to,
+  // which acts as one; for a hold, the sector's identifier and its node; for a patrol, its two ends and whether the ship
+  // heads for the second.
+  StandingOrder standing = StandingOrder::None;
+  std::uint32_t standingGroup = 0;
+  std::int32_t holdSector = 0;
+  PlanePosition standingFrom;
+  PlanePosition standingTo;
+  bool standingOutward = true;
 
   // A structure's construction, in thousandths of a tick of one Constructor's work: built once the two are equal. Both
   // are zero for a structure placed whole (ADR-016).
@@ -172,6 +181,12 @@ enum class CommandResult : std::uint8_t
   ComponentsFixed,
   // An attack's target is an enemy the player neither sees nor, for a structure, remembers (ADR-024).
   NotVisible,
+  // A Relay ordered in a sector that is not adjacent to one the player holds (Phase 2 design §6).
+  NotAdjacent,
+  // A Mining Rig ordered onto an ore asteroid in a sector the player does not hold (Phase 2 design §4).
+  SectorNotHeld,
+  // A hold names a point in no sector, or the map has no territory (ADR-059).
+  NoSector,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -187,8 +202,15 @@ public:
   Simulation(std::uint64_t _seed, std::uint32_t _ticksPerSecond);
 
   // Match setup, before the first tick: places the map's ore asteroids and then its fields, in the file's order, as
-  // entities with no owner (task 2.3).
+  // entities with no owner (task 2.3), and keeps its sectors (ADR-036).
   void PlaceMap(const Map& _map);
+
+  // Whether the match is played for territory: the map has sectors and the simulation has the tuning data's rules for
+  // them (Phase 2 design §4, ADR-056). Without, a Relay cannot be built and ore belongs to no sector, as in Phase 1.
+  [[nodiscard]] bool HasTerritory() const noexcept
+  {
+    return m_tuning != nullptr && !m_sectors.empty();
+  }
 
   // Match setup: builds the pathfinding graph for ships of this footprint radius ahead of their first order.
   void PreparePathfinding(float _radiusMeters) const
@@ -268,9 +290,9 @@ public:
   // finished Shipyard loses the match (Phase 1 design §4).
   void PlaceStartingBases(const Map& _map);
 
-  // Whether a player has lost its Command Station and its last finished Shipyard, which ends the match (Phase 1 design
-  // §4); the player who still has one of them won, or nobody when both lost theirs in the same tick. Only a match whose
-  // bases were placed can end.
+  // Whether a player has lost its Command Station and its last finished Shipyard, or on a map with territory has run out
+  // of tickets, which ends the match (Phase 1 design §4, Phase 2 design §8); the player who still stands won, or nobody
+  // when both fell in the same tick. Only a match whose bases were placed can end.
   [[nodiscard]] bool MatchOver() const noexcept
   {
     return m_matchOver;
@@ -279,6 +301,14 @@ public:
   {
     return m_winner;
   }
+  [[nodiscard]] MatchEnding Ending() const noexcept
+  {
+    return m_ending;
+  }
+
+  // A player's tickets in shares of a ticket, one ticket being as many shares as the map has nodes, so that domination's
+  // drain is whole (ADR-057); zero for a player not added or without territory.
+  [[nodiscard]] std::int64_t TicketShares(PlayerId _player) const noexcept;
 
   // How every ship picks its target. Only the balance check's headless battles change it (task 3.4).
   void SetTargetRule(TargetRule _rule) noexcept
@@ -318,7 +348,8 @@ public:
            _a.m_designs == _b.m_designs && _a.m_lastDesignId == _b.m_lastDesignId && _a.m_players == _b.m_players &&
            _a.m_targetRule == _b.m_targetRule && _a.m_random == _b.m_random && _a.m_pathfinder.Obstacles() == _b.m_pathfinder.Obstacles() &&
            _a.m_basePlayers == _b.m_basePlayers && _a.m_matchOver == _b.m_matchOver && _a.m_winner == _b.m_winner &&
-           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_fog == _b.m_fog && _a.m_plannedOrders == _b.m_plannedOrders;
+           _a.m_matchEndedTick == _b.m_matchEndedTick && _a.m_ending == _b.m_ending && _a.m_fog == _b.m_fog &&
+           _a.m_plannedOrders == _b.m_plannedOrders && _a.m_lastStandingGroup == _b.m_lastStandingGroup && _a.m_sectors == _b.m_sectors;
   }
 
   // A group order for more ships than this plans its paths over two ticks rather than one, and the group sets off in the
@@ -336,6 +367,7 @@ private:
     std::vector<HullView> hulls;
     std::vector<DriveView> drives;
     std::vector<WeaponView> weapons;
+    std::vector<ModuleView> modules;
     std::vector<ResearchTopicView> topics;
 
     friend bool operator==(const ResearchEffects&, const ResearchEffects&) noexcept
@@ -362,6 +394,8 @@ private:
     std::vector<std::pair<EntityId, std::uint64_t>> revealedUntil;
     // The Ore left in each ore asteroid the player has seen, as it last saw it (Phase 1 design §8).
     std::vector<std::pair<EntityId, std::int64_t>> knownReserves;
+    // Its tickets on a map with territory, in shares of a ticket (ADR-057).
+    std::int64_t ticketShares = 0;
     ResearchEffects researchEffects;
 
     friend bool operator==(const PlayerState&, const PlayerState&) = default;
@@ -372,6 +406,20 @@ private:
   {
     PlanePosition position;
     float sightMeters = 0.0f;
+  };
+
+  // One of the map's sectors, and who holds it as of the end of the last tick (ADR-056). Who holds it, whether it is
+  // suppressed and whether it is cut off follow from where the structures and warships stand.
+  struct Sector
+  {
+    SectorPlacement placement;
+    PlayerId holder;
+    // Its holder's Command Station stands on its node.
+    bool home = false;
+    bool suppressed = false;
+    bool cutOff = false;
+
+    friend bool operator==(const Sector&, const Sector&) = default;
   };
 
   // What an entity fires: a warship's design's weapon, or a built structure's Defence gun.
@@ -409,8 +457,18 @@ private:
   [[nodiscard]] const StructureTuning* StructureTuningFor(StructureKind _kind) const noexcept;
   CommandResult ValidateShips(PlayerId _player, const std::vector<EntityId>& _ships) const noexcept;
   CommandResult ValidateConstructors(PlayerId _player, const std::vector<EntityId>& _constructors) const noexcept;
-  // Moves a Mining Rig's _position onto its asteroid.
-  [[nodiscard]] CommandResult CheckPlacement(StructureKind _kind, float _radiusMeters, PlanePosition& _position) const;
+  // Moves a Mining Rig's _position onto its asteroid, and a Relay's onto its sector's node.
+  [[nodiscard]] CommandResult CheckPlacement(PlayerId _player, StructureKind _kind, float _radiusMeters, PlanePosition& _position) const;
+  // The first sector that holds _position, or the one with this identifier; nullptr when there is none.
+  [[nodiscard]] const Sector* SectorAt(PlanePosition _position) const noexcept;
+  [[nodiscard]] const Sector* SectorById(std::int32_t _id) const noexcept;
+  // Works out again who holds each sector, which Relays are suppressed and which sectors are cut off (ADR-056).
+  void UpdateTerritory();
+  // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
+  // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
+  [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;
+  // Whether _position is in a sector _player holds and that is not suppressed, all of which it sees (ADR-056).
+  [[nodiscard]] bool InSectorSight(PlayerId _player, PlanePosition _position) const noexcept;
   CommandResult Apply(PlayerId _player, const MoveCommand& _move);
   CommandResult Apply(PlayerId _player, const AttackMoveCommand& _attackMove);
   CommandResult Apply(PlayerId _player, const AttackCommand& _attack);
@@ -420,6 +478,12 @@ private:
   CommandResult Apply(PlayerId _player, const QueueShipCommand& _queue);
   CommandResult Apply(PlayerId _player, const StartResearchCommand& _research);
   CommandResult Apply(PlayerId _player, const SaveDesignCommand& _save);
+  CommandResult Apply(PlayerId _player, const HoldSectorCommand& _hold);
+  CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
+  // The warships among _ships, each once; validated by the caller.
+  [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
+  // Once a second, every group on a standing order moves as its order says (ADR-059).
+  void KeepStandingOrders();
   void OrderWork(const std::vector<EntityId>& _constructors, EntityId _target);
   // The map's obstacles and every structure but the Mining Rigs, which stand on asteroids; and ships whose way a new
   // structure blocks look for another.
@@ -487,6 +551,11 @@ private:
   void Mine();
   // Ends the match once a player whose base was placed has no Command Station left.
   void DecideMatch();
+  // On a map with territory, every drain interval: each player that holds fewer nodes than another loses tickets, and a
+  // player out of them ends the match (Phase 2 design §8, ADR-057).
+  void Dominate();
+  // The match ends now: _standing are the players still in it, of whom the winner is the one, if one.
+  void EndMatch(const std::vector<PlayerId>& _standing, MatchEnding _ending);
   void MoveShips();
   void SeparateShips();
   void KeepShipsClear();
@@ -512,8 +581,12 @@ private:
   // leaves graph rebuilding to a quieter tick.
   std::vector<PlannedOrder> m_plannedOrders;
   bool m_plannedThisTick = false;
+  // The last group a standing order was given to (ADR-059).
+  std::uint32_t m_lastStandingGroup = 0;
   std::vector<Obstacle> m_mapObstacles;
   float m_mapHalfSizeMeters = 0.0f;
+  // The map's sectors, in its order; none on a map without them.
+  std::vector<Sector> m_sectors;
   // Set by UseTuning; configuration, not state, and shared by copies of the simulation.
   std::shared_ptr<const Tuning> m_tuning;
   // What the tuning data gives a player who has researched nothing, as a player not added has; none before UseTuning.
@@ -523,6 +596,7 @@ private:
   bool m_matchOver = false;
   PlayerId m_winner;
   std::uint64_t m_matchEndedTick = 0;
+  MatchEnding m_ending = MatchEnding::LostProduction;
   bool m_fog = false;
   // What the last tick did, for the snapshots built after it.
   std::vector<ShotView> m_shots;

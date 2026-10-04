@@ -517,7 +517,7 @@ Decided on 2026-10-01, closing the open questions:
 
 Decided on 2026-10-01, after the MVP:
 
-- The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-021).
+- The blue ground colour is gone. The battlefield is drawn over a sky of stars and under a dimmed grid (§11, ADR-022).
 - The Milky Way is gone again, at the owner's first look at it. The sky is an even field of stars with a natural spread of brightness, and its brightest few are drawn as starbursts. The grid is a faint neutral gray rather than blue (§11, ADR-022).
 - Third-party content needs no approval, licence text or record of where it came from. AGENTS.md R14 no longer covers it (§11).
 

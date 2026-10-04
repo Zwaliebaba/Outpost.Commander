@@ -1,5 +1,6 @@
 """Summarizes the matches the game logged, for the owner's playtests: the MVP's Q1 and Q3 (plan task 6.3, design section
-3) and Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10).
+3), Phase 1's P1, P2 and P4 (Phase 1 plan task 13.1, Phase 1 design sections 2 and 10) and Phase 2's S1 to S4 (Phase 2
+plan task 19.1, Phase 2 design section 2).
 
 The game adds every match against the AI to OutpostCommander-matches.log in the temporary folder, and its --ai-matches
 switch writes ten seeded AI-against-AI matches to OutpostCommander-ai-matches.log there. Each line is one record,
@@ -8,17 +9,24 @@ every time in ticks:
   match seed <seed> ticks_per_second <rate>                       a match starts
   research <tick> player <player> topic <id> <name>               a player finished a research topic
   tier <tick> player <player> tier <tier>                         a player finished the gateway that opens a tier
-  built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared
+  built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared; a module ends its name
   fleet <tick> player <player> warships <count>                   a player's warships, every 30 seconds
   dry <tick> asteroid <id>                                        an ore asteroid ran dry
   peak <tick> player <player> warships <count>                    the most warships a player had at once
+  contact <tick> sector <id>                                      the match's first shot
+  engagement <tick> sector <id>                                   both sides fired in one sector
+  sector <tick> sector <id> holder <player or 0>                  a sector's holder changed
+  tickets <tick> player <player> tickets <count>                  a player's tickets, every 30 seconds
+  ending <tick> <production or domination>                        how the match ended
   end <tick> winner <player, or 0 for a draw>                     the match ended
   left <tick>                                                     the match was left before it ended
 
-For each match this prints its length and outcome (P1 asks for 45 to 60 minutes), the asteroids that ran dry, and for
-each player its research with the time it finished, the times it opened each tier, its peak warship count (P4), its
-warships by design in each tier (P2 asks whether each tier changes what gets built), and its warships by design in
-windows of the match. With more than one match it ends with their lengths' median and spread, P1's repeatable figure.
+For each match this prints its length and outcome (P1 and S4 ask for 45 to 60 minutes) and how it ended (S3), its first
+shot (S1 asks for one by minute 5), its engagements before minute 20 and the sectors they were in (S2 asks for at least
+five, in at least three sectors), the asteroids that ran dry, and for each player its research with the time it
+finished, the times it opened each tier, its peak warship count (P4), its warships by design in each tier (P2 asks
+whether each tier changes what gets built), and its warships by design in windows of the match. With more than one match
+it ends with their lengths' median and spread, P1's and S4's repeatable figure, and S1's to S3's.
 
 Usage: python Tools/MatchLog.py [log] [--all] [--ai-matches] [--window-minutes N]
 
@@ -38,6 +46,12 @@ AI_MATCHES_LOG_NAME = "OutpostCommander-ai-matches.log"
 PLAYER_NAMES = {1: "Player", 2: "AI"}
 AI_MATCHES_PLAYER_NAMES = {1: "AI 1", 2: "AI 2"}
 P1_MINUTES = (45, 60)
+# Phase 2 design section 2: contact by minute 5 (S1), and before minute 20 at least five engagements in at least three
+# sectors (S2).
+S1_MINUTES = 5
+S2_MINUTES = 20
+S2_ENGAGEMENTS = 5
+S2_SECTORS = 3
 
 
 class Match:
@@ -50,6 +64,11 @@ class Match:
     self.fleets = []
     self.dry = []
     self.peaks = {}
+    self.contact = None
+    self.engagements = []
+    self.holders = []
+    self.tickets = []
+    self.ending = None
     self.end_tick = None
     self.winner = None
     self.left_tick = None
@@ -58,7 +77,8 @@ class Match:
     return tick / self.ticks_per_second
 
   def last_tick(self):
-    ticks = [record[0] for records in (self.research, self.tiers, self.built, self.fleets, self.dry) for record in records]
+    ticks = [record[0] for records in (self.research, self.tiers, self.built, self.fleets, self.dry, self.engagements, self.holders)
+             for record in records]
     for tick in (self.end_tick, self.left_tick):
       if tick is not None:
         ticks.append(tick)
@@ -67,6 +87,18 @@ class Match:
   def tier_at(self, player, tick):
     """The highest tier the player had opened by the tick: 1 until its first gateway."""
     return max((tier for at, owner, tier in self.tiers if owner == player and at <= tick), default=1)
+
+  def early_engagements(self):
+    """The engagements before S2's minute 20, and the sectors they were in."""
+    early = [sector for tick, sector in self.engagements if self.seconds(tick) < S2_MINUTES * 60]
+    return len(early), len(set(early))
+
+  def s1(self):
+    return self.contact is not None and self.seconds(self.contact[0]) <= S1_MINUTES * 60
+
+  def s2(self):
+    count, sectors = self.early_engagements()
+    return count >= S2_ENGAGEMENTS and sectors >= S2_SECTORS
 
 
 def clock(seconds):
@@ -103,6 +135,16 @@ def read_matches(path):
           match.dry.append((int(words[1]), int(words[3])))
         elif words[0] == "peak":
           match.peaks[int(words[3])] = (int(words[1]), int(words[5]))
+        elif words[0] == "contact":
+          match.contact = (int(words[1]), int(words[3]))
+        elif words[0] == "engagement":
+          match.engagements.append((int(words[1]), int(words[3])))
+        elif words[0] == "sector":
+          match.holders.append((int(words[1]), int(words[3]), int(words[5])))
+        elif words[0] == "tickets":
+          match.tickets.append((int(words[1]), int(words[3]), int(words[5])))
+        elif words[0] == "ending":
+          match.ending = words[2]
         elif words[0] == "end":
           match.end_tick = int(words[1])
           match.winner = int(words[3])
@@ -140,11 +182,32 @@ def describe(match, window_minutes, names):
     outcome = "a draw" if match.winner == 0 else f"won by {names.get(match.winner, f'player {match.winner}')}"
     low, high = P1_MINUTES
     within = "within" if low * 60 <= length <= high * 60 else "outside"
-    lines.append(f"  Ended at {clock(length)}, {outcome}; {within} P1's {low} to {high} minutes")
+    how = f" by {match.ending}" if match.ending is not None else ""
+    lines.append(f"  Ended at {clock(length)}, {outcome}{how}; {within} P1's and S4's {low} to {high} minutes")
   elif match.left_tick is not None:
     lines.append(f"  Left at {clock(match.seconds(match.left_tick))}, before it ended")
   else:
     lines.append(f"  Still running, or the game stopped, at {clock(match.seconds(match.last_tick()))}")
+  if match.contact is not None:
+    verdict = "within" if match.s1() else "after"
+    lines.append(f"  First shot at {clock(match.seconds(match.contact[0]))} in sector {match.contact[1]}; {verdict} S1's "
+                 f"{S1_MINUTES} minutes")
+  elif match.holders or match.engagements:
+    lines.append("  First shot: none")
+  if match.holders or match.engagements:
+    count, sectors = match.early_engagements()
+    verdict = "meets" if match.s2() else "short of"
+    lines.append(f"  Engagements before {S2_MINUTES}:00: {count}, in {sectors} sectors; {verdict} S2's {S2_ENGAGEMENTS} in "
+                 f"{S2_SECTORS}. In all: {len(match.engagements)}")
+    held = {}
+    for tick, sector, holder in match.holders:
+      held[sector] = holder
+    nodes = {}
+    for holder in held.values():
+      if holder:
+        nodes[holder] = nodes.get(holder, 0) + 1
+    if nodes:
+      lines.append("  Nodes held at the end: " + ", ".join(f"player {player} {count}" for player, count in sorted(nodes.items())))
   if match.dry:
     times = ", ".join(clock(match.seconds(tick)) for tick, _ in sorted(match.dry))
     lines.append(f"  Asteroids run dry: {len(match.dry)}, at {times}")
@@ -213,6 +276,21 @@ def summarize(matches):
         peaks.append(peak[0])
   if peaks:
     lines.append(f"  Peak warships of a side: median {statistics.median(peaks):g}, from {min(peaks)} to {max(peaks)}")
+  territorial = [match for match in matches if match.holders or match.engagements]
+  if territorial:
+    contacts = sum(1 for match in territorial if match.s1())
+    lines.append(f"  S1, a shot by minute {S1_MINUTES}: {contacts} of {len(territorial)}")
+    early = sorted(match.early_engagements()[0] for match in territorial)
+    sectors = sorted(match.early_engagements()[1] for match in territorial)
+    met = sum(1 for match in territorial if match.s2())
+    lines.append(f"  S2, engagements before {S2_MINUTES}:00: median {statistics.median(early):g} in a median "
+                 f"{statistics.median(sectors):g} sectors; {met} of {len(territorial)} meet {S2_ENGAGEMENTS} in {S2_SECTORS}")
+    endings = {}
+    for match in territorial:
+      if match.ending is not None:
+        endings[match.ending] = endings.get(match.ending, 0) + 1
+    if endings:
+      lines.append("  S3, endings: " + ", ".join(f"{count} by {ending}" for ending, count in sorted(endings.items())))
   return "\n".join(lines)
 
 

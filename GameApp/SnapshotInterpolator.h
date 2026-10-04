@@ -26,7 +26,8 @@ public:
   // clock jumps rather than catching up.
   static constexpr double CLOCK_CORRECTION = 0.1;
   static constexpr double CLOCK_SNAP_TICKS = 2.0;
-  // Snapshots kept, the newest last: enough for a batch of five from one Advance (ADR-009) and the one before it.
+  // Snapshots kept, the newest last. The view needs only the two around the moment it shows, and after a stall its clock
+  // jumps rather than replaying what arrived meanwhile (ADR-013).
   static constexpr size_t HISTORY = 8;
 
   explicit SnapshotInterpolator(std::uint32_t _ticksPerSecond);

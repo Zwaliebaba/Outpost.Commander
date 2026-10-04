@@ -1,6 +1,6 @@
 # ADR-046 — After the owner's second look: rings that fade with zoom, white crosses, a clearer HUD, and rigs only on explored ore
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-042](ADR-042-faint-footprint-lines.md) decisions 1 and 4 in part, [ADR-043](ADR-043-hud-in-the-windows-look.md) decisions 3 and 7 in part, and [ADR-028](ADR-028-vector-grid-and-crosses.md)'s color of a cross
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -9,7 +9,7 @@ On 2026-10-03, after task 9.5 merged, the owner shared a screenshot of a base an
 1. **A Mining Rig's ring, laid over its rock (ADR-042), read as one more of the rock's lines.**
 2. **At the camera's usual zoom the resting rings told the player nothing the models did not.** A Shipyard is long, so its ring is a wide ellipse, which ran under the units beside it and behind the selection panel.
 3. **The brightest stars' crosses took the stars' warm tints.** An orange cross near a rig read as a marker in the Ore's gold.
-4. **The Ore panel's figure ended at a fixed edge** (ADR-043), which left a dead gap at the panel's left.
+4. **The Ore panel's figure ended at a fixed edge**, which left a dead gap at the panel's left.
 5. **On the minimap the fields' gray squares outweighed the ore's small gold marks.**
 6. **The selection panel wrote "2 x Constructor" and gave hit points only as figures.**
 7. **The Research Lab's button was dim with no reason given.**

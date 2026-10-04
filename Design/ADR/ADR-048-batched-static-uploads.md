@@ -1,12 +1,12 @@
 # ADR-048 — Static uploads are batched, and static buffers share default-heap buffers
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-011](ADR-011-meshes-and-shading.md) decision 5
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-011 decision 5 has `Renderer::CreateStaticBuffer` upload each buffer through an upload buffer of its own and wait for the copy. `CreateStaticTexture` does the same. Each call creates a committed default-heap resource and a committed upload resource, each its own implicit heap of at least 64 KB. It also creates a command allocator and a command list, submits them, and drains the queue.
+`Renderer::CreateStaticBuffer` used to upload each buffer through an upload buffer of its own and wait for the copy. `CreateStaticTexture` did the same. Each call created a committed default-heap resource and a committed upload resource, each its own implicit heap of at least 64 KB. It also created a command allocator and a command list, submitted them, and drained the queue.
 
-Loading the game makes about 107 such calls for less than 1 MB of data, counted from the code and the packaged assets:
+Loading the game made about 107 such calls for less than 1 MB of data, counted from the code and the packaged assets:
 
 - four for each of the 23 model pieces: the faces' and the crease lines' vertices and indices;
 - ten for the five helper meshes;
@@ -14,7 +14,7 @@ Loading the game makes about 107 such calls for less than 1 MB of data, counted 
 - one for the interface's index buffer;
 - the glyph atlas and the particle sprite.
 
-Those are about 107 queue drains and 214 implicit heaps. The data is not what costs; the fixed cost of each call is, and the calls run one after another. This was read from the code, not measured. ADR-049's startup stages measure it.
+Those were about 107 queue drains and 214 implicit heaps. The data was not what cost; the fixed cost of each call was, and the calls ran one after another. This was read from the code, not measured. ADR-049's startup stages measure it.
 
 ## Decision
 
@@ -27,7 +27,7 @@ Those are about 107 queue drains and 214 implicit heaps. The data is not what co
 2. **Static buffers share default-heap buffers.** `CreateStaticBuffer` returns a `StaticBuffer`: the resource that holds the bytes, and their GPU address.
    - Buffers are placed in 4 MB default-heap buffers, each 256-byte aligned. A buffer larger than 4 MB gets one of its own.
    - A view starts at the buffer's address, not at its resource's start. Holding the resource keeps the memory alive.
-   - Buffers stay in the common state and are promoted implicitly, as ADR-011 decision 5 had them, so no barrier is recorded.
+   - Buffers stay in the common state and are promoted implicitly, so no barrier is recorded.
 3. **Textures are still committed resources of their own.** Placing them in shared heaps needs resource heap tier checks and alignment rules. There are only two at load, so that cost buys nothing yet.
 
 ## Consequences

@@ -2,10 +2,14 @@
 
 // Shared by client and server, so no XAML, WinRT API or renderer headers here (ADR-002).
 
+#include <array>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <format>
+#include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -53,6 +57,7 @@
 #include "FileSys.h"
 #include "Json.h"
 #include "JsonReader.h"
+#include "QuicChannel.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 

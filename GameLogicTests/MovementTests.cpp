@@ -36,6 +36,48 @@ bool Arrived(const Outpost::Simulation& _simulation, Outpost::EntityId _ship)
   return !_simulation.FindEntity(_ship)->destination.has_value();
 }
 
+// How long a group is along its ships' mean heading for each meter it is wide across it.
+float LengthPerWidth(const Outpost::Simulation& _simulation, std::span<const Outpost::EntityId> _ships)
+{
+  Outpost::PlaneVector heading{};
+  Outpost::PlaneVector sum{};
+  for (const Outpost::EntityId id : _ships)
+  {
+    const Outpost::Entity& ship = *_simulation.FindEntity(id);
+    heading = heading + Outpost::PlaneVector{std::cos(ship.headingRadians), std::sin(ship.headingRadians)};
+    sum = sum + (ship.position - Outpost::PlanePosition{});
+  }
+  heading = Outpost::Normalized(heading, {1.0f, 0.0f});
+  const Outpost::PlanePosition center = Outpost::PlanePosition{} + sum * (1.0f / static_cast<float>(_ships.size()));
+  float alongLeast = std::numeric_limits<float>::infinity();
+  float alongMost = -alongLeast;
+  float acrossLeast = alongLeast;
+  float acrossMost = -alongLeast;
+  for (const Outpost::EntityId id : _ships)
+  {
+    const Outpost::PlaneVector offset = _simulation.FindEntity(id)->position - center;
+    alongLeast = std::min(alongLeast, Outpost::Dot(offset, heading));
+    alongMost = std::max(alongMost, Outpost::Dot(offset, heading));
+    acrossLeast = std::min(acrossLeast, Outpost::Dot(offset, Outpost::Perpendicular(heading)));
+    acrossMost = std::max(acrossMost, Outpost::Dot(offset, Outpost::Perpendicular(heading)));
+  }
+  return (alongMost - alongLeast) / std::max(acrossMost - acrossLeast, 1.0f);
+}
+
+// Twenty-five ships five to a row, 30 m apart, at _x and square on z = 0.
+std::vector<Outpost::EntityId> Block(Outpost::Simulation& _simulation, float _x)
+{
+  std::vector<Outpost::EntityId> ships;
+  for (int i = 0; i < 25; ++i)
+  {
+    const int column = i % 5;
+    const int row = i / 5;
+    ships.push_back(_simulation.SpawnShip(BLUE, DESIGN, Movement(1, 1),
+                                          {_x + (static_cast<float>(column) * 30.0f), -60.0f + (static_cast<float>(row) * 30.0f)}));
+  }
+  return ships;
+}
+
 // Writes down every part a tick tells it of, where it begins and where it ends (task 8.1). An observer may not throw, so
 // it keeps them in room set aside beforehand, and Take spells them "+name" and "-name".
 class PartRecorder final : public Outpost::TickObserver
@@ -287,6 +329,47 @@ public:
     }
     for (const Outpost::EntityId id : ships)
       Assert::IsTrue(Arrived(simulation, id), L"a ship never arrived");
+    Assert::IsTrue(mostLengthPerWidth <= MOST_LENGTH_PER_WIDTH, std::to_wstring(mostLengthPerWidth).c_str());
+  }
+
+  // Phase 1 plan task 7.3, carried over to Phase 2 (ADR-047): a group given an Attack order on one enemy passes an
+  // obstacle side by side too, and keeps its lanes as it paths again after its moving target. Its ships all close on one
+  // point, so past the obstacle the group narrows toward it, and the bound is looser than a move's: one shared route made
+  // it 6.2 times as long as wide.
+  TEST_METHOD(AnAttackingGroupPassesAnObstacleSideBySide)
+  {
+    constexpr float MOST_LENGTH_PER_WIDTH = 2.5f;
+    constexpr Outpost::PlayerId RED{2};
+    Outpost::Simulation simulation(1, TICKS_PER_SECOND);
+    simulation.PlaceMap(OpenMap({{.position = {}, .radiusMeters = 200.0f}}));
+    const std::vector<Outpost::EntityId> ships = Block(simulation, -1500.0f);
+    // A slow target that combat can touch and that fires at nothing, moving away across the far side of the obstacle.
+    const Outpost::DesignId targetDesign =
+      simulation.SaveDesign(RED, "Target", {},
+                            {.movement = {.speedMetersPerSecond = 5.0f, .turnRateRadiansPerSecond = 1.0f, .radiusMeters = 10.0f},
+                             .hitPointsHundredths = 100'000'000});
+    const Outpost::EntityId target = simulation.SpawnShip(RED, targetDesign, {1500.0f, 0.0f});
+    (void)simulation.Tick({{.player = RED, .order = Outpost::MoveCommand{.ships = {target}, .destination = {1500.0f, 1500.0f}}},
+                           {.player = BLUE, .order = Outpost::AttackCommand{.ships = ships, .target = target}}});
+
+    float mostLengthPerWidth = 0.0f;
+    std::uint32_t repaths = 0;
+    const auto centerX = [&]
+    {
+      float sum = 0.0f;
+      for (const Outpost::EntityId id : ships)
+        sum += simulation.FindEntity(id)->position.xMeters;
+      return sum / static_cast<float>(ships.size());
+    };
+    for (int tick = 0; tick < 60 * TICKS_PER_SECOND && centerX() < 300.0f; ++tick)
+    {
+      const Outpost::PlanePosition chased = simulation.FindEntity(ships.front())->chasedPosition;
+      (void)simulation.Tick({});
+      repaths += simulation.FindEntity(ships.front())->chasedPosition == chased ? 0 : 1;
+      mostLengthPerWidth = std::max(mostLengthPerWidth, LengthPerWidth(simulation, ships));
+    }
+    Assert::IsTrue(centerX() >= 300.0f, L"the group never passed the obstacle");
+    Assert::IsTrue(repaths >= 2, L"the target never moved far enough to path after");
     Assert::IsTrue(mostLengthPerWidth <= MOST_LENGTH_PER_WIDTH, std::to_wstring(mostLengthPerWidth).c_str());
   }
 

@@ -255,6 +255,8 @@ private:
   // What the player has seen of the map, when the match is played under fog of war (ADR-024); the newest snapshot's tick it
   // was brought up to date at, and the revision of it the ground mask's texture holds (ADR-052).
   FogOfWar m_fog;
+  // What the player is alerted to, from every snapshot (ADR-059).
+  Alerts m_alerts;
   std::optional<std::uint64_t> m_fogTick;
   std::optional<std::uint64_t> m_fogRevisionShown;
   // The floating windows, which keep their places for as long as the game runs (ADR-031); and what was selected on its own

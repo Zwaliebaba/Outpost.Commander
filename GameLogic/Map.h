@@ -29,8 +29,8 @@ struct AsteroidFieldPlacement
   float radiusMeters = 0.0f;
 };
 
-// An area of the map with one node site, where Phase 2's territory will be claimed (Phase 1 design §8; the Phase 2 draft,
-// §4). Phase 1 reads none of it. A sector is a rectangle, and two sectors are adjacent when they share a border.
+// An area of the map with one node site, where territory is claimed (Phase 1 design §8; Phase 2 design §4, ADR-056). A
+// sector is a rectangle, and two sectors are adjacent when they share a border.
 struct SectorPlacement
 {
   std::int32_t id = 0;
@@ -48,6 +48,8 @@ struct SectorPlacement
     return _position.xMeters >= minXMeters && _position.xMeters <= maxXMeters && _position.zMeters >= minZMeters &&
            _position.zMeters <= maxZMeters;
   }
+
+  friend bool operator==(const SectorPlacement&, const SectorPlacement&) = default;
 };
 
 // OutpostCommander/Assets/Map.json as the game holds it (design §4, ADR-008). The map is a square centered on the origin.

@@ -48,16 +48,16 @@ TEST_CLASS(AiSettingsTests)
 {
 public:
   // Gate G9 (owner, 2026-10-01) had the AI attack with twelve ships; task 12.2 tuned the attack so that two AIs play a
-  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, falling back after
-  // losing three in ten and regrouping for 120 seconds since groups keep lanes (ADR-047), behind two Defence Platforms for
-  // each Shipyard. The rest is the owner's milestone 6 answers.
+  // 45-60 minute match (owner, 2026-10-03): twenty ships and twelve more for each tier past the first, behind two Defence
+  // Platforms for each Shipyard. Phase 2's task 19.2 tuned the fall-back against S4 with territory: after losing one in
+  // ten, regrouping for 240 seconds (ADR-041). The rest is the owner's milestone 6 answers.
   TEST_METHOD(LoadsTheRepositoryFile)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     Assert::AreEqual(20, settings.attackGroupShips);
     Assert::AreEqual(12, settings.attackGroupGrowthPerTier);
-    Assert::AreEqual(0.3, settings.retreatLossShare);
-    Assert::AreEqual(120.0, settings.regroupSeconds);
+    Assert::AreEqual(0.1, settings.retreatLossShare);
+    Assert::AreEqual(240.0, settings.regroupSeconds);
     Assert::AreEqual(2, settings.homePlatformsPerShipyard);
     Assert::AreEqual(60.0, settings.reviewIntervalSeconds);
     Assert::AreEqual(4, settings.constructors);
@@ -73,13 +73,32 @@ public:
     Assert::AreEqual(size_t{24}, settings.counters.size());
   }
 
+  // Task 18.1: territory's play (Phase 2 design §12). One scout, a Small+Ion+Mass Driver with a Sensor Array; raids of
+  // two that fall back after losing one and wait three minutes between them; a main attack with a lead of one node or
+  // half as many ships again; a Defence Platform by each Relay on its front; and one free sector claimed.
+  TEST_METHOD(LoadsTheTerritoryPlay)
+  {
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(1, settings.scouts);
+    Assert::IsTrue(settings.scoutDesign ==
+                   Outpost::DesignComponents{Outpost::HullId{1}, Outpost::DriveId{1}, Outpost::WeaponId{1}, Outpost::ModuleId{1}});
+    Assert::AreEqual(2, settings.raidShips);
+    Assert::AreEqual(0.5, settings.raidLossShare);
+    Assert::AreEqual(180.0, settings.raidIntervalSeconds);
+    Assert::AreEqual(1, settings.attackNodeLead);
+    Assert::AreEqual(1.5, settings.attackWithoutLeadShare);
+    Assert::AreEqual(1, settings.frontPlatforms);
+    Assert::AreEqual(1, settings.claimSectors);
+  }
+
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every
   // component and topic it names exists, and every topic comes after its prerequisites.
   TEST_METHOD(NamesOnlyWhatTheTuningDataHas)
   {
     const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
     const Outpost::Tuning tuning = Outpost::LoadTuning(ReadRepositoryTuning());
-    std::vector<Outpost::DesignComponents> designs{settings.defaultDesign};
+    std::vector<Outpost::DesignComponents> designs{settings.defaultDesign, settings.scoutDesign};
+    Assert::IsTrue(Exists(tuning.modules, settings.scoutDesign.module), L"the scout's module");
     for (const Outpost::CounterRule& rule : settings.counters)
     {
       designs.push_back(rule.enemy);
@@ -112,7 +131,9 @@ public:
     ExpectLoadError(Replace("\"attackGroupShips\": 20,", "\"attackGroupShips\": 0,"), "attackGroupShips");
     ExpectLoadError(Replace("\"reviewIntervalSeconds\": 60,", "\"reviewIntervalSeconds\": 0,"), "reviewIntervalSeconds");
     ExpectLoadError(Replace("\"shipyardQueueJobs\": 2,", "\"shipyardQueueJobs\": 6,"), "shipyardQueueJobs");
-    ExpectLoadError(Replace("\"retreatLossShare\": 0.3,", "\"retreatLossShare\": 1,"), "retreatLossShare");
+    ExpectLoadError(Replace("\"retreatLossShare\": 0.1,", "\"retreatLossShare\": 1,"), "retreatLossShare");
+    ExpectLoadError(Replace("\"raidLossShare\": 0.5,", "\"raidLossShare\": 1,"), "raidLossShare");
+    ExpectLoadError(Replace("\"attackWithoutLeadShare\": 1.5,", "\"attackWithoutLeadShare\": 0,"), "attackWithoutLeadShare");
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [1, 1,"), "researchOrder[1]");
     ExpectLoadError(Replace("\"researchOrder\": [1, 2,", "\"researchOrder\": [0, 2,"), "researchOrder[0]");
   }

@@ -89,6 +89,7 @@
     <ClInclude Include="RepositoryData.h" />
     <ClInclude Include="BalanceCheck.h" />
     <ClInclude Include="MatchArena.h" />
+    <ClInclude Include="TerritoryMatch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -101,6 +102,8 @@
     <ClCompile Include="RandomTests.cpp" />
     <ClCompile Include="SimulationTests.cpp" />
     <ClCompile Include="InProcessServerTests.cpp" />
+    <ClCompile Include="QuicTransportTests.cpp" />
+    <ClCompile Include="WireFormatTests.cpp" />
     <ClCompile Include="MapTests.cpp" />
     <ClCompile Include="MeasurementLoadTests.cpp" />
     <ClCompile Include="MovementTests.cpp" />
@@ -121,6 +124,9 @@
     <ClCompile Include="DefenseTests.cpp" />
     <ClCompile Include="FogTests.cpp" />
     <ClCompile Include="HandCheckTests.cpp" />
+    <ClCompile Include="TerritoryTests.cpp" />
+    <ClCompile Include="DominationTests.cpp" />
+    <ClCompile Include="StandingOrderTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NeuronCore\NeuronCore.vcxproj">

@@ -35,6 +35,19 @@ struct SightTuning
   double shotRevealSeconds = 0.0;
 };
 
+// How territory plays on a map with sectors (Phase 2 design §5, §6, §8, ADR-056, ADR-057): what share of its income a
+// sector cut off from its holder's home sector earns, in percent, and how near an enemy warship has to be to suppress a
+// Relay. Domination: the tickets each player starts with, and every drainIntervalSeconds, the tickets a player who holds
+// fewer nodes loses for each node it is behind, times the map's nodes: drainTicketsPerNodeDifference × difference ÷ nodes.
+struct TerritoryTuning
+{
+  std::int32_t cutOffIncomePercent = 0;
+  double suppressionRadiusMeters = 0.0;
+  std::int32_t tickets = 0;
+  double drainIntervalSeconds = 0.0;
+  std::int32_t drainTicketsPerNodeDifference = 0;
+};
+
 struct HullTuning
 {
   HullId id;
@@ -69,6 +82,18 @@ struct WeaponTuning
   double fireIntervalSeconds = 0.0;
   double rangeMeters = 0.0;
   double splashRadiusMeters = 0.0;
+  std::int32_t cost = 0;
+};
+
+// A module, a design's optional fourth component (Phase 2 design §10, ADR-058): how far a ship with it sees, whatever its
+// weapon, the factor on its speed, and what it adds to the design's cost. No research unlocks one: every module is
+// available from the start.
+struct ModuleTuning
+{
+  ModuleId id;
+  std::string name;
+  double sightMeters = 0.0;
+  double speedFactor = 0.0;
   std::int32_t cost = 0;
 };
 
@@ -188,9 +213,11 @@ struct Tuning
 {
   RulesTuning rules;
   SightTuning sight;
+  TerritoryTuning territory;
   std::vector<HullTuning> hulls;
   std::vector<DriveTuning> drives;
   std::vector<WeaponTuning> weapons;
+  std::vector<ModuleTuning> modules;
   ConstructorTuning constructor;
   std::vector<StructureWeaponTuning> structureWeapons;
   // One per StructureKind, in the order of the file.

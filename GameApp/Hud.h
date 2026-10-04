@@ -17,8 +17,8 @@ public:
   // The text's size at the reference scale.
   static constexpr float FONT_UNITS = 20.0f;
 
-  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: the HUD's text as it has
-  // been since milestone 3, and the faces of the owner's mockup for the windows of Phase 1 (Phase 1 design §11): condensed
+  // The interface's fonts (ADR-030), in the order GameClient builds the UI pipeline with them: Segoe UI, a text's default
+  // face, and the faces of the owner's mockup (Phase 1 design §11), which the windows and the HUD take (ADR-043): condensed
   // Bahnschrift for titles, labels and names, and Cascadia Mono for figures, or Consolas where it is not installed, with a
   // smaller size for a part card's numbers.
   enum class Typeface : std::uint8_t
@@ -86,6 +86,8 @@ public:
     PickHull,
     PickDrive,
     PickWeapon,
+    // The module, or none (Phase 2 design §10).
+    PickModule,
     EditName,
     SaveDesign,
     // Queues the designer's picks at a Shipyard when they are no saved design yet: saves them first (ADR-023).
@@ -125,6 +127,8 @@ public:
     HullId hull;
     DriveId drive;
     WeaponId weapon;
+    // A module to pick, or none.
+    ModuleId module;
     // How many ships a Queue asks for (Phase 1 design §11).
     std::uint32_t count = 1;
 
@@ -244,7 +248,8 @@ public:
     // The saved designs, and the first shown of those that do not all fit.
     std::vector<DesignChip> chips;
     std::size_t firstChip = 0;
-    std::array<SlotRow, 3> slots;
+    // Hull, drive, weapon and module (Phase 2 design §10).
+    std::array<SlotRow, 4> slots;
     std::vector<StatBar> bars;
     std::vector<DamageCard> damage;
     // What the bars and the cards preview while a part is hovered; the help line otherwise.
@@ -345,6 +350,28 @@ public:
     bool dry = false;
   };
 
+  // One of the map's sectors on the minimap (ADR-056): tinted by whose it is, outlined in that side's color over the fog,
+  // since who holds what is known to both sides, and hatched while suppressed.
+  struct SectorMark
+  {
+    float minXMeters = 0.0f;
+    float maxXMeters = 0.0f;
+    float minZMeters = 0.0f;
+    float maxZMeters = 0.0f;
+    Side side = Side::Neutral;
+    bool suppressed = false;
+  };
+
+  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8).
+  struct Territory
+  {
+    std::int32_t ownNodes = 0;
+    std::int32_t enemyNodes = 0;
+    std::int32_t nodes = 0;
+    std::optional<std::int32_t> ownTickets;
+    std::optional<std::int32_t> enemyTickets;
+  };
+
   // How the match ended for the player (design §6): "Victory", "Defeat" or "Draw", and how long it lasted.
   struct Outcome
   {
@@ -373,6 +400,11 @@ public:
     // No minimap when the map's size is not known.
     float mapSizeMeters = 0.0f;
     std::vector<Mark> marks;
+    // The map's sectors, and the nodes each side holds; none on a map without sectors.
+    std::vector<SectorMark> sectors;
+    std::optional<Territory> territory;
+    // The alerts to show, newest first, each with where it happened, for the minimap (ADR-059); GameClient fills them.
+    std::vector<std::pair<std::string, PlanePosition>> alerts;
     // Under fog of war, the fog is drawn over the marks (ADR-024): one panel over the minimap, which the client fills
     // from the fog's own texture (ADR-052).
     bool fog = false;

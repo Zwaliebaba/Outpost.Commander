@@ -18,6 +18,8 @@ constexpr auto PARTICLE_SPRITE_FILE = L"Textures\\Particle.dds";
 constexpr std::uint8_t KEY_DESIGNER = 'D';
 constexpr std::uint8_t KEY_PRODUCTION = 'P';
 constexpr std::uint8_t KEY_RESEARCH = 'R';
+// Moves the camera to the newest alert (ADR-059).
+constexpr std::uint8_t KEY_LATEST_ALERT = VK_SPACE;
 
 // One light from above and behind the default view's top-left, and how much of an object's color the unlit side keeps.
 // Presentation, not tuning: the design asks only that the scene reads clearly (design §11).
@@ -496,6 +498,7 @@ void Outpost::GameClient::ClearMatch()
   m_hovered.reset();
   m_designer = Designer();
   m_fog = FogOfWar();
+  m_alerts.Reset();
   m_fogTick.reset();
   m_fogRevisionShown.reset();
   m_banking.Clear();
@@ -523,6 +526,7 @@ void Outpost::GameClient::Receive(std::vector<Snapshot> _snapshots)
   {
     m_effects.Receive(snapshot);
     Explode(snapshot);
+    m_alerts.Observe(snapshot, m_ticksPerSecond);
     m_view.Receive(std::move(snapshot));
   }
 
@@ -580,7 +584,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     // Once a snapshot: what the player sees changes no faster than the server ticks, and a cell is 20 m (ADR-052).
     if (m_fogTick != m_view.Newest().tick)
     {
-      m_fog.Update(m_entities, m_view.Newest().player);
+      m_fog.Update(m_entities, m_view.Newest().player, m_view.Newest().sectors);
       m_fogTick = m_view.Newest().tick;
     }
   }
@@ -612,7 +616,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   }
   HandleTyping(input);
   // Esc closes the front window, and then is the window's, not the controls' (Phase 1 design §12). D, P and R open or close
-  // the designer, the production window and the research window.
+  // the designer, the production window and the research window. Space moves the camera to the newest alert (ADR-059).
   for (auto event = input.events.begin(); event != input.events.end();)
   {
     const bool keyDown = event->kind == Neuron::InputEventKind::KeyDown;
@@ -625,6 +629,12 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
       toggled = WindowKind::Research;
     if (keyDown && event->key == VK_ESCAPE && m_windows.CloseFront())
       event = input.events.erase(event);
+    else if (keyDown && event->key == KEY_LATEST_ALERT)
+    {
+      if (const Alerts::Alert* alert = m_alerts.Newest())
+        m_camera.SetFocus(alert->position.xMeters, alert->position.zMeters);
+      event = input.events.erase(event);
+    }
     else if (toggled.has_value() && !m_view.IsEmpty())
     {
       ToggleWindow(*toggled);
@@ -673,6 +683,8 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
     Hud::Content content =
       Hud::Describe(m_view.Newest(), m_entities, selected, m_controls.Placing(), designerOpen ? &m_designer : nullptr, hovered);
     content.fog = m_fog.CellsPerSide() > 0;
+    for (const Alerts::Alert& alert : m_alerts.Shown(m_view.Newest().tick, m_ticksPerSecond))
+      content.alerts.emplace_back(alert.text, alert.position);
     content.outcome = Hud::DescribeOutcome(m_view.Newest(), m_ticksPerSecond);
     if (m_windows.IsOpen(WindowKind::Production))
       content.production = Hud::DescribeProduction(m_view.Newest(), m_production.Target(m_view.Newest()));
@@ -746,6 +758,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::PickWeapon:
     m_designer.PickWeapon(_action.weapon);
+    break;
+  case Hud::ActionKind::PickModule:
+    m_designer.PickModule(_action.module);
     break;
   case Hud::ActionKind::EditName:
     m_designer.BeginEditing(m_view.Newest());
@@ -1230,7 +1245,8 @@ bool Outpost::GameClient::DrapeRigRing(const EntityView& _rig)
 
 void Outpost::GameClient::DrawSelection(ID3D12GraphicsCommandList* _commandList)
 {
-  const DirectX::XMFLOAT4& ringColor = m_controls.IsAttackMoveArmed() ? ATTACK_MOVE_COLOR : SELECTION_COLOR;
+  const DirectX::XMFLOAT4& ringColor =
+    m_controls.IsAttackMoveArmed() || m_controls.ArmedStanding().has_value() ? ATTACK_MOVE_COLOR : SELECTION_COLOR;
   for (const EntityId id : m_controls.Selected())
   {
     const EntityView* ship = FindById(m_entities, id);
@@ -1538,9 +1554,10 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   const auto type = std::ranges::find(newest.structureTypes, *placing, &StructureTypeView::structure);
   if (type == newest.structureTypes.end())
     return;
-  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046).
-  const GhostPlacement ghost =
-    PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities, newest.mapSizeMeters);
+  // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046). A
+  // Relay snaps to its sector's node, and a rig needs a sector the player holds (ADR-056).
+  const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities,
+                                          newest.mapSizeMeters, newest.sectors, newest.player);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.

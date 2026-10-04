@@ -16,7 +16,7 @@ Tasks 2.5 and 2.6 put the server's world on screen and let the player command it
 3. **`SnapshotInterpolator` shows the world one tick behind the newest snapshot**, interpolated between the two snapshots around that moment. Positions are interpolated linearly, and headings the short way round.
    - **The clock.** The view's clock runs at the tick rate. Each frame it is pulled 10% of the way toward "newest tick + time since it arrived − 1 tick". It jumps if it is more than 2 ticks off.
    - **No extrapolation.** It is clamped to the newest snapshot, so when snapshots stop the view holds still.
-   - **History.** Eight snapshots are kept, enough for the five that one `Advance` can bring (ADR-009).
+   - **History.** Eight snapshots are kept, the newest last. The view needs only the two around the moment it shows, and after a stall its clock jumps rather than replaying what arrived meanwhile.
    - **Delay.** One tick at 20 Hz is 50 ms, the low end of ADR-002's 50–100 ms.
 4. **Input arrives as events as well as state.** `Window` records key presses, not auto-repeats, and mouse button presses and releases, in order. Each event has its client position, the message's millisecond time, and Shift and Ctrl. Held state alone misses a click that goes down and up between frames. Any held button captures the mouse, so a drag survives leaving a window.
 5. **`PlayerControls` in `GameApp` turns events into selection, control groups and `Command`s.**
@@ -26,11 +26,11 @@ Tasks 2.5 and 2.6 put the server's world on screen and let the player command it
      - Otherwise an enemy ship under the cursor is attacked, then an enemy structure.
      - Otherwise the ships move to the ground point.
      - A arms attack-move for the next left click, and Escape disarms it. S stops.
-   - **Placing a structure** (task 4.2): the HUD's build button arms a placement while the selection holds a Constructor. The next left click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Escape cancels it. A ghost of the structure follows the cursor, green where `PlaceGhost` finds it may stand and red where not, a Mining Rig snapped to its asteroid. The ghost applies ADR-016's rules to what the snapshot shows, and the server decides.
+   - **Placing a structure** (task 4.2): the HUD's build button arms a placement while the selection holds a Constructor. The next left click on the ground orders the selected Constructors to build there, and Shift keeps the placement armed for another. Right-click or Escape cancels it. A ghost of the structure follows the cursor, green where `PlaceGhost` finds it may stand and red where not, a Mining Rig snapped to its asteroid. The ghost applies ADR-016's rules to what the snapshot shows, and the server decides. The client also keeps a Mining Rig off an asteroid the player has never seen, which the server allows ([ADR-046](ADR-046-second-look-at-the-screen.md) decision 8).
    - **The HUD's own clicks** (task 4.5): a press on a HUD button queues a job or arms a placement, a left press or drag on the minimap moves the camera there, and a right press on it sends the selected ships there. None of these reach the controls as clicks in the world.
    - **Control groups:** Ctrl+digit stores the selection, and the digit recalls it. A second tap within 400 ms centers the camera on the group.
    - **Pruning:** ships that are gone, or no longer the player's, drop out of the selection and the groups.
-   - **Feedback:** the selection is drawn as a ring on the ground around each ship, green, or amber while attack-move waits. The drag box is drawn as its outline on the ground, because there is no 2D overlay until gate G7.
+   - **Feedback:** the selection is drawn as a ring on the ground around each ship, green, or amber while attack-move waits. The drag box is drawn as its outline on the ground.
 6. **The arrow keys pan the camera.** A, S, W and D do not (ADR-012).
 
 ## Consequences

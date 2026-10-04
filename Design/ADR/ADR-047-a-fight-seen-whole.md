@@ -1,6 +1,6 @@
 # ADR-047 — A group passes an obstacle side by side, health bars keep a least size and show on Alt, and no income is a warning
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-010](ADR-010-movement-and-pathing.md) decisions 4 and 6 in part, and [ADR-041](ADR-041-ai-plays-a-longer-match.md) decision 2 in part
+Status: **accepted** · 2026-10-03
 
 ## Context
 
@@ -10,11 +10,11 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
 2. **The health bars could not be read.** At that zoom they were a few pixels of green, so the player could not tell which ships were hurt.
 3. **The Ore panel wrote "+0/s" in the figures' blue**, as calmly as any other income.
 
-**The columns came from two rules of ADR-010 working together**, not from the AI. The AI sends its fleets as whole groups, 20 or more warships with one attack-move order.
+**The columns came from two rules of movement working together**, not from the AI. The AI sends its fleets as whole groups, 20 or more warships with one attack-move order.
 
-- **A group shares one route** (decision 4). Every ship whose way to its slot is blocked joins the group's route at a corner, so every ship of the group passes the obstacle through the same corner.
-- **A ship lets a corner go as soon as it sees the waypoint after it** (decision 6). Past an obstacle, a ship sees its slot as soon as the straight line to the slot clears the obstacle's edge, and then it heads straight for the slot. Every such line touches the obstacle at the same place, so even a ship given its own way round would pass the obstacle where every other ship does.
-- An attack-moving ship stands to fire once an enemy is in range. The head of a column stops, and the rest arrive one after another.
+- **A group shared one route.** Every ship whose way to its slot was blocked joined the group's route at a corner, so every ship of the group passed the obstacle through the same corner.
+- **A ship let a corner go as soon as it saw the waypoint after it.** Past an obstacle, a ship saw its slot as soon as the straight line to the slot cleared the obstacle's edge, and then it headed straight for the slot. Every such line touches the obstacle at the same place, so even a ship given its own way round would pass the obstacle where every other ship did.
+- An attack-moving ship stands to fire once an enemy is in range. The head of a column stopped, and the rest arrived one after another.
 
 **Measured** in the Linux container with a probe of 25 Small+Ion ships in a 5 × 5 block, ordered 3 km past one field 200 m in radius. It measured the group's length along its mean heading against its width across it, worst while the group moved:
 
@@ -35,14 +35,14 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
 2. **A ship keeps its lane's corners.** It lets one go at sight of the next waypoint only once it is within three of its footprint radii of it, which is one place in the formation. It still lets a corner go within its own radius, and still gives up a corner after a second without progress.
    - Every other waypoint is let go at sight as before. That includes the group's destination, which a ship passes through when the route's end does not see its slot.
    - A ship knows its lane by the lane's last waypoint, kept with its path. The rule holds only while that waypoint is still in the path, so a path that replaces it ends the rule.
-3. **An Attack order keeps today's shared route.** Its ships have no slots, and each re-paths alone, once a second, as its target moves (`ChaseTargets`). A lane would be lost at the first re-path. So a group ordered onto one enemy still passes an obstacle in file. The owner decided on 2026-10-03 that the group re-pathing together is a task of its own, task 7.3.
+3. **An Attack order keeps lanes too** (Phase 2 plan task 14.4, carried over from Phase 1's task 7.3). Its ships have no slots: each takes a lane at its place across a grid of the group's size, as a moving group's ships do, and the band leads to the target. When the target has moved 40 m from where they last pathed to, at most once a second, the ships of one player that path again to it in the same tick path again together, along a fresh route in a band, instead of each alone (`ChaseTargets`). A lone ship paths as before.
 4. **Health bars:**
    - **Held, Alt shows a bar over every ship and structure**, whole or not. Released, only damaged ones show, as before.
    - **A bar is never less than 32 × 5 of the HUD's reference units on screen**, measured as the camera's view width falls across the screen's middle. Below that it stays as long as its footprint and 2.5 m thick.
    - On a 1,920-pixel-wide screen, the least size first applies past a 960 m view. At the default 500 m view, nothing changes. At the widest 1,600 m view, a Small hull's bar goes from about 19 × 3 pixels to 32 × 5.
    - **The window ignores the keyboard's menu key.** Alt pressed and released alone would open the window's menu and hold the frame loop in the menu's own loop until it closed, so the window swallows `SC_KEYMENU`. Alt+F4 and Alt+Enter still work.
 5. **An income of nothing is written in the HUD's warning color**, the salmon of a designer name the server would refuse. Any income above nothing stays in the figures' blue.
-6. **The AI regroups for 120 seconds after it falls back, not 150** (`regroupSeconds` in `Opponent.json`). With lanes, two AIs' matches grew longer than the owner's 45–60 minutes (ADR-041). The owner chose this setting on 2026-10-03 from those measured below. Nothing else in ADR-041 changes.
+6. **The AI's regroup after a fall-back is [ADR-041](ADR-041-ai-plays-a-longer-match.md) decision 2's** (`regroupSeconds` in `Opponent.json`), 240 seconds since Phase 2's tuning with territory, which the owner kept on 2026-10-04. On Phase 1's map with lanes it was 120 seconds, not 150: two AIs' matches had grown longer than the owner's 45–60 minutes, and the owner chose 120 on 2026-10-03 from the settings measured below.
 
 ## Consequences
 
@@ -54,6 +54,7 @@ On 2026-10-03 the owner shared a screenshot of a big fight between two AIs and a
   | Field 150 m off the line | 4.1 | 1.2 |
   | Open space | 1.0 | 1.0 |
   | Two fields with a gap narrower than the band | 4.1 | 2.4 |
+  | Field across the way, an Attack order on a target moving 5 m/s beyond it (task 14.4) | 6.2 | 2.5 |
 
   - Every case arrives in the same time as before, 38 to 40 seconds.
   - Through a gap narrower than the band, the ships still close up to pass it.

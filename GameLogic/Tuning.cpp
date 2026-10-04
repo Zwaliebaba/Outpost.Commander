@@ -66,6 +66,19 @@ Outpost::SightTuning ReadSight(ObjectReader& _reader)
   return sight;
 }
 
+Outpost::TerritoryTuning ReadTerritory(ObjectReader& _reader)
+{
+  Outpost::TerritoryTuning territory;
+  territory.cutOffIncomePercent = _reader.Integer("cutOffIncomePercent", 0);
+  if (territory.cutOffIncomePercent > 100)
+    Neuron::JsonFail(_reader.PathOf("cutOffIncomePercent"), std::format("is at most 100, found {}", territory.cutOffIncomePercent));
+  territory.suppressionRadiusMeters = _reader.Number("suppressionRadiusMeters", JsonBound::Positive);
+  territory.tickets = _reader.Integer("tickets", 1);
+  territory.drainIntervalSeconds = _reader.Number("drainIntervalSeconds", JsonBound::Positive);
+  territory.drainTicketsPerNodeDifference = _reader.Integer("drainTicketsPerNodeDifference", 1);
+  return territory;
+}
+
 Outpost::HullTuning ReadHull(ObjectReader& _reader)
 {
   Outpost::HullTuning hull;
@@ -106,6 +119,17 @@ Outpost::WeaponTuning ReadWeapon(ObjectReader& _reader)
   return weapon;
 }
 
+Outpost::ModuleTuning ReadModule(ObjectReader& _reader)
+{
+  Outpost::ModuleTuning module;
+  module.id = _reader.Identifier<Outpost::ModuleId>("id");
+  module.name = _reader.String("name");
+  module.sightMeters = _reader.Number("sightMeters", JsonBound::NotNegative);
+  module.speedFactor = _reader.Number("speedFactor", JsonBound::Positive);
+  module.cost = _reader.Integer("cost", 0);
+  return module;
+}
+
 Outpost::ConstructorTuning ReadConstructor(ObjectReader& _reader)
 {
   Outpost::ConstructorTuning constructor;
@@ -133,12 +157,13 @@ Outpost::StructureWeaponTuning ReadStructureWeapon(ObjectReader& _reader)
 }
 
 // The file spells a kind as its enumerator.
-constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 5> STRUCTURE_KINDS = {{
+constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STRUCTURE_KINDS = {{
   {"CommandStation", Outpost::StructureKind::CommandStation},
   {"Shipyard", Outpost::StructureKind::Shipyard},
   {"ResearchLab", Outpost::StructureKind::ResearchLab},
   {"MiningRig", Outpost::StructureKind::MiningRig},
   {"DefensePlatform", Outpost::StructureKind::DefensePlatform},
+  {"Relay", Outpost::StructureKind::Relay},
 }};
 
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
@@ -387,10 +412,14 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   ObjectReader sight(root.Required("sight"), "sight");
   tuning.sight = ReadSight(sight);
   sight.Finish();
+  ObjectReader territory(root.Required("territory"), "territory");
+  tuning.territory = ReadTerritory(territory);
+  territory.Finish();
 
   tuning.hulls = Neuron::ReadJsonList<Outpost::HullTuning>(root, "hulls", ReadHull);
   tuning.drives = Neuron::ReadJsonList<Outpost::DriveTuning>(root, "drives", ReadDrive);
   tuning.weapons = Neuron::ReadJsonList<Outpost::WeaponTuning>(root, "weapons", ReadWeapon);
+  tuning.modules = Neuron::ReadJsonList<Outpost::ModuleTuning>(root, "modules", ReadModule);
   ObjectReader constructor(root.Required("constructor"), "constructor");
   tuning.constructor = ReadConstructor(constructor);
   constructor.Finish();
@@ -402,6 +431,7 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckUniqueIds(tuning.hulls, "hulls");
   CheckUniqueIds(tuning.drives, "drives");
   CheckUniqueIds(tuning.weapons, "weapons");
+  CheckUniqueIds(tuning.modules, "modules");
   CheckUniqueIds(tuning.structureWeapons, "structureWeapons");
   CheckUniqueIds(tuning.research, "research");
   CheckReferences(tuning);

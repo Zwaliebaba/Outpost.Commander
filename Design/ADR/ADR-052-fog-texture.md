@@ -1,10 +1,10 @@
 # ADR-052 — The fog is a texture, written when it changes, and the ground and the minimap both sample it
 
-Status: **accepted** · 2026-10-03 · supersedes [ADR-024](ADR-024-fog-of-war.md) decision 9 in how the client updates and draws the fog
+Status: **accepted** · 2026-10-03
 
 ## Context
 
-ADR-024 decision 9 had the client do three things every frame:
+The client used to do three things every frame:
 
 1. **Update the fog.** `FogOfWar::Update` allocated a vector the size of the grid, which is 62,500 cells on the 5 km map, and rasterized every own entity's sight.
 2. **Draw it on the ground.** `GroundMaskPipeline` copied all 250 KB of shades, as floats, into an upload buffer. The pixel shader then read four of them per pixel through a root shader resource view, from upload memory, which on a discrete GPU sits across the PCIe bus, and blended them itself.
@@ -33,4 +33,4 @@ The shades change only when a player's entity moves into a new 20 m cell. The se
 - **A frame no longer uploads the fog.** When the fog does change, the upload is 64 KB of bytes, not 250 KB of floats. The ground's pixels read a texture in video memory. The minimap's fog is one quad instead of hundreds, so it no longer competes with text for the interface's quads.
 - **The minimap's fog is now smooth, as the ground's always was.** At its size, a cell is about a pixel, so the runs' hard edges were not visible there either.
 - **A cell is cleared up to one snapshot later than before.** At 20 m a cell, that is not visible.
-- **Forecloses** a grid larger than 256 cells a side, the old limit of `MAX_CELLS` kept as a texture's side.
+- **Forecloses** a grid larger than 256 cells a side, `GroundMaskPipeline::TEXTURE_SIDE`, which was already the grid's limit.
