@@ -54,6 +54,7 @@ Outpost::RulesTuning ReadRules(ObjectReader& _reader)
   rules.exhaustedYieldPercent = _reader.Integer("exhaustedYieldPercent", 0);
   if (rules.exhaustedYieldPercent > 100)
     Neuron::JsonFail(_reader.PathOf("exhaustedYieldPercent"), std::format("is at most 100, found {}", rules.exhaustedYieldPercent));
+  rules.levelHitPointsPercent = _reader.Integer("levelHitPointsPercent", 0);
   return rules;
 }
 
@@ -166,6 +167,70 @@ constexpr std::array<std::pair<std::string_view, Outpost::StructureKind>, 6> STR
   {"Relay", Outpost::StructureKind::Relay},
 }};
 
+// The hulls a Shipyard, or one of its levels, builds: an optional list, which no other kind has (Phase 3 design §5).
+std::vector<Outpost::HullId> ReadHulls(ObjectReader& _reader, const Outpost::StructureTuning& _structure)
+{
+  const JsonValue* hulls = _reader.Optional("hulls");
+  if (hulls == nullptr)
+    return {};
+  const std::string path = _reader.PathOf("hulls");
+  if (_structure.kind != Outpost::StructureKind::Shipyard)
+    Neuron::JsonFail(path, std::format("are a Shipyard's, not a {}'s", _structure.name));
+  const JsonValue::Array& elements = Neuron::ReadJsonArray(*hulls, path);
+  std::vector<Outpost::HullId> ids;
+  ids.reserve(elements.size());
+  for (size_t i = 0; i < elements.size(); ++i)
+    ids.push_back(ReadId<Outpost::HullId>(elements[i], Neuron::JsonElementPath(path, i)));
+  return ids;
+}
+
+// What a level of the Research Lab gives and needs (Phase 3 design §6): the tier it opens, the topics it requires and the
+// topics it researches at once, each optional, and none of them a level of any other kind's.
+void ReadLabLevel(ObjectReader& _reader, const Outpost::StructureTuning& _structure, Outpost::StructureLevelTuning& _level)
+{
+  const bool lab = _structure.kind == Outpost::StructureKind::ResearchLab;
+  for (const std::string_view name : {"opensTier", "requires", "researchSlots"})
+  {
+    if (!lab && _reader.Optional(name) != nullptr)
+      Neuron::JsonFail(_reader.PathOf(name), std::format("is a Research Lab's, not a {}'s", _structure.name));
+  }
+  if (!lab)
+    return;
+  if (_reader.Optional("opensTier") != nullptr)
+  {
+    _level.opensTier = _reader.Integer("opensTier", 2);
+    if (_level.opensTier > Outpost::RESEARCH_TIERS)
+      Neuron::JsonFail(_reader.PathOf("opensTier"), std::format("is past the last tier, {}", Outpost::RESEARCH_TIERS));
+  }
+  if (const JsonValue* required = _reader.Optional("requires"))
+  {
+    const std::string path = _reader.PathOf("requires");
+    const JsonValue::Array& topics = Neuron::ReadJsonArray(*required, path);
+    for (size_t i = 0; i < topics.size(); ++i)
+      _level.prerequisites.push_back(ReadId<Outpost::ResearchTopicId>(topics[i], Neuron::JsonElementPath(path, i)));
+  }
+  if (_reader.Optional("researchSlots") != nullptr)
+    _level.researchSlots = _reader.Integer("researchSlots", 2);
+}
+
+// A Command Station's cap on nodes and its Defence guns, at level 1 or at one of its levels (Phase 3 design §7): each
+// optional, and neither another kind's.
+void ReadStationNumbers(ObjectReader& _reader, const Outpost::StructureTuning& _structure, std::int32_t& _nodes, std::int32_t& _guns)
+{
+  const bool station = _structure.kind == Outpost::StructureKind::CommandStation;
+  for (const std::string_view name : {"nodes", "guns"})
+  {
+    if (!station && _reader.Optional(name) != nullptr)
+      Neuron::JsonFail(_reader.PathOf(name), std::format("are a Command Station's, not a {}'s", _structure.name));
+  }
+  if (!station)
+    return;
+  if (_reader.Optional("nodes") != nullptr)
+    _nodes = _reader.Integer("nodes", 1);
+  if (_reader.Optional("guns") != nullptr)
+    _guns = _reader.Integer("guns", 1);
+}
+
 Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
 {
   Outpost::StructureTuning structure;
@@ -194,6 +259,31 @@ Outpost::StructureTuning ReadStructure(ObjectReader& _reader)
 
   if (const JsonValue* weapon = _reader.Optional("structureWeapon"))
     structure.structureWeapon = ReadId<Outpost::StructureWeaponId>(*weapon, _reader.PathOf("structureWeapon"));
+
+  // Levels are art the owner gave three kinds (ADR-045); the others have none to draw (Phase 3 design §11).
+  if (const JsonValue* levels = _reader.Optional("levels"))
+  {
+    const std::string path = _reader.PathOf("levels");
+    const bool grows = structure.kind == Outpost::StructureKind::CommandStation || structure.kind == Outpost::StructureKind::Shipyard ||
+                       structure.kind == Outpost::StructureKind::ResearchLab;
+    if (!grows)
+      Neuron::JsonFail(path, std::format("are not for a {}", structure.name));
+    const JsonValue::Array& elements = Neuron::ReadJsonArray(*levels, path);
+    if (elements.size() + 1 > static_cast<size_t>(Outpost::MAXIMUM_STRUCTURE_LEVEL))
+      Neuron::JsonFail(path, std::format("reach level {}, past the last, {}", elements.size() + 1, Outpost::MAXIMUM_STRUCTURE_LEVEL));
+    for (size_t i = 0; i < elements.size(); ++i)
+    {
+      ObjectReader level(elements[i], Neuron::JsonElementPath(path, i));
+      structure.levels.push_back(
+        {.cost = level.Integer("cost", 0), .buildConstructorSeconds = level.Number("buildConstructorSeconds", JsonBound::Positive)});
+      structure.levels.back().hulls = ReadHulls(level, structure);
+      ReadLabLevel(level, structure, structure.levels.back());
+      ReadStationNumbers(level, structure, structure.levels.back().nodes, structure.levels.back().guns);
+      level.Finish();
+    }
+  }
+  structure.hulls = ReadHulls(_reader, structure);
+  ReadStationNumbers(_reader, structure, structure.nodes, structure.guns);
   return structure;
 }
 
@@ -268,9 +358,7 @@ Outpost::ResearchEffect ReadEffect(ObjectReader& _reader)
     return _reader.Identifier<Outpost::DriveId>("unlockDrive");
   if (_reader.Optional("unlockWeapon") != nullptr)
     return _reader.Identifier<Outpost::WeaponId>("unlockWeapon");
-  if (_reader.Optional("opensTier") != nullptr)
-    return Outpost::GatewayEffect{.tier = _reader.Integer("opensTier", 2)};
-  Neuron::JsonFail(_reader.Path(), "needs \"upgrade\", \"unlockHull\", \"unlockDrive\", \"unlockWeapon\" or \"opensTier\"");
+  Neuron::JsonFail(_reader.Path(), "needs \"upgrade\", \"unlockHull\", \"unlockDrive\" or \"unlockWeapon\"");
 }
 
 Outpost::ResearchTopicTuning ReadResearchTopic(ObjectReader& _reader)
@@ -306,6 +394,37 @@ void CheckReferences(const Outpost::Tuning& _tuning)
       Neuron::JsonFail(std::format("{}.kind", path), "a structure kind appears twice");
     if (structure.structureWeapon.IsValid())
       CheckExists(_tuning.structureWeapons, structure.structureWeapon, std::format("{}.structureWeapon", path), "structure weapon");
+
+    // A Shipyard that names its hulls names each hull once, so that every hull is built at one level (Phase 3 design §5).
+    std::vector<Outpost::HullId> named;
+    const auto check = [&](const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
+    {
+      for (size_t j = 0; j < _hulls.size(); ++j)
+      {
+        const std::string hullPath = Neuron::JsonElementPath(_path, j);
+        CheckExists(_tuning.hulls, _hulls[j], hullPath, "hull");
+        if (std::ranges::find(named, _hulls[j]) != named.end())
+          Neuron::JsonFail(hullPath, std::format("names hull {} again", _hulls[j].value));
+        named.push_back(_hulls[j]);
+      }
+    };
+    for (size_t level = 0; level < structure.levels.size(); ++level)
+    {
+      const std::vector<Outpost::ResearchTopicId>& topics = structure.levels[level].prerequisites;
+      for (size_t j = 0; j < topics.size(); ++j)
+        CheckExists(_tuning.research, topics[j], Neuron::JsonElementPath(std::format("{}.levels[{}].requires", path, level), j), "topic");
+    }
+    check(structure.hulls, std::format("{}.hulls", path));
+    for (size_t level = 0; level < structure.levels.size(); ++level)
+      check(structure.levels[level].hulls, std::format("{}.levels[{}].hulls", path, level));
+    if (!named.empty())
+    {
+      for (const Outpost::HullTuning& hull : _tuning.hulls)
+      {
+        if (std::ranges::find(named, hull.id) == named.end())
+          Neuron::JsonFail(std::format("{}.hulls", path), std::format("names no level for hull {}, {}", hull.id.value, hull.name));
+      }
+    }
   }
   for (const auto& [name, kind] : STRUCTURE_KINDS)
   {
@@ -336,41 +455,42 @@ void CheckReferences(const Outpost::Tuning& _tuning)
 
 // Every topic must be reachable: repeatedly mark the topics whose prerequisites are all marked, and any left over
 // require themselves through a cycle.
-// The tiers (Phase 1 design §6, ADR-033): a topic requires none of a later tier; each tier after the first that has topics
-// has one gateway, which opens its own tier; and every other topic of that tier requires its gateway.
-void CheckTiers(const std::vector<Outpost::ResearchTopicTuning>& _research)
+// The tiers (Phase 1 design §6, ADR-033): a topic requires none of a later tier, and each tier after the first that has
+// topics is opened by one level of the Research Lab, a later tier by a later level (Phase 3 design §6).
+void CheckTiers(const Outpost::Tuning& _tuning)
 {
-  const auto gatewayOf = [&_research](std::int32_t _tier) -> const Outpost::ResearchTopicTuning*
+  const std::vector<Outpost::ResearchTopicTuning>& research = _tuning.research;
+  for (size_t i = 0; i < research.size(); ++i)
   {
-    const auto gateway = std::ranges::find_if(_research, [_tier](const Outpost::ResearchTopicTuning& _topic)
-                                              { return _topic.IsGateway() && _topic.tier == _tier; });
-    return gateway != _research.end() ? &*gateway : nullptr;
-  };
-  for (size_t i = 0; i < _research.size(); ++i)
-  {
-    const Outpost::ResearchTopicTuning& topic = _research[i];
+    const Outpost::ResearchTopicTuning& topic = research[i];
     const std::string path = Neuron::JsonElementPath("research", i);
     for (size_t j = 0; j < topic.prerequisites.size(); ++j)
     {
-      const auto prerequisite = std::ranges::find(_research, topic.prerequisites[j], &Outpost::ResearchTopicTuning::id);
+      const auto prerequisite = std::ranges::find(research, topic.prerequisites[j], &Outpost::ResearchTopicTuning::id);
       if (prerequisite->tier > topic.tier)
         Neuron::JsonFail(Neuron::JsonElementPath(std::format("{}.requires", path), j), "is a topic of a later tier");
     }
-    if (const auto* gateway = std::get_if<Outpost::GatewayEffect>(&topic.effect))
+  }
+
+  const auto lab = std::ranges::find(_tuning.structures, Outpost::StructureKind::ResearchLab, &Outpost::StructureTuning::kind);
+  const auto labIndex = static_cast<size_t>(lab - _tuning.structures.begin());
+  std::int32_t lastTier = 1;
+  for (size_t level = 0; lab != _tuning.structures.end() && level < lab->levels.size(); ++level)
+  {
+    const std::int32_t tier = lab->levels[level].opensTier;
+    if (tier == 0)
+      continue;
+    if (tier != lastTier + 1)
     {
-      if (gateway->tier != topic.tier)
-        Neuron::JsonFail(std::format("{}.effect.opensTier", path), "is not the gateway's own tier");
-      if (gatewayOf(topic.tier) != &topic)
-        Neuron::JsonFail(std::format("{}.effect.opensTier", path), "opens a tier that has another gateway");
-      continue;
+      Neuron::JsonFail(std::format("{}.levels[{}].opensTier", Neuron::JsonElementPath("structures", labIndex), level),
+                       std::format("opens tier {} where the next tier is {}", tier, lastTier + 1));
     }
-    if (topic.tier == 1)
-      continue;
-    const Outpost::ResearchTopicTuning* gateway = gatewayOf(topic.tier);
-    if (gateway == nullptr)
-      Neuron::JsonFail(std::format("{}.tier", path), "names a tier with no gateway");
-    if (std::ranges::find(topic.prerequisites, gateway->id) == topic.prerequisites.end())
-      Neuron::JsonFail(std::format("{}.requires", path), std::format("does not require its tier's gateway, {}", gateway->name));
+    lastTier = tier;
+  }
+  for (size_t i = 0; i < research.size(); ++i)
+  {
+    if (research[i].tier > lastTier)
+      Neuron::JsonFail(std::format("{}.tier", Neuron::JsonElementPath("research", i)), "names a tier no level of the Research Lab opens");
   }
 }
 
@@ -436,10 +556,74 @@ Outpost::Tuning ReadTuning(std::string_view _json)
   CheckUniqueIds(tuning.research, "research");
   CheckReferences(tuning);
   CheckResearchIsAcyclic(tuning.research);
-  CheckTiers(tuning.research);
+  CheckTiers(tuning);
   return tuning;
 }
 } // namespace
+
+std::int32_t Outpost::LabLevelFor(const Tuning& _tuning, std::int32_t _tier) noexcept
+{
+  const auto lab = std::ranges::find(_tuning.structures, StructureKind::ResearchLab, &StructureTuning::kind);
+  for (size_t level = 0; lab != _tuning.structures.end() && level < lab->levels.size(); ++level)
+  {
+    if (lab->levels[level].opensTier == _tier)
+      return static_cast<std::int32_t>(level) + 2;
+  }
+  return 1;
+}
+
+std::int32_t Outpost::OpenTier(const Tuning& _tuning, std::int32_t _level) noexcept
+{
+  const auto lab = std::ranges::find(_tuning.structures, StructureKind::ResearchLab, &StructureTuning::kind);
+  std::int32_t tier = 1;
+  for (size_t level = 0; lab != _tuning.structures.end() && level < lab->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    tier = std::max(tier, lab->levels[level].opensTier);
+  return tier;
+}
+
+std::int32_t Outpost::ResearchSlots(const Tuning& _tuning, std::int32_t _level) noexcept
+{
+  const auto lab = std::ranges::find(_tuning.structures, StructureKind::ResearchLab, &StructureTuning::kind);
+  std::int32_t slots = 1;
+  for (size_t level = 0; lab != _tuning.structures.end() && level < lab->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    slots = std::max(slots, lab->levels[level].researchSlots);
+  return slots;
+}
+
+std::int32_t Outpost::NodeCap(const Tuning& _tuning, std::int32_t _level) noexcept
+{
+  const auto station = std::ranges::find(_tuning.structures, StructureKind::CommandStation, &StructureTuning::kind);
+  if (station == _tuning.structures.end())
+    return 0;
+  std::int32_t nodes = station->nodes;
+  for (size_t level = 0; level < station->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    nodes = std::max(nodes, station->levels[level].nodes);
+  return nodes;
+}
+
+std::int32_t Outpost::StationGuns(const Tuning& _tuning, StructureKind _kind, std::int32_t _level) noexcept
+{
+  const auto structure = std::ranges::find(_tuning.structures, _kind, &StructureTuning::kind);
+  if (_kind != StructureKind::CommandStation || structure == _tuning.structures.end())
+    return 1;
+  std::int32_t guns = std::max(1, structure->guns);
+  for (size_t level = 0; level < structure->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    guns = std::max(guns, structure->levels[level].guns);
+  return guns;
+}
+
+std::int32_t Outpost::ShipyardLevelFor(const Tuning& _tuning, HullId _hull) noexcept
+{
+  const auto shipyard = std::ranges::find(_tuning.structures, StructureKind::Shipyard, &StructureTuning::kind);
+  if (shipyard == _tuning.structures.end())
+    return 1;
+  for (size_t level = 0; level < shipyard->levels.size(); ++level)
+  {
+    if (std::ranges::find(shipyard->levels[level].hulls, _hull) != shipyard->levels[level].hulls.end())
+      return static_cast<std::int32_t>(level) + 2;
+  }
+  return 1;
+}
 
 Outpost::Tuning Outpost::LoadTuning(std::string_view _json)
 {

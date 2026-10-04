@@ -8,7 +8,7 @@ every time in ticks:
 
   match seed <seed> ticks_per_second <rate>                       a match starts
   research <tick> player <player> topic <id> <name>               a player finished a research topic
-  tier <tick> player <player> tier <tier>                         a player finished the gateway that opens a tier
+  tier <tick> player <player> tier <tier>                         a player's Research Lab opened a tier (Phase 3 design §6)
   built <tick> player <player> hull <id> drive <id> weapon <id> <name>   a warship first appeared; a module ends its name
   fleet <tick> player <player> warships <count>                   a player's warships, every 30 seconds
   dry <tick> asteroid <id>                                        an ore asteroid ran dry
@@ -85,7 +85,7 @@ class Match:
     return max(ticks, default=0)
 
   def tier_at(self, player, tick):
-    """The highest tier the player had opened by the tick: 1 until its first gateway."""
+    """The highest tier the player had opened by the tick: 1 until its Research Lab opened the next."""
     return max((tier for at, owner, tier in self.tiers if owner == player and at <= tick), default=1)
 
   def early_engagements(self):

@@ -81,6 +81,12 @@ struct EntityView
   // A structure's construction, in thousandths: PERMILLE once it is built, as everything else is. A structure under
   // construction does nothing but stand there and block (design §6).
   std::int32_t builtPermille = PERMILLE;
+  // A structure's level, from 1 (Phase 3 design §4, ADR-064); 1 for anything else. An enemy structure the player remembers
+  // keeps the level it was last seen at.
+  std::int32_t level = 1;
+  // The next level's construction, in thousandths, while a finished structure is being upgraded; none otherwise. It is
+  // shown as construction is, to whoever sees the structure.
+  std::optional<std::int32_t> upgradePermille;
   // A finished Shipyard's number among its owner's, 1 for the first finished, never reused; and how many ships it has
   // built this match (Phase 1 design §11). The owner's only; zero for anything else.
   std::uint32_t shipyardNumber = 0;
@@ -92,6 +98,9 @@ struct EntityView
   // of war a player sees only its own queues (ADR-024).
   std::vector<ResearchTopicId> research;
   std::int32_t jobPermille = 0;
+  // A Research Lab with a second slot: how far the second topic of its queue has come, in thousandths, while it is
+  // researched beside the first (Phase 3 design §6); zero otherwise.
+  std::int32_t secondJobPermille = 0;
   // An enemy structure out of the player's sight, as the player last saw it there (ADR-024). It may have changed, or be
   // gone: the player learns which once it sees the place again.
   bool remembered = false;
@@ -122,6 +131,8 @@ struct HullView
   double buildSeconds = 0.0;
   // False until research unlocks it.
   bool available = false;
+  // The level a Shipyard must be at to build it (Phase 3 design §5).
+  std::int32_t shipyardLevel = 1;
 };
 
 struct DriveView
@@ -177,9 +188,8 @@ struct ResearchTopicView
   HullId unlocksHull;
   DriveId unlocksDrive;
   WeaponId unlocksWeapon;
-  // Its tier, and whether it is the gateway that opens it (Phase 1 design §6).
+  // Its tier (Phase 1 design §6), which a level of the Research Lab opens (Phase 3 design §6).
   std::int32_t tier = 1;
-  bool gateway = false;
 };
 
 // One of the player's saved designs (design §7), as the selection panel and, later, the designer show it.
@@ -197,6 +207,27 @@ struct DesignView
 };
 
 // What the client needs to know of a kind of structure to name it, draw it and place it (design §6).
+// One level above the first that a kind of structure is upgraded to (Phase 3 design §4, ADR-064): what the upgrade costs,
+// how long one Constructor takes to build it, and the structure's full hit points once it is in, with the player's
+// research.
+struct StructureLevelView
+{
+  std::int32_t cost = 0;
+  double buildSeconds = 0.0;
+  std::int32_t maxHitPointsHundredths = 0;
+  // A Research Lab's level (Phase 3 design §6): the tier it opens, or 0; how many topics the Lab researches at once from
+  // it on, or 0 where it does not change that; and the topics that must be researched before it is ordered.
+  std::int32_t opensTier = 0;
+  std::int32_t researchSlots = 0;
+  std::vector<ResearchTopicId> prerequisites;
+  // A Command Station's level (Phase 3 design §7): the nodes its player may hold from it on, and its Defence guns; 0 where
+  // it does not change them.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
+
+  friend bool operator==(const StructureLevelView&, const StructureLevelView&) = default;
+};
+
 struct StructureTypeView
 {
   StructureKind structure = StructureKind::CommandStation;
@@ -205,6 +236,8 @@ struct StructureTypeView
   // Whether a Constructor builds it, and for how much Ore; the Command Station is not built.
   bool buildable = false;
   std::int32_t cost = 0;
+  // The levels it is upgraded to, level 2 first; none for a kind that does not grow.
+  std::vector<StructureLevelView> levels;
 };
 
 // One of the map's sectors and who holds it (Phase 2 design §4–§6, ADR-056). Every player sees every sector's holder,
@@ -274,6 +307,9 @@ struct ShotView
   PlanePosition to;
   // How far its splash reached around `to`; zero for a weapon without splash.
   float splashRadiusMeters = 0.0f;
+  // Which of the shooter's guns fired it: 0 for a ship's and a structure's first, and 1 on for a Command Station's further
+  // Defence guns (Phase 3 design §7), which the client draws from hardpoints of their own.
+  std::uint8_t gun = 0;
 };
 
 // An entity destroyed in the tick, where it was, so the client can show it go after it has left the snapshot (task 3.5).
@@ -319,6 +355,12 @@ struct Snapshot
   std::vector<ModuleView> modules;
   std::vector<ResearchTopicView> research;
   double shipyardBuildSpeedFactor = 1.0;
+  // The highest research tier the player's finished Research Lab has opened by its level, and 1 without one (Phase 3
+  // design §6).
+  std::int32_t researchTier = 1;
+  // On a map with territory, the nodes the player may hold, home included, by its Command Station's level, or level 1's
+  // without one (Phase 3 design §7); zero otherwise.
+  std::int32_t nodeCap = 0;
   // The match is over once a player has neither a Command Station nor a finished Shipyard (Phase 1 design §4): the winner
   // is the player who still has one, and no player when both lost theirs in the same tick. The world runs on after it
   // (owner, 2026-10-01).

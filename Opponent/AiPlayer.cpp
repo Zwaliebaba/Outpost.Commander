@@ -76,16 +76,19 @@ bool IsBuilt(const EntityView& _entity) noexcept
   return _entity.builtPermille >= Outpost::PERMILLE;
 }
 
-// The highest tier the player has opened by researching its gateway (Phase 1 design §6): 1 before any.
+// The highest tier the player's Research Lab has opened by its level (Phase 3 design §6): 1 before any.
 std::int32_t OpenedTier(const Snapshot& _snapshot) noexcept
 {
-  std::int32_t tier = 1;
-  for (const Outpost::ResearchTopicView& topic : _snapshot.research)
-  {
-    if (topic.gateway && topic.researched)
-      tier = std::max(tier, topic.tier);
-  }
-  return tier;
+  return _snapshot.researchTier;
+}
+
+// How many topics a Research Lab at _level researches at once (Phase 3 design §6), from the snapshot's levels.
+std::int32_t ResearchSlotsOf(const Outpost::StructureTypeView* _lab, std::int32_t _level) noexcept
+{
+  std::int32_t slots = 1;
+  for (size_t level = 0; _lab != nullptr && level < _lab->levels.size() && std::cmp_less(level + 1, _level); ++level)
+    slots = std::max(slots, _lab->levels[level].researchSlots);
+  return slots;
 }
 
 // The attack group goes for production first: Shipyards, then the Command Station, then anything else (Phase 1 design
@@ -95,6 +98,13 @@ int AttackRank(const EntityView& _structure) noexcept
   if (_structure.structure == StructureKind::Shipyard)
     return 0;
   return _structure.structure == StructureKind::CommandStation ? 1 : 2;
+}
+
+// The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5); 1 for a hull the snapshot does not list.
+std::int32_t ShipyardLevelFor(const Snapshot& _snapshot, Outpost::HullId _hull) noexcept
+{
+  const auto hull = std::ranges::find(_snapshot.hulls, _hull, &Outpost::HullView::id);
+  return hull != _snapshot.hulls.end() ? hull->shipyardLevel : 1;
 }
 
 const Outpost::StructureTypeView* FindType(const Snapshot& _snapshot, StructureKind _kind) noexcept
@@ -312,7 +322,9 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   // Research, one topic at a time, in its order.
   const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
                                         { return IsStructure(_entity, StructureKind::ResearchLab) && _entity.owner == m_player; });
-  if (lab != _snapshot.entities.end() && IsBuilt(*lab) && lab->research.empty())
+  // As many at once as its Lab researches, each of a tier its Lab has opened (Phase 3 design §6).
+  const StructureTypeView* labType = FindType(_snapshot, StructureKind::ResearchLab);
+  if (lab != _snapshot.entities.end() && IsBuilt(*lab) && std::cmp_less(lab->research.size(), ResearchSlotsOf(labType, lab->level)))
   {
     const auto researched = [&_snapshot](ResearchTopicId _id)
     {
@@ -322,7 +334,8 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
     for (const ResearchTopicId id : m_settings.researchOrder)
     {
       const auto topic = std::ranges::find(_snapshot.research, id, &ResearchTopicView::id);
-      if (topic == _snapshot.research.end() || topic->researched || !std::ranges::all_of(topic->prerequisites, researched))
+      if (topic == _snapshot.research.end() || topic->researched || topic->tier > _snapshot.researchTier ||
+          std::ranges::find(lab->research, id) != lab->research.end() || !std::ranges::all_of(topic->prerequisites, researched))
         continue;
       _orders.push_back(MakeCommand(m_player, StartResearchCommand{.lab = lab->id, .topic = id}));
       break;
@@ -332,6 +345,10 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
   std::vector<EntityId> idle;
   TendWork(_snapshot, idle, _orders);
   const bool structureWaiting = Build(_snapshot, idle, _orders);
+  // An upgrade it wants and cannot yet pay for holds production back, as a structure does, so that the Ore gathers for it.
+  bool upgradeWaiting = false;
+  if (!structureWaiting)
+    upgradeWaiting = UpgradeShipyards(_snapshot, idle, _orders) || UpgradeLab(_snapshot, idle, _orders);
 
   // Constructors left over repair what is damaged, one each.
   for (const EntityView& structure : _snapshot.entities)
@@ -348,7 +365,7 @@ void Outpost::AiPlayer::Decide(const Snapshot& _snapshot, std::vector<Command>& 
     m_work.push_back({.constructors = {constructor}, .target = structure.id, .slot = std::nullopt, .orderedTick = _snapshot.tick});
   }
 
-  Produce(_snapshot, structureWaiting, _orders);
+  Produce(_snapshot, structureWaiting || upgradeWaiting, _orders);
   CommandFleet(_snapshot, _orders);
   CommandScouts(_snapshot, _orders);
 }
@@ -677,6 +694,13 @@ bool Outpost::AiPlayer::IsReady(const Slot& _slot, const Snapshot& _snapshot) co
     return sector != nullptr && sector->holder == m_player;
   if (_slot.structure != StructureKind::Relay)
     return true;
+  // A Relay past its Command Station's cap waits for the station's next level (Phase 3 design §7).
+  return IsClaimable(_slot, _snapshot) && !AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
+}
+
+bool Outpost::AiPlayer::IsClaimable(const Slot& _slot, const Snapshot& _snapshot) const
+{
+  const SectorView* sector = FindSector(_snapshot.sectors, _slot.position);
   return sector != nullptr && !sector->holder.IsValid() &&
          std::ranges::any_of(sector->adjacent,
                              [&](std::int32_t _id)
@@ -740,7 +764,8 @@ void Outpost::AiPlayer::TendWork(const Snapshot& _snapshot, std::vector<EntityId
                     _work.target = site->id;
                   }
                   const EntityView* target = FindEntity(_snapshot, _work.target);
-                  return target == nullptr || (IsBuilt(*target) && target->hitPointsHundredths >= target->maxHitPointsHundredths);
+                  return target == nullptr || (IsBuilt(*target) && !target->upgradePermille.has_value() &&
+                                               target->hitPointsHundredths >= target->maxHitPointsHundredths);
                 });
 
   for (const EntityView& ship : _snapshot.entities)
@@ -778,6 +803,24 @@ bool Outpost::AiPlayer::Build(const Snapshot& _snapshot, std::vector<EntityId>& 
   for (size_t i = 0; i < m_slots.size(); ++i)
   {
     Slot& slot = m_slots[i];
+    // A Relay its Command Station's cap holds back has the station's next level take its place in the plan's order (Phase 3
+    // design §7, plan task 23.1). Plan task 24.1 makes this play.
+    const bool capped =
+      slot.structure == StructureKind::Relay && AtNodeCap(_snapshot.sectors, _snapshot.entities, m_player, _snapshot.nodeCap);
+    if (capped && !slot.abandoned && !IsBlocked(slot, _snapshot) && !IsDone(slot, _snapshot) && IsClaimable(slot, _snapshot))
+    {
+      if (const EntityView* station = UpgradableStation(_snapshot))
+      {
+        const std::int32_t cost = FindType(_snapshot, StructureKind::CommandStation)->levels[static_cast<size_t>(station->level - 1)].cost;
+        if (_idle.empty())
+          return false;
+        if (ore < cost)
+          return true;
+        OrderUpgrade(_snapshot, *station, _idle, _orders);
+        ore -= cost;
+      }
+      continue;
+    }
     if (IsBlocked(slot, _snapshot) || IsDone(slot, _snapshot) || !IsReady(slot, _snapshot) ||
         _snapshot.oreIncomeHundredthsPerSecond < slot.minimumIncomeHundredthsPerSecond ||
         std::ranges::any_of(m_work, [i](const Work& _work) { return _work.slot == i; }))
@@ -884,13 +927,109 @@ void Outpost::AiPlayer::Produce(const Snapshot& _snapshot, bool _structureWaitin
     }
     return;
   }
+  const std::int32_t level = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
   for (const EntityView& yard : _snapshot.entities)
   {
-    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard))
+    // A Shipyard below the design's level is upgraded first (UpgradeShipyards).
+    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.level < level)
       continue;
     for (size_t jobs = yard.queue.size(); std::cmp_less(jobs, m_settings.shipyardQueueJobs); ++jobs)
       _orders.push_back(MakeCommand(m_player, QueueShipCommand{.producer = yard.id, .design = design->id}));
   }
+}
+
+// A Shipyard below the level its production design's hull needs is upgraded, one level and one Shipyard at a time, by
+// the nearest idle Constructors, once the Ore is there (Phase 3 design §5, plan task 21.1). Plan task 24.1 makes this
+// play.
+bool Outpost::AiPlayer::UpgradeShipyards(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::Shipyard);
+  const std::int32_t needed = ShipyardLevelFor(_snapshot, m_productionDesign.hull);
+  if (type == nullptr || _idle.empty())
+    return false;
+  for (const EntityView& yard : _snapshot.entities)
+  {
+    if (!IsStructure(yard, StructureKind::Shipyard) || yard.owner != m_player || !IsBuilt(yard) || yard.upgradePermille.has_value() ||
+        yard.level >= needed || std::cmp_greater_equal(yard.level - 1, type->levels.size()) ||
+        std::ranges::any_of(m_work, [&yard](const Work& _work) { return _work.target == yard.id; }))
+      continue;
+    if (_snapshot.ore < type->levels[static_cast<size_t>(yard.level - 1)].cost)
+      return true;
+    OrderUpgrade(_snapshot, yard, _idle, _orders);
+    return false;
+  }
+  return false;
+}
+
+// The Research Lab is upgraded when the next topic of its research order is of a tier it has not opened, once what the
+// level requires is researched and the Ore is there (Phase 3 design §6, plan task 22.1). Plan task 24.1 makes this play.
+bool Outpost::AiPlayer::UpgradeLab(const Snapshot& _snapshot, std::vector<EntityId>& _idle, std::vector<Command>& _orders)
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::ResearchLab);
+  const auto lab = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
+                                        { return IsStructure(_entity, StructureKind::ResearchLab) && _entity.owner == m_player; });
+  if (type == nullptr || _idle.empty() || lab == _snapshot.entities.end() || !IsBuilt(*lab) || lab->upgradePermille.has_value() ||
+      std::cmp_greater_equal(lab->level - 1, type->levels.size()) ||
+      std::ranges::any_of(m_work, [&lab](const Work& _work) { return _work.target == lab->id; }))
+    return false;
+  const auto researched = [&_snapshot](ResearchTopicId _id)
+  {
+    const auto topic = std::ranges::find(_snapshot.research, _id, &ResearchTopicView::id);
+    return topic != _snapshot.research.end() && topic->researched;
+  };
+  // The next topic of its order not yet researched.
+  const auto next =
+    std::ranges::find_if(m_settings.researchOrder, [&](ResearchTopicId _id)
+                         { return std::ranges::contains(_snapshot.research, _id, &ResearchTopicView::id) && !researched(_id); });
+  if (next == m_settings.researchOrder.end())
+    return false;
+  const auto topic = std::ranges::find(_snapshot.research, *next, &ResearchTopicView::id);
+  const StructureLevelView& level = type->levels[static_cast<size_t>(lab->level - 1)];
+  // A level that opens the tier of its next topic, or once its open tier is the settings', the one that gives a second
+  // slot while two topics of its order are left (Phase 3 design §8).
+  const auto left =
+    std::ranges::count_if(m_settings.researchOrder, [&](ResearchTopicId _id)
+                          { return std::ranges::contains(_snapshot.research, _id, &ResearchTopicView::id) && !researched(_id); });
+  const bool opensTier = level.opensTier > 0 && topic->tier > _snapshot.researchTier;
+  const bool addsSlot = level.researchSlots > 1 && _snapshot.researchTier >= m_settings.secondSlotTier && left >= 2;
+  if ((!opensTier && !addsSlot) || !std::ranges::all_of(level.prerequisites, researched))
+    return false;
+  if (_snapshot.ore < level.cost)
+    return true;
+  OrderUpgrade(_snapshot, *lab, _idle, _orders);
+  return false;
+}
+
+// The AI's Command Station, when it can be upgraded now: finished, not being upgraded, below its top level, and with no
+// Constructors of the AI's already on it (Phase 3 design §7).
+const Outpost::EntityView* Outpost::AiPlayer::UpgradableStation(const Snapshot& _snapshot) const
+{
+  const StructureTypeView* type = FindType(_snapshot, StructureKind::CommandStation);
+  const auto station = std::ranges::find_if(_snapshot.entities, [this](const EntityView& _entity)
+                                            { return IsStructure(_entity, StructureKind::CommandStation) && _entity.owner == m_player; });
+  if (type == nullptr || station == _snapshot.entities.end() || !IsBuilt(*station) || station->upgradePermille.has_value() ||
+      std::cmp_greater_equal(station->level - 1, type->levels.size()) ||
+      std::ranges::any_of(m_work, [&station](const Work& _work) { return _work.target == station->id; }))
+    return nullptr;
+  return &*station;
+}
+
+void Outpost::AiPlayer::OrderUpgrade(const Snapshot& _snapshot, const EntityView& _structure, std::vector<EntityId>& _idle,
+                                     std::vector<Command>& _orders)
+{
+  std::ranges::sort(_idle,
+                    [&](EntityId _a, EntityId _b)
+                    {
+                      const float a = Distance(FindEntity(_snapshot, _a)->position, _structure.position);
+                      const float b = Distance(FindEntity(_snapshot, _b)->position, _structure.position);
+                      return a != b ? a < b : _a < _b;
+                    });
+  const auto crew = static_cast<std::ptrdiff_t>(std::min(CONSTRUCTORS_PER_BUILD, _idle.size()));
+  Work work{
+    .constructors = {_idle.begin(), _idle.begin() + crew}, .target = _structure.id, .slot = std::nullopt, .orderedTick = _snapshot.tick};
+  _idle.erase(_idle.begin(), _idle.begin() + crew);
+  _orders.push_back(MakeCommand(m_player, UpgradeStructureCommand{.structure = _structure.id, .constructors = work.constructors}));
+  m_work.push_back(std::move(work));
 }
 
 bool Outpost::AiPlayer::IsScout(const EntityView& _ship) const noexcept
@@ -919,7 +1058,10 @@ void Outpost::AiPlayer::ClaimTerritory(const Snapshot& _snapshot)
   const SectorView* claimed = nullptr;
   for (const SectorView& sector : _snapshot.sectors)
   {
-    if (sector.holder.IsValid() || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
+    // A sector its plan already takes, by a rig's Relay, is no claim: the claims are beyond those (Phase 3 design §8).
+    const bool planned = std::ranges::any_of(m_slots, [&sector](const Slot& _slot)
+                                             { return _slot.structure == StructureKind::Relay && _slot.position == sector.node; });
+    if (sector.holder.IsValid() || planned || std::ranges::find(m_claimed, sector.id) != m_claimed.end())
       continue;
     const bool adjacent = std::ranges::any_of(sector.adjacent,
                                               [&](std::int32_t _id)
@@ -1169,8 +1311,15 @@ void Outpost::AiPlayer::CommandFleet(const Snapshot& _snapshot, std::vector<Comm
     {
       if (entity.kind != EntityKind::Structure || !entity.owner.IsValid() || entity.owner == m_player)
         continue;
+      // Within a rank, a structure's levels bring it nearer: a Shipyard at level 3 is worth more than one at level 1
+      // (Phase 3 design §8).
+      const auto worthMeters = [&](const EntityView& _structure)
+      {
+        return Distance(_structure.position, center) -
+               (static_cast<float>(m_settings.attackLevelMeters) * static_cast<float>(std::max(0, _structure.level - 1)));
+      };
       if (best == nullptr || AttackRank(entity) < AttackRank(*best) ||
-          (AttackRank(entity) == AttackRank(*best) && Distance(entity.position, center) < Distance(best->position, center)))
+          (AttackRank(entity) == AttackRank(*best) && worthMeters(entity) < worthMeters(*best)))
         best = &entity;
     }
     // A target is kept until it is gone, or until production comes to light ahead of it.

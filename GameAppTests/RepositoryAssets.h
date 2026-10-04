@@ -21,14 +21,17 @@ inline std::string ReadRepositoryAssetText(std::string_view _fileName)
   return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
-// A model's converted mesh, as the game builds it from the repository's copy.
-inline Neuron::MeshData ReadRepositoryModel(const Outpost::ModelSet& _set, const Outpost::ModelEntry& _model)
+// A model's converted mesh, as the game builds it from the repository's copy: its first level, or another level of a
+// model that grows, fitted within _firstLevelWidestMeters (ADR-064).
+inline Neuron::MeshData ReadRepositoryModel(const Outpost::ModelSet& _set, const Outpost::ModelEntry& _model,
+                                            int _level = Outpost::FIRST_MODEL_LEVEL,
+                                            std::optional<float> _firstLevelWidestMeters = std::nullopt)
 {
   // ModelFileName's names are ASCII, so narrowing them character by character is exact.
-  const std::wstring wideName = Outpost::ModelFileName(_set, _model);
+  const std::wstring wideName = Outpost::ModelFileName(_set, _model, _level);
   std::string fileName;
   for (const wchar_t c : wideName)
     fileName.push_back(static_cast<char>(c));
-  return Outpost::BuildModelMesh(ReadRepositoryAsset(fileName), _model, fileName);
+  return Outpost::BuildModelMesh(ReadRepositoryAsset(fileName), _model, fileName, _firstLevelWidestMeters);
 }
 } // namespace GameAppTests

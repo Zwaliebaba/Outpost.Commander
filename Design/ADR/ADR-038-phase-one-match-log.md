@@ -17,7 +17,7 @@ Three things stand in the way:
 ## Decision
 
 1. **The log gains four records**, and keeps every record it had, so an older log still reads:
-   - `tier <tick> player <player> tier <tier>`: after the research line of a gateway topic.
+   - `tier <tick> player <player> tier <tier>`: the first snapshot in which the player's Research Lab has opened the tier by its level (Phase 3 design §6).
    - `fleet <tick> player <player> warships <count>`: every 30 seconds, from the player's own snapshots.
    - `dry <tick> asteroid <id>`: once, when a snapshot first shows the asteroid's reserve at zero.
    - `peak <tick> player <player> warships <count>`: the most warships the player had at once, and when it first had them. Written for each player just before `end`, or before `left` when the match is left.
@@ -29,7 +29,7 @@ Three things stand in the way:
    - `tickets <tick> player <player> tickets <count>`: with each `fleet` record, on a map with territory.
    - `ending <tick> <production or domination>`: how the match ended (ADR-057 decision 6), just before `end`.
 2. **`Server::Step` runs one tick now, on the caller's thread.** It applies the commands that have arrived and sends each player its snapshot. A started server refuses it. A headless run steps the server instead of starting it, so no wall time enters it at all; the tick stays the clock (ADR-009).
-3. **The executable's `--ai-matches` switch plays seeds 1 to 10.** Both seats are the AI with the packaged settings.
+3. **The executable's `--ai-matches` switch plays seeds 1 to 10.** Both seats are the AI with the packaged settings. Its options name other seeds, each AI's settings and the log, and `--quiet` runs it for a script without a message ([ADR-063](ADR-063-self-play-probe.md)).
    - Each match is stepped a tick at a time until it ends or reaches 120 minutes. Both AIs get each tick's snapshot, and their commands apply at the next tick, so a match reproduces from its seed.
    - The matches run on as many threads as the machine has, each into a buffer of its own. They are written in seed order to `OutpostCommander-ai-matches.log` in the temporary folder, which each run replaces.
    - No window opens, and a message says when the run is done.

@@ -490,15 +490,21 @@ Outpost::Hud::DesignerPanel DescribeDesigner(const Outpost::Snapshot& _newest, c
   const std::int32_t cost = match != nullptr ? match->cost : stats.has_value() ? stats->cost : 0;
   panel.queueCost = cost * static_cast<std::int32_t>(panel.count);
   panel.queueDetail = stats.has_value() ? std::format("{} s each", Tenths(stats->buildSeconds / _newest.shipyardBuildSpeedFactor)) : "";
+  // A Shipyard builds the hulls of its level (Phase 3 design §5): above it, Queue is dim and says the level the hull needs.
+  // The design is still saved.
+  const auto pickedHull = std::ranges::find(_newest.hulls, picked.hull, &Outpost::HullView::id);
+  const bool leveled = target == nullptr || pickedHull == _newest.hulls.end() || target->level >= pickedHull->shipyardLevel;
+  if (!leveled)
+    panel.queueDetail = std::format("Needs Shipyard L{}", pickedHull->shipyardLevel);
   const Outpost::EntityId producer = target != nullptr ? target->id : Outpost::EntityId{};
   if (match != nullptr)
     panel.queue = {.label = "QUEUE",
                    .action = {.kind = Hud::ActionKind::Queue, .producer = producer, .design = match->id, .count = panel.count},
-                   .enabled = free > 0 && _newest.ore >= cost};
+                   .enabled = leveled && free > 0 && _newest.ore >= cost};
   else
     panel.queue = {.label = "QUEUE",
                    .action = {.kind = Hud::ActionKind::SaveAndQueue, .producer = producer, .count = panel.count},
-                   .enabled = savesNew && free > 0 && stats.has_value() && _newest.ore >= cost};
+                   .enabled = leveled && savesNew && free > 0 && stats.has_value() && _newest.ore >= cost};
   return panel;
 }
 
@@ -1327,8 +1333,7 @@ void LayResearch(Hud::Layout& _layout, const Hud::TextMetrics& _metrics, const H
       paint.Panel(left, cardTop, width, topicHeight, LOCKED_HATCH_COLOR, Hud::Fill::Hatched);
     if (topic.enabled)
       paint.Press(face, topic.action);
-    // A gateway, which opens its tier, is edged in gold.
-    paint.Outline(left, cardTop, width, topicHeight, topic.gateway ? GOLD_COLOR : EDGE_COLOR);
+    paint.Outline(left, cardTop, width, topicHeight, EDGE_COLOR);
     const DirectX::XMFLOAT4& color = topic.enabled ? TEXT_COLOR : LOCKED_TEXT_COLOR;
     const float costWidth = paint.DiamondAndFigureWidth(topic.cost, Hud::Typeface::Figure);
     paint.Text(paint.Fit(topic.name, Hud::Typeface::Name, width - (2.0f * CARD_INSET) - costWidth - FIT_GAP_UNITS), left + CARD_INSET,
@@ -1582,7 +1587,7 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
   };
   if (!_newest.sectors.empty())
   {
-    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size())};
+    Territory territory{.nodes = static_cast<std::int32_t>(_newest.sectors.size()), .cap = _newest.nodeCap};
     content.sectors.reserve(_newest.sectors.size());
     for (const SectorView& sector : _newest.sectors)
     {
@@ -1623,10 +1628,14 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     const auto type = std::ranges::find(_newest.structureTypes, _kind, &StructureTypeView::structure);
     return type != _newest.structureTypes.end() ? &*type : nullptr;
   };
+  const bool capReached = AtNodeCap(_newest.sectors, _newest.entities, _newest.player, _newest.nodeCap);
   if (_placing.has_value())
   {
     const StructureTypeView* type = typeOf(*_placing);
     content.hint = std::format("Placing {}: left-click to build, right-click to cancel", type != nullptr ? type->nameUtf8 : "a structure");
+    // The reason a Relay's ghost is red everywhere (Phase 3 design §7).
+    if (*_placing == StructureKind::Relay && capReached)
+      content.hint = "Relay: at the node cap; upgrade the Command Station to claim more";
   }
 
   const auto nameOf = [&_newest](DesignId _design) { return DesignNameOf(_newest, _design); };
@@ -1638,9 +1647,18 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
     if (structure != _entities.end() && structure->kind == EntityKind::Structure)
     {
       const StructureTypeView* type = typeOf(structure->structure);
-      content.selection.push_back(type != nullptr ? type->nameUtf8 : std::string("Structure"));
+      // A kind that grows names its level, "Shipyard 01 · L2" (Phase 3 design §9).
+      const bool grows = type != nullptr && !type->levels.empty();
+      std::string name = type != nullptr ? type->nameUtf8 : std::string("Structure");
+      if (structure->shipyardNumber > 0)
+        name += std::format(" {:02}", structure->shipyardNumber);
+      if (grows)
+        name += std::format("{}L{}", DOT, structure->level);
+      content.selection.push_back(std::move(name));
       if (structure->builtPermille < PERMILLE)
         content.selection.push_back(std::format("Under construction, {}%", structure->builtPermille / 10));
+      if (structure->upgradePermille.has_value())
+        content.selection.push_back(std::format("Upgrading to L{}, {}%", structure->level + 1, *structure->upgradePermille / 10));
       content.selection.push_back(std::format("Hit points {} / {}", WithThousands(WholePoints(structure->hitPointsHundredths)),
                                               WithThousands(WholePoints(structure->maxHitPointsHundredths))));
       content.selectionHealth = HealthShare(structure->hitPointsHundredths, structure->maxHitPointsHundredths);
@@ -1680,6 +1698,57 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
         }
         else if (structure->structure == StructureKind::ResearchLab)
           content.buttons.push_back({.label = "Research", .action = {.kind = ActionKind::OpenResearch, .producer = structure->id}});
+        // The next level: what it gives, and a button with its time and cost, dim while one is being built or the Ore is
+        // short (Phase 3 design §9).
+        const auto next = static_cast<std::size_t>(std::max(0, structure->level - 1));
+        if (grows && next < type->levels.size())
+        {
+          const StructureLevelView& level = type->levels[next];
+          const bool upgrading = structure->upgradePermille.has_value();
+          // A Shipyard's next level names the hulls it adds, a Research Lab's the tier or the slot it gives, and a Command
+          // Station's the nodes it lets the player hold and the Defence guns it adds (Phase 3 design §5–§7).
+          std::string gives;
+          if (level.nodes > 0)
+            gives = std::format("{} nodes, ", level.nodes);
+          if (level.guns > 0)
+            gives += std::format("{} Defence guns, ", level.guns);
+          if (level.opensTier > 0)
+            gives = std::format("tier {}, ", level.opensTier);
+          else if (level.researchSlots > 1)
+            gives = "a second research slot, ";
+          if (structure->structure == StructureKind::Shipyard)
+          {
+            for (const HullView& hull : _newest.hulls)
+            {
+              if (hull.shipyardLevel == structure->level + 1)
+                gives += std::format("{}{}", gives.empty() ? "" : " and ", hull.nameUtf8);
+            }
+            if (!gives.empty())
+              gives += " hulls, ";
+          }
+          content.selection.push_back(
+            std::format("L{}: {}{} hit points", structure->level + 1, gives, WithThousands(WholePoints(level.maxHitPointsHundredths))));
+          // The topics a Research Lab's next level needs that the player has not researched (Phase 3 design §6).
+          std::string missing;
+          for (const ResearchTopicId required : level.prerequisites)
+          {
+            const auto topic = std::ranges::find(_newest.research, required, &ResearchTopicView::id);
+            if (topic != _newest.research.end() && !topic->researched)
+              missing += std::format("{}{}", missing.empty() ? "" : " and ", topic->nameUtf8);
+          }
+          if (!missing.empty())
+            content.selection.push_back(std::format("L{} needs {}", structure->level + 1, missing));
+          content.buttons.push_back(
+            {.label = std::format("Upgrade to L{}{}{}|{}", structure->level + 1, DOT,
+                                  MinutesAndSeconds(static_cast<std::uint64_t>(std::llround(level.buildSeconds))), level.cost),
+             .action = {.kind = ActionKind::Upgrade, .producer = structure->id},
+             .enabled = !upgrading && missing.empty() && _newest.ore >= level.cost,
+             .note = upgrading         ? std::string("UPGRADING")
+                     : missing.empty() ? std::string()
+                                       : std::string("NEEDS RESEARCH")});
+        }
+        else if (grows)
+          content.selection.emplace_back("Top level");
       }
       return content;
     }
@@ -1751,11 +1820,15 @@ Outpost::Hud::Content Outpost::Hud::Describe(const Snapshot& _newest, std::span<
       // A Relay holds a sector, and a map without them has none to hold (ADR-056).
       if (!type.buildable || (type.structure == StructureKind::Relay && _newest.sectors.empty()))
         continue;
-      const bool allowed = !(type.structure == StructureKind::ResearchLab && hasLab);
+      const bool secondLab = type.structure == StructureKind::ResearchLab && hasLab;
+      // A Relay past the Command Station's cap waits for the station's next level (Phase 3 design §7).
+      const bool capped = type.structure == StructureKind::Relay && capReached;
       content.buttons.push_back({.label = std::format("{}|{}", type.nameUtf8, type.cost),
                                  .action = {.kind = ActionKind::Build, .structure = type.structure},
-                                 .enabled = allowed && _newest.ore >= type.cost,
-                                 .note = allowed ? std::string() : std::string("ONE PER PLAYER")});
+                                 .enabled = !secondLab && !capped && _newest.ore >= type.cost,
+                                 .note = secondLab ? std::string("ONE PER PLAYER")
+                                         : capped  ? std::string("NODE CAP")
+                                                   : std::string()});
     }
   }
   return content;
@@ -1791,11 +1864,16 @@ Hud::ProductionPanel Hud::DescribeProduction(const Snapshot& _newest, const Enti
   panel.options.reserve(_newest.designs.size());
   for (const DesignView& design : _newest.designs)
   {
-    panel.options.push_back({.name = design.nameUtf8,
-                             .detail = DesignCodeOf(_newest, design),
-                             .cost = design.cost,
-                             .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
-                             .enabled = room && _newest.ore >= design.cost});
+    // A design whose hull is above the Shipyard's level is dim, and says the level it needs (Phase 3 design §5).
+    const auto hull = std::ranges::find(_newest.hulls, design.hull, &HullView::id);
+    const std::int32_t level = hull != _newest.hulls.end() ? hull->shipyardLevel : 1;
+    const bool leveled = _producer->level >= level;
+    panel.options.push_back(
+      {.name = design.nameUtf8,
+       .detail = leveled ? DesignCodeOf(_newest, design) : std::format("{}{}NEEDS L{}", DesignCodeOf(_newest, design), DOT, level),
+       .cost = design.cost,
+       .action = {.kind = ActionKind::Queue, .producer = _producer->id, .design = design.id},
+       .enabled = leveled && room && _newest.ore >= design.cost});
   }
   if (panel.options.empty())
     panel.hint = "Save a design in the ship designer to build it here.";
@@ -1835,9 +1913,25 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       names.push_back(view != nullptr ? view->nameUtf8 : std::string("Unknown topic"));
     }
     panel.queue = QueueLinesOf(std::move(names), found->jobPermille);
+    // A second topic researched beside the first shows how far it has come too (Phase 3 design §6).
+    if (found->secondJobPermille > 0 && panel.queue.size() > 1)
+      panel.queue[1] = {.name = std::move(panel.queue[1].name), .front = true, .permille = found->secondJobPermille};
   }
 
-  // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither is dim (design §8).
+  // The level of the Research Lab that opens each tier (Phase 3 design §6).
+  const auto labType = std::ranges::find(_newest.structureTypes, StructureKind::ResearchLab, &StructureTypeView::structure);
+  const auto levelFor = [&](std::int32_t _tier)
+  {
+    for (std::size_t level = 0; labType != _newest.structureTypes.end() && level < labType->levels.size(); ++level)
+    {
+      if (labType->levels[level].opensTier == _tier)
+        return static_cast<std::int32_t>(level) + 2;
+    }
+    return 1;
+  };
+
+  // Each topic not researched or queued yet, and what it does; one whose prerequisites are neither, or of a tier the Lab
+  // has not opened, is dim, and says what it needs (design §8, Phase 3 design §6).
   const auto known = [&](ResearchTopicId _topic)
   {
     const ResearchTopicView* topic = topicOf(_topic);
@@ -1857,6 +1951,8 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
       const ResearchTopicView* view = topicOf(prerequisite);
       needs.push_back(view != nullptr ? Capitals(view->nameUtf8) : std::string("?"));
     }
+    if (topic.tier > _newest.researchTier)
+      needs.insert(needs.begin(), std::format("RESEARCH LAB L{}", levelFor(topic.tier)));
     const bool enabled = canResearch && needs.empty() && _newest.ore >= topic.cost;
     panel.topics.push_back(
       {.name = topic.nameUtf8,
@@ -1866,8 +1962,7 @@ Hud::ResearchPanel Hud::DescribeResearch(const Snapshot& _newest, std::span<cons
        .needs = std::move(needs),
        .action = {.kind = ActionKind::Research, .producer = found != nullptr ? found->id : EntityId{}, .topic = topic.id},
        .enabled = enabled,
-       .tier = topic.tier,
-       .gateway = topic.gateway});
+       .tier = topic.tier});
   }
   // Tier by tier, each in the tuning data's order (Phase 1 design §6).
   std::ranges::stable_sort(panel.topics, {}, &TopicCard::tier);
@@ -1973,8 +2068,10 @@ Hud::Layout Hud::Lay(const Content& _content, const TextMetrics& _metrics, std::
       paint.RightText(_enemy, right, figureTop, ENEMY_COLOR, Typeface::Figure);
       paint.RightText(std::move(own), ownRight, figureTop, OWN_COLOR, Typeface::Figure);
     };
-    row(std::format("Nodes of {}", territory.nodes), std::to_string(territory.ownNodes), std::to_string(territory.enemyNodes),
-        TERRITORY_INSET_UNITS);
+    // The player's own against its Command Station's cap, "4 / 5" (Phase 3 design §7).
+    const std::string own =
+      territory.cap > 0 ? std::format("{} / {}", territory.ownNodes, territory.cap) : std::to_string(territory.ownNodes);
+    row(std::format("Nodes of {}", territory.nodes), own, std::to_string(territory.enemyNodes), TERRITORY_INSET_UNITS);
     if (tickets)
     {
       row("Tickets", WithThousands(territory.ownTickets.value_or(0)), WithThousands(territory.enemyTickets.value_or(0)),

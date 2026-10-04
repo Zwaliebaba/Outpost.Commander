@@ -65,7 +65,7 @@ public:
     Assert::AreEqual(3, settings.homeAsteroids);
     Assert::AreEqual(3, settings.contestedAsteroids);
     // Tier 1, then tier 2 with the Flak Battery first, then tier 3 with the Rail Cannon first (task 10.4).
-    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 9, 11, 10, 13, 16, 17, 14, 15, 12, 18, 19, 20, 21, 22, 24, 23, 25};
+    const std::vector<std::uint32_t> order{1, 2, 5, 6, 3, 4, 8, 7, 11, 10, 13, 16, 17, 14, 15, 12, 19, 20, 21, 22, 24, 23, 25};
     Assert::AreEqual(order.size(), settings.researchOrder.size());
     for (size_t i = 0; i < order.size(); ++i)
       Assert::AreEqual(order[i], settings.researchOrder[i].value);
@@ -89,6 +89,15 @@ public:
     Assert::AreEqual(1.5, settings.attackWithoutLeadShare);
     Assert::AreEqual(1, settings.frontPlatforms);
     Assert::AreEqual(1, settings.claimSectors);
+  }
+
+  // Task 24.1: structure levels' play (Phase 3 design §8). The Lab's second slot once tier 3 is open, and a level worth
+  // 500 m when choosing what to attack.
+  TEST_METHOD(LoadsTheLevelsPlay)
+  {
+    const Outpost::AiSettings settings = Outpost::LoadAiSettings(ReadRepositoryData("Opponent.json"));
+    Assert::AreEqual(3, settings.secondSlotTier);
+    Assert::AreEqual(500.0, settings.attackLevelMeters);
   }
 
   // The AI cannot check its identifiers against the tuning data, which only the server reads, so this does: every

@@ -123,7 +123,9 @@ public:
     PreviousProducer,
     NextProducer,
     PreviousTopics,
-    NextTopics
+    NextTopics,
+    // Upgrades the selected structure by one level (Phase 3 design §4, §9).
+    Upgrade
   };
 
   struct Action
@@ -310,8 +312,8 @@ public:
   };
 
   // A research topic not researched or queued yet, as the research window shows it (design §8): what it does, its cost,
-  // its tier and time, whether it is the gateway that opens its tier (Phase 1 design §6), and the name, in capitals, of
-  // each prerequisite neither researched nor queued; a topic with any is dim.
+  // its tier and time, and in capitals what it needs: the Research Lab's level, while its tier is not open (Phase 3 design
+  // §6), and each prerequisite neither researched nor queued. A topic that needs any is dim.
   struct TopicCard
   {
     std::string name;
@@ -322,7 +324,6 @@ public:
     Action action;
     bool enabled = true;
     std::int32_t tier = 1;
-    bool gateway = false;
   };
 
   // The research window (Phase 1 design §12): the player's Research Lab, such as "RESEARCH LAB" or "NO RESEARCH LAB", its
@@ -372,12 +373,14 @@ public:
     bool suppressed = false;
   };
 
-  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8).
+  // How many nodes each side holds, of how many the map has (Phase 2 design §4), and each side's tickets (§8). With them,
+  // how many the player's Command Station lets it hold (Phase 3 design §7), shown against its own; zero for none.
   struct Territory
   {
     std::int32_t ownNodes = 0;
     std::int32_t enemyNodes = 0;
     std::int32_t nodes = 0;
+    std::int32_t cap = 0;
     std::optional<std::int32_t> ownTickets;
     std::optional<std::int32_t> enemyTickets;
   };

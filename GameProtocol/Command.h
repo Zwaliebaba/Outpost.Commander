@@ -113,8 +113,18 @@ struct PatrolCommand
   PlanePosition destination;
 };
 
-using Order = std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand,
-                           QueueShipCommand, StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand>;
+// Upgrades one of the player's own finished structures by one level (Phase 3 design §4, ADR-064). Its Ore is paid when the
+// order is given, and the structure keeps working while Constructors build the level, as they build a site. The
+// Constructors named here, which may be none, are sent to the work; others join it as they join a site, by RepairCommand.
+struct UpgradeStructureCommand
+{
+  EntityId structure;
+  std::vector<EntityId> constructors;
+};
+
+using Order =
+  std::variant<MoveCommand, AttackCommand, AttackMoveCommand, StopCommand, BuildStructureCommand, RepairCommand, QueueShipCommand,
+               StartResearchCommand, SaveDesignCommand, HoldSectorCommand, PatrolCommand, UpgradeStructureCommand>;
 
 // One order from one player. The player is set by the server's end of the transport, from the connection the command
 // arrived on; what a client puts there is never trusted (ADR-002).

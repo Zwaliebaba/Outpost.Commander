@@ -378,25 +378,32 @@ Outpost::ClientAssets Outpost::LoadClientAssets()
   {
     for (const ModelEntry& model : set.models)
     {
-      const std::wstring fileName = ModelFileName(set, model);
-      const Neuron::ByteBuffer bytes = ReadAsset(fileName);
-      ClientAssets::Model& loaded = assets.models.emplace_back();
-      loaded.shape = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)));
-      // The faces that stand still and each spinning part's (ADR-045), each with its creases, drawn over it as lines
-      // (ADR-027).
-      const auto addPiece = [&loaded](Neuron::MeshData _piece, const std::optional<Neuron::MeshPart>& _spin)
+      // Every level of a model that grows, each after the first standing on the first's ground (ADR-064).
+      std::optional<float> firstLevelWidest;
+      for (int level = FIRST_MODEL_LEVEL; level <= ModelLevels(model); ++level)
       {
-        Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
-        loaded.pieces.push_back({.faces = std::move(_piece), .edges = std::move(edges), .spin = _spin});
-      };
-      const Neuron::MeshData& data = loaded.shape;
-      if (data.parts.empty())
-        addPiece(data, std::nullopt);
-      else
-      {
-        addPiece(Neuron::MeshPiece(data, 0, data.FixedIndexCount()), std::nullopt);
-        for (const Neuron::MeshPart& part : data.parts)
-          addPiece(Neuron::MeshPiece(data, part.firstIndex, part.indexCount), part);
+        const std::wstring fileName = ModelFileName(set, model, level);
+        const Neuron::ByteBuffer bytes = ReadAsset(fileName);
+        ClientAssets::Model& loaded = assets.models.emplace_back();
+        loaded.shape = BuildModelMesh(bytes, model, std::format("Assets\\{}", winrt::to_string(fileName)), firstLevelWidest);
+        if (!firstLevelWidest.has_value())
+          firstLevelWidest = std::max(loaded.shape.Extents().x, loaded.shape.Extents().z);
+        // The faces that stand still and each spinning part's (ADR-045), each with its creases, drawn over it as lines
+        // (ADR-027).
+        const auto addPiece = [&loaded](Neuron::MeshData _piece, const std::optional<Neuron::MeshPart>& _spin)
+        {
+          Neuron::MeshData edges = Neuron::BuildCreaseLines(_piece, CREASE_DEGREES * std::numbers::pi_v<float> / 180.0f);
+          loaded.pieces.push_back({.faces = std::move(_piece), .edges = std::move(edges), .spin = _spin});
+        };
+        const Neuron::MeshData& data = loaded.shape;
+        if (data.parts.empty())
+          addPiece(data, std::nullopt);
+        else
+        {
+          addPiece(Neuron::MeshPiece(data, 0, data.FixedIndexCount()), std::nullopt);
+          for (const Neuron::MeshPart& part : data.parts)
+            addPiece(Neuron::MeshPiece(data, part.firstIndex, part.indexCount), part);
+        }
       }
     }
   }
@@ -603,7 +610,7 @@ void Outpost::GameClient::Update(const Neuron::InputState& _input, float _elapse
   UpdateBanking(_elapsedSeconds);
   m_frameSeconds = _elapsedSeconds;
   m_effectDraws = m_effects.At(
-    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target) { return MuzzleOf(_shooter, _target); },
+    m_view.ViewTick(), [this](EntityId _shooter, PlanePosition _target, std::uint8_t _gun) { return MuzzleOf(_shooter, _target, _gun); },
     [this](EntityId _shooter) { return BeamColor(_shooter); });
   m_particleGlows.clear();
   m_particles.At(m_view.ViewTick(), m_particleGlows);
@@ -753,6 +760,9 @@ void Outpost::GameClient::HandleHudAction(const Hud::Action& _action)
     break;
   case Hud::ActionKind::Research:
     m_controls.Research(_action.producer, _action.topic);
+    break;
+  case Hud::ActionKind::Upgrade:
+    m_controls.Upgrade(_action.producer);
     break;
   case Hud::ActionKind::PickHull:
     m_designer.PickHull(_action.hull);
@@ -1304,7 +1314,7 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
     // The data maps every player and hull the server can send, and the Constructor (ModelCatalog); anything else is not
     // drawn.
     if (const std::optional<PlacedModel> placed = PlaceModel(_entity))
-      QueueModel(placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE);
+      QueueModel(placed->set->name, *placed->model, PoseMatrix(placed->pose), placed->set->color, FILL_SHADE, placed->level);
     break;
   }
   case EntityKind::Asteroid:
@@ -1339,12 +1349,12 @@ void Outpost::GameClient::QueueEntity(const EntityView& _entity)
 }
 
 void Outpost::GameClient::QueueModel(std::string_view _set, std::string_view _model, const DirectX::XMFLOAT4X4& _world,
-                                     const DirectX::XMFLOAT4& _color, float _fillShade)
+                                     const DirectX::XMFLOAT4& _color, float _fillShade, int _level)
 {
   const bool rock = _set == ASTEROID_SET;
   const DirectX::XMFLOAT4 edgeColor =
     rock ? EdgeColor(_color, ROCK_EDGE_BRIGHTNESS, 0.0f) : EdgeColor(_color, EDGE_BRIGHTNESS, EDGE_WHITE_SHARE);
-  for (const ModelPiece& piece : ModelPieces(_set, _model))
+  for (const ModelPiece& piece : ModelPieces(_set, _model, _level))
   {
     const DirectX::XMFLOAT4X4 world = PieceWorld(piece, _world);
     m_faceDraws.push_back({.mesh = piece.faces.get(), .instance = MeshInstance(world, Shaded(_color, _fillShade), 0.0f)});
@@ -1359,7 +1369,8 @@ void Outpost::GameClient::QueueStructure(const EntityView& _entity)
   if (!placed.has_value())
     return;
   QueueModel(placed->set->name, *placed->model, placed->World(),
-             TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE);
+             TowardGray(ModelColor(placed->set->color, placed->tint, _entity.builtPermille), STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE,
+             placed->level);
 }
 
 void Outpost::GameClient::Explode(const Snapshot& _snapshot)
@@ -1393,7 +1404,7 @@ void Outpost::GameClient::Explode(const Snapshot& _snapshot)
       const DirectX::XMFLOAT4 color = ModelColor(placed->set->color, placed->tint, entity.builtPermille);
       const DirectX::XMFLOAT4 faces =
         structure ? Shaded(TowardGray(color, STRUCTURE_GRAY_SHARE), STRUCTURE_FILL_SHADE) : Shaded(color, FILL_SHADE);
-      m_explosions.Add(ModelShape(placed->set->name, *placed->model), placed->World(), faces, start, seed,
+      m_explosions.Add(ModelShape(placed->set->name, *placed->model, placed->level), placed->World(), faces, start, seed,
                        structure ? STRUCTURE_SHARD_COPIES : 1);
     }
   }
@@ -1439,6 +1450,7 @@ std::optional<Outpost::GameClient::PlacedModel> Outpost::GameClient::PlaceModel(
     stance = RigStance(set->name, model->model, _entity, scale);
   return PlacedModel{.set = set,
                      .model = &model->model,
+                     .level = DrawnLevel(entry, _entity.level),
                      .pose = {.position = _entity.position, .headingRadians = _entity.headingRadians, .scale = scale},
                      .tint = model->tint,
                      .stance = stance};
@@ -1503,7 +1515,7 @@ std::optional<DirectX::XMFLOAT4> Outpost::GameClient::BeamColor(EntityId _shoote
   return DirectX::XMFLOAT4{toWhite(set->color.x), toWhite(set->color.y), toWhite(set->color.z), 1.0f};
 }
 
-std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target) const
+std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _shooter, PlanePosition _target, std::uint8_t _gun) const
 {
   const EntityView* shooter = FindById(m_entities, _shooter);
   if (shooter == nullptr)
@@ -1511,7 +1523,7 @@ std::optional<Outpost::PlanePosition> Outpost::GameClient::MuzzleOf(EntityId _sh
   const std::optional<PlacedModel> placed = PlaceModel(*shooter);
   if (!placed.has_value())
     return std::nullopt;
-  return NearestMuzzle(ModelHardpoints(placed->set->name, *placed->model), placed->pose, _target);
+  return NearestMuzzle(ModelHardpoints(placed->set->name, *placed->model, placed->level), placed->pose, _target, _gun);
 }
 
 void Outpost::GameClient::DrawGlows(const Neuron::Renderer& _renderer, ID3D12GraphicsCommandList* _commandList)
@@ -1559,9 +1571,10 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   if (type == newest.structureTypes.end())
     return;
   // A Mining Rig snaps only to an asteroid the player has seen; anything else is blocked by all there is (ADR-046). A
-  // Relay snaps to its sector's node, and a rig needs a sector the player holds (ADR-056).
+  // Relay snaps to its sector's node, and waits at its Command Station's node cap, and a rig needs a sector the player holds
+  // (ADR-056).
   const GhostPlacement ghost = PlaceGhost(*type, *m_cursorGround, *placing == StructureKind::MiningRig ? m_knownEntities : m_entities,
-                                          newest.mapSizeMeters, newest.sectors, newest.player);
+                                          newest.mapSizeMeters, newest.sectors, newest.player, newest.nodeCap);
   const DirectX::XMFLOAT3 at{ghost.position.xMeters, OVERLAY_LIFT_METERS, ghost.position.zMeters};
   m_pipeline.Draw(_commandList, *m_ring, WorldMatrix(at, 0.0f, ghost.radiusMeters), ghost.valid ? GHOST_VALID_COLOR : GHOST_INVALID_COLOR);
   // The structure itself, shown where it would stand.
@@ -1578,36 +1591,37 @@ void Outpost::GameClient::DrawGhost(ID3D12GraphicsCommandList* _commandList)
   }
 }
 
-std::size_t Outpost::GameClient::ModelIndex(std::string_view _set, std::string_view _model) const
+std::size_t Outpost::GameClient::ModelIndex(std::string_view _set, std::string_view _model, int _level) const
 {
+  // Each model takes one place a level, as LoadClientAssets loaded them.
   std::size_t first = 0;
   for (const ModelSet& set : m_catalog.sets)
   {
-    if (set.name == _set)
+    for (const ModelEntry& model : set.models)
     {
-      const auto found = std::ranges::find(set.models, _model, &ModelEntry::name);
-      if (found != set.models.end())
-        return first + static_cast<std::size_t>(found - set.models.begin());
-      break;
+      if (set.name == _set && model.name == _model)
+        return first + static_cast<std::size_t>(DrawnLevel(model, _level) - FIRST_MODEL_LEVEL);
+      first += static_cast<std::size_t>(ModelLevels(model));
     }
-    first += set.models.size();
   }
   throw Neuron::Exception(std::format("The model {}/{} is not loaded.", _set, _model));
 }
 
-const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(std::string_view _set, std::string_view _model) const
+const std::vector<Neuron::MeshHardpoint>& Outpost::GameClient::ModelHardpoints(std::string_view _set, std::string_view _model,
+                                                                               int _level) const
 {
-  return LoadedModelOf(_set, _model).hardpoints;
+  return LoadedModelOf(_set, _model, _level).hardpoints;
 }
 
-const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, std::string_view _model) const
+const Neuron::MeshData& Outpost::GameClient::ModelShape(std::string_view _set, std::string_view _model, int _level) const
 {
-  return LoadedModelOf(_set, _model).shape;
+  return LoadedModelOf(_set, _model, _level).shape;
 }
 
-const std::vector<Outpost::GameClient::ModelPiece>& Outpost::GameClient::ModelPieces(std::string_view _set, std::string_view _model) const
+const std::vector<Outpost::GameClient::ModelPiece>& Outpost::GameClient::ModelPieces(std::string_view _set, std::string_view _model,
+                                                                                     int _level) const
 {
-  return LoadedModelOf(_set, _model).pieces;
+  return LoadedModelOf(_set, _model, _level).pieces;
 }
 
 DirectX::XMFLOAT4X4 Outpost::GameClient::PieceWorld(const ModelPiece& _piece, const DirectX::XMFLOAT4X4& _world) const noexcept

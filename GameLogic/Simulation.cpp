@@ -397,12 +397,17 @@ Outpost::EntityView Outpost::Simulation::EntityViewOf(const Entity& _entity, boo
   }
   if (!_entity.IsBuilt())
     view.builtPermille = static_cast<std::int32_t>(std::int64_t{_entity.buildWorkDone} * PERMILLE / _entity.buildWorkNeeded);
+  view.level = _entity.level;
+  if (_entity.IsUpgrading())
+    view.upgradePermille = static_cast<std::int32_t>(std::int64_t{_entity.upgradeWorkDone} * PERMILLE / _entity.upgradeWorkNeeded);
   if (_detailed && (!_entity.queue.empty() || !_entity.researchQueue.empty()))
   {
     view.queue = _entity.queue;
     view.research = _entity.researchQueue;
     if (_entity.jobWorkNeeded > 0)
       view.jobPermille = static_cast<std::int32_t>(std::int64_t{_entity.jobWorkDone} * PERMILLE / _entity.jobWorkNeeded);
+    if (_entity.secondJobWorkNeeded > 0)
+      view.secondJobPermille = static_cast<std::int32_t>(std::int64_t{_entity.secondJobWorkDone} * PERMILLE / _entity.secondJobWorkNeeded);
   }
   return view;
 }
@@ -440,7 +445,10 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
   ResearchEffects effects{.upgrades = UpgradesFrom(_tuning, _researched)};
   effects.hulls.reserve(_tuning.hulls.size());
   for (const HullTuning& hull : _tuning.hulls)
+  {
     effects.hulls.push_back(ViewOf(hull, effects.upgrades, IsAvailable(_tuning, _researched, hull.id)));
+    effects.hulls.back().shipyardLevel = ShipyardLevelFor(_tuning, hull.id);
+  }
   effects.drives.reserve(_tuning.drives.size());
   for (const DriveTuning& drive : _tuning.drives)
     effects.drives.push_back(ViewOf(drive, IsAvailable(_tuning, _researched, drive.id)));
@@ -463,8 +471,7 @@ Outpost::Simulation::ResearchEffects Outpost::Simulation::EffectsFrom(const Tuni
                               .unlocksHull = UnlockedBy<HullId>(topic),
                               .unlocksDrive = UnlockedBy<DriveId>(topic),
                               .unlocksWeapon = UnlockedBy<WeaponId>(topic),
-                              .tier = topic.tier,
-                              .gateway = topic.IsGateway()});
+                              .tier = topic.tier});
   }
   return effects;
 }
@@ -569,7 +576,7 @@ Outpost::EntityId Outpost::Simulation::SpawnConstructor(PlayerId _owner, PlanePo
 }
 
 Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                                                      std::int32_t _hitPointsHundredths, std::int32_t _armorHundredths)
+                                                      std::int32_t _hitPointsHundredths, std::int32_t _armorHundredths, std::int32_t _level)
 {
   const EntityId id{++m_lastEntityId};
   const StructureTuning* tuning = StructureTuningFor(_kind);
@@ -582,6 +589,7 @@ Outpost::EntityId Outpost::Simulation::SpawnStructure(PlayerId _owner, Structure
                         .hitPointsHundredths = _hitPointsHundredths,
                         .maxHitPointsHundredths = _hitPointsHundredths,
                         .armorHundredths = _armorHundredths,
+                        .level = _level,
                         .structureWeapon = tuning != nullptr ? tuning->structureWeapon : StructureWeaponId{}});
   if (_kind == StructureKind::MiningRig)
   {
@@ -834,11 +842,24 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
   {
     for (const StructureTuning& structure : m_tuning->structures)
     {
-      snapshot.structureTypes.push_back({.structure = structure.kind,
-                                         .nameUtf8 = structure.name,
-                                         .radiusMeters = static_cast<float>(structure.footprintRadiusMeters),
-                                         .buildable = structure.cost.has_value(),
-                                         .cost = structure.cost.value_or(0)});
+      StructureTypeView& type =
+        snapshot.structureTypes.emplace_back(StructureTypeView{.structure = structure.kind,
+                                                               .nameUtf8 = structure.name,
+                                                               .radiusMeters = static_cast<float>(structure.footprintRadiusMeters),
+                                                               .buildable = structure.cost.has_value(),
+                                                               .cost = structure.cost.value_or(0)});
+      for (std::int32_t level = 2; level <= structure.TopLevel(); ++level)
+      {
+        const StructureLevelTuning& tuning = structure.levels[static_cast<size_t>(level - 2)];
+        type.levels.push_back({.cost = tuning.cost,
+                               .buildSeconds = tuning.buildConstructorSeconds,
+                               .maxHitPointsHundredths = StructureHitPoints(_player, structure, level),
+                               .opensTier = tuning.opensTier,
+                               .researchSlots = tuning.researchSlots,
+                               .prerequisites = tuning.prerequisites,
+                               .nodes = tuning.nodes,
+                               .guns = tuning.guns});
+      }
     }
     snapshot.constructorCost = m_tuning->constructor.cost;
 
@@ -850,11 +871,20 @@ Outpost::Snapshot Outpost::Simulation::BuildSnapshot(PlayerId _player) const
     snapshot.modules = effects.modules;
     snapshot.research = effects.topics;
     snapshot.shipyardBuildSpeedFactor = effects.upgrades.shipyardBuildSpeedFactor;
+    // The tier its finished Research Lab's level has opened (Phase 3 design §6).
+    for (const Entity& entity : m_entities)
+    {
+      if (entity.kind == EntityKind::Structure && entity.structure == StructureKind::ResearchLab && entity.owner == _player &&
+          entity.IsBuilt())
+        snapshot.researchTier = std::max(snapshot.researchTier, OpenTier(*m_tuning, entity.level));
+    }
   }
   snapshot.matchOver = m_matchOver;
   snapshot.winner = m_winner;
   snapshot.matchEndedTick = m_matchEndedTick;
   snapshot.ending = m_ending;
+  if (HasTerritory())
+    snapshot.nodeCap = NodeCapOf(_player);
   if (HasTerritory() && !m_basePlayers.empty())
   {
     const auto nodes = static_cast<std::int64_t>(m_sectors.size());
@@ -1288,6 +1318,64 @@ void Outpost::Simulation::Fight()
   };
   std::vector<Hit> hits;
 
+  // One gun of _shooter: it reloads, waits while it has no target, and fires at _target when it is ready (ADR-014). The
+  // shot names the gun, so that the client draws a structure's guns from their own hardpoints (ADR-064).
+  const auto fire = [&](Entity& _shooter, const Armament& _armament, EntityId _target, std::int32_t& _reloadMilliticks, std::uint8_t _gun)
+  {
+    const auto intervalMilliticks =
+      static_cast<std::int32_t>(std::llround(_armament.fireIntervalSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
+    if (!_target.IsValid())
+    {
+      // Idle: the weapon finishes reloading, waits, and an interval later goes cold.
+      _reloadMilliticks = std::max(-intervalMilliticks, _reloadMilliticks - MILLITICKS_PER_TICK);
+      return;
+    }
+    // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
+    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
+    if (_reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
+      _reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
+    _reloadMilliticks -= MILLITICKS_PER_TICK;
+    if (_reloadMilliticks > 0)
+      return;
+    // A weapon that was ready and waiting fires now, and its next shot comes a whole interval later; one firing steadily
+    // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
+    _reloadMilliticks = std::max(_reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
+
+    // The balance check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells
+    // it that an enemy is in range.
+    EntityId shotTarget = _target;
+    if (m_targetRule != TargetRule::Nearest && _target != _shooter.attackTarget)
+      shotTarget = ChooseTarget(_shooter, _armament.rangeMeters, m_targetRule);
+    const Entity& target = *FindEntity(shotTarget);
+    hits.push_back({target.id, HitHundredths(_armament.damageHundredths, target.armorHundredths)});
+    RevealShooter(target.owner, _shooter.id);
+    m_shots.push_back({.shooter = _shooter.id,
+                       .target = target.id,
+                       .weapon = _armament.weapon,
+                       .from = _shooter.position,
+                       .to = target.position,
+                       .splashRadiusMeters = _armament.splashRadiusMeters,
+                       .gun = _gun});
+    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
+    // after its own armor. Never the shooter's own side (ADR-014).
+    if (_armament.splashRadiusMeters > 0.0f)
+    {
+      const float reach = _armament.splashRadiusMeters * _armament.splashRadiusMeters;
+      const std::int32_t damageHundredths = _armament.damageHundredths;
+      for (const Entity& other : m_entities)
+      {
+        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == _shooter.owner)
+          continue;
+        const PlaneVector between = other.position - target.position;
+        if (Dot(between, between) <= reach)
+        {
+          hits.push_back({other.id, HitHundredths(damageHundredths, other.armorHundredths)});
+          RevealShooter(other.owner, _shooter.id);
+        }
+      }
+    }
+  };
+
   for (Entity& ship : m_entities)
   {
     if (ship.maxHitPointsHundredths <= 0)
@@ -1307,57 +1395,16 @@ void Outpost::Simulation::Fight()
     if (!chosen.IsValid())
       chosen = ChooseTarget(ship, armament->rangeMeters, TargetRule::Nearest);
     ship.target = chosen;
+    const Armament& gun = *armament;
+    fire(ship, gun, ship.target, ship.reloadMilliticks, 0);
 
-    const auto intervalMilliticks =
-      static_cast<std::int32_t>(std::llround(armament->fireIntervalSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK));
-    if (!ship.target.IsValid())
+    // A Command Station's further Defence guns, which its level gives (Phase 3 design §7), each the gun it carries, at the
+    // target the station keeps, on a rhythm of its own.
+    if (ship.kind == EntityKind::Structure)
     {
-      // Idle: the weapon finishes reloading, waits, and an interval later goes cold.
-      ship.reloadMilliticks = std::max(-intervalMilliticks, ship.reloadMilliticks - MILLITICKS_PER_TICK);
-      continue;
-    }
-    // A cold weapon fires its first shot at a random moment within its interval, so that a group's volleys do not land
-    // together (design §7, the balance check's model). A ship that lost its target only for a moment keeps its rhythm.
-    if (ship.reloadMilliticks <= -intervalMilliticks && intervalMilliticks > 0)
-      ship.reloadMilliticks = static_cast<std::int32_t>(m_random.NextBelow(static_cast<std::uint32_t>(intervalMilliticks)));
-    ship.reloadMilliticks -= MILLITICKS_PER_TICK;
-    if (ship.reloadMilliticks > 0)
-      continue;
-    // A weapon that was ready and waiting fires now, and its next shot comes a whole interval later; one firing steadily
-    // carries the fraction of a tick over, so an interval that is not a whole number of ticks keeps its average.
-    ship.reloadMilliticks = std::max(ship.reloadMilliticks, -MILLITICKS_PER_TICK) + intervalMilliticks;
-
-    // The balance check's spread and focus fire choose again for every shot; the target the ship keeps is only what tells
-    // it that an enemy is in range.
-    EntityId shotTarget = ship.target;
-    if (m_targetRule != TargetRule::Nearest && ship.target != ship.attackTarget)
-      shotTarget = ChooseTarget(ship, armament->rangeMeters, m_targetRule);
-    const Entity& target = *FindEntity(shotTarget);
-    hits.push_back({target.id, HitHundredths(armament->damageHundredths, target.armorHundredths)});
-    RevealShooter(target.owner, ship.id);
-    m_shots.push_back({.shooter = ship.id,
-                       .target = target.id,
-                       .weapon = armament->weapon,
-                       .from = ship.position,
-                       .to = target.position,
-                       .splashRadiusMeters = armament->splashRadiusMeters});
-    // Splash: every other enemy ship or structure whose center is within the radius of the target's takes the same hit,
-    // after its own armor. Never the shooter's own side (ADR-014).
-    if (armament->splashRadiusMeters > 0.0f)
-    {
-      const float reach = armament->splashRadiusMeters * armament->splashRadiusMeters;
-      const std::int32_t damageHundredths = armament->damageHundredths;
-      for (const Entity& other : m_entities)
-      {
-        if (other.id == target.id || other.maxHitPointsHundredths <= 0 || !other.owner.IsValid() || other.owner == ship.owner)
-          continue;
-        const PlaneVector between = other.position - target.position;
-        if (Dot(between, between) <= reach)
-        {
-          hits.push_back({other.id, HitHundredths(damageHundredths, other.armorHundredths)});
-          RevealShooter(other.owner, ship.id);
-        }
-      }
+      ship.extraGunReloadMilliticks.resize(static_cast<std::size_t>(std::max(0, StationGuns(*m_tuning, ship.structure, ship.level) - 1)));
+      for (std::size_t extra = 0; extra < ship.extraGunReloadMilliticks.size(); ++extra)
+        fire(ship, gun, ship.target, ship.extraGunReloadMilliticks[extra], static_cast<std::uint8_t>(extra + 1));
     }
   }
 
@@ -1793,6 +1840,10 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const BuildS
   PlanePosition position = _build.position;
   if (const CommandResult result = CheckPlacement(_player, _build.structure, radius, position); result != CommandResult::Applied)
     return result;
+  // A Relay past the nodes the player's Command Station lets it hold is refused; one under construction counts, as it
+  // takes its node (Phase 3 design §7).
+  if (const std::int32_t cap = NodeCapOf(_player); _build.structure == StructureKind::Relay && cap > 0 && NodesTaken(_player) >= cap)
+    return CommandResult::CapReached;
   PlayerState* player = FindPlayer(_player);
   const std::int64_t cost = std::int64_t{costOre} * HUNDREDTHS;
   if (player == nullptr || player->oreHundredths < cost)
@@ -1815,7 +1866,7 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const Repair
   const Entity* target = FindEntity(_repair.target);
   if (target == nullptr)
     return CommandResult::UnknownTarget;
-  const bool needsWork = !target->IsBuilt() || target->hitPointsHundredths < target->maxHitPointsHundredths;
+  const bool needsWork = !target->IsBuilt() || target->IsUpgrading() || target->hitPointsHundredths < target->maxHitPointsHundredths;
   const bool own = target->owner == _player && (target->kind == EntityKind::Ship || target->kind == EntityKind::Structure);
   if (!own || target->maxHitPointsHundredths <= 0 || !needsWork ||
       std::ranges::find(_repair.constructors, _repair.target) != _repair.constructors.end())
@@ -1839,11 +1890,54 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const QueueS
     const ShipDesign* design = FindDesign(_queue.design);
     if (design == nullptr || design->owner != _player)
       return CommandResult::UnknownDesign;
+    // A Shipyard builds the hulls of its level and below (Phase 3 design §5).
+    if (producer->level < ShipyardLevelFor(*m_tuning, design->components.hull))
+      return CommandResult::LevelTooLow;
     job = {.role = ShipRole::Warship, .design = _queue.design};
   }
   if (producer->queue.size() >= QUEUE_LIMIT)
     return CommandResult::QueueFull;
   producer->queue.push_back(job);
+  return CommandResult::Applied;
+}
+
+// The upgrade is paid for now and built by Constructors, as a site is; the structure keeps working meanwhile (Phase 3
+// design §4, ADR-064).
+Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade)
+{
+  if (!_upgrade.constructors.empty())
+  {
+    if (const CommandResult result = ValidateConstructors(_player, _upgrade.constructors); result != CommandResult::Applied)
+      return result;
+  }
+  Entity* structure = FindMutableEntity(_upgrade.structure);
+  if (structure == nullptr)
+    return CommandResult::UnknownEntity;
+  const StructureTuning* tuning = StructureTuningFor(structure->structure);
+  if (structure->kind != EntityKind::Structure || structure->owner != _player || tuning == nullptr)
+    return CommandResult::NotUpgradable;
+  if (!structure->IsBuilt())
+    return CommandResult::UnderConstruction;
+  if (structure->IsUpgrading())
+    return CommandResult::AlreadyUpgrading;
+  if (structure->level >= tuning->TopLevel())
+    return CommandResult::TopLevel;
+  const StructureLevelTuning& next = tuning->levels[static_cast<size_t>(structure->level - 1)];
+  // A Research Lab's level may need topics researched first (Phase 3 design §6).
+  const std::span<const ResearchTopicId> researched = Researched(_player);
+  if (!std::ranges::all_of(next.prerequisites,
+                           [&researched](ResearchTopicId _topic) { return std::ranges::find(researched, _topic) != researched.end(); }))
+    return CommandResult::PrerequisiteMissing;
+  PlayerState* player = FindPlayer(_player);
+  const std::int64_t cost = std::int64_t{next.cost} * HUNDREDTHS;
+  if (player == nullptr || player->oreHundredths < cost)
+    return CommandResult::NotEnoughOre;
+  player->oreHundredths -= cost;
+  structure->upgradeWorkDone = 0;
+  structure->upgradeWorkNeeded =
+    std::max(1, static_cast<std::int32_t>(std::llround(next.buildConstructorSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
+  if (!_upgrade.constructors.empty())
+    OrderWork(_upgrade.constructors, _upgrade.structure);
   return CommandResult::Applied;
 }
 
@@ -1960,10 +2054,11 @@ void Outpost::Simulation::ApproachWork()
   }
 }
 
-// Constructors in reach of their target build it while it is under construction, and repair it once it is built
-// (design §6, gate G8). Building: one Constructor does a tick's work each tick, and each further one adds the tuning
-// data's share of one more; the structure's hit points rise with its progress from a tenth to full. Repair: each
-// Constructor restores the tuning data's percentage of the target's maximum each second, for nothing. A finished job
+// Constructors in reach of their target build it while it is under construction, build its next level while it is being
+// upgraded, and repair it once neither is left (design §6, gate G8, Phase 3 design §4). Building: one Constructor does a
+// tick's work each tick, and each further one adds the tuning data's share of one more; a site's hit points rise with its
+// progress from a tenth to full, and a level's land whole when it is in, the structure keeping its share of them. Repair:
+// each Constructor restores the tuning data's percentage of the target's maximum each second, for nothing. A finished job
 // ends the order.
 void Outpost::Simulation::Work()
 {
@@ -1988,10 +2083,10 @@ void Outpost::Simulation::Work()
     Entity& target = *FindMutableEntity(id);
     // A player's Constructors build and repair only its own, so the target's owner's research sets their rate.
     const double rate = EffectsOf(target.owner).upgrades.constructorRateFactor;
+    const auto work = static_cast<std::int32_t>(
+      std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1))) * rate));
     if (!target.IsBuilt())
     {
-      const auto work = static_cast<std::int32_t>(
-        std::llround(MILLITICKS_PER_TICK * (1.0 + (tuning.extraConstructorBuildShare * static_cast<double>(constructors - 1))) * rate));
       const std::int64_t maximum = target.maxHitPointsHundredths;
       const std::int64_t starting = maximum / SITE_STARTING_HIT_POINTS_DIVISOR;
       const auto granted = [&](std::int64_t _done) { return starting + ((maximum - starting) * _done / target.buildWorkNeeded); };
@@ -1999,6 +2094,21 @@ void Outpost::Simulation::Work()
       target.hitPointsHundredths += static_cast<std::int32_t>(granted(done) - granted(target.buildWorkDone));
       target.buildWorkDone = done;
       if (target.IsBuilt() && target.hitPointsHundredths >= target.maxHitPointsHundredths)
+        finished.push_back(id);
+      continue;
+    }
+    // The level first, since its Ore is paid, and then any repair (owner, 2026-10-04).
+    if (target.IsUpgrading())
+    {
+      target.upgradeWorkDone = std::min(target.upgradeWorkNeeded, target.upgradeWorkDone + work);
+      if (target.upgradeWorkDone < target.upgradeWorkNeeded)
+        continue;
+      target.upgradeWorkDone = 0;
+      target.upgradeWorkNeeded = 0;
+      ++target.level;
+      if (const StructureTuning* structure = StructureTuningFor(target.structure))
+        RescaleHitPoints(target, StructureHitPoints(target.owner, *structure, target.level));
+      if (target.hitPointsHundredths >= target.maxHitPointsHundredths)
         finished.push_back(id);
       continue;
     }
@@ -2214,6 +2324,28 @@ void Outpost::Simulation::UpdateTerritory()
     m_sectors[index].cutOff = m_sectors[index].holder.IsValid() && linked[index] == 0;
 }
 
+std::int32_t Outpost::Simulation::NodeCapOf(PlayerId _player) const noexcept
+{
+  if (!m_tuning)
+    return 0;
+  const auto station = std::ranges::find_if(
+    m_entities, [_player](const Entity& _entity)
+    { return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::CommandStation && _entity.owner == _player; });
+  return NodeCap(*m_tuning, station != m_entities.end() ? station->level : 1);
+}
+
+std::int32_t Outpost::Simulation::NodesTaken(PlayerId _player) const noexcept
+{
+  const auto held = std::ranges::count(m_sectors, _player, &Sector::holder);
+  const auto sites = std::ranges::count_if(m_entities,
+                                           [_player](const Entity& _entity)
+                                           {
+                                             return _entity.kind == EntityKind::Structure && _entity.structure == StructureKind::Relay &&
+                                                    _entity.owner == _player && !_entity.IsBuilt();
+                                           });
+  return static_cast<std::int32_t>(held + sites);
+}
+
 double Outpost::Simulation::TerritoryShare(const Entity& _rig) const noexcept
 {
   if (!HasTerritory())
@@ -2273,8 +2405,10 @@ void Outpost::Simulation::Mine()
   }
 }
 
-// Each built Research Lab works on the front of its queue. A topic starts, and is paid for, once the player has the Ore
-// (design §5); until then it waits. A finished topic applies at once (design §8).
+// Each built Research Lab works on the front of its queue, and from the level that gives it a second slot on the topic
+// behind it too (Phase 3 design §6). A topic starts, and is paid for, once the player has the Ore (design §5), and the
+// second once the first has started and what it requires is researched; until then it waits. A finished topic applies at
+// once (design §8).
 void Outpost::Simulation::Research()
 {
   std::vector<std::pair<PlayerId, ResearchTopicId>> finished;
@@ -2282,25 +2416,55 @@ void Outpost::Simulation::Research()
   {
     if (lab.kind != EntityKind::Structure || lab.researchQueue.empty() || !lab.IsBuilt())
       continue;
-    const ResearchTopicId topicId = lab.researchQueue.front();
-    if (lab.jobWorkNeeded == 0)
-    {
-      const auto topic = std::ranges::find(m_tuning->research, topicId, &ResearchTopicTuning::id);
-      PlayerState* player = FindPlayer(lab.owner);
-      if (player == nullptr || player->oreHundredths < std::int64_t{topic->cost} * HUNDREDTHS)
-        continue;
-      player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
-      lab.jobWorkNeeded =
-        std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
-      lab.jobWorkDone = 0;
-    }
-    lab.jobWorkDone += MILLITICKS_PER_TICK;
-    if (lab.jobWorkDone < lab.jobWorkNeeded)
+    PlayerState* player = FindPlayer(lab.owner);
+    if (player == nullptr)
       continue;
-    finished.emplace_back(lab.owner, topicId);
-    lab.researchQueue.erase(lab.researchQueue.begin());
-    lab.jobWorkDone = 0;
-    lab.jobWorkNeeded = 0;
+    // The front topic, and from the level that gives a second slot the one behind it, once what it requires is researched,
+    // not only queued ahead of it (Phase 3 design §6). Each is paid for when it starts.
+    const std::int32_t slots =
+      std::min<std::int32_t>(ResearchSlots(*m_tuning, lab.level), static_cast<std::int32_t>(lab.researchQueue.size()));
+    const auto work = [&](std::size_t _slot) -> std::pair<std::int32_t&, std::int32_t&>
+    {
+      return _slot == 0 ? std::pair<std::int32_t&, std::int32_t&>{lab.jobWorkDone, lab.jobWorkNeeded}
+                        : std::pair<std::int32_t&, std::int32_t&>{lab.secondJobWorkDone, lab.secondJobWorkNeeded};
+    };
+    std::vector<std::size_t> done;
+    for (std::size_t slot = 0; std::cmp_less(slot, slots); ++slot)
+    {
+      auto [workDone, workNeeded] = work(slot);
+      const auto topic = std::ranges::find(m_tuning->research, lab.researchQueue[slot], &ResearchTopicTuning::id);
+      if (workNeeded == 0)
+      {
+        if (slot > 0 && lab.jobWorkNeeded == 0)
+          break;
+        const bool ready = std::ranges::all_of(topic->prerequisites, [player](ResearchTopicId _id)
+                                               { return std::ranges::find(player->researched, _id) != player->researched.end(); });
+        if (!ready || player->oreHundredths < std::int64_t{topic->cost} * HUNDREDTHS)
+          continue;
+        player->oreHundredths -= std::int64_t{topic->cost} * HUNDREDTHS;
+        workNeeded = std::max(1, static_cast<std::int32_t>(std::llround(topic->researchSeconds * m_ticksPerSecond * MILLITICKS_PER_TICK)));
+        workDone = 0;
+      }
+      workDone += MILLITICKS_PER_TICK;
+      if (workDone >= workNeeded)
+        done.push_back(slot);
+    }
+    // The finished leave the queue, the second's progress moving to the front when the first is done.
+    for (auto slot = done.rbegin(); slot != done.rend(); ++slot)
+    {
+      finished.emplace_back(lab.owner, lab.researchQueue[*slot]);
+      lab.researchQueue.erase(lab.researchQueue.begin() + static_cast<std::ptrdiff_t>(*slot));
+      if (*slot == 0)
+      {
+        lab.jobWorkDone = std::exchange(lab.secondJobWorkDone, 0);
+        lab.jobWorkNeeded = std::exchange(lab.secondJobWorkNeeded, 0);
+      }
+      else
+      {
+        lab.secondJobWorkDone = 0;
+        lab.secondJobWorkNeeded = 0;
+      }
+    }
   }
   for (const auto& [player, topic] : finished)
   {
@@ -2322,15 +2486,6 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
   }
   // A ship or structure keeps the share of its hit points it had, so an undamaged one gains the whole upgrade (owner,
   // 2026-10-01). A ship's speed follows its design's, and a Constructor's the rule's; a move under way keeps its pace.
-  const auto rescale = [](Entity& _entity, std::int64_t _after)
-  {
-    const std::int64_t before = _entity.maxHitPointsHundredths;
-    if (before <= 0 || before == _after)
-      return;
-    _entity.hitPointsHundredths =
-      static_cast<std::int32_t>(std::max<std::int64_t>(1, ((_entity.hitPointsHundredths * _after) + (before / 2)) / before));
-    _entity.maxHitPointsHundredths = static_cast<std::int32_t>(_after);
-  };
   for (Entity& entity : m_entities)
   {
     if (entity.owner != _player.id)
@@ -2340,7 +2495,7 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
       const ShipDesign* design = FindDesign(entity.design);
       if (design == nullptr)
         continue;
-      rescale(entity, design->stats.hitPointsHundredths);
+      RescaleHitPoints(entity, design->stats.hitPointsHundredths);
       entity.speedMetersPerSecond = design->stats.movement.speedMetersPerSecond;
     }
     else if (entity.kind == EntityKind::Ship && entity.role == ShipRole::Constructor)
@@ -2350,15 +2505,31 @@ void Outpost::Simulation::CompleteResearch(PlayerState& _player, ResearchTopicId
       // Only a structure with the hit points its kind had before is upgraded: one placed with numbers of its own, as a
       // test or a measurement load places them, keeps them.
       const StructureTuning* tuning = StructureTuningFor(entity.structure);
-      if (tuning != nullptr && entity.maxHitPointsHundredths == std::llround(tuning->hitPoints * HUNDREDTHS * structuresBefore))
-        rescale(entity, StructureHitPoints(_player.id, *tuning));
+      if (tuning != nullptr && entity.maxHitPointsHundredths == StructureHitPointsAt(*tuning, structuresBefore, entity.level))
+        RescaleHitPoints(entity, StructureHitPoints(_player.id, *tuning, entity.level));
     }
   }
 }
 
-std::int32_t Outpost::Simulation::StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const
+void Outpost::Simulation::RescaleHitPoints(Entity& _entity, std::int64_t _after) noexcept
 {
-  return static_cast<std::int32_t>(std::llround(_tuning.hitPoints * HUNDREDTHS * EffectsOf(_owner).upgrades.structureHitPointsFactor));
+  const std::int64_t before = _entity.maxHitPointsHundredths;
+  if (before <= 0 || before == _after)
+    return;
+  _entity.hitPointsHundredths =
+    static_cast<std::int32_t>(std::max<std::int64_t>(1, ((_entity.hitPointsHundredths * _after) + (before / 2)) / before));
+  _entity.maxHitPointsHundredths = static_cast<std::int32_t>(_after);
+}
+
+std::int32_t Outpost::Simulation::StructureHitPointsAt(const StructureTuning& _tuning, double _researchFactor, std::int32_t _level) const
+{
+  const double levels = m_tuning->rules.levelHitPointsPercent * static_cast<double>(_level - 1) / 100.0;
+  return static_cast<std::int32_t>(std::llround(_tuning.hitPoints * HUNDREDTHS * (_researchFactor + levels)));
+}
+
+std::int32_t Outpost::Simulation::StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning, std::int32_t _level) const
+{
+  return StructureHitPointsAt(_tuning, EffectsOf(_owner).upgrades.structureHitPointsFactor, _level);
 }
 
 float Outpost::Simulation::ConstructorSpeed(PlayerId _owner) const
@@ -2387,6 +2558,9 @@ Outpost::CommandResult Outpost::Simulation::Apply(PlayerId _player, const StartR
     return CommandResult::AlreadyResearched;
   if (!std::ranges::all_of(topic->prerequisites, known))
     return CommandResult::PrerequisiteMissing;
+  // A tier is researched only once the Lab's level has opened it (Phase 3 design §6).
+  if (lab->level < LabLevelFor(*m_tuning, topic->tier))
+    return CommandResult::LevelTooLow;
   if (lab->researchQueue.size() >= QUEUE_LIMIT)
     return CommandResult::QueueFull;
   lab->researchQueue.push_back(topic->id);

@@ -153,7 +153,8 @@ Outpost::Hud::Content LongestContent(bool _unlocked, std::optional<Outpost::Hud:
     Outpost::Hud::Describe(newest, newest.entities, selected, Outpost::StructureKind::Shipyard, &designer, _hovered);
   content.research = "Researching Mass Driver Calibration, 99%";
   content.alerts = {{"Shipyard 05 is under attack", {}}, {"Mining Rig 12 destroyed", {}}, {"Relay 03 lost", {}}};
-  content.territory = Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .ownTickets = 10000, .enemyTickets = 10000};
+  content.territory =
+    Outpost::Hud::Territory{.ownNodes = 12, .enemyNodes = 12, .nodes = 12, .cap = 12, .ownTickets = 10000, .enemyTickets = 10000};
   content.outcome = Outpost::Hud::Outcome{.title = "Defeat", .detail = "Command Station destroyed \xC2\xB7 Match length 1:02:03"};
   content.buttons = {{.label = "Shipyard|300"},
                      {.label = "Research Lab|400", .enabled = false, .note = "ONE PER PLAYER"},
@@ -554,18 +555,22 @@ public:
        .maxZMeters = 1500.0f,
        .holder = Outpost::PlayerId{2},
        .suppressed = true}};
+    newest.nodeCap = 3;
     Outpost::Hud::Content content = Outpost::Hud::Describe(newest, {}, {});
     Assert::IsTrue(content.territory.has_value());
     const Outpost::Hud::Territory territory = content.territory.value_or(Outpost::Hud::Territory{});
     Assert::AreEqual(1, territory.ownNodes);
     Assert::AreEqual(1, territory.enemyNodes);
     Assert::AreEqual(3, territory.nodes);
+    Assert::AreEqual(3, territory.cap);
     Assert::AreEqual(size_t{3}, content.sectors.size());
     Assert::IsTrue(content.sectors[0].side == Outpost::Hud::Side::Own && content.sectors[2].side == Outpost::Hud::Side::Enemy);
 
     content.fog = true;
     const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
     Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Nodes of 3"; }));
+    Assert::IsTrue(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "1 / 3 : "; }),
+                   L"the player's own against its station's cap");
     Assert::IsFalse(std::ranges::any_of(layout.texts, [](const Outpost::Hud::Text& _text) { return _text.text == "Tickets"; }),
                     L"no tickets without them");
     const auto fog =
@@ -631,6 +636,118 @@ public:
     content = describe(yard);
     Assert::AreEqual(std::string("Under construction, 60%"), content.selection[1]);
     Assert::IsTrue(content.buttons.empty());
+  }
+
+  // Phase 3 design §9: a structure that grows names its level, says what the next one gives, and offers it with its time
+  // and cost, dim while a level is being built or the Ore is short; at the top there is no button.
+  TEST_METHOD(NamesALevelAndOffersTheNext)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 200;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard,
+                              .nameUtf8 = "Shipyard",
+                              .buildable = true,
+                              .cost = 300,
+                              .levels = {{.cost = 150, .buildSeconds = 30.0, .maxHitPointsHundredths = 300000},
+                                         {.cost = 300, .buildSeconds = 60.0, .maxHitPointsHundredths = 350000}}},
+                             {.structure = Outpost::StructureKind::DefensePlatform, .nameUtf8 = "Defence Platform", .buildable = true}};
+    Outpost::EntityView yard{.id = Outpost::EntityId{30},
+                             .kind = Outpost::EntityKind::Structure,
+                             .owner = PLAYER,
+                             .structure = Outpost::StructureKind::Shipyard,
+                             .hitPointsHundredths = 250000,
+                             .maxHitPointsHundredths = 250000,
+                             .shipyardNumber = 1};
+    const std::vector<Outpost::EntityId> selected{yard.id};
+    const auto describe = [&](const Outpost::EntityView& _entity)
+    { return Outpost::Hud::Describe(newest, std::vector{_entity}, selected); };
+    const Outpost::Hud::Action upgrade{.kind = Outpost::Hud::ActionKind::Upgrade, .producer = yard.id};
+
+    Outpost::Hud::Content content = describe(yard);
+    std::vector<std::string> expected{"Shipyard 01 \xC2\xB7 L1", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    Assert::IsTrue(content.selection == expected);
+    Assert::AreEqual(size_t{3}, content.buttons.size());
+    Assert::AreEqual(std::string("Upgrade to L2 \xC2\xB7 0:30|150"), content.buttons[2].label);
+    Assert::IsTrue(content.buttons[2].action == upgrade && content.buttons[2].enabled);
+
+    // Building the level: how far it has come, and the button dim with the reason.
+    yard.upgradePermille = 417;
+    content = describe(yard);
+    expected = {"Shipyard 01 \xC2\xB7 L1", "Upgrading to L2, 41%", "Hit points 2,500 / 2,500", "L2: 3,000 hit points"};
+    Assert::IsTrue(content.selection == expected);
+    Assert::IsFalse(content.buttons[2].enabled);
+    Assert::AreEqual(std::string("UPGRADING"), content.buttons[2].note);
+
+    // Short of Ore: dim, and the cost says why.
+    yard.upgradePermille.reset();
+    yard.level = 2;
+    content = describe(yard);
+    Assert::AreEqual(std::string("Upgrade to L3 \xC2\xB7 1:00|300"), content.buttons[2].label);
+    Assert::IsFalse(content.buttons[2].enabled);
+    Assert::IsTrue(content.buttons[2].note.empty());
+
+    yard.level = 3;
+    content = describe(yard);
+    Assert::AreEqual(std::string("Top level"), content.selection.back());
+    Assert::AreEqual(size_t{2}, content.buttons.size(), L"no level left to buy");
+
+    // The enemy's names its level and offers nothing; a kind that does not grow names none.
+    Outpost::EntityView theirs = yard;
+    theirs.owner = Outpost::PlayerId{2};
+    theirs.shipyardNumber = 0;
+    content = describe(theirs);
+    Assert::AreEqual(std::string("Shipyard \xC2\xB7 L3"), content.selection.front());
+    Assert::IsTrue(content.buttons.empty());
+    Outpost::EntityView platform = yard;
+    platform.structure = Outpost::StructureKind::DefensePlatform;
+    platform.shipyardNumber = 0;
+    platform.level = 1;
+    Assert::AreEqual(std::string("Defence Platform"), describe(platform).selection.front());
+  }
+
+  // Phase 3 design §7: a Command Station's next level names the nodes it lets the player hold and the Defence guns it adds;
+  // at the cap, a Constructor's Relay is dim with the reason, and so is placing one.
+  TEST_METHOD(ShowsTheStationsCap)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 1000;
+    newest.structureTypes = {{.structure = Outpost::StructureKind::CommandStation,
+                              .nameUtf8 = "Command Station",
+                              .levels = {{.cost = 300, .buildSeconds = 45.0, .maxHitPointsHundredths = 600000, .nodes = 4},
+                                         {.cost = 500, .buildSeconds = 60.0, .maxHitPointsHundredths = 700000, .nodes = 5, .guns = 2}}},
+                             {.structure = Outpost::StructureKind::Relay, .nameUtf8 = "Relay", .buildable = true, .cost = 200}};
+    Outpost::EntityView station{.id = Outpost::EntityId{20},
+                                .kind = Outpost::EntityKind::Structure,
+                                .owner = PLAYER,
+                                .structure = Outpost::StructureKind::CommandStation,
+                                .hitPointsHundredths = 500000,
+                                .maxHitPointsHundredths = 500000};
+    const auto levelLine = [&](const std::string& _line)
+    {
+      const std::vector<std::string> selection = Outpost::Hud::Describe(newest, std::vector{station}, std::vector{station.id}).selection;
+      return std::ranges::find(selection, _line) != selection.end();
+    };
+    Assert::IsTrue(levelLine("L2: 4 nodes, 6,000 hit points"));
+    station.level = 2;
+    Assert::IsTrue(levelLine("L3: 5 nodes, 2 Defence guns, 7,000 hit points"));
+
+    // The player holds its home and has a cap of one: the Relay waits for the station's next level.
+    newest.sectors = {{.id = 1, .nameUtf8 = "South", .maxXMeters = 100.0f, .maxZMeters = 100.0f, .holder = PLAYER}};
+    newest.nodeCap = 1;
+    Outpost::EntityView constructor = Ship(9, {}, 30000, 30000);
+    constructor.role = Outpost::ShipRole::Constructor;
+    const std::vector<Outpost::EntityView> entities{constructor};
+    const std::vector<Outpost::EntityId> selected{constructor.id};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::AreEqual(size_t{1}, content.buttons.size());
+    Assert::IsFalse(content.buttons[0].enabled);
+    Assert::AreEqual(std::string("NODE CAP"), content.buttons[0].note);
+    content = Outpost::Hud::Describe(newest, entities, selected, Outpost::StructureKind::Relay);
+    Assert::AreEqual(std::string("Relay: at the node cap; upgrade the Command Station to claim more"), content.hint);
+
+    newest.nodeCap = 2;
+    content = Outpost::Hud::Describe(newest, entities, selected);
+    Assert::IsTrue(content.buttons[0].enabled && content.buttons[0].note.empty(), L"below the cap");
   }
 
   // Phase 1 design §12: the production window shows one producer: the Command Station's Constructor or a Shipyard's saved
@@ -1020,6 +1137,47 @@ public:
     Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
   }
 
+  // Phase 3 design §5, §9: a Shipyard below a hull's level cannot build it. The designer still saves the design, and its
+  // Queue is dim with the level the hull needs; the production window dims the design and says so; and the Shipyard's
+  // panel names the hulls its next level adds.
+  TEST_METHOD(SaysWhatAShipyardCannotBuild)
+  {
+    Outpost::Snapshot newest = DesignerSnapshot(true);
+    for (Outpost::HullView& hull : newest.hulls)
+      hull.shipyardLevel = static_cast<std::int32_t>(hull.id.value);
+    Outpost::Designer designer;
+    designer.Update(newest);
+    designer.PickHull(Outpost::HullId{3});
+    Outpost::Hud::DesignerPanel panel = DesignerOf(newest, designer);
+    Assert::IsFalse(panel.queue.enabled, L"Shipyard 01 is at level 1");
+    Assert::AreEqual(std::string("Needs Shipyard L3"), panel.queueDetail);
+    Assert::IsTrue(panel.save.enabled, L"it still designs and saves");
+    newest.entities.front().level = 3;
+    panel = DesignerOf(newest, designer);
+    Assert::IsTrue(panel.queue.enabled);
+    Assert::AreNotEqual(std::string("Needs Shipyard L3"), panel.queueDetail);
+
+    // The production window: a Small design builds at level 1, a Medium one waits for level 2.
+    newest.entities.front().level = 1;
+    newest.designs = {{.id = SWARM, .nameUtf8 = "Small+Ion+Mass Driver", .hull = Outpost::HullId{1}, .cost = 87},
+                      {.id = LINE, .nameUtf8 = "Medium+Ion+Lance", .hull = Outpost::HullId{2}, .cost = 215}};
+    const Outpost::Hud::ProductionPanel production = Outpost::Hud::DescribeProduction(newest, &newest.entities.front());
+    Assert::IsTrue(production.options[0].enabled);
+    Assert::IsFalse(production.options[1].enabled);
+    Assert::IsTrue(production.options[1].detail.ends_with("NEEDS L2"), L"says the level it needs");
+
+    // The panel names the next level's hulls.
+    newest.structureTypes = {{.structure = Outpost::StructureKind::Shipyard,
+                              .nameUtf8 = "Shipyard",
+                              .buildable = true,
+                              .cost = 300,
+                              .levels = {{.cost = 150, .buildSeconds = 30.0, .maxHitPointsHundredths = 300000},
+                                         {.cost = 300, .buildSeconds = 60.0, .maxHitPointsHundredths = 350000}}}};
+    const std::vector<Outpost::EntityId> selected{newest.entities.front().id};
+    const Outpost::Hud::Content content = Outpost::Hud::Describe(newest, newest.entities, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2: Medium hulls, 3,000 hit points")) != content.selection.end());
+  }
+
   // Phase 2 design §10: the production window shows a design's module after its components' initials, as the designer's
   // chips do, so that a scout reads apart from the plain design of its hull, drive and weapon.
   TEST_METHOD(NamesAModuleInTheProductionWindow)
@@ -1162,18 +1320,23 @@ public:
     Assert::AreEqual(size_t{0}, count(chips, Outpost::Hud::ActionKind::PreviousDesigns), L"at the first");
   }
 
-  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier, and marks a gateway.
+  // Phase 1 design §6: the research window lists the topics tier by tier, each with its tier. A topic of a tier the
+  // Research Lab has not opened is dim, and names the level that opens it (Phase 3 design §6).
   TEST_METHOD(ListsTheTopicsTierByTier)
   {
     Outpost::Snapshot newest = Newest();
     newest.ore = 1000;
-    newest.research = {{.id = Outpost::ResearchTopicId{9},
-                        .nameUtf8 = "Relay Archives",
-                        .effectUtf8 = "Opens tier 2",
-                        .cost = 400,
-                        .researchSeconds = 150.0,
-                        .tier = 2,
-                        .gateway = true},
+    newest.structureTypes = {{.structure = Outpost::StructureKind::ResearchLab,
+                              .nameUtf8 = "Research Lab",
+                              .buildable = true,
+                              .cost = 200,
+                              .levels = {{.cost = 400, .buildSeconds = 60.0, .opensTier = 2}}}};
+    newest.research = {{.id = Outpost::ResearchTopicId{10},
+                        .nameUtf8 = "Pulse Drive",
+                        .effectUtf8 = "Unlocks the Pulse drive",
+                        .cost = 300,
+                        .researchSeconds = 100.0,
+                        .tier = 2},
                        {.id = Outpost::ResearchTopicId{2},
                         .nameUtf8 = "Hull Plating",
                         .effectUtf8 = "Hull hit points +15%",
@@ -1184,29 +1347,81 @@ public:
                         .effectUtf8 = "Structure hit points +25%",
                         .cost = 250,
                         .researchSeconds = 90.0,
-                        .prerequisites = {Outpost::ResearchTopicId{9}},
+                        .prerequisites = {Outpost::ResearchTopicId{2}},
                         .tier = 2}};
     const Outpost::EntityView lab{.id = Outpost::EntityId{40},
                                   .kind = Outpost::EntityKind::Structure,
                                   .owner = PLAYER,
                                   .structure = Outpost::StructureKind::ResearchLab};
-    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
     Assert::AreEqual(size_t{3}, panel.topics.size());
     Assert::AreEqual(std::string("Hull Plating"), panel.topics[0].name, L"tier 1 first");
     Assert::AreEqual(std::string("TIER 1 \xC2\xB7 60 s"), panel.topics[0].time);
-    Assert::IsTrue(panel.topics[1].gateway && panel.topics[1].tier == 2);
-    Assert::AreEqual(std::string("TIER 2 \xC2\xB7 150 s"), panel.topics[1].time);
-    Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"RELAY ARCHIVES"}, L"its tier waits for the gateway");
-    Assert::IsFalse(panel.topics[2].gateway);
+    Assert::IsTrue(panel.topics[0].enabled);
+    Assert::AreEqual(2, panel.topics[1].tier);
+    Assert::AreEqual(std::string("TIER 2 \xC2\xB7 100 s"), panel.topics[1].time);
+    Assert::IsTrue(panel.topics[1].needs == std::vector<std::string>{"RESEARCH LAB L2"}, L"its tier waits for the Lab's level");
+    Assert::IsFalse(panel.topics[1].enabled);
+    Assert::IsTrue(panel.topics[2].needs == (std::vector<std::string>{"RESEARCH LAB L2", "HULL PLATING"}));
 
-    Outpost::Hud::Content content;
-    content.laboratory = panel;
-    const Outpost::Hud::Layout layout = Lay(content, 1920, 1080);
-    const Outpost::Hud::Span panels = layout.PanelsOf(1);
-    const auto gold = std::count_if(layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.first),
-                                    layout.panels.begin() + static_cast<std::ptrdiff_t>(panels.end),
-                                    [](const Outpost::Hud::Rect& _rect) { return _rect.color.x > 0.9f && _rect.color.y > 0.45f; });
-    Assert::IsTrue(gold >= 4, L"the gateway's card is edged in gold");
+    // Once the Lab has opened tier 2, only the prerequisite is left.
+    newest.researchTier = 2;
+    panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::IsTrue(panel.topics[1].needs.empty() && panel.topics[1].enabled);
+    Assert::IsTrue(panel.topics[2].needs == std::vector<std::string>{"HULL PLATING"});
+  }
+
+  // Phase 3 design §6: a level 4 Research Lab shows how far each of its two running topics has come, and a Lab's panel
+  // names the tier its next level opens and the research it needs, its button dim until that is done.
+  TEST_METHOD(ShowsTheLabsLevels)
+  {
+    Outpost::Snapshot newest = Newest();
+    newest.ore = 1000;
+    newest.research = {{.id = Outpost::ResearchTopicId{1}, .nameUtf8 = "Improved Extraction", .researched = false},
+                       {.id = Outpost::ResearchTopicId{2}, .nameUtf8 = "Hull Plating", .researched = true},
+                       {.id = Outpost::ResearchTopicId{3}, .nameUtf8 = "Mass Driver Calibration"}};
+    newest.structureTypes = {{.structure = Outpost::StructureKind::ResearchLab,
+                              .nameUtf8 = "Research Lab",
+                              .buildable = true,
+                              .cost = 200,
+                              .levels = {{.cost = 400,
+                                          .buildSeconds = 60.0,
+                                          .maxHitPointsHundredths = 180000,
+                                          .opensTier = 2,
+                                          .prerequisites = {Outpost::ResearchTopicId{1}, Outpost::ResearchTopicId{2}}},
+                                         {.cost = 600, .buildSeconds = 90.0, .maxHitPointsHundredths = 210000, .opensTier = 3},
+                                         {.cost = 800, .buildSeconds = 120.0, .maxHitPointsHundredths = 240000, .researchSlots = 2}}}};
+    Outpost::EntityView lab{.id = Outpost::EntityId{40},
+                            .kind = Outpost::EntityKind::Structure,
+                            .owner = PLAYER,
+                            .structure = Outpost::StructureKind::ResearchLab,
+                            .hitPointsHundredths = 150000,
+                            .maxHitPointsHundredths = 150000};
+    const std::vector<Outpost::EntityId> selected{lab.id};
+    Outpost::Hud::Content content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2: tier 2, 1,800 hit points")) != content.selection.end());
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L2 needs Improved Extraction")) != content.selection.end());
+    Assert::IsFalse(content.buttons.back().enabled);
+    Assert::AreEqual(std::string("NEEDS RESEARCH"), content.buttons.back().note);
+
+    newest.research[0].researched = true;
+    content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(content.buttons.back().enabled);
+
+    lab.level = 3;
+    content = Outpost::Hud::Describe(newest, std::vector{lab}, selected);
+    Assert::IsTrue(std::ranges::find(content.selection, std::string("L4: a second research slot, 2,400 hit points")) !=
+                   content.selection.end());
+
+    // Two topics running at once.
+    lab.level = 4;
+    lab.research = {Outpost::ResearchTopicId{3}, Outpost::ResearchTopicId{1}};
+    lab.jobPermille = 300;
+    lab.secondJobPermille = 120;
+    const Outpost::Hud::ResearchPanel panel = Outpost::Hud::DescribeResearch(newest, std::vector{lab});
+    Assert::AreEqual(size_t{2}, panel.queue.size());
+    Assert::IsTrue(panel.queue[0].front && panel.queue[0].permille == 300);
+    Assert::IsTrue(panel.queue[1].front && panel.queue[1].permille == 120 && !panel.queue[1].waiting);
   }
 
   // Phase 1 design §12: the production and research windows are laid out side by side under the Ore, clear of the

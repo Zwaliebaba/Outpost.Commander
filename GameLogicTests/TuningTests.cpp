@@ -21,10 +21,12 @@ std::wstring Widen(std::string_view _text)
   return {_text.begin(), _text.end()};
 }
 
-// Every loaded field equals the file's member of that name, and the file has no member the loader did not load.
-void ExpectSame(const Neuron::JsonValue& _json, const std::vector<LoadedField>& _loaded, std::string_view _path)
+// Every loaded field equals the file's member of that name, and the file has no member the loader did not load, besides
+// the _checkedElsewhere members the caller compares itself.
+void ExpectSame(const Neuron::JsonValue& _json, const std::vector<LoadedField>& _loaded, std::string_view _path,
+                size_t _checkedElsewhere = 0)
 {
-  Assert::AreEqual(_json.AsObject().size(), _loaded.size(), Widen(std::format("{}: member count", _path)).c_str());
+  Assert::AreEqual(_json.AsObject().size(), _loaded.size() + _checkedElsewhere, Widen(std::format("{}: member count", _path)).c_str());
   for (const LoadedField& field : _loaded)
   {
     const std::wstring where = Widen(std::format("{}.{}", _path, field.name));
@@ -78,8 +80,6 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
       fields.push_back({"structureWeapon", Number(upgrade->structureWeapon.value)});
     return fields;
   }
-  if (const auto* gateway = std::get_if<Outpost::GatewayEffect>(&_effect))
-    return {{"opensTier", Number(gateway->tier)}};
   if (const auto* hull = std::get_if<Outpost::HullId>(&_effect))
     return {{"unlockHull", Number(hull->value)}};
   if (const auto* drive = std::get_if<Outpost::DriveId>(&_effect))
@@ -91,7 +91,7 @@ std::vector<LoadedField> EffectFields(const Outpost::ResearchEffect& _effect)
 constexpr std::string_view MINIMAL_TUNING = R"({
   "rules": { "tickHz": 20, "startingOre": 1000, "startingConstructors": 2, "miningRigOrePerSecondHome": 5,
              "miningRigOrePerSecondNear": 6, "miningRigOrePerSecondContested": 8, "miningRigOrePerSecondRich": 10,
-             "exhaustedYieldPercent": 20 },
+             "exhaustedYieldPercent": 20, "levelHitPointsPercent": 20 },
   "sight": { "weaponMarginMeters": 50, "unarmedMeters": 200, "shotRevealSeconds": 3 },
   "territory": { "cutOffIncomePercent": 50, "suppressionRadiusMeters": 400, "tickets": 1000, "drainIntervalSeconds": 10,
                  "drainTicketsPerNodeDifference": 30 },
@@ -109,9 +109,12 @@ constexpr std::string_view MINIMAL_TUNING = R"({
     { "kind": "CommandStation", "name": "Command Station", "hitPoints": 5000, "armor": 10, "footprintRadiusMeters": 45,
       "structureWeapon": 1 },
     { "kind": "Shipyard", "name": "Shipyard", "hitPoints": 2500, "armor": 0, "footprintRadiusMeters": 40, "cost": 300,
-      "buildConstructorSeconds": 40 },
+      "buildConstructorSeconds": 40,
+      "levels": [ { "cost": 150, "buildConstructorSeconds": 30 } ] },
     { "kind": "ResearchLab", "name": "Research Lab", "hitPoints": 1500, "armor": 0, "footprintRadiusMeters": 30, "cost": 200,
-      "buildConstructorSeconds": 30 },
+      "buildConstructorSeconds": 30,
+      "levels": [ { "cost": 400, "buildConstructorSeconds": 60, "opensTier": 2, "requires": [1] },
+                  { "cost": 800, "buildConstructorSeconds": 120, "researchSlots": 2 } ] },
     { "kind": "MiningRig", "name": "Mining Rig", "hitPoints": 800, "armor": 0, "footprintRadiusMeters": 25, "cost": 50,
       "buildConstructorSeconds": 10 },
     { "kind": "DefensePlatform", "name": "Defence Platform", "hitPoints": 1500, "armor": 10, "footprintRadiusMeters": 20,
@@ -126,8 +129,8 @@ constexpr std::string_view MINIMAL_TUNING = R"({
       "effect": { "upgrade": "weapon", "weapon": 1, "stat": "fireRate", "percent": 15 } },
     { "id": 3, "name": "Ion Drive", "tier": 1, "cost": 200, "researchSeconds": 90, "requires": [2],
       "effect": { "unlockDrive": 1 } },
-    { "id": 4, "name": "Relay Archives", "tier": 2, "cost": 400, "researchSeconds": 150, "requires": [1],
-      "effect": { "opensTier": 2 } },
+    { "id": 4, "name": "Automated Shipyards", "tier": 1, "cost": 200, "researchSeconds": 90, "requires": [1],
+      "effect": { "upgrade": "shipyards", "stat": "buildSpeed", "percent": 25 } },
     { "id": 5, "name": "Reinforced Structures", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [4],
       "effect": { "upgrade": "allStructures", "stat": "hitPoints", "percent": 25 } },
     { "id": 6, "name": "Defence Autoloader", "tier": 2, "cost": 250, "researchSeconds": 90, "requires": [4],
@@ -187,7 +190,8 @@ public:
                 {"miningRigOrePerSecondNear", rules.miningRigOrePerSecondNear},
                 {"miningRigOrePerSecondContested", rules.miningRigOrePerSecondContested},
                 {"miningRigOrePerSecondRich", rules.miningRigOrePerSecondRich},
-                {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)}},
+                {"exhaustedYieldPercent", Number(rules.exhaustedYieldPercent)},
+                {"levelHitPointsPercent", Number(rules.levelHitPointsPercent)}},
                "rules");
     ExpectSame(*json.Find("sight"),
                {{"weaponMarginMeters", tuning.sight.weaponMarginMeters},
@@ -308,7 +312,52 @@ public:
         fields.push_back({"buildConstructorSeconds", *structure.buildConstructorSeconds});
       if (structure.structureWeapon.IsValid())
         fields.push_back({"structureWeapon", Number(structure.structureWeapon.value)});
-      ExpectSame(structures[i], fields, std::format("structures[{}]", i));
+      if (structure.nodes > 0)
+        fields.push_back({"nodes", Number(structure.nodes)});
+      if (structure.guns > 0)
+        fields.push_back({"guns", Number(structure.guns)});
+      const std::string path = std::format("structures[{}]", i);
+      // A list of hulls, or none, as the file holds it.
+      const auto expectHulls = [](const Neuron::JsonValue& _json, const std::vector<Outpost::HullId>& _hulls, const std::string& _path)
+      {
+        const Neuron::JsonValue* member = _json.Find("hulls");
+        Assert::AreEqual(member != nullptr ? member->AsArray().size() : size_t{0}, _hulls.size(), Widen(_path).c_str());
+        for (size_t j = 0; j < _hulls.size(); ++j)
+          Assert::IsTrue(member->AsArray()[j].AsNumber() == Number(_hulls[j].value), Widen(_path).c_str());
+        return member != nullptr ? size_t{1} : size_t{0};
+      };
+      size_t elsewhere = expectHulls(structures[i], structure.hulls, path + ".hulls");
+      if (!structure.levels.empty())
+      {
+        ++elsewhere;
+        const Neuron::JsonValue::Array& levels = structures[i].Find("levels")->AsArray();
+        Assert::AreEqual(levels.size(), structure.levels.size(), Widen(path).c_str());
+        for (size_t j = 0; j < levels.size(); ++j)
+        {
+          const std::string levelPath = std::format("{}.levels[{}]", path, j);
+          const Outpost::StructureLevelTuning& loaded = structure.levels[j];
+          std::vector<LoadedField> levelFields = {{"cost", Number(loaded.cost)},
+                                                  {"buildConstructorSeconds", loaded.buildConstructorSeconds}};
+          if (loaded.opensTier > 0)
+            levelFields.push_back({"opensTier", Number(loaded.opensTier)});
+          if (loaded.researchSlots > 0)
+            levelFields.push_back({"researchSlots", Number(loaded.researchSlots)});
+          if (loaded.nodes > 0)
+            levelFields.push_back({"nodes", Number(loaded.nodes)});
+          if (loaded.guns > 0)
+            levelFields.push_back({"guns", Number(loaded.guns)});
+          size_t levelElsewhere = expectHulls(levels[j], loaded.hulls, levelPath + ".hulls");
+          if (const Neuron::JsonValue* required = levels[j].Find("requires"))
+          {
+            ++levelElsewhere;
+            Assert::AreEqual(required->AsArray().size(), loaded.prerequisites.size(), Widen(levelPath).c_str());
+            for (size_t k = 0; k < loaded.prerequisites.size(); ++k)
+              Assert::IsTrue(required->AsArray()[k].AsNumber() == Number(loaded.prerequisites[k].value), Widen(levelPath).c_str());
+          }
+          ExpectSame(levels[j], levelFields, levelPath, levelElsewhere);
+        }
+      }
+      ExpectSame(structures[i], fields, path, elsewhere);
     }
 
     const Neuron::JsonValue::Array& research = json.Find("research")->AsArray();
@@ -396,7 +445,7 @@ public:
 
   TEST_METHOD(RejectsABrokenStructureList)
   {
-    ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"MiningRig\""), "structures[3].kind");
+    ExpectLoadError(Replace("\"kind\": \"DefensePlatform\"", "\"kind\": \"MiningRig\""), "structures[4].kind");
     ExpectLoadError(Replace("\"kind\": \"Shipyard\"", "\"kind\": \"Factory\""), "structures[1].kind");
     // Phase 2 design §5: the Relay is a structure kind like the others, which the file must have.
     ExpectLoadError(Replace("\"kind\": \"Relay\"", "\"kind\": \"Shipyard\""), "structures[5].kind");
@@ -405,6 +454,76 @@ public:
                     "structures[0].structureWeapon");
     ExpectLoadError(Replace("\"footprintRadiusMeters\": 20,", ""), "structures[4]: has no \"footprintRadiusMeters\"");
     ExpectLoadError(Replace(", \"cost\": 300,\n      \"buildConstructorSeconds\": 40", ", \"cost\": 300"), "structures[1].cost");
+  }
+
+  // Phase 3 design §4, ADR-064: the levels above the first, which only three kinds have, up to the fifth.
+  TEST_METHOD(LoadsStructureLevels)
+  {
+    const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
+    Assert::AreEqual(20, tuning.rules.levelHitPointsPercent);
+    const Outpost::StructureTuning& shipyard = tuning.structures[1];
+    Assert::AreEqual(size_t{1}, shipyard.levels.size());
+    Assert::AreEqual(150, shipyard.levels[0].cost);
+    Assert::AreEqual(30.0, shipyard.levels[0].buildConstructorSeconds);
+    Assert::AreEqual(2, shipyard.TopLevel());
+    Assert::AreEqual(1, tuning.structures[5].TopLevel());
+
+    // The repository's: the Command Station to 5, the Shipyard to 3 and the Lab to 4 (gate K3).
+    const Outpost::Tuning repository = Outpost::LoadTuning(ReadRepositoryTuning());
+    const auto top = [&repository](Outpost::StructureKind _kind)
+    { return std::ranges::find(repository.structures, _kind, &Outpost::StructureTuning::kind)->TopLevel(); };
+    Assert::AreEqual(5, top(Outpost::StructureKind::CommandStation));
+    Assert::AreEqual(3, top(Outpost::StructureKind::Shipyard));
+    Assert::AreEqual(4, top(Outpost::StructureKind::ResearchLab));
+    Assert::AreEqual(1, top(Outpost::StructureKind::Relay));
+    // The station's cap and guns at each level (gates K4, K6).
+    for (std::int32_t level = 1; level <= 5; ++level)
+    {
+      Assert::AreEqual(level + 2, Outpost::NodeCap(repository, level));
+      Assert::AreEqual(std::array{1, 1, 2, 2, 3}[static_cast<size_t>(level - 1)],
+                       Outpost::StationGuns(repository, Outpost::StructureKind::CommandStation, level));
+      Assert::AreEqual(1, Outpost::StationGuns(repository, Outpost::StructureKind::DefensePlatform, level));
+    }
+  }
+
+  TEST_METHOD(RejectsBrokenLevels)
+  {
+    ExpectLoadError(Replace("\"exhaustedYieldPercent\": 20, \"levelHitPointsPercent\": 20", "\"exhaustedYieldPercent\": 20"),
+                    "rules: has no \"levelHitPointsPercent\"");
+    ExpectLoadError(Replace("\"levelHitPointsPercent\": 20", "\"levelHitPointsPercent\": -5"), "rules.levelHitPointsPercent");
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"buildConstructorSeconds\": 30 }"),
+                    "structures[1].levels[0]: has no \"cost\"");
+    ExpectLoadError(Replace("{ \"cost\": 150, \"buildConstructorSeconds\": 30 }", "{ \"cost\": 150, \"buildConstructorSeconds\": 0 }"),
+                    "structures[1].levels[0].buildConstructorSeconds");
+    ExpectLoadError(
+      Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+              "\"levels\": [ { \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
+              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 }, { \"cost\": 1, \"buildConstructorSeconds\": 1 }, "
+              "{ \"cost\": 1, \"buildConstructorSeconds\": 1 } ]"),
+      "structures[1].levels");
+    // A Shipyard's hulls (Phase 3 design §5): only a Shipyard names them, each hull exists, and none is named twice.
+    (void)Outpost::LoadTuning(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                                      "\"hulls\": [], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"));
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"hulls\": [1], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"hulls\": [1] } ]"),
+                    "structures[1].levels[0].hulls[0]");
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"hulls\": [2], \"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]"),
+                    "structures[1].hulls[0]");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30,",
+                            "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 30, \"hulls\": [1],"),
+                    "structures[2].hulls");
+    // A Command Station's cap and guns (Phase 3 design §7), which no other kind has, and at least one of each.
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"nodes\": 4 } ]"),
+                    "structures[1].levels[0].nodes");
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1 },",
+                            "\"footprintRadiusMeters\": 45,\n      \"structureWeapon\": 1, \"guns\": 0 },"),
+                    "structures[0].guns");
+    // A kind the owner gave no levels to (Phase 3 design §11).
+    ExpectLoadError(Replace("\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40 }",
+                            "\"footprintRadiusMeters\": 30, \"cost\": 200,\n      \"buildConstructorSeconds\": 40, \"levels\": [] }"),
+                    "structures[5].levels");
   }
 
   TEST_METHOD(RejectsABrokenResearchTree)
@@ -427,30 +546,43 @@ public:
 
   // ADR-033: a topic has a tier, from 1 to the last; a gateway opens its own tier, which has no other; every other topic of
   // a later tier requires its gateway; and no topic requires one of a later tier.
+  // ADR-033: a topic has a tier, from 1 to the last, and requires none of a later tier; each tier after the first is
+  // opened by one level of the Research Lab, a later tier by a later level, and a level's topics exist (Phase 3 design §6).
   TEST_METHOD(RejectsBrokenTiers)
   {
     ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1", "\"name\": \"Ion Drive\""), "research[2]: has no \"tier\"");
     ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1", "\"name\": \"Ion Drive\", \"tier\": 4"), "research[2].tier");
-    ExpectLoadError(Replace("\"opensTier\": 2", "\"opensTier\": 3"), "research[3].effect.opensTier");
-    ExpectLoadError(Replace("\"name\": \"Rapid Construction\", \"tier\": 2, \"cost\": 350, \"researchSeconds\": 100, \"requires\": [4]",
-                            "\"name\": \"Rapid Construction\", \"tier\": 2, \"cost\": 350, \"researchSeconds\": 100, \"requires\": [1]"),
-                    "research[7].requires");
+    ExpectLoadError(Replace("\"opensTier\": 2", "\"opensTier\": 3"), "structures[2].levels[0].opensTier");
+    ExpectLoadError(Replace("\"opensTier\": 2", "\"opensTier\": 4"), "structures[2].levels[0].opensTier");
+    ExpectLoadError(Replace("\"opensTier\": 2, ", ""), "research[4].tier");
+    ExpectLoadError(Replace("\"opensTier\": 2, \"requires\": [1]", "\"opensTier\": 2, \"requires\": [99]"),
+                    "structures[2].levels[0].requires[0]");
+    ExpectLoadError(Replace("\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30 } ]",
+                            "\"levels\": [ { \"cost\": 150, \"buildConstructorSeconds\": 30, \"opensTier\": 2 } ]"),
+                    "structures[1].levels[0].opensTier");
     ExpectLoadError(Replace("\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [2]",
                             "\"name\": \"Ion Drive\", \"tier\": 1, \"cost\": 200, \"researchSeconds\": 90, \"requires\": [5]"),
                     "research[2].requires[0]");
     ExpectLoadError(Replace("\"name\": \"Deep Core Survey\", \"tier\": 2", "\"name\": \"Deep Core Survey\", \"tier\": 3"),
                     "research[8].tier");
+    // No topic opens a tier now; that is a level's.
     ExpectLoadError(Replace("{ \"upgrade\": \"allShips\", \"stat\": \"speed\", \"percent\": 10 }", "{ \"opensTier\": 2 }"),
-                    "research[6].effect.opensTier");
+                    "research[6].effect");
   }
 
-  // Phase 1 design §6: the new kinds of effect load, and a gateway is one.
+  // Phase 1 design §6: the kinds of effect load; and a tier is opened by the Research Lab's level, which also gives the
+  // second slot (Phase 3 design §6).
   TEST_METHOD(LoadsTheTiersEffects)
   {
     const Outpost::Tuning tuning = Outpost::LoadTuning(MINIMAL_TUNING);
     Assert::AreEqual(size_t{9}, tuning.research.size());
-    Assert::IsTrue(tuning.research[3].IsGateway() && tuning.research[3].tier == 2);
-    Assert::IsFalse(tuning.research[4].IsGateway());
+    Assert::AreEqual(1, Outpost::LabLevelFor(tuning, 1));
+    Assert::AreEqual(2, Outpost::LabLevelFor(tuning, 2));
+    Assert::AreEqual(1, Outpost::OpenTier(tuning, 1));
+    Assert::AreEqual(2, Outpost::OpenTier(tuning, 2));
+    Assert::AreEqual(1, Outpost::ResearchSlots(tuning, 2));
+    Assert::AreEqual(2, Outpost::ResearchSlots(tuning, 3));
+    Assert::IsTrue(tuning.structures[2].levels[0].prerequisites == std::vector{Outpost::ResearchTopicId{1}});
     const auto upgrade = [&tuning](size_t _index) { return std::get<Outpost::UpgradeEffect>(tuning.research[_index].effect); };
     Assert::IsTrue(upgrade(4).target == Outpost::UpgradeTarget::AllStructures && upgrade(4).stat == Outpost::UpgradeStat::HitPoints);
     Assert::IsTrue(upgrade(5).target == Outpost::UpgradeTarget::StructureWeapon &&
@@ -458,7 +590,7 @@ public:
     Assert::IsTrue(upgrade(6).target == Outpost::UpgradeTarget::AllShips && upgrade(6).stat == Outpost::UpgradeStat::Speed);
     Assert::IsTrue(upgrade(7).target == Outpost::UpgradeTarget::Constructors && upgrade(7).stat == Outpost::UpgradeStat::BuildRate);
     Assert::IsTrue(upgrade(8).target == Outpost::UpgradeTarget::Asteroids && upgrade(8).percent == 30);
-    Assert::AreEqual(std::string("Opens tier 2"), Outpost::EffectText(tuning, tuning.research[3]));
+    Assert::AreEqual(std::string("Shipyard build speed +25%"), Outpost::EffectText(tuning, tuning.research[3]));
     Assert::AreEqual(std::string("Defence gun fire rate +20%"), Outpost::EffectText(tuning, tuning.research[5]));
     Assert::AreEqual(std::string("Constructor build and repair rate +25%"), Outpost::EffectText(tuning, tuning.research[7]));
   }

@@ -12,7 +12,7 @@ struct ModelEntry
   int levels = 0;
 };
 
-// The level a model that grows is drawn at, until the game grows it (ADR-045).
+// A model's first level, and the one a model that does not grow is drawn at (ADR-045).
 inline constexpr int FIRST_MODEL_LEVEL = 1;
 // The most levels a model may have; the owner's models have five.
 inline constexpr int MAXIMUM_MODEL_LEVELS = 9;
@@ -133,12 +133,27 @@ struct ModelCatalog
 [[nodiscard]] ModelCatalog LoadModelCatalog(std::string_view _json);
 
 // Where a model's baked mesh is under the package's Assets folder: Models\<set>\<model>.nmf (ADR-018), or for a model
-// that grows, its first level's, Models\<set>\<model>_L1.nmf (ADR-045).
-[[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model);
+// that grows, _level's, Models\<set>\<model>_L<level>.nmf (ADR-045).
+[[nodiscard]] std::wstring ModelFileName(const ModelSet& _set, const ModelEntry& _model, int _level = FIRST_MODEL_LEVEL);
+
+// How many meshes a model has: one a level for a model that grows, and one for any other.
+[[nodiscard]] constexpr int ModelLevels(const ModelEntry& _model) noexcept
+{
+  return std::max(FIRST_MODEL_LEVEL, _model.levels);
+}
+
+// The level of _model that draws a structure at _level (Phase 3 design §4): the structure's own, as far as the model has
+// levels, and the first for a model that does not grow.
+[[nodiscard]] constexpr int DrawnLevel(const ModelEntry& _model, std::int32_t _level) noexcept
+{
+  return std::clamp(static_cast<int>(_level), FIRST_MODEL_LEVEL, ModelLevels(_model));
+}
 
 // A model's mesh at its size in the game: read from the bytes of its .nmf file, centered and scaled to its length, its
-// hardpoints with it (ADR-018). Throws Neuron::Exception naming _fileName when the file cannot be read or has a
-// hardpoint whose tag the game does not know.
-[[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model,
-                                              std::string_view _fileName);
+// hardpoints with it (ADR-018). A level after the first is scaled instead to stand within _firstLevelWidestMeters, the
+// wider of its first level's length and depth, so that every level stands on level 1's ground (Phase 3 design §4,
+// ADR-064). Throws Neuron::Exception naming _fileName when the file cannot be read or has a hardpoint whose tag the game
+// does not know.
+[[nodiscard]] Neuron::MeshData BuildModelMesh(std::span<const std::uint8_t> _nmfBytes, const ModelEntry& _model, std::string_view _fileName,
+                                              std::optional<float> _firstLevelWidestMeters = std::nullopt);
 } // namespace Outpost

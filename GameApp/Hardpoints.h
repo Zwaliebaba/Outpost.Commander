@@ -66,9 +66,11 @@ inline constexpr float MAX_STANCE_TILT_RADIANS = 0.5f;
 [[nodiscard]] DirectX::XMFLOAT4X4 StanceMatrix(const ModelPose& _pose, const Stance& _stance) noexcept;
 
 // Where a shot at _target leaves the model from: its gun nearest the target, on the ground. Nothing for a model with no
-// gun. It is presentation only: the server measures range from the ship's center (design §7).
+// gun. It is presentation only: the server measures range from the ship's center (design §7). A shot of a further gun,
+// such as a Command Station's second Defence gun (Phase 3 design §7), leaves from the next nearest, _gun places on, and
+// wraps round when the model has fewer guns than that.
 [[nodiscard]] std::optional<PlanePosition> NearestMuzzle(std::span<const Neuron::MeshHardpoint> _hardpoints, const ModelPose& _pose,
-                                                         PlanePosition _target);
+                                                         PlanePosition _target, std::uint8_t _gun = 0);
 
 // The glows of a ship's exhausts (ADR-019): at each exhaust a bright core, and a plume streaming the way the exhaust
 // points, which grows longer and brighter as the ship goes faster. _speedShare runs from 0 at rest to 1 at full speed.

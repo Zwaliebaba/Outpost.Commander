@@ -104,6 +104,14 @@ struct Entity
   // are zero for a structure placed whole (ADR-016).
   std::int32_t buildWorkDone = 0;
   std::int32_t buildWorkNeeded = 0;
+  // A Command Station's further Defence guns, which its level gives, each with its reload as the first's is
+  // (Phase 3 design §7).
+  std::vector<std::int32_t> extraGunReloadMilliticks;
+  // A structure's level, from 1, and the next level's construction while it is upgraded, counted as a site's is: both are
+  // zero while no upgrade is under way (Phase 3 design §4, ADR-064).
+  std::int32_t level = 1;
+  std::int32_t upgradeWorkDone = 0;
+  std::int32_t upgradeWorkNeeded = 0;
   // The Defence gun a built structure carries, if any (design §6).
   StructureWeaponId structureWeapon;
   // A Shipyard's or the Command Station's jobs, front first, and the front job's progress in thousandths of a tick. The
@@ -113,6 +121,10 @@ struct Entity
   std::vector<ResearchTopicId> researchQueue;
   std::int32_t jobWorkDone = 0;
   std::int32_t jobWorkNeeded = 0;
+  // A Research Lab's second topic, researched beside the first from the level that gives it a second slot (Phase 3 design
+  // §6), counted as the first is: zero until it starts.
+  std::int32_t secondJobWorkDone = 0;
+  std::int32_t secondJobWorkNeeded = 0;
   // A Shipyard's number among its owner's, given when it is first finished, and the ships it has built (Phase 1 design
   // §11).
   std::uint32_t shipyardNumber = 0;
@@ -121,6 +133,11 @@ struct Entity
   [[nodiscard]] bool IsBuilt() const noexcept
   {
     return buildWorkDone >= buildWorkNeeded;
+  }
+
+  [[nodiscard]] bool IsUpgrading() const noexcept
+  {
+    return upgradeWorkNeeded > 0;
   }
 
   friend bool operator==(const Entity&, const Entity&) = default;
@@ -169,7 +186,8 @@ enum class CommandResult : std::uint8_t
   UnknownComponent,
   // The topic is researched already, or already in the lab's queue.
   AlreadyResearched,
-  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8).
+  // A topic the research needs first is neither researched nor ahead of it in the queue (design §8), or a topic a Research
+  // Lab's next level needs is not researched (Phase 3 design §6).
   PrerequisiteMissing,
   // A design's name is empty, too long, or holds a character the HUD cannot show.
   InvalidName,
@@ -187,6 +205,18 @@ enum class CommandResult : std::uint8_t
   SectorNotHeld,
   // A hold names a point in no sector, or the map has no territory (ADR-059).
   NoSector,
+  // An upgrade names something that is not one of the player's own structures (ADR-064).
+  NotUpgradable,
+  // An upgrade names a structure still being built, or one already being upgraded.
+  UnderConstruction,
+  AlreadyUpgrading,
+  // An upgrade names a structure at its kind's highest level, which for a kind that does not grow is its first.
+  TopLevel,
+  // A Shipyard's job names a hull above its level, or a Research Lab's a topic of a tier its level has not opened (Phase 3
+  // design §5, §6).
+  LevelTooLow,
+  // A Relay would take the player past the nodes its Command Station's level lets it hold (Phase 3 design §7).
+  CapReached,
   // The order is valid protocol, but the task that gives it meaning has not been built yet.
   NotYetSupported
 };
@@ -248,8 +278,9 @@ public:
 
   // What the player's research has done to its rates; none before UseTuning.
   [[nodiscard]] Upgrades UpgradesOf(PlayerId _player) const;
-  // A structure's full hit points, in hundredths, and a Constructor's speed, with _owner's research (Phase 1 design §6).
-  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning) const;
+  // A structure's full hit points at _level, in hundredths, and a Constructor's speed, with _owner's research (Phase 1
+  // design §6). A level's percent adds to research's (Phase 3 design §4).
+  [[nodiscard]] std::int32_t StructureHitPoints(PlayerId _owner, const StructureTuning& _tuning, std::int32_t _level = 1) const;
   [[nodiscard]] float ConstructorSpeed(PlayerId _owner) const;
 
   // Saves a design for _owner and returns its identifier. Match setup saves the starting designs; the designer sends a
@@ -280,9 +311,9 @@ public:
 
   // Places a built structure, which blocks movement unless it is a Mining Rig, which stands on its asteroid. Once the
   // tuning data is known, a kind that carries a Defence gun is armed. Without hit points it is out of combat, as task
-  // 2.7's load places them.
+  // 2.7's load places them. It stands at _level, which tests give it as they give its hit points (Phase 3 design §4).
   EntityId SpawnStructure(PlayerId _owner, StructureKind _kind, PlanePosition _position, float _radiusMeters,
-                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0);
+                          std::int32_t _hitPointsHundredths = 0, std::int32_t _armorHundredths = 0, std::int32_t _level = 1);
 
   // Match setup, after PlaceMap and UseTuning: gives every player its Command Station on its start and the starting
   // Constructors in front of it, facing the map's center (design §6). Throws Neuron::Exception when the base would
@@ -464,6 +495,10 @@ private:
   [[nodiscard]] const Sector* SectorById(std::int32_t _id) const noexcept;
   // Works out again who holds each sector, which Relays are suppressed and which sectors are cut off (ADR-056).
   void UpdateTerritory();
+  // The nodes _player may hold (Phase 3 design §7): its Command Station's level's, or level 1's without one; zero for no
+  // cap. And the nodes it holds or has taken with a Relay under construction.
+  [[nodiscard]] std::int32_t NodeCapOf(PlayerId _player) const noexcept;
+  [[nodiscard]] std::int32_t NodesTaken(PlayerId _player) const noexcept;
   // The share of its income a rig earns where it stands: none outside a sector its owner holds or in a suppressed one,
   // the tuning data's share in one cut off, and all of it otherwise or without territory (Phase 2 design §4–§6).
   [[nodiscard]] double TerritoryShare(const Entity& _rig) const noexcept;
@@ -480,6 +515,7 @@ private:
   CommandResult Apply(PlayerId _player, const SaveDesignCommand& _save);
   CommandResult Apply(PlayerId _player, const HoldSectorCommand& _hold);
   CommandResult Apply(PlayerId _player, const PatrolCommand& _patrol);
+  CommandResult Apply(PlayerId _player, const UpgradeStructureCommand& _upgrade);
   // The warships among _ships, each once; validated by the caller.
   [[nodiscard]] std::vector<EntityId> WarshipsOf(const std::vector<EntityId>& _ships) const;
   // Once a second, every group on a standing order moves as its order says (ADR-059).
@@ -540,6 +576,10 @@ private:
   // The player gains the topic's upgrade or unlock at once: its designs take their new stats, and its ships keep the
   // share of their hit points they had (design §8).
   void CompleteResearch(PlayerState& _player, ResearchTopicId _topic);
+  // A structure's full hit points at _level with this factor from research, as StructureHitPoints gives them.
+  [[nodiscard]] std::int32_t StructureHitPointsAt(const StructureTuning& _tuning, double _researchFactor, std::int32_t _level) const;
+  // _entity's full hit points become _after, and it keeps the share of them it had (owner, 2026-10-01).
+  static void RescaleHitPoints(Entity& _entity, std::int64_t _after) noexcept;
   // What the player's built Mining Rigs earn each second, in hundredths of an Ore, with its research applied.
   [[nodiscard]] std::int64_t IncomeHundredthsPerSecond(PlayerId _player) const;
   // What one built rig earns each second, in hundredths, with its owner's income factor: its asteroid's rate, or the

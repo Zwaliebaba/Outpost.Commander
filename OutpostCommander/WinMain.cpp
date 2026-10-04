@@ -1,10 +1,17 @@
 #include "pch.h"
+
+#include <shellapi.h>
+
 #include "AiMatches.h"
 
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <future>
+
+// CommandLineToArgvW is shell32's, which the executable's Windows Store project type does not link by default, as
+// NeuronClient's Window.cpp says of user32.
+#pragma comment(lib, "shell32.lib")
 
 namespace
 {
@@ -31,11 +38,13 @@ constexpr std::wstring_view STRESS_SWITCH = L"--stress";
 constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
 // Plan task 6.3: every match against the AI is added to this log in the temporary folder, for Tools/MatchLog.py.
 constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
-// Phase 1 plan task 13.1's switch: ten seeded AI-against-AI matches on the real server, played headlessly as fast as it
-// ticks, into this log in the temporary folder, for P1's repeatable figure. No window opens; a message says when they
-// are done, and Tools/MatchLog.py --ai-matches summarizes them.
+// Phase 1 plan task 13.1's switch: seeded AI-against-AI matches on the real server, played headlessly as fast as it
+// ticks, for P1's repeatable figure. No window opens; a message says when they are done, and Tools/MatchLog.py
+// --ai-matches summarizes them. Its options name the seeds, each AI's settings and the log (AiMatchesOptions, ADR-063).
 constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
-constexpr auto AI_MATCH_LOG = L"OutpostCommander-ai-matches.log";
+// With --ai-matches, for a script such as Tools/SelfPlay.py: no message. The exit code says how the run went, and a
+// failure's message goes to standard error (ADR-063).
+constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
 {
@@ -54,6 +63,39 @@ DWORD RefreshRateHertz(HWND _window) noexcept
   if (EnumDisplaySettingsW(monitor.szDevice, ENUM_CURRENT_SETTINGS, &mode) == FALSE)
     return 0;
   return mode.dmDisplayFrequency;
+}
+
+// The command line's arguments after the program's name, split by Windows' rules for quotes and backslashes.
+std::vector<std::wstring> CommandLineArguments()
+{
+  struct LocalFreer
+  {
+    void operator()(LPWSTR* _arguments) const noexcept
+    {
+      (void)LocalFree(static_cast<HLOCAL>(_arguments));
+    }
+  };
+
+  int count = 0;
+  const std::unique_ptr<LPWSTR, LocalFreer> arguments(winrt::check_pointer(CommandLineToArgvW(GetCommandLineW(), &count)));
+  const std::span<const LPWSTR> all(arguments.get(), static_cast<size_t>(std::max(count, 0)));
+  return all.empty() ? std::vector<std::wstring>() : std::vector<std::wstring>(all.begin() + 1, all.end());
+}
+
+// Shows a failure, or under --quiet writes it to standard error, where the script that ran the game reads it (ADR-063).
+void ReportFailure(std::wstring_view _message, bool _quiet)
+{
+  if (!_quiet)
+  {
+    MessageBoxW(nullptr, std::wstring(_message).c_str(), GAME_TITLE, MB_OK | MB_ICONERROR);
+    return;
+  }
+  const HANDLE standardError = Neuron::SafeHandle(GetStdHandle(STD_ERROR_HANDLE));
+  if (standardError == nullptr)
+    return;
+  const std::string text = winrt::to_string(_message) + "\n";
+  DWORD written = 0;
+  (void)WriteFile(standardError, text.data(), static_cast<DWORD>(text.size()), &written, nullptr);
 }
 
 // A seed for one match (ADR-009), logged so that the match can be reproduced from it and its command log.
@@ -112,7 +154,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 #endif
 
   // A failure anywhere below, at startup or when the graphics device is lost, ends up here once: it is shown, and its code
-  // is the exit code, so the game never closes without saying why (ADR-006).
+  // is the exit code, so the game never closes without saying why (ADR-006). A quiet run of --ai-matches sets this before
+  // anything there can fail, and its failure goes to standard error instead (ADR-063).
+  bool quiet = false;
   try
   {
     const auto launched = std::chrono::steady_clock::now();
@@ -126,15 +170,19 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     const std::wstring_view commandLine = _cmdLine != nullptr ? std::wstring_view(_cmdLine) : std::wstring_view();
     if (commandLine.find(AI_MATCHES_SWITCH) != std::wstring_view::npos)
     {
-      const std::filesystem::path logPath = std::filesystem::temp_directory_path() / AI_MATCH_LOG;
-      std::ofstream log(logPath, std::ios::trunc);
-      const Outpost::AiMatchesDesc desc;
+      // The shell reads its own two words, the switch and --quiet; the rest are the switch's options (ADR-063).
+      std::vector<std::wstring> arguments = CommandLineArguments();
+      quiet = std::erase(arguments, QUIET_SWITCH) > 0;
+      std::erase(arguments, AI_MATCHES_SWITCH);
+      const Outpost::AiMatchesOptions options = Outpost::ReadAiMatchesOptions(arguments);
       const auto started = std::chrono::steady_clock::now();
-      const std::uint32_t ended = Outpost::PlayAiMatches(log, Outpost::LoadPackagedAiSettings(), desc);
+      const std::uint32_t ended = Outpost::PlayAiMatches(options);
+      if (quiet)
+        return EXIT_SUCCESS;
       const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - started).count();
       const std::wstring message = std::format(L"Played {} AI-against-AI matches in {} seconds: {} ended within {} minutes.\n\n"
                                                L"The log is {}.\nTools\\MatchLog.py --ai-matches summarizes them.",
-                                               desc.matches, seconds, ended, desc.limitMinutes, logPath.wstring());
+                                               options.desc.matches, seconds, ended, options.desc.limitMinutes, options.log.wstring());
       MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONINFORMATION);
       return EXIT_SUCCESS;
     }
@@ -376,14 +424,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
   {
     const std::wstring message =
       std::format(L"{}\n\nError 0x{:08X}", std::wstring_view(error.message()), static_cast<std::uint32_t>(error.code()));
-    MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONERROR);
+    ReportFailure(message, quiet);
     return error.code();
   }
   catch (const std::exception& error)
   {
     // Neuron::Exception carries UTF-8, such as the tuning loader's report of a bad data file (ADR-008).
     const winrt::hstring message = winrt::to_hstring(std::string_view(error.what()));
-    MessageBoxW(nullptr, message.c_str(), GAME_TITLE, MB_OK | MB_ICONERROR);
+    ReportFailure(message, quiet);
     return EXIT_FAILURE;
   }
 }

@@ -23,6 +23,9 @@ struct RulesTuning
   double miningRigOrePerSecondRich = 0.0;
   // What a rig earns of its asteroid's rate once the asteroid's reserve has run out, in percent (Phase 1 design §8).
   std::int32_t exhaustedYieldPercent = 0;
+  // What each level above the first adds to a structure's hit points, in percent of its kind's base hit points (Phase 3
+  // design §4, gate K6). It adds to research's percents (ADR-064).
+  std::int32_t levelHitPointsPercent = 0;
 };
 
 // How far each side sees under fog of war (ADR-024). An armed ship or structure sees its weapon's range and the margin
@@ -125,6 +128,29 @@ struct StructureWeaponTuning
   double rangeMeters = 0.0;
 };
 
+// One level above the first that a structure is upgraded to (Phase 3 design §4, ADR-064): its Ore, paid when the upgrade is
+// ordered, and the time one Constructor takes to build it.
+struct StructureLevelTuning
+{
+  std::int32_t cost = 0;
+  double buildConstructorSeconds = 0.0;
+  // A Shipyard's: the hulls it builds from this level on (Phase 3 design §5).
+  std::vector<HullId> hulls;
+  // A Research Lab's (Phase 3 design §6): the research tier this level opens, or 0; the topics that must be researched
+  // before it is ordered, which the file calls "requires"; and how many topics the Lab researches at once from this level
+  // on, or 0 where the level does not change it.
+  std::int32_t opensTier = 0;
+  std::vector<ResearchTopicId> prerequisites;
+  std::int32_t researchSlots = 0;
+  // A Command Station's (Phase 3 design §7): the nodes its player may hold from this level on, home included, and the
+  // Defence guns it carries; 0 where the level does not change them.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
+};
+
+// The most levels a structure has: the owner's models have five (ADR-045).
+inline constexpr std::int32_t MAXIMUM_STRUCTURE_LEVEL = 5;
+
 struct StructureTuning
 {
   StructureKind kind = StructureKind::CommandStation;
@@ -139,6 +165,21 @@ struct StructureTuning
   std::optional<double> buildConstructorSeconds;
   // Not valid when the structure has no weapon.
   StructureWeaponId structureWeapon;
+  // The levels it is upgraded to, level 2 first; none for a kind that does not grow (Phase 3 design §4).
+  std::vector<StructureLevelTuning> levels;
+  // A Shipyard's: the hulls it builds at level 1. A Shipyard that names no hull at any level builds every hull at level 1
+  // (Phase 3 design §5).
+  std::vector<HullId> hulls;
+  // A Command Station's at level 1 (Phase 3 design §7): the nodes its player may hold, home included, 0 for no cap; and
+  // the Defence guns it carries, 1 when it names none.
+  std::int32_t nodes = 0;
+  std::int32_t guns = 0;
+
+  // The highest level it reaches.
+  [[nodiscard]] std::int32_t TopLevel() const noexcept
+  {
+    return 1 + static_cast<std::int32_t>(levels.size());
+  }
 };
 
 // What a research upgrade applies to, and which of its rates it raises (design §8: upgrades change rates, never the size
@@ -178,18 +219,11 @@ struct UpgradeEffect
   std::int32_t percent = 0;
 };
 
-// A tier's gateway (Phase 1 design §6): it does nothing itself, and every other topic of its tier requires it.
-struct GatewayEffect
-{
-  std::int32_t tier = 0;
+// An upgrade, or the component the topic unlocks.
+using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId>;
 
-  friend bool operator==(const GatewayEffect&, const GatewayEffect&) = default;
-};
-
-// An upgrade, the component the topic unlocks, or the tier it opens.
-using ResearchEffect = std::variant<UpgradeEffect, HullId, DriveId, WeaponId, GatewayEffect>;
-
-// The research tiers (Phase 1 design §6): tier 1 needs no gateway, and each tier after it opens with one.
+// The research tiers (Phase 1 design §6): tier 1 is open from the start, and each tier after it is opened by a level of the
+// Research Lab (Phase 3 design §6).
 inline constexpr std::int32_t RESEARCH_TIERS = 3;
 
 struct ResearchTopicTuning
@@ -202,11 +236,6 @@ struct ResearchTopicTuning
   // The topics that must be researched first. The file calls them "requires", a keyword in C++.
   std::vector<ResearchTopicId> prerequisites;
   ResearchEffect effect;
-
-  [[nodiscard]] bool IsGateway() const noexcept
-  {
-    return std::holds_alternative<GatewayEffect>(effect);
-  }
 };
 
 struct Tuning
@@ -225,11 +254,34 @@ struct Tuning
   std::vector<ResearchTopicTuning> research;
 };
 
+// The level a Shipyard must be at to build a hull of _hull (Phase 3 design §5, gate K1): the level that names it, or 1
+// when no level does.
+[[nodiscard]] std::int32_t ShipyardLevelFor(const Tuning& _tuning, HullId _hull) noexcept;
+
+// The level a Research Lab must be at to research a topic of _tier (Phase 3 design §6, gate K2): the level that opens it,
+// or 1 for tier 1.
+[[nodiscard]] std::int32_t LabLevelFor(const Tuning& _tuning, std::int32_t _tier) noexcept;
+
+// The highest research tier a Research Lab at _level has opened, 1 at least, and how many topics it researches at once,
+// 1 at least (Phase 3 design §6).
+[[nodiscard]] std::int32_t OpenTier(const Tuning& _tuning, std::int32_t _level) noexcept;
+[[nodiscard]] std::int32_t ResearchSlots(const Tuning& _tuning, std::int32_t _level) noexcept;
+
+// The nodes a player whose Command Station is at _level may hold, home included (Phase 3 design §7, gate K4); level 1's
+// for a player without a station. Zero when the data sets no cap.
+[[nodiscard]] std::int32_t NodeCap(const Tuning& _tuning, std::int32_t _level) noexcept;
+
+// The Defence guns a structure of _kind carries at _level (Phase 3 design §7, gate K6): a Command Station's from its
+// levels, and one for any other armed structure.
+[[nodiscard]] std::int32_t StationGuns(const Tuning& _tuning, StructureKind _kind, std::int32_t _level) noexcept;
+
 // Reads the text of OutpostCommander/Assets/Tuning.json. Throws Neuron::Exception on the first problem, naming where it
 // is, such as "hulls[1].armor". Besides types and ranges it checks that identifiers are unique, that every reference
 // names something that exists, that each structure kind appears exactly once, and that no research topic requires
-// itself, even through others. And the tiers hold: a topic requires none of a later tier, each tier after the first has
-// one gateway, of its own tier, and every other topic of that tier requires it (ADR-033). A member the loader does not know is an error too, so that a misspelled optional member
-// is not ignored.
+// itself, even through others. And the tiers hold: a topic requires none of a later tier, and each tier after the first is
+// opened by one level of the Research Lab, in order (ADR-033). Only the Command Station, the
+// Shipyard and the Research Lab have levels, up to MAXIMUM_STRUCTURE_LEVEL (ADR-064), and a Shipyard that names the hulls
+// it builds names each once, at level 1 or at one of its levels. A member the loader does not know is
+// an error too, so that a misspelled optional member is not ignored.
 [[nodiscard]] Tuning LoadTuning(std::string_view _json);
 } // namespace Outpost

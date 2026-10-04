@@ -207,21 +207,34 @@ Neuron::MeshData Neuron::ParseNmf(std::span<const std::uint8_t> _bytes, std::str
 
 void Neuron::FitMesh(MeshData& _mesh, float _lengthMeters)
 {
-  const DirectX::XMFLOAT3 center{(_mesh.boundsMin.x + _mesh.boundsMax.x) / 2.0f, (_mesh.boundsMin.y + _mesh.boundsMax.y) / 2.0f,
-                                 (_mesh.boundsMin.z + _mesh.boundsMax.z) / 2.0f};
   const float lengthInFile = _mesh.Extents().x;
   if (lengthInFile <= 0.0f)
     throw Exception("A mesh with no length along its front cannot be scaled to one.");
-  const float scale = _lengthMeters / lengthInFile;
-  const auto fit = [&center, scale](const DirectX::XMFLOAT3& _point) -> DirectX::XMFLOAT3
-  { return {(_point.x - center.x) * scale, (_point.y - center.y) * scale, (_point.z - center.z) * scale}; };
+  CenterAndScale(_mesh, _lengthMeters / lengthInFile);
+}
+
+void Neuron::FitMeshAcross(MeshData& _mesh, float _widestMeters)
+{
+  const DirectX::XMFLOAT3 extents = _mesh.Extents();
+  const float widestInFile = std::max(extents.x, extents.z);
+  if (widestInFile <= 0.0f)
+    throw Exception("A mesh with no width on the ground cannot be scaled to one.");
+  CenterAndScale(_mesh, _widestMeters / widestInFile);
+}
+
+void Neuron::CenterAndScale(MeshData& _mesh, float _scale)
+{
+  const DirectX::XMFLOAT3 center{(_mesh.boundsMin.x + _mesh.boundsMax.x) / 2.0f, (_mesh.boundsMin.y + _mesh.boundsMax.y) / 2.0f,
+                                 (_mesh.boundsMin.z + _mesh.boundsMax.z) / 2.0f};
+  const auto fit = [&center, _scale](const DirectX::XMFLOAT3& _point) -> DirectX::XMFLOAT3
+  { return {(_point.x - center.x) * _scale, (_point.y - center.y) * _scale, (_point.z - center.z) * _scale}; };
 
   for (MeshVertex& vertex : _mesh.vertices)
     vertex.position = fit(vertex.position);
   for (MeshHardpoint& hardpoint : _mesh.hardpoints)
   {
     hardpoint.position = fit(hardpoint.position);
-    hardpoint.size *= scale;
+    hardpoint.size *= _scale;
   }
   for (MeshPart& part : _mesh.parts)
     part.pivot = fit(part.pivot);
