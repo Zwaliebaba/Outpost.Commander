@@ -33,7 +33,7 @@ Task numbers continue the Phase 1 plan's milestones, so that a number names one 
 | 16.2 | The designer's module row | 16.1 | — | in review: owner run |
 | 17.1 | Alerts | 14.3 | J5 decided | in review: owner run |
 | 17.2 | Standing orders: hold a sector, patrol | 14.1 | J5 decided | in review: owner run |
-| 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | todo |
+| 18.1 | The AI on territory | 14.5, 15.1, 16.1, 17.2 | — | done, not yet built on Windows |
 | 19.1 | The match log for Phase 2 | 15.1 | — | todo |
 | 19.2 | S1–S5 | 18.1, 19.1 | — | todo |
 
@@ -199,6 +199,7 @@ Each is an owner decision, from design §13. All were decided on 2026-10-03, whe
 - **ADR:** ADR-020 and ADR-041, edited in place.
 - **Acceptance:** `AiPlayerTests`.
 - **Verify:** CI; the AI-against-AI matches.
+- **As built:** [ADR-020](../Design/ADR/ADR-020-ai-and-match-flow.md) decision 13 and [ADR-041](../Design/ADR/ADR-041-ai-plays-a-longer-match.md) decision 5, edited in place. Its numbers are starting values in `Opponent.json`: one scout, raids of two every three minutes, one claim beyond the ore's, a platform by each front Relay, and a lead of one node or half as many ships again. "When the enemy's front has thinned" is read as a reserve half as large again as the attack group, since the AI sees only part of the enemy's front. AI-against-AI matches are shorter with territory's play; 19.2 tunes against that. 34 `AiPlayerTests` and `AiSettingsTests` pass in the container.
 
 ---
 

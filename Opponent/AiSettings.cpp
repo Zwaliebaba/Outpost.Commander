@@ -9,9 +9,12 @@ using ObjectReader = Neuron::JsonObjectReader;
 Outpost::DesignComponents ReadComponents(ObjectReader& _parent, std::string_view _name)
 {
   ObjectReader reader(_parent.Required(_name), _parent.PathOf(_name));
-  const Outpost::DesignComponents components{.hull = reader.Identifier<Outpost::HullId>("hull"),
-                                             .drive = reader.Identifier<Outpost::DriveId>("drive"),
-                                             .weapon = reader.Identifier<Outpost::WeaponId>("weapon")};
+  Outpost::DesignComponents components{.hull = reader.Identifier<Outpost::HullId>("hull"),
+                                       .drive = reader.Identifier<Outpost::DriveId>("drive"),
+                                       .weapon = reader.Identifier<Outpost::WeaponId>("weapon")};
+  // A module is optional, as in a design (Phase 2 design §10).
+  if (reader.Optional("module") != nullptr)
+    components.module = reader.Identifier<Outpost::ModuleId>("module");
   reader.Finish();
   return components;
 }
@@ -62,6 +65,17 @@ Outpost::AiSettings ReadAiSettings(std::string_view _json)
 
   settings.defaultDesign = ReadComponents(root, "defaultDesign");
   settings.counters = Neuron::ReadJsonList<Outpost::CounterRule>(root, "counters", ReadCounter);
+  settings.scouts = root.Integer("scouts", 0);
+  settings.scoutDesign = ReadComponents(root, "scoutDesign");
+  settings.raidShips = root.Integer("raidShips", 0);
+  settings.raidLossShare = root.Number("raidLossShare", JsonBound::NotNegative);
+  if (settings.raidLossShare >= 1.0)
+    Neuron::JsonFail(root.PathOf("raidLossShare"), "a share below 1, since a raid that has lost every ship has none to bring back");
+  settings.raidIntervalSeconds = root.Number("raidIntervalSeconds", JsonBound::NotNegative);
+  settings.attackNodeLead = root.Integer("attackNodeLead", 0);
+  settings.attackWithoutLeadShare = root.Number("attackWithoutLeadShare", JsonBound::Positive);
+  settings.frontPlatforms = root.Integer("frontPlatforms", 0);
+  settings.claimSectors = root.Integer("claimSectors", 0);
   root.Finish();
 
   for (size_t i = 0; i < settings.counters.size(); ++i)

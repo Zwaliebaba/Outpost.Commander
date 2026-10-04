@@ -27,7 +27,8 @@ This goes beyond design §13, which had the AI change only as far as Phase 1's r
 1. **The attack group is 20 warships, and 12 more for each tier the AI has opened past the first.** `attackGroupShips`, gate G9's value, is 20 and `attackGroupGrowthPerTier` is 12; the tier is the highest gateway the AI has researched.
 2. **An attack that has lost 30% of the ships it set out with falls back.** It goes to the rally with a move order, out of the fight, and its ships rejoin the reserve. The reserve then waits 120 seconds before it attacks again, however many ships it has (`retreatLossShare` 0.3, `regroupSeconds` 120, [ADR-047](ADR-047-a-fight-seen-whole.md) decision 6). The losses count against the group's size when it last grew. A lost battle so costs part of a fleet, not all of it.
 3. **It plans 2 Defence Platforms round its base for each Shipyard** (`homePlatformsPerShipyard` 2). They stand toward the map's center, 260 m from the Command Station, at turns of 0 and ±0.5 and ±1 radian, then a ring 70 m further out. Each is built once the income reaches its Shipyard's share. An attack on a base that has grown so costs the attacker more than it costs the base.
-4. **Nothing else in its play changes.** It still goes for production first (ADR-037), defends its structures, counters what it has seen, and follows the ore.
+4. **Nothing else in its play changes here.** It still goes for production first (ADR-037), defends its structures, counters what it has seen, and follows the ore. On a map with territory it also plays for territory ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13).
+5. **On a map with territory the main attack waits for a lead in nodes** (Phase 2 design §12, plan task 18.1). The reserve joins the attack group once it holds the group's size and the AI holds `attackNodeLead`, 1, node more than the enemy, or once the reserve holds `attackWithoutLeadShare`, 1.5, times the group's size. A free node counts for neither side. Both players see who holds each node ([ADR-056](ADR-056-territory.md) decision 10), so the AI counts them from its snapshot.
 
 ## Consequences
 
@@ -43,8 +44,14 @@ All measured in the Linux container: clang 18 at `-O2`, `--ai-matches`' code aga
 - **Two more ideas were tried and dropped**, with figures for seeds 1 to 40:
   - Falling back from a fleet stronger than the group, by hit points times damage a second: a median of 32.2 to 33.5 minutes, no better than without it.
   - Leaving the enemy's base alone until tier 2 or 3: a median of 25.7 at tier 2, and at tier 3 alone 36 of 40 matches still going at 150 minutes, since few AIs reach tier 3.
+- **Territory's play shortens the match again.** Measured as above, on the repository's map with territory, with the match log of [ADR-038](ADR-038-phase-one-match-log.md) and seeds 1 to 20 unless said:
+  - Before task 18.1, when the AI built Relays only where the ore took it, seeds 1 to 10 ended at a median of 41:50 ([ADR-057](ADR-057-domination.md)).
+  - Task 18.1's first cut claimed every free sector next to its territory, one at a time, and raided with 4 ships every 90 seconds. Seeds 1 to 10 ended at a median of 23:36. Followed with a probe, seed 1's winner held 7 nodes, earned 150 Ore/s and had 25,000 Ore banked by 16:00.
+  - The starting values, one claim and raids of 2 every 180 seconds, give a median of 20:23, from 11:11 to 35:49, none within 45–60 minutes, every match ended and all by production. Every match has a shot by minute 5 and five engagements in three sectors before minute 20. Player 2 won 14.
+  - Measured before ties were mirrored ([ADR-020](ADR-020-ai-and-match-flow.md) decision 13), when player 1 won 16 of the 20 with the starting values: without claims or raids the median was 40:34; with one claim and no raids, 26:32; with raids and no claim, 28:44; and waiting for a lead of 2 nodes or twice the group, 11:31, every match by production.
+  - These numbers keep what the design asks of the AI and are where 19.2's tuning starts.
 - **What it does to a human's match is not measured.** The AI attacks later and in bigger waves, falls back sooner, and fortifies, so a player who does not rush it meets fewer, larger attacks. The owner's runs are the measure.
-- **`AiPlayerTests` check the behavior with the numbers set in the test**: falling back after losing half and regrouping, the group growing with the tier, and the base fortified for each Shipyard. `AiSettingsTests` checks the file's values and refuses a share of 1 or more.
+- **`AiPlayerTests` check the behavior with the numbers set in the test**: falling back after losing half and regrouping, the group growing with the tier, the base fortified for each Shipyard, and the attack waiting for a lead in nodes or a larger reserve. `AiSettingsTests` checks the file's values and refuses a share of 1 or more.
 
 ## What this forecloses
 
