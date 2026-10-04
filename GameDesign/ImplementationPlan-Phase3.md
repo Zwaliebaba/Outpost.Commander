@@ -1,10 +1,8 @@
 # Outpost Commander — Phase 3 Implementation Plan
 
-Status: **draft** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft, at the owner's request for the plan alone · Every task is blocked by gate K7 until the owner has run Phase 2 and accepted the design · Derived from the Phase 3 design
+Status: **open** · Started 2026-10-04, from [the Phase 3 design](OutpostCommander-Phase3.md)'s draft · Opened the same day, when the owner had run Phase 2 and accepted the design (gate K7), and answered Q1–Q4 · Derived from the Phase 3 design
 
-The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](ImplementationPlan-Phase2.md) stays the game's open plan until its owner runs are done.
-
-**Nothing in this plan starts yet.** The owner decided on 2026-10-04 (design gate K7) that Phase 3 is accepted only after the owner has run Phase 2's open tasks, 14.3, 15.2, 16.2, 17.1, 17.2 and 19.2, and answered S5. Until then the design is a draft, and this plan is too. When the design is accepted, this plan's status becomes **open**, the K7 row of the gates table records the date, and the tasks become `todo`. If the owner's run changes Phase 2, this plan is revised before any task starts.
+The Phase 3 design says *what* is built, AGENTS.md says *how* code is written, and `Design/ADR/` records the engineering decisions. This plan says **in what order**, as a queue of tasks. It is a work queue, not an authority: where it disagrees with the design, AGENTS.md or an ADR, those win and this plan gets fixed. [The Phase 2 plan](ImplementationPlan-Phase2.md) is closed.
 
 ---
 
@@ -25,18 +23,18 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 
 | Task | Title | Depends on | Gate | Status |
 |---|---|---|---|---|
-| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided; K7 | blocked: K7 |
-| 20.2 | The client shows levels and upgrades | 20.1 | K7 | blocked: K7 |
-| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided; K7 | blocked: K7 |
-| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | K7 | blocked: K7 |
-| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided; K7 | blocked: K7 |
-| 22.2 | The Lab's second research slot | 22.1 | K3 decided; K7 | blocked: K7 |
-| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | K7 | blocked: K7 |
-| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided; K7 | blocked: K7 |
-| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | K7 | blocked: K7 |
-| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | K7 | blocked: K7 |
-| 25.1 | The match log for Phase 3 | 20.1, 23.1 | K7 | blocked: K7 |
-| 25.2 | T1–T5 | 24.1, 25.1 | K7 | blocked: K7 |
+| 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | todo |
+| 20.2 | The client shows levels and upgrades | 20.1 | — | todo |
+| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | todo |
+| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | todo |
+| 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | todo |
+| 22.2 | The Lab's second research slot | 22.1 | K3 decided | todo |
+| 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | todo |
+| 23.1 | Command Station levels: the node cap and the guns | 20.1 | K4, K6 decided | todo |
+| 23.2 | The client shows the cap and spreads the station's guns | 23.1, 20.2 | — | todo |
+| 24.1 | The AI plays upgrades | 21.1, 22.2, 23.1 | — | todo |
+| 25.1 | The match log for Phase 3 | 20.1, 23.1 | — | todo |
+| 25.2 | T1–T5 | 24.1, 25.1 | — | todo |
 
 ### Milestone order
 
@@ -61,16 +59,16 @@ Each is an owner decision, from design §12.
 | K4 | The Command Station caps the nodes held at 3 to 7, with upgrades of 300, 500, 700 and 900 Ore; without a station, level 1's cap. **Decided on 2026-10-04.** | design §7 | — |
 | K5 | Every level is fitted to level 1's size; placement is unchanged. **Decided on 2026-10-04.** | design §4 | — |
 | K6 | +20% of base hit points a level; the Command Station has 1, 1, 2, 2 and 3 Defence guns. **Decided on 2026-10-04.** | design §4, §7 | — |
-| K7 | Phase 3 is accepted after the owner has run Phase 2's open tasks and answered S5. **Decided on 2026-10-04. Not yet met.** | design §12 | every task |
+| K7 | Phase 3 is accepted after the owner has run Phase 2's open tasks and answered S5. **Decided on 2026-10-04. Met on 2026-10-04**: the owner ran Phase 2, answered S5 yes, and accepted the design. | design §12 | — |
 
-### Open questions, for the owner before the task that meets them
+### Questions the design left open
 
-The design leaves these open, or contradicts itself on them. Each is answered by the owner, and the answer is written into the design, before its task starts.
+The design left these open, or contradicted itself on them. The owner answered each on 2026-10-04, as proposed, and the answers are written into the design (§4, §9).
 
-- **Q1, for 20.1: how a level's hit points combine with Reinforced Structures.** The design gives +20% of base hit points a level (§4), and Reinforced Structures gives +25% to every structure. `Research.cpp` sums the percents of every upgrade into one factor. *Proposed:* the level's percent adds to the same sum, so a level 3 Lab with Reinforced Structures has base × (1 + 0.40 + 0.25).
-- **Q2, for 20.2: the footprint refusal.** Design §9 has the Upgrade button dim for "no room for the larger footprint", but §4 and gate K5 keep the footprint unchanged by an upgrade, so that refusal cannot happen. *Proposed:* drop it from §9.
-- **Q3, for 20.1: the level of a remembered enemy structure.** Under fog of war, a player remembers an enemy structure it has seen (ADR-024). *Proposed:* it remembers the level last seen, as it remembers the structure's place, and an upgrade it did not see is not shown.
-- **Q4, for 20.1: an upgrade on a damaged structure.** A Constructor told to work on a structure that is both damaged and being upgraded either repairs it or builds the level. *Proposed:* the upgrade first, since its Ore is paid, and repair after.
+- **Q1, for 20.1: how a level's hit points combine with Reinforced Structures.** The design gives +20% of base hit points a level (§4), and Reinforced Structures gives +25% to every structure. `Research.cpp` sums the percents of every upgrade into one factor. **Answered:** the level's percent adds to the same sum, so a level 3 Lab with Reinforced Structures has base × (1 + 0.40 + 0.25).
+- **Q2, for 20.2: the footprint refusal.** Design §9 has the Upgrade button dim for "no room for the larger footprint", but §4 and gate K5 keep the footprint unchanged by an upgrade, so that refusal cannot happen. **Answered:** dropped from §9.
+- **Q3, for 20.1: the level of a remembered enemy structure.** Under fog of war, a player remembers an enemy structure it has seen (ADR-024). **Answered:** it remembers the level last seen, as it remembers the structure's place, and an upgrade it did not see is not shown.
+- **Q4, for 20.1: an upgrade on a damaged structure.** A Constructor told to work on a structure that is both damaged and being upgraded either repairs it or builds the level. **Answered:** the upgrade first, since its Ore is paid, and repair after.
 
 ---
 
@@ -78,7 +76,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 20.1 — Upgrading a structure, on the server
 
-- **Gate:** K5, K6, decided; K7. Q1, Q3 and Q4 answered.
+- **Gate:** K5, K6, decided; Q1, Q3 and Q4 answered.
 - **Goal:** design §4 on the server and in the protocol, for every kind that has levels. The levels do not yet change what a structure does. 21.1, 22.1 and 23.1 give them their effects.
 - **Scope:**
   - **The data.** In `Tuning.json`, the Command Station, the Shipyard and the Research Lab each gain a `levels` list. For each level above the first, it gives the upgrade's Ore and Constructor seconds. A top-level `levelHitPointsPercent` is 20. A kind without a list, such as the Relay, the Defence Platform or the Mining Rig, has one level. The loader refuses a list longer than the design's top level for its kind (K3).
@@ -92,7 +90,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 20.2 — The client shows levels and upgrades
 
-- **Gate:** K7. Q2 answered.
+- **Gate:** Q2 answered.
 - **Scope:**
   - **The selected structure's panel** names its level, "SHIPYARD 01 · L2". It has an Upgrade button showing the next level's Ore, its time and what it gives. The button is dim, with the reason, wherever the server would refuse. The kinds' effects fill in what a level gives as 21.2, 22.3 and 23.2 land, and until then the button names only the level.
   - **The work under way** is drawn as construction is.
@@ -107,7 +105,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 21.1 — Shipyard levels: hulls by level
 
-- **Gate:** K1, decided; K7.
+- **Gate:** K1, decided.
 - **Goal:** design §5 on the server.
 - **Scope:** the Shipyard's `levels` gain the largest hull each level builds: Small at 1, Medium at 2 and Large at 3. A Shipyard refuses to queue a job whose hull is above its level, with a new `CommandResult`. A job already queued is never taken out by a change of level, since levels only go up while the Shipyard stands. The AI upgrades a Shipyard to level 2 before it queues its first Medium hull, and to level 3 before its first Large one. That is the least the AI needs, and 24.1 tunes it.
 - **ADR:** ADR-064, its Shipyard decision.
@@ -127,7 +125,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 22.1 — Research Lab levels open the tiers; the gateways go
 
-- **Gate:** K2, decided; K7.
+- **Gate:** K2, decided.
 - **Goal:** design §6's levels 1 to 3, on the server.
 - **Scope:**
   - **The gateways are removed.** Relay Archives (topic 9) and Precursor Vault (topic 18) leave `Tuning.json`, and `GatewayEffect` leaves `Tuning.h`, `Research.cpp` and the snapshot's topic view, which keeps its tier. Every topic that required a gateway drops it from its `requires`. The topic ids are kept, with a gap where the gateways were, so that a saved design or a match log keeps its meaning.
@@ -141,7 +139,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 22.2 — The Lab's second research slot
 
-- **Gate:** K3, decided; K7.
+- **Gate:** K3, decided.
 - **Scope:** at level 4 the Lab's queue stays five topics long, and its front two topics run side by side, each paid when it starts (ADR-017). A topic whose prerequisite is still being researched waits for it, and the slot behind it runs nothing until it may start. The snapshot carries the progress of both running topics.
 - **ADR:** ADR-017, edited in place for the second slot.
 - **Acceptance:** `ResearchTests` cover two topics researched at once, each paid at its start, a topic waiting for its prerequisite in the other slot, and both slots lost with the Lab. `WireFormatTests` cover both topics' progress.
@@ -160,7 +158,7 @@ The design leaves these open, or contradicts itself on them. Each is answered by
 
 ### 23.1 — Command Station levels: the node cap and the guns
 
-- **Gate:** K4, K6, decided; K7.
+- **Gate:** K4, K6, decided.
 - **Goal:** design §7 on the server.
 - **Scope:**
   - **The cap.** The Command Station's `levels` gain the nodes held, home included, and the Defence guns each level has. A Relay is refused beyond the player's cap, and a Relay under construction counts toward the cap, since it takes its node (ADR-056). The cap refuses new claims and never takes a node away. A player without a Command Station has level 1's cap. The refusal is a new `CommandResult`, and the snapshot carries each player's cap.
