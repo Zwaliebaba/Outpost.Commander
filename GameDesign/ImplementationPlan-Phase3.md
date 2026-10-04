@@ -25,8 +25,8 @@ Task numbers continue the Phase 2 plan's milestones, so that a number names one 
 |---|---|---|---|---|
 | 20.1 | Upgrading a structure, on the server | — | K5, K6 decided | done, in PR |
 | 20.2 | The client shows levels and upgrades | 20.1 | — | in review: owner run |
-| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | todo |
-| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | todo |
+| 21.1 | Shipyard levels: hulls by level | 20.1 | K1 decided | done, in PR |
+| 21.2 | The designer and production say what a Shipyard cannot build | 21.1, 20.2 | — | in review: owner run |
 | 22.1 | Research Lab levels open the tiers; the gateways go | 20.1 | K2 decided | todo |
 | 22.2 | The Lab's second research slot | 22.1 | K3 decided | todo |
 | 22.3 | The research window follows the Lab's level | 22.1, 22.2, 20.2 | — | todo |
@@ -120,6 +120,11 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064, its Shipyard decision.
 - **Acceptance:** `ProductionTests` cover each hull at each level, and a Large hull needing both the topic and level 3. `AiPlayerTests` pass on the repository map.
 - **Verify:** CI; the AI-against-AI matches in the container, with S1's first contact reported against Phase 2's.
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 9, and ADR-020 decision 7 edited in place.
+  - **The Shipyard names its hulls** in `Tuning.json`, `"hulls"` at level 1 and on each level, and each `HullView` carries the `shipyardLevel` it needs. The refusal is `LevelTooLow`.
+  - **The AI** upgrades a Shipyard below its production design's hull with its two nearest idle Constructors once nothing in its plan waits for Ore, and queues that design only where it can be built. Its Constructors stay until the level is in.
+  - **Tests.** `ProductionTests.BuildsTheHullsOfItsLevel`; `ProductionTests.AJobWaitsForTheOre` waits on a Small design, which a level 1 Shipyard builds; `AiPlayerTests.PlaysOnWithoutItsStation` hands the AI a level 3 Shipyard. 246 `GameLogicTests` pass in the container.
+  - **Seeds 1–10, played on the container's harness against `main`'s Phase 2,** which reproduces 19.2's figures exactly (44:50, 16.5 engagements in 6 sectors): every match ends, at a median of 49:30 against 44:50; every first shot comes by minute 5 against every one before; 11.5 engagements in 4 sectors before minute 20 against 16.5 in 6, every match still meeting S2; and 7 dominations to 3 against 6 to 4. Seed 1's first Large ship comes 1:46 after its Large Hull research, the level 3 upgrade and the hull's build time.
 
 ### 21.2 — The designer and production say what a Shipyard cannot build
 
@@ -127,6 +132,7 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **ADR:** ADR-064's client decisions.
 - **Acceptance:** `DesignerTests`, `HudTests`.
 - **Verify:** CI; **owner run.**
+- **As built:** [ADR-064](../Design/ADR/ADR-064-structure-upgrades.md) decision 9. The designer's line under Queue reads "Needs Shipyard L2" in place of the build time; the production window's code is followed by "NEEDS L2". The next level's hulls are named on the panel's line of what it gives, "L2: Medium hulls, 3,000 hit points", rather than on the button, whose label holds the time and cost. `HudTests.SaysWhatAShipyardCannotBuild`; no change was needed in `Designer`, so `DesignerTests` is unchanged. 224 `GameAppTests` pass in the container.
 
 ---
 
