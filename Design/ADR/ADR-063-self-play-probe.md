@@ -1,4 +1,4 @@
-# ADR-061 — Self-play searches the AI's numbers as a probe of the rules, and --ai-matches plays any two settings
+# ADR-063 — Self-play searches the AI's numbers as a probe of the rules, and --ai-matches plays any two settings
 
 Status: **accepted** · 2026-10-04
 

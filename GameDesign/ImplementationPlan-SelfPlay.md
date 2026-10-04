@@ -1,6 +1,6 @@
 # Outpost Commander — Self-Play Plan
 
-Status: **open** · Started 2026-10-04, when the owner opened self-play as a side project and answered its first questions · Derived from [ADR-061](../Design/ADR/ADR-061-self-play-probe.md) and [the network's blueprint](../Design/SelfPlayNetwork.md)
+Status: **open** · Started 2026-10-04, when the owner opened self-play as a side project and answered its first questions · Derived from [ADR-063](../Design/ADR/ADR-063-self-play-probe.md) and [the network's blueprint](../Design/SelfPlayNetwork.md)
 
 Self-play is a side project beside the game's phases. AIs fight each other, and a search keeps what wins. It is a probe of the match's rules, and it changes nothing a player sees. [The Phase 2 plan](ImplementationPlan-Phase2.md) stays the game's open plan. This plan says **in what order** the side project is built, as a queue of tasks. It is a work queue, not an authority: where it disagrees with a design, AGENTS.md or an ADR, those win and this plan gets fixed.
 
@@ -15,7 +15,7 @@ Self-play is a side project beside the game's phases. AIs fight each other, and 
 
 ## How an agent uses this plan
 
-1. **Read AGENTS.md, ADR-061 and ADR-020, then the blueprint for milestone SP2.**
+1. **Read AGENTS.md, ADR-063 and ADR-020, then the blueprint for milestone SP2.**
 2. **Take the lowest-numbered task whose status is `todo`, whose dependencies are `done` and whose gate is decided.** One PR per milestone, in milestone order.
 3. **Tasks are numbered SP\<milestone\>.\<task\>,** apart from the game's milestones, so that the phases keep their numbers. The blueprint's open questions are gates N1 to N5.
 4. **Know what you cannot verify.** An agent in a cloud container has no Windows, no MSBuild and no GPU. The server, the AI and the switch build and run there against a stand-in for the Windows headers, as the phases' did. A search on the real build is the owner's run.
@@ -46,12 +46,12 @@ SP1, then SP2. The network is built only once the search over the numbers has a 
 
 - **Goal:** a script plays any two settings of the AI against each other, on the seeds it names, into the log it names, with no message box.
 - **Scope:** options for each AI's settings file, the first seed, the number of matches, the time limit and the log. `--quiet` reports a failure on standard error and by the exit code. `PlayAiMatches` takes each player's settings. With no options, the switch plays ADR-038's ten matches as before.
-- **ADR:** ADR-061 decisions 1 and 2. ADR-038 decision 3, edited in place.
+- **ADR:** ADR-063 decisions 1 and 2. ADR-038 decision 3, edited in place.
 - **Verify:** CI builds it. In the container, against the stand-in: the same seeds log the same bytes as before, per-player settings take effect, and every malformed option fails with its own message. On Windows, one run of the switch with `--quiet` and a bad option shows the message on standard error; that is the owner's run in SP1.3.
 
 ### SP1.2 — The search over the AI's numbers
 
-- **Goal:** ADR-061 decisions 3 to 8.
+- **Goal:** ADR-063 decisions 3 to 8.
 - **Scope:** `Tools/SelfPlay.py`: a separable CMA-ES over the 22 numbers of `Opponent.json` and its research order, against a champion and a hall of fame, from both seats on shared seeds; a champion confirmed on fresh seeds; state saved every generation, and `--resume`; the report against the packaged settings on seeds 1 to 40; `--self-test`.
 - **Verify:** `--self-test`, and a short search against the stand-in in the container, stopped and resumed.
 

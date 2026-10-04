@@ -17,7 +17,7 @@ namespace
 constexpr std::uint32_t SECONDS_PER_MINUTE = 60;
 // The log when the options name none: in the temporary folder, replaced by each run (ADR-038).
 constexpr auto DEFAULT_LOG = L"OutpostCommander-ai-matches.log";
-// The switch's options (ADR-061). Each takes a value.
+// The switch's options (ADR-063). Each takes a value.
 constexpr std::wstring_view FIRST_SEED_OPTION = L"--first-seed";
 constexpr std::wstring_view MATCHES_OPTION = L"--matches";
 constexpr std::wstring_view LIMIT_MINUTES_OPTION = L"--limit-minutes";

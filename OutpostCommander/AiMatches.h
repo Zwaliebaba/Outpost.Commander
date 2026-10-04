@@ -13,7 +13,7 @@ struct AiMatchesDesc
   std::uint32_t limitMinutes = 120;
 };
 
-// What the --ai-matches switch is asked to play (ADR-061). With no options it is P1's ten matches of the packaged AI
+// What the --ai-matches switch is asked to play (ADR-063). With no options it is P1's ten matches of the packaged AI
 // against itself (ADR-038); a script such as Tools/SelfPlay.py names the seeds, each AI's settings and the log.
 struct AiMatchesOptions
 {

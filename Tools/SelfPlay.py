@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-play over the AI's settings: a probe of the match's rules (ADR-061).
+"""Self-play over the AI's settings: a probe of the match's rules (ADR-063).
 
 Two AIs fight, and a search keeps whichever settings of OutpostCommander/Assets/Opponent.json win. What it finds is a
 question for the owner: a strategy that wins too easily is a degenerate one in the rules, or a weakness in how the

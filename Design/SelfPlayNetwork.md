@@ -2,7 +2,7 @@
 
 Status: **proposal** · 2026-10-04 · The blueprint of milestone SP2 of [the self-play plan](../GameDesign/ImplementationPlan-SelfPlay.md). Nothing here is decided until SP2.1's ADR. Five questions are the owner's, gates N1 to N5 (§15).
 
-This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-061](ADR/ADR-061-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first.
+This document describes how the network that plays the AI's macro game would work: what it sees, what it decides, how it learns, where it sits in the code, what it costs, and what it tells the owner. [ADR-063](ADR/ADR-063-self-play-probe.md) records the first milestone, the search over the AI's numbers, and why it comes first.
 
 ---
 
@@ -12,7 +12,7 @@ The owner asked on 2026-10-04 for networks that fight each other to discover the
 
 The first milestone answers what fixed numbers can do. The scripted AI applies the same rules whatever happens in the match: it researches in one order, answers a design with the counter its table names, and attacks once its reserve reaches a size. The network decides from the state of the match: what the enemy fields, where the territory stands, how the tickets run. If deciding from the state beats fixed rules by a wide margin, that margin and how it is won are the probe's findings. A strategy that wins too easily is a defect in the rules, or a weakness in how the scripted AI plays them, and the owner sorts which.
 
-The network never plays in the game the players get. It plays only in the headless `--ai-matches` switch, and ADR-061 forecloses a learned AI in the shipped game without a design amendment and a new ADR.
+The network never plays in the game the players get. It plays only in the headless `--ai-matches` switch, and ADR-063 forecloses a learned AI in the shipped game without a design amendment and a new ADR.
 
 ## 2. The shape of it in one paragraph
 
@@ -135,7 +135,7 @@ About 150,000 parameters, 0.6 MB as floats. The initialization and the activatio
 
 ### The reward
 
-- **A match's outcome is the reward:** 1 for a win, -1 for a loss, 0 for a draw, and at the time limit half a point to the side ahead on tickets, as ADR-061 decision 4 scores a match.
+- **A match's outcome is the reward:** 1 for a win, -1 for a loss, 0 for a draw, and at the time limit half a point to the side ahead on tickets, as ADR-063 decision 4 scores a match.
 - **Each step adds a shaping term** from the tickets: *r* = γΦ(*s′*) − Φ(*s*), with Φ = 0.5 × (its tickets − the enemy's) ÷ the starting tickets. Shaping of this form leaves the best policy unchanged (Ng, Harada and Russell, 1999), and it gives a signal every step of a long match.
 - **Nothing else is rewarded.** Rewarding kills, Ore or nodes would teach the network what the scripted AI already believes. A probe of the rules is told only who wins.
 - **The discount is 0.995 a step,** a half-life of 138 steps or 23 minutes, and the advantages are generalized advantage estimates with λ = 0.95 (Schulman et al., 2016).
@@ -169,7 +169,7 @@ These are the published defaults, and the self-test of SP2.3 checks the trainer 
 
 ### Stage 3: the league
 
-Self-play against only its latest self cycles, as ADR-061 explains for the search, so the network trains in a league, after AlphaStar's:
+Self-play against only its latest self cycles, as ADR-063 explains for the search, so the network trains in a league, after AlphaStar's:
 
 - **Four matches in ten are against itself,** and both seats learn.
 - **Four in ten are against a past version,** a checkpoint drawn by prioritized fictitious self-play: a checkpoint the network beats with probability *p* is drawn with weight (1 − *p*)². The versions it still loses to are the ones it plays.
@@ -219,7 +219,7 @@ A last record holds the outcome. A scripted seat's records hold the scripted rul
 
 ## 12. What it costs
 
-The only measured figure is the match: about 15 CPU seconds for a match of 45 minutes between scripted AIs, in the Linux container with clang at `-O2` (ADR-061). The network adds two forward passes every 10 seconds, about 90 million multiply-adds a match, which is milliseconds. Everything below is an estimate from that figure:
+The only measured figure is the match: about 15 CPU seconds for a match of 45 minutes between scripted AIs, in the Linux container with clang at `-O2` (ADR-063). The network adds two forward passes every 10 seconds, about 90 million multiply-adds a match, which is milliseconds. Everything below is an estimate from that figure:
 
 | Stage | Matches | CPU hours | On 8 cores |
 |---|---|---|---|
@@ -250,7 +250,7 @@ Each finding is sorted by the owner, as in SP1.3: a rule that wants changing, a 
 - **It finds the body's bugs rather than the rules' defects.** An attack the pathing cannot defend, say. *Answer:* the ablations point at the decision, and the owner sorts the finding. A weakness of the scripted AI is still worth knowing.
 - **It cannot tell which decision won a 50-minute match.** *Answer:* 10-second steps, generalized advantage estimates, the tickets' shaping, and the warm start's head start.
 - **A run outgrows the laptop.** *Answer:* the costs above, the warm start, an earlier time limit early on, and `--resume` after every iteration, as `Tools/SelfPlay.py` saves after every generation.
-- **Results differ between builds.** Floats are only promised to replay on one binary (ADR-009). *Answer:* train and measure on Release|x64 (ADR-061 decision 7). Weights move between builds; outcomes do not reproduce bit for bit across them.
+- **Results differ between builds.** Floats are only promised to replay on one binary (ADR-009). *Answer:* train and measure on Release|x64 (ADR-063 decision 7). Weights move between builds; outcomes do not reproduce bit for bit across them.
 - **It fits the one map.** *Answer:* none is wanted. The probe answers for the repository's map, and another map is another probe.
 
 ## 15. The owner's questions

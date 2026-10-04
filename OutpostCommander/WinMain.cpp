@@ -40,10 +40,10 @@ constexpr auto MEASUREMENT_LOG = L"OutpostCommander-measure.log";
 constexpr auto MATCH_LOG = L"OutpostCommander-matches.log";
 // Phase 1 plan task 13.1's switch: seeded AI-against-AI matches on the real server, played headlessly as fast as it
 // ticks, for P1's repeatable figure. No window opens; a message says when they are done, and Tools/MatchLog.py
-// --ai-matches summarizes them. Its options name the seeds, each AI's settings and the log (AiMatchesOptions, ADR-061).
+// --ai-matches summarizes them. Its options name the seeds, each AI's settings and the log (AiMatchesOptions, ADR-063).
 constexpr std::wstring_view AI_MATCHES_SWITCH = L"--ai-matches";
 // With --ai-matches, for a script such as Tools/SelfPlay.py: no message. The exit code says how the run went, and a
-// failure's message goes to standard error (ADR-061).
+// failure's message goes to standard error (ADR-063).
 constexpr std::wstring_view QUIET_SWITCH = L"--quiet";
 
 std::int64_t Nanoseconds(std::chrono::steady_clock::time_point _time) noexcept
@@ -82,7 +82,7 @@ std::vector<std::wstring> CommandLineArguments()
   return all.empty() ? std::vector<std::wstring>() : std::vector<std::wstring>(all.begin() + 1, all.end());
 }
 
-// Shows a failure, or under --quiet writes it to standard error, where the script that ran the game reads it (ADR-061).
+// Shows a failure, or under --quiet writes it to standard error, where the script that ran the game reads it (ADR-063).
 void ReportFailure(std::wstring_view _message, bool _quiet)
 {
   if (!_quiet)
@@ -155,7 +155,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
 
   // A failure anywhere below, at startup or when the graphics device is lost, ends up here once: it is shown, and its code
   // is the exit code, so the game never closes without saying why (ADR-006). A quiet run of --ai-matches sets this before
-  // anything there can fail, and its failure goes to standard error instead (ADR-061).
+  // anything there can fail, and its failure goes to standard error instead (ADR-063).
   bool quiet = false;
   try
   {
@@ -170,7 +170,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE _hInstance, [[maybe_unused]] HINS
     const std::wstring_view commandLine = _cmdLine != nullptr ? std::wstring_view(_cmdLine) : std::wstring_view();
     if (commandLine.find(AI_MATCHES_SWITCH) != std::wstring_view::npos)
     {
-      // The shell reads its own two words, the switch and --quiet; the rest are the switch's options (ADR-061).
+      // The shell reads its own two words, the switch and --quiet; the rest are the switch's options (ADR-063).
       std::vector<std::wstring> arguments = CommandLineArguments();
       quiet = std::erase(arguments, QUIET_SWITCH) > 0;
       std::erase(arguments, AI_MATCHES_SWITCH);
