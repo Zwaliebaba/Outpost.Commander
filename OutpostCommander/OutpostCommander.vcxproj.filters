@@ -76,6 +76,12 @@
     <None Include="Assets\Opponent.json">
       <Filter>Package\Assets</Filter>
     </None>
+    <None Include="Assets\OpponentEasy.json">
+      <Filter>Package\Assets</Filter>
+    </None>
+    <None Include="Assets\OpponentHard.json">
+      <Filter>Package\Assets</Filter>
+    </None>
     <None Include="Assets\Models\Asteroids\Small.nmf">
       <Filter>Package\Assets\Models\Asteroid</Filter>
     </None>

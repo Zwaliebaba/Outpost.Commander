@@ -241,3 +241,15 @@ The design left these open, or contradicted itself on them. The owner answered e
 - **Goal:** answer design §2's questions and record them there. A failed answer is still a result.
 - **Scope:** the AI-against-AI run over seeds 1–40, tuned against T1–T4 where the AI's own settings and the upgrade numbers can reach them. The owner's matches and judgement for T5.
 - **Verify:** **owner run.**
+
+---
+
+## Owner requests
+
+### 26.1 — The AI's difficulty
+
+- **Asked:** the owner found the AI too strong to beat in play: it outproduced the player early and took nodes faster than the player could hold them (owner, 2026-10-04). The owner chose difficulty levels on the menu over one weaker AI.
+- **Scope:** Easy, Normal and Hard, each a settings file, picked on the menu. Normal stays `Opponent.json`, the AI that T1–T4 measure.
+- **ADR:** ADR-065; ADR-020 edited in place for the menu.
+- **Acceptance:** `AiSettingsTests.LoadsEachDifficulty`, `HudTests.LaysOutTheMenu`.
+- **Verify:** CI; Easy and Hard against Normal, AI against AI; **owner run.**

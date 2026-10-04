@@ -31,10 +31,10 @@ Design §10 lists what the AI does and leaves the details open. The owner settle
    - A shot on any of its structures, built or a site, sends the reserve there with an attack-move (design §10, owner, 2026-10-01). The reserve goes back 10 s after the last shot. It is sent again only when where it goes, or whether it holds a sector there, changes.
    - The AI never kites (design §7).
 9. **A match ends once a player whose base was placed is beaten**, by the rule of [ADR-037](ADR-037-losing-all-production.md) decision 1. Every snapshot carries `matchOver`, the winner, and `matchEndedTick`. The winner is no player when both are beaten in the same tick. The world runs on after the match ends, and the outcome stands. A world with no bases placed never ends, as in the movement and combat tests.
-10. **The game opens on a menu with Start skirmish and Quit.** `GameClient` has a menu screen and a match screen. Starting or leaving a match resets everything the last match left in the view, without reloading a mesh. Each match has its own server and seed.
+10. **The game opens on a menu with a skirmish at each difficulty, Easy, Normal and Hard ([ADR-065](ADR-065-ai-difficulty.md)), and Quit.** `GameClient` has a menu screen and a match screen. Starting or leaving a match resets everything the last match left in the view, without reloading a mesh. Each match has its own server and seed.
    - The next match's server is made while the menu shows, and the first one on a thread of its own while the window is still hidden ([ADR-049](ADR-049-startup-in-parallel.md) decisions 2 and 3), so that bad tuning, map or AI data is reported before the screen goes full screen.
    - The AI is player 2, which `Models.json` draws with the Tarkan set.
-   - `--measure`, `--load` and `--stress` skip the menu, and under load or stress no AI plays.
+   - `--measure`, `--load` and `--stress` skip the menu, and under load or stress no AI plays. A measurement run meets the Normal AI.
 11. **Every match against the AI is added to `OutpostCommander-matches.log` in the temporary folder**, by `Outpost::MatchLog` in `GameApp`. It records:
     - the seed,
     - each player's research as it finishes,
